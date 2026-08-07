@@ -1,0 +1,63 @@
+:root {
+  /* Lottery / Primitives */
+  --lottery-neutral-950: #02070c;
+  --lottery-neutral-925: #040b10;
+  --lottery-neutral-900: #071018;
+  --lottery-neutral-400: #aaa7a2;
+  --lottery-neutral-100: #f5f2ea;
+  --lottery-gold-700: #4f3a22;
+  --lottery-gold-600: #76542b;
+  --lottery-gold-500: #c49145;
+  --lottery-gold-300: #f4ce67;
+  --lottery-white-1000: #ffffff;
+  --lottery-status-active: #79c95c;
+  --lottery-status-active-border: #315725;
+  --lottery-status-focus: #37aee8;
+  --lottery-status-focus-border: #1d526b;
+  --lottery-status-resonance: #b85bc9;
+  --lottery-status-resonance-border: #60306a;
+  --lottery-status-critical: #d08a32;
+  --lottery-status-critical-border: #71471f;
+
+  /* Lottery / Semantic */
+  --lottery-card-bg: var(--lottery-neutral-900);
+  --lottery-draw-card-bg: var(--lottery-neutral-925);
+  --lottery-border-default: var(--lottery-gold-600);
+  --lottery-border-selected: var(--lottery-gold-300);
+  --lottery-card-outline: var(--lottery-gold-700);
+  --lottery-label: var(--lottery-gold-500);
+  --lottery-text-primary: var(--lottery-neutral-100);
+  --lottery-text-secondary: var(--lottery-neutral-400);
+  --lottery-glow: rgba(244, 206, 103, 0.52);
+  --matrix-status-active: var(--lottery-status-active);
+  --matrix-status-active-border: var(--lottery-status-active-border);
+  --matrix-status-focus: var(--lottery-status-focus);
+  --matrix-status-focus-border: var(--lottery-status-focus-border);
+  --matrix-status-resonance: var(--lottery-status-resonance);
+  --matrix-status-resonance-border: var(--lottery-status-resonance-border);
+  --matrix-status-critical: var(--lottery-status-critical);
+  --matrix-status-critical-border: var(--lottery-status-critical-border);
+
+  /* Lottery / Dimensions */
+  --lottery-group-padding: 12px;
+  --lottery-card-gap: 4px;
+  --lottery-card-internal: 6px;
+  --lottery-card-radius: 10px;
+  --lottery-card-height: 74px;
+  --lottery-logo-height: 40px;
+  --lottery-stroke-default: 1px;
+  --lottery-stroke-selected: 1.5px;
+  --lottery-draw-card-padding: 12px;
+  --lottery-draw-toolbar-gap: 8px;
+  --lottery-ball-gap: 4px;
+  --lottery-draw-card-height: 118px;
+  --lottery-ball-standard: 58px;
+  --lottery-ball-compact: 43px;
+  --lottery-special-column: 52px;
+  --next-draw-info-height: 38px;
+  --next-draw-info-padding: 10px;
+  --matrix-status-section-height: 232px;
+  --matrix-status-card-height: 180px;
+  --matrix-status-card-radius: 8px;
+  --matrix-status-padding: 10px;
+}
