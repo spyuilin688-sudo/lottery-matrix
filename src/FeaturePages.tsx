@@ -2366,10 +2366,10 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     ["result", "開獎結果通知", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/result.png"],
     ["win", "中獎通知", "彩種通知、獎金通知", "/assets/notifications/win.png"],
     ["status", "Matrix 狀態通知", "", "/assets/notifications/status.png"],
-    ["card", "Matrix 牌單通知", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/card.png"],
-    ["collision", "Matrix 獨碰通知", "", "/assets/notifications/collision.png"],
+    ["card", "Matrix 牌單通知", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/card-v2.png"],
+    ["collision", "Matrix 獨碰通知", "", "/assets/notifications/collision-v2.png"],
     ["expiry", "Matrix Pro", "提前1日、提前3日、提前7日", "/assets/notifications/expiry.png"],
-    ["system", "系統通知", "維護、更新", "/assets/notifications/system.png"],
+    ["system", "系統通知", "維護、更新", "/assets/notifications/system-v2.png"],
   ] as const;
   const toggleOption = (key: string, option: string) => {
     if (key === "collision") return;
