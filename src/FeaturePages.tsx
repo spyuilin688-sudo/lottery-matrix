@@ -1470,7 +1470,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "Matrix 首頁",
-      summary: "集中顯示目前彩種的最新開獎資訊、下次開獎時間、剩餘時間、Matrix 狀態與主要功能入口。",
+      summary: "集中顯示目前彩種的最新開獎資訊、下次開獎時間、剩餘時間、Matrix 狀態及主要功能入口。",
       blocks: [
         { title: "四彩種切換", items: ["固定顯示今彩539、天天樂、六合彩及大樂透。", "切換後，最新開獎資訊卡顯示該彩種的期數、日期與開獎號碼。"] },
         { title: "Matrix 狀態", items: ["四個彩種固定顯示。", "狀態卡依資料呈現啟動、聚合、共振或臨界；同一彩種同時符合多種狀態時，只顯示最高等級狀態。", "點擊狀態卡可進入該彩種的 Matrix 狀態頁。"] },
@@ -1481,22 +1481,22 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "Matrix 探索",
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期；十三期為 Matrix Pro 功能。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+（鎖定1碼）或準5+（鎖定2碼），兩者為單選。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+（鎖定1碼）或準5+（鎖定2碼），兩者為單選。"] },
         { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日（最新）、昨日（上1期）、前日（上2期）。", "探索範圍：標準範圍或完整範圍；完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
       ],
     },
     {
       title: "Matrix 狀態",
-      summary: "自動分析並篩選較高參考價值的版路結果，依規則分為啟動、聚合、共振與臨界。",
+      summary: "顯示符合條件的版路結果，依規則分為啟動、聚合、共振及臨界。，依規則分為啟動、聚合、共振與臨界。",
       blocks: [
         { title: "狀態層級", items: ["啟動 ACTIVE。", "聚合 FOCUS。", "共振 RESONANCE。", "臨界 CRITICAL。"] },
-        { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、預測期、連準次數、預測及類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
+        { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、預測期、連準次數及版路類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
       ],
     },
     {
       title: "Matrix 同星",
-      summary: "輸入指定號碼與之後期數，查詢同一期指定號碼條件及後續開獎結果。",
+      summary: "輸入指定號碼後，查詢指定期數的開獎結果。，查詢同一期指定號碼條件及後續開獎結果。",
       blocks: [
         { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
         { title: "結果內容", items: ["同頁顯示近10期開獎號碼。", "結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
@@ -1528,9 +1528,9 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "快捷與 Matrix 筆記本",
-      summary: "快捷可指定常用功能；Matrix 筆記本分為筆記與紀錄兩種模式。",
+      summary: "快捷可快速開啟已設定的功能；Matrix 筆記本提供筆記與紀錄兩種模式。",
       blocks: [
-        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "長按三秒可設定 Matrix 同星、號碼對照單、連碰立柱計算機、歷史開獎號碼或 Matrix 筆記本。"] },
+        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "長按三秒可設定快捷功能。"] },
         { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容有變動且尚未寫入，會出現提醒。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
         { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示總成本、總獎金與總損益；統計提供每日、每週與本月。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
       ],
@@ -1540,7 +1540,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "可設定投注、開獎結果、中獎、Matrix 狀態、Matrix 牌單、獨碰、系統及 Matrix Pro 到期通知。",
       blocks: [
         { title: "通知設定", items: ["各通知可個別開啟或關閉。", "投注通知可依彩種設定時間。", "開獎結果、Matrix 牌單及獨碰通知可選擇彩種。", "中獎通知可選擇彩種通知或中獎金額通知。"] },
-        { title: "Matrix Pro 通知", items: ["Matrix 狀態、Matrix 牌單及獨碰通知依頁面標示的 Matrix Pro 權限使用。", "到期通知可選擇提前1日、提前3日或提前7日。"] },
+        { title: "Matrix Pro 通知", items: ["部分通知功能需具備 Matrix Pro 權限。", "到期通知可選擇提前1日、提前3日或提前7日。"] },
       ],
     },
     {
@@ -1555,7 +1555,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "帳號與安全",
       summary: "使用 LINE 官方授權登入，會員資料、記事、通知、設定與 Matrix Pro 權益會同步。",
       blocks: [
-        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統每5分鐘驗證 Session。", "更換手機不影響會員資料與權益。"] },
+        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統每5分鐘驗證 Session。", "會員資料與權益依 LINE 帳號同步。"] },
         { title: "安全機制", items: ["使用裝置驗證與資料加密保護。", "若帳號在其他裝置登入，目前裝置會自動登出。"] },
       ],
     },
@@ -1566,7 +1566,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼可進入更多紀錄。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["長按底部「快捷」三秒後，選擇要指定的功能。"] },
-        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「會員方案／收費標準」，查看方案、期間與權限。"] },
+        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」，查看方案、期間與權限。"] },
       ],
     },
     {
@@ -2363,11 +2363,11 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   const rows = [
     ["bet", "選號提醒", "", "/assets/notifications/bet.png"],
-    ["result", "開獎結果通知", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/result.png"],
+    ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/result.png"],
     ["win", "中獎通知", "彩種通知、獎金通知", "/assets/notifications/win.png"],
-    ["status", "Matrix 狀態通知", "", "/assets/notifications/status.png"],
-    ["card", "Matrix 牌單通知", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/card-v2.png"],
-    ["collision", "Matrix 獨碰通知", "", "/assets/notifications/collision-v2.png"],
+    ["status", "Matrix 狀態", "", "/assets/notifications/status.png"],
+    ["card", "Matrix 牌單下載", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/card-v2.png"],
+    ["collision", "Matrix 摘星", "", "/assets/notifications/collision-v2.png"],
     ["expiry", "Matrix Pro", "提前1日、提前3日、提前7日", "/assets/notifications/expiry.png"],
     ["system", "系統通知", "維護、更新", "/assets/notifications/system-v2.png"],
   ] as const;
