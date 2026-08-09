@@ -2310,7 +2310,10 @@ export function NotesPage({ onNavigate }: { onNavigate: Navigate }) {
     ];
     return (
       <main className="feature-screen note-detail-screen">
-        <BrandHeader title="記事詳細" onBack={() => setSelectedNote(null)} />
+        <BrandHeader onBack={() => setSelectedNote(null)} />
+        <section className="feature-page-title-card" aria-label="記事詳細頁面標題">
+          <h1>記事詳細</h1>
+        </section>
         <div className="feature-body">
           <section className="panel note-detail-card">
             {detailRows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
