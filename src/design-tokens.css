@@ -68,4 +68,12 @@
   --matrix-status-card-height: 180px;
   --matrix-status-card-radius: 8px;
   --matrix-status-padding: 10px;
+
+  /* Homepage / Empty draw information card */
+  --draw-card-bg-main: #040a0f;
+  --draw-card-bg-footer: #03090d;
+  --draw-card-border-gold: #e3a338;
+  --draw-card-divider-gold: #6e4a1f;
+  --draw-card-radius: 10px;
+  --draw-card-stroke: 1px;
 }
