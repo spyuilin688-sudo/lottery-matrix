@@ -10,7 +10,8 @@ import {
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
-import { HOME_BRAND_LOGO } from "./home-assets";\nimport { getMatrixStatusArtwork, type MatrixStatusPosition } from "./status-assets";
+import { HOME_BRAND_LOGO } from "./home-assets";
+import { getMatrixStatusArtwork, type MatrixStatusPosition } from "./status-assets";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
