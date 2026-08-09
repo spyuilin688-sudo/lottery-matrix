@@ -593,6 +593,14 @@
   justify-content: space-between;
 }
 
+.matrix-status-title-group {
+  display: flex;
+  min-width: 0;
+  height: 28px;
+  align-items: center;
+  gap: 7px;
+}
+
 .matrix-status-header h2 {
   margin: 0;
   color: #e6c77f;
@@ -602,12 +610,30 @@
   letter-spacing: 0.2px;
 }
 
+.matrix-status-trigger-button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(223, 176, 68, .72);
+  border-radius: 7px;
+  background: #080806;
+  box-shadow: 0 0 8px rgba(223, 176, 68, .24);
+}
+.matrix-status-trigger-button img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.matrix-status-trigger-button:active { transform: scale(.96); }
+
 .matrix-status-more {
   display: flex;
   height: 22px;
+  padding: 0;
   align-items: center;
   gap: 3px;
+  border: 0;
   color: #bbb9b4;
+  background: transparent;
   font-size: 11px;
   line-height: 16px;
   white-space: nowrap;

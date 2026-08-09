@@ -53,6 +53,7 @@ export type ScreenId =
   | "version-info"
   | "update-history"
   | "disclaimer"
+  | "status-trigger-settings"
   | "status";
 
 type Navigate = (screen: ScreenId) => void;
@@ -2747,6 +2748,68 @@ function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
   return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate}><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
 }
 
+
+const MATRIX_TRIGGER_STATUSES = [
+  ["啟動", "ACTIVE", "green"],
+  ["聚合", "FOCUS", "blue"],
+  ["共振", "RESONANCE", "purple"],
+  ["臨界", "CRITICAL", "orange"],
+] as const;
+const MATRIX_TRIGGER_GROUPS = ["組合 1", "組合 2", "組合 3"] as const;
+const MATRIX_TRIGGER_CONDITIONS = ["準4+（鎖定1碼）", "準5+（鎖定2碼）"] as const;
+
+export function MatrixStatusTriggerSettingsPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [status, setStatus] = useState<(typeof MATRIX_TRIGGER_STATUSES)[number][0]>("啟動");
+  const [conditions, setConditions] = useState(
+    MATRIX_TRIGGER_GROUPS.map((_, index) => MATRIX_TRIGGER_CONDITIONS[index % MATRIX_TRIGGER_CONDITIONS.length]),
+  );
+  const selectCondition = (index: number, condition: (typeof MATRIX_TRIGGER_CONDITIONS)[number]) => {
+    setConditions((current) => current.map((value, itemIndex) => itemIndex === index ? condition : value));
+  };
+  const resetSettings = () => {
+    setStatus("啟動");
+    setConditions(MATRIX_TRIGGER_GROUPS.map((_, index) => MATRIX_TRIGGER_CONDITIONS[index % MATRIX_TRIGGER_CONDITIONS.length]));
+  };
+
+  return (
+    <FeatureShell title="自訂觸發條件" onNavigate={onNavigate} className="matrix-trigger-settings-screen">
+      <section className="matrix-trigger-intro">
+        <img src="/assets/lottery/status-trigger-settings.png" alt="" draggable={false} />
+        <h2>自訂觸發條件</h2>
+      </section>
+      <section className="matrix-trigger-status-section" aria-label="Matrix 狀態">
+        <h3>Matrix 狀態</h3>
+        <div className="matrix-trigger-status-grid">
+          {MATRIX_TRIGGER_STATUSES.map(([title, titleEn, tone]) => (
+            <button type="button" data-tone={tone} data-selected={status === title} onClick={() => setStatus(title)} key={title}>
+              <strong>{title}</strong><small>{titleEn}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+      <div className="matrix-trigger-groups">
+        {MATRIX_TRIGGER_GROUPS.map((group, index) => (
+          <section className="matrix-trigger-group" key={group}>
+            <header><strong>{group}</strong></header>
+            <div role="radiogroup" aria-label={group}>
+              {MATRIX_TRIGGER_CONDITIONS.map((condition) => (
+                <button type="button" role="radio" aria-checked={conditions[index] === condition} data-selected={conditions[index] === condition} onClick={() => selectCondition(index, condition)} key={condition}>
+                  {condition}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+      <button type="button" className="matrix-trigger-add">新增組合</button>
+      <footer className="matrix-trigger-actions">
+        <button type="button" onClick={resetSettings}>重置設定</button>
+        <button type="button">儲存設定</button>
+      </footer>
+    </FeatureShell>
+  );
+}
+
 export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [open, setOpen] = useState("臨界");
@@ -2835,5 +2898,6 @@ export function FeaturePageRouter({
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;
+  if (screen === "status-trigger-settings") return <MatrixStatusTriggerSettingsPage onNavigate={onNavigate} />;
   return <MatrixStatusPage onNavigate={onNavigate} />;
 }

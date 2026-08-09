@@ -414,11 +414,13 @@ export function NextDrawInfoBar({
 export type MatrixStatusSectionProps = {
   statuses?: MatrixStatusMap;
   onOpen?: () => void;
+  onConfigure?: () => void;
 };
 
 export function MatrixStatusSection({
   statuses = MATRIX_STATUS_BY_LOTTERY,
   onOpen,
+  onConfigure,
 }: MatrixStatusSectionProps = {}) {
   return (
     <section
@@ -427,11 +429,16 @@ export function MatrixStatusSection({
       data-testid="matrix-status-section"
     >
       <header className="matrix-status-header">
-        <h2 id="matrix-status-title">Matrix 狀態</h2>
-        <div className="matrix-status-more">
+        <div className="matrix-status-title-group">
+          <h2 id="matrix-status-title">Matrix 狀態</h2>
+          <button type="button" className="matrix-status-trigger-button" aria-label="自訂觸發條件" onClick={onConfigure}>
+            <img src="/assets/lottery/status-trigger-settings.png" alt="" draggable={false} />
+          </button>
+        </div>
+        <button type="button" className="matrix-status-more" onClick={onOpen}>
           <span>查看更多狀態</span>
           <ChevronRightIcon aria-hidden="true" />
-        </div>
+        </button>
       </header>
 
       <div className="matrix-status-grid">
@@ -733,7 +740,10 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
           onOrderChange={setOrder}
           onOpenHistory={() => navigate("history")}
         />
-        <MatrixStatusSection onOpen={() => navigate("status")} />
+        <MatrixStatusSection
+          onOpen={() => navigate("status")}
+          onConfigure={() => navigate("status-trigger-settings")}
+        />
         <MatrixCoreBanner onOpen={() => navigate("explore")} />
         <HomeShortcutRow onNavigate={navigate} />
         <BottomNavigationPortal active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
