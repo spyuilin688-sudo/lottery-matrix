@@ -611,38 +611,32 @@ function RoadValidationProcess({
 
         return (
           <div className="validation-period-block" key={groupIndex}>
-            <div className="validation-period-columns">
-              <div className="validation-column validation-issue-column">
-                {group.map(([issue]) => (
-                  <span className="validation-issue" key={issue}>{issue}</span>
-                ))}
-              </div>
+            <div className="validation-period-table" role="table" aria-label={`第 ${groupIndex + 1} 組驗證資料`}>
+              {group.map(([issue, , numbers], rowIndex) => (
+                <div className="validation-period-row" role="row" key={issue}>
+                  <span className="validation-issue" role="cell">{issue}</span>
+                  <span className="validation-full-numbers" role="cell">
+                    {numbers.map((value, numberIndex) => {
+                      const isLockNumber = rowIndex === lockRow && numberIndex === 0;
+                      const isSourceNumber = groupIndex === 0 && rowIndex === 0 && numberIndex === 0;
 
-              <div className="validation-column validation-number-column">
-                {group.map(([issue, , numbers]) => (
-                  <span className="validation-full-numbers" key={issue}>
-                    {numbers.map((value) => <i key={value}>{value}</i>)}
+                      return (
+                        <i
+                          key={value}
+                          data-highlight={isLockNumber ? "lock" : isSourceNumber ? "source" : undefined}
+                        >
+                          {value}
+                        </i>
+                      );
+                    })}
                   </span>
-                ))}
-              </div>
-
-              <div className="validation-column validation-formula-column">
-                {group.map(([issue], rowIndex) => (
-                  <span className="validation-formula" key={issue}>
-                    {rowIndex < 2 ? (
-                      <>
-                        <b>{number} +14.24</b>
-                        {rowIndex === lockRow ? <small>鎖定條件</small> : null}
-                      </>
-                    ) : (
-                      <>
-                        <b>預測期</b>
-                        <strong>版路結果 {roadResult}</strong>
-                      </>
-                    )}
+                  <span className="validation-formula" role="cell">
+                    {rowIndex < 2
+                      ? <b>{number} +14.24</b>
+                      : <strong>{roadResult}</strong>}
                   </span>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         );
