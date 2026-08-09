@@ -1721,3 +1721,34 @@
   transform: translateX(-50%);
   transform-origin: center;
 }
+
+
+/* Homepage empty draw information card — synced from Figma component 60:2. */
+.latest-draw-card.latest-draw-card--empty {
+  position: relative;
+  width: 358px;
+  max-width: calc(100% - 32px);
+  height: 151px;
+  min-height: 151px;
+  margin: 6px auto 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--draw-card-radius);
+  background: transparent;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.latest-draw-card-empty-artwork {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  display: block;
+  width: calc(100% + 16px);
+  height: calc(100% + 16px);
+  max-width: none;
+  object-fit: fill;
+  user-select: none;
+  -webkit-user-drag: none;
+}
