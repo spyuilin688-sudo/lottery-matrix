@@ -1,3 +1,4 @@
+/* 390px reference layout: 82px body + 16px bottom safe area. */
 .bottom-navigation.bottom-navigation {
   --bottom-nav-safe-area: 16px;
   right: 0;
