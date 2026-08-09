@@ -1733,7 +1733,8 @@
 }
 
 .home-screen .brand-logo {
-  object-position: center;
+  object-fit: cover;
+  object-position: center 50%;
   transform: translateY(-18px);
   transform-origin: center;
 }
