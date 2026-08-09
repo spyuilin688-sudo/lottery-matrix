@@ -2749,30 +2749,71 @@ const MATRIX_TRIGGER_STATUSES = [
   ["共振", "RESONANCE", "purple"],
   ["臨界", "CRITICAL", "orange"],
 ] as const;
-const MATRIX_TRIGGER_GROUPS = ["組合 1", "組合 2", "組合 3"] as const;
-const MATRIX_TRIGGER_CONDITIONS = ["準4+（鎖定1碼）", "準5+（鎖定2碼）"] as const;
+
+const MATRIX_TRIGGER_FIELDS = [
+  ["連準次數", "consecutive"],
+  ["號碼順序", "numberOrder"],
+  ["版路類型", "roadType"],
+  ["數量", "quantity"],
+] as const;
+
+const MATRIX_TRIGGER_OPTIONS = {
+  "準4+（鎖定1碼）": {
+    consecutive: ["準4進5", "準5進6", "準6進7", "準7進8"],
+    numberOrder: ["依號碼由小到大排序"],
+    roadType: ["加減版路"],
+  },
+  "準5+（鎖定2碼）": {
+    consecutive: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+    numberOrder: ["依號碼由小到大排序"],
+    roadType: ["加減版路"],
+  },
+} as const;
+
+type MatrixTriggerCondition = keyof typeof MATRIX_TRIGGER_OPTIONS;
+type MatrixTriggerField = (typeof MATRIX_TRIGGER_FIELDS)[number][1];
+type MatrixTriggerValues = Record<MatrixTriggerField, string>;
+
+const createMatrixTriggerValues = (condition: MatrixTriggerCondition): MatrixTriggerValues => ({
+  consecutive: MATRIX_TRIGGER_OPTIONS[condition].consecutive[0],
+  numberOrder: MATRIX_TRIGGER_OPTIONS[condition].numberOrder[0],
+  roadType: MATRIX_TRIGGER_OPTIONS[condition].roadType[0],
+  quantity: "1",
+});
 
 export function MatrixStatusTriggerSettingsPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [status, setStatus] = useState<(typeof MATRIX_TRIGGER_STATUSES)[number][0]>("啟動");
-  const [conditions, setConditions] = useState(
-    MATRIX_TRIGGER_GROUPS.map((_, index) => MATRIX_TRIGGER_CONDITIONS[index % MATRIX_TRIGGER_CONDITIONS.length]),
-  );
-  const selectCondition = (index: number, condition: (typeof MATRIX_TRIGGER_CONDITIONS)[number]) => {
-    setConditions((current) => current.map((value, itemIndex) => itemIndex === index ? condition : value));
+  const [settings, setSettings] = useState<Record<MatrixTriggerCondition, MatrixTriggerValues>>({
+    "準4+（鎖定1碼）": createMatrixTriggerValues("準4+（鎖定1碼）"),
+    "準5+（鎖定2碼）": createMatrixTriggerValues("準5+（鎖定2碼）"),
+  });
+
+  const updateSetting = (condition: MatrixTriggerCondition, field: MatrixTriggerField, value: string) => {
+    setSettings((current) => ({
+      ...current,
+      [condition]: { ...current[condition], [field]: value },
+    }));
   };
+
   const resetSettings = () => {
+    setLottery("今彩539");
     setStatus("啟動");
-    setConditions(MATRIX_TRIGGER_GROUPS.map((_, index) => MATRIX_TRIGGER_CONDITIONS[index % MATRIX_TRIGGER_CONDITIONS.length]));
+    setSettings({
+      "準4+（鎖定1碼）": createMatrixTriggerValues("準4+（鎖定1碼）"),
+      "準5+（鎖定2碼）": createMatrixTriggerValues("準5+（鎖定2碼）"),
+    });
   };
 
   return (
-    <FeatureShell title="自訂觸發條件" onNavigate={onNavigate} className="matrix-trigger-settings-screen">
-      <section className="matrix-trigger-intro">
-        <img src="/assets/lottery/status-trigger-settings.png" alt="" draggable={false} />
-        <h2>自訂觸發條件</h2>
-      </section>
+    <FeatureShell
+      title="自訂觸發條件"
+      onNavigate={onNavigate}
+      backTarget="status"
+      className="matrix-trigger-settings-screen"
+    >
+      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-trigger-lottery-switcher" />
       <section className="matrix-trigger-status-section" aria-label="Matrix 狀態">
-        <h3>Matrix 狀態</h3>
         <div className="matrix-trigger-status-grid">
           {MATRIX_TRIGGER_STATUSES.map(([title, titleEn, tone]) => (
             <button type="button" data-tone={tone} data-selected={status === title} onClick={() => setStatus(title)} key={title}>
@@ -2781,21 +2822,40 @@ export function MatrixStatusTriggerSettingsPage({ onNavigate }: { onNavigate: Na
           ))}
         </div>
       </section>
-      <div className="matrix-trigger-groups">
-        {MATRIX_TRIGGER_GROUPS.map((group, index) => (
-          <section className="matrix-trigger-group" key={group}>
-            <header><strong>{group}</strong></header>
-            <div role="radiogroup" aria-label={group}>
-              {MATRIX_TRIGGER_CONDITIONS.map((condition) => (
-                <button type="button" role="radio" aria-checked={conditions[index] === condition} data-selected={conditions[index] === condition} onClick={() => selectCondition(index, condition)} key={condition}>
-                  {condition}
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
+      <div className="matrix-trigger-conditions">
+        {(Object.keys(MATRIX_TRIGGER_OPTIONS) as MatrixTriggerCondition[]).map((condition) => {
+          const options = MATRIX_TRIGGER_OPTIONS[condition];
+          return (
+            <section className="matrix-trigger-condition" key={condition}>
+              <header><strong>{condition}</strong></header>
+              <div className="matrix-trigger-select-grid">
+                {MATRIX_TRIGGER_FIELDS.map(([label, field]) => {
+                  const fieldOptions = field === "quantity"
+                    ? Array.from({ length: 15 }, (_, index) => String(index + 1))
+                    : [...options[field]];
+                  return (
+                    <label key={field}>
+                      <span>{label}</span>
+                      <span className="matrix-trigger-native-select">
+                        <select
+                          aria-label={`${condition}－${label}`}
+                          value={settings[condition][field]}
+                          onChange={(event) => updateSetting(condition, field, event.target.value)}
+                        >
+                          {fieldOptions.map((option) => (
+                            <option value={option} key={option}>{field === "quantity" ? `${option}組` : option}</option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon aria-hidden="true" />
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
-      <button type="button" className="matrix-trigger-add">新增組合</button>
       <footer className="matrix-trigger-actions">
         <button type="button" onClick={resetSettings}>重置設定</button>
         <button type="button">儲存設定</button>
@@ -2822,7 +2882,21 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
     { position: 5, number: "33", period: 5, consecutive: "準7進8", prediction: "08", road: "拖牌" },
   ] as const;
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
+    <FeatureShell
+      title="Matrix 狀態"
+      onNavigate={onNavigate}
+      className="matrix-status-screen"
+      headerAction={(
+        <button
+          type="button"
+          className="matrix-status-page-trigger-button"
+          aria-label="自訂觸發條件"
+          onClick={() => onNavigate("status-trigger-settings")}
+        >
+          <img src="/assets/lottery/status-trigger-settings.png" alt="" draggable={false} />
+        </button>
+      )}
+    >
       <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
       <div className="status-list">
         {statuses.map(([title, titleEn, count, description, tone]) => (
