@@ -66,9 +66,9 @@
 
 | 通知項目 | 實際引用 | 實體檔案 | SHA-256 |
 | --- | --- | --- | --- |
-| Matrix 牌單 | `/resources/notify-card.png` | `public/resources/notify-card.png` | `a98a56bfc262466736613ecd36398dabcfa58f11fc979da693b9a12ce1c533bd` |
-| Matrix 摘星 | `/resources/notify-collision.png` | `public/resources/notify-collision.png` | `1972862d2182bef8c64c29aa8f27747583f404ead85ec2adc6d095f9e4b11456` |
-| 系統通知 | `/resources/notify-system.png` | `public/resources/notify-system.png` | `1fd77f75a526ba2d069246c1d43890cccd84dedc1840059d5b47af8e30a73f20` |
+| Matrix 牌單 | `/resources/notify-card-v2.png?v=20260809-3` | `public/resources/notify-card-v2.png` | `a98a56bfc262466736613ecd36398dabcfa58f11fc979da693b9a12ce1c533bd` |
+| Matrix 摘星 | `/resources/notify-collision-v2.png?v=20260809-3` | `public/resources/notify-collision-v2.png` | `1972862d2182bef8c64c29aa8f27747583f404ead85ec2adc6d095f9e4b11456` |
+| 系統通知 | `/resources/notify-system-v2.png?v=20260809-3` | `public/resources/notify-system-v2.png` | `1fd77f75a526ba2d069246c1d43890cccd84dedc1840059d5b47af8e30a73f20` |
 
 其他通知圖示也位於 `public/resources/notify-*.png`，並已包含於本 ZIP。
 
@@ -95,7 +95,7 @@ npm run preview
 
 1. 2026-08-09 Build 成功，但 Vite 顯示現有主要 JavaScript chunk 壓縮後大於 500 kB 的警告；本次未修改程式處理。
 2. 目前沒有 `manifest.webmanifest`、其他 Web App Manifest 或 Service Worker 實作。
-3. `public/resources/lottery-matrix` 是目前專案內原本保留的 AppDeploy 歷史 ZIP 資源；本次僅因完整保留目前 `public/` 而收入 ZIP，沒有將它作為打包來源。一般 Work 開發與 Build 不需執行 `scripts/import-lottery-zip.mjs` 或 `scripts/apply-document-update.mjs`。
+3. 舊 AppDeploy ZIP 已隨舊圖示資產清理移除；一般 Work 開發與 Build 不需執行 `scripts/import-lottery-zip.mjs` 或 `scripts/apply-document-update.mjs`。
 4. `scripts/` 內兩個 `.mjs` 檔案與 `APPDEPLOY_RESOURCE_NOTE.txt`、`scripts/APPDEPLOY_MIGRATION_HISTORY.md` 為既有歷史／遷移資料，本次未執行、未修改產品 UI。
 5. 本次對話另外上傳的圖片位於專案外部，沒有被目前 React 原始碼直接引用；依「唯一打包來源」規則未自行加入專案或改寫素材引用。
 
