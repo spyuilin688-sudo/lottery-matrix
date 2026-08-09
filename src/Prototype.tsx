@@ -10,7 +10,7 @@ import {
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
-import { ACTIVE_POSITION_1, CRITICAL_POSITION_4, FOCUS_POSITION_2, HOME_BRAND_LOGO, RESONANCE_POSITION_2 } from "./home-assets";
+import { HOME_BRAND_LOGO } from "./home-assets";\nimport { getMatrixStatusArtwork, type MatrixStatusPosition } from "./status-assets";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -35,7 +35,7 @@ export type NextDrawInfoData = {
 export type MatrixStatusData = {
   status: "啟動" | "聚合" | "共振" | "臨界";
   statusEn: "ACTIVE" | "FOCUS" | "RESONANCE" | "CRITICAL";
-  artwork: string;
+  artwork?: string;
   count: number;
   description: string;
   tone: "green" | "blue" | "purple" | "orange";
@@ -126,7 +126,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   今彩539: {
     status: "啟動",
     statusEn: "ACTIVE",
-    artwork: ACTIVE_POSITION_1,
     count: 2,
     description: "具備基本參考價值",
     tone: "green",
@@ -134,7 +133,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   天天樂: {
     status: "聚合",
     statusEn: "FOCUS",
-    artwork: FOCUS_POSITION_2,
     count: 1,
     description: "具備明顯規律集中性",
     tone: "blue",
@@ -142,7 +140,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   "六合彩": {
     status: "共振",
     statusEn: "RESONANCE",
-    artwork: RESONANCE_POSITION_2,
     count: 3,
     description: "具備強烈共振效應",
     tone: "purple",
@@ -150,7 +147,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   大樂透: {
     status: "臨界",
     statusEn: "CRITICAL",
-    artwork: CRITICAL_POSITION_4,
     count: 4,
     description: "極為罕見版路狀態",
     tone: "orange",
@@ -437,8 +433,11 @@ export function MatrixStatusSection({
       </header>
 
       <div className="matrix-status-grid">
-        {LOTTERIES.map((lottery) => {
+        {LOTTERIES.map((lottery, index) => {
           const item = statuses[lottery.id];
+          const position = (index + 1) as MatrixStatusPosition;
+          const artwork =
+            item.artwork ?? getMatrixStatusArtwork(item.status, position);
 
           return (
             <article
@@ -450,7 +449,7 @@ export function MatrixStatusSection({
             >
               <img
                 className="matrix-status-artwork"
-                src={item.artwork}
+                src={artwork}
                 alt={`${item.status} ${item.statusEn}`}
                 draggable={false}
               />
