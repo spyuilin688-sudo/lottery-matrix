@@ -2441,3 +2441,36 @@
   margin-left: auto;
   flex: 0 0 auto;
 }
+
+
+/* Matrix 探索：返回鍵＋透明置中 Logo／標題資訊卡／探索內容。 */
+.matrix-explore-main-screen .feature-brand-header {
+  min-height: 118px;
+}
+.matrix-explore-main-screen .feature-brand-header > .feature-brand-logo {
+  top: -10px;
+  left: 50%;
+  width: 320px;
+  height: 118px;
+  object-position: center;
+  transform: translateX(-50%);
+  transform-origin: center;
+}
+.matrix-explore-main-screen:not(.compact-feature-screen) .back-button {
+  top: 27px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+}
+.matrix-explore-main-screen .feature-page-title-card {
+  width: 358px;
+  min-height: 54px;
+  margin: 0 16px 8px;
+}
+.matrix-explore-main-screen .matrix-explore-tool-actions {
+  gap: 8px;
+}
+.matrix-explore-main-screen .matrix-explore-tool-actions button {
+  width: 36px;
+  height: 36px;
+}
