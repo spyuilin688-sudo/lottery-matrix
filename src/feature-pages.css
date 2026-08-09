@@ -2152,37 +2152,36 @@
   transform: translateY(-50%);
   white-space: nowrap;
 }
+.validation-groups {
+  display: grid;
+  gap: 10px;
+}
 .validation-period-block {
   min-width: 0;
 }
 .validation-period-block + .validation-period-block {
-  margin-top: 2px;
-  padding-top: 9px;
+  padding-top: 10px;
   border-top: 2px solid rgba(232, 190, 84, .82);
 }
 .validation-period-table {
+  display: grid;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid rgba(91, 126, 169, .62);
-  border-radius: 9px;
-  background: rgba(6, 13, 24, .94);
+  gap: 4px;
 }
 .validation-period-row {
   display: grid;
-  min-height: 41px;
-  grid-template-columns: 46px minmax(0, 1fr) 108px;
+  min-height: 43px;
+  grid-template-columns: 44px minmax(0, 1fr) 92px;
+  gap: 4px;
   align-items: stretch;
-}
-.validation-period-row + .validation-period-row {
-  border-top: 1px solid rgba(91, 126, 169, .48);
 }
 .validation-period-row > span {
   min-width: 0;
-  min-height: 41px;
+  min-height: 43px;
   padding: 6px 5px;
-}
-.validation-period-row > span + span {
-  border-left: 1px solid rgba(91, 126, 169, .48);
+  border: 1px solid rgba(91, 126, 169, .58);
+  border-radius: 7px;
+  background: rgba(6, 13, 24, .94);
 }
 .validation-issue {
   display: grid;
@@ -2196,18 +2195,18 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 .validation-full-numbers i {
   display: grid;
-  min-width: 25px;
-  min-height: 26px;
+  min-width: 27px;
+  min-height: 28px;
   padding: 0 3px;
   place-items: center;
   border: 1px solid transparent;
   border-radius: 5px;
   color: #e5edf8;
-  font: 750 10px/1 Roboto, sans-serif;
+  font: 750 12.5px/1 Roboto, sans-serif;
   font-style: normal;
   font-variant-numeric: tabular-nums;
 }
@@ -2235,10 +2234,32 @@
 .validation-formula b {
   font-weight: 750;
 }
-.validation-formula strong {
-  color: #70dea0;
+.validation-prediction-row {
+  display: grid;
+  min-height: 48px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(112, 222, 160, .6);
+  border-radius: 9px;
+  background: rgba(7, 28, 23, .82);
+}
+.validation-prediction-row span,
+.validation-prediction-row strong {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+}
+.validation-prediction-row span {
+  color: #b9c8d7;
   font-size: 11px;
-  font-weight: 800;
+}
+.validation-prediction-row strong {
+  border-left: 1px solid rgba(112, 222, 160, .42);
+  color: #70dea0;
+  font-size: 15px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
 }
 
 .tiangong-settings fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }.tiangong-settings legend { margin-bottom: 7px; color: #dbe7f5; font-size: 12px; }
