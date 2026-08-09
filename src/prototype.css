@@ -1743,16 +1743,16 @@
 
 .lottery-screen > .lottery-switcher {
   flex: 0 0 70px;
-  width: 358px !important;
+  width: calc(100% - 4px) !important;
   height: 70px !important;
   margin: 6px auto 0;
   padding: 0 !important;
-  grid-template-columns: repeat(4, 85px) !important;
-  gap: 6px !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 2px !important;
 }
 
 .lottery-screen > .lottery-switcher > .lottery-card {
-  width: 85px !important;
+  width: 100% !important;
   height: 70px !important;
   border-radius: 8px !important;
 }
@@ -1947,10 +1947,10 @@
 
 .lottery-screen > .home-shortcut-row {
   flex: 0 0 74px;
-  width: 358px;
+  width: calc(100% - 4px);
   height: 74px;
   margin: auto auto 4px;
-  gap: 4px;
+  gap: 2px;
 }
 
 .lottery-screen > .home-shortcut-row > .home-shortcut {
