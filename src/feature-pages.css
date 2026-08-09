@@ -2323,30 +2323,80 @@
 
 
 
-/* 統一頁首：底部導覽頁與快捷頁沿用首頁；其他頁面共用返回鍵頁首。 */
+/* 統一頁首：四個底部導覽主頁只顯示置中 Logo；其他頁面為返回鍵＋置中 Logo＋標題資訊卡。 */
 .feature-screen .feature-brand-header {
-  min-height: 178px;
-  padding: 4px 16px 16px;
+  position: relative;
+  display: block;
+  min-height: 118px;
+  padding: 0;
+  overflow: visible;
 }
 .feature-screen .feature-brand-header > .feature-brand-logo {
+  position: absolute;
+  top: -4px;
+  left: 50%;
   width: 320px;
   max-width: none;
   height: 118px;
-  object-position: left center;
-  transform: translate(18px, -8px);
+  object-fit: contain;
+  object-position: center;
+  transform: translateX(-50%);
+  transform-origin: center;
 }
 .feature-screen .feature-brand-header[data-compact="true"] {
   min-height: 124px;
   padding: 0;
 }
 .feature-screen .feature-brand-header[data-compact="true"] > .feature-brand-logo {
+  top: -12px;
+  left: 50%;
   width: 390px;
   max-width: 100%;
   height: 124px;
-  object-position: left center;
-  transform: translateY(-12px);
+  object-position: center;
+  transform: translateX(-50%);
+  transform-origin: center;
 }
 .feature-screen:not(.compact-feature-screen) .back-button {
-  top: 36px;
-  left: 10px;
+  z-index: 2;
+  top: 40px;
+  left: 0;
+  width: 38px;
+  height: 38px;
+}
+.feature-screen:not(.compact-feature-screen) .back-button svg {
+  width: 29px;
+  height: 29px;
+}
+.feature-page-title-card {
+  box-sizing: border-box;
+  display: flex;
+  width: calc(100% - 28px);
+  min-height: 46px;
+  margin: 0 14px 12px;
+  padding: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #6c4a20;
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98));
+  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
+}
+.feature-page-title-card h1 {
+  min-width: 0;
+  margin: 0;
+  color: #e7d5ac;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: .5px;
+}
+.feature-page-title-card .feature-header-action,
+.matrix-status-screen .feature-page-title-card .feature-header-action {
+  position: static;
+  right: auto;
+  bottom: auto;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
