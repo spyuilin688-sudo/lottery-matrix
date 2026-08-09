@@ -10,6 +10,8 @@ import {
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
+import { HOME_BRAND_LOGO } from "./home-assets";
+import { getMatrixStatusArtwork, type MatrixStatusPosition } from "./status-assets";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -34,7 +36,7 @@ export type NextDrawInfoData = {
 export type MatrixStatusData = {
   status: "啟動" | "聚合" | "共振" | "臨界";
   statusEn: "ACTIVE" | "FOCUS" | "RESONANCE" | "CRITICAL";
-  artwork: string;
+  artwork?: string;
   count: number;
   description: string;
   tone: "green" | "blue" | "purple" | "orange";
@@ -125,7 +127,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   今彩539: {
     status: "啟動",
     statusEn: "ACTIVE",
-    artwork: "/assets/lottery/status/active.png",
     count: 2,
     description: "具備基本參考價值",
     tone: "green",
@@ -133,7 +134,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   天天樂: {
     status: "聚合",
     statusEn: "FOCUS",
-    artwork: "/assets/lottery/status/focus.png",
     count: 1,
     description: "具備明顯規律集中性",
     tone: "blue",
@@ -141,7 +141,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   "六合彩": {
     status: "共振",
     statusEn: "RESONANCE",
-    artwork: "/assets/lottery/status/resonance.png",
     count: 3,
     description: "具備強烈共振效應",
     tone: "purple",
@@ -149,7 +148,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   大樂透: {
     status: "臨界",
     statusEn: "CRITICAL",
-    artwork: "/assets/lottery/status/critical.png",
     count: 4,
     description: "極為罕見版路狀態",
     tone: "orange",
@@ -224,6 +222,7 @@ export function LotterySwitcher({
             key={lottery.id}
             onClick={() => onChange(lottery.id)}
             role="radio"
+            aria-label={lottery.id}
             aria-checked={isSelected}
             type="button"
           >
@@ -435,8 +434,11 @@ export function MatrixStatusSection({
       </header>
 
       <div className="matrix-status-grid">
-        {LOTTERIES.map((lottery) => {
+        {LOTTERIES.map((lottery, index) => {
           const item = statuses[lottery.id];
+          const position = (index + 1) as MatrixStatusPosition;
+          const artwork =
+            item.artwork ?? getMatrixStatusArtwork(item.status, position);
 
           return (
             <article
@@ -448,7 +450,7 @@ export function MatrixStatusSection({
             >
               <img
                 className="matrix-status-artwork"
-                src={item.artwork}
+                src={artwork}
                 alt={`${item.status} ${item.statusEn}`}
                 draggable={false}
               />
@@ -461,13 +463,8 @@ export function MatrixStatusSection({
                   draggable={false}
                 />
               </div>
-              <div className="matrix-status-overlay">
-                <div className="matrix-status-found">本期發現</div>
-                <div className="matrix-status-count">
-                  <strong>{item.count}</strong>
-                  <span>組</span>
-                </div>
-                <p>{item.description}</p>
+              <div className="matrix-status-overlay" aria-label={`本期發現 ${item.count} 組`}>
+                <strong>{item.count}</strong>
               </div>
               <ChevronRightIcon
                 className="matrix-status-card-arrow"
@@ -490,21 +487,43 @@ export function MatrixStatusSection({
   );
 }
 
-export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
+export function MatrixCoreBanner({
+  onNavigate,
+}: {
+  onNavigate?: (screen: Extract<ScreenId, "explore" | "tianyan" | "tiangong">) => void;
+}) {
+  const entries = [
+    { label: "Matrix 探索", shortLabel: "探索", screen: "explore" as const },
+    { label: "Matrix 天衍", shortLabel: "天衍", screen: "tianyan" as const },
+    { label: "Matrix 天工", shortLabel: "天工", screen: "tiangong" as const },
+  ];
+
   return (
-    <button
-      type="button"
+    <section
       className="matrix-core-banner"
-      aria-label="Matrix Core"
+      aria-labelledby="matrix-core-title"
       data-testid="matrix-core-banner"
-      onClick={onOpen}
     >
-      <img
-        src="/assets/lottery/matrix-core-banner.jpg"
-        alt="Matrix Core｜分析核心・智慧運算"
-        draggable={false}
-      />
-    </button>
+      <div className="matrix-core-copy">
+        <h2 id="matrix-core-title">Matrix Core</h2>
+        <p>分析核心・智慧運算</p>
+        <div className="matrix-core-entries" aria-label="Matrix Core 功能入口">
+          {entries.map((entry) => (
+            <button
+              type="button"
+              key={entry.screen}
+              aria-label={entry.label}
+              onClick={() => onNavigate?.(entry.screen)}
+            >
+              {entry.shortLabel}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="matrix-core-art" aria-hidden="true">
+        <img src="/assets/lottery/matrix-core-banner.jpg" alt="" draggable={false} />
+      </div>
+    </section>
   );
 }
 
@@ -719,7 +738,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
         <header className="brand-header">
           <img
             className={`brand-logo${deviceId === "iphone" ? " brand-logo--iphone" : ""}`}
-            src="/assets/lottery/brand-logo-transparent.png"
+            src={HOME_BRAND_LOGO}
             alt="樂彩 Matrix"
             draggable={false}
           />
@@ -734,7 +753,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
           onOpenHistory={() => navigate("history")}
         />
         <MatrixStatusSection onOpen={() => navigate("status")} />
-        <MatrixCoreBanner onOpen={() => navigate("explore")} />
+        <MatrixCoreBanner onNavigate={navigate} />
         <HomeShortcutRow onNavigate={navigate} />
         <BottomNavigationPortal active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
         {quickSettings}
