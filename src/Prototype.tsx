@@ -4,12 +4,12 @@ import {
   ChevronRightIcon,
   ClockIcon,
   CountdownTimerIcon,
-  DotFilledIcon,
   Pencil2Icon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
+import { MainPageBrandHeader } from "./MainPageBrandHeader";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -41,6 +41,20 @@ export type MatrixStatusData = {
 };
 
 export type MatrixStatusMap = Record<LotteryId, MatrixStatusData>;
+
+const MATRIX_STATUS_ARTWORK_KEY: Record<MatrixStatusData["status"], string> = {
+  啟動: "active",
+  聚合: "focus",
+  共振: "resonance",
+  臨界: "critical",
+};
+
+function getMatrixStatusArtwork(
+  status: MatrixStatusData["status"],
+  position: number,
+) {
+  return `/assets/lottery/status-puzzle/${MATRIX_STATUS_ARTWORK_KEY[status]}-position-${position}.png`;
+}
 
 const LOTTERIES: LotteryOption[] = [
   {
@@ -335,7 +349,7 @@ export function LatestDrawCard({
               onClick={() => onOrderChange(option)}
               key={option}
             >
-              {option}
+              {option === "順球" ? "依號碼由小到大" : "依實際開獎順序"}
             </button>
           ))}
         </div>
@@ -435,7 +449,7 @@ export function MatrixStatusSection({
       </header>
 
       <div className="matrix-status-grid">
-        {LOTTERIES.map((lottery) => {
+        {LOTTERIES.map((lottery, index) => {
           const item = statuses[lottery.id];
 
           return (
@@ -448,12 +462,11 @@ export function MatrixStatusSection({
             >
               <img
                 className="matrix-status-artwork"
-                src={item.artwork}
+                src={getMatrixStatusArtwork(item.status, index + 1)}
                 alt={`${item.status} ${item.statusEn}`}
                 draggable={false}
               />
               <div className="matrix-status-lottery-center">
-                <div className="matrix-status-lottery">{lottery.id}</div>
                 <img
                   className="matrix-status-logo"
                   src={lottery.logo}
@@ -462,29 +475,13 @@ export function MatrixStatusSection({
                 />
               </div>
               <div className="matrix-status-overlay">
-                <div className="matrix-status-found">本期發現</div>
                 <div className="matrix-status-count">
                   <strong>{item.count}</strong>
-                  <span>組</span>
                 </div>
-                <p>{item.description}</p>
               </div>
-              <ChevronRightIcon
-                className="matrix-status-card-arrow"
-                aria-hidden="true"
-              />
             </article>
           );
         })}
-      </div>
-
-      <div className="matrix-status-indicators" aria-hidden="true">
-        {LOTTERIES.map((lottery) => (
-          <DotFilledIcon
-            data-tone={statuses[lottery.id].tone}
-            key={lottery.id}
-          />
-        ))}
       </div>
     </section>
   );
@@ -625,7 +622,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
     const stored = window.localStorage.getItem("matrix-quick-target") as ScreenId | null;
     return QUICK_OPTIONS.some((option) => option.screen === stored) ? stored : null;
   });
-  const { deviceId, setDeviceId } = useMobileDevice();
+  const { setDeviceId } = useMobileDevice();
   const nextDrawInfo = NEXT_DRAW_INFO[selected];
 
   useEffect(() => {
@@ -716,14 +713,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
         data-testid="lottery-screen"
         aria-label="首頁彩種切換元件預覽"
       >
-        <header className="brand-header">
-          <img
-            className={`brand-logo${deviceId === "iphone" ? " brand-logo--iphone" : ""}`}
-            src="/assets/lottery/brand-logo-transparent.png"
-            alt="樂彩 Matrix"
-            draggable={false}
-          />
-        </header>
+        <MainPageBrandHeader />
         <LotterySwitcher selected={selected} onChange={setSelected} />
         <LatestDrawCard
           lottery={selected}

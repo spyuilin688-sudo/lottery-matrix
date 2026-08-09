@@ -2459,6 +2459,15 @@
   transform: translateX(-50%);
   transform-origin: center;
 }
+
+/* The four bottom-navigation main pages share the same 390px brand header. */
+.compact-feature-screen {
+  padding-top: 0;
+}
+
+.compact-feature-screen > .feature-main-page-brand-header {
+  margin-bottom: 6px;
+}
 .matrix-explore-main-screen:not(.compact-feature-screen) .back-button {
   top: 27px;
   left: 16px;
@@ -2477,7 +2486,6 @@
   width: 36px;
   height: 36px;
 }
-
 
 /* Recent 10 draws: compact hierarchy and readable mobile rows. */
 .history-panel {

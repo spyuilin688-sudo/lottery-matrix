@@ -19,6 +19,7 @@ import {
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
+import { MainPageBrandHeader } from "./MainPageBrandHeader";
 
 export type ScreenId =
   | "home"
@@ -134,19 +135,23 @@ const HISTORY = [
 function BrandHeader({
   onBack,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent.png",
+  logoSrc = "/assets/lottery/brand-logo-transparent-processed.png",
 }: {
   onBack: () => void;
   compact?: boolean;
   logoSrc?: string;
 }) {
   return (
+    compact ? (
+      <MainPageBrandHeader className="feature-main-page-brand-header" />
+    ) : (
     <header className="feature-brand-header" data-compact={compact}>
       {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
         <ChevronLeftIcon />
       </button> : null}
       <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
     </header>
+    )
   );
 }
 
