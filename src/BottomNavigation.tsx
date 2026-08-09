@@ -1,10 +1,11 @@
 import { useRef, type KeyboardEvent, type MouseEvent } from "react";
 import {
   BellIcon,
+  GridIcon,
   HomeIcon,
-  LightningBoltIcon,
   PersonIcon,
 } from "@radix-ui/react-icons";
+import "./bottom-navigation.css";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -19,7 +20,7 @@ type BottomNavigationProps = {
 
 const NAVIGATION_ITEMS = [
   { label: "首頁", icon: HomeIcon, screen: "home" },
-  { label: "快捷", icon: LightningBoltIcon, screen: null },
+  { label: "快捷", icon: GridIcon, screen: null },
   { label: "通知", icon: BellIcon, screen: "notifications" },
   { label: "我的", icon: PersonIcon, screen: "profile" },
 ] as const;
@@ -62,11 +63,7 @@ export function BottomNavigation({
       <span className="bottom-navigation-topline" aria-hidden="true" />
       <span className="bottom-navigation-side-rail bottom-navigation-side-rail--left" aria-hidden="true" />
       <span className="bottom-navigation-side-rail bottom-navigation-side-rail--right" aria-hidden="true" />
-      <span className="bottom-navigation-brand-core" aria-hidden="true">
-        <span className="bottom-navigation-brand-mark">
-          <img src="/assets/lottery/brand-logo-transparent.png" alt="" draggable={false} />
-        </span>
-      </span>
+      <span className="bottom-navigation-connector" aria-hidden="true" />
 
       {NAVIGATION_ITEMS.map(({ label, icon: Icon, screen }) => {
         const selected = label === "快捷" ? active === label || quickActive : active === label && !quickActive;
@@ -97,7 +94,9 @@ export function BottomNavigation({
             {...quickProps}
           >
             <span className="bottom-navigation-icon-frame" aria-hidden="true">
-              <Icon />
+              <span className="bottom-navigation-node-dot bottom-navigation-node-dot--top" />
+              <span className="bottom-navigation-glyph"><Icon /></span>
+              <span className="bottom-navigation-node-dot bottom-navigation-node-dot--bottom" />
             </span>
             <span className="bottom-navigation-label">{label}</span>
             <span className="bottom-navigation-active-bar" aria-hidden="true" />
