@@ -2302,17 +2302,6 @@
   font-weight: 850;
   font-variant-numeric: tabular-nums;
 }
-.validation-prediction-row span {
-  color: #b9c8d7;
-  font-size: 11px;
-}
-.validation-prediction-row strong {
-  border-left: 1px solid rgba(112, 222, 160, .42);
-  color: #70dea0;
-  font-size: 15px;
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
-}
 
 .tiangong-settings fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }.tiangong-settings legend { margin-bottom: 7px; color: #dbe7f5; font-size: 12px; }
 .notebook-create-actions[data-mode='紀錄'] { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
