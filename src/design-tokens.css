@@ -37,6 +37,12 @@
   --bottom-nav-text-active: #f4c65d;
   --bottom-nav-icon-default: #c7cbd1;
   --bottom-nav-text-default: #9298a1;
+  --bottom-nav-height: 80px;
+  --bottom-nav-item-width: 89.5px;
+  --bottom-nav-icon-size: 40px;
+  --bottom-nav-active-bar-width: 28px;
+  --bottom-nav-radius: 13px;
+  --bottom-nav-item-gap: 2px;
   --matrix-status-active: var(--lottery-status-active);
   --matrix-status-active-border: var(--lottery-status-active-border);
   --matrix-status-focus: var(--lottery-status-focus);
