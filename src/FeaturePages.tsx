@@ -134,16 +134,18 @@ const HISTORY = [
 function BrandHeader({
   onBack,
   compact = false,
+  logoSrc = "/assets/lottery/brand-logo-transparent.png",
 }: {
   onBack: () => void;
   compact?: boolean;
+  logoSrc?: string;
 }) {
   return (
     <header className="feature-brand-header" data-compact={compact}>
       {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
         <ChevronLeftIcon />
       </button> : null}
-      <img className="feature-brand-logo" src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
+      <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
     </header>
   );
 }
@@ -185,6 +187,7 @@ function FeatureShell({
   backTarget = "home",
   headerAction,
   compactHeader = false,
+  brandLogoSrc,
 }: {
   title: string;
   children: React.ReactNode;
@@ -194,12 +197,13 @@ function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
+  brandLogoSrc?: string;
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive);
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen" : ""} ${className}`.trim()}>
-      <BrandHeader onBack={() => onNavigate(backTarget)} compact={logoOnlyHeader} />
+      <BrandHeader onBack={() => onNavigate(backTarget)} compact={logoOnlyHeader} logoSrc={brandLogoSrc} />
       {!logoOnlyHeader ? (
         <section className="feature-page-title-card" aria-label={`${title}頁面標題`}>
           <h1>{title}</h1>
@@ -784,6 +788,7 @@ export function MatrixExplorePage({
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : ""}`}
+      brandLogoSrc={title === "Matrix 探索" ? "/assets/lottery/brand-logo-transparent-processed.png" : undefined}
       headerAction={title === "Matrix 探索" ? (
         <div className="matrix-explore-tool-actions" aria-label="Matrix 探索工具">
           <button type="button" onClick={() => onNavigate("tianyan")} aria-label="進入 Matrix 天衍">
