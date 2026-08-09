@@ -134,7 +134,7 @@ const HISTORY = [
 function BrandHeader({
   onBack,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent.png",
+  logoSrc = "/assets/lottery/brand-logo-transparent-processed.png",
 }: {
   onBack: () => void;
   compact?: boolean;
@@ -847,7 +847,7 @@ export function MatrixExplorePage({
         </div>
 
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
-          <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+          <img src="/assets/lottery/brand-logo-transparent-processed.png" alt="" aria-hidden="true" />
           <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
@@ -1477,7 +1477,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="matrix-ticket">
-        <img src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
+        <img src="/assets/lottery/brand-logo-transparent-processed.png" alt="樂彩 Matrix" />
         <span>{lottery}</span>
         <h2>最新一期牌單</h2>
       </section>
@@ -1498,7 +1498,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
         {entries.map((entry) => (
           <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+            <img src="/assets/lottery/brand-logo-transparent-processed.png" alt="" aria-hidden="true" />
             <span>
               <strong>{entry.title}</strong>
               <small>版路類型：{entry.roadType}</small>
