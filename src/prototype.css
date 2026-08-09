@@ -1795,6 +1795,16 @@
   align-items: center;
 }
 
+/* Keep all six regular balls, the plus sign, and the special ball at their
+   established sizes while fitting the complete 6+1 row inside 358px. */
+.lottery-screen .draw-balls[data-has-special="true"] {
+  margin-inline: -12px;
+}
+
+.lottery-screen .draw-balls[data-has-special="true"] .main-balls {
+  gap: 0;
+}
+
 .lottery-screen .latest-draw-card .next-draw-info--embedded {
   height: 36px;
   margin-top: 0;
