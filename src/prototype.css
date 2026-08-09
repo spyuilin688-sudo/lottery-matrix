@@ -1721,3 +1721,215 @@
   transform: translateX(-50%);
   transform-origin: center;
 }
+
+
+/* Homepage compact 390px alignment — 2026-08-10 */
+.home-screen .lottery-screen {
+  width: 100%;
+}
+
+.home-screen .brand-header {
+  justify-content: center;
+}
+
+.home-screen .brand-logo {
+  object-position: center;
+  transform: translateY(-18px);
+  transform-origin: center;
+}
+
+.home-screen .lottery-switcher {
+  gap: 6px;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+.home-screen .lottery-card {
+  width: 85px;
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.home-screen .latest-draw-card,
+.home-screen .matrix-status-section,
+.home-screen .matrix-core-banner {
+  width: 358px;
+  max-width: calc(100% - 32px);
+}
+
+.home-screen .latest-draw-card {
+  margin-top: 2px;
+}
+
+.home-screen .matrix-status-section {
+  flex: 0 0 216px;
+  height: 216px;
+  min-height: 216px;
+  margin-top: 6px;
+  padding: 6px 0 4px;
+  overflow: hidden;
+}
+
+.home-screen .matrix-status-header {
+  height: 30px;
+  padding: 0;
+}
+
+.home-screen .matrix-status-grid {
+  height: 166px;
+  gap: 0;
+  overflow: visible;
+}
+
+.home-screen .matrix-status-card {
+  height: 166px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.home-screen .matrix-status-artwork {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 1;
+}
+
+.home-screen .matrix-status-lottery-center {
+  top: 40%;
+  gap: 0;
+}
+
+.home-screen .matrix-status-lottery {
+  display: none;
+}
+
+.home-screen .matrix-status-logo {
+  width: 70px;
+  max-width: 82%;
+  height: 42px;
+}
+
+.home-screen .matrix-status-card[data-lottery="天天樂"] .matrix-status-logo {
+  transform: scale(1.06);
+}
+
+.home-screen .matrix-status-card[data-lottery="六合彩"] .matrix-status-logo {
+  transform: scale(1.14);
+}
+
+.home-screen .matrix-status-overlay {
+  top: 72%;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  display: grid;
+  place-items: center;
+}
+
+.home-screen .matrix-status-overlay strong {
+  color: var(--status-tone);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 20px;
+  text-shadow: 0 0 7px currentColor;
+}
+
+.home-screen .matrix-status-card-arrow {
+  display: none;
+}
+
+.home-screen .matrix-status-indicators {
+  height: 10px;
+  align-items: center;
+}
+
+.home-screen .matrix-core-banner {
+  display: block;
+  height: 78px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.home-screen .matrix-core-banner::after {
+  z-index: 1;
+  background:
+    linear-gradient(90deg, #03090e 0 56%, rgba(3, 9, 14, .82) 66%, transparent 82%),
+    radial-gradient(circle at 78% 50%, rgba(255, 224, 139, .2), transparent 30%);
+}
+
+.matrix-core-copy {
+  position: relative;
+  z-index: 2;
+  width: 216px;
+}
+
+.matrix-core-copy h2 {
+  margin: 0;
+  color: #efc66d;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: .2px;
+}
+
+.matrix-core-copy p {
+  margin: 1px 0 5px;
+  color: #c8b27d;
+  font-size: 9px;
+  line-height: 11px;
+  white-space: nowrap;
+}
+
+.matrix-core-entries {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  width: 190px;
+}
+
+.matrix-core-entries button {
+  appearance: none;
+  height: 25px;
+  padding: 0 4px;
+  border: 1px solid #8d672d;
+  border-radius: 5px;
+  background: rgba(10, 13, 15, .9);
+  color: #e7bd61;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-core-entries button:active {
+  transform: scale(.98);
+}
+
+.matrix-core-entries button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.matrix-core-art {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  width: 154px;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.matrix-core-art img {
+  width: 220px;
+  height: 100%;
+  object-fit: cover;
+  object-position: 74% center;
+  transform: translateX(-20px) scale(1.08);
+  filter: saturate(1.05) contrast(1.04) brightness(.94);
+}
