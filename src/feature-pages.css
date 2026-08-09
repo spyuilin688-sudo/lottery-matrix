@@ -9,10 +9,10 @@
 }
 
 .feature-body { padding: 0 14px 24px; }
-.feature-brand-header { position: relative; display: flex; min-height: 108px; padding: 4px 16px 0; flex-direction: column; align-items: center; justify-content: flex-start; }
-.feature-brand-header > .feature-brand-logo { width: 250px; height: 48px; object-fit: contain; object-position: center; }
-.feature-brand-header[data-compact="true"] { min-height: 54px; padding: 0 20px; align-items: center; justify-content: flex-start; }
-.feature-brand-header[data-compact="true"] > .feature-brand-logo { width: 320px; max-width: 100%; height: 54px; object-fit: contain; object-position: center; }
+.feature-brand-header { position: relative; display: flex; min-height: 138px; padding: 4px 16px 0; flex-direction: column; align-items: center; justify-content: flex-start; }
+.feature-brand-header > .feature-brand-logo { width: 280px; height: 78px; object-fit: contain; object-position: center; }
+.feature-brand-header[data-compact="true"] { min-height: 84px; padding: 0 20px; align-items: center; justify-content: flex-start; }
+.feature-brand-header[data-compact="true"] > .feature-brand-logo { width: 350px; max-width: 100%; height: 84px; object-fit: contain; object-position: center; }
 .compact-feature-screen { padding-top: 30px; }
 .feature-brand-header h1 { margin: 7px 0 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; }
 .feature-header-action { position: absolute; right: 16px; bottom: 5px; }
@@ -940,8 +940,8 @@
   .notification-actions > button:first-child { padding-inline: 8px; font-size: 10px; }
 }
 
-.profile-screen .feature-brand-header { min-height: 54px; }
-.profile-screen .feature-brand-header > .feature-brand-logo { width: 320px; max-width: 100%; height: 54px; }
+.profile-screen .feature-brand-header { min-height: 84px; }
+.profile-screen .feature-brand-header > .feature-brand-logo { width: 350px; max-width: 100%; height: 84px; }
 .profile-screen .feature-body, .profile-detail-screen .feature-body { display: grid; gap: 12px; padding-inline: 14px; padding-bottom: 32px; }
 .profile-card { display: grid; min-height: 92px; padding: 14px; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 14px; }
 .profile-card { position: relative; min-height: 126px; grid-template-columns: 66px minmax(0, 1fr) auto; overflow: hidden; border-color: #9c722d; }
