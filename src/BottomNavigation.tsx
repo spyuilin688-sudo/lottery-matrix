@@ -59,10 +59,27 @@ export function BottomNavigation({
       aria-label="底部導覽"
       data-testid="bottom-navigation"
     >
-      <span className="bottom-navigation-topline" aria-hidden="true" />
-      <span className="bottom-navigation-side-rail bottom-navigation-side-rail--left" aria-hidden="true" />
-      <span className="bottom-navigation-side-rail bottom-navigation-side-rail--right" aria-hidden="true" />
+      <img
+        className="bottom-navigation-side-energy"
+        src="/assets/navigation/bottom/side-energy-rails.svg"
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
+      <img
+        className="bottom-navigation-topline"
+        src="/assets/navigation/bottom/top-energy-line.svg"
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
       <span className="bottom-navigation-brand-core" aria-hidden="true">
+        <img
+          className="bottom-navigation-brand-node"
+          src="/assets/navigation/bottom/brand-energy-node.svg"
+          alt=""
+          draggable={false}
+        />
         <span className="bottom-navigation-brand-mark">
           <img src="/assets/lottery/brand-logo-transparent.png" alt="" draggable={false} />
         </span>
@@ -97,6 +114,14 @@ export function BottomNavigation({
             {...quickProps}
           >
             <span className="bottom-navigation-icon-frame" aria-hidden="true">
+              <img
+                className="bottom-navigation-node-frame"
+                src={selected
+                  ? "/assets/navigation/bottom/node-frame-selected.svg"
+                  : "/assets/navigation/bottom/node-frame-default.svg"}
+                alt=""
+                draggable={false}
+              />
               <Icon />
             </span>
             <span className="bottom-navigation-label">{label}</span>
