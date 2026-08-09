@@ -428,10 +428,10 @@ export function MatrixStatusSection({
     >
       <header className="matrix-status-header">
         <h2 id="matrix-status-title">Matrix 狀態</h2>
-        <div className="matrix-status-more">
+        <button type="button" className="matrix-status-more" onClick={onOpen}>
           <span>查看更多狀態</span>
           <ChevronRightIcon aria-hidden="true" />
-        </div>
+        </button>
       </header>
 
       <div className="matrix-status-grid">

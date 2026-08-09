@@ -41,19 +41,22 @@
 
 .brand-header {
   display: flex;
-  min-height: 54px;
-  padding: 0 20px;
+  min-height: 124px;
+  padding: 0;
   align-items: center;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .brand-logo {
   display: block;
-  width: 320px;
+  width: 390px;
   max-width: 100%;
-  height: 54px;
+  height: 124px;
   object-fit: contain;
-  object-position: center;
+  object-position: left center;
+  transform: translateY(-12px);
+  transform-origin: left center;
 }
 
 .lottery-switcher {
@@ -593,6 +596,14 @@
   justify-content: space-between;
 }
 
+.matrix-status-title-group {
+  display: flex;
+  min-width: 0;
+  height: 28px;
+  align-items: center;
+  gap: 7px;
+}
+
 .matrix-status-header h2 {
   margin: 0;
   color: #e6c77f;
@@ -602,12 +613,30 @@
   letter-spacing: 0.2px;
 }
 
+.matrix-status-trigger-button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(223, 176, 68, .72);
+  border-radius: 7px;
+  background: #080806;
+  box-shadow: 0 0 8px rgba(223, 176, 68, .24);
+}
+.matrix-status-trigger-button img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.matrix-status-trigger-button:active { transform: scale(.96); }
+
 .matrix-status-more {
   display: flex;
   height: 22px;
+  padding: 0;
   align-items: center;
   gap: 3px;
+  border: 0;
   color: #bbb9b4;
+  background: transparent;
   font-size: 11px;
   line-height: 16px;
   white-space: nowrap;
@@ -1111,7 +1140,7 @@
 }
 
 .mobile-app-viewport[data-platform="android"] .brand-header {
-  min-height: 60px;
+  min-height: 124px;
 }
 
 .mobile-app-viewport[data-platform="android"] .lottery-switcher {
@@ -1178,7 +1207,7 @@
 }
 
 .brand-logo--iphone {
-  transform: translateY(-8px);
+  transform: translateY(-12px);
 }
 
 @media (max-width: 360px) {
