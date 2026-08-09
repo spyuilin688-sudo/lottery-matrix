@@ -29,6 +29,14 @@
   --lottery-text-primary: var(--lottery-neutral-100);
   --lottery-text-secondary: var(--lottery-neutral-400);
   --lottery-glow: rgba(244, 206, 103, 0.52);
+  --bottom-nav-panel-950: #040a11;
+  --bottom-nav-panel-900: #07101a;
+  --bottom-nav-panel-850: #09131f;
+  --bottom-nav-gold: #e5b34d;
+  --bottom-nav-gold-bright: #ffd477;
+  --bottom-nav-text-active: #f4c65d;
+  --bottom-nav-icon-default: #c7cbd1;
+  --bottom-nav-text-default: #9298a1;
   --matrix-status-active: var(--lottery-status-active);
   --matrix-status-active-border: var(--lottery-status-active-border);
   --matrix-status-focus: var(--lottery-status-focus);

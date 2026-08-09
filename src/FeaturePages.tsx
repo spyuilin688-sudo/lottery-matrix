@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  BellIcon,
   CalendarIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -10,18 +9,16 @@ import {
   Cross2Icon,
   DownloadIcon,
   GearIcon,
-  HomeIcon,
-  LightningBoltIcon,
   LockClosedIcon,
   MagnifyingGlassIcon,
   Pencil2Icon,
-  PersonIcon,
   PlusIcon,
   ReaderIcon,
   ReloadIcon,
   TrashIcon,
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "./Prototype";
+import { BottomNavigation } from "./BottomNavigation";
 
 export type ScreenId =
   | "home"
@@ -149,72 +146,10 @@ function BrandHeader({
       {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
         <ChevronLeftIcon />
       </button> : null}
-      <img src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
+      <img className="feature-brand-logo" src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
       {!compact ? <h1>{title}</h1> : null}
       {action ? <div className="feature-header-action">{action}</div> : null}
     </header>
-  );
-}
-
-export function FeatureBottomNavigation({
-  active,
-  onNavigate,
-}: {
-  active: "首頁" | "快捷" | "通知" | "我的";
-  onNavigate: Navigate;
-}) {
-  const { onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
-  const quickIsActive = Boolean(quickActive);
-  const quickTimer = useRef<number | null>(null);
-  const quickLongPressed = useRef(false);
-  const beginQuickPress = () => {
-    quickLongPressed.current = false;
-    quickTimer.current = window.setTimeout(() => {
-      quickLongPressed.current = true;
-      onQuickConfigure?.();
-    }, 3000);
-  };
-  const endQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
-    if (!quickLongPressed.current) onQuickOpen?.();
-  };
-  const cancelQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
-  };
-  const items = [
-    { label: "首頁" as const, icon: HomeIcon, screen: "home" as const },
-    { label: "通知" as const, icon: BellIcon, screen: "notifications" as const },
-    { label: "我的" as const, icon: PersonIcon, screen: "profile" as const },
-  ];
-
-  return (
-    <nav className="feature-bottom-nav" aria-label="底部導覽">
-      <button type="button" data-selected={active === "首頁" && !quickIsActive} onClick={() => onNavigate("home")}><HomeIcon /><span>首頁</span></button>
-      <button
-        type="button"
-        data-selected={active === "快捷" || quickIsActive}
-        aria-label="快捷；長按三秒開啟設定"
-        onPointerDown={beginQuickPress}
-        onPointerUp={endQuickPress}
-        onPointerCancel={cancelQuickPress}
-        onPointerLeave={cancelQuickPress}
-        onContextMenu={(event) => event.preventDefault()}
-        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onQuickOpen?.(); } }}
-      ><LightningBoltIcon /><span>快捷</span></button>
-      {items.slice(1).map(({ label, icon: Icon, screen }) => (
-        <button
-          type="button"
-          key={label}
-          data-selected={active === label}
-          onClick={() => onNavigate(screen)}
-        >
-          <Icon />
-          <span>{label}</span>
-        </button>
-      ))}
-    </nav>
   );
 }
 
@@ -226,6 +161,7 @@ function FeatureBottomNavigationPortal({
   onNavigate: Navigate;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const { onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
 
   useEffect(() => {
     setHost(document.querySelector<HTMLElement>(".mobile-page"));
@@ -233,7 +169,13 @@ function FeatureBottomNavigationPortal({
 
   return host
     ? createPortal(
-        <FeatureBottomNavigation active={active} onNavigate={onNavigate} />,
+        <BottomNavigation
+          active={active}
+          quickActive={Boolean(quickActive)}
+          onNavigate={onNavigate}
+          onQuickOpen={onQuickOpen}
+          onQuickConfigure={onQuickConfigure}
+        />,
         host,
       )
     : null;
@@ -482,7 +424,7 @@ export function DrawHistoryPage({
   const [year, setYear] = useTimedState("history-year", "2026");
   const [month, setMonth] = useTimedState("history-month", "07月");
   const [day, setDay] = useTimedState("history-day", "31日");
-  const [range, setRange] = useTimedState("history-range", "近1000期");
+  const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
 
   useEffect(() => {
@@ -503,7 +445,7 @@ export function DrawHistoryPage({
     setYear("2026");
     setMonth("07月");
     setDay("31日");
-    setRange("近1000期");
+    setRange("1000期");
     setNumberOrder("依號碼由小到大排序");
   };
 
@@ -611,7 +553,7 @@ export function DrawHistoryPage({
                   </div>
                   <fieldset aria-label="探索範圍">
                     <div className="history-range-options">
-                      {["近1000期", "近3000期", "近5000期", "所有期數"].map((value) => (
+                      {["1000期", "3000期", "5000期", "所有期數"].map((value) => (
                         <button
                           type="button"
                           key={value}
@@ -637,6 +579,47 @@ export function DrawHistoryPage({
   );
 }
 
+
+function RoadValidationProcess({
+  number,
+  position,
+  predictionPeriod,
+  consecutive,
+  prediction,
+}: {
+  number: string;
+  position: number;
+  predictionPeriod: number;
+  consecutive: string;
+  prediction: string;
+}) {
+  const validationGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  return (
+    <section className="road-validation-process" aria-label="驗證過程">
+      <header className="validation-summary-card">
+        <span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
+        <em>{consecutive}</em>
+      </header>
+      {validationGroups.map((group, groupIndex) => (
+        <div className="validation-period-block" key={groupIndex}>
+          {group.map(([issue, , numbers], rowIndex) => {
+            const lockRow = groupIndex === 0 ? 1 : 0;
+            return (
+              <div className="validation-period-row" key={issue}>
+                <span className="validation-issue">{issue}</span>
+                <span className="validation-full-numbers">{numbers.map((value) => <i key={value}>{value}</i>)}</span>
+                <span className="validation-formula">
+                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>預測期</b><strong>版路結果 08、37</strong></>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function MatrixExplorePage({
   onNavigate,
   title = "Matrix 探索",
@@ -652,7 +635,10 @@ export function MatrixExplorePage({
     | "準6進7"
     | "準7進8"
     | "準9進10"
-    | "準11進12";
+    | "準11進12"
+    | "準13進14"
+    | "準15進16"
+    | "準17進18+";
 
   type ExploreResult = {
     id: number;
@@ -666,11 +652,11 @@ export function MatrixExplorePage({
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+    "準5+（鎖定2碼）": ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
   };
   const defaultFilters: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": ["準7進8", "準9進10", "準11進12"],
+    "準5+（鎖定2碼）": ["準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
   };
   const resultRows: ExploreResult[] = [
     { id: 1, position: 1, number: "10", predictionPeriod: 1, consecutive: "準11進12", prediction: "03.09", sameCode: true },
@@ -688,7 +674,7 @@ export function MatrixExplorePage({
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [period, setPeriod] = useState("十三期");
   const [road, setRoad] = useState(roadTypes[0]);
-  const [hit, setHit] = useState("準4+（鎖定1碼）");
+  const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
   const [exploreDate, setExploreDate] = useState("本日(最新)");
@@ -698,7 +684,7 @@ export function MatrixExplorePage({
   const [sameCode, setSameCode] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
-    defaultFilters["準4+（鎖定1碼）"],
+    defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
   );
 
   useEffect(() => {
@@ -779,7 +765,7 @@ export function MatrixExplorePage({
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="lottery" /><b>彩種</b></span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/lottery.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="lottery" />}<b>彩種</b></span>
             <div className="select-box native-select">
               <select
                 aria-label="彩種"
@@ -791,17 +777,17 @@ export function MatrixExplorePage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
           </label>
-          <label><span><SettingLabelIcon type="period" />探索期數</span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}探索期數</span>
             <div className="segmented three">
               {["二期", "七期", "十三期"].map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
                   {v}
-                  {v === "十三期" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                  {title === "Matrix 探索" && v === "十三期" ? <em><LockClosedIcon />Matrix Pro</em> : null}
                 </button>
               ))}
             </div>
           </label>
-          <label><span><SettingLabelIcon type="road" />版路類型</span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
@@ -817,7 +803,7 @@ export function MatrixExplorePage({
       <section className="panel hit-advanced-panel">
         <SectionTitle>命中條件</SectionTitle>
         <div className="segmented two hit-options">
-          {["準4+（鎖定1碼）", "準5+（鎖定2碼）"].map((v) => (
+          {(title === "Matrix 天衍" ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
             <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
           ))}
         </div>
@@ -830,7 +816,7 @@ export function MatrixExplorePage({
           <div className="advanced-panel">
             <label>
               <span className="advanced-setting-title">
-                <SettingLabelIcon type="order" />號碼順序
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}號碼順序
               </span>
               <div className="select-box native-select">
                 <select
@@ -846,7 +832,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                <SettingLabelIcon type="date" />探索日期
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
               </span>
               <div className="segmented three">
                 {["本日(最新)", "昨日(上1期)", "前日(上2期)"].map((value) => (
@@ -863,7 +849,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                <SettingLabelIcon type="range" />探索範圍
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}探索範圍
               </span>
               <div className="segmented two">
                 {["標準範圍", "完整範圍"].map((value) => (
@@ -874,7 +860,7 @@ export function MatrixExplorePage({
                     onClick={() => setExploreRange(value)}
                   >
                     {value}
-                    {value === "完整範圍" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                    {title === "Matrix 探索" && value === "完整範圍" ? <em><LockClosedIcon />Matrix Pro</em> : null}
                   </button>
                 ))}
               </div>
@@ -959,13 +945,7 @@ export function MatrixExplorePage({
                     </button>
                   </div>
                   {expandedRoad === item.id ? (
-                    <div className="road-validation">
-                      <strong>版路驗證過程</strong>
-                      <span>位置：順球 {item.position}</span>
-                      <span>號碼： {item.number}</span>
-                      <span>連準次數： {item.consecutive.replace(/準(\d+)進(\d+)/, "準 $1 進 $2")}</span>
-                      <span>預測： {item.prediction}</span>
-                    </div>
+                    <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} />
                   ) : null}
                 </article>
               ))}
@@ -1008,6 +988,43 @@ export function MatrixExplorePage({
             : null}
         </>
       ) : null}
+    </FeatureShell>
+  );
+}
+
+
+function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const [period, setPeriod] = useState("五十期");
+  const [mode, setMode] = useState("一段式");
+  const [hit, setHit] = useState("準2進3");
+  const [searchPositions, setSearchPositions] = useState(["固定"]);
+  const [firstPositions, setFirstPositions] = useState(["固定"]);
+  const [firstRoads, setFirstRoads] = useState(["加減版路"]);
+  const [secondPositions, setSecondPositions] = useState(["固定"]);
+  const [secondRoads, setSecondRoads] = useState(["加減版路"]);
+  const [searched, setSearched] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const toggle = (value: string, current: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  const positionOptions = ["固定", "依序遞增", "依序遞減"];
+  const roadOptions = ["加減版路", "合值版路"];
+  return (
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen">
+      <section className="panel explore-settings tiangong-settings">
+        <SectionTitle>探索設定</SectionTitle>
+        <div className="setting-grid">
+          <label><span><SettingLabelIcon type="lottery" /><b>彩種</b></span><div className="select-box native-select"><select value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
+          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{["五十期", "八十期"].map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
+          <label><span><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{["一段式", "二段式"].map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
+          <label><span>命中條件</span><div className="segmented two">{["準2進3", "準3進4"].map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
+          <fieldset><legend>探索球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{value}</button>)}</div></fieldset>
+          <fieldset><legend>第一段球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{value}</button>)}</div></fieldset>
+          <fieldset><legend>第一段版路類型</legend><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></fieldset>
+          {mode === "二段式" ? <><fieldset><legend>第二段球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{value}</button>)}</div></fieldset><fieldset><legend>第二段版路類型</legend><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></fieldset></> : null}
+        </div>
+      </section>
+      <button type="button" className="primary-action branded-explore-action" onClick={() => setSearched(true)}><MagnifyingGlassIcon /><span>開始探索</span></button>
+      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle></header><div className="road-results"><article><div className="road-result-row"><span className="tag"><span>順球</span><span className="numeric-text">4</span></span><span className="result-number numeric-text">25</span><span className="result-period"><span>下</span><span className="numeric-text">2</span><span>期</span></span><span className="result-consecutive">準3進4</span><strong className="numeric-text">08.37</strong><button type="button" className="road-type-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}><span>版路類型</span><ChevronDownIcon data-open={expanded} /></button></div>{expanded ? <RoadValidationProcess number="25" position={4} predictionPeriod={2} consecutive="準3進4" prediction="08.37" /> : null}</article></div></section> : null}
     </FeatureShell>
   );
 }
@@ -1461,11 +1478,12 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const sections: GuideSection[] = [
     {
       title: "新手入門",
-      summary: "樂彩 Matrix 是歷史開獎資料查詢、比對、驗證與探索工具，支援今彩539、天天樂、六合彩及大樂透。",
+      summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
-        { title: "開始使用", items: ["使用 LINE 登入後進入首頁。", "先切換彩種，再查看最新開獎、下次開獎與 Matrix 狀態。", "依需求進入 Matrix 探索、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單或 Matrix 指南。"] },
-        { title: "基本導覽", items: ["首頁：查看四彩種資訊與主要功能入口。", "快捷：開啟已設定的功能；長按三秒可變更快捷設定。", "通知：設定各類通知。", "我的：查看訂閱、推廣、系統及法律資訊。"] },
-        { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。"] },
+        { title: "開始使用", items: ["使用 LINE 登入之後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix 探索、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
+        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；長按三秒可變更快捷設定。", "通知：設定各類型的推播通知。", "我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] },
+        { title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] },
+        { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
       ],
     },
     {
@@ -1474,21 +1492,21 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "四彩種切換", items: ["固定顯示今彩539、天天樂、六合彩及大樂透。", "切換後，最新開獎資訊卡顯示該彩種的期數、日期與開獎號碼。"] },
         { title: "Matrix 狀態", items: ["四個彩種固定顯示。", "狀態卡依資料呈現啟動、聚合、共振或臨界；同一彩種同時符合多種狀態時，只顯示最高等級狀態。", "點擊狀態卡可進入該彩種的 Matrix 狀態頁。"] },
-        { title: "功能入口", items: ["Matrix Core 為 Matrix 探索、Matrix 天衍及 Matrix 天工的核心入口。", "五大入口為 Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
+        { title: "功能入口", items: ["Matrix Core 為 Matrix 探索、Matrix 天衍及 Matrix 天工的核心入口。"] },
       ],
     },
     {
       title: "Matrix 探索",
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+（鎖定1碼）或準5+（鎖定2碼），兩者為單選。"] },
-        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日（最新）、昨日（上1期）、前日（上2期）。", "探索範圍：標準範圍或完整範圍；完整範圍為 Matrix Pro 功能。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
+        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "探索範圍：標準範圍或完整範圍；完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
       ],
     },
     {
       title: "Matrix 狀態",
-      summary: "顯示符合條件的版路結果，依規則分為啟動、聚合、共振及臨界。，依規則分為啟動、聚合、共振與臨界。",
+      summary: "顯示符合條件的版路結果，依規則分為啟動、聚合、共振及臨界。",
       blocks: [
         { title: "狀態層級", items: ["啟動 ACTIVE。", "聚合 FOCUS。", "共振 RESONANCE。", "臨界 CRITICAL。"] },
         { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、預測期、連準次數及版路類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
@@ -1496,7 +1514,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "Matrix 同星",
-      summary: "輸入指定號碼後，查詢指定期數的開獎結果。，查詢同一期指定號碼條件及後續開獎結果。",
+      summary: "輸入指定號碼後，查詢指定期數的開獎結果。",
       blocks: [
         { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
         { title: "結果內容", items: ["同頁顯示近10期開獎號碼。", "結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
@@ -1506,7 +1524,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "號碼對照單",
       summary: "瀏覽完整歷史開獎紀錄，並以探索號碼與手動標記比對歷史資料。",
       blocks: [
-        { title: "查詢設定", items: ["選擇彩種、1000期／3000期／5000期歷史範圍與號碼順序。", "可輸入0至3個探索號碼；空白格不參與探索，號碼不可重複。"] },
+        { title: "查詢設定", items: ["選擇彩種、歷史範圍（1000／3000／5000期）及號碼順序。", "可輸入0至3個探索號碼；空白格不參與探索，號碼不可重複。"] },
         { title: "開始探索", items: ["修改條件後，需按「開始探索」才更新歷史資料與標記。", "未輸入探索號碼時，仍可顯示完整歷史表格且不顯示探索標記。", "探索顏色固定依輸入格位置對應。"] },
         { title: "手動標記與刷新", items: ["點擊期數或單一號碼可手動標記，並立即生效。", "刷新後清空探索號碼與所有標記，並重新載入資料。"] },
       ],
@@ -1531,15 +1549,15 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "快捷可快速開啟已設定的功能；Matrix 筆記本提供筆記與紀錄兩種模式。",
       blocks: [
         { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "長按三秒可設定快捷功能。"] },
-        { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容有變動且尚未寫入，會出現提醒。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
-        { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示總成本、總獎金與總損益；統計提供每日、每週與本月。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
+        { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
+        { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示玩法成本、已確認獎金及金額差額；統計提供本日、本週與自訂日期。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
       ],
     },
     {
       title: "通知",
-      summary: "可設定投注、開獎結果、中獎、Matrix 狀態、Matrix 牌單、獨碰、系統及 Matrix Pro 到期通知。",
+      summary: "可設定選號提醒、開獎結果、Matrix 狀態、Matrix 牌單下載、Matrix Pro 到期、系統通知。",
       blocks: [
-        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "投注通知可依彩種設定時間。", "開獎結果、Matrix 牌單及獨碰通知可選擇彩種。", "中獎通知可選擇彩種通知或中獎金額通知。"] },
+        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "投注通知可依彩種設定時間。", "選號提醒、開獎結果、Matrix 牌單下載可依彩種設定。", "中獎通知可選擇彩種通知或中獎金額通知。"] },
         { title: "Matrix Pro 通知", items: ["部分通知功能需具備 Matrix Pro 權限。", "到期通知可選擇提前1日、提前3日或提前7日。"] },
       ],
     },
@@ -1548,14 +1566,14 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
         { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 會員方案與收費標準」查看。"] },
-        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "方案頁另依各方案顯示 Matrix Core 天衍與 Matrix Core 天工權限。"] },
+        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
       ],
     },
     {
       title: "帳號與安全",
       summary: "使用 LINE 官方授權登入，會員資料、記事、通知、設定與 Matrix Pro 權益會同步。",
       blocks: [
-        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統每5分鐘驗證 Session。", "會員資料與權益依 LINE 帳號同步。"] },
+        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統將定期驗證登入狀態。", "會員資料與權益依 LINE 帳號同步。"] },
         { title: "安全機制", items: ["使用裝置驗證與資料加密保護。", "若帳號在其他裝置登入，目前裝置會自動登出。"] },
       ],
     },
@@ -1564,9 +1582,9 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "依目前功能整理操作時常見的查詢方式。",
       blocks: [
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
-        { title: "查看更多開獎紀錄", items: ["近10期開獎號碼可進入更多紀錄。", "號碼對照單可選擇1000期、3000期或5000期。"] },
+        { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["長按底部「快捷」三秒後，選擇要指定的功能。"] },
-        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」，查看方案、期間與權限。"] },
+        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」。"] },
       ],
     },
     {
@@ -1718,7 +1736,8 @@ type RecordSnapshot = {
   createdDate: string;
   createdTime: string;
 };
-type PlayDraft = { bets: string; costPerBet: string; cost: string; costManual: boolean; playPrize: string };
+const formatNotebookAmount = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Number.isFinite(value) ? value : 0);
+type PlayDraft = { quantity: string };
 type NotebookRecord = {
   id: string;
   lottery: LotteryId;
@@ -1738,16 +1757,22 @@ type NotebookRecord = {
 };
 
 const DEFAULT_RECORD_SETTINGS = (): Record<LotteryId, LotteryRecordSettings> => Object.fromEntries(
-  LOTTERIES.map((lottery) => [lottery, {
-    tags: ["二星", "三星", "四星"].map((name) => ({
-      name,
-      costMode: "固定成本" as CostMode,
-      defaultBets: lottery === "今彩539" || lottery === "天天樂" ? 38 : 48,
-      costPerBet: 0,
-      fixedCost: 0,
-      prizePerBet: 0,
-    })),
-  }]),
+  LOTTERIES.map((lottery) => {
+    const isThirtyNine = lottery === "今彩539" || lottery === "天天樂";
+    const singlePrize = isThirtyNine ? 21200 : 28500;
+    const singleBets = isThirtyNine ? 38 : 48;
+    const singleFixedCost = isThirtyNine ? 3040 : 3840;
+    const twoStarPrize = isThirtyNine ? 5300 : 5700;
+    const fourStarPrize = isThirtyNine ? 800000 : 750000;
+    return [lottery, {
+      tags: [
+        { name: "單號", costMode: "依照碰數" as CostMode, defaultBets: singleBets, costPerBet: 80, fixedCost: singleFixedCost, prizePerBet: singlePrize },
+        { name: "二星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: twoStarPrize },
+        { name: "三星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: 57000 },
+        { name: "四星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: fourStarPrize },
+      ],
+    }];
+  }),
 ) as Record<LotteryId, LotteryRecordSettings>;
 
 function parseRecordNumbers(value: string, max: number) {
@@ -1777,7 +1802,8 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     try {
       const stored = JSON.parse(window.localStorage.getItem("matrix-notebook-record-settings") || "null") as Record<LotteryId, LotteryRecordSettings> | null;
       if (!stored) return DEFAULT_RECORD_SETTINGS();
-      return Object.fromEntries(LOTTERIES.map((item) => [item, { tags: (stored[item]?.tags ?? DEFAULT_RECORD_SETTINGS()[item].tags).filter((play) => play.name !== "自訂") }])) as Record<LotteryId, LotteryRecordSettings>;
+      const defaults = DEFAULT_RECORD_SETTINGS();
+      return Object.fromEntries(LOTTERIES.map((item) => [item, { tags: [...defaults[item].tags, ...(stored[item]?.tags ?? []).filter((play) => !["單號", "二星", "三星", "四星", "自訂"].includes(play.name)).map((play) => ({ ...play, defaultBets: Math.min(9999999, Math.max(1, Number(play.defaultBets) || 1)), costPerBet: Math.min(9999999, Math.max(1, Number(play.costPerBet) || 1)), fixedCost: Math.min(9999999, Math.max(1, Number(play.fixedCost) || 1)), prizePerBet: Math.min(9999999, Math.max(1, Number(play.prizePerBet) || 1)) }))] }])) as Record<LotteryId, LotteryRecordSettings>;
     } catch { return DEFAULT_RECORD_SETTINGS(); }
   });
   const [settingsDraft, setSettingsDraft] = useState<Record<LotteryId, LotteryRecordSettings>>(() => DEFAULT_RECORD_SETTINGS());
@@ -1790,13 +1816,17 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const [recordDate, setRecordDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [mode, setMode] = useState<RecordMode>("單號");
   const [numberText, setNumberText] = useState("");
-  const [columnTexts, setColumnTexts] = useState(["", "", ""]);
+  const [columnTexts, setColumnTexts] = useState(() => Array.from({ length: 12 }, () => ""));
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [playDrafts, setPlayDrafts] = useState<Record<string, PlayDraft>>({});
-  const [numberPicker, setNumberPicker] = useState<{ type: "numbers" | "column"; column?: number } | null>(null);
-  const [customPlayOpen, setCustomPlayOpen] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [statsPeriod, setStatsPeriod] = useState<"每日" | "每週" | "本月">("每日");
+  const [numberPicker, setNumberPicker] = useState<{ type: "numbers" | "column" | "special"; column?: number } | null>(null);
+  const [specialNumber, setSpecialNumber] = useState("");
+  const [dateInfoOpen, setDateInfoOpen] = useState(false);
+  const [expandedRecordIds, setExpandedRecordIds] = useState<string[]>([]);
+  const [recordLotteryFilters, setRecordLotteryFilters] = useState<LotteryId[]>([...LOTTERIES]);
+  const [customStartDate, setCustomStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [statsPeriod, setStatsPeriod] = useState<"本日" | "本週" | "自訂">("本日");
   const [settingsLottery, setSettingsLottery] = useState<LotteryId>("今彩539");
   const [settingsEditMode, setSettingsEditMode] = useState(false);
   const [newTagName, setNewTagName] = useState("");
@@ -1825,10 +1855,16 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const selectedPlayRows = selectedTags.map((name) => {
     const setting = currentTags.find((play) => play.name === name);
     const draft = playDrafts[name];
-    const bets = Number(draft?.bets || getCalculatedBets(name));
-    const costPerBet = Number(draft?.costPerBet ?? setting?.costPerBet ?? 0);
-    const cost = draft?.costManual ? Number(draft.cost || 0) : bets * costPerBet * quantity;
-    return { name, bets, costPerBet, cost, playPrize: Number(draft?.playPrize || 0) };
+    const playQuantity = Math.min(9999999, Math.max(0.1, Number(draft?.quantity || 1)));
+    const baseBets = getCalculatedBets(name);
+    const bets = baseBets * playQuantity;
+    const cost = setting?.costMode === "固定成本"
+      ? (setting.fixedCost ?? 0) * playQuantity
+      : bets * (setting?.costPerBet ?? 0);
+    const playPrize = (setting?.prizePerBet ?? 0) * playQuantity;
+    const unitCost = bets ? cost / bets : 0;
+    const unitPrize = bets ? playPrize / bets : 0;
+    return { name, quantity: playQuantity, bets, costPerBet: setting?.costPerBet ?? 0, cost, playPrize, unitCost, unitPrize };
   });
   const computedBets = selectedPlayRows.reduce((sum, play) => sum + play.bets, 0);
   const computedCost = selectedPlayRows.reduce((sum, play) => sum + play.cost, 0);
@@ -1849,15 +1885,16 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const visibleRecords = useMemo(() => records.filter((record) => {
     const date = new Date(`${record.date}T00:00:00`);
     const today = new Date();
-    if (statsPeriod === "每日") return record.date === today.toISOString().slice(0, 10);
-    if (statsPeriod === "本月") return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
+    if (!recordLotteryFilters.includes(record.lottery)) return false;
+    if (statsPeriod === "本日") return record.date === today.toISOString().slice(0, 10);
+    if (statsPeriod === "自訂") return record.date >= customStartDate && record.date <= customEndDate;
     const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const day = monday.getDay();
     monday.setDate(monday.getDate() - (day === 0 ? 6 : day - 1));
     monday.setHours(0, 0, 0, 0);
     const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23, 59, 59, 999);
     return date >= monday && date <= sunday;
-  }), [records, statsPeriod]);
+  }), [customEndDate, customStartDate, recordLotteryFilters, records, statsPeriod]);
   const stats = useMemo(() => ({
     total: visibleRecords.length,
     won: visibleRecords.filter((record) => record.actualPrize > 0).length,
@@ -1902,7 +1939,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     if (window.confirm("確定刪除此筆記？")) setNotes((current) => current.filter((entry) => entry.id !== id));
   };
   const startRecord = () => {
-    setLottery("今彩539"); setRecordDate(new Date().toISOString().slice(0, 10)); setMode("單號"); setNumberText(""); setColumnTexts(["", "", ""]); setSelectedTags([]); setPlayDrafts({}); setQuantity(1); setView("record");
+    setLottery("今彩539"); setRecordDate(new Date().toISOString().slice(0, 10)); setMode("單號"); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSelectedTags([]); setPlayDrafts({}); setSpecialNumber(""); setView("record");
   };
   const openSettings = () => {
     const draft = structuredClone(settings);
@@ -1922,15 +1959,16 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   const saveRecord = () => {
     const numbers = mode === "立柱" ? parsedColumns.flat() : parsedNumbers;
+    if (mode === "立柱" && new Set(numbers).size !== numbers.length) return;
     if (numbers.length === 0 || selectedTags.length === 0) return;
     const created = new Date();
     const snapshot: RecordSnapshot = {
-      lottery, plays: selectedPlayRows, quantity,
+      lottery, plays: selectedPlayRows, quantity: 1,
       createdDate: created.toLocaleDateString("zh-TW"), createdTime: created.toLocaleTimeString("zh-TW", { hour12: false }),
     };
     setRecords((current) => [{
-      id: `record-${Date.now()}`, lottery, date: recordDate, mode, numbers, columns: parsedColumns,
-      tags: selectedTags, quantity, bets: computedBets, cost: computedCost, estimatedPrize,
+      id: `record-${Date.now()}`, lottery, date: recordDate, mode, numbers: specialNumber ? [...numbers, specialNumber] : numbers, columns: parsedColumns,
+      tags: selectedTags, quantity: 1, bets: computedBets, cost: computedCost, estimatedPrize,
       actualPrize: 0, status: "等待開獎", unlocked: false, snapshot,
     }, ...current]);
     setView("list");
@@ -1981,9 +2019,9 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
           name,
           costMode: "依照碰數",
           defaultBets: settingsLottery === "今彩539" || settingsLottery === "天天樂" ? 38 : 48,
-          costPerBet: 0,
-          fixedCost: 0,
-          prizePerBet: 0,
+          costPerBet: 1,
+          fixedCost: 1,
+          prizePerBet: 1,
         }],
       },
     }));
@@ -2007,43 +2045,33 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     setSettingsBaseline(JSON.stringify(savedSettings));
     setSettingsEditMode(false);
   };
-  const addCustomTag = () => {
-    if (!newTagName.trim()) return;
-    const name = newTagName.trim();
-    if (settings[settingsLottery].tags.some((play) => play.name === name)) return;
-    setSettings((current) => ({ ...current, [settingsLottery]: { tags: [...current[settingsLottery].tags, { name: newTagName.trim(), costMode: "依照碰數", defaultBets: settingsLottery === "今彩539" || settingsLottery === "天天樂" ? 38 : 48, costPerBet: 0, fixedCost: 0, prizePerBet: 0 }] } }));
-    if (settingsLottery === lottery) {
-      setSelectedTags((current) => [...current, name]);
-      setPlayDrafts((current) => ({ ...current, [name]: { bets: "", costPerBet: "0", cost: "", costManual: false, playPrize: "" } }));
-    }
-    setNewTagName("");
-    setCustomPlayOpen(false);
-  };
   const togglePlay = (name: string) => {
     setSelectedTags((current) => current.includes(name) ? current.filter((play) => play !== name) : [...current, name]);
-    if (!playDrafts[name]) {
-      const setting = currentTags.find((play) => play.name === name);
-      setPlayDrafts((current) => ({ ...current, [name]: { bets: "", costPerBet: String(setting?.costPerBet ?? 0), cost: "", costManual: false, playPrize: "" } }));
-    }
+    if (!playDrafts[name]) setPlayDrafts((current) => ({ ...current, [name]: { quantity: "1" } }));
   };
-  const updatePlayDraft = (name: string, patch: Partial<PlayDraft>) => setPlayDrafts((current) => {
-    const existing = current[name] ?? { bets: "", costPerBet: "0", cost: "", costManual: false, playPrize: "" };
-    return { ...current, [name]: { ...existing, ...patch } };
-  });
+  const updatePlayDraft = (name: string, patch: Partial<PlayDraft>) => setPlayDrafts((current) => ({ ...current, [name]: { quantity: current[name]?.quantity ?? "1", ...patch } }));
   const togglePickedNumber = (number: string) => {
     if (!numberPicker) return;
+    if (numberPicker.type === "special") {
+      setSpecialNumber((current) => current === number ? "" : number);
+      setNumberText((current) => parseRecordNumbers(current, maxNumber).filter((item) => item !== number).join(" "));
+      setColumnTexts((columns) => columns.map((value) => parseRecordNumbers(value, maxNumber).filter((item) => item !== number).join(" ")));
+      return;
+    }
+    setSpecialNumber((current) => current === number ? "" : current);
     if (numberPicker.type === "numbers") {
       if (mode === "單號") setNumberText(number);
-      else {
-        const current = parsedNumbers;
-        setNumberText((current.includes(number) ? current.filter((item) => item !== number) : [...current, number]).join(" "));
-      }
+      else setNumberText((parsedNumbers.includes(number) ? parsedNumbers.filter((item) => item !== number) : [...parsedNumbers, number]).join(" "));
       return;
     }
     const columnIndex = numberPicker.column ?? 0;
     const current = parsedColumns[columnIndex] ?? [];
-    const next = current.includes(number) ? current.filter((item) => item !== number) : [...current, number];
-    setColumnTexts((columns) => columns.map((value, index) => index === columnIndex ? next.join(" ") : value));
+    const removing = current.includes(number);
+    setColumnTexts((columns) => columns.map((value, index) => {
+      const values = parseRecordNumbers(value, maxNumber).filter((item) => item !== number);
+      if (index === columnIndex && !removing) values.push(number);
+      return values.join(" ");
+    }));
   };
   const exportBackup = () => {
     const url = URL.createObjectURL(new Blob([JSON.stringify({ notes, records, settings }, null, 2)], { type: "application/json" }));
@@ -2077,33 +2105,29 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
             </div>
             <span>{notebookMode === "筆記" ? `${notes.length} 筆筆記` : `${records.length} 筆紀錄`}</span>
           </div>
-          <div className="notebook-create-actions">
-            {notebookMode === "筆記"
-              ? <button type="button" onClick={() => startNote()}><PlusIcon />新增筆記</button>
-              : <button type="button" onClick={startRecord}><PlusIcon />新增紀錄</button>}
-          </div>
+          <div className="notebook-create-actions" data-mode={notebookMode}>{notebookMode === "紀錄" ? <div className="record-lottery-filters" aria-label="彩種分類">{LOTTERIES.map((item) => <button type="button" data-selected={recordLotteryFilters.includes(item)} onClick={() => setRecordLotteryFilters((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} key={item}>{item}</button>)}</div> : null}{notebookMode === "筆記" ? <button type="button" onClick={() => startNote()}><PlusIcon />新增筆記</button> : <button type="button" onClick={startRecord}><PlusIcon />新增紀錄</button>}</div>
         </section>
         {notebookMode === "紀錄" ? <section className="record-stats panel">
-          <header><div>{(["每日", "每週", "本月"] as const).map((period) => <button type="button" data-selected={statsPeriod === period} onClick={() => setStatsPeriod(period)} key={period}>{period}</button>)}</div><button type="button" onClick={openSettings}><GearIcon />設定</button></header>
+          <header><div>{(["本日", "本週", "自訂"] as const).map((period) => <button type="button" data-selected={statsPeriod === period} onClick={() => setStatsPeriod(period)} key={period}>{period}</button>)}</div><button type="button" onClick={openSettings}><GearIcon />設定</button></header>{statsPeriod === "自訂" ? <div className="record-custom-range"><input type="date" value={customStartDate} onChange={(event) => setCustomStartDate(event.target.value)} /><span>至</span><input type="date" value={customEndDate} onChange={(event) => setCustomEndDate(event.target.value)} /></div> : null}
           <div className="record-stats-grid">
-            <span>總成本<strong>NT${stats.cost}</strong></span><span>總獎金<strong>NT${stats.prize}</strong></span><span>總損益<strong>NT${stats.prize - stats.cost}</strong></span>
+            <span>玩法成本 <strong>NT {formatNotebookAmount(stats.cost)}</strong></span><span>已確認獎金 <strong>{formatNotebookAmount(stats.prize)}</strong></span><span>金額差額 <strong>NT {formatNotebookAmount(stats.prize - stats.cost)}</strong></span>
           </div>
         </section> : null}
         <section className="notebook-entry-list" aria-label={notebookMode === "筆記" ? "筆記列表" : "紀錄列表"}>
           {notebookMode === "筆記" ? notes.map((entry) => <article className="panel notebook-entry" key={entry.id}>
             <button type="button" className="notebook-entry-open" onClick={() => startNote(entry)}><span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatTime(entry.updatedAt)}</small></span><ChevronRightIcon /></button>
             <button type="button" className="notebook-entry-delete" onClick={() => deleteNote(entry.id)} aria-label="刪除筆記"><TrashIcon /></button>
-          </article>) : records.map((record) => <article className="panel notebook-record-card" key={record.id}>
-            <header><strong>{record.lottery}</strong><span>{record.date}</span><em>{record.status}</em></header>
-            <p>{record.mode}｜{record.tags.join("、")}｜×{record.quantity}</p>
-            <div className="record-number-row">{record.numbers.map((number, index) => <i key={`${number}-${index}`}>{number}</i>)}</div>
-            <footer><span>總碰數<strong>{record.bets}</strong></span><span>成本<strong>NT${record.cost}</strong></span><span>獎金<strong>NT${record.actualPrize}</strong></span><span>損益<strong>NT${record.actualPrize - record.cost}</strong></span></footer>
-            <div className="record-lock-actions">
-              {record.status === "已鎖定" && !record.unlocked ? <button type="button" onClick={() => setRecords((current) => current.map((item) => item.id === record.id ? { ...item, unlocked: true } : item))}>解除鎖定</button> : <button type="button" onClick={() => { if (window.confirm("確定刪除此紀錄？")) setRecords((current) => current.filter((item) => item.id !== record.id)); }}><TrashIcon />刪除</button>}
-            </div>
-          </article>)}
+          </article>) : visibleRecords.map((record) => {
+            const expanded = expandedRecordIds.includes(record.id);
+            return <article className="panel notebook-record-card" key={record.id}>
+              <button type="button" className="record-card-toggle" aria-expanded={expanded} onClick={() => setExpandedRecordIds((current) => current.includes(record.id) ? current.filter((id) => id !== record.id) : [...current, record.id])}>
+                <span><strong>{record.lottery}</strong><small>{record.date}</small></span><em>{record.status}</em><ChevronDownIcon data-open={expanded} />
+              </button>
+              {expanded ? <div className="record-card-details"><p>{record.mode}｜{record.tags.join("、")}</p><div className="record-number-row">{record.numbers.map((number, index) => <i key={number + "-" + index}>{number}</i>)}</div><footer><span>總碰數 <strong>{formatNotebookAmount(record.bets)}</strong></span><span>玩法成本 <strong>NT {formatNotebookAmount(record.cost)}</strong></span><span>已確認獎金 <strong>{formatNotebookAmount(record.actualPrize)}</strong></span><span>金額差額 <strong>NT {formatNotebookAmount(record.actualPrize - record.cost)}</strong></span></footer><div className="record-status-actions"><em>{record.status}</em><button type="button" onClick={() => { if (window.confirm("確定刪除此紀錄？")) setRecords((current) => current.filter((item) => item.id !== record.id)); }}><TrashIcon />刪除</button></div></div> : null}
+            </article>;
+          })}
           {notebookMode === "筆記" && notes.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無筆記</strong></div> : null}
-          {notebookMode === "紀錄" && records.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無紀錄</strong></div> : null}
+          {notebookMode === "紀錄" && visibleRecords.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無紀錄</strong></div> : null}
         </section>
       </> : null}
 
@@ -2116,17 +2140,14 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
 
       {view === "record" ? <section className="record-editor">
         <header className="record-page-header"><button type="button" onClick={() => setView("list")}><ChevronLeftIcon />返回列表</button><button type="button" onClick={openSettings}><GearIcon />設定</button></header>
-        <section className="panel record-form-section"><h3>彩種</h3><div className="record-lottery-tabs">{LOTTERIES.map((item) => <button type="button" data-selected={lottery === item} onClick={() => { setLottery(item); setSettingsLottery(item); setNumberText(""); setColumnTexts(["", "", ""]); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div></section>
-        <section className="panel record-form-section"><h3>日期</h3><div className="record-week-row">{weekDates.map((date) => <button type="button" data-selected={recordDate === date.value} onClick={() => setRecordDate(date.value)} key={date.value}><span>{date.label}</span><strong>{date.day}</strong></button>)}</div></section>
-        <section className="panel record-form-section"><h3>輸入模式</h3><div className="record-mode-tabs">{(["單號", "連碰", "立柱"] as const).map((item) => <button type="button" data-selected={mode === item} onClick={() => { setMode(item); setNumberText(""); setColumnTexts(["", "", ""]); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div>
-          {mode !== "立柱" ? <button type="button" className="record-number-picker-button" onClick={() => setNumberPicker({ type: "numbers" })}><span>{parsedNumbers.length ? parsedNumbers.join("、") : "選取號碼"}</span><ChevronRightIcon /></button> : <div className="record-columns">{columnTexts.map((value, index) => <label key={index}>第{index + 1}柱<button type="button" onClick={() => setNumberPicker({ type: "column", column: index })}><span>{parseRecordNumbers(value, maxNumber).length ? parseRecordNumbers(value, maxNumber).join("、") : "選取號碼"}</span><ChevronRightIcon /></button></label>)}</div>}
+        <section className="panel record-form-section"><h3>彩種</h3><div className="record-lottery-tabs">{LOTTERIES.map((item) => <button type="button" data-selected={lottery === item} onClick={() => { setLottery(item); setSettingsLottery(item); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSpecialNumber(""); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div></section>
+        <section className="panel record-form-section record-date-section"><button type="button" className="record-date-toggle" aria-expanded={dateInfoOpen} onClick={() => setDateInfoOpen(!dateInfoOpen)}><h3>日期</h3><ChevronDownIcon data-open={dateInfoOpen} /></button>{dateInfoOpen ? <div className="record-week-row">{weekDates.map((date) => <button type="button" data-selected={recordDate === date.value} onClick={() => setRecordDate(date.value)} key={date.value}><span>{date.label}</span><strong>{date.day}</strong></button>)}</div> : null}</section>
+        <section className="panel record-form-section"><h3>輸入模式</h3><div className="record-mode-tabs">{(["單號", "連碰", "立柱"] as const).map((item) => <button type="button" data-selected={mode === item} onClick={() => { setMode(item); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSpecialNumber(""); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div>
+          <div className="record-number-and-special">{mode !== "立柱" ? <button type="button" className="record-number-picker-button" onClick={() => setNumberPicker({ type: "numbers" })}><span>{parsedNumbers.length ? parsedNumbers.join("、") : "選取號碼"}</span><ChevronRightIcon /></button> : <div className="record-columns">{columnTexts.map((value, index) => <label key={index}>第{index + 1}柱<button type="button" onClick={() => setNumberPicker({ type: "column", column: index })}><span>{parseRecordNumbers(value, maxNumber).length ? parseRecordNumbers(value, maxNumber).join("、") : "選取號碼"}</span><ChevronRightIcon /></button></label>)}</div>}{lottery === "六合彩" || lottery === "大樂透" ? <button type="button" className="record-special-picker-button" onClick={() => setNumberPicker({ type: "special" })}><span>特別號</span><strong>{specialNumber || "—"}</strong></button> : null}</div>
         </section>
-        <section className="panel record-form-section"><h3>玩法</h3><div className="record-tag-options">{currentTags.filter((play) => mode !== "單號" || !["二星", "三星", "四星"].includes(play.name)).map((play) => <button type="button" data-selected={selectedTags.includes(play.name)} onClick={() => togglePlay(play.name)} key={play.name}>{play.name}</button>)}<button type="button" onClick={() => { setSettingsLottery(lottery); setNewTagName(""); setCustomPlayOpen(true); }}>自訂</button></div></section>
-        {selectedPlayRows.map((play) => {
-          const draft = playDrafts[play.name];
-          return <section className="panel record-play-setting" key={play.name}><h3>{play.name}</h3><div><label>碰數<input type="number" min="0" value={draft?.bets ?? ""} placeholder={String(getCalculatedBets(play.name))} onChange={(event) => updatePlayDraft(play.name, { bets: event.target.value, costManual: false, cost: "" })} /></label><label>1碰成本<input type="number" min="0" value={draft?.costPerBet ?? "0"} onChange={(event) => updatePlayDraft(play.name, { costPerBet: event.target.value, costManual: false, cost: "" })} /></label><label>成本<input type="number" min="0" value={draft?.costManual ? draft.cost : String(play.cost)} onChange={(event) => updatePlayDraft(play.name, { cost: event.target.value, costManual: true })} /></label><label>玩法獎金<input type="number" min="0" value={draft?.playPrize ?? ""} onChange={(event) => updatePlayDraft(play.name, { playPrize: event.target.value })} /></label></div></section>;
-        })}
-        <section className="panel record-form-section record-quantity"><label>數量<input type="number" min="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))} /></label><span>總碰數<strong>{computedBets}</strong></span><span>總成本<strong>NT${computedCost}</strong></span><span>玩法獎金<strong>NT${estimatedPrize}</strong></span></section>
+        <section className="panel record-form-section"><h3>玩法</h3><div className="record-tag-options">{currentTags.filter((play) => mode === "單號" ? !["二星", "三星", "四星"].includes(play.name) : play.name !== "單號").map((play) => <button type="button" data-selected={selectedTags.includes(play.name)} onClick={() => togglePlay(play.name)} key={play.name}>{play.name}</button>)}</div></section>
+        {selectedPlayRows.map((play) => <section className="panel record-play-setting" key={play.name}><h3>{play.name}</h3><div className="record-play-metrics"><label>數量 <input type="number" min="0.1" max="9999999" step="0.1" value={playDrafts[play.name]?.quantity ?? "1"} onChange={(event) => updatePlayDraft(play.name, { quantity: event.target.value })} /></label><p className="record-formula"><span>碰數 <strong>{formatNotebookAmount(play.bets)}</strong> × 1碰金額 <strong>{formatNotebookAmount(play.unitCost)}</strong> = 玩法成本 <strong>NT {formatNotebookAmount(play.cost)}</strong></span></p><p className="record-formula"><span>碰數 <strong>{formatNotebookAmount(play.bets)}</strong> × 1碰獎金 <strong>{formatNotebookAmount(play.unitPrize)}</strong> = 最高獎金 <strong>{formatNotebookAmount(play.playPrize)}</strong></span></p></div></section>)}
+        <section className="panel record-form-section record-quantity"><span>總碰數 <strong>{formatNotebookAmount(computedBets)}</strong></span><span>玩法成本 <strong>NT {formatNotebookAmount(computedCost)}</strong></span><span>最高獎金 <strong>{formatNotebookAmount(estimatedPrize)}</strong></span></section>
         <button type="button" className="record-save-button" onClick={saveRecord}>新增紀錄</button>
       </section> : null}
 
@@ -2136,21 +2157,20 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
         {settingsDraft[settingsLottery].tags.map((tag, index) => <section className="panel tag-setting-card" data-tag-setting-index={index} key={index}>
           <header data-editing={settingsEditMode}>
             {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`拖曳調整${tag.name}順序`} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={endTagDrag}><span aria-hidden="true">⠿</span></button> : null}
-            {["二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={() => { if (tag.name !== editingTagName.current && !window.confirm(`確定將「${editingTagName.current}」修改為「${tag.name}」？`)) updateTag(index, { name: editingTagName.current }); }} />}
+            {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={() => { if (tag.name !== editingTagName.current && !window.confirm(`確定將「${editingTagName.current}」修改為「${tag.name}」？`)) updateTag(index, { name: editingTagName.current }); }} />}
             {settingsEditMode ? <button type="button" className="tag-delete-button" aria-label={`刪除${tag.name}`} onClick={() => deleteSettingsTag(index, tag.name)}><TrashIcon /></button> : null}
           </header>
           <div className="tag-setting-fields">
             <label>成本模式<select value={String(tag.costMode) === "固定成本模式" ? "固定成本" : tag.costMode} onChange={(event) => updateTag(index, { costMode: event.target.value as CostMode })}><option>依照碰數</option><option>固定成本</option></select></label>
             {String(tag.costMode) === "固定成本" || String(tag.costMode) === "固定成本模式"
-              ? <><label>1組成本<input type="number" value={tag.fixedCost} onChange={(event) => updateTag(index, { fixedCost: Number(event.target.value) })} /></label><label>中1組獎金<input type="number" value={tag.prizePerBet} onChange={(event) => updateTag(index, { prizePerBet: Number(event.target.value) })} /></label></>
-              : <><label>碰數<input type="number" value={tag.defaultBets} onChange={(event) => updateTag(index, { defaultBets: Number(event.target.value) })} /></label><label>1碰成本<input type="number" value={tag.costPerBet} onChange={(event) => updateTag(index, { costPerBet: Number(event.target.value) })} /></label><label>中1碰獎金<input type="number" value={tag.prizePerBet} onChange={(event) => updateTag(index, { prizePerBet: Number(event.target.value) })} /></label></>}
+              ? <><label>1組成本<input type="number" min="1" max="9999999" value={tag.fixedCost || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { fixedCost: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>中1組獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { prizePerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label></>
+              : <><label>碰數<input type="number" min="1" max="9999999" value={tag.defaultBets} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { defaultBets: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>1碰成本<input type="number" min="1" max="9999999" value={tag.costPerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { costPerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>中1碰獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { prizePerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label></>}
           </div>
         </section>)}
         <section className="panel custom-tag-add"><input placeholder="新增自訂玩法" value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /><button type="button" onClick={addSettingsTag}>新增</button></section>
         <section className="panel record-data-actions"><button type="button" onClick={resetSettings}>重置設定</button><button type="button" onClick={saveSettings}>儲存設定</button></section>
       </section> : null}
-      {numberPicker && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop record-picker-backdrop" role="presentation" onClick={() => setNumberPicker(null)}><section className="filter-sheet record-number-picker" role="dialog" aria-modal="true" aria-labelledby="record-number-picker-title" onClick={(event) => event.stopPropagation()}><header><h2 id="record-number-picker-title">選取號碼</h2><button type="button" onClick={() => setNumberPicker(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="record-number-grid">{Array.from({ length: maxNumber }, (_, index) => String(index + 1).padStart(2, "0")).map((number) => { const selected = numberPicker.type === "numbers" ? parsedNumbers.includes(number) : parsedColumns[numberPicker.column ?? 0]?.includes(number); return <button type="button" data-selected={selected} onClick={() => togglePickedNumber(number)} key={number}>{number}</button>; })}</div><button type="button" className="record-picker-done" onClick={() => setNumberPicker(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
-      {customPlayOpen && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop record-picker-backdrop" role="presentation" onClick={() => setCustomPlayOpen(false)}><section className="filter-sheet custom-play-dialog" role="dialog" aria-modal="true" aria-labelledby="custom-play-title" onClick={(event) => event.stopPropagation()}><header><h2 id="custom-play-title">自訂玩法</h2><button type="button" onClick={() => setCustomPlayOpen(false)} aria-label="關閉"><Cross2Icon /></button></header><label>玩法名稱<input autoFocus value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /></label><button type="button" className="record-picker-done" onClick={addCustomTag}>新增</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
+      {numberPicker && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop record-picker-backdrop" role="presentation" onClick={() => setNumberPicker(null)}><section className="filter-sheet record-number-picker" role="dialog" aria-modal="true" aria-labelledby="record-number-picker-title" onClick={(event) => event.stopPropagation()}><header><h2 id="record-number-picker-title">選取號碼</h2><button type="button" onClick={() => setNumberPicker(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="record-number-grid">{Array.from({ length: maxNumber }, (_, index) => String(index + 1).padStart(2, "0")).map((number) => { const selected = numberPicker.type === "special" ? specialNumber === number : numberPicker.type === "numbers" ? parsedNumbers.includes(number) : parsedColumns[numberPicker.column ?? 0]?.includes(number); return <button type="button" data-selected={selected} onClick={() => togglePickedNumber(number)} key={number}>{number}</button>; })}</div><button type="button" className="record-picker-done" onClick={() => setNumberPicker(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
     </FeatureShell>
   );
 }
@@ -2362,14 +2382,14 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     "天天樂": ["05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "08:45", "09:00", "09:10", "09:20", "09:25"],
   };
   const rows = [
-    ["bet", "選號提醒", "", "/assets/notifications/bet.png"],
-    ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/result.png"],
-    ["win", "中獎通知", "彩種通知、獎金通知", "/assets/notifications/win.png"],
-    ["status", "Matrix 狀態", "", "/assets/notifications/status.png"],
-    ["card", "Matrix 牌單下載", "今彩539、天天樂、六合彩、大樂透", "/assets/notifications/card-v2.png"],
-    ["collision", "Matrix 摘星", "", "/assets/notifications/collision-v2.png"],
-    ["expiry", "Matrix Pro", "提前1日、提前3日、提前7日", "/assets/notifications/expiry.png"],
-    ["system", "系統通知", "維護、更新", "/assets/notifications/system-v2.png"],
+    ["bet", "選號提醒", "", "/resources/notify-bet.png"],
+    ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-result.png"],
+    ["win", "中獎通知", "彩種通知、獎金通知", "/resources/notify-win.png"],
+    ["status", "Matrix 狀態", "", "/resources/notify-status.png"],
+    ["card", "Matrix 牌單", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-card-v2.png?v=20260809-3"],
+    ["collision", "Matrix 摘星", "", "/resources/notify-collision-v2.png?v=20260809-3"],
+    ["expiry", "Matrix Pro", "提前1日、提前3日、提前7日", "/resources/notify-expiry.png"],
+    ["system", "系統通知", "維護、更新", "/resources/notify-system-v2.png?v=20260809-3"],
   ] as const;
   const toggleOption = (key: string, option: string) => {
     if (key === "collision") return;
@@ -2424,7 +2444,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
     { title: "客服與支援", items: [["聯絡客服", "merchant-info"], ["問題回報", "problem-report"], ["商務合作", "business-cooperation"]] },
-    { title: "推廣相關", items: [["我的推薦碼/啟動碼", "activation-code"], ["邀請好友", "invite-friends"], ["優惠活動", "promotions"]] },
+    { title: "推廣相關", items: [["我的推薦碼/啟動碼", "activation-code"], ["優惠活動", "promotions"]] },
     { title: "系統相關", items: [["版本資訊", "version-info"], ["更新紀錄", "update-history"]] },
     { title: "法律資訊", items: [["關於 樂彩 Matrix", "about-matrix"], ["服務內容與使用說明", "service-info"], ["會員服務條例", "member-terms"], ["隱私權政策", "privacy-policy"], ["退款規範", "refund-policy"], ["聲明與免責事項", "disclaimer"]] },
   ];
@@ -2500,9 +2520,9 @@ function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 
 function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const plans = [
-    { name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態　進階資訊", "Matrix 探索期數　十三期", "Matrix 探索範圍　完整範圍", "Matrix Pro 專屬推播通知"] },
-    { name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix Core　天衍", "Matrix 狀態　進階資訊", "Matrix 探索期數　十三期", "Matrix 探索範圍　完整範圍", "Matrix Pro 專屬推播通知"] },
-    { name: "年費方案", price: "$16,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix Core　天衍", "Matrix Core　天工", "Matrix 狀態　進階資訊", "Matrix 探索期數　十三期", "Matrix 探索範圍　完整範圍", "Matrix Pro 專屬推播通知"] },
+    { name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { name: "年費方案", price: "$16,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
   ] as const;
   const carouselPlans = [plans[2], ...plans, plans[0]] as const;
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -2597,67 +2617,27 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function AboutMatrixPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate}>
-      <section className="panel about-matrix-card">
-        <p className="about-welcome">歡迎使用 樂彩Matrix。</p>
-        <p>樂彩Matrix 致力於提供清晰、直覺且易於使用的開獎資料查詢與分析服務，協助使用者快速查閱公開資訊、整理歷史數據，並透過多元分析功能，提升資料檢視效率。</p>
-        <p>我們持續優化介面設計與操作體驗，整合各項分析工具，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p>
-        <h2>我們的理念</h2>
-        <p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、且容易使用的分析工具，讓每一次資料查詢都更加便利。</p>
-        <p className="about-thanks">感謝您對 樂彩 Matrix  的支持與使用！</p>
-        <div className="about-brand-info">
-          <p><span>品牌名稱：</span>樂彩 Matrix</p>
-          <p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p>
-        </div>
-      </section>
-    </ProfileDetailShell>
-  );
+  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate}><section className="panel about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、直覺且易於使用的開獎資料查詢與分析服務，協助使用者快速查閱公開資訊、整理歷史數據，並透過多項分析功能，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，整合各項分析工具，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、且容易使用的分析工具，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
 }
 
 function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
   const [activationOpen, setActivationOpen] = useState(false);
+  const referralSuccessCount = 0;
   return (
     <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate}>
       <section className="panel referral-card">
         <h2>我的推薦碼</h2>
         <div className="my-referral-code" aria-label="我的推薦碼">—</div>
-        <div className="code-entry-block">
-          <label htmlFor="referral-code">輸入推薦碼</label>
-          <input id="referral-code" value={referralCode} onChange={(event) => setReferralCode(event.target.value)} aria-label="推薦碼" />
-          <button type="button" className="gold-button">確認</button>
-        </div>
+        <p className="referral-success-count">推薦成功 {referralSuccessCount} 人</p>
+        <div className="code-entry-block"><label htmlFor="referral-code">輸入推薦碼</label><input id="referral-code" value={referralCode} onChange={(event) => setReferralCode(event.target.value)} aria-label="推薦碼" /><button type="button" className="gold-button">確認</button></div>
       </section>
-      <section className="panel activation-card">
-        <button
-          type="button"
-          className="activation-toggle"
-          aria-expanded={activationOpen}
-          aria-controls="activation-code-entry"
-          onClick={() => setActivationOpen((current) => !current)}
-        >
-          <span>啟動碼</span>
-          <ChevronDownIcon aria-hidden="true" />
-        </button>
-        {activationOpen ? (
-          <div className="code-entry-block" id="activation-code-entry">
-            <label htmlFor="activation-code">輸入啟動碼</label>
-            <input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" />
-            <button type="button" className="gold-button">確認啟用</button>
-            <section className="activation-instructions" aria-labelledby="activation-instructions-title">
-              <h3 id="activation-instructions-title">啟動碼使用說明</h3>
-              <ul>
-                <li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li>
-                <li>每組啟動碼只能成功使用一次。</li>
-                <li>啟動成功後，該組啟動碼立即標記為已使用。</li>
-                <li>每組啟動碼可設定到期日期或永久有效。</li>
-              </ul>
-            </section>
-          </div>
-        ) : null}
-      </section>
+      <DetailCard title="推薦成功認定"><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", "輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"]} /></DetailCard>
+      <DetailCard title="推薦成功獎勵"><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></DetailCard>
+      <DetailCard title="推薦獎勵補充規則"><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></DetailCard>
+      <DetailCard title="邀請好友"><p>推薦碼/邀請碼尚未提供。</p></DetailCard>
+      <section className="panel activation-card"><button type="button" className="activation-toggle" aria-expanded={activationOpen} aria-controls="activation-code-entry" onClick={() => setActivationOpen((current) => !current)}><span>啟動碼</span><ChevronDownIcon aria-hidden="true" /></button>{activationOpen ? <div className="code-entry-block" id="activation-code-entry"><label htmlFor="activation-code">輸入啟動碼</label><input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" /><button type="button" className="gold-button">確認</button><section className="activation-instructions" aria-labelledby="activation-instructions-title"><h3 id="activation-instructions-title">啟動碼使用說明</h3><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></section></div> : null}</section>
     </ProfileDetailShell>
   );
 }
@@ -2671,52 +2651,11 @@ function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate}>
-      <DetailCard title="1. 服務名稱"><p>樂彩 Matrix</p></DetailCard>
-      <DetailCard title="2. 服務形式"><p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p></DetailCard>
-      <DetailCard title="3. 主要功能">
-        <ul className="service-function-list">
-          <li><span>Matrix Core</span><ul><li>Matrix 探索</li><li>Matrix 天衍</li><li>Matrix 天工</li></ul></li>
-          <li>Matrix 狀態</li>
-          <li>Matrix 同星</li>
-        </ul>
-      </DetailCard>
-      <DetailCard title="4. 支援彩種"><DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} /></DetailCard>
-      <DetailCard title="5. 使用方式"><p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前可使用的功能。</p></DetailCard>
-      <DetailCard title="6. 探索結果說明"><p>探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。</p></DetailCard>
-      <DetailCard title="7. Matrix Pro 說明"><p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案。</p><p>實際價格方案、期間及權限，請至「Matrix Pro 方案與收費標準」閱覽完整內容。</p></DetailCard>
-    </ProfileDetailShell>
-  );
+  return <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate}><DetailCard title="1. 服務名稱"><p>樂彩 Matrix</p></DetailCard><DetailCard title="2. 服務形式"><p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p></DetailCard><DetailCard title="3. 主要功能"><DetailList items={["Matrix Core", "　Matrix 探索", "　Matrix 天衍", "　Matrix 天工", "Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"]} /></DetailCard><DetailCard title="4. 支援彩種"><DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} /></DetailCard><DetailCard title="5. 使用方式"><p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p><p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p></DetailCard><DetailCard title="6. 探索結果說明"><p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p></DetailCard><DetailCard title="7. Matrix Pro 說明"><p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 方案與收費標準」及帳號顯示為準。</p></DetailCard></ProfileDetailShell>;
 }
 
 function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="退款規範" onNavigate={onNavigate}>
-      <DetailCard title="一、適用範圍">
-        <p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。Matrix Pro 採單次付款，不會自動續訂。</p>
-      </DetailCard>
-      <DetailCard title="二、七日解除權與數位服務">
-        <p>Matrix Pro 為付款後提供使用權限的數位服務。依消費者保護法及通訊交易相關規定，通訊交易原則上享有七日解除權。</p>
-        <p>若付款流程已事先告知並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權者，不適用七日無條件解除。</p>
-      </DetailCard>
-      <DetailCard title="三、可申請退款情形">
-        <DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} />
-      </DetailCard>
-      <DetailCard title="四、不予退款情形">
-        <DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "啟動碼已成功使用並增加訂閱天數。", "非屬本規範或法律規定應退款的情形。"]} />
-      </DetailCard>
-      <DetailCard title="五、退款申請方式">
-        <p>請寄送電子郵件至 Matrix1150801@gmail.com，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p>
-      </DetailCard>
-      <DetailCard title="六、退款處理">
-        <p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。符合退款條件者，退款方式及實際入帳時間依原付款方式與金流服務商作業時間辦理。</p>
-      </DetailCard>
-      <DetailCard title="七、其他">
-        <p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p>
-      </DetailCard>
-    </ProfileDetailShell>
-  );
+  return <ProfileDetailShell title="退款規範" onNavigate={onNavigate}><DetailCard title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></DetailCard><DetailCard title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></DetailCard><DetailCard title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></DetailCard><DetailCard title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></DetailCard><DetailCard title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></DetailCard><DetailCard title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></DetailCard><DetailCard title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></DetailCard><DetailCard title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></DetailCard></ProfileDetailShell>;
 }
 
 function MerchantInfoPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -2758,37 +2697,24 @@ function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
   const sections: Array<[string, React.ReactNode]> = [
     ["第一條　服務範圍", <p>樂彩 Matrix 提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
     ["第二條　會員登入", <p>使用者透過 LINE 登入後使用會員功能。</p>],
-    ["第三條　Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>Matrix Pro 採單次付款，不會自動續訂。</p></>],
-    ["第四條　訂閱方案", <><DetailList items={["月方案：30 天，NT$1,880", "季方案：90 天，NT$4,980", "年方案：365 天，NT$16,800"]} /><p>以上價格均為新臺幣含稅價格。</p></>],
+    ["第三條　Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
+    ["第四條　訂閱方案", <><DetailList items={["月方案：30 天，NT$1,880", "季方案：90 天，NT$4,580", "年方案：365 天，NT$16,800"]} /><p>以上價格，均為新臺幣含稅價格。</p></>],
     ["第五條　啟動碼", <><p>啟動碼用於增加 Matrix Pro 訂閱天數。</p><p>每組啟動碼只能成功使用一次。</p><p>啟動碼有效期限與訂閱期間分開計算。</p></>],
-    ["第六條　服務內容", <p>不同會員狀態可使用的功能，依目前帳號顯示的權限為準。</p>],
-    ["第七條　探索結果", <p>探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。</p>],
-    ["第八條　退款", <p>退款方式依「退款規範」頁面內容辦理。</p>],
+    ["第六條　服務內容", <p>不同會員狀態，可使用的功能及權限，依目前帳號顯示及系統判定為準。</p>],
+    ["第七條　探索結果", <p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p>],
+    ["第八條　退款", <p>退款申請及審核方式，依「退款規範」頁面公告內容辦理。</p>],
     ["第九條　個人資料", <p>會員資料的使用方式依「隱私權政策」頁面內容辦理。</p>],
+    ["第十條　其他", <p>樂彩 Matrix 保留服務內容、功能權益、訂閱方案、活動內容、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。</p>],
   ];
   return <ProfileDetailShell title="會員服務條例" onNavigate={onNavigate}>{sections.map(([title, content]) => <DetailCard title={title} key={title}>{content}</DetailCard>)}</ProfileDetailShell>;
 }
 
 function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="隱私權政策" onNavigate={onNavigate}>
-      <DetailCard title="1. 蒐集的資料"><DetailList items={["LINE 登入所提供的帳號識別資料", "Matrix Pro 訂閱狀態", "訂閱到期日", "啟動碼使用紀錄", "通知設定"]} /></DetailCard>
-      <DetailCard title="2. 使用目的"><DetailList items={["會員登入與帳號識別", "顯示會員及訂閱狀態", "Matrix Pro 啟用與續訂", "提供使用者已選擇的功能"]} /></DetailCard>
-      <DetailCard title="3. 第三方服務"><p>目前已確認使用 LINE 登入。</p><p>實際金流服務商尚未確認，不得自行填寫藍新、綠界或其他業者名稱。</p></DetailCard>
-      <DetailCard title="4. 資料使用範圍"><p>蒐集的資料僅用於本政策所列之使用目的，並限於提供樂彩 Matrix 服務所需範圍內使用。</p></DetailCard>
-    </ProfileDetailShell>
-  );
+  return <ProfileDetailShell title="隱私權政策" onNavigate={onNavigate}><DetailCard title="1. 蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", "Matrix Pro 訂閱狀態", "訂閱到期日", "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></DetailCard><DetailCard title="2. 使用目的"><DetailList items={["會員登入與帳號識別", "顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理", "提供使用者已選擇的功能", "推薦活動資格與獎勵管理", "系統通知與服務通知"]} /></DetailCard><DetailCard title="3. 第三方服務"><p>目前已確認使用 LINE 登入。</p><p>實際金流服務商尚未確認，不得自行填寫藍新、綠界或其他業者名稱。</p></DetailCard><DetailCard title="4. 資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></DetailCard><DetailCard title="5. 資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></DetailCard><DetailCard title="6. 隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></DetailCard></ProfileDetailShell>;
 }
 
 function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate}>
-      <DetailCard title="一、服務性質"><p>樂彩 Matrix 提供開獎資料查詢、歷史資料整理與分析工具。</p></DetailCard>
-      <DetailCard title="二、資訊用途"><p>服務內呈現的資料與分析結果僅供參考，不代表任何中獎或獲利保證。</p></DetailCard>
-      <DetailCard title="三、使用者決定"><p>使用者應自行判斷並決定如何使用服務內提供的資訊。</p></DetailCard>
-      <DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，以官方公布資料為準。</p></DetailCard>
-    </ProfileDetailShell>
-  );
+  return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate}><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
 }
 
 export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -2827,15 +2753,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
                     <button type="button" className="status-road-table-row" aria-expanded={openRoad === index} onClick={() => setOpenRoad(openRoad === index ? null : index)}>
                       <span>順球{road.position}</span><span>{road.number}</span><span>下{road.period}期</span><span>{road.consecutive}</span><strong>{road.prediction}</strong><span>{road.road}<ChevronDownIcon data-open={openRoad === index} /></span>
                     </button>
-                    {openRoad === index ? <div className="status-validation status-table-validation">
-                      <h4>詳細驗證過程</h4>
-                      <ol>
-                        <li><b>01</b><span>位置</span><strong>順球{road.position}</strong></li>
-                        <li><b>02</b><span>號碼</span><strong>{road.number}</strong></li>
-                        <li><b>03</b><span>連準次數</span><strong>{road.consecutive}</strong></li>
-                        <li><b>04</b><span>預測</span><strong>{road.prediction}</strong></li>
-                      </ol>
-                    </div> : null}
+                    {openRoad === index ? <RoadValidationProcess number={road.number} position={road.position} predictionPeriod={road.period} consecutive={road.consecutive} prediction={road.prediction} /> : null}
                   </article>
                 ))}
               </div>
@@ -2859,7 +2777,7 @@ export function FeaturePageRouter({
   if (screen === "matrix-core") return <MatrixExplorePage onNavigate={onNavigate} />;
   if (screen === "explore") return <MatrixExplorePage onNavigate={onNavigate} />;
   if (screen === "tianyan") return <MatrixExplorePage onNavigate={onNavigate} title="Matrix 天衍" roadTypes={["複合版路"]} />;
-  if (screen === "tiangong") return <MatrixExplorePage onNavigate={onNavigate} title="Matrix 天工" roadTypes={["自訂版路"]} />;
+  if (screen === "tiangong") return <MatrixTiangongPage onNavigate={onNavigate} />;
   if (screen === "tongxing") return <TongXingPage onNavigate={onNavigate} />;
   if (screen === "history") return <DrawHistoryPage onNavigate={onNavigate} backTarget={historyReturnScreen} />;
   if (screen === "reference") return <NumberReferencePage onNavigate={onNavigate} />;

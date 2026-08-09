@@ -1,19 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  BellIcon,
-  CalendarIcon,
   ChevronRightIcon,
   ClockIcon,
   CountdownTimerIcon,
   DotFilledIcon,
-  HomeIcon,
-  LightningBoltIcon,
   Pencil2Icon,
-  PersonIcon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
+import { BottomNavigation } from "./BottomNavigation";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -66,34 +62,19 @@ const LOTTERIES: LotteryOption[] = [
 ];
 
 const HOME_SHORTCUTS = [
-  {
-    label: "Matrix 同星",
-    image: "/assets/lottery/functions/matrix-tongxing.png",
-  },
-  {
-    label: "號碼對照單",
-    image: "/assets/lottery/functions/number-reference.png",
-  },
-  {
-    label: "連碰立柱計算機",
-    image: "/assets/lottery/functions/collision-column-calculator.png",
-  },
-  {
-    label: "Matrix 牌單",
-    image: "/assets/lottery/functions/matrix-card.png",
-  },
-  {
-    label: "Matrix 指南",
-    image: "/assets/lottery/functions/matrix-guide.png",
-  },
+  { label: 'Matrix 同星', image: '/resources/matrix-tongxing.png' },
+  { label: '號碼對照單', image: '/resources/number-reference.png' },
+  { label: '連碰立柱計算機', image: '/resources/collision-column-calculator.png' },
+  { label: 'Matrix 牌單', image: '/resources/matrix-card.png' },
+  { label: 'Matrix 指南', image: '/resources/matrix-guide.png' },
 ] as const;
 
 const QUICK_OPTIONS = [
-  { label: "Matrix 同星", screen: "tongxing" as const, image: "/assets/lottery/functions/matrix-tongxing.png" },
-  { label: "號碼對照單", screen: "reference" as const, image: "/assets/lottery/functions/number-reference.png" },
-  { label: "連碰立柱計算機", screen: "calculator" as const, image: "/assets/lottery/functions/collision-column-calculator.png" },
-  { label: "歷史開獎號碼", screen: "history" as const },
-  { label: "Matrix 筆記本", screen: "notebook" as const, image: "/assets/quick/matrix-notebook.png" },
+  { label: "Matrix 同星", screen: "tongxing" as const, image: "/assets/quick/settings/matrix-tongxing-v2.png" },
+  { label: "號碼對照單", screen: "reference" as const, image: "/assets/quick/settings/number-reference-v2.png" },
+  { label: "連碰立柱計算機", screen: "calculator" as const, image: "/assets/quick/settings/collision-column-calculator-v2.png" },
+  { label: "歷史開獎號碼", screen: "history" as const, image: "/assets/quick/settings/draw-history-v2.png" },
+  { label: "Matrix 筆記本", screen: "notebook" as const, image: "/assets/quick/settings/matrix-notebook-v2.png" },
 ] as const;
 
 const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
@@ -226,7 +207,7 @@ export function LotterySwitcher({
   className = "",
 }: LotterySwitcherProps) {
   return (
-    <div
+    <div data-lottery-switcher=""
       className={`lottery-switcher ${className}`.trim()}
       role="radiogroup"
       aria-label="選擇彩種"
@@ -236,7 +217,7 @@ export function LotterySwitcher({
         const isSelected = lottery.id === selected;
 
         return (
-          <button
+          <button data-lottery-card=""
             className="lottery-card"
             data-lottery={lottery.id}
             data-selected={isSelected}
@@ -599,82 +580,6 @@ export function BrandLoading({
   );
 }
 
-export function BottomNavigation({
-  active = "首頁",
-  onNavigate,
-  onQuickOpen,
-  onQuickConfigure,
-}: {
-  active?: "首頁" | "快捷" | "通知" | "我的";
-  onNavigate?: (screen: ScreenId) => void;
-  onQuickOpen?: () => void;
-  onQuickConfigure?: () => void;
-}) {
-  const quickTimer = useRef<number | null>(null);
-  const quickLongPressed = useRef(false);
-  const beginQuickPress = () => {
-    quickLongPressed.current = false;
-    quickTimer.current = window.setTimeout(() => {
-      quickLongPressed.current = true;
-      onQuickConfigure?.();
-    }, 3000);
-  };
-  const endQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
-    if (!quickLongPressed.current) onQuickOpen?.();
-  };
-  const cancelQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
-  };
-  const items = [
-    { label: "首頁", icon: HomeIcon, screen: "home" as const },
-    { label: "通知", icon: BellIcon, screen: "notifications" as const },
-    { label: "我的", icon: PersonIcon, screen: "profile" as const },
-  ] as const;
-
-  return (
-    <nav
-      className="bottom-navigation"
-      aria-label="底部導覽"
-      data-testid="bottom-navigation"
-    >
-      <button className="bottom-navigation-item" data-selected={active === "首頁"} type="button" aria-current={active === "首頁" ? "page" : undefined} onClick={() => onNavigate?.("home")}><HomeIcon aria-hidden="true" /><span>首頁</span></button>
-      <button
-        className="bottom-navigation-item"
-        data-selected={active === "快捷"}
-        type="button"
-        aria-label="快捷；長按三秒開啟設定"
-        onPointerDown={beginQuickPress}
-        onPointerUp={endQuickPress}
-        onPointerCancel={cancelQuickPress}
-        onPointerLeave={cancelQuickPress}
-        onContextMenu={(event) => event.preventDefault()}
-        onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onQuickOpen?.(); } }}
-      ><LightningBoltIcon aria-hidden="true" /><span>快捷</span></button>
-      {items.slice(1).map((item) => {
-        const Icon = item.icon;
-        const selected = item.label === active;
-
-        return (
-          <button
-            className="bottom-navigation-item"
-            data-selected={selected}
-            type="button"
-            aria-current={selected ? "page" : undefined}
-            key={item.label}
-            onClick={() => onNavigate?.(item.screen)}
-          >
-            <Icon aria-hidden="true" />
-            <span>{item.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
 function BottomNavigationPortal({
   active,
   onNavigate,
@@ -765,7 +670,10 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
     setQuickTarget(next);
     window.localStorage.setItem("matrix-quick-target", next);
     setQuickSettingsOpen(false);
-    if (screen === "notebook" && next !== "notebook") navigate("home");
+    setQuickReturnScreen(screen);
+    if (next === "history") setHistoryReturnScreen(screen);
+    setQuickActive(true);
+    setScreen(next);
   };
 
   const quickSettings = quickSettingsOpen ? (
@@ -775,7 +683,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
         <div>
           {QUICK_OPTIONS.map((option) => (
             <button type="button" data-selected={quickTarget === option.screen} onClick={() => selectQuickTarget(option.screen)} key={option.screen}>
-              {"image" in option ? <img src={option.image} alt="" /> : <span className="quick-history-icon"><CalendarIcon /></span>}
+              <img src={option.image} alt="" />
               <strong>{option.label}</strong>
               {quickTarget === option.screen ? <span className="quick-selected-dot" /> : null}
             </button>

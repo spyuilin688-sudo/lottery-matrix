@@ -1,0 +1,1 @@
+This deployment requires the user-provided lottery-matrix-v33-latest-complete-20260804.zip resource at public/resources/lottery-matrix-v33-latest-complete-20260804.zip. No product code is changed by this note.

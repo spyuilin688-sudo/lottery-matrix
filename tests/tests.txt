@@ -1,0 +1,49 @@
+# Tests
+
+## Test 1 - Switch lottery on the home screen [sanity]
+Viewport: mobile
+Covers: startup, home lottery selector, latest draw display
+Description: Verifies the primary home workflow can switch lottery types and show the matching draw format.
+
+Steps:
+1. Wait for the home screen to finish loading
+2. Select "六合彩" in the lottery selector
+3. Inspect the latest draw card
+
+Expected: "六合彩" is selected, the selector remains a single row of four cards, and the draw shows six main numbers plus one special number.
+
+## Test 2 - Verify Matrix Core exploration tools
+Viewport: mobile
+Covers: Matrix Core, Matrix 探索 settings, Matrix 天衍, Matrix 天工
+Description: Verifies the Matrix Core entry exposes all updated exploration choices and the two related tools.
+
+Steps:
+1. Open "Matrix 核心" from the home screen
+2. Inspect the basic and advanced Matrix 探索 setting choices
+3. Open "Matrix 天衍", return, then open "Matrix 天工"
+
+Expected: Matrix 探索 visibly offers "彩種", "探索期數", "版路類型", "號碼順序", "探索日期", and "探索範圍"; Matrix 天衍 shows its fixed subscription restrictions; Matrix 天工 opens its dedicated settings.
+
+## Test 3 - Run Matrix 同星 and reject an out-of-range number
+Viewport: mobile
+Covers: Matrix 同星, valid exploration result, numeric input guardrail
+Description: Verifies a valid exploration works and an invalid lottery number cannot remain in the field.
+
+Steps:
+1. Open "Matrix 同星" from the home screen
+2. Enter "12" and "18", then start exploration
+3. Return to the input and replace the first number with "50"
+
+Expected: A Matrix 同星 result is visible after the valid input, and the first number field does not retain the invalid value "50".
+
+## Test 4 - Verify current notifications and account navigation
+Viewport: mobile
+Covers: notification list, updated notification labels, bottom navigation
+Description: Verifies the notification center uses the current labels and remains connected to the account area.
+
+Steps:
+1. Open "通知" from the bottom navigation
+2. Inspect all notification rows in order
+3. Open "我的" from the bottom navigation
+
+Expected: Eight notification rows remain in the existing order from "選號提醒" through "系統通知"; visible titles include "開獎結果", "Matrix 狀態", "Matrix 牌單", and "Matrix 摘星"; the old titles "開獎通知", "系統狀態", "牌單完成", and "摘星結果" are absent; and the account screen opens.
