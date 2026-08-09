@@ -719,7 +719,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
         <header className="brand-header">
           <img
             className={`brand-logo${deviceId === "iphone" ? " brand-logo--iphone" : ""}`}
-            src="/assets/lottery/brand-logo-transparent.png"
+            src="/assets/lottery/brand-logo-transparent-processed.png"
             alt="樂彩 Matrix"
             draggable={false}
           />
