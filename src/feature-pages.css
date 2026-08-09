@@ -2537,3 +2537,9 @@
   font-size: 9.5px;
   line-height: 1;
 }
+
+/* Final shared-header guard: all four bottom-navigation main pages begin at
+   the same top edge, independent of their former page-specific padding. */
+main.feature-screen.compact-feature-screen {
+  padding-top: 0 !important;
+}
