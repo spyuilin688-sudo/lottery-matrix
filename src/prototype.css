@@ -1729,10 +1729,15 @@
 }
 
 .home-screen .brand-header {
+  position: relative;
+  display: flex;
   justify-content: center;
 }
 
 .home-screen .brand-logo {
+  position: static;
+  right: auto;
+  left: auto;
   object-fit: cover;
   object-position: center 50%;
   transform: translateY(-18px);
