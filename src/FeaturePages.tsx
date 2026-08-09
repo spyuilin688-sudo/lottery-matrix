@@ -132,14 +132,10 @@ const HISTORY = [
 ] as const;
 
 function BrandHeader({
-  title,
   onBack,
-  action,
   compact = false,
 }: {
-  title: string;
   onBack: () => void;
-  action?: React.ReactNode;
   compact?: boolean;
 }) {
   return (
@@ -148,8 +144,6 @@ function BrandHeader({
         <ChevronLeftIcon />
       </button> : null}
       <img className="feature-brand-logo" src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
-      {!compact ? <h1>{title}</h1> : null}
-      {action ? <div className="feature-header-action">{action}</div> : null}
     </header>
   );
 }
@@ -205,7 +199,13 @@ function FeatureShell({
   const logoOnlyHeader = compactHeader || Boolean(quickActive);
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen" : ""} ${className}`.trim()}>
-      <BrandHeader title={title} onBack={() => onNavigate(backTarget)} action={headerAction} compact={logoOnlyHeader} />
+      <BrandHeader onBack={() => onNavigate(backTarget)} compact={logoOnlyHeader} />
+      {!logoOnlyHeader ? (
+        <section className="feature-page-title-card" aria-label={`${title}頁面標題`}>
+          <h1>{title}</h1>
+          {headerAction ? <div className="feature-header-action">{headerAction}</div> : null}
+        </section>
+      ) : null}
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
     </main>
