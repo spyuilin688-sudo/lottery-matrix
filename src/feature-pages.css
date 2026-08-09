@@ -9,15 +9,15 @@
 }
 
 .feature-body { padding: 0 14px 24px; }
-.feature-brand-header { position: relative; display: flex; min-height: 178px; padding: 4px 16px 16px; flex-direction: column; align-items: center; justify-content: flex-start; }
-.feature-brand-header > .feature-brand-logo { width: 320px; height: 118px; object-fit: contain; object-position: center; }
-.feature-brand-header[data-compact="true"] { min-height: 136px; padding: 0 0 12px; align-items: center; justify-content: flex-start; }
-.feature-brand-header[data-compact="true"] > .feature-brand-logo { width: 390px; max-width: 100%; height: 124px; object-fit: contain; object-position: center; }
+.feature-brand-header { position: relative; display: flex; min-height: 178px; padding: 4px 16px 16px; flex-direction: column; align-items: center; justify-content: flex-start; overflow: visible; }
+.feature-brand-header > .feature-brand-logo { width: 320px; height: 118px; object-fit: contain; object-position: left center; transform: translate(18px, -8px); transform-origin: left center; }
+.feature-brand-header[data-compact="true"] { min-height: 124px; padding: 0; align-items: center; justify-content: flex-start; overflow: visible; }
+.feature-brand-header[data-compact="true"] > .feature-brand-logo { width: 390px; max-width: 100%; height: 124px; object-fit: contain; object-position: left center; transform: translateY(-12px); transform-origin: left center; }
 .compact-feature-screen { padding-top: 30px; }
 .feature-brand-header h1 { margin: 7px 0 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; }
 .feature-header-action { position: absolute; right: 16px; bottom: 5px; }
 .matrix-explore-screen .feature-brand-header { min-height: 178px; }
-.matrix-explore-main-screen .feature-brand-header > img { transform: translateX(-24px); }
+.matrix-explore-main-screen .feature-brand-header > img { transform: translate(18px, -8px); }
 .matrix-explore-tool-actions { display: flex; align-items: center; gap: 7px; }
 .matrix-explore-tool-actions button {
   width: 46px;
@@ -31,7 +31,7 @@
 }
 .matrix-explore-tool-actions img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
-.back-button { position: absolute; top: 10px; left: 12px; width: 38px; height: 38px; }
+.back-button { position: absolute; top: 36px; left: 10px; width: 38px; height: 38px; }
 .back-button svg { width: 29px; height: 29px; }
 
 .panel { border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
@@ -1044,7 +1044,7 @@
 .about-brand-info span { color: #c9c2b8; }
 
 .mobile-app-viewport[data-platform="android"] .compact-feature-screen { padding-top: 42px; }
-.mobile-app-viewport[data-platform="android"] .feature-brand-header[data-compact="true"] { min-height: 60px; }
+.mobile-app-viewport[data-platform="android"] .feature-brand-header[data-compact="true"] { min-height: 124px; }
 
 .status-list { display: grid; gap: 12px; }
 .status-block { --tone: #d58b2d; --border: #8a561d; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: rgba(4, 11, 16, .96); }
@@ -2321,3 +2321,32 @@
 .matrix-trigger-actions button { min-height: 40px; border: 1px solid #81622f; border-radius: 9px; background: #071019; color: #cdbf9e; font-size: 13px; }
 .matrix-trigger-actions button:last-child { border-color: #d2a33c; background: linear-gradient(180deg, #d9ad45, #9d6b12); color: #100b03; font-weight: 750; }
 
+
+
+/* 統一頁首：底部導覽頁與快捷頁沿用首頁；其他頁面共用返回鍵頁首。 */
+.feature-screen .feature-brand-header {
+  min-height: 178px;
+  padding: 4px 16px 16px;
+}
+.feature-screen .feature-brand-header > .feature-brand-logo {
+  width: 320px;
+  max-width: none;
+  height: 118px;
+  object-position: left center;
+  transform: translate(18px, -8px);
+}
+.feature-screen .feature-brand-header[data-compact="true"] {
+  min-height: 124px;
+  padding: 0;
+}
+.feature-screen .feature-brand-header[data-compact="true"] > .feature-brand-logo {
+  width: 390px;
+  max-width: 100%;
+  height: 124px;
+  object-position: left center;
+  transform: translateY(-12px);
+}
+.feature-screen:not(.compact-feature-screen) .back-button {
+  top: 36px;
+  left: 10px;
+}
