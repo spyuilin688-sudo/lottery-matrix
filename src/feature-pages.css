@@ -2445,7 +2445,10 @@
 
 /* Matrix 探索：返回鍵＋透明置中 Logo／標題資訊卡／探索內容。 */
 .matrix-explore-main-screen .feature-brand-header {
+  width: 390px;
+  max-width: 100%;
   min-height: 118px;
+  margin: 0 auto;
 }
 .matrix-explore-main-screen .feature-brand-header > .feature-brand-logo {
   top: -10px;
@@ -2465,7 +2468,7 @@
 .matrix-explore-main-screen .feature-page-title-card {
   width: 358px;
   min-height: 54px;
-  margin: 0 16px 8px;
+  margin: 0 auto 8px;
 }
 .matrix-explore-main-screen .matrix-explore-tool-actions {
   gap: 8px;
