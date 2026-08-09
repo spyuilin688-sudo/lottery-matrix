@@ -594,28 +594,58 @@ function RoadValidationProcess({
   prediction: string;
 }) {
   const validationGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  const roadResult = prediction.replace(/\./g, "、");
+
   return (
-    <section className="road-validation-process" aria-label="驗證過程">
+    <section className="road-validation-process" aria-label="版路驗證過程">
       <header className="validation-summary-card">
-        <span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
-        <em>{consecutive}</em>
+        <span className="validation-summary-text">
+          開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開
+        </span>
+        <em aria-label="連準次數">{consecutive}</em>
       </header>
-      {validationGroups.map((group, groupIndex) => (
-        <div className="validation-period-block" key={groupIndex}>
-          {group.map(([issue, , numbers], rowIndex) => {
-            const lockRow = groupIndex === 0 ? 1 : 0;
-            return (
-              <div className="validation-period-row" key={issue}>
-                <span className="validation-issue">{issue}</span>
-                <span className="validation-full-numbers">{numbers.map((value) => <i key={value}>{value}</i>)}</span>
-                <span className="validation-formula">
-                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>預測期</b><strong>版路結果 08、37</strong></>}
-                </span>
+
+      {validationGroups.map((group, groupIndex) => {
+        const lockRow = groupIndex === 0 ? 1 : 0;
+
+        return (
+          <div className="validation-period-block" key={groupIndex}>
+            <div className="validation-period-columns">
+              <div className="validation-column validation-issue-column">
+                {group.map(([issue]) => (
+                  <span className="validation-issue" key={issue}>{issue}</span>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      ))}
+
+              <div className="validation-column validation-number-column">
+                {group.map(([issue, , numbers]) => (
+                  <span className="validation-full-numbers" key={issue}>
+                    {numbers.map((value) => <i key={value}>{value}</i>)}
+                  </span>
+                ))}
+              </div>
+
+              <div className="validation-column validation-formula-column">
+                {group.map(([issue], rowIndex) => (
+                  <span className="validation-formula" key={issue}>
+                    {rowIndex < 2 ? (
+                      <>
+                        <b>{number} +14.24</b>
+                        {rowIndex === lockRow ? <small>鎖定條件</small> : null}
+                      </>
+                    ) : (
+                      <>
+                        <b>預測期</b>
+                        <strong>版路結果 {roadResult}</strong>
+                      </>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </section>
   );
 }
