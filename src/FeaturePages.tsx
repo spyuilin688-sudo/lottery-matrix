@@ -594,7 +594,10 @@ function RoadValidationProcess({
   consecutive: string;
   prediction: string;
 }) {
-  const validationGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  const validationGroups = Array.from(
+    { length: 8 },
+    (_, groupIndex) => HISTORY.slice(groupIndex, groupIndex + 3),
+  );
   const roadResult = prediction.replace(/\./g, "、");
 
   return (
@@ -606,41 +609,46 @@ function RoadValidationProcess({
         <em aria-label="連準次數">{consecutive}</em>
       </header>
 
-      {validationGroups.map((group, groupIndex) => {
-        const lockRow = groupIndex === 0 ? 1 : 0;
+      <div className="validation-groups">
+        {validationGroups.map((group, groupIndex) => {
+          const lockRow = groupIndex === 0 ? 1 : 0;
 
-        return (
-          <div className="validation-period-block" key={groupIndex}>
-            <div className="validation-period-table" role="table" aria-label={`第 ${groupIndex + 1} 組驗證資料`}>
-              {group.map(([issue, , numbers], rowIndex) => (
-                <div className="validation-period-row" role="row" key={issue}>
-                  <span className="validation-issue" role="cell">{issue}</span>
-                  <span className="validation-full-numbers" role="cell">
-                    {numbers.map((value, numberIndex) => {
-                      const isLockNumber = rowIndex === lockRow && numberIndex === 0;
-                      const isSourceNumber = groupIndex === 0 && rowIndex === 0 && numberIndex === 0;
+          return (
+            <div className="validation-period-block" key={groupIndex}>
+              <div className="validation-period-table" role="table" aria-label={`第 ${groupIndex + 1} 組驗證資料`}>
+                {group.map(([issue, , numbers], rowIndex) => (
+                  <div className="validation-period-row" role="row" key={issue}>
+                    <span className="validation-issue" role="cell">{issue}</span>
+                    <span className="validation-full-numbers" role="cell">
+                      {numbers.map((value, numberIndex) => {
+                        const isLockNumber = rowIndex === lockRow && numberIndex === 0;
+                        const isSourceNumber = groupIndex === 0 && rowIndex === 0 && numberIndex === 0;
 
-                      return (
-                        <i
-                          key={value}
-                          data-highlight={isLockNumber ? "lock" : isSourceNumber ? "source" : undefined}
-                        >
-                          {value}
-                        </i>
-                      );
-                    })}
-                  </span>
-                  <span className="validation-formula" role="cell">
-                    {rowIndex < 2
-                      ? <b>{number} +14.24</b>
-                      : <strong>{roadResult}</strong>}
-                  </span>
-                </div>
-              ))}
+                        return (
+                          <i
+                            key={value}
+                            data-highlight={isLockNumber ? "lock" : isSourceNumber ? "source" : undefined}
+                          >
+                            {value}
+                          </i>
+                        );
+                      })}
+                    </span>
+                    <span className="validation-formula" role="cell">
+                      {rowIndex < 2 ? <b>{number} +14.24</b> : null}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      <footer className="validation-prediction-row">
+        <span>本期預測</span>
+        <strong>{roadResult}</strong>
+      </footer>
     </section>
   );
 }
