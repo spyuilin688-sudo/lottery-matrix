@@ -2258,13 +2258,27 @@
 
 
 /* Matrix 狀態－自訂觸發條件 */
+.matrix-status-page-trigger-button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(223, 176, 68, .72);
+  border-radius: 8px;
+  background: #080806;
+  box-shadow: 0 0 8px rgba(223, 176, 68, .24);
+}
+.matrix-status-page-trigger-button img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.matrix-status-page-trigger-button:active { transform: scale(.96); }
+.matrix-status-screen .feature-header-action { right: 16px; bottom: 3px; }
+
+.matrix-trigger-settings-screen .feature-brand-header { min-height: 151px; padding-bottom: 5px; }
+.matrix-trigger-settings-screen .feature-brand-header h1 { display: none; }
 .matrix-trigger-settings-screen .feature-body { display: grid; gap: 10px; padding-inline: 16px; padding-bottom: 118px; }
-.matrix-trigger-intro { display: grid; min-height: 62px; padding: 8px 12px; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 10px; border: 1px solid #7a5b28; border-radius: 11px; background: rgba(5, 12, 18, .94); }
-.matrix-trigger-intro img { display: block; width: 46px; height: 46px; border-radius: 9px; object-fit: cover; }
-.matrix-trigger-intro h2, .matrix-trigger-status-section h3 { margin: 0; color: #e7c66f; font-weight: 650; }
-.matrix-trigger-intro h2 { font-size: 17px; }
+.matrix-trigger-lottery-switcher { width: 100%; padding-inline: 0; }
 .matrix-trigger-status-section { display: grid; gap: 8px; }
-.matrix-trigger-status-section h3 { font-size: 13px; }
 .matrix-trigger-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
 .matrix-trigger-status-grid button { --trigger-tone: #54d52e; display: grid; min-width: 0; min-height: 52px; padding: 6px 2px; place-items: center; gap: 2px; border: 1px solid rgba(93, 111, 127, .5); border-radius: 9px; background: #050c12; color: #9c958b; }
 .matrix-trigger-status-grid button[data-tone="blue"] { --trigger-tone: #18a9ef; }
@@ -2273,13 +2287,16 @@
 .matrix-trigger-status-grid button[data-selected="true"] { border-color: var(--trigger-tone); color: var(--trigger-tone); box-shadow: inset 0 0 12px color-mix(in srgb, var(--trigger-tone) 18%, transparent), 0 0 8px color-mix(in srgb, var(--trigger-tone) 22%, transparent); }
 .matrix-trigger-status-grid strong { font-size: 13px; }
 .matrix-trigger-status-grid small { font-size: 7.5px; letter-spacing: .4px; }
-.matrix-trigger-groups { display: grid; gap: 8px; }
-.matrix-trigger-group { overflow: hidden; border: 1px solid rgba(179, 139, 71, .65); border-radius: 10px; background: rgba(4, 11, 17, .96); }
-.matrix-trigger-group header { min-height: 30px; padding: 7px 10px; border-bottom: 1px solid rgba(179, 139, 71, .42); color: #e1bf68; font-size: 12px; }
-.matrix-trigger-group > div { display: grid; padding: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.matrix-trigger-group button { min-width: 0; min-height: 34px; padding: 5px 4px; border: 1px solid #3d4751; border-radius: 8px; background: #061019; color: #a8a29a; font-size: 10px; line-height: 1.25; }
-.matrix-trigger-group button[data-selected="true"] { border-color: #d4a33f; background: rgba(115, 77, 13, .3); color: #f0d37c; }
-.matrix-trigger-add { min-height: 36px; border: 1px dashed #9d7836; border-radius: 9px; background: rgba(7, 16, 23, .9); color: #d8b85f; font-size: 12px; }
+.matrix-trigger-conditions { display: grid; gap: 9px; }
+.matrix-trigger-condition { overflow: hidden; border: 1px solid rgba(179, 139, 71, .65); border-radius: 10px; background: rgba(4, 11, 17, .96); }
+.matrix-trigger-condition header { min-height: 34px; padding: 8px 10px; border-bottom: 1px solid rgba(179, 139, 71, .42); color: #e1bf68; font-size: 13px; }
+.matrix-trigger-select-grid { display: grid; padding: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 7px; }
+.matrix-trigger-select-grid label { display: grid; min-width: 0; gap: 5px; }
+.matrix-trigger-select-grid label > span:first-child { color: #9f9b94; font-size: 10px; line-height: 14px; }
+.matrix-trigger-native-select { position: relative; display: flex; min-width: 0; height: 38px; align-items: center; border: 1px solid #76521d; border-radius: 8px; background: #071018; }
+.matrix-trigger-native-select select { width: 100%; height: 100%; min-width: 0; padding: 0 28px 0 8px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font: inherit; font-size: 10px; text-align: left; }
+.matrix-trigger-native-select svg { position: absolute; right: 7px; width: 15px; height: 15px; color: #e8a900; pointer-events: none; }
 .matrix-trigger-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .matrix-trigger-actions button { min-height: 40px; border: 1px solid #81622f; border-radius: 9px; background: #071019; color: #cdbf9e; font-size: 13px; }
 .matrix-trigger-actions button:last-child { border-color: #d2a33c; background: linear-gradient(180deg, #d9ad45, #9d6b12); color: #100b03; font-weight: 750; }
+
