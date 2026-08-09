@@ -902,12 +902,12 @@
   bottom: 0;
   left: 16px;
   display: grid;
-  height: calc(var(--bottom-nav-height) + var(--bottom-nav-safe-area));
+  height: calc(80px + var(--bottom-nav-safe-area));
   padding: 11px 0 var(--bottom-nav-safe-area);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid rgba(229, 179, 77, .52);
   border-bottom: 0;
-  border-radius: var(--bottom-nav-radius) var(--bottom-nav-radius) 0 0;
+  border-radius: 13px 13px 0 0;
   background:
     radial-gradient(circle at 50% -30%, rgba(229, 179, 77, .12), transparent 48%),
     linear-gradient(155deg, rgba(9, 19, 31, .98), rgba(4, 10, 17, .995) 54%, rgba(7, 16, 26, .99));
@@ -935,27 +935,35 @@
   pointer-events: none;
 }
 
-.bottom-navigation-side-energy {
-  position: absolute;
-  z-index: 1;
-  top: 10px;
-  left: 0;
-  display: block;
-  width: 100%;
-  height: 60px;
-  pointer-events: none;
-}
-
 .bottom-navigation-topline {
   position: absolute;
   z-index: 4;
   top: -1px;
+  right: 8px;
   left: 8px;
-  display: block;
-  width: calc(100% - 16px);
   height: 12px;
-  filter: drop-shadow(0 0 3px rgba(229, 179, 77, .28));
   pointer-events: none;
+}
+
+.bottom-navigation-topline::before,
+.bottom-navigation-topline::after {
+  position: absolute;
+  top: 0;
+  width: calc(50% - 17px);
+  height: 10px;
+  background: linear-gradient(180deg, var(--bottom-nav-gold-bright), #9b691f 23%, #523414 48%, transparent 56%);
+  content: "";
+  filter: drop-shadow(0 0 3px rgba(229, 179, 77, .28));
+}
+
+.bottom-navigation-topline::before {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 16%, 92% 100%, 0 42%);
+}
+
+.bottom-navigation-topline::after {
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 42%, 8% 100%, 0 16%);
 }
 
 .bottom-navigation-brand-core {
@@ -963,26 +971,28 @@
   z-index: 6;
   top: -10px;
   left: 50%;
+  display: grid;
   width: 24px;
   height: 27px;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 24%, 92% 76%, 50% 100%, 8% 76%, 8% 24%);
+  background: linear-gradient(140deg, #fff0bd, #e5b34d 28%, #694315 68%, #ffd477);
   filter: drop-shadow(0 0 4px rgba(229, 179, 77, .46));
   pointer-events: none;
   transform: translateX(-50%);
 }
 
-.bottom-navigation-brand-node {
+.bottom-navigation-brand-core::before {
   position: absolute;
-  inset: 0;
-  display: block;
-  width: 24px;
-  height: 27px;
+  inset: 1px;
+  clip-path: inherit;
+  background: linear-gradient(145deg, #101822, #03070c 70%);
+  content: "";
 }
 
 .bottom-navigation-brand-mark {
-  position: absolute;
-  z-index: 2;
-  top: 7px;
-  left: 5.5px;
+  position: relative;
+  z-index: 1;
   display: block;
   width: 13px;
   height: 13px;
@@ -990,14 +1000,34 @@
 }
 
 .bottom-navigation-brand-mark img {
-  position: absolute;
-  top: -10px;
-  left: -9px;
   display: block;
-  width: 120px;
+  width: auto;
   max-width: none;
-  height: 38px;
-  object-fit: contain;
+  height: 13px;
+}
+
+.bottom-navigation-side-rail {
+  position: absolute;
+  z-index: 1;
+  top: 17px;
+  bottom: calc(var(--bottom-nav-safe-area) + 9px);
+  width: 32px;
+  opacity: .5;
+  pointer-events: none;
+}
+
+.bottom-navigation-side-rail--left {
+  left: 1px;
+  background:
+    linear-gradient(145deg, transparent 0 48%, rgba(229, 179, 77, .38) 49% 51%, transparent 52%) 0 0 / 100% 18px no-repeat,
+    linear-gradient(100deg, rgba(208, 47, 45, .26), rgba(44, 104, 211, .18), transparent 78%) 0 100% / 30px 1px no-repeat;
+}
+
+.bottom-navigation-side-rail--right {
+  right: 1px;
+  background:
+    linear-gradient(215deg, transparent 0 48%, rgba(229, 179, 77, .38) 49% 51%, transparent 52%) 0 0 / 100% 18px no-repeat,
+    linear-gradient(260deg, rgba(30, 151, 97, .28), rgba(47, 109, 219, .2), transparent 78%) 100% 100% / 30px 1px no-repeat;
 }
 
 .bottom-navigation-item {
@@ -1011,7 +1041,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--bottom-nav-item-gap);
+  gap: 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -1027,24 +1057,28 @@
   left: 50%;
   display: grid;
   width: 38px;
-  height: var(--bottom-nav-icon-size);
+  height: 40px;
   place-items: center;
+  clip-path: polygon(50% 0, 92% 24%, 92% 76%, 50% 100%, 8% 76%, 8% 24%);
+  background: linear-gradient(145deg, #e0e3e5, #5f676e 49%, #c9ced1);
   transform: translateX(-50%);
 }
 
-.bottom-navigation-node-frame {
+.bottom-navigation-icon-frame::before {
   position: absolute;
-  inset: 0;
-  display: block;
-  width: 38px;
-  height: 40px;
+  inset: 1px;
+  clip-path: inherit;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(66, 77, 87, .2), transparent 63%),
+    var(--bottom-nav-panel-950);
+  content: "";
 }
 
 .bottom-navigation-icon-frame svg {
   position: relative;
   z-index: 2;
-  width: 24px;
-  height: 24px;
+  width: 27px;
+  height: 27px;
   filter: drop-shadow(0 0 2px rgba(225, 229, 231, .18));
 }
 
@@ -1066,7 +1100,7 @@
   z-index: 2;
   top: 63px;
   left: 50%;
-  width: var(--bottom-nav-active-bar-width);
+  width: 28px;
   height: 2px;
   border-radius: 999px;
   background: var(--bottom-nav-gold-bright);
@@ -1076,7 +1110,14 @@
 }
 
 .bottom-navigation-item[data-selected="true"] .bottom-navigation-icon-frame {
+  background: linear-gradient(145deg, #fff3c6 0%, #ffc95c 23%, #a76516 62%, #ffe090 100%);
   filter: drop-shadow(0 0 4px rgba(255, 181, 48, .54));
+}
+
+.bottom-navigation-item[data-selected="true"] .bottom-navigation-icon-frame::before {
+  background:
+    radial-gradient(circle at 50% 43%, rgba(102, 62, 14, .28), transparent 62%),
+    var(--bottom-nav-panel-950);
 }
 
 .bottom-navigation-item[data-selected="true"] .bottom-navigation-icon-frame svg {
@@ -1679,35 +1720,4 @@
   object-position: center;
   transform: translateX(-50%);
   transform-origin: center;
-}
-
-
-/* Homepage empty draw information card — synced from Figma component 60:2. */
-.latest-draw-card.latest-draw-card--empty {
-  position: relative;
-  width: 358px;
-  max-width: calc(100% - 32px);
-  height: 151px;
-  min-height: 151px;
-  margin: 6px auto 0;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: var(--draw-card-radius);
-  background: transparent;
-  pointer-events: none;
-  isolation: isolate;
-}
-
-.latest-draw-card-empty-artwork {
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  display: block;
-  width: calc(100% + 16px);
-  height: calc(100% + 16px);
-  max-width: none;
-  object-fit: fill;
-  user-select: none;
-  -webkit-user-drag: none;
 }
