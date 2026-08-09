@@ -2477,3 +2477,55 @@
   width: 36px;
   height: 36px;
 }
+
+
+/* Recent 10 draws: compact hierarchy and readable mobile rows. */
+.history-panel {
+  padding: 9px 10px 8px;
+}
+
+.history-panel .panel-heading {
+  align-items: center;
+}
+
+.history-panel .panel-heading .section-title {
+  font-size: 14px;
+}
+
+.history-panel .panel-heading button {
+  color: #f6c95b;
+  font-size: 12px;
+}
+
+.history-panel .history-table {
+  margin-top: 5px;
+}
+
+.history-panel .history-row {
+  min-height: 37px;
+  border-top-color: #756f65;
+}
+
+.history-panel .history-head {
+  min-height: 30px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.history-panel .history-row:not(.history-head) > span:first-child {
+  font-size: 12px;
+}
+
+.history-panel .history-date-stack {
+  line-height: 1;
+}
+
+.history-panel .history-date-stack strong {
+  font-size: 10.5px;
+}
+
+.history-panel .history-date-stack small {
+  margin-top: 0;
+  font-size: 9.5px;
+  line-height: 1;
+}
