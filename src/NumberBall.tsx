@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import "./number-ball.css";
 
 export type NumberBallLottery = "今彩539" | "天天樂" | "六合彩" | "大樂透";
@@ -13,6 +14,11 @@ const MARK_SIX_BLUE = new Set([
   "36", "37", "41", "42", "47", "48",
 ]);
 
+const MARK_SIX_GREEN = new Set([
+  "05", "06", "11", "16", "17", "21", "22", "27", "28", "32",
+  "33", "38", "39", "43", "44", "49",
+]);
+
 const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>> = {
   "今彩539": { orange: "/assets/lottery/balls/jincai-539.png" },
   "天天樂": { white: "/assets/lottery/balls/tiantianle.png" },
@@ -25,7 +31,7 @@ const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, strin
 };
 
 export function normalizeBallNumber(number: string | number) {
-  return String(number).padStart(2, "0");
+  return String(number).trim().padStart(2, "0");
 }
 
 export function getBallTone(
@@ -33,11 +39,14 @@ export function getBallTone(
   number: string | number,
 ): NumberBallTone {
   const value = normalizeBallNumber(number);
+
   if (lottery === "今彩539") return "orange";
   if (lottery === "天天樂") return "white";
   if (lottery === "大樂透") return "red";
-  if (MARK_SIX_BLUE.has(value)) return "blue";
   if (MARK_SIX_RED.has(value)) return "red";
+  if (MARK_SIX_BLUE.has(value)) return "blue";
+  if (MARK_SIX_GREEN.has(value)) return "green";
+
   return "green";
 }
 
@@ -59,6 +68,9 @@ export function NumberBall({
   const value = normalizeBallNumber(number);
   const tone = getBallTone(lottery, value);
   const asset = BALL_ASSET[lottery][tone];
+  const style = size
+    ? ({ "--number-ball-size": `${size}px` } as CSSProperties)
+    : undefined;
 
   return (
     <span
@@ -66,11 +78,21 @@ export function NumberBall({
       data-lottery={lottery}
       data-tone={tone}
       data-special={isSpecial}
-      style={size ? ({ "--number-ball-size": `${size}px` } as React.CSSProperties) : undefined}
+      style={style}
       aria-label={`${isSpecial ? "特別號" : "號碼"} ${value}`}
     >
-      {asset ? <img className="number-ball-asset" src={asset} alt="" draggable={false} aria-hidden="true" /> : null}
-      <span className="number-ball-value" aria-hidden="true">{value}</span>
+      {asset ? (
+        <img
+          className="number-ball-asset"
+          src={asset}
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+        />
+      ) : null}
+      <span className="number-ball-value" aria-hidden="true">
+        {value}
+      </span>
     </span>
   );
 }
