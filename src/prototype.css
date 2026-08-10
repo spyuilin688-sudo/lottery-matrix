@@ -1115,3 +1115,141 @@
 .home-shortcut-row { margin: 5px auto 10px; }
 .mobile-app-viewport[data-platform="android"] .matrix-core-banner { margin-top: 1px; }
 .mobile-app-viewport[data-platform="android"] .home-shortcut-row { margin: 5px auto 10px; }
+
+/* 2026-08-10 home middle-density pass */
+/* Scope: home middle content only. Brand header and bottom navigation remain unchanged. */
+.home-screen .lottery-switcher {
+  width: calc(100% - 32px);
+  height: 74px;
+  margin: 0 auto;
+  padding: 0;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.home-screen .lottery-card {
+  height: 74px;
+}
+
+.home-screen .lottery-card:not([data-selected="true"]) {
+  border-color: var(--lottery-border-default);
+  box-shadow: none;
+}
+
+.home-screen .latest-draw-card {
+  width: calc(100% - 32px);
+  min-height: 0;
+  margin: 4px auto 0;
+  padding: 7px 10px 0;
+}
+
+.home-screen .draw-toolbar {
+  min-height: 34px;
+  align-items: center;
+}
+
+.home-screen .draw-meta {
+  min-height: 34px;
+  padding-top: 0;
+  align-self: center;
+}
+
+.home-screen .draw-order,
+.home-screen .history-link {
+  align-self: center;
+}
+
+.home-screen .draw-issue strong {
+  color: #f1ca70;
+  font-weight: 700;
+}
+
+.home-screen .draw-date {
+  color: #f3f3f3;
+}
+
+.home-screen .history-link {
+  color: #d0ccc5;
+}
+
+.home-screen .draw-balls[data-has-special="false"] .main-balls {
+  gap: 6px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded {
+  height: 32px;
+  margin-top: 2px;
+}
+
+.home-screen .matrix-status-section {
+  flex: 0 0 auto;
+  width: calc(100% - 32px);
+  min-height: 0;
+  height: 190px;
+  margin: 4px auto 0;
+  padding: 6px 6px 5px;
+}
+
+.home-screen .matrix-status-header {
+  height: 26px;
+  align-items: flex-start;
+}
+
+.home-screen .matrix-status-more {
+  color: #ddd8cf;
+  font-weight: 600;
+}
+
+.home-screen .matrix-status-grid {
+  height: calc(100% - 30px);
+  gap: 4px;
+}
+
+.home-screen .matrix-status-card {
+  height: 100%;
+}
+
+.home-screen .matrix-status-artwork {
+  object-fit: cover;
+  object-position: center;
+}
+
+.home-screen .matrix-status-lottery-center {
+  top: 46%;
+  gap: 0;
+}
+
+.home-screen .matrix-status-overlay {
+  right: 3px;
+  bottom: 10px;
+  left: 3px;
+}
+
+.home-screen .matrix-core-banner {
+  width: calc(100% - 32px);
+  height: 72px;
+  margin: 4px auto 0;
+}
+
+.home-screen .matrix-core-banner img {
+  object-fit: cover;
+  transform: none;
+  filter: saturate(1.02) contrast(1.02) brightness(.92);
+}
+
+.home-screen .home-shortcut-row {
+  width: calc(100% - 32px);
+  height: 72px;
+  margin: 8px auto 4px;
+  gap: 4px;
+}
+
+.home-screen .home-shortcut {
+  height: 72px;
+}
+
+.home-screen .home-shortcut img {
+  transform: scale(1.04);
+  filter: brightness(1.1);
+}
+
