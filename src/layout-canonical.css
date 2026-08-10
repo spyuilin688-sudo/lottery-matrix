@@ -1,4 +1,4 @@
-/* Canonical 390px layout rules.
+/* Canonical layout rules.
    This file is intentionally loaded last so page geometry has one owner. */
 
 /* Home: one vertical flow, no auto-margin distribution or stacked spacing. */
@@ -29,54 +29,67 @@
 }
 
 .home-screen .lottery-screen > .lottery-switcher {
+  box-sizing: border-box;
+  display: flex !important;
   flex: 0 0 auto;
-  width: calc(100% - 32px) !important;
+  width: 100% !important;
+  min-width: 0;
   min-height: 0;
   height: auto !important;
   margin: 0 auto;
-  padding: 0 !important;
+  padding: 0 16px !important;
   gap: 6px !important;
+  align-items: stretch;
 }
 
 .home-screen .lottery-screen > .lottery-switcher > .lottery-card {
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
+  width: auto !important;
   height: auto !important;
 }
 
 .home-screen .lottery-screen > .latest-draw-card {
+  box-sizing: border-box;
   flex: 0 0 auto;
-  width: calc(100% - 32px);
+  width: 100%;
   height: auto;
   min-height: 0;
   margin: 0 auto;
 }
 
 .home-screen .lottery-screen > .matrix-status-section {
+  box-sizing: border-box;
   flex: 0 0 auto;
-  width: calc(100% - 32px);
+  width: 100%;
   height: auto;
   min-height: 0;
   margin: 0 auto !important;
 }
 
 .home-screen .lottery-screen .matrix-status-grid {
+  display: flex;
   width: 100%;
+  min-width: 0;
   min-height: 0;
   height: auto;
   margin-top: 6px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
 }
 
 .home-screen .lottery-screen .matrix-status-card {
-  width: 100%;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
   min-height: 0;
   height: auto;
 }
 
 .home-screen .lottery-screen > .matrix-core-banner {
+  box-sizing: border-box;
   flex: 0 0 auto;
-  width: calc(100% - 32px);
+  width: 100%;
   height: auto;
   margin: 0 auto !important;
   overflow: visible !important;
@@ -92,14 +105,19 @@
 }
 
 .home-screen .lottery-screen > .home-shortcut-row {
+  box-sizing: border-box;
+  display: flex;
   flex: 0 0 auto;
-  width: calc(100% - 32px);
+  width: 100%;
   height: auto;
   margin: 0 auto !important;
   gap: 4px;
 }
 
 .home-screen .lottery-screen > .home-shortcut-row > .home-shortcut {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
   height: auto;
   overflow: visible !important;
 }
@@ -215,18 +233,21 @@
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
-  grid-template-columns: minmax(92px, 1fr) 92px minmax(72px, 1fr);
+  display: flex;
   min-height: 0;
   align-items: center;
   gap: 7px;
 }
 
 .home-screen .latest-draw-card .draw-meta {
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
   padding-top: 0;
 }
 
 .home-screen .latest-draw-card .draw-order {
+  flex: 0 1 auto;
   height: auto;
   align-self: center;
 }
@@ -236,6 +257,8 @@
 }
 
 .home-screen .latest-draw-card .history-link {
+  flex: 1 1 0;
+  min-width: 0;
   height: auto;
   color: #d9d0bd;
   font-size: 11.5px;
@@ -274,7 +297,7 @@
 
 .home-screen .lottery-screen > .matrix-status-section {
   min-height: 0;
-  padding: 8px 8px 6px;
+  padding: 8px 16px 6px;
 }
 
 .home-screen .matrix-status-header {
@@ -316,6 +339,7 @@
 
 .home-screen .lottery-screen > .home-shortcut-row {
   height: auto;
+  padding: 0 16px;
   gap: 5px;
 }
 
