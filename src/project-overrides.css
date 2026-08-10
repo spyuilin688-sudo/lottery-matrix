@@ -1,0 +1,88 @@
+.home-screen .latest-draw-card {
+  background-image: url('/assets/lottery/latest-draw-card-bg.jpg') !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+
+/* Matrix 探索與其他有返回鍵頁面：與首頁 Logo 幾何一致。 */
+.feature-brand-header:not([data-compact='true']) {
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  padding: 0;
+  margin-bottom: 8px;
+}
+.feature-brand-header:not([data-compact='true']) .feature-brand-row {
+  position: relative;
+  width: 100%;
+  height: var(--primary-brand-height);
+}
+.feature-brand-header:not([data-compact='true']) .feature-brand-lockup {
+  height: 100%;
+  padding: 0 var(--primary-brand-inline);
+}
+.feature-brand-header:not([data-compact='true']) .feature-brand-lockup > .feature-brand-logo {
+  width: 100%;
+  height: var(--primary-brand-height);
+  object-fit: contain;
+  object-position: center;
+}
+.feature-brand-header:not([data-compact='true']) .back-button {
+  left: 8px !important;
+  top: 18px !important;
+}
+
+/* 通知：8 個左側圖示整體縮小 8px，整頁不可滑動。 */
+.notification-heading {
+  grid-template-columns: 64px minmax(0, 1fr) 134px;
+}
+.notification-icon {
+  width: 56px;
+  height: 56px;
+}
+.notification-icon img {
+  max-width: 54px;
+  max-height: 54px;
+}
+.notifications-screen {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden !important;
+}
+.notifications-screen .feature-body {
+  overflow: hidden !important;
+}
+.notifications-scroll-lock {
+  overflow: hidden !important;
+}
+
+/* 我的下層頁顶： 補上 < + 樂彩 Logo 標頭。 */
+.profile-subpage-header {
+  position: relative;
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  padding: 0 important;
+  align-items: center;
+}
+.profile-subpage-header > .feature-brand-logo {
+  width: 100%;
+  height: var(--primary-brand-height);
+  object-fit: contain;
+  object-position: center;
+}
+.profile-subpage-back {
+  position: absolute;
+  top: 18px;
+  left: 8px;
+  z-index: 5;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #f5bd29;
+  font-size: 31px;
+  line-height: 1;
+  cursor: pointer;
+}
