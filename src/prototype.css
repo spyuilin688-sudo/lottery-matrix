@@ -1745,7 +1745,7 @@
   flex: 0 0 70px;
   width: calc(100% - 4px) !important;
   height: 70px !important;
-  margin: 6px auto 0;
+  margin: 4px auto 0;
   padding: 0 !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 2px !important;
@@ -1762,7 +1762,7 @@
   width: 358px;
   height: 151px;
   min-height: 151px;
-  margin: auto auto 0;
+  margin: 4px auto 0;
   padding: 6px 12px 0;
   overflow: hidden;
 }
@@ -1992,12 +1992,14 @@
 
 /* 2026-08-10 requested home spacing */
 .home-screen .main-page-brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .home-screen [data-lottery-switcher] {
   gap: 8px !important;
   width: calc(100% - 8px) !important;
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 
 .home-screen .matrix-core-banner,
@@ -2024,6 +2026,8 @@
 }
 .lottery-screen > .latest-draw-card {
   position: relative;
+  width: calc(100% - 8px);
+  margin-top: 4px;
   min-height: 182px;
   padding: 8px 12px 0;
   overflow: hidden;
