@@ -158,9 +158,11 @@ function BrandHeader({
 function FeatureBottomNavigationPortal({
   active,
   onNavigate,
+  className,
 }: {
   active: "首頁" | "快捷" | "通知" | "我的";
   onNavigate: Navigate;
+  className?: string;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const { onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
@@ -173,6 +175,7 @@ function FeatureBottomNavigationPortal({
     ? createPortal(
         <BottomNavigation
           active={active}
+          className={className}
           quickActive={Boolean(quickActive)}
           onNavigate={onNavigate}
           onQuickOpen={onQuickOpen}
@@ -216,7 +219,11 @@ function FeatureShell({
         </section>
       ) : null}
       <div className="feature-body">{children}</div>
-      <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
+      <FeatureBottomNavigationPortal
+        active={active}
+        onNavigate={onNavigate}
+        className={className.includes("matrix-guide-screen") ? "matrix-guide-bottom-navigation" : undefined}
+      />
     </main>
   );
 }
@@ -1650,7 +1657,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       <nav className="guide-category-strip" aria-label="Matrix 指南分類">
         {sections.map((section, index) => (
           <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
-            <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+            <span>{String(index + 1).padStart(2, "0")}</span><span className="guide-category-name">{section.title}</span>
           </button>
         ))}
       </nav>
