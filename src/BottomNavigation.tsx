@@ -12,6 +12,7 @@ export type BottomNavigationTarget = "home" | "notifications" | "profile";
 
 type BottomNavigationProps = {
   active?: BottomNavigationLabel;
+  className?: string;
   quickActive?: boolean;
   onNavigate?: (screen: BottomNavigationTarget) => void;
   onQuickOpen?: () => void;
@@ -27,6 +28,7 @@ const NAVIGATION_ITEMS = [
 
 export function BottomNavigation({
   active = "首頁",
+  className = "",
   quickActive = false,
   onNavigate,
   onQuickOpen,
@@ -56,7 +58,7 @@ export function BottomNavigation({
 
   return (
     <nav
-      className="bottom-navigation"
+      className={`bottom-navigation ${className}`.trim()}
       aria-label="底部導覽"
       data-testid="bottom-navigation"
     >
