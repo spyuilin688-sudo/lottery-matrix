@@ -2776,6 +2776,654 @@ main.feature-screen.compact-feature-screen {
   text-align: left;
 }
 
+/* Matrix 探索：390px 手機版統一網格、間距與資訊層級。 */
+.matrix-explore-main-screen {
+  padding-bottom: calc(98px + 16px + var(--mobile-safe-area-height));
+}
+
+.matrix-explore-main-screen .feature-body {
+  display: grid;
+  padding: 0 16px 16px;
+  gap: 12px;
+}
+
+.matrix-explore-main-screen .feature-body > * {
+  min-width: 0;
+  margin: 0;
+}
+
+.matrix-explore-main-screen .panel {
+  border-radius: 11px;
+}
+
+.matrix-explore-main-screen .feature-brand-header {
+  min-height: 102px;
+}
+
+.matrix-explore-main-screen .feature-brand-header > .feature-brand-logo {
+  top: -8px;
+  width: 282px;
+  height: 102px;
+}
+
+.matrix-explore-main-screen:not(.compact-feature-screen) .back-button {
+  top: 21px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+}
+
+.matrix-explore-main-screen .feature-page-title-card {
+  width: calc(100% - 32px);
+  min-height: 52px;
+  margin: 0 16px 12px;
+  padding: 0 12px;
+}
+
+.matrix-explore-main-screen .feature-page-title-card h1 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .matrix-explore-tool-actions {
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .matrix-explore-tool-actions button {
+  width: 34px;
+  height: 34px;
+}
+
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel,
+.matrix-explore-main-screen .history-panel {
+  padding: 12px;
+}
+
+.matrix-explore-main-screen .section-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .setting-grid {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .setting-grid label,
+.matrix-explore-main-screen .advanced-panel label {
+  display: grid;
+  min-height: 36px;
+  grid-template-columns: 32px 64px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+}
+
+.matrix-explore-main-screen .setting-grid label > span,
+.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+  display: contents;
+}
+
+.matrix-explore-main-screen .setting-grid label > span .setting-label-icon,
+.matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon {
+  width: 30px;
+  height: 30px;
+  place-self: center;
+}
+
+.matrix-explore-main-screen .setting-grid label > span b,
+.matrix-explore-main-screen .advanced-panel .advanced-setting-title b {
+  color: #c9c3b8;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .setting-grid label > :last-child,
+.matrix-explore-main-screen .advanced-panel label > :last-child {
+  grid-column: 3;
+}
+
+.matrix-explore-main-screen .setting-grid .select-box,
+.matrix-explore-main-screen .setting-grid .segmented,
+.matrix-explore-main-screen .setting-grid .segmented button,
+.matrix-explore-main-screen .advanced-panel .select-box,
+.matrix-explore-main-screen .advanced-panel .segmented,
+.matrix-explore-main-screen .advanced-panel .segmented button {
+  height: 36px;
+  min-height: 36px;
+}
+
+.matrix-explore-main-screen .segmented {
+  gap: 6px;
+}
+
+.matrix-explore-main-screen .segmented.two {
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .segmented button,
+.matrix-explore-main-screen .native-select select {
+  color: #b8b3aa;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .segmented button {
+  border-color: rgba(137, 104, 53, .58);
+}
+
+.matrix-explore-main-screen .segmented button[data-selected="true"] {
+  border-color: #c89622;
+  background: linear-gradient(145deg, rgba(124, 85, 12, .2), rgba(31, 25, 13, .68));
+  color: #f2cf67;
+  box-shadow: inset 0 0 12px rgba(225, 170, 39, .06);
+}
+
+.matrix-explore-main-screen .segmented button em {
+  top: -10px;
+  padding: 2px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.matrix-explore-main-screen .hit-options {
+  height: 40px;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .hit-options button {
+  min-height: 40px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .advanced-row {
+  min-height: 44px;
+  height: 44px;
+  margin-top: 14px;
+  grid-template-columns: 32px 1fr 44px;
+  border-top-color: rgba(118, 88, 44, .56);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .advanced-row > svg:last-child {
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+}
+
+.matrix-explore-main-screen .advanced-panel {
+  padding-top: 12px;
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .branded-explore-action {
+  height: 48px;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .branded-explore-action::before,
+.matrix-explore-main-screen .branded-explore-action::after {
+  opacity: .62;
+}
+
+.matrix-explore-main-screen .history-panel {
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading {
+  min-height: 44px;
+  margin: -12px -4px 0;
+  padding: 0 4px;
+  align-items: center;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading .section-title {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading button {
+  min-width: 0;
+  margin-right: 8px;
+  color: #d8ae4b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .history-panel .history-table {
+  margin: 0;
+}
+
+.matrix-explore-main-screen .history-panel .history-row {
+  min-height: 46px;
+  grid-template-columns: 48px 86px minmax(0, 1fr);
+  border-top: 1px solid rgba(117, 111, 101, .42);
+}
+
+.matrix-explore-main-screen .history-panel .history-head {
+  min-height: 32px;
+  border-top-color: rgba(203, 164, 80, .58);
+  color: #c7a24c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .history-row > span + span {
+  border-left-color: rgba(92, 82, 68, .42);
+}
+
+.matrix-explore-main-screen .history-panel .history-row:not(.history-head) > span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .history-panel .history-date-stack {
+  gap: 2px;
+  line-height: 1;
+}
+
+.matrix-explore-main-screen .history-panel .history-date-stack strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.matrix-explore-main-screen .history-panel .history-date-stack small {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.matrix-explore-main-screen .history-numbers,
+.matrix-explore-main-screen .history-main-numbers {
+  gap: 4px;
+}
+
+.matrix-explore-main-screen .history-panel .number-ball.history-lottery-ball {
+  width: 27px;
+  height: 27px;
+  flex-basis: 27px;
+  aspect-ratio: 1;
+}
+
+.matrix-explore-main-screen .history-panel .history-lottery-ball .ball-number {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.matrix-explore-main-screen .history-panel .history-lottery-ball .ball-number::after,
+.matrix-explore-main-screen .history-panel .history-lottery-ball[data-lottery="六合彩"] .ball-number::after {
+  top: calc(100% + 1px);
+}
+
+@media (max-width: 389px) {
+  .matrix-explore-main-screen .setting-grid label,
+  .matrix-explore-main-screen .advanced-panel label {
+    grid-template-columns: 30px 60px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .matrix-explore-main-screen .segmented button,
+  .matrix-explore-main-screen .native-select select {
+    font-size: 12px;
+  }
+}
+
+/* 我的／我的推薦碼・啟動碼：390px 手機版面規格 */
+.profile-screen,
+.activation-code-screen {
+  padding-bottom: calc(98px + 16px + var(--mobile-safe-area-height));
+}
+
+.profile-screen .feature-body,
+.activation-code-screen .feature-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.profile-screen .feature-body > *,
+.activation-code-screen .feature-body > * {
+  min-width: 0;
+  margin: 0;
+}
+
+.profile-screen .panel,
+.activation-code-screen .panel,
+.activation-code-screen .feature-page-title-card {
+  border-color: #76521d;
+  border-radius: 10px;
+  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
+}
+
+.profile-screen .feature-main-page-brand-header {
+  margin-bottom: 8px;
+}
+
+.profile-card {
+  min-height: 0;
+  padding: 16px 14px;
+  grid-template-columns: 66px minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.profile-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-card .profile-copy h2 {
+  margin: 0;
+  color: #f1ede6;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.profile-card .profile-copy p {
+  margin: 0;
+  padding: 4px 8px;
+  color: #aaa49a;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.profile-watermark {
+  right: 12px;
+  color: rgba(199, 145, 42, .055);
+}
+
+.profile-logout {
+  margin-right: -2px;
+  align-self: center;
+}
+
+.subscription-status-card {
+  padding: 14px;
+}
+
+.profile-screen .section-title {
+  color: #e7d5ac;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.subscription-status-card > .section-title {
+  margin-bottom: 10px;
+}
+
+.subscription-status-content {
+  display: grid;
+  margin: 0;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+
+.subscription-status-content > div:nth-child(2),
+.subscription-status-content > div:nth-child(3) {
+  display: grid;
+  min-height: 68px;
+  align-content: center;
+}
+
+.subscription-status-content > div:last-child {
+  margin-left: 8px;
+  padding-left: 16px;
+}
+
+.subscription-status-content span {
+  color: #aaa49a;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.subscription-status-content strong {
+  margin-top: 4px;
+  color: #e8bd59;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.subscription-status-content p {
+  margin: 4px 0 0;
+  color: #8f8980;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.subscription-entry {
+  height: 44px;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0 12px 0 14px;
+  border-radius: 8px;
+  border-color: #b8872f;
+  color: #eee9df;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.subscription-entry svg {
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+}
+
+.profile-menu {
+  padding: 0 14px;
+}
+
+.profile-menu .section-title {
+  height: 40px;
+  margin: 0;
+  gap: 8px;
+  border-bottom: 1px solid rgba(93, 75, 51, .55);
+}
+
+.profile-menu .section-title > span {
+  height: 20px;
+}
+
+.profile-menu-rows button {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 0 0 14px;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  border-top-color: rgba(65, 54, 38, .58);
+  color: #d8d1c6;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.profile-menu-rows button:first-child {
+  border-top: 0;
+}
+
+.profile-menu-rows button svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+  color: #b98a31;
+}
+
+.activation-code-screen .feature-brand-header {
+  min-height: 118px;
+}
+
+.activation-code-screen:not(.compact-feature-screen) .back-button {
+  left: 16px;
+}
+
+.activation-code-screen .feature-page-title-card {
+  width: calc(100% - 32px);
+  min-height: 42px;
+  height: 42px;
+  margin: 0 16px 12px;
+  padding: 0 14px;
+}
+
+.activation-code-screen .feature-page-title-card h1 {
+  color: #e7d5ac;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.activation-code-screen .referral-card {
+  display: grid;
+  padding: 14px;
+  gap: 0;
+}
+
+.activation-code-screen .referral-card h2,
+.activation-code-screen .detail-card h2,
+.activation-code-screen .activation-toggle {
+  color: #e5c36e;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.activation-code-screen .referral-card h2 {
+  margin: 0 0 12px;
+}
+
+.activation-code-screen .my-referral-code {
+  min-height: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+.activation-code-screen .referral-success-count {
+  margin: 12px 0 16px;
+  color: #f3c45c;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.activation-code-screen .code-entry-block {
+  display: grid;
+  gap: 0;
+}
+
+.activation-code-screen .code-entry-block label {
+  margin-bottom: 8px;
+  color: #c9c2b8;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.activation-code-screen .code-entry-block input {
+  height: 44px;
+  border-radius: 8px;
+}
+
+.activation-code-screen .code-entry-block .gold-button {
+  height: 44px;
+  margin-top: 10px;
+  border-color: #c99a2e;
+  border-radius: 8px;
+  color: #120d04;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #e0b247, #a96e0b);
+}
+
+.activation-code-screen .referral-card > .code-entry-block {
+  padding-bottom: 12px;
+}
+
+.activation-code-screen .detail-card {
+  padding: 14px;
+}
+
+.activation-code-screen .detail-card h2 {
+  margin: 0 0 10px;
+}
+
+.activation-code-screen .detail-card p,
+.activation-code-screen .detail-card ul {
+  color: #c9c2b8;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.activation-code-screen .detail-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 8px;
+}
+
+.activation-code-screen .detail-card li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.activation-code-screen .detail-card li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  content: "•";
+  width: 12px;
+  color: #c9c2b8;
+  text-align: center;
+}
+
+.activation-code-screen .activation-card {
+  display: grid;
+  padding: 0 14px;
+  gap: 0;
+}
+
+.activation-code-screen .activation-toggle {
+  height: 44px;
+}
+
+.activation-code-screen .activation-toggle svg {
+  margin-right: 12px;
+}
+
+.activation-code-screen .activation-card > .code-entry-block {
+  padding: 12px 0 14px;
+  border-top: 1px solid rgba(65, 54, 38, .58);
+}
+
+.activation-code-screen .activation-instructions {
+  margin-top: 12px;
+}
+
+.activation-code-screen .activation-instructions h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.activation-code-screen .activation-instructions ul {
+  gap: 8px;
+  font-size: 13px;
+  line-height: 21px;
+}
+
 /* 2026-08-10 shared page brand and requested density */
 .feature-screen {
   padding-top: 30px;
@@ -2795,24 +3443,29 @@ main.feature-screen.compact-feature-screen {
 .feature-brand-header > .feature-brand-logo,
 .matrix-explore-main-screen .feature-brand-header > img {
   position: absolute;
-  top: -6px;
+  top: 0;
   left: 50%;
   display: block;
   width: 390px;
   max-width: 100%;
-  height: 124px;
-  object-fit: contain;
+  height: 120px;
+  object-fit: cover;
   object-position: center;
-  transform: translateX(calc(-50% + 10px));
+  transform: translateX(-50%);
   transform-origin: center;
 }
 
 .feature-brand-header .back-button {
-  top: 34px;
-  left: 16px;
+  z-index: 3;
+  top: 40px;
+  left: 4px;
   width: 44px;
   height: 44px;
   padding: 0;
+}
+
+.feature-brand-header .back-button svg {
+  display: none;
 }
 
 .feature-brand-header .back-button svg {
