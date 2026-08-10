@@ -135,7 +135,7 @@ const HISTORY = [
 function BrandHeader({
   onBack,
   compact = false,
-  logoSrc = "/assets/lottery/feature-header-with-back.png",
+  logoSrc = "/assets/lottery/brand-logo-transparent-processed.png",
 }: {
   onBack: () => void;
   compact?: boolean;
@@ -146,7 +146,7 @@ function BrandHeader({
       <MainPageBrandHeader className="feature-main-page-brand-header" />
     ) : (
     <header className="feature-brand-header" data-compact={compact}>
-      {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回" /> : null}
+      {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回"><ChevronLeftIcon /></button> : null}
       <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
     </header>
     )
