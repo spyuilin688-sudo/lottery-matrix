@@ -2174,7 +2174,7 @@
 
 .home-screen .lottery-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-card {
-  height: auto;
+  height: auto !important;
   min-height: 0;
   max-height: none;
 }
@@ -2224,8 +2224,8 @@
 
 .home-screen .brand-header {
   position: relative;
-  top: -20px;
-  left: -8px;
+  top: -36px;
+  left: -2px;
   box-sizing: border-box;
   width: 100%;
   height: var(--primary-brand-height);
@@ -2371,7 +2371,7 @@
 }
 
 .home-screen .brand-header {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .home-screen .lottery-switcher {
@@ -2382,4 +2382,111 @@
 .home-screen .matrix-status-section,
 .home-screen .matrix-core-banner {
   margin-bottom: var(--layout-section-gap);
+}
+
+/* 2026-08-10 requested homepage-only vertical positioning. */
+.home-screen .lottery-switcher {
+  transform: translateY(-36px);
+}
+
+.home-screen .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  transform: translateY(-28px);
+}
+
+/* 2026-08-10 requested homepage section positioning. */
+.home-screen .matrix-core-banner,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
+  position: relative;
+  top: -30px;
+}
+
+.home-screen .home-shortcut-row,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
+  position: relative;
+  top: -40px;
+}
+
+/* 2026-08-10 requested homepage status and shortcut refinements. */
+.home-screen .matrix-status-section,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
+  position: relative;
+  top: -30px;
+}
+
+.home-screen .home-shortcut img {
+  width: 100%;
+  aspect-ratio: 0.82;
+  object-fit: cover;
+  object-position: center;
+  clip-path: inset(2px);
+}
+
+/* 2026-08-10 Product Design homepage arrangement.
+   Brand, navigation, and the switcher structure stay unchanged. */
+.home-screen .lottery-switcher {
+  transform: translateY(-40px);
+}
+
+.home-screen .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  transform: translateY(-32px);
+}
+
+.home-screen .matrix-status-section,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
+  top: -24px;
+}
+
+.home-screen .matrix-core-banner,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
+  top: -20px;
+}
+
+.home-screen .home-shortcut-row,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
+  top: -48px;
+  width: calc(100% - 12px);
+  height: auto;
+  margin: 0 auto 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  align-items: start;
+  overflow: visible;
+}
+
+.home-screen .home-shortcut,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 0.82;
+  overflow: hidden;
+  border-radius: 9px;
+  background: transparent;
+}
+
+.home-screen .home-shortcut img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+  clip-path: inset(2px round 9px);
+}
+
+/* Matrix card source artwork has a light outer canvas; crop only that edge. */
+.home-screen .home-shortcut:nth-child(5) {
+  overflow: hidden;
+  border-radius: 9px;
+}
+
+.home-screen .home-shortcut:nth-child(5) img {
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  margin: -3px;
+  max-width: none;
+  transform: none;
+  clip-path: inset(3px round 9px);
 }
