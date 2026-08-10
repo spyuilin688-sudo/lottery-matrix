@@ -5,84 +5,162 @@
   background-position: center !important;
 }
 
-/* Matrix 探索與其他有返回鍵頁面：與首頁 Logo 幾何一致。 */
+/* 首頁與所有頁首共用相同 Logo 幾何。 */
+.feature-screen:not(.compact-feature-screen) {
+  padding-top: 30px !important;
+}
+
 .feature-brand-header:not([data-compact='true']) {
-  height: var(--primary-brand-height);
-  min-height: var(--primary-brand-height);
-  padding: 0;
-  margin-bottom: 8px;
+  width: 100% !important;
+  height: auto !important;
+  min-height: var(--primary-brand-height) !important;
+  padding: 0 !important;
+  margin-bottom: 8px !important;
 }
+
 .feature-brand-header:not([data-compact='true']) .feature-brand-row {
-  position: relative;
-  width: 100%;
-  height: var(--primary-brand-height);
+  position: relative !important;
+  display: flex !important;
+  width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  min-height: var(--primary-brand-height) !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
+
 .feature-brand-header:not([data-compact='true']) .feature-brand-lockup {
-  height: 100%;
-  padding: 0 var(--primary-brand-inline);
+  display: flex !important;
+  width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  padding: 0 var(--primary-brand-inline) !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
+
 .feature-brand-header:not([data-compact='true']) .feature-brand-lockup > .feature-brand-logo {
-  width: 100%;
-  height: var(--primary-brand-height);
-  object-fit: contain;
-  object-position: center;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  object-fit: contain !important;
+  object-position: center !important;
 }
-.feature-brand-header:not([data-compact='true']) .back-button {
-  left: 8px !important;
+
+.feature-brand-header[data-compact='true'] {
+  position: relative !important;
+  width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  min-height: var(--primary-brand-height) !important;
+  padding: 0 var(--primary-brand-inline) !important;
+  margin-bottom: 8px !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.feature-brand-header[data-compact='true'] > .feature-brand-logo {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.feature-brand-header:not([data-compact='true']) .back-button,
+.profile-subpage-back {
   top: 18px !important;
+  left: 8px !important;
 }
 
 /* 通知：8 個左側圖示整體縮小 8px，整頁不可滑動。 */
-.notification-heading {
-  grid-template-columns: 64px minmax(0, 1fr) 134px;
+.notifications-screen .notification-heading {
+  grid-template-columns: 64px minmax(0, 1fr) 134px !important;
 }
-.notification-icon {
-  width: 56px;
-  height: 56px;
+
+.notifications-screen .notification-icon {
+  width: 56px !important;
+  height: 56px !important;
 }
-.notification-icon img {
-  max-width: 54px;
-  max-height: 54px;
+
+.notifications-screen .notification-icon img {
+  max-width: 54px !important;
+  max-height: 54px !important;
 }
-.notifications-screen {
-  height: 100%;
-  min-height: 100%;
+
+.mobile-page.notifications-scroll-lock .mobile-scroll {
   overflow: hidden !important;
+  overscroll-behavior: none !important;
 }
-.notifications-screen .feature-body {
+
+.mobile-page.notifications-scroll-lock .mobile-scroll-content {
+  height: 100% !important;
+  min-height: 100% !important;
   overflow: hidden !important;
+  transform: none !important;
 }
-.notifications-scroll-lock {
+
+.mobile-page.notifications-scroll-lock .mobile-scrollbar {
+  display: none !important;
+}
+
+.mobile-page.notifications-scroll-lock .notifications-screen {
+  box-sizing: border-box !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
   overflow: hidden !important;
 }
 
-/* 我的下層頁顶： 補上 < + 樂彩 Logo 標頭。 */
+.mobile-page.notifications-scroll-lock .notifications-screen .feature-body {
+  overflow: hidden !important;
+}
+
+/* 「我的」下層選項頁：補上返回鍵＋樂彩 Logo。 */
 .profile-subpage-header {
-  position: relative;
-  height: var(--primary-brand-height);
-  min-height: var(--primary-brand-height);
-  padding: 0 important;
-  align-items: center;
+  position: relative !important;
 }
-.profile-subpage-header > .feature-brand-logo {
-  width: 100%;
-  height: var(--primary-brand-height);
-  object-fit: contain;
-  object-position: center;
-}
+
 .profile-subpage-back {
-  position: absolute;
-  top: 18px;
-  left: 8px;
-  z-index: 5;
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: #f5bd29;
-  font-size: 31px;
-  line-height: 1;
-  cursor: pointer;
+  position: absolute !important;
+  z-index: 5 !important;
+  display: grid !important;
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #f5bd29 !important;
+  font-size: 31px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+/* 首頁 Matrix 牌單：使用指定圖示；修正先前誤套在第 5 張的裁切。 */
+.home-screen .home-shortcut:nth-child(5) img {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+.home-screen .home-shortcut[aria-label='Matrix 牌單'] {
+  overflow: hidden !important;
+  border-radius: 9px !important;
+}
+
+.home-screen .home-shortcut[aria-label='Matrix 牌單'] img {
+  display: block !important;
+  width: calc(100% + 6px) !important;
+  height: calc(100% + 6px) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: -3px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  clip-path: inset(2px round 9px) !important;
+  transform: none !important;
 }
