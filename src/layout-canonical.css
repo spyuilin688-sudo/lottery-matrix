@@ -1,0 +1,138 @@
+/* Canonical 390px layout rules.
+   This file is intentionally loaded last so page geometry has one owner. */
+
+/* Home: one vertical flow, no auto-margin distribution or stacked spacing. */
+.home-screen .lottery-screen {
+  box-sizing: border-box;
+  display: flex;
+  width: min(390px, 100%);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0 0 98px;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.home-screen .lottery-screen > .main-page-brand-header {
+  flex: 0 0 118px;
+  width: 100%;
+  height: 118px;
+  min-height: 118px;
+  margin: 0;
+}
+
+.home-screen .lottery-screen > .lottery-switcher {
+  flex: 0 0 70px;
+  width: calc(100% - 8px) !important;
+  height: 70px !important;
+  margin: 0 auto;
+  padding: 0 !important;
+  gap: 8px !important;
+}
+
+.home-screen .lottery-screen > .lottery-switcher > .lottery-card {
+  height: 70px !important;
+}
+
+.home-screen .lottery-screen > .latest-draw-card {
+  flex: 0 0 182px;
+  width: calc(100% - 8px);
+  height: 182px;
+  min-height: 182px;
+  margin: 0 auto;
+}
+
+.home-screen .lottery-screen > .matrix-status-section {
+  flex: 0 0 192px;
+  width: 358px;
+  height: 192px;
+  min-height: 192px;
+  margin: 0 auto;
+}
+
+.home-screen .lottery-screen .matrix-status-grid {
+  margin-top: 4px;
+}
+
+.home-screen .lottery-screen > .matrix-core-banner {
+  flex: 0 0 88px;
+  width: calc(100% - 8px);
+  height: 88px;
+  margin: 0 auto;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row {
+  flex: 0 0 74px;
+  width: calc(100% - 8px);
+  height: 74px;
+  margin: 0 auto;
+  gap: 4px;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row > .home-shortcut {
+  height: 74px;
+}
+
+/* Main pages and inner pages share one visible Logo geometry. */
+.feature-screen {
+  padding-top: 0;
+}
+
+.feature-screen > .feature-main-page-brand-header,
+.notifications-screen > .feature-main-page-brand-header,
+.profile-screen > .feature-main-page-brand-header,
+.feature-screen > .feature-brand-header,
+.matrix-explore-screen > .feature-brand-header,
+.matrix-guide-screen > .feature-brand-header,
+.activation-code-screen > .feature-brand-header {
+  box-sizing: border-box;
+  position: relative;
+  width: min(390px, 100%);
+  height: 118px;
+  min-height: 118px;
+  margin: 0 auto 4px;
+  padding: 0;
+  overflow: visible;
+}
+
+.feature-screen > .feature-main-page-brand-header .main-page-brand-logo,
+.notifications-screen > .feature-main-page-brand-header .main-page-brand-logo,
+.profile-screen > .feature-main-page-brand-header .main-page-brand-logo,
+.feature-screen > .feature-brand-header > .feature-brand-logo,
+.matrix-explore-screen > .feature-brand-header > .feature-brand-logo,
+.matrix-guide-screen > .feature-brand-header > .feature-brand-logo,
+.activation-code-screen > .feature-brand-header > .feature-brand-logo {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  display: block;
+  width: 390px;
+  max-width: 100%;
+  height: 124px;
+  object-fit: contain;
+  object-position: center;
+  transform: translateX(-50%);
+  transform-origin: center;
+}
+
+.feature-screen > .feature-brand-header .back-button {
+  z-index: 3;
+  top: 37px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.feature-screen > .feature-brand-header + .feature-page-title-card,
+.feature-screen > .feature-brand-header + .feature-body,
+.feature-screen > .feature-main-page-brand-header + .feature-body {
+  margin-top: 0;
+}
+
+.feature-screen > .feature-brand-header + .feature-body > :first-child,
+.feature-screen > .feature-main-page-brand-header + .feature-body > :first-child {
+  margin-top: 0;
+}
