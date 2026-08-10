@@ -2123,20 +2123,21 @@
 
 
 /* 2026-08-08 文件修改：只對應本次指定元件。 */
-.road-validation-process { display: grid; gap: 10px; padding: 12px; border-top: 1px solid rgba(102, 169, 255, .28); background: rgba(3, 9, 20, .72); }
-.validation-summary-card { position: relative; display: grid; gap: 5px; padding: 10px 76px 10px 10px; border: 1px solid rgba(223, 176, 68, .42); border-radius: 10px; background: rgba(10, 14, 24, .92); }
-.validation-summary-card span { display: grid; gap: 4px; font-size: 11px; color: #d9e2ef; }
-.validation-summary-card strong { color: #f6c95f; }
-.validation-summary-card em { position: absolute; top: 10px; right: 10px; font-style: normal; color: #f6c95f; font-weight: 800; }
-.validation-period-block { display: grid; gap: 3px; padding-bottom: 10px; border-bottom: 1px solid rgba(130, 155, 190, .28); }
+.road-validation-process { display: grid; gap: 7px; margin-inline: 0; padding: 10px 12px; border-top: 1px solid rgba(102, 169, 255, .18); background: rgba(3, 9, 20, .72); overflow-x: clip; }
+.validation-summary-card { position: relative; display: grid; min-width: 0; min-height: 40px; padding: 8px 78px 8px 8px; border: 1px solid rgba(223, 176, 68, .42); border-radius: 9px; background: rgba(10, 14, 24, .92); align-items: center; }
+.validation-summary-card span { display: flex; min-width: 0; align-items: center; gap: 5px; color: #d9e2ef; font-size: 12px; white-space: nowrap; }
+.validation-summary-card strong { flex: 0 0 auto; color: #f6c95f; font-size: 12.5px; }
+.validation-summary-card em { position: absolute; top: 50%; right: 8px; width: 66px; transform: translateY(-50%); color: #f6c95f; font-style: normal; font-weight: 800; text-align: right; white-space: nowrap; }
+.validation-period-block { display: grid; gap: 3px; padding-bottom: 7px; border-bottom: 1px solid rgba(223, 176, 68, .56); }
 .validation-period-block:last-child { padding-bottom: 0; border-bottom: 0; }
-.validation-period-row { display: grid; grid-template-columns: 54px minmax(0, 1.45fr) minmax(92px, .9fr); gap: 6px; align-items: stretch; }
-.validation-period-row > span { min-width: 0; padding: 7px 6px; border: 1px solid rgba(91, 126, 169, .25); border-radius: 7px; background: rgba(8, 15, 27, .82); }
-.validation-issue { display: grid; place-items: center; font-size: 11px; color: #aebed2; }
-.validation-full-numbers { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
-.validation-full-numbers i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #edf2f8; color: #111827; font: 700 9px/1 Roboto, sans-serif; }
-.validation-formula { display: grid; align-content: center; gap: 2px; font-size: 9px; color: #cbd6e5; }
-.validation-formula small { color: #f6c95f; }.validation-formula strong { color: #7ee2a8; }
+.validation-period-row { display: grid; min-width: 0; min-height: 38px; grid-template-columns: minmax(0, 15fr) minmax(0, 59fr) minmax(0, 26fr); gap: 5px; align-items: stretch; }
+.validation-period-row > span { min-width: 0; padding: 0 7px; border: 1px solid rgba(91, 126, 169, .18); border-radius: 6px; background: rgba(8, 15, 27, .82); }
+.validation-issue { display: grid; place-items: center; color: #b8c5d6; font-size: 14px; white-space: nowrap; }
+.validation-full-numbers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; justify-items: center; }
+.validation-full-numbers i { color: #edf2f8; font: 700 16px/1 Roboto, sans-serif; font-style: normal; }
+.validation-formula { display: grid; align-content: center; justify-items: center; gap: 1px; color: #cbd6e5; font-size: 10px; text-align: center; white-space: nowrap; }
+.validation-formula b { font-size: 11px; }
+.validation-formula small { color: #f6c95f; font-size: 9px; }.validation-formula strong { color: #7ee2a8; font-size: 10px; }
 .tiangong-settings fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }.tiangong-settings legend { margin-bottom: 7px; color: #dbe7f5; font-size: 12px; }
 .notebook-create-actions[data-mode='紀錄'] { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 .record-lottery-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; min-width: 0; margin: 0; }
