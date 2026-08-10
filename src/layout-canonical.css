@@ -6,12 +6,12 @@
   box-sizing: border-box;
   display: flex;
   width: min(390px, 100%);
-  min-height: 100%;
+  min-height: 0;
   margin: 0 auto;
-  padding: 0 0 104px;
+  padding: 0 0 calc(98px + env(safe-area-inset-bottom, 0px));
   flex-direction: column;
   gap: 6px;
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -21,17 +21,17 @@
 }
 
 .home-screen .lottery-screen > .main-page-brand-header {
-  flex: 0 0 118px;
+  flex: 0 0 auto;
   width: 100%;
-  height: 118px;
-  min-height: 118px;
+  height: auto;
+  min-height: 0;
   margin: 0;
 }
 
 .home-screen .lottery-screen > .lottery-switcher {
   flex: 0 0 auto;
   width: calc(100% - 32px) !important;
-  min-height: 70px;
+  min-height: 0;
   height: auto !important;
   margin: 0 auto;
   padding: 0 !important;
@@ -39,7 +39,7 @@
 }
 
 .home-screen .lottery-screen > .lottery-switcher > .lottery-card {
-  min-height: 70px;
+  min-height: 0;
   height: auto !important;
 }
 
@@ -47,7 +47,7 @@
   flex: 0 0 auto;
   width: calc(100% - 32px);
   height: auto;
-  min-height: 182px;
+  min-height: 0;
   margin: 0 auto;
 }
 
@@ -55,13 +55,13 @@
   flex: 0 0 auto;
   width: calc(100% - 32px);
   height: auto;
-  min-height: 206px;
+  min-height: 0;
   margin: 0 auto !important;
 }
 
 .home-screen .lottery-screen .matrix-status-grid {
   width: 100%;
-  min-height: 166px;
+  min-height: 0;
   height: auto;
   margin-top: 6px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -70,23 +70,23 @@
 
 .home-screen .lottery-screen .matrix-status-card {
   width: 100%;
-  min-height: 166px;
+  min-height: 0;
   height: auto;
 }
 
 .home-screen .lottery-screen > .matrix-core-banner {
   flex: 0 0 auto;
   width: calc(100% - 32px);
-  height: 88px;
+  height: auto;
   margin: 0 auto !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 .home-screen .lottery-screen > .matrix-core-banner > img {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   max-width: 100% !important;
-  max-height: 100% !important;
+  max-height: none !important;
   object-fit: cover !important;
   transform: none !important;
 }
@@ -94,21 +94,21 @@
 .home-screen .lottery-screen > .home-shortcut-row {
   flex: 0 0 auto;
   width: calc(100% - 32px);
-  height: 74px;
+  height: auto;
   margin: 0 auto !important;
   gap: 4px;
 }
 
 .home-screen .lottery-screen > .home-shortcut-row > .home-shortcut {
-  height: 74px;
-  overflow: hidden !important;
+  height: auto;
+  overflow: visible !important;
 }
 
 .home-screen .lottery-screen > .home-shortcut-row > .home-shortcut > img {
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   max-width: 100% !important;
-  max-height: 100% !important;
+  max-height: none !important;
   object-fit: contain !important;
 }
 
@@ -127,8 +127,8 @@
   box-sizing: border-box;
   position: relative;
   width: min(390px, 100%);
-  height: 118px;
-  min-height: 118px;
+  height: auto;
+  min-height: 0;
   margin: 0 auto 8px;
   padding: 0;
   overflow: visible;
@@ -141,16 +141,16 @@
 .matrix-explore-screen > .feature-brand-header > .feature-brand-logo,
 .matrix-guide-screen > .feature-brand-header > .feature-brand-logo,
 .activation-code-screen > .feature-brand-header > .feature-brand-logo {
-  position: absolute;
-  top: -6px;
-  left: 50%;
+  position: relative;
+  top: auto;
+  left: auto;
   display: block;
   width: 390px;
   max-width: 100%;
-  height: 124px;
+  height: auto;
   object-fit: contain;
   object-position: center;
-  transform: translateX(calc(-50% - 4px));
+  transform: none;
   transform-origin: center;
 }
 
@@ -166,7 +166,7 @@
 .feature-screen > .feature-main-page-brand-header .main-page-brand-logo,
 .notifications-screen > .feature-main-page-brand-header .main-page-brand-logo,
 .profile-screen > .feature-main-page-brand-header .main-page-brand-logo {
-  transform: translateX(-50%);
+  transform: none;
 }
 
 .feature-screen > .feature-brand-header .back-button svg {
@@ -192,12 +192,12 @@
 }
 
 .home-screen .lottery-screen > .lottery-switcher {
-  min-height: 68px;
+  min-height: 0;
   gap: 5px !important;
 }
 
 .home-screen .lottery-screen > .lottery-switcher > .lottery-card {
-  min-height: 68px;
+  min-height: 0;
   border-width: 1px;
   border-color: rgba(118, 84, 43, .9);
   box-shadow: none;
@@ -210,24 +210,24 @@
 }
 
 .home-screen .lottery-screen > .latest-draw-card {
-  min-height: 174px;
+  min-height: 0;
   padding-top: 8px;
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
   grid-template-columns: minmax(92px, 1fr) 92px minmax(72px, 1fr);
-  min-height: 38px;
+  min-height: 0;
   align-items: center;
   gap: 7px;
 }
 
 .home-screen .latest-draw-card .draw-meta {
-  min-height: 36px;
+  min-height: 0;
   padding-top: 0;
 }
 
 .home-screen .latest-draw-card .draw-order {
-  height: 30px;
+  height: auto;
   align-self: center;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .home-screen .latest-draw-card .history-link {
-  height: 30px;
+  height: auto;
   color: #d9d0bd;
   font-size: 11.5px;
 }
@@ -254,7 +254,7 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
-  height: 32px;
+  height: auto;
   margin-top: 2px;
 }
 
@@ -273,12 +273,12 @@
 }
 
 .home-screen .lottery-screen > .matrix-status-section {
-  min-height: 194px;
+  min-height: 0;
   padding: 8px 8px 6px;
 }
 
 .home-screen .matrix-status-header {
-  height: 27px;
+  height: auto;
   align-items: center;
 }
 
@@ -291,13 +291,13 @@
 }
 
 .home-screen .lottery-screen .matrix-status-grid {
-  min-height: 154px;
+  min-height: 0;
   margin-top: 5px;
   gap: 0;
 }
 
 .home-screen .lottery-screen .matrix-status-card {
-  min-height: 154px;
+  min-height: 0;
   border-radius: 7px;
 }
 
@@ -311,16 +311,16 @@
 }
 
 .home-screen .lottery-screen > .matrix-core-banner {
-  height: 80px;
+  height: auto;
 }
 
 .home-screen .lottery-screen > .home-shortcut-row {
-  height: 74px;
+  height: auto;
   gap: 5px;
 }
 
 .home-screen .lottery-screen > .home-shortcut-row > .home-shortcut {
-  height: 74px;
+  height: auto;
   border: 1px solid rgba(118, 84, 43, .72);
   border-radius: 8px;
 }
@@ -331,17 +331,17 @@
 }
 
 .feature-screen:not(.compact-feature-screen) > .feature-brand-header {
-  height: 112px;
-  min-height: 112px;
+  height: auto;
+  min-height: 0;
   margin-bottom: 4px;
 }
 
 .feature-screen:not(.compact-feature-screen) > .feature-brand-header > .feature-brand-logo {
-  top: -6px;
+  top: auto;
   width: 390px;
-  height: 124px;
+  height: auto;
   object-fit: contain;
-  transform: translateX(-50%);
+  transform: none;
 }
 
 .feature-screen:not(.compact-feature-screen) > .feature-brand-header .back-button {
