@@ -293,55 +293,34 @@
 
 .ball-surface {
   position: absolute;
-  inset: 5.5%;
+  inset: 0;
   display: block;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
+  background-position: 50% 46%;
+  background-repeat: no-repeat;
+  background-size: 144% 144%;
   user-select: none;
   z-index: -1;
 }
 
 .number-ball[data-lottery="今彩539"] .ball-surface {
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.98) 0 4%, rgba(255, 255, 255, 0.58) 5%, transparent 13%),
-    radial-gradient(circle at 68% 31%, rgba(255, 184, 58, 0.58), transparent 34%),
-    radial-gradient(circle at 50% 76%, #d96b00 0, #f18100 39%, transparent 64%),
-    linear-gradient(145deg, #ffb12a 0%, #ff9200 43%, #ed7600 76%, #b94e00 100%);
-  box-shadow:
-    inset 5px 5px 9px rgba(255, 212, 111, 0.32),
-    inset -7px -8px 12px rgba(128, 42, 0, 0.34),
-    0 5px 6px rgba(0, 0, 0, 0.44);
+  background-image: url("/assets/lottery/balls/jincai-orange.png");
+  box-shadow: none;
 }
 
 .number-ball[data-lottery="天天樂"] .ball-surface {
-  background:
-    radial-gradient(circle at 29% 23%, rgba(255, 255, 255, 1) 0 8%, rgba(255, 255, 255, 0.48) 18%, transparent 31%),
-    radial-gradient(circle at 70% 30%, #ffffff 0, #f7f7f8 36%, transparent 60%),
-    linear-gradient(150deg, #ffffff 0%, #f5f5f6 47%, #d9dadd 79%, #9fa2a6 100%);
-  box-shadow:
-    inset 5px 5px 8px rgba(255, 255, 255, 0.95),
-    inset -7px -8px 12px rgba(98, 101, 107, 0.27),
-    0 5px 7px rgba(0, 0, 0, 0.44);
+  background-image: url("/assets/lottery/balls/fantasy-white.png");
+  box-shadow: none;
 }
 
 .number-ball[data-lottery="大樂透"] .ball-surface {
-  background:
-    radial-gradient(ellipse at 31% 17%, rgba(255, 255, 255, 0.94) 0 3%, rgba(255, 255, 255, 0.45) 5%, transparent 13%),
-    radial-gradient(circle at 34% 30%, #ff2a32 0, #ed0011 35%, transparent 62%),
-    linear-gradient(145deg, #ff1821 0%, #e60010 51%, #9f0009 82%, #5e0005 100%);
-  box-shadow:
-    inset 5px 4px 8px rgba(255, 105, 112, 0.36),
-    inset -8px -9px 12px rgba(72, 0, 4, 0.55),
-    0 5px 7px rgba(0, 0, 0, 0.48);
+  background-image: url("/assets/lottery/balls/lotto-red.png");
+  box-shadow: none;
 }
 
 .number-ball[data-lottery="六合彩"] .ball-surface {
-  inset: 0;
-  overflow: visible;
   background-image: url("/assets/lottery/balls/marksix-green.png");
-  background-position: 50% 46%;
-  background-repeat: no-repeat;
-  background-size: 144% 144%;
   box-shadow: none;
 }
 
