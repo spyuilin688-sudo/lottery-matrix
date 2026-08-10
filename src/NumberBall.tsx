@@ -33,8 +33,6 @@ BALL_ASSET["六合彩"] = {
   green: "/assets/lottery/balls/marksix-green.png",
 };
 
-delete (BALL_ASSET as Record<string, Partial<Record<NumberBallTone, string>>>)["六合彩票"];
-
 export function normalizeBallNumber(number: string | number) {
   return String(number).padStart(2, "0");
 }
