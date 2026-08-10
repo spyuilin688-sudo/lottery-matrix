@@ -2775,3 +2775,81 @@ main.feature-screen.compact-feature-screen {
   line-height: 23px;
   text-align: left;
 }
+
+/* 2026-08-10 shared page brand and requested density */
+.feature-screen {
+  padding-top: 30px;
+}
+
+.feature-brand-header,
+.matrix-explore-screen .feature-brand-header {
+  position: relative;
+  height: 118px;
+  min-height: 118px;
+  padding: 0;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: visible;
+}
+
+.feature-brand-header > .feature-brand-logo,
+.matrix-explore-main-screen .feature-brand-header > img {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  display: block;
+  width: 390px;
+  max-width: 100%;
+  height: 124px;
+  object-fit: contain;
+  object-position: center;
+  transform: translateX(calc(-50% + 10px));
+  transform-origin: center;
+}
+
+.feature-brand-header .back-button {
+  top: 34px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.feature-brand-header .back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.notifications-screen > .feature-main-page-brand-header {
+  width: min(390px, 100%);
+  height: 118px;
+  min-height: 118px;
+}
+
+.notifications-screen > .feature-main-page-brand-header .main-page-brand-logo {
+  top: -6px;
+  width: 390px;
+  max-width: 100%;
+  height: 124px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.notification-list {
+  gap: 4px;
+}
+
+.notification-row {
+  height: auto;
+  min-height: 72px;
+  padding-block: 4px;
+}
+
+.matrix-explore-screen .explore-settings .setting-grid label:first-child > span b {
+  transform: translateX(8px);
+}
+
+/* 2026-08-10 compact pages share the home header position */
+main.feature-screen.compact-feature-screen {
+  padding-top: 30px !important;
+}
