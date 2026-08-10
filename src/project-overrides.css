@@ -91,8 +91,8 @@
 
 .feature-brand-header:not([data-compact='true']) .back-button,
 .profile-subpage-back {
-  top: 18px !important;
-  left: 8px !important;
+  top: 28px !important;
+  left: 4px !important;
 }
 
 /* 通知：8 個左側圖示整體縮小 8px，整頁不可滑動。 */
