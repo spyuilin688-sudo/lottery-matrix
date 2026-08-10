@@ -185,3 +185,175 @@
 .feature-screen > .feature-main-page-brand-header + .feature-body > :first-child {
   margin-top: 0;
 }
+
+/* 2026-08-10 home middle refinement: no Logo or bottom navigation changes. */
+.home-screen .lottery-screen {
+  gap: 5px;
+}
+
+.home-screen .lottery-screen > .lottery-switcher {
+  min-height: 68px;
+  gap: 5px !important;
+}
+
+.home-screen .lottery-screen > .lottery-switcher > .lottery-card {
+  min-height: 68px;
+  border-width: 1px;
+  border-color: rgba(118, 84, 43, .9);
+  box-shadow: none;
+}
+
+.home-screen .lottery-screen > .lottery-switcher > .lottery-card[data-selected="true"] {
+  border-width: 1.5px;
+  border-color: #f4ce67;
+  box-shadow: 0 0 8px rgba(244, 206, 103, .34);
+}
+
+.home-screen .lottery-screen > .latest-draw-card {
+  min-height: 174px;
+  padding-top: 8px;
+}
+
+.home-screen .latest-draw-card .draw-toolbar {
+  grid-template-columns: minmax(92px, 1fr) 92px minmax(72px, 1fr);
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+}
+
+.home-screen .latest-draw-card .draw-meta {
+  min-height: 36px;
+  padding-top: 0;
+}
+
+.home-screen .latest-draw-card .draw-order {
+  height: 30px;
+  align-self: center;
+}
+
+.home-screen .latest-draw-card .draw-order button {
+  font-size: 11px;
+}
+
+.home-screen .latest-draw-card .history-link {
+  height: 30px;
+  color: #d9d0bd;
+  font-size: 11.5px;
+}
+
+.home-screen .latest-draw-card .draw-balls {
+  margin-inline: -6px;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
+  gap: 6px;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
+  gap: 1px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded {
+  height: 32px;
+  margin-top: 2px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
+  font-size: 10.5px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.home-screen .lottery-screen > .matrix-status-section {
+  min-height: 194px;
+  padding: 8px 8px 6px;
+}
+
+.home-screen .matrix-status-header {
+  height: 27px;
+  align-items: center;
+}
+
+.home-screen .matrix-status-more {
+  color: #d7c9aa;
+}
+
+.home-screen .matrix-status-more svg {
+  color: #d7a74a;
+}
+
+.home-screen .lottery-screen .matrix-status-grid {
+  min-height: 154px;
+  margin-top: 5px;
+  gap: 0;
+}
+
+.home-screen .lottery-screen .matrix-status-card {
+  min-height: 154px;
+  border-radius: 7px;
+}
+
+.home-screen .matrix-status-logo {
+  width: 100px;
+  height: 54px;
+}
+
+.home-screen .matrix-status-count strong {
+  font-size: 19px;
+}
+
+.home-screen .lottery-screen > .matrix-core-banner {
+  height: 80px;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row {
+  height: 74px;
+  gap: 5px;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row > .home-shortcut {
+  height: 74px;
+  border: 1px solid rgba(118, 84, 43, .72);
+  border-radius: 8px;
+}
+
+/* Non-bottom-navigation feature pages: only back control + centered Logo. */
+.feature-screen:not(.compact-feature-screen) {
+  padding-top: 0;
+}
+
+.feature-screen:not(.compact-feature-screen) > .feature-brand-header {
+  height: 112px;
+  min-height: 112px;
+  margin-bottom: 4px;
+}
+
+.feature-screen:not(.compact-feature-screen) > .feature-brand-header > .feature-brand-logo {
+  top: -6px;
+  width: 390px;
+  height: 124px;
+  object-fit: contain;
+  transform: translateX(-50%);
+}
+
+.feature-screen:not(.compact-feature-screen) > .feature-brand-header .back-button {
+  top: 34px;
+  left: 16px;
+  display: grid;
+  place-items: center;
+  color: #f1d28a;
+}
+
+.feature-screen:not(.compact-feature-screen) > .feature-brand-header .back-button svg {
+  display: block;
+  width: 29px;
+  height: 29px;
+}
