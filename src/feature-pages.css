@@ -2552,34 +2552,6 @@ main.feature-screen.compact-feature-screen {
   padding-top: 0 !important;
 }
 
-/* 2026-08-10: release non-logo media enlargement limits. */
-.notification-icon,
-.matrix-status-page-trigger-button,
-.guide-intro,
-.history-panel .history-numbers,
-.history-panel .history-lottery-ball {
-  overflow: visible !important;
-  max-width: none !important;
-  max-height: none !important;
-}
-
-.notification-icon img,
-.matrix-status-page-trigger-button img,
-.guide-intro img {
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  object-fit: cover !important;
-}
-
-.history-panel .number-ball.history-lottery-ball,
-.draw-history-row .history-lottery-ball {
-  max-width: none !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
 /* Match the home Logo-to-content spacing on every page. */
 .compact-feature-screen > .feature-main-page-brand-header,
 .notifications-screen > .feature-main-page-brand-header,
