@@ -20,7 +20,6 @@ import {
 import { LotterySwitcher, type LotteryId } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
 import { MainPageBrandHeader } from "./MainPageBrandHeader";
-import { LotteryBall, getLotteryBallTone } from "./LotteryBall";
 
 export type ScreenId =
   | "home"
@@ -112,6 +111,14 @@ function useTimedState<T>(key: string, initialValue: T) {
 }
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
+const MARK_SIX_BLUE = new Set([
+  "03", "04", "09", "10", "14", "15", "20", "25",
+  "26", "31", "36", "37", "41", "42", "47", "48",
+]);
+const MARK_SIX_RED = new Set([
+  "01", "02", "07", "08", "12", "13", "18", "19", "23",
+  "24", "29", "30", "34", "35", "40", "45", "46",
+]);
 const HISTORY = [
   ["5887", "2026/06/12（四）", ["02", "03", "18", "29", "31"]],
   ["5888", "2026/06/13（五）", ["04", "05", "06", "34", "36"]],
@@ -310,6 +317,18 @@ function MiniBall({ number, tone = "gold" }: { number: string; tone?: string }) 
   return <span className="mini-ball" data-tone={tone}>{number}</span>;
 }
 
+function getLotteryBallTone(
+  lottery: LotteryId,
+  number: string,
+): "orange" | "white" | "red" | "green" | "blue" {
+  if (lottery === "今彩539") return "orange";
+  if (lottery === "天天樂") return "white";
+  if (lottery === "大樂透") return "red";
+  if (MARK_SIX_BLUE.has(number)) return "blue";
+  if (MARK_SIX_RED.has(number)) return "red";
+  return "green";
+}
+
 function LotteryHistoryBall({
   lottery,
   number,
@@ -319,7 +338,25 @@ function LotteryHistoryBall({
   number: string;
   isSpecial?: boolean;
 }) {
-  return <LotteryBall lottery={lottery} number={number} isSpecial={isSpecial} className="history-lottery-ball" />;
+  const tone = getLotteryBallTone(lottery, number);
+  const usesDarkText =
+    lottery === "今彩539" ||
+    lottery === "天天樂" ||
+    lottery === "六合彩";
+
+  return (
+    <span
+      className="number-ball history-lottery-ball"
+      data-lottery={lottery}
+      data-tone={tone}
+      data-special={isSpecial}
+      data-dark-text={usesDarkText}
+      aria-label={`${isSpecial ? "特別號" : "號碼"} ${number}`}
+    >
+      <span className="ball-surface" aria-hidden="true" />
+      <span className="ball-number" aria-hidden="true">{number}</span>
+    </span>
+  );
 }
 
 function getHistoryNumbers(
