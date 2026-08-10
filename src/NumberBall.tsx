@@ -25,13 +25,15 @@ const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, strin
   大樂透: {
     red: "/assets/lottery/balls/lotto-649.png",
   },
-} as Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>>;
+} as unknown as Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>>;
 
 BALL_ASSET["六合彩"] = {
   red: "/assets/lottery/balls/marksix-red.png",
   blue: "/assets/lottery/balls/marksix-blue.png",
   green: "/assets/lottery/balls/marksix-green.png",
 };
+
+delete (BALL_ASSET as Record<string, Partial<Record<NumberBallTone, string>>>)["六合彩票"];
 
 export function normalizeBallNumber(number: string | number) {
   return String(number).padStart(2, "0");
