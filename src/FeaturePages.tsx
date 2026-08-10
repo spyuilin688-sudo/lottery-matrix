@@ -613,7 +613,8 @@ function RoadValidationProcess({
   consecutive: string;
   prediction: string;
 }) {
-  const validationGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  const sourceGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  const validationGroups = Array.from({ length: 8 }, (_, index) => sourceGroups[index % sourceGroups.length]);
   return (
     <section className="road-validation-process" aria-label="驗證過程">
       <header className="validation-summary-card">
@@ -623,13 +624,13 @@ function RoadValidationProcess({
       {validationGroups.map((group, groupIndex) => (
         <div className="validation-period-block" key={groupIndex}>
           {group.map(([issue, , numbers], rowIndex) => {
-            const lockRow = groupIndex === 0 ? 1 : 0;
+            const lockRow = groupIndex % 2 === 0 ? 1 : 0;
             return (
               <div className="validation-period-row" key={issue}>
                 <span className="validation-issue">{issue}</span>
                 <span className="validation-full-numbers">{numbers.map((value) => <i key={value}>{value}</i>)}</span>
                 <span className="validation-formula">
-                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>預測期</b><strong>版路結果 08、37</strong></>}
+                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>預測期</b><strong>版路結果 {prediction.replace(".", "、")}</strong></>}
                 </span>
               </div>
             );
