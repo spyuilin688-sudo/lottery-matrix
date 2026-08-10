@@ -2552,6 +2552,17 @@ main.feature-screen.compact-feature-screen {
   padding-top: 0 !important;
 }
 
+/* Match the home Logo-to-content spacing on every page. */
+.compact-feature-screen > .feature-main-page-brand-header,
+.notifications-screen > .feature-main-page-brand-header,
+.profile-screen > .feature-main-page-brand-header {
+  margin-bottom: 8px;
+}
+
+.feature-screen:not(.compact-feature-screen) > .feature-brand-header {
+  margin-bottom: 8px;
+}
+
 /* Matrix 指南：390px 手機版面與閱讀層級。 */
 .matrix-guide-screen {
   padding-bottom: calc(98px + 16px + var(--mobile-safe-area-height));
