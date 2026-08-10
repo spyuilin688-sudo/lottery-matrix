@@ -1,0 +1,42 @@
+.number-ball .ball-surface {
+  inset: 0;
+  overflow: visible;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  box-shadow: none;
+}
+
+.number-ball[data-lottery="今彩539"] .ball-surface {
+  background-image: url('/assets/lottery/balls/jincai-539.png');
+  background-color: transparent;
+}
+
+.number-ball[data-lottery="天天樂"] .ball-surface {
+  background-image: url('/assets/lottery/balls/tiantianle.png');
+  background-color: transparent;
+}
+
+.number-ball[data-lottery="六合彩"] .ball-surface {
+  background-image: url('/assets/lottery/balls/marksix-green.png');
+  background-color: transparent;
+  background-size: 144% 144%;
+  background-position: 50% 46%;
+}
+
+.number-ball[data-lottery="六合彩"][data-tone="red"] .ball-surface {
+  background-image: url('/assets/lottery/balls/marksix-red.png');
+}
+
+.number-ball[data-lottery="六合彩"][data-tone="blue"] .ball-surface {
+  background-image: url('/assets/lottery/balls/marksix-blue.png');
+}
+
+.number-ball[data-lottery="大樂透"] .ball-surface {
+  background-image: url('/assets/lottery/balls/lotto-649.png');
+  background-color: transparent;
+}
+
+.number-ball .ball-number {
+  font-variant-numeric: tabular-nums;
+}
