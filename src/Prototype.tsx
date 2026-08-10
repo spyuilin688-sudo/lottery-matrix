@@ -252,16 +252,48 @@ export function LotterySwitcher({
   );
 }
 
-function getBallTone(
-  lottery: LotteryId,
-  number: string,
-): "orange" | "white" | "red" | "green" | "blue" {
-  if (lottery === "今彩539") return "orange";
-  if (lottery === "天天樂") return "white";
-  if (lottery === "大樂透") return "red";
+type BallTone = "orange" | "white" | "red" | "green" | "blue";
+
+function getMarkSixBallTone(number: string): "red" | "green" | "blue" {
   if (MARK_SIX_BLUE.has(number)) return "blue";
   if (MARK_SIX_RED.has(number)) return "red";
   return "green";
+}
+
+function getBallTone(
+  lottery: LotteryId,
+  number: string,
+): BallTone {
+  if (lottery === "今彩539") return "orange";
+  if (lottery === "天天樂") return "white";
+  if (lottery === "大樂透") return "red";
+  return getMarkSixBallTone(number);
+}
+
+export type MarkSixNumberBallProps = {
+  number: string;
+  isSpecial?: boolean;
+};
+
+export function MarkSixNumberBall({
+  number,
+  isSpecial = false,
+}: MarkSixNumberBallProps) {
+  const tone = getMarkSixBallTone(number);
+
+  return (
+    <span
+      className="number-ball"
+      data-lottery="六合彩"
+      data-special={isSpecial}
+      data-tone={tone}
+      data-dark-text="true"
+      aria-label={`${isSpecial ? "特別號" : "號碼"} ${number}`}
+    >
+      <span className="ball-surface" aria-hidden="true" />
+      <span className="ball-number" aria-hidden="true">{number}</span>
+    </span>
+  );
 }
 
 function NumberBall({
@@ -273,11 +305,12 @@ function NumberBall({
   number: string;
   isSpecial?: boolean;
 }) {
+  if (lottery === "六合彩") {
+    return <MarkSixNumberBall number={number} isSpecial={isSpecial} />;
+  }
+
   const tone = getBallTone(lottery, number);
-  const usesDarkText =
-    lottery === "今彩539" ||
-    lottery === "天天樂" ||
-    lottery === "六合彩";
+  const usesDarkText = lottery === "今彩539" || lottery === "天天樂";
 
   return (
     <span
