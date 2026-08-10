@@ -2474,7 +2474,7 @@
 }
 
 .compact-feature-screen > .feature-main-page-brand-header {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .matrix-explore-main-screen:not(.compact-feature-screen) .back-button {
   top: 27px;
@@ -2552,15 +2552,26 @@ main.feature-screen.compact-feature-screen {
   padding-top: 0 !important;
 }
 
-/* Match the home Logo-to-content spacing on every page. */
+/* Keep every Logo-to-first-component boundary at one 4px source. */
 .compact-feature-screen > .feature-main-page-brand-header,
 .notifications-screen > .feature-main-page-brand-header,
 .profile-screen > .feature-main-page-brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .feature-screen:not(.compact-feature-screen) > .feature-brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.feature-main-page-brand-header + .feature-body,
+.feature-brand-header + .feature-body,
+.feature-brand-header + .feature-page-title-card {
+  margin-top: 0;
+}
+
+.feature-main-page-brand-header + .feature-body > :first-child,
+.feature-brand-header + .feature-body > :first-child {
+  margin-top: 0;
 }
 
 /* Matrix 指南：390px 手機版面與閱讀層級。 */
@@ -3118,7 +3129,7 @@ main.feature-screen.compact-feature-screen {
 }
 
 .profile-screen .feature-main-page-brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .profile-card {
