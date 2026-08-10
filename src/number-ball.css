@@ -31,12 +31,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 2ch;
   color: #070707;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   font-size: var(--number-font-size);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
   transform: translate(var(--number-x), var(--number-y));
 }
 
@@ -91,4 +93,12 @@
 
 .number-ball-component[data-special="true"] {
   --number-ball-size: 50px;
+}
+
+.number-ball-component[data-special="true"] .number-ball-value {
+  font-size: calc(var(--number-font-size) * 0.88);
+}
+
+.number-ball-component[data-special="true"] .number-ball-value::after {
+  width: calc(var(--underline-width) * 0.9);
 }
