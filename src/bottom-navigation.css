@@ -243,3 +243,15 @@
     width: auto;
   }
 }
+
+.bottom-navigation.matrix-guide-bottom-navigation .bottom-navigation-label {
+  top: 61px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.bottom-navigation.matrix-guide-bottom-navigation .bottom-navigation-item[data-selected="true"] .bottom-navigation-label {
+  color: var(--bottom-nav-text-active);
+  text-shadow: 0 0 4px rgba(255, 191, 72, .28);
+}
