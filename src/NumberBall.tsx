@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./number-ball.css";
 
 export type NumberBallLottery = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type NumberBallTone = "orange" | "white" | "red" | "blue" | "green";
@@ -20,14 +21,16 @@ const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, strin
   天天樂: {
     white: "/assets/lottery/balls/tiantianle.png",
   },
-  六合彩: {
-    red: "/assets/lottery/balls/marksix-red.png",
-    blue: "/assets/lottery/balls/marksix-blue.png",
-    green: "/assets/lottery/balls/marksix-green.png",
-  },
+  六合彩票: {},
   大樂透: {
     red: "/assets/lottery/balls/lotto-649.png",
   },
+} as Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>>;
+
+BALL_ASSET["六合彩"] = {
+  red: "/assets/lottery/balls/marksix-red.png",
+  blue: "/assets/lottery/balls/marksix-blue.png",
+  green: "/assets/lottery/balls/marksix-green.png",
 };
 
 export function normalizeBallNumber(number: string | number) {
