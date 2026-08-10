@@ -19,7 +19,6 @@ import {
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
-import { MainPageBrandHeader } from "./MainPageBrandHeader";
 
 export type ScreenId =
   | "home"
@@ -54,7 +53,6 @@ export type ScreenId =
   | "version-info"
   | "update-history"
   | "disclaimer"
-  | "status-trigger-settings"
   | "status";
 
 type Navigate = (screen: ScreenId) => void;
@@ -68,6 +66,8 @@ type QuickNavigationContextValue = {
 };
 
 const QuickNavigationContext = createContext<QuickNavigationContextValue>({});
+
+const PRIMARY_BRAND_LOGO = "/assets/lottery/primary-brand-logo.jpg";
 
 export function QuickNavigationProvider({
   children,
@@ -133,34 +133,44 @@ const HISTORY = [
 ] as const;
 
 function BrandHeader({
+  title,
   onBack,
+  action,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent-processed.png",
+  logoSrc = "/assets/lottery/brand-logo-transparent.png",
 }: {
+  title: string;
   onBack: () => void;
+  action?: React.ReactNode;
   compact?: boolean;
   logoSrc?: string;
 }) {
   return (
-    compact ? (
-      <MainPageBrandHeader className="feature-main-page-brand-header" />
-    ) : (
     <header className="feature-brand-header" data-compact={compact}>
-      {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回"><ChevronLeftIcon /></button> : null}
-      <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
+      {!compact ? (
+        <div className="feature-brand-row">
+          <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
+            <ChevronLeftIcon aria-hidden="true" />
+          </button>
+          <div className="feature-brand-lockup">
+            <img className="feature-brand-logo" src="/assets/lottery/feature-brand-logo.jpg" alt="樂彩 Matrix" />
+          </div>
+        </div>
+      ) : (
+        <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
+      )}
+      {!compact ? <h1>{title}</h1> : null}
+      {action ? <div className="feature-header-action">{action}</div> : null}
     </header>
-    )
   );
 }
 
 function FeatureBottomNavigationPortal({
   active,
   onNavigate,
-  className,
 }: {
   active: "首頁" | "快捷" | "通知" | "我的";
   onNavigate: Navigate;
-  className?: string;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const { onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
@@ -173,7 +183,6 @@ function FeatureBottomNavigationPortal({
     ? createPortal(
         <BottomNavigation
           active={active}
-          className={className}
           quickActive={Boolean(quickActive)}
           onNavigate={onNavigate}
           onQuickOpen={onQuickOpen}
@@ -193,7 +202,7 @@ function FeatureShell({
   backTarget = "home",
   headerAction,
   compactHeader = false,
-  brandLogoSrc,
+  logoSrc,
 }: {
   title: string;
   children: React.ReactNode;
@@ -203,21 +212,21 @@ function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
-  brandLogoSrc?: string;
+  logoSrc?: string;
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
-  const logoOnlyHeader = compactHeader || Boolean(quickActive);
-  void title;
-  void headerAction;
+  const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
   return (
-    <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen" : ""} ${className}`.trim()}>
-      <BrandHeader onBack={() => onNavigate(backTarget)} compact={logoOnlyHeader} logoSrc={brandLogoSrc} />
-      <div className="feature-body">{children}</div>
-      <FeatureBottomNavigationPortal
-        active={active}
-        onNavigate={onNavigate}
-        className={className.includes("matrix-guide-screen") ? "matrix-guide-bottom-navigation" : undefined}
+    <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
+      <BrandHeader
+        title={title}
+        onBack={() => onNavigate(backTarget)}
+        action={headerAction}
+        compact={logoOnlyHeader}
+        logoSrc={logoOnlyHeader ? PRIMARY_BRAND_LOGO : logoSrc}
       />
+      <div className="feature-body">{children}</div>
+      <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
     </main>
   );
 }
@@ -604,61 +613,29 @@ function RoadValidationProcess({
   consecutive: string;
   prediction: string;
 }) {
-  const validationGroups = Array.from(
-    { length: 8 },
-    (_, groupIndex) => HISTORY.slice(groupIndex, groupIndex + 3),
-  );
-  const roadResult = prediction.replace(/\./g, "、");
-
+  const validationGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
   return (
-    <section className="road-validation-process" aria-label="版路驗證過程">
+    <section className="road-validation-process" aria-label="驗證過程">
       <header className="validation-summary-card">
-        <span className="validation-summary-text">
-          開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開
-        </span>
-        <em aria-label="連準次數">{consecutive}</em>
+        <span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
+        <em>{consecutive}</em>
       </header>
-
-      <div className="validation-groups">
-        {validationGroups.map((group, groupIndex) => {
-          const lockRow = groupIndex === 0 ? 1 : 0;
-
-          return (
-            <div className="validation-period-block" key={groupIndex}>
-              <div className="validation-period-table" role="table" aria-label={`第 ${groupIndex + 1} 組驗證資料`}>
-                {group.map(([issue, , numbers], rowIndex) => (
-                  <div className="validation-period-row" role="row" key={issue}>
-                    <span className="validation-issue" role="cell">{issue}</span>
-                    <span className="validation-full-numbers" role="cell">
-                      {numbers.map((value, numberIndex) => {
-                        const isLockNumber = rowIndex === lockRow && numberIndex === 0;
-                        const isSourceNumber = groupIndex === 0 && rowIndex === 0 && numberIndex === 0;
-
-                        return (
-                          <i
-                            key={value}
-                            data-highlight={isLockNumber ? "lock" : isSourceNumber ? "source" : undefined}
-                          >
-                            {value}
-                          </i>
-                        );
-                      })}
-                    </span>
-                    <span className="validation-formula" role="cell">
-                      {rowIndex < 2 ? <b>{number} +14.24</b> : null}
-                    </span>
-                  </div>
-                ))}
+      {validationGroups.map((group, groupIndex) => (
+        <div className="validation-period-block" key={groupIndex}>
+          {group.map(([issue, , numbers], rowIndex) => {
+            const lockRow = groupIndex === 0 ? 1 : 0;
+            return (
+              <div className="validation-period-row" key={issue}>
+                <span className="validation-issue">{issue}</span>
+                <span className="validation-full-numbers">{numbers.map((value) => <i key={value}>{value}</i>)}</span>
+                <span className="validation-formula">
+                  {rowIndex < 2 ? <><b>{number} +14.24</b>{rowIndex === lockRow ? <small>鎖定條件</small> : null}</> : <><b>預測期</b><strong>版路結果 08、37</strong></>}
+                </span>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <footer className="validation-prediction-row">
-        <span>本期預測</span>
-        <strong>{roadResult}</strong>
-      </footer>
+            );
+          })}
+        </div>
+      ))}
     </section>
   );
 }
@@ -793,8 +770,7 @@ export function MatrixExplorePage({
       title={title}
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
-      className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : ""}`}
-      brandLogoSrc={title === "Matrix 探索" ? "/assets/lottery/brand-logo-transparent-processed.png" : undefined}
+      className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
       headerAction={title === "Matrix 探索" ? (
         <div className="matrix-explore-tool-actions" aria-label="Matrix 探索工具">
           <button type="button" onClick={() => onNavigate("tianyan")} aria-label="進入 Matrix 天衍">
@@ -821,7 +797,7 @@ export function MatrixExplorePage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}<b>探索期數</b></span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}探索期數</span>
             <div className="segmented three">
               {["二期", "七期", "十三期"].map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -831,7 +807,7 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}<b>版路類型</b></span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
@@ -860,7 +836,7 @@ export function MatrixExplorePage({
           <div className="advanced-panel">
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}<b>號碼順序</b>
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}號碼順序
               </span>
               <div className="select-box native-select">
                 <select
@@ -876,7 +852,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}<b>探索日期</b>
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
               </span>
               <div className="segmented three">
                 {["本日(最新)", "昨日(上1期)", "前日(上2期)"].map((value) => (
@@ -893,7 +869,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}<b>探索範圍</b>
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}探索範圍
               </span>
               <div className="segmented two">
                 {["標準範圍", "完整範圍"].map((value) => (
@@ -1645,13 +1621,13 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
       <section className="guide-intro panel">
-        <img src="/resources/matrix-guide.png" alt="" />
+        <img src="/assets/lottery/functions/matrix-guide.png" alt="" />
         <div><h2>Matrix 指南</h2><p>樂彩 Matrix 功能說明</p></div>
       </section>
       <nav className="guide-category-strip" aria-label="Matrix 指南分類">
         {sections.map((section, index) => (
           <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
-            <span>{String(index + 1).padStart(2, "0")}</span><span className="guide-category-name">{section.title}</span>
+            <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
           </button>
         ))}
       </nav>
@@ -2321,7 +2297,7 @@ export function NotesPage({ onNavigate }: { onNavigate: Navigate }) {
     ];
     return (
       <main className="feature-screen note-detail-screen">
-        <BrandHeader onBack={() => setSelectedNote(null)} />
+        <BrandHeader title="記事詳細" onBack={() => setSelectedNote(null)} />
         <div className="feature-body">
           <section className="panel note-detail-card">
             {detailRows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
@@ -2430,10 +2406,10 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     ["result", "開獎結果", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-result.png"],
     ["win", "中獎通知", "彩種通知、獎金通知", "/resources/notify-win.png"],
     ["status", "Matrix 狀態", "", "/resources/notify-status.png"],
-    ["card", "Matrix 牌單", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-card-v2.png?v=20260809-5"],
-    ["collision", "Matrix 摘星", "", "/resources/notify-collision-v2.png?v=20260809-5"],
+    ["card", "Matrix 牌單", "今彩539、天天樂、六合彩、大樂透", "/resources/notify-card.png"],
+    ["collision", "Matrix 摘星", "", "/resources/notify-collision.png"],
     ["expiry", "Matrix Pro", "提前1日、提前3日、提前7日", "/resources/notify-expiry.png"],
-    ["system", "系統通知", "維護、更新", "/resources/notify-system-v2.png?v=20260809-5"],
+    ["system", "系統通知", "維護、更新", "/resources/notify-system.png"],
   ] as const;
   const toggleOption = (key: string, option: string) => {
     if (key === "collision") return;
@@ -2532,9 +2508,9 @@ function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array
   );
 }
 
-function ProfileDetailShell({ title, children, onNavigate, className = "" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string }) {
+function ProfileDetailShell({ title, children, onNavigate, className = "", logoSrc }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string; logoSrc?: string }) {
   return (
-    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className={`profile-detail-screen ${className}`.trim()}>
+    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className={`profile-detail-screen ${className}`.trim()} logoSrc={logoSrc}>
       {children}
     </FeatureShell>
   );
@@ -2670,7 +2646,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [activationOpen, setActivationOpen] = useState(false);
   const referralSuccessCount = 0;
   return (
-    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
+    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" logoSrc="/assets/lottery/referral-activation-logo.png">
       <section className="panel referral-card">
         <h2>我的推薦碼</h2>
         <div className="my-referral-code" aria-label="我的推薦碼">—</div>
@@ -2761,128 +2737,6 @@ function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
   return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate}><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
 }
 
-
-const MATRIX_TRIGGER_STATUSES = [
-  ["啟動", "ACTIVE", "green"],
-  ["聚合", "FOCUS", "blue"],
-  ["共振", "RESONANCE", "purple"],
-  ["臨界", "CRITICAL", "orange"],
-] as const;
-
-const MATRIX_TRIGGER_FIELDS = [
-  ["連準次數", "consecutive"],
-  ["號碼順序", "numberOrder"],
-  ["版路類型", "roadType"],
-  ["數量", "quantity"],
-] as const;
-
-const MATRIX_TRIGGER_OPTIONS = {
-  "準4+（鎖定1碼）": {
-    consecutive: ["準4進5", "準5進6", "準6進7", "準7進8"],
-    numberOrder: ["依號碼由小到大排序"],
-    roadType: ["加減版路"],
-  },
-  "準5+（鎖定2碼）": {
-    consecutive: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
-    numberOrder: ["依號碼由小到大排序"],
-    roadType: ["加減版路"],
-  },
-} as const;
-
-type MatrixTriggerCondition = keyof typeof MATRIX_TRIGGER_OPTIONS;
-type MatrixTriggerField = (typeof MATRIX_TRIGGER_FIELDS)[number][1];
-type MatrixTriggerValues = Record<MatrixTriggerField, string>;
-
-const createMatrixTriggerValues = (condition: MatrixTriggerCondition): MatrixTriggerValues => ({
-  consecutive: MATRIX_TRIGGER_OPTIONS[condition].consecutive[0],
-  numberOrder: MATRIX_TRIGGER_OPTIONS[condition].numberOrder[0],
-  roadType: MATRIX_TRIGGER_OPTIONS[condition].roadType[0],
-  quantity: "1",
-});
-
-export function MatrixStatusTriggerSettingsPage({ onNavigate }: { onNavigate: Navigate }) {
-  const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [status, setStatus] = useState<(typeof MATRIX_TRIGGER_STATUSES)[number][0]>("啟動");
-  const [settings, setSettings] = useState<Record<MatrixTriggerCondition, MatrixTriggerValues>>({
-    "準4+（鎖定1碼）": createMatrixTriggerValues("準4+（鎖定1碼）"),
-    "準5+（鎖定2碼）": createMatrixTriggerValues("準5+（鎖定2碼）"),
-  });
-
-  const updateSetting = (condition: MatrixTriggerCondition, field: MatrixTriggerField, value: string) => {
-    setSettings((current) => ({
-      ...current,
-      [condition]: { ...current[condition], [field]: value },
-    }));
-  };
-
-  const resetSettings = () => {
-    setLottery("今彩539");
-    setStatus("啟動");
-    setSettings({
-      "準4+（鎖定1碼）": createMatrixTriggerValues("準4+（鎖定1碼）"),
-      "準5+（鎖定2碼）": createMatrixTriggerValues("準5+（鎖定2碼）"),
-    });
-  };
-
-  return (
-    <FeatureShell
-      title="自訂觸發條件"
-      onNavigate={onNavigate}
-      backTarget="status"
-      className="matrix-trigger-settings-screen"
-    >
-      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-trigger-lottery-switcher" />
-      <section className="matrix-trigger-status-section" aria-label="Matrix 狀態">
-        <div className="matrix-trigger-status-grid">
-          {MATRIX_TRIGGER_STATUSES.map(([title, titleEn, tone]) => (
-            <button type="button" data-tone={tone} data-selected={status === title} onClick={() => setStatus(title)} key={title}>
-              <strong>{title}</strong><small>{titleEn}</small>
-            </button>
-          ))}
-        </div>
-      </section>
-      <div className="matrix-trigger-conditions">
-        {(Object.keys(MATRIX_TRIGGER_OPTIONS) as MatrixTriggerCondition[]).map((condition) => {
-          const options = MATRIX_TRIGGER_OPTIONS[condition];
-          return (
-            <section className="matrix-trigger-condition" key={condition}>
-              <header><strong>{condition}</strong></header>
-              <div className="matrix-trigger-select-grid">
-                {MATRIX_TRIGGER_FIELDS.map(([label, field]) => {
-                  const fieldOptions = field === "quantity"
-                    ? Array.from({ length: 15 }, (_, index) => String(index + 1))
-                    : [...options[field]];
-                  return (
-                    <label key={field}>
-                      <span>{label}</span>
-                      <span className="matrix-trigger-native-select">
-                        <select
-                          aria-label={`${condition}－${label}`}
-                          value={settings[condition][field]}
-                          onChange={(event) => updateSetting(condition, field, event.target.value)}
-                        >
-                          {fieldOptions.map((option) => (
-                            <option value={option} key={option}>{field === "quantity" ? `${option}組` : option}</option>
-                          ))}
-                        </select>
-                        <ChevronDownIcon aria-hidden="true" />
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-      <footer className="matrix-trigger-actions">
-        <button type="button" onClick={resetSettings}>重置設定</button>
-        <button type="button">儲存設定</button>
-      </footer>
-    </FeatureShell>
-  );
-}
-
 export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [open, setOpen] = useState("臨界");
@@ -2901,21 +2755,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
     { position: 5, number: "33", period: 5, consecutive: "準7進8", prediction: "08", road: "拖牌" },
   ] as const;
   return (
-    <FeatureShell
-      title="Matrix 狀態"
-      onNavigate={onNavigate}
-      className="matrix-status-screen"
-      headerAction={(
-        <button
-          type="button"
-          className="matrix-status-page-trigger-button"
-          aria-label="自訂觸發條件"
-          onClick={() => onNavigate("status-trigger-settings")}
-        >
-          <img src="/assets/lottery/status-trigger-settings-v2.png" alt="" draggable={false} />
-        </button>
-      )}
-    >
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
       <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
       <div className="status-list">
         {statuses.map(([title, titleEn, count, description, tone]) => (
@@ -2985,6 +2825,5 @@ export function FeaturePageRouter({
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;
-  if (screen === "status-trigger-settings") return <MatrixStatusTriggerSettingsPage onNavigate={onNavigate} />;
   return <MatrixStatusPage onNavigate={onNavigate} />;
 }

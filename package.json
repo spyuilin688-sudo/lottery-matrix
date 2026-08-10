@@ -1,12 +1,21 @@
 {
-  "name": "lottery-matrix-appdeploy-preview",
+  "name": "lottery-switch-component",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "install:ci": "bash scripts/install-ci.sh",
+    "check:runtime": "node scripts/check-mobile-runtime.mjs",
+    "update:runtime-lock": "node scripts/update-mobile-runtime-lock.mjs",
+    "install:test-browser": "PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright playwright install chromium",
+    "test:runtime": "PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright playwright test",
+    "test:sites": "node --test tests/sites-worker.test.mjs",
+    "predev": "npm run check:runtime",
     "dev": "vite",
-    "build": "tsc && vite build && node scripts/prepare-sites-static.mjs",
-    "preview": "vite preview"
+    "prebuild": "npm run check:runtime",
+    "build": "tsc && vite build && node scripts/prepare-sites-build.mjs",
+    "build:verified": "bash scripts/build-verified.sh",
+    "validate:artifact": "bash scripts/validate-artifact.sh"
   },
   "dependencies": {
     "@fontsource/roboto": "5.2.10",
@@ -14,23 +23,16 @@
     "@radix-ui/react-dropdown-menu": "2.1.20",
     "@radix-ui/react-icons": "1.3.2",
     "@use-gesture/react": "10.3.1",
-    "adm-zip": "0.5.16",
     "motion": "12.42.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.0.0"
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.7.0",
-    "vite": "^6.0.0"
+    "@playwright/test": "1.61.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "typescript": "7.0.2",
+    "vite": "8.1.3"
   }
 }
-
