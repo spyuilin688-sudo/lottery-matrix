@@ -2851,5 +2851,5 @@ main.feature-screen.compact-feature-screen {
 
 /* 2026-08-10 compact pages share the home header position */
 main.feature-screen.compact-feature-screen {
-  padding-top: 30px !important;
+  padding-top: 0 !important;
 }
