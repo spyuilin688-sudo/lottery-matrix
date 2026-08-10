@@ -2064,43 +2064,23 @@
   pointer-events: none;
 }
 
-/* 2026-08-10: release media enlargement limits, excluding the brand logo. */
-.home-screen [data-lottery-switcher] > [data-lottery-card],
+/* 2026-08-10: keep enlargement limits released only for the five shortcuts and Matrix Core. */
 .home-screen .home-shortcut,
-.home-screen .matrix-status-card,
-.home-screen .matrix-core-banner,
-.home-screen .latest-draw-card,
-.matrix-status-trigger-button {
+.home-screen .matrix-core-banner {
   overflow: visible !important;
   max-width: none !important;
   max-height: none !important;
 }
 
-.home-screen [data-lottery-switcher] .lottery-logo,
-.home-screen [data-lottery-switcher] .lottery-logo img,
 .home-screen .home-shortcut img,
-.home-screen .matrix-status-artwork,
-.home-screen .matrix-core-banner > img,
-.matrix-status-trigger-button img {
+.home-screen .matrix-core-banner > img {
   max-width: none !important;
   max-height: none !important;
   object-fit: cover !important;
 }
 
 .home-screen .home-shortcut img,
-.home-screen .matrix-status-artwork,
-.home-screen .matrix-core-banner > img,
-.matrix-status-trigger-button img {
+.home-screen .matrix-core-banner > img {
   width: 100% !important;
   height: 100% !important;
-}
-
-.home-screen .latest-draw-card {
-  min-height: 0;
-}
-
-.home-screen .latest-draw-card .draw-balls {
-  height: auto;
-  min-height: 0;
-  overflow: visible;
 }
