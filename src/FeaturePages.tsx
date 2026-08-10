@@ -135,7 +135,7 @@ const HISTORY = [
 function BrandHeader({
   onBack,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent-processed.png",
+  logoSrc = "/assets/lottery/feature-header-with-back.png",
 }: {
   onBack: () => void;
   compact?: boolean;
@@ -146,9 +146,7 @@ function BrandHeader({
       <MainPageBrandHeader className="feature-main-page-brand-header" />
     ) : (
     <header className="feature-brand-header" data-compact={compact}>
-      {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
-        <ChevronLeftIcon />
-      </button> : null}
+      {!compact ? <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回" /> : null}
       <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
     </header>
     )
@@ -827,7 +825,7 @@ export function MatrixExplorePage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}探索期數</span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}<b>探索期數</b></span>
             <div className="segmented three">
               {["二期", "七期", "十三期"].map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -837,7 +835,7 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}版路類型</span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}<b>版路類型</b></span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
@@ -866,7 +864,7 @@ export function MatrixExplorePage({
           <div className="advanced-panel">
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}號碼順序
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}<b>號碼順序</b>
               </span>
               <div className="select-box native-select">
                 <select
@@ -882,7 +880,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}<b>探索日期</b>
               </span>
               <div className="segmented three">
                 {["本日(最新)", "昨日(上1期)", "前日(上2期)"].map((value) => (
@@ -899,7 +897,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}探索範圍
+                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}<b>探索範圍</b>
               </span>
               <div className="segmented two">
                 {["標準範圍", "完整範圍"].map((value) => (
@@ -2541,9 +2539,9 @@ function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array
   );
 }
 
-function ProfileDetailShell({ title, children, onNavigate }: { title: string; children?: React.ReactNode; onNavigate: Navigate }) {
+function ProfileDetailShell({ title, children, onNavigate, className = "" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string }) {
   return (
-    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className="profile-detail-screen">
+    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className={`profile-detail-screen ${className}`.trim()}>
       {children}
     </FeatureShell>
   );
@@ -2679,7 +2677,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [activationOpen, setActivationOpen] = useState(false);
   const referralSuccessCount = 0;
   return (
-    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate}>
+    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
       <section className="panel referral-card">
         <h2>我的推薦碼</h2>
         <div className="my-referral-code" aria-label="我的推薦碼">—</div>
@@ -2921,7 +2919,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
           aria-label="自訂觸發條件"
           onClick={() => onNavigate("status-trigger-settings")}
         >
-          <img src="/assets/lottery/status-trigger-settings.png" alt="" draggable={false} />
+          <img src="/assets/lottery/status-trigger-settings-v2.png" alt="" draggable={false} />
         </button>
       )}
     >

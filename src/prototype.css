@@ -1997,11 +1997,18 @@
 
 .home-screen [data-lottery-switcher] {
   gap: 8px !important;
+  width: calc(100% - 8px) !important;
 }
 
 .home-screen .matrix-core-banner,
 .home-screen .home-shortcut-row {
-  width: calc(100% - 24px);
+  width: calc(100% - 8px);
+}
+
+.home-screen .matrix-core-banner,
+.mobile-app-viewport[data-platform="android"] .home-screen .matrix-core-banner {
+  flex-basis: 88px;
+  height: 88px;
 }
 
 .home-screen .home-shortcut-row,
@@ -2014,4 +2021,45 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.lottery-screen > .latest-draw-card {
+  position: relative;
+  min-height: 182px;
+  padding: 8px 12px 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 10px;
+  background: #020303 url("/assets/lottery/latest-draw-card-v2.png") center / 100% 100% no-repeat;
+}
+
+.lottery-screen > .latest-draw-card .draw-toolbar {
+  position: relative;
+  z-index: 2;
+  min-height: 42px;
+}
+
+.lottery-screen > .latest-draw-card .draw-meta,
+.lottery-screen > .latest-draw-card .draw-order,
+.lottery-screen > .latest-draw-card .history-link,
+.lottery-screen > .latest-draw-card .next-draw-info--embedded {
+  opacity: 0;
+}
+
+.lottery-screen > .latest-draw-card .draw-balls {
+  position: relative;
+  z-index: 2;
+  height: 82px;
+  margin-top: 2px;
+  align-items: center;
+}
+
+.lottery-screen > .latest-draw-card .draw-order,
+.lottery-screen > .latest-draw-card .history-link {
+  pointer-events: auto;
+}
+
+.lottery-screen > .latest-draw-card .next-draw-info--embedded {
+  height: 44px;
+  margin-top: 2px;
+  pointer-events: none;
 }
