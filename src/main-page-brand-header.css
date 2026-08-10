@@ -20,8 +20,3 @@
   transform: translateX(-50%);
   transform-origin: center;
 }
-
-/* 2026-08-10 shared brand alignment */
-.main-page-brand-logo {
-  transform: translateX(calc(-50% + 10px));
-}
