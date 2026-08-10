@@ -5,12 +5,29 @@
   background-position: center !important;
 }
 
-/* 首頁與所有頁首共用相同 Logo 幾何。 */
-.feature-screen:not(.compact-feature-screen) {
+/* 首頁與所有頁首共用相同 Logo 幾何與垂直位置。 */
+.feature-screen:not(.compact-feature-screen),
+.compact-feature-screen {
   padding-top: 30px !important;
 }
 
+.bottom-nav-brand-screen {
+  --bottom-nav-brand-offset: 0px !important;
+}
+
+.bottom-nav-brand-screen > .feature-brand-header,
+.bottom-nav-brand-screen > .feature-body {
+  top: 0 !important;
+}
+
+.bottom-nav-brand-screen > .feature-body {
+  margin-bottom: 0 !important;
+}
+
 .feature-brand-header:not([data-compact='true']) {
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: auto !important;
   min-height: var(--primary-brand-height) !important;
@@ -20,6 +37,8 @@
 
 .feature-brand-header:not([data-compact='true']) .feature-brand-row {
   position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
   display: flex !important;
   width: 100% !important;
   height: var(--primary-brand-height) !important;
@@ -31,8 +50,10 @@
 .feature-brand-header:not([data-compact='true']) .feature-brand-lockup {
   display: flex !important;
   width: 100% !important;
+  max-width: none !important;
   height: var(--primary-brand-height) !important;
   padding: 0 var(--primary-brand-inline) !important;
+  aspect-ratio: auto !important;
   align-items: center !important;
   justify-content: center !important;
 }
@@ -48,6 +69,8 @@
 
 .feature-brand-header[data-compact='true'] {
   position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: var(--primary-brand-height) !important;
   min-height: var(--primary-brand-height) !important;
