@@ -3465,7 +3465,7 @@ main.feature-screen.compact-feature-screen {
 .feature-brand-header > .feature-brand-logo,
 .matrix-explore-main-screen .feature-brand-header > img {
   position: absolute;
-  top: 0;
+  top: 4px;
   left: 50%;
   display: block;
   width: 390px;
