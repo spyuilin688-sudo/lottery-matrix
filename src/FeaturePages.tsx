@@ -207,15 +207,11 @@ function FeatureShell({
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive);
+  void title;
+  void headerAction;
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen" : ""} ${className}`.trim()}>
       <BrandHeader onBack={() => onNavigate(backTarget)} compact={logoOnlyHeader} logoSrc={brandLogoSrc} />
-      {!logoOnlyHeader ? (
-        <section className="feature-page-title-card" aria-label={`${title}頁面標題`}>
-          <h1>{title}</h1>
-          {headerAction ? <div className="feature-header-action">{headerAction}</div> : null}
-        </section>
-      ) : null}
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal
         active={active}
@@ -2326,9 +2322,6 @@ export function NotesPage({ onNavigate }: { onNavigate: Navigate }) {
     return (
       <main className="feature-screen note-detail-screen">
         <BrandHeader onBack={() => setSelectedNote(null)} />
-        <section className="feature-page-title-card" aria-label="記事詳細頁面標題">
-          <h1>記事詳細</h1>
-        </section>
         <div className="feature-body">
           <section className="panel note-detail-card">
             {detailRows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
