@@ -1,14 +1,6 @@
-.home-screen .latest-draw-card {
-  background-image: url('/assets/lottery/functions/3456667.png') !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
-}
-
 /* 首頁與所有頁首共用相同 Logo 幾何與垂直位置。 */
 .feature-screen:not(.compact-feature-screen),
-.compact-feature-screen,
-.lottery-screen {
+.compact-feature-screen {
   padding-top: var(--primary-brand-top) !important;
 }
 
@@ -25,7 +17,6 @@
   margin-bottom: 0 !important;
 }
 
-.brand-header,
 .feature-brand-header,
 .feature-brand-header:not([data-compact='true']),
 .feature-brand-header[data-compact='true'] {
@@ -105,9 +96,8 @@
   max-height: var(--brand-back-icon-size) !important;
 }
 
-.brand-header > .shared-brand-logo,
-.shared-brand-logo,
 .feature-brand-lockup,
+.feature-brand-header .shared-brand-logo,
 .feature-brand-header[data-compact='true'] > .shared-brand-logo {
   display: flex !important;
   width: 100% !important;
@@ -121,9 +111,8 @@
   line-height: 0 !important;
 }
 
-.shared-brand-logo > img,
-.home-screen .shared-brand-logo > img,
-.feature-brand-header .shared-brand-logo > img {
+.feature-brand-header .shared-brand-logo > img,
+.feature-brand-lockup .shared-brand-logo > img {
   display: block !important;
   width: min(100%, calc(var(--primary-brand-height) * 1536 / 550)) !important;
   max-width: 100% !important;
