@@ -2953,3 +2953,24 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-core-banner {
   margin-top: -20px !important;
 }
+
+/* 2026-08-11 homepage function frames match uploaded image ratios. */
+.home-screen .lottery-screen > .home-shortcut-row .home-shortcut:nth-child(1) {
+  aspect-ratio: 420 / 506 !important;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row .home-shortcut:nth-child(2) {
+  aspect-ratio: 420 / 512 !important;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row .home-shortcut:nth-child(3) {
+  aspect-ratio: 405 / 520 !important;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row .home-shortcut:nth-child(4) {
+  aspect-ratio: 405 / 520 !important;
+}
+
+.home-screen .lottery-screen > .home-shortcut-row .home-shortcut:nth-child(5) {
+  aspect-ratio: 420 / 507 !important;
+}
