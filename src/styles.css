@@ -1,4 +1,5 @@
 :root {
+  --app-layout-viewport: 390px;
   color: #151515;
   background: #ffffff;
   font-family:
@@ -249,7 +250,14 @@ button {
 
 .mobile-app-viewport {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: min(100%, var(--app-layout-viewport));
+  max-width: var(--app-layout-viewport);
+  margin-inline: auto;
+  overflow: hidden;
 }
 
 .mobile-app-viewport[data-platform="android"][data-keyboard-visible="false"] {
