@@ -205,31 +205,3 @@
   line-height: 1 !important;
   cursor: pointer !important;
 }
-
-/* 首頁 Matrix 牌單：使用指定圖示；修正先前誤套在第 5 張的裁切。 */
-.home-screen .home-shortcut:nth-child(5) img {
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  transform: none !important;
-}
-
-.home-screen .home-shortcut[aria-label='Matrix 牌單'] {
-  overflow: hidden !important;
-  border-radius: 9px !important;
-}
-
-.home-screen .home-shortcut[aria-label='Matrix 牌單'] img {
-  display: block !important;
-  width: calc(100% + 6px) !important;
-  height: calc(100% + 6px) !important;
-  max-width: none !important;
-  max-height: none !important;
-  margin: -3px !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  clip-path: inset(2px round 9px) !important;
-  transform: none !important;
-}
