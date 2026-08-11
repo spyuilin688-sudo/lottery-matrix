@@ -11,6 +11,8 @@ import { BrandLogo } from "./BrandLogo";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
+import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
+import type { LotteryDrawRecord } from "./lottery-api";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -24,7 +26,9 @@ export type DrawResultData = {
   issue?: string;
   date?: string;
   numbers: string[];
+  drawOrderNumbers?: string[];
   specialNumber?: string;
+  drawOrderSpecialNumber?: string;
 };
 
 export type NextDrawInfoData = {
@@ -167,14 +171,6 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   },
 };
 
-const MARK_SIX_BLUE = new Set([
-  "03", "04", "09", "10", "14", "15", "20", "25", "26", "31", "36", "37", "41", "42", "47", "48",
-]);
-
-const MARK_SIX_RED = new Set([
-  "01", "02", "07", "08", "12", "13", "18", "19", "23", "24", "29", "30", "34", "35", "40", "45", "46",
-]);
-
 export type LotterySwitcherProps = {
   selected: LotteryId;
   onChange: (lottery: LotteryId) => void;
@@ -197,24 +193,32 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
   );
 }
 
-function getBallTone(lottery: LotteryId, number: string): "orange" | "white" | "red" | "green" | "blue" {
-  if (lottery === "今彩539") return "orange";
-  if (lottery === "天天樂") return "white";
-  if (lottery === "大樂透") return "red";
-  if (MARK_SIX_BLUE.has(number)) return "blue";
-  if (MARK_SIX_RED.has(number)) return "red";
-  return "green";
+function splitDrawNumbers(lottery: LotteryId, values: Array<string | number>) {
+  const normalized = values.map(normalizeBallNumber);
+  if (lottery === "六合彩" || lottery === "大樂透") {
+    return {
+      numbers: normalized.slice(0, 6),
+      specialNumber: normalized[6],
+    };
+  }
+  return {
+    numbers: normalized.slice(0, 5),
+    specialNumber: undefined,
+  };
 }
 
-function NumberBall({ lottery, number, isSpecial = false }: { lottery: LotteryId; number: string; isSpecial?: boolean }) {
-  const tone = getBallTone(lottery, number);
-  const usesDarkText = lottery === "今彩539" || lottery === "天天樂" || lottery === "六合彩";
-  return (
-    <span className="number-ball" data-lottery={lottery} data-special={isSpecial} data-tone={tone} data-dark-text={usesDarkText} aria-label={`${isSpecial ? "特別號" : "號碼"} ${number}`}>
-      <span className="ball-surface" aria-hidden="true" />
-      <span className="ball-number" aria-hidden="true">{number}</span>
-    </span>
-  );
+function toDrawResult(lottery: LotteryId, record: LotteryDrawRecord): DrawResultData {
+  const sorted = splitDrawNumbers(lottery, record.sortedNumbers?.length ? record.sortedNumbers : record.numbers);
+  const drawOrder = splitDrawNumbers(lottery, record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers);
+
+  return {
+    issue: record.period ?? record.issue,
+    date: record.drawDate ?? record.date,
+    numbers: sorted.numbers,
+    drawOrderNumbers: drawOrder.numbers,
+    specialNumber: sorted.specialNumber,
+    drawOrderSpecialNumber: drawOrder.specialNumber,
+  };
 }
 
 export type LatestDrawCardProps = {
@@ -228,9 +232,10 @@ export type LatestDrawCardProps = {
 };
 
 export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
-  const displayedNumbers = order === "順球" ? [...result.numbers].sort((a, b) => Number(a) - Number(b)) : result.numbers;
+  const displayedNumbers = order === "順球" ? result.numbers : result.drawOrderNumbers ?? result.numbers;
+  const displayedSpecialNumber = order === "順球" ? result.specialNumber : result.drawOrderSpecialNumber ?? result.specialNumber;
   const hasMeta = Boolean(result.issue || result.date);
-  const hasSpecial = Boolean(result.specialNumber);
+  const hasSpecial = Boolean(displayedSpecialNumber);
   return (
     <section className={`latest-draw-card ${className}`.trim()} data-lottery={lottery} aria-label={`${lottery}最新開獎資訊`} data-testid="latest-draw-card">
       <div className="draw-toolbar">
@@ -247,9 +252,9 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
       </div>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
-          {displayedNumbers.map((number, index) => <NumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
+          {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
         </div>
-        {result.specialNumber ? <><span className="special-ball-plus" aria-hidden="true">+</span><div className="special-ball-group"><span className="special-label">特別號</span><NumberBall lottery={lottery} number={result.specialNumber} isSpecial /></div></> : null}
+        {displayedSpecialNumber ? <><span className="special-ball-plus" aria-hidden="true">+</span><div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div></> : null}
       </div>
       <NextDrawInfoBar {...nextDrawInfo} className="next-draw-info--embedded" />
     </section>
@@ -326,12 +331,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
   const { deviceId, setDeviceId } = useMobileDevice();
   const nextDrawInfo = NEXT_DRAW_INFO[selected];
   const { data: latestDraw } = useLatestLotteryDraw(selected);
-  const drawResult: DrawResultData = latestDraw ? {
-    issue: latestDraw.period ?? latestDraw.issue,
-    date: latestDraw.drawDate ?? latestDraw.date,
-    numbers: latestDraw.numbers.map((number) => String(number).padStart(2, "0")),
-    specialNumber: latestDraw.specialNumber != null ? String(latestDraw.specialNumber).padStart(2, "0") : undefined,
-  } : DRAW_RESULTS[selected];
+  const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
