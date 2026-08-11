@@ -21,6 +21,7 @@ import { LotterySwitcher, type LotteryId, type DrawOrder } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
+import { BrandLogo } from "./BrandLogo";
 
 export type ScreenId =
   | "home"
@@ -68,8 +69,6 @@ type QuickNavigationContextValue = {
 };
 
 const QuickNavigationContext = createContext<QuickNavigationContextValue>({});
-
-const PRIMARY_BRAND_LOGO = "/assets/lottery/primary-brand-logo.jpg";
 
 export function QuickNavigationProvider({
   children,
@@ -131,13 +130,11 @@ function BrandHeader({
   onBack,
   action,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent.png",
 }: {
   title: string;
   onBack: () => void;
   action?: React.ReactNode;
   compact?: boolean;
-  logoSrc?: string;
 }) {
   return (
     <header className="feature-brand-header" data-compact={compact}>
@@ -147,11 +144,11 @@ function BrandHeader({
             <ChevronLeftIcon aria-hidden="true" />
           </button>
           <div className="feature-brand-lockup">
-            <img className="feature-brand-logo" src="/assets/lottery/feature-brand-logo.jpg" alt="樂彩 Matrix" />
+            <BrandLogo />
           </div>
         </div>
       ) : (
-        <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
+        <BrandLogo />
       )}
       {!compact ? <h1>{title}</h1> : null}
       {action ? <div className="feature-header-action">{action}</div> : null}
@@ -196,7 +193,6 @@ function FeatureShell({
   backTarget = "home",
   headerAction,
   compactHeader = false,
-  logoSrc,
 }: {
   title: string;
   children: React.ReactNode;
@@ -206,7 +202,6 @@ function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
-  logoSrc?: string;
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
@@ -217,7 +212,6 @@ function FeatureShell({
         onBack={() => onNavigate(backTarget)}
         action={headerAction}
         compact={logoOnlyHeader}
-        logoSrc={logoOnlyHeader ? PRIMARY_BRAND_LOGO : logoSrc}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
@@ -1097,9 +1091,10 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
     type: "locked" | "predicted",
   ) => {
     const [issue, date, nums] = entry;
+    const baseNumbers = [...nums] as string[];
     const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
-      ? [...nums, "38", nums.includes("03") ? "44" : "03"]
-      : [...nums];
+      ? [...baseNumbers, "38", baseNumbers.includes("03") ? "44" : "03"]
+      : baseNumbers;
     const draw = getHistoryDrawNumbers(
       lottery,
       { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
@@ -1316,9 +1311,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
           {ROAD_VALIDATION_SAMPLE_HISTORY.map(([issue, , nums]) => {
+            const baseNumbers = [...nums] as string[];
             const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
-              ? [...nums, "38", nums.includes("03") ? "44" : "03"]
-              : [...nums];
+              ? [...baseNumbers, "38", baseNumbers.includes("03") ? "44" : "03"]
+              : baseNumbers;
             const draw = getHistoryDrawNumbers(
               lottery,
               { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
@@ -2529,9 +2525,9 @@ function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array
   );
 }
 
-function ProfileDetailShell({ title, children, onNavigate, className = "", logoSrc }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string; logoSrc?: string }) {
+function ProfileDetailShell({ title, children, onNavigate, className = "" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string }) {
   return (
-    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className={`profile-detail-screen ${className}`.trim()} logoSrc={logoSrc}>
+    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" className={`profile-detail-screen ${className}`.trim()}>
       {children}
     </FeatureShell>
   );
@@ -2667,7 +2663,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [activationOpen, setActivationOpen] = useState(false);
   const referralSuccessCount = 0;
   return (
-    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" logoSrc="/assets/lottery/referral-activation-logo.png">
+    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
       <section className="panel referral-card">
         <h2>我的推薦碼</h2>
         <div className="my-referral-code" aria-label="我的推薦碼">—</div>
