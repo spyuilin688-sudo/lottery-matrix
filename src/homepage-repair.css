@@ -1,0 +1,261 @@
+/* 2026-08-11 homepage display repair: content flow and latest draw card. */
+.home-screen .lottery-screen {
+  row-gap: 0;
+  min-height: 100%;
+  overflow: visible;
+  padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 10px);
+}
+
+.home-screen .lottery-switcher,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher {
+  position: static;
+  transform: none !important;
+  margin: 0 auto 4px;
+  padding: 2px 12px 4px !important;
+}
+
+.home-screen .lottery-switcher > .lottery-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher > .lottery-card {
+  height: 66px !important;
+}
+
+.home-screen .lottery-switcher > .lottery-card .lottery-logo {
+  height: 44px !important;
+  flex-basis: 44px !important;
+}
+
+.home-screen .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  position: static;
+  transform: none !important;
+  width: calc(100% - 24px);
+  min-height: 0;
+  aspect-ratio: auto;
+  margin: 0 auto 6px;
+  padding: 10px 12px 0;
+  overflow: visible;
+  border-color: #8a5f27;
+  background:
+    linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
+    url('/assets/lottery/latest-draw-card-bg.png') center / 100% 100% no-repeat;
+  background-color: #050b10;
+}
+
+.home-screen .latest-draw-card .draw-toolbar {
+  grid-template-columns: minmax(92px, 1fr) 108px minmax(70px, 1fr);
+  min-height: 34px;
+  gap: 6px;
+}
+
+.home-screen .latest-draw-card .draw-issue {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.home-screen .latest-draw-card .draw-issue strong {
+  font-size: 22px;
+  line-height: 24px;
+}
+
+.home-screen .latest-draw-card .draw-date {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.home-screen .latest-draw-card .draw-order,
+.home-screen .latest-draw-card .history-link {
+  height: 26px;
+}
+
+.home-screen .latest-draw-card .draw-order button {
+  font-size: 12px;
+}
+
+.home-screen .latest-draw-card .draw-balls {
+  height: 58px;
+  margin-inline: -4px;
+  align-items: center;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card .next-draw-info--embedded {
+  height: 34px;
+  margin: 0 -12px;
+  padding: 0 10px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
+  grid-template-columns: 18px auto minmax(0, 1fr);
+  gap: 4px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
+  font-size: 11px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-screen .matrix-status-section,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
+  position: static;
+  top: auto;
+  transform: none;
+  width: calc(100% - 24px);
+  min-height: 0;
+  margin: 0 auto 6px;
+  padding: 7px 7px 4px;
+  overflow: visible;
+}
+
+.home-screen .matrix-status-header {
+  height: 24px;
+  align-items: center;
+}
+
+.home-screen .matrix-status-header h2 {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.home-screen .matrix-status-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  overflow: visible;
+}
+
+.home-screen .matrix-status-card {
+  position: relative;
+  display: flex;
+  aspect-ratio: .76;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-screen .matrix-status-artwork {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-screen .matrix-status-lottery-center {
+  top: 37%;
+  gap: 1px;
+}
+
+.home-screen .matrix-status-logo,
+.home-screen .matrix-status-card[data-lottery='天天樂'] .matrix-status-logo,
+.home-screen .matrix-status-card[data-lottery='六合彩'] .matrix-status-logo,
+.home-screen .matrix-status-card[data-lottery='大樂透'] .matrix-status-logo {
+  left: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 44px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.home-screen .matrix-status-overlay {
+  right: 2px;
+  bottom: 8px;
+  left: 2px;
+}
+
+.home-screen .matrix-status-found {
+  font-size: 7px;
+  line-height: 9px;
+}
+
+.home-screen .matrix-status-count {
+  height: 17px;
+}
+
+.home-screen .matrix-status-count strong {
+  font-size: 17px;
+  line-height: 18px;
+}
+
+.home-screen .matrix-status-overlay p {
+  min-height: 9px;
+  font-size: 5px;
+  line-height: 8px;
+}
+
+.home-screen .matrix-status-card-arrow {
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+}
+
+.home-screen .matrix-status-indicators {
+  height: 8px;
+  align-items: center;
+}
+
+.home-screen .matrix-core-banner,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
+  position: static;
+  top: auto;
+  transform: none;
+  width: calc(100% - 24px);
+  height: 64px;
+  margin: 0 auto 6px;
+  overflow: hidden;
+}
+
+.home-screen .matrix-core-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-screen .home-shortcut-row,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
+  position: static;
+  top: auto;
+  transform: none;
+  width: calc(100% - 24px);
+  height: clamp(60px, 16vw, 66px);
+  margin: 0 auto 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.home-screen .home-shortcut,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  border-radius: 9px;
+  background: transparent;
+}
+
+.home-screen .home-shortcut img,
+.home-screen .home-shortcut:nth-child(4) img,
+.home-screen .home-shortcut:nth-child(5) img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: none;
+  margin: 0;
+  object-fit: contain;
+  object-position: center;
+  clip-path: none;
+  border-radius: 0;
+  transform: none;
+}
