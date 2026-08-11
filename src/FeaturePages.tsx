@@ -18,6 +18,7 @@ import {
   TrashIcon,
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "./Prototype";
+import { BrandLogo, PRIMARY_BRAND_LOGO } from "./BrandLogo";
 import { BottomNavigation } from "./BottomNavigation";
 
 export type ScreenId =
@@ -67,7 +68,6 @@ type QuickNavigationContextValue = {
 
 const QuickNavigationContext = createContext<QuickNavigationContextValue>({});
 
-const PRIMARY_BRAND_LOGO = "/assets/lottery/primary-brand-logo.jpg";
 
 export function QuickNavigationProvider({
   children,
@@ -137,13 +137,11 @@ function BrandHeader({
   onBack,
   action,
   compact = false,
-  logoSrc = "/assets/lottery/brand-logo-transparent.png",
 }: {
   title: string;
   onBack: () => void;
   action?: React.ReactNode;
   compact?: boolean;
-  logoSrc?: string;
 }) {
   return (
     <header className="feature-brand-header" data-compact={compact}>
@@ -153,11 +151,11 @@ function BrandHeader({
             <ChevronLeftIcon aria-hidden="true" />
           </button>
           <div className="feature-brand-lockup">
-            <img className="feature-brand-logo" src="/assets/lottery/feature-brand-logo.jpg" alt="樂彩 Matrix" />
+            <BrandLogo />
           </div>
         </div>
       ) : (
-        <img className="feature-brand-logo" src={logoSrc} alt="樂彩 Matrix" />
+        <BrandLogo />
       )}
       {!compact ? <h1>{title}</h1> : null}
       {action ? <div className="feature-header-action">{action}</div> : null}
@@ -202,7 +200,6 @@ function FeatureShell({
   backTarget = "home",
   headerAction,
   compactHeader = false,
-  logoSrc,
 }: {
   title: string;
   children: React.ReactNode;
@@ -212,7 +209,6 @@ function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
-  logoSrc?: string;
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
@@ -223,7 +219,6 @@ function FeatureShell({
         onBack={() => onNavigate(backTarget)}
         action={headerAction}
         compact={logoOnlyHeader}
-        logoSrc={logoOnlyHeader ? PRIMARY_BRAND_LOGO : logoSrc}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
