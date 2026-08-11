@@ -97,6 +97,7 @@
 
 .home-screen .lottery-switcher > .lottery-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher > .lottery-card {
+  --lottery-selected-border-gradient: linear-gradient(135deg, #f4ce67, #ffd98a);
   position: relative !important;
   display: flex !important;
   aspect-ratio: 88 / 74 !important;
@@ -137,8 +138,27 @@
   border-color: rgba(220, 165, 63, 0.62) !important;
 }
 
+.home-screen .lottery-switcher > .lottery-card[data-lottery='今彩539'] {
+  --lottery-selected-border-gradient: linear-gradient(135deg, #3ee66b 0%, #ffe45f 34%, #ff544d 66%, #4ba3ff 100%);
+}
+
+.home-screen .lottery-switcher > .lottery-card[data-lottery='天天樂'] {
+  --lottery-selected-border-gradient: linear-gradient(135deg, #1f6fff 0%, #eff8ff 52%, #67cfff 100%);
+}
+
+.home-screen .lottery-switcher > .lottery-card[data-lottery='六合彩'] {
+  --lottery-selected-border-gradient: linear-gradient(135deg, #ff443d 0%, #2d8cff 50%, #35d76f 100%);
+}
+
+.home-screen .lottery-switcher > .lottery-card[data-lottery='大樂透'] {
+  --lottery-selected-border-gradient: linear-gradient(135deg, #ffe45d 0%, #ffd35a 48%, #2d8dff 100%);
+}
+
 .home-screen .lottery-switcher > .lottery-card[data-selected='true'] {
-  border-color: rgba(244, 206, 103, 0.9) !important;
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98)) padding-box,
+    var(--lottery-selected-border-gradient) border-box !important;
   box-shadow: 0 0 8px rgba(244, 206, 103, 0.24), inset 0 0 12px rgba(244, 206, 103, 0.08) !important;
 }
 
@@ -151,8 +171,8 @@
   z-index: 2 !important;
   display: flex !important;
   width: 100% !important;
-  height: 54px !important;
-  flex: 0 0 54px !important;
+  height: 62px !important;
+  flex: 0 0 62px !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: visible !important;
@@ -165,9 +185,9 @@
   position: static !important;
   display: block !important;
   width: auto !important;
-  max-width: 88% !important;
+  max-width: 96% !important;
   height: auto !important;
-  max-height: 54px !important;
+  max-height: 62px !important;
   object-fit: contain !important;
   object-position: center !important;
   transform: none !important;
@@ -177,12 +197,12 @@
 .home-screen .latest-draw-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
   display: grid !important;
-  grid-template-rows: 46px minmax(0, 1fr) 40px !important;
-  aspect-ratio: 2 / 1 !important;
+  grid-template-rows: 40px minmax(0, 1fr) 34px !important;
+  aspect-ratio: 374 / 166 !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  padding: 12px 16px 0 !important;
+  padding: 10px 14px 0 !important;
   border: 0 !important;
   border-radius: 10px !important;
   background: url('/assets/lottery/functions/3456667.png') center / 100% 100% no-repeat !important;
@@ -193,19 +213,22 @@
 
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr) !important;
-  height: 46px !important;
-  min-height: 46px !important;
+  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr) !important;
+  height: 40px !important;
+  min-height: 40px !important;
   gap: 8px !important;
   align-items: center !important;
 }
 
 .home-screen .latest-draw-card .draw-meta {
+  display: grid !important;
   min-width: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
+  row-gap: 1px !important;
   align-self: center !important;
   justify-self: start !important;
+  align-content: center !important;
   text-align: left !important;
 }
 
@@ -213,15 +236,15 @@
   display: flex !important;
   gap: 4px !important;
   align-items: baseline !important;
-  font-size: 12px !important;
-  line-height: 16px !important;
+  font-size: 11px !important;
+  line-height: 15px !important;
   white-space: nowrap !important;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 16px !important;
-  line-height: 18px !important;
-  letter-spacing: .7px !important;
+  font-size: 15px !important;
+  line-height: 17px !important;
+  letter-spacing: .5px !important;
 }
 
 .home-screen .latest-draw-card .draw-date {
@@ -235,9 +258,9 @@
 .home-screen .latest-draw-card .draw-order {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
-  width: 112px !important;
-  height: 28px !important;
-  min-height: 28px !important;
+  width: 104px !important;
+  height: 26px !important;
+  min-height: 26px !important;
   justify-self: center !important;
   align-self: center !important;
   border: 0 !important;
@@ -260,8 +283,8 @@
 
 .home-screen .latest-draw-card .history-link {
   display: flex !important;
-  height: 24px !important;
-  min-height: 24px !important;
+  height: 22px !important;
+  min-height: 22px !important;
   padding: 0 !important;
   justify-self: end !important;
   align-self: center !important;
@@ -281,7 +304,7 @@
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 2px 0 !important;
+  padding: 0 !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: visible !important;
@@ -300,32 +323,32 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special='false'] .number-ball-component {
-  --number-ball-size: 52px;
-  --number-font-size: 19px;
-  --underline-width: 18px;
-  width: 52px !important;
-  height: 52px !important;
-  flex: 0 0 52px !important;
+  --number-ball-size: 50px;
+  --number-font-size: 18px;
+  --underline-width: 16px;
+  width: 50px !important;
+  height: 50px !important;
+  flex: 0 0 50px !important;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special='true'] .main-balls {
-  gap: 1px !important;
+  gap: 2px !important;
   flex: 0 1 auto !important;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special='true'] .number-ball-component {
-  --number-ball-size: 40px;
-  --number-font-size: 15px;
+  --number-ball-size: 42px;
+  --number-font-size: 16px;
   --underline-width: 14px;
-  width: 40px !important;
-  height: 40px !important;
-  flex: 0 0 40px !important;
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 42px !important;
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
   display: flex !important;
   width: 10px !important;
-  height: 40px !important;
+  height: 42px !important;
   flex: 0 0 10px !important;
   align-items: center !important;
   justify-content: center !important;
@@ -338,9 +361,9 @@
 .home-screen .latest-draw-card .special-ball-group {
   position: relative !important;
   display: flex !important;
-  width: 42px !important;
-  height: 54px !important;
-  flex: 0 0 42px !important;
+  width: 44px !important;
+  height: 56px !important;
+  flex: 0 0 44px !important;
   align-items: flex-end !important;
   justify-content: center !important;
   transform: none !important;
@@ -351,7 +374,7 @@
   top: 0 !important;
   right: 0 !important;
   left: 0 !important;
-  width: 42px !important;
+  width: 44px !important;
   color: #d8a653 !important;
   font-size: 9px !important;
   line-height: 14px !important;
@@ -364,11 +387,11 @@
   display: grid !important;
   grid-template-columns: minmax(0, 54fr) minmax(0, 46fr) !important;
   width: auto !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  max-height: 40px !important;
-  margin: 0 -16px !important;
-  padding: 0 18px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  margin: 0 -14px !important;
+  padding: 0 16px !important;
   align-items: center !important;
   border: 0 !important;
   background: transparent !important;
@@ -457,7 +480,7 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 4px !important;
+  gap: 2px !important;
   width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
