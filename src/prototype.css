@@ -1664,7 +1664,7 @@
   object-fit: contain;
   object-position: center;
   border-radius: 9px;
-  clip-path: inset(2px round 9px);
+  clip-path: none;
   transform: none;
 }
 .home-shortcut:nth-child(2) img,
@@ -2070,7 +2070,7 @@
   height: calc(100% + 4px);
   object-fit: cover;
   object-position: center;
-  clip-path: inset(2px round 9px);
+  clip-path: none;
 }
 
 /* Uploaded black-gold navigation: faceted shell, linked hexagons and gold active state. */
