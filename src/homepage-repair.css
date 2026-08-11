@@ -410,3 +410,8 @@
   border-radius: 0 !important;
   transform: none !important;
 }
+
+.home-screen .lottery-screen > .lottery-switcher,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .lottery-switcher {
+  transform: translateY(-20px) !important;
+}
