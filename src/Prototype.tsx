@@ -167,6 +167,15 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   },
 };
 
+const MATRIX_STATUS_CONTAINER_BY_LOTTERY: Record<LotteryId, string> = {
+  今彩539: "jincai539",
+  天天樂: "fantasy5",
+  "六合彩": "marksix",
+  大樂透: "lotto649",
+};
+
+const MATRIX_STATUS_CONTAINER_BY_POSITION = ["first", "middle", "middle", "last"] as const;
+
 const MARK_SIX_BLUE = new Set([
   "03", "04", "09", "10", "14", "15", "20", "25", "26", "31", "36", "37", "41", "42", "47", "48",
 ]);
@@ -270,12 +279,59 @@ export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: ()
 export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpen }: MatrixStatusSectionProps = {}) {
   return (
     <section className="matrix-status-section" aria-labelledby="matrix-status-title" data-testid="matrix-status-section">
+      <style>{`
+        .matrix-status-container {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: fill;
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-grid,
+        .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-grid {
+          gap: 0 !important;
+        }
+
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-card,
+        .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-card {
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          overflow: hidden !important;
+        }
+
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-container,
+        .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-container {
+          position: absolute !important;
+          inset: 0 !important;
+          z-index: 1 !important;
+          display: block !important;
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: fill !important;
+          pointer-events: none !important;
+        }
+
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-lottery-center,
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-overlay,
+        .home-screen .lottery-screen > .matrix-status-section .matrix-status-card-arrow {
+          z-index: 2 !important;
+        }
+      `}</style>
       <header className="matrix-status-header"><h2 id="matrix-status-title">Matrix 狀態</h2><div className="matrix-status-more"><span>查看更多狀態</span><ChevronRightIcon aria-hidden="true" /></div></header>
       <div className="matrix-status-grid">
         {LOTTERIES.map((lottery) => {
           const item = statuses[lottery.id];
+          const containerPosition = MATRIX_STATUS_CONTAINER_BY_POSITION[LOTTERIES.indexOf(lottery)] ?? "middle";
+          const containerSrc = `/assets/lottery/status-containers/${MATRIX_STATUS_CONTAINER_BY_LOTTERY[lottery.id]}-${containerPosition}.svg`;
           return (
-            <article className="matrix-status-card" data-lottery={lottery.id} data-tone={item.tone} key={lottery.id} onClick={onOpen}>
+            <article className="matrix-status-card" data-lottery={lottery.id} data-tone={item.tone} data-container-position={containerPosition} key={lottery.id} onClick={onOpen}>
+              <img className="matrix-status-container" src={containerSrc} alt="" aria-hidden="true" draggable={false} />
               <div className="matrix-status-lottery-center"><div className="matrix-status-lottery">{lottery.id}</div></div>
               <div className="matrix-status-overlay"><div className="matrix-status-found">本期發現</div><div className="matrix-status-count"><strong>{item.count}</strong><span>組</span></div><p>{item.description}</p></div>
               <ChevronRightIcon className="matrix-status-card-arrow" aria-hidden="true" />
