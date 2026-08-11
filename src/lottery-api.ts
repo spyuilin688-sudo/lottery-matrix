@@ -43,7 +43,7 @@ function normalizePeriod(lottery: NumberBallLottery, value: unknown) {
 function normalizeDrawDate(value: unknown) {
   if (value === null || value === undefined) return undefined;
   const date = String(value).trim();
-  const westernMatch = date.match(/(\d{4})[\/-\.](\d{1,2})[\/-\.](\d{1,2})/);
+  const westernMatch = date.match(/(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})/);
   const chineseMatch = date.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
   const match = westernMatch ?? chineseMatch;
 
