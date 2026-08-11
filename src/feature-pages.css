@@ -2731,3 +2731,60 @@
   height: auto;
   max-height: none;
 }
+
+
+.history-panel .history-lottery-ball .number-ball-value {
+  position: relative;
+  inset: auto;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.history-panel .history-lottery-ball .number-ball-value::after,
+.history-panel .history-lottery-ball[data-lottery="六合彩"] .number-ball-value::after {
+  top: auto;
+  bottom: 3px;
+  width: 7px;
+  height: .75px;
+}
+
+.history-panel .history-numbers[data-has-special="true"] .history-lottery-ball .number-ball-value {
+  font-size: 11px;
+}
+
+.draw-history-row .history-lottery-ball .number-ball-value {
+  font-size: 10px;
+}
+
+.draw-history-row .history-lottery-ball .number-ball-value::after {
+  top: auto;
+  bottom: 1px;
+}
+
+.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .number-ball-value {
+  font-size: 9px;
+}
+
+.draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="今彩539"] .number-ball-value,
+.draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="天天樂"] .number-ball-value {
+  font-size: 11.5px;
+}
+
+.draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"] .number-ball-value,
+.draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="大樂透"] .number-ball-value {
+  font-size: 10px;
+}
+
+.draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"] .number-ball-value::after {
+  display: block;
+  background: #070707;
+  opacity: 1;
+  content: "";
+}
