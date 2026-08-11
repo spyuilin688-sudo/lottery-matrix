@@ -2224,8 +2224,8 @@
 
 .home-screen .brand-header {
   position: relative;
-  top: -36px;
-  left: -2px;
+  top: auto;
+  left: auto;
   box-sizing: border-box;
   width: 100%;
   height: var(--primary-brand-height);
@@ -2310,8 +2310,8 @@
 /* 2026-08-11 Logo unification: all page headers use the shared BrandLogo component. */
 .home-screen .brand-header {
   position: relative;
-  top: -36px;
-  left: -2px;
+  top: auto;
+  left: auto;
   box-sizing: border-box;
   width: 100%;
   height: var(--primary-brand-height);
@@ -2339,11 +2339,11 @@
   object-position: center;
 }
 
-/* 2026-08-12 homepage lottery switcher position adjustment. */
+/* 2026-08-12 homepage lottery switcher position normalized by homepage-repair.css. */
 .home-screen .lottery-screen > .lottery-switcher,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .lottery-switcher {
-  margin-top: -20px !important;
-  margin-bottom: 20px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
   transform: none !important;
 }
 
