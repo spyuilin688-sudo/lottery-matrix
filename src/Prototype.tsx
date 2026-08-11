@@ -84,7 +84,7 @@ const QUICK_OPTIONS = [
 
 const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
   今彩539: {
-    issue: "5896",
+    issue: "115194",
     date: "2026/08/11",
     numbers: ["02", "14", "25", "29", "36"],
   },
@@ -100,7 +100,7 @@ const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
     specialNumber: "03",
   } as DrawResultData,
   大樂透: {
-    issue: "5896",
+    issue: "115078",
     date: "2026/08/11",
     numbers: ["21", "18", "07", "44", "13", "38"],
     specialNumber: "03",
