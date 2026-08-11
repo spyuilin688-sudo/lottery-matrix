@@ -7,8 +7,9 @@
 
 /* 首頁與所有頁首共用相同 Logo 幾何與垂直位置。 */
 .feature-screen:not(.compact-feature-screen),
-.compact-feature-screen {
-  padding-top: 30px !important;
+.compact-feature-screen,
+.lottery-screen {
+  padding-top: var(--primary-brand-top) !important;
 }
 
 .bottom-nav-brand-screen {
@@ -17,30 +18,42 @@
 
 .bottom-nav-brand-screen > .feature-brand-header,
 .bottom-nav-brand-screen > .feature-body {
-  top: 0 !important;
+  top: auto !important;
 }
 
 .bottom-nav-brand-screen > .feature-body {
   margin-bottom: 0 !important;
 }
 
-.feature-brand-header:not([data-compact='true']) {
+.brand-header,
+.feature-brand-header,
+.feature-brand-header:not([data-compact='true']),
+.feature-brand-header[data-compact='true'] {
   position: relative !important;
-  top: 0 !important;
-  left: 0 !important;
+  top: -36px !important;
+  left: -2px !important;
+  box-sizing: border-box !important;
   width: 100% !important;
-  height: auto !important;
+  height: var(--primary-brand-height) !important;
   min-height: var(--primary-brand-height) !important;
-  padding: 0 !important;
-  margin-bottom: 8px !important;
+  padding: 0 var(--primary-brand-inline) !important;
+  margin: 0 0 var(--layout-section-gap) !important;
+  flex: 0 0 var(--primary-brand-height) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+.bottom-nav-brand-screen > .feature-brand-header {
+  top: -36px !important;
 }
 
 .feature-brand-header:not([data-compact='true']) .feature-brand-row {
-  position: relative !important;
+  position: absolute !important;
+  inset: 0 !important;
   top: 0 !important;
-  left: 0 !important;
   display: flex !important;
-  width: 100% !important;
+  width: auto !important;
   height: var(--primary-brand-height) !important;
   min-height: var(--primary-brand-height) !important;
   align-items: center !important;
@@ -52,47 +65,80 @@
   width: 100% !important;
   max-width: none !important;
   height: var(--primary-brand-height) !important;
-  padding: 0 var(--primary-brand-inline) !important;
+  padding: 0 !important;
   aspect-ratio: auto !important;
   align-items: center !important;
   justify-content: center !important;
+  overflow: visible !important;
 }
 
-.feature-brand-header:not([data-compact='true']) .feature-brand-lockup > .feature-brand-logo {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  object-fit: contain !important;
-  object-position: center !important;
-}
-
-.feature-brand-header[data-compact='true'] {
-  position: relative !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  min-height: var(--primary-brand-height) !important;
-  padding: 0 var(--primary-brand-inline) !important;
-  margin-bottom: 8px !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.feature-brand-header[data-compact='true'] > .feature-brand-logo {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  object-fit: contain !important;
-  object-position: center !important;
+.feature-brand-header,
+.profile-subpage-header {
+  --brand-back-button-size: 58px;
+  --brand-back-icon-size: 49px;
+  --brand-back-logo-gap: 12px;
+  --brand-back-left: 6px;
 }
 
 .feature-brand-header:not([data-compact='true']) .back-button,
 .profile-subpage-back {
-  top: 28px !important;
-  left: 4px !important;
+  top: calc(50% + 8px) !important;
+  left: var(--brand-back-left) !important;
+  width: var(--brand-back-button-size) !important;
+  min-width: var(--brand-back-button-size) !important;
+  max-width: var(--brand-back-button-size) !important;
+  height: var(--brand-back-button-size) !important;
+  min-height: var(--brand-back-button-size) !important;
+  max-height: var(--brand-back-button-size) !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  flex: 0 0 var(--brand-back-button-size) !important;
+  transform: translateY(-50%) !important;
+}
+
+.feature-brand-header:not([data-compact='true']) .back-button svg {
+  width: var(--brand-back-icon-size) !important;
+  min-width: var(--brand-back-icon-size) !important;
+  max-width: var(--brand-back-icon-size) !important;
+  height: var(--brand-back-icon-size) !important;
+  min-height: var(--brand-back-icon-size) !important;
+  max-height: var(--brand-back-icon-size) !important;
+}
+
+.brand-header > .shared-brand-logo,
+.shared-brand-logo,
+.feature-brand-lockup,
+.feature-brand-header[data-compact='true'] > .shared-brand-logo {
+  display: flex !important;
+  width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  background: transparent !important;
+  line-height: 0 !important;
+}
+
+.shared-brand-logo > img,
+.home-screen .shared-brand-logo > img,
+.feature-brand-header .shared-brand-logo > img {
+  display: block !important;
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550)) !important;
+  max-width: 100% !important;
+  height: var(--primary-brand-height) !important;
+  aspect-ratio: var(--primary-brand-ratio) !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.brand-logo,
+.feature-brand-logo,
+.feature-brand-lockup > .feature-brand-logo,
+.feature-brand-header[data-compact='true'] > .feature-brand-logo {
+  display: contents !important;
 }
 
 /* 通知：8 個左側圖示整體縮小 8px，整頁不可滑動。 */
@@ -147,14 +193,14 @@
   position: absolute !important;
   z-index: 5 !important;
   display: grid !important;
-  width: 38px !important;
-  height: 38px !important;
+  width: 58px !important;
+  height: 58px !important;
   padding: 0 !important;
   place-items: center !important;
   border: 0 !important;
   background: transparent !important;
   color: #f5bd29 !important;
-  font-size: 31px !important;
+  font-size: 51px !important;
   font-weight: 400 !important;
   line-height: 1 !important;
   cursor: pointer !important;
