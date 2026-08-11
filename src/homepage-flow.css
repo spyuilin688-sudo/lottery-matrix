@@ -1,0 +1,20 @@
+/* Canonical homepage flow for the four movable homepage blocks only.
+   Protected and intentionally untouched: Logo, back buttons, bottom navigation, lottery switcher. */
+
+.home-screen .lottery-screen > .latest-draw-card,
+.home-screen .lottery-screen > .matrix-status-section,
+.home-screen .lottery-screen > .matrix-core-banner,
+.home-screen .lottery-screen > .home-shortcut-row,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-core-banner,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .home-shortcut-row {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  transform: none !important;
+}
