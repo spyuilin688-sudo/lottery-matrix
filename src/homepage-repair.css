@@ -1,5 +1,4 @@
-/* 2026-08-11 homepage layout rebuild.
-   Scope: homepage content flow only. Brand and bottom navigation stay on their locked rules. */
+/* Canonical homepage rules. Protected: Logo, back buttons, bottom navigation, lottery switcher DOM and behavior. */
 
 .home-screen {
   overflow: hidden !important;
@@ -36,7 +35,9 @@
   width: calc(100% - 32px) !important;
   min-width: 0 !important;
   max-width: calc(100% - 32px) !important;
+  margin-top: 0 !important;
   margin-right: auto !important;
+  margin-bottom: 0 !important;
   margin-left: auto !important;
   transform: none !important;
 }
@@ -74,70 +75,100 @@
 .home-screen .latest-draw-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
   display: grid !important;
-  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  grid-template-rows: 50px minmax(0, 1fr) 44px !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 2 / 1 !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  aspect-ratio: auto !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 10px 12px 0 !important;
+  padding: 13px 16px 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: url('/assets/lottery/functions/開獎資訊卡.png') center / 100% 100% no-repeat !important;
+  box-shadow: none !important;
   overflow: visible !important;
-  border-color: #8a5f27 !important;
-  background:
-    linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
-    url('/assets/lottery/latest-draw-card-bg.jpg') center / 100% 100% no-repeat !important;
-  background-color: #050b10 !important;
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid !important;
-  grid-template-columns: minmax(88px, 1fr) 108px minmax(66px, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr) !important;
   min-height: 0 !important;
-  align-items: start !important;
-  gap: 6px !important;
+  height: 50px !important;
+  gap: 8px !important;
+  align-items: center !important;
 }
 
 .home-screen .latest-draw-card .draw-meta {
   min-height: 0 !important;
+  padding-top: 0 !important;
+  align-self: center !important;
 }
 
 .home-screen .latest-draw-card .draw-issue {
-  gap: 5px !important;
-  font-size: 13px !important;
-  line-height: 18px !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 22px !important;
-  line-height: 24px !important;
+  font-size: 18px !important;
+  line-height: 20px !important;
+  letter-spacing: 1px !important;
 }
 
 .home-screen .latest-draw-card .draw-date {
-  margin-top: 2px !important;
-  font-size: 11px !important;
-  line-height: 14px !important;
+  margin-top: 1px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  letter-spacing: .4px !important;
 }
 
-.home-screen .latest-draw-card .draw-order,
-.home-screen .latest-draw-card .history-link {
-  height: 26px !important;
-  min-height: 26px !important;
+.home-screen .latest-draw-card .draw-order {
+  width: 112px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  justify-self: center !important;
+  align-self: center !important;
+  overflow: hidden !important;
 }
 
 .home-screen .latest-draw-card .draw-order button {
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 236, 185, .72) !important;
   font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.home-screen .latest-draw-card .draw-order button[data-selected='true'] {
+  color: #ffd36c !important;
+}
+
+.home-screen .latest-draw-card .history-link {
+  height: 24px !important;
+  min-height: 24px !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #f0c86c !important;
+  font-size: 11px !important;
+  justify-self: end !important;
+  align-self: center !important;
 }
 
 .home-screen .latest-draw-card .draw-balls {
   display: flex !important;
   height: auto !important;
-  min-height: 52px !important;
+  min-height: 0 !important;
   max-height: none !important;
-  margin: 2px -4px 0 !important;
+  margin: 0 !important;
+  padding: 4px 0 2px !important;
   align-items: center !important;
   justify-content: center !important;
-  transform: none !important;
   overflow: visible !important;
 }
 
@@ -192,21 +223,25 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded,
 .mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card .next-draw-info--embedded {
-  height: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  margin: 0 -12px !important;
-  padding: 0 10px !important;
+  width: auto !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 -16px !important;
+  padding: 0 18px !important;
+  border: 0 !important;
+  background: transparent !important;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
-  grid-template-columns: 18px auto minmax(0, 1fr) !important;
+  grid-template-columns: 42px auto minmax(0, 1fr) !important;
   gap: 4px !important;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 16px !important;
-  height: 16px !important;
+  width: 28px !important;
+  height: 28px !important;
+  opacity: 0 !important;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
@@ -214,115 +249,92 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 700 !important;
 }
 
 .home-screen .matrix-status-section,
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 7px 7px 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  height: 146px !important;
+  min-height: 146px !important;
+  max-height: 146px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
   overflow: visible !important;
 }
 
-.home-screen .matrix-status-header {
-  height: auto !important;
-  min-height: 22px !important;
+.home-screen .matrix-status-section .matrix-status-header,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-header {
+  height: 20px !important;
+  min-height: 20px !important;
+  margin: 0 0 4px !important;
+  padding: 0 !important;
   align-items: center !important;
 }
 
-.home-screen .matrix-status-header h2 {
+.home-screen .matrix-status-section .matrix-status-header h2,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-header h2 {
+  margin: 0 !important;
   font-size: 16px !important;
   line-height: 20px !important;
 }
 
-.home-screen .matrix-status-grid {
+.home-screen .matrix-status-section .matrix-status-more,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-more {
+  display: none !important;
+}
+
+.home-screen .matrix-status-section .matrix-status-grid,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-grid {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, 72px) !important;
   gap: 4px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
+  justify-content: center !important;
+  align-items: start !important;
+  height: 122px !important;
+  min-height: 122px !important;
+  max-height: 122px !important;
   overflow: visible !important;
 }
 
-.home-screen .matrix-status-card {
+.home-screen .matrix-status-section .matrix-status-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-card {
   position: relative !important;
-  display: flex !important;
-  aspect-ratio: .76 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: hidden !important;
+  display: block !important;
+  width: 72px !important;
+  height: 120px !important;
+  min-width: 72px !important;
+  min-height: 120px !important;
+  max-width: 72px !important;
+  max-height: 120px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
 }
 
-.home-screen .matrix-status-artwork {
+.home-screen .matrix-status-section .matrix-status-artwork,
+.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-artwork {
   position: absolute !important;
   inset: 0 !important;
+  display: block !important;
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
-}
-
-.home-screen .matrix-status-lottery-center {
-  top: 37% !important;
-  gap: 1px !important;
-  transform: translate(-50%, -50%) !important;
-}
-
-.home-screen .matrix-status-logo,
-.home-screen .matrix-status-card[data-lottery='天天樂'] .matrix-status-logo,
-.home-screen .matrix-status-card[data-lottery='六合彩'] .matrix-status-logo,
-.home-screen .matrix-status-card[data-lottery='大樂透'] .matrix-status-logo {
-  left: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: 44px !important;
-  max-height: 44px !important;
   object-fit: contain !important;
   transform: none !important;
 }
 
-.home-screen .matrix-status-overlay {
-  right: 2px !important;
-  bottom: 8px !important;
-  left: 2px !important;
-}
-
-.home-screen .matrix-status-found {
-  font-size: 7px !important;
-  line-height: 9px !important;
-}
-
-.home-screen .matrix-status-count {
-  height: 17px !important;
-}
-
-.home-screen .matrix-status-count strong {
-  font-size: 17px !important;
-  line-height: 18px !important;
-}
-
-.home-screen .matrix-status-overlay p {
-  min-height: 9px !important;
-  font-size: 5px !important;
-  line-height: 8px !important;
-}
-
-.home-screen .matrix-status-card-arrow {
-  right: 2px !important;
-  bottom: 2px !important;
-  width: 12px !important;
-  height: 12px !important;
-}
-
-.home-screen .matrix-status-indicators {
-  height: 8px !important;
-  align-items: center !important;
+.home-screen .matrix-status-section .matrix-status-lottery-center,
+.home-screen .matrix-status-section .matrix-status-overlay,
+.home-screen .matrix-status-section .matrix-status-card-arrow,
+.home-screen .matrix-status-section .matrix-status-indicators {
+  display: none !important;
 }
 
 .home-screen .matrix-core-banner,
@@ -331,8 +343,6 @@
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
   overflow: hidden !important;
 }
 
@@ -351,15 +361,12 @@
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
   align-items: stretch !important;
   overflow: visible !important;
 }
 
 .home-screen .home-shortcut,
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
-  aspect-ratio: .98 !important;
   width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
@@ -367,6 +374,23 @@
   overflow: visible !important;
   border-radius: 9px !important;
   background: transparent !important;
+}
+
+.home-screen .home-shortcut:nth-child(1) {
+  aspect-ratio: 420 / 506 !important;
+}
+
+.home-screen .home-shortcut:nth-child(2) {
+  aspect-ratio: 420 / 512 !important;
+}
+
+.home-screen .home-shortcut:nth-child(3),
+.home-screen .home-shortcut:nth-child(4) {
+  aspect-ratio: 405 / 520 !important;
+}
+
+.home-screen .home-shortcut:nth-child(5) {
+  aspect-ratio: 420 / 507 !important;
 }
 
 .home-screen .home-shortcut img,
