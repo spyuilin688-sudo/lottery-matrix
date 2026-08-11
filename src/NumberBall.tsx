@@ -20,14 +20,14 @@ const MARK_SIX_GREEN = new Set([
 ]);
 
 const BALL_ASSET: Record<NumberBallLottery, Partial<Record<NumberBallTone, string>>> = {
-  "今彩539": { orange: "/assets/lottery/balls/jincai-539.png" },
-  "天天樂": { white: "/assets/lottery/balls/tiantianle.png" },
+  "今彩539": { orange: "/assets/lottery/functions/539橘球.png" },
+  "天天樂": { white: "/assets/lottery/functions/天天樂白球.png" },
   "六合彩": {
-    red: "/assets/lottery/balls/marksix-red.png",
-    blue: "/assets/lottery/balls/marksix-blue.png",
-    green: "/assets/lottery/balls/marksix-green.png",
+    red: "/assets/lottery/functions/六合彩紅球.png",
+    blue: "/assets/lottery/functions/六合彩藍球.png",
+    green: "/assets/lottery/functions/六合彩綠球.png",
   },
-  "大樂透": { red: "/assets/lottery/balls/lotto-649.png" },
+  "大樂透": { red: "/assets/lottery/functions/大樂透紅球.png" },
 };
 
 export function normalizeBallNumber(number: string | number) {
@@ -74,7 +74,7 @@ export function NumberBall({
 
   return (
     <span
-      className={`number-ball-component ${className}`.trim()}
+      className={`number-ball-component number-ball ${className}`.trim()}
       data-lottery={lottery}
       data-tone={tone}
       data-special={isSpecial}
