@@ -1,22 +1,32 @@
 /* 2026-08-11 homepage display repair: content flow and latest draw card. */
 .home-screen .lottery-screen {
-  row-gap: 0;
-  min-height: 100%;
-  overflow: visible;
-  padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 10px);
+  row-gap: 0 !important;
+  min-height: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+  padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 10px) !important;
 }
 
 .home-screen .lottery-switcher,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher {
   position: static;
   transform: none !important;
-  margin: 0 auto 4px;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 auto 4px !important;
   padding: 2px 12px 4px !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  overflow: visible !important;
 }
 
 .home-screen .lottery-switcher > .lottery-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher > .lottery-card {
   height: 66px !important;
+  min-height: 66px !important;
+  max-height: 66px !important;
+  overflow: visible !important;
 }
 
 .home-screen .lottery-switcher > .lottery-card .lottery-logo {
@@ -29,11 +39,13 @@
   position: static;
   transform: none !important;
   width: calc(100% - 24px);
-  min-height: 0;
-  aspect-ratio: auto;
-  margin: 0 auto 6px;
-  padding: 10px 12px 0;
-  overflow: visible;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 auto 6px !important;
+  padding: 10px 12px 0 !important;
+  overflow: visible !important;
   border-color: #8a5f27;
   background:
     linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
@@ -42,9 +54,10 @@
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
-  grid-template-columns: minmax(92px, 1fr) 108px minmax(70px, 1fr);
-  min-height: 34px;
-  gap: 6px;
+  grid-template-columns: minmax(90px, 1fr) 108px minmax(68px, 1fr) !important;
+  min-height: 34px !important;
+  align-items: start !important;
+  gap: 6px !important;
 }
 
 .home-screen .latest-draw-card .draw-issue {
@@ -65,7 +78,8 @@
 
 .home-screen .latest-draw-card .draw-order,
 .home-screen .latest-draw-card .history-link {
-  height: 26px;
+  height: 26px !important;
+  min-height: 26px !important;
 }
 
 .home-screen .latest-draw-card .draw-order button {
@@ -73,16 +87,75 @@
 }
 
 .home-screen .latest-draw-card .draw-balls {
-  height: 58px;
-  margin-inline: -4px;
-  align-items: center;
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  margin-inline: -4px !important;
+  align-items: center !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+.home-screen .latest-draw-card .main-balls {
+  min-width: 0 !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='false'] .main-balls {
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='false'] .number-ball {
+  width: 52px !important;
+  height: 52px !important;
+  flex: 0 0 52px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] {
+  justify-content: center !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .main-balls {
+  flex: 0 1 auto !important;
+  justify-content: center !important;
+  gap: 1px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .number-ball {
+  width: 40px !important;
+  height: 40px !important;
+  flex: 0 0 40px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .ball-number {
+  font-size: 15px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .special-ball-plus {
+  width: 10px !important;
+  height: 40px !important;
+  flex: 0 0 10px !important;
+  transform: none !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .special-ball-group {
+  width: 42px !important;
+  height: 54px !important;
+  flex: 0 0 42px !important;
+  transform: none !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .special-label {
+  width: 42px !important;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded,
 .mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card .next-draw-info--embedded {
-  height: 34px;
-  margin: 0 -12px;
-  padding: 0 10px;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  margin: 0 -12px !important;
+  padding: 0 10px !important;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
@@ -108,12 +181,12 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
   position: static;
   top: auto;
-  transform: none;
+  transform: none !important;
   width: calc(100% - 24px);
   min-height: 0;
-  margin: 0 auto 6px;
-  padding: 7px 7px 4px;
-  overflow: visible;
+  margin: 0 auto 6px !important;
+  padding: 7px 7px 4px !important;
+  overflow: visible !important;
 }
 
 .home-screen .matrix-status-header {
@@ -207,11 +280,11 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
   position: static;
   top: auto;
-  transform: none;
+  transform: none !important;
   width: calc(100% - 24px);
-  height: 64px;
-  margin: 0 auto 6px;
-  overflow: hidden;
+  height: 64px !important;
+  margin: 0 auto 6px !important;
+  overflow: hidden !important;
 }
 
 .home-screen .matrix-core-banner img {
@@ -224,38 +297,43 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
   position: static;
   top: auto;
-  transform: none;
+  transform: none !important;
   width: calc(100% - 24px);
-  height: clamp(60px, 16vw, 66px);
-  margin: 0 auto 0;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 2px;
-  align-items: stretch;
-  overflow: visible;
+  height: 66px !important;
+  min-height: 66px !important;
+  max-height: 66px !important;
+  margin: 0 auto 0 !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 2px !important;
+  align-items: stretch !important;
+  overflow: visible !important;
 }
 
 .home-screen .home-shortcut,
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
   width: 100%;
-  height: auto;
-  min-height: 0;
-  overflow: visible;
-  border-radius: 9px;
-  background: transparent;
+  height: 66px !important;
+  min-height: 66px !important;
+  max-height: 66px !important;
+  overflow: visible !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  aspect-ratio: auto !important;
 }
 
 .home-screen .home-shortcut img,
+.home-screen .home-shortcut[aria-label='Matrix 牌單'] img,
 .home-screen .home-shortcut:nth-child(4) img,
 .home-screen .home-shortcut:nth-child(5) img {
   display: block;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: none;
-  margin: 0;
-  object-fit: contain;
-  object-position: center;
-  clip-path: none;
-  border-radius: 0;
-  transform: none;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  clip-path: none !important;
+  border-radius: 0 !important;
+  transform: none !important;
 }

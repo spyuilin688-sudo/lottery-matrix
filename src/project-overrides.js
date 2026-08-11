@@ -1,5 +1,11 @@
 const PRIMARY_LOGO = '/assets/lottery/primary-brand-logo.jpg';
-const MATRIX_CARD_ICON = '/resources/matrix-card-normal.svg';
+const HOME_SHORTCUT_ICONS = {
+  'Matrix 同星': '/assets/lottery/functions/matrix-tongxing.png',
+  '號碼對照單': '/assets/lottery/functions/number-reference.png',
+  '連碰立柱計算機': '/assets/lottery/functions/collision-column-calculator.png',
+  'Matrix 牌單': '/assets/lottery/functions/matrix-card.png',
+  'Matrix 指南': '/assets/lottery/functions/matrix-guide.png',
+};
 
 function findProfileNavButton() {
   return [...document.querySelectorAll('.bottom-navigation-item')].find((button) =>
@@ -11,6 +17,15 @@ function syncLogo(image) {
   if (!(image instanceof HTMLImageElement)) return;
   const target = new URL(PRIMARY_LOGO, location.href).href;
   if (image.src !== target) image.src = PRIMARY_LOGO;
+}
+
+function syncHomeShortcutIcons() {
+  Object.entries(HOME_SHORTCUT_ICONS).forEach(([label, src]) => {
+    const image = document.querySelector(`.home-shortcut[aria-label="${label}"] img`);
+    if (!(image instanceof HTMLImageElement)) return;
+    const target = new URL(src, location.href).href;
+    if (image.src !== target) image.src = src;
+  });
 }
 
 function syncFeatureHeaders() {
@@ -32,11 +47,7 @@ function syncFeatureHeaders() {
     }
   });
 
-  const matrixCardIcon = document.querySelector('.home-shortcut[aria-label="Matrix 牌單"] img');
-  if (matrixCardIcon instanceof HTMLImageElement) {
-    const matrixCardTarget = new URL(MATRIX_CARD_ICON, location.href).href;
-    if (matrixCardIcon.src !== matrixCardTarget) matrixCardIcon.src = MATRIX_CARD_ICON;
-  }
+  syncHomeShortcutIcons();
 
   document.querySelectorAll('.mobile-page.notifications-scroll-lock').forEach((page) =>
     page.classList.remove('notifications-scroll-lock')
