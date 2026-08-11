@@ -1,4 +1,4 @@
-/* Canonical homepage rules. Protected: Logo, back buttons, bottom navigation, lottery switcher DOM and behavior. */
+/* Canonical homepage rules. Homepage layout has one control source. */
 
 .home-screen {
   overflow: hidden !important;
@@ -12,12 +12,11 @@
 .home-screen .lottery-screen {
   box-sizing: border-box !important;
   display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
   min-height: 100% !important;
   height: auto !important;
   padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 10px) !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  row-gap: 8px !important;
   overflow: visible !important;
 }
 
@@ -32,15 +31,11 @@
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
-  z-index: auto !important;
   box-sizing: border-box !important;
   width: calc(100% - 32px) !important;
   min-width: 0 !important;
   max-width: calc(100% - 32px) !important;
-  margin-top: 0 !important;
-  margin-right: auto !important;
-  margin-bottom: 0 !important;
-  margin-left: auto !important;
+  margin: 0 auto !important;
   transform: none !important;
 }
 
@@ -52,8 +47,7 @@
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+  margin: 0 !important;
   padding: 0 !important;
   align-items: stretch !important;
   overflow: visible !important;
@@ -94,7 +88,6 @@
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr) !important;
-  min-height: 0 !important;
   height: 50px !important;
   gap: 8px !important;
   align-items: center !important;
@@ -346,14 +339,25 @@
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
   overflow: hidden !important;
 }
 
+.home-screen .matrix-core-banner::after {
+  display: none !important;
+}
+
 .home-screen .matrix-core-banner img {
+  display: block !important;
   width: 100% !important;
   height: auto !important;
+  max-width: 100% !important;
   object-fit: contain !important;
+  object-position: center !important;
   transform: none !important;
+  filter: none !important;
 }
 
 .home-screen .home-shortcut-row,
@@ -382,16 +386,13 @@
 .home-screen .home-shortcut:nth-child(1) {
   aspect-ratio: 420 / 506 !important;
 }
-
 .home-screen .home-shortcut:nth-child(2) {
   aspect-ratio: 420 / 512 !important;
 }
-
 .home-screen .home-shortcut:nth-child(3),
 .home-screen .home-shortcut:nth-child(4) {
   aspect-ratio: 405 / 520 !important;
 }
-
 .home-screen .home-shortcut:nth-child(5) {
   aspect-ratio: 420 / 507 !important;
 }
@@ -405,200 +406,6 @@
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  margin: 0 !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  clip-path: none !important;
-  border-radius: 0 !important;
-  transform: none !important;
-}
-
-
-
-/* 2026-08-12 homepage vertical flow and image containment. */
-.home-screen .lottery-screen {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  row-gap: 8px !important;
-}
-
-.home-screen .lottery-screen > .brand-header,
-.home-screen .lottery-screen > .lottery-switcher,
-.home-screen .lottery-screen > .latest-draw-card,
-.home-screen .lottery-screen > .matrix-status-section,
-.home-screen .lottery-screen > .matrix-core-banner,
-.home-screen .lottery-screen > .home-shortcut-row {
-  position: static !important;
-  top: auto !important;
-  left: auto !important;
-  width: calc(100% - 32px) !important;
-  max-width: calc(100% - 32px) !important;
-  margin: 0 auto !important;
-  transform: none !important;
-}
-
-.home-screen .matrix-status-section,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
-  display: flex !important;
-  flex-direction: column !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 8px !important;
-  border: 1px solid #241b12 !important;
-  border-radius: 10px !important;
-  background: #03090e !important;
-  overflow: visible !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-header,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-header {
-  display: flex !important;
-  height: auto !important;
-  min-height: 0 !important;
-  margin: 0 0 8px !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-header h2,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-header h2 {
-  margin: 0 !important;
-  color: #e6c77f !important;
-  font-size: 16px !important;
-  line-height: 20px !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-more,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-more {
-  appearance: none !important;
-  display: flex !important;
-  height: auto !important;
-  padding: 0 !important;
-  align-items: center !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #bbb9b4 !important;
-  font: inherit !important;
-  font-size: 11px !important;
-  line-height: 16px !important;
-  white-space: nowrap !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-grid,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-grid {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 4px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  align-items: start !important;
-  justify-content: stretch !important;
-  overflow: visible !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-card,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-card {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-.home-screen .matrix-status-section .matrix-status-artwork,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section .matrix-status-artwork {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  object-fit: contain !important;
-  transform: none !important;
-}
-
-.home-screen .matrix-core-banner,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
-  display: block !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-.home-screen .matrix-core-banner::after {
-  display: none !important;
-}
-
-.home-screen .matrix-core-banner img {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  transform: none !important;
-  filter: none !important;
-}
-
-.home-screen .home-shortcut-row,
-.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
-  display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap: 2px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  align-items: start !important;
-  overflow: visible !important;
-}
-
-.home-screen .home-shortcut,
-.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  aspect-ratio: auto !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  overflow: visible !important;
-}
-
-.home-screen .home-shortcut img,
-.home-screen .home-shortcut[aria-label='Matrix 牌單'] img,
-.home-screen .home-shortcut:nth-child(4) img,
-.home-screen .home-shortcut:nth-child(5) img {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: none !important;
   margin: 0 !important;
   object-fit: contain !important;
   object-position: center !important;
