@@ -127,7 +127,11 @@
   gap: 2px;
 }
 
-.tongxing-screen .history-panel .number-ball.history-lottery-ball {
+.tongxing-screen .history-panel .number-ball.history-lottery-ball,
+.tongxing-screen .history-panel .number-ball-component.history-lottery-ball {
+  --number-ball-size: 25px;
+  --number-font-size: 10.5px;
+  --underline-width: 7px;
   width: 25px;
   height: 25px;
   flex: 0 0 25px;
@@ -138,6 +142,9 @@
 }
 
 .tongxing-screen .history-panel .history-numbers[data-has-special="true"] .history-lottery-ball {
+  --number-ball-size: 22px;
+  --number-font-size: 9.5px;
+  --underline-width: 7px;
   width: 22px;
   height: 22px;
   flex-basis: 22px;
