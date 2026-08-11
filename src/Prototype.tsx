@@ -68,7 +68,7 @@ const LOTTERIES: LotteryOption[] = [
 
 const HOME_SHORTCUTS = [
   { label: 'Matrix 同星', image: '/assets/lottery/functions/同星.png' },
-  { label: '號碼對照單', image: '/assets/lottery/functions/對照單.png' },
+  { label: '歷史開獎號碼', image: '/assets/lottery/functions/對照單.png' },
   { label: '連碰立柱計算機', image: '/assets/lottery/functions/計算機.png' },
   { label: 'Matrix 牌單', image: '/assets/lottery/functions/牌單.png' },
   { label: 'Matrix 指南', image: '/assets/lottery/functions/指南.png' },
@@ -295,7 +295,7 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
-  const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "號碼對照單": "reference", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
+  const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "歷史開獎號碼": "history", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
   return <nav className="home-shortcut-row" aria-label="五大功能" data-testid="home-shortcut-row">{HOME_SHORTCUTS.map((item) => <button className="home-shortcut" type="button" aria-label={item.label} key={item.label} onClick={() => onNavigate?.(screens[item.label])}><img src={item.image} alt="" draggable={false} /></button>)}</nav>;
 }
 
