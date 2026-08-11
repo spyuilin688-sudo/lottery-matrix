@@ -275,7 +275,7 @@ export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: ()
 export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpen }: MatrixStatusSectionProps = {}) {
   return (
     <section className="matrix-status-section" aria-labelledby="matrix-status-title" data-testid="matrix-status-section">
-      <header className="matrix-status-header"><h2 id="matrix-status-title">Matrix 狀態</h2></header>
+      <header className="matrix-status-header"><h2 id="matrix-status-title">Matrix 狀態</h2><button className="matrix-status-more" type="button" onClick={onOpen}>查看更多狀態 &gt;</button></header>
       <div className="matrix-status-grid">
         {LOTTERIES.map((lottery) => {
           const item = statuses[lottery.id];
