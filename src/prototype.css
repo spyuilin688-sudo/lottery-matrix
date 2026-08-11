@@ -2545,7 +2545,7 @@
   min-height: 0;
   background:
     linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
-    url('/assets/lottery/latest-draw-card-bg.png') center / 100% 100% no-repeat;
+    url('/assets/lottery/latest-draw-card-bg.jpg') center / 100% 100% no-repeat;
   background-color: #050b10;
 }
 
@@ -2809,4 +2809,130 @@
   object-position: center !important;
   clip-path: none !important;
   transform: none !important;
+}
+
+/* 2026-08-11 homepage latest draw card: user supplied background asset. */
+.home-screen .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  display: grid !important;
+  grid-template-rows: 50px minmax(0, 1fr) 44px !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 2 / 1 !important;
+  min-height: 0 !important;
+  padding: 13px 16px 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: url('/assets/lottery/latest-draw-card-bg.jpg') center / 100% 100% no-repeat !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.home-screen .latest-draw-card .draw-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr) !important;
+  min-height: 0 !important;
+  height: 50px !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+.home-screen .latest-draw-card .draw-meta {
+  min-height: 0 !important;
+  padding-top: 25px !important;
+}
+
+.home-screen .latest-draw-card .draw-issue {
+  gap: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.home-screen .latest-draw-card .draw-issue strong {
+  font-size: 18px !important;
+  line-height: 20px !important;
+  letter-spacing: 1px !important;
+}
+
+.home-screen .latest-draw-card .draw-date {
+  margin-top: 1px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  letter-spacing: .4px !important;
+}
+
+.home-screen .latest-draw-card .draw-order {
+  width: 112px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  justify-self: center !important;
+  overflow: hidden !important;
+}
+
+.home-screen .latest-draw-card .draw-order button {
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 236, 185, .72) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.home-screen .latest-draw-card .draw-order button[data-selected='true'] {
+  color: #ffd36c !important;
+}
+
+.home-screen .latest-draw-card .history-link {
+  height: 24px !important;
+  min-height: 24px !important;
+  margin-top: 25px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #f0c86c !important;
+  font-size: 11px !important;
+  justify-self: end !important;
+}
+
+.home-screen .latest-draw-card .draw-balls {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 4px 0 2px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded {
+  width: auto !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 -16px !important;
+  padding: 0 18px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
+  grid-template-columns: 42px auto minmax(0, 1fr) !important;
+  gap: 4px !important;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
+  width: 28px !important;
+  height: 28px !important;
+  opacity: 0 !important;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
+  font-size: 11px !important;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
+  font-size: 13px !important;
+  font-weight: 700 !important;
 }
