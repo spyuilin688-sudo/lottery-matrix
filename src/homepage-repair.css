@@ -402,14 +402,16 @@
 
 .home-screen .matrix-status-section,
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
+  box-sizing: border-box !important;
   display: flex !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  padding: 0 !important;
+  padding: 8px !important;
   flex-direction: column !important;
-  border: 0 !important;
-  background: transparent !important;
+  border: 1px solid rgba(230, 199, 127, 0.44) !important;
+  border-radius: 12px !important;
+  background: rgba(2, 7, 17, 0.68) !important;
   box-shadow: none !important;
   overflow: visible !important;
 }
@@ -418,7 +420,7 @@
   display: flex !important;
   height: 20px !important;
   min-height: 20px !important;
-  margin: 0 0 4px !important;
+  margin: 0 0 6px !important;
   padding: 0 !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -432,7 +434,19 @@
 }
 
 .home-screen .matrix-status-more {
-  display: none !important;
+  display: flex !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #e6c77f !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
 }
 
 .home-screen .matrix-status-grid,
@@ -490,7 +504,6 @@
 .home-screen .matrix-core-banner,
 .mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
   display: block !important;
-  aspect-ratio: 555 / 100 !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -499,6 +512,7 @@
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  line-height: 0 !important;
   overflow: visible !important;
 }
 
@@ -509,9 +523,8 @@
 .home-screen .matrix-core-banner img {
   display: block !important;
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   max-width: 100% !important;
-  max-height: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
   filter: none !important;
