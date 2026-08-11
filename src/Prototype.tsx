@@ -85,30 +85,30 @@ const QUICK_OPTIONS = [
 const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
   今彩539: {
     issue: "5896",
-    date: "2026/06/23（二）",
+    date: "2026/08/11",
     numbers: ["02", "14", "25", "29", "36"],
   },
   天天樂: {
     issue: "5896",
-    date: "2026/06/23（二）",
+    date: "2026/08/11",
     numbers: ["03", "12", "18", "27", "34"],
   },
   六合彩票: {
     issue: "5896",
-    date: "2026/06/23（二）",
+    date: "2026/08/11",
     numbers: ["21", "18", "07", "44", "13", "38"],
     specialNumber: "03",
   } as DrawResultData,
   大樂透: {
     issue: "5896",
-    date: "2026/06/23（二）",
+    date: "2026/08/11",
     numbers: ["21", "18", "07", "44", "13", "38"],
     specialNumber: "03",
   },
 } as unknown as Record<LotteryId, DrawResultData>;
 DRAW_RESULTS["六合彩"] = {
   issue: "5896",
-  date: "2026/06/23（二）",
+  date: "2026/08/11",
   numbers: ["21", "18", "07", "44", "13", "38"],
   specialNumber: "03",
 };
