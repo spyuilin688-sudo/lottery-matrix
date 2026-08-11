@@ -8,25 +8,52 @@ export type LotteryDrawRecord = {
   drawDate?: string;
   date?: string;
   numbers: Array<string | number>;
+  sortedNumbers?: Array<string | number>;
+  drawOrderNumbers?: Array<string | number>;
   specialNumber?: string | number;
   special?: string | number;
   [key: string]: unknown;
 };
 
 export type LatestLotteryResponse = {
-  item: LotteryDrawRecord | null;
-};
+  item?: LotteryDrawRecord | null;
+} | LotteryDrawRecord | null;
 
 export type LotteryHistoryResponse = {
-  items: LotteryDrawRecord[];
-};
+  items?: LotteryDrawRecord[];
+} | LotteryDrawRecord[];
+
+function normalizeNumberList(values: unknown): string[] {
+  return Array.isArray(values)
+    ? values.map((value) => String(value).trim().padStart(2, '0'))
+    : [];
+}
+
+function sortDrawNumbers(values: string[]) {
+  if (values.length === 7) {
+    return [
+      ...values.slice(0, 6).sort((a, b) => Number(a) - Number(b)),
+      values[6],
+    ];
+  }
+  return [...values].sort((a, b) => Number(a) - Number(b));
+}
 
 function normalizeRecord(record: LotteryDrawRecord): LotteryDrawRecord {
+  const numbers = normalizeNumberList(record.numbers);
+  const sortedNumbers = normalizeNumberList(record.sortedNumbers);
+  const drawOrderNumbers = normalizeNumberList(record.drawOrderNumbers);
+  const normalizedSortedNumbers = sortedNumbers.length
+    ? sortedNumbers
+    : sortDrawNumbers(numbers);
+
   return {
     ...record,
     period: record.period ?? record.issue,
     drawDate: record.drawDate ?? record.date,
-    numbers: Array.isArray(record.numbers) ? record.numbers : [],
+    numbers: normalizedSortedNumbers,
+    sortedNumbers: normalizedSortedNumbers,
+    drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : numbers,
     specialNumber: record.specialNumber ?? record.special,
   };
 }
@@ -43,15 +70,18 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
   const data = await requestJson<LatestLotteryResponse>(
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
   );
-  return data.item ? normalizeRecord(data.item) : null;
+  const item = data && !Array.isArray(data) && 'item' in data ? data.item : data;
+  return item ? normalizeRecord(item) : null;
 }
 
 export async function fetchLotteryHistory(
   lottery: NumberBallLottery,
-  limit = 100,
+  limit?: number,
 ) {
+  const query = typeof limit === 'number' ? `?limit=${limit}` : '';
   const data = await requestJson<LotteryHistoryResponse>(
-    `/api/matrix/history/${encodeURIComponent(lottery)}?limit=${limit}`,
+    `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
   );
-  return data.items.map(normalizeRecord);
+  const items = Array.isArray(data) ? data : data.items ?? [];
+  return items.map(normalizeRecord);
 }
