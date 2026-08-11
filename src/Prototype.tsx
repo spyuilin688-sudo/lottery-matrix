@@ -66,7 +66,7 @@ const HOME_SHORTCUTS = [
   { label: 'Matrix 同星', image: '/resources/matrix-tongxing.png' },
   { label: '號碼對照單', image: '/resources/number-reference.png' },
   { label: '連碰立柱計算機', image: '/resources/collision-column-calculator.png' },
-  { label: 'Matrix 牌單', image: '/resources/matrix-card.png' },
+  { label: 'Matrix 牌單', image: '/assets/lottery/matrix-card-icon.png' },
   { label: 'Matrix 指南', image: '/resources/matrix-guide.png' },
 ] as const;
 
