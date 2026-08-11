@@ -1,18 +1,24 @@
 .feature-screen {
-  padding-top: 30px;
+  padding-top: var(--primary-brand-top);
 }
 
 .feature-brand-header,
 .feature-brand-header[data-compact="true"] {
   position: relative;
+  top: -36px;
+  left: -2px;
+  box-sizing: border-box;
   display: flex;
+  width: 100%;
   height: var(--primary-brand-height);
   min-height: var(--primary-brand-height);
-  margin: 0 0 8px;
+  margin: 0 0 var(--layout-section-gap);
   padding: 0 var(--primary-brand-inline);
   align-items: center;
   justify-content: center;
+  flex: 0 0 var(--primary-brand-height);
   flex-direction: row;
+  overflow: hidden;
 }
 
 .feature-brand-row {
@@ -40,9 +46,11 @@
 .feature-brand-lockup > .feature-brand-logo,
 .feature-brand-header[data-compact="true"] > .feature-brand-logo {
   display: block;
-  width: 100%;
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550));
   max-width: 100%;
   height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  margin: 0 auto;
   object-fit: contain;
   object-position: center;
 }
