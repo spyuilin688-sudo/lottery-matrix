@@ -2598,7 +2598,7 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     if (!window.confirm(`確定以${selected.name}進行付款？`)) return;
   };
   return (
-    <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate}>
+    <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;
