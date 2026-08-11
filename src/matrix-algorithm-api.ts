@@ -70,12 +70,16 @@ export type MatrixAlgorithmResponse = {
 export async function runMatrixAlgorithmExplore(payload: MatrixAlgorithmRequest) {
   const response = await fetch(`${LOTTERY_API_BASE}/api/matrix/algorithm/explore`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     throw new Error(`Matrix Algorithm API ${response.status}: ${response.statusText}`);
+  }
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Matrix Algorithm API returned ${contentType || 'non-JSON response'}`);
   }
 
   return response.json() as Promise<MatrixAlgorithmResponse>;
