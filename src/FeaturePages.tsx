@@ -373,6 +373,14 @@ function HistoryDate({ value }: { value: string }) {
   return <>{match ? match[1] : value}</>;
 }
 
+function getDrawIssue(record: LotteryDrawRecord) {
+  return record.period ?? record.issue ?? "";
+}
+
+function getDrawDate(record: LotteryDrawRecord) {
+  return record.drawDate ?? record.date ?? "";
+}
+
 function HistoryList({
   lottery,
   numberOrder,
@@ -1059,10 +1067,20 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const resultColumns = lottery === "六合彩" || lottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
-  const resultGroups = ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, -1).map((lockedEntry, index) => ({
-    lockedEntry,
-    predictedEntry: ROAD_VALIDATION_SAMPLE_HISTORY[index + 4],
-  }));
+  const periodOffset = Math.max(1, Number(period.replace(/\D/g, "")) || 1);
+  const tongxingHistory = useLotteryHistory(lottery, periodOffset + 10);
+  const resultGroups = useMemo(() => {
+    const groups: Array<{ lockedEntry: LotteryDrawRecord; predictedEntry: LotteryDrawRecord }> = [];
+
+    for (let index = 0; index + periodOffset < tongxingHistory.length; index += 1) {
+      groups.push({
+        lockedEntry: tongxingHistory[index],
+        predictedEntry: tongxingHistory[index + periodOffset],
+      });
+    }
+
+    return groups.slice(0, 6);
+  }, [periodOffset, tongxingHistory]);
 
   const updateInputValue = (index: number, rawValue: string) => {
     const nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
@@ -1086,17 +1104,14 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const renderResultRow = (
-    entry: (typeof ROAD_VALIDATION_SAMPLE_HISTORY)[number],
+    entry: LotteryDrawRecord,
     type: "locked" | "predicted",
   ) => {
-    const [issue, date, nums] = entry;
-    const baseNumbers = [...nums] as string[];
-    const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
-      ? [...baseNumbers, "38", baseNumbers.includes("03") ? "44" : "03"]
-      : baseNumbers;
+    const issue = getDrawIssue(entry);
+    const date = getDrawDate(entry);
     const draw = getHistoryDrawNumbers(
       lottery,
-      { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
+      entry,
       getHistoryOrder(order),
     );
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
@@ -1106,10 +1121,10 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       <div className="tongxing-table-row" data-row-type={type}>
         <span
           className="tongxing-period-cell"
-          aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date.slice(0, 10)}`}
+          aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date}`}
         >
           <strong>{issue}</strong>
-          <time>{date.slice(0, 10)}</time>
+          <time><HistoryDate value={date} /></time>
         </span>
         {displayedNumbers.map((number, index) => (
           <span
@@ -1222,6 +1237,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [inputs, setInputs] = useTimedState("reference-inputs", ["02", "", ""]);
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
+  const referenceHistory = useLotteryHistory(lottery, getHistoryLimit(range));
   const resetReference = () => {
     setInputs(["", "", ""]);
     setMarkedRows(new Set());
@@ -1309,14 +1325,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <header><h2>{lottery}（{order}）</h2><button type="button" onClick={resetReference}><ReloadIcon />刷新</button></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          {ROAD_VALIDATION_SAMPLE_HISTORY.map(([issue, , nums]) => {
-            const baseNumbers = [...nums] as string[];
-            const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
-              ? [...baseNumbers, "38", baseNumbers.includes("03") ? "44" : "03"]
-              : baseNumbers;
+          {referenceHistory.map((record) => {
+            const issue = getDrawIssue(record);
             const draw = getHistoryDrawNumbers(
               lottery,
-              { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
+              record,
               getHistoryOrder(order),
             );
             const displayedNumbers = draw.special
