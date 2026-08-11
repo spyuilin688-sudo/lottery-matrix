@@ -2345,3 +2345,35 @@
   transform: translateY(-20px) !important;
 }
 
+/* Final active NumberBall sizing for the latest draw card. */
+.home-screen .latest-draw-card .draw-balls[data-has-special='false'] .number-ball-component {
+  --number-ball-size: 52px;
+  --number-font-size: 19px;
+  --underline-width: 18px;
+  width: 52px !important;
+  height: 52px !important;
+  flex: 0 0 52px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .number-ball-component {
+  --number-ball-size: 40px;
+  --number-font-size: 15px;
+  --underline-width: 14px;
+  width: 40px !important;
+  height: 40px !important;
+  flex: 0 0 40px !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .special-ball-plus {
+  width: 10px !important;
+  height: 40px !important;
+  flex: 0 0 10px !important;
+  transform: none !important;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .special-ball-group {
+  width: 42px !important;
+  height: 54px !important;
+  flex: 0 0 42px !important;
+  transform: none !important;
+}
