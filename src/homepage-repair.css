@@ -199,7 +199,8 @@
   flex: 0 0 40px !important;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .ball-number {
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .ball-number,
+.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .number-ball-value {
   font-size: 15px !important;
 }
 
