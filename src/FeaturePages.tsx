@@ -18,7 +18,7 @@ import {
   TrashIcon,
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "./Prototype";
-import { BrandLogo, PRIMARY_BRAND_LOGO } from "./BrandLogo";
+import { BrandLogo } from "./BrandLogo";
 import { BottomNavigation } from "./BottomNavigation";
 
 export type ScreenId =
@@ -209,6 +209,7 @@ function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
+  logoSrc?: string;
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
