@@ -2233,7 +2233,7 @@
   width: 100%;
   height: var(--primary-brand-height);
   min-height: var(--primary-brand-height);
-  margin: 0 0 var(--layout-section-gap);
+  margin: 0;
   padding: 0 var(--primary-brand-inline);
   flex: 0 0 var(--primary-brand-height);
   overflow: hidden;
@@ -2374,7 +2374,7 @@
 }
 
 .home-screen .brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .home-screen .lottery-switcher {
@@ -2611,7 +2611,7 @@
   width: 100%;
   height: var(--primary-brand-height);
   min-height: var(--primary-brand-height);
-  margin: 0 0 var(--layout-section-gap);
+  margin: 0;
   padding: 0 var(--primary-brand-inline);
   flex: 0 0 var(--primary-brand-height);
   overflow: hidden;
