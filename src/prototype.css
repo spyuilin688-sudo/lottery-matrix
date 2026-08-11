@@ -2414,14 +2414,6 @@
   top: -30px;
 }
 
-.home-screen .home-shortcut img {
-  width: 100%;
-  aspect-ratio: 0.82;
-  object-fit: cover;
-  object-position: center;
-  clip-path: inset(2px);
-}
-
 /* 2026-08-10 Product Design homepage arrangement.
    Brand, navigation, and the switcher structure stay unchanged. */
 .home-screen .lottery-switcher {
@@ -2447,48 +2439,16 @@
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
   top: -48px;
   width: calc(100% - 12px);
-  height: auto;
   margin: 0 auto 8px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
   align-items: start;
-  overflow: visible;
 }
 
 .home-screen .home-shortcut,
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
   width: 100%;
-  height: auto;
-  aspect-ratio: 0.82;
-  overflow: hidden;
-  border-radius: 9px;
   background: transparent;
-}
-
-.home-screen .home-shortcut img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: cover;
-  object-position: center;
-  clip-path: inset(2px round 9px);
-}
-
-/* Matrix card source artwork has a light outer canvas; crop only that edge. */
-.home-screen .home-shortcut:nth-child(5) {
-  overflow: hidden;
-  border-radius: 9px;
-}
-
-.home-screen .home-shortcut:nth-child(5) img {
-  width: calc(100% + 6px);
-  height: calc(100% + 6px);
-  margin: -3px;
-  max-width: none;
-  transform: none;
-  clip-path: inset(3px round 9px);
 }
 
 /* 2026-08-11 homepage draw card and Matrix card icon update. */
@@ -2498,9 +2458,6 @@
   padding: 17px 15px 0;
   border-color: #8a5f27;
   border-radius: 10px;
-  background:
-    linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
-    url('/assets/lottery/latest-draw-card-bg.png') center / cover no-repeat;
   box-shadow: inset 0 0 0 1px rgba(255, 205, 94, .08);
 }
 
@@ -2577,34 +2534,40 @@
   font-weight: 700;
 }
 
-/* 2026-08-11 fix homepage draw card and Matrix card icon constraints. */
+/* 2026-08-11 verified homepage draw card and shortcut icon rules. */
 .home-screen .latest-draw-card,
 .mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  box-sizing: border-box;
+  aspect-ratio: 2 / 1;
+  min-height: 0;
   background:
     linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
-    url('/assets/lottery/latest-draw-card-bg.png') center / contain no-repeat;
+    url('/assets/lottery/latest-draw-card-bg.png') center / 100% 100% no-repeat;
   background-color: #050b10;
 }
 
 .home-screen .home-shortcut-row,
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
-  overflow: visible;
+  height: 74px;
+  overflow: hidden;
 }
 
 .home-screen .home-shortcut,
 .mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
+  height: 74px;
+  min-height: 74px;
   aspect-ratio: auto;
-  overflow: visible;
-  border-radius: 0;
+  overflow: hidden;
+  border-radius: 9px;
 }
 
 .home-screen .home-shortcut img {
+  display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: auto;
+  height: 100%;
   margin: 0;
   max-width: 100%;
-  max-height: none;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
   clip-path: none;
@@ -2612,22 +2575,27 @@
 }
 
 .home-screen .home-shortcut:nth-child(4) {
-  overflow: visible;
-  border-radius: 0;
+  overflow: hidden;
+  border-radius: 9px;
 }
 
 .home-screen .home-shortcut:nth-child(4) img {
   width: 100%;
-  height: auto;
+  height: 100%;
   margin: 0;
   max-width: 100%;
   transform: none;
+  object-fit: contain;
   clip-path: none;
 }
 
 .home-screen .home-shortcut:nth-child(5),
 .home-screen .home-shortcut:nth-child(5) img {
-  overflow: visible;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  object-fit: contain;
   clip-path: none;
 }
 
