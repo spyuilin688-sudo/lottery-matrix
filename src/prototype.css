@@ -2490,3 +2490,35 @@
   transform: none;
   clip-path: inset(3px round 9px);
 }
+
+/* 2026-08-11 Logo unification: all page headers use the shared BrandLogo component. */
+.home-screen .brand-header {
+  position: relative;
+  top: -36px;
+  left: -2px;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  margin: 0 0 var(--layout-section-gap);
+  padding: 0 var(--primary-brand-inline);
+  flex: 0 0 var(--primary-brand-height);
+  overflow: hidden;
+}
+
+.home-screen .shared-brand-logo,
+.feature-brand-header .shared-brand-logo,
+.feature-brand-lockup {
+  width: 100%;
+  height: var(--primary-brand-height);
+}
+
+.home-screen .shared-brand-logo > img,
+.feature-brand-header .shared-brand-logo > img {
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550));
+  max-width: 100%;
+  height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  object-fit: contain;
+  object-position: center;
+}
