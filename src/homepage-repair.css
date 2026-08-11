@@ -328,7 +328,7 @@
   inset: 0 !important;
   display: block !important;
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   object-fit: contain !important;
   transform: none !important;
 }
@@ -351,8 +351,8 @@
 
 .home-screen .matrix-core-banner img {
   width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
+  height: auto !important;
+  object-fit: contain !important;
   transform: none !important;
 }
 
