@@ -1097,7 +1097,14 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
     type: "locked" | "predicted",
   ) => {
     const [issue, date, nums] = entry;
-    const draw = getHistoryNumbers(lottery, nums);
+    const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
+      ? [...nums, "38", nums.includes("03") ? "44" : "03"]
+      : [...nums];
+    const draw = getHistoryDrawNumbers(
+      lottery,
+      { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
+      getHistoryOrder(order),
+    );
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
     const inputNumbers = new Set(values.filter(Boolean).map((value) => value.padStart(2, "0")));
 
@@ -1309,7 +1316,14 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
           {ROAD_VALIDATION_SAMPLE_HISTORY.map(([issue, , nums]) => {
-            const draw = getHistoryNumbers(lottery, nums);
+            const sampleNumbers = lottery === "六合彩" || lottery === "大樂透"
+              ? [...nums, "38", nums.includes("03") ? "44" : "03"]
+              : [...nums];
+            const draw = getHistoryDrawNumbers(
+              lottery,
+              { numbers: sampleNumbers, sortedNumbers: sampleNumbers, drawOrderNumbers: sampleNumbers },
+              getHistoryOrder(order),
+            );
             const displayedNumbers = draw.special
               ? [...draw.main, draw.special]
               : [...draw.main];
