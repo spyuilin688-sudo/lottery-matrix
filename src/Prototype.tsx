@@ -63,19 +63,19 @@ const LOTTERIES: LotteryOption[] = [
 ];
 
 const HOME_SHORTCUTS = [
-  { label: 'Matrix 同星', image: '/assets/lottery/functions/matrix-tongxing.svg' },
-  { label: '號碼對照單', image: '/assets/lottery/functions/number-reference.svg' },
-  { label: '連碰立柱計算機', image: '/assets/lottery/functions/collision-column-calculator.svg' },
-  { label: 'Matrix 牌單', image: '/assets/lottery/functions/matrix-card.svg' },
-  { label: 'Matrix 指南', image: '/assets/lottery/functions/matrix-guide.svg' },
+  { label: 'Matrix 同星', image: '/assets/lottery/functions/同星.png' },
+  { label: '號碼對照單', image: '/assets/lottery/functions/對照單.png' },
+  { label: '連碰立柱計算機', image: '/assets/lottery/functions/計算機.png' },
+  { label: 'Matrix 牌單', image: '/assets/lottery/functions/牌單.png' },
+  { label: 'Matrix 指南', image: '/assets/lottery/functions/指南.png' },
 ] as const;
 
 const QUICK_OPTIONS = [
-  { label: "Matrix 同星", screen: "tongxing" as const, image: "/assets/quick/settings/matrix-tongxing.png" },
-  { label: "號碼對照單", screen: "reference" as const, image: "/assets/quick/settings/number-reference.png" },
-  { label: "連碰立柱計算機", screen: "calculator" as const, image: "/assets/quick/settings/collision-column-calculator.png" },
-  { label: "歷史開獎號碼", screen: "history" as const, image: "/assets/quick/settings/draw-history.png" },
-  { label: "Matrix 筆記本", screen: "notebook" as const, image: "/assets/quick/settings/matrix-notebook.png" },
+  { label: "Matrix 同星", screen: "tongxing" as const, image: "/assets/lottery/functions/快捷同星.png" },
+  { label: "號碼對照單", screen: "reference" as const, image: "/assets/lottery/functions/快捷對照單.png" },
+  { label: "連碰立柱計算機", screen: "calculator" as const, image: "/assets/lottery/functions/快捷計算機.png" },
+  { label: "歷史開獎號碼", screen: "history" as const, image: "/assets/lottery/functions/快捷歷史號碼.png" },
+  { label: "Matrix 筆記本", screen: "notebook" as const, image: "/assets/lottery/functions/快捷筆記本.png" },
 ] as const;
 
 const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
@@ -136,7 +136,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   今彩539: {
     status: "啟動",
     statusEn: "ACTIVE",
-    artwork: "/assets/lottery/status/active.png",
+    artwork: "/assets/lottery/functions/啟動.png",
     count: 2,
     description: "具備基本參考價值",
     tone: "green",
@@ -144,7 +144,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   天天樂: {
     status: "聚合",
     statusEn: "FOCUS",
-    artwork: "/assets/lottery/status/focus.png",
+    artwork: "/assets/lottery/functions/聚合.png",
     count: 1,
     description: "具備明顯規律集中性",
     tone: "blue",
@@ -152,7 +152,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   "六合彩": {
     status: "共振",
     statusEn: "RESONANCE",
-    artwork: "/assets/lottery/status/resonance.png",
+    artwork: "/assets/lottery/functions/共振.png",
     count: 3,
     description: "具備強烈共振效應",
     tone: "purple",
@@ -160,7 +160,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   大樂透: {
     status: "臨界",
     statusEn: "CRITICAL",
-    artwork: "/assets/lottery/status/critical.png",
+    artwork: "/assets/lottery/functions/臨界.png",
     count: 4,
     description: "極為罕見版路狀態",
     tone: "orange",
@@ -286,7 +286,7 @@ export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpe
 }
 
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
-  return <button type="button" className="matrix-core-banner" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img src="/assets/lottery/matrix-core-banner.jpg" alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
+  return <button type="button" className="matrix-core-banner" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img src="/assets/lottery/functions/matrixcore.png" alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
