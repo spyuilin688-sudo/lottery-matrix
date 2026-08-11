@@ -4,10 +4,10 @@ import {
   ChevronRightIcon,
   ClockIcon,
   CountdownTimerIcon,
-  DotFilledIcon,
   Pencil2Icon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
+import { BrandLogo } from "./BrandLogo";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
@@ -276,15 +276,13 @@ export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpe
           const item = statuses[lottery.id];
           return (
             <article className="matrix-status-card" data-lottery={lottery.id} data-tone={item.tone} key={lottery.id} onClick={onOpen}>
-              <img className="matrix-status-artwork" src={item.artwork} alt={`${item.status} ${item.statusEn}`} draggable={false} />
-              <div className="matrix-status-lottery-center"><div className="matrix-status-lottery">{lottery.id}</div><img className="matrix-status-logo" src={lottery.logo} alt="" draggable={false} /></div>
+              <div className="matrix-status-lottery-center"><div className="matrix-status-lottery">{lottery.id}</div></div>
               <div className="matrix-status-overlay"><div className="matrix-status-found">本期發現</div><div className="matrix-status-count"><strong>{item.count}</strong><span>組</span></div><p>{item.description}</p></div>
               <ChevronRightIcon className="matrix-status-card-arrow" aria-hidden="true" />
             </article>
           );
         })}
       </div>
-      <div className="matrix-status-indicators" aria-hidden="true">{LOTTERIES.map((lottery) => <DotFilledIcon data-tone={statuses[lottery.id].tone} key={lottery.id} />)}</div>
     </section>
   );
 }
@@ -355,7 +353,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
       <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-        <header className="brand-header"><img className={`brand-logo${deviceId === "iphone" ? " brand-logo--iphone" : ""}`} src="/assets/lottery/primary-brand-logo.jpg" alt="樂彩 Matrix" draggable={false} /></header>
+        <header className="brand-header"><BrandLogo className={deviceId === "iphone" ? "brand-logo--iphone" : ""} /></header>
         <LotterySwitcher selected={selected} onChange={setSelected} />
         <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} />
         <MatrixStatusSection onOpen={() => navigate("status")} />
