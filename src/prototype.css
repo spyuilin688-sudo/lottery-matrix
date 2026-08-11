@@ -2401,7 +2401,7 @@
 
 .home-screen .lottery-screen,
 .mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen {
-  --home-content-width: min(calc(100% - 32px), 358px);
+  --home-content-width: min(calc(100% - 16px), 374px);
   box-sizing: border-box !important;
   display: flex !important;
   width: 100% !important;
@@ -2427,7 +2427,7 @@
   box-sizing: border-box !important;
   width: var(--home-content-width) !important;
   min-width: 0 !important;
-  max-width: 358px !important;
+  max-width: 374px !important;
   margin: 0 auto !important;
   transform: none !important;
 }
@@ -2588,6 +2588,8 @@
   min-height: 0 !important;
   padding: 0 !important;
   align-self: center !important;
+  justify-self: start !important;
+  text-align: left !important;
 }
 
 .home-screen .latest-draw-card .draw-issue {
@@ -2600,13 +2602,13 @@
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 18px !important;
-  line-height: 20px !important;
-  letter-spacing: 1px !important;
+  font-size: 16px !important;
+  line-height: 18px !important;
+  letter-spacing: .7px !important;
 }
 
 .home-screen .latest-draw-card .draw-date {
-  margin-top: 1px !important;
+  margin-top: 0 !important;
   font-size: 10px !important;
   line-height: 12px !important;
   letter-spacing: .4px !important;
