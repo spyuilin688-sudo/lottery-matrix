@@ -1,605 +1,571 @@
-/* Canonical homepage rules. Homepage layout has one control source. */
+/* Homepage layout control layer. */
 
 .mobile-scroll.home-screen,
 .home-screen {
-  overflow-x: hidden !important;
-  background: var(--lottery-neutral-950) !important;
+  overflow-x: hidden;
+  background: var(--lottery-neutral-950);
 }
 
 .mobile-scroll.home-screen {
-  overflow-y: auto !important;
+  overflow-y: auto;
 }
 
 .home-screen .mobile-scroll-content {
-  height: auto !important;
-  min-height: 100% !important;
-  overflow: visible !important;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
 }
 
-.home-screen .lottery-screen,
-.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen {
-  --home-content-width: min(calc(100% - 16px), 374px);
-  box-sizing: border-box !important;
-  display: flex !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  min-height: 100% !important;
-  height: auto !important;
-  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 10px) !important;
-  flex-direction: column !important;
-  gap: 8px !important;
-  align-items: center !important;
-  overflow: visible !important;
-  background: var(--lottery-neutral-950) !important;
+.home-screen .lottery-screen {
+  --home-inline: 8px;
+  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 374px);
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  height: auto;
+  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 10px);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+  background: var(--lottery-neutral-950);
 }
 
-.home-screen .lottery-screen > .brand-header,
-.home-screen .lottery-screen > .lottery-switcher,
-.home-screen .lottery-screen > .latest-draw-card,
-.home-screen .lottery-screen > .matrix-status-section,
-.home-screen .lottery-screen > .matrix-core-banner,
-.home-screen .lottery-screen > .home-shortcut-row {
-  position: static !important;
-  inset: auto !important;
-  box-sizing: border-box !important;
-  width: var(--home-content-width) !important;
-  min-width: 0 !important;
-  max-width: 374px !important;
-  margin: 0 auto !important;
-  transform: none !important;
+.home-screen .lottery-screen > :where(
+  .brand-header,
+  .lottery-switcher,
+  .latest-draw-card,
+  .matrix-status-section,
+  .matrix-core-banner,
+  .home-shortcut-row
+) {
+  box-sizing: border-box;
+  width: var(--home-content-width);
+  max-width: 374px;
+  min-width: 0;
+  margin: 0;
 }
 
-.home-screen .brand-header,
-.mobile-app-viewport[data-platform='android'] .home-screen .brand-header {
-  display: flex !important;
-  height: var(--primary-brand-height) !important;
-  min-height: var(--primary-brand-height) !important;
-  flex: 0 0 var(--primary-brand-height) !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: visible !important;
+.home-screen .brand-header {
+  display: flex;
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  padding: 0;
+  flex: 0 0 var(--primary-brand-height);
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .home-screen .brand-header > .shared-brand-logo,
 .home-screen .shared-brand-logo {
-  display: flex !important;
-  width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  min-height: var(--primary-brand-height) !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: visible !important;
+  display: flex;
+  width: 100%;
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .home-screen .shared-brand-logo > img {
-  display: block !important;
-  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550)) !important;
-  max-width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  max-height: var(--primary-brand-height) !important;
-  aspect-ratio: var(--primary-brand-ratio) !important;
-  object-fit: contain !important;
-  object-position: center !important;
+  display: block;
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550));
+  max-width: 100%;
+  height: var(--primary-brand-height);
+  max-height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  object-fit: contain;
+  object-position: center;
 }
 
-.home-screen .lottery-switcher,
-.mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 2px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  align-items: stretch !important;
-  overflow: visible !important;
+.home-screen .lottery-switcher {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  align-items: stretch;
+  overflow: visible;
 }
 
-.home-screen .lottery-switcher > .lottery-card,
-.mobile-app-viewport[data-platform='android'] .home-screen .lottery-switcher > .lottery-card {
+.home-screen .lottery-switcher > .lottery-card {
   --lottery-selected-border-gradient: linear-gradient(135deg, #f4ce67, #ffd98a);
-  position: relative !important;
-  display: flex !important;
-  aspect-ratio: 88 / 74 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid rgba(222, 229, 239, 0.36) !important;
-  border-radius: 12px !important;
-  background: linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98)) !important;
-  box-shadow: inset 0 0 16px rgba(61, 117, 204, 0.05) !important;
-  overflow: hidden !important;
-  transform: none !important;
+  position: relative;
+  display: flex;
+  aspect-ratio: 88 / 74;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(222, 229, 239, 0.36);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98));
+  box-shadow: inset 0 0 16px rgba(61, 117, 204, 0.05);
+  overflow: hidden;
 }
 
 .home-screen .lottery-switcher > .lottery-card::before {
-  position: absolute !important;
-  left: -22% !important;
-  bottom: -38% !important;
-  width: 144% !important;
-  height: 78% !important;
-  border: 1px solid rgba(70, 145, 255, 0.48) !important;
-  border-radius: 50% !important;
-  content: '' !important;
-  pointer-events: none !important;
-  transform: rotate(-9deg) !important;
+  position: absolute;
+  left: -22%;
+  bottom: -38%;
+  width: 144%;
+  height: 78%;
+  border: 1px solid rgba(70, 145, 255, 0.48);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+  transform: rotate(-9deg);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery='今彩539']::before {
-  border-color: rgba(255, 103, 65, 0.62) !important;
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery='大樂透']::before {
-  border-color: rgba(220, 165, 63, 0.62) !important;
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery='今彩539'] {
+.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"] {
   --lottery-selected-border-gradient: linear-gradient(135deg, #3ee66b 0%, #ffe45f 34%, #ff544d 66%, #4ba3ff 100%);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery='天天樂'] {
+.home-screen .lottery-switcher > .lottery-card[data-lottery="天天樂"] {
   --lottery-selected-border-gradient: linear-gradient(135deg, #1f6fff 0%, #eff8ff 52%, #67cfff 100%);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery='六合彩'] {
+.home-screen .lottery-switcher > .lottery-card[data-lottery="六合彩"] {
   --lottery-selected-border-gradient: linear-gradient(135deg, #ff443d 0%, #2d8cff 50%, #35d76f 100%);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery='大樂透'] {
+.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] {
   --lottery-selected-border-gradient: linear-gradient(135deg, #ffe45d 0%, #ffd35a 48%, #2d8dff 100%);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-selected='true'] {
-  border: 1.5px solid transparent !important;
+.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"]::before {
+  border-color: rgba(255, 103, 65, 0.62);
+}
+
+.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"]::before {
+  border-color: rgba(220, 165, 63, 0.62);
+}
+
+.home-screen .lottery-switcher > .lottery-card[data-selected="true"] {
+  border: 1.5px solid transparent;
   background:
     linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98)) padding-box,
-    var(--lottery-selected-border-gradient) border-box !important;
-  box-shadow: 0 0 8px rgba(244, 206, 103, 0.24), inset 0 0 12px rgba(244, 206, 103, 0.08) !important;
+    var(--lottery-selected-border-gradient) border-box;
+  box-shadow: 0 0 8px rgba(244, 206, 103, 0.24), inset 0 0 12px rgba(244, 206, 103, 0.08);
 }
 
 .home-screen .lottery-switcher > .lottery-card .lottery-label {
-  display: none !important;
+  display: none;
 }
 
 .home-screen .lottery-switcher > .lottery-card .lottery-logo {
-  position: relative !important;
-  z-index: 2 !important;
-  display: flex !important;
-  width: 100% !important;
-  height: 62px !important;
-  flex: 0 0 62px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: visible !important;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  height: 62px;
+  flex: 0 0 62px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
-.home-screen .lottery-switcher > .lottery-card .lottery-logo img,
-.home-screen .lottery-switcher > .lottery-card[data-lottery='天天樂'] .lottery-logo img,
-.home-screen .lottery-switcher > .lottery-card[data-lottery='六合彩'] .lottery-logo img,
-.home-screen .lottery-switcher > .lottery-card[data-lottery='大樂透'] .lottery-logo img {
-  position: static !important;
-  display: block !important;
-  width: auto !important;
-  max-width: 96% !important;
-  height: auto !important;
-  max-height: 62px !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  transform: none !important;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42)) !important;
+.home-screen .lottery-switcher > .lottery-card .lottery-logo img {
+  position: static;
+  display: block;
+  width: auto;
+  max-width: 96%;
+  height: auto;
+  max-height: 62px;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
 }
 
-.home-screen .latest-draw-card,
-.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
-  display: grid !important;
-  grid-template-rows: 40px minmax(0, 1fr) 34px !important;
-  aspect-ratio: 374 / 166 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 10px 14px 0 !important;
-  border: 0 !important;
-  border-radius: 10px !important;
-  background: url('/assets/lottery/functions/3456667.png') center / 100% 100% no-repeat !important;
-  box-shadow: none !important;
-  color: var(--lottery-text-primary) !important;
-  overflow: visible !important;
+.home-screen .latest-draw-card {
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr) 34px;
+  aspect-ratio: 374 / 166;
+  height: auto;
+  min-height: 0;
+  padding: 10px 14px 0;
+  border: 0;
+  border-radius: 10px;
+  background: url("/assets/lottery/functions/3456667.png") center / 100% 100% no-repeat;
+  box-shadow: none;
+  color: var(--lottery-text-primary);
+  overflow: visible;
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr) !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  gap: 8px !important;
-  align-items: center !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr);
+  height: 40px;
+  min-height: 40px;
+  gap: 8px;
+  align-items: center;
 }
 
 .home-screen .latest-draw-card .draw-meta {
-  display: grid !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  row-gap: 1px !important;
-  align-self: center !important;
-  justify-self: start !important;
-  align-content: center !important;
-  text-align: left !important;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  row-gap: 1px;
+  align-self: center;
+  justify-self: start;
+  align-content: center;
+  text-align: left;
 }
 
 .home-screen .latest-draw-card .draw-issue {
-  display: flex !important;
-  gap: 4px !important;
-  align-items: baseline !important;
-  font-size: 11px !important;
-  line-height: 15px !important;
-  white-space: nowrap !important;
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  font-size: 11px;
+  line-height: 15px;
+  white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 15px !important;
-  line-height: 17px !important;
-  letter-spacing: .5px !important;
+  font-size: 15px;
+  line-height: 17px;
+  letter-spacing: .5px;
 }
 
 .home-screen .latest-draw-card .draw-date {
-  margin-top: 0 !important;
-  font-size: 10px !important;
-  line-height: 12px !important;
-  letter-spacing: .4px !important;
-  white-space: nowrap !important;
+  margin-top: 0;
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: .4px;
+  white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-order {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  width: 104px !important;
-  height: 26px !important;
-  min-height: 26px !important;
-  justify-self: center !important;
-  align-self: center !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: transparent !important;
-  overflow: hidden !important;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 104px;
+  height: 26px;
+  min-height: 26px;
+  justify-self: center;
+  align-self: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  overflow: hidden;
 }
 
 .home-screen .latest-draw-card .draw-order button {
-  border: 0 !important;
-  background: transparent !important;
-  color: rgba(255, 236, 185, .72) !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 236, 185, .72);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.home-screen .latest-draw-card .draw-order button[data-selected='true'] {
-  color: #ffd36c !important;
+.home-screen .latest-draw-card .draw-order button[data-selected="true"] {
+  color: #ffd36c;
 }
 
 .home-screen .latest-draw-card .history-link {
-  display: flex !important;
-  height: 22px !important;
-  min-height: 22px !important;
-  padding: 0 !important;
-  justify-self: end !important;
-  align-self: center !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #f0c86c !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
+  display: flex;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  justify-self: end;
+  align-self: center;
+  align-items: center;
+  justify-content: flex-end;
+  border: 0;
+  background: transparent;
+  color: #f0c86c;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-balls {
-  display: flex !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: visible !important;
-  transform: none !important;
+  display: flex;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .home-screen .latest-draw-card .main-balls {
-  display: flex !important;
-  min-width: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special='false'] .main-balls {
-  gap: 8px !important;
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
+  gap: 8px;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special='false'] .number-ball-component {
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: 50px;
   --number-font-size: 18px;
   --underline-width: 16px;
-  width: 50px !important;
-  height: 50px !important;
-  flex: 0 0 50px !important;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .main-balls {
-  gap: 2px !important;
-  flex: 0 1 auto !important;
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
+  gap: 2px;
+  flex: 0 1 auto;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special='true'] .number-ball-component {
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
   --number-ball-size: 42px;
   --number-font-size: 16px;
   --underline-width: 14px;
-  width: 42px !important;
-  height: 42px !important;
-  flex: 0 0 42px !important;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
-  display: flex !important;
-  width: 10px !important;
-  height: 42px !important;
-  flex: 0 0 10px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  color: #f0c86c !important;
-  font-size: 15px !important;
-  font-weight: 800 !important;
-  transform: none !important;
+  display: flex;
+  width: 10px;
+  height: 42px;
+  flex: 0 0 10px;
+  align-items: center;
+  justify-content: center;
+  color: #f0c86c;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .home-screen .latest-draw-card .special-ball-group {
-  position: relative !important;
-  display: flex !important;
-  width: 44px !important;
-  height: 56px !important;
-  flex: 0 0 44px !important;
-  align-items: flex-end !important;
-  justify-content: center !important;
-  transform: none !important;
+  position: relative;
+  display: flex;
+  width: 44px;
+  height: 56px;
+  flex: 0 0 44px;
+  align-items: flex-end;
+  justify-content: center;
 }
 
 .home-screen .latest-draw-card .special-label {
-  position: absolute !important;
-  top: 0 !important;
-  right: 0 !important;
-  left: 0 !important;
-  width: 44px !important;
-  color: #d8a653 !important;
-  font-size: 9px !important;
-  line-height: 14px !important;
-  text-align: center !important;
-  white-space: nowrap !important;
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  width: 44px;
+  color: #d8a653;
+  font-size: 9px;
+  line-height: 14px;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded,
-.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card .next-draw-info--embedded {
-  display: grid !important;
-  grid-template-columns: minmax(0, 54fr) minmax(0, 46fr) !important;
-  width: auto !important;
-  height: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  margin: 0 -14px !important;
-  padding: 0 16px !important;
-  align-items: center !important;
-  border: 0 !important;
-  background: transparent !important;
+.home-screen .latest-draw-card .next-draw-info--embedded {
+  display: grid;
+  grid-template-columns: minmax(0, 54fr) minmax(0, 46fr);
+  width: auto;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  margin: 0 -14px;
+  padding: 0 16px;
+  align-items: center;
+  border: 0;
+  background: transparent;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
-  display: grid !important;
-  grid-template-columns: 32px auto minmax(0, 1fr) !important;
-  gap: 4px !important;
-  min-width: 0 !important;
-  align-items: center !important;
+  display: grid;
+  grid-template-columns: 32px auto minmax(0, 1fr);
+  gap: 4px;
+  min-width: 0;
+  align-items: center;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 24px !important;
-  height: 24px !important;
-  opacity: 0 !important;
+  width: 24px;
+  height: 24px;
+  opacity: 0;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
-  font-size: 11px !important;
-  line-height: 16px !important;
-  white-space: nowrap !important;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
-  min-width: 0 !important;
-  overflow: hidden !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  line-height: 16px !important;
-  white-space: nowrap !important;
-  text-overflow: clip !important;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: clip;
 }
 
-.home-screen .matrix-status-section,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-section {
-  box-sizing: border-box !important;
-  display: flex !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 8px !important;
-  flex-direction: column !important;
-  border: 1px solid rgba(230, 199, 127, 0.44) !important;
-  border-radius: 12px !important;
-  background: rgba(2, 7, 17, 0.68) !important;
-  box-shadow: none !important;
-  overflow: visible !important;
+.home-screen .matrix-status-section {
+  display: flex;
+  height: auto;
+  min-height: 0;
+  padding: 8px;
+  flex-direction: column;
+  border: 1px solid rgba(230, 199, 127, 0.44);
+  border-radius: 12px;
+  background: rgba(2, 7, 17, 0.68);
+  box-shadow: none;
+  overflow: visible;
 }
 
 .home-screen .matrix-status-header {
-  display: flex !important;
-  height: 20px !important;
-  min-height: 20px !important;
-  margin: 0 0 6px !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: space-between !important;
+  display: flex;
+  height: 20px;
+  min-height: 20px;
+  margin: 0 0 6px;
+  padding: 0;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .home-screen .matrix-status-header h2 {
-  margin: 0 !important;
-  color: #e6c77f !important;
-  font-size: 16px !important;
-  line-height: 20px !important;
+  margin: 0;
+  color: #e6c77f;
+  font-size: 16px;
+  line-height: 20px;
 }
 
 .home-screen .matrix-status-more {
-  display: flex !important;
-  height: 20px !important;
-  min-height: 20px !important;
-  padding: 0 !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #e6c77f !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  line-height: 20px !important;
-  white-space: nowrap !important;
+  display: flex;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  align-items: center;
+  justify-content: flex-end;
+  border: 0;
+  background: transparent;
+  color: #e6c77f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
 }
 
-.home-screen .matrix-status-grid,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-grid {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 2px !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  align-items: stretch !important;
-  overflow: visible !important;
+.home-screen .matrix-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  align-items: stretch;
+  overflow: visible;
 }
 
-.home-screen .matrix-status-card,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-card {
-  position: relative !important;
-  display: block !important;
-  aspect-ratio: 72 / 120 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
+.home-screen .matrix-status-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 72 / 120;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
-.home-screen .matrix-status-artwork,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-status-artwork {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  opacity: 1 !important;
-  transform: none !important;
+.home-screen .matrix-status-artwork {
+  position: static;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  opacity: 1;
 }
 
 .home-screen .matrix-status-lottery-center,
 .home-screen .matrix-status-overlay,
 .home-screen .matrix-status-card-arrow,
 .home-screen .matrix-status-indicators {
-  display: none !important;
+  display: none;
 }
 
-.home-screen .matrix-core-banner,
-.mobile-app-viewport[data-platform='android'] .home-screen .matrix-core-banner {
-  display: block !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  line-height: 0 !important;
-  overflow: visible !important;
+.home-screen .matrix-core-banner {
+  display: block;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 0;
+  overflow: visible;
 }
 
 .home-screen .matrix-core-banner::after {
-  display: none !important;
+  display: none;
 }
 
 .home-screen .matrix-core-banner img {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  filter: none !important;
-  transform: none !important;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: none;
 }
 
-.home-screen .home-shortcut-row,
-.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
-  display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap: 2px !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  align-items: stretch !important;
-  overflow: visible !important;
+.home-screen .home-shortcut-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  height: auto;
+  min-height: 0;
+  align-items: stretch;
+  overflow: visible;
 }
 
-.home-screen .home-shortcut,
-.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
-  display: block !important;
-  aspect-ratio: 386 / 496 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-  transform: none !important;
+.home-screen .home-shortcut {
+  display: block;
+  aspect-ratio: 386 / 496;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .home-screen .home-shortcut img,
-.home-screen .home-shortcut[aria-label='Matrix 牌單'] img {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  margin: 0 !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  border-radius: 0 !important;
-  clip-path: none !important;
-  filter: none !important;
-  transform: none !important;
+.home-screen .home-shortcut[aria-label="Matrix 牌單"] img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0;
+  clip-path: none;
+  filter: none;
 }
