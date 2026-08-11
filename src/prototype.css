@@ -2833,12 +2833,13 @@
   min-height: 0 !important;
   height: 50px !important;
   gap: 8px !important;
-  align-items: start !important;
+  align-items: center !important;
 }
 
 .home-screen .latest-draw-card .draw-meta {
   min-height: 0 !important;
-  padding-top: 25px !important;
+  padding-top: 0 !important;
+  align-self: center !important;
 }
 
 .home-screen .latest-draw-card .draw-issue {
@@ -2868,6 +2869,7 @@
   border-radius: 12px !important;
   background: transparent !important;
   justify-self: center !important;
+  align-self: center !important;
   overflow: hidden !important;
 }
 
@@ -2886,13 +2888,14 @@
 .home-screen .latest-draw-card .history-link {
   height: 24px !important;
   min-height: 24px !important;
-  margin-top: 25px !important;
+  margin-top: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
   color: #f0c86c !important;
   font-size: 11px !important;
   justify-self: end !important;
+  align-self: center !important;
 }
 
 .home-screen .latest-draw-card .draw-balls {
@@ -2937,10 +2940,11 @@
   font-weight: 700 !important;
 }
 
-/* 2026-08-11 keep Matrix Status hidden while preserving its homepage layout slot. */
-.home-screen .lottery-screen > .matrix-status-layout-spacer,
-.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-layout-spacer {
-  display: block !important;
+/* 2026-08-11 restore homepage Matrix Status above Matrix Core. */
+.home-screen .lottery-screen > .matrix-status-section,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section {
+  display: flex !important;
+  flex-direction: column !important;
   box-sizing: border-box !important;
   width: calc(100% - 32px) !important;
   min-width: 0 !important;
@@ -2952,7 +2956,77 @@
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
-  pointer-events: none !important;
+  overflow: visible !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-header,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-header {
+  height: 20px !important;
+  min-height: 20px !important;
+  margin: 0 0 4px !important;
+  padding: 0 !important;
+  align-items: center !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-header h2,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-header h2 {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 20px !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-more,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-more {
+  display: none !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-grid,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 72px) !important;
+  gap: 4px !important;
+  justify-content: center !important;
+  align-items: start !important;
+  height: 122px !important;
+  min-height: 122px !important;
+  max-height: 122px !important;
+  overflow: visible !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-card {
+  position: relative !important;
+  display: block !important;
+  width: 72px !important;
+  height: 120px !important;
+  min-width: 72px !important;
+  min-height: 120px !important;
+  max-width: 72px !important;
+  max-height: 120px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-artwork,
+.mobile-app-viewport[data-platform='android'] .home-screen .lottery-screen > .matrix-status-section .matrix-status-artwork {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-lottery-center,
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-overlay,
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-card-arrow,
+.home-screen .lottery-screen > .matrix-status-section .matrix-status-indicators {
+  display: none !important;
 }
 
 /* 2026-08-11 homepage lottery switcher position adjustment. */
