@@ -480,7 +480,11 @@
 .history-numbers { display: flex; gap: 3px; align-items: center; justify-content: center; }
 .history-main-numbers { display: flex; gap: 3px; align-items: center; justify-content: center; }
 .history-special-number { display: flex; margin-left: 4px; align-items: center; gap: 4px; color: #d4a63b; }
-.history-panel .number-ball.history-lottery-ball {
+.history-panel .number-ball.history-lottery-ball,
+.history-panel .number-ball-component.history-lottery-ball {
+  --number-ball-size: 28px;
+  --number-font-size: 11.5px;
+  --underline-width: 8px;
   width: 28px;
   height: 28px;
   flex: 0 0 28px;
@@ -516,6 +520,9 @@
 }
 .history-panel .history-numbers[data-has-special="true"] { gap: 4px; }
 .history-panel .history-numbers[data-has-special="true"] .history-lottery-ball {
+  --number-ball-size: 24px;
+  --number-font-size: 11px;
+  --underline-width: 8px;
   width: 24px;
   height: 24px;
   flex-basis: 24px;
@@ -1407,10 +1414,10 @@
 .draw-history-row .history-main-numbers { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 3px; }
 .draw-history-row .history-special-number { display: flex; align-items: center; gap: 2px; }
 .draw-history-row .history-special-number > span:first-child { color: #d2a52a; }
-.draw-history-row .history-lottery-ball { width: 25px; height: 25px; flex: 0 0 25px; }
+.draw-history-row .history-lottery-ball { --number-ball-size: 25px; --number-font-size: 10px; --underline-width: 7px; width: 25px; height: 25px; flex: 0 0 25px; }
 .draw-history-row .history-lottery-ball .ball-number { font-size: 10px; }
 .draw-history-row .history-lottery-ball .ball-number::after { top: auto; bottom: 1px; }
-.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball { width: 22px; height: 22px; flex-basis: 22px; }
+.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball { --number-ball-size: 22px; --number-font-size: 9px; --underline-width: 7px; width: 22px; height: 22px; flex-basis: 22px; }
 .draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number { font-size: 9px; }
 
 .query-selects.three-cols { margin-bottom: 8px; }
