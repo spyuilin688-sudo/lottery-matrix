@@ -1,6 +1,6 @@
 import type { NumberBallLottery } from './NumberBall';
 
-export const LOTTERY_API_BASE = 'https://app-snsxet.v2.appdeploy.ai';
+export const LOTTERY_API_BASE = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 
 export type LotteryDrawRecord = {
   period?: string;
@@ -15,9 +15,11 @@ export type LotteryDrawRecord = {
   [key: string]: unknown;
 };
 
-export type LatestLotteryResponse = {
+type LatestLotteryEnvelope = {
   item?: LotteryDrawRecord | null;
-} | LotteryDrawRecord | null;
+};
+
+export type LatestLotteryResponse = LatestLotteryEnvelope | LotteryDrawRecord | null;
 
 export type LotteryHistoryResponse = {
   items?: LotteryDrawRecord[];
@@ -59,18 +61,33 @@ function normalizeRecord(record: LotteryDrawRecord): LotteryDrawRecord {
 }
 
 async function requestJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${LOTTERY_API_BASE}${path}`);
+  const response = await fetch(`${LOTTERY_API_BASE}${path}`, {
+    headers: { Accept: 'application/json' },
+  });
   if (!response.ok) {
     throw new Error(`Lottery API ${response.status}: ${response.statusText}`);
   }
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Lottery API returned ${contentType || 'non-JSON response'}`);
+  }
   return response.json() as Promise<T>;
+}
+
+function isLatestLotteryEnvelope(data: LatestLotteryResponse): data is LatestLotteryEnvelope {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    Object.prototype.hasOwnProperty.call(data, 'item')
+  );
 }
 
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
   const data = await requestJson<LatestLotteryResponse>(
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
   );
-  const item = data && !Array.isArray(data) && 'item' in data ? data.item : data;
+  const item = isLatestLotteryEnvelope(data) ? data.item : data;
   return item ? normalizeRecord(item) : null;
 }
 
