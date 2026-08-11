@@ -2158,7 +2158,7 @@
   height: var(--primary-brand-height);
   min-height: var(--primary-brand-height);
   padding: 0 var(--primary-brand-inline);
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .compact-feature-screen .feature-brand-header > .feature-brand-logo,
@@ -2594,7 +2594,7 @@
   width: 100%;
   height: var(--primary-brand-height);
   min-height: var(--primary-brand-height);
-  margin: 0 0 var(--layout-section-gap);
+  margin: 0;
   padding: 0 var(--primary-brand-inline);
   flex: 0 0 var(--primary-brand-height);
   overflow: hidden;
@@ -2608,7 +2608,7 @@
 
 .bottom-nav-brand-screen > .feature-brand-header {
   top: var(--bottom-nav-brand-offset);
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .bottom-nav-brand-screen > .feature-body {
@@ -2635,7 +2635,7 @@
   width: 100%;
   height: auto;
   min-height: 0;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   padding-inline: var(--layout-page-inline);
 }
 
@@ -2663,7 +2663,7 @@
 .compact-feature-screen .feature-brand-header,
 .notifications-screen .feature-brand-header,
 .profile-screen .feature-brand-header {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .feature-screen:not(.compact-feature-screen) .feature-brand-lockup {
