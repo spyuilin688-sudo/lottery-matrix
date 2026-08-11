@@ -2,6 +2,7 @@
   padding-top: 30px;
 }
 
+.brand-header,
 .feature-brand-header,
 .feature-brand-header[data-compact="true"] {
   position: relative;
@@ -23,8 +24,9 @@
   justify-content: center;
 }
 
+.shared-brand-logo,
 .feature-brand-lockup,
-.feature-brand-header[data-compact="true"] > .feature-brand-logo {
+.feature-brand-header[data-compact="true"] > .shared-brand-logo {
   display: flex;
   width: 100%;
   height: var(--primary-brand-height);
@@ -37,14 +39,20 @@
   line-height: 0;
 }
 
-.feature-brand-lockup > .feature-brand-logo,
-.feature-brand-header[data-compact="true"] > .feature-brand-logo {
+.shared-brand-logo > img {
   display: block;
-  width: 100%;
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550));
   max-width: 100%;
   height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  margin: 0 auto;
   object-fit: contain;
   object-position: center;
+}
+
+.brand-logo,
+.feature-brand-logo {
+  display: contents;
 }
 
 .feature-brand-header .back-button {
