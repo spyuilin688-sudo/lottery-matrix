@@ -140,7 +140,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   今彩539: {
     status: "啟動",
     statusEn: "ACTIVE",
-    artwork: "/assets/lottery/functions/啟動.png",
+    artwork: "/assets/lottery/status/active.png",
     count: 2,
     description: "具備基本參考價值",
     tone: "green",
@@ -148,7 +148,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   天天樂: {
     status: "聚合",
     statusEn: "FOCUS",
-    artwork: "/assets/lottery/functions/聚合.png",
+    artwork: "/assets/lottery/status/focus.png",
     count: 1,
     description: "具備明顯規律集中性",
     tone: "blue",
@@ -156,7 +156,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   "六合彩": {
     status: "共振",
     statusEn: "RESONANCE",
-    artwork: "/assets/lottery/functions/共振.png",
+    artwork: "/assets/lottery/status/resonance.png",
     count: 3,
     description: "具備強烈共振效應",
     tone: "purple",
@@ -164,7 +164,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   大樂透: {
     status: "臨界",
     statusEn: "CRITICAL",
-    artwork: "/assets/lottery/functions/臨界.png",
+    artwork: "/assets/lottery/status/critical.png",
     count: 4,
     description: "極為罕見版路狀態",
     tone: "orange",
