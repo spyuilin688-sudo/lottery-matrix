@@ -17,8 +17,10 @@ import {
   ReloadIcon,
   TrashIcon,
 } from "@radix-ui/react-icons";
-import { LotterySwitcher, type LotteryId } from "./Prototype";
+import { LotterySwitcher, type LotteryId, type DrawOrder } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
+import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
+import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 
 export type ScreenId =
   | "home"
@@ -111,15 +113,7 @@ function useTimedState<T>(key: string, initialValue: T) {
 }
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
-const MARK_SIX_BLUE = new Set([
-  "03", "04", "09", "10", "14", "15", "20", "25",
-  "26", "31", "36", "37", "41", "42", "47", "48",
-]);
-const MARK_SIX_RED = new Set([
-  "01", "02", "07", "08", "12", "13", "18", "19", "23",
-  "24", "29", "30", "34", "35", "40", "45", "46",
-]);
-const HISTORY = [
+const ROAD_VALIDATION_SAMPLE_HISTORY = [
   ["5887", "2026/06/12（四）", ["02", "03", "18", "29", "31"]],
   ["5888", "2026/06/13（五）", ["04", "05", "06", "34", "36"]],
   ["5889", "2026/06/15（日）", ["12", "16", "24", "28", "36"]],
@@ -322,59 +316,61 @@ function MiniBall({ number, tone = "gold" }: { number: string; tone?: string }) 
   return <span className="mini-ball" data-tone={tone}>{number}</span>;
 }
 
-function getLotteryBallTone(
-  lottery: LotteryId,
-  number: string,
-): "orange" | "white" | "red" | "green" | "blue" {
-  if (lottery === "今彩539") return "orange";
-  if (lottery === "天天樂") return "white";
-  if (lottery === "大樂透") return "red";
-  if (MARK_SIX_BLUE.has(number)) return "blue";
-  if (MARK_SIX_RED.has(number)) return "red";
-  return "green";
+type HistoryDrawNumbers = {
+  main: string[];
+  special?: string;
+};
+
+function useLotteryHistory(lottery: LotteryId, limit?: number) {
+  const [data, setData] = useState<LotteryDrawRecord[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetchLotteryHistory(lottery, limit)
+      .then((records) => {
+        if (active) setData(records);
+      })
+      .catch(() => {
+        if (active) setData([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [lottery, limit]);
+
+  return data;
 }
 
-function LotteryHistoryBall({
-  lottery,
-  number,
-  isSpecial = false,
-}: {
-  lottery: LotteryId;
-  number: string;
-  isSpecial?: boolean;
-}) {
-  const tone = getLotteryBallTone(lottery, number);
-  const usesDarkText =
-    lottery === "今彩539" ||
-    lottery === "天天樂" ||
-    lottery === "六合彩";
-
-  return (
-    <span
-      className="number-ball history-lottery-ball"
-      data-lottery={lottery}
-      data-tone={tone}
-      data-special={isSpecial}
-      data-dark-text={usesDarkText}
-      aria-label={`${isSpecial ? "特別號" : "號碼"} ${number}`}
-    >
-      <span className="ball-surface" aria-hidden="true" />
-      <span className="ball-number" aria-hidden="true">{number}</span>
-    </span>
-  );
+function getHistoryLimit(range: string) {
+  const value = Number(range.replace(/\D/g, ""));
+  return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-function getHistoryNumbers(
+function getHistoryOrder(numberOrder: string): DrawOrder {
+  return numberOrder.includes("實際") ? "落球" : "順球";
+}
+
+function getHistoryDrawNumbers(
   lottery: LotteryId,
-  numbers: readonly string[],
-) {
-  if (lottery !== "六合彩" && lottery !== "大樂透") {
-    return { main: numbers, special: undefined };
+  record: LotteryDrawRecord,
+  order: DrawOrder,
+): HistoryDrawNumbers {
+  const source = order === "順球"
+    ? record.sortedNumbers?.length ? record.sortedNumbers : record.numbers
+    : record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers;
+  const normalized = source.map(normalizeBallNumber);
+
+  if (lottery === "六合彩" || lottery === "大樂透") {
+    return {
+      main: normalized.slice(0, 6),
+      special: normalized[6],
+    };
   }
 
   return {
-    main: [...numbers, "38"],
-    special: numbers.includes("03") ? "44" : "03",
+    main: normalized.slice(0, 5),
+    special: undefined,
   };
 }
 
@@ -393,6 +389,9 @@ function HistoryList({
   numberOrder: string;
   onOpenHistory: () => void;
 }) {
+  const history = useLotteryHistory(lottery, 10);
+  const order = getHistoryOrder(numberOrder);
+
   return (
     <section className="panel history-panel">
       <header className="panel-heading">
@@ -403,8 +402,10 @@ function HistoryList({
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>
-        {HISTORY.map(([issue, date, nums]) => {
-          const draw = getHistoryNumbers(lottery, nums);
+        {history.map((record) => {
+          const draw = getHistoryDrawNumbers(lottery, record, order);
+          const issue = record.period ?? record.issue ?? "";
+          const date = record.drawDate ?? record.date ?? "";
 
           return (
             <div className="history-row" key={issue}>
@@ -412,14 +413,14 @@ function HistoryList({
               <span><HistoryDate value={date} /></span>
               <span className="history-numbers" data-has-special={Boolean(draw.special)}>
                 <span className="history-main-numbers">
-                  {draw.main.map((num) => (
-                    <LotteryHistoryBall key={num} lottery={lottery} number={num} />
+                  {draw.main.map((num, index) => (
+                    <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />
                   ))}
                 </span>
                 {draw.special ? (
                   <span className="history-special-number">
                     <span aria-hidden="true">+</span>
-                    <LotteryHistoryBall lottery={lottery} number={draw.special} isSpecial />
+                    <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
                   </span>
                 ) : null}
               </span>
@@ -446,6 +447,8 @@ export function DrawHistoryPage({
   const [day, setDay] = useTimedState("history-day", "31日");
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const history = useLotteryHistory(lottery, getHistoryLimit(range));
+  const historyOrder = getHistoryOrder(numberOrder);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -491,20 +494,23 @@ export function DrawHistoryPage({
           <span>日期</span>
           <span>開獎號碼</span>
         </div>
-        {HISTORY.map(([issue, date, nums]) => {
-          const draw = getHistoryNumbers(lottery, nums);
+        {history.map((record) => {
+          const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
+          const issue = record.period ?? record.issue ?? "";
+          const date = record.drawDate ?? record.date ?? "";
+
           return (
             <div className="draw-history-row" key={issue}>
               <span className="draw-history-meta">{issue}</span>
               <span className="draw-history-meta"><HistoryDate value={date} /></span>
               <span className="history-numbers" data-has-special={Boolean(draw.special)}>
                 <span className="history-main-numbers">
-                  {draw.main.map((num) => <LotteryHistoryBall key={num} lottery={lottery} number={num} />)}
+                  {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />)}
                 </span>
                 {draw.special ? (
                   <span className="history-special-number">
                     <span aria-hidden="true">+</span>
-                    <LotteryHistoryBall lottery={lottery} number={draw.special} isSpecial />
+                    <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
                   </span>
                 ) : null}
               </span>
@@ -613,7 +619,7 @@ function RoadValidationProcess({
   consecutive: string;
   prediction: string;
 }) {
-  const sourceGroups = [HISTORY.slice(0, 3), HISTORY.slice(3, 6)];
+  const sourceGroups = [ROAD_VALIDATION_SAMPLE_HISTORY.slice(0, 3), ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, 6)];
   const validationGroups = Array.from({ length: 8 }, (_, index) => sourceGroups[index % sourceGroups.length]);
   return (
     <section className="road-validation-process" aria-label="驗證過程">
@@ -1060,9 +1066,9 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const resultColumns = lottery === "六合彩" || lottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
-  const resultGroups = HISTORY.slice(3, -1).map((lockedEntry, index) => ({
+  const resultGroups = ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, -1).map((lockedEntry, index) => ({
     lockedEntry,
-    predictedEntry: HISTORY[index + 4],
+    predictedEntry: ROAD_VALIDATION_SAMPLE_HISTORY[index + 4],
   }));
 
   const updateInputValue = (index: number, rawValue: string) => {
@@ -1087,7 +1093,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const renderResultRow = (
-    entry: (typeof HISTORY)[number],
+    entry: (typeof ROAD_VALIDATION_SAMPLE_HISTORY)[number],
     type: "locked" | "predicted",
   ) => {
     const [issue, date, nums] = entry;
@@ -1302,7 +1308,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <header><h2>{lottery}（{order}）</h2><button type="button" onClick={resetReference}><ReloadIcon />刷新</button></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          {HISTORY.map(([issue, , nums]) => {
+          {ROAD_VALIDATION_SAMPLE_HISTORY.map(([issue, , nums]) => {
             const draw = getHistoryNumbers(lottery, nums);
             const displayedNumbers = draw.special
               ? [...draw.main, draw.special]
