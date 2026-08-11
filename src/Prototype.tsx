@@ -412,6 +412,7 @@ export default function Prototype({ isLoading = true }: PrototypeProps) {
         <header className="brand-header"><BrandLogo className={deviceId === "iphone" ? "brand-logo--iphone" : ""} /></header>
         <LotterySwitcher selected={selected} onChange={setSelected} />
         <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} />
+        <div className="matrix-status-layout-spacer" aria-hidden="true" />
         <MatrixCoreBanner onOpen={() => navigate("explore")} />
         <HomeShortcutRow onNavigate={navigate} />
         <BottomNavigationPortal active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
