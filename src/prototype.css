@@ -2576,3 +2576,89 @@
   font-size: 17px;
   font-weight: 700;
 }
+
+/* 2026-08-11 fix homepage draw card and Matrix card icon constraints. */
+.home-screen .latest-draw-card,
+.mobile-app-viewport[data-platform='android'] .home-screen .latest-draw-card {
+  background:
+    linear-gradient(rgba(2, 7, 12, .08), rgba(2, 7, 12, .08)),
+    url('/assets/lottery/latest-draw-card-bg.png') center / contain no-repeat;
+  background-color: #050b10;
+}
+
+.home-screen .home-shortcut-row,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut-row {
+  overflow: visible;
+}
+
+.home-screen .home-shortcut,
+.mobile-app-viewport[data-platform='android'] .home-screen .home-shortcut {
+  aspect-ratio: auto;
+  overflow: visible;
+  border-radius: 0;
+}
+
+.home-screen .home-shortcut img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  margin: 0;
+  max-width: 100%;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  clip-path: none;
+  border-radius: 0;
+}
+
+.home-screen .home-shortcut:nth-child(4) {
+  overflow: visible;
+  border-radius: 0;
+}
+
+.home-screen .home-shortcut:nth-child(4) img {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  max-width: 100%;
+  transform: none;
+  clip-path: none;
+}
+
+.home-screen .home-shortcut:nth-child(5),
+.home-screen .home-shortcut:nth-child(5) img {
+  overflow: visible;
+  clip-path: none;
+}
+
+/* 2026-08-11 Logo unification: all page headers use the shared BrandLogo component. */
+.home-screen .brand-header {
+  position: relative;
+  top: -36px;
+  left: -2px;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--primary-brand-height);
+  min-height: var(--primary-brand-height);
+  margin: 0 0 var(--layout-section-gap);
+  padding: 0 var(--primary-brand-inline);
+  flex: 0 0 var(--primary-brand-height);
+  overflow: hidden;
+}
+
+.home-screen .shared-brand-logo,
+.feature-brand-header .shared-brand-logo,
+.feature-brand-lockup {
+  width: 100%;
+  height: var(--primary-brand-height);
+}
+
+.home-screen .shared-brand-logo > img,
+.feature-brand-header .shared-brand-logo > img {
+  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550));
+  max-width: 100%;
+  height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  object-fit: contain;
+  object-position: center;
+}
