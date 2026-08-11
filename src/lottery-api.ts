@@ -31,6 +31,28 @@ function normalizeNumberList(values: unknown): string[] {
     : [];
 }
 
+function normalizePeriod(lottery: NumberBallLottery, value: unknown) {
+  if (value === null || value === undefined) return undefined;
+  const period = String(value).trim();
+  if (lottery === '今彩539' || lottery === '大樂透') {
+    return period.replace(/^(\d{3})000(\d{3})$/, '$1$2');
+  }
+  return period;
+}
+
+function normalizeDrawDate(value: unknown) {
+  if (value === null || value === undefined) return undefined;
+  const date = String(value).trim();
+  const westernMatch = date.match(/(\d{4})[\/-\.](\d{1,2})[\/-\.](\d{1,2})/);
+  const chineseMatch = date.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  const match = westernMatch ?? chineseMatch;
+
+  if (!match) return date;
+
+  const [, year, month, day] = match;
+  return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
+}
+
 function sortDrawNumbers(values: string[]) {
   if (values.length === 7) {
     return [
@@ -41,18 +63,22 @@ function sortDrawNumbers(values: string[]) {
   return [...values].sort((a, b) => Number(a) - Number(b));
 }
 
-function normalizeRecord(record: LotteryDrawRecord): LotteryDrawRecord {
+function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord): LotteryDrawRecord {
   const numbers = normalizeNumberList(record.numbers);
   const sortedNumbers = normalizeNumberList(record.sortedNumbers);
   const drawOrderNumbers = normalizeNumberList(record.drawOrderNumbers);
   const normalizedSortedNumbers = sortedNumbers.length
     ? sortedNumbers
     : sortDrawNumbers(numbers);
+  const normalizedPeriod = normalizePeriod(lottery, record.period ?? record.issue);
+  const normalizedDrawDate = normalizeDrawDate(record.drawDate ?? record.date);
 
   return {
     ...record,
-    period: record.period ?? record.issue,
-    drawDate: record.drawDate ?? record.date,
+    period: normalizedPeriod,
+    issue: normalizedPeriod,
+    drawDate: normalizedDrawDate,
+    date: normalizedDrawDate,
     numbers: normalizedSortedNumbers,
     sortedNumbers: normalizedSortedNumbers,
     drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : numbers,
@@ -88,7 +114,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
   );
   const item = isLatestLotteryEnvelope(data) ? data.item : data;
-  return item ? normalizeRecord(item) : null;
+  return item ? normalizeRecord(lottery, item) : null;
 }
 
 export async function fetchLotteryHistory(
@@ -100,5 +126,5 @@ export async function fetchLotteryHistory(
     `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
   );
   const items = Array.isArray(data) ? data : data.items ?? [];
-  return items.map(normalizeRecord);
+  return items.map((item) => normalizeRecord(lottery, item));
 }
