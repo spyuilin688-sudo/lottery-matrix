@@ -88,7 +88,7 @@
 .home-screen .lottery-switcher > .home-asset-image {
   grid-area: 1 / 1;
   width: 100%;
-  height: calc(min(100vw, 390px) * 821 / 1916);
+  height: calc((min(100vw, 390px) * 821 / 1916) - 8px);
   object-fit: fill;
 }
 
@@ -104,6 +104,7 @@
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
   appearance: none;
   display: block;
+  box-sizing: border-box;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -493,20 +494,26 @@
 
 
 
+.home-screen .lottery-card[data-selected="true"] {
+  border: 1px solid transparent;
+  background: transparent;
+  border-image-slice: 1;
+}
+
 .home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
-  background: linear-gradient(135deg, rgba(52, 199, 89, .38), rgba(255, 214, 64, .38), rgba(52, 132, 255, .38), rgba(255, 59, 48, .38));
+  border-image-source: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
-  background: linear-gradient(135deg, rgba(30, 118, 255, .42), rgba(255, 255, 255, .42), rgba(30, 118, 255, .42));
+  border-image-source: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
-  background: linear-gradient(135deg, rgba(255, 59, 48, .4), rgba(30, 118, 255, .4), rgba(52, 199, 89, .4));
+  border-image-source: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
-  background: linear-gradient(135deg, rgba(255, 214, 64, .44), rgba(30, 118, 255, .42), rgba(255, 214, 64, .44));
+  border-image-source: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
 }
 
 @keyframes matrix-core-particle-frame {
