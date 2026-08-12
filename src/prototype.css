@@ -350,3 +350,8 @@
 .brand-logo--iphone {
   transform: none;
 }
+
+/* Match the outer device viewport to the homepage background. */
+.device-screen {
+  background: var(--lottery-neutral-950);
+}
