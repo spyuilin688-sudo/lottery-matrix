@@ -427,17 +427,17 @@
   filter: none;
 }
 
-/* 390 px homepage container map (Plan A: table values are authoritative). */
+/* Homepage containers follow normal vertical document flow. */
 .home-screen .lottery-screen {
-  position: relative;
-  display: block;
+  display: flex;
   width: min(100%, 390px);
-  max-width: 390px;
   min-height: 0;
   height: auto;
-  aspect-ratio: 390 / 735.3;
   margin: 0 auto;
-  padding: 0;
+  padding: 0 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 8px);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--home-section-gap);
   overflow: visible;
 }
 
@@ -449,129 +449,48 @@
   .home-core-box,
   .home-features-box
 ) {
-  position: absolute;
+  position: static;
+  height: auto;
   margin: 0;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .home-screen .home-logo-box {
-  top: 2.094383245%;
-  left: 9.076923077%;
-  width: 81.871794872%;
-  height: 11.872705018%;
-  overflow: hidden;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
 .home-screen .home-logo-box .home-logo-image {
+  display: block;
   width: 100%;
-  height: 100%;
+  max-width: 100%;
+  height: auto;
   object-fit: contain;
 }
 
 .home-screen .home-switcher-box {
-  top: 15.327077383%;
-  left: 1.564102564%;
-  display: grid;
   width: 96.871794872%;
-  height: 9.234326125%;
-  overflow: hidden;
-}
-
-.home-screen .home-switcher-box > .home-asset-image {
-  grid-area: 1 / 1;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-}
-
-.home-screen .home-switcher-box > .lottery-switcher-hit-grid {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  width: auto;
-  gap: 7px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .home-screen .home-draw-box {
-  top: 26.873385013%;
-  left: 4.769230769%;
   width: 90.461538462%;
-  height: 20.359037128%;
   min-height: 0;
-  aspect-ratio: auto;
-  overflow: hidden;
+  aspect-ratio: 361.1 / 176.4;
 }
 
 .home-screen .home-status-box {
-  top: 49.435604515%;
-  left: 4.769230769%;
-  display: grid;
   width: 90.461538462%;
-  height: 18.686250510%;
-  padding: 0;
-  overflow: hidden;
-}
-
-.home-screen .home-status-box > .home-asset-image {
-  grid-area: 1 / 1;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-}
-
-.home-screen .matrix-status-hit-grid {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.home-screen .matrix-status-hit-grid button {
-  appearance: none;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .home-screen .home-core-box {
-  top: 71.657826737%;
-  left: 3.205128205%;
   width: 93.589743590%;
-  height: 15.286277710%;
-  overflow: hidden;
-}
-
-.home-screen .home-core-box > .home-asset-image {
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
 }
 
 .home-screen .home-features-box {
-  top: 89.024887801%;
-  left: 2.923076923%;
-  display: grid;
   width: 94.179487179%;
-  height: 10.975112199%;
-  gap: 12px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  overflow: hidden;
-}
-
-.home-screen .home-features-box .home-shortcut {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-}
-
-.home-screen .home-features-box .home-shortcut img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 /* Temporary homepage container boundary guides. */
