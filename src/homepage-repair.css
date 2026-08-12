@@ -449,3 +449,27 @@
   filter: none;
 }
 
+/* Temporary homepage container boundary guides. */
+.home-screen .brand-header {
+  outline: 1px solid #ff3b30;
+}
+
+.home-screen .lottery-switcher {
+  outline: 1px solid #ffcc00;
+}
+
+.home-screen .latest-draw-card {
+  outline: 1px solid #34c759;
+}
+
+.home-screen .matrix-status-section {
+  outline: 1px solid #00c7be;
+}
+
+.home-screen .matrix-core-banner {
+  outline: 1px solid #007aff;
+}
+
+.home-screen .home-shortcut-row {
+  outline: 1px solid #bf5af2;
+}
