@@ -84,6 +84,8 @@
 .home-screen .lottery-switcher > .home-asset-image {
   grid-area: 1 / 1;
   width: 100%;
+  height: calc((min(100vw, 390px) * 821 / 1916) - 4px);
+  object-fit: fill;
 }
 
 .home-screen .lottery-switcher-hit-grid {
@@ -162,8 +164,8 @@
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 20px;
-  line-height: 21px;
+  font-size: 14px;
+  line-height: 16px;
   letter-spacing: .4px;
 }
 
@@ -359,7 +361,7 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
   min-width: 0;
-  color: #f4e5bd;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   line-height: 14px;
@@ -449,32 +451,19 @@
   filter: none;
 }
 
-/* Temporary homepage container boundary guides. */
-.home-screen .brand-header {
-  outline: 1px solid #ff3b30;
-}
-
-.home-screen .lottery-switcher {
-  outline: 1px solid #ffcc00;
-}
-
-.home-screen .latest-draw-card {
-  outline: 1px solid #34c759;
-  animation: draw-card-scan-frame 2.4s linear infinite;
-}
-
-.home-screen .matrix-status-section {
-  outline: 1px solid #00c7be;
-  animation: matrix-status-flow-frame 2.8s linear infinite;
+/* Homepage container visibility and Matrix Core particle light. */
+.home-screen .brand-header,
+.home-screen .lottery-switcher,
+.home-screen .latest-draw-card,
+.home-screen .matrix-status-section,
+.home-screen .home-shortcut-row {
+  outline: 0;
+  animation: none;
 }
 
 .home-screen .matrix-core-banner {
-  outline: 1px solid #007aff;
-  animation: matrix-core-pulse-frame 1.8s ease-in-out infinite;
-}
-
-.home-screen .home-shortcut-row {
-  outline: 1px solid #bf5af2;
+  outline: 1px dotted rgba(80, 174, 255, .72);
+  animation: matrix-core-particle-frame 1.8s ease-in-out infinite;
 }
 
 /* User-approved homepage container offsets and proportional image sizing. */
@@ -487,12 +476,12 @@
 }
 
 .home-screen .latest-draw-card {
-  margin-top: -6px;
+  margin-top: -7px;
 }
 
 .home-screen .matrix-status-section {
   width: 100.10112%;
-  margin-top: -2px;
+  margin-top: -5px;
 }
 
 .home-screen .matrix-core-banner {
@@ -501,37 +490,28 @@
 
 .home-screen .home-shortcut-row {
   width: calc(108.306410256% - 7.2px);
-  margin-top: 1px;
+  margin-top: -1px;
 }
 
 
-@keyframes draw-card-scan-frame {
-  0%, 100% {
-    outline-color: rgba(52, 199, 89, .45);
-    box-shadow: 0 0 2px rgba(52, 199, 89, .28);
-  }
-  50% {
-    outline-color: #b8ffca;
-    box-shadow: 0 0 10px rgba(52, 199, 89, .9);
-  }
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
+  background: linear-gradient(135deg, rgba(52, 199, 89, .38), rgba(255, 214, 64, .38), rgba(52, 132, 255, .38), rgba(255, 59, 48, .38));
 }
 
-@keyframes matrix-status-flow-frame {
-  0%, 100% {
-    outline-color: #00c7be;
-    box-shadow: 0 0 4px rgba(0, 199, 190, .45);
-  }
-  33% {
-    outline-color: #48a7ff;
-    box-shadow: 0 0 9px rgba(72, 167, 255, .78);
-  }
-  66% {
-    outline-color: #bf5af2;
-    box-shadow: 0 0 9px rgba(191, 90, 242, .78);
-  }
+.home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
+  background: linear-gradient(135deg, rgba(30, 118, 255, .42), rgba(255, 255, 255, .42), rgba(30, 118, 255, .42));
 }
 
-@keyframes matrix-core-pulse-frame {
+.home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
+  background: linear-gradient(135deg, rgba(255, 59, 48, .4), rgba(30, 118, 255, .4), rgba(52, 199, 89, .4));
+}
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
+  background: linear-gradient(135deg, rgba(255, 214, 64, .44), rgba(30, 118, 255, .42), rgba(255, 214, 64, .44));
+}
+
+@keyframes matrix-core-particle-frame {
   0%, 100% {
     outline-color: rgba(0, 122, 255, .55);
     box-shadow: 0 0 3px rgba(0, 122, 255, .35);
@@ -543,8 +523,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-screen .latest-draw-card,
-  .home-screen .matrix-status-section,
   .home-screen .matrix-core-banner {
     animation: none;
   }
