@@ -547,7 +547,7 @@
 
 .home-screen .home-shortcut {
   display: flex;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 386 / 496;
   width: 100%;
   min-width: 0;
   height: auto;
@@ -559,7 +559,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-screen .home-shortcut img,
@@ -570,7 +570,7 @@
   max-width: 100%;
   max-height: 100%;
   margin: 0;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   border-radius: 0;
   clip-path: none;
