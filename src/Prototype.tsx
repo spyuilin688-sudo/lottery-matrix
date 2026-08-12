@@ -307,25 +307,30 @@ export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: Nex
 export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
 export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <button
-      type="button"
-      className="matrix-status-section"
+    <section
+      className="matrix-status-section home-status-box"
       aria-label="Matrix 狀態"
       data-testid="matrix-status-section"
-      onClick={onOpen}
     >
       <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
-    </button>
+      <div className="matrix-status-hit-grid" aria-label="Matrix 四種狀態">
+        {["啟動", "聚合", "共振", "臨界"].map((label) => (
+          <button type="button" aria-label={label} key={label} onClick={onOpen}>
+            <span className="clean-hit-label">{label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
-  return <button type="button" className="matrix-core-banner" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img className="home-asset-image" src={HOME_ASSETS.matrixCore} alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
+  return <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img className="home-asset-image" src={HOME_ASSETS.matrixCore} alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
   const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "歷史開獎號碼": "history", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
-  return <nav className="home-shortcut-row" aria-label="五大功能" data-testid="home-shortcut-row">{HOME_SHORTCUTS.map((item) => <button className="home-shortcut" type="button" aria-label={item.label} key={item.label} onClick={() => onNavigate?.(screens[item.label])}><img src={item.image} alt="" draggable={false} /></button>)}</nav>;
+  return <nav className="home-shortcut-row home-features-box" aria-label="五大功能" data-testid="home-shortcut-row">{HOME_SHORTCUTS.map((item) => <button className="home-shortcut" type="button" aria-label={item.label} key={item.label} onClick={() => onNavigate?.(screens[item.label])}><img src={item.image} alt="" draggable={false} /></button>)}</nav>;
 }
 
 export type BrandLoadingProps = { visible: boolean; onComplete?: () => void; className?: string };
@@ -380,9 +385,9 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
       <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-        <header className="brand-header"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-        <LotterySwitcher selected={selected} onChange={setSelected} />
-        <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} />
+        <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
+        <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
+        <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
         <MatrixStatusSection onOpen={() => navigate("status")} />
         <MatrixCoreBanner onOpen={() => navigate("explore")} />
         <HomeShortcutRow onNavigate={navigate} />
