@@ -505,12 +505,17 @@
 
 .home-screen .matrix-core-banner {
   display: block;
+  width: calc(100% - 16px);
+  max-width: none;
+  height: 92px;
+  margin-top: auto;
   padding: 0;
+  flex: 0 0 92px;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .home-screen .matrix-core-banner::after {
@@ -520,25 +525,29 @@
 .home-screen .matrix-core-banner img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   max-width: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
   filter: none;
 }
 
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: calc(100% - 16px);
+  max-width: none;
   gap: 2px;
-  margin-top: auto;
+  margin-top: 8px;
   margin-bottom: 8px;
+  align-items: end;
   flex: 0 0 auto;
   overflow: visible;
 }
 
 .home-screen .home-shortcut {
   display: block;
-  aspect-ratio: 382 / 440;
+  aspect-ratio: auto;
   width: 100%;
   min-width: 0;
   height: auto;
@@ -555,9 +564,9 @@
 .home-screen .home-shortcut[aria-label="Matrix 牌單"] img {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: 100%;
-  max-height: 100%;
+  max-height: none;
   margin: 0;
   object-fit: contain;
   border-radius: 0;
