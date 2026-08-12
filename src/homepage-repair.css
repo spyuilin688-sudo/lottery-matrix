@@ -113,15 +113,17 @@
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   position: absolute;
   inset: 4px;
-  border: 1.5px solid transparent;
+  padding: 1.5px;
   border-radius: 12px;
-  background:
-    linear-gradient(var(--lottery-neutral-950), var(--lottery-neutral-950)) padding-box,
-    var(--lottery-switcher-selected-gradient) border-box;
+  background: var(--lottery-switcher-selected-gradient);
   box-shadow: 0 0 10px var(--lottery-switcher-selected-glow);
   content: "";
   opacity: .88;
   pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
 .home-screen .lottery-card[data-lottery="今彩539"] {
