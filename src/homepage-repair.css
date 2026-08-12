@@ -20,9 +20,9 @@
   --home-main-inline: 16px;
   --home-wide-inline: 6px;
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 7px;
+  --home-gap-switcher-draw: 2px;
   --home-gap-draw-status: 5px;
-  --home-gap-status-core: 8px;
+  --home-gap-status-core: 2px;
   --home-gap-core-features: 6px;
   --home-feature-gap: 12px;
   box-sizing: border-box;
@@ -78,7 +78,7 @@
 }
 
 .home-screen .lottery-switcher {
-  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 16px);
+  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 26px);
   position: relative;
   display: grid;
   width: 100%;
@@ -418,16 +418,23 @@
 }
 
 .home-screen .matrix-status-section {
+  display: flex;
   width: 90.461538462%;
+  justify-content: center;
 }
 
 .home-screen .matrix-core-banner {
   width: 100%;
 }
 
-.home-screen .matrix-status-section > .home-asset-image,
+.home-screen .matrix-status-section > .home-asset-image {
+  width: 108%;
+  max-width: none;
+}
+
 .home-screen .matrix-core-banner > .home-asset-image {
-  width: 100%;
+  width: 96%;
+  margin-inline: auto;
 }
 
 .home-screen .matrix-status-hit-grid {
@@ -531,8 +538,8 @@
   opacity: 1;
 }
 
-.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
-  --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"][data-lottery="今彩539"]::after {
+  opacity: 0;
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
