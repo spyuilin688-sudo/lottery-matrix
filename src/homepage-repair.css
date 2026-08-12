@@ -122,7 +122,7 @@
   display: grid;
   grid-template-rows: 44px minmax(0, 1fr) 48px;
   width: 100%;
-  aspect-ratio: 361.1 / 176.4;
+  aspect-ratio: 1672 / 732;
   min-height: 0;
   padding: 9px 15px 0;
   border: 0;
