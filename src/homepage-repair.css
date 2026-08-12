@@ -36,17 +36,22 @@
 }
 
 .home-screen .lottery-screen > :where(
-  .brand-header,
-  .lottery-switcher,
-  .latest-draw-card,
-  .matrix-status-section,
-  .matrix-core-banner,
-  .home-shortcut-row
+  .home-logo-box,
+  .home-switcher-box,
+  .home-draw-box,
+  .home-status-box,
+  .home-core-box,
+  .home-features-box
 ) {
+  position: relative;
   box-sizing: border-box;
   flex: 0 0 auto;
   min-width: 0;
   margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .home-screen .home-asset-image,
@@ -60,7 +65,7 @@
   user-select: none;
 }
 
-.home-screen .brand-header {
+.home-screen .brand-header.home-logo-box {
   display: flex;
   width: min(330px, calc(100% - 32px));
   align-items: center;
@@ -68,27 +73,25 @@
   overflow: visible;
 }
 
-.home-screen .home-logo-image {
+.home-screen .home-logo-box > .home-logo-image {
   width: 100%;
 }
 
-.home-screen .lottery-switcher {
-  position: relative;
+.home-screen .lottery-switcher.home-switcher-box {
   display: block;
   width: min(calc(100% - (var(--home-main-inline) * 2)), 374px);
-  padding: 0;
   line-height: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
-.home-screen .lottery-switcher > .home-asset-image {
+.home-screen .home-switcher-box > .home-asset-image {
   display: block;
   width: 100%;
   height: auto;
   object-fit: contain;
 }
 
-.home-screen .lottery-switcher-hit-grid {
+.home-screen .home-switcher-box > .lottery-switcher-hit-grid {
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -100,7 +103,7 @@
   overflow: hidden;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+.home-screen .home-switcher-box > .lottery-switcher-hit-grid > .lottery-card {
   appearance: none;
   position: relative;
   display: block;
@@ -116,7 +119,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+.home-screen .home-switcher-box > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   position: absolute;
   top: 8px;
   right: 3px;
@@ -164,7 +167,7 @@
   white-space: nowrap;
 }
 
-.home-screen .latest-draw-card {
+.home-screen .latest-draw-card.home-draw-box {
   --draw-main-ball-size: clamp(38px, 10.9vw, 44px);
   --draw-special-ball-size: clamp(25px, 7.2vw, 28px);
   --draw-special-label-height: 10px;
@@ -180,7 +183,7 @@
   background: url("/assets/lottery/functions/開獎資訊卡.png") center / contain no-repeat;
   box-shadow: none;
   color: var(--lottery-text-primary);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .home-screen .latest-draw-card .draw-toolbar {
@@ -414,8 +417,8 @@
   white-space: nowrap;
 }
 
-.home-screen .matrix-status-section,
-.home-screen .matrix-core-banner {
+.home-screen .matrix-status-section.home-status-box,
+.home-screen .matrix-core-banner.home-core-box {
   appearance: none;
   display: block;
   width: min(calc(100% - (var(--home-wide-inline) * 2)), 382px);
@@ -427,24 +430,24 @@
   overflow: visible;
 }
 
-.home-screen .matrix-status-section > .home-asset-image,
-.home-screen .matrix-core-banner > .home-asset-image {
+.home-screen .home-status-box > .home-asset-image,
+.home-screen .home-core-box > .home-asset-image {
   width: 100%;
   height: auto;
   object-fit: contain;
 }
 
-.home-screen .matrix-status-section {
-  position: relative;
+.home-screen .matrix-status-section.home-status-box {
   display: block;
   line-height: 0;
+  overflow: hidden;
 }
 
-.home-screen .matrix-status-section > .home-asset-image {
+.home-screen .home-status-box > .home-asset-image {
   display: block;
 }
 
-.home-screen .matrix-status-card-grid {
+.home-screen .home-status-box > .matrix-status-card-grid {
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -518,11 +521,11 @@
   font-weight: 900;
 }
 
-.home-screen .matrix-core-banner::after {
+.home-screen .home-core-box::after {
   display: none;
 }
 
-.home-screen .home-shortcut-row {
+.home-screen .home-shortcut-row.home-features-box {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: min(calc(100% - (var(--home-wide-inline) * 2)), 382px);
