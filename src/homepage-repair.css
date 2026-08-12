@@ -21,6 +21,7 @@
   --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 397px);
   --home-wide-width: min(calc(100% - 16px), 411px);
   --home-section-gap: 8px;
+  --home-matrix-core-gap: 16px;
   --home-status-gap: 6px;
   --home-feature-gap: 8px;
   --primary-brand-top: 4px;
@@ -605,7 +606,7 @@
   width: var(--home-wide-width);
   max-width: 411px;
   height: 90px;
-  margin-top: var(--home-section-gap);
+  margin-top: var(--home-matrix-core-gap);
   padding: 0;
   flex: 0 0 90px;
   border: 0;
