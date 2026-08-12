@@ -185,15 +185,17 @@
 }
 
 .home-screen .latest-draw-card {
+  --draw-main-ball-size: 48px;
+  --draw-special-ball-size: 40px;
+  --draw-special-label-height: 12px;
   display: grid;
-  grid-template-rows: 40px minmax(0, 1fr) 34px;
-  aspect-ratio: 374 / 166;
-  height: auto;
+  grid-template-rows: 34px minmax(0, 1fr) 30px;
+  height: 158px;
   min-height: 0;
-  padding: 10px 14px 0;
+  padding: 8px 14px 0;
   border: 0;
   border-radius: 10px;
-  background: url("/assets/lottery/functions/3456667.png") center / 100% 100% no-repeat;
+  background: url("/assets/lottery/functions/3456667.png") center / cover no-repeat;
   box-shadow: none;
   color: var(--lottery-text-primary);
   overflow: visible;
@@ -202,8 +204,8 @@
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr);
-  height: 40px;
-  min-height: 40px;
+  height: 34px;
+  min-height: 34px;
   gap: 8px;
   align-items: center;
 }
@@ -247,14 +249,14 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 104px;
-  height: 26px;
-  min-height: 26px;
+  height: 24px;
+  min-height: 24px;
   justify-self: center;
   align-self: center;
   border: 0;
   border-radius: 12px;
   background: transparent;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-screen .latest-draw-card .draw-order button {
@@ -271,8 +273,8 @@
 
 .home-screen .latest-draw-card .history-link {
   display: flex;
-  height: 22px;
-  min-height: 22px;
+  height: 20px;
+  min-height: 20px;
   padding: 0;
   justify-self: end;
   align-self: center;
@@ -306,16 +308,16 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
-  gap: 8px;
+  gap: 7px;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
-  --number-ball-size: 50px;
-  --number-font-size: 18px;
-  --underline-width: 16px;
-  width: 50px;
-  height: 50px;
-  flex: 0 0 50px;
+  --number-ball-size: var(--draw-main-ball-size);
+  --number-font-size: 17px;
+  --underline-width: 15px;
+  width: var(--draw-main-ball-size);
+  height: var(--draw-main-ball-size);
+  flex: 0 0 var(--draw-main-ball-size);
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
@@ -324,20 +326,23 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
-  --number-ball-size: 42px;
-  --number-font-size: 16px;
-  --underline-width: 14px;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  --number-ball-size: var(--draw-special-ball-size);
+  --number-font-size: 15px;
+  --underline-width: 13px;
+  width: var(--draw-special-ball-size);
+  height: var(--draw-special-ball-size);
+  flex: 0 0 var(--draw-special-ball-size);
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
   display: flex;
   width: 10px;
-  height: 42px;
+  height: calc(var(--draw-special-label-height) + var(--draw-special-ball-size));
+  padding-top: var(--draw-special-label-height);
   flex: 0 0 10px;
   align-items: center;
+  align-self: center;
+  box-sizing: border-box;
   justify-content: center;
   color: #f0c86c;
   font-size: 15px;
@@ -345,24 +350,22 @@
 }
 
 .home-screen .latest-draw-card .special-ball-group {
-  position: relative;
-  display: flex;
-  width: 44px;
-  height: 56px;
-  flex: 0 0 44px;
-  align-items: flex-end;
-  justify-content: center;
+  display: grid;
+  width: var(--draw-special-ball-size);
+  height: calc(var(--draw-special-label-height) + var(--draw-special-ball-size));
+  flex: 0 0 var(--draw-special-ball-size);
+  grid-template-rows: var(--draw-special-label-height) var(--draw-special-ball-size);
+  align-self: center;
+  align-items: center;
+  justify-items: center;
 }
 
 .home-screen .latest-draw-card .special-label {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  width: 44px;
+  display: block;
+  width: var(--draw-special-ball-size);
   color: #d8a653;
   font-size: 9px;
-  line-height: 14px;
+  line-height: var(--draw-special-label-height);
   text-align: center;
   white-space: nowrap;
 }
@@ -371,11 +374,11 @@
   display: grid;
   grid-template-columns: minmax(0, 54fr) minmax(0, 46fr);
   width: auto;
-  height: 34px;
-  min-height: 34px;
-  max-height: 34px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   margin: 0 -14px;
-  padding: 0 16px;
+  padding: 0 14px;
   align-items: center;
   border: 0;
   background: transparent;
@@ -383,15 +386,15 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 32px auto minmax(0, 1fr);
+  grid-template-columns: 26px auto minmax(0, 1fr);
   gap: 4px;
   min-width: 0;
   align-items: center;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   opacity: 0;
 }
 
@@ -403,12 +406,12 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
   min-width: 0;
-  overflow: hidden;
-  font-size: 13px;
+  overflow: visible;
+  font-size: 12.5px;
   font-weight: 700;
   line-height: 16px;
   white-space: nowrap;
-  text-overflow: clip;
+  text-overflow: unset;
 }
 
 .home-screen .matrix-status-section {
