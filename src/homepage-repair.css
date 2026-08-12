@@ -27,7 +27,7 @@
   min-width: 0;
   min-height: 100%;
   height: auto;
-  padding: 16px 0 calc(var(--bottom-navigation-height, 92px) + var(--mobile-safe-area-height, 0px) + 8px);
+  padding: 16px 0 calc(var(--bottom-navigation-height, 92px) + var(--mobile-safe-area-height, 0px) + 16px);
   flex-direction: column;
   align-items: center;
   gap: var(--home-section-gap);
@@ -74,34 +74,40 @@
 
 .home-screen .lottery-switcher {
   position: relative;
-  display: grid;
+  display: block;
   width: min(calc(100% - (var(--home-main-inline) * 2)), 374px);
   padding: 0;
+  line-height: 0;
   overflow: visible;
 }
 
 .home-screen .lottery-switcher > .home-asset-image {
-  grid-area: 1 / 1;
+  display: block;
   width: 100%;
   height: auto;
   object-fit: contain;
 }
 
 .home-screen .lottery-switcher-hit-grid {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
   display: grid;
-  grid-area: 1 / 1;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
+  height: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
   appearance: none;
   position: relative;
   display: block;
+  width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 12px;
@@ -112,9 +118,12 @@
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   position: absolute;
-  inset: 4px;
+  top: 8px;
+  right: 3px;
+  bottom: 7px;
+  left: 3px;
   padding: 1.5px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--lottery-switcher-selected-gradient);
   box-shadow: 0 0 10px var(--lottery-switcher-selected-glow);
   content: "";
@@ -427,29 +436,35 @@
 
 .home-screen .matrix-status-section {
   position: relative;
-  display: grid;
+  display: block;
+  line-height: 0;
 }
 
-.home-screen .matrix-status-section > .home-asset-image,
-.home-screen .matrix-status-card-grid {
-  grid-area: 1 / 1;
+.home-screen .matrix-status-section > .home-asset-image {
+  display: block;
 }
 
 .home-screen .matrix-status-card-grid {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--home-feature-gap);
   width: 100%;
+  height: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .home-screen .matrix-status-card {
   appearance: none;
   position: relative;
   display: block;
+  width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 10px;
