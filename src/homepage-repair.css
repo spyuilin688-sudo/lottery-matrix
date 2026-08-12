@@ -23,7 +23,8 @@
   --home-section-gap: 8px;
   --home-matrix-core-gap: 16px;
   --home-status-gap: 6px;
-  --home-feature-gap: 8px;
+  --home-draw-gap: 6px;
+  --home-feature-gap: 4px;
   --primary-brand-top: 4px;
   --primary-brand-height: 128px;
   box-sizing: border-box;
@@ -32,7 +33,7 @@
   min-width: 0;
   min-height: 100%;
   height: auto;
-  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + 58px);
+  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + 6px);
   flex-direction: column;
   align-items: center;
   gap: 0;
@@ -205,11 +206,13 @@
   --draw-main-ball-size: 50px;
   --draw-special-ball-size: 34px;
   --draw-special-label-height: 10px;
+  width: var(--home-content-width);
+  max-width: 397px;
   display: grid;
   grid-template-rows: 48px minmax(94px, 1fr) 50px;
   height: 193px;
   min-height: 0;
-  margin-top: var(--home-section-gap);
+  margin-top: var(--home-draw-gap);
   padding: 10px 16px 0;
   border: 0;
   border-radius: 10px;
@@ -605,15 +608,16 @@
   display: block;
   width: var(--home-wide-width);
   max-width: 411px;
-  height: 90px;
+  height: auto;
+  min-height: 0;
   margin-top: var(--home-matrix-core-gap);
   padding: 0;
-  flex: 0 0 90px;
+  flex: 0 0 auto;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-screen .matrix-core-banner::after { display: none; }
@@ -621,9 +625,10 @@
 .home-screen .matrix-core-banner img {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: 100%;
-  object-fit: cover;
+  max-height: none;
+  object-fit: contain;
   object-position: center;
   filter: none;
 }
