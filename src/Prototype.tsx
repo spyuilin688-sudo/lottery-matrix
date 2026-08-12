@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  CalendarIcon,
   ChevronRightIcon,
   ClockIcon,
   CountdownTimerIcon,
-  Pencil2Icon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { BrandLogo } from "./BrandLogo";
@@ -241,7 +241,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
       <div className="draw-toolbar">
         <div className="draw-meta" data-empty={!hasMeta}>
           {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
-          {result.date ? <div className="draw-date">{result.date}</div> : null}
+          {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
         </div>
         <div className="draw-order" role="radiogroup" aria-label="號碼排列">
           {(["順球", "落球"] as DrawOrder[]).map((option) => (
