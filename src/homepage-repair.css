@@ -425,6 +425,84 @@
   object-fit: contain;
 }
 
+.home-screen .matrix-status-section {
+  position: relative;
+  display: grid;
+}
+
+.home-screen .matrix-status-section > .home-asset-image,
+.home-screen .matrix-status-card-grid {
+  grid-area: 1 / 1;
+}
+
+.home-screen .matrix-status-card-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--home-feature-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+.home-screen .matrix-status-card {
+  appearance: none;
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--lottery-text-primary);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-screen .matrix-status-data-zone {
+  position: absolute;
+  right: 6px;
+  bottom: 7px;
+  left: 6px;
+  display: grid;
+  max-height: 32px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 4px;
+  align-items: end;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.home-screen .matrix-status-name,
+.home-screen .matrix-status-name-en,
+.home-screen .matrix-status-count {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-screen .matrix-status-name {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.home-screen .matrix-status-name-en {
+  grid-column: 1 / 2;
+  color: rgba(245, 242, 234, .72);
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.home-screen .matrix-status-count {
+  grid-row: 1 / 3;
+  grid-column: 2 / 3;
+  color: #f4ce67;
+  font-size: 16px;
+  font-weight: 900;
+}
+
 .home-screen .matrix-core-banner::after {
   display: none;
 }
