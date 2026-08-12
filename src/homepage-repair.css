@@ -78,9 +78,11 @@
 }
 
 .home-screen .lottery-switcher {
+  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 16px);
   position: relative;
   display: grid;
   width: 100%;
+  height: var(--lottery-switcher-height);
   padding: 0;
   overflow: visible;
 }
@@ -88,7 +90,7 @@
 .home-screen .lottery-switcher > .home-asset-image {
   grid-area: 1 / 1;
   width: 100%;
-  height: calc((min(100vw, 390px) * 821 / 1916) - 8px);
+  height: 100%;
   object-fit: fill;
 }
 
@@ -102,15 +104,44 @@
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  --lottery-frame-left: 1.55%;
+  --lottery-frame-right: 4.64%;
   appearance: none;
-  display: block;
+  display: grid;
   box-sizing: border-box;
   min-width: 0;
   padding: 0;
+  grid-template-columns: var(--lottery-frame-left) minmax(0, 1fr) var(--lottery-frame-right);
+  grid-template-rows: 4.44% minmax(0, 1fr) 4.63%;
   border: 0;
   background: transparent;
   color: transparent;
   -webkit-tap-highlight-color: transparent;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(2) {
+  --lottery-frame-left: 3.09%;
+  --lottery-frame-right: 3.53%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(3) {
+  --lottery-frame-left: 3.75%;
+  --lottery-frame-right: 4.42%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(4) {
+  --lottery-frame-left: 3.09%;
+  --lottery-frame-right: 5.74%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
+  grid-area: 2 / 2;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 7%;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
 }
 
 .home-screen .clean-hit-label {
@@ -494,26 +525,26 @@
 
 
 
-.home-screen .lottery-card[data-selected="true"] {
-  border: 1px solid transparent;
-  background: transparent;
-  border-image-slice: 1;
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+  border-image: var(--lottery-selected-gradient) 1;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, .78));
+  opacity: 1;
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
-  border-image-source: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+  --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
-  border-image-source: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
+  --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
-  border-image-source: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
+  --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
-  border-image-source: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
+  --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
 }
 
 @keyframes matrix-core-particle-frame {
