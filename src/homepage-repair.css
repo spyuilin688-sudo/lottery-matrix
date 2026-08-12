@@ -573,3 +573,34 @@
   height: 100%;
   object-fit: contain;
 }
+
+/* Temporary homepage container boundary guides. */
+.home-screen .home-logo-box {
+  outline: 1px solid #ff3b30;
+  box-shadow: 0 0 7px rgba(255, 59, 48, .9);
+}
+
+.home-screen .home-switcher-box {
+  outline: 1px dashed #ffcc00;
+  box-shadow: 0 0 7px rgba(255, 204, 0, .9);
+}
+
+.home-screen .home-draw-box {
+  outline: 1px dotted #34c759;
+  box-shadow: 0 0 7px rgba(52, 199, 89, .9);
+}
+
+.home-screen .home-status-box {
+  outline: 1px double #00c7be;
+  box-shadow: 0 0 7px rgba(0, 199, 190, .9);
+}
+
+.home-screen .home-core-box {
+  outline: 1px solid #007aff;
+  box-shadow: 0 0 9px rgba(0, 122, 255, .95);
+}
+
+.home-screen .home-features-box {
+  outline: 1px dashed #bf5af2;
+  box-shadow: 0 0 9px rgba(191, 90, 242, .95);
+}
