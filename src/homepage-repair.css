@@ -538,8 +538,8 @@
   opacity: 1;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"][data-lottery="今彩539"]::after {
-  opacity: 0;
+.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
