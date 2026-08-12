@@ -17,19 +17,21 @@
 }
 
 .home-screen .lottery-screen {
-  --home-inline: 2px;
-  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 386px);
+  --home-inline: 15px;
+  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 397px);
   --home-wide-width: var(--home-content-width);
   --home-section-gap: 8px;
-  --home-status-gap: 3px;
+  --home-status-gap: 8px;
   --home-feature-gap: 8px;
+  --primary-brand-top: 8px;
+  --primary-brand-height: 132px;
   box-sizing: border-box;
   display: flex;
   width: 100%;
   min-width: 0;
   min-height: 100%;
   height: auto;
-  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 10px);
+  padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + 58px);
   flex-direction: column;
   align-items: center;
   gap: 0;
@@ -47,7 +49,7 @@
 ) {
   box-sizing: border-box;
   width: var(--home-content-width);
-  max-width: 386px;
+  max-width: 397px;
   min-width: 0;
 }
 
@@ -111,7 +113,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(222, 229, 239, 0.36);
-  border-radius: 12px;
+  border-radius: 13px;
   background:
     radial-gradient(circle at 50% 55%, var(--lottery-card-glow) 0 18%, transparent 56%),
     linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98));
@@ -185,7 +187,7 @@
 .home-screen .lottery-switcher > .lottery-card .lottery-logo img {
   display: block;
   width: auto;
-  max-width: 104%;
+  max-width: 108%;
   height: auto;
   max-height: 68px;
   object-fit: contain;
@@ -193,21 +195,21 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"] .lottery-logo img { max-width: 116%; max-height: 58px; }
-.home-screen .lottery-switcher > .lottery-card[data-lottery="天天樂"] .lottery-logo img { max-width: 106%; max-height: 68px; }
-.home-screen .lottery-switcher > .lottery-card[data-lottery="六合彩"] .lottery-logo img { max-width: 82%; max-height: 70px; }
-.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] .lottery-logo img { max-width: 112%; max-height: 62px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"] .lottery-logo img { max-width: 118%; max-height: 62px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="天天樂"] .lottery-logo img { max-width: 112%; max-height: 70px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="六合彩"] .lottery-logo img { max-width: 88%; max-height: 72px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] .lottery-logo img { max-width: 116%; max-height: 66px; }
 
 .home-screen .latest-draw-card {
-  --draw-main-ball-size: 44px;
+  --draw-main-ball-size: 52px;
   --draw-special-ball-size: 34px;
   --draw-special-label-height: 10px;
   display: grid;
-  grid-template-rows: 42px minmax(90px, 1fr) 44px;
-  height: 180px;
+  grid-template-rows: 49px minmax(94px, 1fr) 50px;
+  height: 198px;
   min-height: 0;
   margin-top: var(--home-section-gap);
-  padding: 7px 12px 0;
+  padding: 10px 16px 0;
   border: 0;
   border-radius: 10px;
   background: url("/assets/lottery/functions/3456667.png") center / 100% 100% no-repeat;
@@ -218,9 +220,9 @@
 
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr);
-  height: 42px;
-  min-height: 42px;
+  grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
+  height: 49px;
+  min-height: 49px;
   gap: 6px;
   align-items: center;
 }
@@ -229,7 +231,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  padding: 0 0 0 2px;
+  padding: 0 0 0 10px;
   row-gap: 1px;
   align-self: center;
   justify-self: start;
@@ -241,22 +243,22 @@
   display: flex;
   gap: 4px;
   align-items: baseline;
-  font-size: 10.5px;
-  line-height: 13px;
+  font-size: 13px;
+  line-height: 16px;
   white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 14px;
-  line-height: 15px;
+  font-size: 21px;
+  line-height: 22px;
   letter-spacing: .5px;
 }
 
 .home-screen .latest-draw-card .draw-date {
   margin-top: 0;
-  padding-left: 16px;
-  font-size: 10px;
-  line-height: 12px;
+  padding-left: 0;
+  font-size: 11px;
+  line-height: 14px;
   letter-spacing: .4px;
   white-space: nowrap;
 }
@@ -264,26 +266,31 @@
 .home-screen .latest-draw-card .draw-order {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 104px;
-  height: 26px;
-  min-height: 26px;
+  width: 118px;
+  height: 36px;
+  min-height: 36px;
   justify-self: center;
   align-self: center;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  overflow: visible;
+  border: 1px solid rgba(230, 177, 76, .46);
+  border-radius: 14px;
+  background: rgba(2, 7, 17, .38);
+  box-shadow: inset 0 0 13px rgba(228, 169, 57, .12);
+  overflow: hidden;
 }
 
 .home-screen .latest-draw-card .draw-order button {
   border: 0;
   background: transparent;
   color: rgba(255, 236, 185, .72);
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 700;
 }
 
-.home-screen .latest-draw-card .draw-order button[data-selected="true"] { color: #ffd36c; }
+.home-screen .latest-draw-card .draw-order button[data-selected="true"] {
+  color: #ffd36c;
+  background: radial-gradient(circle at 50% 58%, rgba(255, 186, 54, .24), transparent 66%);
+  box-shadow: inset 0 0 14px rgba(255, 188, 50, .22);
+}
 
 .home-screen .latest-draw-card .history-link {
   display: flex;
@@ -297,7 +304,7 @@
   border: 0;
   background: transparent;
   color: #f0c86c;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -318,13 +325,13 @@
   overflow: visible;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 8px; }
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 11px; }
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls { gap: 3px; flex: 0 1 auto; }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: var(--draw-main-ball-size);
-  --number-font-size: 14px;
-  --underline-width: 12px;
+  --number-font-size: 21px;
+  --underline-width: 18px;
   width: var(--draw-main-ball-size);
   height: var(--draw-main-ball-size);
   flex: 0 0 var(--draw-main-ball-size);
@@ -376,42 +383,53 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   width: auto;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  margin: 0 -12px;
-  padding: 0 14px;
+  height: 50px;
+  min-height: 50px;
+  max-height: 50px;
+  margin: 0 -16px;
+  padding: 0 22px;
   align-items: center;
-  border: 0;
-  background: transparent;
+  border-top: 1px solid rgba(232, 177, 76, .48);
+  background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded::before { display: none; }
+.home-screen .latest-draw-card .next-draw-info--embedded::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  display: block;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(238, 183, 73, .72), transparent);
+  content: "";
+  transform: translateX(-50%);
+}
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 17px auto minmax(0, 1fr);
-  gap: 4px;
+  grid-template-columns: 22px auto minmax(0, 1fr);
+  gap: 7px;
   min-width: 0;
   align-items: center;
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:first-child { padding-left: 2px; }
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child { padding-left: 7px; }
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:first-child { padding-left: 0; }
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child { padding-left: 19px; }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 17px;
-  height: 17px;
-  color: transparent;
-  opacity: 0;
+  width: 22px;
+  height: 22px;
+  color: #e6b34f;
+  opacity: .95;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
   color: #d8a653;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 14px;
   white-space: nowrap;
@@ -421,7 +439,7 @@
   min-width: 0;
   overflow: visible;
   color: #f4e5bd;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 14px;
   white-space: nowrap;
@@ -431,7 +449,7 @@
 .home-screen .matrix-status-section {
   display: flex;
   width: var(--home-wide-width);
-  max-width: 386px;
+  max-width: 397px;
   height: auto;
   min-height: 0;
   margin-top: var(--home-section-gap);
@@ -462,7 +480,7 @@
   --matrix-status-tone: #d08a32;
   position: relative;
   display: block;
-  aspect-ratio: 18 / 35;
+  aspect-ratio: 3 / 5;
   width: 100%;
   min-width: 0;
   height: auto;
@@ -567,16 +585,19 @@
 .home-screen .matrix-status-lottery-center,
 .home-screen .matrix-status-overlay,
 .home-screen .matrix-status-card-arrow,
-.home-screen .matrix-status-indicators { display: none; }
+.home-screen .matrix-status-indicators,
+.home-screen .matrix-status-lottery-logo,
+.home-screen .matrix-status-discovery,
+.home-screen .matrix-status-description { display: none; }
 
 .home-screen .matrix-core-banner {
   display: block;
   width: var(--home-wide-width);
-  max-width: 386px;
-  height: 82px;
+  max-width: 397px;
+  height: 88px;
   margin-top: var(--home-section-gap);
   padding: 0;
-  flex: 0 0 82px;
+  flex: 0 0 88px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -600,10 +621,10 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: var(--home-wide-width);
-  max-width: 386px;
+  max-width: 397px;
   gap: var(--home-feature-gap);
   margin-top: var(--home-section-gap);
-  margin-bottom: 8px;
+  margin-bottom: 0;
   align-items: stretch;
   flex: 0 0 auto;
   overflow: visible;
@@ -613,8 +634,8 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  height: 116px;
-  min-height: 116px;
+  height: 88px;
+  min-height: 88px;
   padding: 0;
   align-items: stretch;
   justify-content: center;
