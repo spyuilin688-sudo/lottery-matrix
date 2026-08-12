@@ -17,9 +17,9 @@
 }
 
 .home-screen .lottery-screen {
-  --home-inline: 8px;
-  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 374px);
-  --home-wide-width: min(calc(100% - 16px), 374px);
+  --home-inline: 2px;
+  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 386px);
+  --home-wide-width: var(--home-content-width);
   --home-section-gap: 8px;
   --home-status-gap: 3px;
   --home-feature-gap: 8px;
@@ -47,7 +47,7 @@
 ) {
   box-sizing: border-box;
   width: var(--home-content-width);
-  max-width: 374px;
+  max-width: 386px;
   min-width: 0;
 }
 
@@ -156,20 +156,13 @@
   --lottery-selected-border-gradient: linear-gradient(135deg, #ffe45d 0%, #ffd35a 48%, #2d8dff 100%);
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"]::before {
-  border-color: rgba(255, 103, 65, 0.62);
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"]::before {
-  border-color: rgba(220, 165, 63, 0.62);
-}
-
 .home-screen .lottery-switcher > .lottery-card[data-selected="true"] {
   border: 1.5px solid transparent;
   background:
+    radial-gradient(circle at 50% 55%, var(--lottery-card-glow) 0 18%, transparent 56%) padding-box,
     linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98)) padding-box,
     var(--lottery-selected-border-gradient) border-box;
-  box-shadow: 0 0 8px rgba(244, 206, 103, 0.24), inset 0 0 12px rgba(244, 206, 103, 0.08);
+  box-shadow: 0 0 8px rgba(244, 206, 103, 0.24), inset 0 0 18px var(--lottery-card-glow);
 }
 
 .home-screen .lottery-switcher > .lottery-card .lottery-label {
@@ -200,25 +193,10 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
 }
 
-.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"] .lottery-logo img {
-  max-width: 116%;
-  max-height: 58px;
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery="天天樂"] .lottery-logo img {
-  max-width: 106%;
-  max-height: 68px;
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery="六合彩"] .lottery-logo img {
-  max-width: 82%;
-  max-height: 70px;
-}
-
-.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] .lottery-logo img {
-  max-width: 112%;
-  max-height: 62px;
-}
+.home-screen .lottery-switcher > .lottery-card[data-lottery="今彩539"] .lottery-logo img { max-width: 116%; max-height: 58px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="天天樂"] .lottery-logo img { max-width: 106%; max-height: 68px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="六合彩"] .lottery-logo img { max-width: 82%; max-height: 70px; }
+.home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] .lottery-logo img { max-width: 112%; max-height: 62px; }
 
 .home-screen .latest-draw-card {
   --draw-main-ball-size: 44px;
@@ -251,7 +229,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  padding: 0;
+  padding: 0 0 0 2px;
   row-gap: 1px;
   align-self: center;
   justify-self: start;
@@ -276,6 +254,7 @@
 
 .home-screen .latest-draw-card .draw-date {
   margin-top: 0;
+  padding-left: 16px;
   font-size: 10px;
   line-height: 12px;
   letter-spacing: .4px;
@@ -290,9 +269,9 @@
   min-height: 26px;
   justify-self: center;
   align-self: center;
-  border: 1px solid rgba(230, 177, 76, .46);
+  border: 0;
   border-radius: 12px;
-  background: rgba(2, 7, 17, .3);
+  background: transparent;
   overflow: visible;
 }
 
@@ -304,9 +283,7 @@
   font-weight: 700;
 }
 
-.home-screen .latest-draw-card .draw-order button[data-selected="true"] {
-  color: #ffd36c;
-}
+.home-screen .latest-draw-card .draw-order button[data-selected="true"] { color: #ffd36c; }
 
 .home-screen .latest-draw-card .history-link {
   display: flex;
@@ -325,18 +302,7 @@
   white-space: nowrap;
 }
 
-.home-screen .latest-draw-card .draw-balls {
-  display: flex;
-  min-width: 0;
-  height: auto;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-}
-
+.home-screen .latest-draw-card .draw-balls,
 .home-screen .latest-draw-card .main-balls {
   display: flex;
   min-width: 0;
@@ -344,9 +310,16 @@
   justify-content: center;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
-  gap: 8px;
+.home-screen .latest-draw-card .draw-balls {
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
 }
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 8px; }
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls { gap: 3px; flex: 0 1 auto; }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: var(--draw-main-ball-size);
@@ -355,11 +328,6 @@
   width: var(--draw-main-ball-size);
   height: var(--draw-main-ball-size);
   flex: 0 0 var(--draw-main-ball-size);
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
-  gap: 3px;
-  flex: 0 1 auto;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
@@ -408,7 +376,6 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
-  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   width: auto;
@@ -418,20 +385,11 @@
   margin: 0 -12px;
   padding: 0 14px;
   align-items: center;
-  border-top: 1px solid rgba(232, 177, 76, .48);
-  background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
+  border: 0;
+  background: transparent;
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded::before {
-  position: absolute;
-  top: 7px;
-  bottom: 7px;
-  left: 50%;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(238, 183, 73, .72), transparent);
-  content: "";
-  transform: translateX(-50%);
-}
+.home-screen .latest-draw-card .next-draw-info--embedded::before { display: none; }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
@@ -441,11 +399,14 @@
   align-items: center;
 }
 
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:first-child { padding-left: 2px; }
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child { padding-left: 7px; }
+
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
   width: 17px;
   height: 17px;
-  color: #e6b34f;
-  opacity: .95;
+  color: transparent;
+  opacity: 0;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
@@ -470,7 +431,7 @@
 .home-screen .matrix-status-section {
   display: flex;
   width: var(--home-wide-width);
-  max-width: 374px;
+  max-width: 386px;
   height: auto;
   min-height: 0;
   margin-top: var(--home-section-gap);
@@ -484,9 +445,7 @@
   overflow: visible;
 }
 
-.home-screen .matrix-status-header {
-  display: none;
-}
+.home-screen .matrix-status-header { display: none; }
 
 .home-screen .matrix-status-grid {
   display: grid;
@@ -500,6 +459,7 @@
 }
 
 .home-screen .matrix-status-card {
+  --matrix-status-tone: #d08a32;
   position: relative;
   display: block;
   aspect-ratio: 18 / 35;
@@ -543,38 +503,13 @@
   pointer-events: none;
 }
 
-.home-screen .matrix-status-card[data-lottery="天天樂"] .matrix-status-lottery-logo {
-  width: 54%;
-}
-
-.home-screen .matrix-status-card[data-lottery="六合彩"] .matrix-status-lottery-logo {
-  width: 50%;
-  max-height: 21%;
-}
-
-.home-screen .matrix-status-card[data-lottery="大樂透"] .matrix-status-lottery-logo {
-  width: 58%;
-}
-
-.home-screen .matrix-status-card {
-  --matrix-status-tone: #d08a32;
-}
-
-.home-screen .matrix-status-card[data-tone="green"] {
-  --matrix-status-tone: #70dd42;
-}
-
-.home-screen .matrix-status-card[data-tone="blue"] {
-  --matrix-status-tone: #16a8f2;
-}
-
-.home-screen .matrix-status-card[data-tone="purple"] {
-  --matrix-status-tone: #b84cff;
-}
-
-.home-screen .matrix-status-card[data-tone="orange"] {
-  --matrix-status-tone: #ff9208;
-}
+.home-screen .matrix-status-card[data-lottery="天天樂"] .matrix-status-lottery-logo { width: 54%; }
+.home-screen .matrix-status-card[data-lottery="六合彩"] .matrix-status-lottery-logo { width: 50%; max-height: 21%; }
+.home-screen .matrix-status-card[data-lottery="大樂透"] .matrix-status-lottery-logo { width: 58%; }
+.home-screen .matrix-status-card[data-tone="green"] { --matrix-status-tone: #70dd42; }
+.home-screen .matrix-status-card[data-tone="blue"] { --matrix-status-tone: #16a8f2; }
+.home-screen .matrix-status-card[data-tone="purple"] { --matrix-status-tone: #b84cff; }
+.home-screen .matrix-status-card[data-tone="orange"] { --matrix-status-tone: #ff9208; }
 
 .home-screen .matrix-status-discovery {
   position: absolute;
@@ -632,14 +567,12 @@
 .home-screen .matrix-status-lottery-center,
 .home-screen .matrix-status-overlay,
 .home-screen .matrix-status-card-arrow,
-.home-screen .matrix-status-indicators {
-  display: none;
-}
+.home-screen .matrix-status-indicators { display: none; }
 
 .home-screen .matrix-core-banner {
   display: block;
   width: var(--home-wide-width);
-  max-width: 374px;
+  max-width: 386px;
   height: 82px;
   margin-top: var(--home-section-gap);
   padding: 0;
@@ -651,9 +584,7 @@
   overflow: hidden;
 }
 
-.home-screen .matrix-core-banner::after {
-  display: none;
-}
+.home-screen .matrix-core-banner::after { display: none; }
 
 .home-screen .matrix-core-banner img {
   display: block;
@@ -669,7 +600,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: var(--home-wide-width);
-  max-width: 374px;
+  max-width: 386px;
   gap: var(--home-feature-gap);
   margin-top: var(--home-section-gap);
   margin-bottom: 8px;
@@ -680,11 +611,10 @@
 
 .home-screen .home-shortcut {
   display: flex;
-  aspect-ratio: 193 / 248;
   width: 100%;
   min-width: 0;
-  height: auto;
-  min-height: 0;
+  height: 116px;
+  min-height: 116px;
   padding: 0;
   align-items: stretch;
   justify-content: center;
@@ -693,6 +623,7 @@
   background: transparent;
   box-shadow: none;
   overflow: visible;
+  cursor: pointer;
 }
 
 .home-screen .home-shortcut img,
@@ -703,7 +634,7 @@
   max-width: 100%;
   max-height: 100%;
   margin: 0;
-  object-fit: fill;
+  object-fit: contain;
   object-position: center;
   border-radius: 0;
   clip-path: none;
