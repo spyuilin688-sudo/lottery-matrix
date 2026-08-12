@@ -281,7 +281,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
             <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
           ))}
         </div>
-        <button className="history-link" type="button" onClick={onOpenHistory} aria-label="全部紀錄"><span>全部紀錄</span><span aria-hidden="true">›</span></button>
+        <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       </div>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
