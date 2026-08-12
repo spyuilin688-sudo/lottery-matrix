@@ -7,7 +7,6 @@ import {
   CountdownTimerIcon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
-import { BrandLogo } from "./BrandLogo";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
@@ -66,12 +65,28 @@ const LOTTERIES: LotteryOption[] = [
   },
 ];
 
+const HOME_ASSET_BASE = "/assets/lottery/functions";
+const STATUS_ASSET_BASE = "/assets/lottery/status";
+
+const HOME_ASSETS = {
+  logo: `${HOME_ASSET_BASE}/NewLogo.png`,
+  lotterySwitcher: `${STATUS_ASSET_BASE}/MatrixBB.png`,
+  drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
+  matrixStatus: `${STATUS_ASSET_BASE}/matrixAA.png`,
+  matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,
+  tongxing: `${HOME_ASSET_BASE}/同星.png`,
+  reference: `${HOME_ASSET_BASE}/對照單.png`,
+  calculator: `${HOME_ASSET_BASE}/計算機.png`,
+  matrixCard: `${HOME_ASSET_BASE}/牌單.png`,
+  guide: `${HOME_ASSET_BASE}/指南.png`,
+} as const;
+
 const HOME_SHORTCUTS = [
-  { label: 'Matrix 同星', image: '/assets/lottery/functions/同星.png' },
-  { label: '歷史開獎號碼', image: '/assets/lottery/functions/對照單.png' },
-  { label: '連碰立柱計算機', image: '/assets/lottery/functions/計算機.png' },
-  { label: 'Matrix 牌單', image: '/assets/lottery/functions/牌單.png' },
-  { label: 'Matrix 指南', image: '/assets/lottery/functions/指南.png' },
+  { label: "Matrix 同星", image: HOME_ASSETS.tongxing },
+  { label: "歷史開獎號碼", image: HOME_ASSETS.reference },
+  { label: "連碰立柱計算機", image: HOME_ASSETS.calculator },
+  { label: "Matrix 牌單", image: HOME_ASSETS.matrixCard },
+  { label: "Matrix 指南", image: HOME_ASSETS.guide },
 ] as const;
 
 const QUICK_OPTIONS = [
@@ -179,16 +194,34 @@ export type LotterySwitcherProps = {
 
 export function LotterySwitcher({ selected, onChange, className = "" }: LotterySwitcherProps) {
   return (
-    <div data-lottery-switcher="" className={`lottery-switcher ${className}`.trim()} role="radiogroup" aria-label="選擇彩種" data-testid="lottery-switcher">
-      {LOTTERIES.map((lottery) => {
-        const isSelected = lottery.id === selected;
-        return (
-          <button data-lottery-card="" className="lottery-card" data-lottery={lottery.id} data-selected={isSelected} key={lottery.id} onClick={() => onChange(lottery.id)} role="radio" aria-checked={isSelected} type="button">
-            <span className="lottery-logo" aria-hidden="true"><img src={lottery.logo} alt="" draggable={false} /></span>
-            <span className="lottery-label">{lottery.id}</span>
-          </button>
-        );
-      })}
+    <div
+      data-lottery-switcher=""
+      className={`lottery-switcher ${className}`.trim()}
+      data-selected-lottery={selected}
+      data-testid="lottery-switcher"
+    >
+      <img className="home-asset-image" src={HOME_ASSETS.lotterySwitcher} alt="" draggable={false} />
+      <div className="lottery-switcher-hit-grid" role="radiogroup" aria-label="選擇彩種">
+        {LOTTERIES.map((lottery) => {
+          const isSelected = lottery.id === selected;
+          return (
+            <button
+              data-lottery-card=""
+              className="lottery-card"
+              data-lottery={lottery.id}
+              data-selected={isSelected}
+              key={lottery.id}
+              onClick={() => onChange(lottery.id)}
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={lottery.id}
+              type="button"
+            >
+              <span className="clean-hit-label">{lottery.id}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -272,31 +305,22 @@ export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: Nex
 }
 
 export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
-export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpen }: MatrixStatusSectionProps = {}) {
+export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <section className="matrix-status-section" aria-label="Matrix 狀態" data-testid="matrix-status-section">
-      <div className="matrix-status-grid">
-        {LOTTERIES.map((lottery) => {
-          const item = statuses[lottery.id];
-          return (
-            <article className="matrix-status-card" data-lottery={lottery.id} data-tone={item.tone} key={lottery.id} onClick={onOpen}>
-              <img className="matrix-status-artwork" src={item.artwork} alt={`${item.status} ${item.statusEn}`} draggable={false} />
-              <img className="matrix-status-lottery-logo" src={lottery.logo} alt="" aria-hidden="true" draggable={false} />
-              <div className="matrix-status-discovery" aria-hidden="true">
-                <span>本期發現</span>
-                <strong>{item.count}<em>組</em></strong>
-              </div>
-              <p className="matrix-status-description">{item.description}</p>
-            </article>
-          );
-        })}
-      </div>
-    </section>
+    <button
+      type="button"
+      className="matrix-status-section"
+      aria-label="Matrix 狀態"
+      data-testid="matrix-status-section"
+      onClick={onOpen}
+    >
+      <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
+    </button>
   );
 }
 
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
-  return <button type="button" className="matrix-core-banner" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img src="/assets/lottery/functions/matrixcore.png" alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
+  return <button type="button" className="matrix-core-banner" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}><img className="home-asset-image" src={HOME_ASSETS.matrixCore} alt="Matrix Core｜分析核心・智慧運算" draggable={false} /></button>;
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
@@ -356,7 +380,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
       <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-        <header className="brand-header"><BrandLogo className={deviceId === "iphone" ? "brand-logo--iphone" : ""} /></header>
+        <header className="brand-header"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
         <LotterySwitcher selected={selected} onChange={setSelected} />
         <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} />
         <MatrixStatusSection onOpen={() => navigate("status")} />
