@@ -97,7 +97,7 @@
   --lottery-selected-border-gradient: linear-gradient(135deg, #f4ce67, #ffd98a);
   position: relative;
   display: flex;
-  aspect-ratio: 88 / 74;
+  aspect-ratio: 88 / 66;
   width: 100%;
   min-width: 0;
   height: auto;
@@ -166,8 +166,8 @@
   z-index: 2;
   display: flex;
   width: 100%;
-  height: 62px;
-  flex: 0 0 62px;
+  height: 54px;
+  flex: 0 0 54px;
   align-items: center;
   justify-content: center;
   overflow: visible;
@@ -179,7 +179,7 @@
   width: auto;
   max-width: 96%;
   height: auto;
-  max-height: 62px;
+  max-height: 54px;
   object-fit: contain;
   object-position: center;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
@@ -421,7 +421,7 @@
   height: auto;
   min-height: 0;
   margin-top: 8px;
-  padding: 8px;
+  padding: 6px;
   flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid rgba(230, 199, 127, 0.44);
@@ -433,9 +433,9 @@
 
 .home-screen .matrix-status-header {
   display: flex;
-  height: 20px;
-  min-height: 20px;
-  margin: 0 0 6px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0 0 4px;
   padding: 0;
   align-items: center;
   justify-content: space-between;
@@ -444,23 +444,23 @@
 .home-screen .matrix-status-header h2 {
   margin: 0;
   color: #e6c77f;
-  font-size: 16px;
-  line-height: 20px;
+  font-size: 15px;
+  line-height: 18px;
 }
 
 .home-screen .matrix-status-more {
   display: flex;
-  height: 20px;
-  min-height: 20px;
+  height: 18px;
+  min-height: 18px;
   padding: 0;
   align-items: center;
   justify-content: flex-end;
   border: 0;
   background: transparent;
   color: #e6c77f;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -478,7 +478,7 @@
 .home-screen .matrix-status-card {
   position: relative;
   display: block;
-  aspect-ratio: 72 / 120;
+  aspect-ratio: 72 / 94;
   width: 100%;
   min-width: 0;
   height: auto;
@@ -551,7 +551,7 @@
 
 .home-screen .home-shortcut {
   display: block;
-  aspect-ratio: 386 / 496;
+  aspect-ratio: 382 / 440;
   width: 100%;
   min-width: 0;
   height: auto;
