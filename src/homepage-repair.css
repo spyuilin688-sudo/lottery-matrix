@@ -19,12 +19,12 @@
 .home-screen .lottery-screen {
   --home-inline: 15px;
   --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 397px);
-  --home-wide-width: var(--home-content-width);
+  --home-wide-width: min(calc(100% - 16px), 411px);
   --home-section-gap: 8px;
-  --home-status-gap: 8px;
+  --home-status-gap: 6px;
   --home-feature-gap: 8px;
-  --primary-brand-top: 8px;
-  --primary-brand-height: 132px;
+  --primary-brand-top: 4px;
+  --primary-brand-height: 128px;
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -89,7 +89,7 @@
 .home-screen .lottery-switcher {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2px;
+  gap: 7px;
   height: auto;
   min-height: 0;
   margin-top: var(--home-section-gap);
@@ -201,12 +201,12 @@
 .home-screen .lottery-switcher > .lottery-card[data-lottery="大樂透"] .lottery-logo img { max-width: 116%; max-height: 66px; }
 
 .home-screen .latest-draw-card {
-  --draw-main-ball-size: 52px;
+  --draw-main-ball-size: 50px;
   --draw-special-ball-size: 34px;
   --draw-special-label-height: 10px;
   display: grid;
-  grid-template-rows: 49px minmax(94px, 1fr) 50px;
-  height: 198px;
+  grid-template-rows: 48px minmax(94px, 1fr) 50px;
+  height: 193px;
   min-height: 0;
   margin-top: var(--home-section-gap);
   padding: 10px 16px 0;
@@ -221,8 +221,8 @@
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
-  height: 49px;
-  min-height: 49px;
+  height: 48px;
+  min-height: 48px;
   gap: 6px;
   align-items: center;
 }
@@ -255,12 +255,22 @@
 }
 
 .home-screen .latest-draw-card .draw-date {
+  display: flex;
   margin-top: 0;
   padding-left: 0;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   line-height: 14px;
   letter-spacing: .4px;
   white-space: nowrap;
+}
+
+.home-screen .latest-draw-card .draw-date-icon {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  color: #dba84c;
 }
 
 .home-screen .latest-draw-card .draw-order {
@@ -325,7 +335,7 @@
   overflow: visible;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 11px; }
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 10px; }
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls { gap: 3px; flex: 0 1 auto; }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
@@ -449,7 +459,7 @@
 .home-screen .matrix-status-section {
   display: flex;
   width: var(--home-wide-width);
-  max-width: 397px;
+  max-width: 411px;
   height: auto;
   min-height: 0;
   margin-top: var(--home-section-gap);
@@ -593,11 +603,11 @@
 .home-screen .matrix-core-banner {
   display: block;
   width: var(--home-wide-width);
-  max-width: 397px;
-  height: 88px;
+  max-width: 411px;
+  height: 90px;
   margin-top: var(--home-section-gap);
   padding: 0;
-  flex: 0 0 88px;
+  flex: 0 0 90px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -621,7 +631,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: var(--home-wide-width);
-  max-width: 397px;
+  max-width: 411px;
   gap: var(--home-feature-gap);
   margin-top: var(--home-section-gap);
   margin-bottom: 0;
@@ -634,8 +644,8 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  height: 88px;
-  min-height: 88px;
+  height: 90px;
+  min-height: 90px;
   padding: 0;
   align-items: stretch;
   justify-content: center;
