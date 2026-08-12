@@ -480,11 +480,11 @@
 }
 
 .home-screen .lottery-switcher {
-  margin-top: -36px;
+  margin-top: -32px;
 }
 
 .home-screen .latest-draw-card {
-  margin-top: -66px;
+  margin-top: -52px;
 }
 
 .home-screen .matrix-status-section {
@@ -492,9 +492,10 @@
 }
 
 .home-screen .matrix-core-banner {
-  margin-top: -80px;
+  margin-top: -48px;
 }
 
 .home-screen .home-shortcut-row {
   width: calc(108.306410256% - 7.2px);
+  margin-top: 16px;
 }
