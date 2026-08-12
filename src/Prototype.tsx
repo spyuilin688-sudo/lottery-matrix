@@ -304,18 +304,39 @@ export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: Nex
   );
 }
 
-export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
-export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
+export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: (lottery?: LotteryId) => void };
+export function MatrixStatusSection({ statuses, onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <button
-      type="button"
+    <section
       className="matrix-status-section"
       aria-label="Matrix 狀態"
       data-testid="matrix-status-section"
-      onClick={onOpen}
     >
       <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
-    </button>
+      <div className="matrix-status-card-grid">
+        {LOTTERIES.map((lottery) => {
+          const status = statuses?.[lottery.id];
+          return (
+            <button
+              type="button"
+              className="matrix-status-card"
+              aria-label={`${lottery.id} Matrix 狀態`}
+              data-lottery={lottery.id}
+              key={lottery.id}
+              onClick={() => onOpen?.(lottery.id)}
+            >
+              {status ? (
+                <span className="matrix-status-data-zone" data-tone={status.tone}>
+                  <span className="matrix-status-name">{status.status}</span>
+                  <span className="matrix-status-name-en">{status.statusEn}</span>
+                  <span className="matrix-status-count">{status.count}</span>
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
