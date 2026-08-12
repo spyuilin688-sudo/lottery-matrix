@@ -186,15 +186,15 @@
 }
 
 .home-screen .latest-draw-card {
-  --draw-main-ball-size: 48px;
-  --draw-special-ball-size: 40px;
-  --draw-special-label-height: 12px;
+  --draw-main-ball-size: 38px;
+  --draw-special-ball-size: 32px;
+  --draw-special-label-height: 8px;
   display: grid;
-  grid-template-rows: 34px minmax(0, 1fr) 30px;
-  height: 158px;
+  grid-template-rows: 28px minmax(0, 1fr) 26px;
+  height: 100px;
   min-height: 0;
   margin-top: 8px;
-  padding: 8px 14px 0;
+  padding: 5px 11px 0;
   border: 0;
   border-radius: 10px;
   background: url("/assets/lottery/functions/3456667.png") center / cover no-repeat;
@@ -205,10 +205,10 @@
 
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr);
-  height: 34px;
-  min-height: 34px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr);
+  height: 28px;
+  min-height: 28px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -228,21 +228,21 @@
   display: flex;
   gap: 4px;
   align-items: baseline;
-  font-size: 11px;
-  line-height: 15px;
+  font-size: 10px;
+  line-height: 13px;
   white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-issue strong {
-  font-size: 15px;
-  line-height: 17px;
+  font-size: 13px;
+  line-height: 14px;
   letter-spacing: .5px;
 }
 
 .home-screen .latest-draw-card .draw-date {
   margin-top: 0;
-  font-size: 10px;
-  line-height: 12px;
+  font-size: 9.5px;
+  line-height: 11px;
   letter-spacing: .4px;
   white-space: nowrap;
 }
@@ -250,9 +250,9 @@
 .home-screen .latest-draw-card .draw-order {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 104px;
-  height: 24px;
-  min-height: 24px;
+  width: 92px;
+  height: 20px;
+  min-height: 20px;
   justify-self: center;
   align-self: center;
   border: 0;
@@ -265,7 +265,7 @@
   border: 0;
   background: transparent;
   color: rgba(255, 236, 185, .72);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -275,8 +275,8 @@
 
 .home-screen .latest-draw-card .history-link {
   display: flex;
-  height: 20px;
-  min-height: 20px;
+  height: 17px;
+  min-height: 17px;
   padding: 0;
   justify-self: end;
   align-self: center;
@@ -285,7 +285,7 @@
   border: 0;
   background: transparent;
   color: #f0c86c;
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -310,13 +310,13 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
-  gap: 7px;
+  gap: 6px;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: var(--draw-main-ball-size);
-  --number-font-size: 17px;
-  --underline-width: 15px;
+  --number-font-size: 14px;
+  --underline-width: 12px;
   width: var(--draw-main-ball-size);
   height: var(--draw-main-ball-size);
   flex: 0 0 var(--draw-main-ball-size);
@@ -329,8 +329,8 @@
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
   --number-ball-size: var(--draw-special-ball-size);
-  --number-font-size: 15px;
-  --underline-width: 13px;
+  --number-font-size: 12px;
+  --underline-width: 10px;
   width: var(--draw-special-ball-size);
   height: var(--draw-special-ball-size);
   flex: 0 0 var(--draw-special-ball-size);
@@ -338,16 +338,16 @@
 
 .home-screen .latest-draw-card .special-ball-plus {
   display: flex;
-  width: 10px;
+  width: 8px;
   height: calc(var(--draw-special-label-height) + var(--draw-special-ball-size));
   padding-top: var(--draw-special-label-height);
-  flex: 0 0 10px;
+  flex: 0 0 8px;
   align-items: center;
   align-self: center;
   box-sizing: border-box;
   justify-content: center;
   color: #f0c86c;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -366,7 +366,7 @@
   display: block;
   width: var(--draw-special-ball-size);
   color: #d8a653;
-  font-size: 9px;
+  font-size: 7.5px;
   line-height: var(--draw-special-label-height);
   text-align: center;
   white-space: nowrap;
@@ -376,11 +376,11 @@
   display: grid;
   grid-template-columns: minmax(0, 54fr) minmax(0, 46fr);
   width: auto;
-  height: 30px;
-  min-height: 30px;
-  max-height: 30px;
-  margin: 0 -14px;
-  padding: 0 14px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  margin: 0 -11px;
+  padding: 0 11px;
   align-items: center;
   border: 0;
   background: transparent;
@@ -388,30 +388,30 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 26px auto minmax(0, 1fr);
-  gap: 4px;
+  grid-template-columns: 20px auto minmax(0, 1fr);
+  gap: 3px;
   min-width: 0;
   align-items: center;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   opacity: 0;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 9.5px;
+  line-height: 13px;
   white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
   min-width: 0;
   overflow: visible;
-  font-size: 12.5px;
+  font-size: 10.5px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 13px;
   white-space: nowrap;
   text-overflow: unset;
 }
