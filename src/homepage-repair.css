@@ -84,7 +84,7 @@
 .home-screen .lottery-switcher > .home-asset-image {
   grid-area: 1 / 1;
   width: 100%;
-  height: calc((min(100vw, 390px) * 821 / 1916) - 4px);
+  height: calc(min(100vw, 390px) * 821 / 1916);
   object-fit: fill;
 }
 
