@@ -274,14 +274,19 @@ export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: Nex
 export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
 export function MatrixStatusSection({ statuses = MATRIX_STATUS_BY_LOTTERY, onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <section className="matrix-status-section" aria-labelledby="matrix-status-title" data-testid="matrix-status-section">
-      <header className="matrix-status-header"><h2 id="matrix-status-title">Matrix 狀態</h2><button className="matrix-status-more" type="button" onClick={onOpen}>查看更多狀態 &gt;</button></header>
+    <section className="matrix-status-section" aria-label="Matrix 狀態" data-testid="matrix-status-section">
       <div className="matrix-status-grid">
         {LOTTERIES.map((lottery) => {
           const item = statuses[lottery.id];
           return (
             <article className="matrix-status-card" data-lottery={lottery.id} data-tone={item.tone} key={lottery.id} onClick={onOpen}>
               <img className="matrix-status-artwork" src={item.artwork} alt={`${item.status} ${item.statusEn}`} draggable={false} />
+              <img className="matrix-status-lottery-logo" src={lottery.logo} alt="" aria-hidden="true" draggable={false} />
+              <div className="matrix-status-discovery" aria-hidden="true">
+                <span>本期發現</span>
+                <strong>{item.count}<em>組</em></strong>
+              </div>
+              <p className="matrix-status-description">{item.description}</p>
             </article>
           );
         })}
