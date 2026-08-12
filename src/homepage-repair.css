@@ -28,7 +28,7 @@
   padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 10px);
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   overflow: visible;
   background: var(--lottery-neutral-950);
 }
@@ -87,6 +87,7 @@
   gap: 2px;
   height: auto;
   min-height: 0;
+  margin-top: 8px;
   padding: 0;
   align-items: stretch;
   overflow: visible;
@@ -192,6 +193,7 @@
   grid-template-rows: 34px minmax(0, 1fr) 30px;
   height: 158px;
   min-height: 0;
+  margin-top: 8px;
   padding: 8px 14px 0;
   border: 0;
   border-radius: 10px;
@@ -418,7 +420,9 @@
   display: flex;
   height: auto;
   min-height: 0;
+  margin-top: 8px;
   padding: 8px;
+  flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid rgba(230, 199, 127, 0.44);
   border-radius: 12px;
@@ -510,6 +514,7 @@
   display: block;
   height: auto;
   min-height: 0;
+  margin-top: 8px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -539,6 +544,7 @@
   gap: 2px;
   height: auto;
   min-height: 0;
+  margin-top: 8px;
   align-items: stretch;
   overflow: visible;
 }
