@@ -2,6 +2,7 @@
 
 .mobile-scroll.home-screen,
 .home-screen {
+  overflow-x: hidden;
   background: var(--lottery-neutral-950);
 }
 
@@ -10,17 +11,41 @@
 }
 
 .home-screen .mobile-scroll-content {
+  height: auto;
+  min-height: 100%;
   overflow: visible;
 }
 
 .home-screen .lottery-screen {
+  --home-inline: 8px;
+  --home-content-width: min(calc(100% - (var(--home-inline) * 2)), 374px);
   box-sizing: border-box;
   display: flex;
   width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  height: auto;
   padding: var(--primary-brand-top) 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 10px);
   flex-direction: column;
+  align-items: center;
+  gap: 0;
   overflow: visible;
   background: var(--lottery-neutral-950);
+}
+
+.home-screen .lottery-screen > :where(
+  .brand-header,
+  .lottery-switcher,
+  .latest-draw-card,
+  .matrix-status-section,
+  .matrix-core-banner,
+  .home-shortcut-row
+) {
+  box-sizing: border-box;
+  width: var(--home-content-width);
+  max-width: 374px;
+  min-width: 0;
+  margin: 0;
 }
 
 .home-screen .brand-header {
@@ -60,6 +85,8 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2px;
+  height: auto;
+  min-height: 0;
   margin-top: 8px;
   padding: 0;
   align-items: stretch;
@@ -70,6 +97,11 @@
   --lottery-selected-border-gradient: linear-gradient(135deg, #f4ce67, #ffd98a);
   position: relative;
   display: flex;
+  aspect-ratio: 88 / 66;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   padding: 0;
   align-items: center;
   justify-content: center;
@@ -133,6 +165,9 @@
   position: relative;
   z-index: 2;
   display: flex;
+  width: 100%;
+  height: 54px;
+  flex: 0 0 54px;
   align-items: center;
   justify-content: center;
   overflow: visible;
@@ -141,6 +176,10 @@
 .home-screen .lottery-switcher > .lottery-card .lottery-logo img {
   position: static;
   display: block;
+  width: auto;
+  max-width: 96%;
+  height: auto;
+  max-height: 54px;
   object-fit: contain;
   object-position: center;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
@@ -151,6 +190,9 @@
   --draw-special-ball-size: 32px;
   --draw-special-label-height: 8px;
   display: grid;
+  grid-template-rows: 28px minmax(0, 1fr) 26px;
+  height: 100px;
+  min-height: 0;
   margin-top: 8px;
   padding: 5px 11px 0;
   border: 0;
@@ -164,12 +206,16 @@
 .home-screen .latest-draw-card .draw-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr);
+  height: 28px;
+  min-height: 28px;
   gap: 6px;
   align-items: center;
 }
 
 .home-screen .latest-draw-card .draw-meta {
   display: grid;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   row-gap: 1px;
   align-self: center;
@@ -204,6 +250,9 @@
 .home-screen .latest-draw-card .draw-order {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  width: 92px;
+  height: 20px;
+  min-height: 20px;
   justify-self: center;
   align-self: center;
   border: 0;
@@ -226,6 +275,8 @@
 
 .home-screen .latest-draw-card .history-link {
   display: flex;
+  height: 17px;
+  min-height: 17px;
   padding: 0;
   justify-self: end;
   align-self: center;
@@ -241,6 +292,9 @@
 
 .home-screen .latest-draw-card .draw-balls {
   display: flex;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   margin: 0;
   padding: 0;
   align-items: center;
@@ -250,6 +304,7 @@
 
 .home-screen .latest-draw-card .main-balls {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: center;
 }
@@ -262,6 +317,9 @@
   --number-ball-size: var(--draw-main-ball-size);
   --number-font-size: 14px;
   --underline-width: 12px;
+  width: var(--draw-main-ball-size);
+  height: var(--draw-main-ball-size);
+  flex: 0 0 var(--draw-main-ball-size);
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
@@ -273,11 +331,17 @@
   --number-ball-size: var(--draw-special-ball-size);
   --number-font-size: 12px;
   --underline-width: 10px;
+  width: var(--draw-special-ball-size);
+  height: var(--draw-special-ball-size);
+  flex: 0 0 var(--draw-special-ball-size);
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
   display: flex;
+  width: 8px;
+  height: calc(var(--draw-special-label-height) + var(--draw-special-ball-size));
   padding-top: var(--draw-special-label-height);
+  flex: 0 0 8px;
   align-items: center;
   align-self: center;
   box-sizing: border-box;
@@ -289,6 +353,10 @@
 
 .home-screen .latest-draw-card .special-ball-group {
   display: grid;
+  width: var(--draw-special-ball-size);
+  height: calc(var(--draw-special-label-height) + var(--draw-special-ball-size));
+  flex: 0 0 var(--draw-special-ball-size);
+  grid-template-rows: var(--draw-special-label-height) var(--draw-special-ball-size);
   align-self: center;
   align-items: center;
   justify-items: center;
@@ -296,8 +364,10 @@
 
 .home-screen .latest-draw-card .special-label {
   display: block;
+  width: var(--draw-special-ball-size);
   color: #d8a653;
   font-size: 7.5px;
+  line-height: var(--draw-special-label-height);
   text-align: center;
   white-space: nowrap;
 }
@@ -305,6 +375,10 @@
 .home-screen .latest-draw-card .next-draw-info--embedded {
   display: grid;
   grid-template-columns: minmax(0, 54fr) minmax(0, 46fr);
+  width: auto;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
   margin: 0 -11px;
   padding: 0 11px;
   align-items: center;
@@ -316,6 +390,7 @@
   display: grid;
   grid-template-columns: 20px auto minmax(0, 1fr);
   gap: 3px;
+  min-width: 0;
   align-items: center;
 }
 
@@ -343,8 +418,11 @@
 
 .home-screen .matrix-status-section {
   display: flex;
+  height: auto;
+  min-height: 0;
   margin-top: 8px;
   padding: 6px;
+  flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid rgba(230, 199, 127, 0.44);
   border-radius: 12px;
@@ -355,6 +433,8 @@
 
 .home-screen .matrix-status-header {
   display: flex;
+  height: 18px;
+  min-height: 18px;
   margin: 0 0 4px;
   padding: 0;
   align-items: center;
@@ -370,6 +450,8 @@
 
 .home-screen .matrix-status-more {
   display: flex;
+  height: 18px;
+  min-height: 18px;
   padding: 0;
   align-items: center;
   justify-content: flex-end;
@@ -386,6 +468,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
   align-items: stretch;
   overflow: visible;
 }
@@ -393,6 +478,11 @@
 .home-screen .matrix-status-card {
   position: relative;
   display: block;
+  aspect-ratio: 72 / 94;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -404,6 +494,10 @@
 .home-screen .matrix-status-artwork {
   position: static;
   display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
   opacity: 1;
@@ -418,6 +512,8 @@
 
 .home-screen .matrix-core-banner {
   display: block;
+  height: auto;
+  min-height: 0;
   margin-top: 8px;
   padding: 0;
   border: 0;
@@ -434,6 +530,9 @@
 
 .home-screen .matrix-core-banner img {
   display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
   object-fit: contain;
   object-position: center;
   filter: none;
@@ -443,6 +542,8 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
+  height: auto;
+  min-height: 0;
   margin-top: 8px;
   align-items: stretch;
   overflow: visible;
@@ -450,6 +551,11 @@
 
 .home-screen .home-shortcut {
   display: block;
+  aspect-ratio: 382 / 440;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -461,6 +567,10 @@
 .home-screen .home-shortcut img,
 .home-screen .home-shortcut[aria-label="Matrix 牌單"] img {
   display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   margin: 0;
   object-fit: contain;
   object-position: center;
