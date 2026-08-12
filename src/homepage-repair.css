@@ -45,7 +45,6 @@
   width: var(--home-content-width);
   max-width: 374px;
   min-width: 0;
-  margin: 0;
 }
 
 .home-screen .brand-header {
@@ -109,7 +108,7 @@
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(4, 10, 23, 0.99), rgba(2, 7, 17, 0.98));
   box-shadow: inset 0 0 16px rgba(61, 117, 204, 0.05);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-screen .lottery-switcher > .lottery-card::before {
@@ -166,22 +165,16 @@
   z-index: 2;
   display: flex;
   width: 100%;
-  height: 54px;
-  flex: 0 0 54px;
-  align-items: center;
-  justify-content: center;
   overflow: visible;
 }
 
 .home-screen .lottery-switcher > .lottery-card .lottery-logo img {
-  position: static;
   display: block;
   width: auto;
   max-width: 96%;
   height: auto;
   max-height: 54px;
   object-fit: contain;
-  object-position: center;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.42));
 }
 
@@ -512,15 +505,11 @@
 
 .home-screen .matrix-core-banner {
   display: block;
-  height: auto;
-  min-height: 0;
-  margin-top: 8px;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  line-height: 0;
   overflow: visible;
 }
 
@@ -534,7 +523,6 @@
   height: auto;
   max-width: 100%;
   object-fit: contain;
-  object-position: center;
   filter: none;
 }
 
@@ -542,10 +530,6 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
-  height: auto;
-  min-height: 0;
-  margin-top: 8px;
-  align-items: stretch;
   overflow: visible;
 }
 
@@ -573,7 +557,6 @@
   max-height: 100%;
   margin: 0;
   object-fit: contain;
-  object-position: center;
   border-radius: 0;
   clip-path: none;
   filter: none;
