@@ -473,7 +473,7 @@
 
 .home-screen .home-switcher-box {
   display: grid;
-  width: 96.871794872%;
+  width: 100%;
   height: auto;
   padding: 0;
   overflow: visible;
@@ -499,7 +499,7 @@
 }
 
 .home-screen .home-draw-box {
-  width: 90.461538462%;
+  width: 100%;
   min-height: 0;
   aspect-ratio: 361.1 / 176.4;
 }
@@ -509,7 +509,16 @@
 }
 
 .home-screen .home-core-box {
-  width: 93.589743590%;
+  width: 100%;
+  padding: 0;
+}
+
+.home-screen .home-core-box > .home-asset-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .home-screen .home-features-box {
