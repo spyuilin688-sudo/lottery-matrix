@@ -472,7 +472,30 @@
 }
 
 .home-screen .home-switcher-box {
+  display: grid;
   width: 96.871794872%;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+}
+
+.home-screen .home-switcher-box > .home-asset-image {
+  grid-area: 1 / 1;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.home-screen .home-switcher-box > .lottery-switcher-hit-grid {
+  position: relative;
+  display: grid;
+  grid-area: 1 / 1;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  gap: 7px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .home-screen .home-draw-box {
