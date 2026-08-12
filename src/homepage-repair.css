@@ -484,19 +484,19 @@
 }
 
 .home-screen .latest-draw-card {
-  margin-top: -20px;
+  margin-top: -8px;
 }
 
 .home-screen .matrix-status-section {
   width: 89.376%;
-  margin-top: 48px;
+  margin-top: 32px;
 }
 
 .home-screen .matrix-core-banner {
-  margin-top: 8px;
+  margin-top: -12px;
 }
 
 .home-screen .home-shortcut-row {
   width: calc(108.306410256% - 7.2px);
-  margin-top: 56px;
+  margin-top: 32px;
 }
