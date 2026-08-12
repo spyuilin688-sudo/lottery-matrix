@@ -474,19 +474,27 @@
   outline: 1px solid #bf5af2;
 }
 
-/* User-approved homepage container offsets and status enlargement. */
+/* User-approved homepage container offsets and proportional image sizing. */
+.home-screen .brand-header {
+  margin-top: -10px;
+}
+
 .home-screen .lottery-switcher {
-  margin-top: -20px;
+  margin-top: -36px;
 }
 
 .home-screen .latest-draw-card {
-  margin-top: -50px;
+  margin-top: -66px;
 }
 
 .home-screen .matrix-status-section {
-  width: 117.6%;
+  width: 89.376%;
 }
 
 .home-screen .matrix-core-banner {
   margin-top: -80px;
+}
+
+.home-screen .home-shortcut-row {
+  width: calc(108.306410256% - 7.2px);
 }
