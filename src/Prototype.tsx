@@ -151,6 +151,41 @@ NEXT_DRAW_INFO["六合彩"] = {
   remainingTime: "18:30:00",
 };
 
+const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
+  今彩539: {
+    status: "啟動",
+    statusEn: "ACTIVE",
+    artwork: "/assets/lottery/status/active.png",
+    count: 2,
+    description: "具備基本參考價值",
+    tone: "green",
+  },
+  天天樂: {
+    status: "聚合",
+    statusEn: "FOCUS",
+    artwork: "/assets/lottery/status/focus.png",
+    count: 1,
+    description: "具備明顯規律集中性",
+    tone: "blue",
+  },
+  "六合彩": {
+    status: "共振",
+    statusEn: "RESONANCE",
+    artwork: "/assets/lottery/status/resonance.png",
+    count: 3,
+    description: "具備強烈共振效應",
+    tone: "purple",
+  },
+  大樂透: {
+    status: "臨界",
+    statusEn: "CRITICAL",
+    artwork: "/assets/lottery/status/critical.png",
+    count: 4,
+    description: "極為罕見版路狀態",
+    tone: "orange",
+  },
+};
+
 export type LotterySwitcherProps = {
   selected: LotteryId;
   onChange: (lottery: LotteryId) => void;
@@ -269,39 +304,18 @@ export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: Nex
   );
 }
 
-export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: (lottery?: LotteryId) => void };
-export function MatrixStatusSection({ statuses, onOpen }: MatrixStatusSectionProps = {}) {
+export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
+export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <section
+    <button
+      type="button"
       className="matrix-status-section"
       aria-label="Matrix 狀態"
       data-testid="matrix-status-section"
+      onClick={onOpen}
     >
       <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
-      <div className="matrix-status-card-grid">
-        {LOTTERIES.map((lottery) => {
-          const status = statuses?.[lottery.id];
-          return (
-            <button
-              type="button"
-              className="matrix-status-card"
-              aria-label={`${lottery.id} Matrix 狀態`}
-              data-lottery={lottery.id}
-              key={lottery.id}
-              onClick={() => onOpen?.(lottery.id)}
-            >
-              {status ? (
-                <span className="matrix-status-data-zone" data-tone={status.tone}>
-                  <span className="matrix-status-name">{status.status}</span>
-                  <span className="matrix-status-name-en">{status.statusEn}</span>
-                  <span className="matrix-status-count">{status.count}</span>
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-    </section>
+    </button>
   );
 }
 
