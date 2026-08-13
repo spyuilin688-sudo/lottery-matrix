@@ -1,5 +1,8 @@
 .number-ball-component {
   --number-ball-size: 56px;
+  --number-ball-asset-scale: 1;
+  --number-ball-asset-x: 0%;
+  --number-ball-asset-y: 0%;
   --number-font-size: 23px;
   --number-y: 0px;
   --underline-width: 20px;
@@ -16,13 +19,39 @@
 
 .number-ball-asset {
   position: absolute;
-  inset: 0;
+  top: calc(50% + var(--number-ball-asset-y));
+  left: calc(50% + var(--number-ball-asset-x));
   display: block;
-  width: 100%;
-  height: 100%;
+  width: calc(100% * var(--number-ball-asset-scale));
+  height: calc(100% * var(--number-ball-asset-scale));
   object-fit: contain;
+  transform: translate(-50%, -50%);
   pointer-events: none;
   user-select: none;
+}
+
+/* Compensate the transparent canvas around each formal PNG asset. */
+.number-ball-component[data-lottery="今彩539"] {
+  --number-ball-asset-scale: 1.228;
+  --number-ball-asset-x: -0.6%;
+  --number-ball-asset-y: -1%;
+}
+
+.number-ball-component[data-lottery="天天樂"] {
+  --number-ball-asset-scale: 1.347;
+  --number-ball-asset-x: 0.7%;
+  --number-ball-asset-y: 3.3%;
+}
+
+.number-ball-component[data-lottery="六合彩"] {
+  --number-ball-asset-scale: 1.432;
+  --number-ball-asset-y: 3.4%;
+}
+
+.number-ball-component[data-lottery="大樂透"] {
+  --number-ball-asset-scale: 1.478;
+  --number-ball-asset-x: -0.3%;
+  --number-ball-asset-y: 0.7%;
 }
 
 .number-ball-value {
