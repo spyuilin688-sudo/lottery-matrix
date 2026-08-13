@@ -319,14 +319,33 @@ type HistoryDrawNumbers = {
   special?: string;
 };
 
+function getHistoryRecordKey(record: LotteryDrawRecord) {
+  const issue = getDrawIssue(record);
+  const date = getDrawDate(record);
+  const numbers = record.numbers.map(normalizeBallNumber).join("-");
+  return `${issue}|${date}|${numbers}`;
+}
+
 function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
 
   useEffect(() => {
     let active = true;
+    setData([]);
+
     fetchLotteryHistory(lottery, limit)
       .then((records) => {
-        if (active) setData(records);
+        if (!active) return;
+
+        const seen = new Set<string>();
+        const uniqueRecords = records.filter((record) => {
+          const key = getHistoryRecordKey(record);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        setData(typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords);
       })
       .catch(() => {
         if (active) setData([]);
