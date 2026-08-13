@@ -5,10 +5,27 @@ import { readFileSync } from "node:fs";
 const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 
-test("BrandHeader renders the title and actions inside one shared card", () => {
-  assert.match(featurePages, /className="feature-title-card"/);
-  assert.match(featurePages, /className="feature-title-actions"/);
-  assert.match(styles, /\.feature-title-card\s*\{/);
+test("the nine named feature pages use the uploaded title artwork", () => {
+  const expectedArtwork = [
+    ["Matrix 探索", "matrixT3.png"],
+    ["Matrix 天衍", "matrixT2.png"],
+    ["Matrix 天工", "matrixT1.png"],
+    ["Matrix 指南", "matrixP4.png"],
+    ["Matrix 同星", "matrixP6.png"],
+    ["Matrix 牌單", "matrixP2.png"],
+    ["Matrix 狀態", "matrixP5.png"],
+    ["號碼對照單", "matrixP1.png"],
+    ["歷史開獎號碼", "matrixP3.png"],
+  ];
+
+  for (const [title, file] of expectedArtwork) {
+    assert.match(featurePages, new RegExp(`"${title}": "/assets/lottery/functions/${file.replace(".", "\\.")}"`));
+  }
+});
+
+test("uploaded title artwork sits eight pixels below the logo with four-pixel side margins and no cropping", () => {
+  assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 8px\)[^}]*margin-top:\s*8px/s);
+  assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
 });
 
 test("Matrix pages use the three uploaded PNG icons in one page switcher", () => {
