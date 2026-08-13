@@ -32,7 +32,7 @@
   --home-main-inline: 16px;
   --home-wide-inline: 6px;
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 0px;
+  --home-gap-switcher-draw: 8px;
   --home-gap-draw-status: 1px;
   --home-gap-status-core: 6px;
   --home-gap-core-features: 8px;
@@ -133,7 +133,7 @@
 }
 
 .home-screen .lottery-switcher {
-  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .78);
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
   position: relative;
   display: block;
   flex: 0 0 var(--lottery-switcher-height);
@@ -192,24 +192,52 @@
   object-position: center;
 }
 
+.home-screen .lottery-card[data-lottery="今彩539"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(167, 17, 20, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 5, 8, .88), rgba(8, 8, 13, .96)) padding-box,
+    linear-gradient(135deg, rgba(255, 105, 91, .82), rgba(116, 39, 37, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(19, 91, 181, .28), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 18, 38, .9), rgba(5, 9, 18, .96)) padding-box,
+    linear-gradient(135deg, rgba(105, 146, 200, .76), rgba(49, 66, 91, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="六合彩"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(26, 117, 113, .22), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 22, 31, .9), rgba(4, 9, 17, .96)) padding-box,
+    linear-gradient(135deg, rgba(102, 132, 151, .72), rgba(44, 61, 73, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(151, 105, 21, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 21, 5, .9), rgba(10, 9, 7, .96)) padding-box,
+    linear-gradient(135deg, rgba(177, 148, 91, .76), rgba(80, 67, 42, .58)) border-box;
+}
+
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] > img {
-  width: 130%;
-  height: 108%;
+  width: 124%;
+  height: 103%;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] > img {
-  width: 140%;
-  height: 116%;
+  width: 133%;
+  height: 110%;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] > img {
-  width: 180%;
-  height: 180%;
+  width: 171%;
+  height: 171%;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] > img {
-  width: 122%;
-  height: 104%;
+  width: 116%;
+  height: 99%;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
@@ -662,18 +690,34 @@
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
   --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(167, 17, 20, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 5, 8, .88), rgba(8, 8, 13, .96)) padding-box,
+    var(--lottery-selected-gradient) border-box;
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
   --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(19, 91, 181, .28), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 18, 38, .9), rgba(5, 9, 18, .96)) padding-box,
+    var(--lottery-selected-gradient) border-box;
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(26, 117, 113, .22), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 22, 31, .9), rgba(4, 9, 17, .96)) padding-box,
+    var(--lottery-selected-gradient) border-box;
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(151, 105, 21, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 21, 5, .9), rgba(10, 9, 7, .96)) padding-box,
+    var(--lottery-selected-gradient) border-box;
 }
 
 @keyframes matrix-core-stardust-scan {
