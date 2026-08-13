@@ -1,0 +1,266 @@
+.admin-app {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  background: #07101f;
+  color: #f8fbff;
+  font-family: Roboto, sans-serif;
+}
+
+.admin-app *,
+.admin-app *::before,
+.admin-app *::after {
+  box-sizing: inherit;
+}
+
+.admin-app .admin-navigation {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 12px;
+  border-right: 1px solid #1d3554;
+  background: #09182d;
+}
+
+.admin-app .admin-navigation nav {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-app .admin-navigation-entry,
+.admin-app .admin-logout {
+  min-height: 48px;
+  border: 1px solid #29486f;
+  border-radius: 12px;
+  background: #10233d;
+  color: inherit;
+  font: inherit;
+}
+
+.admin-app .admin-navigation-entry[aria-current="page"] {
+  border-color: #4da3ff;
+  background: #123f72;
+}
+
+.admin-app .admin-logout {
+  margin-top: auto;
+}
+
+.admin-app .admin-content {
+  min-width: 0;
+  padding: 24px;
+}
+
+.admin-app .admin-dashboard {
+  width: 100%;
+}
+
+.admin-app .admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-app .admin-stat-card {
+  display: grid;
+  min-height: 120px;
+  align-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #23466d;
+  border-radius: 12px;
+  background: #0e2139;
+}
+
+.admin-app .admin-stat-label {
+  color: #aebdd0;
+  font-size: 14px;
+}
+
+.admin-app .admin-stat-value {
+  color: #ffffff;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+}
+
+.admin-app .admin-login-submit {
+  min-height: 48px;
+}
+
+.admin-app .admin-record-screen {
+  width: 100%;
+}
+
+.admin-app .admin-record-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-app .admin-record-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
+  background: #0e2139;
+}
+
+.admin-app .admin-record-table th,
+.admin-app .admin-record-table td {
+  padding: 12px;
+  border: 1px solid #23466d;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.admin-app .admin-record-table th {
+  color: #aebdd0;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.admin-app .admin-record-table td {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.admin-app .admin-record-table button,
+.admin-app .admin-record-actions button {
+  min-height: 40px;
+  border: 1px solid #29486f;
+  border-radius: 8px;
+  background: #10233d;
+  color: inherit;
+  font: inherit;
+}
+
+.admin-app .admin-record-cards {
+  display: none;
+}
+
+.admin-app .admin-activation-codes {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-app .admin-activation-controls {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #23466d;
+  border-radius: 12px;
+  background: #0e2139;
+}
+
+.admin-app .admin-activation-controls legend {
+  padding: 0 4px;
+  color: #aebdd0;
+}
+
+.admin-app .admin-activation-duration-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-app .admin-activation-duration-options label {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-app .admin-activation-quantity {
+  margin: 0;
+  color: #aebdd0;
+}
+
+.admin-app .admin-activation-generate {
+  min-height: 48px;
+  max-width: 160px;
+  border: 1px solid #29486f;
+  border-radius: 12px;
+  background: #123f72;
+  color: inherit;
+  font: inherit;
+}
+
+@media (max-width: 719px) {
+  .admin-app {
+    display: block;
+  }
+
+  .admin-app .admin-navigation {
+    min-height: 0;
+    gap: 12px;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid #1d3554;
+  }
+
+  .admin-app .admin-navigation nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .admin-app .admin-navigation-entry {
+    min-width: 0;
+    padding: 6px 2px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-app .admin-logout {
+    margin-top: 0;
+  }
+
+  .admin-app .admin-content {
+    padding: 16px;
+  }
+
+  .admin-app .admin-stat-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-app .admin-record-table-wrap {
+    display: none;
+  }
+
+  .admin-app .admin-record-cards {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-app .admin-record-card {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #23466d;
+    border-radius: 12px;
+    background: #0e2139;
+  }
+
+  .admin-app .admin-record-card > span {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-app .admin-record-card > span::before {
+    content: attr(data-label);
+    color: #aebdd0;
+  }
+
+  .admin-app .admin-record-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-app .admin-activation-generate {
+    max-width: none;
+  }
+}

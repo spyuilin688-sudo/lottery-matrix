@@ -22,6 +22,11 @@ import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 import { BrandLogo } from "./BrandLogo";
+import {
+  isActivationRedemptionError,
+  redeemActivationCode,
+  type ActivationRedemptionErrorCode,
+} from "./activation/redeemActivationCode";
 
 export type ScreenId =
   | "home"
@@ -2737,7 +2742,36 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
   const [activationOpen, setActivationOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [resultState, setResultState] = useState<"idle" | "success" | ActivationRedemptionErrorCode>("idle");
+  const activationRequestRevision = useRef(0);
   const referralSuccessCount = 0;
+
+  useEffect(() => () => {
+    activationRequestRevision.current += 1;
+  }, []);
+
+  async function handleActivation() {
+    if (submitting) return;
+
+    const requestRevision = activationRequestRevision.current + 1;
+    activationRequestRevision.current = requestRevision;
+
+    setSubmitting(true);
+    setResultState("idle");
+
+    try {
+      await redeemActivationCode(activationCode);
+      if (activationRequestRevision.current !== requestRevision) return;
+      setActivationCode("");
+      setResultState("success");
+    } catch (error) {
+      if (activationRequestRevision.current !== requestRevision) return;
+      setResultState(isActivationRedemptionError(error) ? error.code : "ACTIVATION_CODE_REDEMPTION_FAILED");
+    } finally {
+      if (activationRequestRevision.current === requestRevision) setSubmitting(false);
+    }
+  }
   return (
     <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
       <section className="panel referral-card">
@@ -2750,7 +2784,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
       <DetailCard title="推薦成功獎勵"><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></DetailCard>
       <DetailCard title="推薦獎勵補充規則"><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></DetailCard>
       <DetailCard title="邀請好友"><p>推薦碼/邀請碼尚未提供。</p></DetailCard>
-      <section className="panel activation-card"><button type="button" className="activation-toggle" aria-expanded={activationOpen} aria-controls="activation-code-entry" onClick={() => setActivationOpen((current) => !current)}><span>啟動碼</span><ChevronDownIcon aria-hidden="true" /></button>{activationOpen ? <div className="code-entry-block" id="activation-code-entry"><label htmlFor="activation-code">輸入啟動碼</label><input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" /><button type="button" className="gold-button">確認</button><section className="activation-instructions" aria-labelledby="activation-instructions-title"><h3 id="activation-instructions-title">啟動碼使用說明</h3><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></section></div> : null}</section>
+      <section className="panel activation-card"><button type="button" className="activation-toggle" aria-expanded={activationOpen} aria-controls="activation-code-entry" onClick={() => setActivationOpen((current) => !current)}><span>啟動碼</span><ChevronDownIcon aria-hidden="true" /></button>{activationOpen ? <div className="code-entry-block" id="activation-code-entry" data-result-state={resultState} aria-busy={submitting}><label htmlFor="activation-code">輸入啟動碼</label><input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" /><button type="button" className="gold-button" onClick={handleActivation} disabled={submitting}>確認</button><section className="activation-instructions" aria-labelledby="activation-instructions-title"><h3 id="activation-instructions-title">啟動碼使用說明</h3><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></section></div> : null}</section>
     </ProfileDetailShell>
   );
 }

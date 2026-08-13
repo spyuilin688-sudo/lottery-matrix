@@ -7,6 +7,7 @@ import "./prototype.css";
 import "./brand-header-unify.css";
 import "./homepage-repair.css";
 import "./tongxing-compact.css";
+import "./admin/admin.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
