@@ -1406,13 +1406,6 @@
   .subscription-status-content { grid-template-columns: 46px minmax(0, 1fr) minmax(0, 1fr); gap: 7px; }
   .line-login-button { min-width: 70px; padding-inline: 8px; }
   .reference-search .gold-button { font-size: 10px; }
-  .same-star-fields {
-    grid-template-columns: repeat(3, 41px) 1fr 56px auto;
-    gap: 4px;
-  }
-  .same-star-fields input { padding-inline: 4px; }
-  .same-star-fields > span { display: block; font-size: 12.5px; }
-  .same-star-fields .select-box { display: flex; }
   .advanced-panel .segmented.three button { padding-inline: 2px; font-size: 10px; }
   .road-results-head,
   .road-result-row { grid-template-columns: .88fr .84fr .92fr 1.12fr 1.1fr 1.14fr; }
@@ -1461,13 +1454,6 @@
 .quick-actions .clear-button svg { width: 13px; height: 13px; }
 .feature-bottom-nav { width: 100%; }
 
-/* v49 scoped refinements */
-.tongxing-query .query-selects > .native-select:first-child select { font-size: 13px; }
-.tongxing-order-select select { font-size: 13px; }
-.same-star-fields { column-gap: 9px; }
-.same-star-fields > span { font-size: 15px; }
-.same-star-period-select select { font-size: 13px; }
-
 .explore-settings .setting-grid,
 .advanced-panel { gap: 8px; }
 .explore-settings .setting-grid label,
@@ -1497,27 +1483,6 @@
 }
 .road-validation > strong {
   font-size: 12px;
-}
-
-.tongxing-table-row > span {
-  font-size: 14.5px;
-}
-.tongxing-table-head > span {
-  font-size: 15.5px;
-}
-.tongxing-table[data-columns="7"] .tongxing-table-row > span {
-  font-size: 13px;
-}
-.tongxing-table[data-columns="7"] .tongxing-table-head > span {
-  font-size: 14px;
-}
-.tongxing-table[data-columns="7"] .tongxing-period-cell strong {
-  font-size: 13.5px;
-}
-.tongxing-result-group + .tongxing-result-group {
-  margin-top: 7px;
-  border-top: 1px solid #a8772f;
-  box-shadow: 0 -6px 0 #02080d;
 }
 
 /* Matrix status, notes and Matrix guide */
@@ -1727,73 +1692,6 @@
   .note-number-group input { width: 28px; }
   .note-filters { gap: 3px; }
   .note-filters > button { padding-inline: 5px; }
-}
-
-.tongxing-screen .same-star-fields {
-  grid-template-columns: repeat(3, 43px) minmax(48px, 1fr) 62px auto;
-  column-gap: 6px;
-}
-.tongxing-screen .same-star-fields input {
-  padding-inline: 4px;
-  font-size: 17px;
-  font-weight: 600;
-}
-.tongxing-screen .same-star-fields > span {
-  font-size: 17px;
-}
-.tongxing-screen .same-star-period-select select {
-  font-size: 15px;
-  font-weight: 700;
-}
-.tongxing-screen .query-selects select {
-  font-weight: 700;
-}
-.tongxing-screen .query-selects {
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-  gap: 8px;
-}
-.tongxing-screen .query-selects .select-box {
-  height: 44px;
-}
-.tongxing-screen .query-selects select {
-  text-align: center;
-  text-align-last: center;
-}
-
-.tongxing-screen .tongxing-table-row > span {
-  min-height: 31px;
-  font-size: 15px;
-}
-.tongxing-screen .tongxing-table-head {
-  min-height: 33px;
-}
-.tongxing-screen .tongxing-table-head > span {
-  min-height: 33px;
-  font-size: 16px;
-}
-.tongxing-screen .tongxing-period-cell {
-  min-height: 39px !important;
-}
-.tongxing-screen .tongxing-result-group + .tongxing-result-group {
-  margin-top: 10px;
-  border-top: 2px solid #a8772f;
-  box-shadow: 0 -8px 0 #02080d;
-}
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span {
-  font-size: 13.5px;
-}
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span {
-  font-size: 14.5px;
-}
-
-@media (max-width: 360px) {
-  .tongxing-screen .same-star-fields {
-    grid-template-columns: repeat(3, 39px) minmax(44px, 1fr) 58px auto;
-    column-gap: 4px;
-  }
-  .tongxing-screen .same-star-fields input { font-size: 16px; }
-  .tongxing-screen .same-star-fields > span { font-size: 15px; }
-  .tongxing-screen .same-star-period-select select { font-size: 14px; }
 }
 
 .road-results-head > span {
