@@ -1,33 +1,36 @@
-.feature-screen {
-  padding-top: 30px;
+.feature-screen,
+.compact-feature-screen {
+  padding-top: 0;
 }
 
 .feature-brand-header,
 .feature-brand-header[data-compact="true"] {
   position: relative;
   display: flex;
-  height: var(--primary-brand-height);
-  min-height: var(--primary-brand-height);
-  margin: 0 0 8px;
-  padding: 0 var(--primary-brand-inline);
+  width: min(100%, 390px);
+  height: auto;
+  min-height: 0;
+  margin: 0 auto var(--layout-section-gap);
+  padding: 0;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-direction: row;
+  justify-content: flex-start;
 }
 
 .feature-brand-row {
-  position: absolute;
-  inset: 0;
+  position: relative;
   display: flex;
+  width: 100%;
+  height: auto;
   align-items: center;
   justify-content: center;
 }
 
 .feature-brand-lockup,
-.feature-brand-header[data-compact="true"] > .feature-brand-logo {
+.feature-brand-header[data-compact="true"] > .shared-brand-logo {
   display: flex;
   width: 100%;
-  height: var(--primary-brand-height);
+  height: auto;
   margin: 0;
   padding: 0;
   align-items: center;
@@ -37,12 +40,18 @@
   line-height: 0;
 }
 
-.feature-brand-lockup > .feature-brand-logo,
-.feature-brand-header[data-compact="true"] > .feature-brand-logo {
+.feature-brand-lockup .shared-brand-logo,
+.feature-brand-header[data-compact="true"] > .shared-brand-logo {
+  display: contents;
+}
+
+.feature-brand-lockup .shared-brand-logo > img,
+.feature-brand-header[data-compact="true"] > .shared-brand-logo > img {
   display: block;
   width: 100%;
   max-width: 100%;
-  height: var(--primary-brand-height);
+  height: auto;
+  margin: 0;
   object-fit: contain;
   object-position: center;
 }
@@ -58,12 +67,17 @@
 }
 
 .feature-brand-header h1 {
-  display: none;
+  display: block;
+  margin: var(--layout-section-gap) 0 0;
+  color: #eee9df;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .feature-header-action {
-  top: 50%;
   right: 16px;
-  bottom: auto;
-  transform: translateY(-50%);
+  bottom: 0;
 }
