@@ -1,50 +1,37 @@
-/* 首頁與所有頁首共用相同 Logo 幾何與垂直位置。 */
+/* All feature-page logos use the homepage logo canvas and position. */
+.feature-screen,
 .feature-screen:not(.compact-feature-screen),
-.compact-feature-screen {
-  padding-top: var(--primary-brand-top) !important;
-}
+.compact-feature-screen { padding-top: 0 !important; }
 
-.bottom-nav-brand-screen {
-  --bottom-nav-brand-offset: 0px !important;
-}
-
-.bottom-nav-brand-screen > .feature-brand-header,
-.bottom-nav-brand-screen > .feature-body {
-  top: auto !important;
-}
-
-.bottom-nav-brand-screen > .feature-body {
-  margin-bottom: 0 !important;
-}
+.bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px !important; }
+.bottom-nav-brand-screen > .feature-body { top: auto !important; margin-bottom: 0 !important; }
 
 .feature-brand-header,
 .feature-brand-header:not([data-compact='true']),
 .feature-brand-header[data-compact='true'] {
   position: relative !important;
-  top: -36px !important;
-  left: -2px !important;
+  top: auto !important;
+  left: auto !important;
   box-sizing: border-box !important;
   width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  min-height: var(--primary-brand-height) !important;
-  padding: 0 var(--primary-brand-inline) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
   margin: 0 !important;
-  flex: 0 0 var(--primary-brand-height) !important;
+  flex: 0 0 auto !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: visible !important;
 }
 
-.bottom-nav-brand-screen > .feature-brand-header {
-  top: -36px !important;
-}
+.bottom-nav-brand-screen > .feature-brand-header { top: auto !important; }
 
 .feature-brand-header:not([data-compact='true']) .feature-brand-row {
-  position: absolute !important;
-  inset: 0 !important;
-  top: 0 !important;
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
   display: flex !important;
-  width: auto !important;
+  width: 100% !important;
   height: var(--primary-brand-height) !important;
   min-height: var(--primary-brand-height) !important;
   align-items: center !important;
@@ -114,7 +101,7 @@
 .feature-brand-header .shared-brand-logo > img,
 .feature-brand-lockup .shared-brand-logo > img {
   display: block !important;
-  width: min(100%, calc(var(--primary-brand-height) * 1536 / 550)) !important;
+  width: 100% !important;
   max-width: 100% !important;
   height: var(--primary-brand-height) !important;
   aspect-ratio: var(--primary-brand-ratio) !important;
