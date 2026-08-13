@@ -1864,10 +1864,20 @@
   grid-template-columns: 52px 66px minmax(0, 1fr);
   border-top-width: 1px;
 }
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {
+  grid-template-columns: 56px 62px minmax(0, 1fr);
+}
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-special-number {
   margin-left: 3px;
   gap: 2px;
+}
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-number > span:first-child,
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-number > span:first-child {
+  margin-inline: 2px;
+  color: #f6c95f;
+  font-size: 14px;
+  font-weight: 700;
 }
 .matrix-explore-screen .road-result-row > strong {
   font-size: 15px;
