@@ -54,37 +54,21 @@
   overflow: visible !important;
 }
 
-.feature-brand-header,
-.profile-subpage-header {
-  --brand-back-button-size: 58px;
-  --brand-back-icon-size: 49px;
-  --brand-back-logo-gap: 12px;
-  --brand-back-left: 6px;
+.feature-brand-header .back-button {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 6px;
+  box-sizing: border-box;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  transform: translateY(-50%);
 }
 
-.feature-brand-header:not([data-compact='true']) .back-button,
-.profile-subpage-back {
-  top: 50% !important;
-  left: var(--brand-back-left) !important;
-  width: var(--brand-back-button-size) !important;
-  min-width: var(--brand-back-button-size) !important;
-  max-width: var(--brand-back-button-size) !important;
-  height: var(--brand-back-button-size) !important;
-  min-height: var(--brand-back-button-size) !important;
-  max-height: var(--brand-back-button-size) !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  flex: 0 0 var(--brand-back-button-size) !important;
-  transform: translateY(-50%) !important;
-}
-
-.feature-brand-header:not([data-compact='true']) .back-button svg {
-  width: var(--brand-back-icon-size) !important;
-  min-width: var(--brand-back-icon-size) !important;
-  max-width: var(--brand-back-icon-size) !important;
-  height: var(--brand-back-icon-size) !important;
-  min-height: var(--brand-back-icon-size) !important;
-  max-height: var(--brand-back-icon-size) !important;
+.feature-brand-header .back-button svg {
+  width: 49px;
+  height: 49px;
 }
 
 .feature-brand-lockup,
@@ -164,24 +148,3 @@
   overflow: hidden !important;
 }
 
-/* 「我的」下層選項頁：補上返回鍵＋樂彩 Logo。 */
-.profile-subpage-header {
-  position: relative !important;
-}
-
-.profile-subpage-back {
-  position: absolute !important;
-  z-index: 5 !important;
-  display: grid !important;
-  width: 58px !important;
-  height: 58px !important;
-  padding: 0 !important;
-  place-items: center !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #f5bd29 !important;
-  font-size: 51px !important;
-  font-weight: 400 !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-}
