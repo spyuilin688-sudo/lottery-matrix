@@ -524,12 +524,12 @@
   --number-ball-size: 24px;
   --number-font-size: 11px;
   --underline-width: 8px;
-  width: 22px;
-  height: 22px;
-  flex-basis: 22px;
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
 }
 .history-panel .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number {
-  font-size: 10.5px;
+  font-size: 11px;
 }
 .draw-history-panel { overflow: hidden; }
 .draw-history-row { display: grid; min-height: 52px; grid-template-columns: 52px 82px minmax(0, 1fr); align-items: center; border-top: 1px solid #352817; color: #bcb7ae; font-size: 10px; text-align: center; }
@@ -1418,8 +1418,8 @@
 .draw-history-row .history-lottery-ball { --number-ball-size: 27px; --number-font-size: 11px; --underline-width: 8px; width: 27px; height: 27px; flex: 0 0 27px; }
 .draw-history-row .history-lottery-ball .ball-number { font-size: 11px; }
 .draw-history-row .history-lottery-ball .ball-number::after { top: auto; bottom: 1px; }
-.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball { --number-ball-size: 22px; --number-font-size: 9px; --underline-width: 7px; width: 22px; height: 22px; flex-basis: 22px; }
-.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number { font-size: 9px; }
+.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball { --number-ball-size: 25px; --number-font-size: 10.5px; --underline-width: 8px; width: 25px; height: 25px; flex-basis: 25px; }
+.draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number { font-size: 10.5px; }
 
 .query-selects.three-cols { margin-bottom: 8px; }
 .reference-select select { font-size: 14px; font-weight: 600; }
@@ -2082,9 +2082,9 @@
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"],
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="大樂透"] {
-  width: 24px;
-  height: 24px;
-  flex-basis: 24px;
+  width: 25px;
+  height: 25px;
+  flex-basis: 25px;
 }
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="今彩539"] .ball-number,
@@ -2094,7 +2094,7 @@
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"] .ball-number,
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="大樂透"] .ball-number {
-  font-size: 10px;
+  font-size: 10.5px;
 }
 
 /* Matrix Explore supplied icon assets: one shared, uncropped display frame. */
@@ -2777,7 +2777,7 @@
 }
 
 .draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .number-ball-value {
-  font-size: 9px;
+  font-size: 10.5px;
 }
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="今彩539"] .number-ball-value,
@@ -2787,7 +2787,7 @@
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"] .number-ball-value,
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="大樂透"] .number-ball-value {
-  font-size: 10px;
+  font-size: 10.5px;
 }
 
 .draw-history-screen .draw-history-row .history-lottery-ball[data-lottery="六合彩"] .number-ball-value::after {
