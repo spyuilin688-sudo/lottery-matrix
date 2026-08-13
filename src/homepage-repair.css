@@ -1,19 +1,31 @@
 /* Clean rebuilt homepage layout. No absolute coordinate layer. */
 
-.mobile-scroll.home-screen,
 .home-screen {
-  overflow-x: hidden;
+  overflow: hidden;
   background: var(--lottery-neutral-950);
 }
 
-.mobile-scroll.home-screen {
-  overflow-y: hidden;
+.home-screen .mobile-scroll {
+  overflow: hidden;
+  touch-action: none;
 }
 
 .home-screen .mobile-scroll-content {
   height: 100%;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.home-screen .home-layout {
+  box-sizing: border-box;
+  display: grid;
+  width: min(100%, 390px);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  background: var(--lottery-neutral-950);
 }
 
 .home-screen .lottery-screen {
@@ -27,12 +39,12 @@
   --home-feature-gap: 3px;
   box-sizing: border-box;
   display: flex;
-  width: min(100%, 390px);
+  width: 100%;
   min-width: 0;
   min-height: 0;
-  height: calc(100dvh - var(--bottom-navigation-height) - var(--mobile-safe-area-height, 0px));
-  margin: 0 auto;
-  padding: 0 0 6px;
+  height: auto;
+  margin: 0;
+  padding: 0;
   flex-direction: column;
   align-items: center;
   gap: 0;
@@ -44,8 +56,7 @@
   .brand-header,
   .lottery-switcher,
   .latest-draw-card,
-  .matrix-status-section,
-  .home-bottom-group
+  .matrix-status-section
 ) {
   box-sizing: border-box;
   min-width: 0;
@@ -56,24 +67,30 @@
   flex: 0 0 var(--draw-card-height);
 }
 
-.home-screen .lottery-screen > :where(
-  .brand-header,
-  .home-bottom-group
-) {
+.home-screen .lottery-screen > .brand-header {
   flex: 0 0 auto;
   min-height: 0;
 }
 
 .home-screen .matrix-status-section {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .home-screen .home-bottom-group {
   display: grid;
   width: 100%;
-  margin-block-start: auto;
+  min-height: 0;
+  padding-bottom: 6px;
   gap: var(--home-gap-core-features);
+  align-self: end;
+}
+
+.home-screen .home-layout > .bottom-navigation {
+  position: relative;
+  inset: auto;
+  width: 100%;
 }
 
 .home-screen .lottery-screen > :where(
@@ -187,7 +204,7 @@
 }
 
 .home-screen .latest-draw-card {
-  --draw-main-ball-size: clamp(42px, 12.8vw, 50px);
+  --draw-main-ball-size: 44px;
   --draw-special-ball-size: clamp(30px, 8.8vw, 34px);
   --draw-special-label-height: 10px;
   --draw-card-height: calc((min(100vw, 390px) * 732 / 1672) - 4px);
@@ -326,20 +343,30 @@
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: var(--draw-main-ball-size);
-  --number-font-size: 21px;
-  --underline-width: 18px;
-  width: var(--draw-main-ball-size);
-  height: var(--draw-main-ball-size);
-  flex: 0 0 var(--draw-main-ball-size);
+  --number-font-size: 20px;
+  --number-y: 0px;
+  --underline-width: 16px;
+  --underline-height: 1px;
+  --underline-y: 1px;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
   --number-ball-size: var(--draw-special-ball-size);
   --number-font-size: 12px;
+  --number-y: 0px;
   --underline-width: 10px;
-  width: var(--draw-special-ball-size);
-  height: var(--draw-special-ball-size);
-  flex: 0 0 var(--draw-special-ball-size);
+  --underline-height: 1px;
+  --underline-y: 1px;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
+  --number-y: -1px;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-special="true"] {
+  --number-ball-size: var(--draw-special-ball-size);
+  --number-font-size: 12px;
+  --underline-width: 10px;
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
@@ -464,10 +491,11 @@
 
 .home-screen .matrix-status-section > .home-asset-image {
   width: 108%;
-  height: auto;
+  height: 100%;
   max-height: 100%;
   max-width: none;
   object-fit: contain;
+  object-position: center top;
 }
 
 .home-screen .matrix-core-banner > .home-asset-image {
