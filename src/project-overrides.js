@@ -1,10 +1,4 @@
 const PRIMARY_LOGO = '/assets/lottery/primary-brand-logo.jpg';
-function findProfileNavButton() {
-  return [...document.querySelectorAll('.bottom-navigation-item')].find((button) =>
-    button.querySelector('.bottom-navigation-label')?.textContent?.trim() === '我的'
-  );
-}
-
 function syncLogo(image) {
   if (!(image instanceof HTMLImageElement)) return;
   const target = new URL(PRIMARY_LOGO, location.href).href;
@@ -13,23 +7,6 @@ function syncLogo(image) {
 
 function syncFeatureHeaders() {
   document.querySelectorAll('.feature-brand-header .feature-brand-logo').forEach(syncLogo);
-
-  document.querySelectorAll('.profile-detail-screen .feature-brand-header[data-compact="true"]').forEach((compactHeader) => {
-    compactHeader.classList.add('profile-subpage-header');
-    syncLogo(compactHeader.querySelector('.feature-brand-logo'));
-
-    if (!compactHeader.querySelector('.profile-subpage-back')) {
-      const back = document.createElement('button');
-      back.type = 'button';
-      back.className = 'icon-button back-button profile-subpage-back';
-      back.setAttribute('aria-label', '返回');
-      back.setAttribute('data-scroll-drag', 'ignore');
-      back.textContent = '‹';
-      back.addEventListener('click', () => findProfileNavButton()?.click());
-      compactHeader.prepend(back);
-    }
-  });
-
 
   document.querySelectorAll('.mobile-page.notifications-scroll-lock').forEach((page) =>
     page.classList.remove('notifications-scroll-lock')
