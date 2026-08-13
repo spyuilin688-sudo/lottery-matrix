@@ -392,8 +392,16 @@ function getHistoryDrawNumbers(
 }
 
 function HistoryDate({ value }: { value: string }) {
-  const match = value.match(/^(\d{4}\/\d{2}\/\d{2})[（(][^）)]+[）)]$/);
-  return <>{match ? match[1] : value}</>;
+  const match = value.match(/^(\d{4})\/(\d{2}\/\d{2})(?:[（(]([^）)]+)[）)])?$/);
+
+  if (!match) return <>{value}</>;
+
+  return (
+    <span className="history-date-stack">
+      <strong>{match[1]}</strong>
+      <small>{match[2]}{match[3] ? `（${match[3]}）` : ""}</small>
+    </span>
+  );
 }
 
 function getDrawIssue(record: LotteryDrawRecord) {
