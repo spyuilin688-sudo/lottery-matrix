@@ -432,7 +432,7 @@ function HistoryList({
   const order = getHistoryOrder(numberOrder);
 
   return (
-    <section className="panel history-panel">
+    <section className="panel history-panel" data-lottery={lottery}>
       <header className="panel-heading">
         <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
         <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
