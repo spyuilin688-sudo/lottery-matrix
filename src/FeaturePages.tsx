@@ -145,9 +145,11 @@ function BrandHeader({
       {!compact || showBack ? (
         <div className="feature-brand-row">
           {showBack ? (
-            <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
-              <ChevronLeftIcon aria-hidden="true" />
-            </button>
+            <div className="back-button-slot">
+              <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
+                <ChevronLeftIcon aria-hidden="true" />
+              </button>
+            </div>
           ) : null}
           <div className="feature-brand-lockup">
             <BrandLogo />
