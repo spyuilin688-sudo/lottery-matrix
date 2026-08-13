@@ -130,14 +130,16 @@ function BrandHeader({
   onBack,
   action,
   compact = false,
+  hideTitle = false,
 }: {
   title: string;
   onBack: () => void;
   action?: React.ReactNode;
   compact?: boolean;
+  hideTitle?: boolean;
 }) {
   return (
-    <header className="feature-brand-header" data-compact={compact}>
+    <header className="feature-brand-header" data-compact={compact} data-hide-title={hideTitle}>
       {!compact ? (
         <div className="feature-brand-row">
           <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
@@ -150,7 +152,7 @@ function BrandHeader({
       ) : (
         <BrandLogo />
       )}
-      <h1>{title}</h1>
+      {!hideTitle ? <h1>{title}</h1> : null}
       {action ? <div className="feature-header-action">{action}</div> : null}
     </header>
   );
@@ -205,6 +207,7 @@ function FeatureShell({
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
+  const hideTitle = compactHeader || Boolean(quickActive);
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
@@ -212,6 +215,7 @@ function FeatureShell({
         onBack={() => onNavigate(backTarget)}
         action={headerAction}
         compact={logoOnlyHeader}
+        hideTitle={hideTitle}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
@@ -1064,23 +1068,15 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [searched, setSearched] = useTimedState("tongxing-searched", false);
   const [values, setValues] = useTimedState("tongxing-values", ["", "", ""]);
   const resultsEndRef = useRef<HTMLDivElement>(null);
+  const history = useLotteryHistory(lottery, 10);
+  const historyOrder = getHistoryOrder(order);
   const resultColumns = lottery === "六合彩" || lottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
-  const periodOffset = Math.max(1, Number(period.replace(/\D/g, "")) || 1);
-  const tongxingHistory = useLotteryHistory(lottery, periodOffset + 10);
-  const resultGroups = useMemo(() => {
-    const groups: Array<{ lockedEntry: LotteryDrawRecord; predictedEntry: LotteryDrawRecord }> = [];
-
-    for (let index = 0; index + periodOffset < tongxingHistory.length; index += 1) {
-      groups.push({
-        lockedEntry: tongxingHistory[index],
-        predictedEntry: tongxingHistory[index + periodOffset],
-      });
-    }
-
-    return groups.slice(0, 6);
-  }, [periodOffset, tongxingHistory]);
+  const resultGroups = history.slice(3, -1).map((lockedEntry, index) => ({
+    lockedEntry,
+    predictedEntry: history[index + 4],
+  })).filter((group) => group.predictedEntry);
 
   const updateInputValue = (index: number, rawValue: string) => {
     const nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
@@ -1109,11 +1105,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   ) => {
     const issue = getDrawIssue(entry);
     const date = getDrawDate(entry);
-    const draw = getHistoryDrawNumbers(
-      lottery,
-      entry,
-      getHistoryOrder(order),
-    );
+    const draw = getHistoryDrawNumbers(lottery, entry, historyOrder);
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
     const inputNumbers = new Set(values.filter(Boolean).map((value) => value.padStart(2, "0")));
 
@@ -1121,10 +1113,10 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       <div className="tongxing-table-row" data-row-type={type}>
         <span
           className="tongxing-period-cell"
-          aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date}`}
+          aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date.slice(0, 10)}`}
         >
           <strong>{issue}</strong>
-          <time><HistoryDate value={date} /></time>
+          <time>{date.slice(0, 10)}</time>
         </span>
         {displayedNumbers.map((number, index) => (
           <span
@@ -1216,7 +1208,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
                 {resultColumns.map((column) => <span key={column}>{column}</span>)}
               </div>
               {resultGroups.map(({ lockedEntry, predictedEntry }) => (
-                <article className="tongxing-result-group" key={lockedEntry[0]}>
+                <article className="tongxing-result-group" key={getDrawIssue(lockedEntry)}>
                   {renderResultRow(lockedEntry, "locked")}
                   {renderResultRow(predictedEntry, "predicted")}
                 </article>
@@ -1237,7 +1229,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [inputs, setInputs] = useTimedState("reference-inputs", ["02", "", ""]);
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
-  const referenceHistory = useLotteryHistory(lottery, getHistoryLimit(range));
+  const history = useLotteryHistory(lottery, getHistoryLimit(range));
+  const historyOrder = getHistoryOrder(order);
   const resetReference = () => {
     setInputs(["", "", ""]);
     setMarkedRows(new Set());
@@ -1325,13 +1318,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <header><h2>{lottery}（{order}）</h2><button type="button" onClick={resetReference}><ReloadIcon />刷新</button></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          {referenceHistory.map((record) => {
+          {history.map((record) => {
             const issue = getDrawIssue(record);
-            const draw = getHistoryDrawNumbers(
-              lottery,
-              record,
-              getHistoryOrder(order),
-            );
+            const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
             const displayedNumbers = draw.special
               ? [...draw.main, draw.special]
               : [...draw.main];
