@@ -29,9 +29,10 @@
 
 .tongxing-screen .same-star-fields {
   margin: 9px 0 8px;
-  grid-template-columns: repeat(3, 43px) minmax(48px, 1fr) 62px auto;
+  grid-template-columns: repeat(3, 43px) auto 62px auto;
   column-gap: 6px;
   align-items: center;
+  justify-content: start;
 }
 
 .tongxing-screen .same-star-fields input,
@@ -206,7 +207,7 @@
   }
 
   .tongxing-screen .same-star-fields {
-    grid-template-columns: repeat(3, 39px) minmax(44px, 1fr) 58px auto;
+    grid-template-columns: repeat(3, 39px) auto 58px auto;
     column-gap: 4px;
   }
 
