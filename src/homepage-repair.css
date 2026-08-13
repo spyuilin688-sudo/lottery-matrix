@@ -45,8 +45,7 @@
   .lottery-switcher,
   .latest-draw-card,
   .matrix-status-section,
-  .matrix-core-banner,
-  .home-shortcut-row
+  .home-bottom-group
 ) {
   box-sizing: border-box;
   min-width: 0;
@@ -59,8 +58,7 @@
 
 .home-screen .lottery-screen > :where(
   .brand-header,
-  .matrix-core-banner,
-  .home-shortcut-row
+  .home-bottom-group
 ) {
   flex: 0 0 auto;
   min-height: 0;
@@ -69,6 +67,13 @@
 .home-screen .matrix-status-section {
   flex: 0 0 auto;
   min-height: 0;
+}
+
+.home-screen .home-bottom-group {
+  display: grid;
+  width: 100%;
+  margin-block-start: auto;
+  gap: var(--home-gap-core-features);
 }
 
 .home-screen .lottery-screen > :where(
@@ -562,11 +567,11 @@
 }
 
 .home-screen .matrix-core-banner {
-  margin-block-start: auto;
+  margin-block-start: 0;
 }
 
 .home-screen .home-shortcut-row {
-  margin-block-start: var(--home-gap-core-features);
+  margin-block-start: 0;
 }
 
 
