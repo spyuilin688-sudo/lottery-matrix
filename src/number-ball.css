@@ -1,10 +1,10 @@
 .number-ball-component {
-  --number-ball-size: 56px;
-  --number-font-size: 23px;
-  --number-y: 0px;
+  --number-ball-size: 44px;
+  --number-font-size: 24px;
+  --number-y: -1px;
   --underline-width: 20px;
   --underline-height: 1px;
-  --underline-y: 1px;
+  --underline-y: 0px;
   position: relative;
   display: inline-grid;
   width: var(--number-ball-size);
@@ -64,60 +64,42 @@
 
 /* Formal usage sizes. NumberBall visuals are defined only in this file. */
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
-  --number-ball-size: clamp(42px, 12.8vw, 50px);
-  --number-font-size: 20px;
-  --number-y: 0px;
-  --underline-width: 16px;
+  --number-ball-size: 44px;
+  --number-font-size: 24px;
+  --number-y: -1px;
+  --underline-width: 20px;
   --underline-height: 1px;
-  --underline-y: 1px;
+  --underline-y: 0px;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
-  --number-ball-size: clamp(30px, 8.8vw, 34px);
-  --number-font-size: 12px;
-  --number-y: 0px;
-  --underline-width: 10px;
-  --underline-height: 1px;
-  --underline-y: 1px;
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
+  --number-ball-size: 32px;
+  --number-font-size: 17px;
   --number-y: -1px;
+  --underline-width: 14px;
+  --underline-height: 1px;
+  --underline-y: 0px;
 }
 
 .history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: 34px;
-  --number-font-size: 14px;
-  --number-y: 0px;
-  --underline-width: 13px;
+  --number-ball-size: 24px;
+  --number-font-size: 13px;
+  --number-y: -.5px;
+  --underline-width: 11px;
   --underline-height: 1px;
-  --underline-y: 1px;
-}
-
-.history-panel .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --underline-width: 12px;
+  --underline-y: 0px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
+  --number-ball-size: 24px;
+  --number-font-size: 13px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball {
-  --underline-width: 12px;
-  --underline-height: 1px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
-  --number-ball-size: 32px;
+  --number-ball-size: 24px;
   --number-font-size: 13px;
-  --number-y: 0px;
-  --underline-y: .25px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
-  --number-y: 0px;
-  --underline-y: .5px;
+  --number-y: -.5px;
+  --underline-width: 11px;
+  --underline-height: 1px;
+  --underline-y: 0px;
 }
