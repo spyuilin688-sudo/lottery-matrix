@@ -15,9 +15,9 @@ test("首頁號碼對照單導向號碼對照單頁面", () => {
 
 test("返回鍵由父容器自然排列且維持指定尺寸", () => {
   assert.match(featurePagesSource, /className="back-button-slot"/);
-  assert.match(headerCss, /\.feature-brand-row\s*\{[^}]*display: grid;[^}]*width: calc\(100% \+ 8px\);[^}]*grid-template-columns: 100%;/s);
-  assert.match(headerCss, /\.feature-brand-lockup\s*\{[^}]*width: calc\(100% - 8px\) !important;/s);
-  assert.match(headerCss, /\.back-button-slot\s*\{[^}]*padding-top: 8px;/s);
+  assert.match(headerCss, /\.feature-brand-row\s*\{[^}]*display: grid;[^}]*width: calc\(100% \+ 16px\);[^}]*grid-template-columns: 100%;/s);
+  assert.match(headerCss, /\.feature-brand-lockup\s*\{[^}]*width: calc\(100% - 16px\) !important;/s);
+  assert.match(headerCss, /\.back-button-slot\s*\{[^}]*height: 60px;[^}]*padding-top: 16px;/s);
   assert.doesNotMatch(overrideCss, /\.feature-brand-header:not\(\[data-compact='true'\]\) \.feature-brand-row/);
   assert.doesNotMatch(featurePagesCss, /\.feature-screen:not\(\.compact-feature-screen\) \.feature-brand-row/);
   const backButtonRule = headerCss.match(/\.feature-brand-header \.back-button\s*\{([^}]*)\}/s)?.[1] ?? "";
