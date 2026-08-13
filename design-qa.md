@@ -1,48 +1,31 @@
-# Design QA — 功能頁「< 樂彩 Logo」共用頁首
+# 底部導覽 Design QA
 
-- Source visual truth path: `/workspace/scratch/7a4acde526b9/upload/01-1000057903.png`
-- Implementation screenshot path: `/workspace/sites/lottery-matrix-20260810/qa-feature-page.png`
-- Combined focused comparison path: `/workspace/sites/lottery-matrix-20260810/qa-header-comparison.png`
-- Source pixels: 1536 × 475
-- Implementation screenshot pixels: 371 × 139
-- CSS viewport/state: Pixel 10 mobile runtime，Matrix 同星功能頁
-- Density normalization: source resized to the rendered Logo region 343 × 106 and compared beside the matching implementation crop
+## 驗收基準
 
-## Full-view comparison evidence
+- 基準畫布：390px 行動版。
+- 參考圖導覽本體：原圖約 1503×365；換算後約 382×93，水平置中。
+- 既有入口與行為：首頁、快捷、通知、我的；保留快捷短按與長按三秒設定。
+- 狀態：目前頁面以金色六角框、金色文字與 16×3 指示條呈現；其他頁面使用銀色六角框、白字與 4×4 圓點。
 
-The browser-rendered Matrix 同星 page shows the supplied combined back-arrow and 樂彩 Matrix asset centered inside the mobile screen. The asset is complete, has no horizontal overflow, and the page title begins after the specified 8px CSS margin.
+## 實作證據
 
-## Focused region comparison evidence
+| 項目 | React | Figma |
+| --- | --- | --- |
+| 視覺面板 | 382×93，置中 | 四個 variant 皆為 390×93，內層面板 382×93 |
+| 四入口 | 4 個 button，點擊區皆大於 48×48 | 8 個項目 variant（4 項目 × 一般／選中） |
+| 選取狀態 | `aria-current="page"` 隨首頁／通知／我的切換 | `目前頁面`：首頁／快捷／通知／我的 |
+| 首頁實例 | 共用正式元件 | `90:176`，390×93，y=751，貼齊 390×844 畫布底部 |
 
-The combined comparison confirms that the implementation uses the exact supplied raster asset with the same crop, proportions, black background, gold light effects, colored 樂彩 lettering, Matrix wordmark, and LOTTERY MATRIX line.
+## 視覺比對結果
 
-- Fonts and typography: all typography inside the supplied Logo remains raster content and is unchanged; the existing page title typography remains unchanged.
-- Spacing and layout rhythm: the shared header uses identical 16px side padding, full available width, auto height, centered placement, and an exact 8px margin to the next element.
-- Colors and visual tokens: the supplied asset colors are unchanged.
-- Image quality and asset fidelity: the 1536 × 475 source is used directly; natural dimensions load correctly and no stretching, cropping, or overflow was observed.
-- Copy and content: no page title, page content, navigation label, or functionality was changed.
+- 通過：面板比例、四項層級、金黑配色、六角框尺寸差、文字位置、選取條與未選圓點。
+- 通過：參考圖與 React 預覽已在同一輪視覺檢查中比對，導覽未遮住 Android 系統導覽列。
+- 通過：React 的首頁、通知、我的選取狀態會正確跟頁面切換；快捷既有事件程式碼未變更。
+- 刻意不使用附件作為背景素材：附件實際為無透明度 JPEG，棋盤格已烙入；機甲邊框、電路線與光效改以 CSS／Figma 向量與漸層重建。
 
-## Interaction verification
+## 工程驗證
 
-- The combined Logo header remains the return control and successfully returns to the home screen.
-- The 通知 bottom-navigation page was checked separately: it remains a compact header and does not use the replacement.
-- Browser-rendered asset state: complete, natural size 1536 × 475.
-- Application overflow for the Logo container: 0px.
-- Application console: no app-origin errors; observed messages came only from the cloud-browser extension.
-
-## Findings
-
-No actionable P0, P1, or P2 mismatch remains in the requested scope.
-
-## Comparison history
-
-- Initial implementation replaced the separate arrow and Logo with the supplied combined asset and set the next-element margin to 8px.
-- The first inspection found page-specific minimum-height rules on Matrix 同星, profile detail pages, 號碼對照單, 連碰立柱計算機, 歷史開獎號碼, and 啟動碼 pages.
-- Those page-specific header height restrictions were removed; the 啟動碼 page's 12px title margin was normalized to 8px.
-- Post-fix browser evidence reports `min-height: 0px`, `margin-top: 8px`, and zero overflow.
-
-## Follow-up polish
-
-No P3 item is required for this replacement.
-
-final result: passed
+- `node --test tests/bottom-navigation.test.mjs tests/home-navigation-and-back-button.test.mjs`：5/5 通過。
+- `npm run check:runtime`：28 個受保護行動執行環境檔案完整。
+- `npm run build`：TypeScript 與 Vite production build 通過。
+- 瀏覽器實測：底部導覽可見、首頁 → 通知 → 我的 → 首頁的 `aria-current` 狀態正確。

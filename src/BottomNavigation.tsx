@@ -62,11 +62,6 @@ export function BottomNavigation({
       <span className="bottom-navigation-topline" aria-hidden="true" />
       <span className="bottom-navigation-side-rail bottom-navigation-side-rail--left" aria-hidden="true" />
       <span className="bottom-navigation-side-rail bottom-navigation-side-rail--right" aria-hidden="true" />
-      <span className="bottom-navigation-brand-core" aria-hidden="true">
-        <span className="bottom-navigation-brand-mark">
-          <img src="/assets/lottery/brand-logo-transparent.png" alt="" draggable={false} />
-        </span>
-      </span>
 
       {NAVIGATION_ITEMS.map(({ label, icon: Icon, screen }) => {
         const selected = label === "快捷" ? active === label || quickActive : active === label && !quickActive;

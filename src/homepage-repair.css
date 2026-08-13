@@ -95,7 +95,9 @@
 .home-screen .home-layout > .bottom-navigation {
   position: relative;
   inset: auto;
-  width: 100%;
+  left: 50%;
+  width: min(calc(100% - 8px), 382px);
+  transform: translateX(-50%);
 }
 
 .home-screen .lottery-screen > :where(
