@@ -491,6 +491,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 94.179487179%;
+  aspect-ratio: 376.1 / 76.8;
   min-height: 0;
   gap: var(--home-feature-gap);
   align-items: stretch;
@@ -502,10 +503,10 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  height: auto;
+  height: 100%;
   min-height: 0;
   padding: 0;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   border: 0;
   border-radius: 0;
@@ -516,10 +517,10 @@
 
 .home-screen .home-shortcut img {
   display: block;
-  width: 104%;
-  height: auto;
+  width: auto;
+  height: 100%;
   max-height: 100%;
-  max-width: none;
+  max-width: 100%;
   object-fit: contain;
   object-position: center;
   border-radius: 0;
