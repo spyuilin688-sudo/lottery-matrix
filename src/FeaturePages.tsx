@@ -131,20 +131,24 @@ function BrandHeader({
   action,
   compact = false,
   hideTitle = false,
+  showBack = true,
 }: {
   title: string;
   onBack: () => void;
   action?: React.ReactNode;
   compact?: boolean;
   hideTitle?: boolean;
+  showBack?: boolean;
 }) {
   return (
     <header className="feature-brand-header" data-compact={compact} data-hide-title={hideTitle}>
-      {!compact ? (
+      {!compact || showBack ? (
         <div className="feature-brand-row">
-          <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
-            <ChevronLeftIcon aria-hidden="true" />
-          </button>
+          {showBack ? (
+            <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
+              <ChevronLeftIcon aria-hidden="true" />
+            </button>
+          ) : null}
           <div className="feature-brand-lockup">
             <BrandLogo />
           </div>
@@ -216,6 +220,7 @@ function FeatureShell({
         action={headerAction}
         compact={logoOnlyHeader}
         hideTitle={hideTitle}
+        showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile")}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
