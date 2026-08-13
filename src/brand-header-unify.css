@@ -19,11 +19,24 @@
 
 .feature-brand-row {
   position: relative;
-  display: flex;
-  width: 100%;
+  display: grid;
+  width: calc(100% + 8px);
   height: auto;
+  grid-template-columns: 100%;
   align-items: center;
   justify-content: center;
+}
+
+.back-button-slot {
+  z-index: 2;
+  grid-area: 1 / 1;
+  display: flex;
+  box-sizing: border-box;
+  width: 44px;
+  height: 52px;
+  padding-top: 8px;
+  align-self: center;
+  justify-self: start;
 }
 
 .feature-brand-lockup,
@@ -38,6 +51,12 @@
   border: 0;
   background: transparent;
   line-height: 0;
+}
+
+.feature-brand-lockup {
+  grid-area: 1 / 1;
+  width: calc(100% - 8px) !important;
+  justify-self: center;
 }
 
 .feature-brand-lockup .shared-brand-logo,
@@ -57,15 +76,10 @@
 }
 
 .feature-brand-header .back-button {
-  position: absolute;
-  z-index: 2;
-  top: calc(50% + 4px);
-  left: -4px;
   box-sizing: border-box;
   width: 44px;
   height: 44px;
   padding: 0;
-  transform: translateY(-50%);
 }
 
 .feature-brand-header .back-button svg {
