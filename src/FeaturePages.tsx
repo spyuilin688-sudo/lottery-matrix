@@ -150,7 +150,7 @@ function BrandHeader({
       ) : (
         <BrandLogo />
       )}
-      {!compact ? <h1>{title}</h1> : null}
+      <h1>{title}</h1>
       {action ? <div className="feature-header-action">{action}</div> : null}
     </header>
   );
