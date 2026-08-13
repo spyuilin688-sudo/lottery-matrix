@@ -341,12 +341,6 @@ export function BrandLoading({ visible, onComplete, className = "" }: BrandLoadi
   return createPortal(<section className={`brand-loading ${className}`.trim()} role="status" aria-label="Loading" aria-live="polite" data-testid="brand-loading"><video className="brand-loading-video" src="/assets/lottery/matrix-startup.mp4" autoPlay muted playsInline preload="auto" onEnded={onComplete} onError={onComplete} aria-label="樂彩 Matrix 啟動畫面" /></section>, host);
 }
 
-function BottomNavigationPortal({ active, onNavigate, onQuickOpen, onQuickConfigure }: { active: "首頁" | "快捷" | "通知" | "我的"; onNavigate: (screen: ScreenId) => void; onQuickOpen: () => void; onQuickConfigure: () => void }) {
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  useEffect(() => { setHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
-  return host ? createPortal(<BottomNavigation active={active} onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />, host) : null;
-}
-
 export type PrototypeProps = { isLoading?: boolean };
 export default function Prototype({ isLoading = false }: PrototypeProps) {
   const [startupVisible, setStartupVisible] = useState(isLoading);
@@ -384,18 +378,20 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   return (
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
-      <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-        <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-        <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
-        <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
-        <MatrixStatusSection onOpen={() => navigate("status")} />
+      <div className="home-layout">
+        <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
+          <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
+          <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
+          <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
+          <MatrixStatusSection onOpen={() => navigate("status")} />
+        </main>
         <div className="home-bottom-group">
           <MatrixCoreBanner onOpen={() => navigate("explore")} />
           <HomeShortcutRow onNavigate={navigate} />
         </div>
-        <BottomNavigationPortal active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
-        {quickSettings}
-      </main>
+        <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
+      </div>
+      {quickSettings}
     </MobileScroll>
   );
 }
