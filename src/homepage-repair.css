@@ -84,9 +84,9 @@
   --home-features-height: calc((min(100vw, 390px) - 6px) * 76.8 / 376.1);
   display: grid;
   width: 100%;
-  height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 6px);
-  min-height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 6px);
-  padding-bottom: 6px;
+  height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 8px);
+  min-height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 8px);
+  padding-bottom: 8px;
   grid-template-rows: var(--home-core-height) var(--home-features-height);
   gap: var(--home-gap-core-features);
   align-self: end;
@@ -165,6 +165,7 @@
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
   appearance: none;
+  position: relative;
   display: flex;
   box-sizing: border-box;
   min-width: 0;
@@ -182,8 +183,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::before {
+  position: absolute;
+  z-index: 0;
+  inset: 1px;
+  border-radius: 7px;
+  content: "";
+  opacity: .7;
+  pointer-events: none;
+}
+
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card > img {
   display: block;
+  position: relative;
+  z-index: 1;
   width: 115%;
   max-width: none;
   height: 92%;
@@ -199,11 +212,25 @@
     linear-gradient(135deg, rgba(255, 105, 91, .82), rgba(116, 39, 37, .58)) border-box;
 }
 
+.home-screen .lottery-card[data-lottery="今彩539"]::before {
+  background:
+    radial-gradient(ellipse 128% 92% at 62% -16%, transparent 58%, rgba(152, 16, 20, .62) 60%, rgba(246, 46, 25, .26) 65%, transparent 69%),
+    radial-gradient(ellipse 140% 92% at 28% 116%, transparent 57%, rgba(255, 49, 18, .64) 59%, rgba(255, 139, 31, .2) 66%, transparent 70%),
+    radial-gradient(circle at 82% 21%, rgba(255, 81, 45, .22) 0 1px, transparent 2px) 0 0 / 8px 8px;
+}
+
 .home-screen .lottery-card[data-lottery="天天樂"] {
   background:
     radial-gradient(circle at 50% 52%, rgba(19, 91, 181, .28), transparent 70%) padding-box,
     linear-gradient(145deg, rgba(5, 18, 38, .9), rgba(5, 9, 18, .96)) padding-box,
     linear-gradient(135deg, rgba(105, 146, 200, .76), rgba(49, 66, 91, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"]::before {
+  background:
+    radial-gradient(ellipse 132% 96% at 35% 114%, transparent 55%, rgba(15, 90, 220, .66) 58%, rgba(46, 147, 255, .24) 65%, transparent 70%),
+    radial-gradient(circle at 28% 26%, rgba(49, 119, 219, .2) 0 1px, transparent 2px) 0 0 / 9px 9px,
+    radial-gradient(ellipse 72% 60% at 50% 48%, rgba(7, 59, 129, .28), transparent 72%);
 }
 
 .home-screen .lottery-card[data-lottery="六合彩"] {
@@ -213,11 +240,25 @@
     linear-gradient(135deg, rgba(102, 132, 151, .72), rgba(44, 61, 73, .58)) border-box;
 }
 
+.home-screen .lottery-card[data-lottery="六合彩"]::before {
+  background:
+    radial-gradient(ellipse 142% 92% at 30% 112%, transparent 54%, rgba(116, 23, 170, .48) 57%, rgba(22, 85, 226, .3) 61%, transparent 68%),
+    radial-gradient(ellipse 116% 84% at 70% -12%, transparent 58%, rgba(40, 164, 62, .35) 61%, rgba(225, 34, 26, .3) 65%, transparent 70%),
+    radial-gradient(circle at 82% 22%, rgba(53, 148, 154, .2) 0 1px, transparent 2px) 0 0 / 8px 8px;
+}
+
 .home-screen .lottery-card[data-lottery="大樂透"] {
   background:
     radial-gradient(circle at 50% 52%, rgba(151, 105, 21, .3), transparent 70%) padding-box,
     linear-gradient(145deg, rgba(29, 21, 5, .9), rgba(10, 9, 7, .96)) padding-box,
     linear-gradient(135deg, rgba(177, 148, 91, .76), rgba(80, 67, 42, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"]::before {
+  background:
+    radial-gradient(ellipse 140% 100% at 42% 110%, transparent 54%, rgba(230, 151, 26, .6) 57%, rgba(255, 199, 73, .22) 64%, transparent 70%),
+    radial-gradient(ellipse 78% 74% at 83% 28%, transparent 56%, rgba(172, 114, 27, .34) 59%, transparent 63%),
+    repeating-radial-gradient(ellipse at 82% 22%, transparent 0 7px, rgba(209, 152, 59, .12) 8px 9px, transparent 10px 15px);
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] > img {
