@@ -453,7 +453,7 @@ function HistoryDate({ value }: { value: string }) {
   return (
     <span className="history-date-stack">
       <strong>{match[1]}</strong>
-      <small>{match[2]}（{weekday}）</small>
+      <small>{match[2]} ({weekday})</small>
     </span>
   );
 }
