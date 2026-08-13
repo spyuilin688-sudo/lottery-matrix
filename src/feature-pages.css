@@ -492,7 +492,7 @@
 }
 .panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 12px; white-space: nowrap; }
 .history-table { margin-top: 8px; }
-.history-row { display: grid; min-height: 52px; grid-template-columns: 48px 76px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
+.history-row { display: grid; min-height: 42px; grid-template-columns: 48px 78px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
 .history-row > span { min-width: 0; text-align: center; }
 .history-row > span + span {
   display: flex;
@@ -513,9 +513,9 @@
   font-variant-numeric: tabular-nums;
 }
 .history-date-stack { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
-.history-date-stack strong { color: #f1eee8; font-size: 11px; font-weight: 700; }
-.history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 9.5px; font-weight: 500; white-space: nowrap; }
-.history-head { min-height: 42px; color: #b58e3e; font-size: 13.5px; font-weight: 700; }
+.history-date-stack strong { color: #f1eee8; font-size: 9.5px; font-weight: 700; }
+.history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 8.5px; font-weight: 500; white-space: nowrap; }
+.history-head { color: #b58e3e; font-size: 13.5px; font-weight: 700; }
 .history-head > span { text-align: center; }
 .history-row:not(.history-head) > span:first-child { font-size: 11.5px; white-space: nowrap; }
 .history-row:not(.history-head) > span:nth-child(2) { color: #fff; font-size: 10.5px; }
@@ -530,7 +530,7 @@
   gap: 0;
 }
 
-.history-main-numbers { gap: 8px; }
+.history-main-numbers { gap: 7px; }
 .history-special-number {
   margin-left: 0;
   gap: 4px;
@@ -538,11 +538,11 @@
 }
 
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
-  gap: 2px;
+  gap: 3px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .history-special-number {
-  margin-left: 5px;
+  margin-left: 6px;
   gap: 4px;
 }
 
