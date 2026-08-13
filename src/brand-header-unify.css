@@ -59,8 +59,8 @@
 .feature-brand-header .back-button {
   position: absolute;
   z-index: 2;
-  top: 50%;
-  left: 0;
+  top: calc(50% + 4px);
+  left: -4px;
   box-sizing: border-box;
   width: 44px;
   height: 44px;
@@ -69,8 +69,8 @@
 }
 
 .feature-brand-header .back-button svg {
-  width: 37px;
-  height: 37px;
+  width: 40px;
+  height: 40px;
 }
 
 .feature-brand-header h1 {
