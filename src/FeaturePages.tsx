@@ -112,6 +112,33 @@ function useTimedState<T>(key: string, initialValue: T) {
 }
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
+const MATRIX_PAGE_ITEMS = [
+  { screen: "explore", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索.png" },
+  { screen: "tianyan", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍.png" },
+  { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工.png" },
+] as const;
+
+function MatrixPageSwitcher({ current, onNavigate }: {
+  current: "explore" | "tianyan" | "tiangong";
+  onNavigate: Navigate;
+}) {
+  return (
+    <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
+      {MATRIX_PAGE_ITEMS.map((item) => (
+        <button
+          type="button"
+          data-selected={current === item.screen}
+          aria-current={current === item.screen ? "page" : undefined}
+          aria-label={item.label}
+          onClick={() => onNavigate(item.screen)}
+          key={item.screen}
+        >
+          <img src={item.image} alt="" draggable={false} />
+        </button>
+      ))}
+    </nav>
+  );
+}
 const ROAD_VALIDATION_SAMPLE_HISTORY = [
   ["5887", "2026/06/12（四）", ["02", "03", "18", "29", "31"]],
   ["5888", "2026/06/13（五）", ["04", "05", "06", "34", "36"]],
@@ -158,8 +185,12 @@ function BrandHeader({
       ) : (
         <BrandLogo />
       )}
-      {!hideTitle ? <h1>{title}</h1> : null}
-      {action ? <div className="feature-header-action">{action}</div> : null}
+      {!hideTitle ? (
+        <div className="feature-title-card">
+          <h1>{title}</h1>
+          {action ? <div className="feature-title-actions">{action}</div> : null}
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -511,11 +542,23 @@ export function DrawHistoryPage({
     setNumberOrder("依號碼由小到大排序");
   };
 
-  const filterButton = (
-    <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
-      <span className="filter-funnel" aria-hidden="true" />
-      篩選
-    </button>
+  const historyTitleActions = (
+    <div className="history-title-actions">
+      <div className="history-title-lottery native-select">
+        <select
+          aria-label="彩種"
+          value={lottery}
+          onChange={(event) => setLottery(event.target.value as LotteryId)}
+        >
+          {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+        </select>
+        <ChevronDownIcon aria-hidden="true" />
+      </div>
+      <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
+        <span className="filter-funnel" aria-hidden="true" />
+        篩選條件
+      </button>
+    </div>
   );
 
   return (
@@ -524,9 +567,8 @@ export function DrawHistoryPage({
       onNavigate={onNavigate}
       backTarget={backTarget}
       className="draw-history-screen"
-      headerAction={filterButton}
+      headerAction={historyTitleActions}
     >
-      <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="panel draw-history-panel" aria-label={`${lottery}歷史開獎號碼`}>
         <div className="draw-history-row draw-history-head">
           <span>期數</span>
@@ -817,16 +859,7 @@ export function MatrixExplorePage({
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
-      headerAction={title === "Matrix 探索" ? (
-        <div className="matrix-explore-tool-actions" aria-label="Matrix 探索工具">
-          <button type="button" onClick={() => onNavigate("tianyan")} aria-label="進入 Matrix 天衍">
-            <img src="/assets/matrix-explore/tianyan.jpg" alt="天衍" />
-          </button>
-          <button type="button" onClick={() => onNavigate("tiangong")} aria-label="進入 Matrix 天工">
-            <img src="/assets/matrix-explore/tiangong.jpg" alt="天工" />
-          </button>
-        </div>
-      ) : undefined}
+      headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}
     >
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
@@ -1075,7 +1108,13 @@ function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const positionOptions = ["固定", "依序遞增", "依序遞減"];
   const roadOptions = ["加減版路", "合值版路"];
   return (
-    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen">
+    <FeatureShell
+      title="Matrix 天工"
+      onNavigate={onNavigate}
+      backTarget="explore"
+      className="matrix-explore-screen matrix-tiangong-screen"
+      headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}
+    >
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
