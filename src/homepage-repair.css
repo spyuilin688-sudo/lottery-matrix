@@ -78,9 +78,9 @@
 }
 
 .home-screen .lottery-switcher {
-  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 42px);
+  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 58px);
   position: relative;
-  display: grid;
+  display: block;
   width: 100%;
   height: var(--lottery-switcher-height);
   padding: 0;
@@ -88,7 +88,6 @@
 }
 
 .home-screen .lottery-switcher > .home-asset-image {
-  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
   object-fit: fill;
@@ -210,24 +209,24 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
-  line-height: 13px;
+  font-size: 10px;
+  line-height: 12px;
   letter-spacing: .3px;
   white-space: nowrap;
 }
 
 .home-screen .latest-draw-card .draw-date-icon {
-  width: 11px;
-  height: 11px;
-  flex: 0 0 11px;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
   color: #dba84c;
 }
 
 .home-screen .latest-draw-card .draw-order {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 118px;
-  height: 34px;
+  width: 110px;
+  height: 30px;
   justify-self: center;
   border: 1px solid rgba(230, 177, 76, .46);
   border-radius: 14px;
@@ -240,7 +239,7 @@
   border: 0;
   background: transparent;
   color: rgba(255, 236, 185, .72);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -263,6 +262,7 @@
   color: #f0c86c;
   font-size: 12px;
   font-weight: 700;
+  gap: 4px;
   white-space: nowrap;
 }
 
@@ -372,7 +372,7 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 20px auto minmax(0, 1fr);
+  grid-template-columns: 16px auto minmax(0, 1fr);
   gap: 6px;
   min-width: 0;
   align-items: center;
@@ -383,8 +383,8 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: #e6b34f;
 }
 
@@ -486,9 +486,9 @@
 
 .home-screen .home-shortcut img {
   display: block;
-  width: 100%;
+  width: 104%;
   height: auto;
-  max-width: 100%;
+  max-width: none;
   object-position: center;
   border-radius: 0;
   clip-path: none;
