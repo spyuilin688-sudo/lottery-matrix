@@ -448,7 +448,7 @@
 .device-screen[data-device="iphone"] .history-panel .panel-heading .section-title {
   white-space: nowrap;
 }
-.panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 11px; white-space: nowrap; }
+.panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 12px; white-space: nowrap; }
 .history-table { margin-top: 8px; }
 .history-row { display: grid; min-height: 52px; grid-template-columns: 48px 76px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
 .history-row > span { min-width: 0; text-align: center; }
@@ -473,7 +473,7 @@
 .history-date-stack { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
 .history-date-stack strong { color: #f1eee8; font-size: 11px; font-weight: 700; }
 .history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 9.5px; font-weight: 500; white-space: nowrap; }
-.history-head { color: #b58e3e; font-size: 13.5px; font-weight: 700; }
+.history-head { min-height: 42px; color: #b58e3e; font-size: 13.5px; font-weight: 700; }
 .history-head > span { text-align: center; }
 .history-row:not(.history-head) > span:first-child { font-size: 11.5px; white-space: nowrap; }
 .history-row:not(.history-head) > span:nth-child(2) { color: #fff; font-size: 10.5px; }
@@ -575,7 +575,7 @@
   --underline-y: .5px;
 }
 
-.draw-history-panel { overflow: hidden; }
+.draw-history-panel { overflow: visible; }
 .draw-history-row { display: grid; min-height: 62px; grid-template-columns: 48px 78px minmax(0, 1fr); align-items: center; border-top: 1px solid #352817; color: #bcb7ae; font-size: 10px; text-align: center; }
 .draw-history-row:first-child { border-top: 0; }
 .draw-history-row > span { min-width: 0; }
@@ -1965,18 +1965,6 @@
 }
 
 /* v55 scoped density and hierarchy refinements */
-.history-panel .panel-heading button {
-  font-size: 12px;
-}
-
-.history-panel .history-head {
-  min-height: 36px;
-}
-
-.history-panel .history-row:not(.history-head) > span:first-child {
-  font-size: 11px;
-}
-
 .repeat-stats-heading > span {
   color: #9e9a93;
 }
