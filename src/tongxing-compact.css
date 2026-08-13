@@ -1,225 +1,49 @@
 /* Matrix 同星：唯一頁面專屬版面來源。共用元件基礎樣式仍由 feature-pages.css 管理。 */
-.tongxing-screen > .feature-body {
-  padding-inline: 4px;
-}
-
-.tongxing-screen .tongxing-query {
-  padding: 8px 10px 9px;
-}
-
-.tongxing-screen .query-selects {
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-  gap: 6px;
-}
-
-.tongxing-screen .query-selects .select-box {
-  height: 40px;
-}
-
-.tongxing-screen .query-selects select {
-  padding-inline: 10px 28px;
-  font-weight: 700;
-  text-align: center;
-  text-align-last: center;
-}
-
-.tongxing-screen .tongxing-order-select select {
-  font-size: 11.5px;
-}
-
-.tongxing-screen .same-star-fields {
-  margin: 9px 0 8px;
-  grid-template-columns: repeat(3, 43px) auto 62px auto;
-  column-gap: 6px;
-  align-items: center;
-  justify-content: start;
-}
-
+.tongxing-screen > .feature-body { padding-left: 4px; padding-right: 4px; }
+.tongxing-screen .tongxing-query { padding: 8px 10px 9px; }
+.tongxing-screen .query-selects { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 6px; }
+.tongxing-screen .query-selects .select-box { height: 40px; }
+.tongxing-screen .query-selects select { padding-inline: 10px 28px; font-weight: 700; text-align: center; text-align-last: center; }
+.tongxing-screen .tongxing-order-select select { font-size: 11.5px; }
+.tongxing-screen .same-star-fields { margin: 9px 0 8px; grid-template-columns: repeat(3, 43px) auto 62px auto; column-gap: 6px; align-items: center; justify-content: start; }
 .tongxing-screen .same-star-fields input,
-.tongxing-screen .same-star-period-select {
-  height: 40px;
-}
-
-.tongxing-screen .same-star-fields input {
-  padding-inline: 4px;
-  border-color: #805a25;
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.tongxing-screen .same-star-fields input:focus-visible {
-  border-color: #d4a238;
-  outline: 1px solid rgba(212, 162, 56, .45);
-  outline-offset: 1px;
-}
-
-.tongxing-screen .same-star-fields > span {
-  align-self: center;
-  color: #d5cec2;
-  font-size: 15px;
-  line-height: 18px;
-}
-
-.tongxing-screen .same-star-period-select select {
-  padding-inline: 6px 20px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.tongxing-screen .same-star-period-select svg {
-  right: 4px;
-  width: 13px;
-}
-
-.tongxing-screen .primary-action {
-  height: 44px;
-  font-size: 18px;
-}
-
-.tongxing-screen .primary-action svg {
-  width: 22px;
-  height: 22px;
-}
-
-.tongxing-screen .history-panel {
-  margin-top: 8px;
-  padding: 8px;
-}
-
-.tongxing-screen .panel-heading {
-  align-items: center;
-}
-
-.tongxing-screen .panel-heading .history-panel-toggle {
-  display: flex;
-  min-width: 0;
-  padding: 0;
-  align-items: center;
-  gap: 5px;
-  color: inherit;
-  text-align: left;
-}
-
-.tongxing-screen .history-panel-toggle .section-title {
-  min-width: 0;
-  font-size: 12px;
-}
-
-.tongxing-screen .history-panel-toggle .section-title > span {
-  height: 17px;
-}
-
-.tongxing-screen .history-panel-toggle > svg {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
-  color: #d8a93e;
-  transition: transform .2s ease;
-}
-
-.tongxing-screen .history-panel-toggle > svg[data-open="true"] {
-  transform: rotate(180deg);
-}
-
-.tongxing-screen .panel-heading > button:last-child {
-  padding: 0;
-  font-size: 10.5px;
-}
-
-.tongxing-screen .history-table[hidden] {
-  display: none;
-}
-
-.tongxing-screen .ornament-title {
-  margin: 8px 0 6px;
-  font-size: 16px;
-}
-
-.tongxing-screen .tongxing-results {
-  width: 100%;
-}
-
-.tongxing-screen .tongxing-table-row {
-  grid-template-columns: 64px repeat(5, minmax(0, 1fr));
-  align-items: center;
-}
-
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row {
-  grid-template-columns: 58px repeat(7, minmax(0, 1fr));
-}
-
-.tongxing-screen .tongxing-table-row > span {
-  min-height: 31px;
-  align-items: center;
-  font-size: 15px;
-}
-
-.tongxing-screen .tongxing-table-head {
-  min-height: 33px;
-}
-
-.tongxing-screen .tongxing-table-head > span {
-  min-height: 33px;
-  font-size: 16px;
-}
-
-.tongxing-screen .tongxing-result-group {
-  border-top-width: 2px;
-}
-
-.tongxing-screen .tongxing-result-group + .tongxing-result-group {
-  margin-top: 8px;
-  border-top: 1px solid #a8772f;
-  box-shadow: 0 -6px 0 #02080d;
-}
-
-.tongxing-screen .tongxing-period-cell {
-  min-height: 39px !important;
-  padding: 1px 2px;
-  gap: 0;
-}
-
-.tongxing-screen .tongxing-period-cell strong {
-  font-size: 12.5px;
-  line-height: 15px;
-}
-
-.tongxing-screen .tongxing-period-cell time {
-  font-size: 8px;
-  line-height: 11px;
-}
-
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span {
-  font-size: 13.5px;
-}
-
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span {
-  font-size: 14.5px;
-}
-
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong {
-  font-size: 11.5px;
-}
+.tongxing-screen .same-star-period-select { height: 40px; }
+.tongxing-screen .same-star-fields input { padding-inline: 4px; border-color: #805a25; font-size: 17px; font-weight: 600; }
+.tongxing-screen .same-star-fields input:focus-visible { border-color: #d4a238; outline: 1px solid rgba(212, 162, 56, .45); outline-offset: 1px; }
+.tongxing-screen .same-star-fields > span { align-self: center; color: #d5cec2; font-size: 15px; line-height: 18px; }
+.tongxing-screen .same-star-period-select select { padding-inline: 6px 20px; font-size: 14px; font-weight: 700; }
+.tongxing-screen .same-star-period-select svg { right: 4px; width: 13px; }
+.tongxing-screen .primary-action { height: 44px; font-size: 18px; }
+.tongxing-screen .primary-action svg { width: 22px; height: 22px; }
+.tongxing-screen .history-panel { margin-top: 8px; padding: 11px; }
+.tongxing-screen .panel-heading { align-items: center; }
+.tongxing-screen .panel-heading .history-panel-toggle { display: flex; min-width: 0; padding: 0; align-items: center; gap: 5px; color: inherit; text-align: left; }
+.tongxing-screen .history-panel-toggle .section-title { min-width: 0; font-size: 12px; }
+.tongxing-screen .history-panel-toggle .section-title > span { height: 17px; }
+.tongxing-screen .history-panel-toggle > svg { width: 13px; height: 13px; flex: 0 0 13px; color: #d8a93e; transition: transform .2s ease; }
+.tongxing-screen .history-panel-toggle > svg[data-open="true"] { transform: rotate(180deg); }
+.tongxing-screen .panel-heading > button:last-child { padding: 0; font-size: 10.5px; }
+.tongxing-screen .history-table[hidden] { display: none; }
+.tongxing-screen .ornament-title { margin: 12px 0 8px; font-size: 18px; }
+.tongxing-screen .tongxing-results { width: 100%; }
+.tongxing-screen .tongxing-table-row { grid-template-columns: 76px repeat(5, minmax(0, 1fr)); align-items: center; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row { grid-template-columns: 76px repeat(7, minmax(0, 1fr)); }
+.tongxing-screen .tongxing-table-row > span { min-height: 44px; align-items: center; font-size: 13.5px; }
+.tongxing-screen .tongxing-table-head { min-height: 36px; }
+.tongxing-screen .tongxing-table-head > span { min-height: 36px; font-size: 14px; }
+.tongxing-screen .tongxing-result-group { border-top-width: 2px; }
+.tongxing-screen .tongxing-result-group + .tongxing-result-group { margin-top: 8px; border-top: 1px solid #a8772f; box-shadow: 0 -6px 0 #02080d; }
+.tongxing-screen .tongxing-period-cell { min-height: 44px !important; padding: 2px 3px; gap: 1px; }
+.tongxing-screen .tongxing-period-cell strong { font-size: 14px; line-height: 16px; }
+.tongxing-screen .tongxing-period-cell time { font-size: 9px; line-height: 12px; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: 12px; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: 14px; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 13px; }
 
 @media (max-width: 360px) {
-  .tongxing-screen > .feature-body {
-    padding-inline: 4px;
-  }
-
-  .tongxing-screen .same-star-fields {
-    grid-template-columns: repeat(3, 39px) auto 58px auto;
-    column-gap: 4px;
-  }
-
-  .tongxing-screen .same-star-fields input {
-    font-size: 16px;
-  }
-
-  .tongxing-screen .same-star-fields > span {
-    font-size: 15px;
-  }
-
-  .tongxing-screen .same-star-period-select select {
-    font-size: 14px;
-  }
+  .tongxing-screen > .feature-body { padding-left: 4px; padding-right: 4px; }
+  .tongxing-screen .same-star-fields { grid-template-columns: repeat(3, 39px) auto 58px auto; column-gap: 4px; }
+  .tongxing-screen .same-star-fields input { font-size: 16px; }
+  .tongxing-screen .same-star-fields > span { font-size: 15px; }
+  .tongxing-screen .same-star-period-select select { font-size: 14px; }
 }
