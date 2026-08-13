@@ -493,26 +493,6 @@
   color: #d4a63b;
 }
 
-/* Canonical NumberBall sizing for recent draws, history and Matrix TongXing. */
-.history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: 34px;
-  --number-font-size: 14px;
-  --number-y: 0px;
-  --underline-width: 13px;
-  --underline-height: 1px;
-  --underline-y: 1px;
-}
-
-.history-panel .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --underline-width: 12px;
-  --underline-y: 1px;
-}
-
-.history-panel .number-ball-component.history-lottery-ball[data-lottery="大樂透"] {
-  --underline-width: 12px;
-  --underline-y: 1px;
-}
-
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
   gap: 2px;
 }
@@ -520,11 +500,6 @@
 .history-panel .history-numbers[data-has-special="true"] .history-special-number {
   margin-left: 5px;
   gap: 4px;
-}
-
-.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
 }
 
 .draw-history-screen .draw-history-row .history-numbers,
@@ -538,39 +513,6 @@
 .draw-history-screen .draw-history-row .history-special-number {
   margin-left: 5px;
   gap: 4px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball {
-  --underline-width: 12px;
-  --underline-height: 1px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="今彩539"] {
-  --number-ball-size: 32px;
-  --number-font-size: 13px;
-  --number-y: 0px;
-  --underline-y: .25px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="天天樂"] {
-  --number-ball-size: 32px;
-  --number-font-size: 13px;
-  --number-y: 0px;
-  --underline-y: .25px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
-  --number-y: 0px;
-  --underline-y: .5px;
-}
-
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="大樂透"] {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
-  --number-y: 0px;
-  --underline-y: .5px;
 }
 
 .draw-history-panel { overflow: visible; }
