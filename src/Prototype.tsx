@@ -389,8 +389,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
         <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
         <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
         <MatrixStatusSection onOpen={() => navigate("status")} />
-        <MatrixCoreBanner onOpen={() => navigate("explore")} />
-        <HomeShortcutRow onNavigate={navigate} />
+        <div className="home-bottom-group">
+          <MatrixCoreBanner onOpen={() => navigate("explore")} />
+          <HomeShortcutRow onNavigate={navigate} />
+        </div>
         <BottomNavigationPortal active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
         {quickSettings}
       </main>
