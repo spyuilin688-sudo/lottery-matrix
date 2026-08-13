@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import "./number-ball.css";
 
 export type NumberBallLottery = "今彩539" | "天天樂" | "六合彩" | "大樂透";
@@ -54,7 +53,6 @@ export type NumberBallProps = {
   lottery: NumberBallLottery;
   number: string | number;
   isSpecial?: boolean;
-  size?: number;
   className?: string;
 };
 
@@ -62,23 +60,17 @@ export function NumberBall({
   lottery,
   number,
   isSpecial = false,
-  size,
   className = "",
 }: NumberBallProps) {
   const value = normalizeBallNumber(number);
   const tone = getBallTone(lottery, value);
   const asset = BALL_ASSET[lottery][tone];
-  const style = size
-    ? ({ "--number-ball-size": `${size}px` } as CSSProperties)
-    : undefined;
-
   return (
     <span
       className={`number-ball-component number-ball ${className}`.trim()}
       data-lottery={lottery}
       data-tone={tone}
       data-special={isSpecial}
-      style={style}
       aria-label={`${isSpecial ? "特別號" : "號碼"} ${value}`}
     >
       {asset ? (
