@@ -295,7 +295,6 @@
 }
 
 .home-screen .latest-draw-card {
-  --draw-main-ball-size: 44px;
   --draw-special-ball-size: clamp(30px, 8.8vw, 34px);
   --draw-special-label-height: 10px;
   --draw-card-height: calc((min(100vw, 390px) * 732 / 1672) - 4px);
@@ -430,34 +429,6 @@
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
   gap: 3px;
   flex: 0 1 auto;
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
-  --number-ball-size: var(--draw-main-ball-size);
-  --number-font-size: 20px;
-  --number-y: 0px;
-  --underline-width: 16px;
-  --underline-height: 1px;
-  --underline-y: 1px;
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
-  --number-ball-size: var(--draw-special-ball-size);
-  --number-font-size: 12px;
-  --number-y: 0px;
-  --underline-width: 10px;
-  --underline-height: 1px;
-  --underline-y: 1px;
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
-  --number-y: -1px;
-}
-
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-special="true"] {
-  --number-ball-size: var(--draw-special-ball-size);
-  --number-font-size: 12px;
-  --underline-width: 10px;
 }
 
 .home-screen .latest-draw-card .special-ball-plus {
