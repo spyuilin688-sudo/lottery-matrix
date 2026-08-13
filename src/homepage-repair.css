@@ -79,10 +79,14 @@
 }
 
 .home-screen .home-bottom-group {
+  --home-core-height: calc((min(100vw, 390px) * .96) * 568 / 1774);
+  --home-features-height: calc((min(100vw, 390px) - 6px) * 76.8 / 376.1);
   display: grid;
   width: 100%;
-  min-height: 0;
+  height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 6px);
+  min-height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 6px);
   padding-bottom: 6px;
+  grid-template-rows: var(--home-core-height) var(--home-features-height);
   gap: var(--home-gap-core-features);
   align-self: end;
 }
@@ -487,6 +491,7 @@
 
 .home-screen .matrix-core-banner {
   width: 100%;
+  height: var(--home-core-height);
 }
 
 .home-screen .matrix-status-section > .home-asset-image {
@@ -500,6 +505,7 @@
 
 .home-screen .matrix-core-banner > .home-asset-image {
   width: 96%;
+  height: 100%;
   max-height: 100%;
   margin-inline: auto;
   object-fit: contain;
@@ -529,6 +535,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: calc(100% - 6px);
+  height: var(--home-features-height);
   aspect-ratio: 376.1 / 76.8;
   min-height: 0;
   gap: var(--home-feature-gap);
