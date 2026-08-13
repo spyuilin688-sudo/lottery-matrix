@@ -450,7 +450,7 @@
 }
 .panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 11px; white-space: nowrap; }
 .history-table { margin-top: 8px; }
-.history-row { display: grid; min-height: 39px; grid-template-columns: 40px 90px 1fr; align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
+.history-row { display: grid; min-height: 42px; grid-template-columns: 52px 84px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
 .history-row > span { min-width: 0; text-align: center; }
 .history-row > span + span {
   display: flex;
@@ -475,7 +475,7 @@
 .history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 8.5px; font-weight: 500; white-space: nowrap; }
 .history-head { color: #b58e3e; font-size: 13.5px; font-weight: 700; }
 .history-head > span { text-align: center; }
-.history-row:not(.history-head) > span:first-child { font-size: 11.5px; }
+.history-row:not(.history-head) > span:first-child { font-size: 11.5px; white-space: nowrap; }
 .history-row:not(.history-head) > span:nth-child(2) { color: #fff; font-size: 10.5px; }
 .history-row:not(.history-head) > span:first-child { font-weight: 700; }
 .history-numbers { display: flex; gap: 3px; align-items: center; justify-content: center; }
@@ -521,18 +521,18 @@
 }
 .history-panel .history-numbers[data-has-special="true"] { gap: 4px; }
 .history-panel .history-numbers[data-has-special="true"] .history-lottery-ball {
-  --number-ball-size: 24px;
-  --number-font-size: 11px;
-  --underline-width: 8px;
-  width: 24px;
-  height: 24px;
-  flex-basis: 24px;
+  --number-ball-size: 22px;
+  --number-font-size: 10.5px;
+  --underline-width: 7px;
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
 }
 .history-panel .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number {
-  font-size: 11px;
+  font-size: 10.5px;
 }
 .draw-history-panel { overflow: hidden; }
-.draw-history-row { display: grid; min-height: 52px; grid-template-columns: 54px 104px 1fr; align-items: center; border-top: 1px solid #352817; color: #bcb7ae; font-size: 10px; text-align: center; }
+.draw-history-row { display: grid; min-height: 52px; grid-template-columns: 58px 94px minmax(0, 1fr); align-items: center; border-top: 1px solid #352817; color: #bcb7ae; font-size: 10px; text-align: center; }
 .draw-history-row:first-child { border-top: 0; }
 .draw-history-row > span { min-width: 0; }
 .draw-history-row > span + span { height: 100%; display: flex; align-items: center; justify-content: center; border-left: 1px solid #4f391d; }
@@ -1415,8 +1415,8 @@
 .draw-history-row .history-main-numbers { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 3px; }
 .draw-history-row .history-special-number { display: flex; align-items: center; gap: 2px; }
 .draw-history-row .history-special-number > span:first-child { color: #d2a52a; }
-.draw-history-row .history-lottery-ball { --number-ball-size: 25px; --number-font-size: 10px; --underline-width: 7px; width: 25px; height: 25px; flex: 0 0 25px; }
-.draw-history-row .history-lottery-ball .ball-number { font-size: 10px; }
+.draw-history-row .history-lottery-ball { --number-ball-size: 27px; --number-font-size: 11px; --underline-width: 8px; width: 27px; height: 27px; flex: 0 0 27px; }
+.draw-history-row .history-lottery-ball .ball-number { font-size: 11px; }
 .draw-history-row .history-lottery-ball .ball-number::after { top: auto; bottom: 1px; }
 .draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball { --number-ball-size: 22px; --number-font-size: 9px; --underline-width: 7px; width: 22px; height: 22px; flex-basis: 22px; }
 .draw-history-row .history-numbers[data-has-special="true"] .history-lottery-ball .ball-number { font-size: 9px; }
@@ -2768,7 +2768,7 @@
 }
 
 .draw-history-row .history-lottery-ball .number-ball-value {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .draw-history-row .history-lottery-ball .number-ball-value::after {
