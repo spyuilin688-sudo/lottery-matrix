@@ -119,21 +119,22 @@
 }
 
 .history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: 34px;
-  --number-font-size: 14px;
+  --number-ball-size: 28px;
+  --number-font-size: 11.5px;
   --number-y: 0px;
-  --underline-width: 13px;
-  --underline-height: 1px;
-  --underline-y: 1px;
+  --underline-width: 11px;
+  --underline-height: .75px;
+  --underline-y: .25px;
 }
 
 .history-panel .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --underline-width: 12px;
+  --underline-width: 10px;
+  --underline-y: .5px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball {
-  --number-ball-size: 27px;
-  --number-font-size: 11.5px;
+  --number-ball-size: 24px;
+  --number-font-size: 11px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball {
