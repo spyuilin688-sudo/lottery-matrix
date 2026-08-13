@@ -17,7 +17,7 @@
 .tongxing-screen .same-star-period-select svg { right: 5px; width: 13px; }
 .tongxing-screen .primary-action { height: 44px; font-size: 18px; }
 .tongxing-screen .primary-action svg { width: 22px; height: 22px; }
-.tongxing-screen .history-panel { margin-top: 8px; padding: 9px 8px 10px; }
+.tongxing-screen .history-panel { margin-top: 8px; padding: 8px; }
 .tongxing-screen .panel-heading { align-items: center; }
 .tongxing-screen .panel-heading .history-panel-toggle { display: flex; min-width: 0; padding: 0; align-items: center; gap: 5px; color: inherit; text-align: left; }
 .tongxing-screen .history-panel-toggle .section-title { min-width: 0; font-size: 12px; }
