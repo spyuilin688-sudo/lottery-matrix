@@ -23,8 +23,8 @@
   --home-gap-switcher-draw: 0px;
   --home-gap-draw-status: 1px;
   --home-gap-status-core: 6px;
-  --home-gap-core-features: 12px;
-  --home-feature-gap: 6px;
+  --home-gap-core-features: 6px;
+  --home-feature-gap: 3px;
   box-sizing: border-box;
   display: flex;
   width: min(100%, 390px);
@@ -32,7 +32,7 @@
   min-height: 0;
   height: calc(100dvh - var(--bottom-navigation-height) - var(--mobile-safe-area-height, 0px));
   margin: 0 auto;
-  padding: 0 0 8px;
+  padding: 0 0 6px;
   flex-direction: column;
   align-items: center;
   gap: 0;
@@ -59,11 +59,15 @@
 
 .home-screen .lottery-screen > :where(
   .brand-header,
-  .matrix-status-section,
   .matrix-core-banner,
   .home-shortcut-row
 ) {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.home-screen .matrix-status-section {
+  flex: 1 1 0;
   min-height: 0;
 }
 
@@ -490,7 +494,7 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 94.179487179%;
+  width: calc(100% - 6px);
   aspect-ratio: 376.1 / 76.8;
   min-height: 0;
   gap: var(--home-feature-gap);
