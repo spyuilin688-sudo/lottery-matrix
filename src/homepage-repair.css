@@ -7,12 +7,12 @@
 }
 
 .mobile-scroll.home-screen {
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .home-screen .mobile-scroll-content {
-  height: auto;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: visible;
 }
 
@@ -30,13 +30,13 @@
   width: min(100%, 390px);
   min-width: 0;
   min-height: 0;
-  height: auto;
+  height: calc(100dvh - var(--bottom-navigation-height) - var(--mobile-safe-area-height, 0px));
   margin: 0 auto;
-  padding: 0 0 calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px) + 8px);
+  padding: 0 0 8px;
   flex-direction: column;
   align-items: center;
   gap: 0;
-  overflow: visible;
+  overflow: hidden;
   background: var(--lottery-neutral-950);
 }
 
@@ -49,9 +49,34 @@
   .home-shortcut-row
 ) {
   box-sizing: border-box;
-  flex: 0 0 auto;
   min-width: 0;
   margin: 0;
+}
+
+.home-screen .latest-draw-card {
+  flex: 0 0 var(--draw-card-height);
+}
+
+.home-screen .lottery-screen > :where(
+  .brand-header,
+  .lottery-switcher,
+  .matrix-status-section,
+  .matrix-core-banner,
+  .home-shortcut-row
+) {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.home-screen .lottery-screen > :where(
+  .brand-header,
+  .lottery-switcher,
+  .matrix-status-section,
+  .matrix-core-banner,
+  .home-shortcut-row
+) img {
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .home-screen .home-asset-image,
@@ -90,7 +115,7 @@
 .home-screen .lottery-switcher > .home-asset-image {
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
 }
 
 .home-screen .lottery-switcher-hit-grid {
@@ -430,12 +455,16 @@
 
 .home-screen .matrix-status-section > .home-asset-image {
   width: 108%;
+  max-height: 100%;
   max-width: none;
+  object-fit: contain;
 }
 
 .home-screen .matrix-core-banner > .home-asset-image {
   width: 96%;
+  max-height: 100%;
   margin-inline: auto;
+  object-fit: contain;
 }
 
 .home-screen .matrix-status-hit-grid {
@@ -462,6 +491,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 94.179487179%;
+  min-height: 0;
   gap: var(--home-feature-gap);
   align-items: stretch;
   overflow: visible;
@@ -488,7 +518,9 @@
   display: block;
   width: 104%;
   height: auto;
+  max-height: 100%;
   max-width: none;
+  object-fit: contain;
   object-position: center;
   border-radius: 0;
   clip-path: none;
