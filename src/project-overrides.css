@@ -30,21 +30,8 @@
 
 .bottom-nav-brand-screen > .feature-brand-header { top: auto !important; }
 
-.feature-brand-header:not([data-compact='true']) .feature-brand-row {
-  position: relative !important;
-  inset: auto !important;
-  top: auto !important;
-  display: flex !important;
-  width: 100% !important;
-  height: var(--primary-brand-height) !important;
-  min-height: var(--primary-brand-height) !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
 .feature-brand-header:not([data-compact='true']) .feature-brand-lockup {
   display: flex !important;
-  width: 100% !important;
   max-width: none !important;
   height: var(--primary-brand-height) !important;
   padding: 0 !important;
@@ -54,7 +41,6 @@
   overflow: visible !important;
 }
 
-.feature-brand-lockup,
 .feature-brand-header .shared-brand-logo,
 .feature-brand-header[data-compact='true'] > .shared-brand-logo {
   display: flex !important;
