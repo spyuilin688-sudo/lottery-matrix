@@ -24,6 +24,10 @@
   overflow: visible !important;
 }
 
+.feature-brand-header[data-hide-title='true'] {
+  margin-bottom: 8px !important;
+}
+
 .bottom-nav-brand-screen > .feature-brand-header { top: auto !important; }
 
 .feature-brand-header:not([data-compact='true']) .feature-brand-row {
@@ -60,7 +64,7 @@
 
 .feature-brand-header:not([data-compact='true']) .back-button,
 .profile-subpage-back {
-  top: calc(50% + 8px) !important;
+  top: 50% !important;
   left: var(--brand-back-left) !important;
   width: var(--brand-back-button-size) !important;
   min-width: var(--brand-back-button-size) !important;
