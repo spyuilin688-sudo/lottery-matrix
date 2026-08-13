@@ -471,21 +471,45 @@ function HistoryList({
   lottery,
   numberOrder,
   onOpenHistory,
+  collapsible = false,
 }: {
   lottery: LotteryId;
   numberOrder: string;
   onOpenHistory: () => void;
+  collapsible?: boolean;
 }) {
   const history = useLotteryHistory(lottery, 10);
   const order = getHistoryOrder(numberOrder);
+  const [expanded, setExpanded] = useState(!collapsible);
+
+  useEffect(() => {
+    if (collapsible) setExpanded(false);
+  }, [collapsible, lottery]);
 
   return (
     <section className="panel history-panel" data-lottery={lottery}>
       <header className="panel-heading">
-        <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
+        {collapsible ? (
+          <button
+            type="button"
+            className="history-panel-toggle"
+            aria-expanded={expanded}
+            aria-controls="tongxing-history-table"
+            onClick={() => setExpanded((current) => !current)}
+          >
+            <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
+            <ChevronDownIcon data-open={expanded} aria-hidden="true" />
+          </button>
+        ) : (
+          <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
+        )}
         <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
       </header>
-      <div className="history-table">
+      <div
+        id={collapsible ? "tongxing-history-table" : undefined}
+        className="history-table"
+        hidden={collapsible && !expanded}
+      >
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>
@@ -1273,6 +1297,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
         lottery={lottery}
         numberOrder={order}
         onOpenHistory={() => onNavigate("history")}
+        collapsible
       />
       {searched ? (
         <>
