@@ -20,9 +20,9 @@
   --home-main-inline: 16px;
   --home-wide-inline: 6px;
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 2px;
-  --home-gap-draw-status: 5px;
-  --home-gap-status-core: 2px;
+  --home-gap-switcher-draw: 0px;
+  --home-gap-draw-status: 1px;
+  --home-gap-status-core: 0px;
   --home-gap-core-features: 6px;
   --home-feature-gap: 12px;
   box-sizing: border-box;
@@ -78,7 +78,7 @@
 }
 
 .home-screen .lottery-switcher {
-  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 26px);
+  --lottery-switcher-height: calc((min(100vw, 390px) * 821 / 1916) - 42px);
   position: relative;
   display: grid;
   width: 100%;
@@ -157,10 +157,11 @@
   --draw-main-ball-size: clamp(42px, 12.8vw, 50px);
   --draw-special-ball-size: clamp(30px, 8.8vw, 34px);
   --draw-special-label-height: 10px;
+  --draw-card-height: calc((min(100vw, 390px) * 732 / 1672) - 12px);
   display: grid;
   grid-template-rows: 44px minmax(0, 1fr) 48px;
   width: 100%;
-  aspect-ratio: 1672 / 732;
+  height: var(--draw-card-height);
   min-height: 0;
   padding: 9px 15px 0;
   border: 0;
