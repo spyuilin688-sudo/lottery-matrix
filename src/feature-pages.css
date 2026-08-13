@@ -2435,15 +2435,6 @@
   padding-inline: var(--layout-page-inline);
 }
 
-.feature-screen:not(.compact-feature-screen) .feature-brand-row {
-  position: relative;
-  top: -28px;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-}
-
 .compact-feature-screen .feature-brand-header,
 .notifications-screen .feature-brand-header,
 .profile-screen .feature-brand-header {
