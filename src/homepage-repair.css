@@ -295,7 +295,6 @@
 }
 
 .home-screen .latest-draw-card {
-  --draw-special-ball-size: clamp(30px, 8.8vw, 34px);
   --draw-special-label-height: 10px;
   --draw-card-height: calc((min(100vw, 390px) * 732 / 1672) - 4px);
   display: grid;

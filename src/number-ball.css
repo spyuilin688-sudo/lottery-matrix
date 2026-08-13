@@ -63,6 +63,10 @@
 }
 
 /* Formal usage sizes. NumberBall visuals are defined only in this file. */
+.home-screen .latest-draw-card {
+  --draw-special-ball-size: clamp(30px, 8.8vw, 34px);
+}
+
 .home-screen .latest-draw-card .draw-balls[data-has-special="false"] .number-ball-component {
   --number-ball-size: clamp(42px, 12.8vw, 50px);
   --number-font-size: 20px;
