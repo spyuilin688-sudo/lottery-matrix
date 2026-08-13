@@ -20,7 +20,7 @@
 .feature-brand-row {
   position: relative;
   display: grid;
-  width: calc(100% + 8px);
+  width: calc(100% + 16px);
   height: auto;
   grid-template-columns: 100%;
   align-items: center;
@@ -33,8 +33,8 @@
   display: flex;
   box-sizing: border-box;
   width: 44px;
-  height: 52px;
-  padding-top: 8px;
+  height: 60px;
+  padding-top: 16px;
   align-self: center;
   justify-self: start;
 }
@@ -55,7 +55,7 @@
 
 .feature-brand-lockup {
   grid-area: 1 / 1;
-  width: calc(100% - 8px) !important;
+  width: calc(100% - 16px) !important;
   justify-self: center;
 }
 
