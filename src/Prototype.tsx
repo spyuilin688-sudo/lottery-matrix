@@ -83,7 +83,7 @@ const HOME_ASSETS = {
 
 const HOME_SHORTCUTS = [
   { label: "Matrix 同星", image: HOME_ASSETS.tongxing },
-  { label: "歷史開獎號碼", image: HOME_ASSETS.reference },
+  { label: "號碼對照單", image: HOME_ASSETS.reference },
   { label: "連碰立柱計算機", image: HOME_ASSETS.calculator },
   { label: "Matrix 牌單", image: HOME_ASSETS.matrixCard },
   { label: "Matrix 指南", image: HOME_ASSETS.guide },
@@ -332,7 +332,7 @@ export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
-  const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "歷史開獎號碼": "history", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
+  const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "號碼對照單": "reference", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
   return <nav className="home-shortcut-row home-features-box" aria-label="五大功能" data-testid="home-shortcut-row">{HOME_SHORTCUTS.map((item) => <button className="home-shortcut" type="button" aria-label={item.label} key={item.label} onClick={() => onNavigate?.(screens[item.label])}><img src={item.image} alt="" draggable={false} /></button>)}</nav>;
 }
 
