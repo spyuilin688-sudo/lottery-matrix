@@ -36,6 +36,40 @@
 }
 .matrix-page-switcher button[data-selected="true"] { border-color: #d7a52f; box-shadow: 0 0 9px rgba(224, 157, 37, .28); }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.matrix-title-banner {
+  position: relative;
+  width: calc(100% - (var(--layout-page-inline) * 2));
+  aspect-ratio: 16 / 3;
+  margin-top: 8px;
+}
+.matrix-title-banner > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.matrix-title-banner-actions {
+  position: absolute;
+  inset: 13% 3% 13% 57%;
+}
+.matrix-title-banner-actions,
+.matrix-title-banner-actions .matrix-page-switcher {
+  width: auto;
+  height: 100%;
+}
+.matrix-title-banner-actions .matrix-page-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3%;
+}
+.matrix-title-banner-actions .matrix-page-switcher button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+}
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .history-title-lottery { width: 82px; height: 40px; border: 1px solid #76521d; border-radius: 8px; background: #071018; }
 .history-title-lottery select { width: 100%; height: 100%; padding: 0 25px 0 7px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 11px; }
