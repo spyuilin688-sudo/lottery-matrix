@@ -23,6 +23,7 @@
   height: 100%;
   min-height: 0;
   margin: 0 auto;
+  padding-bottom: calc(var(--bottom-navigation-height) + max(var(--mobile-safe-area-height, 0px), env(safe-area-inset-bottom, 0px)));
   grid-template-rows: minmax(0, 1fr) auto auto;
   overflow: hidden;
   background: var(--lottery-neutral-950);
@@ -90,14 +91,6 @@
   grid-template-rows: var(--home-core-height) var(--home-features-height);
   gap: var(--home-gap-core-features);
   align-self: end;
-}
-
-.home-screen .home-layout > .bottom-navigation {
-  position: relative;
-  inset: auto;
-  left: 50%;
-  width: min(calc(100% - 8px), 382px);
-  transform: translateX(-50%);
 }
 
 .home-screen .lottery-screen > :where(

@@ -16,10 +16,12 @@ test("底部導覽只保留四個既有入口與動態選取狀態", () => {
   assert.doesNotMatch(navigationSource, /bottom-navigation-brand-core/);
 });
 
-test("底部導覽採 390px 基準的 382 × 93 參考圖比例", () => {
+test("底部導覽在 390px 基準畫布全寬固定於底部", () => {
   assert.match(tokenCss, /--bottom-navigation-height:\s*93px;/);
-  assert.match(navigationCss, /width:\s*min\(calc\(100% - 8px\),\s*382px\);/);
-  assert.match(homeCss, /width:\s*min\(calc\(100% - 8px\),\s*382px\);/);
+  assert.match(navigationCss, /position:\s*fixed;/);
+  assert.match(navigationCss, /inset:\s*auto 0 0;/);
+  assert.match(navigationCss, /width:\s*100%;/);
+  assert.doesNotMatch(homeCss, /home-layout > \.bottom-navigation/);
   assert.match(navigationCss, /\.bottom-navigation-active-bar\s*\{[^}]*width:\s*4px;[^}]*height:\s*4px;/s);
   assert.match(navigationCss, /\.bottom-navigation-item\[data-selected="true"\][^{]*\.bottom-navigation-active-bar\s*\{[^}]*width:\s*16px;[^}]*height:\s*3px;/s);
 });

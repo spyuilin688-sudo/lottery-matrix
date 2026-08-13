@@ -6,18 +6,20 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId("bottom-navigation")).toBeVisible();
 });
 
-test("底部導覽以參考圖比例置中，保留四個可操作入口", async ({ page }) => {
-  const screen = page.getByTestId("device-screen");
+test("底部導覽全寬固定於內容畫布底部，保留四個可操作入口", async ({ page }) => {
+  const mobilePage = page.locator(".mobile-page");
   const navigation = page.getByTestId("bottom-navigation");
   const labels = ["首頁", "快捷", "通知", "我的"];
 
-  const screenBox = await screen.boundingBox();
+  const mobilePageBox = await mobilePage.boundingBox();
   const navigationBox = await navigation.boundingBox();
-  if (!screenBox || !navigationBox) throw new Error("底部導覽沒有可量測的範圍");
+  if (!mobilePageBox || !navigationBox) throw new Error("底部導覽沒有可量測的範圍");
 
-  expect(navigationBox.width).toBeCloseTo(382, 0);
+  expect(await navigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
+  expect(navigationBox.width).toBeCloseTo(mobilePageBox.width, 0);
   expect(navigationBox.height).toBeCloseTo(93, 0);
-  expect(navigationBox.x - screenBox.x).toBeCloseTo((screenBox.width - navigationBox.width) / 2, 0);
+  expect(navigationBox.x).toBeCloseTo(mobilePageBox.x, 0);
+  expect(navigationBox.y + navigationBox.height).toBeCloseTo(mobilePageBox.y + mobilePageBox.height, 0);
 
   const buttons = navigation.getByRole("button");
   await expect(buttons).toHaveCount(4);
@@ -39,8 +41,17 @@ test("選取狀態會跟隨首頁、通知與我的頁面", async ({ page }) => 
   await expect(home.locator(".bottom-navigation-active-bar")).toHaveCSS("width", "16px");
 
   await navigation.getByRole("button", { name: "通知" }).click();
-  await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "通知" })).toHaveAttribute("aria-current", "page");
+  const notificationNavigation = page.getByTestId("bottom-navigation");
+  await expect(notificationNavigation.getByRole("button", { name: "通知" })).toHaveAttribute("aria-current", "page");
+  expect(await notificationNavigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
 
-  await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" }).click();
+  const notificationPageBox = await page.locator(".mobile-page").boundingBox();
+  const notificationNavigationBox = await notificationNavigation.boundingBox();
+  if (!notificationPageBox || !notificationNavigationBox) throw new Error("通知頁底部導覽沒有可量測的範圍");
+  expect(notificationNavigationBox.width).toBeCloseTo(notificationPageBox.width, 0);
+  expect(notificationNavigationBox.x).toBeCloseTo(notificationPageBox.x, 0);
+  expect(notificationNavigationBox.y + notificationNavigationBox.height).toBeCloseTo(notificationPageBox.y + notificationPageBox.height, 0);
+
+  await notificationNavigation.getByRole("button", { name: "我的" }).click();
   await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" })).toHaveAttribute("aria-current", "page");
 });
