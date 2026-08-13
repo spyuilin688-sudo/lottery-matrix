@@ -1861,7 +1861,7 @@
 .matrix-explore-main-screen .history-panel .panel-heading .section-title,
 .matrix-explore-main-screen .history-panel .panel-heading button { white-space: nowrap; }
 .matrix-explore-main-screen .history-row {
-  grid-template-columns: 44px 66px minmax(0, 1fr);
+  grid-template-columns: 52px 66px minmax(0, 1fr);
   border-top-width: 1px;
 }
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
