@@ -56,6 +56,23 @@
   object-position: center;
 }
 
+.feature-brand-header .back-button {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.feature-brand-header .back-button svg {
+  width: 37px;
+  height: 37px;
+}
+
 .feature-brand-header h1 {
   display: block;
   margin: var(--layout-section-gap) 0 0;
