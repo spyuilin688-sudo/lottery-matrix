@@ -118,6 +118,12 @@ const MATRIX_PAGE_ITEMS = [
   { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工.png" },
 ] as const;
 
+const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
+  "Matrix 探索": "/assets/matrix-explore/title-explore.png",
+  "Matrix 天衍": "/assets/matrix-explore/title-tianyan.png",
+  "Matrix 天工": "/assets/matrix-explore/title-tiangong.png",
+};
+
 function MatrixPageSwitcher({ current, onNavigate }: {
   current: "explore" | "tianyan" | "tiangong";
   onNavigate: Navigate;
@@ -125,14 +131,7 @@ function MatrixPageSwitcher({ current, onNavigate }: {
   return (
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
       {MATRIX_PAGE_ITEMS.map((item) => (
-        <button
-          type="button"
-          data-selected={current === item.screen}
-          aria-current={current === item.screen ? "page" : undefined}
-          aria-label={item.label}
-          onClick={() => onNavigate(item.screen)}
-          key={item.screen}
-        >
+        <button type="button" data-selected={current === item.screen} aria-current={current === item.screen ? "page" : undefined} aria-label={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
           <img src={item.image} alt="" draggable={false} />
         </button>
       ))}
@@ -186,10 +185,17 @@ function BrandHeader({
         <BrandLogo />
       )}
       {!hideTitle ? (
-        <div className="feature-title-card">
-          <h1>{title}</h1>
-          {action ? <div className="feature-title-actions">{action}</div> : null}
-        </div>
+        MATRIX_TITLE_ARTWORK[title] ? (
+          <div className="matrix-title-banner">
+            <img src={MATRIX_TITLE_ARTWORK[title]} alt={title} draggable={false} />
+            {action ? <div className="matrix-title-banner-actions">{action}</div> : null}
+          </div>
+        ) : (
+          <div className="feature-title-card">
+            <h1>{title}</h1>
+            {action ? <div className="feature-title-actions">{action}</div> : null}
+          </div>
+        )
       ) : null}
     </header>
   );
@@ -545,11 +551,7 @@ export function DrawHistoryPage({
   const historyTitleActions = (
     <div className="history-title-actions">
       <div className="history-title-lottery native-select">
-        <select
-          aria-label="彩種"
-          value={lottery}
-          onChange={(event) => setLottery(event.target.value as LotteryId)}
-        >
+        <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
           {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
         </select>
         <ChevronDownIcon aria-hidden="true" />
@@ -1108,13 +1110,7 @@ function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const positionOptions = ["固定", "依序遞增", "依序遞減"];
   const roadOptions = ["加減版路", "合值版路"];
   return (
-    <FeatureShell
-      title="Matrix 天工"
-      onNavigate={onNavigate}
-      backTarget="explore"
-      className="matrix-explore-screen matrix-tiangong-screen"
-      headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}
-    >
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen" headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}>
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
