@@ -119,9 +119,15 @@ const MATRIX_PAGE_ITEMS = [
 ] as const;
 
 const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
-  "Matrix 探索": "/assets/matrix-explore/title-explore.png",
-  "Matrix 天衍": "/assets/matrix-explore/title-tianyan.png",
-  "Matrix 天工": "/assets/matrix-explore/title-tiangong.png",
+  "Matrix 探索": "/assets/lottery/functions/matrixT3.png",
+  "Matrix 天衍": "/assets/lottery/functions/matrixT2.png",
+  "Matrix 天工": "/assets/lottery/functions/matrixT1.png",
+  "Matrix 指南": "/assets/lottery/functions/matrixP4.png",
+  "Matrix 同星": "/assets/lottery/functions/matrixP6.png",
+  "Matrix 牌單": "/assets/lottery/functions/matrixP2.png",
+  "Matrix 狀態": "/assets/lottery/functions/matrixP5.png",
+  "號碼對照單": "/assets/lottery/functions/matrixP1.png",
+  "歷史開獎號碼": "/assets/lottery/functions/matrixP3.png",
 };
 
 function MatrixPageSwitcher({ current, onNavigate }: {
