@@ -36,7 +36,7 @@
   --home-gap-draw-status: 1px;
   --home-gap-status-core: 6px;
   --home-gap-core-features: 8px;
-  --home-feature-gap: 0px;
+  --home-feature-gap: 1.5px;
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -81,7 +81,7 @@
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
   --home-core-height: calc(min(100vw, 390px) * 568 / 1774);
-  --home-features-height: calc((min(100vw, 390px) - 6px) * 76.8 / 376.1 * 1.1);
+  --home-features-height: calc((min(100vw, 390px) - 6px) * 76.8 / 376.1);
   display: grid;
   width: 100%;
   height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 6px);
@@ -562,7 +562,7 @@
   height: var(--home-features-height);
   aspect-ratio: 376.1 / 76.8;
   min-height: 0;
-  gap: 0;
+  gap: var(--home-feature-gap);
   align-items: stretch;
   overflow: visible;
 }
