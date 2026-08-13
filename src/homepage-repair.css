@@ -149,54 +149,48 @@
   object-fit: fill;
 }
 
+.home-screen .lottery-switcher[data-independent-cards="true"] > .home-asset-image {
+  display: none;
+}
+
 .home-screen .lottery-switcher-hit-grid {
   position: absolute;
   z-index: 2;
   inset: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
   min-width: 0;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
-  --lottery-frame-left: 1.55%;
-  --lottery-frame-right: 4.64%;
   appearance: none;
-  display: grid;
+  display: flex;
   box-sizing: border-box;
   min-width: 0;
   padding: 0;
-  grid-template-columns: var(--lottery-frame-left) minmax(0, 1fr) var(--lottery-frame-right);
-  grid-template-rows: 4.44% minmax(0, 1fr) 4.63%;
-  border: 0;
-  background: transparent;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(4, 12, 22, .96), rgba(2, 7, 14, .98)) padding-box,
+    linear-gradient(135deg, rgba(118, 129, 143, .74), rgba(56, 66, 79, .66)) border-box;
   color: transparent;
+  box-shadow: inset 0 0 18px rgba(31, 78, 121, .12);
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(2) {
-  --lottery-frame-left: 3.09%;
-  --lottery-frame-right: 3.53%;
-}
-
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(3) {
-  --lottery-frame-left: 3.75%;
-  --lottery-frame-right: 4.42%;
-}
-
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:nth-child(4) {
-  --lottery-frame-left: 3.09%;
-  --lottery-frame-right: 5.74%;
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card > img {
+  display: block;
+  width: 88%;
+  height: 72%;
+  object-fit: contain;
+  object-position: center;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
-  grid-area: 2 / 2;
-  box-sizing: border-box;
-  border: 2px solid transparent;
-  border-radius: 7%;
-  content: "";
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .home-screen .clean-hit-label {
@@ -545,14 +539,14 @@
   left: -28%;
   width: 24%;
   background:
-    radial-gradient(circle at 20% 16%, rgba(255, 244, 194, .48) 0 1px, transparent 2px),
-    radial-gradient(circle at 76% 72%, rgba(101, 201, 255, .42) 0 1px, transparent 2px),
-    radial-gradient(circle at 48% 42%, rgba(255, 211, 108, .5) 0 1.5px, transparent 2.5px),
-    linear-gradient(90deg, transparent, rgba(255, 224, 144, .05), rgba(255, 211, 108, .24), rgba(79, 181, 241, .1), transparent);
+    radial-gradient(circle at 20% 16%, rgba(255, 244, 194, .58) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 72%, rgba(101, 201, 255, .52) 0 1px, transparent 2px),
+    radial-gradient(circle at 48% 42%, rgba(255, 211, 108, .6) 0 1.5px, transparent 2.5px),
+    linear-gradient(90deg, transparent, rgba(255, 224, 144, .06), rgba(255, 211, 108, .29), rgba(79, 181, 241, .12), transparent);
   content: "";
-  filter: drop-shadow(0 0 4px rgba(255, 205, 93, .34));
+  filter: drop-shadow(0 0 4px rgba(255, 205, 93, .42));
   pointer-events: none;
-  animation: matrix-core-stardust-scan 10s ease-in-out infinite;
+  animation: matrix-core-stardust-scan 6s ease-in-out infinite;
 }
 
 .home-screen .home-shortcut-row {
@@ -633,9 +627,14 @@
 
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
-  border-image: var(--lottery-selected-gradient) 1;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, .78));
-  opacity: 1;
+  display: none;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  background:
+    linear-gradient(145deg, rgba(6, 13, 22, .98), rgba(2, 7, 14, .98)) padding-box,
+    var(--lottery-selected-gradient) border-box;
+  box-shadow: inset 0 0 18px rgba(255, 204, 98, .12), 0 0 7px rgba(255, 206, 105, .28);
 }
 
 .home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
@@ -656,8 +655,8 @@
 
 @keyframes matrix-core-stardust-scan {
   0%, 34% { transform: translateX(0); opacity: 0; }
-  40% { opacity: .42; }
-  70% { opacity: .42; }
+  40% { opacity: .5; }
+  70% { opacity: .5; }
   76%, 100% { transform: translateX(535%); opacity: 0; }
 }
 
