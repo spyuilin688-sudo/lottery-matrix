@@ -9,7 +9,7 @@
 }
 
 .feature-body { padding: 0 var(--layout-page-inline) 24px; }
-.matrix-explore-main-screen > .feature-body { padding-inline: 8px; }
+.matrix-explore-main-screen > .feature-body { padding-inline: 4px; }
 .feature-brand-header { position: relative; display: flex; padding: 4px var(--layout-page-inline) 0; flex-direction: column; align-items: center; justify-content: flex-start; margin-bottom: var(--layout-section-gap); }
 .feature-brand-lockup { display: block; width: 100%; margin: 0; padding: 0; border: 0; background: transparent; line-height: 0; cursor: pointer; }
 .feature-brand-lockup > .feature-brand-logo { display: block; width: 100%; height: auto; object-fit: contain; object-position: center; }
@@ -1493,30 +1493,6 @@
   box-shadow: 0 -6px 0 #02080d;
 }
 
-/* v51 scoped refinements */
-.matrix-explore-screen .advanced-panel label:nth-child(3) {
-  min-height: 32px;
-}
-.matrix-explore-screen .advanced-panel label:nth-child(3) .segmented,
-.matrix-explore-screen .advanced-panel label:nth-child(3) .segmented button {
-  height: 32px;
-  min-height: 32px;
-}
-.matrix-explore-screen .hit-advanced-panel {
-  padding-block: 10px;
-}
-.matrix-explore-screen .hit-options {
-  height: 34px;
-  margin-top: 8px;
-}
-.matrix-explore-screen .hit-options button {
-  min-height: 34px;
-  padding-block: 2px;
-}
-.matrix-explore-screen .hit-advanced-panel + .primary-action {
-  margin-top: 12px;
-}
-
 /* Matrix status, notes and Matrix guide */
 .lottery-logo-tabs {
   display: grid;
@@ -1811,97 +1787,91 @@
 .calculator-panel > header > div > span { white-space: nowrap; }
 .calculator-panel header strong { color: #e5a829; }
 
-/* v52 scoped refinements: Matrix Explore */
-
+/* Matrix Explore formal layout rules */
+.matrix-explore-screen .explore-settings,
+.matrix-explore-screen .hit-advanced-panel,
+.matrix-explore-screen .history-panel {
+  padding: 12px;
+}
+.matrix-explore-screen .setting-grid { margin-top: 12px; gap: 8px; }
+.matrix-explore-screen .setting-grid label,
+.matrix-explore-screen .advanced-panel label {
+  min-height: 36px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px;
+}
 .matrix-explore-screen .setting-grid label > span,
 .matrix-explore-screen .advanced-panel label > .advanced-setting-title {
   font-size: 14px;
   font-weight: 700;
 }
-.matrix-explore-screen .setting-grid label {
-  min-height: 34px;
-}
 .matrix-explore-screen .setting-grid .select-box,
 .matrix-explore-screen .setting-grid .segmented,
-.matrix-explore-screen .setting-grid .segmented button {
-  height: 32px;
-  min-height: 32px;
-}
-.matrix-explore-screen .advanced-panel label {
-  min-height: 32px;
-}
+.matrix-explore-screen .setting-grid .segmented button,
 .matrix-explore-screen .advanced-panel .select-box,
 .matrix-explore-screen .advanced-panel .segmented,
-.matrix-explore-screen .advanced-panel .segmented button {
+.matrix-explore-screen .advanced-panel .segmented button,
+.matrix-explore-screen .hit-options,
+.matrix-explore-screen .hit-options button {
+  height: 36px;
+  min-height: 36px;
+}
+.matrix-explore-screen .setting-grid .segmented button,
+.matrix-explore-screen .advanced-panel .segmented button,
+.matrix-explore-screen .hit-options button {
+  padding-block: 3px;
+  font-weight: 700;
+}
+.matrix-explore-screen .segmented button em {
+  top: 2px;
+  right: 3px;
+  padding: 0 4px;
+  font-size: 7px;
+  line-height: 12px;
+}
+.matrix-explore-screen .advanced-row {
+  min-height: 44px;
+  grid-template-columns: 35px 1fr 24px;
+  font-weight: 700;
+}
+.matrix-explore-screen .advanced-row > img:first-child {
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+}
+.matrix-explore-screen .setting-grid label > span .setting-label-icon,
+.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {
+  width: 30px;
   height: 30px;
-  min-height: 30px;
+  flex: 0 0 30px;
+  border-radius: 5px;
+  transform: none;
+}
+.matrix-explore-screen .setting-label-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.matrix-explore-screen .explore-settings .setting-grid label:first-child > span {
+  grid-template-columns: 30px 1fr;
+}
+.matrix-explore-screen .hit-options { margin-top: 8px; }
+.matrix-explore-screen .hit-advanced-panel + .primary-action { margin-top: 12px; }
+.matrix-explore-main-screen .history-panel .panel-heading { align-items: center; }
+.matrix-explore-main-screen .history-panel .panel-heading .section-title,
+.matrix-explore-main-screen .history-panel .panel-heading button { white-space: nowrap; }
+.matrix-explore-main-screen .history-row {
+  grid-template-columns: 44px 66px minmax(0, 1fr);
+  border-top-width: 1px;
+}
+.matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
+.matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-special-number {
+  margin-left: 3px;
+  gap: 2px;
 }
 .matrix-explore-screen .road-result-row > strong {
   font-size: 15px;
   font-weight: 700;
-}
-
-/* v53 Matrix Explore option density and typography refinements */
-.matrix-explore-screen .explore-settings .setting-grid label:first-child .native-select select {
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.matrix-explore-screen .setting-grid label:nth-child(2) .segmented,
-.matrix-explore-screen .setting-grid label:nth-child(2) .segmented button,
-.matrix-explore-screen .setting-grid label:nth-child(3) .segmented,
-.matrix-explore-screen .setting-grid label:nth-child(3) .segmented button {
-  height: 30px;
-  min-height: 30px;
-}
-
-.matrix-explore-screen .advanced-panel label:nth-child(2) .segmented,
-.matrix-explore-screen .advanced-panel label:nth-child(2) .segmented button {
-  height: 28px;
-  min-height: 28px;
-}
-
-.matrix-explore-screen .advanced-panel label:nth-child(3) .segmented,
-.matrix-explore-screen .advanced-panel label:nth-child(3) .segmented button {
-  height: 30px;
-  min-height: 30px;
-}
-
-.matrix-explore-screen .setting-grid label:nth-child(2) .segmented button,
-.matrix-explore-screen .setting-grid label:nth-child(3) .segmented button,
-.matrix-explore-screen .advanced-panel label:nth-child(2) .segmented button,
-.matrix-explore-screen .advanced-panel label:nth-child(3) .segmented button,
-.matrix-explore-screen .hit-options button {
-  font-weight: 700;
-}
-
-.matrix-explore-screen .advanced-row {
-  grid-template-columns: 31px 1fr 24px;
-  font-weight: 700;
-}
-
-.matrix-explore-screen .advanced-row > img:first-child {
-  width: 21px;
-  height: 21px;
-  border-radius: 5px;
-}
-
-/* v54 scoped refinements: advanced explore labels */
-
-.matrix-explore-screen .advanced-panel label > .advanced-setting-title {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  transform: scale(.82);
-}
-
-.matrix-explore-screen .advanced-panel label:nth-child(2) .segmented button {
-  font-size: 11.5px;
 }
 
 /* v55 scoped density and hierarchy refinements */
@@ -1927,26 +1897,6 @@
   font-size: 13.5px;
 }
 
-.matrix-explore-screen .advanced-row {
-  grid-template-columns: 35px 1fr 24px;
-}
-
-.matrix-explore-screen .advanced-row > img:first-child {
-  width: 25px;
-  height: 25px;
-}
-
-.matrix-explore-screen .setting-grid label > span .setting-label-icon {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  transform: scale(.82);
-}
-
-.matrix-explore-screen .explore-settings .setting-grid label:first-child > span {
-  grid-template-columns: 22px 1fr;
-}
-
 .filter-options {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -1970,39 +1920,6 @@
   font-size: 10.5px;
   white-space: nowrap;
 }
-
-/* Matrix Explore supplied icon assets: one shared, uncropped display frame. */
-.matrix-explore-screen .setting-grid label > span .setting-label-icon,
-.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border-radius: 5px;
-  transform: none;
-}
-
-.matrix-explore-screen .explore-settings .setting-grid label:first-child > span {
-  grid-template-columns: 24px 1fr;
-}
-
-/* v57 Matrix Explore icons: larger, uniformly contained, and aligned. */
-.matrix-explore-screen .setting-grid label > span .setting-label-icon,
-.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-}
-
-.matrix-explore-screen .setting-label-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.matrix-explore-screen .explore-settings .setting-grid label:first-child > span {
-  grid-template-columns: 30px 1fr;
-}
-
 
 /* 2026-08-08 文件修改：只對應本次指定元件。 */
 .road-validation-process { display: grid; gap: 7px; margin-inline: 0; padding: 10px 12px; border-top: 1px solid rgba(102, 169, 255, .18); background: rgba(3, 9, 20, .72); overflow-x: clip; }
