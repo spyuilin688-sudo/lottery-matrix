@@ -5,12 +5,13 @@
 .tongxing-screen .query-selects .select-box { height: 40px; }
 .tongxing-screen .query-selects select { padding-inline: 10px 28px; font-weight: 700; text-align: center; text-align-last: center; }
 .tongxing-screen .tongxing-order-select select { font-size: 11.5px; }
-.tongxing-screen .same-star-fields { margin: 9px 0 8px; grid-template-columns: repeat(3, 43px) auto 62px auto; column-gap: 6px; align-items: center; justify-content: start; }
+.tongxing-screen .same-star-fields { margin: 9px 0 8px; grid-template-columns: repeat(3, 43px) minmax(48px, 1fr) 62px auto; column-gap: 6px; align-items: center; }
 .tongxing-screen .same-star-fields input,
 .tongxing-screen .same-star-period-select { height: 40px; }
 .tongxing-screen .same-star-fields input { padding-inline: 4px; border-color: #805a25; font-size: 17px; font-weight: 600; }
 .tongxing-screen .same-star-fields input:focus-visible { border-color: #d4a238; outline: 1px solid rgba(212, 162, 56, .45); outline-offset: 1px; }
 .tongxing-screen .same-star-fields > span { align-self: center; color: #d5cec2; font-size: 15px; line-height: 18px; }
+.tongxing-screen .same-star-fields > span:first-of-type { justify-self: end; }
 .tongxing-screen .same-star-period-select select { padding-inline: 6px 20px; font-size: 14px; font-weight: 700; }
 .tongxing-screen .same-star-period-select svg { right: 4px; width: 13px; }
 .tongxing-screen .primary-action { height: 44px; font-size: 18px; }
@@ -42,7 +43,7 @@
 
 @media (max-width: 360px) {
   .tongxing-screen > .feature-body { padding-left: 4px; padding-right: 4px; }
-  .tongxing-screen .same-star-fields { grid-template-columns: repeat(3, 39px) auto 58px auto; column-gap: 4px; }
+  .tongxing-screen .same-star-fields { grid-template-columns: repeat(3, 39px) minmax(44px, 1fr) 58px auto; column-gap: 4px; }
   .tongxing-screen .same-star-fields input { font-size: 16px; }
   .tongxing-screen .same-star-fields > span { font-size: 15px; }
   .tongxing-screen .same-star-period-select select { font-size: 14px; }
