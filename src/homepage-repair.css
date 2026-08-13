@@ -462,7 +462,7 @@
 .home-screen .matrix-status-section {
   display: grid;
   width: 100%;
-  place-items: center;
+  place-items: start center;
 }
 
 .home-screen .matrix-core-banner {
