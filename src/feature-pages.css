@@ -1,6 +1,7 @@
 .feature-screen {
   --select-tech-border: #d7a52f;
   --select-tech-accent: #f0bd36;
+  --select-tech-text: #f2cf67;
   --select-tech-surface: #030b13;
   --select-tech-cut: 8px;
   min-height: 100%;
@@ -75,7 +76,7 @@
 }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; }
-.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 8px; }
+.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); font-size: 8px; }
 .history-title-lottery option { font-size: 8px; }
 .history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; color: var(--select-tech-accent); pointer-events: none; }
 .history-title-chevron svg { display: block; width: 12px; height: 12px; stroke-width: 2.5; }
@@ -116,7 +117,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #d4d0c8;
+  color: var(--select-tech-text);
   font: inherit;
 }
 .native-select svg { position: absolute; right: 12px; pointer-events: none; }
