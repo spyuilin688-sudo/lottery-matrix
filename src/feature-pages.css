@@ -559,14 +559,18 @@
   gap: 4px;
 }
 
-.draw-history-panel { padding: 12px; overflow: visible; }
-.draw-history-row { display: grid; min-height: 60px; grid-template-columns: 56px 68px minmax(0, 1fr); align-items: center; border-top: 1px solid #352817; color: #bcb7ae; font-size: 11px; text-align: center; }
+.draw-history-panel { padding: 10px 8px; overflow: visible; }
+.draw-history-row { display: grid; min-height: 60px; grid-template-columns: 52px 64px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(111, 82, 39, .42); color: #bcb7ae; font-size: 11px; text-align: center; }
 .draw-history-row:first-child { border-top: 0; }
 .draw-history-row > span { min-width: 0; }
-.draw-history-row > span + span { height: 100%; display: flex; align-items: center; justify-content: center; border-left: 1px solid #4f391d; }
+.draw-history-row > span + span { height: 100%; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgba(126, 91, 39, .58); }
 .draw-history-head { min-height: 42px; color: #d9ad42; font-size: 15px; font-weight: 700; }
-.draw-history-row .history-numbers { padding: 0 5px; }
+.draw-history-row .history-numbers { padding: 0 3px; }
 .draw-history-row .mini-ball { width: 25px; height: 25px; font-size: 9px; }
+.history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
+.history-pagination button { display: grid; width: 38px; height: 36px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
+.history-pagination button:disabled { color: #5f574a; }
+.history-pagination span { font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 .history-filter-trigger {
   display: flex;
   height: 30px;
