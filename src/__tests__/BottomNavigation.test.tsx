@@ -7,12 +7,12 @@ import { BottomNavigation } from "../BottomNavigation";
 afterEach(cleanup);
 
 describe("BottomNavigation", () => {
-  it("使用 matrixDD 正式底圖，並由互動層控制選取狀態", () => {
+  it("依目前選取入口切換 matrixWW 正式底圖", () => {
     render(<BottomNavigation active="通知" />);
 
     expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute(
       "src",
-      "/assets/lottery/functions/matrixDD.png",
+      "/assets/lottery/functions/matrixWW3.png",
     );
     expect(screen.getByRole("button", { name: "通知" })).toHaveAttribute(
       "data-selected",
