@@ -1564,7 +1564,7 @@
 .reference-row button[data-special="true"]::after {
   position: absolute;
   inset: 0.2px;
-  border: 0.5px solid #B84242;
+  border: 0.5px solid #C65353;
   border-radius: inherit;
   pointer-events: none;
   content: "";
