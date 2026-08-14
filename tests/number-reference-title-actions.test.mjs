@@ -11,3 +11,12 @@ test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () =>
   assert.equal((header.match(/>刷新<\/button>/g) ?? []).length, 1);
   assert.match(header, /探索設定/);
 });
+
+test("刷新與探索設定置中於標題卡右半區域", () => {
+  const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+
+  assert.match(
+    css,
+    /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*inset:\s*0\s+0\s+0\s+50%;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;/s,
+  );
+});
