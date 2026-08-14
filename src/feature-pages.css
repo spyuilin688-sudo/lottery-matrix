@@ -947,7 +947,7 @@
   color: #efbf43;
   font-size: 11px;
 }
-.reference-title-actions button:last-child { width: 30px; padding: 0; }
+.reference-title-actions button:last-child { width: auto; padding: 0 4px; }
 .reference-title-actions svg { width: 14px; height: 14px; }
 .reference-title-actions svg[data-open="true"] { transform: rotate(180deg); }
 .reference-query-panel[hidden] { display: none; }
