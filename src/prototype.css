@@ -63,7 +63,7 @@
   display: block;
   width: 100%;
   height: var(--bottom-navigation-height);
-  object-fit: cover;
+  object-fit: contain;
   pointer-events: none;
   user-select: none;
 }
