@@ -927,10 +927,10 @@
   margin-top: 8px;
 }
 .number-reference-screen .matrix-title-banner-actions {
-  inset: 12% 3% 12% auto;
+  inset: 0 0 0 50%;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
 }
 .reference-title-actions {
   display: flex;
