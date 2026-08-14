@@ -1507,7 +1507,13 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           role={queryFloating ? "dialog" : undefined}
           aria-label={queryFloating ? "探索設定" : undefined}
           hidden={!queryExpanded}
-          style={queryFloating ? { top: `${queryPanelTop}px` } : undefined}
+          style={queryFloating ? {
+            top: `${queryPanelTop}px`,
+            "--select-tech-surface": "#030b13",
+            "--select-tech-accent": "#f0bd36",
+            "--select-tech-text": "#d4d0c8",
+            "--select-tech-cut": "8px",
+          } as React.CSSProperties : undefined}
         >
         <div className="query-selects three-cols">
         <div className="select-box native-select reference-select">
