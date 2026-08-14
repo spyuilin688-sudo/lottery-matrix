@@ -14,14 +14,14 @@ test("歷史開獎三欄使用單一正式比例並將前兩欄內容幾何置�
 });
 
 test("歷史開獎表格降低分隔線亮度並分開五球與六加一排列", () => {
-  assert.match(css, /border-top:\s*1px solid rgba\(111, 82, 39, \.22\)/);
-  assert.match(css, /border-left:\s*1px solid rgba\(126, 91, 39, \.24\)/);
+  assert.match(css, /border-top:\s*1px solid rgba\(111, 82, 39, \.30\)/);
+  assert.match(css, /border-left:\s*1px solid rgba\(126, 91, 39, \.14\)/);
   assert.match(css, /\.draw-history-row \.history-numbers:not\(\[data-has-special="true"\]\)[^}]*justify-content:\s*center/s);
   assert.match(css, /\.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers[^}]*gap:\s*3px/s);
 });
 
 test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", () => {
-  assert.match(css, /\.draw-history-head\s*\{[^}]*min-height:\s*34px[^}]*border-bottom:\s*1px solid rgba\(195, 145, 54, \.64\)/s);
+  assert.match(css, /\.draw-history-head\s*\{[^}]*min-height:\s*28px[^}]*border-bottom:\s*1px solid rgba\(195, 145, 54, \.64\)/s);
   assert.match(css, /\.draw-history-row\s*\{[^}]*min-height:\s*50px/s);
   assert.match(css, /\.draw-history-week-list\s*\{[^}]*gap:\s*8px/s);
 });
