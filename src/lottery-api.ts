@@ -12,6 +12,7 @@ export type LotteryDrawRecord = {
   drawOrderNumbers?: Array<string | number>;
   specialNumber?: string | number;
   special?: string | number;
+  nextDrawAt?: string | null;
   [key: string]: unknown;
 };
 
