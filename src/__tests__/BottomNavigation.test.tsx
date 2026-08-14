@@ -12,7 +12,7 @@ describe("BottomNavigation", () => {
 
     expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute(
       "src",
-      "/assets/lottery/functions/matrixWW3.png",
+      "/assets/lottery/functions/matrixWW2.png",
     );
     expect(screen.getByRole("button", { name: "通知" })).toHaveAttribute(
       "data-selected",
