@@ -70,7 +70,7 @@
   opacity: 0;
 }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 4px; }
-.history-title-lottery { width: 76px; height: 30px; flex: 0 0 76px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
+.history-title-lottery { width: 84px; height: 30px; flex: 0 0 84px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
 .history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 10px; }
 .history-title-lottery svg { position: absolute; right: 4px; width: 11px; color: #e8a900; pointer-events: none; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
@@ -572,7 +572,7 @@
 }
 
 .draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers {
-  gap: 2px;
+  gap: 3px;
 }
 
 .draw-history-screen .draw-history-row .history-special-number {
@@ -581,8 +581,9 @@
 }
 
 .draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
-.draw-history-screen .matrix-title-banner-actions { top: 18%; right: 3%; bottom: 18%; left: auto; width: 45%; }
+.draw-history-screen .matrix-title-banner-actions { top: 18%; right: 3%; bottom: 18%; left: auto; width: 48%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
+.draw-history-screen .history-title-lottery.native-select select { padding: 0 16px 0 6px; text-align: left; text-align-last: left; }
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 78px; flex: 0 0 78px; justify-content: center; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
