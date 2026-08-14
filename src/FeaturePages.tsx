@@ -513,7 +513,7 @@ function HistoryList({
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>
-        {paginatedHistory.items.map((record) => {
+        {history.map((record) => {
           const draw = getHistoryDrawNumbers(lottery, record, order);
           const issue = record.period ?? record.issue ?? "";
           const date = record.drawDate ?? record.date ?? "";
@@ -622,7 +622,7 @@ export function DrawHistoryPage({
           <span>日期</span>
           <span>開獎號碼</span>
         </div>
-        {history.map((record) => {
+        {paginatedHistory.items.map((record) => {
           const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
           const issue = record.period ?? record.issue ?? "";
           const date = record.drawDate ?? record.date ?? "";
