@@ -698,6 +698,9 @@
 .history-date-selects svg { right: 6px; width: 14px; }
 .history-order-select { width: 100%; height: 42px; }
 .history-order-select select { text-align: center; text-align-last: center; font-weight: 600; }
+.history-filter-sheet .select-box::before { z-index: 0; }
+.history-filter-sheet .select-box::after { z-index: 1; }
+.history-filter-sheet .native-select :is(select, svg) { z-index: 2; }
 .history-range-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .history-range-options button {
   min-height: 40px;
