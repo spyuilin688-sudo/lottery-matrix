@@ -1413,6 +1413,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
+  const queryPanelRef = useRef<HTMLDivElement>(null);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const displayedHistory = useMemo(() => [...history].reverse(), [history]);
@@ -1460,6 +1461,17 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     });
   };
 
+  const toggleQueryPanel = () => {
+    if (queryExpanded) {
+      setQueryExpanded(false);
+      return;
+    }
+    setQueryExpanded(true);
+    requestAnimationFrame(() => {
+      queryPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   return (
     <FeatureShell
       title="號碼對照單"
@@ -1468,14 +1480,14 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       headerAction={(
         <div className="reference-title-actions">
           <button type="button" onClick={resetReference}><ReloadIcon />刷新</button>
-          <button type="button" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={() => setQueryExpanded((current) => !current)}>
+          <button type="button" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
             <span>探索設定</span>
             <ChevronDownIcon data-open={queryExpanded} />
           </button>
         </div>
       )}
     >
-      <div className="reference-query-panel" hidden={!queryExpanded}>
+      <div ref={queryPanelRef} className="reference-query-panel" hidden={!queryExpanded}>
         <div className="query-selects three-cols">
         <div className="select-box native-select reference-select">
           <select
