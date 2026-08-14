@@ -58,6 +58,7 @@ export function BottomNavigation({
       className="bottom-navigation"
       aria-label="底部導覽"
       data-testid="bottom-navigation"
+      data-active={quickActive ? "快捷" : active}
     >
       <span className="bottom-navigation-topline" aria-hidden="true" />
       <span className="bottom-navigation-side-rail bottom-navigation-side-rail--left" aria-hidden="true" />
