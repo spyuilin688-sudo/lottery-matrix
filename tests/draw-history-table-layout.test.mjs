@@ -34,7 +34,7 @@ test("標題卡控制項固定在右側並保留完整彩種文字寬度", () =>
   assert.match(css, /\.history-title-lottery\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 18px/s);
   assert.match(css, /\.history-title-chevron\s*\{[^}]*z-index:\s*2[^}]*grid-column:\s*2/s);
   assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*8%[^}]*left:\s*auto[^}]*width:\s*46%[^}]*height:\s*auto/s);
-  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 24px 0 5px/s);
+  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 22px 0 4px[^}]*font-size:\\s*8px[^}]*text-align:\\s*center[^}]*text-align-last:\\s*center/s);
   assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*68px[^}]*height:\s*26px[^}]*flex:\s*0 0 68px[^}]*font-size:\s*9px/s);
 });
 
