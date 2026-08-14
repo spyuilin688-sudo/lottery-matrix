@@ -44,8 +44,8 @@
   width: 100%;
   height: calc(var(--bottom-navigation-height) + var(--bottom-nav-safe-area));
   min-height: calc(var(--bottom-navigation-height) + var(--bottom-nav-safe-area));
-  padding: 0 12px var(--bottom-nav-safe-area) 14px;
-  grid-template-columns: 26.4fr 25.3fr 20.6fr 27.7fr;
+  padding: 0 0 var(--bottom-nav-safe-area);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid rgba(247, 202, 119, .82);
   border-bottom-color: rgba(68, 43, 20, .96);
   border-radius: 18px 18px 48px 48px / 18px 18px 39px 39px;
