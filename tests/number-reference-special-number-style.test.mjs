@@ -12,7 +12,7 @@ test("號碼對照單特別號使用白色正常字重與指定紅色內框", ()
   assert.doesNotMatch(rule, /border\s*:/);
 
   const innerFrame = css.match(/\.reference-row button\[data-special="true"\]::after\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.match(innerFrame, /inset:\s*0\.2px\s*;/);
-  assert.match(innerFrame, /border:\s*0\.5px\s+solid\s+#C65353\s*;/i);
+  assert.match(innerFrame, /inset:\s*0\.3px\s*;/);
+  assert.match(innerFrame, /border:\s*1px\s+solid\s+#C65353\s*;/i);
   assert.match(innerFrame, /border-radius:\s*inherit\s*;/);
 });
