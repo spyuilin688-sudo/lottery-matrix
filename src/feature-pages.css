@@ -13,7 +13,7 @@
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
-.matrix-explore-main-screen { --select-tech-text: #f2cf67; }
+.matrix-explore-main-screen .native-select select { font-weight: 700; }
 
 .feature-body { padding: 0 var(--layout-page-inline) 24px; }
 .matrix-explore-main-screen > .feature-body,
