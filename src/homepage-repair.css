@@ -23,7 +23,7 @@
   height: 100%;
   min-height: 0;
   margin: 0 auto;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   background: var(--lottery-neutral-950);
 }
@@ -92,12 +92,6 @@
   grid-template-rows: var(--home-core-height) var(--home-features-height);
   gap: var(--home-gap-core-features);
   align-self: end;
-}
-
-.home-screen .home-layout > .bottom-navigation {
-  position: relative;
-  inset: auto;
-  width: 100%;
 }
 
 .home-screen .lottery-screen > :where(
@@ -724,8 +718,6 @@
   margin-block-start: 0;
 }
 
-
-
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   display: none;
 }
@@ -796,13 +788,7 @@
   .home-screen .matrix-core-banner::after { animation: none; opacity: .35; }
 }
 
-/* The uploaded navigation is fixed to the bottom edge and remains full width. */
+/* Reserve space for the fixed bottom navigation without overriding its formal positioning. */
 .home-screen .home-layout {
   padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px));
-}
-
-.home-screen .home-layout > .bottom-navigation {
-  position: absolute;
-  inset: auto 0 0;
-  width: 100%;
 }
