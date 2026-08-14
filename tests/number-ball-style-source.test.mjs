@@ -35,10 +35,10 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
   assert.doesNotMatch(homepage, /--draw-special-ball-size\s*:/);
 });
 
-test("六合彩正式使用情境保留共同間距並允許歷史頁貼合校正", async () => {
+test("六合彩正式使用情境保留共同間距並由歷史頁單一規則貼合校正", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
   const markSixUnderlineOffsets = formal.match(/--underline-y:\s*-\.5px;/g) ?? [];
 
   assert.equal(markSixUnderlineOffsets.length, 4);
-  assert.match(formal, /\.draw-history-screen[\s\S]*--underline-y:\s*-1px;/);
+  assert.match(formal, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\][\s\S]*--underline-y:\s*-1\.5px;/);
 });
