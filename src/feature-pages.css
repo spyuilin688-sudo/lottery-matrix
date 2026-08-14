@@ -1026,6 +1026,19 @@ Total output lines: 2503
 .notification-modal .notification-choice { min-height: 42px; font-size: 12px; }
 .notification-modal-done { width: calc(100% - 32px); min-height: 42px; margin: 10px 16px 16px; border: 1px solid #b78520; border-radius: 10px; background: linear-gradient(180deg, #d9a529, #a96d08); color: #110b02; font-size: 13px; font-weight: 700; }
 
+/* Matrix 狀態設定：390px 手機維持四彩種 × 四狀態單列矩陣。 */
+.notification-modal:has(.notification-status-settings) { max-height: min(68vh, 520px); }
+.notification-modal:has(.notification-status-settings) > header { min-height: 44px; }
+.notification-modal:has(.notification-status-settings) > header button { width: 32px; height: 32px; }
+.notification-modal-content:has(.notification-status-settings) { padding: 10px 12px 4px; }
+.notification-modal .notification-status-settings { gap: 8px; }
+.notification-status-settings .notification-lottery-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 6px; }
+.notification-status-settings .notification-lottery-row > strong { font-size: 12px; line-height: 1.2; }
+.notification-status-settings .notification-lottery-row > div { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.notification-modal .notification-status-settings .notification-choice { min-height: 40px; padding: 6px 4px; grid-template-columns: 16px minmax(0, 1fr); justify-content: center; gap: 4px; font-size: 11px; }
+.notification-modal .notification-status-settings .notification-choice input { width: 16px; height: 16px; }
+.notification-modal:has(.notification-status-settings) .notification-modal-done { min-height: 48px; margin-top: 8px; }
+
 @media (max-width: 370px) {
   .notification-heading { grid-template-columns: 72px minmax(0, 1fr) 126px; column-gap: 8px; }
   .notification-actions { width: 126px; gap: 12px; }
