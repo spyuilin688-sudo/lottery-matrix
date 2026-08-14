@@ -115,4 +115,4 @@ npm run preview
 - 期數或 7 個號碼任一不一致時，`drawDate` 維持空白。
 - sc888 不得修改 NFD 的期數、`sortedNumbers` 或 `drawOrderNumbers`。
 - 前端 `src/lottery-api.ts` 已由 `app-snsxet` 讀取 `drawDate`，不需修改前端資料流程。
-- AppDeploy 版本：`1786672580160`，8 項端對端測試通過。
+- AppDeploy 版本：`1786673435106`，8 項端對端測試通過。\n- 2026-08-14 實際同步結果：sc888 找到 100 筆、與 NFD 精確一致 38 筆、補入空白歷史日期 12 筆、號碼不一致 0 筆。
