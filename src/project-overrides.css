@@ -94,6 +94,45 @@
   overscroll-behavior: none !important;
 }
 
+.mobile-page.history-scroll-lock .mobile-scroll {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+.mobile-page.history-scroll-lock .mobile-scroll-content {
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+
+.mobile-page.history-scroll-lock .mobile-scrollbar {
+  display: none !important;
+}
+
+.history-scroll-lock .draw-history-screen {
+  box-sizing: border-box !important;
+  display: flex !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.history-scroll-lock .draw-history-screen > .feature-brand-header {
+  flex: 0 0 auto !important;
+}
+
+.history-scroll-lock .draw-history-screen .feature-body {
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 .mobile-page.notifications-scroll-lock .mobile-scroll-content {
   height: 100% !important;
   min-height: 100% !important;
@@ -116,4 +155,3 @@
 .mobile-page.notifications-scroll-lock .notifications-screen .feature-body {
   overflow: hidden !important;
 }
-
