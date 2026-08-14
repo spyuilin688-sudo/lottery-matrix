@@ -16,14 +16,22 @@ beforeEach(() => {
   };
 });
 
-test('從列表底部展開探索設定時將設定區移入可見畫面', () => {
+test('從列表底部展開探索設定時直接顯示設定且不捲動畫面', () => {
   const scrollIntoView = vi.fn();
   Element.prototype.scrollIntoView = scrollIntoView;
-  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const mobilePage = document.createElement('div');
+  mobilePage.className = 'mobile-page';
+  const root = document.createElement('div');
+  mobilePage.append(root);
+  document.body.append(mobilePage);
+  render(<NumberReferencePage onNavigate={vi.fn()} />, { container: root });
 
   const toggle = screen.getByRole('button', { name: '收合探索設定' });
   fireEvent.click(toggle);
   fireEvent.click(screen.getByRole('button', { name: '展開探索設定' }));
 
-  expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  const dialog = screen.getByRole('dialog', { name: '探索設定' });
+  expect(dialog.hidden).toBe(false);
+  expect(dialog.getAttribute('data-floating')).toBe('true');
+  expect(scrollIntoView).not.toHaveBeenCalled();
 });
