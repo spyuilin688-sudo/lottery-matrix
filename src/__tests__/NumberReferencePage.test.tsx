@@ -5,6 +5,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { NumberReferencePage } from '../FeaturePages';
 
 beforeEach(() => {
+  document.body.innerHTML = '';
   window.localStorage.clear();
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
@@ -42,4 +43,14 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(dialog.style.top).toBe('208px');
   expect(dialog.style.getPropertyValue('--select-tech-surface')).toBe('#030b13');
   expect(scrollIntoView).not.toHaveBeenCalled();
+});
+
+test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+
+  const input = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  fireEvent.click(input);
+
+  expect(input.selectionStart).toBe(0);
+  expect(input.selectionEnd).toBe(2);
 });
