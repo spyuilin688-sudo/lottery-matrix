@@ -31,19 +31,24 @@ test("標題卡控制項固定在右側並保留完整彩種文字寬度", () =>
   assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*80px[^}]*height:\s*26px[^}]*flex:\s*0 0 80px/s);
   assert.match(css, /\.history-title-lottery select\s*\{[^}]*font-size:\s*8px/s);
   assert.match(css, /\.history-title-lottery option\s*\{[^}]*font-size:\s*8px/s);
-  assert.match(css, /\.history-title-lottery svg\s*\{[^}]*z-index:\s*1[^}]*top:\s*50%[^}]*transform:\s*translateY\(-50%\)/s);
+  assert.match(css, /\.history-title-lottery\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 18px/s);
+  assert.match(css, /\.history-title-chevron\s*\{[^}]*z-index:\s*2[^}]*grid-column:\s*2[^}]*border-left:\s*1px solid/s);
   assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*8%[^}]*left:\s*auto[^}]*width:\s*46%[^}]*height:\s*auto/s);
-  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 14px 0 5px/s);
+  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 20px 0 5px/s);
   assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*68px[^}]*height:\s*26px[^}]*flex:\s*0 0 68px[^}]*font-size:\s*9px/s);
 });
 
 test("歷史頁六合彩數字回到彩球中心", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*-\.25px/s);
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*0px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.5px/s);
 });
 
-test("歷史頁今彩539數字比例縮小", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)\s*\{[^}]*--number-font-size:\s*12px/s);
+test("歷史頁今彩539數字比例依示意圖放大", () => {
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="今彩539"\]\s*\{[^}]*--number-font-size:\s*14px[^}]*--underline-width:\s*14px[^}]*--underline-y:\s*-\.5px/s);
+});
+
+test("歷史頁六合彩與大樂透不共用會互相覆寫的位置規則", () => {
+  assert.doesNotMatch(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)/);
 });
 
 test("六加一特別號標籤上移並保持彩球中心一致", () => {
@@ -52,7 +57,6 @@ test("六加一特別號標籤上移並保持彩球中心一致", () => {
   assert.match(css, /\.draw-history-screen \.history-special-ball\s*\{[^}]*height:\s*36px[^}]*grid-template-rows:\s*10px 26px/s);
 });
 
-test("六加一正碼增加球距並將數字底線間距設為0.3px", () => {
+test("六加一正碼增加球距", () => {
   assert.match(css, /\.draw-history-screen \.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*gap:\s*3px/s);
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--underline-y:\s*\.3px/s);
 });
