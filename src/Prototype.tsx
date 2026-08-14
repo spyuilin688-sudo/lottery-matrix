@@ -12,6 +12,7 @@ import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
+import { formatCountdown, parseCountdown } from "./countdown.mjs";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -299,10 +300,20 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
 
 export type NextDrawInfoBarProps = NextDrawInfoData & { className?: string };
 export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: NextDrawInfoBarProps) {
+  const [remainingSeconds, setRemainingSeconds] = useState(() => parseCountdown(remainingTime));
+
+  useEffect(() => {
+    setRemainingSeconds(parseCountdown(remainingTime));
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [remainingTime]);
+
   return (
     <section className={`next-draw-info ${className}`.trim()} aria-label="下次開獎資訊" data-testid="next-draw-info">
       <div className="next-draw-item"><ClockIcon className="next-draw-icon" aria-hidden="true" /><span className="next-draw-label">下次開獎</span><span className="next-draw-value">{nextDraw}</span></div>
-      <div className="next-draw-item"><CountdownTimerIcon className="next-draw-icon" aria-hidden="true" /><span className="next-draw-label">剩餘時間</span><span className="next-draw-value">{remainingTime}</span></div>
+      <div className="next-draw-item"><CountdownTimerIcon className="next-draw-icon" aria-hidden="true" /><span className="next-draw-label">剩餘時間</span><span className="next-draw-value">{formatCountdown(remainingSeconds)}</span></div>
     </section>
   );
 }
