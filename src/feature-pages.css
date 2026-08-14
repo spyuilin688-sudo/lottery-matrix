@@ -1556,9 +1556,18 @@
 
 .reference-search .gold-button { border: 1px solid #c99a2e; background: radial-gradient(circle at 50% 135%, rgba(234, 171, 35, .34), transparent 55%), linear-gradient(105deg, rgba(79, 50, 5, .2), rgba(6, 13, 18, .92) 42%, rgba(103, 67, 8, .2)), #060d12; color: #f6d472; }
 .reference-row button[data-special="true"] {
-  color: #72ceff;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(71, 181, 255, .52);
+  position: relative;
+  color: #fff;
+  font-weight: 400;
+  text-shadow: none;
+}
+.reference-row button[data-special="true"]::after {
+  position: absolute;
+  inset: 0.2px;
+  border: 0.5px solid #B84242;
+  border-radius: inherit;
+  pointer-events: none;
+  content: "";
 }
 
 .calculator-panel header .mode-select-button { border-color: #9a6b1e; color: #e2b64f; }
