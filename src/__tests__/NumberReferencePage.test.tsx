@@ -26,6 +26,11 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   document.body.append(mobilePage);
   render(<NumberReferencePage onNavigate={vi.fn()} />, { container: root });
 
+  const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
+  Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
+  vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 23, width: 195 } as DOMRect);
+  vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 123 } as DOMRect);
+
   const toggle = screen.getByRole('button', { name: '收合探索設定' });
   fireEvent.click(toggle);
   fireEvent.click(screen.getByRole('button', { name: '展開探索設定' }));
@@ -34,5 +39,6 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(dialog.hidden).toBe(false);
   expect(dialog.getAttribute('data-floating')).toBe('true');
   expect(dialog.parentElement).toBe(mobilePage);
+  expect(dialog.style.top).toBe('208px');
   expect(scrollIntoView).not.toHaveBeenCalled();
 });
