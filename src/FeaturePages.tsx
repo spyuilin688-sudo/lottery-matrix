@@ -1552,6 +1552,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           <div>
             {inputs.map((v, i) => (
               <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" maxLength={2} data-filled={Boolean(v)}
+                onClick={(event) => event.currentTarget.select()}
                 onChange={(event) => {
                   const candidate = sanitizeReferenceNumber(event.target.value);
                   const formatted = formatReferenceNumber(candidate);
