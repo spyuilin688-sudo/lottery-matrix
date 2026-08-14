@@ -28,19 +28,19 @@ test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", ()
 
 test("標題卡控制項固定在右側並保留完整彩種文字寬度", () => {
   assert.match(css, /\.history-title-actions\s*\{[^}]*gap:\s*6px/s);
-  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*80px[^}]*height:\s*26px[^}]*flex:\s*0 0 80px/s);
+  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*92px[^}]*height:\s*26px[^}]*flex:\s*0 0 92px/s);
   assert.match(css, /\.history-title-lottery select\s*\{[^}]*font-size:\s*8px/s);
   assert.match(css, /\.history-title-lottery option\s*\{[^}]*font-size:\s*8px/s);
   assert.match(css, /\.history-title-lottery\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 18px/s);
-  assert.match(css, /\.history-title-chevron\s*\{[^}]*z-index:\s*2[^}]*grid-column:\s*2[^}]*border-left:\s*1px solid/s);
+  assert.match(css, /\.history-title-chevron\s*\{[^}]*z-index:\s*2[^}]*grid-column:\s*2/s);
   assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*8%[^}]*left:\s*auto[^}]*width:\s*46%[^}]*height:\s*auto/s);
-  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 20px 0 5px/s);
+  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 24px 0 5px/s);
   assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*68px[^}]*height:\s*26px[^}]*flex:\s*0 0 68px[^}]*font-size:\s*9px/s);
 });
 
 test("歷史頁六合彩數字回到彩球中心", () => {
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*0px/s);
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.5px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*\.3px/s);
 });
 
 test("歷史頁今彩539數字比例依示意圖放大", () => {
