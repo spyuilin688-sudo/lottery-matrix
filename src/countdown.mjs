@@ -11,6 +11,10 @@ export function formatCountdown(value) {
   return [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
 }
 
+export function nextCountdownSeconds(currentSeconds) {
+  return Math.max(0, Math.floor(currentSeconds) - 1);
+}
+
 export function secondsUntil(nextDrawAt, now = Date.now()) {
   const target = Date.parse(nextDrawAt);
   if (!Number.isFinite(target)) return 0;
