@@ -12,7 +12,7 @@ import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
-import { formatCountdown, formatNextDrawAt, parseCountdown, secondsUntil } from "./countdown.mjs";
+import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -306,11 +306,14 @@ export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className
   );
 
   useEffect(() => {
-    const update = () => setRemainingSeconds(
+    setRemainingSeconds(
       nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime),
     );
-    update();
-    const timer = window.setInterval(update, 1000);
+    const timer = window.setInterval(() => {
+      setRemainingSeconds((currentSeconds) =>
+        nextDrawAt ? secondsUntil(nextDrawAt) : nextCountdownSeconds(currentSeconds),
+      );
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [nextDrawAt, remainingTime]);
 
