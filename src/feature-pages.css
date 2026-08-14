@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 31168)
-Total output lines: 2503
+Warning: truncated output (original token count: 31567)
+Total output lines: 2517
 
 .feature-screen {
   min-height: 100%;
@@ -73,10 +73,11 @@ Total output lines: 2503
   opacity: 0;
 }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
-.history-title-lottery { width: 80px; height: 26px; flex: 0 0 80px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
-.history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 8px; }
+.history-title-lottery { display: grid; width: 80px; height: 26px; flex: 0 0 80px; grid-template-columns: minmax(0, 1fr) 18px; overflow: hidden; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
+.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 8px; }
 .history-title-lottery option { font-size: 8px; }
-.history-title-lottery svg { position: absolute; z-index: 1; top: 50%; right: 3px; display: block; width: 11px; height: 11px; color: #e8a900; stroke-width: 2.2; transform: translateY(-50%); pointer-events: none; }
+.history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; border-left: 1px solid rgba(154, 107, 30, .72); background: rgba(20, 17, 9, .94); color: #f0b62c; pointer-events: none; }
+.history-title-chevron svg { display: block; width: 12px; height: 12px; stroke-width: 2.5; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
@@ -596,7 +597,7 @@ Total output lines: 2503
 .draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
 .draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
-.draw-history-screen .history-title-lottery.native-select select { padding: 0 14px 0 5px; text-align: left; text-align-last: left; }
+.draw-history-screen .history-title-lottery.native-select select { padding: 0 20px 0 5px; text-align: left; text-align-last: left; }
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
@@ -1107,23 +1108,7 @@ Total output lines: 2503
 .activation-result { color: #e5c36e !important; }
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid #76521d; border-radius: 9px; background: rgba(183, 133, 32, .08); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
-.plan-carousel { display: flex; margin: 0 -14px; padding: 0 14px 4px; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-.plan-carousel::-webkit-scrollbar { display: none; }
-.plan-card { position: relative; flex: 0 0 calc(100% - 24px); min-height: 300px; padding: 18px; scroll-snap-align: center; border: 1px solid #76521d; border-radius: 13px; background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
-.plan-card[data-current="true"] { border-color: #d6a42b; box-shadow: inset 0 0 24px rgba(202, 144, 30, .11), 0 0 14px rgba(194, 137, 31, .12); }
-.plan-card-heading { display: flex; min-height: 34px; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.plan-name { display: block; padding-top: 2px; color: #e5c36e; font-size: 18px; font-weight: 650; white-space: nowrap; }
-.plan-tool-icons { position: absolute; top: 18px; right: 18px; display: flex; justify-content: flex-end; gap: 7px; }
-.plan-tool-icons--stacked { flex-direction: column; }
-.plan-tool-icons img { width: 72px; height: 72px; border: 1px solid rgba(220, 169, 57, .7); border-radius: 11px; object-fit: cover; box-shadow: 0 0 12px rgba(211, 155, 39, .2); }
-.plan-card--with-tools .plan-card-heading,
-.plan-card--with-tools > strong,
-.plan-card--with-tools > h2,
-.plan-card--with-tools > ul { width: calc(100% - 88px); }
-.plan-card > strong { display: block; margin: 10px 0 20px; color: #f1c352; font-size: 29px; }
-.plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
-.plan-card h2 { margin: 0 0 12px; color: #ece7df; font-size: 15px; }
-.plan-card ul { display: grid; margin: 0; padding-left: 20px; gap: 9px; color: #c8c1b7; fo…1168 tokens truncated…ings-dialog h2 {
+.plan-carousel { display: flex; margin: 0 -14px; padding: 0 14px 4px; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll…1567 tokens truncated…ings-dialog h2 {
   margin: 0 0 11px;
   color: #f0c75c;
   font-size: 17px;
