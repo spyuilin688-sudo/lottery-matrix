@@ -655,34 +655,14 @@
   font-size: 12px;
   font-weight: 600;
 }
-.filter-funnel {
-  position: relative;
-  width: 10px;
-  height: 8px;
-  flex: 0 0 10px;
-  border-top: 1.5px solid currentColor;
-}
-.filter-funnel::before,
-.filter-funnel::after {
-  position: absolute;
-  content: "";
-}
-.filter-funnel::before {
-  top: 0;
-  left: 1px;
-  width: 8px;
-  height: 6px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg) skew(-10deg, -10deg);
-  transform-origin: center;
-}
-.filter-funnel::after {
-  right: 2px;
-  bottom: -1px;
-  width: 1.5px;
-  height: 4px;
-  background: currentColor;
+.history-filter-icon {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.2;
 }
 
 .history-filter-sheet { padding-bottom: 18px; }
