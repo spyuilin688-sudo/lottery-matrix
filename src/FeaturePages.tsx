@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 44809)
+Warning: truncated output (original token count: 44821)
 Total output lines: 3030
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -612,7 +612,7 @@ export function DrawHistoryPage({
         <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
           {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
         </select>
-        <ChevronDownIcon aria-hidden="true" />
+        <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
       </div>
       <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
         <span className="filter-funnel" aria-hidden="true" />
@@ -1429,8 +1429,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           >
             {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
           </select>
-          <ChevronDownIcon aria-hidden="true" />
-        </d…14809 tokens truncated…setting-index={index} key={index}>
+          <Ch…14821 tokens truncated…setting-index={index} key={index}>
           <header data-editing={settingsEditMode}>
             {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`拖曳調整${tag.name}順序`} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={endTagDrag}><span aria-hidden="true">⠿</span></button> : null}
             {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={() => { if (tag.name !== editingTagName.current && !window.confirm(`確定將「${editingTagName.current}」修改為「${tag.name}」？`)) updateTag(index, { name: editingTagName.current }); }} />}
