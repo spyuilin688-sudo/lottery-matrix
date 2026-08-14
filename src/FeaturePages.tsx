@@ -1468,7 +1468,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       headerAction={(
         <div className="reference-title-actions">
           <button type="button" onClick={resetReference}><ReloadIcon />刷新</button>
-          <button type="button" aria-label={queryExpanded ? "收合查詢條件" : "展開查詢條件"} aria-expanded={queryExpanded} onClick={() => setQueryExpanded((current) => !current)}>
+          <button type="button" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={() => setQueryExpanded((current) => !current)}>
+            <span>探索設定</span>
             <ChevronDownIcon data-open={queryExpanded} />
           </button>
         </div>
