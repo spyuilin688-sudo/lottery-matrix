@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatCountdown, formatNextDrawAt, parseCountdown, secondsUntil } from "../src/countdown.mjs";
+import {
+  formatCountdown,
+  formatNextDrawAt,
+  nextCountdownSeconds,
+  parseCountdown,
+  secondsUntil,
+} from "../src/countdown.mjs";
 
 test("將 HH:MM:SS 轉成秒數", () => {
   assert.equal(parseCountdown("18:30:00"), 66_600);
@@ -8,6 +14,14 @@ test("將 HH:MM:SS 轉成秒數", () => {
 
 test("每秒遞減後維持 HH:MM:SS 格式", () => {
   assert.equal(formatCountdown(66_599), "18:29:59");
+});
+
+test("API 未提供 nextDrawAt 時，備用倒數每秒遞減而不是重設固定值", () => {
+  assert.equal(nextCountdownSeconds(66_600), 66_599);
+});
+
+test("備用倒數到零後維持零秒", () => {
+  assert.equal(nextCountdownSeconds(0), 0);
 });
 
 test("倒數到零後不顯示負數", () => {
