@@ -12,7 +12,7 @@ import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
-import { formatCountdown, parseCountdown } from "./countdown.mjs";
+import { formatCountdown, formatNextDrawAt, parseCountdown, secondsUntil } from "./countdown.mjs";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -34,6 +34,7 @@ export type DrawResultData = {
 export type NextDrawInfoData = {
   nextDraw: string;
   remainingTime: string;
+  nextDrawAt?: string;
 };
 
 export type MatrixStatusData = {
@@ -299,16 +300,19 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
 }
 
 export type NextDrawInfoBarProps = NextDrawInfoData & { className?: string };
-export function NextDrawInfoBar({ nextDraw, remainingTime, className = "" }: NextDrawInfoBarProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(() => parseCountdown(remainingTime));
+export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className = "" }: NextDrawInfoBarProps) {
+  const [remainingSeconds, setRemainingSeconds] = useState(() =>
+    nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime),
+  );
 
   useEffect(() => {
-    setRemainingSeconds(parseCountdown(remainingTime));
-    const timer = window.setInterval(() => {
-      setRemainingSeconds((seconds) => Math.max(0, seconds - 1));
-    }, 1000);
+    const update = () => setRemainingSeconds(
+      nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime),
+    );
+    update();
+    const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
-  }, [remainingTime]);
+  }, [nextDrawAt, remainingTime]);
 
   return (
     <section className={`next-draw-info ${className}`.trim()} aria-label="下次開獎資訊" data-testid="next-draw-info">
@@ -371,8 +375,14 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     return QUICK_OPTIONS.some((option) => option.screen === stored) ? stored : null;
   });
   const { deviceId, setDeviceId } = useMobileDevice();
-  const nextDrawInfo = NEXT_DRAW_INFO[selected];
   const { data: latestDraw } = useLatestLotteryDraw(selected);
+  const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
+    ? {
+        nextDraw: formatNextDrawAt(latestDraw.nextDrawAt),
+        remainingTime: "00:00:00",
+        nextDrawAt: latestDraw.nextDrawAt,
+      }
+    : NEXT_DRAW_INFO[selected];
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
