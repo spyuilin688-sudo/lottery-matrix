@@ -1420,6 +1420,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
   const [queryFloating, setQueryFloating] = useState(false);
+  const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const displayedHistory = useMemo(() => [...history].reverse(), [history]);
@@ -1474,6 +1475,12 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       setQueryFloating(false);
       return;
     }
+    const header = document.querySelector<HTMLElement>(".number-reference-screen > .feature-brand-header");
+    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
+    const pageRect = mobilePage?.getBoundingClientRect();
+    const pageTop = pageRect?.top ?? 0;
+    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
+    setQueryPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
     setQueryExpanded(true);
     setQueryFloating(true);
   };
@@ -1500,6 +1507,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           role={queryFloating ? "dialog" : undefined}
           aria-label={queryFloating ? "探索設定" : undefined}
           hidden={!queryExpanded}
+          style={queryFloating ? { top: `${queryPanelTop}px` } : undefined}
         >
         <div className="query-selects three-cols">
         <div className="select-box native-select reference-select">
