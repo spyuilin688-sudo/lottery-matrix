@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 30961)
+Warning: truncated output (original token count: 30976)
 Total output lines: 2493
 
 .feature-screen {
@@ -72,9 +72,9 @@ Total output lines: 2493
   box-shadow: none;
   opacity: 0;
 }
-.history-title-actions { display: flex; min-width: 0; align-items: center; gap: 3px; }
-.history-title-lottery { width: 72px; height: 30px; flex: 0 0 72px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
-.history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 10px; }
+.history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
+.history-title-lottery { width: 80px; height: 26px; flex: 0 0 80px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
+.history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 9px; }
 .history-title-lottery svg { position: absolute; top: 50%; right: 3px; width: 10px; height: 10px; color: #e8a900; transform: translateY(-50%); pointer-events: none; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
@@ -584,10 +584,10 @@ Total output lines: 2493
 }
 
 .draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
-.draw-history-screen .matrix-title-banner-actions { top: 18%; right: 5%; bottom: 18%; left: auto; width: 45%; height: auto; }
+.draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
 .draw-history-screen .history-title-lottery.native-select select { padding: 0 14px 0 5px; text-align: left; text-align-last: left; }
-.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 72px; flex: 0 0 72px; padding-inline: 4px; justify-content: center; }
+.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
 .draw-history-row { display: grid; min-height: 50px; grid-template-columns: 56px 60px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(111, 82, 39, .42); color: #bcb7ae; font-size: 11px; text-align: center; }
@@ -599,9 +599,9 @@ Total output lines: 2493
 .draw-history-row .draw-history-meta:first-child { width: 100%; padding-inline: 0; text-align: center; font-variant-numeric: tabular-nums; }
 .draw-history-row .history-numbers { padding: 0 2px; }
 .draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] { align-items: center; }
-.draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 8px; }
-.draw-history-screen .history-special-number { height: 34px; align-items: flex-end; }
-.draw-history-screen .history-special-ball { height: 34px; grid-template-rows: 8px 26px; }
+.draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 10px; }
+.draw-history-screen .history-special-number { height: 36px; align-items: flex-end; }
+.draw-history-screen .history-special-ball { height: 36px; grid-template-rows: 10px 26px; }
 .draw-history-screen .history-special-label { margin: 0; line-height: 8px; }
 .draw-history-screen .history-special-plus { display: grid; height: 26px; place-items: center; font-size: 13px; font-weight: 900; }
 .history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
@@ -1109,7 +1109,7 @@ Total output lines: 2493
 .renewal-card dd { margin: 0; color: #e5c36e; font-size: 13px; }
 .auto-renew-setting { display: grid; min-height: 52px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
 .auto-renew-setting label { display: flex; min-height: 44px; align-items: center; gap: 9px; color: #ddd5c9; font-size: 14px; cursor: pointer; }
-.auto-renew-setting input { width: 18px; height: 18px; margin: 0; accent-color: #d6…961 tokens truncated…ings-dialog h2 {
+.auto-renew-setting inpu…976 tokens truncated…ings-dialog h2 {
   margin: 0 0 11px;
   color: #f0c75c;
   font-size: 17px;
