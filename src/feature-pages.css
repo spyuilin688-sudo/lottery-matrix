@@ -1,7 +1,7 @@
 .feature-screen {
   --select-tech-border: #d7a52f;
   --select-tech-accent: #f0bd36;
-  --select-tech-text: #f2cf67;
+  --select-tech-text: #d4d0c8;
   --select-tech-surface: #030b13;
   --select-tech-cut: 8px;
   min-height: 100%;
@@ -12,6 +12,8 @@
   color: #f5f2ea;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
+
+.matrix-explore-main-screen { --select-tech-text: #f2cf67; }
 
 .feature-body { padding: 0 var(--layout-page-inline) 24px; }
 .matrix-explore-main-screen > .feature-body,
