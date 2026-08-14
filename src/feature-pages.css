@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 30976)
-Total output lines: 2493
+Warning: truncated output (original token count: 31168)
+Total output lines: 2503
 
 .feature-screen {
   min-height: 100%;
@@ -74,8 +74,9 @@ Total output lines: 2493
 }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .history-title-lottery { width: 80px; height: 26px; flex: 0 0 80px; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
-.history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 9px; }
-.history-title-lottery svg { position: absolute; top: 50%; right: 3px; width: 10px; height: 10px; color: #e8a900; transform: translateY(-50%); pointer-events: none; }
+.history-title-lottery select { width: 100%; height: 100%; padding: 0 16px 0 5px; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 8px; }
+.history-title-lottery option { font-size: 8px; }
+.history-title-lottery svg { position: absolute; z-index: 1; top: 50%; right: 3px; display: block; width: 11px; height: 11px; color: #e8a900; stroke-width: 2.2; transform: translateY(-50%); pointer-events: none; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
@@ -520,6 +521,10 @@ Total output lines: 2493
 .history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 8.5px; font-weight: 500; white-space: nowrap; }
 .history-head { min-height: 32px; color: #b58e3e; font-size: 13.5px; font-weight: 700; }
 .history-head > span { text-align: center; }
+.history-panel .history-row { border-top: 1px solid rgba(90, 87, 80, .45); }
+.history-panel .history-head { min-height: 28px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .70); }
+.history-panel .history-head + .history-row { border-top: 0; }
+.history-panel .history-row[data-week-boundary="true"] { border-top: 2px solid rgba(166, 124, 54, .68); }
 .history-row:not(.history-head) > span:first-child { font-size: 11.5px; white-space: nowrap; }
 .history-row:not(.history-head) > span:nth-child(2) { color: #fff; font-size: 10.5px; }
 .history-row:not(.history-head) > span:first-child { font-weight: 700; }
@@ -555,12 +560,17 @@ Total output lines: 2493
 
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
   gap: 3px;
+  padding-top: 10px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .history-special-number {
+  height: 33.5px;
   margin-left: 6px;
   gap: 4px;
+  align-items: flex-end;
 }
+.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 33.5px; grid-template-rows: 10px 23.5px; }
+.history-panel .history-numbers[data-has-special="true"] .history-special-label { margin: 0; line-height: 8px; }
 
 .draw-history-screen .draw-history-row .history-numbers,
 .draw-history-screen .draw-history-row .history-main-numbers,
@@ -1100,16 +1110,7 @@ Total output lines: 2493
 .plan-card > strong { display: block; margin: 10px 0 20px; color: #f1c352; font-size: 29px; }
 .plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
 .plan-card h2 { margin: 0 0 12px; color: #ece7df; font-size: 15px; }
-.plan-card ul { display: grid; margin: 0; padding-left: 20px; gap: 9px; color: #c8c1b7; font-size: 13px; line-height: 1.45; }
-.renewal-card { padding: 14px; }
-.renewal-card h2 { margin: 0 0 8px; color: #e5c36e; font-size: 17px; }
-.renewal-card dl { margin: 0; }
-.renewal-card dl > div { display: grid; min-height: 42px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
-.renewal-card dt { color: #bcb4a8; font-size: 13px; }
-.renewal-card dd { margin: 0; color: #e5c36e; font-size: 13px; }
-.auto-renew-setting { display: grid; min-height: 52px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
-.auto-renew-setting label { display: flex; min-height: 44px; align-items: center; gap: 9px; color: #ddd5c9; font-size: 14px; cursor: pointer; }
-.auto-renew-setting inpu…976 tokens truncated…ings-dialog h2 {
+.plan-card ul { display: grid; margin: 0; padding-left: 20px; gap: 9px; color: #c8c1b7; fo…1168 tokens truncated…ings-dialog h2 {
   margin: 0 0 11px;
   color: #f0c75c;
   font-size: 17px;
