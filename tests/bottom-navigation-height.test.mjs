@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-test("底部導覽使用縮短後的 72px 高度，內容保留完整導覽與安全區空間", () => {
+test("底部導覽使用正式 95px 高度，內容保留完整導覽與安全區空間", () => {
   const tokens = fs.readFileSync(new URL("../src/design-tokens.css", import.meta.url), "utf8");
   const prototype = fs.readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 
