@@ -642,7 +642,7 @@ export function DrawHistoryPage({
         <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
       </div>
       <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
-        <span className="filter-funnel" aria-hidden="true" />
+        <svg className="history-filter-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選條件
       </button>
     </div>
