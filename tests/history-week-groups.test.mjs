@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { groupHistoryByCalendarWeek } from "../src/history-week-groups.ts";
+import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "../src/history-week-groups.ts";
 
 const record = (period, drawDate) => ({ period, drawDate, numbers: [] });
 
@@ -23,4 +23,12 @@ test("停開不補筆數，只有一期的曆週維持一筆", () => {
   ]);
 
   assert.deepEqual(groups.map((group) => group.length), [2, 1]);
+});
+
+test("近10期依各彩種的跨週開獎日加深分隔線", () => {
+  assert.equal(isNearHistoryWeekBoundary("今彩539", "2026/08/10（一）", "2026/08/08（六）"), true);
+  assert.equal(isNearHistoryWeekBoundary("天天樂", "2026/08/10（一）", "2026/08/09（日）"), true);
+  assert.equal(isNearHistoryWeekBoundary("六合彩", "2026/08/11（二）", "2026/08/08（六）"), true);
+  assert.equal(isNearHistoryWeekBoundary("大樂透", "2026/08/11（二）", "2026/08/07（五）"), true);
+  assert.equal(isNearHistoryWeekBoundary("六合彩", "2026/08/08（六）", "2026/08/06（四）"), false);
 });
