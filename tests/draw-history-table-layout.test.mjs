@@ -27,16 +27,24 @@ test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", ()
 });
 
 test("標題卡控制項固定在右側並保留完整彩種文字寬度", () => {
-  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*72px/s);
+  assert.match(css, /\.history-title-actions\s*\{[^}]*gap:\s*6px/s);
+  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*80px[^}]*height:\s*26px[^}]*flex:\s*0 0 80px/s);
+  assert.match(css, /\.history-title-lottery select\s*\{[^}]*font-size:\s*9px/s);
   assert.match(css, /\.history-title-lottery svg\s*\{[^}]*top:\s*50%[^}]*transform:\s*translateY\(-50%\)/s);
-  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*5%[^}]*left:\s*auto[^}]*width:\s*45%[^}]*height:\s*auto/s);
+  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*8%[^}]*left:\s*auto[^}]*width:\s*46%[^}]*height:\s*auto/s);
   assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 14px 0 5px/s);
-  assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*72px[^}]*flex:\s*0 0 72px/s);
+  assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*68px[^}]*height:\s*26px[^}]*flex:\s*0 0 68px[^}]*font-size:\s*9px/s);
 });
 
 test("歷史頁六合彩數字回到彩球中心", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*-\.5px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*0px/s);
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-\.5px/s);
+});
+
+test("六加一特別號標籤上移並保持彩球中心一致", () => {
+  assert.match(css, /\.draw-history-screen \.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*padding-top:\s*10px/s);
+  assert.match(css, /\.draw-history-screen \.history-special-number\s*\{[^}]*height:\s*36px/s);
+  assert.match(css, /\.draw-history-screen \.history-special-ball\s*\{[^}]*height:\s*36px[^}]*grid-template-rows:\s*10px 26px/s);
 });
 
 test("六加一正碼增加球距並將數字底線間距設為0.3px", () => {
