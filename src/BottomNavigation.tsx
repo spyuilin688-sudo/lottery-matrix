@@ -12,9 +12,9 @@ type BottomNavigationProps = {
 };
 
 const NAVIGATION_ITEMS = [
-  { label: "首頁", screen: "home", artwork: "matrixWW1.png" },
-  { label: "快捷", screen: null, artwork: "matrixWW2.png" },
-  { label: "通知", screen: "notifications", artwork: "matrixWW3.png" },
+  { label: "首頁", screen: "home", artwork: "matrixWW3.png" },
+  { label: "快捷", screen: null, artwork: "matrixWW1.png" },
+  { label: "通知", screen: "notifications", artwork: "matrixWW2.png" },
   { label: "我的", screen: "profile", artwork: "matrixWW4.png" },
 ] as const;
 
