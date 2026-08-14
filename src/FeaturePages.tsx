@@ -1413,7 +1413,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
-  const queryPanelRef = useRef<HTMLDivElement>(null);
+  const [queryFloating, setQueryFloating] = useState(false);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const displayedHistory = useMemo(() => [...history].reverse(), [history]);
@@ -1456,6 +1456,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     setInputs(normalized);
     setAppliedInputs(unique);
     setQueryExpanded(false);
+    setQueryFloating(false);
     requestAnimationFrame(() => {
       resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     });
@@ -1464,12 +1465,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const toggleQueryPanel = () => {
     if (queryExpanded) {
       setQueryExpanded(false);
+      setQueryFloating(false);
       return;
     }
     setQueryExpanded(true);
-    requestAnimationFrame(() => {
-      queryPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    setQueryFloating(true);
   };
 
   return (
@@ -1487,7 +1487,13 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       )}
     >
-      <div ref={queryPanelRef} className="reference-query-panel" hidden={!queryExpanded}>
+      <div
+        className="reference-query-panel"
+        data-floating={queryFloating}
+        role={queryFloating ? "dialog" : undefined}
+        aria-label={queryFloating ? "探索設定" : undefined}
+        hidden={!queryExpanded}
+      >
         <div className="query-selects three-cols">
         <div className="select-box native-select reference-select">
           <select
