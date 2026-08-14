@@ -33,5 +33,6 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   const dialog = screen.getByRole('dialog', { name: '探索設定' });
   expect(dialog.hidden).toBe(false);
   expect(dialog.getAttribute('data-floating')).toBe('true');
+  expect(dialog.parentElement).toBe(mobilePage);
   expect(scrollIntoView).not.toHaveBeenCalled();
 });
