@@ -104,3 +104,15 @@ npm run preview
 - 已包含：完整 `src/`、`public/`、`scripts/`、`tests/`、設定檔、套件鎖定檔、所有目前專案內素材、`PROJECT_HANDOFF.md`、`FILE_MANIFEST.txt`。
 - 已排除：`node_modules/`、`dist/`、快取、日誌、系統暫存檔。
 - 未修改：既有 React／TypeScript 程式碼、CSS、文案、功能、路由、版面及圖片素材。
+
+## 11. 六合彩歷史日期補入規則（2026-08-14）
+
+- 爬蟲 AppDeploy：`app-snsxet`
+- NFD 保留正式期數與號碼。
+- sc888 六合彩頁面：`https://sc888.net/index.php?s=/LotterySix/index`
+- sc888 只提供歷史開獎日期。
+- 只有期數、6 個一般號碼及特別號與 NFD 完全一致時，才補入 `drawDate`。
+- 期數或 7 個號碼任一不一致時，`drawDate` 維持空白。
+- sc888 不得修改 NFD 的期數、`sortedNumbers` 或 `drawOrderNumbers`。
+- 前端 `src/lottery-api.ts` 已由 `app-snsxet` 讀取 `drawDate`，不需修改前端資料流程。
+- AppDeploy 版本：`1786672580160`，8 項端對端測試通過。
