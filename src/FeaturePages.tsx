@@ -22,6 +22,7 @@ import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 import { BrandLogo } from "./BrandLogo";
+import { paginateHistory } from "./history-pagination";
 
 export type ScreenId =
   | "home"
@@ -512,7 +513,7 @@ function HistoryList({
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>
-        {history.map((record) => {
+        {paginatedHistory.items.map((record) => {
           const draw = getHistoryDrawNumbers(lottery, record, order);
           const issue = record.period ?? record.issue ?? "";
           const date = record.drawDate ?? record.date ?? "";
@@ -557,8 +558,18 @@ export function DrawHistoryPage({
   const [day, setDay] = useTimedState("history-day", "31日");
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const [page, setPage] = useState(1);
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const historyOrder = getHistoryOrder(numberOrder);
+  const paginatedHistory = useMemo(() => paginateHistory(history, page), [history, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [lottery, range, numberOrder]);
+
+  useEffect(() => {
+    if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
+  }, [page, paginatedHistory.currentPage]);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -635,6 +646,17 @@ export function DrawHistoryPage({
           );
         })}
       </section>
+      {paginatedHistory.totalPages > 1 ? (
+        <nav className="history-pagination" aria-label="歷史開獎號碼分頁">
+          <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}>
+            <ChevronLeftIcon aria-hidden="true" />
+          </button>
+          <span>{paginatedHistory.currentPage} / {paginatedHistory.totalPages}</span>
+          <button type="button" aria-label="下一頁" disabled={paginatedHistory.currentPage === paginatedHistory.totalPages} onClick={() => setPage((current) => current + 1)}>
+            <ChevronRightIcon aria-hidden="true" />
+          </button>
+        </nav>
+      ) : null}
       {filterOpen && document.querySelector<HTMLElement>(".mobile-page")
         ? createPortal(
             <div className="filter-sheet-backdrop" role="presentation" onClick={() => setFilterOpen(false)}>
