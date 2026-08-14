@@ -38,5 +38,5 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
 test("六合彩正式使用情境使用單一非負底線間距", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
   assert.doesNotMatch(formal, /data-lottery="六合彩"[^}]*--underline-y:\s*-/s);
-  assert.match(formal, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\][^}]*--underline-y:\s*\.3px/s);
+  assert.match(formal, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\][^}]*--underline-y:\s*0px/s);
 });
