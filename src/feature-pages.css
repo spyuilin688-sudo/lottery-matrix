@@ -1,4 +1,7 @@
 .feature-screen {
+  --select-tech-border: #235f9b;
+  --select-tech-accent: #419fe6;
+  --select-tech-surface: #040c13;
   min-height: 100%;
   padding: 44px 0 var(--layout-bottom-nav-clearance);
   background:
@@ -70,10 +73,10 @@
   opacity: 0;
 }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
-.history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; overflow: hidden; border: 1px solid #76521d; border-radius: 6px; background: #071018; }
+.history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; overflow: hidden; border: 1px solid var(--select-tech-border); border-radius: 6px; background: linear-gradient(145deg, #07131d, var(--select-tech-surface)); box-shadow: inset 0 0 12px rgba(35, 95, 155, .16), 0 0 8px rgba(22, 138, 208, .08); }
 .history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: #d4d0c8; font-size: 8px; }
 .history-title-lottery option { font-size: 8px; }
-.history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; border-left: 1px solid rgba(154, 107, 30, .72); background: rgba(20, 17, 9, .94); color: #f0b62c; pointer-events: none; }
+.history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; border-left: 1px solid rgba(35, 95, 155, .78); background: rgba(4, 15, 24, .96); color: var(--select-tech-accent); pointer-events: none; }
 .history-title-chevron svg { display: block; width: 12px; height: 12px; stroke-width: 2.5; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
@@ -85,10 +88,10 @@
 .lottery-tabs { display: grid; height: 48px; margin: 0 0 12px; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #352817; }
 .lottery-tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: #8e8a84; font-size: 14px; }
 .lottery-tabs button[data-selected="true"] { border-bottom-color: #f5c51f; color: #f4c824; }
-.select-box { display: flex; min-width: 0; height: 44px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #76521d; border-radius: 8px; background: #071018; color: #d4d0c8; text-align: left; }
+.select-box { display: flex; min-width: 0; height: 44px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--select-tech-border); border-radius: 8px; background: linear-gradient(145deg, #07131d, var(--select-tech-surface)); box-shadow: inset 0 0 14px rgba(35, 95, 155, .16), 0 0 8px rgba(22, 138, 208, .08); color: #d4dce3; text-align: left; }
 .select-box span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select-box em { margin-left: auto; padding: 2px 7px; border: 1px solid #9a6f1e; border-radius: 999px; color: #e6a91b; font-size: 9px; font-style: normal; }
-.select-box svg { width: 18px; flex: 0 0 18px; color: #e8a900; }
+.select-box svg { width: 18px; flex: 0 0 18px; color: var(--select-tech-accent); }
 .native-select { position: relative; padding: 0; }
 .native-select select {
   width: 100%;
@@ -102,6 +105,7 @@
   font: inherit;
 }
 .native-select svg { position: absolute; right: 12px; pointer-events: none; }
+.native-select option { background: var(--select-tech-surface); color: #d4dce3; }
 
 .matrix-explore-screen .native-select select,
 .tongxing-screen .native-select select {
@@ -1494,8 +1498,8 @@
 .tag-setting-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 6px; }
 .tag-setting-card label { display: grid; gap: 5px; color: #8e877e; font-size: 9px; }
 .tag-setting-card input,
-.tag-setting-card select,
 .custom-tag-add input { width: 100%; height: 34px; padding: 0 8px; border: 1px solid #40382c; border-radius: 6px; color: #e4ddd2; background: #040a0e; font-size: 11px; }
+.tag-setting-card select { width: 100%; height: 34px; padding: 0 8px; border: 1px solid var(--select-tech-border); border-radius: 6px; color: #d4dce3; background: linear-gradient(145deg, #07131d, var(--select-tech-surface)); box-shadow: inset 0 0 12px rgba(35, 95, 155, .16); font-size: 11px; }
 .tag-setting-card select { padding-inline: 5px 2px; font-size: 9px; }
 .custom-tag-add { display: grid; padding: 10px; grid-template-columns: 1fr 64px; gap: 7px; }
 .custom-tag-add button,
