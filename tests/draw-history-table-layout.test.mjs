@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 
 test("歷史開獎三欄使用單一正式比例並將前兩欄內容幾何置中", () => {
   assert.match(css, /\.draw-history-row\s*\{[^}]*grid-template-columns:\s*56px 60px minmax\(0, 1fr\)/s);
@@ -23,4 +24,13 @@ test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", ()
   assert.match(css, /\.draw-history-head\s*\{[^}]*min-height:\s*34px[^}]*border-bottom:\s*1px solid rgba\(195, 145, 54, \.64\)/s);
   assert.match(css, /\.draw-history-row\s*\{[^}]*min-height:\s*50px/s);
   assert.match(css, /\.draw-history-week-list\s*\{[^}]*gap:\s*8px/s);
+});
+
+test("標題卡控制項固定在右側並保留完整彩種文字寬度", () => {
+  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*76px/s);
+  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*3%[^}]*left:\s*auto[^}]*width:\s*45%/s);
+});
+
+test("歷史頁六合彩數字回到彩球中心", () => {
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*0px/s);
 });
