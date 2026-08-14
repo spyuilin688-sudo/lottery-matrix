@@ -7,6 +7,23 @@ import { BottomNavigation } from "../BottomNavigation";
 afterEach(cleanup);
 
 describe("BottomNavigation", () => {
+  it("使用 matrixDD 正式底圖，並由互動層控制選取狀態", () => {
+    render(<BottomNavigation active="通知" />);
+
+    expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute(
+      "src",
+      "/assets/lottery/functions/matrixDD.png",
+    );
+    expect(screen.getByRole("button", { name: "通知" })).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "首頁" })).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+  });
+
   it.each(["首頁", "快捷", "通知", "我的"] as const)(
     "只讓目前頁面 %s 顯示選取發光狀態",
     (active) => {

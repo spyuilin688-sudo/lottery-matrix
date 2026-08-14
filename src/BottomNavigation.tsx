@@ -1,10 +1,4 @@
 import { useRef, type KeyboardEvent, type MouseEvent } from "react";
-import {
-  BellIcon,
-  HomeIcon,
-  LightningBoltIcon,
-  PersonIcon,
-} from "@radix-ui/react-icons";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -18,10 +12,10 @@ type BottomNavigationProps = {
 };
 
 const NAVIGATION_ITEMS = [
-  { label: "首頁", icon: HomeIcon, screen: "home" },
-  { label: "快捷", icon: LightningBoltIcon, screen: null },
-  { label: "通知", icon: BellIcon, screen: "notifications" },
-  { label: "我的", icon: PersonIcon, screen: "profile" },
+  { label: "首頁", screen: "home" },
+  { label: "快捷", screen: null },
+  { label: "通知", screen: "notifications" },
+  { label: "我的", screen: "profile" },
 ] as const;
 
 export function BottomNavigation({
@@ -60,11 +54,14 @@ export function BottomNavigation({
       data-testid="bottom-navigation"
       data-active={quickActive ? "快捷" : active}
     >
-      <span className="bottom-navigation-topline" aria-hidden="true" />
-      <span className="bottom-navigation-side-rail bottom-navigation-side-rail--left" aria-hidden="true" />
-      <span className="bottom-navigation-side-rail bottom-navigation-side-rail--right" aria-hidden="true" />
+      <img
+        className="bottom-navigation-artwork"
+        src="/assets/lottery/functions/matrixDD.png"
+        alt="Matrix 底部導覽"
+        draggable={false}
+      />
 
-      {NAVIGATION_ITEMS.map(({ label, icon: Icon, screen }) => {
+      {NAVIGATION_ITEMS.map(({ label, screen }) => {
         const selected = label === "快捷" ? active === label || quickActive : active === label && !quickActive;
         const quickProps = label === "快捷"
           ? {
@@ -92,11 +89,7 @@ export function BottomNavigation({
             key={label}
             {...quickProps}
           >
-            <span className="bottom-navigation-icon-frame" aria-hidden="true">
-              <Icon />
-            </span>
-            <span className="bottom-navigation-label">{label}</span>
-            <span className="bottom-navigation-active-bar" aria-hidden="true" />
+            <span className="bottom-navigation-a11y-label">{label}</span>
           </button>
         );
       })}
