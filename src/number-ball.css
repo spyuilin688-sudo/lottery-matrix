@@ -45,7 +45,7 @@
 
 .number-ball-component[data-lottery="六合彩"] {
   --number-ball-asset-scale: 1.02;
-  --underline-y: .5px;
+  --underline-y: -.5px;
 }
 
 .number-ball-component[data-lottery="六合彩"][data-tone="red"] {
@@ -140,7 +140,7 @@
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
   --number-font-size: 16px;
   --number-y: 0px;
-  --underline-y: .5px;
+  --underline-y: -.5px;
   --underline-width: 15px;
 }
 
@@ -162,7 +162,7 @@
 }
 
 .history-panel .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --underline-y: .5px;
+  --underline-y: -.5px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball {
@@ -175,7 +175,7 @@
   --number-font-size: 12px;
   --number-y: -1px;
   --underline-width: 11px;
-  --underline-y: .5px;
+  --underline-y: -.5px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] .number-ball-value {
@@ -203,9 +203,9 @@
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
   --number-ball-size: 26px;
   --number-font-size: 11.5px;
-  --number-y: -1px;
+  --number-y: 0px;
   --underline-width: 11px;
-  --underline-y: .5px;
+  --underline-y: -.5px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] .number-ball-value {
