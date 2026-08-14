@@ -619,7 +619,7 @@
 .draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
 .draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
-.draw-history-screen .history-title-lottery.native-select select { padding: 0 24px 0 5px; text-align: left; text-align-last: left; }
+.draw-history-screen .history-title-lottery.native-select select {\n  padding: 0 22px 0 4px;\n  font-size: 8px;\n  text-align: center;\n  text-align-last: center;\n}
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
