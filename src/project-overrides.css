@@ -30,6 +30,12 @@
 
 .bottom-nav-brand-screen > .feature-brand-header { top: auto !important; }
 
+/* 號碼對照單：Logo、返回鍵與標題卡需隨內容捲動固定在頂端。 */
+.number-reference-screen > .feature-brand-header {
+  position: sticky !important;
+  top: 0 !important;
+}
+
 .feature-brand-header:not([data-compact='true']) .feature-brand-lockup {
   display: flex !important;
   max-width: none !important;
