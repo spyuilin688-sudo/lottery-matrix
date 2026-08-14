@@ -171,11 +171,15 @@
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --number-ball-size: 25.9px;
-  --number-font-size: 12px;
-  --number-y: -1px;
+  --number-ball-size: 23.5px;
+  --number-font-size: 10.5px;
+  --number-y: -.5px;
   --underline-width: 11px;
   --underline-y: -.5px;
+}
+
+.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+  --number-ball-size: 23.5px;
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] .number-ball-value {
@@ -189,7 +193,7 @@
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
   --number-ball-size: 32px;
-  --number-font-size: 13px;
+  --number-font-size: 12px;
   --number-y: 0px;
   --underline-y: .25px;
 }
@@ -204,9 +208,9 @@
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
   --number-ball-size: 26px;
   --number-font-size: 11.5px;
-  --number-y: 0px;
+  --number-y: -.25px;
   --underline-width: 11px;
-  --underline-y: -.5px;
+  --underline-y: -1px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] .number-ball-value {
