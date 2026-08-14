@@ -36,7 +36,7 @@
 }
 
 .bottom-nav-brand-screen > .feature-body {
-  padding-bottom: calc(var(--layout-bottom-nav-clearance) + 36px);
+  padding-bottom: var(--layout-bottom-nav-clearance);
 }
 
 .bottom-navigation {
@@ -59,11 +59,10 @@
 .bottom-navigation-artwork {
   position: absolute;
   z-index: 0;
-  top: -1px;
-  left: -2%;
+  inset: 0;
   display: block;
-  width: 104%;
-  height: calc(var(--bottom-navigation-height) + 2px);
+  width: 100%;
+  height: var(--bottom-navigation-height);
   object-fit: fill;
   pointer-events: none;
   user-select: none;
