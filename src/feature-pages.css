@@ -954,6 +954,22 @@
 .reference-title-actions svg { width: 14px; height: 14px; }
 .reference-title-actions svg[data-open="true"] { transform: rotate(180deg); }
 .reference-query-panel[hidden] { display: none; }
+.reference-query-panel[data-floating="true"] {
+  position: fixed;
+  z-index: 40;
+  top: 50%;
+  left: 50%;
+  box-sizing: border-box;
+  width: min(calc(100vw - 8px), 382px);
+  max-height: calc(100dvh - 24px);
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid #6c4a20;
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
+  transform: translate(-50%, -50%);
+}
 .number-reference-screen .query-selects.three-cols { grid-template-columns: 100px 92px minmax(0, 1fr); }
 .number-reference-screen .reference-select select { padding-left: 7px; padding-right: 25px; font-size: 13px; }
 .number-reference-screen .reference-order-select select { padding-left: 5px; padding-right: 22px; font-size: 11.5px; }
