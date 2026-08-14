@@ -204,9 +204,9 @@
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
   --number-ball-size: 26px;
   --number-font-size: 11.5px;
-  --number-y: 0px;
+  --number-y: -.5px;
   --underline-width: 11px;
-  --underline-y: .3px;
+  --underline-y: -.5px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="六合彩"] .number-ball-value {
