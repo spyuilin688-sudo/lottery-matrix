@@ -23,6 +23,12 @@ import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBa
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 import { BrandLogo } from "./BrandLogo";
 import { paginateHistory } from "./history-pagination";
+import { groupHistoryByCalendarWeek } from "./history-week-groups";
+import {
+  isActivationRedemptionError,
+  redeemActivationCode,
+  type ActivationRedemptionErrorCode,
+} from "./activation/redeemActivationCode";
 
 export type ScreenId =
   | "home"
@@ -482,10 +488,6 @@ function HistoryList({
   const order = getHistoryOrder(numberOrder);
   const [expanded, setExpanded] = useState(!collapsible);
 
-  useEffect(() => {
-    if (collapsible) setExpanded(false);
-  }, [collapsible, lottery]);
-
   return (
     <section className="panel history-panel" data-lottery={lottery}>
       <header className="panel-heading">
@@ -531,7 +533,10 @@ function HistoryList({
                 {draw.special ? (
                   <span className="history-special-number">
                     <span aria-hidden="true">+</span>
-                    <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
+                    <span className="history-special-ball">
+                      <small className="history-special-label">特別號</small>
+                      <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
+                    </span>
                   </span>
                 ) : null}
               </span>
@@ -562,6 +567,10 @@ export function DrawHistoryPage({
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const historyOrder = getHistoryOrder(numberOrder);
   const paginatedHistory = useMemo(() => paginateHistory(history, page), [history, page]);
+  const historyWeekGroups = useMemo(
+    () => groupHistoryByCalendarWeek(paginatedHistory.items),
+    [paginatedHistory.items],
+  );
 
   useEffect(() => {
     setPage(1);
@@ -616,36 +625,46 @@ export function DrawHistoryPage({
       className="draw-history-screen"
       headerAction={historyTitleActions}
     >
-      <section className="panel draw-history-panel" aria-label={`${lottery}歷史開獎號碼`}>
-        <div className="draw-history-row draw-history-head">
-          <span>期數</span>
-          <span>日期</span>
-          <span>開獎號碼</span>
-        </div>
-        {paginatedHistory.items.map((record) => {
-          const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
-          const issue = record.period ?? record.issue ?? "";
-          const date = record.drawDate ?? record.date ?? "";
-
+      <div className="draw-history-week-list" aria-label={`${lottery}歷史開獎號碼`}>
+        {historyWeekGroups.map((weekRecords) => {
+          const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (
-            <div className="draw-history-row" key={issue}>
-              <span className="draw-history-meta">{issue}</span>
-              <span className="draw-history-meta"><HistoryDate value={date} /></span>
-              <span className="history-numbers" data-has-special={Boolean(draw.special)}>
-                <span className="history-main-numbers">
-                  {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />)}
-                </span>
-                {draw.special ? (
-                  <span className="history-special-number">
-                    <span aria-hidden="true">+</span>
-                    <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
-                  </span>
-                ) : null}
-              </span>
-            </div>
+            <section className="panel draw-history-panel" key={firstIssue}>
+              <div className="draw-history-row draw-history-head">
+                <span>期數</span>
+                <span>日期</span>
+                <span>開獎號碼</span>
+              </div>
+              {weekRecords.map((record) => {
+                const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
+                const issue = record.period ?? record.issue ?? "";
+                const date = record.drawDate ?? record.date ?? "";
+
+                return (
+                  <div className="draw-history-row" key={issue}>
+                    <span className="draw-history-meta">{issue}</span>
+                    <span className="draw-history-meta"><HistoryDate value={date} /></span>
+                    <span className="history-numbers" data-has-special={Boolean(draw.special)}>
+                      <span className="history-main-numbers">
+                        {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />)}
+                      </span>
+                      {draw.special ? (
+                        <span className="history-special-number">
+                          <span className="history-special-plus" aria-hidden="true">+</span>
+                          <span className="history-special-ball">
+                            <small className="history-special-label">特別號</small>
+                            <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
+                          </span>
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                );
+              })}
+            </section>
           );
         })}
-      </section>
+      </div>
       {paginatedHistory.totalPages > 1 ? (
         <nav className="history-pagination" aria-label="歷史開獎號碼分頁">
           <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}>
@@ -1204,7 +1223,9 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   })).filter((group) => group.predictedEntry);
 
   const updateInputValue = (index: number, rawValue: string) => {
-    const nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
+    let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
+    if (/^[1-9]$/.test(nextValue)) nextValue = `0${nextValue}`;
+    if (nextValue === "0") nextValue = "";
     if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
     setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
   };
@@ -1216,6 +1237,11 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const handleSearch = () => {
+    const hasInvalidValue = values.some((value) => value !== "" && !/^(0[1-9]|[1-4][0-9])$/.test(value));
+    if (hasInvalidValue) {
+      setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : ""));
+      return;
+    }
     setSearched(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -2788,7 +2814,37 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
   const [activationOpen, setActivationOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [resultState, setResultState] = useState<"idle" | "success" | ActivationRedemptionErrorCode>("idle");
+  const activationRequestRevision = useRef(0);
   const referralSuccessCount = 0;
+
+  useEffect(() => () => {
+    activationRequestRevision.current += 1;
+  }, []);
+
+  async function handleActivation() {
+    if (submitting) return;
+
+    const requestRevision = activationRequestRevision.current + 1;
+    activationRequestRevision.current = requestRevision;
+
+    setSubmitting(true);
+    setResultState("idle");
+
+    try {
+      await redeemActivationCode(activationCode);
+      if (activationRequestRevision.current !== requestRevision) return;
+      setActivationCode("");
+      setResultState("success");
+    } catch (error) {
+      if (activationRequestRevision.current !== requestRevision) return;
+      setResultState(isActivationRedemptionError(error) ? error.code : "ACTIVATION_CODE_REDEMPTION_FAILED");
+    } finally {
+      if (activationRequestRevision.current === requestRevision) setSubmitting(false);
+    }
+  }
+
   return (
     <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
       <section className="panel referral-card">
@@ -2801,7 +2857,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
       <DetailCard title="推薦成功獎勵"><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></DetailCard>
       <DetailCard title="推薦獎勵補充規則"><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></DetailCard>
       <DetailCard title="邀請好友"><p>推薦碼/邀請碼尚未提供。</p></DetailCard>
-      <section className="panel activation-card"><button type="button" className="activation-toggle" aria-expanded={activationOpen} aria-controls="activation-code-entry" onClick={() => setActivationOpen((current) => !current)}><span>啟動碼</span><ChevronDownIcon aria-hidden="true" /></button>{activationOpen ? <div className="code-entry-block" id="activation-code-entry"><label htmlFor="activation-code">輸入啟動碼</label><input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" /><button type="button" className="gold-button">確認</button><section className="activation-instructions" aria-labelledby="activation-instructions-title"><h3 id="activation-instructions-title">啟動碼使用說明</h3><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></section></div> : null}</section>
+      <section className="panel activation-card"><button type="button" className="activation-toggle" aria-expanded={activationOpen} aria-controls="activation-code-entry" onClick={() => setActivationOpen((current) => !current)}><span>啟動碼</span><ChevronDownIcon aria-hidden="true" /></button>{activationOpen ? <div className="code-entry-block" id="activation-code-entry" data-result-state={resultState} aria-busy={submitting}><label htmlFor="activation-code">輸入啟動碼</label><input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" /><button type="button" className="gold-button" onClick={handleActivation} disabled={submitting}>確認</button><section className="activation-instructions" aria-labelledby="activation-instructions-title"><h3 id="activation-instructions-title">啟動碼使用說明</h3><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></section></div> : null}</section>
     </ProfileDetailShell>
   );
 }
