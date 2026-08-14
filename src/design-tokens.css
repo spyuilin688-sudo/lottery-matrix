@@ -58,7 +58,7 @@
   --primary-brand-ratio: 1536 / 550;
   --feature-brand-ratio: 1536 / 512;
   --feature-brand-max-width: 358px;
-  --bottom-navigation-height: 72px;
+  --bottom-navigation-height: 95px;
   --layout-card-padding: 12px;
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 16px);
   --lottery-card-radius: 10px;
