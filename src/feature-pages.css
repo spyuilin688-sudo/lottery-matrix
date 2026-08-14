@@ -1048,7 +1048,6 @@ Total output lines: 2517
 
 .profile-screen .feature-brand-header { min-height: 54px; }
 .profile-screen .feature-brand-header > .feature-brand-logo { width: 320px; max-width: 100%; height: 54px; }
-.profile-screen .feature-body, .profile-detail-screen .feature-body { display: grid; gap: 12px; padding-inline: 14px; padding-bottom: 32px; }
 .profile-card { display: grid; min-height: 92px; padding: 14px; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 14px; }
 .profile-card { position: relative; min-height: 126px; grid-template-columns: 66px minmax(0, 1fr) auto; overflow: hidden; border-color: #9c722d; }
 .profile-avatar { z-index: 1; display: grid; width: 66px; height: 66px; place-items: center; border: 1px solid #b8872f; border-radius: 50%; background: radial-gradient(circle, #fff 0 34%, #16ad2d 35% 68%, #087d19 69% 100%); box-shadow: 0 0 15px rgba(213, 157, 39, .18); }
@@ -1059,7 +1058,7 @@ Total output lines: 2517
 .profile-copy p { display: inline-flex; margin-top: 8px; padding: 4px 8px; border: 1px solid #453d33; border-radius: 999px; background: rgba(9, 12, 14, .68); }
 .profile-logout { z-index: 1; align-self: end; min-width: 66px; height: 34px; border: 1px solid #9c722d; border-radius: 999px; background: rgba(9, 12, 14, .76); color: #e3bd60; }
 .subscription-status-card { padding: 14px; }
-.subscription-status-content { display: grid; margin: 14px 0; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; }
+.subscription-status-content { display: grid; margin: 14px 0; grid-template-columns: 52px minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 10px; }
 .subscription-crown { display: grid; width: 48px; height: 48px; place-items: center; border: 1px solid #9c722d; border-radius: 50%; color: #f0bf4c; font-size: 25px; background: radial-gradient(circle, rgba(212, 155, 40, .18), transparent 70%); }
 .subscription-status-content > div:not(:first-child) { min-width: 0; }
 .subscription-status-content > div:last-child { padding-left: 10px; border-left: 1px solid #5f503c; }
@@ -1923,8 +1922,9 @@ Total output lines: 2517
 }
 .profile-screen .feature-body,
 .profile-detail-screen .feature-body {
+  display: grid;
   gap: 8px;
-  padding-inline: 16px;
+  padding-inline: 4px;
   padding-bottom: 106px;
 }
 .profile-screen .panel,
@@ -1983,7 +1983,7 @@ Total output lines: 2517
 }
 .subscription-status-content > div:not(:first-child) {
   display: grid;
-  align-content: center;
+  align-content: start;
 }
 .subscription-status-content > div:last-child {
   padding-left: 0;
