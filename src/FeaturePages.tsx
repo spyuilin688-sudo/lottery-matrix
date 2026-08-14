@@ -249,6 +249,12 @@ function FeatureBottomNavigationPortal({
     : null;
 }
 
+function MobilePagePortal({ active, children }: { active: boolean; children: React.ReactNode }) {
+  if (!active || typeof document === "undefined") return children;
+  const host = document.querySelector<HTMLElement>(".mobile-page");
+  return host ? createPortal(children, host) : children;
+}
+
 function FeatureShell({
   title,
   children,
@@ -1487,13 +1493,14 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       )}
     >
-      <div
-        className="reference-query-panel"
-        data-floating={queryFloating}
-        role={queryFloating ? "dialog" : undefined}
-        aria-label={queryFloating ? "探索設定" : undefined}
-        hidden={!queryExpanded}
-      >
+      <MobilePagePortal active={queryFloating}>
+        <div
+          className="reference-query-panel"
+          data-floating={queryFloating}
+          role={queryFloating ? "dialog" : undefined}
+          aria-label={queryFloating ? "探索設定" : undefined}
+          hidden={!queryExpanded}
+        >
         <div className="query-selects three-cols">
         <div className="select-box native-select reference-select">
           <select
@@ -1547,7 +1554,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
             <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>
           </div>
         </section>
-      </div>
+        </div>
+      </MobilePagePortal>
       <section className="panel reference-table-panel">
         <header><h2>{lottery}（{order}）</h2></header>
         <div className="reference-table">
