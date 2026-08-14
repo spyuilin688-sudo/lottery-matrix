@@ -26,6 +26,12 @@ import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
 import {
+  buildTongXingPairs,
+  filterHistoryRecords,
+  isDuplicateLookupNumber,
+  normalizeLookupNumber,
+} from "./feature-tool-logic";
+import {
   isActivationRedemptionError,
   redeemActivationCode,
   type ActivationRedemptionErrorCode,
@@ -568,10 +574,15 @@ export function DrawHistoryPage({
   const [day, setDay] = useTimedState("history-day", "31日");
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
+  const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
   const [page, setPage] = useState(1);
   const history = useLotteryHistory(lottery, getHistoryLimit(range));
   const historyOrder = getHistoryOrder(numberOrder);
-  const paginatedHistory = useMemo(() => paginateHistory(history, page), [history, page]);
+  const filteredHistory = useMemo(
+    () => filterHistoryRecords(history, appliedFilters),
+    [history, appliedFilters],
+  );
+  const paginatedHistory = useMemo(() => paginateHistory(filteredHistory, page), [filteredHistory, page]);
   const historyWeekGroups = useMemo(
     () => groupHistoryByCalendarWeek(paginatedHistory.items),
     [paginatedHistory.items],
@@ -579,7 +590,7 @@ export function DrawHistoryPage({
 
   useEffect(() => {
     setPage(1);
-  }, [lottery, range, numberOrder]);
+  }, [lottery, range, numberOrder, appliedFilters]);
 
   useEffect(() => {
     if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
@@ -605,6 +616,15 @@ export function DrawHistoryPage({
     setDay("31日");
     setRange("1000期");
     setNumberOrder("依號碼由小到大排序");
+    setAppliedFilters({ issue: "", date: "" });
+  };
+
+  const applyHistoryFilters = () => {
+    setAppliedFilters({
+      issue,
+      date: `${year}/${month.replace("月", "")}/${day.replace("日", "")}`,
+    });
+    setFilterOpen(false);
   };
 
   const historyTitleActions = (
@@ -757,7 +777,7 @@ export function DrawHistoryPage({
                 </div>
                 <footer className="history-filter-actions">
                   <button type="button" onClick={resetHistoryFilters}>重設</button>
-                  <button type="button" onClick={() => setFilterOpen(false)}>開始探索</button>
+                  <button type="button" onClick={applyHistoryFilters}>開始探索</button>
                 </footer>
               </section>
             </div>,
@@ -1216,16 +1236,19 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [period, setPeriod] = useTimedState("tongxing-period", "1期");
   const [searched, setSearched] = useTimedState("tongxing-searched", false);
   const [values, setValues] = useTimedState("tongxing-values", ["", "", ""]);
+  const [appliedValues, setAppliedValues] = useState<string[]>([]);
+  const [appliedPeriod, setAppliedPeriod] = useState(1);
   const resultsEndRef = useRef<HTMLDivElement>(null);
-  const history = useLotteryHistory(lottery, 10);
+  const periodOffset = Number(period.replace(/\D/g, "")) || 1;
+  const history = useLotteryHistory(lottery, Math.max(40, periodOffset + 10));
   const historyOrder = getHistoryOrder(order);
   const resultColumns = lottery === "六合彩" || lottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
-  const resultGroups = history.slice(3, -1).map((lockedEntry, index) => ({
-    lockedEntry,
-    predictedEntry: history[index + 4],
-  })).filter((group) => group.predictedEntry);
+  const resultGroups = useMemo(
+    () => buildTongXingPairs(history, appliedValues, appliedPeriod),
+    [history, appliedValues, appliedPeriod],
+  );
 
   const updateInputValue = (index: number, rawValue: string) => {
     let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
@@ -1247,6 +1270,8 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : ""));
       return;
     }
+    setAppliedValues(values.map(normalizeLookupNumber).filter(Boolean));
+    setAppliedPeriod(periodOffset);
     setSearched(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1263,7 +1288,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
     const date = getDrawDate(entry);
     const draw = getHistoryDrawNumbers(lottery, entry, historyOrder);
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
-    const inputNumbers = new Set(values.filter(Boolean).map((value) => value.padStart(2, "0")));
+    const inputNumbers = new Set(appliedValues);
 
     return (
       <div className="tongxing-table-row" data-row-type={type}>
@@ -1384,6 +1409,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [range, setRange] = useTimedState("reference-range", "1000期");
   const [order, setOrder] = useTimedState("reference-order", "依號碼由小到大排序");
   const [inputs, setInputs] = useTimedState("reference-inputs", ["02", "", ""]);
+  const [appliedInputs, setAppliedInputs] = useState<string[]>([]);
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
@@ -1393,6 +1419,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const historyOrder = getHistoryOrder(order);
   const resetReference = () => {
     setInputs(["", "", ""]);
+    setAppliedInputs([]);
     setMarkedRows(new Set());
     setMarkedCells(new Set());
   };
@@ -1423,6 +1450,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const startReferenceSearch = () => {
+    const normalized = inputs.map(normalizeLookupNumber);
+    const unique = normalized.filter((value, index) => value && normalized.indexOf(value) === index);
+    setInputs(normalized);
+    setAppliedInputs(unique);
     setQueryExpanded(false);
     requestAnimationFrame(() => {
       resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -1481,8 +1512,17 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           <div>
             {inputs.map((v, i) => (
               <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" maxLength={2} data-filled={Boolean(v)}
-                onChange={(event) => setInputs(inputs.map((x, index) => index === i ? sanitizeReferenceNumber(event.target.value) : x))}
-                onBlur={() => setInputs(inputs.map((x, index) => index === i ? formatReferenceNumber(x) : x))}
+                onChange={(event) => {
+                  const candidate = sanitizeReferenceNumber(event.target.value);
+                  const formatted = formatReferenceNumber(candidate);
+                  if (isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted)) return;
+                  setInputs(inputs.map((x, index) => index === i ? candidate : x));
+                }}
+                onBlur={() => {
+                  const formatted = formatReferenceNumber(inputs[i]);
+                  if (isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted)) return;
+                  setInputs(inputs.map((x, index) => index === i ? formatted : x));
+                }}
               />
             ))}
             <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>
@@ -1517,7 +1557,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                 </button>
                 <span>
                   {displayedNumbers.map((num, index) => {
-                    const inputIndex = inputs.findIndex((value) => value === num);
+                    const inputIndex = appliedInputs.findIndex((value) => value === num);
                     const manuallyMarked = markedCells.has(`${issue}-${num}`);
                     const isSpecial = Boolean(draw.special) && index === displayedNumbers.length - 1;
                     return (
