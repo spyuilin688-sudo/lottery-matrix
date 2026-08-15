@@ -424,17 +424,6 @@
   flex: 0 1 auto;
 }
 
-.home-screen .latest-draw-card .special-ball-plus {
-  display: block;
-  width: 1px;
-  height: calc(var(--draw-special-ball-size) + 6px);
-  flex: 0 0 1px;
-  align-self: center;
-  margin: 0 7px;
-  background: #d8a653;
-  box-shadow: 0 0 4px rgba(216, 166, 83, .45);
-}
-
 .home-screen .latest-draw-card .special-ball-group {
   position: relative;
   display: grid;
@@ -442,6 +431,8 @@
   height: var(--draw-special-ball-size);
   flex: 0 0 var(--draw-special-ball-size);
   align-self: center;
+  margin-left: 15px;
+  transform: translateY(-2px);
   align-items: center;
   justify-items: center;
 }
