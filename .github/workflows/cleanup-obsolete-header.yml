@@ -1,0 +1,76 @@
+name: One-shot obsolete header cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-obsolete-header.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Remove obsolete negative header compensation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/feature-pages.css')
+          text = path.read_text()
+
+          old_header = '''/* Bottom-navigation destinations use the same complete brand artwork as home. */
+          .compact-feature-screen .feature-brand-header,
+          .notifications-screen .feature-brand-header,
+          .profile-screen .feature-brand-header {
+            position: relative;
+            top: -36px;
+            left: -2px;
+            box-sizing: border-box;
+            width: 100%;
+            height: var(--primary-brand-height);
+            min-height: var(--primary-brand-height);
+            margin: 0;
+            padding: 0 var(--primary-brand-inline);
+            flex: 0 0 var(--primary-brand-height);
+            overflow: hidden;
+          }
+
+          /* Keep the visible logo-to-content gap at 8px on every bottom-nav screen.
+             The content follows the same optical offset as the shared compact header. */
+          .bottom-nav-brand-screen {
+            --bottom-nav-brand-offset: -36px;
+          }
+
+          .bottom-nav-brand-screen > .feature-brand-header {
+            top: var(--bottom-nav-brand-offset);
+            margin-bottom: 0;
+          }
+
+          .bottom-nav-brand-screen > .feature-body {
+            position: relative;
+            top: var(--bottom-nav-brand-offset);
+            margin-bottom: var(--bottom-nav-brand-offset);
+          }
+
+          '''
+
+          if text.count(old_header) != 1:
+              raise SystemExit(f'expected exactly one obsolete block, found {text.count(old_header)}')
+
+          path.write_text(text.replace(old_header, '', 1))
+
+          workflow = Path('.github/workflows/cleanup-obsolete-header.yml')
+          workflow.unlink()
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/feature-pages.css .github/workflows/cleanup-obsolete-header.yml
+          git commit -m "Remove obsolete negative header compensation"
+          git push origin HEAD:main
