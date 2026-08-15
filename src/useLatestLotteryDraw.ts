@@ -12,20 +12,29 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
     setLoading(true);
     setError(null);
 
-    fetchLatestLotteryDraw(lottery)
-      .then((record) => {
-        if (active) setData(record);
-      })
-      .catch((reason: unknown) => {
-        if (!active) return;
-        setError(reason instanceof Error ? reason.message : '讀取開獎資料失敗');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const refreshLatestDraw = () => {
+      fetchLatestLotteryDraw(lottery)
+        .then((record) => {
+          if (active) {
+            setData(record);
+            setError(null);
+          }
+        })
+        .catch((reason: unknown) => {
+          if (!active) return;
+          setError(reason instanceof Error ? reason.message : '讀取開獎資料失敗');
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    refreshLatestDraw();
+    const refreshTimer = window.setInterval(refreshLatestDraw, 60_000);
 
     return () => {
       active = false;
+      window.clearInterval(refreshTimer);
     };
   }, [lottery]);
 
