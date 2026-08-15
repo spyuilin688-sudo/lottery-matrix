@@ -24,7 +24,7 @@ import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 import { BrandLogo } from "./BrandLogo";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
-import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
+import { sanitizeReferenceNumber } from "./reference-number-input";
 import {
   buildTongXingPairs,
   filterHistoryRecords,
@@ -1420,7 +1420,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("reference-lottery", "今彩539");
   const [range, setRange] = useTimedState("reference-range", "1000期");
   const [order, setOrder] = useTimedState("reference-order", "依號碼由小到大排序");
-  const [inputs, setInputs] = useTimedState("reference-inputs", ["02", "", ""]);
+  const [inputs, setInputs] = useTimedState("reference-inputs", ["", "", ""]);
   const [appliedInputs, setAppliedInputs] = useState<string[]>([]);
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
@@ -1561,14 +1561,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                 onClick={(event) => event.currentTarget.select()}
                 onChange={(event) => {
                   const candidate = sanitizeReferenceNumber(event.target.value);
-                  const formatted = formatReferenceNumber(candidate);
-                  if (isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted)) return;
+                  const normalized = normalizeLookupNumber(candidate);
+                  if (isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, normalized)) return;
                   setInputs(inputs.map((x, index) => index === i ? candidate : x));
-                }}
-                onBlur={() => {
-                  const formatted = formatReferenceNumber(inputs[i]);
-                  if (isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted)) return;
-                  setInputs(inputs.map((x, index) => index === i ? formatted : x));
                 }}
               />
             ))}
