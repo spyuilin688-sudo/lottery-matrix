@@ -39,16 +39,16 @@ test("標題卡控制項固定在右側並保留完整彩種文字寬度", () =>
 });
 
 test("歷史頁六合彩數字回到彩球中心", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-y:\s*0px/s);
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*\.3px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--number-y:\s*0px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.2px/s);
 });
 
 test("歷史頁今彩539數字比例依示意圖放大", () => {
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="今彩539"\]\s*\{[^}]*--number-font-size:\s*14px[^}]*--underline-width:\s*14px[^}]*--underline-y:\s*-\.5px/s);
 });
 
-test("歷史頁六合彩與大樂透不共用會互相覆寫的位置規則", () => {
-  assert.doesNotMatch(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)/);
+test("歷史頁六合彩與大樂透共用尺寸與數字位置規則", () => {
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)/);
 });
 
 test("六加一特別號標籤上移並保持彩球中心一致", () => {
