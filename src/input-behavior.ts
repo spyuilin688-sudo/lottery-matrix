@@ -1,8 +1,4 @@
-const LOTTERY_NUMBER_INPUT_SELECTOR = [
-  '.same-star-fields input',
-  '.reference-search input[aria-label^="探索號碼"]',
-  '.note-number-group input[aria-label*="投注號碼"]',
-].join(',');
+const LOTTERY_NUMBER_INPUT_SELECTOR = '.note-number-group input[aria-label*="投注號碼"]';
 
 const lastValidLotteryNumber = new WeakMap<HTMLInputElement, string>();
 const syntheticInputGuard = new WeakSet<HTMLInputElement>();
