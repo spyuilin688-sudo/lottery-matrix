@@ -406,26 +406,32 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
     let active = true;
     setData([]);
 
-    fetchLotteryHistory(lottery, requestLimit)
-      .then((records) => {
-        if (!active) return;
+    const refreshLotteryHistory = () => {
+      fetchLotteryHistory(lottery, requestLimit)
+        .then((records) => {
+          if (!active) return;
 
-        const seen = new Set<string>();
-        const uniqueRecords = records.filter((record) => {
-          const key = getHistoryRecordKey(record);
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
+          const seen = new Set<string>();
+          const uniqueRecords = records.filter((record) => {
+            const key = getHistoryRecordKey(record);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+
+          setData(typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords);
+        })
+        .catch(() => {
+          if (active) setData([]);
         });
+    };
 
-        setData(typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords);
-      })
-      .catch(() => {
-        if (active) setData([]);
-      });
+    refreshLotteryHistory();
+    const refreshTimer = window.setInterval(refreshLotteryHistory, 60_000);
 
     return () => {
       active = false;
+      window.clearInterval(refreshTimer);
     };
   }, [lottery, limit, requestLimit]);
 
