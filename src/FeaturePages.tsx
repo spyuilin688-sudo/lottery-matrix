@@ -133,13 +133,13 @@ const MATRIX_PAGE_ITEMS = [
 ] as const;
 
 const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
-  "Matrix 探索": "/assets/lottery/functions/matrixT3.png",
+  "Matrix 探索": "/assets/lottery/functions/探索標題卡.png",
   "Matrix 天衍": "/assets/lottery/functions/matrixT2.png",
   "Matrix 天工": "/assets/lottery/functions/matrixT1.png",
-  "Matrix 指南": "/assets/lottery/functions/matrixP4.png",
-  "Matrix 同星": "/assets/lottery/functions/matrixP6.png",
-  "Matrix 牌單": "/assets/lottery/functions/matrixP2.png",
-  "Matrix 狀態": "/assets/lottery/functions/matrixP5.png",
+  "Matrix 指南": "/assets/lottery/functions/指南標題卡.png",
+  "Matrix 同星": "/assets/lottery/functions/同星標題卡.png",
+  "Matrix 牌單": "/assets/lottery/functions/牌單標題卡.png",
+  "Matrix 狀態": "/assets/lottery/functions/狀態標題卡.png",
   "號碼對照單": "/assets/lottery/functions/matrixHH.png",
   "歷史開獎號碼": "/assets/lottery/functions/matrixP3.png",
 };
@@ -278,7 +278,7 @@ function FeatureShell({
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
-  const hideTitle = hidePageTitle || compactHeader || Boolean(quickActive);
+  const hideTitle = hidePageTitle || compactHeader;
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
@@ -1022,7 +1022,7 @@ export function MatrixExplorePage({
         </div>
 
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
-          <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+          <img src="/assets/lottery/functions/NewLogo.png" alt="" aria-hidden="true" />
           <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
@@ -1737,7 +1737,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="matrix-ticket">
-        <img src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
+        <img src="/assets/lottery/functions/NewLogo.png" alt="樂彩 Matrix" />
         <span>{lottery}</span>
         <h2>最新一期牌單</h2>
       </section>
@@ -1758,7 +1758,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
         {entries.map((entry) => (
           <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+            <img src="/assets/lottery/functions/NewLogo.png" alt="" aria-hidden="true" />
             <span>
               <strong>{entry.title}</strong>
               <small>版路類型：{entry.roadType}</small>
@@ -1898,10 +1898,6 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const current = sections[selected];
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
-      <section className="guide-intro panel">
-        <img src="/assets/lottery/functions/matrix-guide.png" alt="" />
-        <div><h2>Matrix 指南</h2><p>樂彩 Matrix 功能說明</p></div>
-      </section>
       <nav className="guide-category-strip" aria-label="Matrix 指南分類">
         {sections.map((section, index) => (
           <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
