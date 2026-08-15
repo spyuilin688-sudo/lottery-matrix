@@ -45,12 +45,13 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(scrollIntoView).not.toHaveBeenCalled();
 });
 
-test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {
+test('輸入兩位數時不會在第一位提前補零', () => {
   render(<NumberReferencePage onNavigate={vi.fn()} />);
 
   const input = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
-  fireEvent.click(input);
+  fireEvent.change(input, { target: { value: '4' } });
+  expect(input.value).toBe('4');
 
-  expect(input.selectionStart).toBe(0);
-  expect(input.selectionEnd).toBe(2);
+  fireEvent.change(input, { target: { value: '49' } });
+  expect(input.value).toBe('49');
 });
