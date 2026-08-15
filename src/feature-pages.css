@@ -2359,40 +2359,6 @@
   padding-bottom: var(--layout-bottom-nav-clearance);
 }
 
-/* Bottom-navigation destinations use the same complete brand artwork as home. */
-.compact-feature-screen .feature-brand-header,
-.notifications-screen .feature-brand-header,
-.profile-screen .feature-brand-header {
-  position: relative;
-  top: -36px;
-  left: -2px;
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--primary-brand-height);
-  min-height: var(--primary-brand-height);
-  margin: 0;
-  padding: 0 var(--primary-brand-inline);
-  flex: 0 0 var(--primary-brand-height);
-  overflow: hidden;
-}
-
-/* Keep the visible logo-to-content gap at 8px on every bottom-nav screen.
-   The content follows the same optical offset as the shared compact header. */
-.bottom-nav-brand-screen {
-  --bottom-nav-brand-offset: -36px;
-}
-
-.bottom-nav-brand-screen > .feature-brand-header {
-  top: var(--bottom-nav-brand-offset);
-  margin-bottom: 0;
-}
-
-.bottom-nav-brand-screen > .feature-body {
-  position: relative;
-  top: var(--bottom-nav-brand-offset);
-  margin-bottom: var(--bottom-nav-brand-offset);
-}
-
 .compact-feature-screen .feature-brand-header > .feature-brand-logo,
 .notifications-screen .feature-brand-header > .feature-brand-logo,
 .profile-screen .feature-brand-header > .feature-brand-logo {
