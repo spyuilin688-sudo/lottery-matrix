@@ -1263,17 +1263,14 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   );
 
   const updateInputValue = (index: number, rawValue: string) => {
-    let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
-    if (/^[1-9]$/.test(nextValue)) nextValue = `0${nextValue}`;
-    if (nextValue === "0") nextValue = "";
-    if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
+    const nextValue = sanitizeReferenceNumber(rawValue);
     setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
   };
 
   const validateInputValue = (index: number) => {
     const value = values[index];
-    if (value === "" || (/^(0[1-9]|[1-4][0-9])$/.test(value))) return;
-    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? "" : currentValue));
+    const normalized = normalizeLookupNumber(value);
+    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? normalized : currentValue));
   };
 
   const handleSearch = () => {
@@ -1564,6 +1561,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                   const normalized = normalizeLookupNumber(candidate);
                   if (isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, normalized)) return;
                   setInputs(inputs.map((x, index) => index === i ? candidate : x));
+                }}
+                onBlur={() => {
+                  const normalized = normalizeLookupNumber(inputs[i]);
+                  setInputs(inputs.map((x, index) => index === i ? normalized : x));
                 }}
               />
             ))}
