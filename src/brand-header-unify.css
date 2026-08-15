@@ -6,15 +6,20 @@
 .feature-brand-header,
 .feature-brand-header[data-compact="true"] {
   position: relative;
+  top: auto;
+  left: auto;
   display: flex;
+  box-sizing: border-box;
   width: min(100%, 390px);
   height: auto;
   min-height: 0;
   margin: 0 auto var(--layout-section-gap);
   padding: 0;
+  flex: 0 0 auto;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .feature-brand-row {
@@ -43,7 +48,7 @@
 .feature-brand-header[data-compact="true"] > .shared-brand-logo {
   display: flex;
   width: 100%;
-  height: auto;
+  height: var(--primary-brand-height);
   margin: 0;
   padding: 0;
   align-items: center;
@@ -51,17 +56,21 @@
   border: 0;
   background: transparent;
   line-height: 0;
+  overflow: visible;
 }
 
 .feature-brand-lockup {
   grid-area: 1 / 1;
-  width: calc(100% - 16px) !important;
+  width: calc(100% - 16px);
   justify-self: center;
 }
 
-.feature-brand-lockup .shared-brand-logo,
-.feature-brand-header[data-compact="true"] > .shared-brand-logo {
-  display: contents;
+.feature-brand-lockup .shared-brand-logo {
+  display: flex;
+  width: 100%;
+  height: var(--primary-brand-height);
+  align-items: center;
+  justify-content: center;
 }
 
 .feature-brand-lockup .shared-brand-logo > img,
@@ -69,8 +78,9 @@
   display: block;
   width: 100%;
   max-width: 100%;
-  height: auto;
-  margin: 0;
+  height: var(--primary-brand-height);
+  aspect-ratio: var(--primary-brand-ratio);
+  margin: 0 auto;
   object-fit: contain;
   object-position: center;
 }
@@ -87,3 +97,19 @@
   height: 40px;
 }
 
+/* Formal bottom-navigation header flow. No negative positional compensation. */
+.bottom-nav-brand-screen {
+  --bottom-nav-brand-offset: 0px;
+}
+
+.bottom-nav-brand-screen > .feature-brand-header {
+  top: auto;
+  left: auto;
+  margin-bottom: 0;
+}
+
+.bottom-nav-brand-screen > .feature-body {
+  position: relative;
+  top: auto;
+  margin-bottom: 0;
+}
