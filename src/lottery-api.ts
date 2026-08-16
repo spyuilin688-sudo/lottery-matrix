@@ -26,6 +26,47 @@ export type LotteryHistoryResponse = {
   items?: LotteryDrawRecord[];
 } | LotteryDrawRecord[];
 
+export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
+
+export type TongXingRequest = {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  numbers: string[];
+  futureOffset: number;
+};
+
+export type TongXingPair = {
+  lockedEntry: LotteryDrawRecord;
+  predictedEntry: LotteryDrawRecord;
+};
+
+type TongXingResponse = {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  numbers: string[];
+  futureOffset: number;
+  groups: TongXingPair[];
+};
+
+export type NumberReferenceRequest = {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  historyRange: 1000 | 3000 | 5000;
+  numbers: string[];
+};
+
+export type NumberReferenceItem = LotteryDrawRecord & {
+  matchSlots: number[];
+};
+
+type NumberReferenceResponse = {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  historyRange: 1000 | 3000 | 5000;
+  numbers: string[];
+  items: NumberReferenceItem[];
+};
+
 function normalizeNumberList(values: unknown): string[] {
   return Array.isArray(values)
     ? values.map((value) => String(value).trim().padStart(2, '0'))
@@ -87,9 +128,12 @@ function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord):
   };
 }
 
-async function requestJson<T>(path: string): Promise<T> {
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set('Accept', 'application/json');
   const response = await fetch(`${LOTTERY_API_BASE}${path}`, {
-    headers: { Accept: 'application/json' },
+    ...init,
+    headers,
   });
   if (!response.ok) {
     throw new Error(`Lottery API ${response.status}: ${response.statusText}`);
@@ -99,6 +143,20 @@ async function requestJson<T>(path: string): Promise<T> {
     throw new Error(`Lottery API returned ${contentType || 'non-JSON response'}`);
   }
   return response.json() as Promise<T>;
+}
+
+function normalizeProjectedRecord(lottery: NumberBallLottery, record: LotteryDrawRecord): LotteryDrawRecord {
+  const normalizedPeriod = normalizePeriod(lottery, record.period ?? record.issue);
+  const normalizedDrawDate = normalizeDrawDate(record.drawDate ?? record.date);
+  return {
+    ...record,
+    period: normalizedPeriod,
+    issue: normalizedPeriod,
+    drawDate: normalizedDrawDate,
+    date: normalizedDrawDate,
+    numbers: normalizeNumberList(record.numbers),
+    specialNumber: record.specialNumber ?? record.special,
+  };
 }
 
 function isLatestLotteryEnvelope(data: LatestLotteryResponse): data is LatestLotteryEnvelope {
@@ -128,4 +186,34 @@ export async function fetchLotteryHistory(
   );
   const items = Array.isArray(data) ? data : data.items ?? [];
   return items.map((item) => normalizeRecord(lottery, item));
+}
+
+export async function fetchTongXing(input: TongXingRequest) {
+  const data = await requestJson<TongXingResponse>('/api/matrix/tongxing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return {
+    ...data,
+    groups: data.groups.map((group) => ({
+      lockedEntry: normalizeProjectedRecord(input.lottery, group.lockedEntry),
+      predictedEntry: normalizeProjectedRecord(input.lottery, group.predictedEntry),
+    })),
+  };
+}
+
+export async function fetchNumberReference(input: NumberReferenceRequest) {
+  const data = await requestJson<NumberReferenceResponse>('/api/matrix/number-reference', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return {
+    ...data,
+    items: data.items.map((item) => ({
+      ...normalizeProjectedRecord(input.lottery, item),
+      matchSlots: Array.isArray(item.matchSlots) ? item.matchSlots.map(Number) : [],
+    })),
+  };
 }
