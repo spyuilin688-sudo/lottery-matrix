@@ -2372,8 +2372,7 @@
 }
 
 .matrix-explore-main-screen .feature-brand-header {
-  padding-left: calc(var(--layout-page-inline) - 8px);
-  padding-right: calc(var(--layout-page-inline) + 8px);
+  padding-inline: 0;
 }
 
 .feature-body {
