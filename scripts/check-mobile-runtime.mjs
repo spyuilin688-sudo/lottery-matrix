@@ -19,7 +19,7 @@ for (const [relativePath, expectedHash] of Object.entries(lockedFiles)) {
 
   const actualHash = createHash("sha256").update(readFileSync(filePath)).digest("hex");
   if (actualHash !== expectedHash) {
-    failures.push(`${relativePath} was modified`);
+    failures.push(`${relativePath} was modified (expected ${expectedHash}, actual ${actualHash})`);
   }
 }
 
