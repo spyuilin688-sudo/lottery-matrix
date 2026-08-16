@@ -276,10 +276,8 @@ function FeatureShell({
   compactHeader?: boolean;
   hidePageTitle?: boolean;
 }) {
-  const { quickActive } = useContext(QuickNavigationContext);
-  const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
-  const quickTitlePages = new Set(["Matrix 同星", "號碼對照單", "歷史開獎號碼"]);
-  const hideTitle = hidePageTitle || compactHeader || (Boolean(quickActive) && !quickTitlePages.has(title));
+  const logoOnlyHeader = compactHeader || active !== "首頁";
+  const hideTitle = hidePageTitle || compactHeader;
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
@@ -588,9 +586,17 @@ export function DrawHistoryPage({
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
+  const [appliedHistorySettings, setAppliedHistorySettings] = useState({
+    lottery,
+    range,
+    numberOrder,
+  });
   const [page, setPage] = useState(1);
-  const history = useLotteryHistory(lottery, getHistoryLimit(range));
-  const historyOrder = getHistoryOrder(numberOrder);
+  const history = useLotteryHistory(
+    appliedHistorySettings.lottery,
+    getHistoryLimit(appliedHistorySettings.range),
+  );
+  const historyOrder = getHistoryOrder(appliedHistorySettings.numberOrder);
   const filteredHistory = useMemo(
     () => filterHistoryRecords(history, appliedFilters),
     [history, appliedFilters],
@@ -603,7 +609,7 @@ export function DrawHistoryPage({
 
   useEffect(() => {
     setPage(1);
-  }, [lottery, range, numberOrder, appliedFilters]);
+  }, [appliedHistorySettings, appliedFilters]);
 
   useEffect(() => {
     if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
@@ -637,6 +643,7 @@ export function DrawHistoryPage({
       issue,
       date: `${year}/${month.replace("月", "")}/${day.replace("日", "")}`,
     });
+    setAppliedHistorySettings({ lottery, range, numberOrder });
     setFilterOpen(false);
   };
 
@@ -663,7 +670,7 @@ export function DrawHistoryPage({
       className="draw-history-screen"
       headerAction={historyTitleActions}
     >
-      <div className="draw-history-week-list" aria-label={`${lottery}歷史開獎號碼`}>
+      <div className="draw-history-week-list" aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
         {historyWeekGroups.map((weekRecords) => {
           const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (
@@ -674,7 +681,7 @@ export function DrawHistoryPage({
                 <span>開獎號碼</span>
               </div>
               {weekRecords.map((record) => {
-                const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
+                const draw = getHistoryDrawNumbers(appliedHistorySettings.lottery, record, historyOrder);
                 const issue = record.period ?? record.issue ?? "";
                 const date = record.drawDate ?? record.date ?? "";
 
@@ -684,14 +691,14 @@ export function DrawHistoryPage({
                     <span className="draw-history-meta"><HistoryDate value={date} /></span>
                     <span className="history-numbers" data-has-special={Boolean(draw.special)}>
                       <span className="history-main-numbers">
-                        {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />)}
+                        {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={appliedHistorySettings.lottery} number={num} />)}
                       </span>
                       {draw.special ? (
                         <span className="history-special-number">
                           <span className="history-special-plus" aria-hidden="true">+</span>
                           <span className="history-special-ball">
                             <small className="history-special-label">特別號</small>
-                            <LotteryNumberBall className="history-lottery-ball" lottery={lottery} number={draw.special} isSpecial />
+                            <LotteryNumberBall className="history-lottery-ball" lottery={appliedHistorySettings.lottery} number={draw.special} isSpecial />
                           </span>
                         </span>
                       ) : null}
@@ -1251,11 +1258,13 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [values, setValues] = useTimedState("tongxing-values", ["", "", ""]);
   const [appliedValues, setAppliedValues] = useState<string[]>([]);
   const [appliedPeriod, setAppliedPeriod] = useState(1);
+  const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
+  const [appliedOrder, setAppliedOrder] = useState(order);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
-  const history = useLotteryHistory(lottery, Math.max(40, periodOffset + 10));
-  const historyOrder = getHistoryOrder(order);
-  const resultColumns = lottery === "六合彩" || lottery === "大樂透"
+  const history = useLotteryHistory(appliedLottery, Math.max(40, appliedPeriod + 10));
+  const historyOrder = getHistoryOrder(appliedOrder);
+  const resultColumns = appliedLottery === "六合彩" || appliedLottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
   const resultGroups = useMemo(
@@ -1285,6 +1294,8 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
     }
     setAppliedValues(values.map(normalizeLookupNumber).filter(Boolean));
     setAppliedPeriod(periodOffset);
+    setAppliedLottery(lottery);
+    setAppliedOrder(order);
     setSearched(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1299,7 +1310,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   ) => {
     const issue = getDrawIssue(entry);
     const date = getDrawDate(entry);
-    const draw = getHistoryDrawNumbers(lottery, entry, historyOrder);
+    const draw = getHistoryDrawNumbers(appliedLottery, entry, historyOrder);
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
     const inputNumbers = new Set(appliedValues);
 
@@ -1396,7 +1407,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
             <div
               className="tongxing-table"
               data-columns={resultColumns.length}
-              aria-label={`${lottery}同星探索結果`}
+              aria-label={`${appliedLottery}同星探索結果`}
             >
               <div className="tongxing-table-row tongxing-table-head">
                 <span>期數</span>
@@ -1423,15 +1434,18 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [order, setOrder] = useTimedState("reference-order", "依號碼由小到大排序");
   const [inputs, setInputs] = useTimedState("reference-inputs", ["", "", ""]);
   const [appliedInputs, setAppliedInputs] = useState<string[]>([]);
+  const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
+  const [appliedRange, setAppliedRange] = useState(range);
+  const [appliedOrder, setAppliedOrder] = useState(order);
   const [markedRows, setMarkedRows] = useState<Set<string>>(new Set());
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
   const [queryFloating, setQueryFloating] = useState(false);
   const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
-  const history = useLotteryHistory(lottery, getHistoryLimit(range));
+  const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
   const displayedHistory = useMemo(() => [...history].reverse(), [history]);
-  const historyOrder = getHistoryOrder(order);
+  const historyOrder = getHistoryOrder(appliedOrder);
   const resetReference = () => {
     setInputs(["", "", ""]);
     setAppliedInputs([]);
@@ -1469,6 +1483,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     const unique = normalized.filter((value, index) => value && normalized.indexOf(value) === index);
     setInputs(normalized);
     setAppliedInputs(unique);
+    setAppliedLottery(lottery);
+    setAppliedRange(range);
+    setAppliedOrder(order);
     setQueryExpanded(false);
     setQueryFloating(false);
     requestAnimationFrame(() => {
@@ -1578,12 +1595,12 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       </MobilePagePortal>
       <section className="panel reference-table-panel">
-        <header><h2>{lottery}（{order}）</h2></header>
+        <header><h2>{appliedLottery}（{appliedOrder}）</h2></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
           {displayedHistory.map((record) => {
             const issue = getDrawIssue(record);
-            const draw = getHistoryDrawNumbers(lottery, record, historyOrder);
+            const draw = getHistoryDrawNumbers(appliedLottery, record, historyOrder);
             const displayedNumbers = draw.special
               ? [...draw.main, draw.special]
               : [...draw.main];
