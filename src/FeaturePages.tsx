@@ -842,7 +842,7 @@ function RoadValidationProcess({
   return (
     <section className="road-validation-process" aria-label="驗證過程">
       <header className="validation-summary-card">
-        <span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
+        <span>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
         <em>{consecutive}</em>
       </header>
       {validationGroups.map((group, groupIndex) => (
