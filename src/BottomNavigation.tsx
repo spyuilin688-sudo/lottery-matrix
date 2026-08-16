@@ -18,6 +18,13 @@ const NAVIGATION_ITEMS = [
   { label: "我的", screen: "profile" },
 ] as const;
 
+const NAVIGATION_ARTWORK: Record<BottomNavigationLabel, string> = {
+  "首頁": "/assets/lottery/functions/matrixWW1.png",
+  "快捷": "/assets/lottery/functions/matrixWW2.png",
+  "通知": "/assets/lottery/functions/matrixWW3.png",
+  "我的": "/assets/lottery/functions/matrixWW4.png",
+};
+
 export function BottomNavigation({
   active = "首頁",
   quickActive = false,
@@ -57,7 +64,7 @@ export function BottomNavigation({
     >
       <img
         className="bottom-navigation-artwork"
-        src="/assets/lottery/functions/bottom-navigation-reference.png"
+        src={NAVIGATION_ARTWORK[displayedActive]}
         alt="Matrix 底部導覽"
         draggable={false}
       />
