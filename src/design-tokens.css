@@ -55,9 +55,7 @@
   --primary-brand-top: 14px;
   --primary-brand-height: 130px;
   --primary-brand-inline: 14px;
-  --primary-brand-ratio: 1536 / 550;
-  --feature-brand-ratio: 1536 / 512;
-  --feature-brand-max-width: 358px;
+  --primary-brand-ratio: 3 / 1;
   --bottom-navigation-height: 95px;
   --layout-card-padding: 12px;
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 16px);
