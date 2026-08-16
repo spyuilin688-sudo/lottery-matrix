@@ -59,7 +59,7 @@ export function BottomNavigation({
     >
       <img
         className="bottom-navigation-artwork"
-        src={`/assets/lottery/functions/${activeArtwork}`}
+        src={`/assets/lottery/functions/${activeArtwork}?v=20260816-2`}
         alt="Matrix 底部導覽"
         draggable={false}
       />
