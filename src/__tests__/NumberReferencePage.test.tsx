@@ -45,13 +45,36 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(scrollIntoView).not.toHaveBeenCalled();
 });
 
-test('輸入兩位數時不會在第一位提前補零', () => {
+test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {
   render(<NumberReferencePage onNavigate={vi.fn()} />);
 
   const input = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
-  fireEvent.change(input, { target: { value: '4' } });
-  expect(input.value).toBe('4');
+  fireEvent.change(input, { target: { value: '02' } });
+  fireEvent.click(input);
 
-  fireEvent.change(input, { target: { value: '49' } });
-  expect(input.value).toBe('49');
+  expect(input.selectionStart).toBe(0);
+  expect(input.selectionEnd).toBe(2);
+});
+
+test('已存在 01 到 04 時仍可輸入 11 到 49', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const first = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  const second = screen.getByRole('textbox', { name: '探索號碼 2' }) as HTMLInputElement;
+
+  for (const [existing, values] of [
+    ['01', ['11', '19']],
+    ['02', ['21', '29']],
+    ['03', ['31', '39']],
+    ['04', ['41', '49']],
+  ] as const) {
+    fireEvent.change(first, { target: { value: existing } });
+    for (const value of values) {
+      fireEvent.change(second, { target: { value: value[0] } });
+      expect(second.value).toBe(value[0]);
+      fireEvent.change(second, { target: { value } });
+      expect(second.value).toBe(value);
+    }
+    fireEvent.change(first, { target: { value: '' } });
+    fireEvent.change(second, { target: { value: '' } });
+  }
 });

@@ -24,7 +24,7 @@ import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
 import { BrandLogo } from "./BrandLogo";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
-import { sanitizeReferenceNumber } from "./reference-number-input";
+import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
 import {
   buildTongXingPairs,
   filterHistoryRecords,
@@ -278,7 +278,8 @@ function FeatureShell({
 }) {
   const { quickActive } = useContext(QuickNavigationContext);
   const logoOnlyHeader = compactHeader || Boolean(quickActive) || active !== "首頁";
-  const hideTitle = hidePageTitle || compactHeader;
+  const quickTitlePages = new Set(["Matrix 同星", "號碼對照單", "歷史開獎號碼"]);
+  const hideTitle = hidePageTitle || compactHeader || (Boolean(quickActive) && !quickTitlePages.has(title));
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
@@ -648,7 +649,7 @@ export function DrawHistoryPage({
         <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
       </div>
       <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
-        <svg className="history-filter-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
+        <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選條件
       </button>
     </div>
@@ -1022,7 +1023,7 @@ export function MatrixExplorePage({
         </div>
 
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
-          <img src="/assets/lottery/functions/NewLogo.png" alt="" aria-hidden="true" />
+          <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
           <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
@@ -1263,14 +1264,17 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   );
 
   const updateInputValue = (index: number, rawValue: string) => {
-    const nextValue = sanitizeReferenceNumber(rawValue);
+    let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
+    if (/^[1-9]$/.test(nextValue)) nextValue = `0${nextValue}`;
+    if (nextValue === "0") nextValue = "";
+    if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
     setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
   };
 
   const validateInputValue = (index: number) => {
     const value = values[index];
-    const normalized = normalizeLookupNumber(value);
-    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? normalized : currentValue));
+    if (value === "" || (/^(0[1-9]|[1-4][0-9])$/.test(value))) return;
+    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? "" : currentValue));
   };
 
   const handleSearch = () => {
@@ -1558,12 +1562,12 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                 onClick={(event) => event.currentTarget.select()}
                 onChange={(event) => {
                   const candidate = sanitizeReferenceNumber(event.target.value);
-                  if (candidate.length === 2 && isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, candidate)) return;
+                  if (candidate.length === 2 && isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, candidate)) return;
                   setInputs(inputs.map((x, index) => index === i ? candidate : x));
                 }}
                 onBlur={() => {
-                  const normalized = normalizeLookupNumber(inputs[i]);
-                  const nextValue = isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, normalized) ? "" : normalized;
+                  const formatted = formatReferenceNumber(inputs[i]);
+                  const nextValue = isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted) ? "" : formatted;
                   setInputs(inputs.map((x, index) => index === i ? nextValue : x));
                 }}
               />
@@ -1737,7 +1741,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="matrix-ticket">
-        <img src="/assets/lottery/functions/NewLogo.png" alt="樂彩 Matrix" />
+        <img src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
         <span>{lottery}</span>
         <h2>最新一期牌單</h2>
       </section>
@@ -1758,7 +1762,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
         {entries.map((entry) => (
           <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src="/assets/lottery/functions/NewLogo.png" alt="" aria-hidden="true" />
+            <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
             <span>
               <strong>{entry.title}</strong>
               <small>版路類型：{entry.roadType}</small>
@@ -1898,6 +1902,10 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const current = sections[selected];
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
+      <section className="guide-intro panel">
+        <img src="/assets/lottery/functions/matrix-guide.png" alt="" />
+        <div><p>樂彩 Matrix 功能說明</p></div>
+      </section>
       <nav className="guide-category-strip" aria-label="Matrix 指南分類">
         {sections.map((section, index) => (
           <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
@@ -3076,7 +3084,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   ] as const;
   return (
     <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
-      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
+      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" independentCards />
       <div className="status-list">
         {statuses.map(([title, titleEn, count, description, tone]) => (
           <section className="status-block" data-tone={tone} key={title}>

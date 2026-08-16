@@ -616,7 +616,8 @@
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
 .draw-history-screen .history-title-lottery.native-select select {
   padding: 0 22px 0 4px;
-  font-size: 8px;
+  font-size: 11px;
+  font-weight: 700;
   text-align: center;
   text-align-last: center;
 }
@@ -655,7 +656,7 @@
   font-size: 12px;
   font-weight: 600;
 }
-.history-filter-icon {
+.history-filter-trigger-icon {
   width: 9px;
   height: 9px;
   flex: 0 0 9px;
@@ -1644,8 +1645,51 @@
 
 .matrix-status-screen .feature-body { padding-inline: 12px; }
 .matrix-status-screen .matrix-status-lottery-switcher {
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
+  position: relative;
+  display: block;
   width: calc(100% + 24px);
+  height: var(--lottery-switcher-height);
   margin: 0 -12px 13px;
+  padding: 0;
+  overflow: visible;
+}
+.matrix-status-screen .matrix-status-lottery-switcher > .home-asset-image { display: none; }
+.matrix-status-screen .matrix-status-lottery-switcher .lottery-switcher-hit-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.matrix-status-screen .matrix-status-lottery-switcher .lottery-card {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #57442c;
+  border-radius: 8px;
+  background: rgba(4, 11, 17, .9);
+  overflow: hidden;
+}
+.matrix-status-screen .matrix-status-lottery-switcher .lottery-card[data-selected="true"] {
+  border-color: #e5bd57;
+  box-shadow: inset 0 0 16px rgba(226, 168, 39, .12), 0 0 10px rgba(226, 168, 39, .16);
+}
+.matrix-status-screen .matrix-status-lottery-switcher .lottery-card > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.matrix-status-screen .matrix-status-lottery-switcher .clean-hit-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 .matrix-status-screen .status-list { gap: 11px; }
 .matrix-status-screen .status-block { border-radius: 12px; }
