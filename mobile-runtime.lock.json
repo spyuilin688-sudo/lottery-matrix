@@ -15,7 +15,7 @@
   "src/mobile/MobileRuntime.tsx": "1ffe80a9582460005d66f10fc73deaff08b81431785a506887cc0d8320be747f",
   "src/mobile/MobileScroll.tsx": "ea3e3691f587ea13753162b9e64c1981263e5b9beddebea21a6a1551dce76430",
   "src/mobile/PhoneFrame.tsx": "73015590b468acbb4b58e3f6fe5eef99c5f68f67722caffd8f00d271ba00a91d",
-  "src/mobile/assets.ts": "d40cb8e5390fd2b54618266e7694e40349006dfed480f65d60559316ca8c9c234",
+  "src/mobile/assets.ts": "d40cb8e5390fd2b54618266e7694e40349006dfe480f65d60559316ca8c9c234",
   "src/mobile/components.tsx": "20b02f6c6de4cfd08aa6a49bf9bc261c0ea000864b37e1001afdcd892afe4bc8",
   "src/mobile/geometry.ts": "f1382e5d6cc9adfd7ac142304f2f9a5a2330db1d74b3f0848adbaf311676bf16",
   "src/mobile/index.ts": "ee69d9341571db5dee84dd2d7452a62eef09085a84a85f198a3edc48047e0412",
