@@ -373,6 +373,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const [quickReturnScreen, setQuickReturnScreen] = useState<ScreenId>("home");
   const [quickActive, setQuickActive] = useState(false);
   const [quickSettingsOpen, setQuickSettingsOpen] = useState(false);
+  const [quickSettingsHost, setQuickSettingsHost] = useState<HTMLElement | null>(null);
   const [quickTarget, setQuickTarget] = useState<ScreenId | null>(() => {
     if (typeof window === "undefined") return null;
     const stored = window.localStorage.getItem("matrix-quick-target") as ScreenId | null;
@@ -390,6 +391,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
+  useEffect(() => { setQuickSettingsHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
 
@@ -397,7 +399,25 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const openQuick = () => { if (quickActive) { setQuickActive(false); setScreen(quickReturnScreen); return; } if (!quickTarget) return; setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); };
   const selectQuickTarget = (next: ScreenId) => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); };
 
-  const quickSettings = quickSettingsOpen ? <div className="quick-settings-backdrop" role="presentation" onClick={() => setQuickSettingsOpen(false)}><section className="quick-settings-dialog" role="dialog" aria-modal="true" aria-label="快捷設定" onClick={(event) => event.stopPropagation()}><h2>快捷設定</h2><div>{QUICK_OPTIONS.map((option) => <button type="button" data-selected={quickTarget === option.screen} onClick={() => selectQuickTarget(option.screen)} key={option.screen}><img src={option.image} alt="" /><strong>{option.label}</strong>{quickTarget === option.screen ? <span className="quick-selected-dot" /> : null}</button>)}</div></section></div> : null;
+  const quickSettings = quickSettingsOpen && quickSettingsHost
+    ? createPortal(
+        <div className="quick-settings-backdrop" role="presentation" onClick={() => setQuickSettingsOpen(false)}>
+          <section className="quick-settings-dialog" role="dialog" aria-modal="true" aria-label="快捷設定" onClick={(event) => event.stopPropagation()}>
+            <h2>快捷設定</h2>
+            <div>
+              {QUICK_OPTIONS.map((option) => (
+                <button type="button" data-selected={quickTarget === option.screen} onClick={() => selectQuickTarget(option.screen)} key={option.screen}>
+                  <img src={option.image} alt="" />
+                  <strong>{option.label}</strong>
+                  {quickTarget === option.screen ? <span className="quick-selected-dot" /> : null}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>,
+        quickSettingsHost,
+      )
+    : null;
 
   if (screen !== "home") {
     return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
