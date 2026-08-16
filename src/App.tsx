@@ -1,5 +1,6 @@
-import { MobileRuntime } from "./mobile";
 import AdminApp from "./admin/AdminApp";
+import { MobileDeviceProvider } from "./mobile/Device";
+import { KeyboardProvider } from "./mobile/Keyboard";
 import Prototype from "./Prototype";
 
 export default function App() {
@@ -10,8 +11,10 @@ export default function App() {
   if (isAdminPath) return <AdminApp />;
 
   return (
-    <MobileRuntime>
-      <Prototype />
-    </MobileRuntime>
+    <MobileDeviceProvider>
+      <KeyboardProvider>
+        <Prototype />
+      </KeyboardProvider>
+    </MobileDeviceProvider>
   );
 }
