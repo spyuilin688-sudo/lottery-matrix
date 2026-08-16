@@ -9,6 +9,7 @@ import {
 import { MobileScroll, useMobileDevice } from "./mobile";
 import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
 import { BottomNavigation } from "./BottomNavigation";
+import { PRIMARY_BRAND_LOGO } from "./BrandLogo";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
@@ -71,7 +72,7 @@ const HOME_ASSET_BASE = "/assets/lottery/functions";
 const STATUS_ASSET_BASE = "/assets/lottery/status";
 
 const HOME_ASSETS = {
-  logo: `${HOME_ASSET_BASE}/NewLogo.png`,
+  logo: PRIMARY_BRAND_LOGO,
   lotterySwitcher: `${STATUS_ASSET_BASE}/MatrixBB.png`,
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
   matrixStatus: `${STATUS_ASSET_BASE}/matrixAA.png`,
