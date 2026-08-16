@@ -52,11 +52,11 @@
   --lottery-card-internal: 6px;
   --layout-page-inline: 16px;
   --layout-section-gap: 8px;
-  --primary-brand-top: 14px;
+  --primary-brand-top: 0px;
   --primary-brand-height: 130px;
   --primary-brand-inline: 14px;
   --primary-brand-ratio: 3 / 1;
-  --bottom-navigation-height: 95px;
+  --bottom-navigation-height: 130px;
   --layout-card-padding: 12px;
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 16px);
   --lottery-card-radius: 10px;
