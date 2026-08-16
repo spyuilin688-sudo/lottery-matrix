@@ -51,7 +51,7 @@
   padding: 0 0 var(--bottom-nav-safe-area);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 0;
-  background: #02050a;
+  background: #000;
   isolation: isolate;
   overflow: hidden;
 }
@@ -63,7 +63,7 @@
   display: block;
   width: 100%;
   height: var(--bottom-navigation-height);
-  object-fit: contain;
+  object-fit: fill;
   pointer-events: none;
   user-select: none;
 }
