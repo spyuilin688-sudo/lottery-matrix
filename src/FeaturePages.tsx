@@ -650,7 +650,15 @@ export function DrawHistoryPage({
   const historyTitleActions = (
     <div className="history-title-actions">
       <div className="history-title-lottery native-select">
-        <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
+        <select
+          aria-label="彩種"
+          value={lottery}
+          onChange={(event) => {
+            const nextLottery = event.target.value as LotteryId;
+            setLottery(nextLottery);
+            setAppliedHistorySettings((current) => ({ ...current, lottery: nextLottery }));
+          }}
+        >
           {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
         </select>
         <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
