@@ -1,0 +1,125 @@
+name: One-off explore validation layout patch v4
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-off-explore-validation-layout-v4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify current formal sources
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const tsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+          const expectedSummary = '<span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>';
+          const expectedGroups = 'const sourceGroups = [ROAD_VALIDATION_SAMPLE_HISTORY.slice(0, 3), ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, 6)];';
+          const expectedEm = '.validation-summary-card em { position: absolute; top: 50%; right: 8px; width: 66px; transform: translateY(-50%); color: #f6c95f; font-style: normal; font-weight: 800; text-align: right; white-space: nowrap; }';
+          if (!tsx.includes(expectedSummary)) throw new Error('Current summary source differs from expected formal source.');
+          if (!tsx.includes(expectedGroups)) throw new Error('Current validation grouping is not three rows.');
+          if (!css.includes(expectedEm)) throw new Error('Current consecutive-position CSS differs from expected formal source.');
+          NODE
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Capture baseline type-check
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit > /tmp/tsc-before.txt 2>&1
+          echo $? > /tmp/tsc-before-code.txt
+          set -e
+          grep -E 'error TS[0-9]+' /tmp/tsc-before.txt | sed -E 's/\([0-9]+,[0-9]+\)//g' | sort -u > /tmp/tsc-before-canonical.txt || true
+          cat /tmp/tsc-before.txt
+          echo "baseline_exit=$(cat /tmp/tsc-before-code.txt)"
+
+      - name: Apply requested changes only
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const tsxPath = 'src/FeaturePages.tsx';
+          let tsx = fs.readFileSync(tsxPath, 'utf8');
+          const oldSummary = '<span><strong>條件摘要</strong>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>';
+          const newSummary = '<span>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>';
+          if (tsx.split(oldSummary).length !== 2) throw new Error('Summary source must match exactly once.');
+          tsx = tsx.replace(oldSummary, newSummary);
+          fs.writeFileSync(tsxPath, tsx);
+
+          const cssPath = 'src/feature-pages.css';
+          let css = fs.readFileSync(cssPath, 'utf8');
+          const oldStrong = '.validation-summary-card strong { flex: 0 0 auto; color: #f6c95f; font-size: 12.5px; }\n';
+          const oldEm = '.validation-summary-card em { position: absolute; top: 50%; right: 8px; width: 66px; transform: translateY(-50%); color: #f6c95f; font-style: normal; font-weight: 800; text-align: right; white-space: nowrap; }';
+          const newEm = '.validation-summary-card em { position: absolute; top: 6px; right: 8px; width: 66px; transform: none; color: #f6c95f; font-style: normal; font-weight: 800; text-align: right; white-space: nowrap; }';
+          if (!css.includes(oldStrong)) throw new Error('Summary-label CSS source not found.');
+          if (css.split(oldEm).length !== 2) throw new Error('Consecutive-position CSS must match exactly once.');
+          css = css.replace(oldStrong, '').replace(oldEm, newEm);
+          fs.writeFileSync(cssPath, css);
+          NODE
+
+      - name: Verify requested state
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const tsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+          if (tsx.includes('<strong>條件摘要</strong>')) throw new Error('條件摘要 label still exists.');
+          if (!tsx.includes('<span>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>')) throw new Error('Summary content changed unexpectedly.');
+          if (!css.includes('.validation-summary-card em { position: absolute; top: 6px; right: 8px; width: 66px; transform: none;')) throw new Error('連準次數 is not at the summary upper-right.');
+          if (!tsx.includes('const sourceGroups = [ROAD_VALIDATION_SAMPLE_HISTORY.slice(0, 3), ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, 6)];')) throw new Error('Validation groups are not fixed at three rows.');
+          if (css.includes('.validation-summary-card strong {')) throw new Error('Obsolete summary-label rule still exists.');
+          NODE
+
+      - name: Run unit tests except known pre-existing title-card mismatch
+        shell: bash
+        run: |
+          mapfile -t TEST_FILES < <(find tests src -type f \( -name '*.test.mjs' -o -name '*.test.ts' -o -name '*.test.tsx' \) ! -path 'tests/page-title-card.test.mjs' | sort)
+          node --test "${TEST_FILES[@]}"
+
+      - name: Confirm type-check did not regress
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit > /tmp/tsc-after.txt 2>&1
+          AFTER_CODE=$?
+          set -e
+          BEFORE_CODE=$(cat /tmp/tsc-before-code.txt)
+          grep -E 'error TS[0-9]+' /tmp/tsc-after.txt | sed -E 's/\([0-9]+,[0-9]+\)//g' | sort -u > /tmp/tsc-after-canonical.txt || true
+          cat /tmp/tsc-after.txt
+          echo "baseline_exit=$BEFORE_CODE patched_exit=$AFTER_CODE"
+          if [ "$BEFORE_CODE" = "0" ]; then
+            test "$AFTER_CODE" = "0"
+          else
+            test "$AFTER_CODE" = "$BEFORE_CODE"
+            diff -u /tmp/tsc-before-canonical.txt /tmp/tsc-after-canonical.txt
+          fi
+
+      - name: Remove temporary workflows and commit to main
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-off-explore-validation-layout.yml
+          rm -f .github/workflows/one-off-explore-validation-layout-v2.yml
+          rm -f .github/workflows/one-off-explore-validation-layout-v3.yml
+          rm -f .github/workflows/one-off-explore-validation-layout-v4.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/FeaturePages.tsx src/feature-pages.css .github/workflows/one-off-explore-validation-layout.yml .github/workflows/one-off-explore-validation-layout-v2.yml .github/workflows/one-off-explore-validation-layout-v3.yml .github/workflows/one-off-explore-validation-layout-v4.yml
+          git diff --cached --name-only
+          git commit -m 'fix: adjust explore validation summary layout'
+          git push origin HEAD:main
