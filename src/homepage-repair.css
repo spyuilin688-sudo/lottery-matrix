@@ -216,6 +216,23 @@
   object-position: center;
 }
 
+/* Normalize the visible logo artwork instead of the unequal transparent PNG canvases. */
+.home-screen .lottery-card[data-lottery="今彩539"] > img {
+  transform: scale(.96);
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"] > img {
+  transform: scale(1.04);
+}
+
+.home-screen .lottery-card[data-lottery="六合彩"] > img {
+  transform: scale(1.32);
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"] > img {
+  transform: scale(1.08);
+}
+
 .home-screen .lottery-card[data-lottery="今彩539"] {
   background:
     radial-gradient(circle at 50% 52%, rgba(167, 17, 20, .3), transparent 70%) padding-box,

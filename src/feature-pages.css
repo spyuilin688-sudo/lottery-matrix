@@ -580,6 +580,7 @@
   gap: 3px;
   padding-top: 10px;
 }
+.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 5px; }
 
 .history-panel .history-numbers[data-has-special="true"] .history-special-number {
   height: 33.5px;
@@ -589,6 +590,7 @@
 }
 .history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 33.5px; grid-template-rows: 10px 23.5px; }
 .history-panel .history-numbers[data-has-special="true"] .history-special-label { margin: 0; line-height: 8px; }
+.history-panel[data-lottery="六合彩"] .history-special-label { transform: translateY(-3px); }
 
 .draw-history-screen .draw-history-row .history-numbers,
 .draw-history-screen .draw-history-row .history-main-numbers,
@@ -605,6 +607,7 @@
 .draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers {
   gap: 3px;
 }
+.draw-history-screen .draw-history-week-list[data-lottery="六合彩"] .draw-history-row .history-main-numbers { gap: 5px; }
 
 .draw-history-screen .draw-history-row .history-special-number {
   margin-left: 3px;
@@ -637,6 +640,7 @@
 .draw-history-screen .history-special-number { height: 36px; align-items: flex-end; }
 .draw-history-screen .history-special-ball { height: 36px; grid-template-rows: 10px 26px; }
 .draw-history-screen .history-special-label { margin: 0; line-height: 8px; }
+.draw-history-screen .draw-history-week-list[data-lottery="六合彩"] .history-special-label { transform: translateY(-3px); }
 .draw-history-screen .history-special-plus { display: grid; height: 26px; place-items: center; font-size: 13px; font-weight: 900; }
 .history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
 .history-pagination button { display: grid; width: 38px; height: 36px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
@@ -1989,7 +1993,7 @@
 .matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {
   grid-template-columns: 56px 62px minmax(0, 1fr);
 }
-.matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
+.matrix-explore-main-screen .history-panel:not([data-lottery="六合彩"]) .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-special-number {
   margin-left: 3px;
   gap: 2px;

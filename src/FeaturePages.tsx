@@ -21,7 +21,7 @@ import { LotterySwitcher, type LotteryId, type DrawOrder } from "./Prototype";
 import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "./lottery-api";
-import { BrandLogo } from "./BrandLogo";
+import { BrandLogo, PRIMARY_BRAND_LOGO } from "./BrandLogo";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
@@ -678,7 +678,7 @@ export function DrawHistoryPage({
       className="draw-history-screen"
       headerAction={historyTitleActions}
     >
-      <div className="draw-history-week-list" aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
+      <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
         {historyWeekGroups.map((weekRecords) => {
           const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (
@@ -1038,7 +1038,7 @@ export function MatrixExplorePage({
         </div>
 
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
-          <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+          <img src={PRIMARY_BRAND_LOGO} alt="" aria-hidden="true" />
           <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
@@ -1282,7 +1282,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
 
   const updateInputValue = (index: number, rawValue: string) => {
     let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
-    if (/^[1-9]$/.test(nextValue)) nextValue = `0${nextValue}`;
     if (nextValue === "0") nextValue = "";
     if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
     setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
@@ -1290,8 +1289,9 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
 
   const validateInputValue = (index: number) => {
     const value = values[index];
-    if (value === "" || (/^(0[1-9]|[1-4][0-9])$/.test(value))) return;
-    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? "" : currentValue));
+    if (value === "") return;
+    const formatted = formatReferenceNumber(value);
+    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? formatted : currentValue));
   };
 
   const handleSearch = () => {
@@ -1766,7 +1766,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="matrix-ticket">
-        <img src="/assets/lottery/brand-logo-transparent.png" alt="樂彩 Matrix" />
+        <img src={PRIMARY_BRAND_LOGO} alt="樂彩 Matrix" />
         <span>{lottery}</span>
         <h2>最新一期牌單</h2>
       </section>
@@ -1787,7 +1787,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
         {entries.map((entry) => (
           <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src="/assets/lottery/brand-logo-transparent.png" alt="" aria-hidden="true" />
+            <img src={PRIMARY_BRAND_LOGO} alt="" aria-hidden="true" />
             <span>
               <strong>{entry.title}</strong>
               <small>版路類型：{entry.roadType}</small>
@@ -2304,6 +2304,13 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     ...current,
     [settingsLottery]: { tags: current[settingsLottery].tags.map((tag, tagIndex) => tagIndex === index ? { ...tag, ...patch } : tag) },
   }));
+  const updateTagNumber = (index: number, key: "defaultBets" | "costPerBet" | "fixedCost" | "prizePerBet", rawValue: string) => {
+    const digits = rawValue.replace(/\D/g, "").slice(0, 7);
+    updateTag(index, { [key]: digits === "" ? 0 : Math.min(9999999, Math.max(1, Number(digits))) });
+  };
+  const finalizeTagNumber = (index: number, key: "defaultBets" | "costPerBet" | "fixedCost" | "prizePerBet", value: number) => {
+    if (value < 1) updateTag(index, { [key]: 1 });
+  };
   const reorderSettingsTag = (from: number, to: number) => {
     if (from === to) return;
     setSettingsDraft((current) => {
@@ -2490,8 +2497,15 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
           <div className="tag-setting-fields">
             <label>成本模式<div className="select-box native-select tag-cost-mode-select"><select value={String(tag.costMode) === "固定成本模式" ? "固定成本" : tag.costMode} onChange={(event) => updateTag(index, { costMode: event.target.value as CostMode })}><option>依照碰數</option><option>固定成本</option></select><ChevronDownIcon /></div></label>
             {String(tag.costMode) === "固定成本" || String(tag.costMode) === "固定成本模式"
-              ? <><label>1組成本<input type="number" min="1" max="9999999" value={tag.fixedCost || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { fixedCost: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>中1組獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { prizePerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label></>
-              : <><label>碰數<input type="number" min="1" max="9999999" value={tag.defaultBets} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { defaultBets: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>1碰成本<input type="number" min="1" max="9999999" value={tag.costPerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { costPerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label><label>中1碰獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTag(index, { prizePerBet: Math.min(9999999, Math.max(1, Number(event.target.value))) })} /></label></>}
+              ? <>
+                  <label>1組成本<input type="number" min="1" max="9999999" value={tag.fixedCost || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTagNumber(index, "fixedCost", event.target.value)} onBlur={() => finalizeTagNumber(index, "fixedCost", tag.fixedCost)} /></label>
+                  <label>中1組獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTagNumber(index, "prizePerBet", event.target.value)} onBlur={() => finalizeTagNumber(index, "prizePerBet", tag.prizePerBet)} /></label>
+                </>
+              : <>
+                  <label>碰數<input type="number" min="1" max="9999999" value={tag.defaultBets || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTagNumber(index, "defaultBets", event.target.value)} onBlur={() => finalizeTagNumber(index, "defaultBets", tag.defaultBets)} /></label>
+                  <label>1碰成本<input type="number" min="1" max="9999999" value={tag.costPerBet || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTagNumber(index, "costPerBet", event.target.value)} onBlur={() => finalizeTagNumber(index, "costPerBet", tag.costPerBet)} /></label>
+                  <label>中1碰獎金<input type="number" min="1" max="9999999" value={tag.prizePerBet || ""} onFocus={(event) => event.currentTarget.select()} onChange={(event) => updateTagNumber(index, "prizePerBet", event.target.value)} onBlur={() => finalizeTagNumber(index, "prizePerBet", tag.prizePerBet)} /></label>
+                </>}
           </div>
         </section>)}
         <section className="panel custom-tag-add"><input placeholder="新增自訂玩法" value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /><button type="button" onClick={addSettingsTag}>新增</button></section>
@@ -2642,14 +2656,14 @@ export function NotesPage({ onNavigate }: { onNavigate: Navigate }) {
         <fieldset className="note-form-section"><legend>開獎資料</legend>
           <label className="note-full-field"><span>彩種</span><LotteryLogoTabs selected={lottery} onChange={switchLottery} /></label>
           <div className="note-two-fields">
-            <label><span>期數</span><input value={issue} onChange={(event) => setIssue(event.target.value)} placeholder="期數" /></label>
+            <label><span>期數</span><input value={issue} inputMode="numeric" onChange={(event) => setIssue(event.target.value.replace(/\D/g, ""))} placeholder="期數" /></label>
             <label><span>日期</span><div className="date-input"><input value={drawDate} onChange={(event) => setDrawDate(event.target.value)} placeholder="日期" /><CalendarIcon /></div></label>
           </div>
         </fieldset>
         <fieldset className="note-form-section"><legend>投注資料</legend>
           <div className="note-two-fields">
             <label><span>玩法</span><div className="select-box native-select"><select value={play} onChange={(event) => setPlay(event.target.value)}><option>三星</option><option>四星</option></select><ChevronDownIcon /></div></label>
-            <label><span>紀錄成本</span><input value={cost} onChange={(event) => setCost(event.target.value)} inputMode="numeric" /></label>
+            <label><span>紀錄成本</span><input value={cost} onChange={(event) => setCost(event.target.value.replace(/\D/g, ""))} inputMode="numeric" /></label>
           </div>
         </fieldset>
         <fieldset className="note-form-section note-number-section"><legend>投注號碼</legend>
