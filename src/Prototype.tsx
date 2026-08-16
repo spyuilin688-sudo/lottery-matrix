@@ -292,7 +292,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
         <div className="main-balls">
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
         </div>
-        {displayedSpecialNumber ? <div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div> : null}
+        {displayedSpecialNumber ? <><span className="special-ball-separator" aria-hidden="true" /><div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div></> : null}
       </div>
       <NextDrawInfoBar {...nextDrawInfo} className="next-draw-info--embedded" />
     </section>
