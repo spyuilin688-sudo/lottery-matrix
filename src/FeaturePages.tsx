@@ -1558,13 +1558,13 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                 onClick={(event) => event.currentTarget.select()}
                 onChange={(event) => {
                   const candidate = sanitizeReferenceNumber(event.target.value);
-                  const normalized = normalizeLookupNumber(candidate);
-                  if (isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, normalized)) return;
+                  if (candidate.length === 2 && isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, candidate)) return;
                   setInputs(inputs.map((x, index) => index === i ? candidate : x));
                 }}
                 onBlur={() => {
                   const normalized = normalizeLookupNumber(inputs[i]);
-                  setInputs(inputs.map((x, index) => index === i ? normalized : x));
+                  const nextValue = isDuplicateLookupNumber(inputs.map(normalizeLookupNumber), i, normalized) ? "" : normalized;
+                  setInputs(inputs.map((x, index) => index === i ? nextValue : x));
                 }}
               />
             ))}
