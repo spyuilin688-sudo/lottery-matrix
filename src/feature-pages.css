@@ -2363,9 +2363,9 @@
   padding-bottom: 0;
 }
 
-/* Matrix Explore is the shared fixed reference for every non-bottom-nav page. */
+/* All feature pages share the same Logo vertical origin. */
 .feature-screen:not(.compact-feature-screen) {
-  padding-top: 32px;
+  padding-top: 0;
 }
 
 .matrix-explore-main-screen .feature-brand-header {
