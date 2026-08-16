@@ -1209,7 +1209,6 @@
 .about-brand-info p { margin-bottom: 7px; color: #9f988e; font-size: 11px; line-height: 1.6; }
 .about-brand-info span { color: #c9c2b8; }
 
-.mobile-app-viewport[data-platform="android"] .compact-feature-screen { padding-top: 42px; }
 .status-list { display: grid; gap: 12px; }
 .status-block { --tone: #d58b2d; --border: #8a561d; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: rgba(4, 11, 16, .96); }
 .status-block[data-tone="purple"] { --tone: #bd62d4; --border: #804687; }
