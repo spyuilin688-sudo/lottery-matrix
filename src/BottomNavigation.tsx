@@ -12,10 +12,10 @@ type BottomNavigationProps = {
 };
 
 const NAVIGATION_ITEMS = [
-  { label: "首頁", screen: "home", artwork: "matrixWW3.png" },
-  { label: "快捷", screen: null, artwork: "matrixWW1.png" },
-  { label: "通知", screen: "notifications", artwork: "matrixWW2.png" },
-  { label: "我的", screen: "profile", artwork: "matrixWW4.png" },
+  { label: "首頁", screen: "home" },
+  { label: "快捷", screen: null },
+  { label: "通知", screen: "notifications" },
+  { label: "我的", screen: "profile" },
 ] as const;
 
 export function BottomNavigation({
@@ -48,8 +48,6 @@ export function BottomNavigation({
   };
 
   const displayedActive = quickActive ? "快捷" : active;
-  const activeArtwork = NAVIGATION_ITEMS.find(({ label }) => label === displayedActive)?.artwork;
-
   return (
     <nav
       className="bottom-navigation"
@@ -59,7 +57,7 @@ export function BottomNavigation({
     >
       <img
         className="bottom-navigation-artwork"
-        src={`/assets/lottery/functions/${activeArtwork}`}
+        src="/assets/lottery/functions/bottom-navigation-reference.png"
         alt="Matrix 底部導覽"
         draggable={false}
       />
