@@ -17,73 +17,11 @@ jobs:
         with:
           ref: 探索
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Guard branch baseline
-        run: |
-          test "$(git rev-parse HEAD^)" = "73c35a839219a9e6b9929cdebca1f86294f62ac2"
-
       - name: Add audit regression checks
-        run: |
-          python <<'PY'
-          from pathlib import Path
-          path = Path("tests/matrix-explore-option-layout.test.mjs")
-          source = path.read_text()
-          source = source.replace(
-              'const formal = css.slice(formalStartIndex, formalEndIndex);\n',
-              'const formal = css.slice(formalStartIndex, formalEndIndex);\nconst preFormal = css.slice(0, formalStartIndex);\nconst postFormal = css.slice(formalEndIndex);\nconst featurePages = readFileSync("src/FeaturePages.tsx", "utf8");\n',
-              1,
-          )
-          marker = '// Matrix Explore document re-audit checks\n'
-          assert marker not in source
-          source += r'''
-
-// Matrix Explore document re-audit checks
-
-test("Matrix Explore removes legacy duplicate result layout sources", () => {
-  assert.doesNotMatch(preFormal, /(?m)^\.repeat-stats-heading(?:\s+button|\s*>\s*span)?\s*\{/);
-  assert.doesNotMatch(preFormal, /(?m)^\.result-title\s*\{/);
-  assert.doesNotMatch(preFormal, /(?m)^\.consecutive-filter-button\s*\{/);
-  assert.doesNotMatch(preFormal, /(?m)^\.result-count(?:\s*>\s*span(?:\:nth-child\(2\))?)?\s*\{/);
-  assert.doesNotMatch(preFormal, /(?m)^\.result-summary(?:\s*>\s*div|\s+b|\s+small)?\s*\{/);
-  assert.doesNotMatch(preFormal, /(?m)^\.explore-result-disclaimer\s*\{/);
-  assert.doesNotMatch(postFormal, /(?m)^\.repeat-stats-heading\s*>\s*span\s*\{/);
-  assert.doesNotMatch(formal, /\.matrix-explore-screen \.hit-advanced-panel \+ \.primary-action\s*\{/);
-});
-
-test("Matrix Explore hit divider keeps 12px space on both sides", () => {
-  assert.match(formal, /\.matrix-explore-screen \.hit-options\s*\{[^}]*margin-top:\s*12px;[^}]*padding-bottom:\s*12px;[^}]*border-bottom:\s*1px solid rgba\(212,\s*165,\s*47,\s*\.28\);/s);
-  const advancedRule = formal.match(/\.matrix-explore-screen \.advanced-row\s*\{[^}]*\}/s)?.[0] ?? "";
-  assert.match(advancedRule, /margin:\s*12px 0 0;/);
-  assert.doesNotMatch(advancedRule, /border-top:/);
-});
-
-test("Matrix Explore setting icons use one 32px size source without cropping", () => {
-  const iconRule = css.match(/\.matrix-explore-setting-icon\s*\{[^}]*\}/s)?.[0] ?? "";
-  assert.match(iconRule, /object-fit:\s*contain;/);
-  assert.doesNotMatch(iconRule, /(?:width|height):\s*24px|flex:\s*0 0 24px/);
-  assert.match(formal, /\.matrix-explore-screen \.setting-grid label > span \.setting-label-icon,[\s\S]*?width:\s*32px;[^}]*height:\s*32px;/s);
-});
-
-test("Matrix Explore date labels and disclaimer follow the uploaded wording rules", () => {
-  assert.match(featurePages, /useState\("本日（最新）"\)/);
-  assert.match(featurePages, /\["本日（最新）", "昨日（上1期）", "前日（上2期）"\]/);
-  assert.doesNotMatch(featurePages, /本日\(最新\)|昨日\(上1期\)|前日\(上2期\)/);
-  assert.match(featurePages, /不保證中獎或<span className="explore-disclaimer-nowrap">獲利<\/span>。/);
-  assert.match(formal, /\.matrix-explore-screen \.explore-result-disclaimer \.explore-disclaimer-nowrap\s*\{[^}]*white-space:\s*nowrap;/s);
-});
-
-test("Matrix Explore formal result rules retain the effective visual values after dedupe", () => {
-  assert.match(formal, /\.matrix-explore-screen \.result-summary small\s*\{[^}]*color:\s*#aaa39a;/s);
-  assert.match(formal, /\.matrix-explore-screen \.consecutive-filter-button\s*\{[^}]*border:\s*1px solid #aa7b1c;[^}]*background:\s*rgba\(128,\s*87,\s*13,\s*\.18\);[^}]*color:\s*#ead295;/s);
-});
-'''
-          path.write_text(source)
-          PY
-
+        run: python .github/scripts/audit_matrix_explore.py add-tests
       - name: Confirm RED
         run: |
           set +e
@@ -96,108 +34,16 @@ test("Matrix Explore formal result rules retain the effective visual values afte
             exit 1
           fi
           echo "RED confirmed"
-
       - name: Apply document-backed fixes and cleanup
-        run: |
-          python <<'PY'
-          from pathlib import Path
-          import re
-
-          css_path = Path("src/feature-pages.css")
-          css = css_path.read_text()
-          marker = "/* Matrix Explore formal layout rules */"
-          assert css.count(marker) == 1
-          pre, formal_and_after = css.split(marker, 1)
-
-          # Remove legacy, pre-formal copies for result/statistics UI now owned by the formal block.
-          patterns = [
-              r'(?m)^\.repeat-stats-heading\s*\{[^{}]*\}\n?',
-              r'(?m)^\.repeat-stats-heading button\s*\{[^{}]*\}\n?',
-              r'(?m)^\.repeat-stats-heading > span\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-title\s*\{[^{}]*\}\n?',
-              r'(?m)^\.consecutive-filter-button\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-count\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-count > span\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-count > span:nth-child\(2\)\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-summary\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-summary > div\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-summary b\s*\{[^{}]*\}\n?',
-              r'(?m)^\.result-summary small\s*\{[^{}]*\}\n?',
-              r'(?m)^\.explore-result-disclaimer\s*\{[^{}]*\}\n?',
-          ]
-          removed = 0
-          for pattern in patterns:
-              pre, count = re.subn(pattern, '', pre)
-              removed += count
-          assert removed >= 14, removed
-          css = pre + marker + formal_and_after
-
-          old_icon = '.matrix-explore-setting-icon { display: block; width: 24px; height: 24px; flex: 0 0 24px; object-fit: cover; border-radius: 6px; }'
-          new_icon = '.matrix-explore-setting-icon { display: block; object-fit: contain; border-radius: 6px; }'
-          assert css.count(old_icon) == 1
-          css = css.replace(old_icon, new_icon, 1)
-
-          redundant_margin = '''.matrix-explore-screen .hit-advanced-panel + .primary-action {\nmargin-top: 12px;\n}\n\n'''
-          assert css.count(redundant_margin) == 1
-          css = css.replace(redundant_margin, '', 1)
-
-          old_hit = '''.matrix-explore-screen .hit-options {\nmargin-top: 12px;\n}'''
-          new_hit = '''.matrix-explore-screen .hit-options {\nmargin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(212, 165, 47, .28);\n}'''
-          assert css.count(old_hit) == 1
-          css = css.replace(old_hit, new_hit, 1)
-
-          old_advanced = 'height: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; border-top: 1px solid rgba(212, 165, 47, .28); font-size: 17px; font-weight: 700;'
-          new_advanced = 'height: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; font-size: 17px; font-weight: 700;'
-          assert css.count(old_advanced) == 1
-          css = css.replace(old_advanced, new_advanced, 1)
-
-          old_small = '''.matrix-explore-screen .result-summary small {\nmargin-top: 1px; font-size: 11px; font-weight: 400; line-height: 13px;\n}'''
-          new_small = '''.matrix-explore-screen .result-summary small {\nmargin-top: 1px; color: #aaa39a; font-size: 11px; font-weight: 400; line-height: 13px;\n}'''
-          assert css.count(old_small) == 1
-          css = css.replace(old_small, new_small, 1)
-
-          old_disclaimer = '''.matrix-explore-screen .explore-result-disclaimer {\nbox-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;\n}\n'''
-          new_disclaimer = old_disclaimer + '''\n.matrix-explore-screen .explore-result-disclaimer .explore-disclaimer-nowrap {\nwhite-space: nowrap;\n}\n'''
-          assert css.count(old_disclaimer) == 1
-          css = css.replace(old_disclaimer, new_disclaimer, 1)
-
-          old_filter = '''.matrix-explore-screen .consecutive-filter-button {\nposition: relative; min-height: 28px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 600; white-space: nowrap;\n}'''
-          new_filter = '''.matrix-explore-screen .consecutive-filter-button {\nposition: relative; min-height: 28px; height: 28px; padding: 0 10px; border: 1px solid #aa7b1c; border-radius: 8px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 13px; font-weight: 600; white-space: nowrap;\n}'''
-          assert css.count(old_filter) == 1
-          css = css.replace(old_filter, new_filter, 1)
-
-          v55_duplicate = '''.repeat-stats-heading > span {\n  color: #9e9a93;\n}\n\n'''
-          assert css.count(v55_duplicate) == 1
-          css = css.replace(v55_duplicate, '', 1)
-          css_path.write_text(css)
-
-          tsx_path = Path("src/FeaturePages.tsx")
-          tsx = tsx_path.read_text()
-          assert tsx.count('本日(最新)') == 2
-          assert tsx.count('昨日(上1期)') == 1
-          assert tsx.count('前日(上2期)') == 1
-          tsx = tsx.replace('本日(最新)', '本日（最新）')
-          tsx = tsx.replace('昨日(上1期)', '昨日（上1期）')
-          tsx = tsx.replace('前日(上2期)', '前日（上2期）')
-          old_copy = '探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。'
-          new_copy = '探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或<span className="explore-disclaimer-nowrap">獲利</span>。'
-          assert tsx.count(old_copy) == 1
-          tsx = tsx.replace(old_copy, new_copy, 1)
-          tsx_path.write_text(tsx)
-          PY
-
+        run: python .github/scripts/audit_matrix_explore.py patch
       - name: Verify focused regression tests
         run: node --test tests/matrix-explore-option-layout.test.mjs
-
       - name: Verify diff hygiene
         run: git diff --check
-
       - name: Install dependencies
         run: npm ci
-
       - name: Verify direct Vite production build
         run: npx vite build
-
       - name: Verify known npm build guard only
         run: |
           set +e
@@ -213,12 +59,12 @@ test("Matrix Explore formal result rules retain the effective visual values afte
           grep -Fq -- "- src/App.tsx was modified" /tmp/npm-build.log
           grep -Fq "Restore the protected runtime. Put app UI in src/Prototype.tsx and src/prototype.css." /tmp/npm-build.log
           echo "Known baseline npm build guard confirmed"
-
       - name: Commit verified audit fixes
         run: |
           rm .github/workflows/audit-matrix-explore-spec.yml
+          rm .github/scripts/audit_matrix_explore.py
           git config user.name "spy854540-cmd"
           git config user.email "spy854540@gmail.com"
-          git add src/feature-pages.css src/FeaturePages.tsx tests/matrix-explore-option-layout.test.mjs .github/workflows/audit-matrix-explore-spec.yml
+          git add src/feature-pages.css src/FeaturePages.tsx tests/matrix-explore-option-layout.test.mjs .github/workflows/audit-matrix-explore-spec.yml .github/scripts/audit_matrix_explore.py
           git commit -m "fix(explore): complete document spec re-audit"
           git push origin HEAD:探索
