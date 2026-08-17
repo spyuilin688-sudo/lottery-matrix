@@ -12,6 +12,13 @@ def sub_once(text: str, pattern: str, replacement: str, label: str, flags: int =
     return text[:match.start()] + replacement + text[match.end():]
 
 
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    count = text.count(old)
+    if count != 1:
+        raise RuntimeError(f"{label}: expected 1 replacement, got {count}")
+    return text.replace(old, new, 1)
+
+
 def write_tests() -> None:
     path = Path("tests/draw-history-table-layout.test.mjs")
     text = path.read_text()
@@ -40,6 +47,12 @@ def write_tests() -> None:
         "replace obsolete title-lottery test",
         re.S,
     )
+    text = replace_once(
+        text,
+        r'--underline-y:\s*-1\.2px',
+        r'--underline-y:\s*-1\.5px',
+        "align stale lottery underline test with current canonical rule",
+    )
     path.write_text(text)
 
 
@@ -57,9 +70,7 @@ def apply_source() -> None:
 
     anchor = '''                <div className="history-filter-fields">\n                  <label>'''
     replacement = '''                <div className="history-filter-fields">\n                  <div className="history-filter-row">\n                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>\n                    <div className="select-box native-select">\n                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>\n                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}\n                      </select>\n                      <ChevronDownIcon />\n                    </div>\n                  </div>\n                  <label>'''
-    if text.count(anchor) != 1:
-        raise RuntimeError(f"history filter anchor: expected 1 occurrence, got {text.count(anchor)}")
-    text = text.replace(anchor, replacement, 1)
+    text = replace_once(text, anchor, replacement, "history filter first-row insertion")
 
     if "history-title-lottery" in text or "history-title-chevron" in text:
         raise RuntimeError("obsolete title lottery markup remains")
@@ -70,28 +81,34 @@ def apply_css() -> None:
     path = Path("src/feature-pages.css")
     text = path.read_text()
 
-    for pattern, label in [
-        (r'\n\.matrix-title-banner-actions \.history-title-lottery \{[^}]*\}', "banner title lottery rule"),
-        (r'\n\.history-title-lottery \{[^}]*\}', "title lottery rule"),
-        (r'\n\.history-title-lottery select \{[^}]*\}', "title lottery select rule"),
-        (r'\n\.history-title-lottery option \{[^}]*\}', "title lottery option rule"),
-        (r'\n\.history-title-chevron \{[^}]*\}', "title chevron rule"),
-        (r'\n\.history-title-chevron svg \{[^}]*\}', "title chevron svg rule"),
-        (r'\n\.draw-history-screen \.history-title-lottery\.native-select select \{[^}]*\}', "history-screen title lottery select rule"),
-    ]:
-        text = sub_once(text, pattern, "", label, re.S)
-
-    replacements = [
+    grouped_replacements = [
         ('.select-box,\n.history-title-lottery {', '.select-box {'),
         ('.select-box::before,\n.history-title-lottery::before,\n.select-box::after,\n.history-title-lottery::after {', '.select-box::before,\n.select-box::after {'),
         ('.select-box::before,\n.history-title-lottery::before {', '.select-box::before {'),
         ('.select-box::after,\n.history-title-lottery::after {', '.select-box::after {'),
         ('.select-box:focus-within::before,\n.history-title-lottery:focus-within::before {', '.select-box:focus-within::before {'),
     ]
-    for old, new in replacements:
-        if text.count(old) != 1:
-            raise RuntimeError(f"selector cleanup: expected 1 occurrence for {old!r}, got {text.count(old)}")
-        text = text.replace(old, new, 1)
+    for old, new in grouped_replacements:
+        text = replace_once(text, old, new, "remove obsolete title selector from shared select rule")
+
+    obsolete_rules = [
+        '.matrix-title-banner-actions .history-title-lottery { width: 84px; height: 26px; flex-basis: 84px; }\n',
+        '.history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; }\n',
+        '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); font-size: 8px; }\n',
+        '.history-title-lottery option { font-size: 8px; }\n',
+        '.history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; color: var(--select-tech-accent); pointer-events: none; }\n',
+        '.history-title-chevron svg { display: block; width: 12px; height: 12px; stroke-width: 2.5; }\n',
+    ]
+    for rule in obsolete_rules:
+        text = replace_once(text, rule, "", "remove obsolete title lottery CSS rule")
+
+    text = sub_once(
+        text,
+        r'\n\.draw-history-screen \.history-title-lottery\.native-select select \{[^}]*\}',
+        "",
+        "remove history-screen title lottery rule",
+        re.S,
+    )
 
     if "history-title-lottery" in text or "history-title-chevron" in text:
         raise RuntimeError("obsolete title lottery CSS remains")
