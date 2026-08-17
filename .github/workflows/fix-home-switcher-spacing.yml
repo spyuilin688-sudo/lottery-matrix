@@ -1,0 +1,79 @@
+name: Fix home switcher spacing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-home-switcher-spacing.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch canonical switcher spacing only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/homepage-repair.css')
+          text = path.read_text()
+
+          old_block = '''.home-screen .lottery-switcher {
+            position: relative;
+            display: block;
+            flex: 0 0 auto;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            margin-inline: 0;
+            margin-block-end: 8px;
+            padding: 0;
+            overflow: visible;
+          }'''
+          new_block = '''.home-screen .lottery-switcher {
+            position: relative;
+            display: block;
+            flex: 0 0 auto;
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            margin-inline: 0;
+            padding: 0;
+            overflow: visible;
+          }'''
+          if text.count(old_block) != 1:
+              raise SystemExit(f'Expected base switcher block once, found {text.count(old_block)}')
+          text = text.replace(old_block, new_block, 1)
+
+          old_gap = '''/* Canonical homepage flow gaps. Each adjacent pair has one source. */
+          .home-screen .lottery-switcher {
+            margin-block-start: 14px;
+          }'''
+          new_gap = '''/* Canonical homepage flow gaps. Each adjacent pair has one source. */
+          .home-screen .lottery-switcher {
+            margin-block-start: var(--home-gap-logo-switcher);
+          }'''
+          if text.count(old_gap) != 1:
+              raise SystemExit(f'Expected canonical switcher gap block once, found {text.count(old_gap)}')
+          text = text.replace(old_gap, new_gap, 1)
+
+          path.write_text(text)
+          Path('.github/workflows/fix-home-switcher-spacing.yml').unlink()
+          PY
+      - name: Verify scope
+        run: |
+          git diff --check
+          git diff -- src/homepage-repair.css .github/workflows/fix-home-switcher-spacing.yml
+      - name: Commit
+        run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add -A
+          git commit -m "fix(home): normalize lottery switcher spacing"
+          git push origin main
