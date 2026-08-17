@@ -23,74 +23,87 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('src/feature-pages.css')
           s = p.read_text()
 
-          replacements = [
-              (
-                  '.matrix-explore-main-screen > .feature-body,\n.matrix-tianyan-screen > .feature-body,\n.matrix-tiangong-screen > .feature-body,\n.draw-history-screen > .feature-body,\n.number-reference-screen > .feature-body { padding-inline: 4px; }',
-                  '.matrix-explore-main-screen > .feature-body,\n.matrix-tianyan-screen > .feature-body,\n.matrix-tiangong-screen > .feature-body,\n.number-reference-screen > .feature-body { padding-inline: 4px; }\n.draw-history-screen > .feature-body { padding-inline: 12px; }',
-              ),
-              (
-                  '.matrix-title-banner-actions .history-title-lottery { width: 84px; height: 26px; flex-basis: 84px; }\n',
-                  '',
-              ),
-              (
-                  '.history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; }',
-                  '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px; grid-template-columns: minmax(0, 1fr) 18px; }',
-              ),
-              (
-                  '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); font-size: 8px; }',
-                  '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); }',
-              ),
-              (
-                  '.history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }',
-                  '.history-title-actions .history-filter-trigger { white-space: nowrap; }',
-              ),
-              (
-                  '.draw-history-screen .draw-history-head {\n  min-height: 28px;\n  font-size: 13px;\n  font-weight: 700;\n}\n\n',
-                  '',
-              ),
-          ]
-
-          for old, new in replacements:
-              count = s.count(old)
+          def sub_once(pattern, replacement, label, flags=0):
+              global s
+              s, count = re.subn(pattern, replacement, s, count=1, flags=flags)
               if count != 1:
-                  raise SystemExit(f'expected exactly one match, got {count}: {old[:80]}')
-              s = s.replace(old, new, 1)
+                  raise SystemExit(f'{label}: expected one match, got {count}')
+
+          sub_once(
+              r'(\.matrix-explore-main-screen > \.feature-body,\n\.matrix-tianyan-screen > \.feature-body,\n\.matrix-tiangong-screen > \.feature-body,\n)\.draw-history-screen > \.feature-body,\n(\.number-reference-screen > \.feature-body \{ padding-inline: 4px; \})',
+              r'\1\2\n.draw-history-screen > .feature-body { padding-inline: 12px; }',
+              'history page side padding',
+          )
+          sub_once(
+              r'^\.matrix-title-banner-actions \.history-title-lottery \{[^\n]*\}\n',
+              '',
+              'duplicate history title lottery sizing',
+              re.M,
+          )
+          sub_once(
+              r'^\.history-title-lottery \{[^\n]*\}$',
+              '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px; grid-template-columns: minmax(0, 1fr) 18px; }',
+              'formal history title lottery sizing',
+              re.M,
+          )
+          sub_once(
+              r'^\.history-title-lottery select \{[^\n]*\}$',
+              '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); }',
+              'history title lottery structural select rule',
+              re.M,
+          )
+          sub_once(
+              r'^\.history-title-actions \.history-filter-trigger \{[^\n]*\}$',
+              '.history-title-actions .history-filter-trigger { white-space: nowrap; }',
+              'history filter trigger base rule',
+              re.M,
+          )
+          sub_once(
+              r'^\.draw-history-screen \.draw-history-head \{\n\s*min-height:\s*28px;\n\s*font-size:\s*13px;\n\s*font-weight:\s*700;\n\}\n\n',
+              '',
+              'duplicate draw history head rule',
+              re.M,
+          )
 
           p.write_text(s)
 
           t = Path('tests/draw-history-table-layout.test.mjs')
           ts = t.read_text()
           anchor = 'test("歷史開獎三欄使用單一正式比例並將前兩欄內容幾何置中", () => {\n'
-          assertion = '  assert.match(css, /\\.draw-history-screen\\s*>\\s*\\.feature-body\\s*\\{[^}]*padding-inline:\\s*12px/s);\n'
-          if assertion not in ts:
+          side_assertion = '  assert.match(css, /\\.draw-history-screen\\s*>\\s*\\.feature-body\\s*\\{[^}]*padding-inline:\\s*12px/s);\n'
+          if side_assertion not in ts:
               if anchor not in ts:
-                  raise SystemExit('history layout test anchor not found')
-              ts = ts.replace(anchor, anchor + assertion, 1)
-          old_width = 'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*92px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 92px/s);'
-          new_width = 'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*84px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 84px/s);'
-          if old_width in ts:
-              ts = ts.replace(old_width, new_width, 1)
-          elif new_width not in ts:
-              raise SystemExit('history title width assertion not found')
+                  raise SystemExit('history test anchor not found')
+              ts = ts.replace(anchor, anchor + side_assertion, 1)
+          ts, count = re.subn(
+              r'assert\.match\(css, /\\\.history-title-lottery\\s\*\\\{\[\^}\]\*width:\\s\*92px\[\^}\]\*height:\\s\*26px\[\^}\]\*flex:\\s\*0 0 92px/s\);',
+              'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*84px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 84px/s);',
+              ts,
+              count=1,
+          )
+          if count == 0 and 'width:\\s*84px' not in ts:
+              raise SystemExit('history title width test not found')
           t.write_text(ts)
 
-          checks = [
+          required = [
               '.draw-history-screen > .feature-body { padding-inline: 12px; }',
               '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px;',
               '.history-title-actions .history-filter-trigger { white-space: nowrap; }',
-              '.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px;',
+              '.draw-history-screen .history-title-lottery.native-select select {',
+              '.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px;',
           ]
-          for check in checks:
-              if check not in s:
-                  raise SystemExit(f'missing final rule: {check}')
-          if '.matrix-title-banner-actions .history-title-lottery { width: 84px;' in s:
-              raise SystemExit('duplicate title-lottery sizing rule still exists')
-          if s.count('.draw-history-screen .draw-history-head {') != 0:
-              raise SystemExit('duplicate draw-history-head block still exists')
+          for item in required:
+              if item not in s:
+                  raise SystemExit(f'missing final rule: {item}')
+          if '.matrix-title-banner-actions .history-title-lottery {' in s:
+              raise SystemExit('duplicate title lottery sizing remains')
+          if '.draw-history-screen .draw-history-head {' in s:
+              raise SystemExit('duplicate draw history head remains')
           PY
       - name: Verify history cleanup
         shell: bash
@@ -99,11 +112,9 @@ jobs:
           from pathlib import Path
           s = Path('src/feature-pages.css').read_text()
           assert '.draw-history-screen > .feature-body { padding-inline: 12px; }' in s
-          assert '.matrix-title-banner-actions .history-title-lottery { width: 84px;' not in s
+          assert '.matrix-title-banner-actions .history-title-lottery {' not in s
           assert '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px;' in s
           assert '.draw-history-screen .draw-history-head {' not in s
-          assert '.draw-history-screen .history-title-lottery.native-select select {' in s
-          assert '.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px;' in s
           print('history cleanup verification passed')
           PY
           node --test tests/page-title-card.test.mjs
