@@ -1,0 +1,28 @@
+name: temp-layout-12px-audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-layout-12px-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit page-edge layout controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== layout page token ==='
+          grep -RIn --include='*.css' --include='*.tsx' --include='*.ts' -- '--layout-page-inline\|--home-main-inline\|--home-wide-inline' src || true
+          echo '=== horizontal padding/margin/width controls ==='
+          grep -RInE --include='*.css' --include='*.tsx' 'padding-inline|padding-left|padding-right|margin-inline|margin-left|margin-right|width:[[:space:]]*calc\(100%|max-width|min-width' src || true
+          echo '=== possible force/override controls ==='
+          grep -RInE --include='*.css' --include='*.tsx' '!important|translateX|left:[[:space:]]*-[0-9]|right:[[:space:]]*-[0-9]|margin(-left|-right|):[^;]*-[0-9]|padding-inline:[[:space:]]*[0-9]+px' src || true
+          echo '=== media queries ==='
+          grep -RIn --include='*.css' '@media' src || true
