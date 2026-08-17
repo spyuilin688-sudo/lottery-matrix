@@ -1,0 +1,114 @@
+name: Apply final notification spec fixes
+
+on:
+  push:
+    branches: ["通知"]
+    paths:
+      - .github/workflows/notification-final-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "通知"
+          fetch-depth: 0
+      - name: Guard notification branch
+        run: |
+          test "${GITHUB_REF_NAME}" = "通知"
+          test "$(git branch --show-current)" = "通知"
+          git merge-base --is-ancestor 741f848247c9d198dedd935b94937b8beb22fdd7 HEAD
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install strengthened regression and verify RED
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+          workflow=Path('.github/workflows/notification-spec-finalize.yml').read_text()
+          marker="          cat > tests/notification-layout-docx.test.mjs <<'EOF'\n"
+          start=workflow.index(marker)+len(marker)
+          end=workflow.index("          EOF\n",start)
+          Path('tests/notification-layout-docx.test.mjs').write_text(textwrap.dedent(workflow[start:end]))
+          PY
+          if node --test tests/notification-layout-docx.test.mjs; then
+            echo "Expected current notification implementation to fail strengthened regression before fixes."
+            exit 1
+          fi
+      - name: Apply notification-only source cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          cssp=Path('src/feature-pages.css'); css=cssp.read_text()
+          old='.notifications-screen .feature-body { padding: 8px 12px calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px); }'
+          new='.notifications-screen .feature-body { padding: 0 12px calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px); }'
+          assert css.count(old)==1, f'expected one notification body padding rule, found {css.count(old)}'
+          css=css.replace(old,new,1)
+          note='.notification-note { margin: 14px auto 4px; padding: 0 12px; color: #aaa49a; font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: .25px; text-align: center; }\n'
+          assert css.count(note)==1, f'expected one notification-note rule, found {css.count(note)}'
+          css=css.replace(note,'',1); cssp.write_text(css)
+          p=Path('src/FeaturePages.tsx'); s=p.read_text()
+          old_article='<article className="panel notification-row" key={key}>'
+          assert s.count(old_article)==1
+          s=s.replace(old_article,'<article className="notification-row" key={key}>',1)
+          old_icon='<div className={`notification-icon${key === "card" || key === "collision" || key === "system" ? " notification-icon--expanded" : ""}`}><img src={icon} alt="" /></div>'
+          assert s.count(old_icon)==1
+          s=s.replace(old_icon,'<div className="notification-icon"><img src={icon} alt="" /></div>',1)
+          note_jsx='      <p className="notification-note">所有通知設定將立即生效</p>\n'
+          assert s.count(note_jsx)==1
+          s=s.replace(note_jsx,'',1); p.write_text(s)
+          PY
+      - name: Normalize eight notification icon source canvases
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          names=['notify-bet.png','notify-result.png','notify-win.png','notify-status.png','notify-card.png','notify-collision.png','notify-expiry.png','notify-system.png']
+          paths=[Path('public/resources')/n for n in names]
+          target_canvas=512
+          target_span=448
+          for p in paths:
+              original=Image.open(p).convert('RGBA')
+              bbox=original.getchannel('A').getbbox()
+              if not bbox: raise SystemExit(f'{p} has no visible pixels')
+              crop=original.crop(bbox)
+              scale=min(target_span/crop.width,target_span/crop.height)
+              size=(max(1,round(crop.width*scale)),max(1,round(crop.height*scale)))
+              crop=crop.resize(size,Image.Resampling.LANCZOS)
+              out=Image.new('RGBA',(target_canvas,target_canvas),(0,0,0,0))
+              out.alpha_composite(crop,((target_canvas-crop.width)//2,(target_canvas-crop.height)//2))
+              out.save(p,optimize=True)
+          PY
+      - name: Update runtime lock
+        run: npm run update:runtime-lock
+      - name: Verify notification regression GREEN
+        run: node --test tests/notification-layout-docx.test.mjs
+      - name: Verify runtime lock
+        run: npm run check:runtime
+      - name: Verify production build
+        run: npm run build
+      - name: Verify scope and shared-global guards
+        run: |
+          git diff --check
+          test -z "$(git diff --name-only -- src/design-tokens.css src/styles.css src/prototype.css src/brand-header-unify.css src/BottomNavigation.tsx src/BrandLogo.tsx)"
+          changed="$(git diff --name-only)"
+          printf '%s\n' "$changed"
+          disallowed="$(printf '%s\n' "$changed" | grep -Ev '^(src/FeaturePages\.tsx|src/feature-pages\.css|mobile-runtime\.lock\.json|tests/notification-layout-docx\.test\.mjs|public/resources/notify-(bet|result|win|status|card|collision|expiry|system)\.png)$' || true)"
+          test -z "$disallowed" || { echo "Unexpected product files changed:"; echo "$disallowed"; exit 1; }
+      - name: Commit and push notification branch only
+        run: |
+          rm .github/workflows/notification-spec-finalize.yml .github/workflows/notification-icon-audit.yml .github/workflows/notification-test-audit.yml .github/workflows/notification-final-apply.yml
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/FeaturePages.tsx src/feature-pages.css mobile-runtime.lock.json tests/notification-layout-docx.test.mjs public/resources/notify-bet.png public/resources/notify-result.png public/resources/notify-win.png public/resources/notify-status.png public/resources/notify-card.png public/resources/notify-collision.png public/resources/notify-expiry.png public/resources/notify-system.png .github/workflows/notification-spec-finalize.yml .github/workflows/notification-icon-audit.yml .github/workflows/notification-test-audit.yml .github/workflows/notification-final-apply.yml
+          git commit -m "fix: align notification page with uploaded spec"
+          git push origin HEAD:通知
