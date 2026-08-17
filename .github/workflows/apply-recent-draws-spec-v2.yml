@@ -1,0 +1,42 @@
+name: Apply recent draws spec v2
+
+on:
+  push:
+    branches:
+      - 近10期開獎號碼
+    paths:
+      - .github/workflows/apply-recent-draws-spec-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 近10期開獎號碼
+      - name: Apply patch
+        run: python scripts/apply-recent-draw-spec.py
+      - name: Verify source scope
+        run: |
+          git diff --check
+          grep -n 'history-panel-title\|history-panel-order' src/FeaturePages.tsx src/feature-pages.css
+          grep -n -- '--number-ball-size: 28px' src/number-ball.css
+          if grep -n 'matrix-explore-screen \.history-panel {' src/feature-pages.css; then exit 1; fi
+      - name: Install dependencies
+        run: npm run install:ci
+      - name: Build
+        run: npm run build
+      - name: Commit and push
+        run: |
+          rm -f scripts/apply-recent-draw-spec.py
+          rm -f .github/workflows/apply-recent-draws-spec.yml
+          rm -f .github/workflows/apply-recent-draws-spec-v2.yml
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add -A
+          git commit -m "fix: apply near 10 draw layout specification"
+          git push origin HEAD:近10期開獎號碼
