@@ -101,47 +101,17 @@ const QUICK_OPTIONS = [
 ] as const;
 
 const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
-  今彩539: {
-    issue: "115194",
-    date: "2026/08/11",
-    numbers: ["02", "14", "25", "29", "36"],
-  },
-  天天樂: {
-    issue: "5896",
-    date: "2026/08/11",
-    numbers: ["03", "12", "18", "27", "34"],
-  },
-  "六合彩": {
-    issue: "5896",
-    date: "2026/08/11",
-    numbers: ["21", "18", "07", "44", "13", "38"],
-    specialNumber: "03",
-  },
-  大樂透: {
-    issue: "115078",
-    date: "2026/08/11",
-    numbers: ["21", "18", "07", "44", "13", "38"],
-    specialNumber: "03",
-  },
+  今彩539: { numbers: [] },
+  天天樂: { numbers: [] },
+  "六合彩": { numbers: [] },
+  大樂透: { numbers: [] },
 };
 
 const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
-  今彩539: {
-    nextDraw: "06/24 (三) 20:30",
-    remainingTime: "18:30:00",
-  },
-  天天樂: {
-    nextDraw: "06/24 (三) 20:30",
-    remainingTime: "18:30:00",
-  },
-  "六合彩": {
-    nextDraw: "06/24 (三) 20:30",
-    remainingTime: "18:30:00",
-  },
-  大樂透: {
-    nextDraw: "06/24 (三) 20:30",
-    remainingTime: "18:30:00",
-  },
+  今彩539: { nextDraw: "", remainingTime: "00:00:00" },
+  天天樂: { nextDraw: "", remainingTime: "00:00:00" },
+  "六合彩": { nextDraw: "", remainingTime: "00:00:00" },
+  大樂透: { nextDraw: "", remainingTime: "00:00:00" },
 };
 
 const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
