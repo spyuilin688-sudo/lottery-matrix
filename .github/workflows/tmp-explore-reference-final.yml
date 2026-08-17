@@ -1,4 +1,3 @@
-# trigger: approved B+C Matrix Explore layout consolidation
 name: Explore reference final
 on:
   push:
@@ -56,6 +55,7 @@ jobs:
           formal = css[start:end]
 
           def replace_rule(selector, body):
+              nonlocal_holder = None
               global formal
               pattern = re.compile(re.escape(selector) + r'\s*\{[^{}]*\}', re.S)
               matches = list(pattern.finditer(formal))
@@ -63,6 +63,7 @@ jobs:
                   raise SystemExit(f'{selector}: expected 1 rule, found {len(matches)}')
               formal = pattern.sub(selector + ' {\n' + body.strip() + '\n}', formal)
 
+          # The advanced selector groups previously mixed main and non-main sources.
           shared_select = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,\n.matrix-explore-main-screen .advanced-panel .select-box'
           pattern = re.compile(re.escape(shared_select) + r'\s*\{([^{}]*)\}', re.S)
           match = pattern.search(formal)
@@ -81,6 +82,7 @@ jobs:
 }'''
           formal = pattern.sub(nonmain_select + '\n\n' + main_select, formal, count=1)
 
+          # Remove select-box from the earlier main height group so it has one effective source.
           old_group = '.matrix-explore-main-screen .advanced-panel .select-box,\n.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button'
           if old_group not in formal:
               raise SystemExit('main advanced height group not found')
