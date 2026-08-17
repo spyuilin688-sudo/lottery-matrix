@@ -30,6 +30,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Diagnose legacy test source
+        run: |
+          echo '=== tracked legacy tests ==='
+          git ls-files 'tests/*.test.mjs' | sort
+          echo '=== runner legacy tests ==='
+          find tests -maxdepth 1 -type f -name '*.test.mjs' -print | sort
+          echo '=== git status ==='
+          git status --short
+          for file in tests/admin-auth-turnstile.test.mjs tests/homepage-layout-regression.test.mjs tests/homepage-spacing.test.mjs; do
+            if [ -f "$file" ]; then
+              echo "=== $file ==="
+              sed -n '1,240p' "$file"
+            fi
+          done
+
       - name: Unit tests
         run: npm run test:unit
 
