@@ -1,0 +1,93 @@
+name: Sync Matrix Explore C
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-matrix-explore-c.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply canonical responsive cleanup
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def one(text, old, new, label):
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {n}')
+              return text.replace(old, new, 1)
+
+          p = Path('src/feature-pages.css')
+          s = p.read_text()
+          s = one(s, '.matrix-explore-screen .setting-grid label > span {\ndisplay: grid; width: 110px; grid-template-columns: 32px 70px; align-items: center; gap: 8px;\n}\n\n', '', 'duplicate label lock')
+          s = one(s, '.matrix-explore-main-screen .history-panel .panel-heading .section-title,\n.matrix-explore-main-screen .history-panel .panel-heading button {\nwhite-space: nowrap;\n}\n', '.matrix-explore-main-screen .history-panel .panel-heading .section-title {\nmin-width: 0; white-space: normal; line-height: 1.25;\n}\n\n.matrix-explore-main-screen .history-panel .panel-heading button {\nwhite-space: nowrap;\n}\n', 'history heading nowrap')
+          s = one(s, '.matrix-explore-main-screen .history-row {\ngrid-template-columns: 66px 68px minmax(0, 1fr);\n  border-top-width: 1px;\n}\n\n.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {\ngrid-template-columns: 66px 68px minmax(0, 1fr);\n}\n', '.matrix-explore-main-screen .history-row {\ngrid-template-columns: 56px 58px minmax(0, 1fr);\n  border-top-width: 1px;\n}\n', 'history grid')
+          s = one(s, '.matrix-explore-screen .setting-grid {\nmargin-top: 12px; gap: 8px;\n}\n', '.matrix-explore-screen .setting-grid {\nmin-width: 0; width: 100%; margin-top: 12px; gap: 8px;\n}\n', 'setting grid width')
+          s = one(s, '.matrix-explore-screen .setting-grid label,\n.matrix-explore-screen .advanced-panel label {\nmin-height: 44px; grid-template-columns: 110px minmax(0, 222px); align-items: center; gap: 8px;\n}\n', '.matrix-explore-screen .setting-grid label,\n.matrix-explore-screen .advanced-panel label {\nmin-width: 0; width: 100%; min-height: 44px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;\n}\n', 'fixed 110+222 grid')
+          s = one(s, '.matrix-explore-screen .setting-grid label > span,\n.matrix-explore-screen .advanced-panel label > .advanced-setting-title {\ndisplay: grid; width: 110px; grid-template-columns: 32px 70px; align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;\n}\n\n.matrix-explore-screen .explore-settings .setting-grid label:first-child > span {\nwidth: 110px; grid-template-columns: 32px 70px; gap: 8px; text-align: left;\n}\n', '.matrix-explore-screen .setting-grid label > span,\n.matrix-explore-screen .advanced-panel label > .advanced-setting-title {\ndisplay: grid; width: 100%; min-width: 0; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;\n}\n', 'label inner lock')
+          s = one(s, '.matrix-explore-screen .setting-grid .select-box,\n.matrix-explore-screen .advanced-panel .select-box {\nwidth: 222px; max-width: 222px; height: 44px; min-height: 44px; padding: 0; font-size: 16px; font-weight: 700;\n}\n', '.matrix-explore-screen .setting-grid .select-box,\n.matrix-explore-screen .advanced-panel .select-box {\nwidth: 100%; max-width: none; min-width: 0; height: 44px; min-height: 44px; padding: 0; font-size: 16px; font-weight: 700;\n}\n', 'select 222 lock')
+          s = one(s, '.matrix-explore-screen .setting-grid .segmented,\n.matrix-explore-screen .advanced-panel .segmented {\nwidth: 222px; max-width: 222px;\n}\n', '.matrix-explore-screen .setting-grid .segmented,\n.matrix-explore-screen .advanced-panel .segmented {\nwidth: 100%; max-width: none; min-width: 0;\n}\n', 'segmented 222 lock')
+          s = one(s, '.matrix-explore-screen .segmented.three button {\nmin-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: visible;\n}\n', '.matrix-explore-screen .segmented.three button {\nmin-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 13px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;\n}\n', 'segmented nowrap')
+          s = one(s, '.matrix-explore-screen .advanced-panel {\npadding-top: 8px; gap: 8px;\n}\n', '.matrix-explore-screen .advanced-panel {\nmin-width: 0; width: 100%; padding-top: 8px; gap: 8px;\n}\n', 'advanced panel width')
+          p.write_text(s)
+
+          p = Path('src/number-ball.css')
+          s = p.read_text()
+          s = one(s, '.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {\n  --number-ball-size: 26px;\n  --number-ball-asset-scale: 1.62;\n  --underline-height: .75px;\n  --underline-y: -1.5px;\n}\n', '.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {\n  --number-ball-asset-scale: 1.62;\n  --underline-height: .75px;\n  --underline-y: -1.5px;\n}\n', 'Mark Six 26px lock')
+          p.write_text(s)
+          PY
+      - name: Verify responsive rules
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          css = Path('src/feature-pages.css').read_text()
+          ball = Path('src/number-ball.css').read_text()
+          a = css.index('/* Matrix Explore formal layout rules */')
+          b = css.index('/* v55 scoped density and hierarchy refinements */')
+          formal = css[a:b]
+          checks = [
+            ('no 222 lock', 'width: 222px' not in formal and 'max-width: 222px' not in formal and '110px minmax(0, 222px)' not in formal),
+            ('responsive grid', 'grid-template-columns: minmax(102px, 110px) minmax(0, 1fr)' in formal),
+            ('responsive controls', 'width: 100%; max-width: none; min-width: 0; height: 44px' in formal),
+            ('three button wrap', 'line-height: 1.15; white-space: normal' in formal),
+            ('history columns', 'grid-template-columns: 56px 58px minmax(0, 1fr)' in formal),
+            ('no mark six grid duplicate', '.history-panel[data-lottery="六合彩"] .history-row' not in formal),
+            ('no mark six 26px lock', '--number-ball-size: 26px' not in ball),
+          ]
+          failed = [name for name, ok in checks if not ok]
+          if failed:
+              raise SystemExit('verification failed: ' + ', '.join(failed))
+          print('responsive verification passed')
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit tests
+        run: npm run test:unit
+      - name: Build
+        run: npm run build
+      - name: Commit C fix
+        shell: bash
+        run: |
+          if git diff --quiet -- src/feature-pages.css src/number-ball.css; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/feature-pages.css src/number-ball.css
+          git commit -m 'fix: apply Matrix Explore C responsive layout'
+          git push origin main
