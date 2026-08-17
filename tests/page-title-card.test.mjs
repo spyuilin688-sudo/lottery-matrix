@@ -54,12 +54,11 @@ test("history filter keeps issue date order range reset and submit controls", ()
 });
 
 
-test("calculator removes its page title and keeps a single formal responsive layout source", () => {
-  assert.match(styles, /\.calculator-screen\s+\.feature-title-card\s*\{[^}]*display:\s*none/s);
-  assert.match(styles, /\.calculator-screen\s*>\s*\.feature-body\s*\{[^}]*padding-inline:\s*4px/s);
-  assert.match(styles, /\.number-grid\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*8px\s+6px/s);
+test("calculator keeps the current single formal responsive layout source", () => {
+  assert.match(styles, /\.calculator-screen\s*>\s*\.feature-body\s*\{[^}]*padding-inline:\s*12px[^}]*overflow-x:\s*hidden/s);
+  assert.match(styles, /\.number-grid\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*42px\)[^}]*justify-content:\s*space-between[^}]*row-gap:\s*8px/s);
   assert.match(styles, /\.column-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(styles, /\.calculation-results\s*>\s*div\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(styles, /\.calculation-results\s*>\s*div\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*79px\)[^}]*justify-content:\s*space-between/s);
   for (const selector of [".calculator-panel > header > div", ".calculator-panel > header .calculator-actions", ".calculator-panel header strong"]) {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     assert.equal((styles.match(new RegExp(`(^|\\n)\\s*${escaped}\\s*\\{`, "g")) ?? []).length, 1, `${selector} must have one source`);
