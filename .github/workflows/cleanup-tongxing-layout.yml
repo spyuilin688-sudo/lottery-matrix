@@ -5,6 +5,7 @@ on:
     branches: ["同星"]
     paths:
       - ".github/workflows/cleanup-tongxing-layout.yml"
+      - "mobile-runtime.lock.json"
 
 permissions:
   contents: write
