@@ -1,0 +1,28 @@
+name: Explore reference final
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: ${{ github.event.issue.title == '[run] Explore reference final' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python scripts/tmp-explore-reference-final.py
+      - name: Guard
+        shell: bash
+        run: |
+          if git diff -- src/feature-pages.css | grep -E '^\+.*(scale\(|zoom:|translate\(|!important|margin[^:]*:[[:space:]]*-)' ; then exit 1; fi
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/feature-pages.css
+          git diff --cached --quiet && exit 1
+          git commit -m "style: align Matrix Explore with supplied references"
+          git push origin HEAD:main
