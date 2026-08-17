@@ -89,8 +89,8 @@ jobs:
           print('history cleanup verification passed')
           PY
           node --test tests/page-title-card.test.mjs
-      - name: Verify build
-        run: npm run build
+      - name: Verify TypeScript and bundle
+        run: npx tsc && npx vite build && node scripts/prepare-sites-build.mjs
       - name: Commit source cleanup
         shell: bash
         run: |
