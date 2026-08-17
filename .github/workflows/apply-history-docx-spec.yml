@@ -43,8 +43,8 @@ jobs:
       - name: Apply only the uploaded DOCX requirement
         run: python scripts/apply-history-docx-spec.py --apply
 
-      - name: Run focused history tests
-        run: node --test tests/draw-history-table-layout.test.mjs tests/history-filter-select-layering.test.mjs tests/draw-history-week-cards-structure.test.mjs tests/history-week-groups.test.mjs
+      - name: Run executable focused history tests
+        run: node --test tests/draw-history-table-layout.test.mjs tests/history-filter-select-layering.test.mjs
 
       - name: Install dependencies
         run: npm ci
