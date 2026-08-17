@@ -167,13 +167,18 @@ function normalizeProjectedRecord(lottery: NumberBallLottery, record: LotteryDra
   const normalizedPeriod = normalizePeriod(lottery, record.period ?? record.issue);
   const normalizedDrawDate = normalizeDrawDate(record.drawDate ?? record.date);
   const specialNumber = normalizeSpecialNumber(record);
+  const numbers = appendSpecialNumber(lottery, normalizeNumberList(record.numbers), specialNumber);
+  const sortedNumbers = appendSpecialNumber(lottery, normalizeNumberList(record.sortedNumbers), specialNumber);
+  const drawOrderNumbers = appendSpecialNumber(lottery, normalizeNumberList(record.drawOrderNumbers), specialNumber);
   return {
     ...record,
     period: normalizedPeriod,
     issue: normalizedPeriod,
     drawDate: normalizedDrawDate,
     date: normalizedDrawDate,
-    numbers: appendSpecialNumber(lottery, normalizeNumberList(record.numbers), specialNumber),
+    numbers,
+    sortedNumbers: sortedNumbers.length ? sortedNumbers : undefined,
+    drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : undefined,
     specialNumber,
   };
 }
