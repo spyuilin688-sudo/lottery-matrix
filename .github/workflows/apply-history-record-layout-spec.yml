@@ -96,7 +96,6 @@ jobs:
         run: |
           git config user.name 'spy854540-cmd'
           git config user.email 'spy854540@gmail.com'
-          git rm .github/workflows/apply-history-record-layout-spec.yml
           git add src/feature-pages.css tests/draw-history-table-layout.test.mjs
           git diff --cached --check
           git commit -m 'style: clean history layout sources and set 12px margins'
