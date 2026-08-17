@@ -9,6 +9,7 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
 
   useEffect(() => {
     let active = true;
+    setData(null);
     setLoading(true);
     setError(null);
 
