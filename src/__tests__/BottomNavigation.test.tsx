@@ -10,20 +10,18 @@ afterEach(() => {
 });
 
 describe("BottomNavigation", () => {
-  it("依目前選取入口切換 matrixWW 正式底圖", () => {
-    render(<BottomNavigation active="通知" />);
+  it.each([
+    ["首頁", "/assets/lottery/functions/matrixWW1.png"],
+    ["快捷", "/assets/lottery/functions/matrixWW2.png"],
+    ["通知", "/assets/lottery/functions/matrixWW3.png"],
+    ["我的", "/assets/lottery/functions/matrixWW4.png"],
+  ] as const)("依目前選取入口 %s 切換正式底圖", (active, artwork) => {
+    render(<BottomNavigation active={active} />);
 
-    expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute(
-      "src",
-      "/assets/lottery/functions/matrixWW2.png",
-    );
-    expect(screen.getByRole("button", { name: "通知" })).toHaveAttribute(
+    expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute("src", artwork);
+    expect(screen.getByRole("button", { name: active === "快捷" ? "快捷；長按三秒開啟設定" : active })).toHaveAttribute(
       "data-selected",
       "true",
-    );
-    expect(screen.getByRole("button", { name: "首頁" })).toHaveAttribute(
-      "data-selected",
-      "false",
     );
   });
 
