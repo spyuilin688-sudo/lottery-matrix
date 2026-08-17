@@ -1717,20 +1717,30 @@ height: 36px;
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented,
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
-.matrix-explore-main-screen .advanced-panel .select-box,
-.matrix-explore-main-screen .advanced-panel .segmented,
-.matrix-explore-main-screen .advanced-panel .segmented button,
-.matrix-explore-screen .hit-options,
-.matrix-explore-screen .hit-options button {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-options,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-options button {
 height: 44px;
   min-height: 44px;
+}
+
+.matrix-explore-main-screen .advanced-panel .select-box,
+.matrix-explore-main-screen .advanced-panel .segmented,
+.matrix-explore-main-screen .advanced-panel .segmented button {
+height: 36px;
+  min-height: 36px;
+}
+
+.matrix-explore-main-screen .hit-options,
+.matrix-explore-main-screen .hit-options button {
+height: 38px;
+  min-height: 38px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid .select-box,
 .matrix-explore-main-screen .explore-settings .setting-grid .segmented,
 .matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
-height: 37.4px;
-  min-height: 37.4px;
+height: 34px;
+  min-height: 34px;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
@@ -1756,11 +1766,11 @@ width: 100%;
 }
 
 .matrix-explore-main-screen .history-panel .panel-heading {
-align-items: center;
+min-height: 44px; padding: 6px 10px; align-items: center;
 }
 
 .matrix-explore-main-screen .history-panel .panel-heading .section-title {
-min-width: 0; white-space: normal; line-height: 1.25;
+min-width: 0; font-size: 14px; line-height: 18px; white-space: normal;
 }
 
 .matrix-explore-main-screen .history-panel .panel-heading button {
@@ -1789,8 +1799,13 @@ margin-inline: 2px;
   font-weight: 700;
 }
 
-.matrix-explore-screen .road-result-row > strong {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .road-result-row > strong {
 font-size: 15px;
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .road-result-row > strong {
+font-size: 14px;
   font-weight: 700;
 }
 
@@ -1801,11 +1816,11 @@ border: 1px solid rgba(108, 74, 32, .50);
   box-shadow: none;
 }
 
-.matrix-explore-screen .explore-settings,
-.matrix-explore-screen .hit-advanced-panel,
-.matrix-explore-screen .history-panel,
-.matrix-explore-screen .repeat-stats-panel,
-.matrix-explore-screen .result-panel {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-settings,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-advanced-panel,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .history-panel,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-panel,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-panel {
 box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -1815,18 +1830,38 @@ box-sizing: border-box;
   box-shadow: none;
 }
 
-.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title,
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel,
+.matrix-explore-main-screen .history-panel,
+.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .result-panel {
+box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title {
 min-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;
+}
+
+.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {
+min-height: 24px; gap: 8px; font-size: 16px; font-weight: 700; line-height: 22px; letter-spacing: 0;
 }
 
 .matrix-explore-main-screen .explore-settings > .section-title {
 min-height: 22.4px; gap: 8px; font-size: 15.2px; font-weight: 700; line-height: 20.8px; letter-spacing: 0;
 }
 
-.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span,
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span {
 width: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
+}
+
+.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {
+width: 4px; height: 20px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
 }
 
 .matrix-explore-main-screen .explore-settings > .section-title > span {
@@ -1847,7 +1882,7 @@ min-width: 0; width: 100%; min-height: 44px; grid-template-columns: minmax(102px
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label {
-min-width: 0; width: 100%; min-height: 37.4px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;
+min-width: 0; width: 100%; min-height: 34px; grid-template-columns: minmax(94px, 102px) minmax(0, 1fr); align-items: center; gap: 8px;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,
@@ -1856,7 +1891,7 @@ display: grid; width: 100%; min-width: 0; grid-template-columns: 32px minmax(0, 
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span {
-display: grid; width: 100%; min-width: 0; grid-template-columns: 36.8px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
+display: grid; width: 100%; min-width: 0; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 14px; font-weight: 600; line-height: 20px; text-align: left; white-space: nowrap;
 }
 
 .matrix-explore-screen .explore-settings .setting-grid label:first-child > span b {
@@ -1869,7 +1904,7 @@ width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px; transform: none;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon {
-width: 36.8px; height: 36.8px; flex: 0 0 36.8px; border-radius: 5.75px; transform: none;
+width: 30px; height: 30px; flex: 0 0 30px; border-radius: 5px; transform: none;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
@@ -1878,7 +1913,7 @@ width: 100%; max-width: none; min-width: 0; height: 44px; min-height: 44px; padd
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid .select-box {
-width: 100%; max-width: none; min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0; font-size: 13.6px; font-weight: 700;
+width: 100%; max-width: none; min-width: 0; height: 34px; min-height: 34px; padding: 0; font-size: 13px; font-weight: 700;
 }
 
 .matrix-explore-screen .native-select select {
@@ -1905,7 +1940,7 @@ gap: 6px;
 }
 
 .matrix-explore-main-screen .explore-settings .segmented.three {
-gap: 5.1px;
+gap: 5px;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.three button,
@@ -1914,7 +1949,7 @@ min-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10p
 }
 
 .matrix-explore-main-screen .explore-settings .segmented.three button {
-min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0 3.4px; border-radius: 8.5px; font-size: 11.05px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
+min-width: 0; height: 34px; min-height: 34px; padding: 0 3px; border-radius: 8px; font-size: 11.5px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
 }
 
 .matrix-explore-screen .segmented.three button[data-selected="true"] {
@@ -1926,9 +1961,17 @@ font-weight: 700;
 gap: 8px;
 }
 
-.matrix-explore-screen .segmented.two button,
-.matrix-explore-screen .hit-options button {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.two button,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-options button {
 height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: visible;
+}
+
+.matrix-explore-main-screen .advanced-panel .segmented.two button {
+height: 36px; min-height: 36px; padding: 0 3px; border-radius: 8px; font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: visible;
+}
+
+.matrix-explore-main-screen .hit-options button {
+height: 38px; min-height: 38px; padding: 0 4px; border-radius: 9px; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: visible;
 }
 
 .matrix-explore-screen .segmented button[data-selected="true"],
@@ -1949,32 +1992,56 @@ top: -7px; right: 4px; height: 16px; min-height: 16px; padding: 0 5px; border: 1
 width: 9px; height: 9px;
 }
 
-.matrix-explore-screen .hit-options {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-options {
 margin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
-.matrix-explore-screen .advanced-row {
+.matrix-explore-main-screen .hit-options {
+margin-top: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-row {
 height: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; font-size: 17px; font-weight: 700;
 }
 
-.matrix-explore-screen .advanced-row > img:first-child {
+.matrix-explore-main-screen .advanced-row {
+height: 38px; min-height: 38px; margin: 8px 0 0; padding: 0; grid-template-columns: 28px minmax(0, 1fr) 12px; align-items: center; font-size: 15px; font-weight: 700;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-row > img:first-child {
 width: 32px; height: 32px; border-radius: 5px; object-fit: contain;
 }
 
-.matrix-explore-screen .advanced-row svg:last-child {
+.matrix-explore-main-screen .advanced-row > img:first-child {
+width: 28px; height: 28px; border-radius: 5px; object-fit: contain;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-row svg:last-child {
 width: 14px; height: 14px;
+}
+
+.matrix-explore-main-screen .advanced-row svg:last-child {
+width: 12px; height: 12px;
 }
 
 .matrix-explore-screen .advanced-panel {
 min-width: 0; width: 100%; padding-top: 8px; gap: 8px;
 }
 
-.matrix-explore-screen .primary-action {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .primary-action {
 width: 100%; height: 50px; margin: 12px 0; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
 }
 
-.matrix-explore-screen .primary-action svg {
+.matrix-explore-main-screen .primary-action {
+width: 100%; height: 42px; margin: 8px 0 12px; border: 1px solid #d4a52f; border-radius: 10px; background: #071018; color: #f6d472; font-size: 18px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .primary-action svg {
 width: 24px; height: 24px;
+}
+
+.matrix-explore-main-screen .primary-action svg {
+width: 20px; height: 20px;
 }
 
 .matrix-explore-screen .branded-explore-action::before {
@@ -1985,73 +2052,127 @@ opacity: .20;
 opacity: .30; box-shadow: none;
 }
 
-.matrix-explore-screen .repeat-stats-heading {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-heading {
 display: grid; min-height: 28px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 12px;
 }
 
-.matrix-explore-screen .repeat-stats-heading .section-title,
-.matrix-explore-screen .result-title .section-title {
+.matrix-explore-main-screen .repeat-stats-heading {
+display: grid; min-height: 24px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-heading .section-title,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-title .section-title {
 font-size: 19px; font-weight: 700;
 }
 
-.matrix-explore-screen .repeat-stats-heading button {
+.matrix-explore-main-screen .repeat-stats-heading .section-title,
+.matrix-explore-main-screen .result-title .section-title {
+font-size: 16px; font-weight: 700;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-heading button {
 height: 26px; min-height: 26px; padding: 0 8px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 8px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 13px; font-weight: 600;
 }
 
-.matrix-explore-screen .repeat-stats-heading > span {
+.matrix-explore-main-screen .repeat-stats-heading button {
+height: 24px; min-height: 24px; padding: 0 7px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 7px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 12px; font-weight: 600;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-heading > span {
 color: #9e9a93; font-size: 12px; font-weight: 400; text-align: right; white-space: nowrap;
 }
 
-.matrix-explore-screen .result-summary {
+.matrix-explore-main-screen .repeat-stats-heading > span {
+color: #9e9a93; font-size: 11px; font-weight: 400; text-align: right; white-space: nowrap;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-summary {
 display: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;
 }
 
-.matrix-explore-screen .result-summary > div {
+.matrix-explore-main-screen .result-summary {
+display: grid; margin-top: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-summary > div {
 display: flex; min-width: 0; height: 48px; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 8px; box-shadow: none;
 }
 
-.matrix-explore-screen .result-summary b {
+.matrix-explore-main-screen .result-summary > div {
+display: flex; min-width: 0; height: 42px; min-height: 42px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 7px; box-shadow: none;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-summary b {
 font-size: 20px; font-weight: 500; line-height: 22px;
 }
 
-.matrix-explore-screen .result-summary small {
+.matrix-explore-main-screen .result-summary b {
+font-size: 18px; font-weight: 500; line-height: 20px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-summary small {
 margin-top: 1px; color: #aaa39a; font-size: 11px; font-weight: 400; line-height: 13px;
 }
 
-.matrix-explore-screen .explore-result-disclaimer {
+.matrix-explore-main-screen .result-summary small {
+margin-top: 1px; color: #aaa39a; font-size: 10px; font-weight: 400; line-height: 12px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-result-disclaimer {
 box-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;
+}
+
+.matrix-explore-main-screen .explore-result-disclaimer {
+box-sizing: border-box; width: 100%; margin: 0; padding: 10px; color: #aaa49a; font-size: 11px; font-weight: 400; line-height: 1.45; text-align: center;
 }
 
 .matrix-explore-screen .explore-result-disclaimer .explore-disclaimer-nowrap {
 white-space: nowrap;
 }
 
-.matrix-explore-screen .result-panel {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-panel {
 padding-top: 12px;
+}
+
+.matrix-explore-main-screen .result-panel {
+padding-top: 10px;
 }
 
 .matrix-explore-screen .result-title {
 display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 6px;
 }
 
-.matrix-explore-screen .consecutive-filter-button {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .consecutive-filter-button {
 position: relative; min-height: 28px; height: 28px; padding: 0 10px; border: 1px solid #aa7b1c; border-radius: 8px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button {
+position: relative; min-height: 24px; height: 24px; padding: 0 8px; border: 1px solid #aa7b1c; border-radius: 7px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 12px; font-weight: 600; white-space: nowrap;
 }
 
 .matrix-explore-screen .consecutive-filter-button::before {
 position: absolute; inset: -8px 0; content: "";
 }
 
-.matrix-explore-screen .result-count {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-count {
 display: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 13px; font-weight: 400; line-height: 20px; text-align: right; white-space: nowrap;
 }
 
-.matrix-explore-screen .result-count > span {
+.matrix-explore-main-screen .result-count {
+display: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 11px; font-weight: 400; line-height: 16px; text-align: right; white-space: nowrap;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-count > span,
+.matrix-explore-main-screen .result-count > span {
 color: inherit; font-size: inherit; font-weight: inherit;
 }
 
-.matrix-explore-screen .result-count .numeric-text {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .result-count .numeric-text {
 color: #35bff0; font-size: 17px; font-weight: 700;
+}
+
+.matrix-explore-main-screen .result-count .numeric-text {
+color: #35bff0; font-size: 15px; font-weight: 700;
 }
 
 /* v55 scoped density and hierarchy refinements */
