@@ -65,11 +65,13 @@
 .select-box span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select-box em { margin-left: auto; padding: 2px 7px; border: 1px solid #9a6f1e; border-radius: 999px; color: #e6a91b; font-size: 9px; font-style: normal; }
 .select-box svg { width: 18px; flex: 0 0 18px; color: var(--select-tech-accent); }
-.native-select { position: relative; padding: 0; }
+.native-select { position: relative; width: 100%; max-width: 100%; min-width: 0; padding: 0; }
 .native-select select {
   position: relative;
   z-index: 1;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
   padding: 0 40px 0 12px;
   appearance: none;
@@ -155,7 +157,7 @@
 
 .explore-settings { padding: 12px; }
 .setting-grid { display: grid; margin-top: 12px; gap: 10px; }
-.setting-grid label, .advanced-panel label { display: grid; grid-template-columns: 102px 1fr; align-items: center; gap: 8px; }
+.setting-grid label, .advanced-panel label { display: grid; min-width: 0; width: 100%; grid-template-columns: 102px minmax(0, 1fr); align-items: center; gap: 8px; }
 .setting-grid label > span, .advanced-panel label > span { color: #c6c0b6; font-size: 13px; }
 .setting-grid label > span { display: flex; align-items: center; gap: 8px; text-align: left; white-space: nowrap; }
 .explore-settings .setting-grid label:first-child > span {
