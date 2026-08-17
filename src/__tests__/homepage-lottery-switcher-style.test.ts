@@ -9,6 +9,16 @@ describe("homepage layout rules", () => {
     expect(css).toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*pointer-events:\s*none;/s);
   });
 
+  it("uses the canonical 8px logo-to-switcher gap", () => {
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*8px;/s);
+    expect(css).toMatch(/\/\* Canonical homepage flow gaps[\s\S]*?\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-switcher\);/s);
+  });
+
+  it("uses only the draw card margin for the switcher-to-draw gap", () => {
+    expect(css).not.toMatch(/\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-end:\s*8px;/s);
+    expect(css).toMatch(/\.home-screen \.latest-draw-card\s*\{[^}]*margin-block-start:\s*var\(--home-gap-switcher-draw\);/s);
+  });
+
   it("separates next draw and remaining time by spacing without a divider", () => {
     expect(css).not.toMatch(/\.next-draw-info--embedded::before\s*\{/);
     expect(css).toMatch(/\.next-draw-info--embedded\s+\.next-draw-item:last-child\s*\{[^}]*padding-left:\s*16px;/s);
