@@ -95,4 +95,17 @@ describe('lottery-api response validation', () => {
     expect(result.items[0].sortedNumbers).toEqual(['07', '13', '18', '21', '38', '44', '03']);
     expect(result.items[0].drawOrderNumbers).toEqual(['21', '18', '07', '44', '13', '38', '03']);
   });
+
+  it('最新開獎只保留 01 到 49 的有效號碼', async () => {
+    mockJsonResponse({
+      period: '5897',
+      drawDate: '2026/08/12',
+      numbers: ['', '00', '1', '49', '50', '7'],
+    });
+
+    const result = await fetchLatestLotteryDraw('今彩539');
+
+    expect(result?.numbers).toEqual(['01', '07', '49']);
+    expect(result?.drawOrderNumbers).toEqual(['01', '49', '07']);
+  });
 });
