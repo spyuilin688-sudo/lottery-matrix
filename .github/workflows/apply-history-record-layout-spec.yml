@@ -1,0 +1,202 @@
+name: Apply history record layout specification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-history-record-layout-spec.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply confirmed history layout specification
+        shell: bash
+        run: |
+          cat >> src/feature-pages.css <<'CSS'
+
+/* History record layout specification */
+.draw-history-screen > .feature-body {
+  padding-inline: 12px;
+}
+.draw-history-panel {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: none;
+}
+.draw-history-week-list {
+  gap: 8px;
+}
+.draw-history-row {
+  grid-template-columns: 17% 17% 66%;
+  min-height: 56px;
+}
+.draw-history-head {
+  min-height: 38px;
+}
+.draw-history-head > span {
+  min-height: 38px;
+  padding-inline: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.draw-history-row > .draw-history-meta:first-child {
+  padding-inline: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .25px;
+  font-variant-numeric: tabular-nums;
+}
+.draw-history-row > .draw-history-meta:nth-child(2) {
+  padding-inline: 3px;
+}
+.draw-history-row .history-numbers {
+  padding-inline: 6px;
+}
+.draw-history-row .history-numbers:not([data-has-special="true"]) .history-main-numbers {
+  gap: 5px;
+  justify-content: center;
+}
+.draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers {
+  gap: 2px;
+  padding-top: 10px;
+}
+.draw-history-screen .history-special-number {
+  height: 38px;
+  align-self: center;
+}
+.draw-history-screen .history-special-ball {
+  height: 38px;
+  grid-template-rows: 10px 28px;
+}
+.draw-history-screen .history-special-plus {
+  font-size: 14px;
+  margin-inline: 2px;
+  align-self: end;
+}
+.draw-history-screen .history-special-label {
+  font-size: 9px;
+  line-height: 10px;
+  font-weight: 600;
+}
+.history-filter-sheet {
+  width: calc(100% - 24px);
+  max-width: 366px;
+  padding: 16px;
+  border-radius: 16px;
+}
+.history-filter-sheet > header {
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+.history-filter-sheet > header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 28px;
+  text-align: center;
+}
+.history-filter-sheet > header button {
+  width: 44px;
+  height: 44px;
+}
+.history-filter-fields {
+  gap: 12px;
+}
+.history-filter-fields > label,
+.history-filter-row {
+  min-height: 48px;
+  gap: 10px;
+}
+.history-filter-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+}
+.history-filter-fields input,
+.history-filter-fields .select-box {
+  min-height: 44px;
+  border-radius: 8px;
+}
+.history-filter-fields input {
+  padding-inline: 12px;
+  font-size: 16px;
+  font-weight: 500;
+}
+.history-date-selects {
+  grid-template-columns: 100px 1fr 1fr;
+  gap: 6px;
+}
+.history-date-selects select {
+  font-size: 16px;
+  font-weight: 500;
+}
+.history-order-select select {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+.history-range-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.history-range-options button {
+  min-height: 44px;
+  padding-inline: 4px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.history-filter-actions {
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px;
+}
+.history-filter-actions button {
+  min-height: 48px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.history-filter-actions button:first-child {
+  font-size: 17px;
+}
+.history-filter-actions button:last-child {
+  font-size: 18px;
+}
+CSS
+
+          cat >> src/number-ball.css <<'CSS'
+
+/* History record ball specification */
+.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+  width: 28px;
+  height: 28px;
+  aspect-ratio: 1;
+  --number-font-size: 12px;
+  --number-y: 0px;
+}
+.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
+  width: 30px;
+  height: 30px;
+  aspect-ratio: 1;
+}
+CSS
+      - name: Verify build
+        run: npm run build
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name 'spy854540-cmd'
+          git config user.email 'spy854540@gmail.com'
+          git add src/feature-pages.css src/number-ball.css
+          git diff --cached --check
+          git commit -m 'style: apply history record layout specification'
+          git push origin main
