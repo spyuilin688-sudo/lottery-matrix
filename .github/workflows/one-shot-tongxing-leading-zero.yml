@@ -1,0 +1,66 @@
+name: One-shot TongXing leading zero fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-tongxing-leading-zero.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Apply exact source replacement
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/FeaturePages.tsx')
+          source = path.read_text()
+          old = '''  const updateInputValue = (index: number, rawValue: string) => {
+            let nextValue = rawValue.replace(/\\D/g, "").slice(0, 2);
+            if (nextValue === "0") nextValue = "";
+            if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
+            setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
+          };'''
+          new = '''  const updateInputValue = (index: number, rawValue: string) => {
+            const nextValue = sanitizeReferenceNumber(rawValue);
+            setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
+          };'''
+
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exact TongXing input block once, found {count}; refusing to modify.')
+
+          updated = source.replace(old, new, 1)
+          if 'if (nextValue === "0") nextValue = "";' in updated:
+              raise SystemExit('Legacy leading-zero blocker still exists; refusing to commit.')
+          if 'const nextValue = sanitizeReferenceNumber(rawValue);' not in updated:
+              raise SystemExit('Shared sanitizer replacement missing; refusing to commit.')
+
+          path.write_text(updated)
+          PY
+
+      - name: Verify diff scope
+        run: |
+          git diff --check
+          git diff -- src/FeaturePages.tsx
+          test "$(git diff --numstat -- src/FeaturePages.tsx | awk '{print $1+$2}')" -le 8
+
+      - name: Commit precise fix
+        run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/FeaturePages.tsx
+          git commit -m "fix: allow leading zero in TongXing inputs"
+          git push origin HEAD:main
