@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { NumberBallLottery } from "../NumberBall";
 import { useLatestLotteryDraw } from "../useLatestLotteryDraw";
 import { fetchLatestLotteryDraw } from "../lottery-api";
 
@@ -24,14 +25,14 @@ describe("useLatestLotteryDraw", () => {
     mockedFetchLatestLotteryDraw.mockImplementationOnce(() => new Promise(() => {}));
 
     const { result, rerender } = renderHook(
-      ({ lottery }) => useLatestLotteryDraw(lottery),
-      { initialProps: { lottery: "今彩539" as const } },
+      ({ lottery }: { lottery: NumberBallLottery }) => useLatestLotteryDraw(lottery),
+      { initialProps: { lottery: "今彩539" as NumberBallLottery } },
     );
 
     await waitFor(() => expect(result.current.data?.period).toBe("115194"));
 
     act(() => {
-      rerender({ lottery: "六合彩" as const });
+      rerender({ lottery: "六合彩" });
     });
 
     expect(result.current.data).toBeNull();
