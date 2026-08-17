@@ -12,7 +12,10 @@ assert.notEqual(formalStartIndex, -1, "Matrix Explore formal rule block must exi
 assert.notEqual(formalEndIndex, -1, "Matrix Explore formal rule block must have an end marker");
 const formal = css.slice(formalStartIndex, formalEndIndex);
 
-const mainRules = [...formal.matchAll(/([^{}]*\.matrix-explore-main-screen[^{}]*)\{([^{}]*)\}/g)]
+const mainRules = [...formal.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .filter(([, selector]) => selector
+    .split(",")
+    .some((part) => part.includes(".matrix-explore-main-screen") && !part.includes(":not(.matrix-explore-main-screen)")))
   .map(([, selector, body]) => `${selector}{${body}}`)
   .join("\n");
 
