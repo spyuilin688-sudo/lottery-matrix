@@ -2797,16 +2797,15 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="通知" onNavigate={onNavigate} active="通知" className="notifications-screen" compactHeader>
       <div className="notification-list">
         {rows.map(([key, title, subtitle, icon]) => {
-          return <article className="panel notification-row" key={key}>
+          return <article className="notification-row" key={key}>
             <div className="notification-heading">
-              <div className={`notification-icon${key === "card" || key === "collision" || key === "system" ? " notification-icon--expanded" : ""}`}><img src={icon} alt="" /></div>
+              <div className="notification-icon"><img src={icon} alt="" /></div>
               <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
               <div className="notification-actions"><button type="button" disabled={!settings[key] || key === "collision"} onClick={() => setActiveSettings(key)}>設定選項</button><Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => setSettings({ ...settings, [key]: !settings[key] })} /></div>
             </div>
           </article>;
         })}
       </div>
-      <p className="notification-note">所有通知設定將立即生效</p>
       {activeRow && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop notification-modal-backdrop" role="presentation" onClick={() => setActiveSettings(null)}><section className="filter-sheet notification-modal" role="dialog" aria-modal="true" aria-labelledby="notification-settings-title" onClick={(event) => event.stopPropagation()}><header><h2 id="notification-settings-title">{activeRow[1]}</h2><button type="button" onClick={() => setActiveSettings(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="notification-modal-content">{renderSettings(activeRow[0], activeRow[1], activeRow[2])}</div><button type="button" className="notification-modal-done" onClick={() => setActiveSettings(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
     </FeatureShell>
   );
