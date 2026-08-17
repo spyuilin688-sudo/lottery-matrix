@@ -25,14 +25,12 @@ jobs:
 
           p = Path('src/FeaturePages.tsx')
           s = p.read_text()
-
           page_start = s.index('export function DrawHistoryPage')
           page_end = s.index('function RoadValidationProcess', page_start)
 
           title_start = s.index('  const historyTitleActions = (', page_start, page_end)
           title_end = s.index('  );', title_start, page_end) + len('  );')
           title_block = s[title_start:title_end]
-
           lottery_start_marker = '      <div className="history-title-lottery native-select">'
           trigger_marker = '      <button type="button" className="history-filter-trigger"'
           if lottery_start_marker in title_block:
@@ -61,7 +59,6 @@ jobs:
                   '',
               ])
               s = s[:issue_start] + lottery_field + s[issue_start:]
-
           p.write_text(s)
 
           t = Path('tests/page-title-card.test.mjs')
@@ -74,7 +71,7 @@ jobs:
               '  const end = featurePages.indexOf("function RoadValidationProcess", start);',
               '  const historyPage = featurePages.slice(start, end);',
               "  const titleActionsStart = historyPage.indexOf('const historyTitleActions');",
-              "  const titleActionsEnd = historyPage.indexOf('return (', titleActionsStart);",
+              "  const titleActionsEnd = historyPage.indexOf('\\n  );', titleActionsStart) + 5;",
               '  const titleActions = historyPage.slice(titleActionsStart, titleActionsEnd);',
               "  const filterFieldsStart = historyPage.indexOf('className=\\\"history-filter-fields\\\"');",
               "  const lotteryIconIndex = historyPage.indexOf('/assets/lottery/functions/彩種.png', filterFieldsStart);",
@@ -87,12 +84,16 @@ jobs:
               '  assert.doesNotMatch(historyPage, /<LotteryTabs/);',
               '});',
           ])
-          if new_name not in ts:
-              if old_name not in ts:
-                  raise SystemExit('history title-card test block not found')
+          if new_name in ts:
+              test_start = ts.index(new_name)
+              test_end = ts.index('\n});', test_start) + len('\n});')
+              ts = ts[:test_start] + new_test + ts[test_end:]
+          elif old_name in ts:
               test_start = ts.index(old_name)
               test_end = ts.index('\n});', test_start) + len('\n});')
               ts = ts[:test_start] + new_test + ts[test_end:]
+          else:
+              raise SystemExit('history title-card test block not found')
           t.write_text(ts)
           PY
       - name: Verify focused tests
