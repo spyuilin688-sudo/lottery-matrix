@@ -1,0 +1,344 @@
+name: Apply integrated title specification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-integrated-title-spec.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply confirmed specification
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 match, found {count}")
+              return text.replace(old, new, 1)
+
+          feature_path = Path("src/FeaturePages.tsx")
+          feature = feature_path.read_text()
+          feature = replace_once(
+              feature,
+              '<LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" independentCards />',
+              '<LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />',
+              "Matrix status switcher",
+          )
+          feature_path.write_text(feature)
+
+          css_path = Path("src/homepage-repair.css")
+          css = css_path.read_text()
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher {
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
+  position: relative;
+  display: block;
+  flex: 0 0 var(--lottery-switcher-height);
+  width: 100%;
+  height: var(--lottery-switcher-height);
+  padding: 0;
+  overflow: visible;
+}''',
+              '''.home-screen .lottery-switcher {
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
+  position: relative;
+  display: block;
+  flex: 0 0 var(--lottery-switcher-height);
+  width: calc(100% - 24px);
+  height: var(--lottery-switcher-height);
+  margin: 0 12px 8px;
+  padding: 0;
+  overflow: visible;
+}''',
+              "lottery switcher layout",
+          )
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher[data-independent-cards="true"] > .home-asset-image {
+  display: none;
+}
+
+''',
+              '',
+              "old independent switcher artwork rule",
+          )
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  appearance: none;
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(4, 12, 22, .96), rgba(2, 7, 14, .98)) padding-box,
+    linear-gradient(135deg, rgba(118, 129, 143, .74), rgba(56, 66, 79, .66)) border-box;
+  color: transparent;
+  box-shadow: inset 0 0 18px rgba(31, 78, 121, .12);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}''',
+              '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  appearance: none;
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: transparent;
+  box-shadow: none;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}''',
+              "switcher hit-area visual rule",
+          )
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::before {
+  position: absolute;
+  z-index: 0;
+  inset: 1px;
+  border-radius: 7px;
+  content: "";
+  opacity: .7;
+  pointer-events: none;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card > img {
+  display: block;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Normalize the visible logo artwork instead of the unequal transparent PNG canvases. */
+.home-screen .lottery-card[data-lottery="今彩539"] > img {
+  transform: scale(.96);
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"] > img {
+  transform: scale(1.04);
+}
+
+.home-screen .lottery-card[data-lottery="六合彩"] > img {
+  transform: scale(1.32);
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"] > img {
+  transform: scale(1.08);
+}
+
+.home-screen .lottery-card[data-lottery="今彩539"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(167, 17, 20, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 5, 8, .88), rgba(8, 8, 13, .96)) padding-box,
+    linear-gradient(135deg, rgba(255, 105, 91, .82), rgba(116, 39, 37, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="今彩539"]::before {
+  background:
+    radial-gradient(ellipse 128% 92% at 62% -16%, transparent 58%, rgba(152, 16, 20, .62) 60%, rgba(246, 46, 25, .26) 65%, transparent 69%),
+    radial-gradient(ellipse 140% 92% at 28% 116%, transparent 57%, rgba(255, 49, 18, .64) 59%, rgba(255, 139, 31, .2) 66%, transparent 70%),
+    radial-gradient(circle at 82% 21%, rgba(255, 81, 45, .22) 0 1px, transparent 2px) 0 0 / 8px 8px;
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(19, 91, 181, .28), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 18, 38, .9), rgba(5, 9, 18, .96)) padding-box,
+    linear-gradient(135deg, rgba(105, 146, 200, .76), rgba(49, 66, 91, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="天天樂"]::before {
+  background:
+    radial-gradient(ellipse 132% 96% at 35% 114%, transparent 55%, rgba(15, 90, 220, .66) 58%, rgba(46, 147, 255, .24) 65%, transparent 70%),
+    radial-gradient(circle at 28% 26%, rgba(49, 119, 219, .2) 0 1px, transparent 2px) 0 0 / 9px 9px,
+    radial-gradient(ellipse 72% 60% at 50% 48%, rgba(7, 59, 129, .28), transparent 72%);
+}
+
+.home-screen .lottery-card[data-lottery="六合彩"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(26, 117, 113, .22), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(5, 22, 31, .9), rgba(4, 9, 17, .96)) padding-box,
+    linear-gradient(135deg, rgba(102, 132, 151, .72), rgba(44, 61, 73, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="六合彩"]::before {
+  background:
+    radial-gradient(ellipse 142% 92% at 30% 112%, transparent 54%, rgba(116, 23, 170, .48) 57%, rgba(22, 85, 226, .3) 61%, transparent 68%),
+    radial-gradient(ellipse 116% 84% at 70% -12%, transparent 58%, rgba(40, 164, 62, .35) 61%, rgba(225, 34, 26, .3) 65%, transparent 70%),
+    radial-gradient(circle at 82% 22%, rgba(53, 148, 154, .2) 0 1px, transparent 2px) 0 0 / 8px 8px;
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"] {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(151, 105, 21, .3), transparent 70%) padding-box,
+    linear-gradient(145deg, rgba(29, 21, 5, .9), rgba(10, 9, 7, .96)) padding-box,
+    linear-gradient(135deg, rgba(177, 148, 91, .76), rgba(80, 67, 42, .58)) border-box;
+}
+
+.home-screen .lottery-card[data-lottery="大樂透"]::before {
+  background:
+    radial-gradient(ellipse 140% 100% at 42% 110%, transparent 54%, rgba(230, 151, 26, .6) 57%, rgba(255, 199, 73, .22) 64%, transparent 70%),
+    radial-gradient(ellipse 78% 74% at 83% 28%, transparent 56%, rgba(172, 114, 27, .34) 59%, transparent 63%),
+    repeating-radial-gradient(ellipse at 82% 22%, transparent 0 7px, rgba(209, 152, 59, .12) 8px 9px, transparent 10px 15px);
+}
+
+''',
+              '',
+              "obsolete reconstructed switcher cards",
+          )
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  background:
+    linear-gradient(145deg, rgba(6, 13, 22, .98), rgba(2, 7, 14, .98)) padding-box,
+    var(--lottery-selected-gradient) border-box;
+  box-shadow: inset 0 0 18px rgba(255, 204, 98, .12), 0 0 7px rgba(255, 206, 105, .28);
+}''',
+              '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    var(--lottery-selected-gradient) border-box;
+  box-shadow: 0 0 7px rgba(255, 206, 105, .28);
+}''',
+              "selected switcher outline",
+          )
+          for lottery, gradient in [
+              ("今彩539", "linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30)"),
+              ("天天樂", "linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff)"),
+              ("六合彩", "linear-gradient(135deg, #ff3b30, #1e76ff, #34c759)"),
+              ("大樂透", "linear-gradient(135deg, #ffd640, #1e76ff, #ffd640)"),
+          ]:
+              import re
+              pattern = re.compile(rf'\.home-screen \.lottery-card\[data-selected="true"\]\[data-lottery="{lottery}"\] \{{.*?\n\}}', re.S)
+              matches = list(pattern.finditer(css))
+              if len(matches) != 1:
+                  raise SystemExit(f"selected {lottery}: expected 1 match, found {len(matches)}")
+              css = pattern.sub(f'.home-screen .lottery-card[data-selected="true"][data-lottery="{lottery}"] {{\n  --lottery-selected-gradient: {gradient};\n}}', css, count=1)
+          css_path.write_text(css)
+
+          test_path = Path("tests/page-title-card.test.mjs")
+          test_path.write_text(r'''import test from "node:test";
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+
+          const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+          const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+          const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
+          const homepageStyles = readFileSync(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+
+          test("the confirmed feature pages use the latest integrated title artwork", () => {
+            const expectedArtwork = [
+              ["Matrix 探索", "探索標題K.png"],
+              ["Matrix 天衍", "天衍標題K.png"],
+              ["Matrix 天工", "天工標題K.png"],
+              ["Matrix 指南", "指南標題K.png"],
+              ["Matrix 同星", "同星標題K.png"],
+              ["Matrix 牌單", "牌單標題K.png"],
+              ["Matrix 狀態", "狀態標題K.png"],
+              ["Matrix 筆記本", "筆記本標題K.png"],
+              ["號碼對照單", "對照單標題K.png"],
+              ["歷史開獎號碼", "歷史開獎標題K.png"],
+              ["連碰計算機", "連碰標題K.png"],
+              ["立柱計算機", "立柱標題K.png"],
+              ["Matrix Pro 方案與收費標準", "會員方案標題K.png"],
+              ["Matrix 自訂觸發狀態", "自訂觸發標題K.png"],
+            ];
+
+            for (const [title, file] of expectedArtwork) {
+              assert.match(featurePages, new RegExp(`"${title}": "/assets/lottery/functions/${file.replace(".", "\\.")}"`));
+            }
+          });
+
+          test("integrated title artwork uses twelve-pixel side margins, proportional height, and eight-pixel vertical spacing", () => {
+            assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin:\s*0 auto/s);
+            assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
+            assert.match(styles, /\.integrated-title-back\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*background:\s*transparent/s);
+            assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*8px[^}]*padding-top:\s*8px/s);
+          });
+
+          test("Matrix explore title owns the Tianyan and Tiangong controls", () => {
+            const exploreSwitcherStart = featurePages.indexOf("function MatrixPageSwitcher");
+            const exploreSwitcherEnd = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", exploreSwitcherStart);
+            const switcher = featurePages.slice(exploreSwitcherStart, exploreSwitcherEnd);
+            assert.match(switcher, /Matrix天衍\.png/);
+            assert.match(switcher, /Matrix天工\.png/);
+            assert.doesNotMatch(switcher, /Matrix探索\.png/);
+            assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
+          });
+
+          test("history title card owns the lottery dropdown and filter trigger", () => {
+            const start = featurePages.indexOf("export function DrawHistoryPage");
+            const end = featurePages.indexOf("function RoadValidationProcess", start);
+            const historyPage = featurePages.slice(start, end);
+            assert.match(historyPage, /className="history-title-actions"/);
+            assert.match(historyPage, /aria-label="彩種"/);
+            assert.match(historyPage, /篩選條件/);
+            assert.doesNotMatch(historyPage, /<LotteryTabs/);
+          });
+
+          test("number reference title card owns refresh and explore settings", () => {
+            const start = featurePages.indexOf("export function NumberReferencePage");
+            const end = featurePages.indexOf("export function CalculatorPage", start);
+            const referencePage = featurePages.slice(start, end);
+            assert.match(referencePage, /className="reference-title-actions"/);
+            assert.match(referencePage, /刷新/);
+            assert.match(referencePage, /探索設定/);
+          });
+
+          test("home and Matrix status share Matrixbba artwork and preserve only the selected outline overlay", () => {
+            assert.match(featurePages, /className="matrix-status-lottery-switcher" \/>/);
+            assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
+            assert.match(homepageStyles, /\.home-screen \.lottery-switcher\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin:\s*0 12px 8px/s);
+            assert.match(homepageStyles, /\.lottery-card\[data-selected="true"\]\[data-lottery="六合彩"\][^{]*\{[^}]*linear-gradient\(135deg, #ff3b30, #1e76ff, #34c759\)/s);
+            assert.doesNotMatch(homepageStyles, /lottery-switcher\[data-independent-cards="true"\][^{]*home-asset-image[^}]*display:\s*none/s);
+          });
+
+          test("history filter keeps issue date order range reset and submit controls", () => {
+            for (const content of ["期數", "日期", "號碼順序", "1000期", "3000期", "5000期", "所有期數", "重設", "開始探索"]) {
+              assert.match(featurePages, new RegExp(content));
+            }
+          });
+'''.replace(/^          /gm, ''))
+          PY
+      - name: Verify focused tests
+        run: node --test tests/page-title-card.test.mjs tests/number-reference-title-actions.test.mjs
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/FeaturePages.tsx src/homepage-repair.css tests/page-title-card.test.mjs
+          git diff --cached --check
+          git commit -m "style: apply latest integrated title and switcher spec"
+          git push origin HEAD:main
