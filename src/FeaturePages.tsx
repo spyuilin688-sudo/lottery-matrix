@@ -140,28 +140,34 @@ const MATRIX_PAGE_ITEMS = [
 ] as const;
 
 const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
-  "Matrix 探索": "/assets/lottery/functions/探索標題卡.png",
-  "Matrix 天衍": "/assets/lottery/functions/matrixT2.png",
-  "Matrix 天工": "/assets/lottery/functions/matrixT1.png",
-  "Matrix 指南": "/assets/lottery/functions/指南標題卡.png",
-  "Matrix 同星": "/assets/lottery/functions/同星標題卡.png",
-  "Matrix 牌單": "/assets/lottery/functions/牌單標題卡.png",
-  "Matrix 狀態": "/assets/lottery/functions/狀態標題卡.png",
-  "號碼對照單": "/assets/lottery/functions/matrixHH.png",
-  "歷史開獎號碼": "/assets/lottery/functions/matrixP3.png",
+  "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
+  "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
+  "Matrix 天工": "/assets/lottery/functions/天工標題K.png",
+  "Matrix 指南": "/assets/lottery/functions/指南標題K.png",
+  "Matrix 同星": "/assets/lottery/functions/同星標題K.png",
+  "Matrix 牌單": "/assets/lottery/functions/牌單標題K.png",
+  "Matrix 狀態": "/assets/lottery/functions/狀態標題K.png",
+  "Matrix 筆記本": "/assets/lottery/functions/筆記本標題K.png",
+  "號碼對照單": "/assets/lottery/functions/對照單標題K.png",
+  "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
+  "連碰計算機": "/assets/lottery/functions/連碰標題K.png",
+  "立柱計算機": "/assets/lottery/functions/立柱標題K.png",
+  "Matrix Pro 方案與收費標準": "/assets/lottery/functions/會員方案標題K.png",
+  "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
 };
 
-function MatrixPageSwitcher({ current, onNavigate }: {
-  current: "explore" | "tianyan" | "tiangong";
+function MatrixPageSwitcher({ onNavigate }: {
+  current?: "explore" | "tianyan" | "tiangong";
   onNavigate: Navigate;
 }) {
   return (
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
-      {MATRIX_PAGE_ITEMS.map((item) => (
-        <button type="button" data-selected={current === item.screen} aria-current={current === item.screen ? "page" : undefined} aria-label={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
-          <img src={item.image} alt="" draggable={false} />
-        </button>
-      ))}
+      <button type="button" aria-label="Matrix 天衍" onClick={() => onNavigate("tianyan")}>
+        <img src="/assets/lottery/functions/Matrix天衍.png" alt="" draggable={false} />
+      </button>
+      <button type="button" aria-label="Matrix 天工" onClick={() => onNavigate("tiangong")}>
+        <img src="/assets/lottery/functions/Matrix天工.png" alt="" draggable={false} />
+      </button>
     </nav>
   );
 }
@@ -193,6 +199,18 @@ function BrandHeader({
   hideTitle?: boolean;
   showBack?: boolean;
 }) {
+  const integratedArtwork = MATRIX_TITLE_ARTWORK[title];
+  if (integratedArtwork && !hideTitle) {
+    return (
+      <header className="feature-brand-header integrated-title-header" data-compact={compact}>
+        <div className="matrix-title-banner">
+          <img src={integratedArtwork} alt={title} draggable={false} />
+          {showBack ? <button type="button" className="integrated-title-back" onClick={onBack} aria-label="返回" /> : null}
+          {action ? <div className="matrix-title-banner-actions">{action}</div> : null}
+        </div>
+      </header>
+    );
+  }
   return (
     <header className="feature-brand-header" data-compact={compact} data-hide-title={hideTitle}>
       {!compact || showBack ? (
@@ -204,25 +222,14 @@ function BrandHeader({
               </button>
             </div>
           ) : null}
-          <div className="feature-brand-lockup">
-            <BrandLogo />
-          </div>
+          <div className="feature-brand-lockup"><BrandLogo /></div>
         </div>
-      ) : (
-        <BrandLogo />
-      )}
+      ) : <BrandLogo />}
       {!hideTitle ? (
-        MATRIX_TITLE_ARTWORK[title] ? (
-          <div className="matrix-title-banner">
-            <img src={MATRIX_TITLE_ARTWORK[title]} alt={title} draggable={false} />
-            {action ? <div className="matrix-title-banner-actions">{action}</div> : null}
-          </div>
-        ) : (
-          <div className="feature-title-card">
-            <h1>{title}</h1>
-            {action ? <div className="feature-title-actions">{action}</div> : null}
-          </div>
-        )
+        <div className="feature-title-card">
+          <h1>{title}</h1>
+          {action ? <div className="feature-title-actions">{action}</div> : null}
+        </div>
       ) : null}
     </header>
   );
@@ -293,7 +300,7 @@ function FeatureShell({
         action={headerAction}
         compact={logoOnlyHeader}
         hideTitle={hideTitle}
-        showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile")}
+        showBack={Boolean(MATRIX_TITLE_ARTWORK[title]) || !logoOnlyHeader || (active === "我的" && backTarget === "profile")}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
@@ -996,7 +1003,7 @@ export function MatrixExplorePage({
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
-      headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}
+      headerAction={title === "Matrix 探索" ? <MatrixPageSwitcher current="explore" onNavigate={onNavigate} /> : undefined}
     >
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
@@ -1245,7 +1252,7 @@ function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const positionOptions = ["固定", "依序遞增", "依序遞減"];
   const roadOptions = ["加減版路", "合值版路"];
   return (
-    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen" headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}>
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen">
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
@@ -1746,7 +1753,7 @@ export function CalculatorPage({ onNavigate }: { onNavigate: Navigate }) {
     return sums[degree] ?? 0;
   };
   return (
-    <FeatureShell title="連碰立柱計算機" onNavigate={onNavigate} className="calculator-screen" hidePageTitle>
+    <FeatureShell title={mode === "連碰" ? "連碰計算機" : "立柱計算機"} onNavigate={onNavigate} className="calculator-screen">
       <div className="mode-tabs"><button type="button" data-selected={mode === "連碰"} onClick={() => setMode("連碰")}>連碰計算機</button><button type="button" data-selected={mode === "立柱"} onClick={() => setMode("立柱")}>立柱計算機</button></div>
       {mode === "連碰" ? (
         <section className="panel calculator-panel">

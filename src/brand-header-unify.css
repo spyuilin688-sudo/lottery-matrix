@@ -1,7 +1,5 @@
 .feature-screen,
-.compact-feature-screen {
-  padding-top: 0;
-}
+.compact-feature-screen { padding-top: 0; }
 
 .feature-brand-header,
 .feature-brand-header[data-compact="true"] {
@@ -22,10 +20,15 @@
   overflow: visible;
 }
 
+.feature-brand-header.integrated-title-header {
+  margin-bottom: 8px;
+  padding-top: 8px;
+}
+
 .feature-brand-row {
   position: relative;
   display: grid;
-  width: calc(100% + 16px);
+  width: 100%;
   height: auto;
   grid-template-columns: 100%;
   align-items: center;
@@ -38,8 +41,7 @@
   display: flex;
   box-sizing: border-box;
   width: 44px;
-  height: 60px;
-  padding-top: 16px;
+  height: 44px;
   align-self: center;
   justify-self: start;
 }
@@ -59,57 +61,13 @@
   overflow: visible;
 }
 
-.feature-brand-lockup {
-  grid-area: 1 / 1;
-  width: calc(100% - 16px);
-  justify-self: center;
-}
-
-.feature-brand-lockup .shared-brand-logo {
-  display: flex;
-  width: 100%;
-  height: var(--primary-brand-height);
-  align-items: center;
-  justify-content: center;
-}
-
+.feature-brand-lockup { grid-area: 1 / 1; justify-self: center; }
+.feature-brand-lockup .shared-brand-logo { display: flex; width: 100%; height: var(--primary-brand-height); align-items: center; justify-content: center; }
 .feature-brand-lockup .shared-brand-logo > img,
-.feature-brand-header[data-compact="true"] > .shared-brand-logo > img {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  height: var(--primary-brand-height);
-  aspect-ratio: var(--primary-brand-ratio);
-  margin: 0 auto;
-  object-fit: contain;
-  object-position: center;
-}
-
-.feature-brand-header .back-button {
-  box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-}
-
-.feature-brand-header .back-button svg {
-  width: 40px;
-  height: 40px;
-}
-
-/* Formal bottom-navigation header flow. No negative positional compensation. */
-.bottom-nav-brand-screen {
-  --bottom-nav-brand-offset: 0px;
-}
-
-.bottom-nav-brand-screen > .feature-brand-header {
-  top: auto;
-  left: auto;
-  margin-bottom: var(--layout-section-gap);
-}
-
-.bottom-nav-brand-screen > .feature-body {
-  position: relative;
-  top: auto;
-  margin-bottom: 0;
-}
+.feature-brand-header[data-compact="true"] > .shared-brand-logo > img { display: block; width: 100%; max-width: 100%; height: var(--primary-brand-height); aspect-ratio: var(--primary-brand-ratio); margin: 0 auto; object-fit: contain; object-position: center; }
+.feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
+.feature-brand-header .back-button svg { width: 40px; height: 40px; }
+.bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px; }
+.bottom-nav-brand-screen > .feature-brand-header { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
+.bottom-nav-brand-screen > .feature-brand-header.integrated-title-header { margin-bottom: 8px; }
+.bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }

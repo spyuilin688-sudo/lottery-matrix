@@ -73,7 +73,7 @@ const STATUS_ASSET_BASE = "/assets/lottery/status";
 
 const HOME_ASSETS = {
   logo: PRIMARY_BRAND_LOGO,
-  lotterySwitcher: `${STATUS_ASSET_BASE}/MatrixBB.png`,
+  lotterySwitcher: `${STATUS_ASSET_BASE}/Matrixbba.png`,
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
   matrixStatus: `${STATUS_ASSET_BASE}/matrixAA.png`,
   matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,

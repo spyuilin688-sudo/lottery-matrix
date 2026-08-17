@@ -26,51 +26,18 @@
 .feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - (var(--layout-page-inline) * 2)); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
 .feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
 .feature-title-actions { display: flex; min-width: 0; align-items: center; }
-.matrix-page-switcher { display: flex; align-items: center; gap: 5px; }
-.matrix-page-switcher button {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid #4b3b28;
-  border-radius: 8px;
-  background: #02060a;
-  overflow: hidden;
-}
-.matrix-page-switcher button[data-selected="true"] { border-color: #d7a52f; box-shadow: 0 0 9px rgba(224, 157, 37, .28); }
+.matrix-page-switcher { display: flex; height: 100%; align-items: center; justify-content: flex-end; gap: 4px; }
+.matrix-page-switcher button { display: grid; height: 100%; max-height: 38px; aspect-ratio: 1; padding: 0; place-items: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.matrix-title-banner {
-  position: relative;
-  width: calc(100% - 8px);
-  margin-top: 8px;
-}
-.matrix-title-banner > img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-.matrix-title-banner-actions {
-  position: absolute;
-  inset: 13% 3% 13% 57%;
-}
-.matrix-title-banner-actions,
-.matrix-title-banner-actions .matrix-page-switcher {
-  width: auto;
-  height: 100%;
-}
-.matrix-title-banner-actions .matrix-page-switcher {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3%;
-}
-.matrix-title-banner-actions .matrix-page-switcher button {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  opacity: 0;
-}
+.matrix-title-banner { position: relative; width: calc(100% - 24px); margin: 0 auto; line-height: 0; }
+.matrix-title-banner > img { display: block; width: 100%; height: auto; object-fit: contain; }
+.integrated-title-back { position: absolute; z-index: 4; top: 50%; left: 0; width: 44px; height: 44px; padding: 0; transform: translateY(-50%); border: 0; background: transparent; }
+.matrix-title-banner-actions { position: absolute; z-index: 3; inset: 10% 3% 10% 56%; display: flex; min-width: 0; align-items: center; justify-content: flex-end; }
+.matrix-title-banner-actions .reference-title-actions,
+.matrix-title-banner-actions .history-title-actions { width: 100%; justify-content: flex-end; }
+.matrix-title-banner-actions .reference-title-actions button,
+.matrix-title-banner-actions .history-title-actions button { min-height: 26px; height: 26px; padding-inline: 5px; font-size: 9px; }
+.matrix-title-banner-actions .history-title-lottery { width: 84px; height: 26px; flex-basis: 84px; }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; }
 .history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); font-size: 8px; }
