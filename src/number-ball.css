@@ -161,7 +161,6 @@
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --number-ball-size: 26px;
   --number-ball-asset-scale: 1.62;
   --underline-height: .75px;
   --underline-y: -1.5px;
