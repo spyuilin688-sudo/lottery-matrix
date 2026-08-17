@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-
-const css = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
+// @ts-expect-error Vite resolves CSS raw imports during tests.
+import css from "../homepage-repair.css?raw";
 
 describe("homepage lottery switcher layout", () => {
   it("sizes each independent lottery logo inside its own quarter hit area", () => {
