@@ -34,6 +34,25 @@ describe('lottery-api response validation', () => {
     ).rejects.toThrow('Lottery API invalid response: groups');
   });
 
+  it('同星 groups 內缺少鎖定期或預測期時拒絕異常格式', async () => {
+    mockJsonResponse({
+      lottery: '今彩539',
+      numberOrder: '依號碼由小到大排序',
+      numbers: ['01', '02'],
+      futureOffset: 1,
+      groups: [{ lockedEntry: { period: '1', numbers: ['01', '02', '03', '04', '05'] } }],
+    });
+
+    await expect(
+      fetchTongXing({
+        lottery: '今彩539',
+        numberOrder: '依號碼由小到大排序',
+        numbers: ['01', '02'],
+        futureOffset: 1,
+      }),
+    ).rejects.toThrow('Lottery API invalid response: groups[0]');
+  });
+
   it('號碼對照單回傳缺少 items 時拒絕異常格式', async () => {
     mockJsonResponse({
       lottery: '今彩539',
