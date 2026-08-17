@@ -1,0 +1,254 @@
+name: Sync near10 confirmed spec to main
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/sync-near10-main.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Apply confirmed near10 changes on latest main
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          tsx_path = Path('src/FeaturePages.tsx')
+          tsx = tsx_path.read_text()
+          old = '''  const [expanded, setExpanded] = useState(!collapsible);\n\n  return ('''
+          new = '''  const [expanded, setExpanded] = useState(!collapsible);\n  const historyHeading = (\n    <div className="history-panel-title">\n      <SectionTitle>近10期開獎號碼</SectionTitle>\n      <span className="history-panel-order">（{numberOrder}）</span>\n    </div>\n  );\n\n  return ('''
+          if tsx.count(old) != 1:
+              raise SystemExit(f'HistoryList state anchor count: {tsx.count(old)}')
+          tsx = tsx.replace(old, new, 1)
+          title = '<SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>'
+          if tsx.count(title) != 2:
+              raise SystemExit(f'HistoryList title anchor count: {tsx.count(title)}')
+          tsx = tsx.replace(title, '{historyHeading}')
+          tsx_path.write_text(tsx)
+
+          css_path = Path('src/feature-pages.css')
+          css = css_path.read_text()
+          start = css.index('.history-panel {')
+          end_marker = '.history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }'
+          end = css.index(end_marker, start) + len(end_marker)
+          formal = r'''.history-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.history-panel .panel-heading {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  height: 52px;
+  padding: 7px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(195, 145, 54, .58);
+}
+.history-panel-title {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 24px 14px;
+  align-content: center;
+}
+.history-panel-title .section-title {
+  min-width: 0;
+  gap: 8px;
+  color: #e7d5ac;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.history-panel-title .section-title > span {
+  width: 4px;
+  height: 24px;
+  flex: 0 0 4px;
+  border-radius: 4px;
+}
+.history-panel-order {
+  min-width: 0;
+  margin-left: 12px;
+  overflow: hidden;
+  color: #c6c0b8;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 14px;
+  white-space: nowrap;
+}
+.history-panel-toggle {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.history-panel-toggle > svg { width: 14px; height: 14px; transition: transform .2s; }
+.history-panel-toggle > svg[data-open="true"] { transform: rotate(180deg); }
+.panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 12px; white-space: nowrap; }
+.history-panel .panel-heading > button:last-child {
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+  justify-self: end;
+  color: #d8a93e;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.history-panel .panel-heading > button:last-child svg { width: 11px; height: 11px; flex: 0 0 11px; }
+.history-table { width: 100%; margin: 0; padding: 0; overflow: hidden; }
+.history-row {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  height: 46px;
+  grid-template-columns: 66px 68px minmax(0, 1fr);
+  align-items: center;
+  border-top: 1px solid rgba(90, 87, 80, .45);
+  color: #bcb7ae;
+  font-size: 9px;
+}
+.history-row > span { box-sizing: border-box; min-width: 0; padding: 0; text-align: center; }
+.history-row > span + span {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(74, 67, 56, .68);
+}
+.history-row:not(.history-head) > span:first-child,
+.history-row:not(.history-head) > span:nth-child(2) {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.history-row:not(.history-head) > span:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.history-row:not(.history-head) > span:nth-child(2) { overflow: hidden; color: #fff; }
+.history-date-stack {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.history-date-stack strong { color: #f1eee8; font-size: 12px; font-weight: 700; line-height: 15px; }
+.history-date-stack small { max-width: 100%; margin-top: 1px; overflow: hidden; color: #c7c1b8; font-size: 11px; font-weight: 500; line-height: 14px; white-space: nowrap; }
+.history-head { height: 36px; color: #b58e3e; font-size: 14px; font-weight: 700; line-height: 18px; }
+.history-head > span { text-align: center; }
+.history-panel .history-row { border-top: 1px solid rgba(90, 87, 80, .45); }
+.history-panel .history-head { border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }
+.history-panel .history-head + .history-row { border-top: 0; }
+.history-panel .history-row[data-week-boundary="true"] { border-top: 2px solid rgba(166, 124, 54, .68); }
+.history-numbers,
+.history-main-numbers,
+.history-special-number {
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+}
+.history-numbers { width: 100%; overflow: hidden; }
+.history-main-numbers { gap: 2px; }
+.history-special-number { height: 38px; margin-left: 4px; gap: 4px; color: #d4a63b; }
+.history-special-number > span:first-child {
+  display: grid;
+  box-sizing: border-box;
+  width: 10px;
+  height: 28px;
+  flex: 0 0 10px;
+  margin: 0;
+  place-items: center;
+  color: #f6c95f;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+.history-special-ball { display: grid; height: 38px; flex: 0 0 auto; grid-template-rows: 9px 28px; row-gap: 1px; place-items: center; }
+.history-special-label { margin: 0; color: #d4a63b; font-size: 9px; font-weight: 600; line-height: 9px; white-space: nowrap; }
+.history-panel .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 0; }
+.history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }'''
+          css_path.write_text(css[:start] + formal + css[end:])
+
+          ball_path = Path('src/number-ball.css')
+          balls = ball_path.read_text()
+          bstart = balls.index('.history-panel .number-ball-component.history-lottery-ball {')
+          bend_marker = '.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {'
+          bend_start = balls.index(bend_marker, bstart)
+          bend = balls.index('}', bend_start) + 1
+          ball_formal = r'''.history-panel .number-ball-component.history-lottery-ball {
+  --number-ball-size: 28px;
+  --number-font-size: 12px;
+  --number-y: 0px;
+  --underline-width: 11px;
+  --underline-height: .5px;
+  --underline-y: .25px;
+}
+
+.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
+  --number-ball-asset-scale: 1.62;
+}'''
+          ball_path.write_text(balls[:bstart] + ball_formal + balls[bend:])
+          PY
+
+      - name: Verify scoped rules
+        run: |
+          grep -n -- '--layout-page-inline: 12px' src/design-tokens.css
+          grep -n 'history-panel-title\|history-panel-order' src/FeaturePages.tsx src/feature-pages.css
+          grep -n -- '--number-ball-size: 28px' src/number-ball.css
+          ! grep -n 'width: 366px' src/feature-pages.css | grep 'history-panel'
+          ! grep -n 'height: 52px;.*min-height: 52px' src/feature-pages.css
+          git diff --check
+
+      - name: Install dependencies
+        run: npm run install:ci
+
+      - name: Typecheck and build
+        run: |
+          npx tsc
+          npx vite build
+          node scripts/prepare-sites-build.mjs
+
+      - name: Commit resolved main
+        run: |
+          rm -f .github/workflows/sync-near10-main.yml
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/FeaturePages.tsx src/feature-pages.css src/number-ball.css .github/workflows/sync-near10-main.yml
+          git commit -m "fix: sync confirmed near10 spec to main"
+          git push origin HEAD:main
