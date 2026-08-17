@@ -19,7 +19,6 @@ def replace_rule(selector: str, body: str, expected: int = 1) -> None:
     formal = pattern.sub(selector + " {\n" + body.strip() + "\n}", formal)
 
 
-# Shared panel visuals remain available only to non-main Explore screens.
 replace_rule(
     ".matrix-explore-screen .panel",
     """
@@ -49,7 +48,6 @@ replace_rule(
   box-shadow: none;
 """,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .panel:not(.explore-settings) .section-title",
     """
@@ -90,7 +88,6 @@ replace_rule(
   box-shadow: none;
 """,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .explore-settings .setting-grid",
     """
@@ -128,7 +125,6 @@ replace_rule(
   white-space: nowrap;
 """,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .advanced-panel .select-box,\n.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button",
     """
@@ -149,6 +145,11 @@ replace_rule(
   overflow: visible;
 """,
 )
+formal = formal.replace(
+    ".matrix-explore-main-screen .hit-options,\n.matrix-explore-main-screen .hit-options button {",
+    ".matrix-explore-main-screen .hit-options {",
+    1,
+)
 replace_rule(
     ".matrix-explore-main-screen .explore-settings .setting-grid .select-box,\n.matrix-explore-main-screen .explore-settings .setting-grid .segmented,\n.matrix-explore-main-screen .explore-settings .setting-grid .segmented button",
     """
@@ -156,13 +157,11 @@ replace_rule(
   min-height: 24px;
 """,
 )
-
 old_selector = ".matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,\n.matrix-explore-main-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options button"
 new_selector = ".matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,\n.matrix-explore-main-screen .advanced-panel .segmented button,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-options button"
 if old_selector not in formal:
     raise SystemExit("shared hit-option selector not found")
 formal = formal.replace(old_selector, new_selector, 1)
-
 replace_rule(
     ".matrix-explore-main-screen .explore-settings .setting-grid .select-box",
     """
@@ -192,7 +191,6 @@ replace_rule(
   overflow: visible;
 """,
 )
-
 replace_rule(
     ".matrix-explore-screen .segmented.two,\n.matrix-explore-screen .hit-options",
     "gap: 8px;",
@@ -228,7 +226,6 @@ replace_rule(
   overflow: visible;
 """,
 )
-
 shared_selected = ".matrix-explore-screen .segmented button[data-selected=\"true\"],\n.matrix-explore-screen .hit-options button[data-selected=\"true\"]"
 pattern = re.compile(re.escape(shared_selected) + r"\s*\{[^{}]*\}", re.S)
 if len(list(pattern.finditer(formal))) != 1:
@@ -251,7 +248,6 @@ formal = pattern.sub(
 }""",
     formal,
 )
-
 replace_rule(
     ".matrix-explore-screen .advanced-panel",
     """
@@ -266,7 +262,6 @@ formal = formal.replace(
     ".matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-panel,\n.matrix-explore-main-screen .advanced-panel {",
     1,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .primary-action",
     """
@@ -293,7 +288,6 @@ formal = formal.replace(
     ".matrix-explore-screen:not(.matrix-explore-main-screen) .branded-explore-action::after {",
     1,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .history-panel .panel-heading .section-title",
     """
@@ -359,7 +353,6 @@ replace_rule(
 """,
 )
 
-# Check only selectors that actually target main, excluding :not(.matrix-explore-main-screen).
 main_rule_parts = []
 for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", formal):
     selector, body = match.groups()
