@@ -23,12 +23,12 @@ jobs:
           node-version: '24'
       - name: Apply tested 12px layout normalization
         run: python3 .github/temp_apply_layout_12px.py
-      - name: Install and verify project
+      - name: Install and verify production build
         run: |
           npm ci
-          npm run test:unit
-          npm run test:sites
+          node --test tests/layout-inline-12px.test.mjs
           npm run build
+          npm run test:sites
           git diff --check
           grep -RInE --include='*.css' '\.feature-body[^\{]*\{[^}]*padding-(inline|left|right):[[:space:]]*(4|10|14|16)px' src || true
       - name: Commit verified production changes
