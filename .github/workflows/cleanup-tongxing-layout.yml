@@ -29,9 +29,21 @@ jobs:
       - name: Recover reviewed cleanup payloads
         shell: bash
         run: |
-          git show HEAD^:.github/workflows/cleanup-tongxing-layout.yml > /tmp/previous-cleanup.yml
-          grep -oP "run: echo '\K[^']+" /tmp/previous-cleanup.yml > /tmp/payloads.txt
-          test "$(wc -l < /tmp/payloads.txt)" -eq 3
+          payload_source=""
+          while IFS= read -r candidate; do
+            if ! git cat-file -e "$candidate:.github/workflows/cleanup-tongxing-layout.yml" 2>/dev/null; then
+              continue
+            fi
+            git show "$candidate:.github/workflows/cleanup-tongxing-layout.yml" > /tmp/candidate-cleanup.yml
+            grep -oP "run: echo '\K[^']+" /tmp/candidate-cleanup.yml > /tmp/candidate-payloads.txt || true
+            if [ "$(wc -l < /tmp/candidate-payloads.txt)" -eq 3 ]; then
+              cp /tmp/candidate-payloads.txt /tmp/payloads.txt
+              payload_source="$candidate"
+              break
+            fi
+          done < <(git rev-list HEAD^)
+          test -n "$payload_source"
+          echo "Recovered reviewed cleanup payloads from $payload_source"
 
       - name: Clean shared Matrix TongXing rules
         shell: bash
@@ -44,8 +56,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Full unit suite diagnostic
-        continue-on-error: true
+      - name: Full unit suite
         run: npm run test:unit
 
       - name: Focused Matrix TongXing unit test
@@ -63,6 +74,13 @@ jobs:
 
       - name: Diff check
         run: git diff --check
+
+      - name: Guard cleanup scope
+        shell: bash
+        run: |
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' 'src/feature-pages.css' 'src/tongxing-compact.css' | sort)"
+          test "$changed" = "$expected"
 
       - name: Commit cleanup to 同星 only
         shell: bash
