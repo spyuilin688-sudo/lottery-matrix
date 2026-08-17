@@ -27,7 +27,7 @@ jobs:
           path = Path('scripts/tmp_matrix_explore_golden_sizing.py')
           text = path.read_text()
           old = 'pattern = re.compile(re.escape(selector) + r"\\s*\\{[^{}]*\\}\\s*", re.S)'
-          new = 'pattern = re.compile(r"(?m)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
+          new = 'pattern = re.compile(r"(?m)(?<!,\\n)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
           if old not in text:
               raise SystemExit('temporary delete helper source not found')
           path.write_text(text.replace(old, new, 1))
