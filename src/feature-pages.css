@@ -32,13 +32,7 @@
 .matrix-title-banner-actions .history-title-actions { width: 100%; justify-content: flex-end; }
 .matrix-title-banner-actions .reference-title-actions button,
 .matrix-title-banner-actions .history-title-actions button { min-height: 26px; height: 26px; padding-inline: 5px; font-size: 9px; }
-.matrix-title-banner-actions .history-title-lottery { width: 84px; height: 26px; flex-basis: 84px; }
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
-.history-title-lottery { display: grid; width: 92px; height: 26px; flex: 0 0 92px; grid-template-columns: minmax(0, 1fr) 18px; }
-.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; padding: 0 20px 0 5px; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); font-size: 8px; }
-.history-title-lottery option { font-size: 8px; }
-.history-title-chevron { position: relative; z-index: 2; display: grid; grid-row: 1; grid-column: 2; place-items: center; color: var(--select-tech-accent); pointer-events: none; }
-.history-title-chevron svg { display: block; width: 12px; height: 12px; stroke-width: 2.5; }
 .history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
@@ -49,19 +43,13 @@
 .lottery-tabs { display: grid; height: 48px; margin: 0 0 12px; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #352817; }
 .lottery-tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: #8e8a84; font-size: 14px; }
 .lottery-tabs button[data-selected="true"] { border-bottom-color: #f5c51f; color: #f4c824; }
-.select-box,
-.history-title-lottery { position: relative; isolation: isolate; min-width: 0; border: 0; border-radius: 0; background: transparent; color: #f0eee9; text-align: left; }
+.select-box { position: relative; isolation: isolate; min-width: 0; border: 0; border-radius: 0; background: transparent; color: #f0eee9; text-align: left; }
 .select-box { display: flex; height: 44px; padding: 0 12px; align-items: center; justify-content: space-between; gap: 8px; }
 .select-box::before,
-.history-title-lottery::before,
-.select-box::after,
-.history-title-lottery::after { position: absolute; z-index: -2; inset: 0; clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut)); pointer-events: none; content: ""; }
-.select-box::before,
-.history-title-lottery::before { background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618); filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32)); }
-.select-box::after,
-.history-title-lottery::after { z-index: -1; inset: 1px; background: linear-gradient(145deg, #07131d, var(--select-tech-surface)); }
-.select-box:focus-within::before,
-.history-title-lottery:focus-within::before { filter: drop-shadow(0 0 6px rgba(240, 189, 54, .58)); }
+.select-box::after { position: absolute; z-index: -2; inset: 0; clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut)); pointer-events: none; content: ""; }
+.select-box::before { background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618); filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32)); }
+.select-box::after { z-index: -1; inset: 1px; background: linear-gradient(145deg, #07131d, var(--select-tech-surface)); }
+.select-box:focus-within::before { filter: drop-shadow(0 0 6px rgba(240, 189, 54, .58)); }
 .select-box span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select-box em { margin-left: auto; padding: 2px 7px; border: 1px solid #9a6f1e; border-radius: 999px; color: #e6a91b; font-size: 9px; font-style: normal; }
 .select-box svg { width: 18px; flex: 0 0 18px; color: var(--select-tech-accent); }
@@ -583,13 +571,6 @@
 .draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
 .draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
-.draw-history-screen .history-title-lottery.native-select select {
-  padding: 0 22px 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-  text-align-last: center;
-}
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
