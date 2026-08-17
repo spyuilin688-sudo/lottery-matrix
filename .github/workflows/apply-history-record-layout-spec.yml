@@ -39,37 +39,11 @@ jobs:
               r'\1\2\n.draw-history-screen > .feature-body { padding-inline: 12px; }',
               'history page side padding',
           )
-          sub_once(
-              r'^\.matrix-title-banner-actions \.history-title-lottery \{[^\n]*\}\n',
-              '',
-              'duplicate history title lottery sizing',
-              re.M,
-          )
-          sub_once(
-              r'^\.history-title-lottery \{[^\n]*\}$',
-              '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px; grid-template-columns: minmax(0, 1fr) 18px; }',
-              'formal history title lottery sizing',
-              re.M,
-          )
-          sub_once(
-              r'^\.history-title-lottery select \{[^\n]*\}$',
-              '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); }',
-              'history title lottery structural select rule',
-              re.M,
-          )
-          sub_once(
-              r'^\.history-title-actions \.history-filter-trigger \{[^\n]*\}$',
-              '.history-title-actions .history-filter-trigger { white-space: nowrap; }',
-              'history filter trigger base rule',
-              re.M,
-          )
-          sub_once(
-              r'^\.draw-history-screen \.draw-history-head \{\n\s*min-height:\s*28px;\n\s*font-size:\s*13px;\n\s*font-weight:\s*700;\n\}\n\n',
-              '',
-              'duplicate draw history head rule',
-              re.M,
-          )
-
+          sub_once(r'^\.matrix-title-banner-actions \.history-title-lottery \{[^\n]*\}\n', '', 'duplicate history title lottery sizing', re.M)
+          sub_once(r'^\.history-title-lottery \{[^\n]*\}$', '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px; grid-template-columns: minmax(0, 1fr) 18px; }', 'formal history title lottery sizing', re.M)
+          sub_once(r'^\.history-title-lottery select \{[^\n]*\}$', '.history-title-lottery select { position: relative; z-index: 1; width: 100%; height: 100%; grid-row: 1; grid-column: 1 / -1; appearance: none; border: 0; outline: 0; background: transparent; color: var(--select-tech-text); }', 'history title lottery structural select rule', re.M)
+          sub_once(r'^\.history-title-actions \.history-filter-trigger \{[^\n]*\}$', '.history-title-actions .history-filter-trigger { white-space: nowrap; }', 'history filter trigger base rule', re.M)
+          sub_once(r'^\.draw-history-screen \.draw-history-head \{\n\s*min-height:\s*28px;\n\s*font-size:\s*13px;\n\s*font-weight:\s*700;\n\}\n\n', '', 'duplicate draw history head rule', re.M)
           p.write_text(s)
 
           t = Path('tests/draw-history-table-layout.test.mjs')
@@ -80,12 +54,9 @@ jobs:
               if anchor not in ts:
                   raise SystemExit('history test anchor not found')
               ts = ts.replace(anchor, anchor + side_assertion, 1)
-          ts, count = re.subn(
-              r'assert\.match\(css, /\\\.history-title-lottery\\s\*\\\{\[\^}\]\*width:\\s\*92px\[\^}\]\*height:\\s\*26px\[\^}\]\*flex:\\s\*0 0 92px/s\);',
-              'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*84px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 84px/s);',
-              ts,
-              count=1,
-          )
+          width_pattern = re.compile(r'\s*assert\.match\(css, /\\\.history-title-lottery\\s\*\\\{\[\^}\]\*width:\\s\*92px\[\^}\]\*height:\\s\*26px\[\^}\]\*flex:\\s\*0 0 92px/s\);')
+          width_replacement = '  assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*84px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 84px/s);'
+          ts, count = width_pattern.subn(lambda _: '\n' + width_replacement, ts, count=1)
           if count == 0 and 'width:\\s*84px' not in ts:
               raise SystemExit('history title width test not found')
           t.write_text(ts)
