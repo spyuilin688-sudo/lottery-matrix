@@ -26,21 +26,28 @@ test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", ()
   assert.match(css, /\.draw-history-week-list\s*\{[^}]*gap:\s*8px/s);
 });
 
-test("標題卡控制項固定在右側並保留完整彩種文字寬度", () => {
-  assert.match(css, /\.history-title-actions\s*\{[^}]*gap:\s*6px/s);
-  assert.match(css, /\.history-title-lottery\s*\{[^}]*width:\s*92px[^}]*height:\s*26px[^}]*flex:\s*0 0 92px/s);
-  assert.match(css, /\.history-title-lottery select\s*\{[^}]*font-size:\s*8px/s);
-  assert.match(css, /\.history-title-lottery option\s*\{[^}]*font-size:\s*8px/s);
-  assert.match(css, /\.history-title-lottery\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 18px/s);
-  assert.match(css, /\.history-title-chevron\s*\{[^}]*z-index:\s*2[^}]*grid-column:\s*2/s);
-  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*8%[^}]*left:\s*auto[^}]*width:\s*46%[^}]*height:\s*auto/s);
-  assert.match(css, /\.draw-history-screen \.history-title-lottery\.native-select select\s*\{[^}]*padding:\s*0 22px 0 4px[^}]*font-size:\\s*8px[^}]*text-align:\\s*center[^}]*text-align-last:\\s*center/s);
+test("彩種下拉移入篩選條件第一項並保留標題列篩選按鈕", () => {
+  const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+  const fieldsStart = source.indexOf('<div className="history-filter-fields">');
+  const lotteryIcon = source.indexOf('/assets/lottery/functions/彩種.png', fieldsStart);
+  const lotterySelect = source.indexOf('aria-label="彩種"', fieldsStart);
+  const issueIcon = source.indexOf('/assets/history-filter/issue.png', fieldsStart);
+  const titleActions = source.indexOf('const historyTitleActions');
+  const filterTrigger = source.indexOf('className="history-filter-trigger"', titleActions);
+  const shellAction = source.indexOf('headerAction={historyTitleActions}', titleActions);
+
+  assert.ok(fieldsStart >= 0);
+  assert.ok(lotteryIcon > fieldsStart && lotteryIcon < issueIcon);
+  assert.ok(lotterySelect > fieldsStart && lotterySelect < issueIcon);
+  assert.ok(titleActions >= 0 && filterTrigger > titleActions && shellAction > filterTrigger);
+  assert.doesNotMatch(source, /history-title-lottery|history-title-chevron/);
+  assert.doesNotMatch(css, /history-title-lottery|history-title-chevron/);
   assert.match(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{[^}]*min-width:\s*68px[^}]*height:\s*26px[^}]*flex:\s*0 0 68px[^}]*font-size:\s*9px/s);
 });
 
 test("歷史頁六合彩數字回到彩球中心", () => {
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--number-y:\s*0px/s);
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.2px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.5px/s);
 });
 
 test("歷史頁今彩539數字比例依示意圖放大", () => {

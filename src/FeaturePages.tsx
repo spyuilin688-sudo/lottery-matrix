@@ -663,20 +663,6 @@ export function DrawHistoryPage({
 
   const historyTitleActions = (
     <div className="history-title-actions">
-      <div className="history-title-lottery native-select">
-        <select
-          aria-label="彩種"
-          value={lottery}
-          onChange={(event) => {
-            const nextLottery = event.target.value as LotteryId;
-            setLottery(nextLottery);
-            setAppliedHistorySettings((current) => ({ ...current, lottery: nextLottery }));
-          }}
-        >
-          {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
-        </select>
-        <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
-      </div>
       <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選條件
@@ -760,6 +746,15 @@ export function DrawHistoryPage({
                   </button>
                 </header>
                 <div className="history-filter-fields">
+                  <div className="history-filter-row">
+                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
+                    <div className="select-box native-select">
+                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
+                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+                      </select>
+                      <ChevronDownIcon />
+                    </div>
+                  </div>
                   <label>
                     <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>
                     <input
