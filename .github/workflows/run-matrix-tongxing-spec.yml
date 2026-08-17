@@ -1,0 +1,37 @@
+name: Execute Matrix Tongxing specification
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/run-matrix-tongxing-spec.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: python scripts/apply-matrix-tongxing-spec.py
+      - run: npm test --if-present
+      - run: npm run build --if-present
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm scripts/apply-matrix-tongxing-spec.py
+          rm .github/workflows/run-matrix-tongxing-spec.yml
+          git add src/feature-pages.css scripts/apply-matrix-tongxing-spec.py .github/workflows/run-matrix-tongxing-spec.yml
+          git commit -m 'style: apply Matrix Tongxing document specification'
+          git push origin HEAD:main
