@@ -1,0 +1,243 @@
+name: Apply integrated title card migration
+on:
+  push:
+    paths:
+      - '.github/workflows/ui-title-card-migration.yml'
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply requested UI migration
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          feature = Path('src/FeaturePages.tsx')
+          text = feature.read_text()
+
+          new_map = '''const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
+            "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
+            "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
+            "Matrix 天工": "/assets/lottery/functions/天工標題K.png",
+            "Matrix 指南": "/assets/lottery/functions/指南標題K.png",
+            "Matrix 同星": "/assets/lottery/functions/同星標題K.png",
+            "Matrix 牌單": "/assets/lottery/functions/牌單標題K.png",
+            "Matrix 狀態": "/assets/lottery/functions/狀態標題K.png",
+            "Matrix 筆記本": "/assets/lottery/functions/筆記本標題K.png",
+            "號碼對照單": "/assets/lottery/functions/對照單標題K.png",
+            "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
+            "連碰計算機": "/assets/lottery/functions/連碰標題K.png",
+            "立柱計算機": "/assets/lottery/functions/立柱標題K.png",
+            "Matrix Pro 方案與收費標準": "/assets/lottery/functions/會員方案標題K.png",
+            "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
+          };'''
+          text, count = re.subn(r'const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = \{.*?\n\};', new_map, text, count=1, flags=re.S)
+          assert count == 1, 'MATRIX_TITLE_ARTWORK block not found'
+
+          old_switcher = re.search(r'function MatrixPageSwitcher\(\{ current, onNavigate \}: \{.*?\n\}\nconst ROAD_VALIDATION_SAMPLE_HISTORY', text, flags=re.S)
+          assert old_switcher, 'MatrixPageSwitcher block not found'
+          new_switcher = '''function MatrixPageSwitcher({ onNavigate }: {
+            current?: "explore" | "tianyan" | "tiangong";
+            onNavigate: Navigate;
+          }) {
+            return (
+              <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
+                <button type="button" aria-label="Matrix 天衍" onClick={() => onNavigate("tianyan")}>
+                  <img src="/assets/lottery/functions/Matrix天衍.png" alt="" draggable={false} />
+                </button>
+                <button type="button" aria-label="Matrix 天工" onClick={() => onNavigate("tiangong")}>
+                  <img src="/assets/lottery/functions/Matrix天工.png" alt="" draggable={false} />
+                </button>
+              </nav>
+            );
+          }
+          const ROAD_VALIDATION_SAMPLE_HISTORY'''
+          text = text[:old_switcher.start()] + new_switcher + text[old_switcher.end():]
+
+          brand_match = re.search(r'function BrandHeader\(\{.*?\n\}\n\nfunction FeatureBottomNavigationPortal', text, flags=re.S)
+          assert brand_match, 'BrandHeader block not found'
+          new_brand = '''function BrandHeader({
+            title,
+            onBack,
+            action,
+            compact = false,
+            hideTitle = false,
+            showBack = true,
+          }: {
+            title: string;
+            onBack: () => void;
+            action?: React.ReactNode;
+            compact?: boolean;
+            hideTitle?: boolean;
+            showBack?: boolean;
+          }) {
+            const integratedArtwork = MATRIX_TITLE_ARTWORK[title];
+            if (integratedArtwork && !hideTitle) {
+              return (
+                <header className="feature-brand-header integrated-title-header" data-compact={compact}>
+                  <div className="matrix-title-banner">
+                    <img src={integratedArtwork} alt={title} draggable={false} />
+                    {showBack ? <button type="button" className="integrated-title-back" onClick={onBack} aria-label="返回" /> : null}
+                    {action ? <div className="matrix-title-banner-actions">{action}</div> : null}
+                  </div>
+                </header>
+              );
+            }
+            return (
+              <header className="feature-brand-header" data-compact={compact} data-hide-title={hideTitle}>
+                {!compact || showBack ? (
+                  <div className="feature-brand-row">
+                    {showBack ? (
+                      <div className="back-button-slot">
+                        <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
+                          <ChevronLeftIcon aria-hidden="true" />
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="feature-brand-lockup"><BrandLogo /></div>
+                  </div>
+                ) : <BrandLogo />}
+                {!hideTitle ? (
+                  <div className="feature-title-card">
+                    <h1>{title}</h1>
+                    {action ? <div className="feature-title-actions">{action}</div> : null}
+                  </div>
+                ) : null}
+              </header>
+            );
+          }
+
+          function FeatureBottomNavigationPortal'''
+          text = text[:brand_match.start()] + new_brand + text[brand_match.end():]
+
+          text = text.replace('showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile")}', 'showBack={Boolean(MATRIX_TITLE_ARTWORK[title]) || !logoOnlyHeader || (active === "我的" && backTarget === "profile")}')
+          text = text.replace('headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}', 'headerAction={title === "Matrix 探索" ? <MatrixPageSwitcher current="explore" onNavigate={onNavigate} /> : undefined}')
+          text = text.replace(' headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}', '')
+          text = text.replace('<FeatureShell title="連碰立柱計算機" onNavigate={onNavigate} className="calculator-screen" hidePageTitle>', '<FeatureShell title={mode === "連碰" ? "連碰計算機" : "立柱計算機"} onNavigate={onNavigate} className="calculator-screen">')
+          feature.write_text(text)
+
+          prototype = Path('src/Prototype.tsx')
+          p = prototype.read_text().replace('${STATUS_ASSET_BASE}/MatrixBB.png', '${STATUS_ASSET_BASE}/Matrixbba.png')
+          prototype.write_text(p)
+
+          css = Path('src/feature-pages.css')
+          c = css.read_text()
+          replacement = '''.matrix-page-switcher { display: flex; height: 100%; align-items: center; justify-content: flex-end; gap: 4px; }
+          .matrix-page-switcher button { display: grid; height: 100%; max-height: 38px; aspect-ratio: 1; padding: 0; place-items: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
+          .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
+          .matrix-title-banner { position: relative; width: calc(100% - 24px); margin: 0 auto; line-height: 0; }
+          .matrix-title-banner > img { display: block; width: 100%; height: auto; object-fit: contain; }
+          .integrated-title-back { position: absolute; z-index: 4; top: 50%; left: 0; width: 44px; height: 44px; padding: 0; transform: translateY(-50%); border: 0; background: transparent; }
+          .matrix-title-banner-actions { position: absolute; z-index: 3; inset: 10% 3% 10% 56%; display: flex; min-width: 0; align-items: center; justify-content: flex-end; }
+          .matrix-title-banner-actions .reference-title-actions,
+          .matrix-title-banner-actions .history-title-actions { width: 100%; justify-content: flex-end; }
+          .matrix-title-banner-actions .reference-title-actions button,
+          .matrix-title-banner-actions .history-title-actions button { min-height: 26px; height: 26px; padding-inline: 5px; font-size: 9px; }
+          .matrix-title-banner-actions .history-title-lottery { width: 84px; height: 26px; flex-basis: 84px; }
+          '''
+          c, count = re.subn(r'\.matrix-page-switcher \{.*?(?=\.history-title-actions \{)', replacement, c, count=1, flags=re.S)
+          assert count == 1, 'title banner CSS block not found'
+          css.write_text(c)
+
+          brand = Path('src/brand-header-unify.css')
+          brand.write_text('''.feature-screen,
+          .compact-feature-screen { padding-top: 0; }
+
+          .feature-brand-header,
+          .feature-brand-header[data-compact="true"] {
+            position: relative;
+            top: auto;
+            left: auto;
+            display: flex;
+            box-sizing: border-box;
+            width: min(100%, 390px);
+            height: auto;
+            min-height: 0;
+            margin: 0 auto var(--layout-section-gap);
+            padding: 0;
+            flex: 0 0 auto;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: visible;
+          }
+
+          .feature-brand-header.integrated-title-header {
+            margin-bottom: 8px;
+            padding-top: 8px;
+          }
+
+          .feature-brand-row {
+            position: relative;
+            display: grid;
+            width: 100%;
+            height: auto;
+            grid-template-columns: 100%;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .back-button-slot {
+            z-index: 2;
+            grid-area: 1 / 1;
+            display: flex;
+            box-sizing: border-box;
+            width: 44px;
+            height: 44px;
+            align-self: center;
+            justify-self: start;
+          }
+
+          .feature-brand-lockup,
+          .feature-brand-header[data-compact="true"] > .shared-brand-logo {
+            display: flex;
+            width: 100%;
+            height: var(--primary-brand-height);
+            margin: 0;
+            padding: 0;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            background: transparent;
+            line-height: 0;
+            overflow: visible;
+          }
+
+          .feature-brand-lockup { grid-area: 1 / 1; justify-self: center; }
+          .feature-brand-lockup .shared-brand-logo { display: flex; width: 100%; height: var(--primary-brand-height); align-items: center; justify-content: center; }
+          .feature-brand-lockup .shared-brand-logo > img,
+          .feature-brand-header[data-compact="true"] > .shared-brand-logo > img { display: block; width: 100%; max-width: 100%; height: var(--primary-brand-height); aspect-ratio: var(--primary-brand-ratio); margin: 0 auto; object-fit: contain; object-position: center; }
+          .feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
+          .feature-brand-header .back-button svg { width: 40px; height: 40px; }
+          .bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px; }
+          .bottom-nav-brand-screen > .feature-brand-header { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
+          .bottom-nav-brand-screen > .feature-brand-header.integrated-title-header { margin-bottom: 8px; }
+          .bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
+          ''')
+
+          # Keep tests and static references aligned with the formal asset source.
+          for path in Path('tests').glob('*'):
+            if path.is_file():
+              data = path.read_text(errors='ignore')
+              if 'MatrixBB.png' in data:
+                path.write_text(data.replace('MatrixBB.png', 'Matrixbba.png'))
+
+      - name: Validate build
+        run: npm ci && npm run build
+      - name: Commit migration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: integrate latest title cards and lottery switcher'
+          git push origin main
