@@ -1,0 +1,88 @@
+name: Apply full history uploaded spec
+
+on:
+  push:
+    branches:
+      - "歷史開獎紀錄"
+    paths:
+      - ".github/workflows/apply-history-uploaded-spec.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "歷史開獎紀錄"
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Write updated history regression tests
+        run: python scripts/apply-history-uploaded-spec.py --tests
+
+      - name: Verify uploaded-spec tests fail before implementation
+        shell: bash
+        run: |
+          set +e
+          node --test \
+            tests/draw-history-table-layout.test.mjs \
+            tests/draw-history-week-cards-structure.test.mjs \
+            tests/history-filter-select-layering.test.mjs \
+            tests/number-ball-style-source.test.mjs \
+            tests/number-ball-visible-size.test.mjs > /tmp/history-red.log 2>&1
+          status=$?
+          cat /tmp/history-red.log
+          if [ "$status" -eq 0 ]; then
+            echo "Expected uploaded-spec regression tests to fail before implementation."
+            exit 1
+          fi
+          exit 0
+
+      - name: Apply missing uploaded history specifications
+        run: python scripts/apply-history-uploaded-spec.py --apply
+
+      - name: Run focused history regression tests
+        run: |
+          node --test \
+            tests/draw-history-table-layout.test.mjs \
+            tests/draw-history-week-cards-structure.test.mjs \
+            tests/history-filter-select-layering.test.mjs \
+            tests/number-ball-style-source.test.mjs \
+            tests/number-ball-visible-size.test.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify history week grouping
+        run: node --test tests/history-week-groups.test.mjs
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Type check and production bundle
+        run: npm run build
+
+      - name: Remove temporary audit tooling
+        run: |
+          rm .github/workflows/apply-history-uploaded-spec.yml
+          rm scripts/apply-history-uploaded-spec.py
+
+      - name: Commit verified history cleanup
+        run: |
+          git config user.name "openai-history-bot"
+          git config user.email "openai-history-bot@users.noreply.github.com"
+          git add src/FeaturePages.tsx src/feature-pages.css src/number-ball.css tests/draw-history-table-layout.test.mjs tests/draw-history-week-cards-structure.test.mjs tests/number-ball-style-source.test.mjs tests/number-ball-visible-size.test.mjs .github/workflows/apply-history-uploaded-spec.yml scripts/apply-history-uploaded-spec.py
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(history): complete uploaded layout specification"
+          git push origin HEAD:"歷史開獎紀錄"
