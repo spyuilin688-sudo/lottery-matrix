@@ -35,12 +35,14 @@ test("Matrix Explore main uses 8px gaps throughout the form layout", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px;[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label\s*\{[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.segmented\.three\s*\{[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.segmented\.two,[\s\S]*?\.matrix-explore-main-screen \.hit-options\s*\{[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
 });
 
 test("Matrix Explore main general controls are 24px high with 13px action text", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.select-box\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.segmented\.two button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
@@ -55,6 +57,7 @@ test("Matrix Explore main primary action is exactly 32px high", () => {
 
 test("Matrix Explore main labels, dates and explanatory text use 11px", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span\s*\{[^}]*font-size:\s*11px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel label > \.advanced-setting-title\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-heading > span\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-table th\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*11px;/s);
