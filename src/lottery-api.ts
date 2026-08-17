@@ -68,9 +68,14 @@ type NumberReferenceResponse = {
 };
 
 function normalizeNumberList(values: unknown): string[] {
-  return Array.isArray(values)
-    ? values.map((value) => String(value).trim().padStart(2, '0'))
-    : [];
+  if (!Array.isArray(values)) return [];
+  return values.flatMap((value) => {
+    const digits = String(value).trim();
+    if (!/^\d{1,2}$/.test(digits)) return [];
+    const number = Number(digits);
+    if (!Number.isInteger(number) || number < 1 || number > 49) return [];
+    return [String(number).padStart(2, '0')];
+  });
 }
 
 function normalizeSpecialNumber(record: LotteryDrawRecord) {
