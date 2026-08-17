@@ -1,3 +1,4 @@
+# Verification-only workflow; removed after a successful branch check.
 name: Verify history branch cleanup
 
 on:
