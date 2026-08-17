@@ -1,16 +1,16 @@
 name: Matrix Explore reference compact
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/matrix-explore-reference-compact.yml'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   implement-and-verify:
+    if: github.event.issue.title == '[run] Matrix Explore compact reference'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,367 +21,42 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Apply reference-based Explore compact sizing
+      - name: Apply approved Explore compact sizing to canonical rules
         shell: bash
         run: |
           python <<'PY'
           from pathlib import Path
-
-          p = Path('src/feature-pages.css')
-          s = p.read_text()
-
-          def one(old, new, label):
+          p=Path('src/feature-pages.css')
+          s=p.read_text()
+          def one(old,new,label):
               global s
-              n = s.count(old)
-              if n != 1:
-                  raise SystemExit(f'{label}: expected 1 match, found {n}')
-              s = s.replace(old, new, 1)
-
-          one('''.matrix-explore-screen .explore-settings,
-.matrix-explore-screen .hit-advanced-panel,
-.matrix-explore-screen .history-panel,
-.matrix-explore-screen .repeat-stats-panel,
-.matrix-explore-screen .result-panel {
-box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: auto;
-  padding: 12px;
-  border-radius: 12px;
-  box-shadow: none;
-}
-''','''.matrix-explore-screen .explore-settings,
-.matrix-explore-screen .hit-advanced-panel,
-.matrix-explore-screen .history-panel,
-.matrix-explore-screen .repeat-stats-panel,
-.matrix-explore-screen .result-panel {
-box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: auto;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: none;
-}
-''','panel compact sizing')
-
-          one('''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title,
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {
-min-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;
-}
-''','''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title {
-min-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;
-}
-
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {
-min-height: 24px; gap: 8px; font-size: 16px; font-weight: 700; line-height: 22px; letter-spacing: 0;
-}
-''','main section title split')
-
-          one('''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span,
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {
-width: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
-}
-''','''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span {
-width: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
-}
-
-.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {
-width: 4px; height: 20px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
-}
-''','main title marker split')
-
-          one('''.matrix-explore-main-screen .explore-settings .setting-grid label {
-min-width: 0; width: 100%; min-height: 37.4px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;
-}
-''','''.matrix-explore-main-screen .explore-settings .setting-grid label {
-min-width: 0; width: 100%; min-height: 34px; grid-template-columns: minmax(94px, 102px) minmax(0, 1fr); align-items: center; gap: 8px;
-}
-''','settings row size')
-
-          one('''.matrix-explore-main-screen .explore-settings .setting-grid label > span {
-display: grid; width: 100%; min-width: 0; grid-template-columns: 36.8px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
-}
-''','''.matrix-explore-main-screen .explore-settings .setting-grid label > span {
-display: grid; width: 100%; min-width: 0; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 14px; font-weight: 600; line-height: 20px; text-align: left; white-space: nowrap;
-}
-''','settings label density')
-
-          one('''.matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon {
-width: 36.8px; height: 36.8px; flex: 0 0 36.8px; border-radius: 5.75px; transform: none;
-}
-''','''.matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon {
-width: 30px; height: 30px; flex: 0 0 30px; border-radius: 5px; transform: none;
-}
-''','settings icon size')
-
-          one('''.matrix-explore-main-screen .explore-settings .setting-grid .select-box {
-width: 100%; max-width: none; min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0; font-size: 13.6px; font-weight: 700;
-}
-''','''.matrix-explore-main-screen .explore-settings .setting-grid .select-box {
-width: 100%; max-width: none; min-width: 0; height: 34px; min-height: 34px; padding: 0; font-size: 13px; font-weight: 700;
-}
-''','settings select size')
-
-          one('''.matrix-explore-main-screen .explore-settings .segmented.three {
-gap: 5.1px;
-}
-''','''.matrix-explore-main-screen .explore-settings .segmented.three {
-gap: 5px;
-}
-''','settings segmented gap')
-
-          one('''.matrix-explore-main-screen .explore-settings .segmented.three button {
-min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0 3.4px; border-radius: 8.5px; font-size: 11.05px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
-}
-''','''.matrix-explore-main-screen .explore-settings .segmented.three button {
-min-width: 0; height: 34px; min-height: 34px; padding: 0 3px; border-radius: 8px; font-size: 11.5px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
-}
-''','settings segmented button size')
-
-          one('''.matrix-explore-main-screen .explore-settings .setting-grid .select-box,
-.matrix-explore-main-screen .explore-settings .setting-grid .segmented,
-.matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
-height: 37.4px;
-  min-height: 37.4px;
-}
-''','''.matrix-explore-main-screen .explore-settings .setting-grid .select-box,
-.matrix-explore-main-screen .explore-settings .setting-grid .segmented,
-.matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
-height: 34px;
-  min-height: 34px;
-}
-''','formal settings height')
-
-          one('''.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
-.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented,
-.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
-.matrix-explore-main-screen .advanced-panel .select-box,
-.matrix-explore-main-screen .advanced-panel .segmented,
-.matrix-explore-main-screen .advanced-panel .segmented button,
-.matrix-explore-screen .hit-options,
-.matrix-explore-screen .hit-options button {
-height: 44px;
-  min-height: 44px;
-}
-''','''.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
-.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented,
-.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button {
-height: 44px;
-  min-height: 44px;
-}
-
-.matrix-explore-main-screen .advanced-panel .select-box,
-.matrix-explore-main-screen .advanced-panel .segmented,
-.matrix-explore-main-screen .advanced-panel .segmented button {
-height: 36px;
-  min-height: 36px;
-}
-
-.matrix-explore-main-screen .hit-options,
-.matrix-explore-main-screen .hit-options button {
-height: 38px;
-  min-height: 38px;
-}
-''','main advanced and hit heights')
-
-          one('''.matrix-explore-screen .segmented.two button,
-.matrix-explore-screen .hit-options button {
-height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: visible;
-}
-''','''.matrix-explore-screen .segmented.two button {
-height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: visible;
-}
-
-.matrix-explore-main-screen .advanced-panel .segmented.two button {
-height: 36px; min-height: 36px; padding: 0 3px; border-radius: 8px; font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: visible;
-}
-
-.matrix-explore-main-screen .hit-options button {
-height: 38px; min-height: 38px; padding: 0 4px; border-radius: 9px; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: visible;
-}
-''','hit and advanced two-button sizing')
-
-          one('''.matrix-explore-screen .hit-options {
-margin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(212, 165, 47, .28);
-}
-''','''.matrix-explore-main-screen .hit-options {
-margin-top: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(212, 165, 47, .28);
-}
-''','hit spacing')
-
-          one('''.matrix-explore-screen .advanced-row {
-height: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; font-size: 17px; font-weight: 700;
-}
-''','''.matrix-explore-main-screen .advanced-row {
-height: 38px; min-height: 38px; margin: 8px 0 0; padding: 0; grid-template-columns: 28px minmax(0, 1fr) 12px; align-items: center; font-size: 15px; font-weight: 700;
-}
-''','advanced row sizing')
-
-          one('''.matrix-explore-screen .advanced-row > img:first-child {
-width: 32px; height: 32px; border-radius: 5px; object-fit: contain;
-}
-''','''.matrix-explore-main-screen .advanced-row > img:first-child {
-width: 28px; height: 28px; border-radius: 5px; object-fit: contain;
-}
-''','advanced icon')
-
-          one('''.matrix-explore-screen .advanced-row svg:last-child {
-width: 14px; height: 14px;
-}
-''','''.matrix-explore-main-screen .advanced-row svg:last-child {
-width: 12px; height: 12px;
-}
-''','advanced arrow')
-
-          one('''.matrix-explore-screen .primary-action {
-width: 100%; height: 50px; margin: 12px 0; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
-}
-''','''.matrix-explore-main-screen .primary-action {
-width: 100%; height: 42px; margin: 8px 0 12px; border: 1px solid #d4a52f; border-radius: 10px; background: #071018; color: #f6d472; font-size: 18px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
-}
-''','primary action')
-
-          one('''.matrix-explore-screen .primary-action svg {
-width: 24px; height: 24px;
-}
-''','''.matrix-explore-main-screen .primary-action svg {
-width: 20px; height: 20px;
-}
-''','primary icon')
-
-          one('''.matrix-explore-main-screen .history-panel .panel-heading {
-align-items: center;
-}
-''','''.matrix-explore-main-screen .history-panel .panel-heading {
-min-height: 44px; padding: 6px 10px; align-items: center;
-}
-''','history heading size')
-
-          one('''.matrix-explore-main-screen .history-panel .panel-heading .section-title {
-min-width: 0; white-space: normal; line-height: 1.25;
-}
-''','''.matrix-explore-main-screen .history-panel .panel-heading .section-title {
-min-width: 0; font-size: 14px; line-height: 18px; white-space: normal;
-}
-''','history heading title')
-
-          one('''.matrix-explore-screen .road-result-row > strong {
-font-size: 15px;
-  font-weight: 700;
-}
-''','''.matrix-explore-main-screen .road-result-row > strong {
-font-size: 14px;
-  font-weight: 700;
-}
-''','result row number')
-
-          one('''.matrix-explore-screen .repeat-stats-heading {
-display: grid; min-height: 28px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 12px;
-}
-''','''.matrix-explore-main-screen .repeat-stats-heading {
-display: grid; min-height: 24px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px;
-}
-''','repeat heading')
-
-          one('''.matrix-explore-screen .repeat-stats-heading .section-title,
-.matrix-explore-screen .result-title .section-title {
-font-size: 19px; font-weight: 700;
-}
-''','''.matrix-explore-main-screen .repeat-stats-heading .section-title,
-.matrix-explore-main-screen .result-title .section-title {
-font-size: 16px; font-weight: 700;
-}
-''','result section titles')
-
-          one('''.matrix-explore-screen .repeat-stats-heading button {
-height: 26px; min-height: 26px; padding: 0 8px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 8px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 13px; font-weight: 600;
-}
-''','''.matrix-explore-main-screen .repeat-stats-heading button {
-height: 24px; min-height: 24px; padding: 0 7px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 7px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 12px; font-weight: 600;
-}
-''','repeat filter button')
-
-          one('''.matrix-explore-screen .repeat-stats-heading > span {
-color: #9e9a93; font-size: 12px; font-weight: 400; text-align: right; white-space: nowrap;
-}
-''','''.matrix-explore-main-screen .repeat-stats-heading > span {
-color: #9e9a93; font-size: 11px; font-weight: 400; text-align: right; white-space: nowrap;
-}
-''','repeat helper text')
-
-          one('''.matrix-explore-screen .result-summary {
-display: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;
-}
-''','''.matrix-explore-main-screen .result-summary {
-display: grid; margin-top: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px;
-}
-''','summary grid')
-
-          one('''.matrix-explore-screen .result-summary > div {
-display: flex; min-width: 0; height: 48px; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 8px; box-shadow: none;
-}
-''','''.matrix-explore-main-screen .result-summary > div {
-display: flex; min-width: 0; height: 42px; min-height: 42px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 7px; box-shadow: none;
-}
-''','summary cell')
-
-          one('''.matrix-explore-screen .result-summary b {
-font-size: 20px; font-weight: 500; line-height: 22px;
-}
-''','''.matrix-explore-main-screen .result-summary b {
-font-size: 18px; font-weight: 500; line-height: 20px;
-}
-''','summary number')
-
-          one('''.matrix-explore-screen .result-summary small {
-margin-top: 1px; color: #aaa39a; font-size: 11px; font-weight: 400; line-height: 13px;
-}
-''','''.matrix-explore-main-screen .result-summary small {
-margin-top: 1px; color: #aaa39a; font-size: 10px; font-weight: 400; line-height: 12px;
-}
-''','summary count')
-
-          one('''.matrix-explore-screen .explore-result-disclaimer {
-box-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;
-}
-''','''.matrix-explore-main-screen .explore-result-disclaimer {
-box-sizing: border-box; width: 100%; margin: 0; padding: 10px; color: #aaa49a; font-size: 12px; font-weight: 400; line-height: 1.5; text-align: center;
-}
-''','disclaimer density')
-
-          one('''.matrix-explore-screen .result-panel {
-padding-top: 12px;
-}
-''','''.matrix-explore-main-screen .result-panel {
-padding-top: 10px;
-}
-''','result panel top')
-
-          one('''.matrix-explore-screen .consecutive-filter-button {
-position: relative; min-height: 28px; height: 28px; padding: 0 10px; border: 1px solid #aa7b1c; border-radius: 8px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 13px; font-weight: 600; white-space: nowrap;
-}
-''','''.matrix-explore-main-screen .consecutive-filter-button {
-position: relative; min-height: 26px; height: 26px; padding: 0 8px; border: 1px solid #aa7b1c; border-radius: 7px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 12px; font-weight: 600; white-space: nowrap;
-}
-''','consecutive filter')
-
-          one('''.matrix-explore-screen .result-count {
-display: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 13px; font-weight: 400; line-height: 20px; text-align: right; white-space: nowrap;
-}
-''','''.matrix-explore-main-screen .result-count {
-display: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 12px; font-weight: 400; line-height: 18px; text-align: right; white-space: nowrap;
-}
-''','result count')
-
-          one('''.matrix-explore-screen .result-count .numeric-text {
-color: #35bff0; font-size: 17px; font-weight: 700;
-}
-''','''.matrix-explore-main-screen .result-count .numeric-text {
-color: #35bff0; font-size: 16px; font-weight: 700;
-}
-''','result count numeric')
-
+              n=s.count(old)
+              if n!=1: raise SystemExit(f'{label}: expected 1 match, found {n}')
+              s=s.replace(old,new,1)
+          one('''  padding: 12px;\n  border-radius: 12px;\n  box-shadow: none;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title,\n.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {\nmin-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;\n}\n''','''  padding: 10px;\n  border-radius: 10px;\n  box-shadow: none;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title {\nmin-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;\n}\n\n.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {\nmin-height: 24px; gap: 8px; font-size: 16px; font-weight: 700; line-height: 22px; letter-spacing: 0;\n}\n''','panel and titles')
+          one('''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span,\n.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {\nwidth: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);\n}\n''','''.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span {\nwidth: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);\n}\n\n.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {\nwidth: 4px; height: 20px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);\n}\n''','title markers')
+          one('''min-width: 0; width: 100%; min-height: 37.4px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,''','''min-width: 0; width: 100%; min-height: 34px; grid-template-columns: minmax(94px, 102px) minmax(0, 1fr); align-items: center; gap: 8px;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,''','settings row')
+          one('''display: grid; width: 100%; min-width: 0; grid-template-columns: 36.8px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;''','''display: grid; width: 100%; min-width: 0; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 14px; font-weight: 600; line-height: 20px; text-align: left; white-space: nowrap;''','settings labels')
+          one('''width: 36.8px; height: 36.8px; flex: 0 0 36.8px; border-radius: 5.75px; transform: none;''','''width: 30px; height: 30px; flex: 0 0 30px; border-radius: 5px; transform: none;''','settings icons')
+          one('''width: 100%; max-width: none; min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0; font-size: 13.6px; font-weight: 700;''','''width: 100%; max-width: none; min-width: 0; height: 34px; min-height: 34px; padding: 0; font-size: 13px; font-weight: 700;''','settings select')
+          one('''.matrix-explore-main-screen .explore-settings .segmented.three {\ngap: 5.1px;\n}\n''','''.matrix-explore-main-screen .explore-settings .segmented.three {\ngap: 5px;\n}\n''','settings gap')
+          one('''min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0 3.4px; border-radius: 8.5px; font-size: 11.05px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;''','''min-width: 0; height: 34px; min-height: 34px; padding: 0 3px; border-radius: 8px; font-size: 11.5px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;''','settings buttons')
+          one('''height: 37.4px;\n  min-height: 37.4px;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,''','''height: 34px;\n  min-height: 34px;\n}\n\n.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,''','settings canonical height')
+          one('''.matrix-explore-main-screen .advanced-panel .select-box,\n.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options,\n.matrix-explore-screen .hit-options button {\nheight: 44px;\n  min-height: 44px;\n}\n''','''.matrix-explore-main-screen .advanced-panel .select-box,\n.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button {\nheight: 36px;\n  min-height: 36px;\n}\n\n.matrix-explore-main-screen .hit-options,\n.matrix-explore-main-screen .hit-options button {\nheight: 38px;\n  min-height: 38px;\n}\n''','advanced hit heights')
+          one('''.matrix-explore-screen .segmented.two button,\n.matrix-explore-screen .hit-options button {\nheight: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: visible;\n}\n''','''.matrix-explore-screen .segmented.two button {\nheight: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: visible;\n}\n\n.matrix-explore-main-screen .advanced-panel .segmented.two button {\nheight: 36px; min-height: 36px; padding: 0 3px; border-radius: 8px; font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: visible;\n}\n\n.matrix-explore-main-screen .hit-options button {\nheight: 38px; min-height: 38px; padding: 0 4px; border-radius: 9px; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: visible;\n}\n''','hit buttons')
+          one('''.matrix-explore-screen .hit-options {\nmargin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(212, 165, 47, .28);\n}\n''','''.matrix-explore-main-screen .hit-options {\nmargin-top: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(212, 165, 47, .28);\n}\n''','hit spacing')
+          one('''.matrix-explore-screen .advanced-row {\nheight: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 14px; align-items: center; font-size: 17px; font-weight: 700;\n}\n\n.matrix-explore-screen .advanced-row > img:first-child {\nwidth: 32px; height: 32px; border-radius: 5px; object-fit: contain;\n}\n\n.matrix-explore-screen .advanced-row svg:last-child {\nwidth: 14px; height: 14px;\n}\n''','''.matrix-explore-main-screen .advanced-row {\nheight: 38px; min-height: 38px; margin: 8px 0 0; padding: 0; grid-template-columns: 28px minmax(0, 1fr) 12px; align-items: center; font-size: 15px; font-weight: 700;\n}\n\n.matrix-explore-main-screen .advanced-row > img:first-child {\nwidth: 28px; height: 28px; border-radius: 5px; object-fit: contain;\n}\n\n.matrix-explore-main-screen .advanced-row svg:last-child {\nwidth: 12px; height: 12px;\n}\n''','advanced row')
+          one('''.matrix-explore-screen .primary-action {\nwidth: 100%; height: 50px; margin: 12px 0; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);\n}\n\n.matrix-explore-screen .primary-action svg {\nwidth: 24px; height: 24px;\n}\n''','''.matrix-explore-main-screen .primary-action {\nwidth: 100%; height: 42px; margin: 8px 0 12px; border: 1px solid #d4a52f; border-radius: 10px; background: #071018; color: #f6d472; font-size: 18px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);\n}\n\n.matrix-explore-main-screen .primary-action svg {\nwidth: 20px; height: 20px;\n}\n''','primary action')
+          one('''.matrix-explore-main-screen .history-panel .panel-heading {\nalign-items: center;\n}\n\n.matrix-explore-main-screen .history-panel .panel-heading .section-title {\nmin-width: 0; white-space: normal; line-height: 1.25;\n}\n''','''.matrix-explore-main-screen .history-panel .panel-heading {\nmin-height: 44px; padding: 6px 10px; align-items: center;\n}\n\n.matrix-explore-main-screen .history-panel .panel-heading .section-title {\nmin-width: 0; font-size: 14px; line-height: 18px; white-space: normal;\n}\n''','history heading')
+          one('''.matrix-explore-screen .road-result-row > strong {\nfont-size: 15px;\n  font-weight: 700;\n}\n''','''.matrix-explore-screen:not(.matrix-explore-main-screen) .road-result-row > strong {\nfont-size: 15px;\n  font-weight: 700;\n}\n\n.matrix-explore-main-screen .road-result-row > strong {\nfont-size: 14px;\n  font-weight: 700;\n}\n''','road result')
+          one('''.matrix-explore-screen .repeat-stats-heading {\ndisplay: grid; min-height: 28px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 12px;\n}\n\n.matrix-explore-screen .repeat-stats-heading .section-title,\n.matrix-explore-screen .result-title .section-title {\nfont-size: 19px; font-weight: 700;\n}\n''','''.matrix-explore-main-screen .repeat-stats-heading {\ndisplay: grid; min-height: 24px; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px;\n}\n\n.matrix-explore-main-screen .repeat-stats-heading .section-title,\n.matrix-explore-main-screen .result-title .section-title {\nfont-size: 16px; font-weight: 700;\n}\n''','result headings')
+          one('''.matrix-explore-screen .repeat-stats-heading button {\nheight: 26px; min-height: 26px; padding: 0 8px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 8px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 13px; font-weight: 600;\n}\n\n.matrix-explore-screen .repeat-stats-heading > span {\ncolor: #9e9a93; font-size: 12px; font-weight: 400; text-align: right; white-space: nowrap;\n}\n''','''.matrix-explore-main-screen .repeat-stats-heading button {\nheight: 24px; min-height: 24px; padding: 0 7px; border: 1px solid rgba(170, 123, 28, .55); border-radius: 7px; background: rgba(128, 87, 13, .10); color: #ead295; font-size: 12px; font-weight: 600;\n}\n\n.matrix-explore-main-screen .repeat-stats-heading > span {\ncolor: #9e9a93; font-size: 11px; font-weight: 400; text-align: right; white-space: nowrap;\n}\n''','repeat heading controls')
+          one('''.matrix-explore-screen .result-summary {\ndisplay: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;\n}\n\n.matrix-explore-screen .result-summary > div {\ndisplay: flex; min-width: 0; height: 48px; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 8px; box-shadow: none;\n}\n\n.matrix-explore-screen .result-summary b {\nfont-size: 20px; font-weight: 500; line-height: 22px;\n}\n\n.matrix-explore-screen .result-summary small {\nmargin-top: 1px; color: #aaa39a; font-size: 11px; font-weight: 400; line-height: 13px;\n}\n''','''.matrix-explore-main-screen .result-summary {\ndisplay: grid; margin-top: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px;\n}\n\n.matrix-explore-main-screen .result-summary > div {\ndisplay: flex; min-width: 0; height: 42px; min-height: 42px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 7px; box-shadow: none;\n}\n\n.matrix-explore-main-screen .result-summary b {\nfont-size: 18px; font-weight: 500; line-height: 20px;\n}\n\n.matrix-explore-main-screen .result-summary small {\nmargin-top: 1px; color: #aaa39a; font-size: 10px; font-weight: 400; line-height: 12px;\n}\n''','result summary')
+          one('''.matrix-explore-screen .explore-result-disclaimer {\nbox-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;\n}\n''','''.matrix-explore-main-screen .explore-result-disclaimer {\nbox-sizing: border-box; width: 100%; margin: 0; padding: 10px; color: #aaa49a; font-size: 12px; font-weight: 400; line-height: 1.5; text-align: center;\n}\n''','disclaimer')
+          one('''.matrix-explore-screen .result-panel {\npadding-top: 12px;\n}\n''','''.matrix-explore-main-screen .result-panel {\npadding-top: 10px;\n}\n''','result panel')
+          one('''.matrix-explore-screen .consecutive-filter-button {\nposition: relative; min-height: 28px; height: 28px; padding: 0 10px; border: 1px solid #aa7b1c; border-radius: 8px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 13px; font-weight: 600; white-space: nowrap;\n}\n''','''.matrix-explore-main-screen .consecutive-filter-button {\nposition: relative; min-height: 26px; height: 26px; padding: 0 8px; border: 1px solid #aa7b1c; border-radius: 7px; background: rgba(128, 87, 13, .18); color: #ead295; font-size: 12px; font-weight: 600; white-space: nowrap;\n}\n''','filter button')
+          one('''.matrix-explore-screen .result-count {\ndisplay: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 13px; font-weight: 400; line-height: 20px; text-align: right; white-space: nowrap;\n}\n''','''.matrix-explore-main-screen .result-count {\ndisplay: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 12px; font-weight: 400; line-height: 18px; text-align: right; white-space: nowrap;\n}\n''','result count')
+          one('''.matrix-explore-screen .result-count .numeric-text {\ncolor: #35bff0; font-size: 17px; font-weight: 700;\n}\n''','''.matrix-explore-main-screen .result-count .numeric-text {\ncolor: #35bff0; font-size: 16px; font-weight: 700;\n}\n''','result count number')
           p.write_text(s)
           PY
 
@@ -392,21 +67,21 @@ color: #35bff0; font-size: 16px; font-weight: 700;
           import test from 'node:test';
           import assert from 'node:assert/strict';
           import { readFileSync } from 'node:fs';
-          const css = readFileSync('src/feature-pages.css','utf8');
-          const start = css.indexOf('/* Matrix Explore formal layout rules */');
-          const end = css.indexOf('/* v55 scoped density and hierarchy refinements */');
-          assert.notEqual(start,-1); assert.notEqual(end,-1);
-          const formal = css.slice(start,end);
-          test('Explore main compact reference dimensions are canonical',()=>{
+          const css=readFileSync('src/feature-pages.css','utf8');
+          const a=css.indexOf('/* Matrix Explore formal layout rules */');
+          const b=css.indexOf('/* v55 scoped density and hierarchy refinements */');
+          assert.notEqual(a,-1); assert.notEqual(b,-1);
+          const formal=css.slice(a,b);
+          test('Explore main matches approved compact reference dimensions',()=>{
             assert.match(formal,/explore-settings \.setting-grid label \{\nmin-width: 0; width: 100%; min-height: 34px/);
-            assert.match(formal,/explore-settings \.setting-grid label > span \.setting-label-icon \{\nwidth: 30px; height: 30px/);
+            assert.match(formal,/setting-label-icon \{\nwidth: 30px; height: 30px/);
             assert.match(formal,/explore-settings \.setting-grid \.select-box \{\nwidth: 100%; max-width: none; min-width: 0; height: 34px/);
             assert.match(formal,/hit-options button \{\nheight: 38px; min-height: 38px/);
             assert.match(formal,/\.matrix-explore-main-screen \.primary-action \{\nwidth: 100%; height: 42px/);
             assert.match(formal,/history-panel \.panel-heading \{\nmin-height: 44px; padding: 6px 10px/);
             assert.match(formal,/result-summary > div \{\ndisplay: flex; min-width: 0; height: 42px/);
           });
-          test('unchanged reference constraints stay intact',()=>{
+          test('fixed project constraints remain intact',()=>{
             assert.match(formal,/\.matrix-explore-screen \.matrix-title-banner \{\nmargin-bottom: 8px;/);
             assert.doesNotMatch(formal,/scale\(|zoom\s*:|!important|margin-(?:top|right|bottom|left):\s*-/);
           });
@@ -414,18 +89,20 @@ color: #35bff0; font-size: 16px; font-weight: 700;
 
       - name: Install dependencies
         run: npm ci
-      - name: Run targeted tests
+      - name: Targeted tests
         run: node --test tests/matrix-explore-reference-density.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
-      - name: Run full tests
+      - name: Full tests
         run: node --test tests/*.test.mjs
       - name: Build
         run: npm run build
-      - name: Commit verified implementation
+
+      - name: Commit implementation and cleanup temporary workflow changes
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout 8a3ec9b4b46114df32b98e52282a3e61831dc55c -- .github/workflows/ci.yml
           git rm .github/workflows/matrix-explore-reference-compact.yml
-          git add src/feature-pages.css tests/matrix-explore-reference-density.test.mjs
+          git add src/feature-pages.css tests/matrix-explore-reference-density.test.mjs .github/workflows/ci.yml
           git commit -m 'refactor(explore): match compact reference proportions'
           git push origin main
