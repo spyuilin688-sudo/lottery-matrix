@@ -35,29 +35,50 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
   assert.doesNotMatch(homepage, /--draw-special-ball-size\s*:/);
 });
 
-test("六合彩正式使用情境將底線向上校正", async () => {
+test("六合彩正式使用情境將底線統一向上校正 1.5px", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
-  assert.match(formal, /\.home-screen[^}]*data-lottery="六合彩"[^}]*--underline-y:\s*-1\.5px/s);
-  assert.match(formal, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\][^}]*--underline-y:\s*-1\.2px/s);
+
+  assert.match(
+    formal,
+    /\.home-screen[^}]*data-lottery="六合彩"[^}]*\{[^}]*--underline-y:\s*-1\.5px/s,
+  );
+  assert.match(
+    formal,
+    /\.history-panel[^{}]*data-lottery="六合彩"[^{}]*\{[^}]*--underline-y:\s*-1\.5px/s,
+  );
+  assert.match(
+    formal,
+    /\.draw-history-screen[^{}]*data-lottery="六合彩"[^{}]*\{[^}]*--underline-y:\s*-1\.5px/s,
+  );
 });
 
-test("六合彩沿用同頁大樂透的球徑、數字與底線寬度", async () => {
+test("近10期與歷史開獎六合彩使用既有正式放大規則且不建立第二套文字尺寸", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
-  const markSixContextRules = formal.match(/[^{}]*data-lottery="六合彩"[^{}]*\{[^{}]*\}/g) ?? [];
 
-  for (const rule of markSixContextRules.filter((rule) => !rule.includes('data-lottery="大樂透"'))) {
-    assert.doesNotMatch(rule, /--number-ball-size\s*:/);
-    assert.doesNotMatch(rule, /--number-font-size\s*:/);
-    assert.doesNotMatch(rule, /--number-y\s*:/);
-    assert.doesNotMatch(rule, /--underline-width\s*:/);
-  }
+  const nearTenRule = formal.match(
+    /\.history-panel \.history-numbers\[data-has-special="true"\] \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*\}/s,
+  )?.[0] ?? "";
+  assert.match(nearTenRule, /--number-ball-size:\s*26px/);
+  assert.match(nearTenRule, /--number-ball-asset-scale:\s*1\.62/);
+  assert.match(nearTenRule, /--underline-height:\s*\.75px/);
+  assert.match(nearTenRule, /--underline-y:\s*-1\.5px/);
+  assert.doesNotMatch(nearTenRule, /--number-font-size\s*:/);
+  assert.doesNotMatch(nearTenRule, /--number-y\s*:/);
+  assert.doesNotMatch(nearTenRule, /--underline-width\s*:/);
 
-  assert.match(formal, /\.history-panel[^{}]*:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)[^{]*\{[^}]*--number-ball-size:\s*23\.5px[^}]*--underline-width:\s*10px/s);
-  assert.match(formal, /\.draw-history-screen[^{}]*:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)[^{]*\{[^}]*--number-ball-size:\s*26px[^}]*--number-font-size:\s*11px[^}]*--number-y:\s*0px[^}]*--underline-width:\s*10px/s);
-});
+  assert.match(
+    formal,
+    /\.draw-history-screen[^{}]*:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)[^{]*\{[^}]*--number-ball-size:\s*26px[^}]*--number-font-size:\s*11px[^}]*--number-y:\s*0px[^}]*--underline-width:\s*10px/s,
+  );
 
-test("近10期與歷史開獎只將六合彩彩球視覺直徑放大一像素", async () => {
-  const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
-  assert.match(formal, /\.history-panel[^{}]*data-lottery="六合彩"[^{}]*\{[^}]*--number-ball-asset-scale:\s*1\.5206[^}]*--underline-y:\s*-1\.25px/s);
-  assert.match(formal, /\.draw-history-screen[^{}]*data-lottery="六合彩"[^{}]*\{[^}]*--number-ball-asset-scale:\s*1\.5165[^}]*--underline-y:\s*-1\.2px/s);
+  const historyRule = formal.match(
+    /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*\}/s,
+  )?.[0] ?? "";
+  assert.match(historyRule, /--number-ball-asset-scale:\s*1\.62/);
+  assert.match(historyRule, /--underline-height:\s*\.75px/);
+  assert.match(historyRule, /--underline-y:\s*-1\.5px/);
+  assert.doesNotMatch(historyRule, /--number-ball-size\s*:/);
+  assert.doesNotMatch(historyRule, /--number-font-size\s*:/);
+  assert.doesNotMatch(historyRule, /--number-y\s*:/);
+  assert.doesNotMatch(historyRule, /--underline-width\s*:/);
 });
