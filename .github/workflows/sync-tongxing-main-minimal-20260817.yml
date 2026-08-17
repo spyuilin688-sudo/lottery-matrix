@@ -1,0 +1,292 @@
+name: One-time Matrix TongXing minimal main sync
+
+on:
+  push:
+    branches:
+      - "同星"
+    paths:
+      - ".github/workflows/sync-tongxing-main-minimal-20260817.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-tongxing-main-minimal-20260817
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout 同星
+        uses: actions/checkout@v4
+        with:
+          ref: "同星"
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch latest main and preserve 同星 formal sources
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          cp src/design-tokens.css /tmp/tongxing-design-tokens.css
+          cp src/tongxing-compact.css /tmp/tongxing-compact.css
+
+      - name: Merge latest main
+        run: |
+          set -euo pipefail
+          set +e
+          git merge --no-ff --no-commit origin/main
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            echo "Merge reported conflicts; resolving only known 同星 shared files."
+          fi
+          git checkout origin/main -- mobile-runtime.lock.json
+          cp /tmp/tongxing-design-tokens.css src/design-tokens.css
+          cp /tmp/tongxing-compact.css src/tongxing-compact.css
+
+      - name: Remove stale 同星 rules without reformatting unrelated CSS
+        run: |
+          set -euo pipefail
+          git show origin/main:src/feature-pages.css > /tmp/main-feature-pages.css
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          src = Path('/tmp/main-feature-pages.css').read_text(encoding='utf-8')
+          TARGET = re.compile(r'\.(?:tongxing(?:-[A-Za-z0-9_-]+)?|same-star(?:-[A-Za-z0-9_-]+)?)')
+
+          def find_open(text, start, end):
+              i = start
+              quote = None
+              comment = False
+              while i < end:
+                  if comment:
+                      j = text.find('*/', i)
+                      if j == -1:
+                          return -1
+                      i = j + 2
+                      comment = False
+                      continue
+                  if quote:
+                      if text[i] == '\\':
+                          i += 2
+                          continue
+                      if text[i] == quote:
+                          quote = None
+                      i += 1
+                      continue
+                  if text.startswith('/*', i):
+                      comment = True
+                      i += 2
+                      continue
+                  if text[i] in ('"', "'"):
+                      quote = text[i]
+                      i += 1
+                      continue
+                  if text[i] == '{':
+                      return i
+                  i += 1
+              return -1
+
+          def find_close(text, open_i, end):
+              depth = 1
+              i = open_i + 1
+              quote = None
+              comment = False
+              while i < end:
+                  if comment:
+                      j = text.find('*/', i)
+                      if j == -1:
+                          raise RuntimeError('unterminated CSS comment')
+                      i = j + 2
+                      comment = False
+                      continue
+                  if quote:
+                      if text[i] == '\\':
+                          i += 2
+                          continue
+                      if text[i] == quote:
+                          quote = None
+                      i += 1
+                      continue
+                  if text.startswith('/*', i):
+                      comment = True
+                      i += 2
+                      continue
+                  if text[i] in ('"', "'"):
+                      quote = text[i]
+                      i += 1
+                      continue
+                  if text[i] == '{':
+                      depth += 1
+                  elif text[i] == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return i
+                  i += 1
+              raise RuntimeError('unbalanced CSS braces')
+
+          def split_selectors(header):
+              parts = []
+              start = 0
+              paren = bracket = 0
+              quote = None
+              for i, ch in enumerate(header):
+                  if quote:
+                      if ch == quote and (i == 0 or header[i-1] != '\\'):
+                          quote = None
+                      continue
+                  if ch in ('"', "'"):
+                      quote = ch
+                  elif ch == '(':
+                      paren += 1
+                  elif ch == ')':
+                      paren = max(0, paren - 1)
+                  elif ch == '[':
+                      bracket += 1
+                  elif ch == ']':
+                      bracket = max(0, bracket - 1)
+                  elif ch == ',' and paren == 0 and bracket == 0:
+                      parts.append(header[start:i])
+                      start = i + 1
+              parts.append(header[start:])
+              return parts
+
+          removed = []
+
+          def clean_region(text, start=0, end=None):
+              if end is None:
+                  end = len(text)
+              out = []
+              pos = start
+              while pos < end:
+                  open_i = find_open(text, pos, end)
+                  if open_i == -1:
+                      out.append(text[pos:end])
+                      break
+                  close_i = find_close(text, open_i, end)
+                  raw_header = text[pos:open_i]
+                  m = re.match(r'(?s)((?:\s|/\*.*?\*/)*)', raw_header)
+                  prefix = m.group(1) if m else ''
+                  header = raw_header[len(prefix):]
+                  stripped = header.strip()
+
+                  if stripped.startswith('@'):
+                      body = text[open_i + 1:close_i]
+                      if TARGET.search(body):
+                          cleaned_body = clean_region(body)
+                          out.append(text[pos:open_i + 1] + cleaned_body + '}')
+                      else:
+                          out.append(text[pos:close_i + 1])
+                  elif not TARGET.search(header):
+                      # Byte-for-byte preservation for every unrelated CSS rule.
+                      out.append(text[pos:close_i + 1])
+                  else:
+                      selectors = split_selectors(header)
+                      kept = []
+                      targeted = []
+                      for sel in selectors:
+                          if TARGET.search(sel):
+                              targeted.append(sel.strip())
+                          else:
+                              kept.append(sel.strip())
+                      removed.extend(targeted)
+                      if kept:
+                          # Only mixed selector groups are rewritten; declarations remain byte-identical.
+                          out.append(prefix + ',\n'.join(kept) + ' {' + text[open_i + 1:close_i] + '}')
+                      else:
+                          out.append(prefix)
+                  pos = close_i + 1
+              return ''.join(out)
+
+          cleaned = clean_region(src)
+          leftovers = sorted(set(re.findall(r'\.[A-Za-z0-9_-]*(?:tongxing|same-star)[A-Za-z0-9_-]*', cleaned)))
+          if leftovers:
+              raise SystemExit(f'Unexpected 同星 selectors remain: {leftovers}')
+          if len(removed) < 20:
+              raise SystemExit(f'Expected stale 同星 rules were not found; removed only {len(removed)} selectors')
+
+          Path('src/feature-pages.css').write_text(cleaned, encoding='utf-8')
+          print(f'Removed {len(removed)} stale 同星 selectors; unrelated CSS bytes were preserved.')
+          PY
+
+      - name: Verify exact conflict resolution scope
+        run: |
+          set -euo pipefail
+          git add src/design-tokens.css src/feature-pages.css src/tongxing-compact.css mobile-runtime.lock.json
+
+          unresolved="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$unresolved" ]; then
+            echo "Unexpected unresolved conflicts:"
+            echo "$unresolved"
+            exit 1
+          fi
+
+          if grep -En '\.(tongxing|same-star)' src/feature-pages.css; then
+            echo "Stale 同星 selector remains in shared feature-pages.css"
+            exit 1
+          fi
+
+          git show origin/main:mobile-runtime.lock.json > /tmp/main-runtime-lock.json
+          cmp -s mobile-runtime.lock.json /tmp/main-runtime-lock.json || {
+            echo "mobile-runtime.lock.json differs from main"
+            exit 1
+          }
+
+          git add -A
+          actual="$(git diff --name-only origin/main | grep -v '^\.github/workflows/sync-tongxing-main-minimal-20260817.yml$' | sort)"
+          expected="$(printf '%s\n' src/design-tokens.css src/feature-pages.css src/tongxing-compact.css | sort)"
+          if [ "$actual" != "$expected" ]; then
+            echo "Unexpected files differ from main:"
+            echo "$actual"
+            exit 1
+          fi
+
+          # feature-pages.css is allowed to delete/reduce stale 同星 declarations only.
+          if git diff origin/main -- src/feature-pages.css | grep -E '^\+[^+]' | grep -v -E '^\+\.matrix-explore-screen \.native-select (select|option) \{$'; then
+            echo "Unexpected added content in shared feature-pages.css"
+            exit 1
+          fi
+
+          git diff --check origin/main
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused 同星 tests
+        run: |
+          set -euo pipefail
+          if [ -f src/__tests__/tongxing-input-integration.test.tsx ]; then
+            npx vitest run src/__tests__/tongxing-input-integration.test.tsx
+          fi
+          if [ -f src/__tests__/tongxing-layout.test.ts ]; then
+            npx vitest run src/__tests__/tongxing-layout.test.ts
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit minimal merge resolution and self-delete
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/sync-tongxing-main-minimal-20260817.yml
+          git add -A
+
+          actual="$(git diff --name-only origin/main | sort)"
+          expected="$(printf '%s\n' src/design-tokens.css src/feature-pages.css src/tongxing-compact.css | sort)"
+          if [ "$actual" != "$expected" ]; then
+            echo "Final branch scope differs from expected:"
+            echo "$actual"
+            exit 1
+          fi
+
+          git diff --check origin/main
+          git commit -m "merge: minimize 同星 conflict resolution against main"
+          git push origin HEAD:同星
