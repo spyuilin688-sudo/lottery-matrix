@@ -5,8 +5,18 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
 
 describe("homepage layout rules", () => {
-  it("sizes each independent lottery logo inside its own quarter hit area", () => {
-    expect(css).toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*pointer-events:\s*none;/s);
+  it("does not keep a second independent-logo visual rule over the shared switcher artwork", () => {
+    expect(css).not.toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{/);
+  });
+
+  it("uses the canonical 8px logo-to-switcher gap", () => {
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*8px;/s);
+    expect(css).toMatch(/\/\* Canonical homepage flow gaps[\s\S]*?\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-switcher\);/s);
+  });
+
+  it("uses only the draw card margin for the switcher-to-draw gap", () => {
+    expect(css).not.toMatch(/\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-end:\s*8px;/s);
+    expect(css).toMatch(/\.home-screen \.latest-draw-card\s*\{[^}]*margin-block-start:\s*var\(--home-gap-switcher-draw\);/s);
   });
 
   it("separates next draw and remaining time by spacing without a divider", () => {
