@@ -27,26 +27,23 @@ jobs:
 
           path = Path('src/FeaturePages.tsx')
           source = path.read_text()
-          old = '''  const updateInputValue = (index: number, rawValue: string) => {
-            let nextValue = rawValue.replace(/\\D/g, "").slice(0, 2);
-            if (nextValue === "0") nextValue = "";
-            if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
-            setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
-          };'''
-          new = '''  const updateInputValue = (index: number, rawValue: string) => {
-            const nextValue = sanitizeReferenceNumber(rawValue);
-            setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
-          };'''
+          old = '''    let nextValue = rawValue.replace(/\\D/g, "").slice(0, 2);
+              if (nextValue === "0") nextValue = "";
+              if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;'''
+          new = '''    const nextValue = sanitizeReferenceNumber(rawValue);'''
+
+          # YAML removes the common block indentation before the shell runs.
+          old = old.replace('              ', '    ')
 
           count = source.count(old)
           if count != 1:
-              raise SystemExit(f'Expected exact TongXing input block once, found {count}; refusing to modify.')
+              raise SystemExit(f'Expected exact TongXing sanitizer lines once, found {count}; refusing to modify.')
 
           updated = source.replace(old, new, 1)
           if 'if (nextValue === "0") nextValue = "";' in updated:
               raise SystemExit('Legacy leading-zero blocker still exists; refusing to commit.')
-          if 'const nextValue = sanitizeReferenceNumber(rawValue);' not in updated:
-              raise SystemExit('Shared sanitizer replacement missing; refusing to commit.')
+          if updated.count('const nextValue = sanitizeReferenceNumber(rawValue);') != 1:
+              raise SystemExit('Shared sanitizer replacement count is not exactly one; refusing to commit.')
 
           path.write_text(updated)
           PY
@@ -55,7 +52,9 @@ jobs:
         run: |
           git diff --check
           git diff -- src/FeaturePages.tsx
-          test "$(git diff --numstat -- src/FeaturePages.tsx | awk '{print $1+$2}')" -le 8
+          changed="$(git diff --numstat -- src/FeaturePages.tsx | awk '{print $1+$2}')"
+          test -n "$changed"
+          test "$changed" -le 6
 
       - name: Commit precise fix
         run: |
