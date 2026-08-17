@@ -73,6 +73,23 @@ function normalizeNumberList(values: unknown): string[] {
     : [];
 }
 
+function normalizeSpecialNumber(record: LotteryDrawRecord) {
+  const value = record.specialNumber ?? record.special;
+  if (value === null || value === undefined || String(value).trim() === '') return undefined;
+  return String(value).trim().padStart(2, '0');
+}
+
+function appendSpecialNumber(
+  lottery: NumberBallLottery,
+  values: string[],
+  specialNumber?: string,
+) {
+  if ((lottery !== '六合彩' && lottery !== '大樂透') || !specialNumber || values.length !== 6) {
+    return values;
+  }
+  return [...values, specialNumber];
+}
+
 function normalizePeriod(lottery: NumberBallLottery, value: unknown) {
   if (value === null || value === undefined) return undefined;
   const period = String(value).trim();
@@ -106,11 +123,12 @@ function sortDrawNumbers(values: string[]) {
 }
 
 function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord): LotteryDrawRecord {
-  const numbers = normalizeNumberList(record.numbers);
-  const sortedNumbers = normalizeNumberList(record.sortedNumbers);
-  const drawOrderNumbers = normalizeNumberList(record.drawOrderNumbers);
+  const specialNumber = normalizeSpecialNumber(record);
+  const numbers = appendSpecialNumber(lottery, normalizeNumberList(record.numbers), specialNumber);
+  const sortedNumbers = appendSpecialNumber(lottery, normalizeNumberList(record.sortedNumbers), specialNumber);
+  const drawOrderNumbers = appendSpecialNumber(lottery, normalizeNumberList(record.drawOrderNumbers), specialNumber);
   const normalizedSortedNumbers = sortedNumbers.length
-    ? sortedNumbers
+    ? sortDrawNumbers(sortedNumbers)
     : sortDrawNumbers(numbers);
   const normalizedPeriod = normalizePeriod(lottery, record.period ?? record.issue);
   const normalizedDrawDate = normalizeDrawDate(record.drawDate ?? record.date);
@@ -124,7 +142,7 @@ function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord):
     numbers: normalizedSortedNumbers,
     sortedNumbers: normalizedSortedNumbers,
     drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : numbers,
-    specialNumber: record.specialNumber ?? record.special,
+    specialNumber,
   };
 }
 
@@ -148,14 +166,15 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 function normalizeProjectedRecord(lottery: NumberBallLottery, record: LotteryDrawRecord): LotteryDrawRecord {
   const normalizedPeriod = normalizePeriod(lottery, record.period ?? record.issue);
   const normalizedDrawDate = normalizeDrawDate(record.drawDate ?? record.date);
+  const specialNumber = normalizeSpecialNumber(record);
   return {
     ...record,
     period: normalizedPeriod,
     issue: normalizedPeriod,
     drawDate: normalizedDrawDate,
     date: normalizedDrawDate,
-    numbers: normalizeNumberList(record.numbers),
-    specialNumber: record.specialNumber ?? record.special,
+    numbers: appendSpecialNumber(lottery, normalizeNumberList(record.numbers), specialNumber),
+    specialNumber,
   };
 }
 
