@@ -31,8 +31,8 @@ test("Matrix Explore main uses 8px gaps throughout the form layout", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px;[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label\s*\{[^}]*gap:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three\s*\{[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.segmented\.two,[\s\S]*?\.matrix-explore-screen \.hit-options\s*\{[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.advanced-panel\s*\{[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.segmented\.two,[\s\S]*?\.matrix-explore-main-screen \.hit-options\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
 });
 
 test("Matrix Explore main general controls are 24px high with 13px action text", () => {
