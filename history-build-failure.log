@@ -1,0 +1,13 @@
+
+> lottery-switch-component@0.1.0 prebuild
+> npm run check:runtime
+
+
+> lottery-switch-component@0.1.0 check:runtime
+> node scripts/check-mobile-runtime.mjs
+
+Mobile runtime integrity check failed:
+
+- src/App.tsx was modified
+
+Restore the protected runtime. Put app UI in src/Prototype.tsx and src/prototype.css.
