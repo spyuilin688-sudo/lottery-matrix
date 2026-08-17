@@ -1290,9 +1290,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
     : ["一", "二", "三", "四", "五"];
 
   const updateInputValue = (index: number, rawValue: string) => {
-    let nextValue = rawValue.replace(/\D/g, "").slice(0, 2);
-    if (nextValue === "0") nextValue = "";
-    if (nextValue.length === 2 && (Number(nextValue) < 1 || Number(nextValue) > 49)) return;
+    const nextValue = sanitizeReferenceNumber(rawValue);
     setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
   };
 
