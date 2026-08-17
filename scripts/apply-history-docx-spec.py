@@ -4,10 +4,12 @@ import sys
 
 
 def sub_once(text: str, pattern: str, replacement: str, label: str, flags: int = 0) -> str:
-    updated, count = re.subn(pattern, replacement, text, count=1, flags=flags)
-    if count != 1:
-        raise RuntimeError(f"{label}: expected 1 replacement, got {count}")
-    return updated
+    regex = re.compile(pattern, flags)
+    matches = list(regex.finditer(text))
+    if len(matches) != 1:
+        raise RuntimeError(f"{label}: expected 1 replacement, got {len(matches)}")
+    match = matches[0]
+    return text[:match.start()] + replacement + text[match.end():]
 
 
 def write_tests() -> None:
