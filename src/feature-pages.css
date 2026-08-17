@@ -465,9 +465,9 @@
 .filter-options strong { font-size: 13px; font-weight: 500; }
 .restriction { display: flex; margin-top: 10px; padding: 9px; align-items: center; gap: 8px; border: 1px solid #574423; border-radius: 7px; color: #bfb8ac; font-size: 12px; }
 
-.history-panel { margin-top: 12px; padding: 11px; }
+.history-panel { box-sizing: border-box; width: 366px; max-width: 100%; min-width: 0; margin-top: 12px; padding: 0; overflow: hidden; }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.history-panel .panel-heading { padding-bottom: 6px; border-bottom: 1px solid rgba(195, 145, 54, .70); }
+.history-panel .panel-heading { min-height: 52px; padding: 7px 12px; align-items: center; border-bottom: 1px solid rgba(195, 145, 54, .58); box-sizing: border-box; }
 .panel-heading .section-title { font-size: 12.5px; }
 .device-screen[data-device="iphone"] .history-panel .panel-heading .section-title {
   white-space: nowrap;
@@ -476,7 +476,7 @@
 .history-panel .panel-heading > button:last-child { margin-top: -3px; margin-right: -4px; padding: 2px 0 2px 4px; font-size: 10.5px; }
 .history-panel .panel-heading > button:last-child svg { width: 11px; height: 11px; }
 .history-table { margin-top: 0; }
-.history-row { display: grid; min-height: 42px; grid-template-columns: 48px 78px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }
+.history-row { display: grid; min-height: 46px; grid-template-columns: 66px 68px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(90, 87, 80, .45); color: #bcb7ae; font-size: 9px; box-sizing: border-box; }
 .history-row > span { min-width: 0; text-align: center; }
 .history-row > span + span {
   display: flex;
@@ -502,7 +502,7 @@
 .history-head { min-height: 32px; color: #b58e3e; font-size: 13.5px; font-weight: 700; }
 .history-head > span { text-align: center; }
 .history-panel .history-row { border-top: 1px solid rgba(90, 87, 80, .45); }
-.history-panel .history-head { min-height: 28px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .70); }
+.history-panel .history-head { min-height: 36px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }
 .history-panel .history-head + .history-row { border-top: 0; }
 .history-panel .history-row[data-week-boundary="true"] { border-top: 2px solid rgba(166, 124, 54, .68); }
 .history-row:not(.history-head) > span:first-child { padding-inline: 4px; box-sizing: border-box; font-size: 11.5px; white-space: nowrap; }
@@ -539,20 +539,20 @@
 }
 
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
-  gap: 3px;
-  padding-top: 10px;
+  gap: 2px;
+  padding-top: 0;
 }
-.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 5px; }
+.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
 
 .history-panel .history-numbers[data-has-special="true"] .history-special-number {
-  height: 33.5px;
-  margin-left: 6px;
+  height: 28px;
+  margin-left: 4px;
   gap: 4px;
-  align-items: flex-end;
+  align-items: center;
 }
-.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 33.5px; grid-template-rows: 10px 23.5px; }
+.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 28px; grid-template-rows: 9px 19px; }
 .history-panel .history-numbers[data-has-special="true"] .history-special-label { margin: 0; line-height: 8px; }
-.history-panel[data-lottery="六合彩"] .history-special-label { transform: translateY(-3px); }
+.history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }
 
 .draw-history-screen .draw-history-row .history-numbers,
 .draw-history-screen .draw-history-row .history-main-numbers,
@@ -1954,11 +1954,11 @@
 .matrix-explore-main-screen .history-panel .panel-heading .section-title,
 .matrix-explore-main-screen .history-panel .panel-heading button { white-space: nowrap; }
 .matrix-explore-main-screen .history-row {
-  grid-template-columns: 52px 66px minmax(0, 1fr);
+  grid-template-columns: 66px 68px minmax(0, 1fr);
   border-top-width: 1px;
 }
 .matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {
-  grid-template-columns: 56px 62px minmax(0, 1fr);
+  grid-template-columns: 66px 68px minmax(0, 1fr);
 }
 .matrix-explore-main-screen .history-panel:not([data-lottery="六合彩"]) .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-special-number {
