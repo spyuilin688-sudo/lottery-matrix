@@ -150,7 +150,6 @@
   height: auto;
   min-height: 0;
   margin-inline: 0;
-  margin-block-end: 8px;
   padding: 0;
   overflow: visible;
 }
@@ -598,7 +597,7 @@
 
 /* Canonical homepage flow gaps. Each adjacent pair has one source. */
 .home-screen .lottery-switcher {
-  margin-block-start: 14px;
+  margin-block-start: var(--home-gap-logo-switcher);
 }
 
 .home-screen .latest-draw-card {
