@@ -35,7 +35,7 @@ jobs:
       - name: Apply document-backed fixes and cleanup
         run: python .github/scripts/audit_matrix_explore.py patch
       - name: Verify document re-audit checks
-        run: python .github/scripts/audit_matrix_explore.py check
+        run: python .github/scripts/audit_matrix_explore_check.py
       - name: Verify focused regression tests
         run: node --test tests/matrix-explore-option-layout.test.mjs
       - name: Verify diff hygiene
@@ -63,8 +63,9 @@ jobs:
         run: |
           rm .github/workflows/audit-matrix-explore-spec.yml
           rm .github/scripts/audit_matrix_explore.py
+          rm .github/scripts/audit_matrix_explore_check.py
           git config user.name "spy854540-cmd"
           git config user.email "spy854540@gmail.com"
-          git add src/feature-pages.css src/FeaturePages.tsx .github/workflows/audit-matrix-explore-spec.yml .github/scripts/audit_matrix_explore.py
+          git add src/feature-pages.css src/FeaturePages.tsx .github/workflows/audit-matrix-explore-spec.yml .github/scripts/audit_matrix_explore.py .github/scripts/audit_matrix_explore_check.py
           git commit -m "fix(explore): complete document spec re-audit"
           git push origin HEAD:探索
