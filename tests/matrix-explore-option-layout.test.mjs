@@ -22,7 +22,7 @@ test("Matrix Explore keeps one canonical formal layout source", () => {
 
 test("Matrix Explore cards and section titles match the document dimensions", () => {
   assert.match(formal, /\.matrix-explore-screen \.panel\s*\{[^}]*border:\s*1px solid rgba\(108,\s*74,\s*32,\s*\.50\);[^}]*border-radius:\s*12px;[^}]*box-shadow:\s*none;/s);
-  assert.match(formal, /\.matrix-explore-screen \.explore-settings,[\s\S]*?width:\s*366px;[\s\S]*?height:\s*auto;[\s\S]*?padding:\s*12px;/s);
+  assert.match(formal, /\.matrix-explore-screen \.explore-settings,[\s\S]*?width:\s*100%;[\s\S]*?height:\s*auto;[\s\S]*?padding:\s*12px;/s);
   assert.match(formal, /\.matrix-explore-screen \.section-title\s*\{[^}]*min-height:\s*28px;[^}]*gap:\s*10px;[^}]*font-size:\s*19px;[^}]*font-weight:\s*700;[^}]*line-height:\s*26px;/s);
   assert.match(formal, /\.matrix-explore-screen \.section-title > span\s*\{[^}]*width:\s*4px;[^}]*height:\s*24px;[^}]*border-radius:\s*2px;/s);
 });
@@ -49,7 +49,7 @@ test("Matrix Explore option buttons and badges keep stable selected geometry", (
 test("Matrix Explore advanced row and primary action use document sizing", () => {
   assert.match(formal, /\.matrix-explore-screen \.advanced-row\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;[^}]*grid-template-columns:\s*32px minmax\(0,\s*1fr\) 14px;[^}]*font-size:\s*17px;[^}]*font-weight:\s*700;/s);
   assert.match(formal, /\.matrix-explore-screen \.advanced-panel\s*\{[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.primary-action\s*\{[^}]*width:\s*366px;[^}]*height:\s*50px;[^}]*margin:\s*12px 0;[^}]*border-radius:\s*12px;[^}]*font-size:\s*21px;[^}]*font-weight:\s*700;/s);
+  assert.match(formal, /\.matrix-explore-screen \.primary-action\s*\{[^}]*width:\s*100%;[^}]*height:\s*50px;[^}]*margin:\s*12px 0;[^}]*border-radius:\s*12px;[^}]*font-size:\s*21px;[^}]*font-weight:\s*700;/s);
   assert.match(formal, /\.matrix-explore-screen \.primary-action svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
 });
 
