@@ -1,0 +1,317 @@
+name: Matrix Explore responsive fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/matrix-explore-responsive-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Write responsive regression tests first
+        shell: bash
+        run: |
+          cat > tests/matrix-explore-option-layout.test.mjs <<'EOF'
+          import test from "node:test";
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+
+          const css = readFileSync("src/feature-pages.css", "utf8");
+          const formalStart = "/* Matrix Explore formal layout rules */";
+          const formalEnd = "/* v55 scoped density and hierarchy refinements */";
+          const formalStartIndex = css.indexOf(formalStart);
+          const formalEndIndex = css.indexOf(formalEnd);
+
+          assert.notEqual(formalStartIndex, -1, "Matrix Explore formal rule block must exist");
+          assert.notEqual(formalEndIndex, -1, "Matrix Explore formal rule block must have an end marker");
+          const formal = css.slice(formalStartIndex, formalEndIndex);
+
+          test("Matrix Explore keeps one canonical formal layout source", () => {
+            assert.equal(css.split(formalStart).length - 1, 1);
+            assert.equal(formal.match(/\.matrix-explore-screen \.section-title\s*\{/g)?.length ?? 0, 1);
+            assert.equal(formal.match(/\.matrix-explore-screen \.primary-action\s*\{/g)?.length ?? 0, 1);
+            assert.doesNotMatch(formal, /width:\s*222px|max-width:\s*222px|grid-template-columns:\s*110px minmax\(0,\s*222px\)/);
+            assert.doesNotMatch(css, /\.result-summary > div\s*\{\s*min-height:\s*46px;/s);
+            assert.doesNotMatch(css, /\.repeat-stats-heading button\s*\{\s*min-height:\s*22px;/s);
+          });
+
+          test("Matrix Explore cards and section titles match the document dimensions", () => {
+            assert.match(formal, /\.matrix-explore-screen \.panel\s*\{[^}]*border:\s*1px solid rgba\(108,\s*74,\s*32,\s*\.50\);[^}]*border-radius:\s*12px;[^}]*box-shadow:\s*none;/s);
+            assert.match(formal, /\.matrix-explore-screen \.explore-settings,[\s\S]*?width:\s*100%;[\s\S]*?height:\s*auto;[\s\S]*?padding:\s*12px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.section-title\s*\{[^}]*min-height:\s*28px;[^}]*gap:\s*10px;[^}]*font-size:\s*19px;[^}]*font-weight:\s*700;[^}]*line-height:\s*26px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.section-title > span\s*\{[^}]*width:\s*4px;[^}]*height:\s*24px;[^}]*border-radius:\s*2px;/s);
+          });
+
+          test("Matrix Explore settings shrink with the available mobile width", () => {
+            assert.match(formal, /\.matrix-explore-screen \.setting-grid\s*\{[^}]*min-width:\s*0;[^}]*width:\s*100%;/s);
+            assert.match(formal, /\.matrix-explore-screen \.setting-grid label,[\s\S]*?min-width:\s*0;[\s\S]*?width:\s*100%;[\s\S]*?grid-template-columns:\s*minmax\(102px,\s*110px\) minmax\(0,\s*1fr\);/s);
+            assert.match(formal, /\.matrix-explore-screen \.setting-grid label > span,[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?grid-template-columns:\s*32px minmax\(0,\s*1fr\);/s);
+            assert.match(formal, /font-size:\s*16px;[\s\S]*?font-weight:\s*600;[\s\S]*?line-height:\s*22px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.setting-grid \.select-box,[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*none;[\s\S]*?min-width:\s*0;[\s\S]*?height:\s*44px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.native-select select\s*\{[^}]*padding-inline:\s*36px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.setting-grid \.native-select svg,[^}]*right:\s*12px;[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
+          });
+
+          test("Matrix Explore option buttons keep stable geometry without horizontal text overflow", () => {
+            assert.match(formal, /\.matrix-explore-screen \.segmented\.three\s*\{[^}]*gap:\s*6px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.segmented\.three button\s*\{[^}]*height:\s*44px;[^}]*font-size:\s*13px;[^}]*font-weight:\s*600;[^}]*white-space:\s*normal;/s);
+            assert.match(formal, /\.matrix-explore-screen \.segmented\.two,[^}]*gap:\s*8px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.segmented\.two button,[^}]*height:\s*44px;[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
+            assert.match(formal, /button\[data-selected="true"\][^}]*border:\s*1px solid #d4a52f;[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.10\);[^}]*box-shadow:\s*0 0 3px rgba\(212,\s*165,\s*47,\s*\.16\);/s);
+            assert.match(formal, /\.matrix-explore-screen \.segmented button em\s*\{[^}]*top:\s*-7px;[^}]*right:\s*4px;[^}]*height:\s*16px;[^}]*padding:\s*0 5px;[^}]*border-radius:\s*8px;[^}]*font-size:\s*9px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.segmented\s*\{[^}]*overflow:\s*visible;/s);
+          });
+
+          test("Matrix Explore recent history remains inside the mobile content width", () => {
+            assert.match(formal, /\.matrix-explore-main-screen \.history-panel \.panel-heading \.section-title\s*\{[^}]*min-width:\s*0;[^}]*white-space:\s*normal;/s);
+            assert.match(formal, /\.matrix-explore-main-screen \.history-panel \.panel-heading button\s*\{[^}]*white-space:\s*nowrap;/s);
+            assert.match(formal, /\.matrix-explore-main-screen \.history-row\s*\{[^}]*grid-template-columns:\s*56px 58px minmax\(0,\s*1fr\);/s);
+            assert.doesNotMatch(formal, /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\] \.history-row/);
+          });
+
+          test("Matrix Explore advanced row and primary action use document sizing", () => {
+            assert.match(formal, /\.matrix-explore-screen \.advanced-row\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;[^}]*grid-template-columns:\s*32px minmax\(0,\s*1fr\) 14px;[^}]*font-size:\s*17px;[^}]*font-weight:\s*700;/s);
+            assert.match(formal, /\.matrix-explore-screen \.advanced-panel\s*\{[^}]*min-width:\s*0;[^}]*width:\s*100%;[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.primary-action\s*\{[^}]*width:\s*100%;[^}]*height:\s*50px;[^}]*margin:\s*12px 0;[^}]*border-radius:\s*12px;[^}]*font-size:\s*21px;[^}]*font-weight:\s*700;/s);
+            assert.match(formal, /\.matrix-explore-screen \.primary-action svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
+          });
+
+          test("Matrix Explore statistics and result heading follow the two-row mobile hierarchy", () => {
+            assert.match(formal, /\.matrix-explore-screen \.repeat-stats-heading\s*\{[^}]*grid-template-columns:\s*auto auto minmax\(0,\s*1fr\);[^}]*gap:\s*12px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-summary\s*\{[^}]*margin-top:\s*12px;[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*6px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-summary > div\s*\{[^}]*height:\s*48px;[^}]*border-radius:\s*8px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.explore-result-disclaimer\s*\{[^}]*padding:\s*14px 12px;[^}]*font-size:\s*13px;[^}]*line-height:\s*1\.55;[^}]*text-align:\s*center;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-title\s*\{[^}]*grid-template-columns:\s*auto auto minmax\(0,\s*1fr\);[^}]*row-gap:\s*6px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-count\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*justify-self:\s*end;[^}]*font-size:\s*13px;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-count \.numeric-text\s*\{[^}]*font-size:\s*17px;[^}]*font-weight:\s*700;/s);
+            assert.match(formal, /\.matrix-explore-screen \.result-panel\s*\{[^}]*padding-top:\s*12px;/s);
+          });
+          EOF
+
+          cat > tests/recent-history-layout.test.mjs <<'EOF'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          import test from "node:test";
+
+          const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+          const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
+          const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+
+          test("近10期標題列縮短並加強標題資料分隔線", () => {
+            assert.match(css, /\.history-panel \.history-head\s*\{[^}]*min-height:\s*28px[^}]*border-bottom:\s*1px solid rgba\(195, 145, 54, \.70\)/s);
+          });
+
+          test("近10期六加一彩球使用共用 23.5px 尺寸且六合彩不再額外鎖成 26px", () => {
+            assert.match(ballCss, /\.history-panel \.history-numbers\[data-has-special="true"\] \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--number-ball-size:\s*23\.5px/s);
+            assert.doesNotMatch(ballCss, /\.history-panel \.history-numbers\[data-has-special="true"\] \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-ball-size:\s*26px/s);
+            assert.match(css, /\.history-panel \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*gap:\s*2px[^}]*padding-top:\s*0/s);
+            assert.match(css, /\.history-panel \.history-numbers\[data-has-special="true"\] \.history-special-ball\s*\{[^}]*height:\s*28px[^}]*grid-template-rows:\s*9px 19px/s);
+          });
+
+          test("近10期資料列依彩種日期標記跨週分隔線", () => {
+            assert.match(source, /data-week-boundary=\{isNearHistoryWeekBoundary\(lottery, previousDate, date\)\}/);
+            assert.match(css, /\.history-panel \.history-row\[data-week-boundary="true"\]\s*\{[^}]*border-top:\s*2px solid rgba\(166, 124, 54, \.68\)/s);
+          });
+          EOF
+
+      - name: Confirm regression tests fail before source changes
+        shell: bash
+        run: |
+          if node --test tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs; then
+            echo 'Regression tests unexpectedly passed before the source fix.'
+            exit 1
+          else
+            echo 'Expected RED state confirmed.'
+          fi
+
+      - name: Apply canonical responsive source changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          css_path = Path('src/feature-pages.css')
+          css = css_path.read_text()
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid label > span {
+          display: grid; width: 110px; grid-template-columns: 32px 70px; align-items: center; gap: 8px;
+          }
+
+          ''', '', 'remove duplicated fixed label rule')
+
+          css = replace_once(css,
+          '''.matrix-explore-main-screen .history-panel .panel-heading .section-title,
+          .matrix-explore-main-screen .history-panel .panel-heading button {
+          white-space: nowrap;
+          }
+          ''',
+          '''.matrix-explore-main-screen .history-panel .panel-heading .section-title {
+          min-width: 0; white-space: normal; line-height: 1.25;
+          }
+
+          .matrix-explore-main-screen .history-panel .panel-heading button {
+          white-space: nowrap;
+          }
+          ''', 'make recent-history heading responsive')
+
+          css = replace_once(css,
+          '''.matrix-explore-main-screen .history-row {
+          grid-template-columns: 66px 68px minmax(0, 1fr);
+            border-top-width: 1px;
+          }
+
+          .matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {
+          grid-template-columns: 66px 68px minmax(0, 1fr);
+          }
+          ''',
+          '''.matrix-explore-main-screen .history-row {
+          grid-template-columns: 56px 58px minmax(0, 1fr);
+            border-top-width: 1px;
+          }
+          ''', 'free recent-history number column and remove duplicated Mark Six grid rule')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid {
+          margin-top: 12px; gap: 8px;
+          }
+          ''',
+          '''.matrix-explore-screen .setting-grid {
+          min-width: 0; width: 100%; margin-top: 12px; gap: 8px;
+          }
+          ''', 'make setting grid shrinkable')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid label,
+          .matrix-explore-screen .advanced-panel label {
+          min-height: 44px; grid-template-columns: 110px minmax(0, 222px); align-items: center; gap: 8px;
+          }
+          ''',
+          '''.matrix-explore-screen .setting-grid label,
+          .matrix-explore-screen .advanced-panel label {
+          min-width: 0; width: 100%; min-height: 44px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;
+          }
+          ''', 'replace fixed 110+222 setting grid')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid label > span,
+          .matrix-explore-screen .advanced-panel label > .advanced-setting-title {
+          display: grid; width: 110px; grid-template-columns: 32px 70px; align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
+          }
+
+          .matrix-explore-screen .explore-settings .setting-grid label:first-child > span {
+          width: 110px; grid-template-columns: 32px 70px; gap: 8px; text-align: left;
+          }
+          ''',
+          '''.matrix-explore-screen .setting-grid label > span,
+          .matrix-explore-screen .advanced-panel label > .advanced-setting-title {
+          display: grid; width: 100%; min-width: 0; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
+          }
+          ''', 'make label content shrinkable and remove first-row duplicate')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid .select-box,
+          .matrix-explore-screen .advanced-panel .select-box {
+          width: 222px; max-width: 222px; height: 44px; min-height: 44px; padding: 0; font-size: 16px; font-weight: 700;
+          }
+          ''',
+          '''.matrix-explore-screen .setting-grid .select-box,
+          .matrix-explore-screen .advanced-panel .select-box {
+          width: 100%; max-width: none; min-width: 0; height: 44px; min-height: 44px; padding: 0; font-size: 16px; font-weight: 700;
+          }
+          ''', 'remove fixed 222 select width')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .setting-grid .segmented,
+          .matrix-explore-screen .advanced-panel .segmented {
+          width: 222px; max-width: 222px;
+          }
+          ''',
+          '''.matrix-explore-screen .setting-grid .segmented,
+          .matrix-explore-screen .advanced-panel .segmented {
+          width: 100%; max-width: none; min-width: 0;
+          }
+          ''', 'remove fixed 222 segmented width')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .segmented.three button {
+          min-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: visible;
+          }
+          ''',
+          '''.matrix-explore-screen .segmented.three button {
+          min-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 13px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
+          }
+          ''', 'allow three-way option text to wrap inside its own button')
+
+          css = replace_once(css,
+          '''.matrix-explore-screen .advanced-panel {
+          padding-top: 8px; gap: 8px;
+          }
+          ''',
+          '''.matrix-explore-screen .advanced-panel {
+          min-width: 0; width: 100%; padding-top: 8px; gap: 8px;
+          }
+          ''', 'make advanced panel shrinkable')
+
+          css_path.write_text(css)
+
+          ball_path = Path('src/number-ball.css')
+          ball = ball_path.read_text()
+          ball = replace_once(ball,
+          '''.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
+            --number-ball-size: 26px;
+            --number-ball-asset-scale: 1.62;
+            --underline-height: .75px;
+            --underline-y: -1.5px;
+          }
+          ''',
+          '''.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
+            --number-ball-asset-scale: 1.62;
+            --underline-height: .75px;
+            --underline-y: -1.5px;
+          }
+          ''', 'remove conflicting Mark Six 26px recent-history size lock')
+          ball_path.write_text(ball)
+          PY
+
+      - name: Run targeted responsive tests
+        run: node --test tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run full source tests
+        run: node --test tests/*.test.mjs
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified fix and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/matrix-explore-responsive-fix.yml
+          git add src/feature-pages.css src/number-ball.css tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
+          git commit -m 'fix(explore): make mobile layout responsive'
+          git push origin main
