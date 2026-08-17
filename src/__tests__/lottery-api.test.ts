@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchLatestLotteryDraw, fetchNumberReference, fetchTongXing } from '../lottery-api';
+import { fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing } from '../lottery-api';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -16,6 +16,16 @@ function mockJsonResponse(body: unknown) {
 }
 
 describe('lottery-api response validation', () => {
+  it('最新開獎缺少 numbers 時拒絕異常格式', async () => {
+    mockJsonResponse({ period: '5899', drawDate: '2026/08/14' });
+    await expect(fetchLatestLotteryDraw('今彩539')).rejects.toThrow('Lottery API invalid response: item');
+  });
+
+  it('歷史開獎 items 內缺少 numbers 時拒絕異常格式', async () => {
+    mockJsonResponse({ items: [{ period: '5899', drawDate: '2026/08/14' }] });
+    await expect(fetchLotteryHistory('今彩539', 10)).rejects.toThrow('Lottery API invalid response: items[0]');
+  });
+
   it('同星回傳缺少 groups 時拒絕異常格式', async () => {
     mockJsonResponse({
       lottery: '今彩539',
