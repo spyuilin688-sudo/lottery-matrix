@@ -1,0 +1,76 @@
+name: Verify Superpowers cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-superpowers-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify formal layout rules and cleanup
+        shell: python
+        run: |
+          from pathlib import Path
+          tokens = Path('src/design-tokens.css').read_text(encoding='utf-8')
+          tx = Path('src/tongxing-compact.css').read_text(encoding='utf-8')
+          required = [
+            '--layout-page-inline: 12px;',
+            '--tongxing-page-padding-x: 12px;',
+            '--tongxing-card-padding: 10px;',
+            '--tongxing-control-height: 44px;',
+            '--tongxing-number-input-size: 44px;',
+            '--tongxing-table-header-height: 38px;',
+            '--tongxing-table-row-height: 52px;',
+            '--tongxing-result-row-height: 50px;',
+            'grid-template-columns: 116px 220px;',
+            'grid-template-columns: repeat(3, 44px) minmax(0, 1fr) 64px auto;',
+            'font-variant-numeric: tabular-nums;',
+          ]
+          if required[0] not in tokens:
+            raise SystemExit('Global 12px page inline token missing')
+          for item in required[1:]:
+            if item not in tx:
+              raise SystemExit('Matrix Tongxing rule missing: ' + item)
+          forbidden = [
+            'grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr)',
+            'grid-template-columns: repeat(3, 42px)',
+            'height: 40px;',
+            'min-height: 36px;',
+            'background: linear-gradient(90deg, rgba(126, 83, 15, .32)',
+            'background: linear-gradient(90deg, rgba(10, 61, 88, .42)',
+          ]
+          for item in forbidden:
+            if item in tx:
+              raise SystemExit('Old Matrix Tongxing rule still present: ' + item)
+          for obsolete in [
+            '.github/workflows/apply-history-lottery-filter-spec.yml',
+            '.github/workflows/apply-history-record-layout-spec.yml',
+            '.github/workflows/audit-layout-specs.yml',
+          ]:
+            if Path(obsolete).exists():
+              raise SystemExit('Obsolete workflow still present: ' + obsolete)
+      - run: npm test --if-present
+      - run: npm run build --if-present
+      - name: Remove one-time verification workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/verify-superpowers-cleanup.yml
+          git add .github/workflows/verify-superpowers-cleanup.yml
+          git commit -m 'chore: remove one-time verification workflow'
+          git push origin HEAD:main
