@@ -48,16 +48,18 @@ jobs:
           lottery_icon = '/assets/lottery/functions/彩種.png'
           if lottery_icon not in s[filter_fields:page_end]:
               issue_start = s.index(issue_marker, filter_fields, page_end)
-              lottery_field = '''                  <label>
-                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
-                    <div className="select-box native-select">
-                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
-                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
-                      </select>
-                      <ChevronDownIcon />
-                    </div>
-                  </label>
-'''
+              lottery_field = '\n'.join([
+                  '                  <label>',
+                  '                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>',
+                  '                    <div className="select-box native-select">',
+                  '                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>',
+                  '                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}',
+                  '                      </select>',
+                  '                      <ChevronDownIcon />',
+                  '                    </div>',
+                  '                  </label>',
+                  '',
+              ])
               s = s[:issue_start] + lottery_field + s[issue_start:]
 
           p.write_text(s)
@@ -66,23 +68,25 @@ jobs:
           ts = t.read_text()
           old_name = 'test("history title card owns the lottery dropdown and filter trigger", () => {'
           new_name = 'test("history lottery selector is the first filter field and no longer appears in the title actions", () => {'
-          new_test = '''test("history lottery selector is the first filter field and no longer appears in the title actions", () => {
-  const start = featurePages.indexOf("export function DrawHistoryPage");
-  const end = featurePages.indexOf("function RoadValidationProcess", start);
-  const historyPage = featurePages.slice(start, end);
-  const titleActionsStart = historyPage.indexOf('const historyTitleActions');
-  const titleActionsEnd = historyPage.indexOf('return (', titleActionsStart);
-  const titleActions = historyPage.slice(titleActionsStart, titleActionsEnd);
-  const filterFieldsStart = historyPage.indexOf('className="history-filter-fields"');
-  const lotteryIconIndex = historyPage.indexOf('/assets/lottery/functions/彩種.png', filterFieldsStart);
-  const issueIconIndex = historyPage.indexOf('/assets/history-filter/issue.png', filterFieldsStart);
-  assert.match(titleActions, /篩選條件/);
-  assert.doesNotMatch(titleActions, /aria-label="彩種"/);
-  assert.ok(lotteryIconIndex > filterFieldsStart);
-  assert.ok(issueIconIndex > lotteryIconIndex);
-  assert.match(historyPage.slice(filterFieldsStart), /aria-label="彩種"/);
-  assert.doesNotMatch(historyPage, /<LotteryTabs/);
-});'''
+          new_test = '\n'.join([
+              'test("history lottery selector is the first filter field and no longer appears in the title actions", () => {',
+              '  const start = featurePages.indexOf("export function DrawHistoryPage");',
+              '  const end = featurePages.indexOf("function RoadValidationProcess", start);',
+              '  const historyPage = featurePages.slice(start, end);',
+              "  const titleActionsStart = historyPage.indexOf('const historyTitleActions');",
+              "  const titleActionsEnd = historyPage.indexOf('return (', titleActionsStart);",
+              '  const titleActions = historyPage.slice(titleActionsStart, titleActionsEnd);',
+              "  const filterFieldsStart = historyPage.indexOf('className=\\\"history-filter-fields\\\"');",
+              "  const lotteryIconIndex = historyPage.indexOf('/assets/lottery/functions/彩種.png', filterFieldsStart);",
+              "  const issueIconIndex = historyPage.indexOf('/assets/history-filter/issue.png', filterFieldsStart);",
+              '  assert.match(titleActions, /篩選條件/);',
+              '  assert.doesNotMatch(titleActions, /aria-label="彩種"/);',
+              '  assert.ok(lotteryIconIndex > filterFieldsStart);',
+              '  assert.ok(issueIconIndex > lotteryIconIndex);',
+              '  assert.match(historyPage.slice(filterFieldsStart), /aria-label="彩種"/);',
+              '  assert.doesNotMatch(historyPage, /<LotteryTabs/);',
+              '});',
+          ])
           if new_name not in ts:
               if old_name not in ts:
                   raise SystemExit('history title-card test block not found')
