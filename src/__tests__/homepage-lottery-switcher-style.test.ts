@@ -1,6 +1,8 @@
+// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error Vite resolves inline CSS imports during tests.
-import css from "../homepage-repair.css?inline";
+
+const css = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
 
 describe("homepage lottery switcher layout", () => {
   it("sizes each independent lottery logo inside its own quarter hit area", () => {
