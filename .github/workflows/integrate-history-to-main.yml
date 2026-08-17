@@ -1,0 +1,63 @@
+name: Verify history main integration
+
+on:
+  push:
+    branches:
+      - "sync/history-to-main-20260817"
+    paths:
+      - ".github/workflows/integrate-history-to-main.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "sync/history-to-main-20260817"
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply history-only integration patch
+        run: python scripts/integrate-history-to-main.py
+
+      - name: Check patch cleanliness
+        run: git diff --check
+
+      - name: Run focused history regressions
+        run: |
+          node --test \
+            tests/draw-history-table-layout.test.mjs \
+            tests/history-filter-select-layering.test.mjs \
+            tests/number-ball-style-source.test.mjs \
+            tests/number-ball-visible-size.test.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run full unit suite
+        run: npm run test:unit
+
+      - name: Run production build
+        run: npm run build
+
+      - name: Remove temporary integration tooling
+        run: |
+          rm .github/workflows/integrate-history-to-main.yml
+          rm scripts/integrate-history-to-main.py
+
+      - name: Commit verified integration candidate
+        run: |
+          git config user.name "openai-history-bot"
+          git config user.email "openai-history-bot@users.noreply.github.com"
+          git add src/FeaturePages.tsx src/feature-pages.css .github/workflows/integrate-history-to-main.yml scripts/integrate-history-to-main.py
+          git diff --cached --check
+          git commit -m "fix(history): sync verified history filters onto main"
+          git push origin HEAD:"sync/history-to-main-20260817"
