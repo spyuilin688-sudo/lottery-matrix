@@ -26,30 +26,75 @@ jobs:
           p = Path('src/FeaturePages.tsx')
           s = p.read_text()
 
-          old_header = '''  const historyTitleActions = (\n    <div className="history-title-actions">\n      <div className="history-title-lottery native-select">\n        <select\n          aria-label="彩種"\n          value={lottery}\n          onChange={(event) => {\n            const nextLottery = event.target.value as LotteryId;\n            setLottery(nextLottery);\n            setAppliedHistorySettings((current) => ({ ...current, lottery: nextLottery }));\n          }}\n        >\n          {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}\n        </select>\n        <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>\n      </div>\n      <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>\n        <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>\n        篩選條件\n      </button>\n    </div>\n  );'''
-          new_header = '''  const historyTitleActions = (\n    <div className="history-title-actions">\n      <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>\n        <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>\n        篩選條件\n      </button>\n    </div>\n  );'''
-          if s.count(old_header) != 1:
-              raise SystemExit(f'header source match count={s.count(old_header)}')
-          s = s.replace(old_header, new_header, 1)
+          page_start = s.index('export function DrawHistoryPage')
+          page_end = s.index('function RoadValidationProcess', page_start)
 
-          marker = '''                <div className="history-filter-fields">\n                  <label>\n                    <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>'''
-          replacement = '''                <div className="history-filter-fields">\n                  <label>\n                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>\n                    <div className="select-box native-select">\n                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>\n                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}\n                      </select>\n                      <ChevronDownIcon />\n                    </div>\n                  </label>\n                  <label>\n                    <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>'''
-          if s.count(marker) != 1:
-              raise SystemExit(f'filter marker match count={s.count(marker)}')
-          s = s.replace(marker, replacement, 1)
+          title_start = s.index('  const historyTitleActions = (', page_start, page_end)
+          title_end = s.index('  );', title_start, page_end) + len('  );')
+          title_block = s[title_start:title_end]
+
+          lottery_start_marker = '      <div className="history-title-lottery native-select">'
+          trigger_marker = '      <button type="button" className="history-filter-trigger"'
+          if lottery_start_marker in title_block:
+              lottery_start = s.index(lottery_start_marker, title_start, title_end)
+              trigger_start = s.index(trigger_marker, lottery_start, title_end)
+              s = s[:lottery_start] + s[trigger_start:]
+              page_end -= trigger_start - lottery_start
+          elif 'aria-label="彩種"' in title_block:
+              raise SystemExit('history title lottery selector exists in an unexpected structure')
+
+          filter_fields = s.index('className="history-filter-fields"', page_start, page_end)
+          issue_marker = '                  <label>\n                    <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>'
+          lottery_icon = '/assets/lottery/functions/彩種.png'
+          if lottery_icon not in s[filter_fields:page_end]:
+              issue_start = s.index(issue_marker, filter_fields, page_end)
+              lottery_field = '''                  <label>
+                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
+                    <div className="select-box native-select">
+                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
+                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+                      </select>
+                      <ChevronDownIcon />
+                    </div>
+                  </label>
+'''
+              s = s[:issue_start] + lottery_field + s[issue_start:]
+
           p.write_text(s)
 
           t = Path('tests/page-title-card.test.mjs')
           ts = t.read_text()
-          old_test = '''test("history title card owns the lottery dropdown and filter trigger", () => {\n  const start = featurePages.indexOf("export function DrawHistoryPage");\n  const end = featurePages.indexOf("function RoadValidationProcess", start);\n  const historyPage = featurePages.slice(start, end);\n  assert.match(historyPage, /className="history-title-actions"/);\n  assert.match(historyPage, /aria-label="彩種"/);\n  assert.match(historyPage, /篩選條件/);\n  assert.doesNotMatch(historyPage, /<LotteryTabs/);\n});'''
-          new_test = '''test("history lottery selector is the first filter field and no longer appears in the title actions", () => {\n  const start = featurePages.indexOf("export function DrawHistoryPage");\n  const end = featurePages.indexOf("function RoadValidationProcess", start);\n  const historyPage = featurePages.slice(start, end);\n  const titleActionsStart = historyPage.indexOf('const historyTitleActions');\n  const titleActionsEnd = historyPage.indexOf('return (', titleActionsStart);\n  const titleActions = historyPage.slice(titleActionsStart, titleActionsEnd);\n  const filterFieldsStart = historyPage.indexOf('className="history-filter-fields"');\n  const lotteryIconIndex = historyPage.indexOf('/assets/lottery/functions/彩種.png', filterFieldsStart);\n  const issueIconIndex = historyPage.indexOf('/assets/history-filter/issue.png', filterFieldsStart);\n  assert.match(titleActions, /篩選條件/);\n  assert.doesNotMatch(titleActions, /aria-label="彩種"/);\n  assert.ok(lotteryIconIndex > filterFieldsStart);\n  assert.ok(issueIconIndex > lotteryIconIndex);\n  assert.match(historyPage.slice(filterFieldsStart), /aria-label="彩種"/);\n  assert.doesNotMatch(historyPage, /<LotteryTabs/);\n});'''
-          if ts.count(old_test) != 1:
-              raise SystemExit(f'test source match count={ts.count(old_test)}')
-          ts = ts.replace(old_test, new_test, 1)
+          old_name = 'test("history title card owns the lottery dropdown and filter trigger", () => {'
+          new_name = 'test("history lottery selector is the first filter field and no longer appears in the title actions", () => {'
+          new_test = '''test("history lottery selector is the first filter field and no longer appears in the title actions", () => {
+  const start = featurePages.indexOf("export function DrawHistoryPage");
+  const end = featurePages.indexOf("function RoadValidationProcess", start);
+  const historyPage = featurePages.slice(start, end);
+  const titleActionsStart = historyPage.indexOf('const historyTitleActions');
+  const titleActionsEnd = historyPage.indexOf('return (', titleActionsStart);
+  const titleActions = historyPage.slice(titleActionsStart, titleActionsEnd);
+  const filterFieldsStart = historyPage.indexOf('className="history-filter-fields"');
+  const lotteryIconIndex = historyPage.indexOf('/assets/lottery/functions/彩種.png', filterFieldsStart);
+  const issueIconIndex = historyPage.indexOf('/assets/history-filter/issue.png', filterFieldsStart);
+  assert.match(titleActions, /篩選條件/);
+  assert.doesNotMatch(titleActions, /aria-label="彩種"/);
+  assert.ok(lotteryIconIndex > filterFieldsStart);
+  assert.ok(issueIconIndex > lotteryIconIndex);
+  assert.match(historyPage.slice(filterFieldsStart), /aria-label="彩種"/);
+  assert.doesNotMatch(historyPage, /<LotteryTabs/);
+});'''
+          if new_name not in ts:
+              if old_name not in ts:
+                  raise SystemExit('history title-card test block not found')
+              test_start = ts.index(old_name)
+              test_end = ts.index('\n});', test_start) + len('\n});')
+              ts = ts[:test_start] + new_test + ts[test_end:]
           t.write_text(ts)
           PY
       - name: Verify focused tests
         run: node --test tests/page-title-card.test.mjs tests/history-filter-select-layering.test.mjs tests/draw-history-table-layout.test.mjs
+      - name: Verify build
+        run: npm run build
       - name: Commit changes
         shell: bash
         run: |
@@ -57,5 +102,9 @@ jobs:
           git config user.email 'spy854540@gmail.com'
           git add src/FeaturePages.tsx tests/page-title-card.test.mjs
           git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
           git commit -m 'feat: move history lottery selector into filters'
           git push origin main
