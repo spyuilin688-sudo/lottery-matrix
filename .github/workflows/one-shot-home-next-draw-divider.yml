@@ -1,0 +1,69 @@
+name: One-shot home next draw divider fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-home-next-draw-divider.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Remove exact divider rule
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/homepage-repair.css')
+          source = path.read_text()
+          old = '''.home-screen .latest-draw-card .next-draw-info--embedded::before {
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 50%;
+            width: 1px;
+            background: linear-gradient(180deg, transparent, rgba(238, 183, 73, .72), transparent);
+            content: "";
+            transform: translateX(-50%);
+          }
+
+          '''
+          old = old.replace('          ', '')
+
+          if source.count(old) != 1:
+              raise SystemExit(f'Expected exact divider block once, found {source.count(old)}; refusing to modify.')
+          if '.next-draw-info--embedded .next-draw-item:last-child' not in source or 'padding-left: 16px;' not in source:
+              raise SystemExit('Spacing rule missing; refusing to remove divider.')
+
+          updated = source.replace(old, '', 1)
+          if '.next-draw-info--embedded::before' in updated:
+              raise SystemExit('Divider selector still exists; refusing to commit.')
+          path.write_text(updated)
+          PY
+
+      - name: Verify diff scope
+        run: |
+          git diff --check
+          git diff -- src/homepage-repair.css
+          changed="$(git diff --numstat -- src/homepage-repair.css | awk '{print $1+$2}')"
+          test -n "$changed"
+          test "$changed" -le 12
+
+      - name: Commit precise fix
+        run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/homepage-repair.css
+          git commit -m "fix(home): remove next draw divider"
+          git push origin HEAD:main
