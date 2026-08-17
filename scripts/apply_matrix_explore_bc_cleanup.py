@@ -19,7 +19,18 @@ def replace_rule(selector: str, body: str) -> None:
     formal = pattern.sub(selector + ' {\n' + body.strip() + '\n}', formal, count=1)
 
 
-# Main Explore cards: reference-like internal spacing, one canonical source.
+def consolidate_rule(selector: str, body: str, expected: int) -> None:
+    global formal
+    pattern = re.compile(re.escape(selector) + r'\s*\{[^{}]*\}', re.S)
+    matches = list(pattern.finditer(formal))
+    if len(matches) != expected:
+        raise SystemExit(f'{selector}: expected {expected} rules, found {len(matches)}')
+    for match in reversed(matches[1:]):
+        formal = formal[:match.start()] + formal[match.end():]
+    pattern = re.compile(re.escape(selector) + r'\s*\{[^{}]*\}', re.S)
+    formal = pattern.sub(selector + ' {\n' + body.strip() + '\n}', formal, count=1)
+
+
 replace_rule(
     '.matrix-explore-main-screen .explore-settings,\n.matrix-explore-main-screen .hit-advanced-panel,\n.matrix-explore-main-screen .history-panel,\n.matrix-explore-main-screen .repeat-stats-panel,\n.matrix-explore-main-screen .result-panel',
     '''
@@ -33,7 +44,6 @@ replace_rule(
 ''',
 )
 
-# Split main advanced controls away from non-main controls so later shared rules cannot enlarge them.
 shared_select = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,\n.matrix-explore-main-screen .advanced-panel .select-box'
 pattern = re.compile(re.escape(shared_select) + r'\s*\{([^{}]*)\}', re.S)
 match = pattern.search(formal)
@@ -89,8 +99,7 @@ formal = pattern.sub(
     count=1,
 )
 
-# Use the already-approved reference proportions for the main screen.
-replace_rule(
+consolidate_rule(
     '.matrix-explore-main-screen .hit-options button',
     '''
   height: 34px;
@@ -102,6 +111,7 @@ replace_rule(
   white-space: nowrap;
   overflow: visible;
 ''',
+    expected=2,
 )
 replace_rule(
     '.matrix-explore-main-screen .advanced-row',
@@ -143,7 +153,6 @@ replace_rule(
 ''',
 )
 
-# Main selected controls get a single state source without a second glow override.
 shared_selected = '.matrix-explore-screen .segmented button[data-selected="true"],\n.matrix-explore-screen .hit-options button[data-selected="true"]'
 pattern = re.compile(re.escape(shared_selected) + r'\s*\{[^{}]*\}', re.S)
 if len(list(pattern.finditer(formal))) != 1:
@@ -168,7 +177,6 @@ formal = pattern.sub(
     count=1,
 )
 
-# Keep the compact table/stat/result proportions already represented by the reference.
 replace_rule('.matrix-explore-main-screen .result-summary', '''
   display: grid;
   margin-top: 8px;
