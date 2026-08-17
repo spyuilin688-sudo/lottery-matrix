@@ -111,24 +111,18 @@ const DRAW_RESULTS: Record<LotteryId, DrawResultData> = {
     date: "2026/08/11",
     numbers: ["03", "12", "18", "27", "34"],
   },
-  六合彩票: {
+  "六合彩": {
     issue: "5896",
     date: "2026/08/11",
     numbers: ["21", "18", "07", "44", "13", "38"],
     specialNumber: "03",
-  } as DrawResultData,
+  },
   大樂透: {
     issue: "115078",
     date: "2026/08/11",
     numbers: ["21", "18", "07", "44", "13", "38"],
     specialNumber: "03",
   },
-} as unknown as Record<LotteryId, DrawResultData>;
-DRAW_RESULTS["六合彩"] = {
-  issue: "5896",
-  date: "2026/08/11",
-  numbers: ["21", "18", "07", "44", "13", "38"],
-  specialNumber: "03",
 };
 
 const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
@@ -140,18 +134,14 @@ const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
     nextDraw: "06/24 (三) 20:30",
     remainingTime: "18:30:00",
   },
-  六合彩票: {
+  "六合彩": {
     nextDraw: "06/24 (三) 20:30",
     remainingTime: "18:30:00",
-  } as NextDrawInfoData,
+  },
   大樂透: {
     nextDraw: "06/24 (三) 20:30",
     remainingTime: "18:30:00",
   },
-} as unknown as Record<LotteryId, NextDrawInfoData>;
-NEXT_DRAW_INFO["六合彩"] = {
-  nextDraw: "06/24 (三) 20:30",
-  remainingTime: "18:30:00",
 };
 
 const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
