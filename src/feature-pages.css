@@ -372,25 +372,104 @@
 .filter-options strong { font-size: 13px; font-weight: 500; }
 .restriction { display: flex; margin-top: 10px; padding: 9px; align-items: center; gap: 8px; border: 1px solid #574423; border-radius: 7px; color: #bfb8ac; font-size: 12px; }
 
-.history-panel { box-sizing: border-box; width: 366px; max-width: 100%; min-width: 0; margin-top: 12px; padding: 0; overflow: hidden; }
+.history-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.history-panel .panel-heading { min-height: 52px; padding: 7px 12px; align-items: center; border-bottom: 1px solid rgba(195, 145, 54, .58); box-sizing: border-box; }
-.panel-heading .section-title { font-size: 12.5px; }
-.device-screen[data-device="iphone"] .history-panel .panel-heading .section-title {
+.history-panel .panel-heading {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  height: 52px;
+  padding: 7px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(195, 145, 54, .58);
+}
+.history-panel-title {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: 24px 14px;
+  align-content: center;
+}
+.history-panel-title .section-title {
+  min-width: 0;
+  gap: 8px;
+  color: #e7d5ac;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
   white-space: nowrap;
 }
+.history-panel-title .section-title > span {
+  width: 4px;
+  height: 24px;
+  flex: 0 0 4px;
+  border-radius: 4px;
+}
+.history-panel-order {
+  min-width: 0;
+  margin-left: 12px;
+  overflow: hidden;
+  color: #c6c0b8;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 14px;
+  white-space: nowrap;
+}
+.history-panel-toggle {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.history-panel-toggle > svg { width: 14px; height: 14px; transition: transform .2s; }
+.history-panel-toggle > svg[data-open="true"] { transform: rotate(180deg); }
 .panel-heading button { display: flex; align-items: center; border: 0; background: transparent; color: #d8a93e; font-size: 12px; white-space: nowrap; }
-.history-panel .panel-heading > button:last-child { margin-top: -3px; margin-right: -4px; padding: 2px 0 2px 4px; font-size: 10.5px; }
-.history-panel .panel-heading > button:last-child svg { width: 11px; height: 11px; }
-.history-table { margin-top: 0; }
-.history-row { display: grid; min-height: 46px; grid-template-columns: 66px 68px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(90, 87, 80, .45); color: #bcb7ae; font-size: 9px; box-sizing: border-box; }
-.history-row > span { min-width: 0; text-align: center; }
+.history-panel .panel-heading > button:last-child {
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+  justify-self: end;
+  color: #d8a93e;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.history-panel .panel-heading > button:last-child svg { width: 11px; height: 11px; flex: 0 0 11px; }
+.history-table { width: 100%; margin: 0; padding: 0; overflow: hidden; }
+.history-row {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  height: 46px;
+  grid-template-columns: 66px 68px minmax(0, 1fr);
+  align-items: center;
+  border-top: 1px solid rgba(90, 87, 80, .45);
+  color: #bcb7ae;
+  font-size: 9px;
+}
+.history-row > span { box-sizing: border-box; min-width: 0; padding: 0; text-align: center; }
 .history-row > span + span {
   display: flex;
   align-self: stretch;
   align-items: center;
   justify-content: center;
-  border-left: .75px solid #4a4338;
+  border-left: 1px solid rgba(74, 67, 56, .68);
 }
 .history-row:not(.history-head) > span:first-child,
 .history-row:not(.history-head) > span:nth-child(2) {
@@ -400,65 +479,61 @@
   justify-content: center;
   text-align: center;
 }
-.history-row:not(.history-head) > span:nth-child(2) {
+.history-row:not(.history-head) > span:first-child {
+  font-size: 14px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
-.history-date-stack { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
-.history-date-stack strong { color: #f1eee8; font-size: 9.5px; font-weight: 700; }
-.history-date-stack small { margin-top: 2px; color: #c7c1b8; font-size: 8.5px; font-weight: 500; white-space: nowrap; }
-.history-head { min-height: 32px; color: #b58e3e; font-size: 13.5px; font-weight: 700; }
+.history-row:not(.history-head) > span:nth-child(2) { overflow: hidden; color: #fff; }
+.history-date-stack {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.history-date-stack strong { color: #f1eee8; font-size: 12px; font-weight: 700; line-height: 15px; }
+.history-date-stack small { max-width: 100%; margin-top: 1px; overflow: hidden; color: #c7c1b8; font-size: 11px; font-weight: 500; line-height: 14px; white-space: nowrap; }
+.history-head { height: 36px; color: #b58e3e; font-size: 14px; font-weight: 700; line-height: 18px; }
 .history-head > span { text-align: center; }
 .history-panel .history-row { border-top: 1px solid rgba(90, 87, 80, .45); }
-.history-panel .history-head { min-height: 36px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }
+.history-panel .history-head { border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }
 .history-panel .history-head + .history-row { border-top: 0; }
 .history-panel .history-row[data-week-boundary="true"] { border-top: 2px solid rgba(166, 124, 54, .68); }
-.history-row:not(.history-head) > span:first-child { padding-inline: 4px; box-sizing: border-box; font-size: 11.5px; white-space: nowrap; }
-.history-row:not(.history-head) > span:nth-child(2) { color: #fff; font-size: 10.5px; }
-.history-row:not(.history-head) > span:first-child { font-weight: 700; }
 .history-numbers,
 .history-main-numbers,
 .history-special-number {
   display: flex;
+  min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 0;
 }
-
-.history-main-numbers { gap: 7px; }
-.history-special-number {
-  margin-left: 0;
-  gap: 4px;
-  color: #d4a63b;
-}
-.history-special-ball {
+.history-numbers { width: 100%; overflow: hidden; }
+.history-main-numbers { gap: 2px; }
+.history-special-number { height: 38px; margin-left: 4px; gap: 4px; color: #d4a63b; }
+.history-special-number > span:first-child {
   display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-}
-.history-special-label {
-  margin-bottom: 2px;
-  color: #d4a63b;
-  font-size: 7px;
-  font-weight: 700;
-  line-height: 8px;
-  white-space: nowrap;
-}
-
-.history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
-  gap: 2px;
-  padding-top: 0;
-}
-.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
-
-.history-panel .history-numbers[data-has-special="true"] .history-special-number {
+  box-sizing: border-box;
+  width: 10px;
   height: 28px;
-  margin-left: 4px;
-  gap: 4px;
-  align-items: center;
+  flex: 0 0 10px;
+  margin: 0;
+  place-items: center;
+  color: #f6c95f;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
 }
-.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 28px; grid-template-rows: 9px 19px; }
-.history-panel .history-numbers[data-has-special="true"] .history-special-label { margin: 0; line-height: 8px; }
+.history-special-ball { display: grid; height: 38px; flex: 0 0 auto; grid-template-rows: 9px 28px; row-gap: 1px; place-items: center; }
+.history-special-label { margin: 0; color: #d4a63b; font-size: 9px; font-weight: 600; line-height: 9px; white-space: nowrap; }
+.history-panel .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 0; }
 .history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }
 
 .draw-history-screen .draw-history-row .history-numbers,

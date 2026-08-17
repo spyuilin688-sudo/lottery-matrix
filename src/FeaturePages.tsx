@@ -522,6 +522,12 @@ function HistoryList({
   const history = useLotteryHistory(lottery, 10);
   const order = getHistoryOrder(numberOrder);
   const [expanded, setExpanded] = useState(!collapsible);
+  const historyHeading = (
+    <div className="history-panel-title">
+      <SectionTitle>近10期開獎號碼</SectionTitle>
+      <span className="history-panel-order">（{numberOrder}）</span>
+    </div>
+  );
 
   return (
     <section className="panel history-panel" data-lottery={lottery}>
@@ -534,11 +540,11 @@ function HistoryList({
             aria-controls="tongxing-history-table"
             onClick={() => setExpanded((current) => !current)}
           >
-            <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
+            {historyHeading}
             <ChevronDownIcon data-open={expanded} aria-hidden="true" />
           </button>
         ) : (
-          <SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>
+          historyHeading
         )}
         <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
       </header>
