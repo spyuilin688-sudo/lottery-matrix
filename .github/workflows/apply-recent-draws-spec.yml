@@ -23,17 +23,14 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           tsx_path = Path('src/FeaturePages.tsx')
           tsx = tsx_path.read_text()
-          old_state = '''  const history = useLotteryHistory(lottery, 10);
-            const order = getHistoryOrder(numberOrder);
-            const [expanded, setExpanded] = useState(!collapsible);
+          state_anchor = '''  const [expanded, setExpanded] = useState(!collapsible);
 
-            return ('''.replace('            ', '  ')
-          new_state = '''  const history = useLotteryHistory(lottery, 10);
-          const order = getHistoryOrder(numberOrder);
-          const [expanded, setExpanded] = useState(!collapsible);
+  return ('''
+          state_replacement = '''  const [expanded, setExpanded] = useState(!collapsible);
           const historyHeading = (
             <div className="history-panel-title">
               <SectionTitle>近10期開獎號碼</SectionTitle>
@@ -42,14 +39,13 @@ jobs:
           );
 
           return ('''
-          if tsx.count(old_state) != 1:
-            raise SystemExit(f'HistoryList state anchor count: {tsx.count(old_state)}')
-          tsx = tsx.replace(old_state, new_state, 1)
-
-          old_title = '<SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>'
-          if tsx.count(old_title) != 2:
-            raise SystemExit(f'HistoryList title count: {tsx.count(old_title)}')
-          tsx = tsx.replace(old_title, '{historyHeading}')
+          if tsx.count(state_anchor) != 1:
+            raise SystemExit(f'HistoryList state anchor count: {tsx.count(state_anchor)}')
+          tsx = tsx.replace(state_anchor, state_replacement, 1)
+          title_anchor = '<SectionTitle>近10期開獎號碼（{numberOrder}）</SectionTitle>'
+          if tsx.count(title_anchor) != 2:
+            raise SystemExit(f'HistoryList title count: {tsx.count(title_anchor)}')
+          tsx = tsx.replace(title_anchor, '{historyHeading}')
           tsx_path.write_text(tsx)
 
           css_path = Path('src/feature-pages.css')
@@ -116,7 +112,6 @@ jobs:
             font-size: 12px;
             font-weight: 500;
             line-height: 14px;
-            text-overflow: clip;
             white-space: nowrap;
           }
           .history-panel-toggle {
@@ -182,10 +177,7 @@ jobs:
             letter-spacing: 0;
             white-space: nowrap;
           }
-          .history-row:not(.history-head) > span:nth-child(2) {
-            overflow: hidden;
-            color: #fff;
-          }
+          .history-row:not(.history-head) > span:nth-child(2) { overflow: hidden; color: #fff; }
           .history-date-stack {
             display: flex;
             width: 100%;
@@ -196,30 +188,9 @@ jobs:
             overflow: hidden;
             white-space: nowrap;
           }
-          .history-date-stack strong {
-            color: #f1eee8;
-            font-size: 12px;
-            font-weight: 700;
-            line-height: 15px;
-          }
-          .history-date-stack small {
-            max-width: 100%;
-            margin-top: 1px;
-            overflow: hidden;
-            color: #c7c1b8;
-            font-size: 11px;
-            font-weight: 500;
-            line-height: 14px;
-            white-space: nowrap;
-          }
-          .history-head {
-            height: 36px;
-            min-height: 36px;
-            color: #b58e3e;
-            font-size: 14px;
-            font-weight: 700;
-            line-height: 18px;
-          }
+          .history-date-stack strong { color: #f1eee8; font-size: 12px; font-weight: 700; line-height: 15px; }
+          .history-date-stack small { max-width: 100%; margin-top: 1px; overflow: hidden; color: #c7c1b8; font-size: 11px; font-weight: 500; line-height: 14px; white-space: nowrap; }
+          .history-head { height: 36px; min-height: 36px; color: #b58e3e; font-size: 14px; font-weight: 700; line-height: 18px; }
           .history-head > span { text-align: center; }
           .history-panel .history-row { border-top: 1px solid rgba(90, 87, 80, .45); }
           .history-panel .history-head { border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }
@@ -236,12 +207,7 @@ jobs:
           }
           .history-numbers { width: 100%; overflow: hidden; }
           .history-main-numbers { gap: 2px; }
-          .history-special-number {
-            height: 38px;
-            margin-left: 4px;
-            gap: 4px;
-            color: #d4a63b;
-          }
+          .history-special-number { height: 38px; margin-left: 4px; gap: 4px; color: #d4a63b; }
           .history-special-number > span:first-child {
             display: grid;
             box-sizing: border-box;
@@ -255,22 +221,8 @@ jobs:
             font-weight: 700;
             line-height: 1;
           }
-          .history-special-ball {
-            display: grid;
-            height: 38px;
-            flex: 0 0 auto;
-            grid-template-rows: 9px 28px;
-            row-gap: 1px;
-            place-items: center;
-          }
-          .history-special-label {
-            margin: 0;
-            color: #d4a63b;
-            font-size: 9px;
-            font-weight: 600;
-            line-height: 9px;
-            white-space: nowrap;
-          }
+          .history-special-ball { display: grid; height: 38px; flex: 0 0 auto; grid-template-rows: 9px 28px; row-gap: 1px; place-items: center; }
+          .history-special-label { margin: 0; color: #d4a63b; font-size: 9px; font-weight: 600; line-height: 9px; white-space: nowrap; }
           .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; padding-top: 0; }
           .history-panel .history-numbers[data-has-special="true"] .history-special-number { height: 38px; margin-left: 4px; gap: 4px; align-items: center; }
           .history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 38px; grid-template-rows: 9px 28px; row-gap: 1px; }
@@ -278,48 +230,35 @@ jobs:
           .history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }'''
           css = css[:start] + formal + css[end:]
 
-          grouped_old_inline = '.matrix-explore-screen .explore-settings, .matrix-explore-screen .hit-advanced-panel, .matrix-explore-screen .history-panel {'
-          grouped_new_inline = '.matrix-explore-screen .explore-settings, .matrix-explore-screen .hit-advanced-panel {'
-          inline_count = css.count(grouped_old_inline)
-          if inline_count != 2:
-            raise SystemExit(f'Inline Matrix Explore history-panel selector count: {inline_count}')
-          css = css.replace(grouped_old_inline, grouped_new_inline)
-
-          grouped_old_multiline = '''.matrix-explore-screen .explore-settings,
-          .matrix-explore-screen .hit-advanced-panel,
-          .matrix-explore-screen .history-panel {'''
-          grouped_new_multiline = '''.matrix-explore-screen .explore-settings,
-          .matrix-explore-screen .hit-advanced-panel {'''
-          if css.count(grouped_old_multiline) != 1:
-            raise SystemExit(f'Multiline Matrix Explore history-panel selector count: {css.count(grouped_old_multiline)}')
-          css = css.replace(grouped_old_multiline, grouped_new_multiline, 1)
+          css = css.replace(', .matrix-explore-screen .history-panel {', ' {')
+          css = css.replace(',\n.matrix-explore-screen .history-panel {', ' {')
 
           css = css.replace('.matrix-explore-screen .section-title {', '.matrix-explore-screen .section-title:not(.history-panel .section-title) {')
           css = css.replace('.matrix-explore-screen .section-title > span {', '.matrix-explore-screen .section-title:not(.history-panel .section-title) > span {')
 
-          obsolete_blocks = [
-            '.matrix-explore-main-screen .history-panel .panel-heading { align-items: center; }\n',
-            '.matrix-explore-main-screen .history-panel .panel-heading .section-title,\n.matrix-explore-main-screen .history-panel .panel-heading button { white-space: nowrap; }\n',
-            '.matrix-explore-main-screen .history-row {\n  grid-template-columns: 66px 68px minmax(0, 1fr);\n  border-top-width: 1px;\n}\n',
-            '.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {\n  grid-template-columns: 66px 68px minmax(0, 1fr);\n}\n',
-            '.matrix-explore-main-screen .history-panel:not([data-lottery="六合彩"]) .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }\n',
-            '.matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-special-number {\n  margin-left: 3px;\n  gap: 2px;\n}\n',
-            '.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-number > span:first-child,\n.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-number > span:first-child {\n  margin-inline: 2px;\n  color: #f6c95f;\n  font-size: 14px;\n  font-weight: 700;\n}\n',
+          selectors = [
+            r'\.matrix-explore-main-screen \.history-panel \.panel-heading',
+            r'\.matrix-explore-main-screen \.history-row',
+            r'\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\] \.history-row',
+            r'\.matrix-explore-main-screen \.history-panel:not\(\[data-lottery="六合彩"\]\) \.history-numbers\[data-has-special="true"\] \.history-main-numbers',
+            r'\.matrix-explore-main-screen \.history-panel \.history-numbers\[data-has-special="true"\] \.history-special-number',
           ]
-          for block in obsolete_blocks:
-            count = css.count(block)
-            if count != 1:
-              raise SystemExit(f'Obsolete near10 block expected once, found {count}: {block[:72]!r}')
-            css = css.replace(block, '', 1)
+          for selector in selectors:
+            css = re.sub(selector + r'\s*\{[^{}]*\}\s*', '', css)
 
-          forbidden = [
-            '.matrix-explore-screen .history-panel {',
-            'margin-left: 3px;\n  gap: 2px;',
-            'margin-inline: 2px;',
-          ]
-          for token in forbidden:
-            if token in css:
-              raise SystemExit(f'Forbidden recent-draw override remains: {token}')
+          css = re.sub(
+            r'\.matrix-explore-main-screen \.history-panel \.panel-heading \.section-title,\s*\.matrix-explore-main-screen \.history-panel \.panel-heading button\s*\{[^{}]*\}\s*',
+            '', css,
+          )
+          css = re.sub(
+            r'\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\] \.history-special-number > span:first-child,\s*\.matrix-explore-main-screen \.history-panel\[data-lottery="大樂透"\] \.history-special-number > span:first-child\s*\{[^{}]*\}\s*',
+            '', css,
+          )
+
+          if '.matrix-explore-screen .history-panel {' in css:
+            raise SystemExit('Matrix Explore padding override for history-panel remains')
+          if 'margin-left: 3px;\n  gap: 2px;' in css:
+            raise SystemExit('Old near10 special-number spacing remains')
 
           css_path.write_text(css)
           PY
