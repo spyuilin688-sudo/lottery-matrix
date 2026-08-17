@@ -1714,23 +1714,37 @@ height: 36px;
   min-height: 36px;
 }
 
-.matrix-explore-screen .setting-grid .select-box,
-.matrix-explore-screen .setting-grid .segmented,
-.matrix-explore-screen .setting-grid .segmented button,
-.matrix-explore-screen .advanced-panel .select-box,
-.matrix-explore-screen .advanced-panel .segmented,
-.matrix-explore-screen .advanced-panel .segmented button,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented,
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
+.matrix-explore-main-screen .advanced-panel .select-box,
+.matrix-explore-main-screen .advanced-panel .segmented,
+.matrix-explore-main-screen .advanced-panel .segmented button,
 .matrix-explore-screen .hit-options,
 .matrix-explore-screen .hit-options button {
 height: 44px;
   min-height: 44px;
 }
 
-.matrix-explore-screen .setting-grid .segmented button,
-.matrix-explore-screen .advanced-panel .segmented button,
+.matrix-explore-main-screen .explore-settings .setting-grid .select-box,
+.matrix-explore-main-screen .explore-settings .setting-grid .segmented,
+.matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
+height: 37.4px;
+  min-height: 37.4px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
+.matrix-explore-main-screen .advanced-panel .segmented button,
 .matrix-explore-screen .hit-options button {
 padding: 0 4px;
   border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
+padding: 0 3.4px;
+  border-radius: 8.5px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1801,40 +1815,70 @@ box-sizing: border-box;
   box-shadow: none;
 }
 
-.matrix-explore-screen .section-title {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title,
+.matrix-explore-main-screen .panel:not(.explore-settings) .section-title {
 min-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0;
 }
 
-.matrix-explore-screen .section-title > span {
+.matrix-explore-main-screen .explore-settings > .section-title {
+min-height: 22.4px; gap: 8px; font-size: 15.2px; font-weight: 700; line-height: 20.8px; letter-spacing: 0;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .section-title > span,
+.matrix-explore-main-screen .panel:not(.explore-settings) .section-title > span {
 width: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
 }
 
-.matrix-explore-screen .setting-grid {
+.matrix-explore-main-screen .explore-settings > .section-title > span {
+width: 3.2px; height: 19.2px; border-radius: 1.6px; box-shadow: 0 0 4px rgba(255, 194, 42, .18);
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid {
 min-width: 0; width: 100%; margin-top: 12px; gap: 8px;
 }
 
-.matrix-explore-screen .setting-grid label,
-.matrix-explore-screen .advanced-panel label {
+.matrix-explore-main-screen .explore-settings .setting-grid {
+min-width: 0; width: 100%; margin-top: 8px; gap: 8px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label,
+.matrix-explore-main-screen .advanced-panel label {
 min-width: 0; width: 100%; min-height: 44px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;
 }
 
-.matrix-explore-screen .setting-grid label > span,
-.matrix-explore-screen .advanced-panel label > .advanced-setting-title {
+.matrix-explore-main-screen .explore-settings .setting-grid label {
+min-width: 0; width: 100%; min-height: 37.4px; grid-template-columns: minmax(102px, 110px) minmax(0, 1fr); align-items: center; gap: 8px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,
+.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
 display: grid; width: 100%; min-width: 0; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label > span {
+display: grid; width: 100%; min-width: 0; grid-template-columns: 36.8px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 16px; font-weight: 600; line-height: 22px; text-align: left; white-space: nowrap;
 }
 
 .matrix-explore-screen .explore-settings .setting-grid label:first-child > span b {
 font: inherit; text-align: left;
 }
 
-.matrix-explore-screen .setting-grid label > span .setting-label-icon,
-.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span .setting-label-icon,
+.matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon {
 width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px; transform: none;
 }
 
-.matrix-explore-screen .setting-grid .select-box,
-.matrix-explore-screen .advanced-panel .select-box {
+.matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon {
+width: 36.8px; height: 36.8px; flex: 0 0 36.8px; border-radius: 5.75px; transform: none;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
+.matrix-explore-main-screen .advanced-panel .select-box {
 width: 100%; max-width: none; min-width: 0; height: 44px; min-height: 44px; padding: 0; font-size: 16px; font-weight: 700;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid .select-box {
+width: 100%; max-width: none; min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0; font-size: 13.6px; font-weight: 700;
 }
 
 .matrix-explore-screen .native-select select {
@@ -1855,12 +1899,22 @@ overflow: visible;
 width: 100%; max-width: none; min-width: 0;
 }
 
-.matrix-explore-screen .segmented.three {
+.matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.three,
+.matrix-explore-main-screen .advanced-panel .segmented.three {
 gap: 6px;
 }
 
-.matrix-explore-screen .segmented.three button {
+.matrix-explore-main-screen .explore-settings .segmented.three {
+gap: 5.1px;
+}
+
+.matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.three button,
+.matrix-explore-main-screen .advanced-panel .segmented.three button {
 min-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10px; font-size: 13px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
+}
+
+.matrix-explore-main-screen .explore-settings .segmented.three button {
+min-width: 0; height: 37.4px; min-height: 37.4px; padding: 0 3.4px; border-radius: 8.5px; font-size: 11.05px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
 }
 
 .matrix-explore-screen .segmented.three button[data-selected="true"] {
