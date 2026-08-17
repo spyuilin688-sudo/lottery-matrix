@@ -80,8 +80,12 @@ function normalizeNumberList(values: unknown): string[] {
 
 function normalizeSpecialNumber(record: LotteryDrawRecord) {
   const value = record.specialNumber ?? record.special;
-  if (value === null || value === undefined || String(value).trim() === '') return undefined;
-  return String(value).trim().padStart(2, '0');
+  if (value === null || value === undefined) return undefined;
+  const digits = String(value).trim();
+  if (!/^\d{1,2}$/.test(digits)) return undefined;
+  const number = Number(digits);
+  if (!Number.isInteger(number) || number < 1 || number > 49) return undefined;
+  return String(number).padStart(2, '0');
 }
 
 function appendSpecialNumber(
