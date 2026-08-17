@@ -71,6 +71,25 @@ describe('lottery-api response validation', () => {
     ).rejects.toThrow('Lottery API invalid response: items');
   });
 
+  it('號碼對照單 items 內缺少開獎號碼時拒絕異常格式', async () => {
+    mockJsonResponse({
+      lottery: '今彩539',
+      numberOrder: '依號碼由小到大排序',
+      historyRange: 1000,
+      numbers: ['01', '02'],
+      items: [{ period: '1', matchSlots: [] }],
+    });
+
+    await expect(
+      fetchNumberReference({
+        lottery: '今彩539',
+        numberOrder: '依號碼由小到大排序',
+        historyRange: 1000,
+        numbers: ['01', '02'],
+      }),
+    ).rejects.toThrow('Lottery API invalid response: items[0]');
+  });
+
   it('六合彩最新開獎的獨立特別號會併入第七顆', async () => {
     mockJsonResponse({
       period: '5896',
