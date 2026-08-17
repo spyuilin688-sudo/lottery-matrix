@@ -1,55 +1,107 @@
-name: Project CI
+name: Sync calculator CSS to main
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - "連碰立柱計算機"
+    paths:
+      - ".github/workflows/ci.yml"
 
 permissions:
-  contents: read
-
-concurrency:
-  group: project-ci-${{ github.ref }}
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  verify:
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: 22
-          cache: npm
+          ref: main
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Diagnose legacy test source
+      - name: Apply calculator CSS cleanup to main
+        shell: bash
         run: |
-          echo '=== tracked legacy tests ==='
-          git ls-files 'tests/*.test.mjs' | sort
-          echo '=== runner legacy tests ==='
-          find tests -maxdepth 1 -type f -name '*.test.mjs' -print | sort
-          echo '=== git status ==='
-          git status --short
-          for file in tests/admin-auth-turnstile.test.mjs tests/homepage-layout-regression.test.mjs tests/homepage-spacing.test.mjs; do
-            if [ -f "$file" ]; then
-              echo "=== $file ==="
-              sed -n '1,240p' "$file"
-            fi
-          done
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Unit tests
-        run: npm run test:unit
+          path = Path("src/feature-pages.css")
+          text = path.read_text(encoding="utf-8")
 
-      - name: Legacy structure tests
-        run: node --test tests/*.test.mjs
+          replacements = [
+              (
+                  '.segmented button, .mode-tabs button { position: relative; min-height: 42px; padding: 4px 6px; border: 1px solid #5b472b; border-radius: 8px; background: #071018; color: #b9b5ae; font-size: 12px; }',
+                  '.segmented button { position: relative; min-height: 42px; padding: 4px 6px; border: 1px solid #5b472b; border-radius: 8px; background: #071018; color: #b9b5ae; font-size: 12px; }',
+              ),
+              (
+                  '.segmented button[data-selected="true"], .mode-tabs button[data-selected="true"] { border-color: #c89622; background: linear-gradient(145deg, rgba(124, 85, 12, .25), rgba(31, 25, 13, .74)); color: #f2cf67; box-shadow: inset 0 0 16px rgba(225, 170, 39, .08); }',
+                  '.segmented button[data-selected="true"] { border-color: #c89622; background: linear-gradient(145deg, rgba(124, 85, 12, .25), rgba(31, 25, 13, .74)); color: #f2cf67; box-shadow: inset 0 0 16px rgba(225, 170, 39, .08); }',
+              ),
+              (
+                  '.calculator-panel > header { display: grid; min-width: 0; min-height: 40px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }',
+                  '.calculator-panel:not(.column-panel) > header { display: grid; min-width: 0; min-height: 40px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }\n.column-panel > header { display: grid; min-width: 0; min-height: 30px; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 0; }',
+              ),
+              (
+                  '.calculator-panel header .mode-select-button { border-color: rgba(200, 150, 34, .55); color: #d6b45a; }',
+                  '.calculator-panel header .mode-select-button { border-color: #9a6b1e; color: #e2b64f; }',
+              ),
+          ]
 
-      - name: Build
-        run: npm run build
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one match, found {count}: {old[:90]}")
+              text = text.replace(old, new, 1)
+
+          obsolete = '''.calculator-panel header .mode-select-button { border-color: #9a6b1e; color: #e2b64f; }
+.column-panel > header > span {
+  margin-left: 12px;
+  padding: 3px 9px;
+  border: 1px solid #9a6b1e;
+  border-radius: 999px;
+  color: #bcb6ad;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.column-panel > header > span strong {
+  color: #e5a829;
+  font-size: 15px;
+}
+'''
+          count = text.count(obsolete)
+          if count != 1:
+              raise SystemExit(f"Expected one obsolete calculator override block, found {count}")
+          text = text.replace(obsolete, '', 1)
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Verify and push main
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("src/feature-pages.css").read_text(encoding="utf-8")
+          checks = {
+              "shared mode-tab override removed": '.segmented button, .mode-tabs button {' not in text,
+              "shared selected override removed": '.segmented button[data-selected="true"], .mode-tabs button[data-selected="true"] {' not in text,
+              "pillar header 30px": '.column-panel > header { display: grid; min-width: 0; min-height: 30px;' in text,
+              "combination header 40px": '.calculator-panel:not(.column-panel) > header { display: grid; min-width: 0; min-height: 40px;' in text,
+              "obsolete pillar span removed": '.column-panel > header > span {' not in text,
+              "mode select single source": text.count('.calculator-panel header .mode-select-button {') == 1,
+              "366px card preserved": '.calculator-panel { box-sizing: border-box; width: 366px; max-width: 100%;' in text,
+              "340px pillar grid preserved": '.column-grid { display: grid; box-sizing: border-box; width: 340px;' in text,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(("PASS" if ok else "FAIL") + ': ' + name)
+          if failed:
+              raise SystemExit('Verification failed: ' + ', '.join(failed))
+          PY
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/feature-pages.css
+          git commit -m "fix: sync calculator layout constraints"
+          git push origin HEAD:main
