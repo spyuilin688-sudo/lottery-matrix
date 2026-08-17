@@ -1,12 +1,13 @@
 name: Explore reference final
 on:
-  issues:
-    types: [opened]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-explore-reference-final.yml'
 permissions:
   contents: write
 jobs:
   apply:
-    if: ${{ github.event.issue.title == '[run] Matrix Explore golden sizing' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
