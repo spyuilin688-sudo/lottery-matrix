@@ -22,7 +22,8 @@ jobs:
       - name: Patch canonical Matrix Explore rules
         run: python scripts/tmp_matrix_explore_golden_sizing.py
       - name: Verify 12px page inline token
-        run: grep -R --line-number --include='*.css' -- '--layout-page-inline: 12px' src
+        run: |
+          grep -R --line-number --include='*.css' -- '--layout-page-inline: 12px' src
       - name: Targeted tests
         run: node --test tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
       - name: Full tests
