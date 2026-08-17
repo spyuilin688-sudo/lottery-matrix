@@ -212,6 +212,12 @@ function isLotteryDrawRecord(value: unknown): value is LotteryDrawRecord {
     && Array.isArray((value as { numbers?: unknown }).numbers);
 }
 
+function assertLotteryDrawRecord(value: unknown, field: string): asserts value is LotteryDrawRecord {
+  if (!isLotteryDrawRecord(value)) {
+    throw new Error(`Lottery API invalid response: ${field}`);
+  }
+}
+
 function assertTongXingGroup(value: unknown, index: number): asserts value is TongXingPair {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`Lottery API invalid response: groups[${index}]`);
@@ -233,7 +239,9 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
   );
   const item = isLatestLotteryEnvelope(data) ? data.item : data;
-  return item ? normalizeRecord(lottery, item) : null;
+  if (item === null || item === undefined) return null;
+  assertLotteryDrawRecord(item, 'item');
+  return normalizeRecord(lottery, item);
 }
 
 export async function fetchLotteryHistory(
@@ -245,6 +253,8 @@ export async function fetchLotteryHistory(
     `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
   );
   const items = Array.isArray(data) ? data : data.items ?? [];
+  assertArrayField(items, 'items');
+  items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
   return items.map((item) => normalizeRecord(lottery, item));
 }
 
