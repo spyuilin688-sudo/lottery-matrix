@@ -207,6 +207,21 @@ function assertArrayField(value: unknown, field: string): asserts value is unkno
   }
 }
 
+function isLotteryDrawRecord(value: unknown): value is LotteryDrawRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    && Array.isArray((value as { numbers?: unknown }).numbers);
+}
+
+function assertTongXingGroup(value: unknown, index: number): asserts value is TongXingPair {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Lottery API invalid response: groups[${index}]`);
+  }
+  const group = value as { lockedEntry?: unknown; predictedEntry?: unknown };
+  if (!isLotteryDrawRecord(group.lockedEntry) || !isLotteryDrawRecord(group.predictedEntry)) {
+    throw new Error(`Lottery API invalid response: groups[${index}]`);
+  }
+}
+
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
   const data = await requestJson<LatestLotteryResponse>(
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
@@ -234,6 +249,7 @@ export async function fetchTongXing(input: TongXingRequest) {
     body: JSON.stringify(input),
   });
   assertArrayField(data.groups, 'groups');
+  data.groups.forEach((group, index) => assertTongXingGroup(group, index));
   return {
     ...data,
     groups: data.groups.map((group) => ({
