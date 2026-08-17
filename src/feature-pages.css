@@ -453,15 +453,7 @@
 .history-panel .panel-heading > button:last-child svg { width: 11px; height: 11px; flex: 0 0 11px; }
 .history-table { width: 100%; margin: 0; padding: 0; overflow: hidden; }
 .history-row {
-  display: grid;
-  box-sizing: border-box;
-  width: 100%;
-  height: 46px;
-  grid-template-columns: 66px 68px minmax(0, 1fr);
-  align-items: center;
-  border-top: 1px solid rgba(90, 87, 80, .45);
-  color: #bcb7ae;
-  font-size: 9px;
+display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-columns: 66px 68px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(90, 87, 80, .45); color: #bcb7ae; font-size: 9px;
 }
 .history-row > span { box-sizing: border-box; min-width: 0; padding: 0; text-align: center; }
 .history-row > span + span {
@@ -1807,14 +1799,13 @@ height: 36px;
 
 .matrix-explore-main-screen .hit-options,
 .matrix-explore-main-screen .hit-options button {
-height: 34px; min-height: 34px; padding: 0 4px; border-radius: 8px; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: visible;
+height: 34px; min-height: 34px; padding: 0 4px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: visible;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid .select-box,
 .matrix-explore-main-screen .explore-settings .setting-grid .segmented,
 .matrix-explore-main-screen .explore-settings .setting-grid .segmented button {
-height: 32px;
-  min-height: 32px;
+height: 32px; min-height: 32px;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented button,
@@ -1956,7 +1947,7 @@ min-width: 0; width: 100%; min-height: 44px; grid-template-columns: minmax(102px
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label {
-min-width: 0; width: 100%; min-height: 34px; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 8px;
+min-width: 0; width: 100%; min-height: 38px; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 8px;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,
@@ -1965,7 +1956,7 @@ display: grid; width: 100%; min-width: 0; grid-template-columns: 32px minmax(0, 
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span {
-display: grid; width: 100%; min-width: 0; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 13px; font-weight: 600; line-height: 18px; text-align: left; white-space: nowrap;
+display: grid; width: 100%; min-width: 0; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 8px; color: #bdb8b0; font-size: 13px; font-weight: 600; line-height: 18px; text-align: left; white-space: nowrap;
 }
 
 .matrix-explore-screen .explore-settings .setting-grid label:first-child > span b {
@@ -1978,7 +1969,7 @@ width: 32px; height: 32px; flex: 0 0 32px; border-radius: 5px; transform: none;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon {
-width: 36px; height: 36px; flex: 0 0 36px; border-radius: 6px; transform: none;
+width: 38px; height: 38px; flex: 0 0 38px; border-radius: 6px; transform: none;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
@@ -1987,7 +1978,7 @@ width: 100%; max-width: none; min-width: 0; height: 44px; min-height: 44px; padd
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid .select-box {
-width: 100%; max-width: none; min-width: 0; height: 32px; min-height: 32px; padding: 0; font-size: 13px; font-weight: 700;
+width: 100%; max-width: none; min-width: 0; height: 32px; min-height: 32px; padding: 0; font-size: 12px; font-weight: 700;
 }
 
 .matrix-explore-screen .native-select select {
@@ -2023,7 +2014,7 @@ min-width: 0; height: 44px; min-height: 44px; padding: 0 4px; border-radius: 10p
 }
 
 .matrix-explore-main-screen .explore-settings .segmented.three button {
-min-width: 0; height: 32px; min-height: 32px; padding: 0 3px; border-radius: 8px; font-size: 12px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
+min-width: 0; height: 32px; min-height: 32px; padding: 0 3px; border-radius: 8px; font-size: 11px; font-weight: 600; line-height: 1.15; white-space: normal; overflow: visible;
 }
 
 .matrix-explore-screen .segmented.three button[data-selected="true"] {
@@ -2079,7 +2070,7 @@ height: 44px; min-height: 44px; margin: 12px 0 0; padding: 0; grid-template-colu
 }
 
 .matrix-explore-main-screen .advanced-row {
-height: 36px; min-height: 36px; margin: 8px 0 0; padding: 0; grid-template-columns: 32px minmax(0, 1fr) 12px; align-items: center; font-size: 14px; font-weight: 700;
+height: 38px; min-height: 38px; margin: 8px 0 0; padding: 0; grid-template-columns: 34px minmax(0, 1fr) 12px; align-items: center; font-size: 14px; font-weight: 700;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-row > img:first-child {
@@ -2087,7 +2078,7 @@ width: 32px; height: 32px; border-radius: 5px; object-fit: contain;
 }
 
 .matrix-explore-main-screen .advanced-row > img:first-child {
-width: 32px; height: 32px; border-radius: 5px; object-fit: contain;
+width: 34px; height: 34px; border-radius: 5px; object-fit: contain;
 }
 
 .matrix-explore-screen:not(.matrix-explore-main-screen) .advanced-row svg:last-child {
