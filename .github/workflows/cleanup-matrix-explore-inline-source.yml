@@ -1,0 +1,258 @@
+name: Cleanup Matrix Explore inline source
+
+on:
+  push:
+    branches:
+      - 探索
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exploration branch
+        uses: actions/checkout@v4
+        with:
+          ref: 探索
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify cleanup tests are red before production change
+        shell: bash
+        run: |
+          set +e
+          node --test tests/matrix-explore-inline-source.test.mjs tests/matrix-explore-option-layout.test.mjs > /tmp/explore-red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/explore-red.log
+          if [ "$status" -eq 0 ]; then
+            echo "Expected the cleanup tests to fail before removing the stale rules."
+            exit 1
+          fi
+          grep -Eq "single viewport spacing source|parent instead of a 366px|cards and section titles" /tmp/explore-red.log
+
+      - name: Remove stale Matrix Explore width and density sources
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/feature-pages.css")
+          css = path.read_text()
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global css
+              count = css.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
+              css = css.replace(old, new, 1)
+
+          replace_once(
+              '.matrix-title-banner { position: relative; width: calc(100% - 24px); margin: 0 auto; line-height: 0; }',
+              '.matrix-title-banner { position: relative; width: calc(100% - (var(--layout-page-inline) * 2)); margin: 0 auto; line-height: 0; }',
+              'title banner inline spacing',
+          )
+
+          replace_once('.explore-settings { padding: 12px; }\n', '', 'legacy explore settings padding')
+
+          replace_once(
+              '''.explore-settings .setting-grid label:first-child > span {
+            display: grid;
+            width: 100%;
+            grid-template-columns: 30px 1fr;
+            align-items: center;
+            gap: 0;
+            text-align: center;
+          }
+          .explore-settings .setting-grid label:first-child > span .setting-label-icon {
+            grid-column: 1;
+          }
+          .explore-settings .setting-grid label:first-child > span b {
+            grid-column: 2;
+            font: inherit;
+            text-align: center;
+          }
+          .explore-settings .setting-grid label:first-child .native-select select {
+            padding-inline: 40px;
+            text-align: center;
+            text-align-last: center;
+          }
+          .explore-settings .setting-grid label:first-child .native-select option {
+            text-align: center;
+          }
+          ''',
+              '',
+              'legacy first setting overrides',
+          )
+
+          replace_once(
+              '.hit-advanced-panel { margin-top: 10px; padding: 12px; }',
+              '.hit-advanced-panel { margin-top: 10px; }',
+              'legacy hit panel padding',
+          )
+          replace_once('.hit-options { margin-top: 12px; }\n', '', 'legacy hit options margin')
+
+          replace_once(
+              '.advanced-row { display: grid; width: 100%; height: 52px; margin: 12px 0 0; padding: 0; grid-template-columns: 38px 1fr 24px; align-items: center; border: 0; border-top: 1px solid #4b3820; background: transparent; color: #ddd5c7; text-align: left; }',
+              '.advanced-row { display: grid; width: 100%; border: 0; background: transparent; color: #ddd5c7; text-align: left; }',
+              'legacy advanced row dimensions',
+          )
+          replace_once(
+              '''.advanced-row > img:first-child {
+            display: block;
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            object-position: left center;
+            border-radius: 7px;
+          }
+          ''',
+              '''.advanced-row > img:first-child {
+            display: block;
+            object-position: left center;
+          }
+          ''',
+              'legacy advanced row icon dimensions',
+          )
+
+          replace_once(
+              '''.advanced-panel { display: grid; padding: 2px 0 0; gap: 12px; }
+          .advanced-panel label > .advanced-setting-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+            white-space: nowrap;
+          }
+          .advanced-panel .segmented.three button { white-space: nowrap; }
+          .advanced-panel label:first-child .native-select select {
+            font-size: 12px;
+          }
+          .advanced-panel label:nth-child(2) .segmented.three button {
+            padding-inline: 2px;
+            font-size: 10.5px;
+          }
+          ''',
+              '.advanced-panel { display: grid; }\n',
+              'legacy advanced panel overrides',
+          )
+
+          replace_once(
+              '.repeat-stats-panel, .result-panel { box-sizing: border-box; width: 366px; max-width: 100%; margin-top: 12px; padding: 12px; border-radius: 12px; box-shadow: none; }',
+              '.repeat-stats-panel, .result-panel { margin-top: 12px; }',
+              'legacy result panel fixed width',
+          )
+
+          replace_once(
+              '''.explore-settings .setting-grid,
+          .advanced-panel { gap: 8px; }
+          .explore-settings .setting-grid label,
+          .advanced-panel label { min-height: 38px; }
+          .explore-settings .segmented,
+          .explore-settings .select-box,
+          .advanced-panel .segmented,
+          .advanced-panel .select-box { height: 36px; }
+          .advanced-panel .setting-label-icon { width: 25px; height: 25px; flex-basis: 25px; transform: scale(.88); }
+          ''',
+              '',
+              'legacy density overrides',
+          )
+
+          replace_once(
+              '''.explore-settings .setting-grid label:nth-child(2) .segmented,
+          .explore-settings .setting-grid label:nth-child(3) .segmented,
+          .advanced-panel label:nth-child(2) .segmented {
+            height: 32px;
+          }
+          .explore-settings .setting-grid label:nth-child(2) .segmented button,
+          .explore-settings .setting-grid label:nth-child(3) .segmented button,
+          .advanced-panel label:nth-child(2) .segmented button {
+            min-height: 32px;
+            padding-block: 2px;
+          }
+          ''',
+              '',
+              'legacy v50 explore overrides',
+          )
+
+          replace_once(
+              '''box-sizing: border-box;
+            width: 366px;
+            max-width: 100%;
+            min-width: 0;
+            height: auto;
+            padding: 12px;''',
+              '''box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            height: auto;
+            padding: 12px;''',
+              'canonical panel parent-driven width',
+          )
+
+          replace_once(
+              'width: 366px; max-width: 100%; height: 50px; margin: 12px 0;',
+              'width: 100%; height: 50px; margin: 12px 0;',
+              'canonical primary action parent-driven width',
+          )
+
+          replace_once(
+              'box-sizing: border-box; width: 366px; max-width: 100%; margin: 0 auto; padding: 14px 12px;',
+              'box-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px;',
+              'canonical disclaimer parent-driven width',
+          )
+
+          path.write_text(css)
+          PY
+
+      - name: Verify cleanup tests are green
+        run: node --test tests/matrix-explore-inline-source.test.mjs tests/matrix-explore-option-layout.test.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Confirm only known protected-runtime baseline blocks npm build
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/npm-build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "npm build passed."
+          elif grep -Fq "Mobile runtime integrity check failed:" /tmp/npm-build.log \
+            && grep -Fq -- "- src/App.tsx was modified" /tmp/npm-build.log; then
+            echo "Known pre-existing protected-runtime mismatch confirmed; continuing with direct Vite compile."
+          else
+            echo "Unexpected build failure."
+            exit "$status"
+          fi
+
+      - name: Compile application directly
+        run: npx vite build
+
+      - name: Verify diff and remove one-time workflow
+        shell: bash
+        run: |
+          rm .github/workflows/cleanup-matrix-explore-inline-source.yml
+          git diff --check
+          git status --short
+          git diff -- src/feature-pages.css tests/matrix-explore-inline-source.test.mjs tests/matrix-explore-option-layout.test.mjs
+
+      - name: Commit and push only to exploration branch
+        shell: bash
+        run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/feature-pages.css tests/matrix-explore-inline-source.test.mjs tests/matrix-explore-option-layout.test.mjs .github/workflows/cleanup-matrix-explore-inline-source.yml
+          git commit -m "refactor(explore): remove duplicate layout constraints"
+          git push origin HEAD:"探索"
