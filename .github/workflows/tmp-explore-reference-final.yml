@@ -20,6 +20,18 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Narrow temporary delete helper to standalone selectors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/tmp_matrix_explore_golden_sizing.py')
+          text = path.read_text()
+          old = 'pattern = re.compile(re.escape(selector) + r"\\s*\\{[^{}]*\\}\\s*", re.S)'
+          new = 'pattern = re.compile(r"(?m)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
+          if old not in text:
+              raise SystemExit('temporary delete helper source not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - name: Patch canonical Matrix Explore rules
         run: python scripts/tmp_matrix_explore_golden_sizing.py
       - name: Verify 12px page inline token
@@ -40,4 +52,3 @@ jobs:
           git diff --cached --quiet && exit 1
           git commit -m "style: apply Matrix Explore golden mobile sizing"
           git push origin HEAD:main
-# rerun after result-panel duplicate cleanup
