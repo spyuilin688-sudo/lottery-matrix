@@ -26,7 +26,8 @@ jobs:
       - name: Install and verify project
         run: |
           npm ci
-          npm test
+          npm run test:unit
+          npm run test:sites
           npm run build
           git diff --check
           grep -RInE --include='*.css' '\.feature-body[^\{]*\{[^}]*padding-(inline|left|right):[[:space:]]*(4|10|14|16)px' src || true
