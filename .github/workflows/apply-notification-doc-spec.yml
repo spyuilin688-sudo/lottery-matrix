@@ -7,10 +7,10 @@ on:
       - .github/workflows/apply-notification-doc-spec.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  patch:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,22 +34,179 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Capture baseline structure tests
-        shell: bash
+      - name: Write notification layout regression test
         run: |
-          set +e
-          node --test tests/*.test.mjs > legacy-tests.txt 2>&1
-          status=$?
-          echo "$status" > legacy-tests.exit
-          cat legacy-tests.txt
-          exit 0
+          cat > tests/notification-layout-docx.test.mjs <<'EOF'
+          import fs from 'node:fs';
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
 
-      - name: Upload diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: notification-test-diagnostics
-          path: |
-            legacy-tests.txt
-            legacy-tests.exit
-          if-no-files-found: error
-          retention-days: 1
+          const featureCss = fs.readFileSync('src/feature-pages.css', 'utf8');
+          const runtimeCss = fs.readFileSync('src/styles.css', 'utf8');
+
+          test('notification page follows the uploaded 390px layout specification', () => {
+            assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 8px 12px calc\(var\(--bottom-navigation-height\) \+ var\(--mobile-safe-area-height, 34px\) \+ 12px\); \}/);
+            assert.match(featureCss, /\.notification-list \{ display: grid; gap: 8px; \}/);
+            assert.match(featureCss, /\.notification-row \{[^}]*width: 100%;[^}]*height: 80px;[^}]*padding: 8px;/);
+            assert.match(featureCss, /\.notification-heading \{[^}]*grid-template-columns: 58px minmax\(0, 1fr\) 88px 46px;[^}]*column-gap: 8px;/);
+            assert.match(featureCss, /\.notification-icon \{[^}]*width: 58px;[^}]*height: 58px;/);
+            assert.match(featureCss, /\.notification-icon img \{[^}]*width: 58px;[^}]*height: 58px;[^}]*object-fit: contain;/);
+            assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*border:/);
+            assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*box-shadow:/);
+            assert.match(featureCss, /\.notification-actions \{ display: contents; \}/);
+            assert.match(featureCss, /\.notification-actions > button:first-child \{[^}]*width: 88px;[^}]*height: 38px;[^}]*border-radius: 19px;[^}]*font-size: 14px;[^}]*font-weight: 600;/);
+            assert.match(featureCss, /\.notification-row h2 \{[^}]*color: #F2F2F2;[^}]*font-size: 17px;[^}]*font-weight: 700;[^}]*line-height: 23px;[^}]*letter-spacing: 0;/);
+            assert.match(featureCss, /\.notification-row h2 em \{[^}]*height: 22px;[^}]*padding: 0 8px;[^}]*border-radius: 7px;[^}]*font-size: 12px;[^}]*font-weight: 600;/);
+            assert.match(featureCss, /\.notifications-screen \.notification-row \{[^}]*border-radius: 14px;[^}]*background: #020C12;/);
+            assert.match(featureCss, /\.toggle \{[^}]*width: 46px;[^}]*height: 44px;/);
+            assert.match(featureCss, /\.toggle::before \{[^}]*width: 46px;[^}]*height: 28px;[^}]*border: 1px solid #46505C;[^}]*border-radius: 14px;[^}]*background: #151B22;/);
+            assert.match(featureCss, /\.toggle span \{[^}]*width: 24px;[^}]*height: 24px;/);
+            assert.match(featureCss, /\.toggle\[data-checked="true"\]::before \{[^}]*background: #D99B00;/);
+            assert.match(featureCss, /\.toggle\[data-checked="true"\] span \{[^}]*translateX\(18px\)/);
+            assert.doesNotMatch(featureCss, /@media \(max-width: 370px\) \{\s*\.notification-heading/);
+            assert.doesNotMatch(featureCss, /\.notifications-screen \.feature-body,\s*\.profile-screen \.feature-body/);
+            assert.match(runtimeCss, /\.mobile-page:not\(:has\(\.notifications-screen\)\) \.mobile-scrollbar\[data-visible="true"\] \{\s*opacity: 1;\s*\}/);
+          });
+          EOF
+
+      - name: Confirm regression test fails before implementation
+        run: |
+          if node --test tests/notification-layout-docx.test.mjs; then
+            echo "Expected notification regression test to fail before implementation."
+            exit 1
+          fi
+
+      - name: Replace existing notification rules
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one exact match, found {count}')
+              p.write_text(text.replace(old, new, 1))
+
+          feature = 'src/feature-pages.css'
+          replace_once(feature,
+          '''.notification-list { display: grid; gap: 6px; }
+          .notification-row { display: grid; height: auto; min-height: 0; padding: 4px; }
+          .notification-heading { display: grid; grid-template-columns: 72px minmax(0, 1fr) 134px; align-items: center; column-gap: 12px; }
+          .notification-icon { display: grid; width: 64px; height: 64px; place-items: center; justify-self: start; overflow: hidden; border: 1px solid rgba(141, 100, 28, .66); border-radius: 11px; background: #03070a; box-shadow: inset 0 0 8px rgba(220, 161, 24, .07); }
+          .notification-icon img { display: block; width: 100%; max-width: 62px; height: auto; max-height: 62px; object-fit: contain; }
+          .notification-icon--expanded img { transform: none; }
+          .notification-title { display: grid; min-width: 0; align-content: center; justify-items: start; }
+          .notification-actions { display: flex; width: 134px; align-items: center; justify-content: flex-end; gap: 20px; }
+          .notification-actions > button:first-child { width: 76px; height: 36px; padding: 0 12px; border: 1px solid #72521f; border-radius: 999px; background: rgba(183, 133, 32, .09); color: #d3a642; font-size: 12px; font-weight: 500; white-space: nowrap; }
+          .notification-actions > button:first-child:disabled { opacity: .46; color: #a99d84; }
+          .notification-row h2 { display: flex; margin: 0; flex-direction: column; align-items: flex-start; gap: 4px; color: #eee9df; font-size: 16px; font-weight: 700; line-height: 22px; }
+          .notification-row h2 em { padding: 2px 6px; border: 1px solid #8b6417; border-radius: 7px; color: #e9ba25; font-size: 10px; font-weight: 600; font-style: normal; line-height: 14px; white-space: nowrap; }
+          ''',
+          '''.notification-list { display: grid; gap: 8px; }
+          .notification-row { display: grid; width: 100%; height: 80px; min-height: 0; padding: 8px; }
+          .notification-heading { display: grid; grid-template-columns: 58px minmax(0, 1fr) 88px 46px; align-items: center; column-gap: 8px; }
+          .notification-icon { display: grid; width: 58px; height: 58px; place-items: center; justify-self: start; }
+          .notification-icon img { display: block; width: 58px; height: 58px; object-fit: contain; }
+          .notification-title { display: grid; min-width: 0; align-content: center; justify-items: start; overflow: hidden; }
+          .notification-actions { display: contents; }
+          .notification-actions > button:first-child { width: 88px; height: 38px; padding: 0 12px; justify-self: end; border: 1px solid rgba(211, 166, 66, .62); border-radius: 19px; background: transparent; box-shadow: none; color: rgba(211, 166, 66, .88); font-size: 14px; font-weight: 600; line-height: 18px; white-space: nowrap; }
+          .notification-actions > button:first-child:active { opacity: .86; }
+          .notification-actions > button:first-child:disabled { opacity: 1; border-color: #46505C; background: transparent; color: rgba(242, 242, 242, .38); }
+          .notification-row h2 { display: flex; max-width: 100%; margin: 0; flex-direction: column; align-items: flex-start; gap: 4px; overflow: hidden; color: #F2F2F2; font-size: 17px; font-weight: 700; line-height: 23px; letter-spacing: 0; }
+          .notification-row h2 span { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; }
+          .notification-row h2 em + span { font-size: 18px; line-height: 24px; }
+          .notification-row h2 em { box-sizing: border-box; height: 22px; padding: 0 8px; border: 1px solid rgba(139, 100, 23, .74); border-radius: 7px; color: rgba(233, 186, 37, .74); font-size: 12px; font-weight: 600; font-style: normal; line-height: 20px; white-space: nowrap; }
+          .notification-row:has(.toggle:disabled) h2 span { color: rgba(242, 242, 242, .65); }
+          .notification-row:has(.toggle:disabled) h2 em { opacity: .5; }
+          ''')
+
+          replace_once(feature,
+          '''.toggle { position: relative; width: 38px; height: 22px; flex: 0 0 38px; border: 1px solid #797979; border-radius: 999px; background: #171d21; }
+          .toggle span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #dadada; transition: transform .18s; }
+          .toggle[data-checked="true"] { border-color: #c58e19; background: linear-gradient(90deg, #c78305, #e9af20); box-shadow: 0 0 5px rgba(213, 149, 21, .18); }
+          .toggle[data-checked="true"] span { transform: translateX(16px); background: white; }
+          .toggle:disabled { opacity: .5; }
+          ''',
+          '''.toggle { position: relative; width: 46px; height: 44px; flex: 0 0 46px; padding: 0; border: 0; background: transparent; }
+          .toggle::before { position: absolute; top: 8px; left: 0; box-sizing: border-box; width: 46px; height: 28px; border: 1px solid #46505C; border-radius: 14px; background: #151B22; content: ""; }
+          .toggle span { position: absolute; top: 10px; left: 2px; width: 24px; height: 24px; border-radius: 50%; background: #dadada; transition: transform .18s; }
+          .toggle[data-checked="true"]::before { border-color: #D99B00; background: #D99B00; box-shadow: 0 0 4px rgba(217, 155, 0, .14); }
+          .toggle[data-checked="true"] span { transform: translateX(18px); background: white; }
+          .toggle:disabled { opacity: .5; }
+          .toggle:disabled::before { border-color: #46505C; background: #151B22; box-shadow: none; }
+          ''')
+
+          replace_once(feature,
+          '''.notifications-screen { padding-top: 30px; }
+          .notifications-screen .feature-body { padding: 4px 4px calc(108px + var(--mobile-safe-area-height)); }
+          .notifications-screen .notification-row { border-color: rgba(108, 74, 32, .7); box-shadow: inset 0 0 12px rgba(150, 102, 34, .025); }
+          ''',
+          '''.notifications-screen { padding-top: 30px; }
+          .notifications-screen .feature-body { padding: 8px 12px calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px); }
+          .notifications-screen .notification-row { border: 1px solid rgba(108, 74, 32, .35); border-radius: 14px; background: #020C12; box-shadow: inset 0 0 10px rgba(150, 102, 34, .02); }
+          ''')
+
+          replace_once(feature,
+          '''@media (max-width: 370px) {
+            .notification-heading { grid-template-columns: 72px minmax(0, 1fr) 126px; column-gap: 8px; }
+            .notification-actions { width: 126px; gap: 12px; }
+            .notification-actions > button:first-child { width: 76px; }
+          }
+
+          ''',
+          '')
+
+          replace_once(feature,
+          '''.notifications-screen .feature-body,
+          .profile-screen .feature-body,
+          .profile-detail-screen .feature-body,
+          .compact-feature-screen .feature-body {
+            padding-bottom: var(--layout-bottom-nav-clearance);
+          }
+          ''',
+          '''.profile-screen .feature-body,
+          .profile-detail-screen .feature-body,
+          .compact-feature-screen:not(.notifications-screen) .feature-body {
+            padding-bottom: var(--layout-bottom-nav-clearance);
+          }
+          ''')
+
+          replace_once('src/styles.css',
+          '''.mobile-scrollbar[data-visible="true"] {
+            opacity: 1;
+          }
+          ''',
+          '''.mobile-page:not(:has(.notifications-screen)) .mobile-scrollbar[data-visible="true"] {
+            opacity: 1;
+          }
+          ''')
+          PY
+
+      - name: Update runtime lock
+        run: npm run update:runtime-lock
+
+      - name: Verify notification regression
+        run: node --test tests/notification-layout-docx.test.mjs
+
+      - name: Verify runtime lock
+        run: npm run check:runtime
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Verify diff scope
+        run: |
+          git diff --check
+          git status --short
+          git diff -- src/feature-pages.css src/styles.css mobile-runtime.lock.json tests/notification-layout-docx.test.mjs .github/workflows/apply-notification-doc-spec.yml
+
+      - name: Commit notification specification
+        run: |
+          rm .github/workflows/apply-notification-doc-spec.yml
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add src/feature-pages.css src/styles.css mobile-runtime.lock.json tests/notification-layout-docx.test.mjs .github/workflows/apply-notification-doc-spec.yml
+          git commit -m "style: align notification page with uploaded spec"
+          git push origin HEAD:通知
