@@ -3156,7 +3156,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   ] as const;
   return (
     <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
-      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" independentCards />
+      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
       <div className="status-list">
         {statuses.map(([title, titleEn, count, description, tone]) => (
           <section className="status-block" data-tone={tone} key={title}>
