@@ -20,8 +20,217 @@ jobs:
       - name: Apply confirmed specification
         shell: bash
         run: |
-          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCByZQoKZGVmIHJlcGxhY2Vfb25jZSh0ZXh0LCBvbGQsIG5ldywgbGFiZWwpOgogICAgY291bnQgPSB0ZXh0LmNvdW50KG9sZCkKICAgIGlmIGNvdW50ICE9IDE6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdChmIntsYWJlbH06IGV4cGVjdGVkIDEgbWF0Y2gsIGZvdW5kIHtjb3VudH0iKQogICAgcmV0dXJuIHRleHQucmVwbGFjZShvbGQsIG5ldywgMSkKCmRlZiByZWdleF9vbmNlKHRleHQsIHBhdHRlcm4sIHJlcGxhY2VtZW50LCBsYWJlbCk6CiAgICBuZXdfdGV4dCwgY291bnQgPSByZS5zdWJuKHBhdHRlcm4sIHJlcGxhY2VtZW50LCB0ZXh0LCBjb3VudD0xLCBmbGFncz1yZS5TKQogICAgaWYgY291bnQgIT0gMToKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KGYie2xhYmVsfTogZXhwZWN0ZWQgMSBtYXRjaCwgZm91bmQge2NvdW50fSIpCiAgICByZXR1cm4gbmV3X3RleHQKCmZlYXR1cmVfcGF0aCA9IFBhdGgoInNyYy9GZWF0dXJlUGFnZXMudHN4IikKZmVhdHVyZSA9IGZlYXR1cmVfcGF0aC5yZWFkX3RleHQoKQpmZWF0dXJlID0gcmVwbGFjZV9vbmNlKAogICAgZmVhdHVyZSwKICAgICc8TG90dGVyeVN3aXRjaGVyIHNlbGVjdGVkPXtsb3R0ZXJ5fSBvbkNoYW5nZT17c2V0TG90dGVyeX0gY2xhc3NOYW1lPSJtYXRyaXgtc3RhdHVzLWxvdHRlcnktc3dpdGNoZXIiIGluZGVwZW5kZW50Q2FyZHMgLz4nLAogICAgJzxMb3R0ZXJ5U3dpdGNoZXIgc2VsZWN0ZWQ9e2xvdHRlcnl9IG9uQ2hhbmdlPXtzZXRMb3R0ZXJ5fSBjbGFzc05hbWU9Im1hdHJpeC1zdGF0dXMtbG90dGVyeS1zd2l0Y2hlciIgLz4nLAogICAgIk1hdHJpeCBzdGF0dXMgc3dpdGNoZXIiLAopCmZlYXR1cmVfcGF0aC53cml0ZV90ZXh0KGZlYXR1cmUpCgpjc3NfcGF0aCA9IFBhdGgoInNyYy9ob21lcGFnZS1yZXBhaXIuY3NzIikKY3NzID0gY3NzX3BhdGgucmVhZF90ZXh0KCkKY3NzID0gcmVwbGFjZV9vbmNlKAogICAgY3NzLAogICAgJycnLmhvbWUtc2NyZWVuIC5sb3R0ZXJ5LXN3aXRjaGVyIHsKICAtLWxvdHRlcnktc3dpdGNoZXItaGVpZ2h0OiBjYWxjKCgobWluKDEwMHZ3LCAzOTBweCkgLSAxOHB4KSAvIDQpICogLjc0KTsKICBwb3NpdGlvbjogcmVsYXRpdmU7CiAgZGlzcGxheTogYmxvY2s7CiAgZmxleDogMCAwIHZhcigtLWxvdHRlcnktc3dpdGNoZXItaGVpZ2h0KTsKICB3aWR0aDogMTAwJTsKICBoZWlnaHQ6IHZhcigtLWxvdHRlcnktc3dpdGNoZXItaGVpZ2h0KTsKICBwYWRkaW5nOiAwOwogIG92ZXJmbG93OiB2aXNpYmxlOwp9JycnLAogICAgJycnLmhvbWUtc2NyZWVuIC5sb3R0ZXJ5LXN3aXRjaGVyIHsKICAtLWxvdHRlcnktc3dpdGNoZXItaGVpZ2h0OiBjYWxjKCgobWluKDEwMHZ3LCAzOTBweCkgLSAxOHB4KSAvIDQpICogLjc0KTsKICBwb3NpdGlvbjogcmVsYXRpdmU7CiAgZGlzcGxheTogYmxvY2s7CiAgZmxleDogMCAwIHZhcigtLWxvdHRlcnktc3dpdGNoZXItaGVpZ2h0KTsKICB3aWR0aDogY2FsYygxMDAlIC0gMjRweCk7CiAgaGVpZ2h0OiB2YXIoLS1sb3R0ZXJ5LXN3aXRjaGVyLWhlaWdodCk7CiAgbWFyZ2luOiAwIDEycHggOHB4OwogIHBhZGRpbmc6IDA7CiAgb3ZlcmZsb3c6IHZpc2libGU7Cn0nJycsCiAgICAibG90dGVyeSBzd2l0Y2hlciBsYXlvdXQiLAopCmNzcyA9IHJlZ2V4X29uY2UoCiAgICBjc3MsCiAgICByJ1wuaG9tZS1zY3JlZW4gXC5sb3R0ZXJ5LXN3aXRjaGVyXFtkYXRhLWluZGVwZW5kZW50LWNhcmRzPSJ0cnVlIlxdID4gXC5ob21lLWFzc2V0LWltYWdlIFx7Lio/XH1cblxuJywKICAgICcnLAogICAgIm9ic29sZXRlIGluZGVwZW5kZW50IGFydHdvcmsgcnVsZSIsCikKY3NzID0gcmVnZXhfb25jZSgKICAgIGNzcywKICAgIHInKFwuaG9tZS1zY3JlZW4gXC5sb3R0ZXJ5LXN3aXRjaGVyID4gXC5sb3R0ZXJ5LXN3aXRjaGVyLWhpdC1ncmlkID4gXC5sb3R0ZXJ5LWNhcmQgXHsuKj9ib3JkZXItcmFkaXVzOiA4cHg7KVxuICBiYWNrZ3JvdW5kOi4qP1xuICBjb2xvcjogdHJhbnNwYXJlbnQ7XG4gIGJveC1zaGFkb3c6Lio/O1xuKCAgb3ZlcmZsb3c6IGhpZGRlbjspJywKICAgIHInXDFcbiAgYmFja2dyb3VuZDogdHJhbnNwYXJlbnQ7XG4gIGNvbG9yOiB0cmFuc3BhcmVudDtcbiAgYm94LXNoYWRvdzogbm9uZTtcblwyJywKICAgICJzd2l0Y2hlciBoaXQgYXJlYSB2aXN1YWxzIiwKKQpjc3MgPSByZWdleF9vbmNlKAogICAgY3NzLAogICAgcidcLmhvbWUtc2NyZWVuIFwubG90dGVyeS1zd2l0Y2hlciA+IFwubG90dGVyeS1zd2l0Y2hlci1oaXQtZ3JpZCA+IFwubG90dGVyeS1jYXJkOjpiZWZvcmUgXHsuKj8oPz1cblxuXC5ob21lLXNjcmVlbiBcLmxvdHRlcnktc3dpdGNoZXIgPiBcLmxvdHRlcnktc3dpdGNoZXItaGl0LWdyaWQgPiBcLmxvdHRlcnktY2FyZDo6YWZ0ZXIpJywKICAgICcnLAogICAgIm9ic29sZXRlIHJlY29uc3RydWN0ZWQgc3dpdGNoZXIgY2FyZHMiLAopCmNzcyA9IHJlZ2V4X29uY2UoCiAgICBjc3MsCiAgICByJ1wuaG9tZS1zY3JlZW4gXC5sb3R0ZXJ5LXN3aXRjaGVyID4gXC5sb3R0ZXJ5LXN3aXRjaGVyLWhpdC1ncmlkID4gXC5sb3R0ZXJ5LWNhcmRcW2RhdGEtc2VsZWN0ZWQ9InRydWUiXF0gXHsuKj9cblx9JywKICAgICcnJy5ob21lLXNjcmVlbiAubG90dGVyeS1zd2l0Y2hlciA+IC5sb3R0ZXJ5LXN3aXRjaGVyLWhpdC1ncmlkID4gLmxvdHRlcnktY2FyZFtkYXRhLXNlbGVjdGVkPSJ0cnVlIl0gewogIGJhY2tncm91bmQ6CiAgICBsaW5lYXItZ3JhZGllbnQodHJhbnNwYXJlbnQsIHRyYW5zcGFyZW50KSBwYWRkaW5nLWJveCwKICAgIHZhcigtLWxvdHRlcnktc2VsZWN0ZWQtZ3JhZGllbnQpIGJvcmRlci1ib3g7CiAgYm94LXNoYWRvdzogMCAwIDdweCByZ2JhKDI1NSwgMjA2LCAxMDUsIC4yOCk7Cn0nJycsCiAgICAic2VsZWN0ZWQgb3V0bGluZSIsCikKZ3JhZGllbnRzID0gewogICAgIuS7iuW9qTUzOSI6ICJsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjMzRjNzU5LCAjZmZkNjQwLCAjMzQ4NGZmLCAjZmYzYjMwKSIsCiAgICAi5aSp5aSp5qiCIjogImxpbmVhci1ncmFkaWVudCgxMzVkZWcsICMxZTc2ZmYsICNmZmZmZmYsICMxZTc2ZmYpIiwKICAgICLlha3lkIjlvakiOiAibGluZWFyLWdyYWRpZW50KDEzNWRlZywgI2ZmM2IzMCwgIzFlNzZmZiwgIzM0Yzc1OSkiLAogICAgIuWkp+aogumAjyI6ICJsaW5lYXItZ3JhZGllbnQoMTM1ZGVnLCAjZmZkNjQwLCAjMWU3NmZmLCAjZmZkNjQwKSIsCn0KZm9yIGxvdHRlcnksIGdyYWRpZW50IGluIGdyYWRpZW50cy5pdGVtcygpOgogICAgY3NzID0gcmVnZXhfb25jZSgKICAgICAgICBjc3MsCiAgICAgICAgcmYnXC5ob21lLXNjcmVlbiBcLmxvdHRlcnktY2FyZFxbZGF0YS1zZWxlY3RlZD0idHJ1ZSJcXVxbZGF0YS1sb3R0ZXJ5PSJ7bG90dGVyeX0iXF0gXHt7Lio/XG5cfX0nLAogICAgICAgIGYnLmhvbWUtc2NyZWVuIC5sb3R0ZXJ5LWNhcmRbZGF0YS1zZWxlY3RlZD0idHJ1ZSJdW2RhdGEtbG90dGVyeT0ie2xvdHRlcnl9Il0ge3tcbiAgLS1sb3R0ZXJ5LXNlbGVjdGVkLWdyYWRpZW50OiB7Z3JhZGllbnR9O1xufX0nLAogICAgICAgIGYic2VsZWN0ZWQge2xvdHRlcnl9IiwKICAgICkKY3NzX3BhdGgud3JpdGVfdGV4dChjc3MpCgp0ZXN0X3BhdGggPSBQYXRoKCJ0ZXN0cy9wYWdlLXRpdGxlLWNhcmQudGVzdC5tanMiKQp0ZXN0cyA9IHRlc3RfcGF0aC5yZWFkX3RleHQoKQp0ZXN0cyA9IHJlcGxhY2Vfb25jZSgKICAgIHRlc3RzLAogICAgJ2NvbnN0IHN0eWxlcyA9IHJlYWRGaWxlU3luYyhuZXcgVVJMKCIuLi9zcmMvZmVhdHVyZS1wYWdlcy5jc3MiLCBpbXBvcnQubWV0YS51cmwpLCAidXRmOCIpOycsCiAgICAnY29uc3Qgc3R5bGVzID0gcmVhZEZpbGVTeW5jKG5ldyBVUkwoIi4uL3NyYy9mZWF0dXJlLXBhZ2VzLmNzcyIsIGltcG9ydC5tZXRhLnVybCksICJ1dGY4Iik7XG5jb25zdCBicmFuZEhlYWRlclN0eWxlcyA9IHJlYWRGaWxlU3luYyhuZXcgVVJMKCIuLi9zcmMvYnJhbmQtaGVhZGVyLXVuaWZ5LmNzcyIsIGltcG9ydC5tZXRhLnVybCksICJ1dGY4Iik7XG5jb25zdCBob21lcGFnZVN0eWxlcyA9IHJlYWRGaWxlU3luYyhuZXcgVVJMKCIuLi9zcmMvaG9tZXBhZ2UtcmVwYWlyLmNzcyIsIGltcG9ydC5tZXRhLnVybCksICJ1dGY4Iik7JywKICAgICJ0ZXN0IHN0eWxlIHNvdXJjZXMiLAopCnRlc3RzID0gcmVnZXhfb25jZSgKICAgIHRlc3RzLAogICAgcid0ZXN0XCgidGhlIG5pbmUgbmFtZWQgZmVhdHVyZSBwYWdlcyB1c2UgdGhlIHVwbG9hZGVkIHRpdGxlIGFydHdvcmsiLCBcKFwpID0+IFx7Lio/XG5cfVwpOycsCiAgICAnJyd0ZXN0KCJ0aGUgY29uZmlybWVkIGZlYXR1cmUgcGFnZXMgdXNlIHRoZSBsYXRlc3QgaW50ZWdyYXRlZCB0aXRsZSBhcnR3b3JrIiwgKCkgPT4gewogIGNvbnN0IGV4cGVjdGVkQXJ0d29yayA9IFsKICAgIFsiTWF0cml4IOaOoue0oiIsICLmjqLntKLmqJnpoYxLLnBuZyJdLAogICAgWyJNYXRyaXgg5aSp6KGNIiwgIuWkqeihjeaomemhjEsucG5nIl0sCiAgICBbIk1hdHJpeCDlpKnlt6UiLCAi5aSp5bel5qiZ6aGMSy5wbmciXSwKICAgIFsiTWF0cml4IOaMh+WNlyIsICLmjIfljZfmqJnpoYxLLnBuZyJdLAogICAgWyJNYXRyaXgg5ZCM5pifIiwgIuWQjOaYn+aomemhjEsucG5nIl0sCiAgICBbIk1hdHJpeCDniYzllq4iLCAi54mM5Zau5qiZ6aGMSy5wbmciXSwKICAgIFsiTWF0cml4IOeLgOaFiyIsICLni4DmhYvmqJnpoYxLLnBuZyJdLAogICAgWyJNYXRyaXgg562G6KiY5pysIiwgIuethuiomOacrOaomemhjEsucG5nIl0sCiAgICBbIuiZn+eivOWwjeeFp+WWriIsICLlsI3nhafllq7mqJnpoYxLLnBuZyJdLAogICAgWyLmrbflj7LplovnjY7omZ/norwiLCAi5q235Y+y6ZaL542O5qiZ6aGMSy5wbmciXSwKICAgIFsi6YCj56Kw6KiI566X5qmfIiwgIumAo+eisOaomemhjEsucG5nIl0sCiAgICBbIueri+afseioiOeul+apnyIsICLnq4vmn7HmqJnpoYxLLnBuZyJdLAogICAgWyJNYXRyaXggUHJvIOaWueahiOiIh+aUtuiyu+aomea6liIsICLmnIPlk6HmlrnmoYjmqJnpoYxLLnBuZyJdLAogICAgWyJNYXRyaXgg6Ieq6KiC6Ke455m854uA5oWLIiwgIuiHquioguinuOeZvOaomemhjEsucG5nIl0sCiAgXTsKCiAgZm9yIChjb25zdCBbdGl0bGUsIGZpbGVdIG9mIGV4cGVjdGVkQXJ0d29yaykgewogICAgYXNzZXJ0Lm1hdGNoKGZlYXR1cmVQYWdlcywgbmV3IFJlZ0V4cChgIiR7dGl0bGV9IjogIi9hc3NldHMvbG90dGVyeS9mdW5jdGlvbnMvJHtmaWxlLnJlcGxhY2UoIi4iLCAiXFxcXC4iKX0iYCkpOwogIH0KfSk7JycnLAogICAgImxhdGVzdCBhcnR3b3JrIHRlc3QiLAopCnRlc3RzID0gcmVnZXhfb25jZSgKICAgIHRlc3RzLAogICAgcid0ZXN0XCgidXBsb2FkZWQgdGl0bGUgYXJ0d29yayBzaXRzIGVpZ2h0IHBpeGVscyBiZWxvdyB0aGUgbG9nbyB3aXRoIGZvdXItcGl4ZWwgc2lkZSBtYXJnaW5zIGFuZCBubyBjcm9wcGluZyIsIFwoXCkgPT4gXHsuKj9cblx9XCk7JywKICAgICcnJ3Rlc3QoImludGVncmF0ZWQgdGl0bGUgYXJ0d29yayB1c2VzIHR3ZWx2ZS1waXhlbCBzaWRlIG1hcmdpbnMgYW5kIGVpZ2h0LXBpeGVsIHZlcnRpY2FsIHNwYWNpbmciLCAoKSA9PiB7CiAgYXNzZXJ0Lm1hdGNoKHN0eWxlcywgL1xcLm1hdHJpeC10aXRsZS1iYW5uZXJcXHMqXFx7W159XSp3aWR0aDpcXHMqY2FsY1xcKDEwMCUgLSAyNHB4XFwpW159XSptYXJnaW46XFxzKjAgYXV0by9zKTsKICBhc3NlcnQubWF0Y2goc3R5bGVzLCAvXFwubWF0cml4LXRpdGxlLWJhbm5lclxccyo+XFxzKmltZ1xccypcXHtbXn1dKndpZHRoOlxccyoxMDAlW159XSpoZWlnaHQ6XFxzKmF1dG9bXn1dKm9iamVjdC1maXQ6XFxzKmNvbnRhaW4vcyk7CiAgYXNzZXJ0Lm1hdGNoKHN0eWxlcywgL1xcLmludGVncmF0ZWQtdGl0bGUtYmFja1xccypcXHtbXn1dKndpZHRoOlxccyo0NHB4W159XSpoZWlnaHQ6XFxzKjQ0cHhbXn1dKmJhY2tncm91bmQ6XFxzKnRyYW5zcGFyZW50L3MpOwogIGFzc2VydC5tYXRjaChicmFuZEhlYWRlclN0eWxlcywgL1xcLmZlYXR1cmUtYnJhbmQtaGVhZGVyXFwuaW50ZWdyYXRlZC10aXRsZS1oZWFkZXJcXHMqXFx7W159XSptYXJnaW4tYm90dG9tOlxccyo4cHhbXn1dKnBhZGRpbmctdG9wOlxccyo4cHgvcyk7Cn0pOycnJywKICAgICJpbnRlZ3JhdGVkIGxheW91dCB0ZXN0IiwKKQp0ZXN0cyA9IHJlZ2V4X29uY2UoCiAgICB0ZXN0cywKICAgIHIndGVzdFwoIk1hdHJpeCBwYWdlcyB1c2UgdGhlIHRocmVlIHVwbG9hZGVkIFBORyBpY29ucyBpbiBvbmUgcGFnZSBzd2l0Y2hlciIsIFwoXCkgPT4gXHsuKj9cblx9XCk7JywKICAgICcnJ3Rlc3QoIk1hdHJpeCBleHBsb3JlIHRpdGxlIG93bnMgVGlhbnlhbiBhbmQgVGlhbmdvbmcgY29udHJvbHMiLCAoKSA9PiB7CiAgY29uc3Qgc3RhcnQgPSBmZWF0dXJlUGFnZXMuaW5kZXhPZigiZnVuY3Rpb24gTWF0cml4UGFnZVN3aXRjaGVyIik7CiAgY29uc3QgZW5kID0gZmVhdHVyZVBhZ2VzLmluZGV4T2YoImNvbnN0IFJPQURfVkFMSURBVElPTl9TQU1QTEVfSElTVE9SWSIsIHN0YXJ0KTsKICBjb25zdCBzd2l0Y2hlciA9IGZlYXR1cmVQYWdlcy5zbGljZShzdGFydCwgZW5kKTsKICBhc3NlcnQubWF0Y2goc3dpdGNoZXIsIC9NYXRyaXjlpKnooY1cXC5wbmcvKTsKICBhc3NlcnQubWF0Y2goc3dpdGNoZXIsIC9NYXRyaXjlpKnlt6VcXC5wbmcvKTsKICBhc3NlcnQuZG9lc05vdE1hdGNoKHN3aXRjaGVyLCAvTWF0cml45o6i57SiXFwucG5nLyk7CiAgYXNzZXJ0Lm1hdGNoKGZlYXR1cmVQYWdlcywgL2hlYWRlckFjdGlvbj1cXHt0aXRsZSA9PT0gIk1hdHJpeCDmjqLntKIiIFxcPyA8TWF0cml4UGFnZVN3aXRjaGVyLyk7Cn0pOycnJywKICAgICJleHBsb3JlIGhlYWRlciBjb250cm9scyB0ZXN0IiwKKQptYXJrZXIgPSAndGVzdCgiaGlzdG9yeSBmaWx0ZXIga2VlcHMgaXNzdWUgZGF0ZSBvcmRlciByYW5nZSByZXNldCBhbmQgc3VibWl0IGNvbnRyb2xzIiwgKCkgPT4geycKc3dpdGNoZXJfdGVzdCA9ICcnJ3Rlc3QoImhvbWUgYW5kIE1hdHJpeCBzdGF0dXMgdXNlIHRoZSBzaGFyZWQgTWF0cml4YmJhIHN3aXRjaGVyIHdpdGggc2VsZWN0ZWQgb3V0bGluZSBvbmx5IiwgKCkgPT4gewogIGFzc2VydC5tYXRjaChmZWF0dXJlUGFnZXMsIC9jbGFzc05hbWU9Im1hdHJpeC1zdGF0dXMtbG90dGVyeS1zd2l0Y2hlciIgXFwvPi8pOwogIGFzc2VydC5kb2VzTm90TWF0Y2goZmVhdHVyZVBhZ2VzLCAvY2xhc3NOYW1lPSJtYXRyaXgtc3RhdHVzLWxvdHRlcnktc3dpdGNoZXIiIGluZGVwZW5kZW50Q2FyZHMvKTsKICBhc3NlcnQubWF0Y2goaG9tZXBhZ2VTdHlsZXMsIC9cXC5ob21lLXNjcmVlbiBcXC5sb3R0ZXJ5LXN3aXRjaGVyXFxzKlxce1tefV0qd2lkdGg6XFxzKmNhbGNcXCgxMDAlIC0gMjRweFxcKVtefV0qbWFyZ2luOlxccyowIDEycHggOHB4L3MpOwogIGFzc2VydC5kb2VzTm90TWF0Y2goaG9tZXBhZ2VTdHlsZXMsIC9sb3R0ZXJ5LXN3aXRjaGVyXFxbZGF0YS1pbmRlcGVuZGVudC1jYXJkcz0idHJ1ZSJcXF1bXntdKmhvbWUtYXNzZXQtaW1hZ2VbXn1dKmRpc3BsYXk6XFxzKm5vbmUvcyk7Cn0pOwoKJycnCmlmIHN3aXRjaGVyX3Rlc3Quc3RyaXAoKSBub3QgaW4gdGVzdHM6CiAgICB0ZXN0cyA9IHJlcGxhY2Vfb25jZSh0ZXN0cywgbWFya2VyLCBzd2l0Y2hlcl90ZXN0ICsgbWFya2VyLCAic3dpdGNoZXIgdGVzdCBpbnNlcnRpb24iKQp0ZXN0X3BhdGgud3JpdGVfdGV4dCh0ZXN0cykK' | base64 -d > /tmp/apply.py
-          python /tmp/apply.py
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 match, found {count}")
+              return text.replace(old, new, 1)
+
+          def regex_once(text, pattern, replacement, label):
+              new_text, count = re.subn(pattern, lambda _m: replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 match, found {count}")
+              return new_text
+
+          feature_path = Path("src/FeaturePages.tsx")
+          feature = feature_path.read_text()
+          feature = replace_once(
+              feature,
+              '<LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" independentCards />',
+              '<LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />',
+              "Matrix status switcher",
+          )
+          feature_path.write_text(feature)
+
+          css_path = Path("src/homepage-repair.css")
+          css = css_path.read_text()
+          css = replace_once(
+              css,
+              '''.home-screen .lottery-switcher {
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
+  position: relative;
+  display: block;
+  flex: 0 0 var(--lottery-switcher-height);
+  width: 100%;
+  height: var(--lottery-switcher-height);
+  padding: 0;
+  overflow: visible;
+}''',
+              '''.home-screen .lottery-switcher {
+  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
+  position: relative;
+  display: block;
+  flex: 0 0 var(--lottery-switcher-height);
+  width: calc(100% - 24px);
+  height: var(--lottery-switcher-height);
+  margin: 0 12px 8px;
+  padding: 0;
+  overflow: visible;
+}''',
+              "lottery switcher layout",
+          )
+          css = regex_once(
+              css,
+              r'\.home-screen \.lottery-switcher\[data-independent-cards="true"\] > \.home-asset-image \{.*?\}\n\n',
+              '',
+              "obsolete independent artwork rule",
+          )
+
+          old_card_rule = '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  appearance: none;
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(4, 12, 22, .96), rgba(2, 7, 14, .98)) padding-box,
+    linear-gradient(135deg, rgba(118, 129, 143, .74), rgba(56, 66, 79, .66)) border-box;
+  color: transparent;
+  box-shadow: inset 0 0 18px rgba(31, 78, 121, .12);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}'''
+          new_card_rule = '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  appearance: none;
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: transparent;
+  box-shadow: none;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}'''
+          css = replace_once(css, old_card_rule, new_card_rule, "switcher hit-area visual rule")
+
+          start = css.find('.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::before {')
+          end = css.find('.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {', start)
+          if start < 0 or end < 0:
+              raise SystemExit("obsolete reconstructed switcher cards: markers not found")
+          css = css[:start] + css[end:]
+
+          old_selected = '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  background:
+    linear-gradient(145deg, rgba(6, 13, 22, .98), rgba(2, 7, 14, .98)) padding-box,
+    var(--lottery-selected-gradient) border-box;
+  box-shadow: inset 0 0 18px rgba(255, 204, 98, .12), 0 0 7px rgba(255, 206, 105, .28);
+}'''
+          new_selected = '''.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  background:
+    linear-gradient(transparent, transparent) padding-box,
+    var(--lottery-selected-gradient) border-box;
+  box-shadow: 0 0 7px rgba(255, 206, 105, .28);
+}'''
+          css = replace_once(css, old_selected, new_selected, "selected switcher outline")
+
+          gradients = {
+              "今彩539": "linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30)",
+              "天天樂": "linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff)",
+              "六合彩": "linear-gradient(135deg, #ff3b30, #1e76ff, #34c759)",
+              "大樂透": "linear-gradient(135deg, #ffd640, #1e76ff, #ffd640)",
+          }
+          for lottery, gradient in gradients.items():
+              pattern = rf'\.home-screen \.lottery-card\[data-selected="true"\]\[data-lottery="{lottery}"\] \{{.*?\n\}}'
+              replacement = f'.home-screen .lottery-card[data-selected="true"][data-lottery="{lottery}"] {{\n  --lottery-selected-gradient: {gradient};\n}}'
+              css = regex_once(css, pattern, replacement, f"selected {lottery}")
+          css_path.write_text(css)
+
+          test_path = Path("tests/page-title-card.test.mjs")
+          tests = test_path.read_text()
+          tests = replace_once(
+              tests,
+              'const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");',
+              'const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");\nconst brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");\nconst homepageStyles = readFileSync(new URL("../src/homepage-repair.css", import.meta.url), "utf8");',
+              "test style sources",
+          )
+
+          def replace_test_block(text, old_name, new_block):
+              marker = f'test("{old_name}", () => {{'
+              start = text.find(marker)
+              if start < 0:
+                  raise SystemExit(f"test block not found: {old_name}")
+              depth = 0
+              i = start
+              while i < len(text):
+                  if text.startswith('test("', i) and i != start and depth == 0:
+                      break
+                  if text[i] == '{': depth += 1
+                  elif text[i] == '}':
+                      depth -= 1
+                      if depth == 0:
+                          close = text.find(');', i)
+                          if close < 0: raise SystemExit(f"test close not found: {old_name}")
+                          return text[:start] + new_block + text[close+2:]
+                  i += 1
+              raise SystemExit(f"could not parse test block: {old_name}")
+
+          tests = replace_test_block(tests, "the nine named feature pages use the uploaded title artwork", '''test("the confirmed feature pages use the latest integrated title artwork", () => {
+  const expectedArtwork = [
+    ["Matrix 探索", "探索標題K.png"],
+    ["Matrix 天衍", "天衍標題K.png"],
+    ["Matrix 天工", "天工標題K.png"],
+    ["Matrix 指南", "指南標題K.png"],
+    ["Matrix 同星", "同星標題K.png"],
+    ["Matrix 牌單", "牌單標題K.png"],
+    ["Matrix 狀態", "狀態標題K.png"],
+    ["Matrix 筆記本", "筆記本標題K.png"],
+    ["號碼對照單", "對照單標題K.png"],
+    ["歷史開獎號碼", "歷史開獎標題K.png"],
+    ["連碰計算機", "連碰標題K.png"],
+    ["立柱計算機", "立柱標題K.png"],
+    ["Matrix Pro 方案與收費標準", "會員方案標題K.png"],
+    ["Matrix 自訂觸發狀態", "自訂觸發標題K.png"],
+  ];
+  for (const [title, file] of expectedArtwork) {
+    assert.match(featurePages, new RegExp(`"${title}": "/assets/lottery/functions/${file.replace(".", "\\.")}"`));
+  }
+});''')
+
+          tests = replace_test_block(tests, "uploaded title artwork sits eight pixels below the logo with four-pixel side margins and no cropping", '''test("integrated title artwork uses twelve-pixel side margins and eight-pixel vertical spacing", () => {
+  assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin:\s*0 auto/s);
+  assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
+  assert.match(styles, /\.integrated-title-back\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*background:\s*transparent/s);
+  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*8px[^}]*padding-top:\s*8px/s);
+});''')
+
+          tests = replace_test_block(tests, "Matrix pages use the three uploaded PNG icons in one page switcher", '''test("Matrix explore title owns Tianyan and Tiangong controls", () => {
+  const start = featurePages.indexOf("function MatrixPageSwitcher");
+  const end = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", start);
+  const switcher = featurePages.slice(start, end);
+  assert.match(switcher, /Matrix天衍\.png/);
+  assert.match(switcher, /Matrix天工\.png/);
+  assert.doesNotMatch(switcher, /Matrix探索\.png/);
+  assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
+});''')
+
+          marker = 'test("history filter keeps issue date order range reset and submit controls", () => {'
+          switcher_test = '''test("home and Matrix status use the shared Matrixbba switcher with selected outline only", () => {
+  assert.match(featurePages, /className="matrix-status-lottery-switcher" \/>/);
+  assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
+  assert.match(homepageStyles, /\.home-screen \.lottery-switcher\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin:\s*0 12px 8px/s);
+  assert.doesNotMatch(homepageStyles, /lottery-switcher\[data-independent-cards="true"\][^{]*home-asset-image[^}]*display:\s*none/s);
+});
+
+'''
+          if switcher_test.strip() not in tests:
+              tests = replace_once(tests, marker, switcher_test + marker, "switcher test insertion")
+          test_path.write_text(tests)
+          PY
       - name: Verify focused tests
         run: node --test tests/page-title-card.test.mjs tests/number-reference-title-actions.test.mjs
       - name: Commit changes
