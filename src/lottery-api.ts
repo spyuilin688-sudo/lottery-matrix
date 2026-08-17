@@ -222,6 +222,12 @@ function assertTongXingGroup(value: unknown, index: number): asserts value is To
   }
 }
 
+function assertNumberReferenceItem(value: unknown, index: number): asserts value is NumberReferenceItem {
+  if (!isLotteryDrawRecord(value)) {
+    throw new Error(`Lottery API invalid response: items[${index}]`);
+  }
+}
+
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
   const data = await requestJson<LatestLotteryResponse>(
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
@@ -266,6 +272,7 @@ export async function fetchNumberReference(input: NumberReferenceRequest) {
     body: JSON.stringify(input),
   });
   assertArrayField(data.items, 'items');
+  data.items.forEach((item, index) => assertNumberReferenceItem(item, index));
   return {
     ...data,
     items: data.items.map((item) => ({
