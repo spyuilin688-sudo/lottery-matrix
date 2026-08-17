@@ -70,12 +70,19 @@ jobs:
               if anchor not in ts:
                   raise SystemExit('history layout test anchor not found')
               ts = ts.replace(anchor, anchor + assertion, 1)
+          old_width = 'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*92px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 92px/s);'
+          new_width = 'assert.match(css, /\\.history-title-lottery\\s*\\{[^}]*width:\\s*84px[^}]*height:\\s*26px[^}]*flex:\\s*0 0 84px/s);'
+          if old_width in ts:
+              ts = ts.replace(old_width, new_width, 1)
+          elif new_width not in ts:
+              raise SystemExit('history title width assertion not found')
           t.write_text(ts)
 
           checks = [
               '.draw-history-screen > .feature-body { padding-inline: 12px; }',
               '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px;',
               '.history-title-actions .history-filter-trigger { white-space: nowrap; }',
+              '.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px;',
           ]
           for check in checks:
               if check not in s:
@@ -85,8 +92,21 @@ jobs:
           if s.count('.draw-history-screen .draw-history-head {') != 0:
               raise SystemExit('duplicate draw-history-head block still exists')
           PY
-      - name: Verify focused tests
-        run: node --test tests/draw-history-table-layout.test.mjs tests/page-title-card.test.mjs
+      - name: Verify history cleanup
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('src/feature-pages.css').read_text()
+          assert '.draw-history-screen > .feature-body { padding-inline: 12px; }' in s
+          assert '.matrix-title-banner-actions .history-title-lottery { width: 84px;' not in s
+          assert '.history-title-lottery { display: grid; width: 84px; height: 26px; flex: 0 0 84px;' in s
+          assert '.draw-history-screen .draw-history-head {' not in s
+          assert '.draw-history-screen .history-title-lottery.native-select select {' in s
+          assert '.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px;' in s
+          print('history cleanup verification passed')
+          PY
+          node --test tests/page-title-card.test.mjs
       - name: Verify build
         run: npm run build
       - name: Commit source cleanup
