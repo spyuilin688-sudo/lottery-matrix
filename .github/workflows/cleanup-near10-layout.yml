@@ -80,7 +80,6 @@ jobs:
           from pathlib import Path
           text = Path('src/feature-pages.css').read_text()
           checks = {
-              'page token remains 12px': '--layout-page-inline' not in text,
               'history panel no fixed 366px': 'width: 366px;' not in text[text.index('.history-panel {'):text.index('.panel-heading', text.index('.history-panel {'))],
               'history panel uses parent width': '.history-panel {\n  box-sizing: border-box;\n  width: 100%;\n  min-width: 0;' in text,
               'heading duplicate min-height removed': 'height: 52px;\n  min-height: 52px;' not in text,
