@@ -20,22 +20,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Add audit regression checks
-        run: python .github/scripts/audit_matrix_explore.py add-tests
-      - name: Confirm RED
+      - name: Confirm RED against current branch
         run: |
           set +e
-          node --test tests/matrix-explore-option-layout.test.mjs > /tmp/red.log 2>&1
+          python .github/scripts/audit_matrix_explore.py check > /tmp/red.log 2>&1
           status=$?
           set -e
           cat /tmp/red.log
           if [ "$status" -eq 0 ]; then
-            echo "Expected new audit assertions to fail before the fix"
+            echo "Expected re-audit checks to fail before the fix"
             exit 1
           fi
           echo "RED confirmed"
       - name: Apply document-backed fixes and cleanup
         run: python .github/scripts/audit_matrix_explore.py patch
+      - name: Verify document re-audit checks
+        run: python .github/scripts/audit_matrix_explore.py check
       - name: Verify focused regression tests
         run: node --test tests/matrix-explore-option-layout.test.mjs
       - name: Verify diff hygiene
@@ -65,6 +65,6 @@ jobs:
           rm .github/scripts/audit_matrix_explore.py
           git config user.name "spy854540-cmd"
           git config user.email "spy854540@gmail.com"
-          git add src/feature-pages.css src/FeaturePages.tsx tests/matrix-explore-option-layout.test.mjs .github/workflows/audit-matrix-explore-spec.yml .github/scripts/audit_matrix_explore.py
+          git add src/feature-pages.css src/FeaturePages.tsx .github/workflows/audit-matrix-explore-spec.yml .github/scripts/audit_matrix_explore.py
           git commit -m "fix(explore): complete document spec re-audit"
           git push origin HEAD:探索
