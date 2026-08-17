@@ -16,13 +16,16 @@ jobs:
           fetch-depth: 0
       - name: Fetch main and inspect merge conflicts
         run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
           git fetch origin main
           set +e
-          git merge --no-commit --no-ff origin/main
+          git merge --no-commit --no-ff origin/main > merge-output.txt 2>&1
           status=$?
           set -e
           echo "merge_status=$status" > merge-audit.txt
-          echo "conflicts:" >> merge-audit.txt
+          cat merge-output.txt >> merge-audit.txt
+          echo "--- conflicts ---" >> merge-audit.txt
           git diff --name-only --diff-filter=U >> merge-audit.txt
           echo "--- status ---" >> merge-audit.txt
           git status --short >> merge-audit.txt
