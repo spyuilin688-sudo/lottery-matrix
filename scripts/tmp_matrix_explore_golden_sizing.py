@@ -19,6 +19,15 @@ def replace_rule(selector: str, body: str, expected: int = 1) -> None:
     formal = pattern.sub(selector + " {\n" + body.strip() + "\n}", formal)
 
 
+def delete_rule(selector: str, expected: int = 1) -> None:
+    global formal
+    pattern = re.compile(re.escape(selector) + r"\s*\{[^{}]*\}\s*", re.S)
+    matches = list(pattern.finditer(formal))
+    if len(matches) != expected:
+        raise SystemExit(f"{selector!r}: expected {expected} deletable rule(s), found {len(matches)}")
+    formal = pattern.sub("", formal)
+
+
 replace_rule(
     ".matrix-explore-screen .panel",
     """
@@ -33,7 +42,6 @@ formal = formal.replace(
     ".matrix-explore-screen:not(.matrix-explore-main-screen) .panel {",
     1,
 )
-
 replace_rule(
     ".matrix-explore-main-screen .explore-settings,\n.matrix-explore-main-screen .hit-advanced-panel,\n.matrix-explore-main-screen .history-panel,\n.matrix-explore-main-screen .repeat-stats-panel,\n.matrix-explore-main-screen .result-panel",
     """
@@ -335,7 +343,7 @@ replace_rule(
   gap: 8px;
 """,
 )
-replace_rule(".matrix-explore-main-screen .result-panel", "padding-top: 8px;")
+delete_rule(".matrix-explore-main-screen .result-panel")
 replace_rule(
     ".matrix-explore-main-screen .consecutive-filter-button",
     """
