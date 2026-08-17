@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/temp-apply-layout-12px.yml'
+      - '.github/temp_apply_layout_12px.py'
 
 permissions:
   contents: write
