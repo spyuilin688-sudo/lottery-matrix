@@ -58,7 +58,7 @@ test("Matrix Explore main labels and secondary text use 11px", () => {
 });
 
 test("Matrix Explore main formal rules contain no glow, shadow, gradient, hard pull, or thick border", () => {
-  assert.doesNotMatch(mainRules, /box-shadow:\s*(?!none)/);
+  assert.doesNotMatch(mainRules, /box-shadow:(?!\s*none\b)[^;]+;/);
   assert.doesNotMatch(mainRules, /text-shadow\s*:/);
   assert.doesNotMatch(mainRules, /filter:\s*drop-shadow/i);
   assert.doesNotMatch(mainRules, /(?:linear|radial)-gradient\s*\(/i);
