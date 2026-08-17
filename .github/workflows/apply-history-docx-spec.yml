@@ -43,7 +43,7 @@ jobs:
       - name: Apply canonical history page rules
         run: python scripts/apply-history-docx-spec.py --apply
 
-      - name: Run focused history regression tests
+      - name: Verify focused history regression tests after apply
         shell: bash
         run: |
           set +e
@@ -76,7 +76,7 @@ jobs:
           git config user.email "openai-history-bot@users.noreply.github.com"
           git rm .github/workflows/apply-history-docx-spec.yml scripts/apply-history-docx-spec.py
           git rm --ignore-unmatch history-focused-failure.log
-          git add src/FeaturePages.tsx src/feature-pages.css src/number-ball.css tests/draw-history-table-layout.test.mjs
+          git add src/FeaturePages.tsx src/feature-pages.css src/number-ball.css tests/draw-history-table-layout.test.mjs tests/history-filter-select-layering.test.mjs
           git diff --cached --check
           git commit -m "fix(history): align page with uploaded DOCX spec"
           git push origin HEAD:"歷史開獎紀錄"
