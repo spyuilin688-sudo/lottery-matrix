@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BottomNavigation } from "../BottomNavigation";
 
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 describe("BottomNavigation", () => {
   it("依目前選取入口切換 matrixWW 正式底圖", () => {
@@ -58,5 +61,26 @@ describe("BottomNavigation", () => {
       "data-selected",
       "false",
     );
+  });
+
+  it("快捷長按期間移出按鈕範圍仍會在三秒後開啟設定", () => {
+    vi.useFakeTimers();
+    const onQuickOpen = vi.fn();
+    const onQuickConfigure = vi.fn();
+
+    render(
+      <BottomNavigation
+        onQuickOpen={onQuickOpen}
+        onQuickConfigure={onQuickConfigure}
+      />,
+    );
+
+    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
+    fireEvent.pointerDown(quickButton);
+    fireEvent.pointerLeave(quickButton);
+    vi.advanceTimersByTime(3000);
+
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+    expect(onQuickOpen).not.toHaveBeenCalled();
   });
 });
