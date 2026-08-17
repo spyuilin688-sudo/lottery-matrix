@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error Vite resolves CSS raw imports during tests.
-import css from "../homepage-repair.css?raw";
+// @ts-expect-error Vite resolves inline CSS imports during tests.
+import css from "../homepage-repair.css?inline";
 
 describe("homepage lottery switcher layout", () => {
   it("sizes each independent lottery logo inside its own quarter hit area", () => {
