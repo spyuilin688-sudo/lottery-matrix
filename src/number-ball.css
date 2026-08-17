@@ -150,6 +150,10 @@
   --underline-y: .25px;
 }
 
+.matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
+  --number-ball-size: 29px;
+}
+
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
   --number-ball-asset-scale: 1.62;
 }
