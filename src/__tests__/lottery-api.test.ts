@@ -108,4 +108,19 @@ describe('lottery-api response validation', () => {
     expect(result?.numbers).toEqual(['01', '07', '49']);
     expect(result?.drawOrderNumbers).toEqual(['01', '49', '07']);
   });
+
+  it('六合彩不接受超出 01 到 49 的獨立特別號', async () => {
+    mockJsonResponse({
+      period: '5898',
+      drawDate: '2026/08/13',
+      numbers: ['01', '02', '03', '04', '05', '06'],
+      specialNumber: '50',
+    });
+
+    const result = await fetchLatestLotteryDraw('六合彩');
+
+    expect(result?.specialNumber).toBeUndefined();
+    expect(result?.numbers).toEqual(['01', '02', '03', '04', '05', '06']);
+    expect(result?.drawOrderNumbers).toEqual(['01', '02', '03', '04', '05', '06']);
+  });
 });
