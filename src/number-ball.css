@@ -150,21 +150,8 @@
   --underline-y: .25px;
 }
 
-.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball {
-  --number-ball-size: 28px;
-  --number-font-size: 12px;
-}
-
-.history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --number-ball-size: 28px;
-  --underline-width: 11px;
-}
-
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
-  --number-ball-size: 28px;
   --number-ball-asset-scale: 1.62;
-  --underline-height: .5px;
-  --underline-y: .25px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball {
