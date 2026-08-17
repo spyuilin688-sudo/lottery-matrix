@@ -57,7 +57,21 @@ jobs:
           node scripts/prepare-sites-build.mjs
 
       - name: Run unit tests
-        run: npm run test:unit
+        shell: bash
+        run: |
+          set +e
+          npm run test:unit > history-unit-failure.log 2>&1
+          status=$?
+          cat history-unit-failure.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "openai-history-bot"
+            git config user.email "openai-history-bot@users.noreply.github.com"
+            git add history-unit-failure.log
+            git commit -m "chore(history): capture unit test output"
+            git push origin HEAD:"歷史開獎紀錄"
+            exit "$status"
+          fi
+          rm history-unit-failure.log
 
       - name: Confirm existing runtime guard remains the only npm build blocker
         shell: bash
@@ -76,7 +90,7 @@ jobs:
           git config user.name "openai-history-bot"
           git config user.email "openai-history-bot@users.noreply.github.com"
           git rm .github/workflows/apply-history-docx-spec.yml scripts/apply-history-docx-spec.py
-          git rm --ignore-unmatch history-focused-failure.log history-build-failure.log
+          git rm --ignore-unmatch history-focused-failure.log history-build-failure.log history-unit-failure.log
           git add src/FeaturePages.tsx src/feature-pages.css src/number-ball.css tests/draw-history-table-layout.test.mjs tests/history-filter-select-layering.test.mjs
           git diff --cached --check
           git commit -m "fix(history): align page with uploaded DOCX spec"
