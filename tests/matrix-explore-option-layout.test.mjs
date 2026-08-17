@@ -27,7 +27,8 @@ test("Matrix Explore keeps one canonical formal layout source", () => {
 
 test("Matrix Explore main uses 8px section padding and 15px bold section titles", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[\s\S]*?padding:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-main-screen \.panel(?:[^,{]*)? \.section-title\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.panel:not\(\.explore-settings\) \.section-title\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings > \.section-title\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
 });
 
 test("Matrix Explore main uses 8px gaps throughout the form layout", () => {
@@ -43,6 +44,7 @@ test("Matrix Explore main general controls are 24px high with 13px action text",
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.segmented\.two button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-row\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.consecutive-filter-button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;[^}]*font-size:\s*13px;/s);
 });
@@ -51,10 +53,16 @@ test("Matrix Explore main primary action is exactly 32px high", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.primary-action\s*\{[^}]*height:\s*32px;[^}]*font-size:\s*13px;/s);
 });
 
-test("Matrix Explore main labels and secondary text use 11px", () => {
+test("Matrix Explore main labels, dates and explanatory text use 11px", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-heading > span\s*\{[^}]*font-size:\s*11px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-table th\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*11px;/s);
+});
+
+test("Matrix Explore main table core data uses 13px", () => {
+  assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-body\s*\{[^}]*font-size:\s*13px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.repeat-stats-table td\s*\{[^}]*font-size:\s*13px;/s);
 });
 
 test("Matrix Explore main formal rules contain no glow, shadow, gradient, hard pull, or thick border", () => {
