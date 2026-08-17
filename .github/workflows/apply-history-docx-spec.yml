@@ -24,7 +24,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Update focused regression test
+      - name: Prepare focused regression test
         run: python scripts/apply-history-docx-spec.py --tests
 
       - name: Verify the new requirement fails before implementation
