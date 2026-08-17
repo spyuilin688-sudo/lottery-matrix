@@ -77,7 +77,6 @@ export function BottomNavigation({
               onPointerDown: beginQuickPress,
               onPointerUp: endQuickPress,
               onPointerCancel: cancelQuickPress,
-              onPointerLeave: cancelQuickPress,
               onContextMenu: (event: MouseEvent<HTMLButtonElement>) => event.preventDefault(),
               onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
                 if (event.key === "Enter" || event.key === " ") {
