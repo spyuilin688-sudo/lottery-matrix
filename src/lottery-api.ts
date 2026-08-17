@@ -168,6 +168,12 @@ function isLatestLotteryEnvelope(data: LatestLotteryResponse): data is LatestLot
   );
 }
 
+function assertArrayField(value: unknown, field: string): asserts value is unknown[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`Lottery API invalid response: ${field}`);
+  }
+}
+
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
   const data = await requestJson<LatestLotteryResponse>(
     `/api/matrix/latest/${encodeURIComponent(lottery)}`,
@@ -194,6 +200,7 @@ export async function fetchTongXing(input: TongXingRequest) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+  assertArrayField(data.groups, 'groups');
   return {
     ...data,
     groups: data.groups.map((group) => ({
@@ -209,6 +216,7 @@ export async function fetchNumberReference(input: NumberReferenceRequest) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+  assertArrayField(data.items, 'items');
   return {
     ...data,
     items: data.items.map((item) => ({
