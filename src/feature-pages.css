@@ -16,12 +16,7 @@
 .matrix-explore-main-screen .native-select select { font-weight: 700; }
 
 .feature-body { padding: 0 var(--layout-page-inline) 24px; }
-.matrix-explore-main-screen > .feature-body,
-.matrix-tianyan-screen > .feature-body,
-.matrix-tiangong-screen > .feature-body,
-.draw-history-screen > .feature-body,
-.number-reference-screen > .feature-body { padding-inline: 4px; }
-.calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; padding-inline: 12px; overflow-x: hidden; }
+.calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; overflow-x: hidden; }
 .compact-feature-screen { padding-top: 30px; }
 .feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - (var(--layout-page-inline) * 2)); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
 .feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
@@ -1284,7 +1279,6 @@
   box-shadow: 0 0 8px #f2c646;
 }
 
-.matrix-notebook-screen .feature-body { padding-inline: 14px; }
 .notebook-heading { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; margin-bottom: 12px; gap: 10px; }
 .notebook-heading > img { width: 52px; height: 52px; border-radius: 11px; object-fit: cover; }
 .notebook-heading h2 { margin: 0; color: #f1ece3; font-size: 17px; }
@@ -1501,7 +1495,6 @@
 .record-data-actions button:last-child { border-color: #c49331; color: #f2d374; background: rgba(105, 69, 10, .24); }
 
 @media (max-width: 360px) {
-  .feature-body { padding-inline: 10px; }
   .profile-card { grid-template-columns: 50px minmax(0, 1fr) auto; padding: 12px; gap: 10px; }
   .profile-mark { width: 50px; height: 50px; }
   .profile-card { grid-template-columns: 58px minmax(0, 1fr) auto; }
@@ -1620,7 +1613,6 @@
 .lottery-logo-tabs img { display: block; width: 72px; max-width: 100%; height: 38px; object-fit: contain; }
 .lottery-logo-tabs span { font-size: 11px; white-space: nowrap; }
 
-.matrix-status-screen .feature-body { padding-inline: 12px; }
 .matrix-status-screen .matrix-status-lottery-switcher {
   --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
   position: relative;
@@ -1754,7 +1746,6 @@
 .guide-detail-block ul { display: grid; margin: 0; padding-left: 19px; gap: 7px; color: #bbb4aa; font-size: 12px; line-height: 1.72; }
 .guide-detail-block li::marker { color: #b88525; }
 
-.notes-screen .feature-body { padding-inline: 10px; }
 .weekly-summary { margin-bottom: 8px; padding: 9px 10px 10px; border-color: #168ad0; }
 .weekly-summary > header { display: flex; height: 28px; align-items: center; gap: 8px; border-bottom: 1px solid #1d2c37; }
 .weekly-summary h2 { margin: 0; color: #e6cc84; font-size: 14px; font-weight: 550; }
@@ -1831,7 +1822,6 @@
 .note-record-numbers b { display: flex; gap: 3px; }
 .note-record-numbers i { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #c24b0d; color: #fff; font-size: 8px; font-style: normal; }
 .note-difference strong { color: #e8c766; }
-.note-detail-screen .feature-body { padding-inline: 12px; }
 .note-detail-card { overflow: hidden; padding: 0; }
 .note-detail-card > div { display: grid; min-height: 47px; padding: 10px 13px; grid-template-columns: 94px 1fr; align-items: center; gap: 10px; border-top: 1px solid #29343a; }
 .note-detail-card > div:first-child { border-top: 0; }
@@ -2065,7 +2055,6 @@
 .profile-detail-screen .feature-body {
   display: grid;
   gap: 8px;
-  padding-inline: 4px;
   padding-bottom: 106px;
 }
 .profile-screen .panel {
@@ -2380,7 +2369,6 @@
 /* Referral and activation page: single formal layout source. */
 .activation-code-screen .feature-body {
   gap: 8px;
-  padding-inline: 4px;
   padding-bottom: var(--layout-bottom-nav-clearance);
 }
 .activation-code-screen .panel {
