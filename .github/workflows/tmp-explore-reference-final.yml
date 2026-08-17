@@ -20,17 +20,23 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Narrow temporary delete helper to standalone selectors
+      - name: Normalize temporary verification helpers
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('scripts/tmp_matrix_explore_golden_sizing.py')
           text = path.read_text()
-          old = 'pattern = re.compile(re.escape(selector) + r"\\s*\\{[^{}]*\\}\\s*", re.S)'
-          new = 'pattern = re.compile(r"(?m)(?<!,\\n)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
-          if old not in text:
+          old_delete = 'pattern = re.compile(re.escape(selector) + r"\\s*\\{[^{}]*\\}\\s*", re.S)'
+          new_delete = 'pattern = re.compile(r"(?m)(?<!,\\n)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
+          old_shadow = '(r"box-shadow:\\s*(?!none)", "non-none box-shadow")'
+          new_shadow = '(r"box-shadow:(?!\\s*none\\b)[^;]+;", "non-none box-shadow")'
+          if old_delete not in text:
               raise SystemExit('temporary delete helper source not found')
-          path.write_text(text.replace(old, new, 1))
+          if old_shadow not in text:
+              raise SystemExit('temporary shadow checker source not found')
+          text = text.replace(old_delete, new_delete, 1)
+          text = text.replace(old_shadow, new_shadow, 1)
+          path.write_text(text)
           PY
       - name: Patch canonical Matrix Explore rules
         run: python scripts/tmp_matrix_explore_golden_sizing.py
