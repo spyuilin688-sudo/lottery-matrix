@@ -51,7 +51,11 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <section className="admin-dashboard" data-testid="admin-dashboard" data-state={dataState}>
+    <section
+      className="admin-dashboard"
+      data-testid={dataState === "loading" ? undefined : "admin-dashboard"}
+      data-state={dataState}
+    >
       <div className="admin-stat-grid">
         {statistics.map(({ label, field }) => (
           <article className="admin-stat-card" key={field}>
