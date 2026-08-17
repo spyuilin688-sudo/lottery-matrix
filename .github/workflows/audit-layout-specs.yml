@@ -1,0 +1,89 @@
+name: Audit layout specs and cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-layout-specs.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit source
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          css_files = list(Path('src').rglob('*.css'))
+          tsx_files = list(Path('src').rglob('*.tsx'))
+          all_text = '\n'.join(p.read_text(encoding='utf-8') for p in css_files + tsx_files)
+          feature = Path('src/feature-pages.css').read_text(encoding='utf-8')
+          tokens = Path('src/design-tokens.css').read_text(encoding='utf-8')
+
+          print('=== GLOBAL INLINE TOKEN ===')
+          m = re.search(r'--layout-page-inline:\s*([^;]+);', tokens)
+          print('layout-page-inline =', m.group(1).strip() if m else 'MISSING')
+
+          print('\n=== EXPLICIT 4/8/12/16PX HORIZONTAL RULES ===')
+          for p in css_files:
+            for i, line in enumerate(p.read_text(encoding='utf-8').splitlines(), 1):
+              s = line.strip()
+              if any(x in s for x in ['padding-inline:', 'margin-inline:', 'padding-left:', 'padding-right:', 'left:', 'right:']):
+                if any(f'{n}px' in s for n in [4,8,12,16]):
+                  print(f'{p}:{i}: {s}')
+
+          print('\n=== MATRIX EXPLORE REQUIRED RULES ===')
+          explore_required = [
+            'grid-template-columns: 110px minmax(0, 222px)',
+            'min-height: 44px',
+            'font-size: 16px',
+            'font-weight: 600',
+            'width: 32px',
+            'height: 50px',
+            'font-size: 21px',
+            '.result-summary b { font-size: 20px',
+            '.result-count > span { color: #35bff0; font-size: 17px',
+          ]
+          for item in explore_required:
+            print(('PASS ' if item in feature else 'FAIL ') + item)
+
+          print('\n=== MATRIX TONGXING REQUIRED RULES ===')
+          tongxing_required = [
+            '--tongxing-page-padding-x: 12px',
+            '--tongxing-card-padding: 10px',
+            '--tongxing-control-height: 44px',
+            '--tongxing-number-input-size: 44px',
+            '--tongxing-table-header-height: 38px',
+            '--tongxing-table-row-height: 52px',
+            '--tongxing-result-row-height: 50px',
+            'grid-template-columns: 116px 220px',
+            'grid-template-columns: repeat(3, 44px) 1fr 64px auto',
+            'font-variant-numeric: tabular-nums',
+          ]
+          for item in tongxing_required:
+            print(('PASS ' if item in feature else 'FAIL ') + item)
+
+          print('\n=== ONE-TIME / MUTATION WORKFLOWS STILL PRESENT ===')
+          wf = Path('.github/workflows')
+          for p in sorted(wf.glob('*.yml')):
+            if p.name != 'audit-layout-specs.yml':
+              print(p.name)
+
+          print('\n=== TEMP SPEC SCRIPTS STILL PRESENT ===')
+          for p in sorted(Path('scripts').glob('*spec*')):
+            print(p.name)
+
+          print('\n=== DUPLICATE / OLD TONGXING RULE SIGNALS ===')
+          old_signals = [
+            'grid-template-columns: 88px 84px minmax(0, 1fr)',
+            'grid-template-columns: repeat(3, 46px)',
+            '.tongxing-table-row {\n  display: grid;\n  grid-template-columns: 76px',
+            'min-height: 36px;\n  border-bottom: 1px solid #76501f',
+            'background: linear-gradient(90deg, rgba(126, 83, 15, .32)',
+            'background: linear-gradient(90deg, rgba(10, 61, 88, .42)',
+          ]
+          for item in old_signals:
+            print(('FOUND_OLD ' if item in feature else 'CLEAR ') + item[:90])
