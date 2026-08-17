@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const featureCss = fs.readFileSync('src/feature-pages.css', 'utf8');
 const runtimeCss = fs.readFileSync('src/styles.css', 'utf8');
+const prototypeCss = fs.readFileSync('src/prototype.css', 'utf8');
 
 test('notification page follows the uploaded 390px layout specification', () => {
   assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 8px 12px calc\(var\(--bottom-navigation-height\) \+ var\(--mobile-safe-area-height, 34px\) \+ 12px\); \}/);
@@ -27,4 +28,27 @@ test('notification page follows the uploaded 390px layout specification', () => 
   assert.doesNotMatch(featureCss, /@media \(max-width: 370px\) \{\s*\.notification-heading/);
   assert.doesNotMatch(featureCss, /\.notifications-screen \.feature-body,\s*\.profile-screen \.feature-body/);
   assert.match(runtimeCss, /\.mobile-page:not\(:has\(\.notifications-screen\)\) \.mobile-scrollbar\[data-visible="true"\] \{\s*opacity: 1;\s*\}/);
+});
+
+test('notification layout has one authoritative sizing and spacing source', () => {
+  assert.doesNotMatch(featureCss, /\.notifications-screen\s*\{[^}]*padding-top:/s);
+
+  const notificationBlocks = [...featureCss.matchAll(/([^{}]*\.notification-row[^{}]*)\{([^{}]*)\}/g)];
+  const sharedSizingOverrides = notificationBlocks.filter(([, selector, body]) =>
+    selector.includes(',') && /(?:^|;)\s*(?:height|max-height)\s*:/.test(body),
+  );
+  assert.equal(
+    sharedSizingOverrides.length,
+    0,
+    `notification-row must not be included in shared height/max-height rules: ${sharedSizingOverrides.map(([, selector]) => selector.trim()).join(' | ')}`,
+  );
+
+  assert.match(
+    prototypeCss,
+    /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body \{\s*padding-bottom: var\(--layout-bottom-nav-clearance\);\s*\}/,
+  );
+  assert.doesNotMatch(
+    prototypeCss,
+    /\.bottom-nav-brand-screen > \.feature-body \{\s*padding-bottom: var\(--layout-bottom-nav-clearance\);\s*\}/,
+  );
 });

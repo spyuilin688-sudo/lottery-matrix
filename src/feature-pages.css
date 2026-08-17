@@ -1102,7 +1102,6 @@
 .toggle:disabled { opacity: .5; }
 .toggle:disabled::before { border-color: #46505C; background: #151B22; box-shadow: none; }
 .notification-note { margin: 14px auto 4px; padding: 0 12px; color: #aaa49a; font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: .25px; text-align: center; }
-.notifications-screen { padding-top: 30px; }
 .notifications-screen .feature-body { padding: 8px 12px calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px); }
 .notifications-screen .notification-row { border: 1px solid rgba(108, 74, 32, .35); border-radius: 14px; background: #020C12; box-shadow: inset 0 0 10px rgba(150, 102, 34, .02); }
 .notification-modal-backdrop { align-items: flex-end; }
@@ -2366,7 +2365,6 @@
 .feature-screen,
 .feature-body,
 .panel,
-.notification-row,
 .profile-card,
 .subscription-status-card,
 .plan-card,
@@ -2381,7 +2379,6 @@
 }
 
 .panel,
-.notification-row,
 .profile-card,
 .subscription-status-card,
 .plan-card,
@@ -2445,7 +2442,6 @@
 
 /* Content-bearing cards expand; controls and visual assets retain their own sizing rules. */
 .panel,
-.notification-row,
 .profile-card,
 .subscription-status-card,
 .plan-card,
