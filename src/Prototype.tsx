@@ -153,16 +153,14 @@ export type LotterySwitcherProps = {
   selected: LotteryId;
   onChange: (lottery: LotteryId) => void;
   className?: string;
-  independentCards?: boolean;
 };
 
-export function LotterySwitcher({ selected, onChange, className = "", independentCards = false }: LotterySwitcherProps) {
+export function LotterySwitcher({ selected, onChange, className = "" }: LotterySwitcherProps) {
   return (
     <div
       data-lottery-switcher=""
       className={`lottery-switcher ${className}`.trim()}
       data-selected-lottery={selected}
-      data-independent-cards={independentCards}
       data-testid="lottery-switcher"
     >
       <img className="home-asset-image" src={HOME_ASSETS.lotterySwitcher} alt="" draggable={false} />
@@ -182,7 +180,6 @@ export function LotterySwitcher({ selected, onChange, className = "", independen
               aria-label={lottery.id}
               type="button"
             >
-              {independentCards ? <img src={lottery.logo} alt="" draggable={false} /> : null}
               <span className="clean-hit-label">{lottery.id}</span>
             </button>
           );
@@ -389,7 +386,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <div className="home-layout">
         <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-          <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" independentCards />
+          <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
           <MatrixStatusSection onOpen={() => navigate("status")} />
         </main>
