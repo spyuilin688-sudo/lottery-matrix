@@ -24,7 +24,7 @@
 .matrix-page-switcher { display: flex; height: 100%; align-items: center; justify-content: flex-end; gap: 4px; }
 .matrix-page-switcher button { display: grid; height: 100%; max-height: 38px; aspect-ratio: 1; padding: 0; place-items: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.matrix-title-banner { position: relative; width: calc(100% - 24px); margin: 0 auto; line-height: 0; }
+.matrix-title-banner { position: relative; width: calc(100% - (var(--layout-page-inline) * 2)); margin: 0 auto; line-height: 0; }
 .matrix-title-banner > img { display: block; width: 100%; height: auto; object-fit: contain; }
 .integrated-title-back { position: absolute; z-index: 4; top: 50%; left: 0; width: 44px; height: 44px; padding: 0; transform: translateY(-50%); border: 0; background: transparent; }
 .matrix-title-banner-actions { position: absolute; z-index: 3; inset: 10% 3% 10% 56%; display: flex; min-width: 0; align-items: center; justify-content: flex-end; }
@@ -155,35 +155,10 @@
   z-index: 1;
 }
 
-.explore-settings { padding: 12px; }
 .setting-grid { display: grid; margin-top: 12px; gap: 10px; }
 .setting-grid label, .advanced-panel label { display: grid; min-width: 0; width: 100%; grid-template-columns: 102px minmax(0, 1fr); align-items: center; gap: 8px; }
 .setting-grid label > span, .advanced-panel label > span { color: #c6c0b6; font-size: 13px; }
 .setting-grid label > span { display: flex; align-items: center; gap: 8px; text-align: left; white-space: nowrap; }
-.explore-settings .setting-grid label:first-child > span {
-  display: grid;
-  width: 100%;
-  grid-template-columns: 30px 1fr;
-  align-items: center;
-  gap: 0;
-  text-align: center;
-}
-.explore-settings .setting-grid label:first-child > span .setting-label-icon {
-  grid-column: 1;
-}
-.explore-settings .setting-grid label:first-child > span b {
-  grid-column: 2;
-  font: inherit;
-  text-align: center;
-}
-.explore-settings .setting-grid label:first-child .native-select select {
-  padding-inline: 40px;
-  text-align: center;
-  text-align-last: center;
-}
-.explore-settings .setting-grid label:first-child .native-select option {
-  text-align: center;
-}
 .setting-label-icon {
   position: relative;
   display: inline-grid;
@@ -263,37 +238,16 @@
   border-radius: 50%;
   content: "";
 }
-.hit-advanced-panel { margin-top: 10px; padding: 12px; }
-.hit-options { margin-top: 12px; }
-.advanced-row { display: grid; width: 100%; height: 52px; margin: 12px 0 0; padding: 0; grid-template-columns: 38px 1fr 24px; align-items: center; border: 0; border-top: 1px solid #4b3820; background: transparent; color: #ddd5c7; text-align: left; }
+.hit-advanced-panel { margin-top: 10px; }
+.advanced-row { display: grid; width: 100%; border: 0; background: transparent; color: #ddd5c7; text-align: left; }
 .advanced-row > img:first-child {
   display: block;
-  width: 30px;
-  height: 30px;
-  object-fit: cover;
   object-position: left center;
-  border-radius: 7px;
 }
 .advanced-row > svg:last-child { color: #e7ad22; transition: transform .2s; }
 .advanced-row > svg[data-open="true"] { transform: rotate(90deg); }
-.advanced-panel { display: grid; padding: 2px 0 0; gap: 12px; }
-.advanced-panel label > .advanced-setting-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  white-space: nowrap;
-}
-.advanced-panel .segmented.three button { white-space: nowrap; }
-.advanced-panel label:first-child .native-select select {
-  font-size: 12px;
-}
-.advanced-panel label:nth-child(2) .segmented.three button {
-  padding-inline: 2px;
-  font-size: 10.5px;
-}
-.repeat-stats-panel, .result-panel { box-sizing: border-box; width: 366px; max-width: 100%; margin-top: 12px; padding: 12px; border-radius: 12px; box-shadow: none; }
+.advanced-panel { display: grid; }
+.repeat-stats-panel, .result-panel { margin-top: 12px; }
 .repeat-stats-heading { display: grid; min-height: 28px; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; }
 .repeat-stats-heading button {
   height: 26px;
@@ -1592,28 +1546,8 @@
 .quick-actions .clear-button svg { width: 13px; height: 13px; }
 .feature-bottom-nav { width: 100%; }
 
-.explore-settings .setting-grid,
-.advanced-panel { gap: 8px; }
-.explore-settings .setting-grid label,
-.advanced-panel label { min-height: 38px; }
-.explore-settings .segmented,
-.explore-settings .select-box,
-.advanced-panel .segmented,
-.advanced-panel .select-box { height: 36px; }
-.advanced-panel .setting-label-icon { width: 25px; height: 25px; flex-basis: 25px; transform: scale(.88); }
 
 /* v50 Matrix Explore / recent draws / Matrix TongXing density refinements */
-.explore-settings .setting-grid label:nth-child(2) .segmented,
-.explore-settings .setting-grid label:nth-child(3) .segmented,
-.advanced-panel label:nth-child(2) .segmented {
-  height: 32px;
-}
-.explore-settings .setting-grid label:nth-child(2) .segmented button,
-.explore-settings .setting-grid label:nth-child(3) .segmented button,
-.advanced-panel label:nth-child(2) .segmented button {
-  min-height: 32px;
-  padding-block: 2px;
-}
 
 .road-validation {
   font-size: 11px;
@@ -2014,8 +1948,7 @@ border: 1px solid rgba(108, 74, 32, .50);
 .matrix-explore-screen .repeat-stats-panel,
 .matrix-explore-screen .result-panel {
 box-sizing: border-box;
-  width: 366px;
-  max-width: 100%;
+  width: 100%;
   min-width: 0;
   height: auto;
   padding: 12px;
@@ -2142,7 +2075,7 @@ padding-top: 8px; gap: 8px;
 }
 
 .matrix-explore-screen .primary-action {
-width: 366px; max-width: 100%; height: 50px; margin: 12px 0; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
+width: 100%; height: 50px; margin: 12px 0; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212, 165, 47, .18);
 }
 
 .matrix-explore-screen .primary-action svg {
@@ -2191,7 +2124,7 @@ margin-top: 1px; font-size: 11px; font-weight: 400; line-height: 13px;
 }
 
 .matrix-explore-screen .explore-result-disclaimer {
-box-sizing: border-box; width: 366px; max-width: 100%; margin: 0 auto; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;
+box-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px; color: #aaa49a; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center;
 }
 
 .matrix-explore-screen .result-panel {
