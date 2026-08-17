@@ -1,0 +1,99 @@
+name: Execute Matrix Explore image specification
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-matrix-explore-image-spec-fix.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply formal Matrix Explore rules
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/feature-pages.css')
+          s = p.read_text(encoding='utf-8')
+          pairs = [
+            ('.matrix-explore-screen .setting-grid label,\n.matrix-explore-screen .advanced-panel label {\n  min-height: 36px;\n  grid-template-columns: 96px minmax(0, 1fr);\n  gap: 8px;\n}', '.matrix-explore-screen .setting-grid label,\n.matrix-explore-screen .advanced-panel label {\n  min-height: 44px;\n  grid-template-columns: 110px minmax(0, 222px);\n  gap: 8px;\n}'),
+            ('.matrix-explore-screen .setting-grid label > span,\n.matrix-explore-screen .advanced-panel label > .advanced-setting-title {\n  font-size: 14px;\n  font-weight: 700;\n}', '.matrix-explore-screen .setting-grid label > span,\n.matrix-explore-screen .advanced-panel label > .advanced-setting-title {\n  color: #bdb8b0;\n  font-size: 16px;\n  font-weight: 600;\n  line-height: 22px;\n  text-align: left;\n}'),
+            ('.matrix-explore-screen .setting-grid .select-box,\n.matrix-explore-screen .setting-grid .segmented,\n.matrix-explore-screen .setting-grid .segmented button,\n.matrix-explore-screen .advanced-panel .select-box,\n.matrix-explore-screen .advanced-panel .segmented,\n.matrix-explore-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options,\n.matrix-explore-screen .hit-options button {\n  height: 36px;\n  min-height: 36px;\n}', '.matrix-explore-screen .setting-grid .select-box,\n.matrix-explore-screen .setting-grid .segmented,\n.matrix-explore-screen .setting-grid .segmented button,\n.matrix-explore-screen .advanced-panel .select-box,\n.matrix-explore-screen .advanced-panel .segmented,\n.matrix-explore-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options,\n.matrix-explore-screen .hit-options button {\n  height: 44px;\n  min-height: 44px;\n}'),
+            ('.matrix-explore-screen .setting-grid .segmented button,\n.matrix-explore-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options button {\n  padding-block: 3px;\n  font-weight: 700;\n}', '.matrix-explore-screen .setting-grid .segmented button,\n.matrix-explore-screen .advanced-panel .segmented button,\n.matrix-explore-screen .hit-options button {\n  padding: 0 4px;\n  border-radius: 10px;\n  font-weight: 600;\n  white-space: nowrap;\n}'),
+            ('.matrix-explore-screen .advanced-row {\n  min-height: 44px;\n  grid-template-columns: 35px 1fr 24px;\n  font-weight: 700;\n}', '.matrix-explore-screen .advanced-row {\n  min-height: 44px;\n  grid-template-columns: 32px minmax(0, 1fr) 14px;\n  align-items: center;\n  font-size: 17px;\n  font-weight: 700;\n}'),
+            ('.matrix-explore-screen .advanced-row > img:first-child {\n  width: 25px;\n  height: 25px;\n  border-radius: 5px;\n}', '.matrix-explore-screen .advanced-row > img:first-child {\n  width: 32px;\n  height: 32px;\n  border-radius: 5px;\n  object-fit: contain;\n}'),
+            ('.matrix-explore-screen .setting-grid label > span .setting-label-icon,\n.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {\n  width: 30px;\n  height: 30px;\n  flex: 0 0 30px;\n  border-radius: 5px;', '.matrix-explore-screen .setting-grid label > span .setting-label-icon,\n.matrix-explore-screen .advanced-panel .advanced-setting-title .setting-label-icon {\n  width: 32px;\n  height: 32px;\n  flex: 0 0 32px;\n  border-radius: 5px;'),
+            ('.repeat-stats-heading { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 9px; }', '.repeat-stats-heading { display: grid; min-height: 28px; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; }'),
+            ('.repeat-stats-heading > span { color: #fff; font-size: 11px; text-align: right; }', '.repeat-stats-heading > span { color: #fff; font-size: 12px; font-weight: 400; text-align: right; }'),
+            ('.result-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }', '.result-title { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 6px; }'),
+            ('.result-count { display: block; margin-left: auto; color: #c6c0b8; font-size: 11.5px; font-weight: 500; text-align: right; white-space: nowrap; }', '.result-count { display: block; margin-left: 0; grid-column: 1 / -1; justify-self: end; color: #c6c0b8; font-size: 13px; font-weight: 400; line-height: 20px; text-align: right; white-space: nowrap; }'),
+            ('.result-count > span { color: #35bff0; }', '.result-count > span { color: #35bff0; font-size: 17px; font-weight: 700; }'),
+            ('.result-summary { display: grid; margin-top: 12px; grid-template-columns: repeat(6, 1fr); gap: 5px; }', '.result-summary { display: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }'),
+            ('.result-summary > div { display: flex; min-width: 0; min-height: 52px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #4f4b45; border-radius: 7px; }', '.result-summary > div { display: flex; min-width: 0; height: 48px; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(79, 75, 69, .72); border-radius: 8px; }'),
+            ('.result-summary b { font-size: 15px; font-weight: 500; }', '.result-summary b { font-size: 20px; font-weight: 500; line-height: 22px; }'),
+            ('.result-summary small { color: #aaa39a; font-size: 9px; }', '.result-summary small { margin-top: 1px; color: #aaa39a; font-size: 11px; font-weight: 400; line-height: 13px; }')
+          ]
+          for old, new in pairs:
+            if old in s:
+              s = s.replace(old, new, 1)
+            elif new not in s:
+              raise SystemExit('Formal rule missing: ' + old[:100])
+          marker = '/* Matrix Explore formal layout rules */'
+          rules = [
+            '.matrix-explore-screen .explore-settings, .matrix-explore-screen .hit-advanced-panel, .matrix-explore-screen .history-panel { box-sizing: border-box; width: 366px; max-width: 100%; min-width: 0; height: auto; padding: 12px; border-radius: 12px; box-shadow: none; }',
+            '.matrix-explore-screen .section-title { min-height: 28px; gap: 10px; font-size: 19px; font-weight: 700; line-height: 26px; letter-spacing: 0; }',
+            '.matrix-explore-screen .section-title > span { width: 4px; height: 24px; border-radius: 2px; box-shadow: 0 0 4px rgba(255,194,42,.18); }',
+            '.matrix-explore-screen .setting-grid label > span { display: grid; width: 110px; grid-template-columns: 32px 70px; align-items: center; gap: 8px; }',
+            '.matrix-explore-screen .setting-grid .select-box, .matrix-explore-screen .advanced-panel .select-box { width: 222px; max-width: 222px; padding-inline: 36px; font-size: 16px; font-weight: 700; }',
+            '.matrix-explore-screen .segmented.three { gap: 6px; }',
+            '.matrix-explore-screen .segmented.three button { font-size: 13px; font-weight: 600; }',
+            '.matrix-explore-screen .segmented.two, .matrix-explore-screen .hit-options { gap: 8px; }',
+            '.matrix-explore-screen .segmented.two button, .matrix-explore-screen .hit-options button { font-size: 15px; font-weight: 700; }',
+            '.matrix-explore-screen .segmented button[data-selected="true"], .matrix-explore-screen .hit-options button[data-selected="true"] { border: 1px solid #d4a52f; background: rgba(212,165,47,.10); color: #f1c75a; box-shadow: 0 0 3px rgba(212,165,47,.16); }',
+            '.matrix-explore-screen .segmented button:not([data-selected="true"]), .matrix-explore-screen .hit-options button:not([data-selected="true"]) { border: 1px solid rgba(120,100,70,.65); background: rgba(3,11,17,.35); color: #b9b5ae; box-shadow: none; }',
+            '.matrix-explore-screen .segmented button em { top: -7px; right: 4px; height: 16px; min-height: 16px; padding: 0 5px; border-radius: 8px; font-size: 9px; line-height: 14px; overflow: visible; }',
+            '.matrix-explore-screen .advanced-row svg:last-child { width: 14px; height: 14px; }',
+            '.matrix-explore-screen .primary-action { width: 366px; max-width: 100%; height: 50px; margin-block: 12px; border: 1px solid #d4a52f; border-radius: 12px; background: #071018; color: #f6d472; font-size: 21px; font-weight: 700; letter-spacing: 0; box-shadow: 0 0 4px rgba(212,165,47,.18); }',
+            '.matrix-explore-screen .primary-action svg { width: 24px; height: 24px; }',
+            '.matrix-explore-screen .branded-explore-action::before { opacity: .20; }',
+            '.matrix-explore-screen .branded-explore-action::after { opacity: .35; box-shadow: none; }',
+            '.matrix-explore-screen .repeat-stats-heading .section-title, .matrix-explore-screen .result-title .section-title { font-size: 19px; font-weight: 700; }',
+            '.matrix-explore-screen .consecutive-filter-button { min-height: 28px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }',
+            '.matrix-explore-screen .explore-result-disclaimer { margin: 10px 12px 14px; font-size: 13px; font-weight: 400; line-height: 1.55; text-align: center; }'
+          ]
+          block = '\n'.join(rules) + '\n'
+          if rules[0] not in s:
+            i = s.index(marker) + len(marker)
+            s = s[:i] + '\n' + block + s[i:]
+          required = ['height: 50px', 'font-size: 21px', 'grid-template-columns: 110px minmax(0, 222px)', '.result-summary b { font-size: 20px', '.result-count > span { color: #35bff0; font-size: 17px']
+          for item in required:
+            if item not in s:
+              raise SystemExit('Required image rule missing: ' + item)
+          p.write_text(s, encoding='utf-8')
+      - name: Verify source
+        run: |
+          grep -F 'grid-template-columns: 110px minmax(0, 222px)' src/feature-pages.css
+          grep -F '.matrix-explore-screen .primary-action { width: 366px; max-width: 100%; height: 50px' src/feature-pages.css
+          grep -F '.result-summary b { font-size: 20px' src/feature-pages.css
+          grep -F '.result-count > span { color: #35bff0; font-size: 17px' src/feature-pages.css
+      - run: npm test --if-present
+      - run: npm run build --if-present
+      - name: Commit and clean one-time workflows
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/apply-matrix-explore-image-spec.yml
+          rm -f .github/workflows/apply-matrix-explore-image-spec-fix.yml
+          git add src/feature-pages.css .github/workflows/apply-matrix-explore-image-spec.yml .github/workflows/apply-matrix-explore-image-spec-fix.yml
+          git commit -m 'style: apply Matrix Explore image specification'
+          git push origin HEAD:main
