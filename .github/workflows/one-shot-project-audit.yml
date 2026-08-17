@@ -1,0 +1,50 @@
+name: One-shot project audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-project-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run legacy Node tests
+        id: legacy
+        continue-on-error: true
+        run: node --test tests/*.test.mjs
+
+      - name: Scan control-source risks
+        if: always()
+        run: |
+          echo '=== CSS imports ==='
+          grep -nE '^import .*\.css|^@import .*\.css' src/main.tsx src/*.css 2>/dev/null || true
+          echo '=== !important occurrences ==='
+          grep -RIn --include='*.css' '!important' src || true
+          echo '=== patch/repair/override filenames ==='
+          find src -maxdepth 1 -type f \( -name '*repair*' -o -name '*override*' -o -name '*compact*' \) -print | sort
+          echo '=== unsafe casts / suppressions ==='
+          grep -RInE 'as unknown as|@ts-ignore|@ts-expect-error' src --include='*.ts' --include='*.tsx' || true
+          echo '=== hard-coded status markers ==='
+          grep -RInE 'MATRIX_STATUS_BY_LOTTERY|const statuses = \[' src --include='*.ts' --include='*.tsx' || true
+
+      - name: Fail if legacy tests failed
+        if: steps.legacy.outcome == 'failure'
+        run: exit 1
