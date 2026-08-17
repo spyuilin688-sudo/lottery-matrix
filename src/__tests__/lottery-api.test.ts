@@ -67,7 +67,7 @@ describe('lottery-api response validation', () => {
     expect(result?.drawOrderNumbers).toEqual(['21', '18', '07', '44', '13', '38', '03']);
   });
 
-  it('號碼對照單的獨立特別號會保留為第七顆', async () => {
+  it('號碼對照單的獨立特別號會保留在全部號碼順序欄位', async () => {
     mockJsonResponse({
       lottery: '大樂透',
       numberOrder: '依實際開獎順序排序',
@@ -77,6 +77,8 @@ describe('lottery-api response validation', () => {
         period: '115078',
         drawDate: '2026/08/11',
         numbers: ['21', '18', '07', '44', '13', '38'],
+        sortedNumbers: ['07', '13', '18', '21', '38', '44'],
+        drawOrderNumbers: ['21', '18', '07', '44', '13', '38'],
         specialNumber: '03',
         matchSlots: [],
       }],
@@ -90,5 +92,7 @@ describe('lottery-api response validation', () => {
     });
 
     expect(result.items[0].numbers).toEqual(['21', '18', '07', '44', '13', '38', '03']);
+    expect(result.items[0].sortedNumbers).toEqual(['07', '13', '18', '21', '38', '44', '03']);
+    expect(result.items[0].drawOrderNumbers).toEqual(['21', '18', '07', '44', '13', '38', '03']);
   });
 });
