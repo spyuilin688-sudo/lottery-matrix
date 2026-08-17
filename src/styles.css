@@ -493,7 +493,7 @@ button {
   transition: none;
 }
 
-.mobile-scrollbar[data-visible="true"] {
+.mobile-page:not(:has(.notifications-screen)) .mobile-scrollbar[data-visible="true"] {
   opacity: 1;
 }
 

@@ -35,7 +35,7 @@
   transform: translateZ(0);
 }
 
-.bottom-nav-brand-screen > .feature-body {
+.bottom-nav-brand-screen:not(.notifications-screen) > .feature-body {
   padding-bottom: var(--layout-bottom-nav-clearance);
 }
 
