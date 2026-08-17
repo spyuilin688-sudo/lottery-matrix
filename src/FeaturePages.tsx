@@ -663,20 +663,6 @@ export function DrawHistoryPage({
 
   const historyTitleActions = (
     <div className="history-title-actions">
-      <div className="history-title-lottery native-select">
-        <select
-          aria-label="彩種"
-          value={lottery}
-          onChange={(event) => {
-            const nextLottery = event.target.value as LotteryId;
-            setLottery(nextLottery);
-            setAppliedHistorySettings((current) => ({ ...current, lottery: nextLottery }));
-          }}
-        >
-          {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
-        </select>
-        <span className="history-title-chevron" aria-hidden="true"><ChevronDownIcon /></span>
-      </div>
       <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選條件
@@ -760,6 +746,15 @@ export function DrawHistoryPage({
                   </button>
                 </header>
                 <div className="history-filter-fields">
+                  <div className="history-filter-row">
+                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
+                    <div className="select-box native-select">
+                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
+                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+                      </select>
+                      <ChevronDownIcon />
+                    </div>
+                  </div>
                   <label>
                     <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>
                     <input
@@ -929,7 +924,7 @@ export function MatrixExplorePage({
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
-  const [exploreDate, setExploreDate] = useState("本日(最新)");
+  const [exploreDate, setExploreDate] = useState("本日（最新）");
   const [exploreRange, setExploreRange] = useState("標準範圍");
   const [searched, setSearched] = useState(false);
   const [expandedRoad, setExpandedRoad] = useState<number | null>(null);
@@ -1078,7 +1073,7 @@ export function MatrixExplorePage({
                 {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
               </span>
               <div className="segmented three">
-                {["本日(最新)", "昨日(上1期)", "前日(上2期)"].map((value) => (
+                {["本日（最新）", "昨日（上1期）", "前日（上2期）"].map((value) => (
                   <button
                     type="button"
                     key={value}
@@ -1145,7 +1140,7 @@ export function MatrixExplorePage({
           </section>
 
           <p className="explore-result-disclaimer">
-            探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。
+            探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或<span className="explore-disclaimer-nowrap">獲利</span>。
           </p>
 
           <section className="panel result-panel">
@@ -2797,16 +2792,15 @@ export function NotificationsPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="通知" onNavigate={onNavigate} active="通知" className="notifications-screen" compactHeader>
       <div className="notification-list">
         {rows.map(([key, title, subtitle, icon]) => {
-          return <article className="panel notification-row" key={key}>
+          return <article className="notification-row" key={key}>
             <div className="notification-heading">
-              <div className={`notification-icon${key === "card" || key === "collision" || key === "system" ? " notification-icon--expanded" : ""}`}><img src={icon} alt="" /></div>
+              <div className="notification-icon"><img src={icon} alt="" /></div>
               <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
               <div className="notification-actions"><button type="button" disabled={!settings[key] || key === "collision"} onClick={() => setActiveSettings(key)}>設定選項</button><Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => setSettings({ ...settings, [key]: !settings[key] })} /></div>
             </div>
           </article>;
         })}
       </div>
-      <p className="notification-note">所有通知設定將立即生效</p>
       {activeRow && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop notification-modal-backdrop" role="presentation" onClick={() => setActiveSettings(null)}><section className="filter-sheet notification-modal" role="dialog" aria-modal="true" aria-labelledby="notification-settings-title" onClick={(event) => event.stopPropagation()}><header><h2 id="notification-settings-title">{activeRow[1]}</h2><button type="button" onClick={() => setActiveSettings(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="notification-modal-content">{renderSettings(activeRow[0], activeRow[1], activeRow[2])}</div><button type="button" className="notification-modal-done" onClick={() => setActiveSettings(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
     </FeatureShell>
   );
