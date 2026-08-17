@@ -19,7 +19,18 @@ jobs:
           fetch-depth: 0
           ref: 近10期開獎號碼
       - name: Apply patch
-        run: python scripts/apply-recent-draw-spec.py
+        run: |
+          python scripts/apply-recent-draw-spec.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/FeaturePages.tsx')
+          text = path.read_text()
+          old = ') : (\n          {historyHeading}\n        )}'
+          new = ') : (\n          historyHeading\n        )}'
+          if text.count(old) != 1:
+            raise SystemExit(f'Non-collapsible heading syntax anchor count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - name: Verify source scope
         run: |
           git diff --check
