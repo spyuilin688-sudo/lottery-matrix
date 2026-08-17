@@ -1,0 +1,69 @@
+name: Audit notification icon canvases
+
+on:
+  push:
+    branches: ["通知"]
+    paths:
+      - .github/workflows/notification-icon-audit.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "通知"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet pillow
+      - name: Measure source and normalized icon bounds
+        run: |
+          python - <<'PY' > notification-icon-audit.txt
+          from pathlib import Path
+          from PIL import Image
+          import json
+          paths = [
+              Path('public/resources/notify-bet.png'),
+              Path('public/resources/notify-result.png'),
+              Path('public/resources/notify-win.png'),
+              Path('public/resources/notify-status.png'),
+              Path('public/resources/notify-card.png'),
+              Path('public/resources/notify-collision.png'),
+              Path('public/resources/notify-expiry.png'),
+              Path('public/resources/notify-system.png'),
+          ]
+          def metric(path):
+              im=Image.open(path).convert('RGBA')
+              box=im.getchannel('A').getbbox()
+              left,top,right,bottom=box
+              return {'name':path.name,'size':im.size,'bbox':box,'visible':[right-left,bottom-top],'center':[(left+right-1)/2,(top+bottom-1)/2]}
+          before=[metric(p) for p in paths]
+          print('BEFORE')
+          print(json.dumps(before,ensure_ascii=False,indent=2))
+          canvas=max(max(m['size']) for m in before)
+          target=round(canvas*.875)
+          if target%2: target-=1
+          print('NORMALIZE_TARGET', canvas, target)
+          for p in paths:
+              im=Image.open(p).convert('RGBA')
+              box=im.getchannel('A').getbbox()
+              crop=im.crop(box)
+              scale=min(target/crop.width,target/crop.height)
+              size=(max(1,round(crop.width*scale)),max(1,round(crop.height*scale)))
+              crop=crop.resize(size,Image.Resampling.LANCZOS)
+              out=Image.new('RGBA',(canvas,canvas),(0,0,0,0))
+              out.alpha_composite(crop,((canvas-crop.width)//2,(canvas-crop.height)//2))
+              out.save('/tmp/'+p.name,optimize=True)
+          def tmpmetric(path):
+              im=Image.open('/tmp/'+path.name).convert('RGBA')
+              box=im.getchannel('A').getbbox(); left,top,right,bottom=box
+              return {'name':path.name,'size':im.size,'bbox':box,'visible':[right-left,bottom-top],'center':[(left+right-1)/2,(top+bottom-1)/2]}
+          after=[tmpmetric(p) for p in paths]
+          print('AFTER')
+          print(json.dumps(after,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notification-icon-audit
+          path: notification-icon-audit.txt
