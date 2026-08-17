@@ -405,17 +405,6 @@
   background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded::before {
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 50%;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(238, 183, 73, .72), transparent);
-  content: "";
-  transform: translateX(-50%);
-}
-
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
   grid-template-columns: 16px auto minmax(0, 1fr);
