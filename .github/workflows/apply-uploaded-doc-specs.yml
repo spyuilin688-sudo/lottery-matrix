@@ -1,0 +1,107 @@
+name: Apply uploaded UI specifications
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-uploaded-doc-specs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply confirmed document rules to existing formal selectors
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/feature-pages.css')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = {
+            '.history-panel { margin-top: 12px; padding: 11px; }':
+              '.history-panel { box-sizing: border-box; width: 366px; max-width: 100%; min-width: 0; margin-top: 12px; padding: 0; overflow: hidden; }',
+            '.history-panel .panel-heading { padding-bottom: 6px; border-bottom: 1px solid rgba(195, 145, 54, .70); }':
+              '.history-panel .panel-heading { min-height: 52px; padding: 7px 12px; align-items: center; border-bottom: 1px solid rgba(195, 145, 54, .58); box-sizing: border-box; }',
+            '.history-row { display: grid; min-height: 42px; grid-template-columns: 48px 78px minmax(0, 1fr); align-items: center; border-top: 2px solid #5a5750; color: #bcb7ae; font-size: 9px; }':
+              '.history-row { display: grid; min-height: 46px; grid-template-columns: 66px 68px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(90, 87, 80, .45); color: #bcb7ae; font-size: 9px; box-sizing: border-box; }',
+            '.history-panel .history-head { min-height: 28px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .70); }':
+              '.history-panel .history-head { min-height: 36px; border-top: 0; border-bottom: 1px solid rgba(195, 145, 54, .58); }',
+            '.history-panel .history-numbers[data-has-special="true"] .history-main-numbers {\n  gap: 3px;\n  padding-top: 10px;\n}':
+              '.history-panel .history-numbers[data-has-special="true"] .history-main-numbers {\n  gap: 2px;\n  padding-top: 0;\n}',
+            '.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 5px; }':
+              '.history-panel[data-lottery="六合彩"] .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }',
+            '.history-panel .history-numbers[data-has-special="true"] .history-special-number {\n  height: 33.5px;\n  margin-left: 6px;\n  gap: 4px;\n  align-items: flex-end;\n}':
+              '.history-panel .history-numbers[data-has-special="true"] .history-special-number {\n  height: 28px;\n  margin-left: 4px;\n  gap: 4px;\n  align-items: center;\n}',
+            '.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 33.5px; grid-template-rows: 10px 23.5px; }':
+              '.history-panel .history-numbers[data-has-special="true"] .history-special-ball { height: 28px; grid-template-rows: 9px 19px; }',
+            '.history-panel[data-lottery="六合彩"] .history-special-label { transform: translateY(-3px); }':
+              '.history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }',
+            '.matrix-explore-main-screen .history-row {\n  grid-template-columns: 52px 66px minmax(0, 1fr);\n  border-top-width: 1px;\n}':
+              '.matrix-explore-main-screen .history-row {\n  grid-template-columns: 66px 68px minmax(0, 1fr);\n  border-top-width: 1px;\n}',
+            '.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {\n  grid-template-columns: 56px 62px minmax(0, 1fr);\n}':
+              '.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-row {\n  grid-template-columns: 66px 68px minmax(0, 1fr);\n}',
+          }
+
+          changed = []
+          for old, new in replacements.items():
+            count = text.count(old)
+            if count == 1:
+              text = text.replace(old, new)
+              changed.append(old.split('{', 1)[0].strip())
+            elif count == 0:
+              # Already-current rules are accepted; never append a second control source.
+              if new not in text:
+                raise SystemExit(f'Expected formal rule not found: {old[:100]}')
+            else:
+              raise SystemExit(f'Ambiguous formal rule ({count} matches): {old[:100]}')
+
+          # Existing calculator formal rules already match the uploaded specification;
+          # verify them instead of creating duplicate overrides.
+          required = [
+            '.mode-tabs { display: grid; box-sizing: border-box; width: 366px; max-width: 100%; height: 42px;',
+            '.calculator-panel { box-sizing: border-box; width: 366px; max-width: 100%; min-width: 0; height: auto; min-height: 0; padding: 12px;',
+            '.number-grid { display: grid; min-width: 0; margin-top: 10px; grid-template-columns: repeat(7, 42px); justify-content: space-between; row-gap: 8px;',
+          ]
+          for rule in required:
+            if rule not in text:
+              raise SystemExit(f'Calculator formal rule missing: {rule}')
+
+          path.write_text(text, encoding='utf-8')
+          print('Updated formal selectors:', changed)
+
+      - name: Verify no prohibited near-10 positioning remains
+        run: |
+          ! grep -n 'history-panel\[data-lottery="六合彩"\].*translateY(-3px)' src/feature-pages.css
+          ! grep -n 'history-panel.*padding-top: 10px' src/feature-pages.css
+
+      - run: npm test --if-present
+      - run: npm run build --if-present
+
+      - name: Commit source changes and remove one-time workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/apply-uploaded-doc-specs.yml
+          git add src/feature-pages.css .github/workflows/apply-uploaded-doc-specs.yml
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git commit -m 'style: apply uploaded UI specifications'
+          git push origin HEAD:main
