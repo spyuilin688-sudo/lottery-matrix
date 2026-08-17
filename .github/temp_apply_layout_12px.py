@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import subprocess
 
 TEST = '''import test from 'node:test';
@@ -72,12 +73,13 @@ p.write_text(text)
 
 p = Path('src/tongxing-compact.css')
 text = p.read_text()
-for old in [
-    '.tongxing-screen > .feature-body { padding-left: 4px; padding-right: 4px; }\n',
-    '  .tongxing-screen > .feature-body { padding-left: 4px; padding-right: 4px; }\n',
-]:
-    if text.count(old) != 1: raise SystemExit(f'tongxing body mismatch: {old!r}')
-    text = text.replace(old, '', 1)
+patterns = [
+    r'^\.tongxing-screen\s*>\s*\.feature-body\s*\{\s*padding-left:\s*4px;\s*padding-right:\s*4px;\s*\}\s*$',
+    r'^\s+\.tongxing-screen\s*>\s*\.feature-body\s*\{\s*padding-left:\s*4px;\s*padding-right:\s*4px;\s*\}\s*$'
+]
+for pattern in patterns:
+    text, n = re.subn(pattern, '', text, count=1, flags=re.MULTILINE)
+    if n != 1: raise SystemExit(f'tongxing body regex mismatch: {pattern}')
 p.write_text(text)
 
 p = Path('src/homepage-repair.css')
