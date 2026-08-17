@@ -929,7 +929,7 @@ export function MatrixExplorePage({
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
-  const [exploreDate, setExploreDate] = useState("本日(最新)");
+  const [exploreDate, setExploreDate] = useState("本日（最新）");
   const [exploreRange, setExploreRange] = useState("標準範圍");
   const [searched, setSearched] = useState(false);
   const [expandedRoad, setExpandedRoad] = useState<number | null>(null);
@@ -1078,7 +1078,7 @@ export function MatrixExplorePage({
                 {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
               </span>
               <div className="segmented three">
-                {["本日(最新)", "昨日(上1期)", "前日(上2期)"].map((value) => (
+                {["本日（最新）", "昨日（上1期）", "前日（上2期）"].map((value) => (
                   <button
                     type="button"
                     key={value}
@@ -1145,7 +1145,7 @@ export function MatrixExplorePage({
           </section>
 
           <p className="explore-result-disclaimer">
-            探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或獲利。
+            探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或<span className="explore-disclaimer-nowrap">獲利</span>。
           </p>
 
           <section className="panel result-panel">
