@@ -44,10 +44,14 @@
   min-width: 0;
   height: auto;
   margin: 0;
-  padding: .5rem;
+  padding: .875rem;
   flex-direction: column;
   gap: 0;
   border-radius: .75rem;
+}
+
+.matrix-explore-main-screen .explore-settings {
+  padding: .5rem;
 }
 
 .matrix-explore-main-screen .panel .section-title {
@@ -78,10 +82,6 @@
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
   margin-top: 2rem;
-}
-
-.matrix-explore-main-screen .advanced-panel {
-  padding-top: 2rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
@@ -201,9 +201,9 @@
 
 .matrix-explore-main-screen .hit-options {
   width: 100%;
-  margin: 1.5rem 0 0;
-  padding: 0;
-  border-bottom: 0;
+  margin: 0;
+  padding: 0 0 .875rem;
+  border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -212,7 +212,7 @@
   min-width: 0;
   min-height: 38px;
   height: auto;
-  margin: .5rem 0 0;
+  margin: 0;
   padding: 0;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -494,6 +494,13 @@
 }
 
 @media (min-width: 40rem) {
+  .matrix-explore-main-screen .hit-advanced-panel,
+  .matrix-explore-main-screen .history-panel,
+  .matrix-explore-main-screen .repeat-stats-panel,
+  .matrix-explore-main-screen .result-panel {
+    padding: 1rem;
+  }
+
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
     width: 120px;
