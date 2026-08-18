@@ -1,4 +1,4 @@
-/* Matrix Explore canonical spacing */
+/* Matrix Explore: canonical mobile layout aligned to the approved reference. */
 .matrix-explore-main-screen {
   box-sizing: border-box;
 }
@@ -12,70 +12,128 @@
 .matrix-explore-main-screen .matrix-title-banner,
 .matrix-explore-main-screen .feature-body > * {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
 }
 
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel {
-  padding: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
+/* Settings card: icon/label/control stay on one aligned visual grid. */
 .matrix-explore-main-screen .explore-settings .setting-grid {
-  margin-top: 32px;
-  row-gap: 16px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px;
+  row-gap: 12px;
 }
 
-.matrix-explore-main-screen .explore-settings .setting-grid label {
-  grid-template-columns: max-content minmax(0, 1fr);
+.matrix-explore-main-screen .explore-settings .setting-grid label,
+.matrix-explore-main-screen .advanced-panel label {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: clamp(108px, 31vw, 120px) minmax(0, 1fr);
   column-gap: 12px;
+  align-items: center;
 }
 
-.matrix-explore-main-screen .explore-settings .setting-grid label:first-child {
-  column-gap: 28px;
+.matrix-explore-main-screen .explore-settings .setting-grid label > span,
+.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  white-space: nowrap;
 }
 
-.matrix-explore-main-screen .explore-settings .setting-grid label > span {
-  column-gap: 12px;
+.matrix-explore-main-screen .setting-label-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
 }
 
-.matrix-explore-main-screen .explore-settings .setting-grid label:first-child > span {
-  column-gap: 28px;
+.matrix-explore-main-screen .explore-settings .select-box,
+.matrix-explore-main-screen .explore-settings .segmented,
+.matrix-explore-main-screen .advanced-panel .select-box,
+.matrix-explore-main-screen .advanced-panel .segmented {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 }
 
-.matrix-explore-main-screen .explore-settings .segmented.three {
+.matrix-explore-main-screen .explore-settings .segmented.three,
+.matrix-explore-main-screen .advanced-panel .segmented.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
+.matrix-explore-main-screen .advanced-panel .segmented.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Hit-condition card mirrors the reference: two equal choices, divider, advanced row. */
 .matrix-explore-main-screen .hit-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 24px;
-  padding-bottom: 0;
+  margin-top: 16px;
+  padding-bottom: 12px;
 }
 
 .matrix-explore-main-screen .advanced-row {
-  margin-top: 8px;
-  column-gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+  column-gap: 10px;
 }
 
 .matrix-explore-main-screen .advanced-panel {
-  padding-top: 32px;
-  row-gap: 16px;
-}
-
-.matrix-explore-main-screen .advanced-panel label {
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 12px;
-}
-
-.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-  column-gap: 12px;
-}
-
-.matrix-explore-main-screen .advanced-panel .segmented.three,
-.matrix-explore-main-screen .advanced-panel .segmented.two {
-  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding-top: 18px;
+  row-gap: 12px;
 }
 
 .matrix-explore-main-screen .primary-action {
+  width: 100%;
   margin: 0;
+}
+
+@media (max-width: 360px) {
+  .matrix-explore-main-screen .explore-settings,
+  .matrix-explore-main-screen .hit-advanced-panel {
+    padding: 10px;
+  }
+
+  .matrix-explore-main-screen .explore-settings .setting-grid label,
+  .matrix-explore-main-screen .advanced-panel label {
+    grid-template-columns: 104px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .matrix-explore-main-screen .explore-settings .setting-grid label > span,
+  .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+    grid-template-columns: 30px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .matrix-explore-main-screen .setting-label-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
+
+  .matrix-explore-main-screen .explore-settings .segmented.three,
+  .matrix-explore-main-screen .advanced-panel .segmented.three,
+  .matrix-explore-main-screen .advanced-panel .segmented.two {
+    gap: 6px;
+  }
 }
