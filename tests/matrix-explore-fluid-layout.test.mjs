@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const css = readFileSync('src/matrix-explore-spacing.css', 'utf8');
+const ballCss = readFileSync('src/number-ball.css', 'utf8');
 
 test('page container uses responsive 12px gutters and parent spacing', () => {
   assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*32rem;[\s\S]*?margin:\s*0 auto;[\s\S]*?padding:\s*1rem \.75rem;[\s\S]*?gap:\s*\.875rem;/);
@@ -36,4 +37,6 @@ test('history table uses 12-column 3-3-6 layout and compact responsive balls', (
   assert.match(css, /\.matrix-explore-main-screen \.history-row > :nth-child\(2\)[\s\S]*?grid-column:\s*span 3;/);
   assert.match(css, /\.matrix-explore-main-screen \.history-row > :nth-child\(3\)[\s\S]*?grid-column:\s*span 6;/);
   assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers[\s\S]*?display:\s*flex;[\s\S]*?gap:\s*\.25rem;/);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[\s\S]*?--number-ball-size:\s*1\.5rem;/);
+  assert.match(ballCss, /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[\s\S]*?--number-ball-size:\s*1\.75rem;/);
 });
