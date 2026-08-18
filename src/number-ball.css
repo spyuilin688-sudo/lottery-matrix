@@ -151,12 +151,12 @@
 }
 
 .matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: 1.5rem;
+  --number-ball-size: 1.625rem;
 }
 
 @media (min-width: 40rem) {
   .matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
-    --number-ball-size: 1.75rem;
+    --number-ball-size: 1.875rem;
   }
 }
 
