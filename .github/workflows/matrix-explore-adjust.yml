@@ -120,3 +120,5 @@ jobs:
           git add src/FeaturePages.tsx src/feature-pages.css .github/workflows/matrix-explore-adjust.yml
           git commit -m 'Adjust Matrix Explore settings layout'
           git push origin main
+
+# trigger: 2
