@@ -27,12 +27,10 @@ function px(value: string) {
 }
 
 function boxValues(style: CSSStyleDeclaration, prefix: 'margin' | 'padding') {
-  return [
-    px(style[`${prefix}Top`]),
-    px(style[`${prefix}Right`]),
-    px(style[`${prefix}Bottom`]),
-    px(style[`${prefix}Left`]),
-  ].join('/');
+  const values = prefix === 'margin'
+    ? [style.marginTop, style.marginRight, style.marginBottom, style.marginLeft]
+    : [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft];
+  return values.map(px).join('/');
 }
 
 function shortName(element: Element) {
@@ -117,8 +115,11 @@ export function installLayoutDebugMode() {
     frame = window.requestAnimationFrame(renderOverlay);
   };
 
-  const observer = new MutationObserver(schedule);
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+  const appRoot = document.getElementById('root');
+  if (appRoot) {
+    const observer = new MutationObserver(schedule);
+    observer.observe(appRoot, { childList: true, subtree: true, attributes: true });
+  }
   window.addEventListener('resize', schedule, { passive: true });
   window.addEventListener('scroll', schedule, { passive: true });
   schedule();
