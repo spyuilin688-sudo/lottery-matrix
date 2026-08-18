@@ -1,0 +1,133 @@
+name: Matrix Explore PR patch runner
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'matrix-explore-reference-trigger'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Write regression test
+        run: |
+          cat > tests/matrix-explore-reference-proportions.test.mjs <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+          test('Matrix Explore requested result sections use reference proportions', () => {
+            assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--mx-history-row-height:\s*54px/s);
+            assert.match(css, /--mx-history-columns:\s*54px 78px minmax\(0, 1fr\)/);
+            assert.match(css, /--mx-history-ball-size:\s*30px/);
+            assert.match(css, /\.matrix-explore-screen \.repeat-stats-heading\s*\{/);
+            assert.match(css, /\.matrix-explore-screen \.result-summary > div\s*\{[^}]*height:\s*58px/s);
+            assert.match(css, /grid-template-columns:\s*minmax\(0, \.9fr\) minmax\(0, \.72fr\) minmax\(0, \.94fr\) minmax\(0, 1\.16fr\) minmax\(0, 1\.02fr\) minmax\(0, 1\.18fr\)/);
+            assert.match(css, /\.road-result-row\s*\{\s*min-height:\s*58px;/);
+            assert.doesNotMatch(css, /\.matrix-explore-main-screen[^}]*(!important|zoom\s*:|scale\(|translate\(|margin(?:-[a-z]+)?\s*:\s*-)/s);
+          });
+          EOF
+
+      - name: Verify RED
+        run: |
+          set +e
+          node --test tests/matrix-explore-reference-proportions.test.mjs
+          status=$?
+          set -e
+          test "$status" -ne 0
+
+      - name: Patch existing formal style sources only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/feature-pages.css')
+          css = p.read_text()
+
+          def once(old, new):
+              global css
+              n = css.count(old)
+              if n != 1:
+                  raise SystemExit(f'Expected exactly one match, found {n}: {old[:100]}')
+              css = css.replace(old, new, 1)
+
+          anchor = '.matrix-explore-main-screen .native-select select { font-weight: 700; }'
+          once(anchor, anchor + '''\n.matrix-explore-main-screen {\n  --mx-history-heading-height: 58px;\n  --mx-history-heading-padding: 8px 12px;\n  --mx-history-title-size: 17px;\n  --mx-history-head-height: 40px;\n  --mx-history-row-height: 54px;\n  --mx-history-columns: 54px 78px minmax(0, 1fr);\n  --mx-history-issue-size: 14px;\n  --mx-history-date-year-size: 13px;\n  --mx-history-date-detail-size: 12px;\n  --mx-history-ball-size: 30px;\n  --mx-history-ball-font-size: 11px;\n  --mx-history-ball-gap: 5px;\n  --mx-history-action-size: 13px;\n}\n''')
+
+          once('height: 52px;\n  padding: 7px 12px;', 'height: var(--mx-history-heading-height, 52px);\n  padding: var(--mx-history-heading-padding, 7px 12px);')
+          once('font-size: 15px;\n  font-weight: 700;\n  line-height: 24px;', 'font-size: var(--mx-history-title-size, 15px);\n  font-weight: 700;\n  line-height: 24px;')
+          once('color: #d8a93e;\n  font-size: 13px;\n  font-weight: 500;', 'color: #d8a93e;\n  font-size: var(--mx-history-action-size, 13px);\n  font-weight: 500;')
+          once('width: 100%; height: 46px; grid-template-columns: 66px 68px minmax(0, 1fr);', 'width: 100%; height: var(--mx-history-row-height, 46px); grid-template-columns: var(--mx-history-columns, 66px 68px minmax(0, 1fr));')
+          once('  font-size: 14px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;', '  font-size: var(--mx-history-issue-size, 14px);\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;')
+          once('.history-date-stack strong { color: #f1eee8; font-size: 12px;', '.history-date-stack strong { color: #f1eee8; font-size: var(--mx-history-date-year-size, 12px);')
+          once('.history-date-stack small { max-width: 100%; margin-top: 1px; overflow: hidden; color: #c7c1b8; font-size: 11px;', '.history-date-stack small { max-width: 100%; margin-top: 1px; overflow: hidden; color: #c7c1b8; font-size: var(--mx-history-date-detail-size, 11px);')
+          once('.history-head { height: 36px;', '.history-head { height: var(--mx-history-head-height, 36px);')
+          once('.history-main-numbers { gap: 2px; }', '.history-main-numbers { gap: var(--mx-history-ball-gap, 2px); }')
+          once('.mini-ball { display: inline-grid; width: 27px; height: 27px;', '.mini-ball { display: inline-grid; width: var(--mx-history-ball-size, 27px); height: var(--mx-history-ball-size, 27px);')
+          once('color: white; font-size: 10px; text-shadow: 0 1px 2px #000; }', 'color: white; font-size: var(--mx-history-ball-font-size, 10px); text-shadow: 0 1px 2px #000; }')
+
+          old_group = '''.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-settings,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-advanced-panel,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .history-panel,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .repeat-stats-panel,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .result-panel {'''
+          new_group = '''.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-settings,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-advanced-panel,\n.matrix-explore-screen .history-panel,\n.matrix-explore-screen .repeat-stats-panel,\n.matrix-explore-screen .result-panel {'''
+          once(old_group, new_group)
+
+          for tail in [
+              ' .repeat-stats-heading {',
+              ' .repeat-stats-heading .section-title,',
+              ' .result-title .section-title {',
+              ' .repeat-stats-heading button {',
+              ' .repeat-stats-heading > span {',
+              ' .result-summary {',
+              ' .result-summary > div {',
+              ' .result-summary b {',
+              ' .result-summary small {',
+              ' .explore-result-disclaimer {',
+              ' .result-panel {',
+          ]:
+              old = '.matrix-explore-screen:not(.matrix-explore-main-screen)' + tail
+              if old in css:
+                  css = css.replace(old, '.matrix-explore-screen' + tail, 1)
+
+          once('display: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px;', 'display: grid; margin-top: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 6px; row-gap: 8px;')
+          once('display: flex; min-width: 0; height: 48px; min-height: 48px;', 'display: flex; min-width: 0; height: 58px; min-height: 58px;')
+          once('font-size: 20px; font-weight: 500; line-height: 22px;', 'font-size: 19px; font-weight: 500; line-height: 22px;')
+          once('margin-top: 1px; color: #aaa39a; font-size: 11px;', 'margin-top: 2px; color: #aaa39a; font-size: 12px;')
+          once('box-sizing: border-box; width: 100%; margin: 0; padding: 14px 12px;', 'box-sizing: border-box; width: 100%; margin: 0; padding: 16px 12px;')
+
+          once('grid-template-columns: minmax(0, .88fr) minmax(0, .84fr) minmax(0, .92fr) minmax(0, 1.12fr) minmax(0, 1.1fr) minmax(0, 1.14fr);', 'grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, .94fr) minmax(0, 1.16fr) minmax(0, 1.02fr) minmax(0, 1.18fr);')
+          once('.road-results-head { min-height: 34px;', '.road-results-head { min-height: 40px;')
+          once('.road-result-row { min-height: 50px; }', '.road-result-row { min-height: 58px; }')
+          once('border-radius: 6px; color: #f0bd34; font-size: 10px;', 'border-radius: 6px; color: #f0bd34; font-size: 11px;')
+          once('.road-results .result-period { font-size: 11px; }', '.road-results .result-period { font-size: 12px; }')
+          once('.road-results .result-consecutive { font-size: 10.5px; }', '.road-results .result-consecutive { font-size: 11.5px; }')
+          once('.road-results .result-number { font-size: 14.5px; }', '.road-results .result-number { font-size: 16px; }')
+          once('.road-results strong { color: #d7ad55; font-size: 16.5px; }', '.road-results strong { color: #d7ad55; font-size: 18px; }')
+          once('  .road-result-row { grid-template-columns: .88fr .84fr .92fr 1.12fr 1.1fr 1.14fr; }', '  .road-result-row { grid-template-columns: .9fr .72fr .94fr 1.16fr 1.02fr 1.18fr; }')
+          once('.repeat-stats-panel, .result-panel { margin-top: 12px; }', '.repeat-stats-panel, .result-panel { margin-top: 16px; }')
+
+          p.write_text(css)
+          Path('.github/workflows/matrix-explore-pr-patch.yml').unlink()
+          Path('.github/workflows/matrix-explore-reference-proportions-one-shot.yml').unlink(missing_ok=True)
+          Path('.github/matrix-explore-reference-trigger.txt').unlink(missing_ok=True)
+          PY
+
+      - name: Verify GREEN and build
+        run: |
+          node --test tests/matrix-explore-reference-proportions.test.mjs tests/matrix-explore-ui-refinement.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-filter-hit-area.test.mjs
+          npm ci
+          npm run build
+          git diff --check
+
+      - name: Commit verified change to main
+        run: |
+          git config user.name "spyuilin688-sudo"
+          git config user.email "spyuilin688@gmail.com"
+          git add -A
+          git commit -m "style: restore Matrix Explore reference proportions"
+          git push origin main
