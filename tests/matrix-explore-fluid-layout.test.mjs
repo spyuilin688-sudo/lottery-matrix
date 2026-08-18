@@ -6,12 +6,14 @@ const css = readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const ballCss = readFileSync('src/number-ball.css', 'utf8');
 
 test('page container uses responsive 12px gutters and parent spacing', () => {
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[\s\S]*?width:\s*100%;[\s\S]*?max-width:\s*32rem;[\s\S]*?margin:\s*0 auto;[\s\S]*?padding:\s*1rem \.75rem;[\s\S]*?gap:\s*\.875rem;/);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*28rem;[^}]*margin:\s*0 auto;[^}]*padding:\s*1rem \.75rem;[^}]*gap:\s*\.875rem;/);
+  assert.match(css, /@media \(min-width:\s*48rem\)[\s\S]*?\.matrix-explore-main-screen \.feature-body\s*\{[^}]*max-width:\s*32rem;/);
   assert.doesNotMatch(css, /\.matrix-explore-main-screen \.feature-body[^}]*width:\s*\d+px/);
 });
 
 test('cards use responsive padding with no compensating margins', () => {
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?padding:\s*\.875rem;[\s\S]*?border-radius:\s*\.75rem;/);
+  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-explore-main-screen \.explore-settings,[\s\S]*?padding:\s*1rem;/);
   assert.doesNotMatch(css, /\.matrix-explore-main-screen (?:\.explore-settings|\.hit-advanced-panel|\.history-panel|\.repeat-stats-panel|\.result-panel)[^\{]*\{[^}]*margin-(?:top|bottom):/);
 });
 
