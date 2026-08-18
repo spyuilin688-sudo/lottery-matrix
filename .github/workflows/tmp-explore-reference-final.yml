@@ -1,3 +1,4 @@
+# Triggered through pull-request merge so the main push event can run the verified layout patch.
 name: Matrix Explore fluid layout
 on:
   push:
