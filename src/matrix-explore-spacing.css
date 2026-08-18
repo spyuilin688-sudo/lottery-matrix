@@ -24,7 +24,7 @@
   box-sizing: border-box;
 }
 
-/* Settings card: icon/label/control stay on one aligned visual grid. */
+/* Reference layout: compact icon/label area, wide control area. */
 .matrix-explore-main-screen .explore-settings .setting-grid {
   width: 100%;
   min-width: 0;
@@ -37,18 +37,18 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: clamp(108px, 31vw, 120px) minmax(0, 1fr);
-  column-gap: 12px;
+  grid-template-columns: 92px minmax(0, 1fr);
+  column-gap: 8px;
   align-items: center;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: grid;
-  width: 100%;
+  width: 92px;
   min-width: 0;
   grid-template-columns: 32px minmax(0, 1fr);
-  column-gap: 10px;
+  column-gap: 8px;
   align-items: center;
   white-space: nowrap;
 }
@@ -79,6 +79,16 @@
   gap: 8px;
 }
 
+.matrix-explore-main-screen .explore-settings .segmented button,
+.matrix-explore-main-screen .advanced-panel .segmented button {
+  min-width: 0;
+  padding-inline: 3px;
+  font-size: 13px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: visible;
+}
+
 /* Hit-condition card mirrors the reference: two equal choices, divider, advanced row. */
 .matrix-explore-main-screen .hit-options {
   display: grid;
@@ -86,6 +96,11 @@
   gap: 8px;
   margin-top: 16px;
   padding-bottom: 12px;
+}
+
+.matrix-explore-main-screen .hit-options button {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -115,14 +130,15 @@
 
   .matrix-explore-main-screen .explore-settings .setting-grid label,
   .matrix-explore-main-screen .advanced-panel label {
-    grid-template-columns: 104px minmax(0, 1fr);
-    column-gap: 8px;
+    grid-template-columns: 86px minmax(0, 1fr);
+    column-gap: 6px;
   }
 
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+    width: 86px;
     grid-template-columns: 30px minmax(0, 1fr);
-    column-gap: 8px;
+    column-gap: 6px;
   }
 
   .matrix-explore-main-screen .setting-label-icon {
@@ -135,5 +151,11 @@
   .matrix-explore-main-screen .advanced-panel .segmented.three,
   .matrix-explore-main-screen .advanced-panel .segmented.two {
     gap: 6px;
+  }
+
+  .matrix-explore-main-screen .explore-settings .segmented button,
+  .matrix-explore-main-screen .advanced-panel .segmented button {
+    padding-inline: 2px;
+    font-size: 12px;
   }
 }
