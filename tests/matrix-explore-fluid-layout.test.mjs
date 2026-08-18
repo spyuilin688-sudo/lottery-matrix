@@ -11,17 +11,20 @@ function ruleBlock(source, selectorPattern) {
   return match[1];
 }
 
-test("Matrix Explore control rows use the requested fluid box model", () => {
+test("Matrix Explore control rows use compact responsive density", () => {
+  const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel");
+  assert.match(stack, /row-gap:\s*\.5rem/);
+  assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*\.5rem/s);
+
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel label");
   assert.match(row, /display:\s*flex/);
   assert.match(row, /width:\s*100%/);
   assert.match(row, /align-items:\s*center/);
-  assert.match(row, /justify-content:\s*space-between/);
-  assert.match(row, /gap:\s*\.75rem/);
+  assert.match(row, /gap:\s*\.5rem/);
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
   assert.match(left, /display:\s*flex/);
-  assert.match(left, /width:\s*110px/);
+  assert.match(left, /width:\s*100px/);
   assert.match(left, /gap:\s*\.5rem/);
   assert.match(left, /font-size:\s*\.875rem/);
   assert.match(left, /font-weight:\s*700/);
@@ -34,21 +37,28 @@ test("Matrix Explore control rows use the requested fluid box model", () => {
   assert.match(icon, /border-radius:\s*\.5rem/);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button,[\\s\\S]*?\\.hit-options button");
-  assert.match(button, /min-height:\s*38px/);
-  assert.match(button, /padding:\s*\.375rem \.5rem/);
+  assert.match(button, /height:\s*36px/);
+  assert.match(button, /min-height:\s*36px/);
+  assert.match(button, /padding:\s*\.25rem \.375rem/);
+  assert.match(button, /border:\s*1px solid #334155/);
   assert.match(button, /border-radius:\s*\.75rem/);
   assert.match(button, /white-space:\s*nowrap/);
+
+  assert.match(css, /\.hit-advanced-panel\s*\{[^}]*padding:\s*\.5rem/s);
+  assert.match(css, /\.hit-options\s*\{[^}]*padding:\s*0 0 \.5rem/s);
+  assert.doesNotMatch(css, /transform:\s*(?:translate|scale)\([^)]*\)[^}]*\.explore-settings/s);
+  assert.doesNotMatch(css, /zoom\s*:/);
 });
 
 test("Matrix Explore history table keeps 3-3-6 by default and opens to 2.5-2.5-7 below 360px", () => {
   const heading = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel \\.panel-heading");
   assert.match(heading, /display:\s*flex/);
   assert.match(heading, /justify-content:\s*space-between/);
-  assert.match(heading, /margin-bottom:\s*\.75rem/);
+  assert.match(heading, /margin-bottom:\s*\.5rem/);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
   assert.match(row, /grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(row, /padding:\s*\.625rem 0/);
+  assert.match(row, /padding:\s*\.5rem 0/);
   assert.match(row, /border-bottom:\s*1px solid rgba\(30, 41, 59, \.6\)/);
   assert.match(css, /:nth-child\(1\)\s*\{[^}]*grid-column:\s*span 3/);
   assert.match(css, /:nth-child\(2\)\s*\{[^}]*grid-column:\s*span 3/);
