@@ -1,4 +1,0 @@
-/* Temporary project-wide container outline for layout inspection. */
-:where(div, main, section, article, header, footer, nav, aside, form, fieldset) {
-  outline: 1px solid #FF0000 !important;
-}
