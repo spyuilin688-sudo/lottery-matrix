@@ -1,11 +1,10 @@
 /* Matrix Explore canonical spacing */
 .matrix-explore-main-screen {
-  padding-inline: 16px;
   box-sizing: border-box;
 }
 
 .matrix-explore-main-screen .feature-body {
-  padding-inline: 0;
+  padding-inline: 16px;
   gap: 8px;
 }
 
