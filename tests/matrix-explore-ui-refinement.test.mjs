@@ -35,6 +35,8 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /min-height:\s*28px/);
   assert.match(button, /align-items:\s*center/);
   assert.match(button, /justify-content:\s*center/);
+  assert.match(button, /text-align:\s*center/);
+  assert.match(button, /padding:\s*\.125rem 0/);
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
 
@@ -47,12 +49,13 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
-  assert.match(badge, /top:\s*-\.625rem/);
   assert.match(badge, /right:\s*\.125rem/);
-  assert.match(badge, /padding:\s*\.0625rem \.25rem/);
-  assert.match(badge, /font-size:\s*\.5625rem/);
+  assert.match(badge, /padding:\s*\.0625rem \.1875rem/);
+  assert.match(badge, /font-size:\s*\.5rem/);
   assert.doesNotMatch(badge, /transform\s*:/);
 
+  assert.doesNotMatch(prototypeCss, /--debug-container-(?:page|wrapper|section|layout|navigation|form)/);
+  assert.doesNotMatch(prototypeCss, /Temporary global container debug outlines/);
   assert.doesNotMatch(css, /!important/);
   assert.doesNotMatch(css, /margin(?:-top|-right|-bottom|-left)?:\s*-/);
   assert.doesNotMatch(css, /zoom\s*:/);
