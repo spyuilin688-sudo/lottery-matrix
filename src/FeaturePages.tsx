@@ -1009,7 +1009,7 @@ export function MatrixExplorePage({
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/lottery.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="lottery" />}<b>彩種</b></span>
+          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/lottery.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="lottery" />}<b>彩球類型</b></span>
             <div className="select-box native-select">
               <select
                 aria-label="彩種"
