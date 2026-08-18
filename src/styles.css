@@ -340,17 +340,13 @@ button {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-width: none;
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
   transition: bottom 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .mobile-scroll::-webkit-scrollbar {
   display: none;
-}
-
-.mobile-scroll[data-dragging="true"] {
-  cursor: none;
 }
 
 .mobile-cursor {
@@ -466,7 +462,6 @@ button {
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   padding: 0;
-  will-change: transform;
 }
 
 .app-screen {
