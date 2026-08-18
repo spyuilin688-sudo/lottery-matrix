@@ -11,6 +11,7 @@
   width: 100%;
   max-width: 28rem;
   min-width: 0;
+  min-height: 100%;
   margin: 0 auto;
   padding: 1rem .75rem;
   flex-direction: column;
@@ -85,11 +86,11 @@
   display: flex;
   min-width: max-content;
   align-items: center;
-  gap: .5rem;
+  gap: .625rem;
   flex: 0 0 auto;
   color: #bdb8b0;
   font-size: .875rem;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.25rem;
   text-align: left;
   white-space: nowrap;
@@ -153,6 +154,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: .5rem;
+  align-items: center;
 }
 
 .matrix-explore-main-screen .segmented.two,
@@ -160,21 +162,26 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .5rem;
+  align-items: center;
 }
 
 .matrix-explore-main-screen .segmented button,
 .matrix-explore-main-screen .hit-options button {
   position: relative;
   box-sizing: border-box;
+  display: flex;
   min-width: 0;
   height: auto;
   min-height: 38px;
-  padding: .375rem .75rem;
-  border-radius: .5rem;
+  padding: .5rem .75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: .75rem;
   font-size: .75rem;
   font-weight: 700;
   line-height: 1.15;
-  white-space: normal;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .hit-options {
@@ -182,10 +189,6 @@
   margin: 0;
   padding: 0 0 .875rem;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
-}
-
-.matrix-explore-main-screen .hit-options button {
-  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -223,7 +226,7 @@
   padding: .5rem .75rem;
   gap: .75rem;
   border: 1px solid #d4a52f;
-  border-radius: .625rem;
+  border-radius: .75rem;
   background: #071018;
   color: #f6d472;
   font-size: 1.0625rem;
@@ -316,7 +319,7 @@
   min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .matrix-explore-main-screen .history-numbers {
@@ -325,7 +328,6 @@
 }
 
 .matrix-explore-main-screen .history-main-numbers {
-  display: flex;
   gap: .25rem;
 }
 
@@ -352,6 +354,7 @@
   min-width: 0;
   min-height: 3.375rem;
   height: auto;
+  padding: .5rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
