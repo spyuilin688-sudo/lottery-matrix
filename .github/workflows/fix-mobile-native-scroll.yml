@@ -1,212 +1,40 @@
-name: Fix mobile native scroll
+name: Refresh mobile runtime lock
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-mobile-native-scroll.yml
 
 permissions:
   contents: write
 
 jobs:
-  repair:
+  refresh-lock:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: RED - reproduce custom scroll physics conflict
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Refresh protected runtime hashes
+        run: npm run update:runtime-lock
+      - name: Verify protected runtime and build
         run: |
-          cat > tests/mobile-native-scroll.test.mjs <<'EOF'
-          import assert from 'node:assert/strict';
-          import { readFileSync } from 'node:fs';
-          import test from 'node:test';
-
-          const source = readFileSync('src/mobile/MobileScroll.tsx', 'utf8');
-          const css = readFileSync('src/styles.css', 'utf8');
-
-          test('MobileScroll delegates touch scrolling and momentum to the browser', () => {
-            assert.doesNotMatch(source, /scrollPhysics|startMomentum|springBack|setPointerCapture|onPointerMove|preventDefault\(\)/);
-            assert.doesNotMatch(source, /data-overscroll|translateY\(\$\{overscrollY\}px\)/);
-            assert.match(css, /\.mobile-scroll\s*\{[^}]*overflow-y:\s*auto;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-y;/s);
-          });
-          EOF
-          if node --test tests/mobile-native-scroll.test.mjs; then
-            echo 'Expected native-scroll regression test to fail before the fix.'
-            exit 1
-          fi
-      - name: Apply root-cause fix
-        run: |
-          cat > src/mobile/MobileScroll.tsx <<'EOF'
-          import {
-            useCallback,
-            useEffect,
-            useRef,
-            useState,
-            type CSSProperties,
-            type PropsWithChildren,
-          } from "react";
-          import { useKeyboardInsets } from "./Keyboard";
-
-          type MobileScrollProps = PropsWithChildren<{
-            className?: string;
-          }>;
-
-          export function MobileScroll({ className, children }: MobileScrollProps) {
-            const { isKeyboardVisible, keyboardHeight, keyboardDragging } = useKeyboardInsets();
-            const scrollRef = useRef<HTMLDivElement | null>(null);
-            const hideTimerRef = useRef<number | null>(null);
-            const [thumb, setThumb] = useState({
-              visible: false,
-              top: 0,
-              height: 0,
-              enabled: false,
-            });
-
-            const updateThumb = useCallback((visible = true) => {
-              const scroll = scrollRef.current;
-              if (!scroll) return;
-
-              const { clientHeight, scrollHeight, scrollTop } = scroll;
-              const enabled = scrollHeight > clientHeight + 2;
-              const height = enabled ? Math.max(36, (clientHeight / scrollHeight) * clientHeight) : 0;
-              const maxThumbTop = Math.max(0, clientHeight - height - 8);
-              const maxScrollTop = Math.max(1, scrollHeight - clientHeight);
-              const top = enabled ? 4 + (scrollTop / maxScrollTop) * maxThumbTop : 0;
-
-              setThumb({ visible: visible && enabled, top, height, enabled });
-
-              if (hideTimerRef.current !== null) {
-                window.clearTimeout(hideTimerRef.current);
-              }
-
-              if (visible && enabled) {
-                hideTimerRef.current = window.setTimeout(() => {
-                  setThumb((current) => ({ ...current, visible: false }));
-                }, 650);
-              }
-            }, []);
-
-            useEffect(() => {
-              updateThumb(false);
-
-              const scroll = scrollRef.current;
-              if (!scroll) return;
-
-              const handleScroll = () => updateThumb(true);
-              const resizeObserver = new ResizeObserver(() => updateThumb(false));
-
-              scroll.addEventListener("scroll", handleScroll, { passive: true });
-              resizeObserver.observe(scroll);
-
-              if (scroll.firstElementChild) {
-                resizeObserver.observe(scroll.firstElementChild);
-              }
-
-              return () => {
-                scroll.removeEventListener("scroll", handleScroll);
-                resizeObserver.disconnect();
-
-                if (hideTimerRef.current !== null) {
-                  window.clearTimeout(hideTimerRef.current);
-                }
-              };
-            }, [updateThumb]);
-
-            useEffect(() => {
-              updateThumb(false);
-            }, [keyboardHeight, updateThumb]);
-
-            const style = {
-              "--keyboard-height": `${keyboardHeight}px`,
-            } as CSSProperties;
-
-            return (
-              <section
-                className={`mobile-page ${className ?? ""}`}
-                data-keyboard-dragging={keyboardDragging ? "true" : "false"}
-                data-keyboard-visible={isKeyboardVisible ? "true" : "false"}
-                style={style}
-              >
-                <div
-                  ref={scrollRef}
-                  className="mobile-scroll"
-                  data-testid="mobile-scroll"
-                >
-                  <div className="mobile-scroll-content" data-testid="mobile-scroll-content">
-                    {children}
-                  </div>
-                </div>
-                <div
-                  className="mobile-scrollbar"
-                  data-testid="mobile-scrollbar"
-                  data-visible={thumb.visible ? "true" : "false"}
-                  aria-hidden="true"
-                >
-                  <div
-                    className="mobile-scrollbar-thumb"
-                    style={{
-                      height: thumb.height,
-                      transform: `translateY(${thumb.top}px)`,
-                    }}
-                  />
-                </div>
-              </section>
-            );
-          }
-          EOF
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('src/styles.css')
-          text = path.read_text()
-          old = '''.mobile-scroll {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: var(--keyboard-height);
-            left: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            scrollbar-width: none;
-            touch-action: none;
-            user-select: none;
-            transition: bottom 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-          }'''
-          new = '''.mobile-scroll {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: var(--keyboard-height);
-            left: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
-            scrollbar-width: none;
-            touch-action: pan-y;
-            user-select: none;
-            transition: bottom 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-          }'''
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected mobile-scroll CSS block once, found {text.count(old)}')
-          path.write_text(text.replace(old, new, 1))
-          PY
-      - name: GREEN - verify native scrolling and project build
-        run: |
+          npm run check:runtime
           node --test tests/mobile-native-scroll.test.mjs
-          npm ci
           npm run build
-      - name: Verify scope and clean workflow
+          git diff --check
+      - name: Remove temporary workflow and commit lock
         run: |
           rm .github/workflows/fix-mobile-native-scroll.yml
-          git diff --check
-          git diff -- src/mobile/MobileScroll.tsx src/styles.css tests/mobile-native-scroll.test.mjs .github/workflows/fix-mobile-native-scroll.yml
-      - name: Commit repair
-        run: |
           git config user.name "spy854540-cmd"
           git config user.email "spy854540@gmail.com"
-          git add -A
-          git commit -m "fix: restore native mobile scrolling"
+          git add mobile-runtime.lock.json .github/workflows/fix-mobile-native-scroll.yml
+          git commit -m "chore: refresh mobile runtime lock"
           git push origin main
