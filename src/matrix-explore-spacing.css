@@ -497,6 +497,7 @@
 
 .matrix-explore-main-screen .consecutive-filter-button,
 .matrix-explore-main-screen .repeat-stats-heading button {
+  position: relative;
   min-height: 38px;
   height: auto;
   padding: .375rem .75rem;
