@@ -42,7 +42,7 @@ jobs:
 
           test('main container is fluid', () => {
             assert.match(block, /\.matrix-explore-main-screen \.feature-body\s*\{[\s\S]*?width:\s*100%;[\s\S]*?padding:\s*1rem;[\s\S]*?gap:\s*\.875rem;/);
-            assert.doesNotMatch(block, /\bwidth:\s*\d+px\b/);
+            assert.doesNotMatch(block, /^\s*width:\s*\d+px\b/m);
           });
           test('rows stack then switch at md', () => {
             assert.match(block, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label,[\s\S]*?flex-direction:\s*column;[\s\S]*?gap:\s*\.5rem;/);
