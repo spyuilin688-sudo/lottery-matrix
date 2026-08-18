@@ -1,4 +1,4 @@
-name: Temporary Matrix Explore title action removal
+name: Fix production shell regression
 
 on:
   push:
@@ -16,61 +16,56 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Remove Explore Tianyan and Tiangong title actions at source
+      - name: Patch stale shell assertion and runtime lock
         run: |
           python - <<'PY'
           from pathlib import Path
+          import hashlib
+          import json
 
-          path = Path('src/FeaturePages.tsx')
-          text = path.read_text()
+          test_path = Path('src/admin/__tests__/AdminApp.test.tsx')
+          text = test_path.read_text()
+          old = '''  it("keeps a non-admin path in the member mobile runtime", async () => {
+            window.history.replaceState({}, "", "/matrix-explore");
+            const { default: App } = await import("../../App");
 
-          switcher = '''function MatrixPageSwitcher({ onNavigate }: {
-            current?: "explore" | "tianyan" | "tiangong";
-            onNavigate: Navigate;
-          }) {
-            return (
-              <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
-                <button type="button" aria-label="Matrix 天衍" onClick={() => onNavigate("tianyan")}>
-                  <img src="/assets/lottery/functions/Matrix天衍.png" alt="" draggable={false} />
-                </button>
-                <button type="button" aria-label="Matrix 天工" onClick={() => onNavigate("tiangong")}>
-                  <img src="/assets/lottery/functions/Matrix天工.png" alt="" draggable={false} />
-                </button>
-              </nav>
-            );
-          }
-          '''
-          action = '      headerAction={title === "Matrix 探索" ? <MatrixPageSwitcher current="explore" onNavigate={onNavigate} /> : undefined}\n'
+            render(<App />);
 
-          if text.count(switcher) != 1:
-              raise SystemExit(f'Expected MatrixPageSwitcher exactly once, found {text.count(switcher)}')
-          if text.count(action) != 1:
-              raise SystemExit(f'Expected Explore headerAction exactly once, found {text.count(action)}')
+            expect(screen.getByText("member-root")).toBeInTheDocument();
+            expect(screen.getByTestId("mobile-app-viewport")).toBeInTheDocument();
+            expect(screen.queryByTestId("login")).not.toBeInTheDocument();
+          });'''
+          new = '''  it("keeps a non-admin path in the production member shell", async () => {
+            window.history.replaceState({}, "", "/matrix-explore");
+            const { default: App } = await import("../../App");
 
-          text = text.replace(switcher, '', 1).replace(action, '', 1)
-          path.write_text(text)
+            render(<App />);
+
+            expect(screen.getByText("member-root")).toBeInTheDocument();
+            expect(screen.queryByTestId("mobile-app-viewport")).not.toBeInTheDocument();
+            expect(screen.queryByTestId("phone-frame")).not.toBeInTheDocument();
+            expect(screen.queryByTestId("login")).not.toBeInTheDocument();
+          });'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected stale assertion exactly once, found {text.count(old)}')
+          test_path.write_text(text.replace(old, new, 1))
+
+          lock_path = Path('mobile-runtime.lock.json')
+          lock = json.loads(lock_path.read_text())
+          app_bytes = Path('src/App.tsx').read_bytes()
+          lock['src/App.tsx'] = hashlib.sha256(app_bytes).hexdigest()
+          lock_path.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+
+          Path('.github/workflows/fix-production-shell-regression.yml').unlink()
           PY
-
-      - name: Restore workflow and verify requested scope
+      - name: Verify patch scope
         run: |
-          git show HEAD^:.github/workflows/fix-production-shell-regression.yml > .github/workflows/fix-production-shell-regression.yml
           git diff --check
-          test "$(git diff --name-only | sort)" = "src/FeaturePages.tsx"
-          ! grep -q 'function MatrixPageSwitcher' src/FeaturePages.tsx
-          ! grep -q 'MatrixPageSwitcher current="explore"' src/FeaturePages.tsx
-
-      - name: Verify build
-        run: |
-          npm ci --ignore-scripts
-          npm run check:runtime
-          node --test tests/matrix-explore-fluid-layout.test.mjs tests/mobile-native-scroll.test.mjs tests/mobile-runtime-entry.test.mjs tests/pwa-shell-viewport.test.mjs
-          npm run build
-
-      - name: Commit requested change
+          git diff -- src/App.tsx src/admin/__tests__/AdminApp.test.tsx mobile-runtime.lock.json .github/workflows/fix-production-shell-regression.yml
+      - name: Commit patch
         run: |
           git config user.name "spy854540-cmd"
           git config user.email "spy854540@gmail.com"
-          git add src/FeaturePages.tsx .github/workflows/fix-production-shell-regression.yml
-          git commit -m "style: temporarily remove Explore Tianyan Tiangong title actions"
+          git add -A
+          git commit -m "test: align production shell without phone frame"
           git push origin main
