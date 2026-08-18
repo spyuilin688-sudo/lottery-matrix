@@ -25,19 +25,33 @@ test("Matrix Explore keeps one canonical formal layout source", () => {
   assert.doesNotMatch(formal, /!important/);
 });
 
-test("Matrix Explore main uses 8px section padding and 15px bold section titles", () => {
+test("Matrix Explore main uses 16px page inline spacing and 8px vertical section gap", () => {
+  assert.match(formal, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;[^}]*gap:\s*8px;/s);
+});
+
+test("Matrix Explore main uses 8px panel padding and 15px bold section titles", () => {
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[\s\S]*?padding:\s*8px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.panel:not\(\.explore-settings\) \.section-title\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings > \.section-title\s*\{[^}]*font-size:\s*15px;[^}]*font-weight:\s*700;/s);
 });
 
-test("Matrix Explore main uses 8px gaps throughout the form layout", () => {
-  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px;[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label\s*\{[^}]*gap:\s*8px;/s);
+test("Matrix Explore settings spacing follows the requested row and label gaps", () => {
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*32px;[^}]*gap:\s*16px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\);[^}]*gap:\s*12px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span\s*\{[^}]*gap:\s*12px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label:first-child\s*\{[^}]*gap:\s*28px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label:first-child > span\s*\{[^}]*gap:\s*28px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three\s*\{[^}]*gap:\s*8px;/s);
+});
+
+test("Matrix Explore hit-condition and advanced spacing follows the requested gaps", () => {
+  assert.match(formal, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*gap:\s*8px;[^}]*margin-top:\s*24px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-row\s*\{[^}]*margin:\s*8px 0 0;[^}]*gap:\s*8px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*padding-top:\s*32px;[^}]*gap:\s*16px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel label\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\);[^}]*gap:\s*12px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel label > \.advanced-setting-title\s*\{[^}]*gap:\s*12px;/s);
   assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.segmented\.three\s*\{[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-main-screen \.segmented\.two,[\s\S]*?\.matrix-explore-main-screen \.hit-options\s*\{[^}]*gap:\s*8px;/s);
-  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*padding-top:\s*8px;[^}]*gap:\s*8px;/s);
+  assert.match(formal, /\.matrix-explore-main-screen \.advanced-panel \.segmented\.two\s*\{[^}]*gap:\s*8px;/s);
 });
 
 test("Matrix Explore main general controls are 24px high with 13px action text", () => {
