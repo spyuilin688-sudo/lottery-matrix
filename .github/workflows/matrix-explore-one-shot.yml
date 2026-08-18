@@ -1,179 +1,49 @@
-# trigger-after-workflow-exists
-name: Matrix Explore approved UI patch
+name: Matrix Explore approved source patch
 
 on:
   push:
     branches: [main]
-    paths:
-      - .github/workflows/matrix-explore-one-shot.yml
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Verify RED before implementation
+      - name: Verify RED before source-copy change
         run: |
           set +e
           node --test tests/matrix-explore-ui-refinement.test.mjs
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
-            echo "Expected new Matrix Explore regression assertions to fail before implementation."
+            echo "Expected date-copy assertions to fail before FeaturePages patch."
             exit 1
           fi
-          echo "RED verified: new assertions fail against the pre-change source."
+          echo "RED verified."
 
-      - name: Patch approved Matrix Explore sources
+      - name: Patch only approved Matrix Explore copy
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          def replace_once(path, old, new):
-              p = Path(path)
-              text = p.read_text()
+          p = Path('src/FeaturePages.tsx')
+          text = p.read_text()
+          replacements = [
+            ('const [exploreDate, setExploreDate] = useState("本日（最新）");', 'const [exploreDate, setExploreDate] = useState("本日 (最新)");'),
+            ('["本日（最新）", "昨日（上1期）", "前日（上2期）"]', '["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"]'),
+          ]
+          for old, new in replacements:
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old!r}')
-              p.write_text(text.replace(old, new, 1))
-
-          replace_once(
-              'src/FeaturePages.tsx',
-              'const [exploreDate, setExploreDate] = useState("本日（最新）");',
-              'const [exploreDate, setExploreDate] = useState("本日 (最新)");',
-          )
-          replace_once(
-              'src/FeaturePages.tsx',
-              '["本日（最新）", "昨日（上1期）", "前日（上2期）"]',
-              '["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"]',
-          )
-
-          css = Path('src/matrix-explore-spacing.css')
-          text = css.read_text()
-
-          old_banner = '''.matrix-explore-main-screen .matrix-title-banner {
-            box-sizing: border-box;
-            width: calc(100% - 32px);
-            max-width: none;
-            min-width: 0;
-          }
-          '''
-          new_banner = old_banner + '''
-          .matrix-explore-main-screen > .feature-brand-header.integrated-title-header {
-            margin-bottom: 4px;
-          }
-          '''
-          if text.count(old_banner) != 1:
-              raise SystemExit('matrix title banner anchor mismatch')
-          text = text.replace(old_banner, new_banner, 1)
-
-          old_advanced = '''.matrix-explore-main-screen .advanced-row {
-            display: grid;
-            width: 100%;
-            min-width: 0;
-            min-height: 32px;
-            height: auto;
-            margin: 0;
-            padding: 0;
-            grid-template-columns: auto minmax(0, 1fr) auto;
-            align-items: center;
-            column-gap: .375rem;
-            font-size: .8125rem;
-            font-weight: 700;
-          }
-          '''
-          new_advanced = old_advanced.replace('padding: 0;\n', 'padding: 0;\n  padding-inline-end: .375rem;\n')
-          if text.count(old_advanced) != 1:
-              raise SystemExit('advanced row anchor mismatch')
-          text = text.replace(old_advanced, new_advanced, 1)
-
-          old_arrow = '''.matrix-explore-main-screen .advanced-row svg:last-child {
-            inline-size: .75rem;
-            block-size: .75rem;
-          }
-          '''
-          new_arrow = '''.matrix-explore-main-screen .advanced-row svg:last-child {
-            inline-size: 1rem;
-            block-size: 1rem;
-          }
-          '''
-          if text.count(old_arrow) != 1:
-              raise SystemExit('advanced arrow anchor mismatch')
-          text = text.replace(old_arrow, new_arrow, 1)
-
-          old_action = '''.matrix-explore-main-screen .primary-action {
-            width: 100%;
-            min-height: 38px;
-            height: auto;
-            margin: 0;
-            padding: .5rem .75rem;
-            gap: .75rem;
-            border: 1px solid #d4a52f;
-            border-radius: .75rem;
-            background: #071018;
-            color: #f6d472;
-            font-size: 1.0625rem;
-            font-weight: 700;
-            letter-spacing: 0;
-          }
-          '''
-          new_action = '''.matrix-explore-main-screen .primary-action {
-            width: 100%;
-            min-height: 34px;
-            height: auto;
-            margin: 0;
-            padding: .25rem .75rem;
-            gap: .75rem;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #d4a52f;
-            border-radius: .75rem;
-            color: #f6d472;
-            font-size: 1.0625rem;
-            font-weight: 700;
-            letter-spacing: 0;
-          }
-          '''
-          if text.count(old_action) != 1:
-              raise SystemExit('primary action anchor mismatch')
-          text = text.replace(old_action, new_action, 1)
-
-          history_anchor = '''.matrix-explore-main-screen .history-panel .panel-heading {
-          '''
-          history_rule = '''.matrix-explore-main-screen .history-panel-order {
-            display: none;
-          }
-
-          '''
-          if text.count(history_anchor) != 1:
-              raise SystemExit('history heading anchor mismatch')
-          text = text.replace(history_anchor, history_rule + history_anchor, 1)
-          css.write_text(text)
-
-          test = Path('tests/matrix-explore-ui-refinement.test.mjs')
-          test_text = test.read_text()
-          old_imports = '''const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
-          const prototypeCss = readFileSync("src/prototype.css", "utf8");
-          const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");'''
-          new_imports = '''const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
-          const prototypeCss = readFileSync("src/prototype.css", "utf8");
-          const featureCss = readFileSync("src/feature-pages.css", "utf8");
-          const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");'''
-          if test_text.count(old_imports) != 1:
-              raise SystemExit('test import anchor mismatch')
-          test_text = test_text.replace(old_imports, new_imports, 1)
-          old_assert = 'assert.match(prototypeCss, /\\.branded-explore-action\\s*\\{[\\s\\S]*?radial-gradient/s);'
-          new_assert = 'assert.match(featureCss, /\\.branded-explore-action\\s*\\{[\\s\\S]*?radial-gradient/s);'
-          if test_text.count(old_assert) != 1:
-              raise SystemExit('gold action test anchor mismatch')
-          test.write_text(test_text.replace(old_assert, new_assert, 1))
-
+                  raise SystemExit(f'Expected exactly one FeaturePages match, found {count}: {old}')
+              text = text.replace(old, new, 1)
+          p.write_text(text)
           Path('.github/workflows/matrix-explore-one-shot.yml').unlink()
           PY
 
@@ -184,10 +54,10 @@ jobs:
           npm run build
           git diff --check
 
-      - name: Commit approved changes to main
+      - name: Commit approved source change to main
         run: |
           git config user.name "spyuilin688-sudo"
           git config user.email "spyuilin688@gmail.com"
           git add -A
-          git commit -m "style: refine Matrix Explore action details"
+          git commit -m "style: use halfwidth Matrix Explore date labels"
           git push origin main
