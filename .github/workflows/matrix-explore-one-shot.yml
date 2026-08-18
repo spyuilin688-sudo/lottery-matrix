@@ -1,3 +1,4 @@
+# trigger-after-workflow-exists
 name: Matrix Explore approved UI patch
 
 on:
