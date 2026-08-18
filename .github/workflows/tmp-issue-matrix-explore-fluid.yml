@@ -2,10 +2,11 @@ name: Apply Matrix Explore fluid layout now
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   apply:
@@ -13,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Mark workflow started
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body 'Matrix Explore workflow started.'
       - uses: actions/checkout@v4
         with:
           ref: main
@@ -85,3 +90,8 @@ jobs:
           git add -A
           git commit -m 'style: make Matrix Explore layout fluid and responsive'
           git push origin HEAD:main
+      - name: Mark workflow result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "Matrix Explore workflow result: ${{ job.status }}."
