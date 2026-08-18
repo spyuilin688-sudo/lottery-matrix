@@ -151,7 +151,13 @@
 }
 
 .matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: 29px;
+  --number-ball-size: 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
+    --number-ball-size: 1.75rem;
+  }
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
