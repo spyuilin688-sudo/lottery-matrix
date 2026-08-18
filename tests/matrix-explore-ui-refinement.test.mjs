@@ -4,6 +4,7 @@ import test from "node:test";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
+const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
 
 function ruleBlock(source, selectorPattern) {
   const match = source.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "s"));
@@ -28,7 +29,6 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
   assert.match(select, /height:\s*28px/);
   assert.match(select, /min-height:\s*28px/);
-  assert.match(css, /\.setting-grid \.select-box select,[\s\S]*?\.advanced-panel \.select-box select\s*\{[^}]*height:\s*28px;[^}]*min-height:\s*28px;/s);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button,[\\s\\S]*?\\.hit-options button");
   assert.match(button, /height:\s*28px/);
@@ -43,10 +43,6 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   const hit = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options");
   assert.match(hit, /margin:\s*\.375rem 0 0/);
 
-  const advancedIcon = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row > img:first-child");
-  assert.match(advancedIcon, /inline-size:\s*1\.75rem/);
-  assert.match(advancedIcon, /block-size:\s*1\.75rem/);
-
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
   assert.match(badge, /right:\s*\.125rem/);
@@ -59,4 +55,27 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.doesNotMatch(css, /!important/);
   assert.doesNotMatch(css, /margin(?:-top|-right|-bottom|-left)?:\s*-/);
   assert.doesNotMatch(css, /zoom\s*:/);
+});
+
+test("Matrix Explore action details keep the approved compact presentation", () => {
+  assert.match(featureSource, /useState\("本日 \(最新\)"\)/);
+  assert.match(featureSource, /\["本日 \(最新\)", "昨日 \(上1期\)", "前日 \(上2期\)"\]/);
+  assert.doesNotMatch(featureSource, /\["本日（最新）", "昨日（上1期）", "前日（上2期）"\]/);
+
+  assert.match(css, /\.matrix-explore-main-screen > \.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*4px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*none;/s);
+
+  const advanced = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row");
+  assert.match(advanced, /padding-inline-end:\s*\.375rem/);
+  const arrow = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row svg:last-child");
+  assert.match(arrow, /inline-size:\s*1rem/);
+  assert.match(arrow, /block-size:\s*1rem/);
+
+  const action = ruleBlock(css, "\\.matrix-explore-main-screen \\.primary-action");
+  assert.match(action, /min-height:\s*34px/);
+  assert.match(action, /padding:\s*\.25rem \.75rem/);
+  assert.match(action, /justify-content:\s*center/);
+  assert.doesNotMatch(action, /background\s*:/);
+
+  assert.match(prototypeCss, /\.branded-explore-action\s*\{[\s\S]*?radial-gradient/s);
 });
