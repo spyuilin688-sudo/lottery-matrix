@@ -41,40 +41,44 @@
   width: 100%;
   min-width: 0;
   margin-top: 10px;
-  row-gap: 6px;
+  row-gap: 7px;
 }
 
-/* Icon | label | control: one stable three-column source of truth. */
+/* Stable visual three-column layout: [icon | label] | control. */
 .matrix-explore-main-screen .explore-settings .setting-grid label,
 .matrix-explore-main-screen .advanced-panel label {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 24px 72px minmax(0, 1fr);
-  column-gap: 6px;
+  grid-template-columns: 100px minmax(0, 1fr);
+  column-gap: 8px;
   align-items: center;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-  display: contents;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+  color: #c6c0b6;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  border-radius: 4px;
-}
-
-.matrix-explore-main-screen .explore-settings .setting-grid label > span,
-.matrix-explore-main-screen .advanced-panel .advanced-setting-title {
-  color: #c6c0b6;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
-  white-space: nowrap;
+  display: block;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 5px;
+  object-fit: contain;
 }
 
 .matrix-explore-main-screen .explore-settings .select-box,
@@ -88,19 +92,19 @@
 
 .matrix-explore-main-screen .explore-settings .select-box,
 .matrix-explore-main-screen .advanced-panel .select-box {
-  height: 30px;
-  min-height: 30px;
-  font-size: 12px;
+  height: 34px;
+  min-height: 34px;
+  font-size: 13px;
   box-sizing: border-box;
 }
 
 .matrix-explore-main-screen .native-select select {
-  padding-inline: 28px;
-  font-size: 12px;
+  padding-inline: 30px;
+  font-size: 13px;
 }
 
 .matrix-explore-main-screen .native-select svg {
-  right: 8px;
+  right: 9px;
   width: 14px;
 }
 
@@ -120,11 +124,11 @@
 .matrix-explore-main-screen .explore-settings .segmented button,
 .matrix-explore-main-screen .advanced-panel .segmented button {
   min-width: 0;
-  height: 28px;
-  min-height: 28px;
-  padding: 0 3px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 4px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -135,13 +139,13 @@
   top: -6px;
   right: 2px;
   padding: 0 4px;
-  font-size: 6px;
+  font-size: 7px;
   line-height: 11px;
 }
 
 .matrix-explore-main-screen .segmented button em svg {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 .matrix-explore-main-screen .hit-options {
@@ -176,7 +180,7 @@
   width: 100%;
   min-width: 0;
   padding-top: 10px;
-  row-gap: 6px;
+  row-gap: 7px;
 }
 
 .matrix-explore-main-screen .primary-action {
@@ -195,15 +199,22 @@
 
   .matrix-explore-main-screen .explore-settings .setting-grid label,
   .matrix-explore-main-screen .advanced-panel label {
-    grid-template-columns: 22px 66px minmax(0, 1fr);
-    column-gap: 5px;
+    grid-template-columns: 92px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .matrix-explore-main-screen .explore-settings .setting-grid label > span,
+  .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+    grid-template-columns: 26px minmax(0, 1fr);
+    column-gap: 6px;
+    font-size: 12px;
   }
 
   .matrix-explore-main-screen .setting-label-icon,
   .matrix-explore-main-screen .matrix-explore-setting-icon {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
   }
 
   .matrix-explore-main-screen .explore-settings .segmented.three,
@@ -215,6 +226,6 @@
   .matrix-explore-main-screen .explore-settings .segmented button,
   .matrix-explore-main-screen .advanced-panel .segmented button {
     padding-inline: 2px;
-    font-size: 10px;
+    font-size: 11px;
   }
 }
