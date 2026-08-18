@@ -1,4 +1,4 @@
-name: Explore reference final
+name: Matrix Explore fluid layout
 on:
   push:
     branches: [main]
@@ -20,155 +20,386 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Normalize temporary verification helpers
+      - name: RED - write Matrix Explore fluid layout contract
+        run: |
+          cat > tests/matrix-explore-fluid-layout.test.mjs <<'EOF'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          import test from 'node:test';
+
+          const css = readFileSync('src/feature-pages.css', 'utf8');
+          const startMarker = '/* Matrix Explore main canonical mobile sizing */';
+          const endMarker = '/* v55 scoped density and hierarchy refinements */';
+          const start = css.indexOf(startMarker);
+          const end = css.indexOf(endMarker);
+          assert.notEqual(start, -1, 'canonical Matrix Explore marker must exist');
+          assert.notEqual(end, -1, 'canonical Matrix Explore end marker must exist');
+          const block = css.slice(start, end);
+
+          test('Matrix Explore main container is fluid with p-4 and 14px section rhythm', () => {
+            assert.match(block, /\.matrix-explore-main-screen \.feature-body\s*\{[\s\S]*?width:\s*100%;[\s\S]*?padding:\s*1rem;[\s\S]*?gap:\s*\.875rem;/);
+            assert.doesNotMatch(block, /\bwidth:\s*\d+px\b/);
+          });
+
+          test('setting rows stack by default and become horizontal at md', () => {
+            assert.match(block, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label,[\s\S]*?flex-direction:\s*column;[\s\S]*?gap:\s*\.5rem;/);
+            assert.match(block, /@media \(min-width:\s*48rem\)[\s\S]*?flex-direction:\s*row;[\s\S]*?align-items:\s*center;[\s\S]*?justify-content:\s*space-between;/);
+            assert.match(block, /flex:\s*0 0 auto;/);
+          });
+
+          test('controls use minimum heights and fluid grids without fixed button heights', () => {
+            assert.match(block, /min-height:\s*34px;/);
+            assert.match(block, /\.matrix-explore-main-screen \.primary-action\s*\{[\s\S]*?min-height:\s*38px;/);
+            assert.doesNotMatch(block, /(?:select-box|segmented[^\{]*button|hit-options button)[\s\S]{0,180}?\bheight:\s*\d+px/);
+            assert.match(block, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/);
+            assert.match(block, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
+          });
+
+          test('Matrix Pro and recommendation badges are locked to the parent button', () => {
+            assert.match(block, /\.matrix-explore-main-screen \.segmented button\s*\{[\s\S]*?position:\s*relative;/);
+            assert.match(block, /\.matrix-explore-main-screen \.segmented button em\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?top:\s*-7px;[\s\S]*?right:\s*\.375rem;[\s\S]*?padding-inline:\s*\.375rem;[\s\S]*?transform:\s*scale\(\.9\);[\s\S]*?white-space:\s*nowrap;/);
+          });
+          EOF
+          if node --test tests/matrix-explore-fluid-layout.test.mjs; then
+            echo 'Expected RED failure, but contract already passed.'
+            exit 1
+          fi
+      - name: Patch canonical Matrix Explore layout source
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('scripts/tmp_matrix_explore_golden_sizing.py')
-          text = path.read_text()
-          old_delete = 'pattern = re.compile(re.escape(selector) + r"\\s*\\{[^{}]*\\}\\s*", re.S)'
-          new_delete = 'pattern = re.compile(r"(?m)(?<!,\\n)^[ \\t]*" + re.escape(selector) + r"\\s*\\{[^{}]*\\}[ \\t]*\\n?")'
-          old_shadow = '(r"box-shadow:\\s*(?!none)", "non-none box-shadow")'
-          new_shadow = '(r"box-shadow:(?!\\s*none\\b)[^;]+;", "non-none box-shadow")'
-          if old_delete not in text:
-              raise SystemExit('temporary delete helper source not found')
-          if old_shadow not in text:
-              raise SystemExit('temporary shadow checker source not found')
-          text = text.replace(old_delete, new_delete, 1)
-          text = text.replace(old_shadow, new_shadow, 1)
-          path.write_text(text)
-          PY
-      - name: Patch canonical Matrix Explore rules
-        run: python scripts/tmp_matrix_explore_golden_sizing.py
-      - name: Finalize remaining approved sizing categories
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
 
           path = Path('src/feature-pages.css')
           css = path.read_text()
-          start_marker = '/* Matrix Explore formal layout rules */'
+          start_marker = '/* Matrix Explore main canonical mobile sizing */'
           end_marker = '/* v55 scoped density and hierarchy refinements */'
           start = css.index(start_marker)
           end = css.index(end_marker)
-          formal = css[start:end]
+          replacement = r'''/* Matrix Explore main canonical mobile sizing */
+.matrix-explore-main-screen .feature-body {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  padding: 1rem;
+  flex-direction: column;
+  gap: .875rem;
+}
 
-          def replace_rule(selector, body):
-              nonlocal_holder = None
-              global formal
-              pattern = re.compile(re.escape(selector) + r'\s*\{[^{}]*\}', re.S)
-              matches = list(pattern.finditer(formal))
-              if len(matches) != 1:
-                  raise SystemExit(f'{selector}: expected 1 rule, found {len(matches)}')
-              formal = pattern.sub(selector + ' {\n' + body.strip() + '\n}', formal)
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel,
+.matrix-explore-main-screen .history-panel,
+.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .result-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 1rem;
+  border-radius: .625rem;
+}
 
-          # The advanced selector groups previously mixed main and non-main sources.
-          shared_select = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,\n.matrix-explore-main-screen .advanced-panel .select-box'
-          pattern = re.compile(re.escape(shared_select) + r'\s*\{([^{}]*)\}', re.S)
-          match = pattern.search(formal)
-          if not match:
-              raise SystemExit('shared advanced select source not found')
-          nonmain_select = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box {' + match.group(1) + '}'
-          main_select = '''.matrix-explore-main-screen .advanced-panel .select-box {
+.matrix-explore-main-screen .panel .section-title {
+  min-height: 1.5rem;
+  gap: .5rem;
+  font-size: .9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+}
+
+.matrix-explore-main-screen .panel .section-title > span {
+  inline-size: .25rem;
+  block-size: 1.5rem;
+  flex: 0 0 .25rem;
+  border-radius: .125rem;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid,
+.matrix-explore-main-screen .advanced-panel {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid {
+  margin-top: 1rem;
+}
+
+.matrix-explore-main-screen .advanced-panel {
+  padding-top: 1rem;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label,
+.matrix-explore-main-screen .advanced-panel label {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .5rem;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label > span,
+.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+  display: flex;
+  min-width: max-content;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: .625rem;
+  color: #bdb8b0;
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
+.matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon {
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  flex: 0 0 auto;
+  border-radius: .3125rem;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid .select-box,
+.matrix-explore-main-screen .advanced-panel .select-box {
   width: 100%;
   max-width: none;
   min-width: 0;
-  height: 24px;
-  min-height: 24px;
+  height: auto;
+  min-height: 34px;
   padding: 0;
-  font-size: 13px;
+  flex: 1 1 0;
+  font-size: .8125rem;
   font-weight: 700;
-}'''
-          formal = pattern.sub(nonmain_select + '\n\n' + main_select, formal, count=1)
+}
 
-          # Remove select-box from the earlier main height group so it has one effective source.
-          old_group = '.matrix-explore-main-screen .advanced-panel .select-box,\n.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button'
-          if old_group not in formal:
-              raise SystemExit('main advanced height group not found')
-          formal = formal.replace(old_group, '.matrix-explore-main-screen .advanced-panel .segmented,\n.matrix-explore-main-screen .advanced-panel .segmented button', 1)
-
-          shared_title = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span,\n.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title'
-          pattern = re.compile(re.escape(shared_title) + r'\s*\{([^{}]*)\}', re.S)
-          match = pattern.search(formal)
-          if not match:
-              raise SystemExit('shared advanced label source not found')
-          nonmain_title = '.matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid label > span {' + match.group(1) + '}'
-          main_title = '''.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-  display: grid;
+.matrix-explore-main-screen .explore-settings .setting-grid .select-box select,
+.matrix-explore-main-screen .advanced-panel .select-box select {
   width: 100%;
   min-width: 0;
-  grid-template-columns: 32px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  color: #bdb8b0;
-  font-size: 11px;
+  height: auto;
+  min-height: 34px;
+}
+
+.matrix-explore-main-screen .segmented {
+  width: 100%;
+  min-width: 0;
+}
+
+.matrix-explore-main-screen .segmented.three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem;
+}
+
+.matrix-explore-main-screen .segmented.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+}
+
+.matrix-explore-main-screen .segmented button,
+.matrix-explore-main-screen .hit-options button {
+  position: relative;
+  min-width: 0;
+  height: auto;
+  min-height: 34px;
+  padding: .25rem .375rem;
+  border-radius: .5rem;
+  font-size: .8125rem;
   font-weight: 600;
-  line-height: 18px;
-  text-align: left;
-  white-space: nowrap;
-}'''
-          formal = pattern.sub(nonmain_title + '\n\n' + main_title, formal, count=1)
+  line-height: 1.15;
+  white-space: normal;
+}
 
-          shared_three = '.matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.three,\n.matrix-explore-main-screen .advanced-panel .segmented.three'
-          pattern = re.compile(re.escape(shared_three) + r'\s*\{([^{}]*)\}', re.S)
-          match = pattern.search(formal)
-          if not match:
-              raise SystemExit('shared advanced three-column gap source not found')
-          nonmain_three = '.matrix-explore-screen:not(.matrix-explore-main-screen) .segmented.three {' + match.group(1) + '}'
-          main_three = '.matrix-explore-main-screen .advanced-panel .segmented.three {\n  gap: 8px;\n}'
-          formal = pattern.sub(nonmain_three + '\n\n' + main_three, formal, count=1)
+.matrix-explore-main-screen .hit-options {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+  margin-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
 
-          replace_rule('.matrix-explore-main-screen .advanced-row', '''
-  height: 24px;
-  min-height: 24px;
-  margin: 8px 0 0;
-  padding: 0;
-  grid-template-columns: 24px minmax(0, 1fr) 12px;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+.matrix-explore-main-screen .hit-options button {
   font-weight: 700;
-''')
-          replace_rule('.matrix-explore-main-screen .advanced-row > img:first-child', '''
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .advanced-row {
+  display: grid;
+  width: 100%;
+  min-height: 34px;
+  height: auto;
+  margin: 1rem 0 0;
+  padding: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .5rem;
+  font-size: .875rem;
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .advanced-row > img:first-child {
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  border-radius: .3125rem;
   object-fit: contain;
-''')
-          replace_rule('.matrix-explore-main-screen .repeat-stats-body', 'font-size: 13px;')
-          replace_rule('.matrix-explore-main-screen .repeat-stats-table th', 'font-size: 11px;')
-          replace_rule('.matrix-explore-main-screen .repeat-stats-table td', 'font-size: 13px;')
-          replace_rule('.matrix-explore-main-screen .explore-result-disclaimer', '''
+}
+
+.matrix-explore-main-screen .advanced-row svg:last-child {
+  inline-size: .875rem;
+  block-size: .875rem;
+}
+
+.matrix-explore-main-screen .primary-action {
+  width: 100%;
+  min-height: 38px;
+  height: auto;
+  margin: 0;
+  padding: .5rem .75rem;
+  gap: .75rem;
+  border: 1px solid #d4a52f;
+  border-radius: .625rem;
+  background: #071018;
+  color: #f6d472;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.matrix-explore-main-screen .primary-action svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.matrix-explore-main-screen .segmented button em {
+  position: absolute;
+  top: -7px;
+  right: .375rem;
+  height: auto;
+  min-height: 0;
+  padding-inline: .375rem;
+  transform: scale(.9);
+  transform-origin: top right;
+  border-radius: 9999px;
+  font-size: .5rem;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading {
+  min-height: 2.125rem;
+  padding: 0;
+  align-items: center;
+}
+
+.matrix-explore-main-screen .history-row {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, 3fr);
+  align-items: center;
+  border-top-width: 1px;
+}
+
+.matrix-explore-main-screen .history-main-numbers {
+  gap: .375rem;
+}
+
+.matrix-explore-main-screen .history-numbers,
+.matrix-explore-main-screen .history-main-numbers,
+.matrix-explore-main-screen .history-special-number {
+  min-width: 0;
+}
+
+.matrix-explore-main-screen .repeat-stats-heading {
+  min-height: 1.5rem;
+  gap: .5rem;
+}
+
+.matrix-explore-main-screen .result-summary {
+  display: grid;
+  width: 100%;
+  margin-top: .75rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: .375rem;
+}
+
+.matrix-explore-main-screen .result-summary > div {
+  display: flex;
+  min-width: 0;
+  min-height: 3.375rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(79, 75, 69, .72);
+  border-radius: .5rem;
+}
+
+.matrix-explore-main-screen .explore-result-disclaimer {
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: 8px;
+  padding: .75rem;
   color: #aaa49a;
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 400;
   line-height: 1.45;
   text-align: center;
-''')
+}
 
-          css = css[:start] + formal + css[end:]
-          path.write_text(css)
+.matrix-explore-main-screen .consecutive-filter-button,
+.matrix-explore-main-screen .repeat-stats-heading button {
+  min-height: 34px;
+  height: auto;
+  padding: .25rem .5rem;
+  font-size: .8125rem;
+}
+
+@media (min-width: 48rem) {
+  .matrix-explore-main-screen .explore-settings .setting-grid label,
+  .matrix-explore-main-screen .advanced-panel label {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .matrix-explore-main-screen .explore-settings .setting-grid label > .select-box,
+  .matrix-explore-main-screen .explore-settings .setting-grid label > .segmented,
+  .matrix-explore-main-screen .advanced-panel label > .select-box,
+  .matrix-explore-main-screen .advanced-panel label > .segmented {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+}
+
+'''
+          path.write_text(css[:start] + replacement + css[end:])
           PY
-      - name: Verify 12px page inline token
+      - name: GREEN - Matrix Explore fluid layout contract
+        run: node --test tests/matrix-explore-fluid-layout.test.mjs
+      - name: Existing Matrix Explore tests
         run: |
-          grep -R --line-number --include='*.css' -- '--layout-page-inline: 12px' src
-      - name: Targeted tests
-        run: node --test tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
+          test -f tests/matrix-explore-option-layout.test.mjs && node --test tests/matrix-explore-option-layout.test.mjs || true
+          test -f tests/recent-history-layout.test.mjs && node --test tests/recent-history-layout.test.mjs || true
       - name: Full tests
         run: node --test tests/*.test.mjs
       - name: Build
         run: npm run build
-      - name: Commit verified CSS
+      - name: Commit verified Matrix Explore layout
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/feature-pages.css
+          git add src/feature-pages.css tests/matrix-explore-fluid-layout.test.mjs
           git diff --cached --quiet && exit 1
-          git commit -m "style: apply Matrix Explore golden mobile sizing"
+          git commit -m "style: make Matrix Explore layout fluid and responsive"
           git push origin HEAD:main
