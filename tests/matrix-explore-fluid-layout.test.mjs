@@ -36,7 +36,7 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(left, /display:\s*flex/);
   assert.match(left, /width:\s*92px/);
   assert.match(left, /min-width:\s*92px/);
-  assert.match(left, /gap:\s*\.375rem/);
+  assert.match(left, /gap:\s*\.5rem/);
   assert.match(left, /flex:\s*0 0 92px/);
   assert.match(left, /font-size:\s*\.8125rem/);
   assert.match(left, /font-weight:\s*700/);
@@ -44,13 +44,13 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?width:\s*108px/);
 
   const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
-  assert.match(icon, /inline-size:\s*1\.5rem/);
-  assert.match(icon, /block-size:\s*1\.5rem/);
-  assert.match(icon, /flex:\s*0 0 1\.5rem/);
+  assert.match(icon, /inline-size:\s*1\.75rem/);
+  assert.match(icon, /block-size:\s*1\.75rem/);
+  assert.match(icon, /flex:\s*0 0 1\.75rem/);
 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
-  assert.match(select, /height:\s*32px/);
-  assert.match(select, /min-height:\s*32px/);
+  assert.match(select, /height:\s*28px/);
+  assert.match(select, /min-height:\s*28px/);
 
   const three = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented\\.three");
   assert.match(three, /display:\s*flex/);
@@ -64,13 +64,14 @@ test("Matrix Explore control rows match the compact mobile reference density", (
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button,[\\s\\S]*?\\.hit-options button");
   assert.match(button, /flex:\s*1 1 0/);
-  assert.match(button, /height:\s*32px/);
-  assert.match(button, /min-height:\s*32px/);
+  assert.match(button, /height:\s*28px/);
+  assert.match(button, /min-height:\s*28px/);
   assert.match(button, /padding:\s*\.125rem \.25rem/);
   assert.match(button, /border:\s*1px solid #334155/);
+  assert.match(button, /line-height:\s*1/);
   assert.match(button, /white-space:\s*nowrap/);
 
-  assert.match(css, /\.hit-options\s*\{[^}]*padding:\s*0 0 \.375rem/s);
+  assert.match(css, /\.hit-options\s*\{[^}]*margin:\s*\.375rem 0 0;[^}]*padding:\s*0 0 \.25rem/s);
 
   const advanced = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row");
   assert.match(advanced, /min-height:\s*32px/);
@@ -78,8 +79,8 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(advanced, /font-size:\s*\.8125rem/);
 
   const advancedIcon = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row > img:first-child");
-  assert.match(advancedIcon, /inline-size:\s*1\.5rem/);
-  assert.match(advancedIcon, /block-size:\s*1\.5rem/);
+  assert.match(advancedIcon, /inline-size:\s*1\.75rem/);
+  assert.match(advancedIcon, /block-size:\s*1\.75rem/);
 
   assert.doesNotMatch(css, /zoom\s*:/);
   assert.doesNotMatch(css, /\.matrix-explore-main-screen \.explore-settings[^}]*transform\s*:/s);
