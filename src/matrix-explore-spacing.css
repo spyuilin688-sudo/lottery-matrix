@@ -472,6 +472,12 @@
   border-bottom: 1px solid rgba(30, 41, 59, .6);
 }
 
+.matrix-explore-main-screen .road-result-row > span,
+.matrix-explore-main-screen .road-result-row > strong,
+.matrix-explore-main-screen .road-result-row > button {
+  font-size: .75rem;
+}
+
 .matrix-explore-main-screen .road-results .tag {
   display: inline-flex;
   min-width: 0;

@@ -79,5 +79,6 @@ test("Matrix Explore statistics and results use six equal fluid columns", () => 
 
   assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*\.5rem;/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*padding:\s*\.75rem 0;[^}]*border-bottom:\s*1px solid rgba\(30, 41, 59, \.6\)/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row > span,[\s\S]*?\.matrix-explore-main-screen \.road-result-row > button\s*\{[^}]*font-size:\s*\.75rem;/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.5rem;[^}]*border-radius:\s*\.375rem;[^}]*font-size:\s*\.6875rem;[^}]*font-weight:\s*700/s);
 });
