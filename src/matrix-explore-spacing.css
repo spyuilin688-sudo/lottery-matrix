@@ -2,6 +2,7 @@
 .matrix-explore-main-screen .feature-body {
   padding-inline: 16px;
   gap: 8px;
+  outline: 1px solid #FF0000;
 }
 
 .matrix-explore-main-screen .matrix-title-banner {
