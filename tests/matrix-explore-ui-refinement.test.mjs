@@ -4,6 +4,7 @@ import test from "node:test";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
+const featureCss = readFileSync("src/feature-pages.css", "utf8");
 const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
 
 function ruleBlock(source, selectorPattern) {
@@ -77,5 +78,5 @@ test("Matrix Explore action details keep the approved compact presentation", () 
   assert.match(action, /justify-content:\s*center/);
   assert.doesNotMatch(action, /background\s*:/);
 
-  assert.match(prototypeCss, /\.branded-explore-action\s*\{[\s\S]*?radial-gradient/s);
+  assert.match(featureCss, /\.branded-explore-action\s*\{[\s\S]*?radial-gradient/s);
 });
