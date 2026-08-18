@@ -111,6 +111,115 @@
   background: var(--lottery-neutral-950);
 }
 
+/* Temporary global container debug outlines. Remove this block after layout inspection. */
+#root {
+  --debug-container-page: #ff3b5c;
+  --debug-container-wrapper: #22d3ee;
+  --debug-container-section: #22c55e;
+  --debug-container-layout: #facc15;
+  --debug-container-navigation: #a855f7;
+  --debug-container-form: #fb7185;
+}
+
+#root :where(
+  .app-screen,
+  .mobile-page,
+  main[class*="screen"],
+  section[class*="screen"],
+  div[class*="screen"],
+  main[class*="page"],
+  section[class*="page"],
+  div[class*="page"]
+) {
+  outline: 1px solid var(--debug-container-page);
+  outline-offset: -1px;
+}
+
+#root :where(
+  .feature-body,
+  main[class*="container"],
+  section[class*="container"],
+  div[class*="container"],
+  main[class*="wrapper"],
+  section[class*="wrapper"],
+  div[class*="wrapper"],
+  main[class*="content"],
+  section[class*="content"],
+  div[class*="content"]
+) {
+  outline: 1px solid var(--debug-container-wrapper);
+  outline-offset: -1px;
+}
+
+#root :where(
+  section,
+  article,
+  main[class*="panel"],
+  section[class*="panel"],
+  div[class*="panel"],
+  main[class*="card"],
+  section[class*="card"],
+  div[class*="card"],
+  main[class*="section"],
+  section[class*="section"],
+  div[class*="section"]
+) {
+  outline: 1px solid var(--debug-container-section);
+  outline-offset: -1px;
+}
+
+#root :where(
+  main[class*="grid"],
+  section[class*="grid"],
+  div[class*="grid"],
+  main[class*="row"],
+  section[class*="row"],
+  div[class*="row"],
+  main[class*="group"],
+  section[class*="group"],
+  div[class*="group"],
+  main[class*="toolbar"],
+  section[class*="toolbar"],
+  div[class*="toolbar"],
+  main[class*="list"],
+  section[class*="list"],
+  div[class*="list"]
+) {
+  outline: 1px solid var(--debug-container-layout);
+  outline-offset: -1px;
+}
+
+#root :where(
+  nav,
+  header,
+  footer,
+  nav[class*="navigation"],
+  div[class*="navigation"],
+  header[class*="header"],
+  div[class*="header"],
+  footer[class*="footer"],
+  div[class*="footer"]
+) {
+  outline: 1px solid var(--debug-container-navigation);
+  outline-offset: -1px;
+}
+
+#root :where(
+  form,
+  form[class*="settings"],
+  section[class*="settings"],
+  div[class*="settings"],
+  form[class*="form"],
+  section[class*="form"],
+  div[class*="form"],
+  form[class*="field"],
+  section[class*="field"],
+  div[class*="field"]
+) {
+  outline: 1px solid var(--debug-container-form);
+  outline-offset: -1px;
+}
+
 /* Temporary Matrix Explore title action removal. */
 .matrix-explore-main-screen .matrix-title-banner-actions,
 .matrix-explore-main-screen .matrix-page-switcher {
