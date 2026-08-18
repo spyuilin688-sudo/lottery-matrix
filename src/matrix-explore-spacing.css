@@ -1,4 +1,4 @@
-/* Matrix Explore: canonical mobile layout aligned to the approved reference. */
+/* Matrix Explore: canonical responsive layout. */
 .matrix-explore-main-screen {
   box-sizing: border-box;
 }
@@ -24,33 +24,27 @@
   box-sizing: border-box;
 }
 
-/* Reference layout: compact icon/label area, wide control area. */
 .matrix-explore-main-screen .explore-settings .setting-grid {
   width: 100%;
   min-width: 0;
-  margin-top: 20px;
-  row-gap: 12px;
+  margin-top: 22px;
+  row-gap: 16px;
 }
 
+/* True three-column layout: icon | label | control. */
 .matrix-explore-main-screen .explore-settings .setting-grid label,
 .matrix-explore-main-screen .advanced-panel label {
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: 92px minmax(0, 1fr);
-  column-gap: 8px;
+  grid-template-columns: 32px 86px minmax(0, 1fr);
+  column-gap: 10px;
   align-items: center;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-  display: grid;
-  width: 92px;
-  min-width: 0;
-  grid-template-columns: 32px minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: center;
-  white-space: nowrap;
+  display: contents;
 }
 
 .matrix-explore-main-screen .setting-label-icon {
@@ -68,39 +62,43 @@
   max-width: none;
 }
 
+.matrix-explore-main-screen .explore-settings .select-box,
+.matrix-explore-main-screen .explore-settings .segmented button,
+.matrix-explore-main-screen .advanced-panel .select-box,
+.matrix-explore-main-screen .advanced-panel .segmented button,
+.matrix-explore-main-screen .hit-options button {
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
 .matrix-explore-main-screen .explore-settings .segmented.three,
 .matrix-explore-main-screen .advanced-panel .segmented.three {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .matrix-explore-main-screen .advanced-panel .segmented.two {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .matrix-explore-main-screen .explore-settings .segmented button,
-.matrix-explore-main-screen .advanced-panel .segmented button {
+.matrix-explore-main-screen .advanced-panel .segmented button,
+.matrix-explore-main-screen .hit-options button {
   min-width: 0;
-  padding-inline: 3px;
-  font-size: 13px;
-  line-height: 1.15;
+  padding-inline: 6px;
   white-space: nowrap;
-  overflow: visible;
 }
 
-/* Hit-condition card mirrors the reference: two equal choices, divider, advanced row. */
 .matrix-explore-main-screen .hit-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 18px;
   padding-bottom: 12px;
-}
-
-.matrix-explore-main-screen .hit-options button {
-  min-width: 0;
-  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -113,8 +111,8 @@
 .matrix-explore-main-screen .advanced-panel {
   width: 100%;
   min-width: 0;
-  padding-top: 18px;
-  row-gap: 12px;
+  padding-top: 20px;
+  row-gap: 16px;
 }
 
 .matrix-explore-main-screen .primary-action {
@@ -130,15 +128,8 @@
 
   .matrix-explore-main-screen .explore-settings .setting-grid label,
   .matrix-explore-main-screen .advanced-panel label {
-    grid-template-columns: 86px minmax(0, 1fr);
-    column-gap: 6px;
-  }
-
-  .matrix-explore-main-screen .explore-settings .setting-grid label > span,
-  .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-    width: 86px;
-    grid-template-columns: 30px minmax(0, 1fr);
-    column-gap: 6px;
+    grid-template-columns: 30px 78px minmax(0, 1fr);
+    column-gap: 8px;
   }
 
   .matrix-explore-main-screen .setting-label-icon {
@@ -154,8 +145,8 @@
   }
 
   .matrix-explore-main-screen .explore-settings .segmented button,
-  .matrix-explore-main-screen .advanced-panel .segmented button {
-    padding-inline: 2px;
-    font-size: 12px;
+  .matrix-explore-main-screen .advanced-panel .segmented button,
+  .matrix-explore-main-screen .hit-options button {
+    padding-inline: 4px;
   }
 }
