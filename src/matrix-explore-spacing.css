@@ -1,4 +1,4 @@
-/* Matrix Explore requested spacing */
+/* Matrix Explore canonical spacing */
 .matrix-explore-main-screen {
   padding-inline: 16px;
   box-sizing: border-box;
@@ -7,7 +7,6 @@
 .matrix-explore-main-screen .feature-body {
   padding-inline: 0;
   gap: 8px;
-  outline: 1px solid #FF0000;
 }
 
 .matrix-explore-main-screen .feature-brand-header,
