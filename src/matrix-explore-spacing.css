@@ -1,0 +1,74 @@
+/* Matrix Explore requested spacing */
+.matrix-explore-main-screen .feature-body {
+  padding-inline: 16px;
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .matrix-title-banner {
+  width: calc(100% - 32px);
+}
+
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel {
+  padding: 8px;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid {
+  margin-top: 32px;
+  row-gap: 16px;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label:first-child {
+  column-gap: 28px;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label > span {
+  column-gap: 12px;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label:first-child > span {
+  column-gap: 28px;
+}
+
+.matrix-explore-main-screen .explore-settings .segmented.three {
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .hit-options {
+  gap: 8px;
+  margin-top: 24px;
+  padding-bottom: 0;
+}
+
+.matrix-explore-main-screen .advanced-row {
+  margin-top: 8px;
+  column-gap: 8px;
+}
+
+.matrix-explore-main-screen .advanced-panel {
+  padding-top: 32px;
+  row-gap: 16px;
+}
+
+.matrix-explore-main-screen .advanced-panel label {
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+}
+
+.matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+  column-gap: 12px;
+}
+
+.matrix-explore-main-screen .advanced-panel .segmented.three,
+.matrix-explore-main-screen .advanced-panel .segmented.two {
+  gap: 8px;
+}
+
+.matrix-explore-main-screen .primary-action {
+  margin: 0;
+}
