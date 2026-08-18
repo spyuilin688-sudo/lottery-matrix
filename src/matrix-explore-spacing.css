@@ -193,7 +193,7 @@
   min-width: 0;
   height: 28px;
   min-height: 28px;
-  padding: .125rem .25rem;
+  padding: .125rem 0;
   flex: 1 1 0;
   align-items: center;
   justify-content: center;
@@ -268,17 +268,17 @@
   right: .125rem;
   height: auto;
   min-height: 0;
-  padding: .0625rem .25rem;
+  padding: .0625rem .1875rem;
   border: 1px solid #9a6f1e;
   border-radius: 9999px;
-  font-size: .5625rem;
+  font-size: .5rem;
   line-height: 1;
   white-space: nowrap;
 }
 
 .matrix-explore-main-screen .segmented button em svg {
-  inline-size: .4375rem;
-  block-size: .4375rem;
+  inline-size: .375rem;
+  block-size: .375rem;
 }
 
 .matrix-explore-main-screen .history-panel .panel-heading {
