@@ -1,12 +1,20 @@
 /* Matrix Explore requested spacing */
-.matrix-explore-main-screen .feature-body {
+.matrix-explore-main-screen {
   padding-inline: 16px;
+  box-sizing: border-box;
+}
+
+.matrix-explore-main-screen .feature-body {
+  padding-inline: 0;
   gap: 8px;
   outline: 1px solid #FF0000;
 }
 
-.matrix-explore-main-screen .matrix-title-banner {
-  width: calc(100% - 32px);
+.matrix-explore-main-screen .feature-brand-header,
+.matrix-explore-main-screen .matrix-title-banner,
+.matrix-explore-main-screen .feature-body > * {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .matrix-explore-main-screen .explore-settings,
