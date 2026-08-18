@@ -11,7 +11,7 @@ const exploreSource = source.slice(exploreStart, exploreEnd);
 
 test("Matrix Explore canonical scoped stylesheet remains the final loaded layout source", () => {
   assert.match(main, /import "\.\/matrix-explore-spacing\.css";/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding:\s*1rem 16px;[^}]*gap:\s*\.5rem;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding:\s*0 16px 1rem;[^}]*gap:\s*\.5rem;/s);
   assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*max-width:\s*none;/s);
 });
 

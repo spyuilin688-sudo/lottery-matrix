@@ -40,7 +40,7 @@ test("Matrix Explore control rows use the requested fluid box model", () => {
   assert.match(button, /white-space:\s*nowrap/);
 });
 
-test("Matrix Explore history table uses 12-column 3-3-6 layout and responsive balls", () => {
+test("Matrix Explore history table keeps 3-3-6 by default and opens to 2.5-2.5-7 below 360px", () => {
   const heading = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel \\.panel-heading");
   assert.match(heading, /display:\s*flex/);
   assert.match(heading, /justify-content:\s*space-between/);
@@ -48,14 +48,19 @@ test("Matrix Explore history table uses 12-column 3-3-6 layout and responsive ba
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
   assert.match(row, /grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(row, /gap:\s*\.25rem/);
   assert.match(row, /padding:\s*\.625rem 0/);
   assert.match(row, /border-bottom:\s*1px solid rgba\(30, 41, 59, \.6\)/);
   assert.match(css, /:nth-child\(1\)\s*\{[^}]*grid-column:\s*span 3/);
   assert.match(css, /:nth-child\(2\)\s*\{[^}]*grid-column:\s*span 3/);
   assert.match(css, /:nth-child\(3\)\s*\{[^}]*grid-column:\s*span 6/);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*1\.625rem/);
-  assert.match(ballCss, /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*1\.875rem/);
+
+  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?grid-template-columns:\s*2\.5fr 2\.5fr 7fr;[\s\S]*?gap:\s*\.125rem;/s);
+  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?history-row > :nth-child\(3\)[\s\S]*?grid-column:\s*auto;/s);
+
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(20px, 6vw, 28px\);[^}]*--number-font-size:\s*clamp\(10px, 2\.8vw, 12px\);/s);
+  assert.doesNotMatch(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*(?:1\.625rem|1\.875rem)/s);
+  assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*\.125rem;/s);
+  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?\.history-special-ball\s*\{[^}]*width:\s*clamp\(20px, 6vw, 28px\)/s);
 });
 
 test("Matrix Explore statistics and results use six equal fluid columns", () => {
