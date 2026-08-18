@@ -26,3 +26,10 @@ test('badges stay locked to parent buttons', () => {
   assert.match(css, /\.matrix-explore-main-screen \.segmented button,[\s\S]*?position:\s*relative;/);
   assert.match(css, /\.matrix-explore-main-screen \.segmented button em\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?top:\s*-7px;[\s\S]*?right:\s*\.375rem;[\s\S]*?padding-inline:\s*\.375rem;[\s\S]*?transform:\s*scale\(\.9\);[\s\S]*?white-space:\s*nowrap;/);
 });
+
+test('legacy high-specificity fixed sizing is neutralized in active source', () => {
+  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.segmented\.three button,[\s\S]*?height:\s*auto;[\s\S]*?min-height:\s*34px;/);
+  assert.match(css, /\.matrix-explore-main-screen \.history-row,[\s\S]*?\.matrix-explore-main-screen \.history-row\.history-head,[\s\S]*?\.matrix-explore-main-screen \.history-row:not\(\.history-head\)[\s\S]*?height:\s*auto;/);
+  assert.match(css, /\.matrix-explore-main-screen \.history-row\.history-head\s*\{[\s\S]*?min-height:\s*2\.25rem;/);
+  assert.match(css, /\.matrix-explore-main-screen \.history-row:not\(\.history-head\)\s*\{[\s\S]*?min-height:\s*2\.875rem;/);
+});
