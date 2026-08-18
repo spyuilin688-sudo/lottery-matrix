@@ -91,19 +91,18 @@
   min-width: 0;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: .75rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
-  width: 110px;
-  min-width: 110px;
+  width: 100px;
+  min-width: 100px;
   align-items: center;
-  gap: .5rem;
-  flex: 0 0 110px;
-  color: #bdb8b0;
+  gap: .75rem;
+  flex: 0 0 100px;
+  color: #e5e7eb;
   font-size: .875rem;
   font-weight: 700;
   line-height: 1.25rem;
@@ -114,9 +113,9 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  flex: 0 0 1.75rem;
+  inline-size: 2rem;
+  block-size: 2rem;
+  flex: 0 0 2rem;
   border-radius: .5rem;
   object-fit: contain;
 }
@@ -134,8 +133,8 @@
 .matrix-explore-main-screen .advanced-panel .select-box {
   box-sizing: border-box;
   max-width: none;
-  height: auto;
-  min-height: 38px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
   font-size: .75rem;
   font-weight: 700;
@@ -145,8 +144,8 @@
 .matrix-explore-main-screen .advanced-panel .select-box select {
   width: 100%;
   min-width: 0;
-  height: auto;
-  min-height: 38px;
+  height: 40px;
+  min-height: 40px;
 }
 
 .matrix-explore-main-screen .native-select select {
@@ -186,11 +185,12 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  height: auto;
-  min-height: 38px;
-  padding: .375rem .5rem;
+  height: 40px;
+  min-height: 40px;
+  padding: .25rem .375rem;
   align-items: center;
   justify-content: center;
+  border: 1px solid #334155;
   border-radius: .75rem;
   font-size: .75rem;
   font-weight: 700;
@@ -256,8 +256,8 @@
 
 .matrix-explore-main-screen .segmented button em {
   position: absolute;
-  z-index: 10;
-  top: -.625rem;
+  z-index: 20;
+  top: -.5rem;
   right: -.25rem;
   height: auto;
   min-height: 0;
@@ -498,7 +498,6 @@
   padding: .375rem .75rem;
   font-size: .75rem;
 }
-
 
 @media (max-width: 359.98px) {
   .matrix-explore-main-screen .history-panel {
