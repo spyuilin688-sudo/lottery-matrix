@@ -1,0 +1,136 @@
+name: Matrix Explore reference proportion patch
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write regression test
+        run: |
+          cat > tests/matrix-explore-reference-proportions.test.mjs <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+
+          test('Matrix Explore main screen uses readable reference proportions without transform hacks', () => {
+            assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--mx-history-row-height:\s*58px/s);
+            assert.match(css, /--mx-history-ball-size:\s*31px/);
+            assert.match(css, /--mx-repeat-item-height:\s*64px/);
+            assert.match(css, /--mx-result-row-height:\s*62px/);
+            assert.match(css, /--mx-result-columns:\s*\.84fr \.72fr \.9fr 1\.08fr 1\.08fr 1\.18fr/);
+            const root = css.match(/\.matrix-explore-main-screen\s*\{([^}]*)\}/s)?.[1] ?? '';
+            assert.doesNotMatch(root, /!important|zoom\s*:|scale\(|translate\(|margin\s*:\s*-|margin-(?:top|right|bottom|left)\s*:\s*-/);
+          });
+          EOF
+
+      - name: Verify RED
+        run: |
+          set +e
+          node --test tests/matrix-explore-reference-proportions.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Expected reference-proportion regression test to fail before CSS change."
+            exit 1
+          fi
+          echo "RED verified."
+
+      - name: Patch formal Matrix Explore style sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('src/feature-pages.css')
+          css = p.read_text()
+
+          anchor = '.matrix-explore-main-screen .native-select select { font-weight: 700; }'
+          if css.count(anchor) != 1:
+              raise SystemExit(f'Expected one main-screen anchor, found {css.count(anchor)}')
+
+          vars_block = '''\n.matrix-explore-main-screen {\n  --mx-history-heading-height: 60px;\n  --mx-history-heading-padding-y: 10px;\n  --mx-history-heading-padding-x: 12px;\n  --mx-history-head-height: 42px;\n  --mx-history-row-height: 58px;\n  --mx-history-columns: 72px 82px minmax(0, 1fr);\n  --mx-history-issue-size: 15px;\n  --mx-history-date-year-size: 13px;\n  --mx-history-date-detail-size: 12px;\n  --mx-history-ball-size: 31px;\n  --mx-history-ball-font-size: 11px;\n  --mx-history-ball-gap: 5px;\n  --mx-section-gap: 16px;\n  --mx-repeat-grid-gap-x: 7px;\n  --mx-repeat-grid-gap-y: 8px;\n  --mx-repeat-item-height: 64px;\n  --mx-repeat-number-size: 20px;\n  --mx-repeat-count-size: 12px;\n  --mx-result-head-height: 42px;\n  --mx-result-row-height: 62px;\n  --mx-result-columns: .84fr .72fr .9fr 1.08fr 1.08fr 1.18fr;\n  --mx-result-head-size: 12px;\n  --mx-result-body-size: 11.5px;\n  --mx-result-number-size: 15px;\n  --mx-result-prediction-size: 17px;\n  --mx-result-tag-size: 11px;\n}\n'''
+          css = css.replace(anchor, anchor + vars_block, 1)
+
+          def update_block(selector_pattern, updates, flags=re.S):
+              nonlocal_css = None
+              pattern = re.compile(r'(' + selector_pattern + r'\s*\{)(.*?)(\})', flags)
+              m = pattern.search(css)
+              if not m:
+                  raise SystemExit(f'Selector not found: {selector_pattern}')
+              body = m.group(2)
+              new_body = body
+              for prop, value in updates.items():
+                  prop_pat = re.compile(r'(?<![-\w])' + re.escape(prop) + r'\s*:\s*[^;]+;')
+                  if not prop_pat.search(new_body):
+                      raise SystemExit(f'Property {prop} not found in {selector_pattern}')
+                  new_body = prop_pat.sub(f'{prop}: {value};', new_body, count=1)
+              return css[:m.start(2)] + new_body + css[m.end(2):]
+
+          # History card: keep the shared declarations, but make the formal values responsive to the main-screen variables.
+          css = re.sub(r'(\.history-panel \.panel-heading\s*\{.*?height:)\s*52px;', r'\1 var(--mx-history-heading-height, 52px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-panel \.panel-heading\s*\{.*?padding:)\s*7px 12px;', r'\1 var(--mx-history-heading-padding-y, 7px) var(--mx-history-heading-padding-x, 12px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-row\s*\{.*?height:)\s*46px;', r'\1 var(--mx-history-row-height, 46px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-row\s*\{.*?grid-template-columns:)\s*66px 68px minmax\(0, 1fr\);', r'\1 var(--mx-history-columns, 66px 68px minmax(0, 1fr));', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-head\s*\{.*?height:)\s*36px;', r'\1 var(--mx-history-head-height, 36px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-row:not\(\.history-head\) > span:first-child\s*\{.*?font-size:)\s*14px;', r'\1 var(--mx-history-issue-size, 14px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-date-stack strong\s*\{.*?font-size:)\s*12px;', r'\1 var(--mx-history-date-year-size, 12px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-date-stack small\s*\{.*?font-size:)\s*11px;', r'\1 var(--mx-history-date-detail-size, 11px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.history-main-numbers\s*\{\s*gap:)\s*2px;', r'\1 var(--mx-history-ball-gap, 2px);', css, count=1)
+          css = re.sub(r'(\.mini-ball\s*\{[^}]*?width:)\s*27px;\s*height:\s*27px;', r'\1 var(--mx-history-ball-size, 27px); height: var(--mx-history-ball-size, 27px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.mini-ball\s*\{[^}]*?font-size:)\s*10px;', r'\1 var(--mx-history-ball-font-size, 10px);', css, count=1, flags=re.S)
+
+          # Vertical spacing between the requested cards.
+          css = css.replace('.repeat-stats-panel, .result-panel { margin-top: 12px; }', '.repeat-stats-panel, .result-panel { margin-top: var(--mx-section-gap, 12px); }', 1)
+
+          # Repeat-number statistics: 6 x 3 remains fixed, only density/proportion changes.
+          css = re.sub(r'(\.result-summary\s*\{[^}]*?gap:)\s*6px;', r'\1 var(--mx-repeat-grid-gap-y, 6px) var(--mx-repeat-grid-gap-x, 6px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.result-summary > div\s*\{[^}]*?height:)\s*48px;\s*min-height:\s*48px;', r'\1 var(--mx-repeat-item-height, 48px); min-height: var(--mx-repeat-item-height, 48px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.result-summary b\s*\{[^}]*?font-size:)\s*20px;', r'\1 var(--mx-repeat-number-size, 20px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.result-summary small\s*\{[^}]*?font-size:)\s*10px;', r'\1 var(--mx-repeat-count-size, 10px);', css, count=1, flags=re.S)
+
+          # Exploration result table: preserve six columns and rightmost road type while restoring row/readability proportions.
+          css = re.sub(r'(\.road-results-head,\s*\.road-result-row\s*\{.*?grid-template-columns:)\s*minmax\(0, \.88fr\) minmax\(0, \.84fr\) minmax\(0, \.92fr\) minmax\(0, 1\.12fr\) minmax\(0, 1\.1fr\) minmax\(0, 1\.14fr\);', r'\1 minmax(0, var(--mx-result-columns, .88fr .84fr .92fr 1.12fr 1.1fr 1.14fr));', css, count=1, flags=re.S)
+          # CSS grid cannot consume a six-track list inside one minmax. Replace that declaration explicitly with var() containing all tracks.
+          css = css.replace('grid-template-columns: minmax(0, var(--mx-result-columns, .88fr .84fr .92fr 1.12fr 1.1fr 1.14fr));', 'grid-template-columns: var(--mx-result-columns, minmax(0, .88fr) minmax(0, .84fr) minmax(0, .92fr) minmax(0, 1.12fr) minmax(0, 1.1fr) minmax(0, 1.14fr));', 1)
+          css = re.sub(r'(\.road-results-head\s*\{.*?min-height:)\s*34px;', r'\1 var(--mx-result-head-height, 34px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-results-head\s*\{.*?font-size:)\s*12\.5px;', r'\1 var(--mx-result-head-size, 12.5px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-results article\s*\{[^}]*?font-size:)\s*10\.5px;', r'\1 var(--mx-result-body-size, 10.5px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-result-row\s*\{.*?min-height:)\s*50px;', r'\1 var(--mx-result-row-height, 50px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-results \.tag\s*\{[^}]*?font-size:)\s*10px;', r'\1 var(--mx-result-tag-size, 10px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-results \.result-number\s*\{[^}]*?font-size:)\s*14\.5px;', r'\1 var(--mx-result-number-size, 14.5px);', css, count=1, flags=re.S)
+          css = re.sub(r'(\.road-results strong\s*\{[^}]*?font-size:)\s*16\.5px;', r'\1 var(--mx-result-prediction-size, 16.5px);', css, count=1, flags=re.S)
+
+          if 'minmax(0, var(--mx-result-columns' in css:
+              raise SystemExit('Invalid result-grid var replacement remained')
+
+          p.write_text(css)
+          Path('.github/workflows/matrix-explore-reference-proportions-one-shot.yml').unlink()
+          PY
+
+      - name: Verify GREEN and build
+        run: |
+          node --test tests/matrix-explore-reference-proportions.test.mjs tests/matrix-explore-ui-refinement.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-filter-hit-area.test.mjs
+          npm ci
+          npm run build
+          git diff --check
+
+      - name: Commit verified source change to main
+        run: |
+          git config user.name "spyuilin688-sudo"
+          git config user.email "spyuilin688@gmail.com"
+          git add -A
+          git commit -m "style: restore Matrix Explore reference proportions"
+          git push origin main
