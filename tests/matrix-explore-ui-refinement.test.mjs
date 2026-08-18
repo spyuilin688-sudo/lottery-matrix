@@ -51,8 +51,13 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(badge, /font-size:\s*\.5rem/);
   assert.doesNotMatch(badge, /transform\s*:/);
 
-  assert.doesNotMatch(prototypeCss, /--debug-container-(?:page|wrapper|section|layout|navigation|form)/);
-  assert.doesNotMatch(prototypeCss, /Temporary global container debug outlines/);
+  assert.match(prototypeCss, /--debug-container-page:\s*#ff3b5c/);
+  assert.match(prototypeCss, /--debug-container-wrapper:\s*#22d3ee/);
+  assert.match(prototypeCss, /--debug-container-section:\s*#22c55e/);
+  assert.match(prototypeCss, /--debug-container-layout:\s*#facc15/);
+  assert.match(prototypeCss, /--debug-container-navigation:\s*#a855f7/);
+  assert.match(prototypeCss, /--debug-container-form:\s*#fb7185/);
+  assert.match(prototypeCss, /Temporary global container debug outlines/);
   assert.doesNotMatch(css, /!important/);
   assert.doesNotMatch(css, /margin(?:-top|-right|-bottom|-left)?:\s*-/);
   assert.doesNotMatch(css, /zoom\s*:/);
