@@ -15,7 +15,7 @@
   margin: 0 auto;
   padding: 0 16px 1rem;
   flex-direction: column;
-  gap: .5rem;
+  gap: .375rem;
   overflow-x: hidden;
 }
 
@@ -51,24 +51,24 @@
 }
 
 .matrix-explore-main-screen .explore-settings {
-  padding: .5rem;
+  padding: .375rem;
 }
 
 .matrix-explore-main-screen .hit-advanced-panel {
-  padding: .5rem;
+  padding: .375rem;
 }
 
 .matrix-explore-main-screen .panel .section-title {
-  min-height: 1.5rem;
-  gap: .5rem;
-  font-size: .9375rem;
+  min-height: 1.25rem;
+  gap: .375rem;
+  font-size: .875rem;
   font-weight: 700;
-  line-height: 1.25rem;
+  line-height: 1.125rem;
 }
 
 .matrix-explore-main-screen .panel .section-title > span {
   inline-size: .25rem;
-  block-size: 1.5rem;
+  block-size: 1.25rem;
   flex: 0 0 .25rem;
   border-radius: .125rem;
 }
@@ -81,11 +81,11 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: .5rem;
+  row-gap: .375rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
-  margin-top: .5rem;
+  margin-top: .375rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
@@ -95,21 +95,21 @@
   min-width: 0;
   flex-direction: row;
   align-items: center;
-  gap: .5rem;
+  gap: .375rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
-  width: 100px;
-  min-width: 100px;
+  width: 92px;
+  min-width: 92px;
   align-items: center;
-  gap: .5rem;
-  flex: 0 0 100px;
+  gap: .375rem;
+  flex: 0 0 92px;
   color: #e5e7eb;
-  font-size: .875rem;
+  font-size: .8125rem;
   font-weight: 700;
-  line-height: 1.25rem;
+  line-height: 1.125rem;
   text-align: left;
   white-space: nowrap;
 }
@@ -117,10 +117,10 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  flex: 0 0 1.75rem;
-  border-radius: .5rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  flex: 0 0 1.5rem;
+  border-radius: .375rem;
   object-fit: contain;
 }
 
@@ -137,8 +137,8 @@
 .matrix-explore-main-screen .advanced-panel .select-box {
   box-sizing: border-box;
   max-width: none;
-  height: 36px;
-  min-height: 36px;
+  height: 32px;
+  min-height: 32px;
   padding: 0;
   font-size: .75rem;
   font-weight: 700;
@@ -148,19 +148,19 @@
 .matrix-explore-main-screen .advanced-panel .select-box select {
   width: 100%;
   min-width: 0;
-  height: 36px;
-  min-height: 36px;
+  height: 32px;
+  min-height: 32px;
 }
 
 .matrix-explore-main-screen .native-select select {
-  padding-inline: 2.25rem;
+  padding-inline: 1.75rem;
   font-size: .75rem;
 }
 
 .matrix-explore-main-screen .native-select svg {
-  right: .75rem;
-  inline-size: .875rem;
-  block-size: .875rem;
+  right: .625rem;
+  inline-size: .75rem;
+  block-size: .75rem;
 }
 
 .matrix-explore-main-screen .segmented {
@@ -169,17 +169,15 @@
 }
 
 .matrix-explore-main-screen .segmented.three {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .5rem;
+  display: flex;
+  gap: .375rem;
   align-items: center;
 }
 
 .matrix-explore-main-screen .segmented.two,
 .matrix-explore-main-screen .hit-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .5rem;
+  display: flex;
+  gap: .375rem;
   align-items: center;
 }
 
@@ -189,16 +187,17 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  height: 36px;
-  min-height: 36px;
-  padding: .25rem .375rem;
+  height: 32px;
+  min-height: 32px;
+  padding: .125rem .25rem;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   border: 1px solid #334155;
-  border-radius: .75rem;
+  border-radius: .625rem;
   font-size: .75rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
   text-align: center;
   white-space: nowrap;
 }
@@ -206,7 +205,7 @@
 .matrix-explore-main-screen .hit-options {
   width: 100%;
   margin: 0;
-  padding: 0 0 .5rem;
+  padding: 0 0 .375rem;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
@@ -214,27 +213,27 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  min-height: 36px;
+  min-height: 32px;
   height: auto;
   margin: 0;
   padding: 0;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: .5rem;
-  font-size: .875rem;
+  column-gap: .375rem;
+  font-size: .8125rem;
   font-weight: 700;
 }
 
 .matrix-explore-main-screen .advanced-row > img:first-child {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  border-radius: .5rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: .375rem;
   object-fit: contain;
 }
 
 .matrix-explore-main-screen .advanced-row svg:last-child {
-  inline-size: .875rem;
-  block-size: .875rem;
+  inline-size: .75rem;
+  block-size: .75rem;
 }
 
 .matrix-explore-main-screen .primary-action {
@@ -556,9 +555,9 @@
 
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-    width: 120px;
-    min-width: 120px;
-    flex-basis: 120px;
+    width: 108px;
+    min-width: 108px;
+    flex-basis: 108px;
   }
 
   .matrix-explore-main-screen .history-numbers,
