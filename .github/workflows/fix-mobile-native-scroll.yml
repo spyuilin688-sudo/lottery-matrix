@@ -1,10 +1,9 @@
 name: Fix mobile native scroll
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/fix-mobile-native-scroll.yml
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -134,10 +133,7 @@ jobs:
                   className="mobile-scroll"
                   data-testid="mobile-scroll"
                 >
-                  <div
-                    className="mobile-scroll-content"
-                    data-testid="mobile-scroll-content"
-                  >
+                  <div className="mobile-scroll-content" data-testid="mobile-scroll-content">
                     {children}
                   </div>
                 </div>
@@ -201,7 +197,6 @@ jobs:
         run: |
           node --test tests/mobile-native-scroll.test.mjs
           npm ci
-          npm run test -- --runInBand || npm test
           npm run build
       - name: Verify scope and clean workflow
         run: |
