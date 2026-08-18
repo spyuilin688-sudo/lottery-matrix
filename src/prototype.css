@@ -220,3 +220,9 @@
   outline: 1px solid var(--debug-container-form);
   outline-offset: -1px;
 }
+
+/* Temporary Matrix Explore title action removal. */
+.matrix-explore-main-screen .matrix-title-banner-actions,
+.matrix-explore-main-screen .matrix-page-switcher {
+  display: none;
+}
