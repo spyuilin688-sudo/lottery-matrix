@@ -1,4 +1,4 @@
-/* Matrix Explore: single active responsive layout source for the approved fluid page. */
+/* Matrix Explore: active responsive layout source for the approved fluid page. */
 .matrix-explore-main-screen {
   box-sizing: border-box;
   min-width: 0;
@@ -154,7 +154,10 @@
 }
 
 .matrix-explore-main-screen .segmented button,
-.matrix-explore-main-screen .hit-options button {
+.matrix-explore-main-screen .hit-options button,
+.matrix-explore-main-screen .explore-settings .segmented.three button,
+.matrix-explore-main-screen .advanced-panel .segmented.three button,
+.matrix-explore-main-screen .advanced-panel .segmented.two button {
   position: relative;
   box-sizing: border-box;
   min-width: 0;
@@ -254,7 +257,9 @@
   align-items: center;
 }
 
-.matrix-explore-main-screen .history-row {
+.matrix-explore-main-screen .history-row,
+.matrix-explore-main-screen .history-row.history-head,
+.matrix-explore-main-screen .history-row:not(.history-head) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -262,6 +267,14 @@
   grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, 3fr);
   align-items: center;
   border-top-width: 1px;
+}
+
+.matrix-explore-main-screen .history-row.history-head {
+  min-height: 2.25rem;
+}
+
+.matrix-explore-main-screen .history-row:not(.history-head) {
+  min-height: 2.875rem;
 }
 
 .matrix-explore-main-screen .history-main-numbers {
