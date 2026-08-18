@@ -1,17 +1,21 @@
-/* Matrix Explore: active responsive layout source for the approved fluid page. */
+/* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
   box-sizing: border-box;
   min-width: 0;
+  overflow-x: hidden;
 }
 
 .matrix-explore-main-screen .feature-body {
   box-sizing: border-box;
   display: flex;
   width: 100%;
+  max-width: 28rem;
   min-width: 0;
-  padding: 1rem;
+  margin: 0 auto;
+  padding: 1rem .75rem;
   flex-direction: column;
   gap: .875rem;
+  overflow-x: hidden;
 }
 
 .matrix-explore-main-screen .feature-brand-header,
@@ -28,12 +32,15 @@
 .matrix-explore-main-screen .repeat-stats-panel,
 .matrix-explore-main-screen .result-panel {
   box-sizing: border-box;
+  display: flex;
   width: 100%;
   min-width: 0;
   height: auto;
   margin: 0;
-  padding: 1rem;
-  border-radius: .625rem;
+  padding: .875rem;
+  flex-direction: column;
+  gap: .875rem;
+  border-radius: .75rem;
 }
 
 .matrix-explore-main-screen .panel .section-title {
@@ -56,16 +63,10 @@
   display: flex;
   width: 100%;
   min-width: 0;
+  margin: 0;
+  padding: 0;
   flex-direction: column;
-  gap: .5rem;
-}
-
-.matrix-explore-main-screen .explore-settings .setting-grid {
-  margin-top: 1rem;
-}
-
-.matrix-explore-main-screen .advanced-panel {
-  padding-top: 1rem;
+  gap: .875rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
@@ -73,22 +74,23 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  gap: .5rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
   min-width: max-content;
-  flex: 0 0 auto;
   align-items: center;
-  gap: .625rem;
+  gap: .5rem;
+  flex: 0 0 auto;
   color: #bdb8b0;
-  font-size: .8125rem;
-  font-weight: 600;
-  line-height: 1.125rem;
+  font-size: .875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
   text-align: left;
   white-space: nowrap;
 }
@@ -96,24 +98,30 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 2.125rem;
-  block-size: 2.125rem;
+  inline-size: 2rem;
+  block-size: 2rem;
   flex: 0 0 auto;
-  border-radius: .3125rem;
+  border-radius: .5rem;
   object-fit: contain;
+}
+
+.matrix-explore-main-screen .explore-settings .setting-grid label > .select-box,
+.matrix-explore-main-screen .explore-settings .setting-grid label > .segmented,
+.matrix-explore-main-screen .advanced-panel label > .select-box,
+.matrix-explore-main-screen .advanced-panel label > .segmented {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid .select-box,
 .matrix-explore-main-screen .advanced-panel .select-box {
   box-sizing: border-box;
-  width: 100%;
   max-width: none;
-  min-width: 0;
   height: auto;
-  min-height: 34px;
+  min-height: 38px;
   padding: 0;
-  flex: 1 1 0;
-  font-size: .8125rem;
+  font-size: .75rem;
   font-weight: 700;
 }
 
@@ -122,17 +130,18 @@
   width: 100%;
   min-width: 0;
   height: auto;
-  min-height: 34px;
+  min-height: 38px;
 }
 
 .matrix-explore-main-screen .native-select select {
   padding-inline: 2.25rem;
-  font-size: .8125rem;
+  font-size: .75rem;
 }
 
 .matrix-explore-main-screen .native-select svg {
   right: .75rem;
   inline-size: .875rem;
+  block-size: .875rem;
 }
 
 .matrix-explore-main-screen .segmented {
@@ -154,32 +163,28 @@
 }
 
 .matrix-explore-main-screen .segmented button,
-.matrix-explore-main-screen .hit-options button,
-.matrix-explore-main-screen .explore-settings .segmented.three button,
-.matrix-explore-main-screen .advanced-panel .segmented.three button,
-.matrix-explore-main-screen .advanced-panel .segmented.two button {
+.matrix-explore-main-screen .hit-options button {
   position: relative;
   box-sizing: border-box;
   min-width: 0;
   height: auto;
-  min-height: 34px;
-  padding: .25rem .375rem;
+  min-height: 38px;
+  padding: .375rem .75rem;
   border-radius: .5rem;
-  font-size: .8125rem;
-  font-weight: 600;
+  font-size: .75rem;
+  font-weight: 700;
   line-height: 1.15;
   white-space: normal;
 }
 
 .matrix-explore-main-screen .hit-options {
   width: 100%;
-  margin-top: 1rem;
-  padding-bottom: 1rem;
+  margin: 0;
+  padding: 0 0 .875rem;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
 .matrix-explore-main-screen .hit-options button {
-  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -187,9 +192,9 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  min-height: 34px;
+  min-height: 38px;
   height: auto;
-  margin: 1rem 0 0;
+  margin: 0;
   padding: 0;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -199,9 +204,9 @@
 }
 
 .matrix-explore-main-screen .advanced-row > img:first-child {
-  inline-size: 2.125rem;
-  block-size: 2.125rem;
-  border-radius: .3125rem;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: .5rem;
   object-fit: contain;
 }
 
@@ -233,16 +238,17 @@
 
 .matrix-explore-main-screen .segmented button em {
   position: absolute;
-  top: -7px;
-  right: .375rem;
+  z-index: 10;
+  top: -.625rem;
+  right: -.25rem;
   height: auto;
   min-height: 0;
-  padding-inline: .375rem;
+  padding: .125rem .375rem;
   transform: scale(.9);
   transform-origin: top right;
   border-radius: 9999px;
-  font-size: .5rem;
-  line-height: 1rem;
+  font-size: .625rem;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -252,39 +258,80 @@
 }
 
 .matrix-explore-main-screen .history-panel .panel-heading {
-  min-height: 2.125rem;
+  min-height: 0;
   padding: 0;
   align-items: center;
+}
+
+.matrix-explore-main-screen .history-table {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .matrix-explore-main-screen .history-row,
 .matrix-explore-main-screen .history-row.history-head,
 .matrix-explore-main-screen .history-row:not(.history-head) {
+  display: grid;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   height: auto;
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr) minmax(0, 3fr);
+  min-height: 0;
+  padding: .625rem 0;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: center;
-  border-top-width: 1px;
+  gap: .25rem;
+  border-top: 0;
+  border-bottom: 1px solid rgba(120, 53, 15, .2);
 }
 
-.matrix-explore-main-screen .history-row.history-head {
-  min-height: 2.25rem;
+.matrix-explore-main-screen .history-row > :nth-child(1) {
+  grid-column: span 3;
 }
 
-.matrix-explore-main-screen .history-row:not(.history-head) {
-  min-height: 2.875rem;
+.matrix-explore-main-screen .history-row > :nth-child(2) {
+  grid-column: span 3;
 }
 
-.matrix-explore-main-screen .history-main-numbers {
-  gap: .375rem;
+.matrix-explore-main-screen .history-row > :nth-child(3) {
+  grid-column: span 6;
+}
+
+.matrix-explore-main-screen .history-row > span,
+.matrix-explore-main-screen .history-row > span + span,
+.matrix-explore-main-screen .history-row:not(.history-head) > span:first-child,
+.matrix-explore-main-screen .history-row:not(.history-head) > span:nth-child(2) {
+  min-width: 0;
+  padding: 0;
+  border-left: 0;
 }
 
 .matrix-explore-main-screen .history-numbers,
 .matrix-explore-main-screen .history-main-numbers,
 .matrix-explore-main-screen .history-special-number {
+  display: flex;
   min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.matrix-explore-main-screen .history-numbers {
+  width: 100%;
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .history-main-numbers {
+  display: flex;
+  gap: .25rem;
+}
+
+.matrix-explore-main-screen .history-special-number {
+  margin-left: .25rem;
+  gap: .25rem;
 }
 
 .matrix-explore-main-screen .repeat-stats-heading {
@@ -295,7 +342,7 @@
 .matrix-explore-main-screen .result-summary {
   display: grid;
   width: 100%;
-  margin-top: .75rem;
+  margin: 0;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: .375rem;
 }
@@ -326,26 +373,28 @@
 
 .matrix-explore-main-screen .consecutive-filter-button,
 .matrix-explore-main-screen .repeat-stats-heading button {
-  min-height: 34px;
+  min-height: 38px;
   height: auto;
-  padding: .25rem .5rem;
-  font-size: .8125rem;
+  padding: .375rem .75rem;
+  font-size: .75rem;
+}
+
+@media (min-width: 40rem) {
+  .matrix-explore-main-screen .explore-settings,
+  .matrix-explore-main-screen .hit-advanced-panel,
+  .matrix-explore-main-screen .history-panel,
+  .matrix-explore-main-screen .repeat-stats-panel,
+  .matrix-explore-main-screen .result-panel {
+    padding: 1rem;
+  }
+
+  .matrix-explore-main-screen .history-main-numbers {
+    gap: .375rem;
+  }
 }
 
 @media (min-width: 48rem) {
-  .matrix-explore-main-screen .explore-settings .setting-grid label,
-  .matrix-explore-main-screen .advanced-panel label {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .matrix-explore-main-screen .explore-settings .setting-grid label > .select-box,
-  .matrix-explore-main-screen .explore-settings .setting-grid label > .segmented,
-  .matrix-explore-main-screen .advanced-panel label > .select-box,
-  .matrix-explore-main-screen .advanced-panel label > .segmented {
-    width: 100%;
-    min-width: 0;
-    flex: 1 1 0;
+  .matrix-explore-main-screen .feature-body {
+    max-width: 32rem;
   }
 }
