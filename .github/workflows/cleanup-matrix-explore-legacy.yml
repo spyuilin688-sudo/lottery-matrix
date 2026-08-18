@@ -1,0 +1,47 @@
+name: Cleanup Matrix Explore legacy CSS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-matrix-explore-legacy.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove obsolete Matrix Explore main sizing block
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/feature-pages.css')
+          text = path.read_text()
+          start = '/* Matrix Explore main canonical mobile sizing */'
+          end = '/* v55 scoped density and hierarchy refinements */'
+          if text.count(start) != 1:
+              raise SystemExit(f'Expected legacy Matrix Explore block once, found {text.count(start)}')
+          if text.count(end) != 1:
+              raise SystemExit(f'Expected v55 boundary once, found {text.count(end)}')
+          before, remainder = text.split(start, 1)
+          _, after = remainder.split(end, 1)
+          path.write_text(before.rstrip() + '\n\n' + end + after)
+          Path('.github/workflows/cleanup-matrix-explore-legacy.yml').unlink()
+          PY
+      - name: Verify cleanup scope
+        run: |
+          git diff --check
+          git diff -- src/feature-pages.css .github/workflows/cleanup-matrix-explore-legacy.yml
+      - name: Commit cleanup
+        run: |
+          git config user.name "spy854540-cmd"
+          git config user.email "spy854540@gmail.com"
+          git add -A
+          git commit -m "chore: remove obsolete Matrix Explore main sizing block"
+          git push origin main
