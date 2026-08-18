@@ -47,7 +47,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
-  assert.match(badge, /top:\s*-\.3125rem/);
+  assert.match(badge, /top:\s*-\.625rem/);
   assert.match(badge, /right:\s*\.125rem/);
   assert.match(badge, /padding:\s*\.0625rem \.25rem/);
   assert.match(badge, /font-size:\s*\.5625rem/);
