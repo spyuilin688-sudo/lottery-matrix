@@ -1,5 +1,8 @@
 name: Apply Matrix Explore fluid layout
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '*/5 * * * *'
 permissions:
