@@ -10,5 +10,9 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="module">
+      import { installLayoutDebugMode } from "/src/layout-debug.ts";
+      installLayoutDebugMode();
+    </script>
   </body>
 </html>
