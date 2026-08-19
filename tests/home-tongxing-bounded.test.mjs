@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const prototype = fs.readFileSync('src/Prototype.tsx','utf8');
-const featurePages = fs.readFileSync('src/FeaturePages.tsx','utf8');
 const homeCss = fs.readFileSync('src/homepage-repair.css','utf8');
 const tongCss = fs.readFileSync('src/tongxing-compact.css','utf8');
 const exploreCss = fs.readFileSync('src/matrix-explore-spacing.css','utf8');
@@ -24,8 +23,7 @@ test('tongxing uses 8px left inset and 32px controls with explore option text si
   assert.match(tongCss,/\.tongxing-screen \.same-star-period-select select\s*\{[\s\S]*?font-size:\s*\.75rem;/);
 });
 
-test('tongxing collapsible recent draw heading omits order copy and title wrapper while non-collapsible history keeps existing heading',()=>{
-  assert.match(featurePages,/const historyHeading = collapsible\s*\?\s*<SectionTitle>近10期開獎號碼<\/SectionTitle>\s*:\s*\(/);
-  assert.match(featurePages,/className="history-panel-title"/);
-  assert.match(featurePages,/history-panel-order/);
+test('tongxing recent draw removes parenthetical order copy and title container box without changing shared history markup',()=>{
+  assert.match(tongCss,/\.tongxing-screen \.history-panel-title\s*\{[\s\S]*?display:\s*contents;/);
+  assert.match(tongCss,/\.tongxing-screen \.history-panel-order\s*\{[\s\S]*?display:\s*none;/);
 });
