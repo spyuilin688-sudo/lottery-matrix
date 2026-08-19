@@ -87,30 +87,26 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.doesNotMatch(css, /\.matrix-explore-main-screen \.hit-advanced-panel[^}]*transform\s*:/s);
 });
 
-test("Matrix Explore history table keeps 3-3-6 by default and opens to 2.5-2.5-7 below 360px", () => {
+test("Matrix Explore history table uses the restored reference proportions", () => {
   const heading = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel \\.panel-heading");
   assert.match(heading, /display:\s*flex/);
   assert.match(heading, /justify-content:\s*space-between/);
-  assert.match(heading, /margin-bottom:\s*\.5rem/);
+  assert.match(heading, /min-height:\s*52px/);
+  assert.match(heading, /padding:\s*\.5rem \.75rem/);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
-  assert.match(row, /grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(row, /grid-template-columns:\s*2\.1fr 2\.5fr 7\.4fr/);
+  assert.match(row, /min-height:\s*54px/);
   assert.match(row, /padding:\s*\.5rem 0/);
-  assert.match(row, /border-bottom:\s*1px solid rgba\(30, 41, 59, \.6\)/);
-  assert.match(css, /:nth-child\(1\)\s*\{[^}]*grid-column:\s*span 3/);
-  assert.match(css, /:nth-child\(2\)\s*\{[^}]*grid-column:\s*span 3/);
-  assert.match(css, /:nth-child\(3\)\s*\{[^}]*grid-column:\s*span 6/);
+  assert.match(row, /border-bottom:\s*1px solid rgba\(90, 87, 80, \.7\)/);
+  assert.match(css, /\.history-row\.history-head\s*\{[^}]*min-height:\s*40px/);
 
-  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?grid-template-columns:\s*2\.5fr 2\.5fr 7fr;[\s\S]*?gap:\s*\.125rem;/s);
-  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?history-row > :nth-child\(3\)[\s\S]*?grid-column:\s*auto;/s);
-
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(20px, 6vw, 28px\);[^}]*--number-font-size:\s*clamp\(10px, 2\.8vw, 12px\);/s);
-  assert.doesNotMatch(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*(?:1\.625rem|1\.875rem)/s);
-  assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*\.125rem;/s);
-  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?\.history-special-ball\s*\{[^}]*width:\s*clamp\(20px, 6vw, 28px\)/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(26px, 7\.6vw, 30px\);[^}]*--number-font-size:\s*clamp\(11px, 3\.1vw, 13px\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*\.3125rem;/s);
+  assert.match(css, /@media \(max-width:\s*359\.98px\)[\s\S]*?grid-template-columns:\s*2fr 2\.35fr 7\.65fr;[\s\S]*?gap:\s*\.125rem;/s);
 });
 
-test("Matrix Explore statistics and results use six equal fluid columns", () => {
+test("Matrix Explore statistics and results use the restored readable density", () => {
   const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");
   assert.match(statsHeading, /display:\s*flex/);
   assert.match(statsHeading, /gap:\s*\.5rem/);
@@ -118,7 +114,9 @@ test("Matrix Explore statistics and results use six equal fluid columns", () => 
   assert.match(css, /repeat-stats-heading > span\s*\{[^}]*margin-left:\s*auto;[^}]*font-size:\s*\.75rem/);
 
   const card = ruleBlock(css, "\\.matrix-explore-main-screen \\.result-summary > div");
-  assert.match(card, /padding:\s*\.5rem/);
+  assert.match(card, /height:\s*58px/);
+  assert.match(card, /min-height:\s*58px/);
+  assert.match(card, /padding:\s*\.5rem \.25rem/);
   assert.match(card, /border-radius:\s*\.75rem/);
   assert.match(card, /background:\s*#141A26/);
   assert.match(card, /border:\s*1px solid #1e293b/);
@@ -129,8 +127,8 @@ test("Matrix Explore statistics and results use six equal fluid columns", () => 
   assert.match(resultTitle, /gap:\s*\.5rem/);
   assert.match(resultTitle, /margin-bottom:\s*\.75rem/);
 
-  assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*\.5rem;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*padding:\s*\.75rem 0;[^}]*border-bottom:\s*1px solid rgba\(30, 41, 59, \.6\)/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-result-row > span,[\s\S]*?\.matrix-explore-main-screen \.road-result-row > button\s*\{[^}]*font-size:\s*\.75rem;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.5rem;[^}]*border-radius:\s*\.375rem;[^}]*font-size:\s*\.6875rem;[^}]*font-weight:\s*700/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.9fr\) minmax\(0, \.72fr\) minmax\(0, \.94fr\) minmax\(0, 1\.16fr\) minmax\(0, 1\.02fr\) minmax\(0, 1\.18fr\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*58px;[^}]*padding:\s*\.75rem 0;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.7\)/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.25rem \.375rem;[^}]*border-radius:\s*\.375rem;[^}]*font-size:\s*\.6875rem;[^}]*font-weight:\s*700/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*color:\s*#d7ad55;[^}]*font-size:\s*1\.0625rem;/s);
 });
