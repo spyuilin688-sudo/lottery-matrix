@@ -124,7 +124,7 @@
 .home-screen .latest-draw-card::before {
   position: absolute;
   z-index: 0;
-  inset: 44px 4px 48px;
+  inset: 44px 4px 24px;
   border-radius: 4px;
   background:
     radial-gradient(circle at 50% 82%, transparent 0 18%, rgba(0, 5, 10, .28) 48%, rgba(0, 5, 10, .56) 100%),
@@ -226,7 +226,8 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-rows: 44px minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
+  grid-template-rows: 44px minmax(0, 1fr) 24px;
   width: 100%;
   height: var(--draw-card-height);
   min-height: 0;
@@ -239,16 +240,9 @@
   overflow: visible;
 }
 
-.home-screen .latest-draw-card .draw-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
-  height: 44px;
-  min-height: 44px;
-  gap: 6px;
-  align-items: center;
-}
-
 .home-screen .latest-draw-card .draw-meta {
+  grid-column: 1;
+  grid-row: 1;
   display: grid;
   min-width: 0;
   padding-left: 8px;
@@ -291,11 +285,14 @@
 }
 
 .home-screen .latest-draw-card .draw-order {
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 110px;
   height: 30px;
   justify-self: center;
+  align-self: center;
   border: 1px solid rgba(230, 177, 76, .46);
   border-radius: 14px;
   background: rgba(2, 7, 17, .38);
@@ -318,11 +315,14 @@
 }
 
 .home-screen .latest-draw-card .history-link {
+  grid-column: 3;
+  grid-row: 1;
   display: flex;
   height: 20px;
   min-height: 20px;
   padding: 0;
   justify-self: end;
+  align-self: center;
   align-items: center;
   justify-content: flex-end;
   border: 0;
@@ -343,6 +343,8 @@
 }
 
 .home-screen .latest-draw-card .draw-balls {
+  grid-column: 1 / -1;
+  grid-row: 2;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -396,13 +398,15 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
+  grid-column: 1 / -1;
+  grid-row: 3;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   width: auto;
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
   margin: 0 -15px;
   padding: 0 20px;
   align-items: center;
@@ -412,8 +416,8 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 16px auto minmax(0, 1fr);
-  gap: 6px;
+  grid-template-columns: 14px auto minmax(0, 1fr);
+  gap: 0;
   min-width: 0;
   align-items: center;
   justify-content: center;
