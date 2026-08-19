@@ -155,18 +155,16 @@
 }
 
 .home-screen .lottery-switcher > .home-asset-image {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: contain;
+  display: none;
 }
 
 .home-screen .lottery-switcher-hit-grid {
-  position: absolute;
+  position: relative;
   z-index: 2;
-  inset: 0;
+  inset: auto;
   display: grid;
+  width: 100%;
+  aspect-ratio: 1532 / 214;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
   min-width: 0;
@@ -183,11 +181,30 @@
   justify-content: center;
   border: 1px solid transparent;
   border-radius: 8px;
-  background: transparent;
+  background-color: transparent;
+  background-image: url("/assets/lottery/status/Matrixbba.png");
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
   color: transparent;
   box-shadow: none;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] {
+  background-position: 0% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] {
+  background-position: 33.333% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] {
+  background-position: 66.667% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] {
+  background-position: 100% 50%;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
