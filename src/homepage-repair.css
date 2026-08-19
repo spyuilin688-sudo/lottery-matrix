@@ -139,7 +139,7 @@
 }
 
 .home-screen .home-logo-image {
-  width: 100%;
+  width: 75%;
 }
 
 .home-screen .lottery-switcher {
@@ -168,7 +168,7 @@
   inset: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -449,7 +449,7 @@
 }
 
 .home-screen .matrix-core-banner {
-  width: 100%;
+  width: calc(100% - (var(--layout-page-inline) * 2));
   height: var(--home-core-height);
   margin-inline: auto;
   isolation: isolate;
@@ -533,10 +533,11 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%;
+  width: calc(100% - (var(--layout-page-inline) * 2));
   height: var(--home-features-height);
   aspect-ratio: 376.1 / 76.8;
   min-height: 0;
+  margin-inline: auto;
   gap: var(--home-feature-gap);
   align-items: stretch;
   overflow: visible;
