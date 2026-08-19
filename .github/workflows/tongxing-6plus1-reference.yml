@@ -1,0 +1,151 @@
+name: Tongxing 6+1 reference one-shot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'tongxing-6plus1-trigger'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify RED
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css = Path('src/tongxing-compact.css').read_text()
+          assert 'clamp(21px, 6vw, 24px)' in css
+          assert 'grid-template-columns: minmax(0, .95fr) minmax(0, 1fr) minmax(0, 3.05fr);' in css
+          assert '.history-row:has(.history-numbers[data-has-special="true"])' not in css
+          assert 'grid-template-rows: auto auto;' not in css
+          PY
+
+      - name: Patch formal Tongxing style source only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/tongxing-compact.css')
+          css = p.read_text()
+
+          old = '''.tongxing-screen .history-numbers,
+.tongxing-screen .history-main-numbers { min-width: 0; }
+.tongxing-screen .history-main-numbers { gap: 3px; }
+.tongxing-screen .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
+.tongxing-screen .history-numbers[data-has-special="true"] .mini-ball {
+  width: clamp(21px, 6vw, 24px);
+  height: clamp(21px, 6vw, 24px);
+  flex: 0 0 clamp(21px, 6vw, 24px);
+  font-size: 9px;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-number {
+  margin-left: 2px;
+  gap: 2px;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-number > span:first-child {
+  width: 8px;
+  flex-basis: 8px;
+  font-size: 12px;
+}
+'''
+          new = '''.tongxing-screen .history-numbers,
+.tongxing-screen .history-main-numbers { min-width: 0; }
+.tongxing-screen .history-main-numbers { gap: 3px; }
+.tongxing-screen .history-row:has(.history-numbers[data-has-special="true"]) {
+  min-height: 68px;
+  grid-template-columns: minmax(0, .82fr) minmax(0, .82fr) minmax(0, 3.36fr);
+}
+.tongxing-screen .history-numbers[data-has-special="true"] {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-main-numbers {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, .9vw, 4px);
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .mini-ball {
+  width: clamp(24px, 6.7vw, 27px);
+  height: clamp(24px, 6.7vw, 27px);
+  flex: 0 0 clamp(24px, 6.7vw, 27px);
+  font-size: clamp(9px, 2.5vw, 10px);
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-number {
+  display: flex;
+  margin-left: clamp(3px, 1vw, 5px);
+  align-items: center;
+  gap: clamp(2px, .8vw, 4px);
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-number > span:first-child {
+  display: inline-flex;
+  width: 10px;
+  flex: 0 0 10px;
+  align-items: center;
+  justify-content: center;
+  color: #d8aa39;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-ball {
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  align-items: center;
+  gap: 1px;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-label {
+  position: static;
+  grid-row: 1;
+  margin: 0;
+  color: #d8aa39;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 10px;
+  white-space: nowrap;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-ball .history-lottery-ball {
+  grid-row: 2;
+}
+'''
+          if css.count(old) != 1:
+              raise SystemExit(f'Expected one 6+1 block, found {css.count(old)}')
+          p.write_text(css.replace(old, new, 1))
+          PY
+
+      - name: Verify GREEN and build
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css = Path('src/tongxing-compact.css').read_text()
+          assert '.history-row:has(.history-numbers[data-has-special="true"])' in css
+          assert 'min-height: 68px;' in css
+          assert 'minmax(0, .82fr) minmax(0, .82fr) minmax(0, 3.36fr)' in css
+          assert 'clamp(24px, 6.7vw, 27px)' in css
+          assert 'grid-template-rows: auto auto;' in css
+          assert 'position: static;' in css
+          assert 'clamp(21px, 6vw, 24px)' not in css
+          PY
+          npm ci
+          npm run build
+          git diff --check
+
+      - name: Commit verified change to main
+        run: |
+          rm -f .github/workflows/tongxing-6plus1-reference.yml
+          git config user.name 'spyuilin688-sudo'
+          git config user.email 'spyuilin688@gmail.com'
+          git add src/tongxing-compact.css .github/workflows/tongxing-6plus1-reference.yml
+          git commit -m 'style: match tongxing 6+1 recent draws to reference'
+          git push origin main
