@@ -663,5 +663,5 @@
 
 /* The uploaded navigation is fixed to the bottom edge and remains full width. */
 .home-screen .home-layout {
-  padding-bottom: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 0px));
+  padding-bottom: var(--layout-bottom-nav-clearance);
 }
