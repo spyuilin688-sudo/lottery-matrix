@@ -174,21 +174,65 @@
 .tongxing-screen .history-numbers,
 .tongxing-screen .history-main-numbers { min-width: 0; }
 .tongxing-screen .history-main-numbers { gap: 3px; }
-.tongxing-screen .history-numbers[data-has-special="true"] .history-main-numbers { gap: 2px; }
+.tongxing-screen .history-row:has(.history-numbers[data-has-special="true"]) {
+  min-height: 68px;
+  grid-template-columns: minmax(0, .82fr) minmax(0, .82fr) minmax(0, 3.36fr);
+}
+.tongxing-screen .history-numbers[data-has-special="true"] {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-main-numbers {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, .9vw, 4px);
+}
 .tongxing-screen .history-numbers[data-has-special="true"] .mini-ball {
-  width: clamp(21px, 6vw, 24px);
-  height: clamp(21px, 6vw, 24px);
-  flex: 0 0 clamp(21px, 6vw, 24px);
-  font-size: 9px;
+  width: clamp(24px, 6.7vw, 27px);
+  height: clamp(24px, 6.7vw, 27px);
+  flex: 0 0 clamp(24px, 6.7vw, 27px);
+  font-size: clamp(9px, 2.5vw, 10px);
 }
 .tongxing-screen .history-numbers[data-has-special="true"] .history-special-number {
-  margin-left: 2px;
-  gap: 2px;
+  display: flex;
+  margin-left: clamp(3px, 1vw, 5px);
+  align-items: center;
+  gap: clamp(2px, .8vw, 4px);
 }
 .tongxing-screen .history-numbers[data-has-special="true"] .history-special-number > span:first-child {
-  width: 8px;
-  flex-basis: 8px;
-  font-size: 12px;
+  display: inline-flex;
+  width: 10px;
+  flex: 0 0 10px;
+  align-items: center;
+  justify-content: center;
+  color: #d8aa39;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-ball {
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  align-items: center;
+  gap: 1px;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-label {
+  position: static;
+  grid-row: 1;
+  margin: 0;
+  color: #d8aa39;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 10px;
+  white-space: nowrap;
+}
+.tongxing-screen .history-numbers[data-has-special="true"] .history-special-ball .history-lottery-ball {
+  grid-row: 2;
 }
 
 .tongxing-screen .ornament-title { margin: var(--large-section-gap) 0 10px; font-size: 20px; font-weight: 600; line-height: 26px; }
