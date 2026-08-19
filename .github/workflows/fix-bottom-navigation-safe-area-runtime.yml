@@ -1,0 +1,63 @@
+name: Fix Bottom Navigation Safe Area Runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-bottom-navigation-safe-area-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify regression test is red before fix
+        run: |
+          if node --test tests/bottom-navigation-safe-area-position.test.mjs; then
+            echo "Regression test unexpectedly passed before production fix"
+            exit 1
+          fi
+          echo "Regression test failed as expected before production fix"
+
+      - name: Fix formal PWA safe-area source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/styles.css')
+          text = path.read_text()
+          old = '  --mobile-safe-area-height: var(--device-safe-area-bottom, 34px);'
+          new = '  --mobile-safe-area-height: max(var(--device-safe-area-bottom, 0px), env(safe-area-inset-bottom, 0px));'
+          if text.count(old) != 1:
+              raise SystemExit('formal mobile safe-area source not found exactly once')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Verify target regression test is green
+        run: node --test tests/bottom-navigation-safe-area-position.test.mjs
+
+      - name: Full tests
+        run: node --test tests/*.test.mjs
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified fix to main
+        run: |
+          rm .github/workflows/fix-bottom-navigation-safe-area-runtime.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/styles.css tests/bottom-navigation-safe-area-position.test.mjs .github/workflows/fix-bottom-navigation-safe-area-runtime.yml
+          git commit -m "fix: use real PWA bottom safe area"
+          git push origin HEAD:main
