@@ -5,6 +5,7 @@ import test from "node:test";
 const navigationCss = await readFile(new URL("../src/prototype.css", import.meta.url), "utf8");
 const tokenCss = await readFile(new URL("../src/design-tokens.css", import.meta.url), "utf8");
 const runtimeCss = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+const homepageCss = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
 
 test("底部導覽固定貼底並以瀏覽器 safe area 為唯一底部安全區來源", () => {
   assert.match(navigationCss, /\.bottom-navigation\s*\{[\s\S]*?--bottom-nav-safe-area:\s*env\(safe-area-inset-bottom,\s*0px\);[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*auto 0 0;/);
@@ -27,4 +28,9 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*var\(--mobile-safe-area-height/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*\+\s*12px/);
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
+});
+
+test("首頁不再用 mobile safe-area 變數重複撐高底部空白", () => {
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
