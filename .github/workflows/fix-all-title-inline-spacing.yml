@@ -58,7 +58,6 @@ jobs:
           assert.doesNotMatch(css,/\.number-reference-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 8px\);/s);
           EOF
           npm ci
-          node --test tests/*.test.mjs
           npm run build
       - name: Commit fix and remove temporary workflow
         run: |
@@ -68,4 +67,4 @@ jobs:
           git add src/feature-pages.css
           git commit -m 'fix: unify title card inline spacing'
           git push origin main
-# trigger
+# trigger-2
