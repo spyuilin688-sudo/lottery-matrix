@@ -50,10 +50,22 @@ export type MatrixStatusData = {
 export type MatrixStatusMap = Record<LotteryId, MatrixStatusData>;
 
 const LOTTERIES: LotteryOption[] = [
-  { id: "今彩539", logo: "/assets/lottery/jincai-539-logo.png" },
-  { id: "天天樂", logo: "/assets/lottery/fantasy-5-logo.png" },
-  { id: "六合彩", logo: "/assets/lottery/mark-six-logo.png" },
-  { id: "大樂透", logo: "/assets/lottery/lotto-649-logo.png" },
+  {
+    id: "今彩539",
+    logo: "/assets/lottery/jincai-539-logo.png",
+  },
+  {
+    id: "天天樂",
+    logo: "/assets/lottery/fantasy-5-logo.png",
+  },
+  {
+    id: "六合彩",
+    logo: "/assets/lottery/mark-six-logo.png",
+  },
+  {
+    id: "大樂透",
+    logo: "/assets/lottery/lotto-649-logo.png",
+  },
 ];
 
 const HOME_ASSET_BASE = "/assets/lottery/functions";
@@ -103,10 +115,38 @@ const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
 };
 
 const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
-  今彩539: { status: "啟動", statusEn: "ACTIVE", artwork: "/assets/lottery/status/active.png", count: 2, description: "具備基本參考價值", tone: "green" },
-  天天樂: { status: "聚合", statusEn: "FOCUS", artwork: "/assets/lottery/status/focus.png", count: 1, description: "具備明顯規律集中性", tone: "blue" },
-  "六合彩": { status: "共振", statusEn: "RESONANCE", artwork: "/assets/lottery/status/resonance.png", count: 3, description: "具備強烈共振效應", tone: "purple" },
-  大樂透: { status: "臨界", statusEn: "CRITICAL", artwork: "/assets/lottery/status/critical.png", count: 4, description: "極為罕見版路狀態", tone: "orange" },
+  今彩539: {
+    status: "啟動",
+    statusEn: "ACTIVE",
+    artwork: "/assets/lottery/status/active.png",
+    count: 2,
+    description: "具備基本參考價值",
+    tone: "green",
+  },
+  天天樂: {
+    status: "聚合",
+    statusEn: "FOCUS",
+    artwork: "/assets/lottery/status/focus.png",
+    count: 1,
+    description: "具備明顯規律集中性",
+    tone: "blue",
+  },
+  "六合彩": {
+    status: "共振",
+    statusEn: "RESONANCE",
+    artwork: "/assets/lottery/status/resonance.png",
+    count: 3,
+    description: "具備強烈共振效應",
+    tone: "purple",
+  },
+  大樂透: {
+    status: "臨界",
+    statusEn: "CRITICAL",
+    artwork: "/assets/lottery/status/critical.png",
+    count: 4,
+    description: "極為罕見版路狀態",
+    tone: "orange",
+  },
 };
 
 export type LotterySwitcherProps = {
@@ -117,13 +157,29 @@ export type LotterySwitcherProps = {
 
 export function LotterySwitcher({ selected, onChange, className = "" }: LotterySwitcherProps) {
   return (
-    <div data-lottery-switcher="" className={`lottery-switcher ${className}`.trim()} data-selected-lottery={selected} data-testid="lottery-switcher">
+    <div
+      data-lottery-switcher=""
+      className={`lottery-switcher ${className}`.trim()}
+      data-selected-lottery={selected}
+      data-testid="lottery-switcher"
+    >
       <img className="home-asset-image" src={HOME_ASSETS.lotterySwitcher} alt="" draggable={false} />
       <div className="lottery-switcher-hit-grid" role="radiogroup" aria-label="選擇彩種">
         {LOTTERIES.map((lottery) => {
           const isSelected = lottery.id === selected;
           return (
-            <button data-lottery-card="" className="lottery-card" data-lottery={lottery.id} data-selected={isSelected} key={lottery.id} onClick={() => onChange(lottery.id)} role="radio" aria-checked={isSelected} aria-label={lottery.id} type="button">
+            <button
+              data-lottery-card=""
+              className="lottery-card"
+              data-lottery={lottery.id}
+              data-selected={isSelected}
+              key={lottery.id}
+              onClick={() => onChange(lottery.id)}
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={lottery.id}
+              type="button"
+            >
               <span className="clean-hit-label">{lottery.id}</span>
             </button>
           );
@@ -136,14 +192,21 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
 function splitDrawNumbers(lottery: LotteryId, values: Array<string | number>) {
   const normalized = values.map(normalizeBallNumber);
   if (lottery === "六合彩" || lottery === "大樂透") {
-    return { numbers: normalized.slice(0, 6), specialNumber: normalized[6] };
+    return {
+      numbers: normalized.slice(0, 6),
+      specialNumber: normalized[6],
+    };
   }
-  return { numbers: normalized.slice(0, 5), specialNumber: undefined };
+  return {
+    numbers: normalized.slice(0, 5),
+    specialNumber: undefined,
+  };
 }
 
 function toDrawResult(lottery: LotteryId, record: LotteryDrawRecord): DrawResultData {
   const sorted = splitDrawNumbers(lottery, record.sortedNumbers?.length ? record.sortedNumbers : record.numbers);
   const drawOrder = splitDrawNumbers(lottery, record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers);
+
   return {
     issue: record.period ?? record.issue,
     date: record.drawDate ?? record.date,
@@ -171,16 +234,18 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
   const hasSpecial = Boolean(displayedSpecialNumber);
   return (
     <section className={`latest-draw-card ${className}`.trim()} data-lottery={lottery} aria-label={`${lottery}最新開獎資訊`} data-testid="latest-draw-card">
-      <div className="draw-meta" data-empty={!hasMeta}>
-        {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
-        {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
+      <div className="draw-toolbar">
+        <div className="draw-meta" data-empty={!hasMeta}>
+          {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
+          {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
+        </div>
+        <div className="draw-order" role="radiogroup" aria-label="號碼排列">
+          {(["順球", "落球"] as DrawOrder[]).map((option) => (
+            <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
+          ))}
+        </div>
+        <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       </div>
-      <div className="draw-order" role="radiogroup" aria-label="號碼排列">
-        {(["順球", "落球"] as DrawOrder[]).map((option) => (
-          <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
-        ))}
-      </div>
-      <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
@@ -194,14 +259,22 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
 
 export type NextDrawInfoBarProps = NextDrawInfoData & { className?: string };
 export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className = "" }: NextDrawInfoBarProps) {
-  const [remainingSeconds, setRemainingSeconds] = useState(() => nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime));
+  const [remainingSeconds, setRemainingSeconds] = useState(() =>
+    nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime),
+  );
+
   useEffect(() => {
-    setRemainingSeconds(nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime));
+    setRemainingSeconds(
+      nextDrawAt ? secondsUntil(nextDrawAt) : parseCountdown(remainingTime),
+    );
     const timer = window.setInterval(() => {
-      setRemainingSeconds((currentSeconds) => nextDrawAt ? secondsUntil(nextDrawAt) : nextCountdownSeconds(currentSeconds));
+      setRemainingSeconds((currentSeconds) =>
+        nextDrawAt ? secondsUntil(nextDrawAt) : nextCountdownSeconds(currentSeconds),
+      );
     }, 1000);
     return () => window.clearInterval(timer);
   }, [nextDrawAt, remainingTime]);
+
   return (
     <section className={`next-draw-info ${className}`.trim()} aria-label="下次開獎資訊" data-testid="next-draw-info">
       <div className="next-draw-item"><ClockIcon className="next-draw-icon" aria-hidden="true" /><span className="next-draw-label">下次開獎</span><span className="next-draw-value">{nextDraw}</span></div>
@@ -213,11 +286,17 @@ export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className
 export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
 export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
   return (
-    <section className="matrix-status-section home-status-box" aria-label="Matrix 狀態" data-testid="matrix-status-section">
+    <section
+      className="matrix-status-section home-status-box"
+      aria-label="Matrix 狀態"
+      data-testid="matrix-status-section"
+    >
       <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
       <div className="matrix-status-hit-grid" aria-label="Matrix 四種狀態">
         {["啟動", "聚合", "共振", "臨界"].map((label) => (
-          <button type="button" aria-label={label} key={label} onClick={onOpen}><span className="clean-hit-label">{label}</span></button>
+          <button type="button" aria-label={label} key={label} onClick={onOpen}>
+            <span className="clean-hit-label">{label}</span>
+          </button>
         ))}
       </div>
     </section>
@@ -259,19 +338,48 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
-  const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt ? { nextDraw: formatNextDrawAt(latestDraw.nextDrawAt), remainingTime: "00:00:00", nextDrawAt: latestDraw.nextDrawAt } : NEXT_DRAW_INFO[selected];
+  const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
+    ? {
+        nextDraw: formatNextDrawAt(latestDraw.nextDrawAt),
+        remainingTime: "00:00:00",
+        nextDrawAt: latestDraw.nextDrawAt,
+      }
+    : NEXT_DRAW_INFO[selected];
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
+
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => { setQuickSettingsHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
+
   const navigate = (next: ScreenId) => { if (next === "history") setHistoryReturnScreen(screen); setQuickActive(false); setScreen(next); };
   const openQuick = () => { if (quickActive) { setQuickActive(false); setScreen(quickReturnScreen); return; } if (!quickTarget) return; setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); };
   const selectQuickTarget = (next: ScreenId) => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); };
-  const quickSettings = quickSettingsOpen && quickSettingsHost ? createPortal(<div className="quick-settings-backdrop" role="presentation" onClick={() => setQuickSettingsOpen(false)}><section className="quick-settings-dialog" role="dialog" aria-modal="true" aria-label="快捷設定" onClick={(event) => event.stopPropagation()}><h2>快捷設定</h2><div>{QUICK_OPTIONS.map((option) => <button type="button" data-selected={quickTarget === option.screen} onClick={() => selectQuickTarget(option.screen)} key={option.screen}><img src={option.image} alt="" /><strong>{option.label}</strong>{quickTarget === option.screen ? <span className="quick-selected-dot" /> : null}</button>)}</div></section></div>, quickSettingsHost) : null;
+
+  const quickSettings = quickSettingsOpen && quickSettingsHost
+    ? createPortal(
+        <div className="quick-settings-backdrop" role="presentation" onClick={() => setQuickSettingsOpen(false)}>
+          <section className="quick-settings-dialog" role="dialog" aria-modal="true" aria-label="快捷設定" onClick={(event) => event.stopPropagation()}>
+            <h2>快捷設定</h2>
+            <div>
+              {QUICK_OPTIONS.map((option) => (
+                <button type="button" data-selected={quickTarget === option.screen} onClick={() => selectQuickTarget(option.screen)} key={option.screen}>
+                  <img src={option.image} alt="" />
+                  <strong>{option.label}</strong>
+                  {quickTarget === option.screen ? <span className="quick-selected-dot" /> : null}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>,
+        quickSettingsHost,
+      )
+    : null;
+
   if (screen !== "home") {
     return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
   }
+
   return (
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />

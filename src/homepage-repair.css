@@ -124,7 +124,7 @@
 .home-screen .latest-draw-card::before {
   position: absolute;
   z-index: 0;
-  inset: 44px 4px 24px;
+  inset: 44px 4px 48px;
   border-radius: 4px;
   background:
     radial-gradient(circle at 50% 82%, transparent 0 18%, rgba(0, 5, 10, .28) 48%, rgba(0, 5, 10, .56) 100%),
@@ -191,11 +191,25 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] { background-position: 0% 50%; }
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] { background-position: 33.333% 50%; }
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] { background-position: 66.667% 50%; }
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] { background-position: 100% 50%; }
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after { display: none; }
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] {
+  background-position: 0% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] {
+  background-position: 33.333% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] {
+  background-position: 66.667% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] {
+  background-position: 100% 50%;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
+  display: none;
+}
 
 .home-screen .clean-hit-label {
   position: absolute;
@@ -212,8 +226,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
-  grid-template-rows: 44px minmax(0, 1fr) 24px;
+  grid-template-rows: 44px minmax(0, 1fr) 48px;
   width: 100%;
   height: var(--draw-card-height);
   min-height: 0;
@@ -226,9 +239,16 @@
   overflow: visible;
 }
 
+.home-screen .latest-draw-card .draw-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
+  height: 44px;
+  min-height: 44px;
+  gap: 6px;
+  align-items: center;
+}
+
 .home-screen .latest-draw-card .draw-meta {
-  grid-column: 1;
-  grid-row: 1;
   display: grid;
   min-width: 0;
   padding-left: 8px;
@@ -271,14 +291,11 @@
 }
 
 .home-screen .latest-draw-card .draw-order {
-  grid-column: 2;
-  grid-row: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 110px;
   height: 30px;
   justify-self: center;
-  align-self: center;
   border: 1px solid rgba(230, 177, 76, .46);
   border-radius: 14px;
   background: rgba(2, 7, 17, .38);
@@ -301,14 +318,11 @@
 }
 
 .home-screen .latest-draw-card .history-link {
-  grid-column: 3;
-  grid-row: 1;
   display: flex;
   height: 20px;
   min-height: 20px;
   padding: 0;
   justify-self: end;
-  align-self: center;
   align-items: center;
   justify-content: flex-end;
   border: 0;
@@ -329,16 +343,20 @@
 }
 
 .home-screen .latest-draw-card .draw-balls {
-  grid-column: 1 / -1;
-  grid-row: 2;
   min-height: 0;
   margin: 0;
   padding: 0;
   overflow: visible;
 }
 
-.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls { gap: 9px; }
-.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls { gap: 3px; flex: 0 1 auto; }
+.home-screen .latest-draw-card .draw-balls[data-has-special="false"] .main-balls {
+  gap: 9px;
+}
+
+.home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
+  gap: 3px;
+  flex: 0 1 auto;
+}
 
 .home-screen .latest-draw-card .special-ball-separator {
   display: block;
@@ -378,15 +396,13 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
-  grid-column: 1 / -1;
-  grid-row: 3;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   width: auto;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
   margin: 0 -15px;
   padding: 0 20px;
   align-items: center;
@@ -396,17 +412,39 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
-  grid-template-columns: 14px auto minmax(0, 1fr);
-  gap: 0;
+  grid-template-columns: 16px auto minmax(0, 1fr);
+  gap: 6px;
   min-width: 0;
   align-items: center;
   justify-content: center;
 }
 
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child { padding-left: 16px; }
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon { width: 14px; height: 14px; color: #e6b34f; }
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label { color: #d8a653; font-size: 11px; font-weight: 700; line-height: 13px; white-space: nowrap; }
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value { min-width: 0; color: #ffffff; font-size: 11px; font-weight: 700; line-height: 13px; white-space: nowrap; }
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child {
+  padding-left: 16px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
+  width: 14px;
+  height: 14px;
+  color: #e6b34f;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label {
+  color: #d8a653;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 13px;
+  white-space: nowrap;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
+  min-width: 0;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 13px;
+  white-space: nowrap;
+}
 
 .home-screen .matrix-status-section,
 .home-screen .matrix-core-banner {
@@ -421,12 +459,55 @@
   overflow: visible;
 }
 
-.home-screen .matrix-status-section { display: flex; width: 100%; justify-content: center; }
-.home-screen .matrix-core-banner { width: calc(100% - (var(--layout-page-inline) * 2)); height: var(--home-core-height); margin-inline: auto; isolation: isolate; overflow: hidden; animation: matrix-core-pulse 8s ease-in-out infinite; }
-.home-screen .matrix-status-section > .home-asset-image { width: 100%; height: 100%; max-height: 100%; max-width: 100%; object-fit: contain; object-position: center top; }
-.home-screen .matrix-core-banner > .home-asset-image { position: relative; z-index: 1; width: 100%; height: 100%; max-height: 100%; margin-inline: auto; object-fit: contain; }
-.home-screen .matrix-status-hit-grid { position: absolute; z-index: 2; inset: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.home-screen .matrix-status-hit-grid > button { appearance: none; min-width: 0; padding: 0; border: 0; background: transparent; }
+.home-screen .matrix-status-section {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.home-screen .matrix-core-banner {
+  width: calc(100% - (var(--layout-page-inline) * 2));
+  height: var(--home-core-height);
+  margin-inline: auto;
+  isolation: isolate;
+  overflow: hidden;
+  animation: matrix-core-pulse 8s ease-in-out infinite;
+}
+
+.home-screen .matrix-status-section > .home-asset-image {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center top;
+}
+
+.home-screen .matrix-core-banner > .home-asset-image {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin-inline: auto;
+  object-fit: contain;
+}
+
+.home-screen .matrix-status-hit-grid {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-screen .matrix-status-hit-grid > button {
+  appearance: none;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
 
 .home-screen .matrix-core-banner::before {
   position: absolute;
@@ -444,7 +525,10 @@
   pointer-events: none;
 }
 
-.home-screen .matrix-core-banner:active::before { animation: matrix-core-click-wave 420ms ease-out both; }
+.home-screen .matrix-core-banner:active::before {
+  animation: matrix-core-click-wave 420ms ease-out both;
+}
+
 .home-screen .matrix-core-banner::after {
   position: absolute;
   z-index: 3;
@@ -476,37 +560,123 @@
   overflow: visible;
 }
 
-.home-screen .home-shortcut { appearance: none; display: flex; width: 100%; min-width: 0; height: 100%; min-height: 0; padding: 0; align-items: center; justify-content: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
-.home-screen .home-shortcut img { display: block; width: auto; height: 100%; max-height: 100%; max-width: 100%; object-fit: contain; object-position: center; border-radius: 0; clip-path: polygon(1.5px 0, calc(100% - 1.5px) 0, 100% 1.5px, 100% calc(100% - 1.5px), calc(100% - 1.5px) 100%, 1.5px 100%, 0 calc(100% - 1.5px), 0 1.5px); filter: none; }
+.home-screen .home-shortcut {
+  appearance: none;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
 
+.home-screen .home-shortcut img {
+  display: block;
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0;
+  clip-path: polygon(1.5px 0, calc(100% - 1.5px) 0, 100% 1.5px, 100% calc(100% - 1.5px), calc(100% - 1.5px) 100%, 1.5px 100%, 0 calc(100% - 1.5px), 0 1.5px);
+  filter: none;
+}
+
+/* Homepage container visibility and Matrix Core particle light. */
 .home-screen .brand-header,
 .home-screen .lottery-switcher,
 .home-screen .latest-draw-card,
 .home-screen .matrix-status-section,
-.home-screen .home-shortcut-row { outline: 0; animation: none; }
+.home-screen .home-shortcut-row {
+  outline: 0;
+  animation: none;
+}
 
 .home-screen .matrix-core-banner { outline: 0; }
-.home-screen .lottery-switcher { margin-block-start: var(--home-gap-logo-switcher); }
-.home-screen .latest-draw-card { margin-block-start: var(--home-gap-switcher-draw); }
-.home-screen .matrix-status-section { margin-block-start: var(--home-gap-draw-status); }
-.home-screen .matrix-core-banner { margin-block-start: 0; }
-.home-screen .home-shortcut-row { margin-block-start: 0; }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after { display: none; }
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] { border-color: transparent; border-image: var(--lottery-selected-gradient) 1; box-shadow: 0 0 7px rgba(255, 206, 105, .28); }
-.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] { --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30); }
-.home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] { --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff); }
-.home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] { --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759); }
-.home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] { --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640); }
+/* Canonical homepage flow gaps. Each adjacent pair has one source. */
+.home-screen .lottery-switcher {
+  margin-block-start: var(--home-gap-logo-switcher);
+}
 
-@keyframes matrix-core-stardust-scan { 0%, 34% { transform: translateX(0); opacity: 0; } 40% { opacity: .55; } 70% { opacity: .55; } 76%, 100% { transform: translateX(535%); opacity: 0; } }
-@keyframes matrix-core-pulse { 0%, 34%, 100% { box-shadow: inset 0 0 5px rgba(255, 205, 93, .08); } 48%, 68% { box-shadow: inset 0 0 14px rgba(255, 205, 93, .22), 0 0 8px rgba(255, 205, 93, .12); } }
-@keyframes matrix-core-click-wave { 0% { opacity: .72; scale: .35; } 100% { opacity: 0; scale: 8; } }
+.home-screen .latest-draw-card {
+  margin-block-start: var(--home-gap-switcher-draw);
+}
+
+.home-screen .matrix-status-section {
+  margin-block-start: var(--home-gap-draw-status);
+}
+
+.home-screen .matrix-core-banner {
+  margin-block-start: 0;
+}
+
+.home-screen .home-shortcut-row {
+  margin-block-start: 0;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+  display: none;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  border-color: transparent;
+  border-image: var(--lottery-selected-gradient) 1;
+  box-shadow: 0 0 7px rgba(255, 206, 105, .28);
+}
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+}
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
+}
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
+}
+
+.home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
+}
+
+@keyframes matrix-core-stardust-scan {
+  0%, 34% { transform: translateX(0); opacity: 0; }
+  40% { opacity: .55; }
+  70% { opacity: .55; }
+  76%, 100% { transform: translateX(535%); opacity: 0; }
+}
+
+@keyframes matrix-core-pulse {
+  0%, 34%, 100% { box-shadow: inset 0 0 5px rgba(255, 205, 93, .08); }
+  48%, 68% { box-shadow: inset 0 0 14px rgba(255, 205, 93, .22), 0 0 8px rgba(255, 205, 93, .12); }
+}
+
+@keyframes matrix-core-click-wave {
+  0% { opacity: .72; scale: .35; }
+  100% { opacity: 0; scale: 8; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .home-screen .matrix-core-banner { box-shadow: inset 0 0 7px rgba(42, 155, 225, .42); animation: none; }
+  .home-screen .matrix-core-banner {
+    box-shadow: inset 0 0 7px rgba(42, 155, 225, .42);
+    animation: none;
+  }
+
   .home-screen .matrix-core-banner::before { animation: none; opacity: 0; }
   .home-screen .matrix-core-banner::after { animation: none; opacity: .35; }
 }
 
-.home-screen .home-layout { padding-bottom: var(--layout-bottom-nav-clearance); }
+/* The uploaded navigation is fixed to the bottom edge and remains full width. */
+.home-screen .home-layout {
+  padding-bottom: var(--layout-bottom-nav-clearance);
+}
