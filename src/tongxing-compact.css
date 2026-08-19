@@ -6,12 +6,12 @@
   --large-section-gap: 16px;
   --card-padding: 10px;
   --card-radius: 12px;
-  --control-gap: 8px;
-  --control-height: 40px;
-  --primary-button-height: 48px;
-  --table-header-height: 38px;
-  --table-row-height: 52px;
-  --result-row-height: 50px;
+  --control-gap: 6px;
+  --control-height: 36px;
+  --primary-button-height: 40px;
+  --table-header-height: 32px;
+  --table-row-height: 44px;
+  --result-row-height: 44px;
   --border-width: 1px;
   --group-divider-width: 2px;
   --bottom-nav-height: var(--bottom-navigation-height);
@@ -42,7 +42,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr);
   gap: var(--control-gap);
 }
 
@@ -69,8 +69,8 @@
   width: 100%;
   min-width: 0;
   margin: var(--control-gap) 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, .9fr) minmax(0, 1.3fr) minmax(0, .7fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(52px, .9fr) max-content;
+  gap: var(--control-gap);
   align-items: center;
 }
 
@@ -106,7 +106,7 @@
 .tongxing-screen .same-star-fields > span {
   align-self: center;
   color: #d5cec2;
-  font-size: clamp(13px, 3.8vw, 16px);
+  font-size: clamp(12px, 3.5vw, 14px);
   font-weight: 600;
   line-height: 22px;
   white-space: nowrap;
@@ -136,11 +136,11 @@
 .tongxing-screen .primary-action {
   width: 100%;
   height: var(--primary-button-height);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
 }
 
-.tongxing-screen .primary-action svg { width: 24px; height: 24px; }
+.tongxing-screen .primary-action svg { width: 20px; height: 20px; }
 
 .tongxing-screen .history-panel {
   width: 100%;
@@ -258,13 +258,13 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(64px, 20%) repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(72px, 1.8fr) repeat(5, minmax(0, 1fr));
   align-items: stretch;
   text-align: center;
 }
 
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row {
-  grid-template-columns: minmax(64px, 20%) repeat(7, minmax(0, 1fr));
+  grid-template-columns: minmax(76px, 2.2fr) repeat(7, minmax(0, 1fr));
 }
 
 .tongxing-screen .tongxing-table-row > span {
@@ -290,12 +290,12 @@
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] { background: rgba(10, 61, 88, .13); }
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] > span { border-top: var(--border-width) solid rgba(105, 129, 140, .31); }
 .tongxing-screen .tongxing-period-cell { display: grid; min-height: var(--result-row-height); padding: 2px 3px; align-content: center; gap: 1px; }
-.tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 16px; font-weight: 700; line-height: 18px; }
-.tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 12px; font-weight: 400; line-height: 14px; }
+.tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 14px; font-weight: 700; line-height: 17px; white-space: nowrap; }
+.tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 10.5px; font-weight: 400; line-height: 13px; white-space: nowrap; }
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] .tongxing-period-cell strong { color: #78bfe3; }
-.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: 17px; font-weight: 700; }
+.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: 15px; font-weight: 700; }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: clamp(12px, 3.7vw, 16px); }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: clamp(11px, 3.4vw, 14px); }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell { padding-inline: 2px; }
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 15px; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 13px; }
 .tongxing-screen .tongxing-results-end { height: 12px; }
