@@ -23,35 +23,33 @@ jobs:
           import test from 'node:test';
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
-
           const layout = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
           const balls = fs.readFileSync('src/number-ball.css', 'utf8');
 
-          test('Matrix Explore lower half uses compact responsive reference density', () => {
+          test('Matrix Explore lower sections use compact responsive proportions', () => {
             assert.match(layout, /\.matrix-explore-main-screen \.history-panel \.panel-heading\s*\{[^}]*min-height:\s*36px/s);
             assert.match(layout, /\.matrix-explore-main-screen \.history-row,[\s\S]*?min-height:\s*34px;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 2fr\) minmax\(0, 7fr\)/);
             assert.match(layout, /\.matrix-explore-main-screen \.result-summary\s*\{[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)/s);
             assert.match(layout, /\.matrix-explore-main-screen \.result-summary > div\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
             assert.match(layout, /\.matrix-explore-main-screen \.road-results-head\s*\{[^}]*min-height:\s*32px/s);
             assert.match(layout, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*42px;[^}]*padding:\s*\.375rem 0/s);
-            assert.match(layout, /\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[\s\S]*?background:\s*transparent;[\s\S]*?height:\s*26px/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*height:\s*26px;[^}]*background:\s*transparent/s);
             assert.match(balls, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(18px, 5\.2vw, 20px\)/s);
           });
 
-          test('320 360 and 390 widths retain room for 6+1 without fixed-width pressure', () => {
+          test('320 360 and 390 widths preserve 6+1 room', () => {
             for (const viewport of [320, 360, 390]) {
               const panelInner = viewport - 32 - 16;
               const drawColumn = panelInner * 0.7;
               const ball = Math.max(18, Math.min(viewport * 0.052, 20));
               const gap = Math.max(1, Math.min(viewport * 0.005, 2));
               const required = ball * 7 + gap * 8 + 8;
-              assert.ok(required < drawColumn, `${viewport}px: 6+1 requires ${required}px but draw column has ${drawColumn}px`);
+              assert.ok(required < drawColumn, `${viewport}px overflow risk`);
             }
           });
 
-          test('lower-half formal source has no hard-overwrite hacks', () => {
-            assert.doesNotMatch(layout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
-            assert.doesNotMatch(layout, /transform\s*:/);
+          test('formal lower-half CSS has no hard overwrite hacks', () => {
+            assert.doesNotMatch(layout, /!important|zoom\s*:|scale\s*\(|transform\s*:|margin(?:-[a-z]+)?\s*:\s*-/);
           });
           EOF
 
@@ -61,83 +59,100 @@ jobs:
           node --test tests/matrix-explore-lower-density.test.mjs
           status=$?
           set -e
-          if [ "$status" -eq 0 ]; then
-            echo 'Expected lower-density contract to fail before production CSS change.'
-            exit 1
-          fi
+          test "$status" -ne 0
           echo 'RED verified.'
 
-      - name: Patch existing formal style sources only
+      - name: Patch formal sources
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
-          layout_path = Path('src/matrix-explore-spacing.css')
-          layout = layout_path.read_text()
-          balls_path = Path('src/number-ball.css')
-          balls = balls_path.read_text()
+          lp = Path('src/matrix-explore-spacing.css')
+          bp = Path('src/number-ball.css')
+          css = lp.read_text()
+          balls = bp.read_text()
 
-          def once(text, old, new, label):
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+          def replace_once(text, old, new, label):
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {n}')
               return text.replace(old, new, 1)
 
-          layout = once(layout, '  padding: .625rem;\n  flex-direction: column;', '  padding: .5rem;\n  flex-direction: column;', 'lower card padding')
-          layout = once(layout, '  min-height: 42px;\n  margin-bottom: 0;\n  padding: .375rem .5rem;', '  min-height: 36px;\n  margin-bottom: 0;\n  padding: .25rem .375rem;', 'history heading')
-          layout = once(layout, '  font-size: clamp(.9375rem, 4.1vw, 1.0625rem);', '  font-size: clamp(.875rem, 3.6vw, 1rem);', 'history title size')
-          layout = once(layout, '  font-size: clamp(.6875rem, 3.1vw, .8125rem);', '  font-size: clamp(.625rem, 2.8vw, .75rem);', 'history action size')
-          layout = once(layout, '  min-height: 40px;\n  padding: .25rem 0;\n  grid-template-columns: minmax(0, 1.15fr) minmax(0, 2.2fr) minmax(0, 6.65fr);', '  min-height: 34px;\n  padding: .125rem 0;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr);', 'history row density')
-          layout = once(layout, '  min-height: 34px;\n  padding-block: .1875rem;', '  min-height: 30px;\n  padding-block: .125rem;', 'history head density')
-          layout = once(layout, '  font-size: clamp(.75rem, 3.4vw, .875rem);', '  font-size: clamp(.6875rem, 3vw, .8125rem);', 'history head font')
-          layout = once(layout, '  font-size: clamp(.75rem, 3.3vw, .8125rem);', '  font-size: clamp(.6875rem, 3vw, .75rem);', 'issue font')
-          layout = once(layout, '  font-size: clamp(.6875rem, 3vw, .75rem);\n  opacity: .92;', '  font-size: clamp(.625rem, 2.7vw, .6875rem);\n  opacity: .92;', 'date cell font')
-          layout = once(layout, '  font-size: clamp(.6875rem, 3vw, .75rem);\n}\n\n.matrix-explore-main-screen .history-date-stack small', '  font-size: clamp(.625rem, 2.7vw, .6875rem);\n}\n\n.matrix-explore-main-screen .history-date-stack small', 'date year font')
-          layout = once(layout, '  font-size: clamp(.625rem, 2.8vw, .6875rem);\n}', '  font-size: clamp(.5625rem, 2.4vw, .625rem);\n}', 'date detail font')
-          layout = once(layout, '  gap: .25rem;\n  overflow: hidden;', '  gap: .125rem;\n  overflow: hidden;', 'history number group gap')
-          layout = once(layout, '  gap: clamp(.125rem, .7vw, .25rem);', '  gap: clamp(.0625rem, .5vw, .125rem);', 'main ball gap')
-          layout = once(layout, '  margin-left: .125rem;\n  gap: .125rem;', '  margin-left: .0625rem;\n  gap: .0625rem;', 'special group gap')
+          def set_props(text, selector, props):
+              pattern = re.compile(re.escape(selector) + r'\s*\{([^}]*)\}', re.S)
+              m = pattern.search(text)
+              if not m:
+                  raise SystemExit(f'selector not found: {selector}')
+              body = m.group(1)
+              for prop, value in props.items():
+                  p = re.compile(r'(^\s*' + re.escape(prop) + r'\s*:\s*)[^;]+;', re.M)
+                  body2, n = p.subn(r'\g<1>' + value + ';', body, count=1)
+                  if n != 1:
+                      raise SystemExit(f'{selector}: property {prop} expected once, found {n}')
+                  body = body2
+              return text[:m.start(1)] + body + text[m.end(1):]
 
-          layout = once(layout, '  min-height: 2rem;\n  margin-bottom: .5rem;', '  min-height: 1.75rem;\n  margin-bottom: .375rem;', 'repeat heading density')
-          layout = once(layout, '  font-size: clamp(.625rem, 2.8vw, .75rem);\n}\n\n.matrix-explore-main-screen .result-summary', '  font-size: clamp(.5625rem, 2.5vw, .6875rem);\n}\n\n.matrix-explore-main-screen .result-summary', 'repeat hint font')
-          layout = once(layout, '  column-gap: clamp(.25rem, 1.2vw, .375rem);\n  row-gap: clamp(.375rem, 1.6vw, .5rem);', '  column-gap: clamp(.125rem, .8vw, .25rem);\n  row-gap: clamp(.25rem, 1.1vw, .375rem);', 'repeat grid gaps')
-          layout = once(layout, '  min-height: clamp(44px, 12vw, 48px);\n  height: auto;\n  padding: .3125rem .125rem;', '  min-height: clamp(36px, 10vw, 40px);\n  height: auto;\n  padding: .1875rem .0625rem;', 'repeat cell density')
-          layout = once(layout, '  border-radius: .5rem;', '  border-radius: .4375rem;', 'repeat cell radius')
-          layout = once(layout, '  font-size: clamp(.875rem, 3.8vw, 1rem);', '  font-size: clamp(.75rem, 3.2vw, .875rem);', 'repeat number font')
-          layout = once(layout, '  margin-top: .0625rem;\n  font-size: clamp(.5625rem, 2.5vw, .6875rem);', '  margin-top: 0;\n  font-size: clamp(.5rem, 2.2vw, .625rem);', 'repeat count font')
+          css = replace_once(css, '  padding: .625rem;\n  flex-direction: column;', '  padding: .5rem;\n  flex-direction: column;', 'lower card padding')
 
-          layout = once(layout, '  padding: 1rem .75rem;', '  padding: .5rem .5rem;', 'result disclaimer padding')
-          layout = once(layout, '  font-size: .75rem;\n  font-weight: 400;', '  font-size: .6875rem;\n  font-weight: 400;', 'result disclaimer font')
-          layout = once(layout, '  margin-bottom: .75rem;', '  margin-bottom: .375rem;', 'result title gap')
-          layout = once(layout, '  font-size: 1.0625rem;\n}\n\n.matrix-explore-main-screen .result-title .result-count', '  font-size: .9375rem;\n}\n\n.matrix-explore-main-screen .result-title .result-count', 'result title font')
-          layout = once(layout, '  font-size: .75rem;\n  font-weight: 500;', '  font-size: .6875rem;\n  font-weight: 500;', 'result count font')
-          layout = once(layout, '  font-size: 1rem;\n  font-weight: 700;', '  font-size: .875rem;\n  font-weight: 700;', 'result numeric count font')
-          layout = once(layout, '  grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, .94fr) minmax(0, 1.16fr) minmax(0, 1.02fr) minmax(0, 1.18fr);', '  grid-template-columns: minmax(0, .82fr) minmax(0, .7fr) minmax(0, .86fr) minmax(0, 1.12fr) minmax(0, .98fr) minmax(0, 1.36fr);', 'result columns')
-          layout = once(layout, '  gap: .25rem;\n  text-align: center;\n  font-size: .75rem;', '  gap: .125rem;\n  text-align: center;\n  font-size: .6875rem;', 'result common density')
-          layout = once(layout, '  min-height: 40px;\n  color: #d2a52a;\n  font-size: .8125rem;', '  min-height: 32px;\n  color: #d2a52a;\n  font-size: .6875rem;', 'result head density')
-          layout = once(layout, '  min-height: 58px;\n  padding: .75rem 0;', '  min-height: 42px;\n  padding: .375rem 0;', 'result row density')
-          layout = once(layout, '  font-size: .75rem;\n}\n\n.matrix-explore-main-screen .road-result-row > strong', '  font-size: .6875rem;\n}\n\n.matrix-explore-main-screen .road-result-row > strong', 'result row text')
-          layout = once(layout, '  font-size: 1.0625rem;', '  font-size: .875rem;', 'result prediction font')
-          layout = once(layout, '  padding: .25rem .375rem;', '  padding: .125rem .25rem;', 'result tag padding')
-          layout = once(layout, '  font-size: .6875rem;\n  font-weight: 700;\n  white-space: nowrap;', '  font-size: .5625rem;\n  font-weight: 700;\n  white-space: nowrap;', 'result tag font')
-          layout = once(layout, '  font-size: .9375rem;', '  font-size: .8125rem;', 'result number font')
-          layout = once(layout, '  font-size: .75rem;\n}\n\n.matrix-explore-main-screen .road-results .result-consecutive', '  font-size: .625rem;\n}\n\n.matrix-explore-main-screen .road-results .result-consecutive', 'result period font')
-          layout = once(layout, '  font-size: .71875rem;', '  font-size: .625rem;', 'result consecutive font')
-          layout = once(layout, '  font-size: .6875rem;\n}\n\n.matrix-explore-main-screen .consecutive-filter-button,', '  font-size: .625rem;\n}\n\n.matrix-explore-main-screen .consecutive-filter-button,', 'road type font')
-          layout = once(layout, '  min-height: 30px;\n  height: 30px;\n  padding: .25rem .625rem;\n  font-size: .75rem;\n}', '  min-height: 26px;\n  height: 26px;\n  padding: .125rem .5rem;\n  border: 1px solid rgba(212, 165, 47, .72);\n  border-radius: .5rem;\n  background: transparent;\n  color: #d8a93e;\n  font-size: .6875rem;\n}', 'filter button control')
+          css = set_props(css, '.matrix-explore-main-screen .history-panel .panel-heading', {'min-height':'36px','padding':'.25rem .375rem','gap':'.375rem'})
+          css = set_props(css, '.matrix-explore-main-screen .history-panel-title .section-title', {'font-size':'clamp(.875rem, 3.6vw, 1rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-panel .panel-heading > button:last-child', {'font-size':'clamp(.625rem, 2.8vw, .75rem)'})
+          history_group = '.matrix-explore-main-screen .history-row,\n.matrix-explore-main-screen .history-row.history-head,\n.matrix-explore-main-screen .history-row:not(.history-head)'
+          css = set_props(css, history_group, {'min-height':'34px','padding':'.125rem 0','grid-template-columns':'minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-row.history-head', {'min-height':'30px','padding-block':'.125rem','font-size':'clamp(.6875rem, 3vw, .8125rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-row > :nth-child(1)', {'font-size':'clamp(.6875rem, 3vw, .75rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-row > :nth-child(2)', {'font-size':'clamp(.625rem, 2.7vw, .6875rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-date-stack strong', {'font-size':'clamp(.625rem, 2.7vw, .6875rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-date-stack small', {'font-size':'clamp(.5625rem, 2.4vw, .625rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-numbers', {'gap':'.125rem'})
+          css = set_props(css, '.matrix-explore-main-screen .history-main-numbers', {'gap':'clamp(.0625rem, .5vw, .125rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .history-special-number', {'margin-left':'.0625rem','gap':'.0625rem'})
 
-          layout = once(layout, '    grid-template-columns: 2fr 2.35fr 7.65fr;\n    gap: .125rem;', '    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr);\n    gap: 0;', 'narrow history columns')
-          layout = once(layout, '    gap: .125rem;\n  }\n\n  .matrix-explore-main-screen .history-special-number {', '    gap: .0625rem;\n  }\n\n  .matrix-explore-main-screen .history-special-number {', 'narrow main ball gap')
-          layout = once(layout, '    height: clamp(22px, 6.8vw, 28px);\n    flex: 0 0 6px;\n    font-size: 10px;', '    height: clamp(18px, 5.6vw, 20px);\n    flex: 0 0 6px;\n    font-size: 9px;', 'narrow plus size')
-          layout = once(layout, '    width: clamp(22px, 6.8vw, 28px);\n    height: calc(clamp(22px, 6.8vw, 28px) + 7px);\n    grid-template-rows: 7px clamp(22px, 6.8vw, 28px);', '    width: clamp(18px, 5.6vw, 20px);\n    height: calc(clamp(18px, 5.6vw, 20px) + 6px);\n    grid-template-rows: 6px clamp(18px, 5.6vw, 20px);', 'narrow special ball wrapper')
-          layout = once(layout, '    font-size: 6px;\n    line-height: 7px;', '    font-size: 5.5px;\n    line-height: 6px;', 'narrow special label')
-          layout = once(layout, '    font-size: .9375rem;', '    font-size: .875rem;', 'narrow result title')
-          layout = once(layout, '    font-size: .6875rem;', '    font-size: .625rem;', 'narrow result count')
+          css = set_props(css, '.matrix-explore-main-screen .repeat-stats-heading', {'min-height':'1.75rem','margin-bottom':'.375rem','gap':'.375rem'})
+          css = set_props(css, '.matrix-explore-main-screen .repeat-stats-heading > span', {'font-size':'clamp(.5625rem, 2.5vw, .6875rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .result-summary', {'column-gap':'clamp(.125rem, .8vw, .25rem)','row-gap':'clamp(.25rem, 1.1vw, .375rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .result-summary > div', {'min-height':'clamp(36px, 10vw, 40px)','padding':'.1875rem .0625rem','border-radius':'.4375rem'})
+          css = set_props(css, '.matrix-explore-main-screen .result-summary b', {'font-size':'clamp(.75rem, 3.2vw, .875rem)'})
+          css = set_props(css, '.matrix-explore-main-screen .result-summary small', {'margin-top':'0','font-size':'clamp(.5rem, 2.2vw, .625rem)'})
 
-          balls = once(balls, '  --number-ball-size: clamp(22px, 6.2vw, 24px);\n  --number-font-size: clamp(10px, 2.8vw, 11px);\n  --underline-width: clamp(9px, 2.8vw, 11px);', '  --number-ball-size: clamp(18px, 5.2vw, 20px);\n  --number-font-size: clamp(9px, 2.4vw, 10px);\n  --underline-width: clamp(8px, 2.4vw, 9px);', 'Matrix Explore ball size')
+          css = set_props(css, '.matrix-explore-main-screen .explore-result-disclaimer', {'padding':'.5rem .5rem','font-size':'.6875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .result-title', {'margin-bottom':'.375rem','gap':'.375rem'})
+          css = set_props(css, '.matrix-explore-main-screen .result-title .section-title', {'font-size':'.9375rem'})
+          css = set_props(css, '.matrix-explore-main-screen .result-title .result-count', {'font-size':'.6875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .result-title .result-count .numeric-text', {'font-size':'.875rem'})
+          result_group = '.matrix-explore-main-screen .road-results-head,\n.matrix-explore-main-screen .road-result-row'
+          css = set_props(css, result_group, {'grid-template-columns':'minmax(0, .82fr) minmax(0, .7fr) minmax(0, .86fr) minmax(0, 1.12fr) minmax(0, .98fr) minmax(0, 1.36fr)','gap':'.125rem','font-size':'.6875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-results-head', {'min-height':'32px','font-size':'.6875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-result-row', {'min-height':'42px','padding':'.375rem 0'})
+          row_text_group = '.matrix-explore-main-screen .road-result-row > span,\n.matrix-explore-main-screen .road-result-row > button'
+          css = set_props(css, row_text_group, {'font-size':'.6875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-result-row > strong', {'font-size':'.875rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-results .tag', {'padding':'.125rem .25rem','font-size':'.5625rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-results .result-number', {'font-size':'.8125rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-results .result-period', {'font-size':'.625rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-results .result-consecutive', {'font-size':'.625rem'})
+          css = set_props(css, '.matrix-explore-main-screen .road-type-toggle', {'font-size':'.625rem'})
+          filter_group = '.matrix-explore-main-screen .consecutive-filter-button,\n.matrix-explore-main-screen .repeat-stats-heading button'
+          css = set_props(css, filter_group, {'min-height':'26px','height':'26px','padding':'.125rem .5rem','font-size':'.6875rem'})
+          # Keep the existing control; only normalize its visual source instead of browser-default white styling.
+          marker = '  font-size: .6875rem;\n}'
+          pos = css.find(filter_group)
+          end = css.find('}', pos)
+          block = css[pos:end]
+          if 'background:' not in block:
+              block = block.replace('  font-size: .6875rem;\n', '  border: 1px solid rgba(212, 165, 47, .72);\n  border-radius: .5rem;\n  background: transparent;\n  color: #d8a93e;\n  font-size: .6875rem;\n')
+              css = css[:pos] + block + css[end:]
 
-          layout_path.write_text(layout)
-          balls_path.write_text(balls)
+          css = replace_once(css, '    grid-template-columns: 2fr 2.35fr 7.65fr;\n    gap: .125rem;', '    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr);\n    gap: 0;', '320 history columns')
+          css = replace_once(css, '    height: clamp(22px, 6.8vw, 28px);\n    flex: 0 0 6px;\n    font-size: 10px;', '    height: clamp(18px, 5.6vw, 20px);\n    flex: 0 0 6px;\n    font-size: 9px;', '320 plus')
+          css = replace_once(css, '    width: clamp(22px, 6.8vw, 28px);\n    height: calc(clamp(22px, 6.8vw, 28px) + 7px);\n    grid-template-rows: 7px clamp(22px, 6.8vw, 28px);', '    width: clamp(18px, 5.6vw, 20px);\n    height: calc(clamp(18px, 5.6vw, 20px) + 6px);\n    grid-template-rows: 6px clamp(18px, 5.6vw, 20px);', '320 special wrapper')
+          css = replace_once(css, '    font-size: 6px;\n    line-height: 7px;', '    font-size: 5.5px;\n    line-height: 6px;', '320 special label')
+
+          balls = replace_once(balls, '  --number-ball-size: clamp(22px, 6.2vw, 24px);\n  --number-font-size: clamp(10px, 2.8vw, 11px);\n  --underline-width: clamp(9px, 2.8vw, 11px);', '  --number-ball-size: clamp(18px, 5.2vw, 20px);\n  --number-font-size: clamp(9px, 2.4vw, 10px);\n  --underline-width: clamp(8px, 2.4vw, 9px);', 'Matrix Explore ball sizing')
+
+          lp.write_text(css)
+          bp.write_text(balls)
           PY
 
       - name: Verify GREEN and build
