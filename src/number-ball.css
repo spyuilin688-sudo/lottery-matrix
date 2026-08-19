@@ -151,9 +151,9 @@
 }
 
 .matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
-  --number-ball-size: clamp(22px, 6.2vw, 24px);
-  --number-font-size: clamp(10px, 2.8vw, 11px);
-  --underline-width: clamp(9px, 2.8vw, 11px);
+  --number-ball-size: clamp(18px, 5.2vw, 20px);
+  --number-font-size: clamp(9px, 2.4vw, 10px);
+  --underline-width: clamp(8px, 2.4vw, 9px);
 }
 
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
