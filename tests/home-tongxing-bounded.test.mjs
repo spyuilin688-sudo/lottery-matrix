@@ -24,8 +24,8 @@ test('tongxing uses 8px left inset and 32px controls with explore option text si
   assert.match(tongCss,/\.tongxing-screen \.same-star-period-select select\s*\{[\s\S]*?font-size:\s*\.75rem;/);
 });
 
-test('tongxing recent draw heading removes parenthetical order copy and green container markup',()=>{
-  assert.doesNotMatch(featurePages,/history-panel-order/);
-  assert.doesNotMatch(featurePages,/（\{numberOrder\}）/);
-  assert.doesNotMatch(featurePages,/className="history-panel-title"/);
+test('tongxing collapsible recent draw heading omits order copy and title wrapper while non-collapsible history keeps existing heading',()=>{
+  assert.match(featurePages,/const historyHeading = collapsible\s*\?\s*<SectionTitle>近10期開獎號碼<\/SectionTitle>\s*:\s*\(/);
+  assert.match(featurePages,/className="history-panel-title"/);
+  assert.match(featurePages,/history-panel-order/);
 });
