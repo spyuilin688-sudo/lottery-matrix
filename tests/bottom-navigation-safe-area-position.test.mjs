@@ -22,6 +22,11 @@ test("Android viewport 不再額外上縮 device safe area", () => {
   assert.doesNotMatch(runtimeCss, /\.mobile-app-viewport\[data-platform="android"\]\[data-keyboard-visible="false"\]\s*\{[^}]*bottom\s*:\s*var\(--device-safe-area-bottom,\s*48px\)/s);
 });
 
+test("正式 PWA 不使用 34px 模擬器安全區作為預設底部空白", () => {
+  assert.match(runtimeCss, /\.mobile-page\s*\{[\s\S]*?--mobile-safe-area-height:\s*max\(var\(--device-safe-area-bottom,\s*0px\),\s*env\(safe-area-inset-bottom,\s*0px\)\);/);
+  assert.doesNotMatch(runtimeCss, /--mobile-safe-area-height:\s*var\(--device-safe-area-bottom,\s*34px\);/);
+});
+
 test("內容底部保留導覽高度加安全區但不額外增加 12px 黑色空白", () => {
   assert.match(tokenCss, /--bottom-navigation-height:\s*82px;/);
   assert.match(tokenCss, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ max\(var\(--mobile-safe-area-height,\s*0px\), env\(safe-area-inset-bottom,\s*0px\)\)\);/);
