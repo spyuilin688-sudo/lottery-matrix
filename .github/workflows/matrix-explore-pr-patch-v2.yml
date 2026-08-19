@@ -81,20 +81,25 @@ jobs:
 
           def set_props(text, selector, props):
               pattern = re.compile(re.escape(selector) + r'\s*\{([^}]*)\}', re.S)
-              m = pattern.search(text)
-              if not m:
+              candidates = list(pattern.finditer(text))
+              if not candidates:
                   raise SystemExit(f'selector not found: {selector}')
-              body = m.group(1)
-              for prop, value in props.items():
-                  p = re.compile(r'(^\s*' + re.escape(prop) + r'\s*:\s*)[^;]+;', re.M)
-                  body2, n = p.subn(r'\g<1>' + value + ';', body, count=1)
-                  if n != 1:
-                      raise SystemExit(f'{selector}: property {prop} expected once, found {n}')
-                  body = body2
-              return text[:m.start(1)] + body + text[m.end(1):]
+              for m in candidates:
+                  body = m.group(1)
+                  prop_patterns = {
+                      prop: re.compile(r'(^\s*' + re.escape(prop) + r'\s*:\s*)[^;]+;', re.M)
+                      for prop in props
+                  }
+                  if not all(p.search(body) for p in prop_patterns.values()):
+                      continue
+                  for prop, value in props.items():
+                      body, n = prop_patterns[prop].subn(r'\g<1>' + value + ';', body, count=1)
+                      if n != 1:
+                          raise SystemExit(f'{selector}: property {prop} update failed')
+                  return text[:m.start(1)] + body + text[m.end(1):]
+              raise SystemExit(f'{selector}: no declaration block contains all requested properties')
 
           css = replace_once(css, '  padding: .625rem;\n  flex-direction: column;', '  padding: .5rem;\n  flex-direction: column;', 'lower card padding')
-
           css = set_props(css, '.matrix-explore-main-screen .history-panel .panel-heading', {'min-height':'36px','padding':'.25rem .375rem','gap':'.375rem'})
           css = set_props(css, '.matrix-explore-main-screen .history-panel-title .section-title', {'font-size':'clamp(.875rem, 3.6vw, 1rem)'})
           css = set_props(css, '.matrix-explore-main-screen .history-panel .panel-heading > button:last-child', {'font-size':'clamp(.625rem, 2.8vw, .75rem)'})
@@ -135,8 +140,6 @@ jobs:
           css = set_props(css, '.matrix-explore-main-screen .road-type-toggle', {'font-size':'.625rem'})
           filter_group = '.matrix-explore-main-screen .consecutive-filter-button,\n.matrix-explore-main-screen .repeat-stats-heading button'
           css = set_props(css, filter_group, {'min-height':'26px','height':'26px','padding':'.125rem .5rem','font-size':'.6875rem'})
-          # Keep the existing control; only normalize its visual source instead of browser-default white styling.
-          marker = '  font-size: .6875rem;\n}'
           pos = css.find(filter_group)
           end = css.find('}', pos)
           block = css[pos:end]
