@@ -9,7 +9,7 @@ const block = (selector) => {
 };
 
 test('home logo is 25 percent smaller without top offset', () => {
-  assert.match(block('.home-screen .home-logo-image'), /width:\s*75%/);
+  assert.match(css, /\.home-screen \.home-logo-image\s*\{\s*width:\s*75%;\s*\}/);
   assert.doesNotMatch(block('.home-screen .brand-header'), /padding-top:\s*[1-9]|margin-top:\s*[1-9]/);
 });
 
