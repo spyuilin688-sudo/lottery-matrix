@@ -816,7 +816,7 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
 }
 .number-reference-screen .matrix-title-banner {
   width: calc(100% - 8px);
-  margin-top: 8px;
+  margin-top: 0;
 }
 .number-reference-screen .matrix-title-banner-actions {
   inset: 0 0 0 50%;
@@ -1729,7 +1729,7 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
   transform: none;
 }
 .road-result-row > strong { font-size: 10px; }
-.number-reference-screen .feature-body,
+.number-reference-screen .feature-body { padding-top: 8px; }
 .calculator-screen .feature-body { padding-top: 4px; }
 .reference-table-panel h2 { font-weight: 700; }
 .reference-row:not(.head) .reference-issue { font-weight: 700; }
