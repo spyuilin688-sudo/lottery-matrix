@@ -5,7 +5,7 @@
   "vite.config.ts": "aa7bfcd65269d0aed4117e159dbf5bd880918f09d7da4d58c62d58e20e1455f3",
   "src/App.tsx": "9724de661d9e93e4bd5d0ea7a9b740b9edc17d1454fa4efffe3cf76983933d76",
   "src/main.tsx": "9912495ca8cf3568fa555e36391d6fdde341fefef47ab5414e0493667512af92",
-  "src/styles.css": "b7cd3ab5e72fdf13b2328b28a27b23bf5b51e4c432afe68de3b7586a16bd4f5a",
+  "src/styles.css": "fc177177120384f2cb31b6b756d85fa7a57c38b668198334737e5761120397dd",
   "src/mobile/BottomSheet.tsx": "f9c376dc78b8b5feb1c8752aa23414993ab66013d11e81b2ebb8342c570032ac",
   "src/mobile/Carousel.tsx": "242f4a7488e18c35e9b43651c9d5877288655a6f9f1734e03e56108f17526bf7",
   "src/mobile/Device.tsx": "867de9c65220f2ac7202f895d2b10a64c747f211a4b22cd8f81a1a1d66e52fc2",
