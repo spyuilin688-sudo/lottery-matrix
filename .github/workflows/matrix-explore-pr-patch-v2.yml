@@ -17,130 +17,141 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Write regression test
+      - name: Write responsive regression contract
         run: |
-          cat > tests/matrix-explore-reference-proportions.test.mjs <<'EOF'
+          cat > tests/matrix-explore-lower-density.test.mjs <<'EOF'
           import test from 'node:test';
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
-          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
-          test('Matrix Explore requested result sections use reference proportions', () => {
-            assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--mx-history-row-height:\s*54px/s);
-            assert.match(css, /--mx-history-columns:\s*54px 78px minmax\(0, 1fr\)/);
-            assert.match(css, /--mx-history-ball-size:\s*30px/);
-            assert.match(css, /\.matrix-explore-screen \.repeat-stats-heading\s*\{/);
-            assert.match(css, /\.matrix-explore-screen \.result-summary > div\s*\{[^}]*height:\s*58px/s);
-            assert.match(css, /grid-template-columns:\s*minmax\(0, \.9fr\) minmax\(0, \.72fr\) minmax\(0, \.94fr\) minmax\(0, 1\.16fr\) minmax\(0, 1\.02fr\) minmax\(0, 1\.18fr\)/);
-            assert.match(css, /\.road-result-row\s*\{\s*min-height:\s*58px;/);
-            const mainRules = css.match(/\.matrix-explore-main-screen\s*\{([^}]*)\}/s)?.[1] ?? '';
-            assert.doesNotMatch(mainRules, /!important|zoom\s*:|scale\(|translate\(|margin(?:-[a-z]+)?\s*:\s*-/);
+
+          const layout = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
+          const balls = fs.readFileSync('src/number-ball.css', 'utf8');
+
+          test('Matrix Explore lower half uses compact responsive reference density', () => {
+            assert.match(layout, /\.matrix-explore-main-screen \.history-panel \.panel-heading\s*\{[^}]*min-height:\s*36px/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.history-row,[\s\S]*?min-height:\s*34px;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 2fr\) minmax\(0, 7fr\)/);
+            assert.match(layout, /\.matrix-explore-main-screen \.result-summary\s*\{[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\)/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.result-summary > div\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.road-results-head\s*\{[^}]*min-height:\s*32px/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*42px;[^}]*padding:\s*\.375rem 0/s);
+            assert.match(layout, /\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[\s\S]*?background:\s*transparent;[\s\S]*?height:\s*26px/s);
+            assert.match(balls, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(18px, 5\.2vw, 20px\)/s);
+          });
+
+          test('320 360 and 390 widths retain room for 6+1 without fixed-width pressure', () => {
+            for (const viewport of [320, 360, 390]) {
+              const panelInner = viewport - 32 - 16;
+              const drawColumn = panelInner * 0.7;
+              const ball = Math.max(18, Math.min(viewport * 0.052, 20));
+              const gap = Math.max(1, Math.min(viewport * 0.005, 2));
+              const required = ball * 7 + gap * 8 + 8;
+              assert.ok(required < drawColumn, `${viewport}px: 6+1 requires ${required}px but draw column has ${drawColumn}px`);
+            }
+          });
+
+          test('lower-half formal source has no hard-overwrite hacks', () => {
+            assert.doesNotMatch(layout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
+            assert.doesNotMatch(layout, /transform\s*:/);
           });
           EOF
 
       - name: Verify RED
         run: |
           set +e
-          node --test tests/matrix-explore-reference-proportions.test.mjs
+          node --test tests/matrix-explore-lower-density.test.mjs
           status=$?
           set -e
-          test "$status" -ne 0
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected lower-density contract to fail before production CSS change.'
+            exit 1
+          fi
+          echo 'RED verified.'
 
       - name: Patch existing formal style sources only
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
-          p = Path('src/feature-pages.css')
-          css = p.read_text()
+          layout_path = Path('src/matrix-explore-spacing.css')
+          layout = layout_path.read_text()
+          balls_path = Path('src/number-ball.css')
+          balls = balls_path.read_text()
 
-          def sub_once(pattern, replacement, flags=0):
-              global css
-              css2, n = re.subn(pattern, replacement, css, count=1, flags=flags)
-              if n != 1:
-                  raise SystemExit(f'Expected one regex match, found {n}: {pattern[:110]}')
-              css = css2
+          def once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new, 1)
 
-          anchor = r'(\.matrix-explore-main-screen \.native-select select \{ font-weight: 700; \})'
-          vars_block = '''\n.matrix-explore-main-screen {\n  --mx-history-heading-height: 58px;\n  --mx-history-heading-padding: 8px 12px;\n  --mx-history-title-size: 17px;\n  --mx-history-head-height: 40px;\n  --mx-history-row-height: 54px;\n  --mx-history-columns: 54px 78px minmax(0, 1fr);\n  --mx-history-issue-size: 14px;\n  --mx-history-date-year-size: 13px;\n  --mx-history-date-detail-size: 12px;\n  --mx-history-ball-size: 30px;\n  --mx-history-ball-font-size: 11px;\n  --mx-history-ball-gap: 5px;\n  --mx-history-action-size: 13px;\n}\n'''
-          sub_once(anchor, lambda m: m.group(1) + vars_block)
+          layout = once(layout, '  padding: .625rem;\n  flex-direction: column;', '  padding: .5rem;\n  flex-direction: column;', 'lower card padding')
+          layout = once(layout, '  min-height: 42px;\n  margin-bottom: 0;\n  padding: .375rem .5rem;', '  min-height: 36px;\n  margin-bottom: 0;\n  padding: .25rem .375rem;', 'history heading')
+          layout = once(layout, '  font-size: clamp(.9375rem, 4.1vw, 1.0625rem);', '  font-size: clamp(.875rem, 3.6vw, 1rem);', 'history title size')
+          layout = once(layout, '  font-size: clamp(.6875rem, 3.1vw, .8125rem);', '  font-size: clamp(.625rem, 2.8vw, .75rem);', 'history action size')
+          layout = once(layout, '  min-height: 40px;\n  padding: .25rem 0;\n  grid-template-columns: minmax(0, 1.15fr) minmax(0, 2.2fr) minmax(0, 6.65fr);', '  min-height: 34px;\n  padding: .125rem 0;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr);', 'history row density')
+          layout = once(layout, '  min-height: 34px;\n  padding-block: .1875rem;', '  min-height: 30px;\n  padding-block: .125rem;', 'history head density')
+          layout = once(layout, '  font-size: clamp(.75rem, 3.4vw, .875rem);', '  font-size: clamp(.6875rem, 3vw, .8125rem);', 'history head font')
+          layout = once(layout, '  font-size: clamp(.75rem, 3.3vw, .8125rem);', '  font-size: clamp(.6875rem, 3vw, .75rem);', 'issue font')
+          layout = once(layout, '  font-size: clamp(.6875rem, 3vw, .75rem);\n  opacity: .92;', '  font-size: clamp(.625rem, 2.7vw, .6875rem);\n  opacity: .92;', 'date cell font')
+          layout = once(layout, '  font-size: clamp(.6875rem, 3vw, .75rem);\n}\n\n.matrix-explore-main-screen .history-date-stack small', '  font-size: clamp(.625rem, 2.7vw, .6875rem);\n}\n\n.matrix-explore-main-screen .history-date-stack small', 'date year font')
+          layout = once(layout, '  font-size: clamp(.625rem, 2.8vw, .6875rem);\n}', '  font-size: clamp(.5625rem, 2.4vw, .625rem);\n}', 'date detail font')
+          layout = once(layout, '  gap: .25rem;\n  overflow: hidden;', '  gap: .125rem;\n  overflow: hidden;', 'history number group gap')
+          layout = once(layout, '  gap: clamp(.125rem, .7vw, .25rem);', '  gap: clamp(.0625rem, .5vw, .125rem);', 'main ball gap')
+          layout = once(layout, '  margin-left: .125rem;\n  gap: .125rem;', '  margin-left: .0625rem;\n  gap: .0625rem;', 'special group gap')
 
-          sub_once(r'(\.history-panel \.panel-heading \{.*?\n\s*)height:\s*52px;', r'\1height: var(--mx-history-heading-height, 52px);', re.S)
-          sub_once(r'(\.history-panel \.panel-heading \{.*?\n\s*)padding:\s*7px 12px;', r'\1padding: var(--mx-history-heading-padding, 7px 12px);', re.S)
-          sub_once(r'(\.history-panel-title \.section-title \{.*?font-size:)\s*15px;', r'\1 var(--mx-history-title-size, 15px);', re.S)
-          sub_once(r'(\.history-panel \.panel-heading > button:last-child \{.*?font-size:)\s*13px;', r'\1 var(--mx-history-action-size, 13px);', re.S)
-          sub_once(r'(\.history-row \{\s*\n?display: grid; box-sizing: border-box; width: 100%; height:)\s*46px;( grid-template-columns:)\s*66px 68px minmax\(0, 1fr\);', r'\1 var(--mx-history-row-height, 46px);\2 var(--mx-history-columns, 66px 68px minmax(0, 1fr));')
-          sub_once(r'(\.history-row:not\(\.history-head\) > span:first-child \{.*?font-size:)\s*14px;', r'\1 var(--mx-history-issue-size, 14px);', re.S)
-          sub_once(r'(\.history-date-stack strong \{[^}]*font-size:)\s*12px;', r'\1 var(--mx-history-date-year-size, 12px);')
-          sub_once(r'(\.history-date-stack small \{[^}]*font-size:)\s*11px;', r'\1 var(--mx-history-date-detail-size, 11px);')
-          sub_once(r'(\.history-head \{ height:)\s*36px;', r'\1 var(--mx-history-head-height, 36px);')
-          sub_once(r'(\.history-main-numbers \{ gap:)\s*2px;', r'\1 var(--mx-history-ball-gap, 2px);')
-          sub_once(r'(\.mini-ball \{[^}]*?width:)\s*27px;\s*height:\s*27px;', r'\1 var(--mx-history-ball-size, 27px); height: var(--mx-history-ball-size, 27px);')
-          sub_once(r'(\.mini-ball \{[^}]*?font-size:)\s*10px;', r'\1 var(--mx-history-ball-font-size, 10px);')
+          layout = once(layout, '  min-height: 2rem;\n  margin-bottom: .5rem;', '  min-height: 1.75rem;\n  margin-bottom: .375rem;', 'repeat heading density')
+          layout = once(layout, '  font-size: clamp(.625rem, 2.8vw, .75rem);\n}\n\n.matrix-explore-main-screen .result-summary', '  font-size: clamp(.5625rem, 2.5vw, .6875rem);\n}\n\n.matrix-explore-main-screen .result-summary', 'repeat hint font')
+          layout = once(layout, '  column-gap: clamp(.25rem, 1.2vw, .375rem);\n  row-gap: clamp(.375rem, 1.6vw, .5rem);', '  column-gap: clamp(.125rem, .8vw, .25rem);\n  row-gap: clamp(.25rem, 1.1vw, .375rem);', 'repeat grid gaps')
+          layout = once(layout, '  min-height: clamp(44px, 12vw, 48px);\n  height: auto;\n  padding: .3125rem .125rem;', '  min-height: clamp(36px, 10vw, 40px);\n  height: auto;\n  padding: .1875rem .0625rem;', 'repeat cell density')
+          layout = once(layout, '  border-radius: .5rem;', '  border-radius: .4375rem;', 'repeat cell radius')
+          layout = once(layout, '  font-size: clamp(.875rem, 3.8vw, 1rem);', '  font-size: clamp(.75rem, 3.2vw, .875rem);', 'repeat number font')
+          layout = once(layout, '  margin-top: .0625rem;\n  font-size: clamp(.5625rem, 2.5vw, .6875rem);', '  margin-top: 0;\n  font-size: clamp(.5rem, 2.2vw, .625rem);', 'repeat count font')
 
-          sub_once(
-              r'\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.explore-settings,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.hit-advanced-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.history-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.repeat-stats-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.result-panel \{',
-              '.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-settings,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-advanced-panel,\n.matrix-explore-screen .history-panel,\n.matrix-explore-screen .repeat-stats-panel,\n.matrix-explore-screen .result-panel {'
-          )
+          layout = once(layout, '  padding: 1rem .75rem;', '  padding: .5rem .5rem;', 'result disclaimer padding')
+          layout = once(layout, '  font-size: .75rem;\n  font-weight: 400;', '  font-size: .6875rem;\n  font-weight: 400;', 'result disclaimer font')
+          layout = once(layout, '  margin-bottom: .75rem;', '  margin-bottom: .375rem;', 'result title gap')
+          layout = once(layout, '  font-size: 1.0625rem;\n}\n\n.matrix-explore-main-screen .result-title .result-count', '  font-size: .9375rem;\n}\n\n.matrix-explore-main-screen .result-title .result-count', 'result title font')
+          layout = once(layout, '  font-size: .75rem;\n  font-weight: 500;', '  font-size: .6875rem;\n  font-weight: 500;', 'result count font')
+          layout = once(layout, '  font-size: 1rem;\n  font-weight: 700;', '  font-size: .875rem;\n  font-weight: 700;', 'result numeric count font')
+          layout = once(layout, '  grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, .94fr) minmax(0, 1.16fr) minmax(0, 1.02fr) minmax(0, 1.18fr);', '  grid-template-columns: minmax(0, .82fr) minmax(0, .7fr) minmax(0, .86fr) minmax(0, 1.12fr) minmax(0, .98fr) minmax(0, 1.36fr);', 'result columns')
+          layout = once(layout, '  gap: .25rem;\n  text-align: center;\n  font-size: .75rem;', '  gap: .125rem;\n  text-align: center;\n  font-size: .6875rem;', 'result common density')
+          layout = once(layout, '  min-height: 40px;\n  color: #d2a52a;\n  font-size: .8125rem;', '  min-height: 32px;\n  color: #d2a52a;\n  font-size: .6875rem;', 'result head density')
+          layout = once(layout, '  min-height: 58px;\n  padding: .75rem 0;', '  min-height: 42px;\n  padding: .375rem 0;', 'result row density')
+          layout = once(layout, '  font-size: .75rem;\n}\n\n.matrix-explore-main-screen .road-result-row > strong', '  font-size: .6875rem;\n}\n\n.matrix-explore-main-screen .road-result-row > strong', 'result row text')
+          layout = once(layout, '  font-size: 1.0625rem;', '  font-size: .875rem;', 'result prediction font')
+          layout = once(layout, '  padding: .25rem .375rem;', '  padding: .125rem .25rem;', 'result tag padding')
+          layout = once(layout, '  font-size: .6875rem;\n  font-weight: 700;\n  white-space: nowrap;', '  font-size: .5625rem;\n  font-weight: 700;\n  white-space: nowrap;', 'result tag font')
+          layout = once(layout, '  font-size: .9375rem;', '  font-size: .8125rem;', 'result number font')
+          layout = once(layout, '  font-size: .75rem;\n}\n\n.matrix-explore-main-screen .road-results .result-consecutive', '  font-size: .625rem;\n}\n\n.matrix-explore-main-screen .road-results .result-consecutive', 'result period font')
+          layout = once(layout, '  font-size: .71875rem;', '  font-size: .625rem;', 'result consecutive font')
+          layout = once(layout, '  font-size: .6875rem;\n}\n\n.matrix-explore-main-screen .consecutive-filter-button,', '  font-size: .625rem;\n}\n\n.matrix-explore-main-screen .consecutive-filter-button,', 'road type font')
+          layout = once(layout, '  min-height: 30px;\n  height: 30px;\n  padding: .25rem .625rem;\n  font-size: .75rem;\n}', '  min-height: 26px;\n  height: 26px;\n  padding: .125rem .5rem;\n  border: 1px solid rgba(212, 165, 47, .72);\n  border-radius: .5rem;\n  background: transparent;\n  color: #d8a93e;\n  font-size: .6875rem;\n}', 'filter button control')
 
-          targets = [
-              '.repeat-stats-heading',
-              '.repeat-stats-heading .section-title',
-              '.result-title .section-title',
-              '.repeat-stats-heading button',
-              '.repeat-stats-heading > span',
-              '.result-summary',
-              '.result-summary > div',
-              '.result-summary b',
-              '.result-summary small',
-              '.explore-result-disclaimer',
-              '.result-panel',
-              '.consecutive-filter-button',
-              '.result-count',
-              '.result-count > span',
-              '.result-count .numeric-text',
-          ]
-          for target in targets:
-              css = css.replace(f'.matrix-explore-screen:not(.matrix-explore-main-screen) {target}', f'.matrix-explore-screen {target}', 1)
+          layout = once(layout, '    grid-template-columns: 2fr 2.35fr 7.65fr;\n    gap: .125rem;', '    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 7fr);\n    gap: 0;', 'narrow history columns')
+          layout = once(layout, '    gap: .125rem;\n  }\n\n  .matrix-explore-main-screen .history-special-number {', '    gap: .0625rem;\n  }\n\n  .matrix-explore-main-screen .history-special-number {', 'narrow main ball gap')
+          layout = once(layout, '    height: clamp(22px, 6.8vw, 28px);\n    flex: 0 0 6px;\n    font-size: 10px;', '    height: clamp(18px, 5.6vw, 20px);\n    flex: 0 0 6px;\n    font-size: 9px;', 'narrow plus size')
+          layout = once(layout, '    width: clamp(22px, 6.8vw, 28px);\n    height: calc(clamp(22px, 6.8vw, 28px) + 7px);\n    grid-template-rows: 7px clamp(22px, 6.8vw, 28px);', '    width: clamp(18px, 5.6vw, 20px);\n    height: calc(clamp(18px, 5.6vw, 20px) + 6px);\n    grid-template-rows: 6px clamp(18px, 5.6vw, 20px);', 'narrow special ball wrapper')
+          layout = once(layout, '    font-size: 6px;\n    line-height: 7px;', '    font-size: 5.5px;\n    line-height: 6px;', 'narrow special label')
+          layout = once(layout, '    font-size: .9375rem;', '    font-size: .875rem;', 'narrow result title')
+          layout = once(layout, '    font-size: .6875rem;', '    font-size: .625rem;', 'narrow result count')
 
-          sub_once(r'(\.matrix-explore-screen \.result-summary \{\s*\n?display: grid; margin-top: 12px; grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);) gap: 6px;', r'\1 column-gap: 6px; row-gap: 8px;')
-          sub_once(r'(\.matrix-explore-screen \.result-summary > div \{\s*\n?display: flex; min-width: 0;) height: 48px; min-height: 48px;', r'\1 height: 58px; min-height: 58px;')
-          sub_once(r'(\.matrix-explore-screen \.result-summary b \{\s*\n?)font-size: 20px;', r'\1font-size: 19px;')
-          sub_once(r'(\.matrix-explore-screen \.result-summary small \{\s*\n?)margin-top: 1px; color: #aaa39a; font-size: 11px;', r'\1margin-top: 2px; color: #aaa39a; font-size: 12px;')
-          sub_once(r'(\.matrix-explore-screen \.explore-result-disclaimer \{\s*\n?box-sizing: border-box; width: 100%; margin: 0; padding:) 14px 12px;', r'\1 16px 12px;')
+          balls = once(balls, '  --number-ball-size: clamp(22px, 6.2vw, 24px);\n  --number-font-size: clamp(10px, 2.8vw, 11px);\n  --underline-width: clamp(9px, 2.8vw, 11px);', '  --number-ball-size: clamp(18px, 5.2vw, 20px);\n  --number-font-size: clamp(9px, 2.4vw, 10px);\n  --underline-width: clamp(8px, 2.4vw, 9px);', 'Matrix Explore ball size')
 
-          sub_once(r'grid-template-columns: minmax\(0, \.88fr\) minmax\(0, \.84fr\) minmax\(0, \.92fr\) minmax\(0, 1\.12fr\) minmax\(0, 1\.1fr\) minmax\(0, 1\.14fr\);', 'grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, .94fr) minmax(0, 1.16fr) minmax(0, 1.02fr) minmax(0, 1.18fr);')
-          sub_once(r'\.road-results-head \{ min-height: 34px;', '.road-results-head { min-height: 40px;')
-          sub_once(r'\.road-result-row \{ min-height: 50px; \}', '.road-result-row { min-height: 58px; }')
-          sub_once(r'(\.road-results \.tag \{[^}]*font-size:) 10px;', r'\1 11px;')
-          sub_once(r'\.road-results \.result-period \{ font-size: 11px; \}', '.road-results .result-period { font-size: 12px; }')
-          sub_once(r'\.road-results \.result-consecutive \{ font-size: 10\.5px; \}', '.road-results .result-consecutive { font-size: 11.5px; }')
-          sub_once(r'\.road-results \.result-number \{ font-size: 14\.5px; \}', '.road-results .result-number { font-size: 16px; }')
-          sub_once(r'\.road-results strong \{ color: #d7ad55; font-size: 16\.5px; \}', '.road-results strong { color: #d7ad55; font-size: 18px; }')
-          sub_once(r'  \.road-result-row \{ grid-template-columns: \.88fr \.84fr \.92fr 1\.12fr 1\.1fr 1\.14fr; \}', '  .road-result-row { grid-template-columns: .9fr .72fr .94fr 1.16fr 1.02fr 1.18fr; }')
-          sub_once(r'\.repeat-stats-panel, \.result-panel \{ margin-top: 12px; \}', '.repeat-stats-panel, .result-panel { margin-top: 16px; }')
-
-          p.write_text(css)
-          for path in [
-              '.github/workflows/matrix-explore-pr-patch.yml',
-              '.github/workflows/matrix-explore-pr-patch-v2.yml',
-              '.github/workflows/matrix-explore-reference-proportions-one-shot.yml',
-              '.github/matrix-explore-reference-trigger.txt',
-          ]:
-              Path(path).unlink(missing_ok=True)
+          layout_path.write_text(layout)
+          balls_path.write_text(balls)
           PY
 
       - name: Verify GREEN and build
         run: |
-          node --test tests/matrix-explore-reference-proportions.test.mjs tests/matrix-explore-ui-refinement.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-filter-hit-area.test.mjs
+          node --test tests/matrix-explore-lower-density.test.mjs tests/matrix-explore-ui-refinement.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-filter-hit-area.test.mjs
           npm ci
           npm run build
           git diff --check
 
-      - name: Commit verified change to main
+      - name: Restore runner and commit verified source
         run: |
-          git config user.name "spyuilin688-sudo"
-          git config user.email "spyuilin688@gmail.com"
-          git add -A
-          git commit -m "style: restore Matrix Explore reference proportions"
+          git show d669239e48b0ea9f09ce7f6b85d834cee0e37810:.github/workflows/matrix-explore-pr-patch-v2.yml > .github/workflows/matrix-explore-pr-patch-v2.yml
+          git config user.name 'spyuilin688-sudo'
+          git config user.email 'spyuilin688@gmail.com'
+          git add src/matrix-explore-spacing.css src/number-ball.css tests/matrix-explore-lower-density.test.mjs .github/workflows/matrix-explore-pr-patch-v2.yml
+          git commit -m 'style: compact Matrix Explore lower sections'
           git push origin main
