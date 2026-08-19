@@ -1,0 +1,48 @@
+name: Refresh Mobile Runtime Lock
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/refresh-mobile-runtime-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh protected runtime lock
+        run: npm run update:runtime-lock
+
+      - name: Verify runtime integrity
+        run: npm run check:runtime
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit refreshed lock and remove workflow
+        run: |
+          rm .github/workflows/refresh-mobile-runtime-lock.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add mobile-runtime.lock.json .github/workflows/refresh-mobile-runtime-lock.yml
+          git commit -m "chore: refresh mobile runtime lock"
+          git push origin HEAD:main
