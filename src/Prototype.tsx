@@ -234,18 +234,16 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
   const hasSpecial = Boolean(displayedSpecialNumber);
   return (
     <section className={`latest-draw-card ${className}`.trim()} data-lottery={lottery} aria-label={`${lottery}最新開獎資訊`} data-testid="latest-draw-card">
-      <div className="draw-toolbar">
-        <div className="draw-meta" data-empty={!hasMeta}>
-          {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
-          {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
-        </div>
-        <div className="draw-order" role="radiogroup" aria-label="號碼排列">
-          {(["順球", "落球"] as DrawOrder[]).map((option) => (
-            <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
-          ))}
-        </div>
-        <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
+      <div className="draw-meta" data-empty={!hasMeta}>
+        {result.issue ? <div className="draw-issue"><span>第</span><strong>{result.issue}</strong><span>期</span></div> : null}
+        {result.date ? <div className="draw-date"><CalendarIcon className="draw-date-icon" aria-hidden="true" />{result.date}</div> : null}
       </div>
+      <div className="draw-order" role="radiogroup" aria-label="號碼排列">
+        {(["順球", "落球"] as DrawOrder[]).map((option) => (
+          <button type="button" role="radio" aria-checked={order === option} data-selected={order === option} onClick={() => onOrderChange(option)} key={option}>{option}</button>
+        ))}
+      </div>
+      <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
