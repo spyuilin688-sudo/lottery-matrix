@@ -7,7 +7,8 @@ const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
 
 function block(source, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return source.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 's'))?.[1] ?? '';
+  const matches = [...source.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'gs'))];
+  return matches.at(-1)?.[1] ?? '';
 }
 
 test('homepage keeps zero top spacing and scales logo to 75 percent', () => {
