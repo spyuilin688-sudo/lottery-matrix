@@ -736,7 +736,7 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
 .mini-ball[data-tone="purple"] { background: radial-gradient(circle at 35% 28%, #c9a1ff, #6d25a8 46%, #24043e); }
 .mini-ball[data-tone="dark"] { background: radial-gradient(circle at 35% 28%, #8b8b8b, #282828 55%, #050505); border-color: #777; }
 
-.number-reference-screen .query-selects.three-cols { grid-template-columns: 88px 84px minmax(0, 1fr); margin-bottom: 12px; }
+.number-reference-screen .query-selects.three-cols { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, .9fr) minmax(0, .9fr) minmax(0, 1.8fr); gap: 8px; margin-bottom: 12px; }
 .number-reference-screen .reference-select { height: 36px; }
 .number-reference-screen .reference-select select { padding-right: 28px; font-size: 14px; font-weight: 600; text-align: center; text-align-last: center; }
 .number-reference-screen .reference-select svg { right: 8px; width: 15px; }
@@ -757,7 +757,7 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
 .ornament-title span:last-child { background: #6f5121; }
 .empty-state { display: grid; min-height: 190px; place-items: center; color: #77736e; font-size: 13px; }
 .reference-search { margin: 0 0 12px; }
-.reference-search > div { display: grid; grid-template-columns: repeat(3, 48px) minmax(0, 1fr); gap: 8px; }
+.reference-search > div { display: grid; width: 100%; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr); gap: 8px; }
 .reference-search input,
 .reference-search .gold-button { height: 36px; }
 .reference-search input { padding-inline: 4px; }
@@ -774,7 +774,7 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
 .reference-table-panel h2 { margin: 0; color: #ddd3c3; font-size: 14px; font-weight: 600; }
 .reference-table-panel header button { display: flex; height: 32px; align-items: center; gap: 4px; border: 1px solid #704b17; border-radius: 5px; background: transparent; color: #d19a25; font-size: 11px; }
 .reference-table-panel header button svg { width: 1em; height: 1em; }
-.reference-row { display: grid; min-height: 40px; grid-template-columns: 72px minmax(0, 1fr); border-top: 1px solid #4f391d; color: #ccc4b8; font-size: 13px; text-align: center; }
+.reference-row { display: grid; width: 100%; min-width: 0; min-height: 40px; grid-template-columns: minmax(0, .24fr) minmax(0, .76fr); border-top: 1px solid #4f391d; color: #ccc4b8; font-size: 13px; text-align: center; }
 .reference-row > span { display: flex; align-items: center; justify-content: center; }
 .reference-row > span + span,
 .reference-row > .reference-issue + span { border-left: 1px solid #704c1e; }

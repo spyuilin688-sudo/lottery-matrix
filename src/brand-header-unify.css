@@ -73,8 +73,8 @@
 .bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
 
 .number-reference-screen .matrix-title-banner-actions {
-  inset: 0 4% 0 43%;
-  width: auto;
+  inset: 0 4% 0 auto;
+  width: clamp(176px, 52%, 220px);
   height: 100%;
   min-width: 0;
   justify-content: stretch;
