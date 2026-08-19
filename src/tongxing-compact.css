@@ -7,7 +7,7 @@
   --card-padding: 10px;
   --card-radius: 12px;
   --control-gap: 6px;
-  --control-height: 36px;
+  --control-height: 32px;
   --primary-button-height: 40px;
   --table-header-height: 32px;
   --table-row-height: 44px;
@@ -22,7 +22,8 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding-inline: 16px;
+  padding-left: 8px;
+  padding-right: 16px;
   overflow-x: hidden;
 }
 
@@ -55,13 +56,12 @@
 .tongxing-screen .query-selects select {
   min-width: 0;
   padding-inline: 10px 28px;
-  font-size: clamp(14px, 4vw, 16px);
+  font-size: .75rem;
   font-weight: 600;
   text-align: center;
   text-align-last: center;
 }
 
-.tongxing-screen .tongxing-order-select select { font-size: clamp(13px, 3.8vw, 16px); }
 .tongxing-screen .tongxing-query .lottery-tabs { display: none; }
 
 .tongxing-screen .same-star-fields {
@@ -121,7 +121,7 @@
 .tongxing-screen .same-star-period-select select {
   min-width: 0;
   padding-inline: 7px 21px;
-  font-size: clamp(14px, 4vw, 16px);
+  font-size: .75rem;
   font-weight: 600;
   text-align: center;
   text-align-last: center;
@@ -149,6 +149,8 @@
   padding: 8px;
 }
 
+.tongxing-screen .history-panel-title { display: contents; }
+.tongxing-screen .history-panel-order { display: none; }
 .tongxing-screen .panel-heading { align-items: center; }
 .tongxing-screen .panel-heading .history-panel-toggle { display: flex; min-width: 0; padding: 0; align-items: center; gap: 5px; color: inherit; text-align: left; }
 .tongxing-screen .history-panel-toggle .section-title { min-width: 0; font-size: 12px; }
