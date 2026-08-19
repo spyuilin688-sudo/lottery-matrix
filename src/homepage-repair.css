@@ -605,16 +605,13 @@
   margin-block-start: 0;
 }
 
-
-
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   display: none;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
-  background:
-    linear-gradient(transparent, transparent) padding-box,
-    var(--lottery-selected-gradient) border-box;
+  border-color: transparent;
+  border-image: var(--lottery-selected-gradient) 1;
   box-shadow: 0 0 7px rgba(255, 206, 105, .28);
 }
 
