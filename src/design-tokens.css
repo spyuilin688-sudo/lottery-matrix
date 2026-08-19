@@ -58,7 +58,7 @@
   --primary-brand-ratio: 3 / 1;
   --bottom-navigation-height: 82px;
   --layout-card-padding: 12px;
-  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px);
+  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + max(var(--mobile-safe-area-height, 0px), env(safe-area-inset-bottom, 0px)));
   --lottery-card-radius: 10px;
   --lottery-logo-height: auto;
   --lottery-stroke-default: 1px;
