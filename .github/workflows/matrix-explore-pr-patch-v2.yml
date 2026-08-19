@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   patch:
-    if: github.head_ref == 'matrix-explore-reference-trigger-v4'
+    if: github.head_ref == 'matrix-explore-reference-trigger'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,73 +17,130 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: RED then patch
+      - name: Write regression test
+        run: |
+          cat > tests/matrix-explore-reference-proportions.test.mjs <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+          test('Matrix Explore requested result sections use reference proportions', () => {
+            assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--mx-history-row-height:\s*54px/s);
+            assert.match(css, /--mx-history-columns:\s*54px 78px minmax\(0, 1fr\)/);
+            assert.match(css, /--mx-history-ball-size:\s*30px/);
+            assert.match(css, /\.matrix-explore-screen \.repeat-stats-heading\s*\{/);
+            assert.match(css, /\.matrix-explore-screen \.result-summary > div\s*\{[^}]*height:\s*58px/s);
+            assert.match(css, /grid-template-columns:\s*minmax\(0, \.9fr\) minmax\(0, \.72fr\) minmax\(0, \.94fr\) minmax\(0, 1\.16fr\) minmax\(0, 1\.02fr\) minmax\(0, 1\.18fr\)/);
+            assert.match(css, /\.road-result-row\s*\{\s*min-height:\s*58px;/);
+            const mainRules = css.match(/\.matrix-explore-main-screen\s*\{([^}]*)\}/s)?.[1] ?? '';
+            assert.doesNotMatch(mainRules, /!important|zoom\s*:|scale\(|translate\(|margin(?:-[a-z]+)?\s*:\s*-/);
+          });
+          EOF
+
+      - name: Verify RED
+        run: |
+          set +e
+          node --test tests/matrix-explore-reference-proportions.test.mjs
+          status=$?
+          set -e
+          test "$status" -ne 0
+
+      - name: Patch existing formal style sources only
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          p=Path('src/matrix-explore-spacing.css')
-          css=p.read_text()
-          balls=Path('src/number-ball.css').read_text()
-          assert 'min-height: 52px;' in css and 'min-height: 54px;' in css
-          assert 'grid-template-columns: 2.1fr 2.5fr 7.4fr;' in css
-          assert 'height: 58px;' in css
-          assert '--number-ball-size: clamp(26px, 7.6vw, 30px);' in balls
 
-          def sub(pattern,repl,count=1):
+          p = Path('src/feature-pages.css')
+          css = p.read_text()
+
+          def sub_once(pattern, replacement, flags=0):
               global css
-              css2,n=re.subn(pattern,repl,css,count=count,flags=re.S)
-              if n!=count: raise SystemExit(f'expected {count} match, got {n}: {pattern[:80]}')
-              css=css2
+              css2, n = re.subn(pattern, replacement, css, count=1, flags=flags)
+              if n != 1:
+                  raise SystemExit(f'Expected one regex match, found {n}: {pattern[:110]}')
+              css = css2
 
-          sub(r'(\.matrix-explore-main-screen \.history-panel \.panel-heading \{.*?min-height:) 52px;(.*?margin-bottom:) \.5rem;(.*?padding:) \.5rem \.75rem;',r'\1 42px;\2 0;\3 .375rem .5rem;')
-          sub(r'(\.matrix-explore-main-screen \.history-panel \.panel-heading \{.*?gap: \.5rem;)(\n\})',r'\1\n  border-bottom: 1px solid rgba(90, 87, 80, .72);\2')
-          sub(r'(\.matrix-explore-main-screen \.history-panel-title \.section-title \{\s*font-size:) 1\.0625rem;',r'\1 clamp(.9375rem, 4.1vw, 1.0625rem);')
-          sub(r'(\.matrix-explore-main-screen \.history-panel \.panel-heading > button:last-child \{\s*font-size:) \.8125rem;',r'\1 clamp(.6875rem, 3.1vw, .8125rem);')
-          sub(r'(\.matrix-explore-main-screen \.history-row,.*?\.history-row:not\(\.history-head\) \{.*?min-height:) 54px;(.*?padding:) \.5rem 0;(.*?grid-template-columns:) 2\.1fr 2\.5fr 7\.4fr;(.*?gap:) \.25rem;(.*?border-bottom:) 1px solid rgba\(90, 87, 80, \.7\);',r'\1 40px;\2 .25rem 0;\3 minmax(0, 1.15fr) minmax(0, 2.2fr) minmax(0, 6.65fr);\4 0;\5 1px solid rgba(90, 87, 80, .72);')
-          sub(r'(\.matrix-explore-main-screen \.history-row\.history-head \{\s*min-height:) 40px;(\s*padding-block:) \.25rem;(.*?font-size:) \.875rem;',r'\1 34px;\2 .1875rem;\3 clamp(.75rem, 3.4vw, .875rem);\n  font-weight: 700;')
-          sub(r'(\.matrix-explore-main-screen \.history-row > :nth-child\(1\) \{.*?font-size:) \.875rem;',r'\1 clamp(.75rem, 3.3vw, .8125rem);')
-          sub(r'(\.matrix-explore-main-screen \.history-row > :nth-child\(2\) \{\s*font-size:) \.8125rem;(\s*opacity:) \.9;',r'\1 clamp(.6875rem, 3vw, .75rem);\2 .92;')
-          sub(r'(\.matrix-explore-main-screen \.history-row > span,.*?border-left: 0;\n\})',r'\1\n.matrix-explore-main-screen .history-row > :nth-child(1),\n.matrix-explore-main-screen .history-row > :nth-child(2) {\n  border-right: 1px solid rgba(90, 87, 80, .55);\n}')
-          sub(r'(\.matrix-explore-main-screen \.history-date-stack strong \{\s*font-size:) \.8125rem;',r'\1 clamp(.6875rem, 3vw, .75rem);')
-          sub(r'(\.matrix-explore-main-screen \.history-date-stack small \{\s*font-size:) \.75rem;',r'\1 clamp(.625rem, 2.8vw, .6875rem);')
-          sub(r'(\.matrix-explore-main-screen \.history-main-numbers \{\s*gap:) \.3125rem;',r'\1 clamp(.125rem, .7vw, .25rem);')
-          sub(r'(\.matrix-explore-main-screen \.repeat-stats-heading \{.*?min-height:) 1\.75rem;(\s*margin-bottom:) \.75rem;',r'\1 2rem;\2 .5rem;')
-          sub(r'(\.matrix-explore-main-screen \.repeat-stats-heading > span \{.*?font-size:) \.75rem;',r'\1 clamp(.625rem, 2.8vw, .75rem);')
-          sub(r'(\.matrix-explore-main-screen \.result-summary \{.*?column-gap:) \.375rem;(\s*row-gap:) \.5rem;',r'\1 clamp(.25rem, 1.2vw, .375rem);\2 clamp(.375rem, 1.6vw, .5rem);')
-          sub(r'(\.matrix-explore-main-screen \.result-summary > div \{.*?min-height:) 58px;(\s*height:) 58px;(\s*padding:) \.5rem \.25rem;(.*?border:) 1px solid #1e293b;(\s*border-radius:) \.75rem;(\s*background:) #141A26;',r'\1 clamp(44px, 12vw, 48px);\2 auto;\3 .3125rem .125rem;\4 1px solid rgba(112, 108, 99, .72);\5 .5rem;\6 rgba(7, 16, 24, .72);')
-          sub(r'(\.matrix-explore-main-screen \.result-summary b \{.*?font-size:) 1\.0625rem;(\s*font-weight:) 700;',r'\1 clamp(.875rem, 3.8vw, 1rem);\2 600;')
-          sub(r'(\.matrix-explore-main-screen \.result-summary small \{\s*margin-top:) \.125rem;(\s*font-size:) \.75rem;(\s*opacity:) \.7;',r'\1 .0625rem;\2 clamp(.5625rem, 2.5vw, .6875rem);\3 .72;')
+          anchor = r'(\.matrix-explore-main-screen \.native-select select \{ font-weight: 700; \})'
+          vars_block = '''\n.matrix-explore-main-screen {\n  --mx-history-heading-height: 58px;\n  --mx-history-heading-padding: 8px 12px;\n  --mx-history-title-size: 17px;\n  --mx-history-head-height: 40px;\n  --mx-history-row-height: 54px;\n  --mx-history-columns: 54px 78px minmax(0, 1fr);\n  --mx-history-issue-size: 14px;\n  --mx-history-date-year-size: 13px;\n  --mx-history-date-detail-size: 12px;\n  --mx-history-ball-size: 30px;\n  --mx-history-ball-font-size: 11px;\n  --mx-history-ball-gap: 5px;\n  --mx-history-action-size: 13px;\n}\n'''
+          sub_once(anchor, lambda m: m.group(1) + vars_block)
+
+          sub_once(r'(\.history-panel \.panel-heading \{.*?\n\s*)height:\s*52px;', r'\1height: var(--mx-history-heading-height, 52px);', re.S)
+          sub_once(r'(\.history-panel \.panel-heading \{.*?\n\s*)padding:\s*7px 12px;', r'\1padding: var(--mx-history-heading-padding, 7px 12px);', re.S)
+          sub_once(r'(\.history-panel-title \.section-title \{.*?font-size:)\s*15px;', r'\1 var(--mx-history-title-size, 15px);', re.S)
+          sub_once(r'(\.history-panel \.panel-heading > button:last-child \{.*?font-size:)\s*13px;', r'\1 var(--mx-history-action-size, 13px);', re.S)
+          sub_once(r'(\.history-row \{\s*\n?display: grid; box-sizing: border-box; width: 100%; height:)\s*46px;( grid-template-columns:)\s*66px 68px minmax\(0, 1fr\);', r'\1 var(--mx-history-row-height, 46px);\2 var(--mx-history-columns, 66px 68px minmax(0, 1fr));')
+          sub_once(r'(\.history-row:not\(\.history-head\) > span:first-child \{.*?font-size:)\s*14px;', r'\1 var(--mx-history-issue-size, 14px);', re.S)
+          sub_once(r'(\.history-date-stack strong \{[^}]*font-size:)\s*12px;', r'\1 var(--mx-history-date-year-size, 12px);')
+          sub_once(r'(\.history-date-stack small \{[^}]*font-size:)\s*11px;', r'\1 var(--mx-history-date-detail-size, 11px);')
+          sub_once(r'(\.history-head \{ height:)\s*36px;', r'\1 var(--mx-history-head-height, 36px);')
+          sub_once(r'(\.history-main-numbers \{ gap:)\s*2px;', r'\1 var(--mx-history-ball-gap, 2px);')
+          sub_once(r'(\.mini-ball \{[^}]*?width:)\s*27px;\s*height:\s*27px;', r'\1 var(--mx-history-ball-size, 27px); height: var(--mx-history-ball-size, 27px);')
+          sub_once(r'(\.mini-ball \{[^}]*?font-size:)\s*10px;', r'\1 var(--mx-history-ball-font-size, 10px);')
+
+          sub_once(
+              r'\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.explore-settings,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.hit-advanced-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.history-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.repeat-stats-panel,\n\.matrix-explore-screen:not\(\.matrix-explore-main-screen\) \.result-panel \{',
+              '.matrix-explore-screen:not(.matrix-explore-main-screen) .explore-settings,\n.matrix-explore-screen:not(.matrix-explore-main-screen) .hit-advanced-panel,\n.matrix-explore-screen .history-panel,\n.matrix-explore-screen .repeat-stats-panel,\n.matrix-explore-screen .result-panel {'
+          )
+
+          targets = [
+              '.repeat-stats-heading',
+              '.repeat-stats-heading .section-title',
+              '.result-title .section-title',
+              '.repeat-stats-heading button',
+              '.repeat-stats-heading > span',
+              '.result-summary',
+              '.result-summary > div',
+              '.result-summary b',
+              '.result-summary small',
+              '.explore-result-disclaimer',
+              '.result-panel',
+              '.consecutive-filter-button',
+              '.result-count',
+              '.result-count > span',
+              '.result-count .numeric-text',
+          ]
+          for target in targets:
+              css = css.replace(f'.matrix-explore-screen:not(.matrix-explore-main-screen) {target}', f'.matrix-explore-screen {target}', 1)
+
+          sub_once(r'(\.matrix-explore-screen \.result-summary \{\s*\n?display: grid; margin-top: 12px; grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);) gap: 6px;', r'\1 column-gap: 6px; row-gap: 8px;')
+          sub_once(r'(\.matrix-explore-screen \.result-summary > div \{\s*\n?display: flex; min-width: 0;) height: 48px; min-height: 48px;', r'\1 height: 58px; min-height: 58px;')
+          sub_once(r'(\.matrix-explore-screen \.result-summary b \{\s*\n?)font-size: 20px;', r'\1font-size: 19px;')
+          sub_once(r'(\.matrix-explore-screen \.result-summary small \{\s*\n?)margin-top: 1px; color: #aaa39a; font-size: 11px;', r'\1margin-top: 2px; color: #aaa39a; font-size: 12px;')
+          sub_once(r'(\.matrix-explore-screen \.explore-result-disclaimer \{\s*\n?box-sizing: border-box; width: 100%; margin: 0; padding:) 14px 12px;', r'\1 16px 12px;')
+
+          sub_once(r'grid-template-columns: minmax\(0, \.88fr\) minmax\(0, \.84fr\) minmax\(0, \.92fr\) minmax\(0, 1\.12fr\) minmax\(0, 1\.1fr\) minmax\(0, 1\.14fr\);', 'grid-template-columns: minmax(0, .9fr) minmax(0, .72fr) minmax(0, .94fr) minmax(0, 1.16fr) minmax(0, 1.02fr) minmax(0, 1.18fr);')
+          sub_once(r'\.road-results-head \{ min-height: 34px;', '.road-results-head { min-height: 40px;')
+          sub_once(r'\.road-result-row \{ min-height: 50px; \}', '.road-result-row { min-height: 58px; }')
+          sub_once(r'(\.road-results \.tag \{[^}]*font-size:) 10px;', r'\1 11px;')
+          sub_once(r'\.road-results \.result-period \{ font-size: 11px; \}', '.road-results .result-period { font-size: 12px; }')
+          sub_once(r'\.road-results \.result-consecutive \{ font-size: 10\.5px; \}', '.road-results .result-consecutive { font-size: 11.5px; }')
+          sub_once(r'\.road-results \.result-number \{ font-size: 14\.5px; \}', '.road-results .result-number { font-size: 16px; }')
+          sub_once(r'\.road-results strong \{ color: #d7ad55; font-size: 16\.5px; \}', '.road-results strong { color: #d7ad55; font-size: 18px; }')
+          sub_once(r'  \.road-result-row \{ grid-template-columns: \.88fr \.84fr \.92fr 1\.12fr 1\.1fr 1\.14fr; \}', '  .road-result-row { grid-template-columns: .9fr .72fr .94fr 1.16fr 1.02fr 1.18fr; }')
+          sub_once(r'\.repeat-stats-panel, \.result-panel \{ margin-top: 12px; \}', '.repeat-stats-panel, .result-panel { margin-top: 16px; }')
+
           p.write_text(css)
-
-          bp=Path('src/number-ball.css')
-          balls2,n=re.subn(r'(\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball \{\s*--number-ball-size:) clamp\(26px, 7\.6vw, 30px\);(\s*--number-font-size:) clamp\(11px, 3\.1vw, 13px\);',r'\1 clamp(22px, 6.2vw, 24px);\2 clamp(10px, 2.8vw, 11px);\n  --underline-width: clamp(9px, 2.8vw, 11px);',balls,count=1,flags=re.S)
-          if n!=1: raise SystemExit(f'ball rule matches: {n}')
-          bp.write_text(balls2)
+          for path in [
+              '.github/workflows/matrix-explore-pr-patch.yml',
+              '.github/workflows/matrix-explore-pr-patch-v2.yml',
+              '.github/workflows/matrix-explore-reference-proportions-one-shot.yml',
+              '.github/matrix-explore-reference-trigger.txt',
+          ]:
+              Path(path).unlink(missing_ok=True)
           PY
 
-      - name: GREEN and build
+      - name: Verify GREEN and build
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          css=Path('src/matrix-explore-spacing.css').read_text(); balls=Path('src/number-ball.css').read_text()
-          assert 'min-height: 42px;' in css
-          assert 'minmax(0, 1.15fr) minmax(0, 2.2fr) minmax(0, 6.65fr)' in css
-          assert 'min-height: clamp(44px, 12vw, 48px);' in css
-          assert '--number-ball-size: clamp(22px, 6.2vw, 24px);' in balls
-          assert 'grid-template-columns: repeat(6, minmax(0, 1fr));' in css
-          assert 'grid-template-columns: 2.1fr 2.5fr 7.4fr;' not in css
-          PY
+          node --test tests/matrix-explore-reference-proportions.test.mjs tests/matrix-explore-ui-refinement.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-filter-hit-area.test.mjs
           npm ci
           npm run build
           git diff --check
 
-      - name: Restore workflow state and commit
+      - name: Commit verified change to main
         run: |
-          git checkout 63c4f5c19839d250a49feb737cca76f8ed78f31d -- .github/workflows/matrix-explore-pr-patch.yml .github/workflows/matrix-explore-pr-patch-v2.yml .github/workflows/matrix-explore-reference-proportions-one-shot.yml
-          rm -f .github/workflows/matrix-explore-reference-one-shot.yml .github/matrix-explore-reference-trigger-v2.txt .github/matrix-explore-reference-merge-trigger.txt
-          git config user.name 'spyuilin688-sudo'
-          git config user.email 'spyuilin688@gmail.com'
+          git config user.name "spyuilin688-sudo"
+          git config user.email "spyuilin688@gmail.com"
           git add -A
-          git commit -m 'style: match Matrix Explore history and repeat stats reference'
+          git commit -m "style: restore Matrix Explore reference proportions"
           git push origin main
