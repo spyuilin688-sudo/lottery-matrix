@@ -82,7 +82,8 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  width: 100%;
+  width: calc(100% - (var(--layout-page-inline) * 2));
+  margin-inline: auto;
   height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 8px);
   min-height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features) + 8px);
   padding-bottom: 8px;
@@ -139,7 +140,7 @@
 }
 
 .home-screen .home-logo-image {
-  width: 100%;
+  width: 75%;
 }
 
 .home-screen .lottery-switcher {
@@ -168,7 +169,7 @@
   inset: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -561,7 +562,7 @@
 
 .home-screen .home-shortcut img {
   display: block;
-  width: auto;
+  width: 100%;
   height: 100%;
   max-height: 100%;
   max-width: 100%;
