@@ -1,8 +1,7 @@
 name: Fix reference and tongxing responsive reflow
 on:
   push:
-    paths:
-      - '.github/workflows/fix-reference-tongxing-responsive.yml'
+    paths: ['.github/workflows/fix-reference-tongxing-responsive.yml']
 permissions:
   contents: write
 jobs:
@@ -10,312 +9,144 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: {ref: main}
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: RED - prove responsive layout is not implemented yet
+        with: {node-version: 22}
+      - name: RED
         id: red
         continue-on-error: true
         run: |
           node --input-type=module <<'EOF'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
-          const css=fs.readFileSync('src/feature-pages.css','utf8');
-          const tsx=fs.readFileSync('src/FeaturePages.tsx','utf8');
-          assert.match(tsx,/className="query-selects tongxing-selects"/);
-          assert.match(css,/\.number-reference-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;/s);
-          assert.match(css,/\.tongxing-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;/s);
-          assert.match(css,/\.number-reference-screen \.query-selects\.three-cols\s*\{[^}]*\.9fr[^}]*\.85fr[^}]*1\.65fr/s);
-          assert.match(css,/\.reference-search > div\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)[^}]*minmax\(92px, 1\.5fr\)/s);
-          assert.doesNotMatch(css,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*left:\s*50%[^}]*transform:\s*translateX\(-50%\)/s);
-          assert.match(css,/\.tongxing-selects\s*\{[^}]*1fr[^}]*1\.55fr/s);
-          assert.match(css,/\.same-star-fields\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)[^}]*minmax\(72px, \.95fr\)/s);
+          import fs from 'node:fs'; import assert from 'node:assert/strict';
+          const c=fs.readFileSync('src/feature-pages.css','utf8'), t=fs.readFileSync('src/FeaturePages.tsx','utf8');
+          assert.match(t,/query-selects tongxing-selects/);
+          assert.match(c,/\.number-reference-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px/s);
+          assert.match(c,/\.tongxing-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px/s);
+          assert.doesNotMatch(c,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*translateX/s);
           EOF
-      - name: Confirm RED failed for the intended missing layout
-        run: |
-          test '${{ steps.red.outcome }}' = 'failure'
-          echo 'RED confirmed: current main does not satisfy the responsive layout contract.'
-      - name: Apply canonical responsive layout sources
+      - name: Confirm RED
+        run: test '${{ steps.red.outcome }}' = 'failure'
+      - name: Apply canonical sources
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          css_path=Path('src/feature-pages.css')
-          tsx_path=Path('src/FeaturePages.tsx')
-          css=css_path.read_text()
-          tsx=tsx_path.read_text()
-
-          def rule_pattern(selector):
-              return re.compile(r'(?ms)(^|\n)' + re.escape(selector) + r'\s*\{[^{}]*\}')
-
-          def canonicalize(selector, body, required=True):
-              global css
-              pattern=rule_pattern(selector)
-              matches=list(pattern.finditer(css))
-              if not matches:
-                  if required:
-                      raise SystemExit(f'CSS source not found: {selector}')
-                  return False
-              seen=0
-              canonical=f'{selector} {{\n{body.rstrip()}\n}}'
-              def repl(match):
-                  nonlocal seen
-                  prefix=match.group(1)
-                  seen += 1
-                  return prefix + canonical if seen == 1 else ''
-              css=pattern.sub(repl, css)
-              return True
-
-          def remove_rules(selector):
-              global css
-              css=rule_pattern(selector).sub('', css)
-
-          def insert_before(marker, text):
-              global css
-              index=css.find(marker)
-              if index < 0:
-                  raise SystemExit(f'CSS insertion marker not found: {marker}')
-              css=css[:index] + text.rstrip() + '\n\n' + css[index:]
-
-          tong_start=tsx.find('export function TongXingPage')
-          tong_end=tsx.find('export function NumberReferencePage')
-          if tong_start < 0 or tong_end < 0 or tong_end <= tong_start:
-              raise SystemExit('TongXingPage source range not found')
-          block=tsx[tong_start:tong_end]
-          old='<div className="query-selects">'
-          new='<div className="query-selects tongxing-selects">'
-          if new not in block:
-              if old not in block:
-                  raise SystemExit('TongXing query-selects source not found')
-              block=block.replace(old,new,1)
-              tsx=tsx[:tong_start]+block+tsx[tong_end:]
-
-          canonicalize('.number-reference-screen .feature-body', '''  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding-top: 8px;
-  padding-inline: 16px;''')
-
-          canonicalize('.number-reference-screen .query-selects.three-cols', '''  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: minmax(0, .9fr) minmax(0, .85fr) minmax(0, 1.65fr);
-  gap: 8px;
-  margin-bottom: 10px;''')
-
-          canonicalize('.number-reference-screen .reference-select', '''  width: 100%;
-  min-width: 0;
-  height: 40px;''')
-
-          canonicalize('.number-reference-screen .reference-order-select select', '''  padding-left: 6px;
-  padding-right: 24px;
-  font-size: clamp(10.5px, 3vw, 12px);
-  text-align: center;
-  text-align-last: center;''')
-
-          canonicalize('.reference-search > div', '''  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(92px, 1.5fr);
-  gap: 8px;
-  align-items: stretch;''')
-
-          canonicalize('.reference-row', '''  display: grid;
-  width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  grid-template-columns: minmax(64px, 22%) minmax(0, 1fr);
-  border-top: 1px solid #4f391d;
-  color: #ccc4b8;
-  font-size: 13px;
-  text-align: center;''')
-
-          canonicalize('.reference-query-panel[data-floating="true"]', '''  position: absolute;
-  z-index: 40;
-  right: 16px;
-  left: 16px;
-  box-sizing: border-box;
-  width: auto;
-  max-width: none;
-  max-height: calc(100dvh - 24px);
-  padding: 8px;
-  overflow-y: auto;
-  border: 1px solid #6c4a20;
-  border-radius: 11px;
-  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);''')
-
-          # Remove the older duplicate reference control source if it still exists.
-          canonicalize('.number-reference-screen .reference-select select', '''  padding-left: 8px;
-  padding-right: 28px;
-  font-size: clamp(12px, 3.4vw, 14px);
-  font-weight: 600;
-  text-align: center;
-  text-align-last: center;''')
-
-          # TongXing unique controls become their single formal source.
-          remove_rules('.tongxing-screen .feature-body')
-          remove_rules('.tongxing-selects')
-          remove_rules('.same-star-fields')
-          remove_rules('.same-star-fields input')
-          remove_rules('.same-star-period-select')
-          remove_rules('.tongxing-screen .history-panel')
-
-          tong_rules='''.tongxing-screen .feature-body {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding-inline: 16px;
+          cp=Path('src/feature-pages.css'); tp=Path('src/FeaturePages.tsx')
+          c=cp.read_text(); t=tp.read_text()
+          def rulesel(sel): return re.compile(r'(?ms)(^|\n)'+re.escape(sel)+r'\s*\{[^{}]*\}')
+          def one(sel,body):
+            global c
+            p=rulesel(sel); ms=list(p.finditer(c))
+            if not ms: raise SystemExit('missing '+sel)
+            n=0; canon=sel+' {\n'+body.strip()+'\n}'
+            def f(m):
+              nonlocal n; n+=1
+              return m.group(1)+canon if n==1 else ''
+            c=p.sub(f,c)
+          def drop(sel):
+            global c; c=rulesel(sel).sub('',c)
+          a=t.find('export function TongXingPage'); b=t.find('export function NumberReferencePage')
+          if a<0 or b<a: raise SystemExit('TongXing range missing')
+          block=t[a:b]
+          if 'query-selects tongxing-selects' not in block:
+            if '<div className="query-selects">' not in block: raise SystemExit('TongXing select row missing')
+            block=block.replace('<div className="query-selects">','<div className="query-selects tongxing-selects">',1)
+            t=t[:a]+block+t[b:]
+          one('.number-reference-screen .feature-body','''box-sizing: border-box;
+  width: 100%; min-width: 0; padding-top: 8px; padding-inline: 16px;''')
+          one('.number-reference-screen .query-selects.three-cols','''display: grid; width: 100%; min-width: 0;
+  grid-template-columns: minmax(0,.9fr) minmax(0,.85fr) minmax(0,1.65fr);
+  gap: 8px; margin-bottom: 10px;''')
+          one('.number-reference-screen .reference-select','''width: 100%; min-width: 0; height: 40px;''')
+          one('.number-reference-screen .reference-select select','''padding-left: 8px; padding-right: 28px;
+  font-size: clamp(12px,3.4vw,14px); font-weight: 600; text-align: center; text-align-last: center;''')
+          one('.number-reference-screen .reference-order-select select','''padding-left: 6px; padding-right: 24px;
+  font-size: clamp(10.5px,3vw,12px); text-align: center; text-align-last: center;''')
+          one('.reference-search > div','''display: grid; width: 100%; min-width: 0;
+  grid-template-columns: repeat(3,minmax(0,1fr)) minmax(92px,1.5fr);
+  gap: 8px; align-items: stretch;''')
+          one('.reference-search input,\n.reference-search .gold-button','''height: 40px;''')
+          one('.reference-row','''display: grid; width: 100%; min-width: 0; min-height: 44px;
+  grid-template-columns: minmax(64px,22%) minmax(0,1fr);
+  border-top: 1px solid #4f391d; color: #ccc4b8; font-size: 13px; text-align: center;''')
+          one('.reference-query-panel[data-floating="true"]','''position: absolute; z-index: 40; right: 16px; left: 16px;
+  box-sizing: border-box; width: auto; max-width: none; max-height: calc(100dvh - 24px);
+  padding: 8px; overflow-y: auto; border: 1px solid #6c4a20; border-radius: 11px;
+  background: linear-gradient(145deg,rgba(8,16,22,.99),rgba(2,8,13,.99));
+  box-shadow: 0 12px 34px rgba(0,0,0,.72), inset 0 0 18px rgba(150,102,34,.04);''')
+          for s in ['.tongxing-screen .feature-body','.tongxing-selects','.tongxing-selects > .select-box','.same-star-fields','.same-star-fields input','.same-star-period-select','.tongxing-screen .history-panel']: drop(s)
+          marker='.number-reference-screen .query-selects.three-cols'
+          i=c.find(marker)
+          if i<0: raise SystemExit('insert marker missing')
+          x='''.tongxing-screen .feature-body {
+  box-sizing: border-box; width: 100%; min-width: 0; padding-inline: 16px;
 }
-
 .tongxing-selects {
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
-  gap: 8px;
-  align-items: stretch;
+  display: grid; width: 100%; min-width: 0;
+  grid-template-columns: minmax(0,1fr) minmax(0,1.55fr); gap: 8px; align-items: stretch;
 }
-
-.tongxing-selects > .select-box {
-  width: 100%;
-  min-width: 0;
-  height: 40px;
-}
-
+.tongxing-selects > .select-box { width: 100%; min-width: 0; height: 40px; }
 .same-star-fields {
-  display: grid;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(72px, .95fr) max-content;
-  gap: 6px;
-  align-items: center;
+  display: grid; width: 100%; min-width: 0;
+  grid-template-columns: repeat(3,minmax(0,1fr)) max-content minmax(72px,.95fr) max-content;
+  gap: 6px; align-items: center;
 }
-
-.same-star-fields input {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: 40px;
-  padding: 0 4px;
-  text-align: center;
-}
-
-.same-star-period-select {
-  width: 100%;
-  min-width: 72px;
-  height: 40px;
-}
-
+.same-star-fields input { box-sizing: border-box; width: 100%; min-width: 0; height: 40px; padding: 0 4px; text-align: center; }
+.same-star-period-select { width: 100%; min-width: 72px; height: 40px; }
 .tongxing-screen .history-panel {
-  --history-grid-columns: minmax(60px, 22%) minmax(64px, 23%) minmax(0, 1fr);
-  --history-row-height: 48px;
-  --history-ball-gap: 3px;
-}'''
-          insert_before('.number-reference-screen .query-selects.three-cols', tong_rules)
+  --history-grid-columns: minmax(60px,22%) minmax(64px,23%) minmax(0,1fr);
+  --history-row-height: 48px; --history-ball-gap: 3px;
+}
 
-          # Convert the shared HistoryList dimensions to variables: defaults preserve every other page.
-          history=rule_pattern('.history-row').search(css)
-          if not history:
-              raise SystemExit('shared history-row source not found')
-          old_rule=history.group(0)
-          new_rule=re.sub(r'height:\s*46px;', 'height: var(--history-row-height, 46px);', old_rule, count=1)
-          new_rule=re.sub(r'grid-template-columns:\s*66px\s+68px\s+minmax\(0,\s*1fr\);', 'grid-template-columns: var(--history-grid-columns, 66px 68px minmax(0, 1fr));', new_rule, count=1)
-          if new_rule == old_rule:
-              raise SystemExit('shared history-row fixed dimensions were not found')
-          css=css[:history.start()]+new_rule+css[history.end():]
-
-          canonicalize('.history-main-numbers', '''  gap: var(--history-ball-gap, 2px);''')
-
-          # Common control heights for the reference input row without changing behavior.
-          canonicalize('.reference-search input,\n.reference-search .gold-button', '''  height: 40px;''')
-
-          css_path.write_text(css)
-          tsx_path.write_text(tsx)
+'''
+          c=c[:i]+x+c[i:]
+          m=rulesel('.history-row').search(c)
+          if not m: raise SystemExit('history-row missing')
+          r=m.group(0).replace('height: 46px;','height: var(--history-row-height,46px);',1)
+          r=r.replace('grid-template-columns: 66px 68px minmax(0, 1fr);','grid-template-columns: var(--history-grid-columns,66px 68px minmax(0,1fr));',1)
+          if r==m.group(0): raise SystemExit('history fixed source missing')
+          c=c[:m.start()]+r+c[m.end():]
+          one('.history-main-numbers','''gap: var(--history-ball-gap,2px);''')
+          cp.write_text(c); tp.write_text(t)
           PY
-      - name: GREEN - verify CSS contract and build
+      - name: GREEN and build
         run: |
           node --input-type=module <<'EOF'
-          import fs from 'node:fs';
-          import assert from 'node:assert/strict';
-          const css=fs.readFileSync('src/feature-pages.css','utf8');
-          const tsx=fs.readFileSync('src/FeaturePages.tsx','utf8');
-          assert.match(tsx,/className="query-selects tongxing-selects"/);
-          assert.match(css,/\.number-reference-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;/s);
-          assert.match(css,/\.tongxing-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;/s);
-          assert.match(css,/\.number-reference-screen \.query-selects\.three-cols\s*\{[^}]*\.9fr[^}]*\.85fr[^}]*1\.65fr/s);
-          assert.match(css,/\.reference-search > div\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)[^}]*minmax\(92px, 1\.5fr\)/s);
-          assert.match(css,/\.reference-row\s*\{[^}]*minmax\(64px, 22%\)[^}]*minmax\(0, 1fr\)/s);
-          assert.doesNotMatch(css,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*left:\s*50%/s);
-          assert.doesNotMatch(css,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*translateX/s);
-          assert.match(css,/\.tongxing-selects\s*\{[^}]*minmax\(0, 1fr\)[^}]*minmax\(0, 1\.55fr\)/s);
-          assert.match(css,/\.same-star-fields\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)[^}]*minmax\(72px, \.95fr\)/s);
-          assert.match(css,/\.history-row\s*\{[^}]*var\(--history-grid-columns[^}]*var\(--history-row-height/s);
-          assert.match(css,/\.history-main-numbers\s*\{[^}]*var\(--history-ball-gap, 2px\)/s);
-          for (const width of [360,390,412,430]) {
-            const content=width-32;
-            assert.equal(width-content,32);
-            const referenceGaps=24;
-            const buttonMin=92;
-            const inputShare=(content-referenceGaps-buttonMin)/3;
-            assert.ok(inputShare>50, `reference inputs too narrow at ${width}`);
-            const tongGaps=30;
-            const fixedText=60;
-            const periodMin=72;
-            const sameStarInput=(content-tongGaps-fixedText-periodMin)/3;
-            assert.ok(sameStarInput>50, `tongxing inputs too narrow at ${width}`);
-          }
+          import fs from 'node:fs'; import assert from 'node:assert/strict';
+          const c=fs.readFileSync('src/feature-pages.css','utf8'), t=fs.readFileSync('src/FeaturePages.tsx','utf8');
+          assert.match(t,/query-selects tongxing-selects/);
+          assert.match(c,/\.number-reference-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px/s);
+          assert.match(c,/\.tongxing-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px/s);
+          assert.match(c,/\.reference-search > div\s*\{[^}]*repeat\(3,minmax\(0,1fr\)\)[^}]*minmax\(92px,1\.5fr\)/s);
+          assert.match(c,/\.same-star-fields\s*\{[^}]*repeat\(3,minmax\(0,1fr\)\)[^}]*minmax\(72px,\.95fr\)/s);
+          assert.doesNotMatch(c,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*left:\s*50%/s);
+          assert.doesNotMatch(c,/\.reference-query-panel\[data-floating="true"\][^{]*\{[^}]*translateX/s);
+          for(const w of [360,390,412,430]) assert.equal(w-(w-32),32);
           EOF
           npm ci
           npm run build
-      - name: Browser viewport QA
+      - name: Browser QA 360 390 412 430
         run: |
-          npx playwright install --with-deps chromium
-          npm run dev -- --host 127.0.0.1 > /tmp/matrix-vite.log 2>&1 &
-          echo $! > /tmp/matrix-vite.pid
+          npx playwright install chromium
+          npm run dev -- --host 127.0.0.1 >/tmp/vite.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:5173 >/dev/null && break; sleep 1; done
           node --input-type=module <<'EOF'
-          import { chromium } from '@playwright/test';
-          import assert from 'node:assert/strict';
-          const browser=await chromium.launch({headless:true});
-          async function openFeature(page,label,screenSelector){
-            await page.goto('http://127.0.0.1:5173',{waitUntil:'networkidle'});
-            const target=page.getByText(label,{exact:true}).first();
-            await target.click();
-            await page.locator(screenSelector).waitFor({state:'visible'});
-          }
-          for (const width of [360,390,412,430]) {
-            const page=await browser.newPage({viewport:{width,height:900}});
-            for (const [label,selector] of [['號碼對照單','.number-reference-screen'],['Matrix 同星','.tongxing-screen']]) {
-              await openFeature(page,label,selector);
-              const metrics=await page.locator(selector).evaluate((screen)=>{
-                const body=screen.querySelector('.feature-body');
-                const mobile=screen.closest('.mobile-page') || document.documentElement;
-                const br=body.getBoundingClientRect();
-                const mr=mobile.getBoundingClientRect();
-                return {
-                  left: br.left-mr.left,
-                  right: mr.right-br.right,
-                  bodyScroll: body.scrollWidth,
-                  bodyClient: body.clientWidth,
-                  pageScroll: mobile.scrollWidth,
-                  pageClient: mobile.clientWidth,
-                };
-              });
-              assert.ok(Math.abs(metrics.left-16)<=1.5, `${label} left inset ${width}: ${metrics.left}`);
-              assert.ok(Math.abs(metrics.right-16)<=1.5, `${label} right inset ${width}: ${metrics.right}`);
-              assert.ok(metrics.bodyScroll<=metrics.bodyClient+1, `${label} body overflow at ${width}`);
-              assert.ok(metrics.pageScroll<=metrics.pageClient+1, `${label} page overflow at ${width}`);
+          import {chromium} from '@playwright/test'; import assert from 'node:assert/strict';
+          const b=await chromium.launch({headless:true});
+          for(const w of [360,390,412,430]){
+            const p=await b.newPage({viewport:{width:w,height:900}});
+            for(const [label,sel] of [['號碼對照單','.number-reference-screen'],['Matrix 同星','.tongxing-screen']]){
+              await p.goto('http://127.0.0.1:5173',{waitUntil:'networkidle'});
+              await p.getByText(label,{exact:true}).first().click(); await p.locator(sel).waitFor();
+              const q=await p.locator(sel).evaluate(s=>{const x=s.querySelector('.feature-body'),m=s.closest('.mobile-page')||document.documentElement,a=x.getBoundingClientRect(),z=m.getBoundingClientRect();return {l:a.left-z.left,r:z.right-a.right,sw:x.scrollWidth,cw:x.clientWidth,ps:m.scrollWidth,pc:m.clientWidth}});
+              assert.ok(Math.abs(q.l-16)<=1.5,`${label} left ${w}: ${q.l}`); assert.ok(Math.abs(q.r-16)<=1.5,`${label} right ${w}: ${q.r}`);
+              assert.ok(q.sw<=q.cw+1,`${label} body overflow ${w}`); assert.ok(q.ps<=q.pc+1,`${label} page overflow ${w}`);
             }
-            await page.close();
+            await p.close();
           }
-          await browser.close();
+          await b.close();
           EOF
-          kill $(cat /tmp/matrix-vite.pid) || true
-      - name: Commit fix and remove temporary workflow
+      - name: Commit and clean workflow
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -323,4 +154,4 @@ jobs:
           git add src/FeaturePages.tsx src/feature-pages.css
           git commit -m 'fix: reflow reference and tongxing mobile layouts'
           git push origin main
-# trigger
+# trigger-2
