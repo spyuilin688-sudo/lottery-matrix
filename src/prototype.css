@@ -36,7 +36,7 @@
 }
 
 .bottom-navigation {
-  --bottom-nav-safe-area: max(var(--mobile-safe-area-height, 0px), env(safe-area-inset-bottom, 0px));
+  --bottom-nav-safe-area: env(safe-area-inset-bottom, 0px);
   position: fixed;
   z-index: 20;
   inset: auto 0 0;
