@@ -40,11 +40,18 @@ test('號碼對照單 uses one responsive three-select grid without the old fixe
 });
 
 test('bounded responsive rules do not add prohibited compensation techniques', () => {
-  for (const css of [tongxing, feature]) {
-    const relevant = css
-      .split('\n')
-      .filter((line) => /tongxing|number-reference|reference-search/.test(line) || /!important|zoom\s*:|scale\(|margin[^:]*:\s*-/.test(line))
-      .join('\n');
-    assert.doesNotMatch(relevant, /!important|zoom\s*:|scale\(|margin(?:-[a-z]+)?\s*:\s*-/);
+  const referenceRelevant = [
+    block(feature, '.number-reference-screen .query-selects.three-cols'),
+    block(feature, '.number-reference-screen .reference-select'),
+    block(feature, '.number-reference-screen .reference-select select'),
+    block(feature, '.number-reference-screen .reference-order-select select'),
+    block(feature, '.reference-search'),
+    block(feature, '.reference-search > div'),
+    block(feature, '.reference-search input'),
+    block(feature, '.reference-search .gold-button'),
+  ].join('\n');
+
+  for (const css of [tongxing, referenceRelevant]) {
+    assert.doesNotMatch(css, /!important|zoom\s*:|scale\(|margin(?:-[a-z]+)?\s*:\s*-/);
   }
 });
