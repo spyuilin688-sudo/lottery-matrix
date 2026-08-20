@@ -90,28 +90,33 @@ jobs:
 
           old = 'width: calc(100% - 32px); min-height: 56px; margin-top: 8px;'
           new = 'width: auto; min-height: 56px; margin: 8px var(--layout-page-inline) 0;'
-          if base.count(old) != 1:
-              raise SystemExit(f'feature-title-card source count={base.count(old)}')
+          count = base.count(old)
+          if count != 1:
+              raise SystemExit(f'feature-title-card source count={count}')
           base = base.replace(old, new, 1)
 
           old = '.matrix-title-banner {\n  position: relative;\n  width: calc(100% - 32px);\n  margin: 0 auto;\n'
           new = '.matrix-title-banner {\n  position: relative;\n  width: auto;\n  margin: 0 var(--layout-page-inline);\n'
-          if base.count(old) != 1:
-              raise SystemExit(f'base matrix-title-banner source count={base.count(old)}')
+          count = base.count(old)
+          if count != 1:
+              raise SystemExit(f'base matrix-title-banner source count={count}')
           base = base.replace(old, new, 1)
 
           old = '.number-reference-screen .matrix-title-banner {\n  width: calc(100% - 32px);\n  margin-top: 0;\n}'
           new = '.number-reference-screen .matrix-title-banner {\n  width: auto;\n  margin: 0 var(--layout-page-inline);\n}'
-          if base.count(old) != 1:
-              raise SystemExit(f'number-reference title source count={base.count(old)}')
+          count = base.count(old)
+          if count != 1:
+              raise SystemExit(f'number-reference title source count={count}')
           base = base.replace(old, new, 1)
           base_path.write_text(base)
 
           explore_path = Path('src/matrix-explore-spacing.css')
           explore = explore_path.read_text()
-          if explore.count('padding: 0 16px 1rem;') != 1:
-              raise SystemExit(f'explore 16px padding source count={explore.count("padding: 0 16px 1rem;")}')
-          explore = explore.replace('padding: 0 16px 1rem;', 'padding: 0 var(--layout-page-inline) 1rem;', 1)
+          old_padding = 'padding: 0 16px 1rem;'
+          count = explore.count(old_padding)
+          if count != 1:
+              raise SystemExit(f'explore 16px padding source count={count}')
+          explore = explore.replace(old_padding, 'padding: 0 var(--layout-page-inline) 1rem;', 1)
 
           selector = '.matrix-explore-main-screen .matrix-title-banner {'
           start = explore.index(selector)
