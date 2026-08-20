@@ -1,6 +1,10 @@
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));
+  --road-validation-inline-padding: 4px;
+  --validation-issue-font-family: inherit;
+  --validation-issue-font-size: 12px;
+  --validation-issue-font-weight: 800;
   box-sizing: border-box;
   min-width: 0;
   overflow-x: hidden;
@@ -16,7 +20,7 @@
   margin: 0 auto;
   padding: 0 16px 1rem;
   flex-direction: column;
-  row-gap: .375rem;
+  row-gap: 8px;
   overflow-x: hidden;
 }
 
@@ -32,6 +36,14 @@
   width: calc(100% - 32px);
   max-width: none;
   min-width: 0;
+}
+
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel,
+.matrix-explore-main-screen .history-panel,
+.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .result-panel {
+  border: 1px solid #755329;
 }
 
 .matrix-explore-main-screen .explore-settings,
@@ -59,36 +71,34 @@
   padding: 0;
   flex-direction: column;
   gap: 0;
-  border: 1px solid rgba(126, 91, 39, .88);
   border-radius: .75rem;
   overflow: hidden;
 }
 
-.matrix-explore-main-screen .primary-action + .history-panel,
-.matrix-explore-main-screen .history-panel + .repeat-stats-panel {
-  margin-top: 6px;
+.matrix-explore-main-screen .primary-action + .history-panel {
+  margin-top: 4px;
 }
 
 .matrix-explore-main-screen .explore-settings {
-  padding: .375rem;
+  padding: 6px;
 }
 
 .matrix-explore-main-screen .hit-advanced-panel {
-  padding: .375rem;
+  padding: 6px;
 }
 
 .matrix-explore-main-screen .repeat-stats-panel {
-  padding: .75rem 3px;
+  padding: 6px 6px 12px;
 }
 
 .matrix-explore-main-screen .result-panel {
-  padding: .75rem;
+  padding: 6px 6px 12px;
 }
 
 .matrix-explore-main-screen .panel .section-title {
   min-height: 1.25rem;
   gap: .375rem;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.125rem;
 }
@@ -108,11 +118,15 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: 4px;
+  row-gap: 5px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
-  margin-top: .375rem;
+  margin-top: 8px;
+}
+
+.matrix-explore-main-screen .advanced-panel {
+  margin-top: 8px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
@@ -212,8 +226,7 @@
   align-items: center;
 }
 
-.matrix-explore-main-screen .segmented button,
-.matrix-explore-main-screen .hit-options button {
+.matrix-explore-main-screen .segmented button {
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -235,9 +248,14 @@
 
 .matrix-explore-main-screen .hit-options {
   width: 100%;
-  margin: .375rem 0 0;
-  padding: 0 0 .25rem;
+  margin: 8px 0 6px;
+  padding: 0;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
+
+.matrix-explore-main-screen .hit-options button {
+  height: 28px;
+  min-height: 28px;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -252,7 +270,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: .375rem;
-  font-size: .8125rem;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -314,6 +332,7 @@
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
+  overflow: hidden;
   align-items: center;
   gap: 0;
   white-space: nowrap;
@@ -323,7 +342,6 @@
   min-width: 0;
   flex: 0 0 auto;
   gap: .25rem;
-  font-size: 14px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -338,7 +356,8 @@
   display: inline;
   min-width: 0;
   margin-left: 0;
-  overflow: visible;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #c6c0b8;
   font-size: clamp(.5rem, 2.4vw, .625rem);
   font-weight: 500;
@@ -354,14 +373,15 @@
   height: auto;
   min-height: 32px;
   margin: 0;
-  padding: .1875rem .375rem;
+  padding: 5px 6px;
   align-items: center;
   justify-content: space-between;
   gap: .25rem;
   border-bottom: 1px solid rgba(195, 145, 54, .58);
 }
 
-.matrix-explore-main-screen .history-panel .panel-heading > button:last-child {
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child,
+.matrix-explore-main-screen .history-panel-actions > button:last-child {
   min-width: 0;
   flex: 0 0 auto;
   gap: .125rem;
@@ -370,10 +390,27 @@
   white-space: nowrap;
 }
 
-.matrix-explore-main-screen .history-panel .panel-heading > button:last-child svg {
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child svg,
+.matrix-explore-main-screen .history-panel-actions > button:last-child svg {
   width: .625rem;
   height: .625rem;
   flex: 0 0 .625rem;
+}
+
+.matrix-explore-main-screen .history-panel-actions {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.matrix-explore-main-screen .history-panel-actions > .history-panel-collapse-button {
+  display: grid;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  place-items: center;
 }
 
 .matrix-explore-main-screen .history-table {
@@ -392,8 +429,8 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 50px;
-  min-height: 50px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
   grid-template-columns: minmax(0, .88fr) minmax(0, .82fr) minmax(0, 3.3fr);
   align-items: center;
@@ -438,10 +475,9 @@
 }
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
-  --history-period-font-size: clamp(13px, 3.8vw, 15px);
   color: #fff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: var(--history-period-font-size);
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -460,6 +496,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  row-gap: 2px;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -541,7 +578,7 @@
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --matrix-history-ball-size: clamp(22px, 7.2vw, 28px);
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
@@ -584,13 +621,14 @@
   width: 100%;
   min-width: 0;
   min-height: 1.75rem;
-  margin-bottom: .375rem;
+  margin-bottom: 8px;
   align-items: center;
   gap: .375rem;
 }
 
 .matrix-explore-main-screen .repeat-stats-heading > span {
   margin-left: auto;
+  padding-right: 8px;
   font-size: 12px;
   font-weight: 700;
 }
@@ -621,8 +659,8 @@
 
 .matrix-explore-main-screen .result-summary b {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.75rem, 3.2vw, .875rem);
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .matrix-explore-main-screen .result-summary small {
@@ -635,9 +673,9 @@
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: .5rem .5rem;
+  padding: 0 8px;
   color: #aaa49a;
-  font-size: 11px;
+  font-size: clamp(7px, 2vw, 8px);
   font-weight: 700;
   line-height: 1.55;
   text-align: center;
@@ -648,7 +686,7 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  margin-bottom: .375rem;
+  margin-bottom: 8px;
   align-items: center;
   justify-content: space-between;
   gap: .375rem;
@@ -657,11 +695,11 @@
 
 .matrix-explore-main-screen .result-title .section-title {
   flex: 0 0 auto;
-  font-size: .9375rem;
 }
 
 .matrix-explore-main-screen .result-title .result-count {
   margin-left: auto;
+  padding-right: 8px;
   font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
@@ -694,6 +732,7 @@
 
 .matrix-explore-main-screen .road-results-head {
   min-height: 32px;
+  border-bottom: 1px solid #755329;
   color: #d2a52a;
   font-size: .6875rem;
 }
@@ -772,21 +811,12 @@
     gap: .25rem;
   }
 
-  .matrix-explore-main-screen .result-title .section-title {
-    font-size: .9375rem;
-  }
-
   .matrix-explore-main-screen .result-title .result-count {
     font-size: .6875rem;
   }
 }
 
 @media (min-width: 40rem) {
-  .matrix-explore-main-screen .hit-advanced-panel,
-  .matrix-explore-main-screen .result-panel {
-    padding: 1rem;
-  }
-
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
     width: 108px;

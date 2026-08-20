@@ -31,7 +31,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
 
-  const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button,[\\s\\S]*?\\.hit-options button");
+  const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button");
   assert.match(button, /height:\s*24px/);
   assert.match(button, /min-height:\s*24px/);
   assert.match(button, /align-items:\s*center/);
@@ -41,7 +41,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
 
-  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*\.375rem 0 0;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 6px;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);

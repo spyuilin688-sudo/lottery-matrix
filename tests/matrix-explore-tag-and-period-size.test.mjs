@@ -14,9 +14,9 @@ test("Matrix Pro 與推薦標籤共用上移後的位置規則", () => {
   );
 });
 
-test("Matrix Explore 近10期資料列的期數數字是白色響應式粗體", () => {
+test("Matrix Explore 近10期資料列的期數數字是白色預設字型 14px 粗體", () => {
   assert.match(
     css,
-    /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*--history-period-font-size:\s*clamp\(13px, 3\.8vw, 15px\);[^}]*color:\s*#fff;[^}]*font-size:\s*var\(--history-period-font-size\);[^}]*font-weight:\s*800;/s,
+    /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*color:\s*#fff;[^}]*font-family:\s*inherit;[^}]*font-size:\s*14px;[^}]*font-weight:\s*800;/s,
   );
 });

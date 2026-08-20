@@ -8,15 +8,15 @@ const prototype = readFileSync("src/prototype.css", "utf8");
 test("Matrix Explore lower result sections match reference image two", () => {
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*padding:\s*\.75rem 3px;/s,
+    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s,
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*\.75rem;/s,
+    /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s,
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;[^}]*white-space:\s*nowrap;/s,
+    /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*clamp\(7px, 2vw, 8px\);[^}]*font-weight:\s*700;[^}]*text-align:\s*center;[^}]*white-space:\s*nowrap;/s,
   );
   assert.match(
     layout,
@@ -52,7 +52,7 @@ test("the six result columns retain usable proportional width at supported mobil
   const totalWeight = weights.reduce((sum, value) => sum + value, 0);
 
   for (const viewport of [360, 375, 390]) {
-    const panelContentWidth = viewport - 32 - 24;
+    const panelContentWidth = viewport - 32 - 12;
     const typeColumnWidth = panelContentWidth * weights[5] / totalWeight;
     assert.ok(typeColumnWidth >= 57, `${viewport}px leaves too little room for the road type column`);
   }
