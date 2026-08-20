@@ -14,7 +14,7 @@ function ruleBlock(source, selectorPattern) {
 test("Matrix Explore control rows match the compact mobile reference density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*row-gap:\s*8px/s);
   assert.match(css, /\.explore-settings\s*\{[^}]*padding:\s*6px/s);
-  assert.match(css, /\.hit-advanced-panel\s*\{[^}]*padding:\s*6px/s);
+  assert.match(css, /\.hit-advanced-panel\s*\{[^}]*padding:\s*6px 6px 4px/s);
 
   const title = ruleBlock(css, "\\.matrix-explore-main-screen \\.panel \\.section-title");
   assert.match(title, /min-height:\s*1\.25rem/);

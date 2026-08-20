@@ -12,8 +12,8 @@ test('compact lower sections', () => {
   assert.match(layout, /\.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(212, 165, 47, \.72\);[^}]*background:\s*transparent/s);
   assert.match(balls, /--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\)/);
 });
-test('320 360 390 preserve 6+1 room', () => {
-  for (const viewport of [320,360,390]) {
+test('320 360 375 390 preserve 6+1 room', () => {
+  for (const viewport of [320,360,375,390]) {
     const inner=viewport-34, draw=inner*(3.3/5), ball=Math.max(20,Math.min(viewport*.0615,24)), gap=Math.max(2,Math.min(viewport*.0085,3.5));
     assert.ok(ball*7+gap*7+8 < draw, `${viewport}px overflow risk`);
   }

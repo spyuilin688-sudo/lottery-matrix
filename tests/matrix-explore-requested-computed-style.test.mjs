@@ -83,6 +83,7 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   }
   assert.equal(style(".explore-settings").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingTop, "6px");
+  assert.equal(style(".hit-advanced-panel").paddingBottom, "4px");
   assert.equal(style(".repeat-stats-panel").paddingTop, "6px");
   assert.equal(style(".result-panel").paddingTop, "6px");
   assert.equal(style(".repeat-stats-panel").paddingLeft, "6px");
@@ -91,11 +92,12 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   assert.equal(style(".result-panel").paddingRight, "6px");
 });
 
-test("命中條件按鍵為 28px 並與進階探索設定相距 6px", () => {
+test("命中條件分隔線下移 4px 並與進階探索設定相距 4px", () => {
   const { style } = exploreFixture();
   assert.equal(style(".hit-options button").height, "28px");
   assert.equal(style(".hit-options button").minHeight, "28px");
-  assert.equal(style(".hit-options").marginBottom, "6px");
+  assert.equal(style(".hit-options").paddingBottom, "4px");
+  assert.equal(style(".hit-options").marginBottom, "4px");
 });
 
 test("重複統計卡片與控制項使用指定比例", () => {
@@ -110,6 +112,7 @@ test("重複統計卡片與控制項使用指定比例", () => {
   assert.equal(style(".repeat-stats-heading > span").fontSize, "12px");
   assert.equal(style(".repeat-stats-heading > span").fontWeight, "700");
   assert.equal(style(".repeat-stats-heading > span").paddingRight, "8px");
+  assert.equal(style(".repeat-stats-heading > span").color, "rgb(158, 154, 147)");
   assert.equal(style(".result-summary b").fontSize, "15px");
   assert.equal(style(".result-summary b").fontWeight, "800");
 });
