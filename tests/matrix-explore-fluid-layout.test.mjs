@@ -75,13 +75,13 @@ test("Matrix Explore history table uses compact target proportions", () => {
   assert.match(heading, /padding:\s*\.1875rem \.375rem/);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
-  assert.match(row, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
+  assert.match(row, /grid-template-columns:\s*minmax\(0, \.88fr\) minmax\(0, \.82fr\) minmax\(0, 3\.3fr\)/);
   assert.match(row, /height:\s*50px/);
   assert.match(row, /min-height:\s*50px/);
   assert.match(row, /padding:\s*0/);
   assert.match(css, /\.history-row\.history-head\s*\{[^}]*height:\s*26px;[^}]*min-height:\s*26px/);
 
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(28px, 7\.7vw, 30px\);[^}]*--number-font-size:\s*13px;/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(28px, 7\.7vw, 30px\);[^}]*--number-font-size:\s*clamp\(11px, 3\.3vw, 13px\);/s);
   assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(4px, 1\.8vw, 8px\);/s);
 });
 
