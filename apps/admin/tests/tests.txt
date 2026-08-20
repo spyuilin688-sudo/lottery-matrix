@@ -1,0 +1,74 @@
+# Tests
+
+## Test 1 - 授權後載入營運概覽與演算法狀態 [sanity]
+Viewport: desktop
+Covers: AppDeploy Auth, GET /api/bootstrap, GET /api/dashboard, GET /api/algorithm-status
+Description: 驗證已列入 Supabase admin_accounts 的啟用管理員可登入，並同時看到 Supabase 營運統計與演算法 API 狀態。
+
+Steps:
+1. 使用已存在於 admin_accounts 且狀態為啟用的管理員帳號登入
+2. 進入「營運概覽」
+3. 等待統計卡片與「演算法 API 狀態」完成載入
+
+Expected: 顯示實際用戶與收入統計；演算法狀態顯示連線正常或明確的不可用狀態，頁面不出現假造資料。
+
+## Test 2 - 查看 Supabase 營運資料
+Viewport: desktop
+Covers: GET /api/data/users, GET /api/data/subscriptions, GET /api/data/subscriptionRecords, Supabase field mapping
+Description: 驗證後台模組直接呈現 members、plans 與 payments 的真實欄位，且唯讀模組不顯示無效新增或刪除操作。
+
+Steps:
+1. 依序開啟「用戶管理」、「訂閱管理」與「訂閱紀錄」
+2. 檢查表格欄位標題與資料
+3. 檢查工具列與每筆資料操作欄
+
+Expected: 表格只顯示對應 Supabase 欄位；唯讀模組沒有新增、修改或刪除按鈕。
+
+## Test 3 - 批次建立十組啟動碼
+Viewport: desktop
+Covers: POST /api/activation-codes/batch, generate_activation_code_batch RPC, audit_logs
+Description: 驗證有新增權限的管理員可選擇有效期限，透過 Supabase RPC 原子建立恰好十組啟動碼並留下審計紀錄。
+
+Steps:
+1. 以具有新增權限的管理員進入「啟動碼管理」
+2. 點擊「新增」，選擇「30 天」
+3. 點擊「批次建立 10 組」並等待重新載入
+4. 前往「審計日誌」
+
+Expected: 啟動碼列表新增同一批次的十組資料，審計日誌新增一筆批次建立紀錄。
+
+## Test 4 - 權限不足時拒絕寫入
+Viewport: mobile
+Covers: Supabase admin_accounts permissions, POST /api/activation-codes/batch denial, administrator management boundary
+Description: 驗證查看人員不能建立啟動碼，也不能新增、修改或刪除管理員。
+
+Steps:
+1. 以只有查看權限的管理員登入
+2. 開啟「啟動碼管理」
+3. 開啟「管理員權限」
+
+Expected: 啟動碼批次建立入口不顯示；管理員新增、修改與刪除操作不顯示，受保護 API 回應 403。
+
+## Test 5 - 演算法狀態不可用不阻斷營運資料
+Viewport: desktop
+Covers: algorithm API fault isolation, Supabase dashboard availability
+Description: 驗證演算法四個唯讀狀態端點任一失敗時，後台仍可使用 Supabase 營運資料。
+
+QA Faults:
+```json
+[
+  {
+    "method": "GET",
+    "path": "/api/algorithm-status",
+    "status": 503,
+    "body_json": { "error": "simulated_algorithm_unavailable" }
+  }
+]
+```
+
+Steps:
+1. 重新開啟「營運概覽」
+2. 等待營運統計與演算法狀態區塊載入
+3. 再開啟「用戶管理」
+
+Expected: 演算法區塊顯示「目前無法取得狀態」，營運統計與用戶資料仍正常顯示。

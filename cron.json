@@ -1,0 +1,6 @@
+[
+  {"name":"matrix-539-refresh-v2","cron":"35-59/5 20 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"taiwan539"}},
+  {"name":"matrix-649-refresh-v2","cron":"45-59/5 20 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"taiwan649"}},
+  {"name":"matrix-marksix-refresh-v2","cron":"35-59/5 21 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"nfdhk"}},
+  {"name":"matrix-fantasy5-refresh-v2","cron":"35-59/5 18 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"sc888"}}
+]
