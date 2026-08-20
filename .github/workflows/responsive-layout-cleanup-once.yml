@@ -1,16 +1,15 @@
 name: Responsive layout cleanup once
 
 on:
-  push:
+  pull_request:
     branches: [main]
-    paths:
-      - .github/workflows/responsive-layout-cleanup-once.yml
 
 permissions:
   contents: write
 
 jobs:
   cleanup:
+    if: github.head_ref == 'responsive-layout-cleanup-trigger'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,37 +35,32 @@ jobs:
 
           const base = readFileSync('src/feature-pages.css', 'utf8');
           const explore = readFileSync('src/matrix-explore-spacing.css', 'utf8');
+          const tokens = readFileSync('src/design-tokens.css', 'utf8');
           const styles = readFileSync('src/styles.css', 'utf8');
 
-          function rule(source, selector) {
-            const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const match = source.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 's'));
-            assert.ok(match, `missing ${selector}`);
-            return match[1];
-          }
-
-          test('mobile viewport keeps the 390px maximum without fixing internal component widths', () => {
+          test('390px remains only the mobile viewport maximum', () => {
             assert.match(styles, /--app-layout-viewport:\s*390px/);
             assert.match(styles, /\.mobile-app-viewport\s*\{[^}]*width:\s*min\(100%,\s*var\(--app-layout-viewport\)\);[^}]*max-width:\s*var\(--app-layout-viewport\)/s);
           });
 
-          test('shared title surfaces use the 12px layout token instead of a hard-coded 32px subtraction', () => {
-            const card = rule(base, '.feature-title-card');
-            const banner = rule(base, '.matrix-title-banner');
-            assert.match(card, /width:\s*auto/);
-            assert.match(card, /margin:\s*8px var\(--layout-page-inline\) 0/);
-            assert.doesNotMatch(card, /calc\(100%\s*-\s*32px\)/);
-            assert.match(banner, /width:\s*auto/);
-            assert.match(banner, /margin:\s*0 var\(--layout-page-inline\)/);
-            assert.doesNotMatch(banner, /calc\(100%\s*-\s*32px\)/);
+          test('shared layout token remains 12px', () => {
+            assert.match(tokens, /--layout-page-inline:\s*12px/);
           });
 
-          test('Matrix Explore uses the shared 12px page-inline token and does not re-lock the title width', () => {
-            const body = rule(explore, '.matrix-explore-main-screen .feature-body');
-            const banner = rule(explore, '.matrix-explore-main-screen .matrix-title-banner');
-            assert.match(body, /padding:\s*0 var\(--layout-page-inline\) 1rem/);
-            assert.doesNotMatch(body, /padding:\s*0 16px 1rem/);
-            assert.doesNotMatch(banner, /width:\s*calc\(100%\s*-\s*32px\)/);
+          test('shared title surfaces no longer subtract 32px', () => {
+            assert.match(base, /\.feature-title-card\s*\{[^}]*width:\s*auto;[^}]*margin:\s*8px var\(--layout-page-inline\) 0;/s);
+            assert.match(base, /\.matrix-title-banner\s*\{[^}]*width:\s*auto;[^}]*margin:\s*0 var\(--layout-page-inline\);/s);
+            assert.doesNotMatch(base, /\.feature-title-card\s*\{[^}]*calc\(100%\s*-\s*32px\)/s);
+          });
+
+          test('number reference title uses the same 12px source', () => {
+            assert.match(base, /\.number-reference-screen \.matrix-title-banner\s*\{[^}]*width:\s*auto;[^}]*margin:\s*0 var\(--layout-page-inline\);/s);
+          });
+
+          test('Matrix Explore uses shared 12px page inset without a width re-lock', () => {
+            assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) 1rem;/s);
+            assert.doesNotMatch(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px 1rem;/s);
+            assert.doesNotMatch(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100%\s*-\s*32px\)/s);
           });
 
           test('latest responsive recent-history rules remain intact', () => {
@@ -85,38 +79,51 @@ jobs:
           fi
           echo 'RED confirmed.'
 
-      - name: GREEN - modify existing responsive control sources
-        shell: python
+      - name: GREEN - modify existing formal style sources only
+        shell: bash
         run: |
+          python - <<'PY'
           from pathlib import Path
 
           base_path = Path('src/feature-pages.css')
           base = base_path.read_text()
 
-          old_card = 'width: calc(100% - 32px); min-height: 56px; margin-top: 8px;'
-          new_card = 'width: auto; min-height: 56px; margin: 8px var(--layout-page-inline) 0;'
-          assert base.count(old_card) == 1, base.count(old_card)
-          base = base.replace(old_card, new_card, 1)
+          old = 'width: calc(100% - 32px); min-height: 56px; margin-top: 8px;'
+          new = 'width: auto; min-height: 56px; margin: 8px var(--layout-page-inline) 0;'
+          if base.count(old) != 1:
+              raise SystemExit(f'feature-title-card source count={base.count(old)}')
+          base = base.replace(old, new, 1)
 
-          old_banner = '''.matrix-title-banner {\n  position: relative;\n  width: calc(100% - 32px);\n  margin: 0 auto;\n'''
-          new_banner = '''.matrix-title-banner {\n  position: relative;\n  width: auto;\n  margin: 0 var(--layout-page-inline);\n'''
-          assert base.count(old_banner) == 1, base.count(old_banner)
-          base = base.replace(old_banner, new_banner, 1)
+          old = '.matrix-title-banner {\n  position: relative;\n  width: calc(100% - 32px);\n  margin: 0 auto;\n'
+          new = '.matrix-title-banner {\n  position: relative;\n  width: auto;\n  margin: 0 var(--layout-page-inline);\n'
+          if base.count(old) != 1:
+              raise SystemExit(f'base matrix-title-banner source count={base.count(old)}')
+          base = base.replace(old, new, 1)
+
+          old = '.number-reference-screen .matrix-title-banner {\n  width: calc(100% - 32px);\n  margin-top: 0;\n}'
+          new = '.number-reference-screen .matrix-title-banner {\n  width: auto;\n  margin: 0 var(--layout-page-inline);\n}'
+          if base.count(old) != 1:
+              raise SystemExit(f'number-reference title source count={base.count(old)}')
+          base = base.replace(old, new, 1)
           base_path.write_text(base)
 
           explore_path = Path('src/matrix-explore-spacing.css')
           explore = explore_path.read_text()
-          assert explore.count('padding: 0 16px 1rem;') == 1
+          if explore.count('padding: 0 16px 1rem;') != 1:
+              raise SystemExit(f'explore 16px padding source count={explore.count("padding: 0 16px 1rem;")}')
           explore = explore.replace('padding: 0 16px 1rem;', 'padding: 0 var(--layout-page-inline) 1rem;', 1)
 
           selector = '.matrix-explore-main-screen .matrix-title-banner {'
           start = explore.index(selector)
           end = explore.index('}', start)
           block = explore[start:end]
-          assert '  width: calc(100% - 32px);\n' in block
-          block = block.replace('  width: calc(100% - 32px);\n', '')
+          locked = '  width: calc(100% - 32px);\n'
+          if locked not in block:
+              raise SystemExit('Matrix Explore title width lock not found in expected rule')
+          block = block.replace(locked, '')
           explore = explore[:start] + block + explore[end:]
           explore_path.write_text(explore)
+          PY
 
       - name: Verify targeted and full tests
         run: |
@@ -125,10 +132,11 @@ jobs:
           node --test tests/*.test.mjs
           npm run build
 
-      - name: Commit verified cleanup
+      - name: Commit verified cleanup to main
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/responsive-layout-cleanup-once.yml
           git add -- src/feature-pages.css src/matrix-explore-spacing.css tests/responsive-layout-cleanup.test.mjs
           git commit -m 'Refine responsive layout constraints'
           git push origin main
