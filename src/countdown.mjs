@@ -35,5 +35,5 @@ export function formatNextDrawAt(nextDrawAt) {
   }).formatToParts(date);
   const value = (type) => parts.find((part) => part.type === type)?.value ?? "";
   const weekday = value("weekday").replace("週", "").replace("星期", "");
-  return `${value("month")}/${value("day")} (${weekday}) ${value("hour")}:${value("minute")}`;
+  return `${value("month")}/${value("day")}(${weekday}) ${value("hour")}:${value("minute")}`;
 }
