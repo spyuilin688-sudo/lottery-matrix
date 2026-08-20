@@ -7,8 +7,8 @@
   --card-padding: 10px;
   --card-radius: 12px;
   --control-gap: 6px;
-  --control-height: 32px;
-  --primary-button-height: 40px;
+  --control-height: var(--button-height);
+  --primary-button-height: var(--button-height);
   --table-header-height: 32px;
   --table-row-height: 44px;
   --result-row-height: 44px;
@@ -22,8 +22,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding-left: 8px;
-  padding-right: 16px;
+  padding-inline: var(--layout-page-inline);
   overflow-x: hidden;
 }
 
@@ -135,8 +134,8 @@
 
 .tongxing-screen .primary-action {
   width: 100%;
-  height: var(--primary-button-height);
-  font-size: 18px;
+  height: var(--button-height);
+  font-size: var(--button-font-size);
   font-weight: 600;
 }
 
@@ -157,7 +156,7 @@
 .tongxing-screen .history-panel-toggle .section-title > span { height: 17px; }
 .tongxing-screen .history-panel-toggle > svg { width: 13px; height: 13px; flex: 0 0 13px; color: #d8a93e; transition: transform .2s ease; }
 .tongxing-screen .history-panel-toggle > svg[data-open="true"] { transform: rotate(180deg); }
-.tongxing-screen .panel-heading > button:last-child { padding: 0; font-size: 10.5px; }
+.tongxing-screen .panel-heading > button:last-child { padding: 0; font-size: var(--button-font-size); }
 .tongxing-screen .history-table[hidden] { display: none; }
 
 .tongxing-screen .history-row {
