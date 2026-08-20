@@ -408,7 +408,7 @@
   min-height: 24px;
   max-height: 24px;
   margin: 0 -15px;
-  padding: 0 20px;
+  padding: 0 20px 2px;
   align-items: center;
   border-top: 1px solid rgba(232, 177, 76, .48);
   background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
@@ -417,7 +417,7 @@
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
   grid-template-columns: 14px auto minmax(0, 1fr);
-  gap: 0;
+  gap: 4px;
   min-width: 0;
   align-items: center;
   justify-content: center;
