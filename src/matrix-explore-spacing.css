@@ -123,7 +123,7 @@
   font-size: .8125rem;
   font-weight: 700;
   line-height: 1.125rem;
-  margin-bottom: 4px;
+  padding-bottom: 4px;
   text-align: left;
   white-space: nowrap;
 }
@@ -416,7 +416,7 @@
   border-right: 1px solid rgba(90, 87, 80, .55);
 }
 
-.matrix-explore-main-screen .history-row > :nth-child(1) {
+.matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: clamp(.5625rem, 2.5vw, .6875rem);
   font-weight: 700;
@@ -475,14 +475,14 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(.125rem, .8vw, .25rem);
+  gap: clamp(.25rem, 1.2vw, .375rem);
 }
 
 .matrix-explore-main-screen .history-special-number {
   height: auto;
-  margin-left: .25rem;
+  margin-left: .375rem;
   flex: 0 0 auto;
-  gap: .1875rem;
+  gap: .25rem;
   justify-content: center;
   color: #d4a63b;
   white-space: nowrap;
@@ -496,15 +496,15 @@
 }
 
 .matrix-explore-main-screen .history-special-ball {
-  display: grid;
+  display: flex;
   height: auto;
   flex: 0 0 auto;
-  grid-template-rows: 0 auto;
-  row-gap: 0;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .matrix-explore-main-screen .history-special-label {
+  display: none;
   margin: 0;
   font-size: clamp(.40625rem, 1.8vw, .5rem);
   line-height: 1;
