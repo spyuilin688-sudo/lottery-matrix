@@ -3,6 +3,19 @@
 
 /* App-specific styles. The surrounding mobile runtime remains unchanged. */
 
+button {
+  height: var(--button-height);
+  min-height: var(--button-height);
+  font-size: var(--button-font-size);
+  line-height: 1;
+}
+
+button svg,
+button img {
+  max-width: var(--button-icon-size);
+  max-height: var(--button-icon-size);
+}
+
 .app-screen {
   background: var(--lottery-neutral-950);
   overflow: hidden;
@@ -71,8 +84,8 @@
   z-index: 1;
   display: block;
   min-width: 0;
-  height: var(--bottom-navigation-height);
-  min-height: var(--bottom-navigation-height);
+  height: var(--button-height);
+  min-height: var(--button-height);
   padding: 0;
   border: 0;
   background: transparent;
