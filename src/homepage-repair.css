@@ -118,7 +118,6 @@
   width: 100%;
   align-items: center;
   justify-content: center;
-  background: url("/assets/lottery/functions/HomeLogo.svg") center / 75% auto no-repeat;
   overflow: visible;
 }
 
@@ -141,7 +140,6 @@
 
 .home-screen .home-logo-image {
   width: 75%;
-  visibility: hidden;
 }
 
 .home-screen .lottery-switcher {
