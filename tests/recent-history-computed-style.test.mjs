@@ -3,7 +3,13 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { JSDOM } from "jsdom";
 
+const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const responsiveIssueRules = [
+  featureCss.match(/\.matrix-explore-main-screen\s*\{[^}]*\}/s)?.[0],
+  featureCss.match(/\.history-row:not\(\.history-head\) > span:first-child\s*\{[^}]*\}/s)?.[0],
+].join("\n");
 const css = [
+  responsiveIssueRules,
   readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8"),
 ].join("\n");
@@ -49,8 +55,9 @@ function historyFixture(lottery, mainCount, hasSpecial) {
   return { style };
 }
 
-test("近10期期數使用預設字型 14px 粗體並保留響應式欄寬", () => {
+test("近10期期數使用單一響應式 8–10px 字級來源並保留預設字型與粗體", () => {
   const { style } = historyFixture("六合彩", 6, true);
+  const screen = style(".matrix-explore-main-screen");
   const period = style('[data-testid="period"]');
   const year = style(".history-date-stack strong");
   const date = style(".history-date-stack small");
@@ -58,7 +65,8 @@ test("近10期期數使用預設字型 14px 粗體並保留響應式欄寬", () 
 
   assert.equal(period.color, "rgb(255, 255, 255)");
   assert.doesNotMatch(period.fontFamily, /monospace/i);
-  assert.equal(period.fontSize, "14px");
+  assert.equal(screen.getPropertyValue("--mx-history-issue-size").trim(), "clamp(8px,2.6vw,10px)");
+  assert.equal(period.fontSize, "var(--mx-history-issue-size, 14px)");
   assert.equal(period.fontWeight, "800");
   assert.equal(year.getPropertyValue("--history-year-font-size").trim(), "clamp(10px,3vw,12px)");
   assert.equal(date.getPropertyValue("--history-date-font-size").trim(), "clamp(9px,2.6vw,10px)");

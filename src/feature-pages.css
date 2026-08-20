@@ -21,7 +21,7 @@
   --mx-history-head-height: 42px;
   --mx-history-row-height: 58px;
   --mx-history-columns: 72px 82px minmax(0, 1fr);
-  --mx-history-issue-size: 15px;
+  --mx-history-issue-size: clamp(8px, 2.6vw, 10px);
   --mx-history-date-year-size: 13px;
   --mx-history-date-detail-size: 12px;
   --mx-history-ball-size: 31px;

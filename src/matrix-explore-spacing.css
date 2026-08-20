@@ -477,7 +477,6 @@
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
   color: #fff;
   font-family: inherit;
-  font-size: 14px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;

@@ -22,7 +22,11 @@ test("Matrix Explore 近10期收合按鍵保留可點擊面積且不擠壓標題
 test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", () => {
   assert.match(exploreCss, /grid-template-columns:\s*minmax\(0, \.88fr\) minmax\(0, \.82fr\) minmax\(0, 3\.3fr\);/);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?height:\s*40px;[\s\S]*?min-height:\s*40px;[\s\S]*?padding:\s*0;/);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*color:\s*#fff;[^}]*font-family:\s*inherit;[^}]*font-size:\s*14px;[^}]*font-weight:\s*800;[^}]*white-space:\s*nowrap;/s);
+  assert.match(css, /--mx-history-issue-size:\s*clamp\(8px, 2\.6vw, 10px\);/);
+  const issueRule = exploreCss.match(/\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{([^}]*)\}/s);
+  assert.ok(issueRule);
+  assert.match(issueRule[1], /color:\s*#fff;[\s\S]*font-family:\s*inherit;[\s\S]*font-weight:\s*800;[\s\S]*white-space:\s*nowrap;/);
+  assert.doesNotMatch(issueRule[1], /font-size\s*:/);
 });
 
 test("Matrix Explore 近10期三欄標題字級一致且直向分隔線清楚", () => {

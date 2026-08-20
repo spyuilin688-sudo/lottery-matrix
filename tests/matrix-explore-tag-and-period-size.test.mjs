@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 
@@ -14,9 +15,10 @@ test("Matrix Pro 與推薦標籤共用上移後的位置規則", () => {
   );
 });
 
-test("Matrix Explore 近10期資料列的期數數字是白色預設字型 14px 粗體", () => {
-  assert.match(
-    css,
-    /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*color:\s*#fff;[^}]*font-family:\s*inherit;[^}]*font-size:\s*14px;[^}]*font-weight:\s*800;/s,
-  );
+test("Matrix Explore 近10期資料列的期數數字由單一 8–10px 響應式變數控制", () => {
+  assert.match(featureCss, /--mx-history-issue-size:\s*clamp\(8px, 2\.6vw, 10px\);/);
+  const issueRule = css.match(/\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{([^}]*)\}/s);
+  assert.ok(issueRule);
+  assert.match(issueRule[1], /color:\s*#fff;[\s\S]*font-family:\s*inherit;[\s\S]*font-weight:\s*800;/);
+  assert.doesNotMatch(issueRule[1], /font-size\s*:/);
 });
