@@ -86,6 +86,8 @@ test("Matrix Explore history table uses compact target proportions", () => {
 });
 
 test("Matrix Explore statistics and results use compact target density", () => {
+  assert.match(css, /\.matrix-explore-main-screen \.repeat-stats-panel,\s*\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*\.75rem;/s);
+
   const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");
   assert.match(statsHeading, /display:\s*flex/);
   assert.match(statsHeading, /gap:\s*\.375rem/);
@@ -103,9 +105,9 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(resultTitle, /gap:\s*\.375rem/);
   assert.match(resultTitle, /margin-bottom:\s*\.375rem/);
 
-  assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.82fr\) minmax\(0, \.7fr\) minmax\(0, \.86fr\) minmax\(0, 1\.12fr\) minmax\(0, \.98fr\) minmax\(0, 1\.36fr\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.46fr\) minmax\(0, 1\.46fr\) minmax\(0, 1\.46fr\);/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results-head\s*\{[^}]*min-height:\s*32px/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*42px;[^}]*padding:\s*\.375rem 0/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*\.375rem 0/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.25rem;[^}]*font-size:\s*\.5625rem/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*font-size:\s*\.875rem/s);
 });

@@ -8,7 +8,7 @@ test('compact lower sections', () => {
   assert.match(layout, /\.history-row,[\s\S]*?min-height:\s*34px;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 2fr\) minmax\(0, 7fr\)/);
   assert.match(layout, /\.result-summary > div\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
   assert.match(layout, /\.road-results-head\s*\{[^}]*min-height:\s*32px/s);
-  assert.match(layout, /\.road-result-row\s*\{[^}]*min-height:\s*42px;[^}]*padding:\s*\.375rem 0/s);
+  assert.match(layout, /\.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*\.375rem 0/s);
   assert.match(layout, /\.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(212, 165, 47, \.72\);[^}]*background:\s*transparent/s);
   assert.match(balls, /--number-ball-size:\s*clamp\(18px, 5\.2vw, 20px\)/);
 });
