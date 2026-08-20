@@ -17,7 +17,7 @@ test("Matrix Explore canonical scoped stylesheet remains the final loaded layout
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {
   assert.ok(exploreStart >= 0 && exploreEnd > exploreStart);
-  assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?matrix-explore-setting-icon[\s\S]*?<b>彩種<\/b><\/span>/s);
+  assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?matrix-explore-setting-icon[\s\S]*?<b>彩球類型<\/b><\/span>/s);
   assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?period\.png[\s\S]*?探索期數<\/span>/s);
   assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?road\.png[\s\S]*?版路類型<\/span>/s);
   assert.doesNotMatch(exploreSource, /style=\{/);
@@ -33,8 +33,8 @@ test("Matrix Explore selects and option buttons are 24px high", () => {
   assert.match(css, /\.matrix-explore-main-screen \.segmented button,[\s\S]*?\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
 });
 
-test("Matrix Explore button badges are smaller and half-cover the upper-right border", () => {
-  assert.match(css, /\.matrix-explore-main-screen \.segmented button em\s*\{[^}]*position:\s*absolute;[^}]*top:\s*-\.3125rem;[^}]*right:\s*\.125rem;[^}]*padding:\s*\.0625rem \.125rem;[^}]*font-size:\s*\.4375rem;[^}]*white-space:\s*nowrap;/s);
+test("Matrix Explore button badges sit above the upper-right border without covering option text", () => {
+  assert.match(css, /\.matrix-explore-main-screen \.segmented button em\s*\{[^}]*position:\s*absolute;[^}]*top:\s*-\.5625rem;[^}]*right:\s*\.125rem;[^}]*padding:\s*\.0625rem \.125rem;[^}]*font-size:\s*\.4375rem;[^}]*white-space:\s*nowrap;/s);
   assert.doesNotMatch(css, /\.matrix-explore-main-screen \.segmented button em\s*\{[^}]*transform\s*:/s);
 });
 

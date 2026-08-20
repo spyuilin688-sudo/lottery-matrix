@@ -279,7 +279,7 @@
 .matrix-explore-main-screen .segmented button em {
   position: absolute;
   z-index: 20;
-  top: -.3125rem;
+  top: -.5625rem;
   right: .125rem;
   height: auto;
   min-height: 0;
@@ -418,7 +418,7 @@
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.5625rem, 2.5vw, .6875rem);
+  font-size: clamp(.5rem, 2.2vw, .5625rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
