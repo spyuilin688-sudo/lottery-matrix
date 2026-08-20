@@ -4,6 +4,13 @@ import test from "node:test";
 
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
+const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
+const prototypeCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
+
+test("正式樣式表由入口直接載入以確保部署重新編譯", () => {
+  assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
+  assert.doesNotMatch(prototypeCss, /@import\s+"\.\/feature-pages\.css/);
+});
 
 test("歷史開獎三欄使用單一正式比例並將前兩欄內容幾何置中", () => {
   assert.match(css, /\.draw-history-row\s*\{[^}]*grid-template-columns:\s*62px 72px minmax\(0, 1fr\)/s);
