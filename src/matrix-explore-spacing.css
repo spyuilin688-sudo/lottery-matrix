@@ -16,7 +16,7 @@
   margin: 0 auto;
   padding: 0 16px 1rem;
   flex-direction: column;
-  gap: .375rem;
+  row-gap: .375rem;
   overflow-x: hidden;
 }
 
@@ -59,7 +59,14 @@
   padding: 0;
   flex-direction: column;
   gap: 0;
+  border: 1px solid rgba(126, 91, 39, .88);
   border-radius: .75rem;
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .primary-action + .history-panel,
+.matrix-explore-main-screen .history-panel + .repeat-stats-panel {
+  margin-top: 6px;
 }
 
 .matrix-explore-main-screen .explore-settings {
@@ -70,7 +77,10 @@
   padding: .375rem;
 }
 
-.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .repeat-stats-panel {
+  padding: .75rem 3px;
+}
+
 .matrix-explore-main-screen .result-panel {
   padding: .75rem;
 }
@@ -78,7 +88,7 @@
 .matrix-explore-main-screen .panel .section-title {
   min-height: 1.25rem;
   gap: .375rem;
-  font-size: .875rem;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.125rem;
 }
@@ -98,7 +108,7 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: 3px;
+  row-gap: 4px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
@@ -313,7 +323,7 @@
   min-width: 0;
   flex: 0 0 auto;
   gap: .25rem;
-  font-size: clamp(.625rem, 3vw, .75rem);
+  font-size: 14px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -367,6 +377,7 @@
 }
 
 .matrix-explore-main-screen .history-table {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -381,17 +392,18 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: auto;
-  min-height: 34px;
-  padding: .0625rem 0;
-  grid-template-columns: 54px 62px minmax(0, 1fr);
+  height: 50px;
+  min-height: 50px;
+  padding: 0;
+  grid-template-columns: minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr);
   align-items: center;
   gap: 0;
   border-top: 0;
-  border-bottom: 1px solid rgba(90, 87, 80, .72);
+  border-bottom: 1px solid rgba(126, 91, 39, .82);
 }
 
 .matrix-explore-main-screen .history-row.history-head {
+  height: 26px;
   min-height: 26px;
   padding: 0;
   color: #d2a52a;
@@ -422,13 +434,13 @@
 
 .matrix-explore-main-screen .history-row > :nth-child(1),
 .matrix-explore-main-screen .history-row > :nth-child(2) {
-  border-right: 1px solid rgba(126, 91, 39, .72);
+  border-right: 1px solid rgba(126, 91, 39, .9);
 }
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
   color: #fff;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -452,13 +464,13 @@
 }
 
 .matrix-explore-main-screen .history-date-stack strong {
-  font-size: clamp(.625rem, 2.7vw, .6875rem);
+  font-size: 11px;
   line-height: 1.05;
 }
 
 .matrix-explore-main-screen .history-date-stack small {
   margin-top: 0;
-  font-size: clamp(.5625rem, 2.4vw, .625rem);
+  font-size: 10px;
   line-height: 1.05;
   white-space: nowrap;
 }
@@ -485,7 +497,7 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: clamp(4px, 1.8vw, 8px);
 }
 
 .matrix-explore-main-screen .history-special-number {
@@ -526,16 +538,16 @@
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --matrix-history-ball-size: 24px;
-}
-
-.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
-  min-height: 50px;
+  --matrix-history-ball-size: clamp(20px, 5.7vw, 22px);
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
   gap: 3px;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
+  align-items: flex-end;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
@@ -554,9 +566,10 @@
   display: grid;
   width: var(--matrix-history-ball-size);
   flex: 0 0 var(--matrix-history-ball-size);
-  grid-template-rows: .5rem var(--matrix-history-ball-size);
+  grid-template-rows: auto var(--matrix-history-ball-size);
   align-items: center;
   justify-items: center;
+  row-gap: 2px;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
@@ -575,7 +588,8 @@
 
 .matrix-explore-main-screen .repeat-stats-heading > span {
   margin-left: auto;
-  font-size: clamp(.5625rem, 2.5vw, .6875rem);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .matrix-explore-main-screen .result-summary {
@@ -605,7 +619,7 @@
 .matrix-explore-main-screen .result-summary b {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: clamp(.75rem, 3.2vw, .875rem);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .matrix-explore-main-screen .result-summary small {
@@ -620,8 +634,8 @@
   margin: 0;
   padding: .5rem .5rem;
   color: #aaa49a;
-  font-size: clamp(.5rem, 2.2vw, .5625rem);
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1.55;
   text-align: center;
   white-space: nowrap;
@@ -645,13 +659,14 @@
 
 .matrix-explore-main-screen .result-title .result-count {
   margin-left: auto;
-  font-size: .6875rem;
+  font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .matrix-explore-main-screen .result-title .result-count .numeric-text {
-  font-size: .875rem;
+  color: #35bff0;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -739,14 +754,14 @@
 .matrix-explore-main-screen .consecutive-filter-button,
 .matrix-explore-main-screen .repeat-stats-heading button {
   position: relative;
-  min-height: 26px;
-  height: 26px;
+  min-height: 24px;
+  height: 24px;
   padding: .125rem .5rem;
   border: 1px solid rgba(212, 165, 47, .72);
   border-radius: .5rem;
   background: transparent;
   color: #d8a93e;
-  font-size: .6875rem;
+  font-size: 11px;
 }
 
 @media (max-width: 359.98px) {
@@ -765,7 +780,6 @@
 
 @media (min-width: 40rem) {
   .matrix-explore-main-screen .hit-advanced-panel,
-  .matrix-explore-main-screen .repeat-stats-panel,
   .matrix-explore-main-screen .result-panel {
     padding: 1rem;
   }

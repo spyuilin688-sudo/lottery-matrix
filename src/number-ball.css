@@ -157,7 +157,11 @@
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .number-ball-component.history-lottery-ball {
-  --number-ball-size: 22px;
+  --number-ball-size: clamp(28px, 7.7vw, 30px);
+  --number-font-size: 13px;
+  --underline-width: 12px;
+  --underline-height: 1px;
+  --underline-y: 0px;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .number-ball-component.history-lottery-ball {

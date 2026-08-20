@@ -27,10 +27,10 @@ test("Matrix Explore setting icons are 32px", () => {
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span \.setting-label-icon,[\s\S]*?\.matrix-explore-main-screen \.matrix-explore-setting-icon\s*\{[^}]*inline-size:\s*2rem;[^}]*block-size:\s*2rem;[^}]*flex:\s*0 0 2rem;/s);
 });
 
-test("Matrix Explore 兩組三列圖示的垂直邊距都是 3px", () => {
+test("Matrix Explore 兩組三列圖示的垂直邊距都是 4px", () => {
   assert.match(
     css,
-    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*3px;/s,
+    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*4px;/s,
   );
   assert.match(
     css,

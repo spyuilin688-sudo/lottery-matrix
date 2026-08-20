@@ -8,11 +8,15 @@ const prototype = readFileSync("src/prototype.css", "utf8");
 test("Matrix Explore lower result sections match reference image two", () => {
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.repeat-stats-panel,\s*\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*\.75rem;/s,
+    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*padding:\s*\.75rem 3px;/s,
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*clamp\(\.5rem, 2\.2vw, \.5625rem\);[^}]*white-space:\s*nowrap;/s,
+    /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*\.75rem;/s,
+  );
+  assert.match(
+    layout,
+    /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;[^}]*white-space:\s*nowrap;/s,
   );
   assert.match(
     layout,

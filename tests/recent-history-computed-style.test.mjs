@@ -26,13 +26,18 @@ function historyFixture(lottery, mainCount, hasSpecial) {
     <style>${css}</style>
     <main class="matrix-explore-main-screen">
       <section class="history-panel" data-lottery="${lottery}">
-        <div class="history-row">
-          <span data-testid="period">026090</span>
-          <span>2026/08/18（二）</span>
-          <span class="history-numbers" data-has-special="${hasSpecial}">
-            <span class="history-main-numbers">${mainBalls}</span>
-            ${special}
-          </span>
+        <header class="panel-heading">
+          <div class="history-panel-title"><h2 class="section-title"><span></span>近10期開獎號碼</h2></div>
+        </header>
+        <div class="history-table">
+          <div class="history-row">
+            <span data-testid="period">026090</span>
+            <span><span class="history-date-stack"><strong>2026</strong><small>08/18 (二)</small></span></span>
+            <span class="history-numbers" data-has-special="${hasSpecial}">
+              <span class="history-main-numbers">${mainBalls}</span>
+              ${special}
+            </span>
+          </div>
         </div>
       </section>
     </main>
@@ -43,52 +48,76 @@ function historyFixture(lottery, mainCount, hasSpecial) {
   return { style };
 }
 
-test("近10期期數為白色 12px 粗體，欄寬把剩餘空間留給開獎號碼", () => {
+test("近10期期數比日期大一階且使用響應式欄寬", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const period = style('[data-testid="period"]');
+  const year = style(".history-date-stack strong");
+  const date = style(".history-date-stack small");
   const row = style(".history-row");
 
   assert.equal(period.color, "rgb(255, 255, 255)");
-  assert.equal(period.fontSize, "12px");
+  assert.equal(period.fontSize, "14px");
   assert.equal(period.fontWeight, "800");
-  assert.equal(row.gridTemplateColumns, "54px 62px minmax(0, 1fr)");
+  assert.equal(year.fontSize, "11px");
+  assert.equal(date.fontSize, "10px");
+  assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("6+1 維持 50px 列高，以 24px 彩球和 3px 間距形成置中連續群組", () => {
+test("6+1 維持 50px 列高，以響應式 22px 彩球和 3px 間距形成置中連續群組", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
   const numbers = style(".history-numbers");
   const main = style(".history-main-numbers");
   const special = style(".history-special-number");
+  const specialBall = style(".history-special-ball");
 
+  assert.equal(row.height, "50px");
   assert.equal(row.minHeight, "50px");
-  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "24px");
+  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(20px,5.7vw,22px)");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(numbers.gap, "3px");
   assert.equal(main.flex, "0 0 auto");
   assert.equal(main.gap, "3px");
   assert.equal(special.marginLeft, "0px");
   assert.equal(special.gap, "3px");
+  assert.equal(specialBall.rowGap, "2px");
 
-  const sixPlusGroupWidth = 6 * 24 + 5 * 3 + 3 + 8 + 3 + 24;
+  const sixPlusGroupWidth = 6 * 22 + 5 * 3 + 3 + 8 + 3 + 22;
   for (const viewport of [360, 375, 390]) {
     const rowWidth = viewport - 32 - 2;
-    const numberColumnWidth = rowWidth - 54 - 62;
+    const numberColumnWidth = rowWidth * 3.5 / 5;
     assert.ok(sixPlusGroupWidth <= numberColumnWidth, `${viewport}px viewport must contain the 6+1 group`);
   }
 });
 
-test("五顆玩法維持 34px 列高，以 22px 彩球和 8px 間距整組置中", () => {
+test("五顆玩法維持 50px 列高，彩球、數字、底線與間距同步放大", () => {
   const { style } = historyFixture("今彩539", 5, false);
   const row = style(".history-row");
   const numbers = style(".history-numbers");
   const main = style(".history-main-numbers");
   const ball = style(".history-lottery-ball");
 
-  assert.equal(row.minHeight, "34px");
+  assert.equal(row.height, "50px");
+  assert.equal(row.minHeight, "50px");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(main.flex, "0 0 auto");
-  assert.equal(main.gap, "8px");
-  assert.equal(ball.getPropertyValue("--number-ball-size").trim(), "22px");
+  assert.equal(main.gap, "clamp(4px, 1.8vw, 8px)");
+  assert.equal(ball.getPropertyValue("--number-ball-size").trim(), "clamp(28px,7.7vw,30px)");
+  assert.equal(ball.getPropertyValue("--number-font-size").trim(), "13px");
+  assert.equal(ball.getPropertyValue("--underline-width").trim(), "12px");
+});
+
+test("近10期表格外框與欄列分隔線明確呈現", () => {
+  const { style } = historyFixture("今彩539", 5, false);
+  const panel = style(".history-panel");
+  const heading = style(".panel-heading");
+  const period = style('[data-testid="period"]');
+  const row = style(".history-row");
+
+  assert.equal(panel.borderTopWidth, "1px");
+  assert.notEqual(panel.borderTopColor, "rgba(0, 0, 0, 0)");
+  assert.equal(heading.borderBottomWidth, "1px");
+  assert.equal(period.borderRightWidth, "1px");
+  assert.equal(row.borderBottomWidth, "1px");
 });

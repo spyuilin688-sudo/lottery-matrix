@@ -23,32 +23,31 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(left, /font-size:\s*\.8125rem/);
 
   const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
-  assert.match(icon, /inline-size:\s*1\.75rem/);
-  assert.match(icon, /block-size:\s*1\.75rem/);
-  assert.match(icon, /flex:\s*0 0 1\.75rem/);
+  assert.match(icon, /inline-size:\s*2rem/);
+  assert.match(icon, /block-size:\s*2rem/);
+  assert.match(icon, /flex:\s*0 0 2rem/);
 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
-  assert.match(select, /height:\s*28px/);
-  assert.match(select, /min-height:\s*28px/);
+  assert.match(select, /height:\s*24px/);
+  assert.match(select, /min-height:\s*24px/);
 
   const button = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button,[\\s\\S]*?\\.hit-options button");
-  assert.match(button, /height:\s*28px/);
-  assert.match(button, /min-height:\s*28px/);
+  assert.match(button, /height:\s*24px/);
+  assert.match(button, /min-height:\s*24px/);
   assert.match(button, /align-items:\s*center/);
   assert.match(button, /justify-content:\s*center/);
   assert.match(button, /text-align:\s*center/);
-  assert.match(button, /padding:\s*\.125rem 0/);
+  assert.match(button, /padding:\s*\.125rem \.25rem/);
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
 
-  const hit = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options");
-  assert.match(hit, /margin:\s*\.375rem 0 0/);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*\.375rem 0 0;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
   assert.match(badge, /right:\s*\.125rem/);
-  assert.match(badge, /padding:\s*\.0625rem \.1875rem/);
-  assert.match(badge, /font-size:\s*\.5rem/);
+  assert.match(badge, /padding:\s*\.0625rem \.125rem/);
+  assert.match(badge, /font-size:\s*\.4375rem/);
   assert.doesNotMatch(badge, /transform\s*:/);
 
   assert.doesNotMatch(prototypeCss, /--debug-container-/);
@@ -63,8 +62,7 @@ test("Matrix Explore action details keep the approved compact presentation", () 
   assert.match(featureSource, /\["本日 \(最新\)", "昨日 \(上1期\)", "前日 \(上2期\)"\]/);
   assert.doesNotMatch(featureSource, /\["本日（最新）", "昨日（上1期）", "前日（上2期）"\]/);
 
-  assert.match(css, /\.matrix-explore-main-screen > \.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*4px;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*none;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*white-space:\s*nowrap;/s);
 
   const advanced = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row");
   assert.match(advanced, /padding-inline-end:\s*\.375rem/);
