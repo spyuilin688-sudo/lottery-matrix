@@ -85,7 +85,7 @@
 }
 
 .matrix-explore-main-screen .hit-advanced-panel {
-  padding: 6px;
+  padding: 6px 6px 4px;
 }
 
 .matrix-explore-main-screen .repeat-stats-panel {
@@ -249,8 +249,8 @@
 
 .matrix-explore-main-screen .hit-options {
   width: 100%;
-  margin: 8px 0 6px;
-  padding: 0;
+  margin: 8px 0 4px;
+  padding: 0 0 4px;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
@@ -630,6 +630,7 @@
 .matrix-explore-main-screen .repeat-stats-heading > span {
   margin-left: auto;
   padding-right: 8px;
+  color: #9e9a93;
   font-size: 12px;
   font-weight: 700;
 }
