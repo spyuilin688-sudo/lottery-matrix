@@ -7,16 +7,17 @@ const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", imp
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 
-test("Matrix Explore 近10期標題列單列顯示排序文字並取消舊固定高度", () => {
+test("Matrix Explore 近10期標題整合收合箭頭並可隱藏排序文字", () => {
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-title\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel \.panel-heading\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*32px;[^}]*align-items:\s*center;/s);
-  assert.match(source, /<SectionTitle>近10期開獎號碼<\/SectionTitle>[\s\S]*?<span className="history-panel-order">（\{numberOrder\}）<\/span>/);
+  assert.match(source, /showOrderText \? <span className="history-panel-order">（\{numberOrder\}）<\/span> : null/);
+  assert.match(source, /collapseControl="title"[\s\S]*?showOrderText=\{title !== "Matrix 探索"\}/);
 });
 
-test("Matrix Explore 近10期收合按鍵保留可點擊面積且不擠壓標題", () => {
+test("Matrix Explore 近10期標題收合按鍵保留狀態標籤", () => {
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-title\s*\{[^}]*min-width:\s*0;[^}]*flex:\s*1 1 auto;[^}]*overflow:\s*hidden;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-actions > \.history-panel-collapse-button\s*\{[^}]*min-width:\s*24px;[^}]*min-height:\s*24px;[^}]*padding:\s*0;[^}]*place-items:\s*center;/s);
+  assert.match(source, /className="history-panel-toggle"[\s\S]*?aria-label=\{expanded \? "收合近10期開獎號碼" : "展開近10期開獎號碼"\}/);
 });
 
 test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", () => {
@@ -50,13 +51,15 @@ test("Matrix Explore 近10期六加一使用連續內容寬度群組且移除 32
 
 test("Matrix Explore 近10期五顆彩球放大，六加一彩球響應式縮放", () => {
   assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(20px, 6vw, 22px\);[^}]*--number-font-size:\s*clamp\(10px, 2\.8vw, 11px\);/s);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(10px, 3\.08vw, 12px\);[^}]*--underline-width:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.5px;[^}]*--underline-y:\s*\.5px;/s);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*var\(--matrix-history-ball-size\);[^}]*--number-font-size:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.5px;[^}]*--underline-y:\s*\.5px;/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);[^}]*--underline-width:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.3px;/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*var\(--matrix-history-ball-size\);[^}]*--number-font-size:\s*clamp\(7px, 2\.31vw, 9px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.3px;/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="大樂透"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-font-size:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.3px;[^}]*transform:\s*translateY\(3px\);/s);
 });
 
-test("Matrix Explore 六加一維持統一列高並在特別號球上方保留間距", () => {
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(20px, 6\.15vw, 24px\);/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?height:\s*40px;[^}]*min-height:\s*40px;/s);
+test("Matrix Explore 六加一使用 36px 列高與各自彩球尺寸", () => {
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\]\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(18px, 5\.64vw, 22px\);/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="大樂透"\]\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(20px, 6\.15vw, 24px\);/s);
+  assert.match(exploreCss, /data-lottery="六合彩"[^}]*data-lottery="大樂透"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*36px;[^}]*min-height:\s*36px/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-special-ball\s*\{[^}]*row-gap:\s*2px;/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-special-label\s*\{[^}]*display:\s*block;/s);
 });
@@ -66,7 +69,9 @@ test("Matrix Explore 近10期正式樣式來源不使用禁止的補償方式", 
   const end = exploreCss.indexOf(".matrix-explore-main-screen .repeat-stats-heading");
   const historyLayout = exploreCss.slice(start, end);
   assert.ok(start >= 0 && end > start);
-  assert.doesNotMatch(historyLayout, /!important|zoom\s*:|scale\(|margin(?:-[a-z]+)?\s*:\s*-|position\s*:\s*absolute/);
+  assert.doesNotMatch(historyLayout, /!important|zoom\s*:|scale\(|margin(?:-[a-z]+)?\s*:\s*-/);
+  assert.equal((historyLayout.match(/position:\s*absolute/g) ?? []).length, 1);
+  assert.match(historyLayout, /data-lottery="大樂透"[^}]*\.history-special-label\s*\{[^}]*position:\s*absolute/s);
 });
 
 test("近10期資料列依彩種日期標記跨週分隔線", () => {

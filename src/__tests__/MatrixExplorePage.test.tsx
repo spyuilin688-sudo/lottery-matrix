@@ -19,6 +19,11 @@ test('近10期開獎號碼剛進頁面時保持展開', () => {
   const table = document.querySelector<HTMLElement>('.history-table');
 
   expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  expect(toggle.getAttribute('aria-controls')).toBe('matrix-explore-history-table');
+  expect(toggle.textContent).toContain('近10期開獎號碼');
+  expect(toggle.textContent).not.toContain('依號碼由小到大排序');
+  expect(toggle.querySelector('.section-title')).not.toBeNull();
+  expect(toggle.querySelector('h2')).toBeNull();
   expect(table?.hidden).toBe(false);
 });
 
@@ -48,4 +53,30 @@ test('切換彩種時自動展開近10期開獎號碼', () => {
 
   expect(screen.getByRole('button', { name: '收合近10期開獎號碼' }).getAttribute('aria-expanded')).toBe('true');
   expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(false);
+});
+
+test('展開版路後以可分色數字與右上外框標籤顯示版路概要', () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getAllByRole('button', { name: /加減版路/ })[0]);
+
+  const summary = document.querySelector<HTMLElement>('.validation-summary-card');
+  expect(summary).not.toBeNull();
+  expect(summary?.querySelector('.validation-summary-primary')?.textContent).toBe('10');
+  expect(summary?.querySelectorAll('.validation-summary-position')).toHaveLength(2);
+  expect(summary?.querySelector('.validation-summary-lookback')?.textContent).toBe('2');
+  expect(summary?.querySelector('.validation-summary-formula')?.textContent).toBe('+14.24');
+  expect(summary?.querySelector('.validation-summary-future')?.textContent).toBe('2');
+  expect(summary?.querySelector('em')?.textContent).toBe('準7進8');
+});
+
+test('合值版路的概要顯示合值文字並沿用公式數字色彩類別', () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '合值版路' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(document.querySelector<HTMLButtonElement>('.road-type-toggle')!);
+
+  expect(document.querySelector('.validation-summary-formula')?.textContent).toBe('合值14.24');
 });

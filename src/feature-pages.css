@@ -1967,8 +1967,18 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 }
 .road-validation-process { display: grid; gap: 7px; margin-inline: 0; padding: 10px var(--road-validation-inline-padding, 12px); border-top: 1px solid rgba(102, 169, 255, .18); background: rgba(3, 9, 20, .72); overflow-x: clip; }
 .validation-summary-card { position: relative; display: grid; min-width: 0; min-height: 40px; padding: 8px 78px 8px 8px; border: 1px solid rgba(223, 176, 68, .42); border-radius: 9px; background: rgba(10, 14, 24, .92); align-items: center; }
-.validation-summary-card span { display: flex; min-width: 0; align-items: center; gap: 5px; color: #d9e2ef; font-size: 12px; white-space: nowrap; }
+.validation-summary-card > span { display: flex; min-width: 0; align-items: center; gap: 5px; color: #d9e2ef; font-size: 12px; white-space: nowrap; }
+.validation-summary-card > span i { font-style: normal; font-weight: inherit; }
 .validation-summary-card em { position: absolute; top: 6px; right: 8px; width: 66px; transform: none; color: #f6c95f; font-style: normal; font-weight: 800; text-align: right; white-space: nowrap; }
+.matrix-explore-main-screen .validation-summary-card { padding: 4px; }
+.matrix-explore-main-screen .validation-summary-card > span { gap: 3px; font-size: 10px; }
+.matrix-explore-main-screen .validation-summary-card > span i { font-weight: 800; }
+.matrix-explore-main-screen .validation-summary-card em { top: 0; right: 4px; width: auto; padding: 1px 4px; transform: translateY(-50%); border: 1px solid rgba(223, 176, 68, .68); border-radius: 999px; background: rgba(10, 14, 24, .98); font-size: 9px; line-height: 1; }
+.matrix-explore-main-screen .validation-summary-primary { color: #ef5350; }
+.matrix-explore-main-screen .validation-summary-position { color: #35bff0; }
+.matrix-explore-main-screen .validation-summary-lookback { color: #a78bfa; }
+.matrix-explore-main-screen .validation-summary-future { color: #7ee2a8; }
+.matrix-explore-main-screen .validation-summary-formula { color: #f6c95f; }
 .validation-period-block { display: grid; gap: 3px; padding-bottom: 7px; border-bottom: 1px solid rgba(223, 176, 68, .56); }
 .validation-period-block:last-child { padding-bottom: 0; border-bottom: 0; }
 .validation-period-row { display: grid; min-width: 0; min-height: 38px; grid-template-columns: minmax(0, 15fr) minmax(0, 59fr) minmax(0, 26fr); gap: 5px; align-items: stretch; }

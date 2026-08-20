@@ -74,7 +74,7 @@ test("近10期期數、年份與日期使用指定響應式字級並保留期數
   assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("6+1 維持 40px 列高，以 20–24px 彩球和響應式間距形成置中連續群組", () => {
+test("六合彩使用 36px 列高、18–22px 彩球及指定數字與底線比例", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
@@ -84,9 +84,9 @@ test("6+1 維持 40px 列高，以 20–24px 彩球和響應式間距形成置�
   const specialBall = style(".history-special-ball");
   const mainBall = style(".history-main-numbers .history-lottery-ball");
 
-  assert.equal(row.height, "40px");
-  assert.equal(row.minHeight, "40px");
-  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(20px,6.15vw,24px)");
+  assert.equal(row.height, "36px");
+  assert.equal(row.minHeight, "36px");
+  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(18px,5.64vw,22px)");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(numbers.alignItems, "center");
   assert.equal(numbers.gap, "clamp(4px, 1.5vw, 7px)");
@@ -97,43 +97,65 @@ test("6+1 維持 40px 列高，以 20–24px 彩球和響應式間距形成置�
   assert.equal(special.alignItems, "center");
   assert.equal(special.gap, "clamp(4px, 1.5vw, 7px)");
   assert.equal(specialBall.rowGap, "2px");
-  assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(9px,2.82vw,11px)");
+  assert.equal(style(".history-special-label").getPropertyValue("--history-special-label-size").trim(), "clamp(5px,1.67vw,6.5px)");
+  assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(7px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.56vw,10px)");
-  assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".5px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), ".5px");
+  assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), ".3px");
 
   const expectedGeometry = [
-    { viewport: 320, ball: 20, gap: 4.8 },
-    { viewport: 360, ball: 22.14, gap: 5.4 },
-    { viewport: 375, ball: 23.0625, gap: 5.625 },
-    { viewport: 390, ball: 23.985, gap: 5.85 },
+    { viewport: 320, ball: 18.048, gap: 4.8 },
+    { viewport: 360, ball: 20.304, gap: 5.4 },
+    { viewport: 375, ball: 21.15, gap: 5.625 },
+    { viewport: 390, ball: 21.996, gap: 5.85 },
   ];
   for (const { viewport, ball, gap } of expectedGeometry) {
     const rowWidth = viewport - 32 - 2;
     const numberColumnWidth = rowWidth * 3.3 / 5;
     const sixPlusGroupWidth = 7 * ball + 7 * gap + 8;
     assert.ok(sixPlusGroupWidth <= numberColumnWidth, `${viewport}px viewport must contain the 6+1 group`);
-    assert.ok(ball / 40 >= .5, `${viewport}px ball must remain proportional to the 40px row`);
+    assert.ok(ball / 36 >= .5, `${viewport}px ball must remain proportional to the 36px row`);
   }
 });
 
-test("五顆玩法維持 40px 列高，彩球、數字、底線與間距同步響應", () => {
+test("大樂透使用 36px 列高並讓正碼及特別號球同步下移 3px", () => {
+  const { style } = historyFixture("大樂透", 6, true);
+  const row = style(".history-row");
+  const panel = style(".history-panel");
+  const mainBall = style(".history-main-numbers .history-lottery-ball");
+  const specialGroup = style(".history-special-ball");
+  const specialBall = style(".history-special-ball .history-lottery-ball");
+  const specialLabel = style(".history-special-label");
+
+  assert.equal(row.height, "36px");
+  assert.equal(row.minHeight, "36px");
+  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(20px,6.15vw,24px)");
+  assert.equal(mainBall.transform, "translateY(3px)");
+  assert.equal(specialBall.transform, "translateY(3px)");
+  assert.equal(specialGroup.height, "36px");
+  assert.equal(specialGroup.gridTemplateRows, "1fr");
+  assert.equal(specialLabel.bottom, "calc(50% + var(--matrix-history-ball-size) / 2 - 1px)");
+  assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), ".3px");
+});
+
+test("五顆玩法使用 32px 列高，數字為 12–14px 且底線符合指定比例", () => {
   const { style } = historyFixture("今彩539", 5, false);
   const row = style(".history-row");
   const numbers = style(".history-numbers");
   const main = style(".history-main-numbers");
   const ball = style(".history-lottery-ball");
 
-  assert.equal(row.height, "40px");
-  assert.equal(row.minHeight, "40px");
+  assert.equal(row.height, "32px");
+  assert.equal(row.minHeight, "32px");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(main.flex, "0 0 auto");
   assert.equal(main.gap, "clamp(4px, 1.8vw, 8px)");
   assert.equal(ball.getPropertyValue("--number-ball-size").trim(), "clamp(24px,7.18vw,28px)");
-  assert.equal(ball.getPropertyValue("--number-font-size").trim(), "clamp(10px,3.08vw,12px)");
+  assert.equal(ball.getPropertyValue("--number-font-size").trim(), "clamp(12px,3.59vw,14px)");
   assert.equal(ball.getPropertyValue("--underline-width").trim(), "clamp(9px,2.82vw,11px)");
-  assert.equal(ball.getPropertyValue("--underline-height").trim(), ".5px");
-  assert.equal(ball.getPropertyValue("--underline-y").trim(), ".5px");
+  assert.equal(ball.getPropertyValue("--underline-height").trim(), ".7px");
+  assert.equal(ball.getPropertyValue("--underline-y").trim(), ".3px");
 });
 
 test("近10期表格外框與欄列分隔線明確呈現", () => {

@@ -8,7 +8,7 @@ const prototype = readFileSync("src/prototype.css", "utf8");
 test("Matrix Explore lower result sections match reference image two", () => {
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s,
+    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*6px;/s,
   );
   assert.match(
     layout,
