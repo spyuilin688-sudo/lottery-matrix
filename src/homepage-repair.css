@@ -304,7 +304,7 @@
   border: 0;
   background: transparent;
   color: rgba(255, 236, 185, .72);
-  font-size: 12px;
+  font-size: var(--button-font-size);
   font-weight: 700;
 }
 
@@ -318,8 +318,8 @@
   grid-column: 3;
   grid-row: 1;
   display: flex;
-  height: 20px;
-  min-height: 20px;
+  height: var(--button-height);
+  min-height: var(--button-height);
   padding: 0;
   justify-self: end;
   align-self: center;
@@ -471,7 +471,7 @@
 
 .home-screen .matrix-core-banner {
   width: calc(100% - (var(--layout-page-inline) * 2));
-  height: var(--home-core-height);
+  height: var(--button-height);
   margin-inline: auto;
   isolation: isolate;
   overflow: hidden;
@@ -569,8 +569,8 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  height: 100%;
-  min-height: 0;
+  height: var(--button-height);
+  min-height: var(--button-height);
   padding: 0;
   align-items: center;
   justify-content: center;
