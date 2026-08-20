@@ -14,7 +14,11 @@ function exploreFixture() {
       <div class="feature-body">
         <section class="panel explore-settings">
           <h2 class="section-title"><span></span>探索設定</h2>
-          <div class="setting-grid"><label></label><label></label><label></label></div>
+          <div class="setting-grid">
+            <label><span><img class="setting-label-icon matrix-explore-setting-icon">彩球類型</span><div class="select-box native-select"><select><option>今彩539</option></select></div></label>
+            <label><span><img class="setting-label-icon matrix-explore-setting-icon">探索期數</span><div class="segmented three"><button>二期</button><button>七期</button><button>十三期</button></div></label>
+            <label><span><img class="setting-label-icon matrix-explore-setting-icon">版路類型</span><div class="segmented three"><button>加減版路</button><button>合值版路</button><button>拖牌版路</button></div></label>
+          </div>
         </section>
         <section class="panel hit-advanced-panel">
           <h2 class="section-title"><span></span>命中條件</h2>
@@ -64,6 +68,17 @@ test("探索與進階設定的三列圖示使用 5px 垂直間距", () => {
   const { style } = exploreFixture();
   assert.equal(style(".setting-grid").rowGap, "5px");
   assert.equal(style(".advanced-panel").rowGap, "5px");
+});
+
+test("探索設定左側標籤依內容延伸避免壓到右側選項", () => {
+  const { style } = exploreFixture();
+  const label = style(".setting-grid label > span");
+
+  assert.equal(label.width, "auto");
+  assert.equal(label.minWidth, "92px");
+  assert.equal(label.flexGrow, "0");
+  assert.equal(label.flexShrink, "0");
+  assert.equal(label.flexBasis, "auto");
 });
 
 test("開始探索、近10期與重複號碼統計的相鄰間距皆為 12px", () => {

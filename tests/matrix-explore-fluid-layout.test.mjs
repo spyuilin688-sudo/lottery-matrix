@@ -33,11 +33,11 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(row, /gap:\s*\.375rem/);
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
-  assert.match(left, /width:\s*92px/);
+  assert.match(left, /width:\s*auto/);
   assert.match(left, /min-width:\s*92px/);
-  assert.match(left, /flex:\s*0 0 92px/);
+  assert.match(left, /flex:\s*0 0 auto/);
   assert.match(left, /font-size:\s*\.8125rem/);
-  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?width:\s*108px/);
+  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?min-width:\s*108px/);
 
   const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
   assert.match(icon, /inline-size:\s*2rem/);

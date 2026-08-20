@@ -144,11 +144,11 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
-  width: 92px;
+  width: auto;
   min-width: 92px;
   align-items: center;
   gap: .5rem;
-  flex: 0 0 92px;
+  flex: 0 0 auto;
   color: #e5e7eb;
   font-size: .8125rem;
   font-weight: 700;
@@ -855,9 +855,7 @@
 @media (min-width: 40rem) {
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-    width: 108px;
     min-width: 108px;
-    flex-basis: 108px;
   }
 
   .matrix-explore-main-screen .history-numbers,
