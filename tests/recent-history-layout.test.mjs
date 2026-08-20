@@ -20,9 +20,10 @@ test("Matrix Explore 近10期收合按鍵保留可點擊面積且不擠壓標題
 });
 
 test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", () => {
-  assert.match(exploreCss, /grid-template-columns:\s*minmax\(0, \.88fr\) minmax\(0, \.82fr\) minmax\(0, 3\.3fr\);/);
+  assert.match(exploreCss, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\);/);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?height:\s*40px;[\s\S]*?min-height:\s*40px;[\s\S]*?padding:\s*0;/);
-  assert.match(css, /--mx-history-issue-size:\s*clamp\(8px, 2\.6vw, 10px\);/);
+  assert.doesNotMatch(css, /--mx-history-issue-size:/);
+  assert.match(exploreCss, /--mx-history-issue-size:\s*clamp\(6px, 2\.1vw, 8px\);/);
   const issueRule = exploreCss.match(/\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{([^}]*)\}/s);
   assert.ok(issueRule);
   assert.match(issueRule[1], /color:\s*#fff;[\s\S]*font-family:\s*inherit;[\s\S]*font-weight:\s*800;[\s\S]*white-space:\s*nowrap;/);
@@ -40,8 +41,8 @@ test("Matrix Explore 近10期六加一使用連續內容寬度群組且移除 32
   const narrowMedia = exploreCss.slice(narrowMediaStart, wideMediaStart);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*flex:\s*0 0 auto;[^}]*flex-wrap:\s*nowrap;[^}]*gap:\s*clamp\(4px, 1\.8vw, 8px\);/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-special-number\s*\{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*nowrap;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(2px, \.85vw, 3\.5px\);/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-special-number\s*\{[^}]*margin-left:\s*0;[^}]*gap:\s*clamp\(2px, \.85vw, 3\.5px\);/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(4px, 1\.5vw, 7px\);/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-special-number\s*\{[^}]*margin-left:\s*0;[^}]*gap:\s*clamp\(4px, 1\.5vw, 7px\);/s);
   assert.ok(narrowMediaStart >= 0 && wideMediaStart > narrowMediaStart);
   assert.doesNotMatch(narrowMedia, /history-special-(?:number|ball|label)/);
   assert.match(source, /className="history-special-number"[\s\S]*?<span aria-hidden="true">\+<\/span>[\s\S]*?className="history-special-label">特別號<\/small>/);

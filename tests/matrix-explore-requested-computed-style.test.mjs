@@ -66,14 +66,14 @@ test("一般區塊使用 8px 間距，開始探索與近10期合計 12px", () =>
   assert.equal(style(".repeat-stats-panel").marginTop, "0px");
 });
 
-test("指定卡片標題與進階探索設定統一為 16px", () => {
+test("探索區標題為 14px，近10期標題為 12px", () => {
   const { style } = exploreFixture();
-  assert.equal(style(".history-panel-title .section-title").fontSize, style(".explore-settings > .section-title").fontSize);
-  assert.equal(style(".history-panel-title .section-title").fontSize, "16px");
-  assert.equal(style(".hit-advanced-panel > .section-title").fontSize, "16px");
-  assert.equal(style(".advanced-row").fontSize, "16px");
-  assert.equal(style(".repeat-stats-heading .section-title").fontSize, "16px");
-  assert.equal(style(".result-title .section-title").fontSize, "16px");
+  assert.equal(style(".explore-settings > .section-title").fontSize, "14px");
+  assert.equal(style(".hit-advanced-panel > .section-title").fontSize, "14px");
+  assert.equal(style(".advanced-row").fontSize, "14px");
+  assert.equal(style(".repeat-stats-heading .section-title").fontSize, "14px");
+  assert.equal(style(".result-title .section-title").fontSize, "14px");
+  assert.equal(style(".history-panel-title .section-title").fontSize, "12px");
 });
 
 test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距", () => {

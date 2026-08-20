@@ -19,7 +19,7 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   const title = ruleBlock(css, "\\.matrix-explore-main-screen \\.panel \\.section-title");
   assert.match(title, /min-height:\s*1\.25rem/);
   assert.match(title, /gap:\s*\.375rem/);
-  assert.match(title, /font-size:\s*16px/);
+  assert.match(title, /font-size:\s*14px/);
   assert.match(title, /line-height:\s*1\.125rem/);
 
   const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel");
@@ -79,7 +79,7 @@ test("Matrix Explore history table uses compact target proportions", () => {
   assert.match(heading, /padding:\s*5px 6px/);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
-  assert.match(row, /grid-template-columns:\s*minmax\(0, \.88fr\) minmax\(0, \.82fr\) minmax\(0, 3\.3fr\)/);
+  assert.match(row, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
   assert.match(row, /height:\s*40px/);
   assert.match(row, /min-height:\s*40px/);
   assert.match(row, /padding:\s*0/);
