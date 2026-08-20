@@ -5,7 +5,7 @@ const layout = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const balls = fs.readFileSync('src/number-ball.css', 'utf8');
 test('compact lower sections', () => {
   assert.match(layout, /\.history-panel \.panel-heading\s*\{[^}]*min-height:\s*32px/s);
-  assert.match(layout, /\.history-row,[\s\S]*?height:\s*40px;[\s\S]*?min-height:\s*40px;[\s\S]*?grid-template-columns:\s*minmax\(0, \.88fr\) minmax\(0, \.82fr\) minmax\(0, 3\.3fr\)/);
+  assert.match(layout, /\.history-row,[\s\S]*?height:\s*40px;[\s\S]*?min-height:\s*40px;[\s\S]*?grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
   assert.match(layout, /\.result-summary > div\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
   assert.match(layout, /\.road-results-head\s*\{[^}]*min-height:\s*32px/s);
   assert.match(layout, /\.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*\.375rem 0/s);

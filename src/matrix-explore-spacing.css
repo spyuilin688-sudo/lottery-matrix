@@ -1,6 +1,7 @@
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));
+  --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
   --road-validation-inline-padding: 4px;
   --validation-issue-font-family: inherit;
   --validation-issue-font-size: 12px;
@@ -98,7 +99,7 @@
 .matrix-explore-main-screen .panel .section-title {
   min-height: 1.25rem;
   gap: .375rem;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.125rem;
 }
@@ -270,7 +271,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: .375rem;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -342,6 +343,7 @@
   min-width: 0;
   flex: 0 0 auto;
   gap: .25rem;
+  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -432,7 +434,7 @@
   height: 40px;
   min-height: 40px;
   padding: 0;
-  grid-template-columns: minmax(0, .88fr) minmax(0, .82fr) minmax(0, 3.3fr);
+  grid-template-columns: minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr);
   align-items: center;
   gap: 0;
   border-top: 0;
@@ -501,13 +503,13 @@
 }
 
 .matrix-explore-main-screen .history-date-stack strong {
-  --history-year-font-size: clamp(10px, 3vw, 12px);
+  --history-year-font-size: clamp(8px, 2.6vw, 10px);
   font-size: var(--history-year-font-size);
   line-height: 1.05;
 }
 
 .matrix-explore-main-screen .history-date-stack small {
-  --history-date-font-size: clamp(9px, 2.6vw, 10px);
+  --history-date-font-size: clamp(7px, 2.1vw, 8px);
   margin-top: 0;
   font-size: var(--history-date-font-size);
   line-height: 1.05;
@@ -582,17 +584,17 @@
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
-  gap: clamp(2px, .85vw, 3.5px);
+  gap: clamp(4px, 1.5vw, 7px);
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
-  align-items: flex-end;
+  align-items: center;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
   margin-left: 0;
-  align-items: flex-end;
-  gap: clamp(2px, .85vw, 3.5px);
+  align-items: center;
+  gap: clamp(4px, 1.5vw, 7px);
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
