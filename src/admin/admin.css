@@ -31,7 +31,7 @@
 
 .admin-app .admin-navigation-entry,
 .admin-app .admin-logout {
-  min-height: 48px;
+  min-height: var(--button-height);
   border: 1px solid #29486f;
   border-radius: 12px;
   background: #10233d;
@@ -86,7 +86,7 @@
 }
 
 .admin-app .admin-login-submit {
-  min-height: 48px;
+  min-height: var(--button-height);
 }
 
 .admin-app .admin-record-screen {
@@ -127,7 +127,7 @@
 
 .admin-app .admin-record-table button,
 .admin-app .admin-record-actions button {
-  min-height: 40px;
+  min-height: var(--button-height);
   border: 1px solid #29486f;
   border-radius: 8px;
   background: #10233d;
@@ -178,7 +178,7 @@
 }
 
 .admin-app .admin-activation-generate {
-  min-height: 48px;
+  min-height: var(--button-height);
   max-width: 160px;
   border: 1px solid #29486f;
   border-radius: 12px;
