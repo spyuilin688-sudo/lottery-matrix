@@ -380,7 +380,7 @@
   height: auto;
   min-height: 34px;
   padding: .0625rem 0;
-  grid-template-columns: minmax(54px, .9fr) minmax(62px, 1.05fr) minmax(0, 3.25fr);
+  grid-template-columns: 54px 62px minmax(0, 1fr);
   align-items: center;
   gap: 0;
   border-top: 0;
@@ -422,8 +422,9 @@
 }
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
+  color: #fff;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.5625rem, 2.5vw, .625rem);
+  font-size: 12px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -476,11 +477,11 @@
 
 .matrix-explore-main-screen .history-main-numbers {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(.25rem, 1.2vw, .375rem);
+  gap: 8px;
 }
 
 .matrix-explore-main-screen .history-special-number {
@@ -521,15 +522,22 @@
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --matrix-history-ball-size: clamp(18px, 5.4vw, 20px);
+  --matrix-history-ball-size: 24px;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
   min-height: 50px;
 }
 
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
+  gap: 3px;
+}
+
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
+  margin-left: 0;
   align-items: flex-end;
+  gap: 3px;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
@@ -540,6 +548,8 @@
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
   display: grid;
+  width: var(--matrix-history-ball-size);
+  flex: 0 0 var(--matrix-history-ball-size);
   grid-template-rows: .5rem var(--matrix-history-ball-size);
   align-items: center;
   justify-items: center;
