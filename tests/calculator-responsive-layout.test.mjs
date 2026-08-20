@@ -5,6 +5,7 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 
 const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
 const prototype = fs.readFileSync('src/prototype.css', 'utf8');
+const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
 
 function block(css, selector) {
   const start = css.indexOf(`${selector} {`);
@@ -18,7 +19,7 @@ function calculatorStyles() {
   const warn = console.warn;
   console.warn = () => {};
   const dom = new JSDOM(`<!doctype html>
-    <style>${feature}</style>
+    <style>${tokens}\n${feature}</style>
     <main class="calculator-screen">
       <div class="feature-body">
         <nav class="mode-tabs"><button data-selected="true">連碰</button><button>立柱</button></nav>
@@ -28,10 +29,10 @@ function calculatorStyles() {
               <div class="section-title"><span></span>連碰設定</div>
               <span class="calculator-summary">計算總數：<strong>1</strong> 個</span>
             </div>
-            <div class="calculator-actions"><button>選號</button></div>
+            <div class="calculator-actions"><button class="clear-button"><svg></svg>清除</button></div>
           </header>
           <div class="number-grid"><button>01</button></div>
-          <div class="quick-actions"><button>全部設為 2</button></div>
+          <div class="quick-actions"><button>全部設為 2</button><button class="clear-button"><svg></svg>清除</button></div>
           <div class="column-grid"><div><span>第 1 柱</span><button>−</button><strong>1</strong><button>＋</button></div></div>
         </section>
         <section class="calculation-results">
@@ -53,35 +54,44 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(tabs.height, '38px');
   assert.equal(firstTab.height, '36px');
   assert.equal(firstTab.minHeight, '36px');
-  assert.equal(firstTab.fontSize, '9px');
+  assert.equal(firstTab.fontSize, '18px');
   assert.equal(firstTab.borderRightColor, tabs.borderRightColor);
 
   assert.equal(style('.calculator-panel').paddingTop, '8px');
   assert.equal(style('.calculator-panel').paddingRight, '4px');
+  assert.equal(style('.calculator-panel').borderColor, 'rgb(117, 83, 41)');
+  assert.equal(style('.calculator-screen .feature-body').paddingInline, 'var(--layout-page-inline)');
+  assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '12px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
   assert.equal(style('.calculator-summary').fontSize, '12px');
   assert.equal(style('.calculator-summary').fontWeight, '700');
 
   assert.equal(style('.calculator-panel header button').height, '28px');
-  assert.equal(style('.calculator-panel header button').fontSize, '9px');
+  assert.equal(style('.calculator-panel header button').fontSize, '12px');
+  assert.equal(style('.calculator-panel header button svg').width, '8px');
+  assert.equal(style('.calculator-panel header button svg').height, '8px');
   assert.equal(style('.quick-actions button').height, '28px');
-  assert.equal(style('.quick-actions button').fontSize, '8.5px');
+  assert.equal(style('.quick-actions button').fontSize, '12px');
+  assert.equal(style('.quick-actions .clear-button svg').width, '8px');
+  assert.equal(style('.quick-actions .clear-button svg').height, '8px');
 
   assert.equal(style('.calculation-results').paddingTop, '6px');
   assert.equal(style('.calculation-results').paddingRight, '4px');
   assert.equal(style('.calculation-results').paddingBottom, '6px');
   assert.equal(style('.calculation-results').paddingLeft, '4px');
+  assert.equal(style('.calculation-results').borderColor, 'rgb(117, 83, 41)');
   assert.equal(style('.calculation-results article').height, '60px');
   assert.equal(style('.calculation-results article').paddingTop, '6px');
   assert.equal(style('.calculation-results article').paddingBottom, '6px');
-  assert.equal(style('.calculation-results article span').fontSize, '12px');
-  assert.equal(style('.calculation-results article strong').fontSize, '10px');
+  assert.equal(style('.calculation-results article span').fontSize, '16px');
+  assert.equal(style('.calculation-results article strong').fontSize, '14px');
 
   assert.equal(style('.number-grid button').height, '38px');
   assert.equal(style('.number-grid button').width, '38px');
   assert.equal(style('.column-grid button').height, '28px');
   assert.equal(style('.column-grid button').width, '28px');
+  assert.equal(style('.column-grid button').fontSize, '18px');
   dom.window.close();
 });
 
