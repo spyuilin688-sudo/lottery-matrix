@@ -25,6 +25,12 @@ test('lottery switcher and draw card use the 12px homepage inline baseline', () 
   assertBlock(css, '.home-screen .lottery-switcher-hit-grid', /gap:\s*3px;/);
 });
 
+test('home bottom group has no black clearance above bottom navigation', () => {
+  assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*0;/);
+  assertBlock(css, '.home-screen .home-bottom-group', /height:\s*calc\(var\(--home-core-height\) \+ var\(--home-features-height\) \+ var\(--home-gap-core-features\)\);/);
+  assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*calc\(var\(--home-core-height\) \+ var\(--home-features-height\) \+ var\(--home-gap-core-features\)\);/);
+});
+
 test('embedded next draw info retains the requested compact metrics', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0 20px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child', /padding-left:\s*16px;/);
