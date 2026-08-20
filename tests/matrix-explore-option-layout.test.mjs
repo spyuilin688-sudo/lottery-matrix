@@ -27,10 +27,10 @@ test("Matrix Explore setting icons are 32px", () => {
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span \.setting-label-icon,[\s\S]*?\.matrix-explore-main-screen \.matrix-explore-setting-icon\s*\{[^}]*inline-size:\s*2rem;[^}]*block-size:\s*2rem;[^}]*flex:\s*0 0 2rem;/s);
 });
 
-test("Matrix Explore 兩組三列圖示的垂直邊距都是 3px", () => {
+test("Matrix Explore 兩組三列圖示的垂直邊距都是 5px", () => {
   assert.match(
     css,
-    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*3px;/s,
+    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*5px;/s,
   );
   assert.match(
     css,
@@ -38,10 +38,11 @@ test("Matrix Explore 兩組三列圖示的垂直邊距都是 3px", () => {
   );
 });
 
-test("Matrix Explore selects and option buttons are 24px high", () => {
+test("Matrix Explore selects and general option buttons are 24px high, hit options are 28px", () => {
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box select,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box select\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.segmented button,[\s\S]*?\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.segmented button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*28px;[^}]*min-height:\s*28px;/s);
 });
 
 test("Matrix Explore button badges sit above the upper-right border without covering option text", () => {

@@ -1,6 +1,11 @@
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));
+  --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
+  --road-validation-inline-padding: 4px;
+  --validation-issue-font-family: inherit;
+  --validation-issue-font-size: 12px;
+  --validation-issue-font-weight: 800;
   box-sizing: border-box;
   min-width: 0;
   overflow-x: hidden;
@@ -16,7 +21,7 @@
   margin: 0 auto;
   padding: 0 16px 1rem;
   flex-direction: column;
-  gap: .375rem;
+  row-gap: 8px;
   overflow-x: hidden;
 }
 
@@ -36,6 +41,14 @@
 
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel,
+.matrix-explore-main-screen .history-panel,
+.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .result-panel {
+  border: 1px solid #755329;
+}
+
+.matrix-explore-main-screen .explore-settings,
+.matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .repeat-stats-panel,
 .matrix-explore-main-screen .result-panel {
   box-sizing: border-box;
@@ -44,7 +57,6 @@
   min-width: 0;
   height: auto;
   margin: 0;
-  padding: .5rem;
   flex-direction: column;
   gap: 0;
   border-radius: .75rem;
@@ -61,20 +73,33 @@
   flex-direction: column;
   gap: 0;
   border-radius: .75rem;
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .primary-action + .history-panel {
+  margin-top: 4px;
 }
 
 .matrix-explore-main-screen .explore-settings {
-  padding: .375rem;
+  padding: 6px;
 }
 
 .matrix-explore-main-screen .hit-advanced-panel {
-  padding: .375rem;
+  padding: 6px 6px 4px;
+}
+
+.matrix-explore-main-screen .repeat-stats-panel {
+  padding: 6px 6px 12px;
+}
+
+.matrix-explore-main-screen .result-panel {
+  padding: 6px 6px 12px;
 }
 
 .matrix-explore-main-screen .panel .section-title {
   min-height: 1.25rem;
   gap: .375rem;
-  font-size: .875rem;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.125rem;
 }
@@ -94,11 +119,15 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: 3px;
+  row-gap: 5px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
-  margin-top: .375rem;
+  margin-top: 8px;
+}
+
+.matrix-explore-main-screen .advanced-panel {
+  margin-top: 8px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
@@ -198,8 +227,7 @@
   align-items: center;
 }
 
-.matrix-explore-main-screen .segmented button,
-.matrix-explore-main-screen .hit-options button {
+.matrix-explore-main-screen .segmented button {
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -221,9 +249,14 @@
 
 .matrix-explore-main-screen .hit-options {
   width: 100%;
-  margin: .375rem 0 0;
-  padding: 0 0 .25rem;
+  margin: 8px 0 4px;
+  padding: 0 0 4px;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
+
+.matrix-explore-main-screen .hit-options button {
+  height: 28px;
+  min-height: 28px;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -238,7 +271,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: .375rem;
-  font-size: .8125rem;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -300,6 +333,7 @@
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
+  overflow: hidden;
   align-items: center;
   gap: 0;
   white-space: nowrap;
@@ -309,7 +343,7 @@
   min-width: 0;
   flex: 0 0 auto;
   gap: .25rem;
-  font-size: clamp(.625rem, 3vw, .75rem);
+  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -324,7 +358,8 @@
   display: inline;
   min-width: 0;
   margin-left: 0;
-  overflow: visible;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #c6c0b8;
   font-size: clamp(.5rem, 2.4vw, .625rem);
   font-weight: 500;
@@ -340,14 +375,15 @@
   height: auto;
   min-height: 32px;
   margin: 0;
-  padding: .1875rem .375rem;
+  padding: 5px 6px;
   align-items: center;
   justify-content: space-between;
   gap: .25rem;
   border-bottom: 1px solid rgba(195, 145, 54, .58);
 }
 
-.matrix-explore-main-screen .history-panel .panel-heading > button:last-child {
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child,
+.matrix-explore-main-screen .history-panel-actions > button:last-child {
   min-width: 0;
   flex: 0 0 auto;
   gap: .125rem;
@@ -356,13 +392,31 @@
   white-space: nowrap;
 }
 
-.matrix-explore-main-screen .history-panel .panel-heading > button:last-child svg {
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child svg,
+.matrix-explore-main-screen .history-panel-actions > button:last-child svg {
   width: .625rem;
   height: .625rem;
   flex: 0 0 .625rem;
 }
 
+.matrix-explore-main-screen .history-panel-actions {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.matrix-explore-main-screen .history-panel-actions > .history-panel-collapse-button {
+  display: grid;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  place-items: center;
+}
+
 .matrix-explore-main-screen .history-table {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -377,17 +431,18 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: auto;
-  min-height: 34px;
-  padding: .0625rem 0;
-  grid-template-columns: minmax(54px, .9fr) minmax(62px, 1.05fr) minmax(0, 3.25fr);
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  grid-template-columns: minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr);
   align-items: center;
   gap: 0;
   border-top: 0;
-  border-bottom: 1px solid rgba(90, 87, 80, .72);
+  border-bottom: 1px solid rgba(126, 91, 39, .82);
 }
 
 .matrix-explore-main-screen .history-row.history-head {
+  height: 26px;
   min-height: 26px;
   padding: 0;
   color: #d2a52a;
@@ -418,12 +473,12 @@
 
 .matrix-explore-main-screen .history-row > :nth-child(1),
 .matrix-explore-main-screen .history-row > :nth-child(2) {
-  border-right: 1px solid rgba(126, 91, 39, .72);
+  border-right: 1px solid rgba(126, 91, 39, .9);
 }
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.5625rem, 2.5vw, .625rem);
+  color: #fff;
+  font-family: inherit;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -442,18 +497,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  row-gap: 2px;
   overflow: hidden;
   white-space: nowrap;
 }
 
 .matrix-explore-main-screen .history-date-stack strong {
-  font-size: clamp(.625rem, 2.7vw, .6875rem);
+  --history-year-font-size: clamp(8px, 2.6vw, 10px);
+  font-size: var(--history-year-font-size);
   line-height: 1.05;
 }
 
 .matrix-explore-main-screen .history-date-stack small {
+  --history-date-font-size: clamp(7px, 2.1vw, 8px);
   margin-top: 0;
-  font-size: clamp(.5625rem, 2.4vw, .625rem);
+  font-size: var(--history-date-font-size);
   line-height: 1.05;
   white-space: nowrap;
 }
@@ -476,11 +534,11 @@
 
 .matrix-explore-main-screen .history-main-numbers {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(.25rem, 1.2vw, .375rem);
+  gap: clamp(4px, 1.8vw, 8px);
 }
 
 .matrix-explore-main-screen .history-special-number {
@@ -521,15 +579,22 @@
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  --matrix-history-ball-size: clamp(18px, 5.4vw, 20px);
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
 }
 
-.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
-  min-height: 50px;
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
+  gap: clamp(4px, 1.5vw, 7px);
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
+  align-items: center;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
-  align-items: flex-end;
+  margin-left: 0;
+  align-items: center;
+  gap: clamp(4px, 1.5vw, 7px);
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
@@ -540,9 +605,12 @@
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
   display: grid;
-  grid-template-rows: .5rem var(--matrix-history-ball-size);
+  width: var(--matrix-history-ball-size);
+  flex: 0 0 var(--matrix-history-ball-size);
+  grid-template-rows: auto var(--matrix-history-ball-size);
   align-items: center;
   justify-items: center;
+  row-gap: 2px;
 }
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
@@ -554,14 +622,17 @@
   width: 100%;
   min-width: 0;
   min-height: 1.75rem;
-  margin-bottom: .375rem;
+  margin-bottom: 8px;
   align-items: center;
   gap: .375rem;
 }
 
 .matrix-explore-main-screen .repeat-stats-heading > span {
   margin-left: auto;
-  font-size: clamp(.5625rem, 2.5vw, .6875rem);
+  padding-right: 8px;
+  color: #9e9a93;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .matrix-explore-main-screen .result-summary {
@@ -590,8 +661,8 @@
 
 .matrix-explore-main-screen .result-summary b {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.75rem, 3.2vw, .875rem);
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .matrix-explore-main-screen .result-summary small {
@@ -604,38 +675,41 @@
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: .5rem .5rem;
+  padding: 0 8px;
   color: #aaa49a;
-  font-size: .6875rem;
-  font-weight: 400;
+  font-size: clamp(7px, 2vw, 8px);
+  font-weight: 700;
   line-height: 1.55;
   text-align: center;
+  white-space: nowrap;
 }
 
 .matrix-explore-main-screen .result-title {
   display: flex;
   width: 100%;
   min-width: 0;
-  margin-bottom: .375rem;
+  margin-bottom: 8px;
   align-items: center;
   justify-content: space-between;
   gap: .375rem;
+  flex-wrap: nowrap;
 }
 
 .matrix-explore-main-screen .result-title .section-title {
   flex: 0 0 auto;
-  font-size: .9375rem;
 }
 
 .matrix-explore-main-screen .result-title .result-count {
   margin-left: auto;
-  font-size: .6875rem;
+  padding-right: 8px;
+  font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .matrix-explore-main-screen .result-title .result-count .numeric-text {
-  font-size: .875rem;
+  color: #35bff0;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -651,7 +725,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, .82fr) minmax(0, .7fr) minmax(0, .86fr) minmax(0, 1.12fr) minmax(0, .98fr) minmax(0, 1.36fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(0, 1.23fr) minmax(0, 1.46fr) minmax(0, 1.46fr) minmax(0, 1.46fr);
   align-items: center;
   gap: .125rem;
   text-align: center;
@@ -660,6 +734,7 @@
 
 .matrix-explore-main-screen .road-results-head {
   min-height: 32px;
+  border-bottom: 1px solid #755329;
   color: #d2a52a;
   font-size: .6875rem;
 }
@@ -669,7 +744,7 @@
 }
 
 .matrix-explore-main-screen .road-result-row {
-  min-height: 42px;
+  min-height: 46px;
   padding: .375rem 0;
   border-bottom: 1px solid rgba(90, 87, 80, .7);
 }
@@ -714,29 +789,28 @@
   font-size: .625rem;
 }
 
+.matrix-explore-main-screen .road-type-toggle svg {
+  width: .5rem;
+  height: .5rem;
+  flex: 0 0 .5rem;
+}
+
 .matrix-explore-main-screen .consecutive-filter-button,
 .matrix-explore-main-screen .repeat-stats-heading button {
   position: relative;
-  min-height: 26px;
-  height: 26px;
+  min-height: 24px;
+  height: 24px;
   padding: .125rem .5rem;
-  font-size: .6875rem;
-}
-
-.matrix-explore-main-screen .repeat-stats-heading button {
   border: 1px solid rgba(212, 165, 47, .72);
   border-radius: .5rem;
   background: transparent;
   color: #d8a93e;
+  font-size: 11px;
 }
 
 @media (max-width: 359.98px) {
   .matrix-explore-main-screen .result-title {
     gap: .25rem;
-  }
-
-  .matrix-explore-main-screen .result-title .section-title {
-    font-size: .9375rem;
   }
 
   .matrix-explore-main-screen .result-title .result-count {
@@ -745,12 +819,6 @@
 }
 
 @media (min-width: 40rem) {
-  .matrix-explore-main-screen .hit-advanced-panel,
-  .matrix-explore-main-screen .repeat-stats-panel,
-  .matrix-explore-main-screen .result-panel {
-    padding: 1rem;
-  }
-
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
     width: 108px;

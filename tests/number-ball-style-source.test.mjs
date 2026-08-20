@@ -35,7 +35,7 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
   assert.doesNotMatch(homepage, /--draw-special-ball-size\s*:/);
 });
 
-test("六合彩正式使用情境將底線統一向上校正 1.5px", async () => {
+test("六合彩底線依正式使用情境套用對應間距", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
 
   assert.match(
@@ -44,7 +44,7 @@ test("六合彩正式使用情境將底線統一向上校正 1.5px", async () =>
   );
   assert.match(
     formal,
-    /\.history-panel[^{}]*data-lottery="六合彩"[^{}]*\{[^}]*--underline-y:\s*-1\.5px/s,
+    /\.matrix-explore-main-screen \.history-panel:is\([^{}]*data-lottery="六合彩"[^{}]*\)[^{]*\{[^}]*--underline-y:\s*\.5px/s,
   );
   assert.match(
     formal,
@@ -52,19 +52,23 @@ test("六合彩正式使用情境將底線統一向上校正 1.5px", async () =>
   );
 });
 
-test("近10期與歷史開獎六合彩使用既有正式放大規則且不建立第二套文字尺寸", async () => {
+test("近10期與歷史開獎六合彩使用各自正式響應規則", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
 
   const nearTenRule = formal.match(
-    /\.history-panel \.history-numbers\[data-has-special="true"\] \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*\}/s,
+    /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*\}/s,
   )?.[0] ?? "";
-  assert.match(nearTenRule, /--number-ball-size:\s*26px/);
-  assert.match(nearTenRule, /--number-ball-asset-scale:\s*1\.62/);
-  assert.match(nearTenRule, /--underline-height:\s*\.75px/);
-  assert.match(nearTenRule, /--underline-y:\s*-1\.5px/);
-  assert.doesNotMatch(nearTenRule, /--number-font-size\s*:/);
-  assert.doesNotMatch(nearTenRule, /--number-y\s*:/);
-  assert.doesNotMatch(nearTenRule, /--underline-width\s*:/);
+  assert.match(nearTenRule, /--number-ball-size:\s*var\(--matrix-history-ball-size\)/);
+  assert.match(nearTenRule, /--number-font-size:\s*clamp\(9px, 2\.82vw, 11px\)/);
+  assert.match(nearTenRule, /--number-y:\s*0px/);
+  assert.match(nearTenRule, /--underline-width:\s*clamp\(8px, 2\.56vw, 10px\)/);
+  assert.match(nearTenRule, /--underline-height:\s*\.5px/);
+  assert.match(nearTenRule, /--underline-y:\s*\.5px/);
+
+  assert.match(
+    formal,
+    /\.history-panel \.history-numbers\[data-has-special="true"\] \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--number-ball-asset-scale:\s*1\.62/s,
+  );
 
   assert.match(
     formal,

@@ -513,15 +513,28 @@ function HistoryList({
   numberOrder,
   onOpenHistory,
   collapsible = false,
+  collapseControl = "title",
+  expanded: controlledExpanded,
+  onExpandedChange,
 }: {
   lottery: LotteryId;
   numberOrder: string;
   onOpenHistory: () => void;
   collapsible?: boolean;
+  collapseControl?: "title" | "action";
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }) {
   const history = useLotteryHistory(lottery, 10);
   const order = getHistoryOrder(numberOrder);
-  const [expanded, setExpanded] = useState(!collapsible);
+  const [internalExpanded, setInternalExpanded] = useState(!collapsible);
+  const expanded = controlledExpanded ?? internalExpanded;
+  const historyTableId = collapseControl === "action" ? "matrix-explore-history-table" : "tongxing-history-table";
+  const toggleExpanded = () => {
+    const nextExpanded = !expanded;
+    if (controlledExpanded === undefined) setInternalExpanded(nextExpanded);
+    onExpandedChange?.(nextExpanded);
+  };
   const historyHeading = (
     <div className="history-panel-title">
       <SectionTitle>近10期開獎號碼</SectionTitle>
@@ -532,13 +545,13 @@ function HistoryList({
   return (
     <section className="panel history-panel" data-lottery={lottery}>
       <header className="panel-heading">
-        {collapsible ? (
+        {collapsible && collapseControl === "title" ? (
           <button
             type="button"
             className="history-panel-toggle"
             aria-expanded={expanded}
-            aria-controls="tongxing-history-table"
-            onClick={() => setExpanded((current) => !current)}
+            aria-controls={historyTableId}
+            onClick={toggleExpanded}
           >
             {historyHeading}
             <ChevronDownIcon data-open={expanded} aria-hidden="true" />
@@ -546,10 +559,26 @@ function HistoryList({
         ) : (
           historyHeading
         )}
-        <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
+        {collapsible && collapseControl === "action" ? (
+          <div className="history-panel-actions">
+            <button
+              type="button"
+              className="history-panel-collapse-button"
+              aria-label={expanded ? "收合近10期開獎號碼" : "展開近10期開獎號碼"}
+              aria-expanded={expanded}
+              aria-controls={historyTableId}
+              onClick={toggleExpanded}
+            >
+              <ChevronDownIcon data-open={expanded} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
+          </div>
+        ) : (
+          <button type="button" onClick={onOpenHistory}>查看更多紀錄 <ChevronRightIcon /></button>
+        )}
       </header>
       <div
-        id={collapsible ? "tongxing-history-table" : undefined}
+        id={collapsible ? historyTableId : undefined}
         className="history-table"
         hidden={collapsible && !expanded}
       >
@@ -933,6 +962,7 @@ export function MatrixExplorePage({
   const [exploreDate, setExploreDate] = useState("本日 (最新)");
   const [exploreRange, setExploreRange] = useState("標準範圍");
   const [searched, setSearched] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedRoad, setExpandedRoad] = useState<number | null>(null);
   const [sameCode, setSameCode] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -989,6 +1019,16 @@ export function MatrixExplorePage({
     setExpandedRoad(null);
   };
 
+  const changeLottery = (value: LotteryId) => {
+    setLottery(value);
+    if (title === "Matrix 探索") setHistoryExpanded(true);
+  };
+
+  const startExplore = () => {
+    setSearched(true);
+    if (title === "Matrix 探索") setHistoryExpanded(false);
+  };
+
   const toggleFilter = (value: ConsecutiveOption) => {
     setSelectedFilters((current) => (
       current.includes(value)
@@ -1014,7 +1054,7 @@ export function MatrixExplorePage({
               <select
                 aria-label="彩種"
                 value={lottery}
-                onChange={(event) => setLottery(event.target.value as LotteryId)}
+                onChange={(event) => changeLottery(event.target.value as LotteryId)}
               >
                 {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
               </select>
@@ -1113,7 +1153,7 @@ export function MatrixExplorePage({
         ) : null}
       </section>
 
-      <button type="button" className="primary-action branded-explore-action" onClick={() => setSearched(true)}>
+      <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
         <MagnifyingGlassIcon /><span>開始探索</span>
       </button>
 
@@ -1121,6 +1161,10 @@ export function MatrixExplorePage({
         lottery={lottery}
         numberOrder={numberOrder}
         onOpenHistory={() => onNavigate("history")}
+        collapsible={title === "Matrix 探索"}
+        collapseControl="action"
+        expanded={title === "Matrix 探索" ? historyExpanded : undefined}
+        onExpandedChange={title === "Matrix 探索" ? setHistoryExpanded : undefined}
       />
 
       {searched ? (
