@@ -20,19 +20,47 @@ test('calculator uses one fluid width source at 390px, 375px and 360px', () => {
   assert.doesNotMatch(block(feature, '.calculator-screen > .feature-body'), /overflow-x:\s*hidden/);
 });
 
+test('calculator owns a viewport-height shell with independently scrolling content', () => {
+  const screen = block(feature, '.calculator-screen');
+  assert.match(screen, /display:\s*flex/);
+  assert.match(screen, /height:\s*100vh/);
+  assert.match(screen, /flex-direction:\s*column/);
+
+  const body = block(feature, '.calculator-screen > .feature-body');
+  assert.match(body, /flex:\s*1 1 auto/);
+  assert.match(body, /min-height:\s*0/);
+  assert.match(body, /overflow-y:\s*auto/);
+  assert.match(body, /padding-bottom:\s*80px/);
+});
+
+test('calculator settings header separates copy and actions without overlap', () => {
+  const header = block(feature, '.calculator-panel > header');
+  assert.match(header, /display:\s*flex/);
+  assert.match(header, /justify-content:\s*space-between/);
+  assert.match(header, /align-items:\s*center/);
+});
+
 test('49-number layout keeps seven columns without horizontal overflow', () => {
   const grid = block(feature, '.number-grid');
-  assert.match(grid, /grid-template-columns:\s*repeat\(7, minmax\(0, 42px\)\)/);
-  assert.match(grid, /justify-content:\s*space-between/);
+  assert.match(grid, /grid-template-columns:\s*repeat\(7, minmax\(0, 1fr\)\)/);
+  assert.match(grid, /gap:\s*6px/);
+
+  const button = block(feature, '.number-grid button');
+  assert.match(button, /width:\s*38px/);
+  assert.match(button, /height:\s*38px/);
 });
 
 test('12-column controls and four result cards shrink inside the available width', () => {
-  assert.match(block(feature, '.column-grid > div'), /grid-template-columns:\s*minmax\(0, 1fr\)/);
+  const row = block(feature, '.column-grid > div');
+  assert.match(row, /height:\s*44px/);
+  assert.match(row, /padding:\s*4px 8px/);
+  assert.match(row, /grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(block(feature, '.calculation-results > div'), /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(block(feature, '.calculation-results > div'), /gap:\s*8px/);
   const cards = block(feature, '.calculation-results article');
   assert.match(cards, /width:\s*100%/);
   assert.match(cards, /min-width:\s*0/);
-  assert.match(cards, /height:\s*92px/);
+  assert.match(cards, /height:\s*80px/);
 });
 
 test('calculator result-card height is not cancelled by a later global rule', () => {
