@@ -588,48 +588,27 @@ display: grid; box-sizing: border-box; width: 100%; height: 46px; grid-template-
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 0; }
 .history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }
 
-.draw-history-screen .draw-history-row .history-numbers,
-.draw-history-screen .draw-history-row .history-main-numbers,
-.draw-history-screen .draw-history-row .history-special-number {
-  gap: 0;
-}
-
-.draw-history-screen .draw-history-row .history-main-numbers { gap: 7px; }
-
-.draw-history-screen .draw-history-row .history-numbers:not([data-has-special="true"]) {
-  justify-content: center;
-}
-
-.draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers {
-  gap: 3px;
-}
-.draw-history-screen .draw-history-week-list[data-lottery="六合彩"] .draw-history-row .history-main-numbers { gap: 5px; }
-
-.draw-history-screen .draw-history-row .history-special-number {
-  margin-left: 3px;
-  gap: 3px;
-}
-
-.draw-history-screen .matrix-title-banner { margin-bottom: 8px; }
+.draw-history-screen .matrix-title-banner { width: calc(100% - 24px); margin-bottom: 8px; }
 .draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0 4px; overflow: visible; }
-.draw-history-row { display: grid; min-height: 50px; grid-template-columns: 56px 60px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(111, 82, 39, .42); color: #bcb7ae; font-size: 11px; text-align: center; }
+.draw-history-row { display: grid; height: 54px; grid-template-columns: 62px 72px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(111, 82, 39, .42); color: #bcb7ae; font-size: 11px; text-align: center; }
 .draw-history-row:first-child { border-top: 0; }
 .draw-history-row > span { display: grid; min-width: 0; height: 100%; padding: 0; place-items: center; box-sizing: border-box; }
 .draw-history-row > span + span { border-left: 1px solid rgba(126, 91, 39, .24); }
 .draw-history-row > .history-numbers { display: flex; }
-.draw-history-head { min-height: 28px; border-bottom: 1px solid rgba(195, 145, 54, .64); color: #d9ad42; font-size: 13px; font-weight: 700; }
-.draw-history-row .draw-history-meta:first-child { width: 100%; padding-inline: 0; text-align: center; font-variant-numeric: tabular-nums; }
-.draw-history-row .history-numbers { padding: 0 2px; }
-.draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] { align-items: center; }
-.draw-history-screen .draw-history-row .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 10px; }
-.draw-history-screen .history-special-number { height: 36px; align-items: flex-end; }
+.draw-history-head { height: 32px; border-bottom: 2px solid rgba(195, 145, 54, .64); color: #d9ad42; font-size: 13px; font-weight: 700; }
+.draw-history-head + .draw-history-row { border-top: 0; }
+.draw-history-row .draw-history-meta:first-child { width: 100%; padding-inline: 0; font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+.draw-history-screen .history-date-stack strong { font-size: 14px; }
+.draw-history-screen .history-date-stack small { font-size: 13px; }
+.draw-history-screen .draw-history-row .history-numbers { padding: 0; align-items: center; justify-content: space-evenly; }
+.draw-history-screen .draw-history-row .history-main-numbers,
+.draw-history-screen .draw-history-row .history-special-number { display: contents; }
 .draw-history-screen .history-special-ball { height: 36px; grid-template-rows: 10px 26px; }
 .draw-history-screen .history-special-label { margin: 0; line-height: 8px; }
-.draw-history-screen .draw-history-week-list[data-lottery="六合彩"] .history-special-label { transform: translateY(-3px); }
 .draw-history-screen .history-special-plus { display: grid; height: 26px; place-items: center; font-size: 13px; font-weight: 900; }
 .history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
 .history-pagination button { display: grid; width: 38px; height: 36px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
@@ -1955,18 +1934,6 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 }
 .filter-options label {
   min-width: 0;
-}
-.draw-history-screen .draw-history-head {
-  min-height: 28px;
-  font-size: 13px;
-  font-weight: 700;
-}
-.draw-history-screen .draw-history-row .draw-history-meta:first-child {
-  font-size: 10.5px;
-}
-.draw-history-screen .draw-history-row .draw-history-meta:nth-child(2) {
-  font-size: 9.5px;
-  white-space: nowrap;
 }
 .road-validation-process { display: grid; gap: 7px; margin-inline: 0; padding: 10px 12px; border-top: 1px solid rgba(102, 169, 255, .18); background: rgba(3, 9, 20, .72); overflow-x: clip; }
 .validation-summary-card { position: relative; display: grid; min-width: 0; min-height: 40px; padding: 8px 78px 8px 8px; border: 1px solid rgba(223, 176, 68, .42); border-radius: 9px; background: rgba(10, 14, 24, .92); align-items: center; }

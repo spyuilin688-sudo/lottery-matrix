@@ -165,18 +165,18 @@
   --underline-height: 1px;
 }
 
-.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="今彩539"] {
-  --number-ball-size: 32px;
+.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
+  --number-ball-size: 34px;
   --number-font-size: 14px;
   --number-y: 0px;
+}
+
+.draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="今彩539"] {
   --underline-width: 14px;
   --underline-y: -.5px;
 }
 
 .draw-history-screen .draw-history-row .number-ball-component.history-lottery-ball[data-lottery="天天樂"] {
-  --number-ball-size: 32px;
-  --number-font-size: 12px;
-  --number-y: 0px;
   --underline-y: .25px;
 }
 

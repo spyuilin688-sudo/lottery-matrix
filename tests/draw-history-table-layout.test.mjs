@@ -6,24 +6,33 @@ const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 
 test("歷史開獎三欄使用單一正式比例並將前兩欄內容幾何置中", () => {
-  assert.match(css, /\.draw-history-row\s*\{[^}]*grid-template-columns:\s*56px 60px minmax\(0, 1fr\)/s);
+  assert.match(css, /\.draw-history-row\s*\{[^}]*grid-template-columns:\s*62px 72px minmax\(0, 1fr\)/s);
   assert.match(css, /\.draw-history-row\s*>\s*span\s*\{[^}]*display:\s*grid/s);
   assert.match(css, /\.draw-history-row\s*>\s*span\s*\{[^}]*padding:\s*0/s);
   assert.match(css, /\.draw-history-row\s*>\s*span\s*\{[^}]*place-items:\s*center/s);
   assert.match(css, /\.draw-history-row \.draw-history-meta:first-child\s*\{[^}]*width:\s*100%[^}]*text-align:\s*center/s);
 });
 
-test("歷史開獎表格降低分隔線亮度並分開五球與六加一排列", () => {
+test("歷史開獎表格使用一像素資料分隔線並平均分配彩球", () => {
   assert.match(css, /border-top:\s*1px solid rgba\(111, 82, 39, \.42\)/);
   assert.match(css, /border-left:\s*1px solid rgba\(126, 91, 39, \.24\)/);
-  assert.match(css, /\.draw-history-row \.history-numbers:not\(\[data-has-special="true"\]\)[^}]*justify-content:\s*center/s);
-  assert.match(css, /\.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers[^}]*gap:\s*3px/s);
+  assert.match(css, /\.draw-history-screen \.draw-history-row \.history-numbers\s*\{[^}]*justify-content:\s*space-evenly/s);
+  assert.match(css, /\.draw-history-screen \.draw-history-row \.history-main-numbers,[\s\S]*?\.draw-history-screen \.draw-history-row \.history-special-number\s*\{[^}]*display:\s*contents/s);
+  assert.doesNotMatch(css, /\.draw-history-screen \.draw-history-row \.history-main-numbers\s*\{[^}]*gap:/s);
 });
 
-test("歷史開獎標題列與資料列採緊湊高度並加強標題區隔", () => {
-  assert.match(css, /\.draw-history-head\s*\{[^}]*min-height:\s*28px[^}]*border-bottom:\s*1px solid rgba\(195, 145, 54, \.64\)/s);
-  assert.match(css, /\.draw-history-row\s*\{[^}]*min-height:\s*50px/s);
+test("歷史開獎標題列與資料列採指定高度及分隔線", () => {
+  assert.match(css, /\.draw-history-head\s*\{[^}]*height:\s*32px[^}]*border-bottom:\s*2px solid rgba\(195, 145, 54, \.64\)/s);
+  assert.match(css, /\.draw-history-row\s*\{[^}]*height:\s*54px/s);
+  assert.match(css, /\.draw-history-head \+ \.draw-history-row\s*\{[^}]*border-top:\s*0/s);
   assert.match(css, /\.draw-history-week-list\s*\{[^}]*gap:\s*8px/s);
+});
+
+test("歷史開獎頁使用12px左右間距、8px標題間距與指定文字尺寸", () => {
+  assert.match(css, /\.draw-history-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin-bottom:\s*8px/s);
+  assert.match(css, /\.draw-history-row \.draw-history-meta:first-child\s*\{[^}]*font-size:\s*14px/s);
+  assert.match(css, /\.draw-history-screen \.history-date-stack strong\s*\{[^}]*font-size:\s*14px/s);
+  assert.match(css, /\.draw-history-screen \.history-date-stack small\s*\{[^}]*font-size:\s*13px/s);
 });
 
 test("彩種下拉移入篩選條件第一項並保留標題列篩選按鈕", () => {
@@ -50,20 +59,17 @@ test("歷史頁六合彩數字回到彩球中心", () => {
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="六合彩"\]\s*\{[^}]*--underline-y:\s*-1\.5px/s);
 });
 
-test("歷史頁今彩539數字比例依示意圖放大", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball\[data-lottery="今彩539"\]\s*\{[^}]*--number-font-size:\s*14px[^}]*--underline-width:\s*14px[^}]*--underline-y:\s*-\.5px/s);
+test("歷史頁今彩539與天天樂使用34px彩球及14px數字", () => {
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)\s*\{[^}]*--number-ball-size:\s*34px[^}]*--number-font-size:\s*14px/s);
 });
 
 test("歷史頁六合彩與大樂透共用尺寸與數字位置規則", () => {
   assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)/);
 });
 
-test("六加一特別號標籤上移並保持彩球中心一致", () => {
-  assert.match(css, /\.draw-history-screen \.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*padding-top:\s*10px/s);
-  assert.match(css, /\.draw-history-screen \.history-special-number\s*\{[^}]*height:\s*36px/s);
+test("六加一維持單列較小彩球且不使用補償位移", () => {
+  assert.doesNotMatch(css, /\.draw-history-screen \.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*padding-top:/s);
+  assert.doesNotMatch(css, /\.draw-history-screen \.draw-history-week-list\[data-lottery="六合彩"\] \.history-special-label\s*\{[^}]*transform:/s);
   assert.match(css, /\.draw-history-screen \.history-special-ball\s*\{[^}]*height:\s*36px[^}]*grid-template-rows:\s*10px 26px/s);
-});
-
-test("六加一正碼增加球距", () => {
-  assert.match(css, /\.draw-history-screen \.draw-history-row \.history-numbers\[data-has-special="true"\] \.history-main-numbers\s*\{[^}]*gap:\s*3px/s);
+  assert.match(ballCss, /\.draw-history-screen \.draw-history-row \.number-ball-component\.history-lottery-ball:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--number-ball-size:\s*26px/s);
 });
