@@ -514,6 +514,7 @@ function HistoryList({
   onOpenHistory,
   collapsible = false,
   collapseControl = "title",
+  showOrderText = true,
   expanded: controlledExpanded,
   onExpandedChange,
 }: {
@@ -522,6 +523,7 @@ function HistoryList({
   onOpenHistory: () => void;
   collapsible?: boolean;
   collapseControl?: "title" | "action";
+  showOrderText?: boolean;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
 }) {
@@ -529,7 +531,7 @@ function HistoryList({
   const order = getHistoryOrder(numberOrder);
   const [internalExpanded, setInternalExpanded] = useState(!collapsible);
   const expanded = controlledExpanded ?? internalExpanded;
-  const historyTableId = collapseControl === "action" ? "matrix-explore-history-table" : "tongxing-history-table";
+  const historyTableId = showOrderText ? "tongxing-history-table" : "matrix-explore-history-table";
   const toggleExpanded = () => {
     const nextExpanded = !expanded;
     if (controlledExpanded === undefined) setInternalExpanded(nextExpanded);
@@ -538,8 +540,14 @@ function HistoryList({
   const historyHeading = (
     <div className="history-panel-title">
       <SectionTitle>近10期開獎號碼</SectionTitle>
-      <span className="history-panel-order">（{numberOrder}）</span>
+      {showOrderText ? <span className="history-panel-order">（{numberOrder}）</span> : null}
     </div>
+  );
+  const historyToggleHeading = (
+    <span className="history-panel-title">
+      <span className="section-title"><span aria-hidden="true" />近10期開獎號碼</span>
+      {showOrderText ? <span className="history-panel-order">（{numberOrder}）</span> : null}
+    </span>
   );
 
   return (
@@ -549,11 +557,12 @@ function HistoryList({
           <button
             type="button"
             className="history-panel-toggle"
+            aria-label={expanded ? "收合近10期開獎號碼" : "展開近10期開獎號碼"}
             aria-expanded={expanded}
             aria-controls={historyTableId}
             onClick={toggleExpanded}
           >
-            {historyHeading}
+            {historyToggleHeading}
             <ChevronDownIcon data-open={expanded} aria-hidden="true" />
           </button>
         ) : (
@@ -867,19 +876,26 @@ function RoadValidationProcess({
   predictionPeriod,
   consecutive,
   prediction,
+  roadType,
 }: {
   number: string;
   position: number;
   predictionPeriod: number;
   consecutive: string;
   prediction: string;
+  roadType?: string;
 }) {
   const sourceGroups = [ROAD_VALIDATION_SAMPLE_HISTORY.slice(0, 3), ROAD_VALIDATION_SAMPLE_HISTORY.slice(3, 6)];
   const validationGroups = Array.from({ length: 8 }, (_, index) => sourceGroups[index % sourceGroups.length]);
   return (
     <section className="road-validation-process" aria-label="驗證過程">
       <header className="validation-summary-card">
-        <span>開 {number} 第 {position} 顆｜上 2 期｜第 3 顆｜+14.24｜下 {predictionPeriod} 期開</span>
+        <span>
+          開 <i className="validation-summary-primary">{number}</i>
+          第 <i className="validation-summary-position">{position}</i> 顆｜上 <i className="validation-summary-lookback">2</i> 期｜
+          第 <i className="validation-summary-position">3</i> 顆｜<i className="validation-summary-formula">{roadType === "合值版路" ? "合值14.24" : "+14.24"}</i>｜
+          下 <i className="validation-summary-future">{predictionPeriod}</i> 期開
+        </span>
         <em>{consecutive}</em>
       </header>
       {validationGroups.map((group, groupIndex) => (
@@ -1162,7 +1178,8 @@ export function MatrixExplorePage({
         numberOrder={numberOrder}
         onOpenHistory={() => onNavigate("history")}
         collapsible={title === "Matrix 探索"}
-        collapseControl="action"
+        collapseControl="title"
+        showOrderText={title !== "Matrix 探索"}
         expanded={title === "Matrix 探索" ? historyExpanded : undefined}
         onExpandedChange={title === "Matrix 探索" ? setHistoryExpanded : undefined}
       />
@@ -1233,7 +1250,7 @@ export function MatrixExplorePage({
                     </button>
                   </div>
                   {expandedRoad === item.id ? (
-                    <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} />
+                    <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} roadType={road} />
                   ) : null}
                 </article>
               ))}

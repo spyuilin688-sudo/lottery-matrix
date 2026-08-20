@@ -89,7 +89,8 @@
 }
 
 .matrix-explore-main-screen .repeat-stats-panel {
-  padding: 6px 6px 12px;
+  margin-top: 4px;
+  padding: 6px;
 }
 
 .matrix-explore-main-screen .result-panel {
@@ -450,6 +451,16 @@
   font-weight: 700;
 }
 
+.matrix-explore-main-screen .history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row:not(.history-head) {
+  height: 32px;
+  min-height: 32px;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
+  height: 36px;
+  min-height: 36px;
+}
+
 .matrix-explore-main-screen .history-row.history-head > span {
   font-size: inherit;
   font-weight: inherit;
@@ -567,9 +578,10 @@
 }
 
 .matrix-explore-main-screen .history-special-label {
+  --history-special-label-size: clamp(5px, 1.67vw, 6.5px);
   display: none;
   margin: 0;
-  font-size: clamp(.40625rem, 1.8vw, .5rem);
+  font-size: var(--history-special-label-size);
   line-height: 1;
   white-space: nowrap;
 }
@@ -578,7 +590,11 @@
   padding-top: 0;
 }
 
-.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] {
+  --matrix-history-ball-size: clamp(18px, 5.64vw, 22px);
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] {
   --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
 }
 
@@ -615,6 +631,20 @@
 
 .matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
   display: block;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-ball {
+  position: relative;
+  height: 36px;
+  grid-template-rows: 1fr;
+  row-gap: 0;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-label {
+  position: absolute;
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .matrix-explore-main-screen .repeat-stats-heading {
@@ -660,8 +690,8 @@
 }
 
 .matrix-explore-main-screen .result-summary b {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 15px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -785,7 +815,11 @@
 }
 
 .matrix-explore-main-screen .road-type-toggle {
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
+  padding-right: 3px;
+  justify-content: flex-end;
   font-size: .625rem;
 }
 

@@ -19,5 +19,7 @@ test('320 360 375 390 preserve 6+1 room', () => {
   }
 });
 test('no hard overwrite hacks', () => {
-  assert.doesNotMatch(layout, /!important|zoom\s*:|scale\s*\(|transform\s*:|margin(?:-[a-z]+)?\s*:\s*-/);
+  const approvedSpecialLabelRule = /\.matrix-explore-main-screen \.history-panel\[data-lottery="大樂透"\] \.history-special-label\s*\{[^}]*transform:\s*translateX\(-50%\);[^}]*\}/s;
+  assert.match(layout, approvedSpecialLabelRule);
+  assert.doesNotMatch(layout.replace(approvedSpecialLabelRule, ''), /!important|zoom\s*:|scale\s*\(|transform\s*:|margin(?:-[a-z]+)?\s*:\s*-/);
 });

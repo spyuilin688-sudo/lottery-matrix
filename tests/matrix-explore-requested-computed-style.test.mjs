@@ -42,7 +42,14 @@ function exploreFixture() {
             <span class="result-count">探索到 <span class="numeric-text">123</span> 組符合條件版路</span>
           </header>
           <div class="road-results-head"><span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>版路類型</span></div>
-          <section class="road-validation-process"><span class="validation-issue">026090</span></section>
+          <div class="road-result-row"><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div>
+          <section class="road-validation-process">
+            <header class="validation-summary-card">
+              <span>開 <i class="validation-summary-primary">25</i> 第 <i class="validation-summary-position">4</i> 顆｜上 <i class="validation-summary-lookback">2</i> 期｜第 <i class="validation-summary-position">3</i> 顆｜<i class="validation-summary-formula">+14.24</i>｜下 <i class="validation-summary-future">2</i> 期開</span>
+              <em>準4進5</em>
+            </header>
+            <span class="validation-issue">026090</span>
+          </section>
         </section>
       </div>
     </main>
@@ -59,11 +66,11 @@ test("探索與進階設定的三列圖示使用 5px 垂直間距", () => {
   assert.equal(style(".advanced-panel").rowGap, "5px");
 });
 
-test("一般區塊使用 8px 間距，開始探索與近10期合計 12px", () => {
+test("開始探索、近10期與重複號碼統計的相鄰間距皆為 12px", () => {
   const { style } = exploreFixture();
   assert.equal(style(".feature-body").rowGap, "8px");
   assert.equal(style(".history-panel").marginTop, "4px");
-  assert.equal(style(".repeat-stats-panel").marginTop, "0px");
+  assert.equal(style(".repeat-stats-panel").marginTop, "4px");
 });
 
 test("探索區標題為 14px，近10期標題為 12px", () => {
@@ -85,6 +92,7 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   assert.equal(style(".hit-advanced-panel").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingBottom, "4px");
   assert.equal(style(".repeat-stats-panel").paddingTop, "6px");
+  assert.equal(style(".repeat-stats-panel").paddingBottom, "6px");
   assert.equal(style(".result-panel").paddingTop, "6px");
   assert.equal(style(".repeat-stats-panel").paddingLeft, "6px");
   assert.equal(style(".repeat-stats-panel").paddingRight, "6px");
@@ -113,7 +121,8 @@ test("重複統計卡片與控制項使用指定比例", () => {
   assert.equal(style(".repeat-stats-heading > span").fontWeight, "700");
   assert.equal(style(".repeat-stats-heading > span").paddingRight, "8px");
   assert.equal(style(".repeat-stats-heading > span").color, "rgb(158, 154, 147)");
-  assert.equal(style(".result-summary b").fontSize, "15px");
+  assert.equal(style(".result-summary b").fontSize, "14px");
+  assert.doesNotMatch(style(".result-summary b").fontFamily, /monospace/i);
   assert.equal(style(".result-summary b").fontWeight, "800");
 });
 
@@ -146,4 +155,31 @@ test("展開驗證內容使用 4px 左右內距，左側期數為預設字型 12
   assert.match(exploreCss, /--validation-issue-font-weight:\s*800;/);
   assert.match(featureCss, /\.road-validation-process\s*\{[^}]*padding:\s*10px var\(--road-validation-inline-padding, 12px\);/s);
   assert.match(featureCss, /\.validation-issue\s*\{[^}]*font-family:\s*var\(--validation-issue-font-family, inherit\);[^}]*font-size:\s*var\(--validation-issue-font-size, 14px\);[^}]*font-weight:\s*var\(--validation-issue-font-weight, 400\);/s);
+});
+
+test("版路按鈕與概要卡使用指定右距、內距、標籤位置及數字配色", () => {
+  const { style } = exploreFixture();
+  const toggle = style(".road-type-toggle");
+  const card = style(".validation-summary-card");
+  const label = style(".validation-summary-card em");
+
+  assert.equal(toggle.paddingRight, "3px");
+  assert.equal(toggle.justifyContent, "flex-end");
+  assert.equal(card.paddingTop, "4px");
+  assert.equal(card.paddingRight, "4px");
+  assert.equal(card.paddingBottom, "4px");
+  assert.equal(card.paddingLeft, "4px");
+  assert.equal(style(".validation-summary-card > span").fontSize, "10px");
+  assert.equal(label.top, "0px");
+  assert.equal(label.right, "4px");
+  assert.equal(label.transform, "translateY(-50%)");
+  assert.equal(label.borderTopWidth, "1px");
+  assert.equal(style(".validation-summary-primary").color, "rgb(239, 83, 80)");
+  assert.equal(style(".validation-summary-position").color, "rgb(53, 191, 240)");
+  assert.equal(style(".validation-summary-lookback").color, "rgb(167, 139, 250)");
+  assert.equal(style(".validation-summary-future").color, "rgb(126, 226, 168)");
+  assert.equal(style(".validation-summary-formula").color, "rgb(246, 201, 95)");
+  assert.equal(style(".validation-summary-card > span i").fontWeight, "800");
+  assert.match(featureCss, /\.validation-summary-card > span i\s*\{[^}]*font-weight:\s*inherit;/s);
+  assert.match(featureCss, /\.matrix-explore-main-screen \.validation-summary-card > span i\s*\{[^}]*font-weight:\s*800;/s);
 });
