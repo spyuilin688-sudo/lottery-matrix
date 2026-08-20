@@ -156,6 +156,12 @@
   --underline-width: clamp(9px, 2.6vw, 10px);
 }
 
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .number-ball-component.history-lottery-ball {
+  --number-ball-size: var(--matrix-history-ball-size);
+  --number-font-size: clamp(9px, 2.5vw, 10px);
+  --underline-width: clamp(8px, 2.3vw, 9px);
+}
+
 .history-panel .history-numbers[data-has-special="true"] .number-ball-component.history-lottery-ball[data-lottery="六合彩"] {
   --number-ball-asset-scale: 1.62;
 }

@@ -50,6 +50,7 @@
   --lottery-group-padding: 12px;
   --lottery-card-gap: 4px;
   --lottery-card-internal: 6px;
+  --layout-safe-area-top: env(safe-area-inset-top, 0px);
   --layout-page-inline: 12px;
   --layout-section-gap: 8px;
   --primary-brand-top: 0px;

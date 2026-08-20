@@ -14,9 +14,9 @@ test("Matrix Pro 與推薦標籤共用上移後的位置規則", () => {
   );
 });
 
-test("Matrix Explore 近10期只縮小資料列的期數數字", () => {
+test("Matrix Explore 近10期資料列的期數數字放大並加粗", () => {
   assert.match(
     css,
-    /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*font-size:\s*clamp\(\.5rem, 2\.2vw, \.5625rem\);/s,
+    /\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{[^}]*font-size:\s*clamp\(\.5625rem, 2\.5vw, \.625rem\);[^}]*font-weight:\s*800;/s,
   );
 });

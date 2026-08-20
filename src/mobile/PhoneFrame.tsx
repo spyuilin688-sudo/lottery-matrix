@@ -110,6 +110,7 @@ export function PhoneFrame({ children }: PropsWithChildren) {
               {...mobileCursor.cursorHandlers}
               style={
                 {
+                  "--layout-safe-area-top": `${geometry.safeArea.top}px`,
                   "--device-safe-area-bottom": `${geometry.safeArea.bottom}px`,
                   left: geometry.screen.x,
                   top: geometry.screen.y,

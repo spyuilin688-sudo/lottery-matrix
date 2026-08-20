@@ -94,7 +94,7 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: .375rem;
+  row-gap: 3px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
@@ -123,7 +123,7 @@
   font-size: .8125rem;
   font-weight: 700;
   line-height: 1.125rem;
-  padding-bottom: 4px;
+  padding-bottom: 0;
   text-align: left;
   white-space: nowrap;
 }
@@ -395,6 +395,11 @@
   font-weight: 700;
 }
 
+.matrix-explore-main-screen .history-row.history-head > span {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
 .matrix-explore-main-screen .history-row > :nth-child(1),
 .matrix-explore-main-screen .history-row > :nth-child(2),
 .matrix-explore-main-screen .history-row > :nth-child(3) {
@@ -413,19 +418,19 @@
 
 .matrix-explore-main-screen .history-row > :nth-child(1),
 .matrix-explore-main-screen .history-row > :nth-child(2) {
-  border-right: 1px solid rgba(90, 87, 80, .55);
+  border-right: 1px solid rgba(126, 91, 39, .72);
 }
 
 .matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: clamp(.5rem, 2.2vw, .5625rem);
-  font-weight: 700;
+  font-size: clamp(.5625rem, 2.5vw, .625rem);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   white-space: nowrap;
 }
 
-.matrix-explore-main-screen .history-row > :nth-child(2) {
+.matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(2) {
   overflow: hidden;
   font-size: clamp(.5625rem, 2.5vw, .6875rem);
 }
@@ -513,6 +518,35 @@
 
 .matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
   padding-top: 0;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+  --matrix-history-ball-size: clamp(18px, 5.4vw, 20px);
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
+  min-height: 50px;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
+  align-items: flex-end;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
+  display: grid;
+  height: var(--matrix-history-ball-size);
+  place-items: center;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
+  display: grid;
+  grid-template-rows: .5rem var(--matrix-history-ball-size);
+  align-items: center;
+  justify-items: center;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
+  display: block;
 }
 
 .matrix-explore-main-screen .repeat-stats-heading {

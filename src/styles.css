@@ -464,6 +464,10 @@ button {
   background: #ffffff;
 }
 
+.app-screen > .mobile-scroll {
+  top: var(--layout-safe-area-top);
+}
+
 .mobile-scrollbar {
   position: absolute;
   z-index: 9;
