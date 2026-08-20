@@ -9,7 +9,7 @@ test("首頁使用專用 Logo 視窗裁切並維持原本流式尺寸來源", ()
   assert.match(css, /\.home-screen \.brand-header\s*\{[^}]*background:\s*url\("\/assets\/lottery\/functions\/HomeLogo\.svg"\) center \/ 75% auto no-repeat;/s);
   assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*75%;[^}]*visibility:\s*hidden;/s);
   assert.match(logoSvg, /viewBox="0 8 480 160"/);
-  assert.match(logoSvg, /href="NewLogo\.png"/);
+  assert.match(logoSvg, /href="\/assets\/lottery\/functions\/NewLogo\.png"/);
 });
 
 test("首頁 Logo 不使用硬拉位移", () => {
