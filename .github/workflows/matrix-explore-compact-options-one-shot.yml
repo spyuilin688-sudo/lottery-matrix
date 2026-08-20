@@ -1,0 +1,86 @@
+name: Matrix Explore compact options one-shot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/matrix-explore-compact-options-one-shot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: RED - new layout contract must fail before implementation
+        shell: bash
+        run: |
+          set +e
+          node --test tests/matrix-explore-option-layout.test.mjs > /tmp/red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/red.log
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected compact-option contract to fail before implementation.'
+            exit 1
+          fi
+          echo 'RED confirmed.'
+
+      - name: Update canonical Matrix Explore layout source
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('src/matrix-explore-spacing.css')
+          text = path.read_text()
+          replacements = [
+            ('''  inline-size: 1.75rem;\n  block-size: 1.75rem;\n  flex: 0 0 1.75rem;''', '''  inline-size: 2rem;\n  block-size: 2rem;\n  flex: 0 0 2rem;''', 1),
+            ('''  height: 28px;\n  min-height: 28px;\n  padding: 0;\n  font-size: .75rem;''', '''  height: 24px;\n  min-height: 24px;\n  padding: 0;\n  font-size: .75rem;''', 1),
+            ('''  height: 28px;\n  min-height: 28px;\n  padding-block: 0;''', '''  height: 24px;\n  min-height: 24px;\n  padding-block: 0;''', 1),
+            ('''  height: 28px;\n  min-height: 28px;\n  padding: .125rem .25rem;''', '''  height: 24px;\n  min-height: 24px;\n  padding: .125rem .25rem;''', 1),
+            ('''  top: -.625rem;\n  right: .125rem;\n  height: auto;\n  min-height: 0;\n  padding: .0625rem .1875rem;''', '''  top: -.3125rem;\n  right: .125rem;\n  height: auto;\n  min-height: 0;\n  padding: .0625rem .125rem;''', 1),
+            ('''  font-size: .5rem;\n  line-height: 1;''', '''  font-size: .4375rem;\n  line-height: 1;''', 1),
+          ]
+          for old, new, expected in replacements:
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'Expected {expected} match, found {count}: {old!r}')
+              text = text.replace(old, new, expected)
+          path.write_text(text)
+          PY
+
+      - name: GREEN - targeted layout tests
+        run: node --test tests/matrix-explore-option-layout.test.mjs tests/matrix-explore-fluid-layout.test.mjs tests/recent-history-layout.test.mjs
+
+      - name: Full tests
+        run: node --test tests/*.test.mjs
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified change and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/matrix-explore-compact-options-one-shot.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- src/matrix-explore-spacing.css tests/matrix-explore-option-layout.test.mjs .github/workflows/matrix-explore-compact-options-one-shot.yml
+          git commit -m 'fix: compact Matrix Explore options'
+          git push origin HEAD:main
