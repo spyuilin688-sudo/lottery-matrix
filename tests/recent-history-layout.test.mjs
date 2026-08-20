@@ -15,15 +15,19 @@ test("Matrix Explore 近10期標題列單列顯示排序文字並取消舊固定
 });
 
 test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", () => {
-  assert.match(exploreCss, /grid-template-columns:\s*minmax\(54px, \.9fr\) minmax\(62px, 1\.05fr\) minmax\(0, 3\.25fr\);/);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?min-height:\s*34px;[\s\S]*?padding:\s*\.0625rem 0;/);
+  assert.match(exploreCss, /grid-template-columns:\s*minmax\(48px, \.8fr\) minmax\(62px, 1fr\) minmax\(0, 3\.55fr\);/);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?min-height:\s*32px;[\s\S]*?padding:\s*0;/);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row > :nth-child\(1\)\s*\{[^}]*white-space:\s*nowrap;/s);
 });
 
 test("Matrix Explore 近10期六加一使用主號彈性區與特別號內容寬度且移除 320px 補償規則", () => {
+  const compactMediaStart = exploreCss.indexOf("@media (max-width: 359.98px)");
+  const compactMediaEnd = exploreCss.indexOf("@media (min-width: 40rem)", compactMediaStart);
+  const compactMedia = exploreCss.slice(compactMediaStart, compactMediaEnd);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*flex:\s*1 1 auto;[^}]*flex-wrap:\s*nowrap;/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-special-number\s*\{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*nowrap;/s);
-  assert.doesNotMatch(exploreCss, /@media \(max-width:\s*359\.98px\)[\s\S]*?history-special-(?:number|ball|label)/);
+  assert.ok(compactMediaStart >= 0 && compactMediaEnd > compactMediaStart);
+  assert.doesNotMatch(compactMedia, /history-special-(?:number|ball|label)/);
   assert.match(source, /className="history-special-number"[\s\S]*?<span aria-hidden="true">\+<\/span>[\s\S]*?className="history-special-label">特別號<\/small>/);
 });
 
