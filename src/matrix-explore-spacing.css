@@ -130,9 +130,9 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-  flex: 0 0 1.75rem;
+  inline-size: 2rem;
+  block-size: 2rem;
+  flex: 0 0 2rem;
   border-radius: .375rem;
   object-fit: contain;
 }
@@ -150,8 +150,8 @@
 .matrix-explore-main-screen .advanced-panel .select-box {
   box-sizing: border-box;
   max-width: none;
-  height: 28px;
-  min-height: 28px;
+  height: 24px;
+  min-height: 24px;
   padding: 0;
   font-size: .75rem;
   font-weight: 700;
@@ -161,8 +161,8 @@
 .matrix-explore-main-screen .advanced-panel .select-box select {
   width: 100%;
   min-width: 0;
-  height: 28px;
-  min-height: 28px;
+  height: 24px;
+  min-height: 24px;
   padding-block: 0;
   line-height: 1;
 }
@@ -203,8 +203,8 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  height: 28px;
-  min-height: 28px;
+  height: 24px;
+  min-height: 24px;
   padding: .125rem .25rem;
   flex: 1 1 0;
   align-items: center;
@@ -278,14 +278,14 @@
 .matrix-explore-main-screen .segmented button em {
   position: absolute;
   z-index: 20;
-  top: -.625rem;
+  top: -.3125rem;
   right: .125rem;
   height: auto;
   min-height: 0;
-  padding: .0625rem .1875rem;
+  padding: .0625rem .125rem;
   border: 1px solid #9a6f1e;
   border-radius: 9999px;
-  font-size: .5rem;
+  font-size: .4375rem;
   line-height: 1;
   white-space: nowrap;
 }
