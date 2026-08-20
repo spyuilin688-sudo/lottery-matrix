@@ -65,7 +65,7 @@
 .feature-brand-lockup .shared-brand-logo { display: flex; width: 100%; height: var(--primary-brand-height); align-items: center; justify-content: center; }
 .feature-brand-lockup .shared-brand-logo > img,
 .feature-brand-header[data-compact="true"] > .shared-brand-logo > img { display: block; width: 100%; max-width: 100%; height: var(--primary-brand-height); aspect-ratio: var(--primary-brand-ratio); margin: 0 auto; object-fit: contain; object-position: center; }
-.feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
+.feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: var(--button-height); padding: 0; }
 .feature-brand-header .back-button svg { width: 40px; height: 40px; }
 .bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px; }
 .bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
