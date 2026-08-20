@@ -182,14 +182,14 @@ describe("App route boundary", () => {
     expect(screen.queryByTestId("mobile-app-viewport")).not.toBeInTheDocument();
   });
 
-  it("keeps a non-admin path in the member mobile runtime", async () => {
+  it("keeps a non-admin path in the production member shell", async () => {
     window.history.replaceState({}, "", "/matrix-explore");
     const { default: App } = await import("../../App");
 
     render(<App />);
 
     expect(screen.getByText("member-root")).toBeInTheDocument();
-    expect(screen.getByTestId("mobile-app-viewport")).toBeInTheDocument();
+    expect(screen.queryByTestId("mobile-app-viewport")).not.toBeInTheDocument();
     expect(screen.queryByTestId("login")).not.toBeInTheDocument();
   });
 });
