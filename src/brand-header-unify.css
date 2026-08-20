@@ -21,7 +21,7 @@
 }
 
 .feature-brand-header.integrated-title-header {
-  margin-bottom: 8px;
+  margin-bottom: 0;
   padding-top: 8px;
 }
 
@@ -68,8 +68,7 @@
 .feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
 .feature-brand-header .back-button svg { width: 40px; height: 40px; }
 .bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px; }
-.bottom-nav-brand-screen > .feature-brand-header { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
-.bottom-nav-brand-screen > .feature-brand-header.integrated-title-header { margin-bottom: 8px; }
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
 .bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
 
 .number-reference-screen .matrix-title-banner-actions {

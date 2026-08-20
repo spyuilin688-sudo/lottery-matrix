@@ -34,10 +34,6 @@
   min-width: 0;
 }
 
-.matrix-explore-main-screen > .feature-brand-header.integrated-title-header {
-  margin-bottom: 4px;
-}
-
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .history-panel,
