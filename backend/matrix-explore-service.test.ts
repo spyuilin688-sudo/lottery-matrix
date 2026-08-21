@@ -50,12 +50,22 @@ const history = Array.from({ length: 13 }, (_, index) => ({
 
 describe('canonical Matrix Explore artifact', () => {
   it('creates 390 five-ball groups and 546 seven-position groups from thirteen draws', () => {
-    expect(createExploreWorkUnits('今彩539', history)).toHaveLength(390);
+    const fiveBallUnits = createExploreWorkUnits('今彩539', history);
+    expect(fiveBallUnits).toHaveLength(390);
+    expect(new Set(fiveBallUnits.map((unit) => [
+      unit.minPredictionDistance,
+      unit.maxPredictionDistance,
+    ].join('-')))).toEqual(new Set(['1-13']));
     const sevenPositionHistory = history.map((draw) => ({
       ...draw,
       numbers: [...draw.numbers, '06', '07'],
     }));
-    expect(createExploreWorkUnits('六合彩', sevenPositionHistory)).toHaveLength(546);
+    const sevenPositionUnits = createExploreWorkUnits('六合彩', sevenPositionHistory);
+    expect(sevenPositionUnits).toHaveLength(546);
+    expect(new Set(sevenPositionUnits.map((unit) => [
+      unit.minPredictionDistance,
+      unit.maxPredictionDistance,
+    ].join('-')))).toEqual(new Set(['1-13']));
   });
 
   it('runs only the current thirteen-draw lock groups and detaches validation from list rows', () => {
