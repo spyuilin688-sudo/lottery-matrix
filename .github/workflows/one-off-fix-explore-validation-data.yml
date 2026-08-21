@@ -1,0 +1,125 @@
+name: One-off fix explore validation data
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-off-fix-explore-validation-data.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: RED - confirm validation context is not rendered yet
+        shell: bash
+        run: |
+          set +e
+          node <<'NODE'
+          const fs = require('fs');
+          const tsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+          if (!tsx.includes('number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} referenceOffset={item.referenceOffset} referencePosition={item.referencePosition}')) process.exit(1);
+          NODE
+          code=$?
+          set -e
+          test "$code" -ne 0
+
+      - name: Patch formal validation sources only
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const apiPath = 'src/matrix-algorithm-api.ts';
+          let api = fs.readFileSync(apiPath, 'utf8');
+          const apiOld = `  ruleCount: 1 | 2;\n  referenceOffset?: number;\n};`;
+          const apiNew = `  ruleCount: 1 | 2;\n  referenceOffset?: number;\n  referencePosition?: number;\n};`;
+          if (api.split(apiOld).length !== 2) throw new Error('ExploreApiRow reference fields source mismatch');
+          api = api.replace(apiOld, apiNew);
+          fs.writeFileSync(apiPath, api);
+
+          const tsxPath = 'src/FeaturePages.tsx';
+          let tsx = fs.readFileSync(tsxPath, 'utf8');
+
+          const mapOld = `        algorithmType: item.algorithmType,\n        numberOrder: item.numberOrder,\n      }));`;
+          const mapNew = `        algorithmType: item.algorithmType,\n        numberOrder: item.numberOrder,\n        referenceOffset: item.referenceOffset,\n        referencePosition: item.referencePosition,\n      }));`;
+          if (tsx.split(mapOld).length !== 2) throw new Error('Explore result mapping source mismatch');
+          tsx = tsx.replace(mapOld, mapNew);
+
+          const signatureOld = `function ExploreValidationProcess({\n  validation,\n  loading,\n}: {\n  validation?: ExploreValidation;\n  loading: boolean;\n}) {`;
+          const signatureNew = `function ExploreValidationProcess({\n  validation,\n  loading,\n  number,\n  position,\n  predictionPeriod,\n  consecutive,\n  referenceOffset,\n  referencePosition,\n}: {\n  validation?: ExploreValidation;\n  loading: boolean;\n  number: string;\n  position: number;\n  predictionPeriod: number;\n  consecutive: string;\n  referenceOffset?: number;\n  referencePosition?: number;\n}) {`;
+          if (tsx.split(signatureOld).length !== 2) throw new Error('ExploreValidationProcess signature source mismatch');
+          tsx = tsx.replace(signatureOld, signatureNew);
+
+          const valuesOld = `  const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));\n  return (`;
+          const valuesNew = `  const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));\n  const offset = Number(referenceOffset ?? 0);\n  const referenceLabel = offset < 0 ? \`上 \${Math.abs(offset)} 期\` : offset > 0 ? \`下 \${offset} 期\` : "當期";\n  const resolvedReferencePosition = referencePosition ?? position;\n  return (`;
+          if (tsx.split(valuesOld).length !== 2) throw new Error('ExploreValidationProcess values source mismatch');
+          tsx = tsx.replace(valuesOld, valuesNew);
+
+          const headerOld = `          <header className="validation-summary-card">\n            <span>{ruleSet.rules.map((rule) => rule.display).join(".")}</span>\n          </header>`;
+          const headerNew = `          <header className="validation-summary-card">\n            <span>開 <i className="validation-summary-primary">{number}</i> 第 <i className="validation-summary-position">{position}</i> 顆｜<i className="validation-summary-lookback">{referenceLabel}</i>｜第 <i className="validation-summary-position">{resolvedReferencePosition}</i> 顆｜<i className="validation-summary-formula">{ruleSet.rules.map((rule) => rule.display).join(".")}</i>｜下 <i className="validation-summary-future">{predictionPeriod}</i> 期開</span>\n            <em>{consecutive}</em>\n          </header>`;
+          if (tsx.split(headerOld).length !== 2) throw new Error('Explore validation summary source mismatch');
+          tsx = tsx.replace(headerOld, headerNew);
+
+          const callOld = `                      ? <ExploreValidationProcess\n                          validation={validationById[\`${'${exploreResponse.analysisVersion}:${item.id}'}\`]}\n                          loading={validationLoadingId === \`${'${exploreResponse.analysisVersion}:${item.id}'}\`}\n                        />`;
+          const callNew = `                      ? <ExploreValidationProcess\n                          validation={validationById[\`${'${exploreResponse.analysisVersion}:${item.id}'}\`]}\n                          loading={validationLoadingId === \`${'${exploreResponse.analysisVersion}:${item.id}'}\`}\n                          number={item.number}\n                          position={item.position}\n                          predictionPeriod={item.predictionPeriod}\n                          consecutive={item.consecutive}\n                          referenceOffset={item.referenceOffset}\n                          referencePosition={item.referencePosition}\n                        />`;
+          if (tsx.split(callOld).length !== 2) throw new Error('Explore validation component call source mismatch');
+          tsx = tsx.replace(callOld, callNew);
+          fs.writeFileSync(tsxPath, tsx);
+
+          const cssPath = 'src/feature-pages.css';
+          let css = fs.readFileSync(cssPath, 'utf8');
+          const rowOld = `.validation-period-row { display: grid; min-width: 0; min-height: 38px; grid-template-columns: minmax(0, 15fr) minmax(0, 59fr) minmax(0, 26fr); gap: 5px; align-items: stretch; }`;
+          const rowNew = `.validation-period-row { display: grid; min-width: 0; min-height: 38px; grid-template-columns: minmax(82px, 18fr) minmax(0, 56fr) minmax(0, 26fr); gap: 5px; align-items: stretch; }`;
+          if (css.split(rowOld).length !== 2) throw new Error('Validation row grid source mismatch');
+          css = css.replace(rowOld, rowNew);
+
+          const summaryOld = `.matrix-explore-main-screen .validation-summary-card { padding: 4px; }\n.matrix-explore-main-screen .validation-summary-card > span { gap: 3px; font-size: 10px; }`;
+          const summaryNew = `.matrix-explore-main-screen .validation-summary-card { padding: 8px 4px 4px; }\n.matrix-explore-main-screen .validation-summary-card > span { gap: 3px; padding-right: 42px; font-size: 10px; line-height: 1.35; white-space: normal; }`;
+          if (css.split(summaryOld).length !== 2) throw new Error('Validation summary mobile source mismatch');
+          css = css.replace(summaryOld, summaryNew);
+          fs.writeFileSync(cssPath, css);
+          NODE
+
+      - name: GREEN - verify requested validation data path
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const tsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+          const api = fs.readFileSync('src/matrix-algorithm-api.ts', 'utf8');
+          const css = fs.readFileSync('src/feature-pages.css', 'utf8');
+          const checks = [
+            api.includes('referencePosition?: number;'),
+            tsx.includes('referenceOffset: item.referenceOffset'),
+            tsx.includes('referencePosition: item.referencePosition'),
+            tsx.includes('const referenceLabel = offset < 0 ? `上 ${Math.abs(offset)} 期` : offset > 0 ? `下 ${offset} 期` : "當期";'),
+            tsx.includes('className="validation-summary-formula">{ruleSet.rules.map((rule) => rule.display).join(".")}</i>'),
+            tsx.includes('<em>{consecutive}</em>'),
+            tsx.includes('referenceOffset={item.referenceOffset}'),
+            tsx.includes('referencePosition={item.referencePosition}'),
+            css.includes('grid-template-columns: minmax(82px, 18fr) minmax(0, 56fr) minmax(0, 26fr);'),
+            css.includes('padding-right: 42px; font-size: 10px; line-height: 1.35; white-space: normal;'),
+          ];
+          if (checks.some((value) => !value)) throw new Error('Explore validation fix verification failed');
+          NODE
+
+      - name: Type-check changed frontend
+        run: npx tsc --noEmit
+
+      - name: Commit fix to main and remove one-off workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-off-fix-explore-validation-data.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/FeaturePages.tsx src/matrix-algorithm-api.ts src/feature-pages.css .github/workflows/one-off-fix-explore-validation-data.yml
+          git commit -m 'fix: render complete explore validation data'
+          git push origin HEAD:main
