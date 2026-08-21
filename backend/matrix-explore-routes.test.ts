@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MemberContext } from './matrix-entitlements';
 import { MatrixAccessError } from './matrix-member-auth';
 import { createMatrixExploreRoutes } from './matrix-explore-routes';
@@ -73,6 +73,23 @@ function routes(overrides: Partial<Parameters<typeof createMatrixExploreRoutes>[
 }
 
 describe('Matrix Explore routes', () => {
+  it('reads yesterday and the previous day from their stored draw periods without recomputing offsets', async () => {
+    const readAnalysis = vi.fn(async () => ({
+      analysisVersion: '114000121:v1',
+      drawPeriod: '114000121',
+      data: { ...artifact, drawPeriod: '114000121' },
+    }));
+    const resolveDrawPeriod = vi.fn(async () => '114000121');
+    const response = await routes({ readAnalysis, resolveDrawPeriod }).list({
+      authorization: 'Bearer token',
+      body: { ...listBody, exploreDateOffset: 2 },
+    });
+
+    expect(resolveDrawPeriod).toHaveBeenCalledWith('今彩539', 2);
+    expect(readAnalysis).toHaveBeenCalledWith('explore', '今彩539', '114000121');
+    expect(response).toMatchObject({ status: 200, body: { drawPeriod: '114000121', total: 1 } });
+  });
+
   it('allows anonymous standard two-period exploration without calling member auth', async () => {
     let authCalls = 0;
     const api = routes({ requireMember: async () => { authCalls += 1; throw new MatrixAccessError('AUTH_REQUIRED', 401); } });

@@ -28,6 +28,7 @@ type ExploreRouteDependencies = {
     lottery: LotteryId,
     drawPeriod?: string,
   ): Promise<CompletedArtifact | null>;
+  resolveDrawPeriod?(lottery: LotteryId, exploreDateOffset: 0 | 1 | 2): Promise<string | undefined>;
   now?: () => Date;
 };
 
@@ -116,15 +117,20 @@ export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies
       try {
         const member = await memberFor(input.authorization);
         const request = parseListRequest(input.body);
+        const resolvedDrawPeriod = request.drawPeriod ?? (
+          request.exploreDateOffset === 0
+            ? undefined
+            : await dependencies.resolveDrawPeriod?.(request.lottery, request.exploreDateOffset)
+        );
         const artifact = await dependencies.readAnalysis(
           'explore',
           request.lottery,
-          request.drawPeriod,
+          resolvedDrawPeriod,
         );
         if (!artifact) throw new Error('ANALYSIS_NOT_READY');
         const filtered = filterExploreArtifact(
           artifact.data,
-          request,
+          { ...request, exploreDateOffset: 0 },
           resolveMatrixEntitlements(member, now()),
         );
         return {

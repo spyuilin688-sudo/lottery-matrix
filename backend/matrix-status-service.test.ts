@@ -40,6 +40,20 @@ describe('Matrix status artifact orchestration', () => {
       row({ id: 'ignored-date', exploreDateOffset: 1 }),
     ]), null, [], entitlements);
     expect(result.summary).toMatchObject({ lottery: '今彩539', drawPeriod: '114000123', status: 'RESONANCE', count: 1 });
+    expect(result.cards[0].roads).toHaveLength(2);
+  });
+
+  it('treats rows from the first two locked sources as part of the thirteen-source result', () => {
+    const result = buildMatrixStatusArtifact(explore([
+      row({
+        id: 'source-zero',
+        explorePeriods: 2,
+        lockedSourceIndex: 0,
+        lockedSourcePeriod: '114000123',
+      }),
+    ]), null, [], entitlements);
+
+    expect(result.summary).toMatchObject({ status: 'RESONANCE', count: 1 });
     expect(result.cards[0].roads).toHaveLength(1);
   });
 

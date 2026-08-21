@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatrixEntitlements } from './matrix-entitlements';
 import {
   buildExploreArtifact,
+  createExploreWorkUnits,
   filterExploreArtifact,
   getExploreValidation,
   type ExploreArtifact,
@@ -39,11 +40,29 @@ const request = {
   sameCode: false,
 };
 
+const history = Array.from({ length: 13 }, (_, index) => ({
+  period: `114000${String(123 - index).padStart(3, '0')}`,
+  drawDate: `2026-08-${String(21 - index).padStart(2, '0')}`,
+  numbers: Array.from({ length: 5 }, (__, position) => (
+    String(((index * 5 + position) % 39) + 1).padStart(2, '0')
+  )),
+}));
+
 describe('canonical Matrix Explore artifact', () => {
-  it('enumerates complete settings and detaches validation from list rows', () => {
+  it('creates 390 five-ball groups and 546 seven-position groups from thirteen draws', () => {
+    expect(createExploreWorkUnits('今彩539', history)).toHaveLength(390);
+    const sevenPositionHistory = history.map((draw) => ({
+      ...draw,
+      numbers: [...draw.numbers, '06', '07'],
+    }));
+    expect(createExploreWorkUnits('六合彩', sevenPositionHistory)).toHaveLength(546);
+  });
+
+  it('runs only the current thirteen-draw lock groups and detaches validation from list rows', () => {
     const calls: Array<Record<string, unknown>> = [];
-    const artifact = buildExploreArtifact('今彩539', '114000123', [], (input) => {
+    const artifact = buildExploreArtifact('今彩539', '114000123', history, (input) => {
       calls.push(input as Record<string, unknown>);
+      if (calls.length > 1) return { results: [] };
       return {
         results: [{
           id: 'raw',
@@ -54,6 +73,7 @@ describe('canonical Matrix Explore artifact', () => {
           highestStreak: 4,
           predictionNumbers: ['03'],
           algorithmType: input.algorithmType,
+          ruleCount: 1,
           searchCondition: { referenceOffset: -14 },
           sourceA: { sourcePeriod: '114000123' },
           ruleSets: [{ rules: [], predictionNumbers: [3], historicalValidation: [{ predictionPeriod: '114000122' }] }],
@@ -61,7 +81,10 @@ describe('canonical Matrix Explore artifact', () => {
       };
     });
 
-    expect(calls).toHaveLength(108);
+    expect(calls).toHaveLength(390);
+    expect(new Set(calls.map((call) => call.exploreDateOffset))).toEqual(new Set([0]));
+    expect(new Set(calls.map((call) => call.explorePeriods))).toEqual(new Set([13]));
+    expect(calls.every((call) => !('ruleCount' in call))).toBe(true);
     const list = filterExploreArtifact(artifact, request, paid);
     expect(list.items).toHaveLength(1);
     expect(list.items[0]).not.toHaveProperty('historicalValidation');
@@ -69,6 +92,34 @@ describe('canonical Matrix Explore artifact', () => {
     expect(getExploreValidation(artifact, list.items[0].id)).toMatchObject({
       sourceA: { sourcePeriod: '114000123' },
     });
+  });
+
+  it('filters two and seven draws from one thirteen-draw calculation', () => {
+    const artifact = buildExploreArtifact('今彩539', '114000123', history, (input) => ({
+      results: [{
+        id: `${input.lockedSourceIndex}:${input.lockedPosition}`,
+        number: '10',
+        lockedPosition: input.lockedPosition,
+        predictionDistance: 1,
+        consecutive: '準4進5',
+        highestStreak: 4,
+        predictionNumbers: ['03'],
+        algorithmType: input.algorithmType,
+        ruleCount: 1,
+        searchCondition: { referenceOffset: -7 },
+        ruleSets: [],
+      }],
+    }));
+
+    const filtered = (explorePeriods: 2 | 7 | 13) => filterExploreArtifact(artifact, {
+      ...request,
+      explorePeriods,
+      exploreRange: '標準範圍',
+    }, paid).total;
+
+    expect(filtered(2)).toBe(10);
+    expect(filtered(7)).toBe(35);
+    expect(filtered(13)).toBe(65);
   });
 
   it('rejects seven, thirteen and full requests without entitlement', () => {

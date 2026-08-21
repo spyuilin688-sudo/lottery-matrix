@@ -5,6 +5,118 @@ import type { MatrixDraw } from './matrix-algorithm';
 const history: MatrixDraw[] = [{ period: '114000123', drawDate: '2026-08-21', numbers: ['01', '02', '03', '04', '05'] }];
 
 describe('Matrix completed-analysis pipeline', () => {
+  it('checkpoints Explore groups across bounded invocations before running composite and Tiangong phases', async () => {
+    const published = new Map<string, unknown>();
+    const groups: unknown[] = [];
+    let job = {
+      id: 'job-1', lottery: '今彩539' as const, drawPeriod: '114000123',
+      analysisVersion: '114000123:matrix-v2', startedAt: '2026-08-21T01:02:03.000Z',
+      phase: 'explore' as const, cursor: 0, total: 2,
+    };
+    const progressStore = {
+      getOrCreate: async () => job,
+      appendExploreGroup: async (current: typeof job, unitIndex: number, artifact: unknown) => {
+        groups[unitIndex] = artifact;
+        job = { ...current, cursor: unitIndex + 1 };
+        return job;
+      },
+      readExploreGroups: async () => groups,
+      setPhase: async (current: typeof job, phase: typeof job.phase) => {
+        job = { ...current, phase, cursor: 0 };
+        return job;
+      },
+      finish: async () => undefined,
+    };
+    const buildTianyan = vi.fn((lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }));
+    const buildTiangong = vi.fn((lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }));
+    const publishAnalysis = vi.fn(async (meta, data) => {
+      published.set(meta.kind, { analysisVersion: meta.analysisVersion, drawPeriod: meta.drawPeriod, data });
+      return {};
+    });
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async (kind) => published.get(kind) ?? null,
+      publishAnalysis,
+      createExploreWorkUnits: () => [{ id: 'unit-1' }, { id: 'unit-2' }] as never,
+      buildExploreGroup: (_period, _history, unit: { id: string }) => ({
+        lottery: '今彩539', drawPeriod: '114000123', items: [{ id: unit.id }], validationById: {},
+      }) as never,
+      mergeExplore: (lottery, period, artifacts) => ({
+        lottery, drawPeriod: period, items: artifacts.flatMap((artifact: { items: unknown[] }) => artifact.items), validationById: {},
+      }) as never,
+      progressStore: progressStore as never,
+      buildTianyan,
+      buildTiangong,
+      now: () => new Date('2026-08-21T01:02:03Z'),
+    });
+
+    await expect(pipeline.ensureCurrent('今彩539', { maxExploreGroups: 1 })).resolves.toMatchObject({ pending: true, phase: 'explore', cursor: 1, total: 2 });
+    expect(publishAnalysis).not.toHaveBeenCalled();
+    await expect(pipeline.ensureCurrent('今彩539', { maxExploreGroups: 1 })).resolves.toMatchObject({ pending: true, phase: 'tianyan' });
+    expect(publishAnalysis.mock.calls.map(([meta]) => meta.kind)).toEqual(['explore']);
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ pending: true, phase: 'tiangong' });
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ pending: true, phase: 'status' });
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ completed: true });
+    expect(publishAnalysis.mock.calls.map(([meta]) => meta.kind)).toEqual(['explore', 'tianyan', 'tiangong', 'status']);
+    expect(buildTianyan).toHaveBeenCalledTimes(1);
+    expect(buildTiangong).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not treat a lone Explore artifact as a completed current analysis', async () => {
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async (kind) => kind === 'explore' ? { analysisVersion: 'partial' } : null,
+      createExploreWorkUnits: () => [] as never,
+      progressStore: {
+        getOrCreate: async () => ({
+          id: 'job', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v2',
+          startedAt: '2026-08-21T00:00:00Z', phase: 'explore', cursor: 0, total: 0,
+        }),
+        readExploreGroups: async () => [],
+        setPhase: async (job, phase) => ({ ...job, phase, cursor: 0 }),
+        appendExploreGroup: async () => { throw new Error('unexpected'); },
+        finish: async () => undefined,
+      } as never,
+      publishAnalysis: vi.fn(async () => ({})),
+      mergeExplore: (lottery, drawPeriod) => ({ lottery, drawPeriod, items: [], validationById: {} }),
+    });
+
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.not.toMatchObject({ skipped: true });
+  });
+
+  it('stops adding Explore groups when the safe execution budget is reached', async () => {
+    let job = {
+      id: 'job', lottery: '今彩539' as const, drawPeriod: '114000123', analysisVersion: 'v2',
+      startedAt: '2026-08-21T00:00:00Z', phase: 'explore' as const, cursor: 0, total: 2,
+    };
+    const buildExploreGroup = vi.fn((_period, _history, unit: { id: string }) => ({
+      lottery: '今彩539', drawPeriod: '114000123', items: [{ id: unit.id }], validationById: {},
+    })) as never;
+    const times = [1_000, 23_000];
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async () => null,
+      createExploreWorkUnits: () => [{ id: 'one' }, { id: 'two' }] as never,
+      buildExploreGroup,
+      monotonicNow: () => times.shift() ?? 23_000,
+      progressStore: {
+        getOrCreate: async () => job,
+        appendExploreGroup: async (current, unitIndex) => {
+          job = { ...current, cursor: unitIndex + 1 };
+          return job;
+        },
+        readExploreGroups: async () => [],
+        setPhase: async (current, phase) => ({ ...current, phase, cursor: 0 }),
+        finish: async () => undefined,
+      } as never,
+    });
+
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      pending: true, phase: 'explore', cursor: 1, total: 2,
+    });
+    expect(buildExploreGroup).toHaveBeenCalledTimes(1);
+  });
+
   it('builds all three artifacts before publishing them under one completed version', async () => {
     const calls: string[] = [];
     const publishAnalysis = vi.fn(async (meta, data) => { calls.push(`publish:${meta.kind}`); return { meta, data }; });
@@ -63,25 +175,38 @@ describe('Matrix completed-analysis pipeline', () => {
     await expect(pipeline.run('今彩539')).rejects.toThrow('MATRIX_HISTORY_NOT_READY');
   });
 
-  it('builds the current draw when its completed Explore artifact is missing', async () => {
+  it('starts the current draw when its completion marker is missing', async () => {
     const publishAnalysis = vi.fn(async () => ({}));
+    const progressStore = {
+      getOrCreate: async () => ({
+        id: 'job', lottery: '今彩539' as const, drawPeriod: '114000123', analysisVersion: 'v2',
+        startedAt: '2026-08-21T00:00:00Z', phase: 'explore' as const, cursor: 0, total: 0,
+      }),
+      readExploreGroups: async () => [],
+      setPhase: async (job: object, phase: string) => ({ ...job, phase, cursor: 0 }),
+      appendExploreGroup: async () => { throw new Error('unexpected'); },
+      finish: async () => undefined,
+    };
     const pipeline = createMatrixAnalysisPipeline({
       getHistory: async () => history,
       readAnalysis: async () => null,
       publishAnalysis,
-      buildExplore: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
-      buildTianyan: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
-      buildTiangong: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
+      createExploreWorkUnits: () => [],
+      mergeExplore: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
+      progressStore: progressStore as never,
     });
-    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ drawPeriod: '114000123' });
-    expect(publishAnalysis).toHaveBeenCalledTimes(4);
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      drawPeriod: '114000123', pending: true, phase: 'tianyan',
+    });
+    expect(publishAnalysis).toHaveBeenCalledTimes(1);
+    expect(publishAnalysis.mock.calls[0][0]).toMatchObject({ kind: 'explore' });
   });
 
-  it('skips recomputation when the current draw already has a completed Explore artifact', async () => {
+  it('skips recomputation only when the current draw has a completion marker', async () => {
     const publishAnalysis = vi.fn(async () => ({}));
     const pipeline = createMatrixAnalysisPipeline({
       getHistory: async () => history,
-      readAnalysis: async () => ({ analysisVersion: 'existing' }),
+      readAnalysis: async (kind) => kind === 'status' ? { analysisVersion: 'existing' } : null,
       publishAnalysis,
     });
     await expect(pipeline.ensureCurrent('今彩539')).resolves.toEqual({

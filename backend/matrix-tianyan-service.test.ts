@@ -89,4 +89,22 @@ describe('Tianyan artifact service', () => {
     expect(validations).toHaveLength(2);
     expect(validations[0]?.rules).not.toEqual(validations[1]?.rules);
   });
+
+  it('only combines rules from the same locked source condition', () => {
+    const source = sourceArtifact();
+    const items = [
+      { ...source.items[0], lockedSourceIndex: 0, lockedSourcePeriod: '114000123' },
+      { ...source.items[2], lockedSourceIndex: 1, lockedSourcePeriod: '114000122' },
+    ];
+    const artifact = buildTianyanArtifact('今彩539', '114000123', {
+      ...source,
+      items,
+      validationById: {
+        [items[0].id]: source.validationById[items[0].id],
+        [items[1].id]: source.validationById[items[1].id],
+      },
+    });
+
+    expect(artifact.items).toEqual([]);
+  });
 });

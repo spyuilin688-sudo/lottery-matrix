@@ -2,7 +2,8 @@ export type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透
 export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 export type MatrixAlgorithmType = '加減' | '合值' | '拖牌';
 export type MatrixDraw = { period: string; drawDate: string; numbers: string[]; sortedNumbers?: string[]; drawOrderNumbers?: string[] | null };
-export type MatrixAlgorithmRequest = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; lockedPosition: number; lockedNumber: number; referenceOffset?: number; referencePosition?: number; predictionDistance: number; ruleCount: 1 | 2; algorithmType: MatrixAlgorithmType };
+export type MatrixAlgorithmRequest = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; lockedPosition: number; lockedNumber: number; lockedSourcePeriod?: string; referenceOffset?: number; referencePosition?: number; predictionDistance: number; ruleCount: 1 | 2; algorithmType: MatrixAlgorithmType };
+export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 13; exploreDateOffset: 0; exploreRange: '完整範圍'; minPredictionDistance: 1; maxPredictionDistance: 30 };
 export type MatrixAlgorithmRule = { value: number; display: string; algorithmType: MatrixAlgorithmType };
 export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceNumbers: number[]; sourceSortedNumbers: Array<string | number>; sourceDrawOrderNumbers: Array<string | number> | null; referencePeriod: string; referenceNumbers: number[]; referenceSortedNumbers: Array<string | number>; referenceDrawOrderNumbers: Array<string | number> | null; baseNumber: number; predictionPeriod: string; predictionNumbers: Array<string | number>; candidateRules: number[]; matchedRules: number[]; hitNumbers: number[]; success: boolean };
 export type MatrixAlgorithmRuleSet = { rules: MatrixAlgorithmRule[]; predictionNumbers: number[]; historicalValidation: MatrixValidationRow[] };
@@ -188,10 +189,14 @@ function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]) {
   if (request.numberOrder === '依實際開獎順序排序') { const missing = history.filter(draw => !Array.isArray(draw.drawOrderNumbers) || draw.drawOrderNumbers.length !== ballCount(request.lottery)); if (missing.length > 0) return { valid: false, reason: '實際開獎順序（落球）資料不完整，不得以順球資料代替', searchCondition: request, missingDrawOrderCount: missing.length, missingDrawOrderPeriods: missing.slice(-20).map(draw => draw.period), results: [] }; }
   const sourceIndexes = history.map((draw, index) => ({ draw, index })).filter(item => numberAt(item.draw, request.lottery, request.numberOrder, request.lockedPosition) === request.lockedNumber).map(item => item.index);
   if (sourceIndexes.length === 0) return { valid: false, reason: '找不到符合鎖定條件的來源期', searchCondition: request, results: [] };
-  const aIndex = sourceIndexes[sourceIndexes.length - 1];
+  const requestedSourceIndex = request.lockedSourcePeriod
+    ? history.findIndex((draw) => draw.period === request.lockedSourcePeriod)
+    : -1;
+  const aIndex = request.lockedSourcePeriod ? requestedSourceIndex : sourceIndexes[sourceIndexes.length - 1];
+  if (aIndex < 0 || !sourceIndexes.includes(aIndex)) return { valid: false, reason: '找不到指定鎖定條件來源期', searchCondition: request, results: [] };
   const aBase = baseForSource(history, aIndex, request);
   if (!aBase) return { valid: false, reason: 'A組找不到完整參照期或參照位置號碼', searchCondition: request, results: [] };
-  const historicalIndexes = sourceIndexes.slice(0, -1).reverse();
+  const historicalIndexes = sourceIndexes.filter((index) => index < aIndex).reverse();
   const groups: CandidateGroup[] = [];
   const countedPredictionPeriods = new Set<string>();
   for (const sourceIndex of historicalIndexes) {
@@ -242,6 +247,69 @@ export function runMatrixAutomaticExploreWithHistory(input: unknown, newestFirst
   const explore = parseExploreRequest(input); const anchorHistory = newestFirst.slice(explore.exploreDateOffset); const lockSources = anchorHistory.slice(0, explore.explorePeriods); const count = ballCount(explore.lottery); const referenceBack = explore.exploreRange === '完整範圍' ? 14 : 7; const results: Array<Record<string, unknown>> = []; const seen = new Set<string>();
   for (let lockedPosition = 1; lockedPosition <= count; lockedPosition += 1) for (const source of lockSources) { const lockedNumber = numberAt(source, explore.lottery, explore.numberOrder, lockedPosition); if (lockedNumber === null) continue; for (let predictionDistance = explore.minPredictionDistance; predictionDistance <= explore.maxPredictionDistance; predictionDistance += 1) { const offsets = explore.algorithmType === '拖牌' ? [0] : Array.from({ length: referenceBack + predictionDistance }, (_, index) => index - referenceBack).filter(offset => offset < predictionDistance); const positions = explore.algorithmType === '拖牌' ? [lockedPosition] : Array.from({ length: count }, (_, index) => index + 1); for (const referenceOffset of offsets) for (const referencePosition of positions) { const request: MatrixRequest = { lottery: explore.lottery, numberOrder: explore.numberOrder, lockedPosition, lockedNumber, predictionDistance, ruleCount: explore.ruleCount, algorithmType: explore.algorithmType, ...(explore.algorithmType === '拖牌' ? {} : { referenceOffset, referencePosition }) }; const evaluated = evaluateMatrixAlgorithm(request, anchorHistory); if (!evaluated.valid || !evaluated.highestStreak) continue; const minimumStreak = explore.ruleCount === 1 ? 4 : 5; if (evaluated.highestStreak < minimumStreak) continue; const predictionNumbers = [...new Set((evaluated.predictionNumbers ?? evaluated.results?.flatMap(item => item.predictionNumbers) ?? []).map(Number))].sort((a, b) => a - b); if (predictionNumbers.length < 1 || predictionNumbers.length > 2) continue; const key = [lockedPosition, lockedNumber, referenceOffset, referencePosition, predictionDistance, explore.algorithmType, explore.ruleCount, evaluated.highestStreak, predictionNumbers.join('.')].join('|'); if (seen.has(key)) continue; seen.add(key); results.push({ id: key, number: String(lockedNumber).padStart(2, '0'), lockedPosition, predictionDistance, consecutive: evaluated.displayStreak, highestStreak: evaluated.highestStreak, predictionNumbers: predictionNumbers.map(value => String(value).padStart(2, '0')), algorithmType: explore.algorithmType, searchCondition: request, sourceA: evaluated.sourceA, ruleSets: evaluated.results ?? evaluated.ruleSets ?? [] }); } } }
   results.sort((left, right) => Number(right.highestStreak) - Number(left.highestStreak) || Number(left.predictionDistance) - Number(right.predictionDistance) || Number(left.lockedPosition) - Number(right.lockedPosition)); const duplicate = new Map<string, number>(); for (const result of results) for (const number of result.predictionNumbers as string[]) duplicate.set(number, (duplicate.get(number) ?? 0) + 1); const duplicateStats = [...duplicate.entries()].sort((a, b) => b[1] - a[1] || Number(a[0]) - Number(b[0])).map(([number, countValue]) => ({ number, count: countValue })); return { searchCondition: explore, resultCount: results.length, duplicateStats, results };
+}
+
+export function runMatrixExploreGroupWithHistory(input: MatrixExploreGroupInput, newestFirst: Draw[]) {
+  const count = ballCount(input.lottery);
+  if (!numberOrders.includes(input.numberOrder)) throw new Error('未知號碼順序');
+  if (!algorithmTypes.includes(input.algorithmType)) throw new Error('未知版路類型');
+  if (!Number.isInteger(input.lockedSourceIndex) || input.lockedSourceIndex < 0 || input.lockedSourceIndex >= Math.min(13, newestFirst.length)) throw new Error('鎖定來源期超出前十三期');
+  if (!Number.isInteger(input.lockedPosition) || input.lockedPosition < 1 || input.lockedPosition > count) throw new Error('鎖定位置超出彩種位置範圍');
+  const source = newestFirst[input.lockedSourceIndex];
+  const lockedNumber = numberAt(source, input.lottery, input.numberOrder, input.lockedPosition);
+  if (lockedNumber === null) return { results: [] };
+  const referenceBack = 14;
+  const results: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+  for (const ruleCount of [1, 2] as const) {
+    for (let predictionDistance = input.minPredictionDistance; predictionDistance <= input.maxPredictionDistance; predictionDistance += 1) {
+      const offsets = input.algorithmType === '拖牌'
+        ? [0]
+        : Array.from({ length: referenceBack + predictionDistance }, (_, index) => index - referenceBack).filter((offset) => offset < predictionDistance);
+      const positions = input.algorithmType === '拖牌'
+        ? [input.lockedPosition]
+        : Array.from({ length: count }, (_, index) => index + 1);
+      for (const referenceOffset of offsets) for (const referencePosition of positions) {
+        const request: MatrixRequest = {
+          lottery: input.lottery,
+          numberOrder: input.numberOrder,
+          lockedPosition: input.lockedPosition,
+          lockedNumber,
+          lockedSourcePeriod: source.period,
+          predictionDistance,
+          ruleCount,
+          algorithmType: input.algorithmType,
+          ...(input.algorithmType === '拖牌' ? {} : { referenceOffset, referencePosition }),
+        };
+        const evaluated = evaluateMatrixAlgorithm(request, newestFirst);
+        if (!evaluated.valid || !evaluated.highestStreak) continue;
+        const minimumStreak = ruleCount === 1 ? 4 : 5;
+        if (evaluated.highestStreak < minimumStreak) continue;
+        const predictionNumbers = [...new Set((evaluated.predictionNumbers ?? evaluated.results?.flatMap((item) => item.predictionNumbers) ?? []).map(Number))].sort((a, b) => a - b);
+        if (predictionNumbers.length < 1 || predictionNumbers.length > 2) continue;
+        const key = [source.period, input.lockedPosition, lockedNumber, referenceOffset, referencePosition, predictionDistance, input.algorithmType, ruleCount, evaluated.highestStreak, predictionNumbers.join('.')].join('|');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        results.push({
+          id: key,
+          number: String(lockedNumber).padStart(2, '0'),
+          lockedPosition: input.lockedPosition,
+          lockedSourceIndex: input.lockedSourceIndex,
+          lockedSourcePeriod: source.period,
+          predictionDistance,
+          consecutive: evaluated.displayStreak,
+          highestStreak: evaluated.highestStreak,
+          predictionNumbers: predictionNumbers.map((value) => String(value).padStart(2, '0')),
+          algorithmType: input.algorithmType,
+          ruleCount,
+          searchCondition: request,
+          sourceA: evaluated.sourceA,
+          ruleSets: evaluated.results ?? evaluated.ruleSets ?? [],
+        });
+      }
+    }
+  }
+  return { results };
 }
 
 export async function runMatrixAutomaticExplore(input: unknown) { const request = parseExploreRequest(input); const { getMatrixHistory } = await import('./scraper'); const newestFirst = await getMatrixHistory(request.lottery, null) as Draw[]; return runMatrixAutomaticExploreWithHistory(input, newestFirst); }

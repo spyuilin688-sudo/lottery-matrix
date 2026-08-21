@@ -33,7 +33,12 @@ function normalizedResult(values: string[]) {
 }
 
 function eligibleExploreRows(artifact: ExploreArtifact) {
-  return artifact.items.filter((item) => item.explorePeriods === 13 && item.exploreDateOffset === 0);
+  return artifact.items.filter((item) => (
+    item.exploreDateOffset === 0
+    && (item.lockedSourceIndex === undefined
+      ? item.explorePeriods === 13
+      : item.lockedSourceIndex < 13)
+  ));
 }
 
 function chapterExploreRows(artifact: ExploreArtifact) {
@@ -119,7 +124,12 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
 function tianyanMatchSeeds(artifact: TianyanArtifact | null): MatchSeed[] {
   if (!artifact) return [];
   return artifact.items
-    .filter((item) => item.explorePeriods === 13 && item.exploreDateOffset === 0)
+    .filter((item) => (
+      item.exploreDateOffset === 0
+      && (item.lockedSourceIndex === undefined
+        ? item.explorePeriods === 13
+        : item.lockedSourceIndex < 13)
+    ))
     .map((item) => ({
     hitType: 'two-code',
     consecutive: item.consecutive,
@@ -197,7 +207,9 @@ function visibleStatusCards(
       ? new Set([2, 7])
       : new Set([2]);
   const exploreRoads = chapterRoads(explore.items.filter((item) => (
-    item.exploreDateOffset === 0 && periods.has(item.explorePeriods)
+    item.exploreDateOffset === 0
+    && item.numberOrder === '依號碼由小到大排序'
+    && periods.has(item.explorePeriods)
   )));
   return cards.map((card) => {
     const candidates = [

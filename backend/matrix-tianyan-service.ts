@@ -27,6 +27,8 @@ export type TianyanArtifactRow = {
   numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
   exploreDateOffset: 0 | 1 | 2;
+  lockedSourceIndex?: number;
+  lockedSourcePeriod?: string;
   ruleIds: [string, string];
 };
 
@@ -103,7 +105,9 @@ function sameSearch(left: ExploreArtifactRow, right: ExploreArtifactRow) {
     && left.predictionDistance === right.predictionDistance
     && left.numberOrder === right.numberOrder
     && left.explorePeriods === right.explorePeriods
-    && left.exploreDateOffset === right.exploreDateOffset;
+    && left.exploreDateOffset === right.exploreDateOffset
+    && left.lockedSourceIndex === right.lockedSourceIndex
+    && left.lockedSourcePeriod === right.lockedSourcePeriod;
 }
 
 function historicalGroups(left: SourceRule, right: SourceRule): TianyanHistoricalGroup[] {
@@ -144,6 +148,8 @@ function pairSignature(left: SourceRule, right: SourceRule, result: TianyanResul
   return [
     left.row.number,
     left.row.lockedPosition,
+    left.row.lockedSourceIndex ?? '',
+    left.row.lockedSourcePeriod ?? '',
     left.row.predictionDistance,
     left.row.numberOrder,
     ...[ruleIdentity(left.rule), ruleIdentity(right.rule)].sort(),
@@ -208,6 +214,8 @@ export function buildTianyanArtifact(
         numberOrder: left.row.numberOrder,
         explorePeriods: left.row.explorePeriods,
         exploreDateOffset: left.row.exploreDateOffset,
+        lockedSourceIndex: left.row.lockedSourceIndex,
+        lockedSourcePeriod: left.row.lockedSourcePeriod,
         ruleIds: [left.rule.id, right.rule.id],
       });
       validationById[id] = {

@@ -45,6 +45,10 @@ const matrixStatusRoutes = createMatrixStatusRoutes({
 });
 const matrixExploreRoutes = createMatrixExploreRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
+    resolveDrawPeriod: async (lottery,exploreDateOffset) => {
+        const history = await getMatrixHistory(lottery,exploreDateOffset + 1);
+        return history[exploreDateOffset]?.period;
+    },
     readAnalysis: async (kind,lottery,drawPeriod) => {
         const artifact = await readCompletedMatrixAnalysis('explore',lottery,drawPeriod);
         return artifact === null ? null : { ...artifact,data:artifact.data as ExploreArtifact };
@@ -70,10 +74,7 @@ export const scheduledLotteryRefresh = async () => {
     const results = await refreshActiveSources();
     const failures = results.filter(result => !result.ok);
     if (failures.length) throw new Error('排程爬蟲失敗：' + failures.map(result => result.sourceId + ' ' + result.error).join('；'));
-    const lotteryBySource: Record<string,'今彩539'|'天天樂'|'六合彩'|'大樂透'> = { taiwan539:'今彩539',sc888:'天天樂',nfdhk:'六合彩',taiwan649:'大樂透' };
-    const analysis=[];
-    for(const result of results) if(lotteryBySource[result.sourceId]) analysis.push(await matrixAnalysisPipeline.ensureCurrent(lotteryBySource[result.sourceId]));
-    return { statusCode: 200,analysis };
+    return { statusCode: 200,analysis:[] };
 };
 
 export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceId?: string } }) => {
@@ -81,9 +82,7 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
     if (!sourceId) throw new Error('彩種排程缺少 sourceId');
     const result = await fetchSource(sourceId);
     if (!result.updated) console.warn('彩種排程來源尚未更新', sourceId, result.data.period);
-    const lotteryBySource: Record<string,'今彩539'|'天天樂'|'六合彩'|'大樂透'> = { taiwan539:'今彩539',sc888:'天天樂',nfdhk:'六合彩',taiwan649:'大樂透' };
-    const analysis = lotteryBySource[sourceId] ? await matrixAnalysisPipeline.ensureCurrent(lotteryBySource[sourceId]) : null;
-    return { statusCode: 200,analysis };
+    return { statusCode: 200,analysis:null };
 };
 
 export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透' } }) => {
