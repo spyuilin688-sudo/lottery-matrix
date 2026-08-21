@@ -128,7 +128,7 @@
   margin: 0;
   padding: 0;
   flex-direction: column;
-  row-gap: 5px;
+  row-gap: 7px;
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid {
@@ -153,7 +153,7 @@
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
   width: auto;
-  min-width: 92px;
+  min-width: 88.8px;
   align-items: center;
   gap: .5rem;
   flex: 0 0 auto;
@@ -169,9 +169,9 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 2rem;
-  block-size: 2rem;
-  flex: 0 0 2rem;
+  inline-size: 1.8rem;
+  block-size: 1.8rem;
+  flex: 0 0 1.8rem;
   border-radius: .375rem;
   object-fit: contain;
 }
@@ -247,13 +247,22 @@
   flex: 1 1 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid #334155;
+  border: 1px solid #4a4030;
   border-radius: .625rem;
+  background: transparent;
+  color: #d1d5db;
   font-size: .75rem;
   font-weight: 700;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+}
+
+.matrix-explore-main-screen .segmented button[data-selected="true"] {
+  border-color: #c89622;
+  background: linear-gradient(145deg, rgba(124, 85, 12, .25), rgba(31, 25, 13, .74));
+  color: #f2cf67;
+  box-shadow: inset 0 0 16px rgba(225, 170, 39, .08);
 }
 
 .matrix-explore-main-screen .hit-options {
@@ -264,8 +273,11 @@
 }
 
 .matrix-explore-main-screen .hit-options button {
+  box-sizing: border-box;
   height: 28px;
   min-height: 28px;
+  padding: .125rem .25rem;
+  flex: 1 1 0;
 }
 
 .matrix-explore-main-screen .advanced-row {
@@ -281,7 +293,7 @@
   align-items: center;
   column-gap: .375rem;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .matrix-explore-main-screen .advanced-row > img:first-child {
@@ -873,7 +885,7 @@
 @media (min-width: 40rem) {
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
-    min-width: 108px;
+    min-width: 104.8px;
   }
 
   .matrix-explore-main-screen .history-numbers,

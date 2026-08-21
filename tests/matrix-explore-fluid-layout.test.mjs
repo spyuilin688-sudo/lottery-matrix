@@ -23,7 +23,7 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(title, /line-height:\s*1\.125rem/);
 
   const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel");
-  assert.match(stack, /row-gap:\s*5px/);
+  assert.match(stack, /row-gap:\s*7px/);
   assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px/s);
 
   const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel label");
@@ -34,14 +34,14 @@ test("Matrix Explore control rows match the compact mobile reference density", (
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
   assert.match(left, /width:\s*auto/);
-  assert.match(left, /min-width:\s*92px/);
+  assert.match(left, /min-width:\s*88\.8px/);
   assert.match(left, /flex:\s*0 0 auto/);
   assert.match(left, /font-size:\s*\.8125rem/);
-  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?min-width:\s*108px/);
+  assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?min-width:\s*104\.8px/);
 
   const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
-  assert.match(icon, /inline-size:\s*2rem/);
-  assert.match(icon, /block-size:\s*2rem/);
+  assert.match(icon, /inline-size:\s*1\.8rem/);
+  assert.match(icon, /block-size:\s*1\.8rem/);
 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
   assert.match(select, /height:\s*24px/);
@@ -60,11 +60,14 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(button, /height:\s*24px/);
   assert.match(button, /min-height:\s*24px/);
   assert.match(button, /padding:\s*\.125rem \.25rem/);
-  assert.match(button, /border:\s*1px solid #334155/);
+  assert.match(button, /border:\s*1px solid #4a4030/);
 
   const hitButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options button");
   assert.match(hitButton, /height:\s*28px/);
   assert.match(hitButton, /min-height:\s*28px/);
+  assert.match(hitButton, /box-sizing:\s*border-box/);
+  assert.match(hitButton, /padding:\s*\.125rem \.25rem/);
+  assert.match(hitButton, /flex:\s*1 1 0/);
 
   assert.doesNotMatch(css, /zoom\s*:/);
   assert.doesNotMatch(css, /\.matrix-explore-main-screen \.explore-settings[^}]*transform\s*:/s);

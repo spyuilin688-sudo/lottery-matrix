@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
-const css = `${featureCss}\n${exploreCss}`;
+const css = `html { font-size: 16px; }\n${featureCss}\n${exploreCss}`;
 
 function exploreFixture() {
   const dom = new JSDOM(`
@@ -16,13 +16,13 @@ function exploreFixture() {
           <h2 class="section-title"><span></span>探索設定</h2>
           <div class="setting-grid">
             <label><span><img class="setting-label-icon matrix-explore-setting-icon">彩球類型</span><div class="select-box native-select"><select><option>今彩539</option></select></div></label>
-            <label><span><img class="setting-label-icon matrix-explore-setting-icon">探索期數</span><div class="segmented three"><button>二期</button><button>七期</button><button>十三期</button></div></label>
-            <label><span><img class="setting-label-icon matrix-explore-setting-icon">版路類型</span><div class="segmented three"><button>加減版路</button><button>合值版路</button><button>拖牌版路</button></div></label>
+            <label><span><img class="setting-label-icon matrix-explore-setting-icon">探索期數</span><div class="segmented three"><button data-selected="true">二期</button><button data-selected="false">七期</button><button data-selected="false">十三期</button></div></label>
+            <label><span><img class="setting-label-icon matrix-explore-setting-icon">版路類型</span><div class="segmented three"><button data-selected="true">加減版路</button><button data-selected="false">合值版路</button><button data-selected="false">拖牌版路</button></div></label>
           </div>
         </section>
         <section class="panel hit-advanced-panel">
           <h2 class="section-title"><span></span>命中條件</h2>
-          <div class="hit-options"><button>準4+</button><button>準5+</button></div>
+          <div class="hit-options"><button data-selected="true">準4+</button><button data-selected="false">準5+</button></div>
           <button class="advanced-row"><span>進階探索設定</span></button>
           <div class="advanced-panel"><label></label><label></label><label></label></div>
         </section>
@@ -64,10 +64,10 @@ function exploreFixture() {
   return { style };
 }
 
-test("探索與進階設定的三列圖示使用 5px 垂直間距", () => {
+test("探索與進階設定的三列圖示使用 7px 垂直間距", () => {
   const { style } = exploreFixture();
-  assert.equal(style(".setting-grid").rowGap, "5px");
-  assert.equal(style(".advanced-panel").rowGap, "5px");
+  assert.equal(style(".setting-grid").rowGap, "7px");
+  assert.equal(style(".advanced-panel").rowGap, "7px");
 });
 
 test("探索設定左側標籤依內容延伸避免壓到右側選項", () => {
@@ -75,7 +75,7 @@ test("探索設定左側標籤依內容延伸避免壓到右側選項", () => {
   const label = style(".setting-grid label > span");
 
   assert.equal(label.width, "auto");
-  assert.equal(label.minWidth, "92px");
+  assert.equal(label.minWidth, "88.8px");
   assert.equal(label.flexGrow, "0");
   assert.equal(label.flexShrink, "0");
   assert.equal(label.flexBasis, "auto");
@@ -117,10 +117,45 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
 
 test("命中條件分隔線下移 4px 並與進階探索設定相距 4px", () => {
   const { style } = exploreFixture();
-  assert.equal(style(".hit-options button").height, "28px");
-  assert.equal(style(".hit-options button").minHeight, "28px");
+  const selected = style('.hit-options button[data-selected="true"]');
+  const unselected = style('.hit-options button[data-selected="false"]');
+
+  assert.equal(selected.height, "28px");
+  assert.equal(selected.minHeight, "28px");
+  assert.equal(selected.padding, "0.125rem 0.25rem");
+  assert.equal(selected.boxSizing, "border-box");
+  assert.equal(unselected.height, selected.height);
+  assert.equal(unselected.minHeight, selected.minHeight);
+  assert.equal(unselected.padding, selected.padding);
+  assert.equal(unselected.boxSizing, selected.boxSizing);
   assert.equal(style(".hit-options").paddingBottom, "4px");
   assert.equal(style(".hit-options").marginBottom, "4px");
+});
+
+test("設定控制項以已選金色與未選白灰深色邊框區分", () => {
+  const { style } = exploreFixture();
+  const selected = style('.segmented button[data-selected="true"]');
+  const unselected = style('.segmented button[data-selected="false"]');
+
+  assert.equal(selected.color, "rgb(242, 207, 103)");
+  assert.equal(selected.borderColor, "rgb(200, 150, 34)");
+  assert.equal(selected.backgroundImage, "linear-gradient(145deg, rgba(124, 85, 12, 0.25), rgba(31, 25, 13, 0.74))");
+  assert.equal(unselected.color, "rgb(209, 213, 219)");
+  assert.equal(unselected.borderColor, "rgb(74, 64, 48)");
+  assert.equal(unselected.backgroundImage, "none");
+});
+
+test("功能圖示與進階探索標題使用更新後的層級", () => {
+  const { style } = exploreFixture();
+  const icon = style(".matrix-explore-setting-icon");
+  const rootFontSize = Number.parseFloat(style("html").fontSize);
+
+  assert.equal(icon.inlineSize, "1.8rem");
+  assert.equal(icon.blockSize, "1.8rem");
+  assert.equal(icon.flexBasis, "1.8rem");
+  assert.equal(Number.parseFloat(icon.inlineSize) * rootFontSize, 28.8);
+  assert.equal(Number.parseFloat(icon.blockSize) * rootFontSize, 28.8);
+  assert.equal(style(".advanced-row").fontWeight, "600");
 });
 
 test("重複統計卡片與控制項使用指定比例", () => {

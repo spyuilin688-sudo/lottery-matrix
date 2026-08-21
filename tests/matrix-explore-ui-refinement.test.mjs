@@ -23,9 +23,9 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(left, /font-size:\s*\.8125rem/);
 
   const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
-  assert.match(icon, /inline-size:\s*2rem/);
-  assert.match(icon, /block-size:\s*2rem/);
-  assert.match(icon, /flex:\s*0 0 2rem/);
+  assert.match(icon, /inline-size:\s*1\.8rem/);
+  assert.match(icon, /block-size:\s*1\.8rem/);
+  assert.match(icon, /flex:\s*0 0 1\.8rem/);
 
   const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
   assert.match(select, /height:\s*24px/);
@@ -40,6 +40,10 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /padding:\s*\.125rem \.25rem/);
   assert.match(button, /font-size:\s*\.75rem/);
   assert.match(button, /line-height:\s*1/);
+  assert.match(button, /color:\s*#d1d5db/);
+  assert.match(button, /background:\s*transparent/);
+
+  assert.match(css, /\.matrix-explore-main-screen \.segmented button\[data-selected="true"\]\s*\{[^}]*border-color:\s*#c89622;[^}]*background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\);[^}]*color:\s*#f2cf67;/s);
 
   assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 4px;/s);
 
@@ -66,6 +70,7 @@ test("Matrix Explore action details keep the approved compact presentation", () 
 
   const advanced = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row");
   assert.match(advanced, /padding-inline-end:\s*\.375rem/);
+  assert.match(advanced, /font-weight:\s*600/);
   const arrow = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row svg:last-child");
   assert.match(arrow, /inline-size:\s*1rem/);
   assert.match(arrow, /block-size:\s*1rem/);

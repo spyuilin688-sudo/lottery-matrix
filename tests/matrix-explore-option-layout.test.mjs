@@ -23,14 +23,14 @@ test("Matrix Explore DOM keeps icon and field title in the same horizontal label
   assert.doesNotMatch(exploreSource, /style=\{/);
 });
 
-test("Matrix Explore setting icons are 32px", () => {
-  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span \.setting-label-icon,[\s\S]*?\.matrix-explore-main-screen \.matrix-explore-setting-icon\s*\{[^}]*inline-size:\s*2rem;[^}]*block-size:\s*2rem;[^}]*flex:\s*0 0 2rem;/s);
+test("Matrix Explore setting icons are 28.8px", () => {
+  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span \.setting-label-icon,[\s\S]*?\.matrix-explore-main-screen \.matrix-explore-setting-icon\s*\{[^}]*inline-size:\s*1\.8rem;[^}]*block-size:\s*1\.8rem;[^}]*flex:\s*0 0 1\.8rem;/s);
 });
 
-test("Matrix Explore 兩組三列圖示的垂直邊距都是 5px", () => {
+test("Matrix Explore 兩組三列圖示的垂直邊距都是 7px", () => {
   assert.match(
     css,
-    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*5px;/s,
+    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*7px;/s,
   );
   assert.match(
     css,
@@ -42,7 +42,7 @@ test("Matrix Explore selects and general option buttons are 24px high, hit optio
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box select,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box select\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.segmented button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*28px;[^}]*min-height:\s*28px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*28px;[^}]*min-height:\s*28px;[^}]*padding:\s*\.125rem \.25rem;[^}]*flex:\s*1 1 0;/s);
 });
 
 test("Matrix Explore button badges sit above the upper-right border without covering option text", () => {
