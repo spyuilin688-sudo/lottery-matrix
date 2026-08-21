@@ -83,6 +83,7 @@ describe('Matrix analysis resumable progress store', () => {
     expect(advanced).toMatchObject({ phase: 'explore', cursor: 1, total: 390 });
     await expect(store.readExploreGroups(advanced)).resolves.toEqual([artifact]);
     expect(saved.files.size).toBe(1);
+    expect([...saved.files.values()][0].length).toBeLessThan(JSON.stringify(artifact).length);
     expect([...tables.keys()].filter((name) => name.startsWith('matrix_analysis_progress_'))).toEqual([]);
   });
 

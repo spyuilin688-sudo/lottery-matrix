@@ -73,7 +73,40 @@ function progressPrefix(job: MatrixAnalysisJob) {
 }
 
 function groupPath(job: MatrixAnalysisJob, unitIndex: number) {
+  return `${progressPrefix(job)}/groups/${unitIndex}.json.gz`;
+}
+
+function legacyGroupPath(job: MatrixAnalysisJob, unitIndex: number) {
   return `${progressPrefix(job)}/groups/${unitIndex}.json`;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += 32_768) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + 32_768));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+async function encodeArtifact(artifact: unknown) {
+  const stream = new Blob([JSON.stringify(artifact)])
+    .stream()
+    .pipeThrough(new CompressionStream('gzip'));
+  return bytesToBase64(new Uint8Array(await new Response(stream).arrayBuffer()));
+}
+
+async function decodeArtifact(value: string) {
+  const stream = new Blob([base64ToBytes(value)])
+    .stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(stream).text()) as unknown;
 }
 
 function withoutId(record: StoredRecord) {
@@ -100,11 +133,14 @@ export function createMatrixAnalysisProgressStore(
     const chunks = await listAll<StoredRecord>(adapter, table);
     await deleteIds(table, chunks.map((chunk) => chunk.id));
     for (let index = 0; index < job.total; index += 20) {
-      await storageAdapter.delete(
-        Array.from({ length: Math.min(20, job.total - index) }, (_, offset) => (
-          groupPath(job, index + offset)
-        )),
+      const indexes = Array.from(
+        { length: Math.min(20, job.total - index) },
+        (_, offset) => index + offset,
       );
+      await storageAdapter.delete([
+        ...indexes.map((unitIndex) => groupPath(job, unitIndex)),
+        ...indexes.map((unitIndex) => legacyGroupPath(job, unitIndex)),
+      ]);
     }
     await deleteIds(JOB_TABLE, [job.id]);
   }
@@ -140,8 +176,8 @@ export function createMatrixAnalysisProgressStore(
       }
       const [written] = await storageAdapter.write([{
         path: groupPath(job, unitIndex),
-        content: JSON.stringify(artifact),
-        contentType: 'application/json',
+        content: await encodeArtifact(artifact),
+        contentType: 'application/gzip',
       }]);
       if (!written) throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
       return updateJob(job, { cursor: unitIndex + 1 });
@@ -154,10 +190,22 @@ export function createMatrixAnalysisProgressStore(
           groupPath(job, index + offset)
         ));
         const stored = await storageAdapter.read(paths);
-        if (stored.length !== paths.length || stored.some((file) => file.content === null)) {
+        if (stored.length !== paths.length) throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
+        const missingIndexes = stored.flatMap((file, offset) => file.content === null ? [offset] : []);
+        const legacy = missingIndexes.length
+          ? await storageAdapter.read(missingIndexes.map((offset) => legacyGroupPath(job, index + offset)))
+          : [];
+        if (legacy.some((file) => file.content === null)) {
           throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
         }
-        artifacts.push(...stored.map((file) => JSON.parse(String(file.content)) as unknown));
+        const legacyByOffset = new Map(missingIndexes.map((offset, legacyIndex) => (
+          [offset, String(legacy[legacyIndex]?.content)]
+        )));
+        artifacts.push(...await Promise.all(stored.map((file, offset) => (
+          file.content === null
+            ? JSON.parse(String(legacyByOffset.get(offset))) as unknown
+            : decodeArtifact(file.content)
+        ))));
       }
       return artifacts;
     },
