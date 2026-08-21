@@ -97,13 +97,36 @@ describe('Matrix analysis resumable progress store', () => {
       startedAt: '2026-08-21T10:00:00.000Z', total: 390,
     });
     const resumed = await store.getOrCreate({
-      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v2',
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1',
       startedAt: '2026-08-21T10:01:00.000Z', total: 390,
     });
 
     expect(resumed.id).toBe(first.id);
     expect(resumed.analysisVersion).toBe('v1');
     expect(tables.get('matrix_analysis_jobs')).toHaveLength(1);
+  });
+
+  it('abandons same-period progress from an older algorithm revision', async () => {
+    const { adapter, tables } = memoryAdapter();
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
+    const oldJob = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:matrix-v2',
+      startedAt: '2026-08-21T10:00:00.000Z', total: 390,
+    });
+    await store.appendExploreGroup(oldJob, 0, { id: 'old-result' });
+
+    const currentJob = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:matrix-v3',
+      startedAt: '2026-08-21T10:01:00.000Z', total: 390,
+    });
+
+    expect(currentJob.id).not.toBe(oldJob.id);
+    expect(currentJob.analysisVersion).toBe('114000123:matrix-v3');
+    expect(tables.get('matrix_analysis_jobs')).toEqual([
+      expect.objectContaining({ id: currentJob.id, analysisVersion: '114000123:matrix-v3' }),
+    ]);
+    expect(saved.files.size).toBe(0);
   });
 
   it('persists multiple completed units with one storage write before advancing the cursor', async () => {
