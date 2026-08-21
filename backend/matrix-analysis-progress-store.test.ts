@@ -146,15 +146,16 @@ describe('Matrix analysis resumable progress store', () => {
     await expect(store.readExploreGroups(advanced)).resolves.toEqual([{ id: 'one' }, { id: 'two' }]);
   });
 
-  it('abandons unfinished progress from an older draw when a newer draw becomes current', async () => {
+  it('retains completed Explore partitions for the three-day analysis window', async () => {
     const { adapter, tables } = memoryAdapter();
     const saved = memoryStorage();
     const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
     const oldJob = await store.getOrCreate({
       lottery: '今彩539', drawPeriod: '114000122', analysisVersion: 'old',
-      startedAt: '2026-08-20T10:00:00.000Z', total: 390,
+      startedAt: '2026-08-20T10:00:00.000Z', total: 1,
     });
-    await store.appendExploreGroup(oldJob, 0, { id: 'old-result' });
+    const completeOldJob = await store.appendExploreGroup(oldJob, 0, { id: 'old-result' });
+    await store.finish(completeOldJob);
 
     const currentJob = await store.getOrCreate({
       lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'current',
@@ -162,6 +163,28 @@ describe('Matrix analysis resumable progress store', () => {
     });
 
     expect(currentJob.drawPeriod).toBe('114000123');
+    expect(tables.get('matrix_analysis_jobs')).toEqual([
+      expect.objectContaining({ id: oldJob.id, drawPeriod: '114000122' }),
+      expect.objectContaining({ id: currentJob.id, drawPeriod: '114000123' }),
+    ]);
+    expect(saved.files.size).toBe(1);
+  });
+
+  it('deletes Explore partitions after the three-day analysis window', async () => {
+    const { adapter, tables } = memoryAdapter();
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
+    const expiredJob = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000120', analysisVersion: 'expired',
+      startedAt: '2026-08-17T10:00:00.000Z', total: 1,
+    });
+    await store.appendExploreGroup(expiredJob, 0, { id: 'expired-result' });
+
+    const currentJob = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'current',
+      startedAt: '2026-08-21T10:00:00.000Z', total: 390,
+    });
+
     expect(tables.get('matrix_analysis_jobs')).toEqual([
       expect.objectContaining({ id: currentJob.id, drawPeriod: '114000123' }),
     ]);

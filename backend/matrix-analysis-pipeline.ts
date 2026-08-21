@@ -15,6 +15,10 @@ import {
 } from './matrix-explore-service';
 import { buildTianyanArtifact, type TianyanArtifact } from './matrix-tianyan-service';
 import { buildTiangongArtifact, type TiangongArtifact } from './matrix-tiangong-service';
+import {
+  createPartitionedExploreArtifact,
+  isPartitionedExploreArtifact,
+} from './matrix-explore-partitions';
 
 const DEFAULT_BATCH_BUDGET_MS = 22_000;
 const PERSISTENCE_RESERVE_MS = 7_000;
@@ -257,20 +261,11 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           };
         }
 
-        await reportStage(`explore:read-groups-start:${job.cursor}`);
-        logEnsureCurrentStage(lottery, 'explore:read-groups-start', diagnosticStartedAt, {
-          groupCount: job.cursor,
+        await reportStage(`explore:publish-manifest-start:${job.cursor}`);
+        logEnsureCurrentStage(lottery, 'explore:publish-manifest-start', diagnosticStartedAt, {
+          partitionCount: job.cursor,
         });
-        const groups = await dependencies.progressStore.readExploreGroups(job) as ExploreArtifact[];
-        await reportStage(`explore:read-groups-complete:${groups.length}`);
-        logEnsureCurrentStage(lottery, 'explore:read-groups-complete', diagnosticStartedAt, {
-          groupCount: groups.length,
-        });
-        const explore = dependencies.mergeExplore(lottery, drawPeriod, groups);
-        await reportStage(`explore:publish-start:${explore.items.length}`);
-        logEnsureCurrentStage(lottery, 'explore:publish-start', diagnosticStartedAt, {
-          itemCount: explore.items.length,
-        });
+        const explore = createPartitionedExploreArtifact(lottery, drawPeriod, job, workUnits);
         await dependencies.publishAnalysis({
           kind: 'explore',
           lottery,
@@ -279,9 +274,9 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           startedAt: job.startedAt,
           completedAt: dependencies.now().toISOString(),
         }, explore);
-        await reportStage(`explore:publish-complete:${explore.items.length}`);
-        logEnsureCurrentStage(lottery, 'explore:publish-complete', diagnosticStartedAt, {
-          itemCount: explore.items.length,
+        await reportStage(`explore:publish-manifest-complete:${job.cursor}`);
+        logEnsureCurrentStage(lottery, 'explore:publish-manifest-complete', diagnosticStartedAt, {
+          partitionCount: job.cursor,
         });
         job = await dependencies.progressStore.setPhase(job, 'tianyan');
         logEnsureCurrentStage(lottery, 'explore:phase-complete', diagnosticStartedAt, {
@@ -303,10 +298,15 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           'explore', lottery, drawPeriod, job.analysisVersion,
         );
         if (!storedExplore) throw new Error('MATRIX_EXPLORE_ARTIFACT_NOT_READY');
+        const exploreArtifact = storedData<ExploreArtifact>(storedExplore);
+        if (isPartitionedExploreArtifact(exploreArtifact)) {
+          await reportStage('tianyan:partitioned-pending');
+          return { lottery, drawPeriod, pending: true as const, phase: job.phase };
+        }
         const tianyan = dependencies.buildTianyan(
           lottery,
           drawPeriod,
-          storedData<ExploreArtifact>(storedExplore),
+          exploreArtifact,
         );
         await dependencies.publishAnalysis({
           kind: 'tianyan',

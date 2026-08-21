@@ -5,7 +5,7 @@ import type { MatrixDraw } from './matrix-algorithm';
 const history: MatrixDraw[] = [{ period: '114000123', drawDate: '2026-08-21', numbers: ['01', '02', '03', '04', '05'] }];
 
 describe('Matrix completed-analysis pipeline', () => {
-  it('checkpoints Explore groups across bounded invocations before running composite and Tiangong phases', async () => {
+  it('publishes completed Explore groups as a partition manifest without bulk-loading them', async () => {
     const published = new Map<string, unknown>();
     const groups: unknown[] = [];
     let job = {
@@ -13,6 +13,7 @@ describe('Matrix completed-analysis pipeline', () => {
       analysisVersion: '114000123:matrix-v2', startedAt: '2026-08-21T01:02:03.000Z',
       phase: 'explore' as const, cursor: 0, total: 2,
     };
+    const readExploreGroups = vi.fn(async () => groups);
     const progressStore = {
       getOrCreate: async () => job,
       appendExploreGroups: async (current: typeof job, unitIndex: number, artifacts: unknown[]) => {
@@ -20,7 +21,7 @@ describe('Matrix completed-analysis pipeline', () => {
         job = { ...current, cursor: unitIndex + artifacts.length };
         return job;
       },
-      readExploreGroups: async () => groups,
+      readExploreGroups,
       setPhase: async (current: typeof job, phase: typeof job.phase) => {
         job = { ...current, phase, cursor: 0 };
         return job;
@@ -54,12 +55,21 @@ describe('Matrix completed-analysis pipeline', () => {
     expect(publishAnalysis).not.toHaveBeenCalled();
     await expect(pipeline.ensureCurrent('今彩539', { maxExploreGroups: 1 })).resolves.toMatchObject({ pending: true, phase: 'tianyan' });
     expect(publishAnalysis.mock.calls.map(([meta]) => meta.kind)).toEqual(['explore']);
-    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ pending: true, phase: 'tiangong' });
-    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ pending: true, phase: 'status' });
-    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ completed: true });
-    expect(publishAnalysis.mock.calls.map(([meta]) => meta.kind)).toEqual(['explore', 'tianyan', 'tiangong', 'status']);
-    expect(buildTianyan).toHaveBeenCalledTimes(1);
-    expect(buildTiangong).toHaveBeenCalledTimes(1);
+    expect(publishAnalysis.mock.calls[0][1]).toMatchObject({
+      items: [],
+      validationById: {},
+      partitioned: {
+        format: 'matrix-explore-partitioned-v1',
+        job: { cursor: 2, total: 2 },
+      },
+    });
+    expect(readExploreGroups).not.toHaveBeenCalled();
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      pending: true,
+      phase: 'tianyan',
+    });
+    expect(buildTianyan).not.toHaveBeenCalled();
+    expect(buildTiangong).not.toHaveBeenCalled();
   });
 
   it('does not treat a lone Explore artifact as a completed current analysis', async () => {

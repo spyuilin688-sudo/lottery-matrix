@@ -7,7 +7,11 @@ import { runNumberReference, runTongXing } from './matrix-tools';
 import { analysisStore } from './matrix-analysis-store';
 import { createMemberAuth } from './matrix-member-auth';
 import { createMatrixExploreRoutes } from './matrix-explore-routes';
-import type { ExploreArtifact } from './matrix-explore-service';
+import {
+    filterExploreArtifact,
+    type ExploreArtifact,
+    type ExploreFilterRequest,
+} from './matrix-explore-service';
 import { createMatrixTianyanRoutes } from './matrix-tianyan-routes';
 import type { TianyanArtifact } from './matrix-tianyan-service';
 import { createMatrixTiangongRoutes } from './matrix-tiangong-routes';
@@ -16,6 +20,12 @@ import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 import { matrixAnalysisPipeline } from './matrix-analysis-pipeline';
+import { matrixAnalysisProgressStore } from './matrix-analysis-progress-store';
+import {
+    isPartitionedExploreArtifact,
+    partitionIndexForItemId,
+    partitionIndexesForRequest,
+} from './matrix-explore-partitions';
 import { isTaipeiRefreshWindow, matrixWorkerLimits, runRefreshThenAnalysis, selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { createSystemJobStatusWriter, createSystemJobTracker } from './system-job-status';
@@ -40,6 +50,51 @@ const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
 });
 const readCompletedMatrixAnalysis = (kind: 'explore'|'tianyan'|'tiangong',lottery: '今彩539'|'天天樂'|'六合彩'|'大樂透',drawPeriod?: string) =>
     readReadyAnalysis((analysisKind,analysisLottery,analysisPeriod,analysisVersion) => analysisStore.readAnalysis(analysisKind,analysisLottery,analysisPeriod,analysisVersion),kind,lottery,drawPeriod);
+async function filterStoredExploreArtifact(
+    artifact: ExploreArtifact,
+    request: ExploreFilterRequest,
+    entitlements: Parameters<typeof filterExploreArtifact>[2],
+) {
+    if (!isPartitionedExploreArtifact(artifact)) {
+        return filterExploreArtifact(artifact, request, entitlements);
+    }
+    const indexes = partitionIndexesForRequest(artifact, request);
+    const items: ExploreArtifact['items'] = [];
+    for (let index = 0; index < indexes.length; index += 4) {
+        const groups = await matrixAnalysisProgressStore.readExploreGroupIndexes(
+            artifact.partitioned.job,
+            indexes.slice(index, index + 4),
+        ) as ExploreArtifact[];
+        for (const group of groups) {
+            const filtered = filterExploreArtifact(
+                group,
+                { ...request, sameCode: false },
+                entitlements,
+            );
+            items.push(...filtered.items);
+        }
+    }
+    return filterExploreArtifact({
+        lottery: artifact.lottery,
+        drawPeriod: artifact.drawPeriod,
+        items,
+        validationById: {},
+    }, request, entitlements);
+}
+
+async function readStoredExploreValidationArtifact(
+    artifact: ExploreArtifact,
+    itemId: string,
+) {
+    if (!isPartitionedExploreArtifact(artifact)) return artifact;
+    const partitionIndex = partitionIndexForItemId(artifact, itemId);
+    if (partitionIndex === null) return null;
+    const [group] = await matrixAnalysisProgressStore.readExploreGroupIndexes(
+        artifact.partitioned.job,
+        [partitionIndex],
+    ) as ExploreArtifact[];
+    return group ?? null;
+}
 const matrixStatusRoutes = createMatrixStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
     readAnalysis: (kind,lottery,drawPeriod) => kind === 'explore' || kind === 'tianyan'
@@ -57,6 +112,8 @@ const matrixExploreRoutes = createMatrixExploreRoutes({
         const artifact = await analysisStore.readAnalysis('explore',lottery,drawPeriod,`${drawPeriod}:matrix-v3`);
         return artifact === null ? null : { ...artifact,data:artifact.data as ExploreArtifact };
     },
+    filterPartitionedExplore: filterStoredExploreArtifact,
+    readPartitionedValidationArtifact: readStoredExploreValidationArtifact,
 });
 const matrixTianyanRoutes = createMatrixTianyanRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),

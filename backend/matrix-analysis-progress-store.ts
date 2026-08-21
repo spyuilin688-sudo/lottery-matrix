@@ -3,6 +3,7 @@ import type { LotteryId } from '../shared/matrix-contracts';
 import { readExploreGroupArtifacts } from './matrix-analysis-progress-reader';
 
 const JOB_TABLE = 'matrix_analysis_jobs';
+const PROGRESS_RETENTION_MS = 3 * 24 * 60 * 60 * 1_000;
 
 type StoredRecord = Record<string, unknown> & { id: string };
 
@@ -153,6 +154,21 @@ export function createMatrixAnalysisProgressStore(
     return updated;
   }
 
+  async function readExploreGroupIndexes(job: MatrixAnalysisJob, indexes: number[]) {
+    if (indexes.some((index) => !Number.isInteger(index) || index < 0 || index >= job.cursor)) {
+      throw new Error('MATRIX_ANALYSIS_PROGRESS_INDEX_INVALID');
+    }
+    const paths = indexes.map((index) => groupPath(job, index));
+    const legacyPaths = indexes.map((index) => legacyGroupPath(job, index));
+    return readExploreGroupArtifacts(
+      storageAdapter,
+      paths,
+      legacyPaths,
+      decodeArtifact,
+      value => JSON.parse(value) as unknown,
+    );
+  }
+
   return {
     async getOrCreate(input: Omit<MatrixAnalysisJob, 'id' | 'phase' | 'cursor'>) {
       const jobs = await listAll<MatrixAnalysisJob>(adapter, JOB_TABLE);
@@ -168,9 +184,12 @@ export function createMatrixAnalysisProgressStore(
           cursor: 0,
         });
       }
+      const retentionCutoff = Date.parse(input.startedAt) - PROGRESS_RETENTION_MS;
       for (const stale of jobs.filter((job) => (
         job.lottery === input.lottery
         && job.drawPeriod !== input.drawPeriod
+        && Number.isFinite(retentionCutoff)
+        && Date.parse(job.startedAt) < retentionCutoff
       ))) {
         await deleteJob(stale);
       }
@@ -203,15 +222,12 @@ export function createMatrixAnalysisProgressStore(
       return this.appendExploreGroups(job, unitIndex, [artifact]);
     },
 
-    async readExploreGroups(job: MatrixAnalysisJob) {
-      const paths = Array.from({ length: job.cursor }, (_, index) => groupPath(job, index));
-      const legacyPaths = Array.from({ length: job.cursor }, (_, index) => legacyGroupPath(job, index));
-      return readExploreGroupArtifacts(
-        storageAdapter,
-        paths,
-        legacyPaths,
-        decodeArtifact,
-        value => JSON.parse(value) as unknown,
+    readExploreGroupIndexes,
+
+    readExploreGroups(job: MatrixAnalysisJob) {
+      return readExploreGroupIndexes(
+        job,
+        Array.from({ length: job.cursor }, (_, index) => index),
       );
     },
 
@@ -219,8 +235,8 @@ export function createMatrixAnalysisProgressStore(
       return updateJob(job, { phase, cursor: 0 });
     },
 
-    async finish(job: MatrixAnalysisJob) {
-      await deleteJob(job);
+    async finish(_job: MatrixAnalysisJob) {
+      // Explore partitions remain available for the three-day analysis retention window.
     },
   };
 }

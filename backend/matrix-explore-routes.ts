@@ -2,6 +2,7 @@ import type { MatrixAnalysisKind, LotteryId } from '../shared/matrix-contracts';
 import {
   anonymousMatrixMember,
   resolveMatrixEntitlements,
+  type MatrixEntitlements,
   type MemberContext,
 } from './matrix-entitlements';
 import { MatrixAccessError } from './matrix-member-auth';
@@ -29,6 +30,15 @@ type ExploreRouteDependencies = {
     drawPeriod?: string,
   ): Promise<CompletedArtifact | null>;
   resolveDrawPeriod?(lottery: LotteryId, exploreDateOffset: 0 | 1 | 2): Promise<string | undefined>;
+  filterPartitionedExplore?(
+    artifact: ExploreArtifact,
+    request: ExploreFilterRequest,
+    entitlements: MatrixEntitlements,
+  ): Promise<{ items: ExploreArtifact['items']; total: number; duplicateStats: Array<{ number: string; count: number }> }>;
+  readPartitionedValidationArtifact?(
+    artifact: ExploreArtifact,
+    itemId: string,
+  ): Promise<ExploreArtifact | null>;
   now?: () => Date;
 };
 
@@ -128,11 +138,15 @@ export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies
           resolvedDrawPeriod,
         );
         if (!artifact) throw new Error('ANALYSIS_NOT_READY');
-        const filtered = filterExploreArtifact(
-          artifact.data,
-          { ...request, exploreDateOffset: 0 },
-          resolveMatrixEntitlements(member, now()),
-        );
+        const normalizedRequest = { ...request, exploreDateOffset: 0 as const };
+        const entitlements = resolveMatrixEntitlements(member, now());
+        const filtered = dependencies.filterPartitionedExplore
+          ? await dependencies.filterPartitionedExplore(
+            artifact.data,
+            normalizedRequest,
+            entitlements,
+          )
+          : filterExploreArtifact(artifact.data, normalizedRequest, entitlements);
         return {
           status: 200,
           body: {
@@ -163,8 +177,12 @@ export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies
         if (artifact.analysisVersion !== analysisVersion) {
           throw new Error('ANALYSIS_VERSION_MISMATCH');
         }
-        canReadValidation(artifact.data, itemId, member, now());
-        const validation = getExploreValidation(artifact.data, itemId);
+        const validationArtifact = dependencies.readPartitionedValidationArtifact
+          ? await dependencies.readPartitionedValidationArtifact(artifact.data, itemId)
+          : artifact.data;
+        if (!validationArtifact) throw new Error('INVALID_REQUEST');
+        canReadValidation(validationArtifact, itemId, member, now());
+        const validation = getExploreValidation(validationArtifact, itemId);
         if (!validation) throw new Error('INVALID_REQUEST');
         return {
           status: 200,

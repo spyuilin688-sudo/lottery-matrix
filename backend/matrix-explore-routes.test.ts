@@ -144,6 +144,43 @@ describe('Matrix Explore routes', () => {
     });
   });
 
+  it('delegates partitioned Explore list and validation reads without loading all groups', async () => {
+    const partitioned = {
+      ...artifact,
+      items: [],
+      validationById: {},
+      partitioned: { format: 'matrix-explore-partitioned-v1' },
+    } as never;
+    const filterPartitionedExplore = vi.fn(async () => ({
+      items: [artifact.items[0]],
+      total: 1,
+      duplicateStats: [{ number: '03', count: 1 }],
+    }));
+    const readPartitionedValidationArtifact = vi.fn(async () => artifact);
+    const api = routes({
+      readAnalysis: async () => ({
+        analysisVersion: '114000123:v1',
+        drawPeriod: '114000123',
+        data: partitioned,
+      }),
+      filterPartitionedExplore,
+      readPartitionedValidationArtifact,
+    });
+
+    await expect(api.list({ authorization: 'Bearer token', body: listBody })).resolves.toMatchObject({
+      status: 200,
+      body: { total: 1, items: [{ id: 'item-1' }] },
+    });
+    await expect(api.validation({ authorization: 'Bearer token', body: {
+      lottery: '今彩539',
+      drawPeriod: '114000123',
+      analysisVersion: '114000123:v1',
+      itemId: 'item-1',
+    } })).resolves.toMatchObject({ status: 200, body: { itemId: 'item-1' } });
+    expect(filterPartitionedExplore).toHaveBeenCalledTimes(1);
+    expect(readPartitionedValidationArtifact).toHaveBeenCalledWith(partitioned, 'item-1');
+  });
+
   it('returns ANALYSIS_NOT_READY until a complete artifact exists', async () => {
     const api = routes({ readAnalysis: async () => null });
     await expect(api.list({ authorization: 'Bearer token', body: listBody })).resolves.toMatchObject({
