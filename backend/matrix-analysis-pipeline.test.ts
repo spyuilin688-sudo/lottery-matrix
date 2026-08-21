@@ -202,6 +202,37 @@ describe('Matrix completed-analysis pipeline', () => {
     expect(publishAnalysis.mock.calls[0][0]).toMatchObject({ kind: 'explore' });
   });
 
+  it('restarts the current draw when only an older algorithm revision is complete', async () => {
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async (kind, _lottery, _drawPeriod, analysisVersion) => (
+        kind === 'status' && analysisVersion !== '114000123:matrix-v3'
+          ? { analysisVersion: '114000123:matrix-v2' }
+          : null
+      ),
+      createExploreWorkUnits: () => [],
+      progressStore: {
+        getOrCreate: async () => ({
+          id: 'job', lottery: '今彩539', drawPeriod: '114000123',
+          analysisVersion: '114000123:matrix-v3', startedAt: '2026-08-21T00:00:00Z',
+          phase: 'explore', cursor: 0, total: 0,
+        }),
+        readExploreGroups: async () => [],
+        setPhase: async (job, phase) => ({ ...job, phase, cursor: 0 }),
+        appendExploreGroups: async () => { throw new Error('unexpected'); },
+        finish: async () => undefined,
+      } as never,
+      publishAnalysis: vi.fn(async () => ({})),
+      mergeExplore: (lottery, drawPeriod) => ({
+        lottery, drawPeriod, items: [], validationById: {},
+      }),
+    });
+
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      drawPeriod: '114000123', pending: true, phase: 'tianyan',
+    });
+  });
+
   it('skips recomputation only when the current draw has a completion marker', async () => {
     const publishAnalysis = vi.fn(async () => ({}));
     const pipeline = createMatrixAnalysisPipeline({
