@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
   BarChart3,
@@ -22,9 +22,9 @@ import "./profile-name.css";
 import "./admin-operations.css";
 import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
-import { filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
+import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
-import { loadSystemStatus, type SystemStatusItem } from "./system-status";
+import { loadSystemStatus, retrySystemStatus, type SystemStatusItem } from "./system-status";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   totalUsers: number;
@@ -351,6 +351,29 @@ function AdminApp() {
       },
     );
   };
+  const deleteCode = async (id: string) => {
+    const code = rows.find((row) => row.id === id)?.code;
+    await runConfirmed(
+      () => requestConfirmation({
+        title: "確認刪除啟動碼",
+        message: `啟動碼「${text(code)}」刪除後無法復原。`,
+        confirmLabel: "確認刪除",
+        tone: "danger",
+      }),
+      async () => {
+        setBusy(true);
+        setError("");
+        try {
+          await deleteActivationCode(api, id);
+          await load("啟動碼管理");
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "刪除啟動碼失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
+  };
   const saveAdmin = async () => {
     await runConfirmed(
       () => requestConfirmation({
@@ -424,6 +447,7 @@ function AdminApp() {
     );
   return (
     <div className="shell">
+      {drawer && <button className="drawerBackdrop" aria-label="關閉功能選單" onClick={() => setDrawer(false)} />}
       <aside className={drawer ? "side open" : "side"}>
         <div className="sideTitle">
           樂彩 Matrix<small>營運後台</small>
@@ -454,9 +478,6 @@ function AdminApp() {
           <div className="actions">
             <button className="profileName" onClick={openProfileName} title="修改自己的名稱">
               {String(admin?.name || admin?.account || "管理員")}
-            </button>
-            <button onClick={() => load()} title="重新整理">
-              <RefreshCw size={18} />
             </button>
             <button onClick={signOut} title="登出">
               <LogOut size={18} />
@@ -626,8 +647,8 @@ function AdminApp() {
               <DataTable
                 rows={rows}
                 fields={fields}
-                canDelete={false}
-                onDelete={() => undefined}
+                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit")}
+                onDelete={deleteCode}
               />
             </>
           )}
@@ -1042,8 +1063,12 @@ function SystemSettings() {
   const [items, setItems] = useState<SystemStatusItem[]>([]);
   const [checkedAt, setCheckedAt] = useState("");
   const [checking, setChecking] = useState(false);
+  const [retryingId, setRetryingId] = useState("");
   const [statusError, setStatusError] = useState("");
+  const requestInFlight = useRef(false);
   const refresh = async () => {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setChecking(true);
     setStatusError("");
     try {
@@ -1053,7 +1078,24 @@ function SystemSettings() {
     } catch (cause) {
       setStatusError(cause instanceof Error ? cause.message : "連線狀態檢查失敗");
     } finally {
+      requestInFlight.current = false;
       setChecking(false);
+    }
+  };
+  const retry = async (id: string) => {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setRetryingId(id);
+    setStatusError("");
+    try {
+      const next = await retrySystemStatus(api, id);
+      setItems((current) => current.map((item) => item.id === id ? next : item));
+      setCheckedAt(next.checkedAt);
+    } catch (cause) {
+      setStatusError(cause instanceof Error ? cause.message : "API 重新呼叫失敗");
+    } finally {
+      requestInFlight.current = false;
+      setRetryingId("");
     }
   };
   useEffect(() => { void refresh(); }, []);
@@ -1061,7 +1103,7 @@ function SystemSettings() {
     <>
       <div className="systemStatusHeader">
         <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
-        <button className="compactButton" onClick={refresh} disabled={checking}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
+        <button className="compactButton" onClick={refresh} disabled={checking || Boolean(retryingId)}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
       </div>
       {statusError && <div className="error">{statusError}</div>}
       <div className="statusCards">
@@ -1076,6 +1118,11 @@ function SystemSettings() {
               {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
               {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
               {item.error && <div className="statusErrorText">{item.error}</div>}
+              {!item.ok && item.retryable && (
+                <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={checking || Boolean(retryingId)}>
+                  <RefreshCw size={14} />{retryingId === item.id ? "呼叫中" : "重新呼叫"}
+                </button>
+              )}
             </article>
           );
         })}
@@ -1108,7 +1155,7 @@ function DataTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={fields.length + 1} className="empty">
+              <td colSpan={fields.length + (canDelete ? 1 : 0)} className="empty">
                 目前沒有資料
               </td>
             </tr>
@@ -1120,7 +1167,7 @@ function DataTable({
                 ))}
                 {canDelete && (
                   <td>
-                    <button className="danger" onClick={() => onDelete(r.id)}>
+                    <button className="danger" aria-label={`刪除啟動碼 ${text(r.code)}`} onClick={() => onDelete(r.id)}>
                       <Trash2 size={15} />
                     </button>
                   </td>
