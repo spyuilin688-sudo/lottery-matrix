@@ -16,6 +16,9 @@ describe('listAdminTable', () => {
       status: 'active',
       referral_code: null,
       invitation_code: 'INVITE',
+      last_online_at: '2026-08-21T10:30:00Z',
+      total_online_seconds: 5400,
+      online_session_count: 3,
       current_plan: { name: '月費方案' },
     }]) };
 
@@ -34,8 +37,20 @@ describe('listAdminTable', () => {
         referralCode: null,
         invitationCode: 'INVITE',
         planName: '月費方案',
+        lastOnlineAt: '2026-08-21T10:30:00Z',
+        averageOnlineMinutes: 30,
       }],
     });
+  });
+
+  it('excludes super administrators from login and audit record queries', async () => {
+    const request = vi.fn(async () => []);
+
+    await listAdminTable('loginRecords', { request });
+    await listAdminTable('auditLogs', { request });
+
+    expect(request.mock.calls[0][0]).toContain('admin_account.role=neq.');
+    expect(request.mock.calls[1][0]).toContain('admin_account.role=neq.');
   });
 
   it('maps administrator permission columns into the existing permission object', async () => {

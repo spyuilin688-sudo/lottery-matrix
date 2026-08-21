@@ -3,6 +3,7 @@ import {
   requireAdmin,
   requireModulePermission,
   requirePermission,
+  shouldRecordAdminActivity,
   type ModuleAction,
   type ModuleKey,
   type PermissionKey,
@@ -44,10 +45,11 @@ const requestMetadata = (ctx: Context) => ({
   ip: String(ctx.event?.requestContext?.http?.sourceIp || ctx.event?.headers?.['x-forwarded-for'] || ''),
   device: String(ctx.event?.headers?.['user-agent'] || ''),
 });
-const actorOf = (admin: { id?: string; account?: string; name?: string }) => ({
+const actorOf = (admin: { id?: string; account?: string; name?: string; role?: string }) => ({
   id: String(admin.id),
   account: String(admin.account || ''),
   name: String(admin.name || admin.account || '管理員'),
+  role: String(admin.role || ''),
 });
 const bodyOf = (ctx: Context) =>
   (ctx.body && typeof ctx.body === 'object' ? ctx.body : {}) as Record<string, unknown>;
@@ -117,17 +119,19 @@ const routes: Record<string, unknown> = {
     try {
       const admin = await getAdmin(ctx);
       const lastLoginAt = now();
-      await Promise.all([
-        supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(String(admin.id))}`, {
-          last_login_at: lastLoginAt,
-        }),
-        supabase.insertRows('admin_login_records', [{
-          admin_id: admin.id,
-          account: admin.account,
-          login_at: lastLoginAt,
-          ...requestMetadata(ctx),
-        }]),
-      ]);
+      if (shouldRecordAdminActivity(admin)) {
+        await Promise.all([
+          supabase.updateRows('admin_accounts', `id=eq.${encodeURIComponent(String(admin.id))}`, {
+            last_login_at: lastLoginAt,
+          }),
+          supabase.insertRows('admin_login_records', [{
+            admin_id: admin.id,
+            account: admin.account,
+            login_at: lastLoginAt,
+            ...requestMetadata(ctx),
+          }]),
+        ]);
+      }
       return json({ admin: { ...admin, lastLoginAt } });
     } catch (cause) {
       return fail(cause);

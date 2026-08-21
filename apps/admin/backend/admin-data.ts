@@ -10,7 +10,7 @@ type WriteTransport = {
   deleteRows<T = unknown>(table: string, query: string): Promise<T[]>;
 };
 
-export type AdminActor = { id: string; account: string; name: string };
+export type AdminActor = { id: string; account: string; name: string; role?: string };
 export type AdminAccountInput = {
   account: string;
   name: string;
@@ -45,7 +45,7 @@ export class AdminDataError extends Error {
 
 const definitions: Record<string, TableDefinition> = {
   users: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       authUserId: row.auth_user_id,
@@ -60,15 +60,21 @@ const definitions: Record<string, TableDefinition> = {
       referralCode: row.referral_code,
       invitationCode: row.invitation_code,
       planName: (row.current_plan as Row | null)?.name ?? null,
+      lastOnlineAt: row.last_online_at,
+      averageOnlineMinutes: Number(row.online_session_count ?? 0) > 0
+        ? Math.round(Number(row.total_online_seconds ?? 0) / Number(row.online_session_count) / 60)
+        : 0,
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
         id: String(row.id),
         authUserId: row.auth_user_id,
+        lineUserId: row.line_user_id,
+        registeredAt: row.registered_at,
         currentPlanId: row.current_plan_id,
         planName: plan?.name ?? null,
         planPrice: plan?.price ?? null,
@@ -78,11 +84,17 @@ const definitions: Record<string, TableDefinition> = {
         isLifetime: row.is_lifetime,
         autoRenew: row.auto_renew,
         status: row.status,
+        referralCode: row.referral_code,
+        invitationCode: row.invitation_code,
+        lastOnlineAt: row.last_online_at,
+        averageOnlineMinutes: Number(row.online_session_count ?? 0) > 0
+          ? Math.round(Number(row.total_online_seconds ?? 0) / Number(row.online_session_count) / 60)
+          : 0,
       };
     },
   },
   loginRecords: {
-    path: '/rest/v1/admin_login_records?select=id,admin_id,account,login_at,logout_at,online_minutes,ip,device&order=login_at.desc&limit=200',
+    path: `/rest/v1/admin_login_records?select=id,admin_id,account,login_at,logout_at,online_minutes,ip,device,admin_account:admin_accounts!inner(role)&admin_account.role=neq.${encodeURIComponent('超級管理員')}&order=login_at.desc&limit=200`,
     map: (row) => ({
       id: String(row.id),
       adminId: row.admin_id,
@@ -106,7 +118,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   auditLogs: {
-    path: '/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device&order=operation_time.desc&limit=200',
+    path: `/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device,admin_account:admin_accounts!inner(role)&admin_account.role=neq.${encodeURIComponent('超級管理員')}&order=operation_time.desc&limit=200`,
     map: (row) => ({
       id: String(row.id),
       operationTime: row.operation_time,
@@ -280,6 +292,7 @@ export function createAdminData(transport: WriteTransport) {
     ip?: string | null;
     device?: string | null;
   }) {
+    if (entry.actor.role === '超級管理員') return;
     await transport.insertRows('audit_logs', [{
       admin_id: entry.actor.id,
       admin: entry.actor.name || entry.actor.account,

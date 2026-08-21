@@ -50,6 +50,10 @@ export function getPermissions(admin: AdminAccount): Permissions {
   return { view: true, add: false, edit: false, delete: false };
 }
 
+export function shouldRecordAdminActivity(admin: AdminAccount) {
+  return admin.role !== '超級管理員';
+}
+
 const roleModules: Record<string, ModulePermissions> = {
   超級管理員: {
     users: { view: true, edit: true },

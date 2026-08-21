@@ -42,14 +42,24 @@
 .transferRow > div:first-child { display: grid; gap: 4px; }
 .transferRow span { color: #888d96; font-size: 12px; }
 .permissionBox span { font-size: 13px; color: #c4c6cc; }
+.managementList table { min-width: 980px; }
+.pagination { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; }
+.pagination button { border: 1px solid #343840; background: #15181d; color: #eee; border-radius: 8px; padding: 7px 10px; }
+.pagination button:disabled { opacity: .4; }
+.pagination span { color: #8f939b; font-size: 13px; }
+.userInfoRows { display: grid; gap: 0; }
+.userInfoRows > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid #24272d; }
+.userInfoRows span { color: #888d96; font-size: 12px; }
+.userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
 @media (max-width: 760px) {
   .managementToolbar { grid-template-columns: 1fr 120px; }
   .managementToolbar span { grid-column: 1 / -1; }
-  .desktopManagement { display: none; }
-  .mobileManagement { display: grid; gap: 10px; }
-  .mobileManagement.subscriptionGrid { display: grid; grid-template-columns: 1fr; }
+  .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .managementList table { min-width: 920px; }
   .transferRow { grid-template-columns: 1fr auto; }
   .transferRow .rowActions { grid-column: 1 / -1; }
   .managementCard > .compactButton { width: 100%; margin-top: 10px; }
+  .pagination { justify-content: center; }
+  .userInfoRows > div { grid-template-columns: 105px minmax(0, 1fr); }
 }

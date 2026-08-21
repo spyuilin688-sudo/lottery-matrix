@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { filterRows, saveMemberStatus, saveSubscription } from './admin-operations';
+import { filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from './admin-operations';
 
 describe('admin operation helpers', () => {
   it('filters rows by keyword and status', () => {
@@ -27,5 +27,19 @@ describe('admin operation helpers', () => {
     await saveSubscription({ put }, 'member-1', { action: 'cancel' });
     expect(put).toHaveBeenNthCalledWith(1, '/api/members/member-1/status', { status: 'disabled' });
     expect(put).toHaveBeenNthCalledWith(2, '/api/subscriptions/member-1', { action: 'cancel' });
+  });
+
+  it('formats stored dates without seconds and preserves missing values', () => {
+    expect(formatAdminDateTime('2026-08-21T10:35:42+08:00')).toBe('2026/08/21 10:35');
+    expect(formatAdminDateTime(null)).toBe('—');
+  });
+
+  it('paginates filtered rows in groups of thirty', () => {
+    const rows = Array.from({ length: 65 }, (_, index) => ({ id: String(index + 1) }));
+    expect(paginateRows(rows, 1).items).toHaveLength(30);
+    expect(paginateRows(rows, 2).items[0].id).toBe('31');
+    expect(paginateRows(rows, 3).totalPages).toBe(3);
+    expect(paginateRows(rows, 3).items).toHaveLength(5);
+    expect(paginateRows(rows, 3).items[0].id).toBe('61');
   });
 });

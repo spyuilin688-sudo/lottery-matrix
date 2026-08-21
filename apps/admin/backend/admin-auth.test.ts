@@ -5,6 +5,7 @@ import {
   requireAdmin,
   requireModulePermission,
   requirePermission,
+  shouldRecordAdminActivity,
 } from './admin-auth';
 
 const transport = (rows: unknown[]) => ({
@@ -53,6 +54,10 @@ describe('requireAdmin', () => {
 });
 
 describe('permissions', () => {
+  it('does not record super administrator activity', () => {
+    expect(shouldRecordAdminActivity({ role: '超級管理員' })).toBe(false);
+    expect(shouldRecordAdminActivity({ role: '營運管理員' })).toBe(true);
+  });
   it('grants every permission to a super administrator', () => {
     expect(getPermissions({ role: '超級管理員' })).toEqual({
       view: true,

@@ -4,10 +4,8 @@ import {
   BarChart3,
   Users,
   CreditCard,
-  Activity,
   Wallet,
   LogIn,
-  ReceiptText,
   ScrollText,
   ShieldCheck,
   Settings,
@@ -24,7 +22,7 @@ import "./profile-name.css";
 import "./admin-operations.css";
 import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
-import { filterRows, saveMemberStatus, saveSubscription } from "./admin-operations";
+import { filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { loadSystemStatus, type SystemStatusItem } from "./system-status";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
@@ -39,13 +37,6 @@ type Dashboard = {
   yearRevenue: number;
   cumulativeRevenue: number;
 };
-type AlgorithmStatus = {
-  ok: boolean;
-  health: unknown | null;
-  coverage: unknown | null;
-  audit: unknown | null;
-  cases: unknown | null;
-};
 type AdminForm = {
   account: string;
   name: string;
@@ -57,10 +48,8 @@ const modules = [
   ["營運概覽", BarChart3],
   ["用戶管理", Users],
   ["訂閱管理", CreditCard],
-  ["數據分析", Activity],
   ["收入報表", Wallet],
   ["登入紀錄", LogIn],
-  ["訂閱紀錄", ReceiptText],
   ["審計日誌", ScrollText],
   ["管理員權限", ShieldCheck],
   ["系統設定", Settings],
@@ -70,7 +59,6 @@ const tableMap: Record<string, string> = {
   用戶管理: "users",
   訂閱管理: "subscriptions",
   登入紀錄: "loginRecords",
-  訂閱紀錄: "subscriptionRecords",
   審計日誌: "auditLogs",
   啟動碼管理: "activationCodes",
 };
@@ -106,13 +94,6 @@ const labels: Record<string, string[]> = {
     "ip",
     "device",
   ],
-  subscriptionRecords: [
-    "memberId",
-    "planId",
-    "amount",
-    "paidAt",
-    "status",
-  ],
   auditLogs: [
     "operationTime",
     "admin",
@@ -137,9 +118,11 @@ const labels: Record<string, string[]> = {
   ],
 };
 const zh: Record<string, string> = {
-  authUserId: "驗證用戶 ID",
-  lineUserId: "LINE 用戶 ID",
-  registeredAt: "註冊日期",
+  authUserId: "驗證用戶ID",
+  lineUserId: "LINE用戶ID",
+  registeredAt: "註冊時間",
+  lastOnlineAt: "最後上線時間",
+  averageOnlineMinutes: "平均在線時間",
   currentPlanId: "目前方案 ID",
   planStartedAt: "方案開始時間",
   planExpiresAt: "方案到期時間",
@@ -180,6 +163,8 @@ const zh: Record<string, string> = {
 const money = (n: number) => `$${Number(n || 0).toLocaleString("zh-TW")}`;
 const text = (v: unknown) =>
   typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "—");
+const dateFields = new Set(["registeredAt", "planStartedAt", "planExpiresAt", "loginAt", "logoutAt", "operationTime", "paidAt", "createdAt", "redeemedAt", "expiresAt", "lastLoginAt", "lastOnlineAt"]);
+const displayValue = (field: string, value: unknown) => dateFields.has(field) ? formatAdminDateTime(value) : text(value);
 const defaultAdmin = (role = "查看人員"): AdminForm => ({
   account: "",
   name: "",
@@ -198,8 +183,6 @@ function AdminApp() {
   const [plans, setPlans] = useState<Row[]>([]);
   const [transfers, setTransfers] = useState<Row[]>([]);
   const [dash, setDash] = useState<Dashboard | null>(null);
-  const [algorithmStatus, setAlgorithmStatus] =
-    useState<AlgorithmStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [drawer, setDrawer] = useState(false);
@@ -225,25 +208,10 @@ function AdminApp() {
     setError("");
     try {
       if (name === "營運概覽") {
-        const [dashboardResult, algorithmResult] = await Promise.allSettled([
-          api.get("/api/dashboard"),
-          api.get("/api/algorithm-status"),
-        ]);
-        if (dashboardResult.status === "rejected") throw dashboardResult.reason;
-        setDash(dashboardResult.value.data);
-        setAlgorithmStatus(
-          algorithmResult.status === "fulfilled"
-            ? algorithmResult.value.data
-            : {
-                ok: false,
-                health: null,
-                coverage: null,
-                audit: null,
-                cases: null,
-              },
-        );
+        const result = await api.get("/api/dashboard");
+        setDash(result.data);
         setRows([]);
-      } else if (name === "數據分析" || name === "收入報表") {
+      } else if (name === "收入報表") {
         const r = await api.get("/api/dashboard");
         setDash(r.data);
         setRows([]);
@@ -481,10 +449,7 @@ function AdminApp() {
         <section className="content">
           {error && <div className="error">{error}</div>}
           {busy && <div className="loading">資料處理中…</div>}
-          {active === "營運概覽" && dash && (
-            <Overview d={dash} algorithmStatus={algorithmStatus} />
-          )}{" "}
-          {active === "數據分析" && dash && <Analytics d={dash} />}{" "}
+          {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} />}{" "}
           {active === "系統設定" && <SystemSettings />}{" "}
           {active === "用戶管理" && (
@@ -619,40 +584,37 @@ function UserManager({
 }) {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("all");
+  const [page, setPage] = useState(1);
   const filtered = filterRows(rows, keyword, status);
-  const fields = ["authUserId", "lineUserId", "planName", "planExpiresAt", "status", "referralCode", "invitationCode"];
+  const paged = paginateRows(filtered, page);
+  const fields = ["lineUserId", "registeredAt", "lastOnlineAt", "averageOnlineMinutes", "status", "authUserId"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
+  const showValue = (field: string, row: Row) => field === "status"
+    ? statusText(row[field])
+    : field === "averageOnlineMinutes" ? `${Number(row[field] || 0)} 分鐘` : displayValue(field, row[field]);
   return (
     <>
       <div className="managementToolbar">
-        <input aria-label="搜尋會員" placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-        <select aria-label="篩選會員狀態" value={status} onChange={(event) => setStatus(event.target.value)}>
+        <input aria-label="搜尋會員" placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(1); }} />
+        <select aria-label="篩選會員狀態" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
           <option value="all">全部狀態</option>
           <option value="active">啟用</option>
           <option value="disabled">停用</option>
         </select>
         <span>{filtered.length} 筆資料</span>
       </div>
-      <div className="desktopManagement tableWrap">
+      <div className="managementList tableWrap">
         <table>
           <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>操作</th></tr></thead>
-          <tbody>{filtered.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">目前沒有資料</td></tr> : filtered.map((row) => (
+          <tbody>{paged.items.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              {fields.map((field) => <td key={field}>{field === "status" ? statusText(row[field]) : text(row[field])}</td>)}
-              <td>{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟用" : "停用"}</button>}</td>
+              {fields.map((field) => <td key={field}>{showValue(field, row)}</td>)}
+              <td>{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</td>
             </tr>
           ))}</tbody>
         </table>
       </div>
-      <div className="mobileManagement">
-        {filtered.map((row) => (
-          <article className="managementCard" key={row.id}>
-            <div className="cardHeading"><b>{text(row.authUserId)}</b><span className={statusText(row.status) === "停用" ? "statusBadge bad" : "statusBadge good"}>{statusText(row.status)}</span></div>
-            {fields.slice(1).map((field) => <div className="cardRow" key={field}><span>{zh[field] || field}</span><b>{field === "status" ? statusText(row[field]) : text(row[field])}</b></div>)}
-            {canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟用會員" : "停用會員"}</button>}
-          </article>
-        ))}
-      </div>
+      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} />
     </>
   );
 }
@@ -684,7 +646,10 @@ function SubscriptionManager({
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [page, setPage] = useState(1);
+  const [userInfo, setUserInfo] = useState<Row | null>(null);
   const filtered = filterRows(rows, keyword, status);
+  const paged = paginateRows(filtered, page);
   const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
     setEditing(row);
     setAction(nextAction);
@@ -705,34 +670,25 @@ function SubscriptionManager({
   return (
     <>
       <div className="managementToolbar">
-        <input aria-label="搜尋訂閱" placeholder="搜尋會員或方案" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => setStatus(event.target.value)}>
+        <input aria-label="搜尋訂閱" placeholder="搜尋會員或方案" value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(1); }} />
+        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
           <option value="all">全部狀態</option><option value="active">啟用</option><option value="disabled">停用</option>
         </select>
         <span>{filtered.length} 筆資料</span>
       </div>
-      <div className="desktopManagement tableWrap">
+      <div className="managementList tableWrap">
         <table>
-          <thead><tr><th>驗證用戶 ID</th><th>方案名稱</th><th>方案開始時間</th><th>方案到期時間</th><th>終生</th><th>自動續訂</th><th>操作</th></tr></thead>
-          <tbody>{filtered.length === 0 ? <tr><td colSpan={7} className="empty">目前沒有資料</td></tr> : filtered.map((row) => (
+          <thead><tr><th>LINE用戶ID</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
+          <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              <td>{text(row.authUserId)}</td><td>{text(row.planName)}</td><td>{text(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : text(row.planExpiresAt)}</td><td>{row.isLifetime ? "是" : "否"}</td><td>{row.autoRenew ? "是" : "否"}</td>
-              <td>{canEdit && <div className="cardActions">{(["activate", "renew", "cancel", "adjustExpiry", "lifetime"] as const).map((item) => <button key={item} className="compactButton" onClick={() => open(row, item)}>{actionText[item]}</button>)}</div>}</td>
+              <td>{text(row.lineUserId)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
+              <td>{canEdit && <button className="compactButton" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
+              <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
           ))}</tbody>
         </table>
       </div>
-      <div className="mobileManagement subscriptionGrid">
-        {filtered.map((row) => (
-          <article className="managementCard" key={row.id}>
-            <div className="cardHeading"><b>{text(row.authUserId)}</b><span>{text(row.planName)}</span></div>
-            <div className="cardRow"><span>方案開始時間</span><b>{text(row.planStartedAt)}</b></div>
-            <div className="cardRow"><span>方案到期時間</span><b>{row.isLifetime ? "終生" : text(row.planExpiresAt)}</b></div>
-            <div className="cardRow"><span>自動續訂</span><b>{row.autoRenew ? "是" : "否"}</b></div>
-            {canEdit && <div className="cardActions">{(["activate", "renew", "cancel", "adjustExpiry", "lifetime"] as const).map((item) => <button key={item} className="compactButton" onClick={() => open(row, item)}>{actionText[item]}</button>)}</div>}
-          </article>
-        ))}
-      </div>
+      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} />
       {editing && (
         <div className="modalBackdrop" role="presentation">
           <div className="operationDialog" role="dialog" aria-modal="true">
@@ -745,6 +701,7 @@ function SubscriptionManager({
           </div>
         </div>
       )}
+      {userInfo && <UserInfoDialog row={userInfo} onClose={() => setUserInfo(null)} />}
       <div className="panel transferPanel">
         <h2>轉帳申請</h2>
         {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
@@ -756,6 +713,37 @@ function SubscriptionManager({
         ))}
       </div>
     </>
+  );
+}
+
+function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (page: number) => void }) {
+  return (
+    <div className="pagination" aria-label="分頁">
+      <button disabled={page <= 1} onClick={() => onPage(page - 1)}>上一頁</button>
+      <span>第 {page}／{totalPages} 頁</span>
+      <button disabled={page >= totalPages} onClick={() => onPage(page + 1)}>下一頁</button>
+    </div>
+  );
+}
+
+function UserInfoDialog({ row, onClose }: { row: Row; onClose: () => void }) {
+  const statusText = ["disabled", "停用", "inactive"].includes(String(row.status)) ? "停用" : "啟用";
+  const values: Array<[string, string]> = [
+    ["LINE用戶ID", text(row.lineUserId)],
+    ["註冊時間", formatAdminDateTime(row.registeredAt)],
+    ["最後上線時間", formatAdminDateTime(row.lastOnlineAt)],
+    ["平均在線時間", `${Number(row.averageOnlineMinutes || 0)} 分鐘`],
+    ["狀態", statusText],
+    ["驗證用戶ID", text(row.authUserId)],
+  ];
+  return (
+    <div className="modalBackdrop" role="presentation">
+      <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="user-info-title">
+        <h2 id="user-info-title">用戶資訊</h2>
+        <div className="userInfoRows">{values.map(([label, value]) => <div key={label}><span>{label}</span><b>{value}</b></div>)}</div>
+        <div className="formActions"><button className="primary" onClick={onClose}>關閉</button></div>
+      </div>
+    </div>
   );
 }
 
@@ -877,7 +865,7 @@ function AdminManager({
                     <td>{text(r.name)}</td>
                     <td>{text(r.role)}</td>
                     <td>{text(r.status)}</td>
-                    <td>{text(r.lastLoginAt)}</td>
+                    <td>{formatAdminDateTime(r.lastLoginAt)}</td>
                     <td>{roleDescription[String(r.role)] || "—"}</td>
                     {isSuper && (
                       <td>
@@ -916,13 +904,7 @@ function Cards({ items }: { items: [string, string][] }) {
     </div>
   );
 }
-function Overview({
-  d,
-  algorithmStatus,
-}: {
-  d: Dashboard;
-  algorithmStatus: AlgorithmStatus | null;
-}) {
+function Overview({ d }: { d: Dashboard }) {
   return (
     <>
       <Cards
@@ -937,51 +919,6 @@ function Overview({
       <div className="panel">
         <h2>成長曲線</h2>
         <div className="emptyChart">資料將依實際紀錄累積呈現</div>
-      </div>
-      <div className="panel">
-        <h2>演算法 API 狀態</h2>
-        <p>{algorithmStatus?.ok ? "連線正常" : "目前無法取得狀態"}</p>
-        {algorithmStatus?.ok && (
-          <div className="settingRows">
-            <div>
-              <b>健康檢查</b>
-              <span>{text(algorithmStatus.health)}</span>
-            </div>
-            <div>
-              <b>資料覆蓋率</b>
-              <span>{text(algorithmStatus.coverage)}</span>
-            </div>
-            <div>
-              <b>稽核狀態</b>
-              <span>{text(algorithmStatus.audit)}</span>
-            </div>
-            <div>
-              <b>演算法案例</b>
-              <span>{text(algorithmStatus.cases)}</span>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-function Analytics({ d }: { d: Dashboard }) {
-  return (
-    <>
-      <Cards
-        items={[
-          ["總用戶數", String(d.totalUsers)],
-          ["Matrix Pro 月費", String(d.monthlyPro)],
-          ["Matrix Pro 季費", String(d.quarterlyPro)],
-          ["Matrix Pro 年費", String(d.yearlyPro)],
-          ["即將到期", String(d.expiring)],
-        ]}
-      />
-      <div className="panel">
-        <h2>數據分析</h2>
-        <p>
-          每日／每週／每月新增用戶、活躍用戶、訂閱新增／到期／續訂與三項成長曲線均由後台資料庫紀錄計算。
-        </p>
       </div>
     </>
   );
@@ -1029,7 +966,7 @@ function SystemSettings() {
   return (
     <>
       <div className="systemStatusHeader">
-        <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt || "尚未檢查"}</span></div>
+        <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
         <button className="compactButton" onClick={refresh} disabled={checking}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
       </div>
       {statusError && <div className="error">{statusError}</div>}
@@ -1040,22 +977,14 @@ function SystemSettings() {
             <article className="statusCard" key={item.id}>
               <div className="statusCardTitle"><b>{item.name}</b><span className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</span></div>
               <p>{item.description}</p>
-              <div className="statusMeta"><span>最後檢查時間</span><b>{item.checkedAt}</b></div>
+              <div className="statusMeta"><span>最後檢查時間</span><b>{formatAdminDateTime(item.checkedAt)}</b></div>
               <div className="statusMeta"><span>回應時間</span><b>{item.responseMs} ms</b></div>
               {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
-              {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{text(detail.finished_at)}</b></div>}
+              {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
               {item.error && <div className="statusErrorText">{item.error}</div>}
             </article>
           );
         })}
-      </div>
-      <div className="panel">
-        <h2>其他設定</h2>
-        <div className="settingRows">
-          <div><b>管理員密碼修改</b><span>由登入帳號提供者管理</span></div>
-          <div><b>後台登入安全設定</b><span>登入驗證已啟用</span></div>
-          <div><b>操作日誌查看</b><span>請至「審計日誌」查看</span></div>
-        </div>
       </div>
     </>
   );
@@ -1093,7 +1022,7 @@ function DataTable({
             rows.map((r) => (
               <tr key={r.id}>
                 {fields.map((f) => (
-                  <td key={f}>{text(r[f])}</td>
+                  <td key={f}>{displayValue(f, r[f])}</td>
                 ))}
                 {canDelete && (
                   <td>

@@ -21,6 +21,25 @@ export function filterRows(rows: Row[], keyword: string, status: string) {
   });
 }
 
+export function formatAdminDateTime(value: unknown) {
+  if (!value) return '—';
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return '—';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}/${part('month')}/${part('day')} ${part('hour')}:${part('minute')}`;
+}
+
+export function paginateRows<T>(rows: T[], page: number, pageSize = 30) {
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const start = (currentPage - 1) * pageSize;
+  return { items: rows.slice(start, start + pageSize), currentPage, totalPages };
+}
+
 export async function saveMemberStatus(api: ApiClient, id: string, status: 'active' | 'disabled') {
   return api.put(`/api/members/${id}/status`, { status });
 }

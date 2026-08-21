@@ -13,31 +13,31 @@ Steps:
 
 Expected: 右上角顯示新的管理員名稱，重新整理後名稱仍維持不變。
 
-## Test 2 - 手機版搜尋會員並停用或啟用
+## Test 2 - 手機版搜尋會員並停權或啟動
 Viewport: mobile
-Covers: GET /api/data/users, PUT /api/members/:id/status, member search/filter, mobile member cards, audit_logs
-Description: 驗證營運管理員可在手機版搜尋會員、查看會員資料並切換帳號狀態。
+Covers: GET /api/data/users, PUT /api/members/:id/status, member search/filter, 30-row pagination, audit_logs
+Description: 驗證營運管理員可在手機版列表搜尋會員、查看在線統計並切換帳號狀態。
 
 Steps:
 1. 以營運管理員進入「用戶管理」
 2. 使用會員 ID、方案、推薦碼或邀請碼搜尋一位會員
 3. 使用狀態選項篩選會員
-4. 點擊會員卡片中的「停用會員」或「啟用會員」
+4. 點擊列表中的「停權」或「啟動」
 
-Expected: 會員卡片顯示驗證用戶 ID、LINE 用戶 ID、方案、到期日、推薦碼、邀請碼及最新帳號狀態。
+Expected: 列表每頁最多 30 筆，依序顯示 LINE用戶ID、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態。
 
 ## Test 3 - 手動管理會員訂閱
 Viewport: desktop
-Covers: GET /api/data/subscriptions, GET /api/data/plans, PUT /api/subscriptions/:id, activate, renew, cancel, adjustExpiry, lifetime
-Description: 驗證營運管理員可依現有方案手動開通、續訂、取消續訂、調整到期日或設定終生會員。
+Covers: GET /api/data/subscriptions, PUT /api/subscriptions/:id, adjustExpiry, user information dialog, 30-row pagination
+Description: 驗證營運管理員可查看訂閱列表、會員資訊並調整方案到期日。
 
 Steps:
 1. 以營運管理員進入「訂閱管理」
-2. 選擇一位會員並執行開通或續訂，選擇方案後確認
-3. 再執行「取消續訂」
+2. 點擊一位會員的「用戶資訊」，確認顯示用戶管理內的相同資料
+3. 點擊「調整到期日」，輸入日期後儲存
 4. 重新載入「訂閱管理」
 
-Expected: 方案與到期日依操作更新；取消續訂後自動續訂顯示「否」，原到期日仍保留。
+Expected: 列表每頁最多 30 筆，依序顯示 LINE用戶ID、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；到期日依操作更新。
 
 ## Test 4 - 審核轉帳申請並套用角色統一權限
 Viewport: desktop
