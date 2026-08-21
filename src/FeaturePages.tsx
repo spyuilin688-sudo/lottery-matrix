@@ -1333,7 +1333,7 @@ export function MatrixExplorePage({
         </div>
 
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
-          <img src={PRIMARY_BRAND_LOGO} alt="" aria-hidden="true" />
+          <img src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" />
           <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
