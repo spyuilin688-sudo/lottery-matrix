@@ -633,6 +633,20 @@
   display: block;
 }
 
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-ball {
+  position: relative;
+  height: 40px;
+  grid-template-rows: 1fr;
+  row-gap: 0;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-label {
+  position: absolute;
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-ball {
   position: relative;
   height: 36px;

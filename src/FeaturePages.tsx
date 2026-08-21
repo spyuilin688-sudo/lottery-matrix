@@ -413,7 +413,9 @@ function getHistoryRecordKey(record: LotteryDrawRecord) {
 
 function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
-  const requestLimit = typeof limit === "number" ? Math.max(limit * 3, 30) : undefined;
+  const requestLimit = typeof limit === "number"
+    ? Math.max(limit * 3, limit <= 10 ? 50 : 30)
+    : undefined;
 
   useEffect(() => {
     let active = true;

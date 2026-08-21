@@ -74,7 +74,7 @@ test("近10期期數、年份與日期使用指定響應式字級並保留期數
   assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("六合彩使用 40px 列高、18–22px 彩球及貼近數字的底線", () => {
+test("六合彩使用 40px 列高、18–22px 彩球並讓正碼與特別號同線下移 2px", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
@@ -83,6 +83,7 @@ test("六合彩使用 40px 列高、18–22px 彩球及貼近數字的底線", (
   const special = style(".history-special-number");
   const specialBall = style(".history-special-ball");
   const mainBall = style(".history-main-numbers .history-lottery-ball");
+  const specialNumberBall = style(".history-special-ball .history-lottery-ball");
 
   assert.equal(row.height, "40px");
   assert.equal(row.minHeight, "40px");
@@ -96,12 +97,18 @@ test("六合彩使用 40px 列高、18–22px 彩球及貼近數字的底線", (
   assert.equal(special.marginLeft, "0px");
   assert.equal(special.alignItems, "center");
   assert.equal(special.gap, "clamp(4px, 1.5vw, 7px)");
-  assert.equal(specialBall.rowGap, "2px");
+  assert.equal(specialBall.rowGap, "0px");
   assert.equal(style(".history-special-label").getPropertyValue("--history-special-label-size").trim(), "clamp(5px,1.67vw,6.5px)");
   assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(7px,2.31vw,9px)");
-  assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.56vw,10px)");
+  assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(7px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-1.5px");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-1px");
+  assert.equal(mainBall.transform, "translateY(2px)");
+  assert.equal(specialNumberBall.transform, "translateY(2px)");
+  assert.equal(specialBall.position, "relative");
+  assert.equal(specialBall.height, "40px");
+  assert.equal(specialBall.gridTemplateRows, "1fr");
+  assert.equal(style(".history-special-label").position, "absolute");
 
   const expectedGeometry = [
     { viewport: 320, ball: 18.048, gap: 4.8 },
@@ -155,7 +162,7 @@ test("五顆玩法使用 32px 列高，數字為 12–14px 且底線符合指定
   assert.equal(ball.getPropertyValue("--number-font-size").trim(), "clamp(12px,3.59vw,14px)");
   assert.equal(ball.getPropertyValue("--underline-width").trim(), "clamp(9px,2.82vw,11px)");
   assert.equal(ball.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(ball.getPropertyValue("--underline-y").trim(), ".3px");
+  assert.equal(ball.getPropertyValue("--underline-y").trim(), ".2px");
 });
 
 test("近10期表格外框與欄列分隔線明確呈現", () => {
