@@ -96,6 +96,20 @@ function artifactItemCount(stored: unknown) {
   return Array.isArray(data?.items) ? data.items.length : 0;
 }
 
+function logEnsureCurrentStage(
+  lottery: LotteryId,
+  stage: string,
+  startedAt: number,
+  details: Record<string, unknown> = {},
+) {
+  console.warn(`[matrix-analysis] ${JSON.stringify({
+    lottery,
+    stage,
+    elapsedMs: Date.now() - startedAt,
+    ...details,
+  })}`);
+}
+
 export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = {}) {
   const dependencies = { ...defaults, ...overrides };
   const pipeline = {
@@ -131,14 +145,25 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
       };
     },
     async ensureCurrent(lottery: LotteryId, options: EnsureCurrentOptions = {}) {
+      const diagnosticStartedAt = Date.now();
+      logEnsureCurrentStage(lottery, 'ensure-current:start', diagnosticStartedAt);
+      logEnsureCurrentStage(lottery, 'history:start', diagnosticStartedAt);
       const history = await dependencies.getHistory(lottery, null);
+      logEnsureCurrentStage(lottery, 'history:complete', diagnosticStartedAt, {
+        historyRows: history.length,
+      });
       const drawPeriod = history[0]?.period;
       if (!drawPeriod) throw new Error('MATRIX_HISTORY_NOT_READY');
       const analysisVersion = `${drawPeriod}:matrix-v3`;
       const completed = await dependencies.readAnalysis(
         'status', lottery, drawPeriod, analysisVersion,
       );
-      if (completed) return { lottery, drawPeriod, skipped: true as const };
+      if (completed) {
+        logEnsureCurrentStage(lottery, 'status:already-current', diagnosticStartedAt, {
+          drawPeriod,
+        });
+        return { lottery, drawPeriod, skipped: true as const };
+      }
 
       const workUnits = dependencies.createExploreWorkUnits(lottery, history);
       const startedAt = dependencies.now().toISOString();
@@ -148,6 +173,12 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         analysisVersion,
         startedAt,
         total: workUnits.length,
+      });
+      logEnsureCurrentStage(lottery, 'job:ready', diagnosticStartedAt, {
+        drawPeriod,
+        phase: job.phase,
+        cursor: job.cursor,
+        total: job.total,
       });
       if (job.total !== workUnits.length) {
         throw new Error('MATRIX_ANALYSIS_WORK_UNIT_MISMATCH');
@@ -161,27 +192,51 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         let completedThisInvocation = 0;
         const firstUnitIndex = job.cursor;
         const artifacts: ExploreArtifact[] = [];
+        logEnsureCurrentStage(lottery, 'explore:batch-start', diagnosticStartedAt, {
+          firstUnitIndex,
+          maxExploreGroups,
+          batchBudgetMs,
+        });
         while (
           firstUnitIndex + completedThisInvocation < job.total
           && completedThisInvocation < maxExploreGroups
           && (completedThisInvocation === 0 || dependencies.monotonicNow() < deadline)
         ) {
+          const unitIndex = firstUnitIndex + completedThisInvocation;
+          logEnsureCurrentStage(lottery, 'explore:group-start', diagnosticStartedAt, {
+            unitIndex,
+          });
           artifacts.push(dependencies.buildExploreGroup(
             drawPeriod,
             history,
-            workUnits[firstUnitIndex + completedThisInvocation],
+            workUnits[unitIndex],
           ));
           completedThisInvocation += 1;
+          logEnsureCurrentStage(lottery, 'explore:group-complete', diagnosticStartedAt, {
+            unitIndex,
+          });
         }
         if (artifacts.length) {
+          logEnsureCurrentStage(lottery, 'explore:append-start', diagnosticStartedAt, {
+            firstUnitIndex,
+            artifactCount: artifacts.length,
+          });
           job = await dependencies.progressStore.appendExploreGroups(
             job,
             firstUnitIndex,
             artifacts,
           );
+          logEnsureCurrentStage(lottery, 'explore:append-complete', diagnosticStartedAt, {
+            cursor: job.cursor,
+            total: job.total,
+          });
         }
 
         if (job.cursor < job.total) {
+          logEnsureCurrentStage(lottery, 'explore:pending', diagnosticStartedAt, {
+            cursor: job.cursor,
+            total: job.total,
+          });
           return {
             lottery,
             drawPeriod,
@@ -192,8 +247,17 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           };
         }
 
+        logEnsureCurrentStage(lottery, 'explore:read-groups-start', diagnosticStartedAt, {
+          groupCount: job.cursor,
+        });
         const groups = await dependencies.progressStore.readExploreGroups(job) as ExploreArtifact[];
+        logEnsureCurrentStage(lottery, 'explore:read-groups-complete', diagnosticStartedAt, {
+          groupCount: groups.length,
+        });
         const explore = dependencies.mergeExplore(lottery, drawPeriod, groups);
+        logEnsureCurrentStage(lottery, 'explore:publish-start', diagnosticStartedAt, {
+          itemCount: explore.items.length,
+        });
         await dependencies.publishAnalysis({
           kind: 'explore',
           lottery,
@@ -202,7 +266,13 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           startedAt: job.startedAt,
           completedAt: dependencies.now().toISOString(),
         }, explore);
+        logEnsureCurrentStage(lottery, 'explore:publish-complete', diagnosticStartedAt, {
+          itemCount: explore.items.length,
+        });
         job = await dependencies.progressStore.setPhase(job, 'tianyan');
+        logEnsureCurrentStage(lottery, 'explore:phase-complete', diagnosticStartedAt, {
+          nextPhase: job.phase,
+        });
         return {
           lottery,
           drawPeriod,
