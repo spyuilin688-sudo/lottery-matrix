@@ -121,6 +121,19 @@ const routes: Record<string, unknown> = {
     }
   }],
 
+  'PUT /api/me/name': [requireAuth(), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const updated = await adminData.updateOwnAdminName(
+        String(bodyOf(ctx).name ?? ''),
+        actorOf(admin),
+      );
+      return json({ admin: updated });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
   'GET /api/algorithm-status': [requireAuth(), guard('view'), async () =>
     json(await algorithmApi.getAlgorithmStatus())],
 

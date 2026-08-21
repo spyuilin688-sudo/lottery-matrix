@@ -1,0 +1,54 @@
+.actions .profileName {
+  width: auto;
+  max-width: 160px;
+  padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #000a;
+}
+
+.nameDialog {
+  width: min(360px, 100%);
+  padding: 18px;
+  border: 1px solid #8c6d28;
+  border-radius: 12px;
+  background: #111419;
+  box-shadow: 0 24px 80px #000b;
+}
+
+.nameDialog h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.nameDialog label {
+  font-size: 12px;
+  color: #989ca5;
+}
+
+.nameDialog input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px;
+  border: 1px solid #343840;
+  border-radius: 8px;
+  background: #0b0d11;
+  color: #eee;
+}
+
+@media (max-width: 760px) {
+  .actions .profileName {
+    max-width: 92px;
+    padding: 0 9px;
+  }
+}

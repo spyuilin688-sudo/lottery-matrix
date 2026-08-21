@@ -282,6 +282,28 @@ export function createAdminData(transport: WriteTransport) {
     return definitions.admins.map(updated);
   }
 
+  async function updateOwnAdminName(name: string, actor: AdminActor) {
+    const normalizedName = name.trim();
+    if (!normalizedName) throw new AdminDataError('管理員名稱必填');
+    const query = `id=eq.${encodeURIComponent(actor.id)}`;
+    const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&${query}`);
+    if (!before) throw new AdminDataError('Not found', 404);
+    const [updated] = await transport.updateRows<Row>('admin_accounts', query, {
+      name: normalizedName,
+    });
+    if (!updated) throw new AdminDataError('更新管理員名稱失敗', 500);
+    await writeAudit({
+      actor,
+      operationType: '修改',
+      targetTable: 'admin_accounts',
+      targetId: actor.id,
+      content: '修改本人管理員名稱',
+      beforeData: before,
+      afterData: updated,
+    });
+    return definitions.admins.map(updated);
+  }
+
   async function deleteAdminAccount(id: string, actor: AdminActor) {
     const [deleted] = await transport.deleteRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`);
     if (!deleted) throw new AdminDataError('Not found', 404);
@@ -320,6 +342,7 @@ export function createAdminData(transport: WriteTransport) {
     writeAudit,
     createAdminAccount,
     updateAdminAccount,
+    updateOwnAdminName,
     deleteAdminAccount,
     generateActivationCodeBatch,
   };

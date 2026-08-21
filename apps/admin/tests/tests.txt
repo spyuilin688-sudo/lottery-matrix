@@ -2,15 +2,18 @@
 
 ## Test 1 - 授權後載入營運概覽與演算法狀態 [sanity]
 Viewport: desktop
-Covers: AppDeploy Auth, GET /api/bootstrap, GET /api/dashboard, GET /api/algorithm-status
-Description: 驗證已列入 Supabase admin_accounts 的啟用管理員可登入，並同時看到 Supabase 營運統計與演算法 API 狀態。
+Covers: AppDeploy Auth, GET /api/bootstrap, GET /api/dashboard, GET /api/algorithm-status, PUT /api/me/name
+Description: 驗證已列入 Supabase admin_accounts 的啟用管理員可登入、查看營運概覽，並修改自己的管理員名稱。
 
 Steps:
 1. 使用已存在於 admin_accounts 且狀態為啟用的管理員帳號登入
 2. 進入「營運概覽」
 3. 等待統計卡片與「演算法 API 狀態」完成載入
+4. 點擊右上角自己的名稱
+5. 輸入新的管理員名稱並儲存
+6. 重新整理頁面
 
-Expected: 顯示實際用戶與收入統計；演算法狀態顯示連線正常或明確的不可用狀態，頁面不出現假造資料。
+Expected: 顯示實際用戶與收入統計；演算法狀態顯示連線正常或明確的不可用狀態；重新整理後右上角仍顯示新的管理員名稱。
 
 ## Test 2 - 查看 Supabase 營運資料
 Viewport: desktop

@@ -14,6 +14,65 @@ const input = {
 };
 
 describe('authorized Supabase writes', () => {
+  it('updates only the signed-in administrator name and writes an audit record', async () => {
+    const updateRows = vi.fn(async () => [{
+      id: 'admin-1',
+      account: 'admin@example.com',
+      name: '新的名稱',
+      role: '查看人員',
+      status: '啟用',
+      can_view: true,
+      can_add: false,
+      can_edit: false,
+      can_delete: false,
+    }]);
+    const insertRows = vi.fn(async () => [{ id: 'audit-1' }]);
+    const data = createAdminData({
+      insertRows,
+      selectRows: vi.fn(async () => [{
+        id: 'admin-1',
+        account: 'admin@example.com',
+        name: '管理員',
+      }]),
+      updateRows,
+      deleteRows: vi.fn(async () => []),
+      supabaseRequest: vi.fn(async () => []),
+    });
+
+    await expect(data.updateOwnAdminName('新的名稱', actor)).resolves.toMatchObject({
+      id: 'admin-1',
+      account: 'admin@example.com',
+      name: '新的名稱',
+    });
+    expect(updateRows).toHaveBeenCalledWith(
+      'admin_accounts',
+      'id=eq.admin-1',
+      { name: '新的名稱' },
+    );
+    expect(insertRows).toHaveBeenCalledWith('audit_logs', [expect.objectContaining({
+      admin_id: 'admin-1',
+      operation_type: '修改',
+      target_id: 'admin-1',
+      content: '修改本人管理員名稱',
+    })]);
+  });
+
+  it('rejects an empty own name before writing to Supabase', async () => {
+    const updateRows = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(),
+      selectRows: vi.fn(),
+      updateRows,
+      deleteRows: vi.fn(),
+      supabaseRequest: vi.fn(),
+    });
+
+    await expect(data.updateOwnAdminName('   ', actor)).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    expect(updateRows).not.toHaveBeenCalled();
+  });
+
   it('writes one audit record only after a successful mutation', async () => {
     const calls: string[] = [];
     const data = createAdminData({

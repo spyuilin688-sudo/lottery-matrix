@@ -20,6 +20,8 @@ import {
   Pencil,
 } from "lucide-react";
 import "./admin.css";
+import "./profile-name.css";
+import { saveOwnAdminName } from "./admin-profile";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   totalUsers: number;
@@ -198,6 +200,8 @@ function AdminApp() {
   const [showForm, setShowForm] = useState(false);
   const [adminForm, setAdminForm] = useState<AdminForm>(defaultAdmin());
   const [editingAdmin, setEditingAdmin] = useState<string | null>(null);
+  const [showProfileName, setShowProfileName] = useState(false);
+  const [profileName, setProfileName] = useState("");
   const can = (k: string) =>
     Boolean(
       (admin?.permissions as Record<string, boolean> | undefined)?.[k] ??
@@ -297,6 +301,23 @@ function AdminApp() {
     await auth.signOut();
     setSigned(false);
     setAdmin(null);
+  };
+  const openProfileName = () => {
+    setProfileName(String(admin?.name || ""));
+    setShowProfileName(true);
+  };
+  const saveProfileName = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const updated = await saveOwnAdminName(api, profileName);
+      setAdmin((current) => ({ ...current, ...updated }));
+      setShowProfileName(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
+    } finally {
+      setBusy(false);
+    }
   };
   const fields = useMemo(() => labels[tableMap[active]] || [], [active]);
   const batchCodes = async () => {
@@ -400,9 +421,11 @@ function AdminApp() {
           </button>
           <div>
             <b>{active}</b>
-            <small>{String(admin?.name || admin?.account || "管理員")}</small>
           </div>
           <div className="actions">
+            <button className="profileName" onClick={openProfileName} title="修改自己的名稱">
+              {String(admin?.name || admin?.account || "管理員")}
+            </button>
             <button onClick={() => load()} title="重新整理">
               <RefreshCw size={18} />
             </button>
@@ -411,6 +434,27 @@ function AdminApp() {
             </button>
           </div>
         </header>
+        {showProfileName && (
+          <div className="modalBackdrop" role="presentation">
+            <div className="nameDialog" role="dialog" aria-modal="true" aria-labelledby="profile-name-title">
+              <h2 id="profile-name-title">修改名稱</h2>
+              <label>
+                管理員名稱
+                <input
+                  autoFocus
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                />
+              </label>
+              <div className="formActions">
+                <button onClick={() => setShowProfileName(false)}>取消</button>
+                <button className="primary" onClick={saveProfileName} disabled={busy}>
+                  儲存
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <section className="content">
           {error && <div className="error">{error}</div>}
           {busy && <div className="loading">資料處理中…</div>}
