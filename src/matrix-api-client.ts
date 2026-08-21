@@ -36,13 +36,17 @@ export function createMatrixApiClient(
   baseUrl = LOTTERY_API_BASE,
 ) {
   return {
-    async fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+    async fetchJson<T>(
+      path: string,
+      init: RequestInit = {},
+      options: { auth?: 'required' | 'optional' } = {},
+    ): Promise<T> {
       const accessToken = await getAccessToken();
-      if (!accessToken) throw new MatrixApiError('AUTH_REQUIRED', 401);
+      if (!accessToken && options.auth !== 'optional') throw new MatrixApiError('AUTH_REQUIRED', 401);
 
       const headers = new Headers(init.headers);
       headers.set('Accept', 'application/json');
-      headers.set('Authorization', `Bearer ${accessToken}`);
+      if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
       const url = `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
 
       let response: Response;
@@ -70,6 +74,10 @@ const matrixClient = createMatrixApiClient(async () => {
   return data.session?.access_token ?? null;
 });
 
-export function matrixApiFetch<T>(path: string, init?: RequestInit) {
-  return matrixClient.fetchJson<T>(path, init);
+export function matrixApiFetch<T>(
+  path: string,
+  init?: RequestInit,
+  options?: { auth?: 'required' | 'optional' },
+) {
+  return matrixClient.fetchJson<T>(path, init, options);
 }

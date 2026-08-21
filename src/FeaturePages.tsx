@@ -3557,7 +3557,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
               <span><strong><i />{title}<small>{titleEn}</small></strong><small>{description}</small></span><em>{count} 組</em><ChevronRightIcon data-open={open === titleEn} />
             </button>
             {open === titleEn ? <div className="status-detail">
-              {result?.detailLocked ? <p className="matrix-api-state"><LockClosedIcon />月費以上可查看進階資訊</p> : null}
+              {result?.detailLocked ? <p className="matrix-api-state"><LockClosedIcon />目前顯示公開版路；Matrix Pro 可查看十三期版路</p> : null}
               <div className="status-road-table">
                 <div className="status-road-table-head" aria-hidden="true">
                   <span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>類型</span>

@@ -34,6 +34,26 @@ describe('authenticated Matrix API client', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it('allows an anonymous request when authentication is optional', async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse({ ok: true }));
+    const client = createMatrixApiClient(async () => null, fetcher, 'https://api.test');
+
+    await client.fetchJson('/api/matrix/explore', {}, { auth: 'optional' });
+
+    const headers = new Headers(fetcher.mock.calls[0]?.[1]?.headers);
+    expect(headers.get('Authorization')).toBeNull();
+  });
+
+  it('still sends the current token on an optional authenticated request', async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse({ ok: true }));
+    const client = createMatrixApiClient(async () => 'access-token', fetcher, 'https://api.test');
+
+    await client.fetchJson('/api/matrix/explore', {}, { auth: 'optional' });
+
+    const headers = new Headers(fetcher.mock.calls[0]?.[1]?.headers);
+    expect(headers.get('Authorization')).toBe('Bearer access-token');
+  });
+
   it.each([
     [401, 'AUTH_REQUIRED'],
     [403, 'FORBIDDEN'],

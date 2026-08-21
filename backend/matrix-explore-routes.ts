@@ -1,5 +1,6 @@
 import type { MatrixAnalysisKind, LotteryId } from '../shared/matrix-contracts';
 import {
+  anonymousMatrixMember,
   resolveMatrixEntitlements,
   type MemberContext,
 } from './matrix-entitlements';
@@ -107,10 +108,13 @@ function canReadValidation(
 
 export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies) {
   const now = dependencies.now ?? (() => new Date());
+  const memberFor = (authorization?: string) => authorization
+    ? dependencies.requireMember(authorization)
+    : Promise.resolve(anonymousMatrixMember);
   return {
     async list(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await dependencies.requireMember(input.authorization);
+        const member = await memberFor(input.authorization);
         const request = parseListRequest(input.body);
         const artifact = await dependencies.readAnalysis(
           'explore',
@@ -141,7 +145,7 @@ export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies
 
     async validation(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await dependencies.requireMember(input.authorization);
+        const member = await memberFor(input.authorization);
         const body = bodyRecord(input.body);
         const lottery = lotteryOf(body);
         const drawPeriod = String(body.drawPeriod ?? '');

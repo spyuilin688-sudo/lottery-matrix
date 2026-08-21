@@ -1,6 +1,6 @@
 import type { LotteryId, MatrixAnalysisKind } from '../shared/matrix-contracts';
 import type { CustomStatusConfig } from './matrix-custom-status';
-import { resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
+import { anonymousMatrixMember, resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
 import type { ExploreArtifact } from './matrix-explore-service';
 import { MatrixAccessError } from './matrix-member-auth';
 import { buildMatrixStatusArtifact } from './matrix-status-service';
@@ -33,10 +33,13 @@ function failure(cause: unknown): RouteResult {
 
 export function createMatrixStatusRoutes(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
+  const memberFor = (authorization?: string) => authorization
+    ? dependencies.requireMember(authorization)
+    : Promise.resolve(anonymousMatrixMember);
   return {
     async get(input: RouteInput): Promise<RouteResult> {
       try {
-        const member = await dependencies.requireMember(input.authorization);
+        const member = await memberFor(input.authorization);
         const body = record(input.body);
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
@@ -45,7 +48,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         if (!explore) throw new Error('ANALYSIS_NOT_READY');
         const [tianyan, configs] = await Promise.all([
           dependencies.readAnalysis('tianyan', lottery, explore.drawPeriod),
-          dependencies.listConfigs(member.memberId),
+          member.memberId ? dependencies.listConfigs(member.memberId) : Promise.resolve([]),
         ]);
         if (!tianyan || tianyan.analysisVersion !== explore.analysisVersion || tianyan.drawPeriod !== explore.drawPeriod) {
           throw new Error('ANALYSIS_NOT_READY');
@@ -67,9 +70,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
             analysisVersion: `${explore.analysisVersion}:status`,
             ...artifact,
             detailLocked,
-            cards: detailLocked
-              ? artifact.cards.map((card) => ({ ...card, roads: [] }))
-              : artifact.cards,
+            cards: artifact.cards,
           },
         };
       } catch (cause) {

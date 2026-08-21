@@ -32,6 +32,7 @@ export type MatrixStatusRoad = {
   predictionDistance: number;
   position: number;
   lockedNumber: string;
+  explorePeriods: 2 | 7 | 13;
 };
 
 export type MatrixStatusResponse = {
@@ -57,7 +58,11 @@ function jsonBody(value: unknown): RequestInit {
 }
 
 export function fetchMatrixStatus(lottery: LotteryId) {
-  return matrixApiFetch<MatrixStatusResponse>('/api/matrix/status', jsonBody({ lottery }));
+  return matrixApiFetch<MatrixStatusResponse>(
+    '/api/matrix/status',
+    jsonBody({ lottery }),
+    { auth: 'optional' },
+  );
 }
 
 export function listCustomStatusSettings() {

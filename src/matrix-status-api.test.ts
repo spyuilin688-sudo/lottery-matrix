@@ -10,7 +10,11 @@ beforeEach(() => api.fetchJson.mockReset().mockResolvedValue({}));
 describe('Matrix status API', () => {
   it('loads live status for the selected lottery', async () => {
     await fetchMatrixStatus('六合彩');
-    expect(api.fetchJson).toHaveBeenCalledWith('/api/matrix/status', expect.objectContaining({ method: 'POST', body: JSON.stringify({ lottery: '六合彩' }) }));
+    expect(api.fetchJson).toHaveBeenCalledWith(
+      '/api/matrix/status',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ lottery: '六合彩' }) }),
+      { auth: 'optional' },
+    );
   });
 
   it('lists, saves and resets custom settings', async () => {

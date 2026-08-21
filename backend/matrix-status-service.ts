@@ -57,7 +57,7 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
           predictionDistance: item.predictionDistance,
           position: item.lockedPosition,
           lockedNumber: item.number,
-          explorePeriods: 13,
+          explorePeriods: item.explorePeriods,
         });
       }
     } else {
@@ -71,7 +71,7 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
         predictionDistance: item.predictionDistance,
         position: item.lockedPosition,
         lockedNumber: item.number,
-        explorePeriods: 13,
+        explorePeriods: item.explorePeriods,
       });
     }
   }
@@ -182,6 +182,38 @@ function sortedStatusCards(cards: StatusTriggerCard[]) {
   ));
 }
 
+function sameResult(left: string[], right: string[]) {
+  return left.join(',') === right.join(',');
+}
+
+function visibleStatusCards(
+  cards: StatusTriggerCard[],
+  explore: ExploreArtifact,
+  entitlements: MatrixEntitlements,
+) {
+  const periods = entitlements.canUseThirteen
+    ? new Set([2, 7, 13])
+    : entitlements.canUseSeven
+      ? new Set([2, 7])
+      : new Set([2]);
+  const exploreRoads = chapterRoads(explore.items.filter((item) => (
+    item.exploreDateOffset === 0 && periods.has(item.explorePeriods)
+  )));
+  return cards.map((card) => {
+    const candidates = [
+      ...exploreRoads,
+      ...(entitlements.canUseThirteen ? card.roads : []),
+    ].filter((road) => road.hitType === card.hitType && sameResult(road.result, card.result));
+    const roads = sortedStatusRoads([
+      ...new Map(candidates.map((road) => [
+        [road.id, road.explorePeriods, road.result.join(',')].join('|'),
+        road,
+      ])).values(),
+    ]);
+    return { ...card, roads };
+  });
+}
+
 function customCard(status: CustomStatusConfig['status'], group: CustomConditionGroup, hitType: CustomConditionMatch['hitType'], matches: CountedMatch[]): StatusTriggerCard {
   const witnesses = group.rows.flatMap((row) => matches.filter((match) => rowMatches(row, hitType, match)));
   const roads = sortedStatusRoads([...new Map(witnesses.map((match) => [match.road.id, match.road])).values()]);
@@ -254,7 +286,7 @@ export function buildMatrixStatusArtifact(
       message: messages[status],
     },
     counts,
-    cards: sortedStatusCards(cards),
+    cards: visibleStatusCards(sortedStatusCards(cards), explore, entitlements),
     customTriggers,
     customSettings,
   };

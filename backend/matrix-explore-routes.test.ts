@@ -29,9 +29,21 @@ const artifact: ExploreArtifact = {
     exploreDateOffset: 0,
     ruleCount: 1,
     referenceOffset: -14,
+  }, {
+    id: 'item-2', number: '10', lockedPosition: 1, predictionDistance: 1,
+    consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'], algorithmType: '加減',
+    numberOrder: '依號碼由小到大排序', explorePeriods: 2, exploreDateOffset: 0, ruleCount: 1,
+    referenceOffset: -7,
+  }, {
+    id: 'item-7', number: '10', lockedPosition: 1, predictionDistance: 1,
+    consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'], algorithmType: '加減',
+    numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, ruleCount: 1,
+    referenceOffset: -7,
   }],
   validationById: {
     'item-1': { itemId: 'item-1', ruleSets: [] },
+    'item-2': { itemId: 'item-2', ruleSets: [] },
+    'item-7': { itemId: 'item-7', ruleSets: [] },
   },
 };
 
@@ -61,14 +73,50 @@ function routes(overrides: Partial<Parameters<typeof createMatrixExploreRoutes>[
 }
 
 describe('Matrix Explore routes', () => {
-  it('returns 401 without a valid bearer member', async () => {
+  it('allows anonymous standard two-period exploration without calling member auth', async () => {
+    let authCalls = 0;
+    const api = routes({ requireMember: async () => { authCalls += 1; throw new MatrixAccessError('AUTH_REQUIRED', 401); } });
+    const response = await api.list({ authorization: undefined, body: { ...listBody, explorePeriods: 2, exploreRange: '標準範圍' } });
+    expect(response).toMatchObject({ status: 200, body: { total: 1, items: [{ id: 'item-2' }] } });
+    expect(authCalls).toBe(0);
+  });
+
+  it('allows anonymous standard seven-period exploration on Friday', async () => {
+    const api = routes({ requireMember: async () => { throw new MatrixAccessError('AUTH_REQUIRED', 401); } });
+    await expect(api.list({ authorization: undefined, body: { ...listBody, explorePeriods: 7, exploreRange: '標準範圍' } })).resolves.toMatchObject({
+      status: 200, body: { items: [{ id: 'item-7' }] },
+    });
+  });
+
+  it('denies anonymous seven-period exploration outside Tuesday and Friday', async () => {
     const api = routes({
       requireMember: async () => { throw new MatrixAccessError('AUTH_REQUIRED', 401); },
+      now: () => new Date('2026-08-24T00:00:00Z'),
     });
+    await expect(api.list({ authorization: undefined, body: { ...listBody, explorePeriods: 7, exploreRange: '標準範圍' } })).resolves.toMatchObject({
+      status: 403, body: { error: { code: 'FORBIDDEN' } },
+    });
+  });
+
+  it('keeps anonymous thirteen-period exploration restricted', async () => {
+    const api = routes({ requireMember: async () => { throw new MatrixAccessError('AUTH_REQUIRED', 401); } });
     await expect(api.list({ authorization: undefined, body: listBody })).resolves.toMatchObject({
-      status: 401,
-      body: { error: { code: 'AUTH_REQUIRED' } },
+      status: 403, body: { error: { code: 'FORBIDDEN' } },
     });
+  });
+
+  it('rejects an invalid bearer token instead of treating it as anonymous', async () => {
+    const api = routes({ requireMember: async () => { throw new MatrixAccessError('AUTH_REQUIRED', 401); } });
+    await expect(api.list({ authorization: 'Bearer invalid', body: { ...listBody, explorePeriods: 2, exploreRange: '標準範圍' } })).resolves.toMatchObject({
+      status: 401, body: { error: { code: 'AUTH_REQUIRED' } },
+    });
+  });
+
+  it('allows anonymous validation for a public two-period road', async () => {
+    const api = routes({ requireMember: async () => { throw new MatrixAccessError('AUTH_REQUIRED', 401); } });
+    await expect(api.validation({ authorization: undefined, body: {
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:v1', itemId: 'item-2',
+    } })).resolves.toMatchObject({ status: 200, body: { itemId: 'item-2' } });
   });
 
   it('returns 403 when thirteen/full access is unavailable', async () => {

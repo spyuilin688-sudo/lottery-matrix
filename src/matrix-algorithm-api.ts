@@ -267,7 +267,7 @@ export function fetchExploreList(request: ExploreListRequest) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
-  });
+  }, { auth: 'optional' });
 }
 
 export function fetchExploreValidation(
@@ -278,7 +278,7 @@ export function fetchExploreValidation(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...meta, itemId }),
-  });
+  }, { auth: 'optional' });
 }
 
 export function fetchTianyanList(request: {

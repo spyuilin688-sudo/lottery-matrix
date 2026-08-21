@@ -14,6 +14,14 @@ export type MemberContext = {
   referralSuccessCount: number;
 };
 
+export const anonymousMatrixMember: MemberContext = {
+  authUserId: '',
+  memberId: '',
+  plan: 'free',
+  active: false,
+  referralSuccessCount: 0,
+};
+
 export type MatrixEntitlements = {
   canUseSeven: boolean;
   canUseThirteen: boolean;
