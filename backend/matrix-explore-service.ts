@@ -107,7 +107,7 @@ export function createExploreWorkUnits(
             exploreDateOffset: 0,
             exploreRange: '完整範圍',
             minPredictionDistance: 1,
-            maxPredictionDistance: 30,
+            maxPredictionDistance: 13,
           });
         }
       }
