@@ -1,6 +1,6 @@
 [
   {
-    "name": "matrix-539-worker-v5",
+    "name": "matrix-539-worker-v6",
     "cron": "0-59/5 * * * *",
     "handler": "scheduledMatrixAnalysisRefresh",
     "timezone": "Asia/Taipei",
@@ -9,7 +9,7 @@
     }
   },
   {
-    "name": "matrix-fantasy5-worker-v6",
+    "name": "matrix-fantasy5-worker-v7",
     "cron": "1-59/5 * * * *",
     "handler": "scheduledMatrixAnalysisRefresh",
     "timezone": "Asia/Taipei",

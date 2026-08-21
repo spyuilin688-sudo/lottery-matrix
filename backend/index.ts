@@ -98,7 +98,7 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
 export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透'; sourceId?: string; refreshAll?: boolean; refreshHour?: number } }) => {
     const trackedLottery=event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
     const jobByLottery: Record<string,string>={'今彩539':'matrix-539-refresh-v2','天天樂':'matrix-fantasy5-refresh-v2','六合彩':'matrix-marksix-refresh-v2','大樂透':'matrix-649-refresh-v2'};
-    return systemJobTracker.run(jobByLottery[trackedLottery],trackedLottery,async()=>{
+    return systemJobTracker.run(jobByLottery[trackedLottery],trackedLottery,async(reportStage)=>{
         const refreshHour = event.payload?.refreshHour;
         let refresh: (() => Promise<unknown>) | undefined;
         if (refreshHour !== undefined && isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
@@ -108,7 +108,7 @@ export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: st
         const limits = matrixWorkerLimits(trackedLottery, Boolean(refresh));
         const cycle = await runRefreshThenAnalysis(
             refresh,
-            () => matrixAnalysisPipeline.ensureCurrent(trackedLottery, limits),
+            () => matrixAnalysisPipeline.ensureCurrent(trackedLottery, { ...limits, reportStage }),
         );
         return {statusCode:200,refresh:cycle.refresh,result:cycle.analysis};
     });

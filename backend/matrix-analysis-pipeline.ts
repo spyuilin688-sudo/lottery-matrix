@@ -58,6 +58,7 @@ type Dependencies = {
 type EnsureCurrentOptions = {
   maxExploreGroups?: number;
   batchBudgetMs?: number;
+  reportStage?: (stage: string) => Promise<void>;
 };
 
 const defaults: Dependencies = {
@@ -146,9 +147,13 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
     },
     async ensureCurrent(lottery: LotteryId, options: EnsureCurrentOptions = {}) {
       const diagnosticStartedAt = Date.now();
+      const reportStage = options.reportStage ?? (async () => undefined);
+      await reportStage('ensure-current:start');
       logEnsureCurrentStage(lottery, 'ensure-current:start', diagnosticStartedAt);
+      await reportStage('history:start');
       logEnsureCurrentStage(lottery, 'history:start', diagnosticStartedAt);
       const history = await dependencies.getHistory(lottery, null);
+      await reportStage(`history:complete:${history.length}`);
       logEnsureCurrentStage(lottery, 'history:complete', diagnosticStartedAt, {
         historyRows: history.length,
       });
@@ -174,6 +179,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         startedAt,
         total: workUnits.length,
       });
+      await reportStage(`job:ready:${job.phase}:${job.cursor}/${job.total}`);
       logEnsureCurrentStage(lottery, 'job:ready', diagnosticStartedAt, {
         drawPeriod,
         phase: job.phase,
@@ -203,6 +209,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           && (completedThisInvocation === 0 || dependencies.monotonicNow() < deadline)
         ) {
           const unitIndex = firstUnitIndex + completedThisInvocation;
+          await reportStage(`explore:group-start:${unitIndex}`);
           logEnsureCurrentStage(lottery, 'explore:group-start', diagnosticStartedAt, {
             unitIndex,
           });
@@ -212,11 +219,13 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
             workUnits[unitIndex],
           ));
           completedThisInvocation += 1;
+          await reportStage(`explore:group-complete:${unitIndex}`);
           logEnsureCurrentStage(lottery, 'explore:group-complete', diagnosticStartedAt, {
             unitIndex,
           });
         }
         if (artifacts.length) {
+          await reportStage(`explore:append-start:${firstUnitIndex}:${artifacts.length}`);
           logEnsureCurrentStage(lottery, 'explore:append-start', diagnosticStartedAt, {
             firstUnitIndex,
             artifactCount: artifacts.length,
@@ -226,6 +235,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
             firstUnitIndex,
             artifacts,
           );
+          await reportStage(`explore:append-complete:${job.cursor}/${job.total}`);
           logEnsureCurrentStage(lottery, 'explore:append-complete', diagnosticStartedAt, {
             cursor: job.cursor,
             total: job.total,
@@ -247,14 +257,17 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           };
         }
 
+        await reportStage(`explore:read-groups-start:${job.cursor}`);
         logEnsureCurrentStage(lottery, 'explore:read-groups-start', diagnosticStartedAt, {
           groupCount: job.cursor,
         });
         const groups = await dependencies.progressStore.readExploreGroups(job) as ExploreArtifact[];
+        await reportStage(`explore:read-groups-complete:${groups.length}`);
         logEnsureCurrentStage(lottery, 'explore:read-groups-complete', diagnosticStartedAt, {
           groupCount: groups.length,
         });
         const explore = dependencies.mergeExplore(lottery, drawPeriod, groups);
+        await reportStage(`explore:publish-start:${explore.items.length}`);
         logEnsureCurrentStage(lottery, 'explore:publish-start', diagnosticStartedAt, {
           itemCount: explore.items.length,
         });
@@ -266,6 +279,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           startedAt: job.startedAt,
           completedAt: dependencies.now().toISOString(),
         }, explore);
+        await reportStage(`explore:publish-complete:${explore.items.length}`);
         logEnsureCurrentStage(lottery, 'explore:publish-complete', diagnosticStartedAt, {
           itemCount: explore.items.length,
         });
@@ -284,6 +298,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
       }
 
       if (job.phase === 'tianyan') {
+        await reportStage('tianyan:start');
         const storedExplore = await dependencies.readAnalysis(
           'explore', lottery, drawPeriod, job.analysisVersion,
         );
@@ -302,10 +317,12 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           completedAt: dependencies.now().toISOString(),
         }, tianyan);
         job = await dependencies.progressStore.setPhase(job, 'tiangong');
+        await reportStage('tianyan:complete');
         return { lottery, drawPeriod, pending: true as const, phase: job.phase };
       }
 
       if (job.phase === 'tiangong') {
+        await reportStage('tiangong:start');
         const tiangong = dependencies.buildTiangong(lottery, drawPeriod, history);
         await dependencies.publishAnalysis({
           kind: 'tiangong',
@@ -316,9 +333,11 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
           completedAt: dependencies.now().toISOString(),
         }, tiangong);
         job = await dependencies.progressStore.setPhase(job, 'status');
+        await reportStage('tiangong:complete');
         return { lottery, drawPeriod, pending: true as const, phase: job.phase };
       }
 
+      await reportStage('status:start');
       const [storedExplore, storedTianyan, storedTiangong] = await Promise.all([
         dependencies.readAnalysis('explore', lottery, drawPeriod, job.analysisVersion),
         dependencies.readAnalysis('tianyan', lottery, drawPeriod, job.analysisVersion),
@@ -336,6 +355,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         completedAt: dependencies.now().toISOString(),
       }, { artifactKinds: ['explore', 'tianyan', 'tiangong'] });
       await dependencies.progressStore.finish(job);
+      await reportStage('status:complete');
       return {
         lottery,
         drawPeriod,

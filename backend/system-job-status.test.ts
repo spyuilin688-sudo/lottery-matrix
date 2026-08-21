@@ -12,6 +12,34 @@ describe('system job status tracker', () => {
     ]);
   });
 
+  it('writes a durable running stage under the same job start time', async () => {
+    const writes: Record<string, unknown>[] = [];
+    const times = [
+      new Date('2026-08-22T00:00:00Z'),
+      new Date('2026-08-22T00:00:01Z'),
+      new Date('2026-08-22T00:00:02Z'),
+    ];
+    const tracker = createSystemJobTracker(
+      async (record) => { writes.push(record); },
+      () => times.shift() ?? new Date('2026-08-22T00:00:02Z'),
+    );
+
+    await expect(tracker.run('matrix-539-refresh-v2', '今彩539', async (reportStage) => {
+      await reportStage('history:start');
+      return 'done';
+    })).resolves.toBe('done');
+
+    expect(writes[1]).toEqual({
+      job_name: 'matrix-539-refresh-v2',
+      lottery: '今彩539',
+      status: 'running',
+      started_at: '2026-08-22T00:00:00.000Z',
+      finished_at: null,
+      error: 'stage:history:start',
+      updated_at: '2026-08-22T00:00:01.000Z',
+    });
+  });
+
   it('writes failure and rethrows the job error', async () => {
     const writes: Record<string, unknown>[] = [];
     const tracker = createSystemJobTracker(async (record) => { writes.push(record); }, () => new Date('2026-08-21T03:00:00Z'));

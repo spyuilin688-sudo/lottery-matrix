@@ -25,7 +25,11 @@ export function createSystemJobTracker(
     }
   };
   return {
-    async run<T>(jobName: string, lottery: Lottery, job: () => Promise<T>): Promise<T> {
+    async run<T>(
+      jobName: string,
+      lottery: Lottery,
+      job: (reportStage: (stage: string) => Promise<void>) => Promise<T>,
+    ): Promise<T> {
       const startedAt = now().toISOString();
       await safeWrite({
         job_name: jobName,
@@ -36,8 +40,20 @@ export function createSystemJobTracker(
         error: null,
         updated_at: startedAt,
       });
+      const reportStage = async (stage: string) => {
+        const updatedAt = now().toISOString();
+        await safeWrite({
+          job_name: jobName,
+          lottery,
+          status: 'running',
+          started_at: startedAt,
+          finished_at: null,
+          error: `stage:${stage}`,
+          updated_at: updatedAt,
+        });
+      };
       try {
-        const result = await job();
+        const result = await job(reportStage);
         const finishedAt = now().toISOString();
         await safeWrite({
           job_name: jobName,
