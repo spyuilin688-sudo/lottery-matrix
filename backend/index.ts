@@ -103,8 +103,8 @@ export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: st
             if (event.payload?.sourceId) return scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
         }
         const result = await matrixAnalysisPipeline.ensureCurrent(trackedLottery, {
-            maxExploreGroups: 1,
-            batchBudgetMs: 15_000,
+            maxExploreGroups: 20,
+            batchBudgetMs: 22_000,
         });
         return {statusCode:200,result};
     });
