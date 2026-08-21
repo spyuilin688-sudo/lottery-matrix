@@ -69,7 +69,10 @@ export const scheduledLotteryRefresh = async () => {
     const results = await refreshActiveSources();
     const failures = results.filter(result => !result.ok);
     if (failures.length) throw new Error('排程爬蟲失敗：' + failures.map(result => result.sourceId + ' ' + result.error).join('；'));
-    return { statusCode: 200 };
+    const lotteryBySource: Record<string,'今彩539'|'天天樂'|'六合彩'|'大樂透'> = { taiwan539:'今彩539',sc888:'天天樂',nfdhk:'六合彩',taiwan649:'大樂透' };
+    const analysis=[];
+    for(const result of results) if(lotteryBySource[result.sourceId]) analysis.push(await matrixAnalysisPipeline.ensureCurrent(lotteryBySource[result.sourceId]));
+    return { statusCode: 200,analysis };
 };
 
 export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceId?: string } }) => {
@@ -78,14 +81,14 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
     const result = await fetchSource(sourceId);
     if (!result.updated) console.warn('彩種排程來源尚未更新', sourceId, result.data.period);
     const lotteryBySource: Record<string,'今彩539'|'天天樂'|'六合彩'|'大樂透'> = { taiwan539:'今彩539',sc888:'天天樂',nfdhk:'六合彩',taiwan649:'大樂透' };
-    const analysis = result.updated && lotteryBySource[sourceId] ? await matrixAnalysisPipeline.run(lotteryBySource[sourceId]) : null;
+    const analysis = lotteryBySource[sourceId] ? await matrixAnalysisPipeline.ensureCurrent(lotteryBySource[sourceId]) : null;
     return { statusCode: 200,analysis };
 };
 
 export const scheduledMatrixAnalysisRefresh = async (event: { payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透' } }) => {
     const lotteries = event.payload?.lottery ? [event.payload.lottery] : ['今彩539','天天樂','六合彩','大樂透'] as const;
     const results=[];
-    for(const lottery of lotteries) results.push(await matrixAnalysisPipeline.run(lottery));
+    for(const lottery of lotteries) results.push(await matrixAnalysisPipeline.ensureCurrent(lottery));
     return {statusCode:200,results};
 };
 

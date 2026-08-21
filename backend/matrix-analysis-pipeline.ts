@@ -7,6 +7,7 @@ import { buildTiangongArtifact, type TiangongArtifact } from './matrix-tiangong-
 
 type Dependencies = {
   getHistory(lottery: LotteryId, limit: number | null): Promise<MatrixDraw[]>;
+  readAnalysis(kind: 'explore', lottery: LotteryId, drawPeriod: string): Promise<unknown | null>;
   publishAnalysis(meta: AnalysisWriteMeta, data: unknown): Promise<unknown>;
   buildExplore(lottery: LotteryId, drawPeriod: string, history: MatrixDraw[]): ExploreArtifact;
   buildTianyan(lottery: LotteryId, drawPeriod: string, explore: ExploreArtifact): TianyanArtifact;
@@ -20,6 +21,7 @@ const defaults: Dependencies = {
     return getMatrixHistory(lottery, limit) as Promise<MatrixDraw[]>;
   },
   publishAnalysis: (meta, data) => analysisStore.publishAnalysis(meta, data),
+  readAnalysis: (kind, lottery, drawPeriod) => analysisStore.readAnalysis(kind, lottery, drawPeriod),
   buildExplore: buildExploreArtifact,
   buildTianyan: buildTianyanArtifact,
   buildTiangong: buildTiangongArtifact,
@@ -28,7 +30,7 @@ const defaults: Dependencies = {
 
 export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = {}) {
   const dependencies = { ...defaults, ...overrides };
-  return {
+  const pipeline = {
     async run(lottery: LotteryId) {
       const startedAt = dependencies.now().toISOString();
       const history = await dependencies.getHistory(lottery, null);
@@ -60,7 +62,16 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         tiangongItems: tiangong.items.length,
       };
     },
+    async ensureCurrent(lottery: LotteryId) {
+      const history = await dependencies.getHistory(lottery, 1);
+      const drawPeriod = history[0]?.period;
+      if (!drawPeriod) throw new Error('MATRIX_HISTORY_NOT_READY');
+      const existing = await dependencies.readAnalysis('explore', lottery, drawPeriod);
+      if (existing) return { lottery, drawPeriod, skipped: true as const };
+      return pipeline.run(lottery);
+    },
   };
+  return pipeline;
 }
 
 export const matrixAnalysisPipeline = createMatrixAnalysisPipeline();

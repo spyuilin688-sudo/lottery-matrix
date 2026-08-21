@@ -62,4 +62,31 @@ describe('Matrix completed-analysis pipeline', () => {
     const pipeline = createMatrixAnalysisPipeline({ getHistory: async () => [], publishAnalysis: vi.fn() });
     await expect(pipeline.run('今彩539')).rejects.toThrow('MATRIX_HISTORY_NOT_READY');
   });
+
+  it('builds the current draw when its completed Explore artifact is missing', async () => {
+    const publishAnalysis = vi.fn(async () => ({}));
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async () => null,
+      publishAnalysis,
+      buildExplore: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
+      buildTianyan: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
+      buildTiangong: (lottery, period) => ({ lottery, drawPeriod: period, items: [], validationById: {} }),
+    });
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({ drawPeriod: '114000123' });
+    expect(publishAnalysis).toHaveBeenCalledTimes(4);
+  });
+
+  it('skips recomputation when the current draw already has a completed Explore artifact', async () => {
+    const publishAnalysis = vi.fn(async () => ({}));
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async () => ({ analysisVersion: 'existing' }),
+      publishAnalysis,
+    });
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toEqual({
+      lottery: '今彩539', drawPeriod: '114000123', skipped: true,
+    });
+    expect(publishAnalysis).not.toHaveBeenCalled();
+  });
 });
