@@ -15,9 +15,9 @@ describe('Matrix completed-analysis pipeline', () => {
     };
     const progressStore = {
       getOrCreate: async () => job,
-      appendExploreGroup: async (current: typeof job, unitIndex: number, artifact: unknown) => {
-        groups[unitIndex] = artifact;
-        job = { ...current, cursor: unitIndex + 1 };
+      appendExploreGroups: async (current: typeof job, unitIndex: number, artifacts: unknown[]) => {
+        artifacts.forEach((artifact, offset) => { groups[unitIndex + offset] = artifact; });
+        job = { ...current, cursor: unitIndex + artifacts.length };
         return job;
       },
       readExploreGroups: async () => groups,
@@ -74,7 +74,7 @@ describe('Matrix completed-analysis pipeline', () => {
         }),
         readExploreGroups: async () => [],
         setPhase: async (job, phase) => ({ ...job, phase, cursor: 0 }),
-        appendExploreGroup: async () => { throw new Error('unexpected'); },
+        appendExploreGroups: async () => { throw new Error('unexpected'); },
         finish: async () => undefined,
       } as never,
       publishAnalysis: vi.fn(async () => ({})),
@@ -101,8 +101,8 @@ describe('Matrix completed-analysis pipeline', () => {
       monotonicNow: () => times.shift() ?? 23_000,
       progressStore: {
         getOrCreate: async () => job,
-        appendExploreGroup: async (current, unitIndex) => {
-          job = { ...current, cursor: unitIndex + 1 };
+        appendExploreGroups: async (current, unitIndex, artifacts) => {
+          job = { ...current, cursor: unitIndex + artifacts.length };
           return job;
         },
         readExploreGroups: async () => [],
@@ -184,7 +184,7 @@ describe('Matrix completed-analysis pipeline', () => {
       }),
       readExploreGroups: async () => [],
       setPhase: async (job: object, phase: string) => ({ ...job, phase, cursor: 0 }),
-      appendExploreGroup: async () => { throw new Error('unexpected'); },
+      appendExploreGroups: async () => { throw new Error('unexpected'); },
       finish: async () => undefined,
     };
     const pipeline = createMatrixAnalysisPipeline({

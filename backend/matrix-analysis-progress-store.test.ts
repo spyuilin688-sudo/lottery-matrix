@@ -44,8 +44,10 @@ function memoryAdapter() {
 
 function memoryStorage() {
   const files = new Map<string, string>();
+  const state = { writeCalls: 0 };
   const adapter: MatrixAnalysisProgressStorageAdapter = {
     async write(items) {
+      state.writeCalls += 1;
       for (const item of items) files.set(item.path, item.content);
       return items.map(() => true);
     },
@@ -56,7 +58,7 @@ function memoryStorage() {
       return paths.map((path) => files.delete(path));
     },
   };
-  return { adapter, files };
+  return { adapter, files, state };
 }
 
 describe('Matrix analysis resumable progress store', () => {
@@ -102,6 +104,22 @@ describe('Matrix analysis resumable progress store', () => {
     expect(resumed.id).toBe(first.id);
     expect(resumed.analysisVersion).toBe('v1');
     expect(tables.get('matrix_analysis_jobs')).toHaveLength(1);
+  });
+
+  it('persists multiple completed units with one storage write before advancing the cursor', async () => {
+    const { adapter } = memoryAdapter();
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
+    const job = await store.getOrCreate({
+      lottery: '六合彩', drawPeriod: '20260821', analysisVersion: 'v1',
+      startedAt: '2026-08-21T10:00:00.000Z', total: 546,
+    });
+
+    const advanced = await store.appendExploreGroups(job, 0, [{ id: 'one' }, { id: 'two' }]);
+
+    expect(advanced.cursor).toBe(2);
+    expect(saved.state.writeCalls).toBe(1);
+    await expect(store.readExploreGroups(advanced)).resolves.toEqual([{ id: 'one' }, { id: 'two' }]);
   });
 
   it('abandons unfinished progress from an older draw when a newer draw becomes current', async () => {

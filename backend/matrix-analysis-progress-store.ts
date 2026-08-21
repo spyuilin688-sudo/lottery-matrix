@@ -170,17 +170,27 @@ export function createMatrixAnalysisProgressStore(
       return { ...record, id };
     },
 
-    async appendExploreGroup(job: MatrixAnalysisJob, unitIndex: number, artifact: unknown) {
+    async appendExploreGroups(job: MatrixAnalysisJob, unitIndex: number, artifacts: unknown[]) {
       if (job.phase !== 'explore' || unitIndex !== job.cursor) {
         throw new Error('MATRIX_ANALYSIS_PROGRESS_CURSOR_MISMATCH');
       }
-      const [written] = await storageAdapter.write([{
-        path: groupPath(job, unitIndex),
-        content: await encodeArtifact(artifact),
+      if (artifacts.length === 0 || unitIndex + artifacts.length > job.total) {
+        throw new Error('MATRIX_ANALYSIS_PROGRESS_BATCH_INVALID');
+      }
+      const encoded = await Promise.all(artifacts.map((artifact) => encodeArtifact(artifact)));
+      const written = await storageAdapter.write(encoded.map((content, offset) => ({
+        path: groupPath(job, unitIndex + offset),
+        content,
         contentType: 'application/gzip',
-      }]);
-      if (!written) throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
-      return updateJob(job, { cursor: unitIndex + 1 });
+      })));
+      if (written.length !== artifacts.length || written.some((ok) => !ok)) {
+        throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
+      }
+      return updateJob(job, { cursor: unitIndex + artifacts.length });
+    },
+
+    appendExploreGroup(job: MatrixAnalysisJob, unitIndex: number, artifact: unknown) {
+      return this.appendExploreGroups(job, unitIndex, [artifact]);
     },
 
     async readExploreGroups(job: MatrixAnalysisJob) {

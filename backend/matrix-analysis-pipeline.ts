@@ -17,13 +17,14 @@ import { buildTianyanArtifact, type TianyanArtifact } from './matrix-tianyan-ser
 import { buildTiangongArtifact, type TiangongArtifact } from './matrix-tiangong-service';
 
 const DEFAULT_BATCH_BUDGET_MS = 22_000;
+const PERSISTENCE_RESERVE_MS = 7_000;
 
 type ProgressStore = {
   getOrCreate(input: Omit<MatrixAnalysisJob, 'id' | 'phase' | 'cursor'>): Promise<MatrixAnalysisJob>;
-  appendExploreGroup(
+  appendExploreGroups(
     job: MatrixAnalysisJob,
     unitIndex: number,
-    artifact: unknown,
+    artifacts: unknown[],
   ): Promise<MatrixAnalysisJob>;
   readExploreGroups(job: MatrixAnalysisJob): Promise<unknown[]>;
   setPhase(job: MatrixAnalysisJob, phase: MatrixAnalysisJob['phase']): Promise<MatrixAnalysisJob>;
@@ -151,17 +152,30 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
 
       if (job.phase === 'explore') {
         const maxExploreGroups = Math.max(1, options.maxExploreGroups ?? Number.POSITIVE_INFINITY);
+        const batchBudgetMs = Math.max(1, options.batchBudgetMs ?? DEFAULT_BATCH_BUDGET_MS);
         const deadline = dependencies.monotonicNow()
-          + Math.max(1, options.batchBudgetMs ?? DEFAULT_BATCH_BUDGET_MS);
+          + Math.max(1, batchBudgetMs - PERSISTENCE_RESERVE_MS);
         let completedThisInvocation = 0;
+        const firstUnitIndex = job.cursor;
+        const artifacts: ExploreArtifact[] = [];
         while (
-          job.cursor < job.total
+          firstUnitIndex + completedThisInvocation < job.total
           && completedThisInvocation < maxExploreGroups
           && (completedThisInvocation === 0 || dependencies.monotonicNow() < deadline)
         ) {
-          const artifact = dependencies.buildExploreGroup(drawPeriod, history, workUnits[job.cursor]);
-          job = await dependencies.progressStore.appendExploreGroup(job, job.cursor, artifact);
+          artifacts.push(dependencies.buildExploreGroup(
+            drawPeriod,
+            history,
+            workUnits[firstUnitIndex + completedThisInvocation],
+          ));
           completedThisInvocation += 1;
+        }
+        if (artifacts.length) {
+          job = await dependencies.progressStore.appendExploreGroups(
+            job,
+            firstUnitIndex,
+            artifacts,
+          );
         }
 
         if (job.cursor < job.total) {
