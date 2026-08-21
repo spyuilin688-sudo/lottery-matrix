@@ -70,7 +70,7 @@ export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
         if (!entitlements.canCustomizeStatus) throw new Error('FORBIDDEN');
         const config = record(input.body) as CustomStatusConfig;
         const validation = validateCustomStatusConfig(config, entitlements);
-        if (!validation.ok) throw new Error(validation.code);
+        if (validation.ok === false) throw new Error(validation.code);
         return { status: 200, body: { item: await dependencies.store.save(member.memberId, config) } };
       } catch (cause) {
         return failure(cause);
