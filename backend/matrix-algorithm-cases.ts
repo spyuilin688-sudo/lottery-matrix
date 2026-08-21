@@ -17,7 +17,7 @@ const specs: Spec[] = [
   { name: '案例10｜順球2開11｜下5期第3支+18+36｜下7期', expectedStreak: 7, expectedRules: [18,36], expectedPredictions: [9,30], bases: [20,17,15,14,12,28,13], hits: [[6,9,11,16,17],[9,14,27,29,33],[5,6,12,36,37],[11,15,30,34,36],[1,11,23,30,34],[10,25,27,35,38],[13,25,28,30,31]], aBase: 12, body: { lottery: '今彩539', numberOrder: '依號碼由小到大', lockedPosition: 2, lockedNumber: 11, referenceOffset: 5, referencePosition: 3, predictionDistance: 7, ruleCount: 2, algorithmType: '加減版路' } },
   { name: '回推上限｜準13進14', expectedStreak: 13, expectedRules: [5], expectedPredictions: [25], bases: Array(14).fill(20), hits: Array(14).fill([1,2,3,4,25]), aBase: 20, body: { lottery: '今彩539', numberOrder: '依號碼由小到大', lockedPosition: 1, lockedNumber: 10, referenceOffset: 0, referencePosition: 2, predictionDistance: 1, ruleCount: 1, algorithmType: '加減版路' } },
   { name: '案例11｜落球5開35｜下1期第3支+14+40｜下9期', expectedStreak: 11, expectedRules: [14,40], expectedPredictions: [7,30], bases: [15,29,30,16,46,21,26,32,26,25,47], hits: [[29,1,2,3,4,5,6],[20,1,2,3,4,5,6],[21,1,2,3,4,5,6],[7,1,2,3,4,5,6],[37,1,2,3,4,5,6],[12,1,2,3,4,5,6],[17,1,2,3,4,5,6],[23,1,2,3,4,5,6],[40,1,2,3,4,5,6],[16,1,2,3,4,5,6],[12,1,2,3,4,5,6]], aBase: 16, body: { lottery: '六合彩', numberOrder: '依實際開獎順序', lockedPosition: 5, lockedNumber: 35, referenceOffset: 1, referencePosition: 3, predictionDistance: 9, ruleCount: 2, algorithmType: '加減版路' } },
-  { name: '案例12｜特別號開03｜同期第7支+8+24｜下6期｜順球', expectedStreak: 5, expectedRules: [8,24], expectedPredictions: [11,27], bases: [3,3,3,3,3], hits: [[27,1,2,4,5,6,49],[27,1,2,4,5,6,49],[27,1,2,4,5,6,49],[11,1,2,4,5,6,49],[11,1,2,4,5,6,49]], aBase: 3, body: { lottery: '六合彩', numberOrder: '依號碼由小到大', lockedPosition: 7, lockedNumber: 3, referenceOffset: 0, referencePosition: 7, predictionDistance: 6, ruleCount: 2, algorithmType: '拖牌版路' } },
+  { name: '案例12｜特別號開03｜同期第7支+8+24｜下6期｜順球', expectedStreak: 5, expectedRules: [8,24], expectedPredictions: [11,27], bases: [3,3,3,3,3], hits: [[27,1,2,4,5,6,49],[27,7,8,9,10,12,48],[27,13,14,15,16,17,47],[11,18,19,20,21,22,46],[11,23,24,25,26,28,45]], aBase: 3, body: { lottery: '六合彩', numberOrder: '依號碼由小到大', lockedPosition: 7, lockedNumber: 3, referenceOffset: 0, referencePosition: 7, predictionDistance: 6, ruleCount: 2, algorithmType: '拖牌版路' } },
   { name: '案例13｜落球5開48｜同期第5支+19+35｜下3期', expectedStreak: 6, expectedRules: [19,35], expectedPredictions: [18,34], bases: [48,48,48,48,48,48], hits: [[18,1,2,3,4,5,6],[34,1,2,3,4,5,6],[18,1,2,3,4,5,6],[34,1,2,3,4,5,6],[18,1,2,3,4,5,6],[18,1,2,3,4,5,6]], aBase: 48, body: { lottery: '六合彩', numberOrder: '依實際開獎順序', lockedPosition: 5, lockedNumber: 48, referenceOffset: 0, referencePosition: 5, predictionDistance: 3, ruleCount: 2, algorithmType: '拖牌版路' } },
   { name: '案例14｜特別號開03｜同期第7支+8+24｜下6期｜落球', expectedStreak: 5, expectedRules: [8,24], expectedPredictions: [11,27], bases: [3,3,3,3,3], hits: [[27,1,2,4,5,6,49],[27,1,2,4,5,6,49],[27,1,2,4,5,6,49],[11,1,2,4,5,6,49],[11,1,2,4,5,6,49]], aBase: 3, body: { lottery: '六合彩', numberOrder: '依實際開獎順序', lockedPosition: 7, lockedNumber: 3, referenceOffset: 0, referencePosition: 7, predictionDistance: 6, ruleCount: 2, algorithmType: '拖牌版路' } },
   { name: '案例15｜落球1開42｜上12期第1支+6+38｜下6期', expectedStreak: 11, expectedRules: [6,38], expectedPredictions: [26,43], bases: [42,49,40,41,24,11,12,13,23,12,6], hits: [[1,2,3,4,5,6,48],[38,1,2,3,4,5,6],[29,46,1,2,3,4,5],[47,1,2,3,4,5,6],[13,30,1,2,3,4,5],[17,1,2,3,4,5,6],[1,2,3,4,5,6,7],[2,3,4,5,6,7,8],[29,1,2,3,4,5,6],[18,1,2,3,4,5,6],[44,1,2,3,4,5,6]], aBase: 37, body: { lottery: '六合彩', numberOrder: '依實際開獎順序', lockedPosition: 1, lockedNumber: 42, referenceOffset: -12, referencePosition: 1, predictionDistance: 6, ruleCount: 2, algorithmType: '加減版路' } },
@@ -38,16 +38,16 @@ function buildOrdered(spec: Spec, constraints: Map<number,number>) {
     for (let index=0; index<count; index+=1) if (!values[index]) { while (used.has(candidate)) candidate+=1; values[index]=candidate; used.add(candidate); }
     return values;
   }
-  const mainCount = count === 7 ? 6 : 5; const mainConstraints = new Map([...constraints].filter(([position]) => position <= mainCount)); const values = Array<number>(mainCount);
+  const mainCount = count === 7 ? 6 : 5; const fixedSpecial = count === 7 ? constraints.get(7) : undefined; const mainConstraints = new Map([...constraints].filter(([position]) => position <= mainCount)); const values = Array<number>(mainCount);
   const solve = (index: number, minimum: number): boolean => {
     if (index >= mainCount) return true;
     const fixed = mainConstraints.get(index+1); const start = fixed ?? minimum; const end = fixed ?? max;
-    for (let value=start; value<=end; value+=1) { if (value < minimum) continue; values[index]=value; if (solve(index+1,value+1)) return true; }
+    for (let value=start; value<=end; value+=1) { if (value < minimum || value === fixedSpecial) continue; values[index]=value; if (solve(index+1,value+1)) return true; }
     return false;
   };
   if (!solve(0,1)) throw new Error('案例固定球位無法建立');
   if (count === 5) return values;
-  const fixedSpecial = constraints.get(7); let special = fixedSpecial ?? 1; while (values.includes(special)) special+=1;
+  let special = fixedSpecial ?? 1; while (values.includes(special)) special+=1;
   return [...values,special];
 }
 
