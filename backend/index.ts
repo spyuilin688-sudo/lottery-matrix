@@ -18,6 +18,7 @@ import { createMatrixStatusRoutes } from './matrix-status-routes';
 import { matrixAnalysisPipeline } from './matrix-analysis-pipeline';
 import { isTaipeiRefreshWindow, selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
+import { createSystemJobStatusWriter, createSystemJobTracker } from './system-job-status';
 
 async function loadMatrixSupabaseConfig() {
     const names = await secrets.listSecretNames();
@@ -29,6 +30,7 @@ async function loadMatrixSupabaseConfig() {
 }
 
 const matrixMemberAuth = createMemberAuth(loadMatrixSupabaseConfig);
+const systemJobTracker = createSystemJobTracker(createSystemJobStatusWriter(loadMatrixSupabaseConfig));
 const matrixCustomStatusStore = createCustomStatusStore(loadMatrixSupabaseConfig);
 const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
@@ -70,30 +72,39 @@ const matrixTiangongRoutes = createMatrixTiangongRoutes({
 });
 function authorizationHeader(event: { headers?: Record<string,string|undefined> } | undefined) { return event?.headers?.authorization ?? event?.headers?.Authorization; }
 
-export const scheduledLotteryRefresh = async () => {
+export const scheduledLotteryRefresh = async () => systemJobTracker.run('matrix-649-refresh-v2', '大樂透', async () => {
     const results = await refreshActiveSources();
     const failures = results.filter(result => !result.ok);
     if (failures.length) throw new Error('排程爬蟲失敗：' + failures.map(result => result.sourceId + ' ' + result.error).join('；'));
     return { statusCode: 200,analysis:[] };
-};
+});
 
 export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceId?: string } }) => {
     const sourceId = event.payload?.sourceId;
     if (!sourceId) throw new Error('彩種排程缺少 sourceId');
-    const result = await fetchSource(sourceId);
-    if (!result.updated) console.warn('彩種排程來源尚未更新', sourceId, result.data.period);
-    return { statusCode: 200,analysis:null };
+    const lotteryBySource: Record<string,'今彩539'|'天天樂'|'六合彩'|'大樂透'> = { taiwan539:'今彩539',sc888:'天天樂',nfdhk:'六合彩',taiwan649:'大樂透' };
+    const jobBySource: Record<string,string> = { taiwan539:'matrix-539-refresh-v2',sc888:'matrix-fantasy5-refresh-v2',nfdhk:'matrix-marksix-refresh-v2',taiwan649:'matrix-649-refresh-v2' };
+    const lottery=lotteryBySource[sourceId];
+    if(!lottery) throw new Error('未知彩種排程來源');
+    return systemJobTracker.run(jobBySource[sourceId],lottery,async()=>{
+        const result = await fetchSource(sourceId);
+        if (!result.updated) console.warn('彩種排程來源尚未更新', sourceId, result.data.period);
+        return { statusCode: 200,analysis:null };
+    });
 };
 
 export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透'; sourceId?: string; refreshAll?: boolean; refreshHour?: number } }) => {
-    const lottery = event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
-    const refreshHour = event.payload?.refreshHour;
-    if (refreshHour !== undefined && isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
-        if (event.payload?.refreshAll) return scheduledLotteryRefresh();
-        if (event.payload?.sourceId) return scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
-    }
-    const result = await matrixAnalysisPipeline.ensureCurrent(lottery);
-    return {statusCode:200,result};
+    const trackedLottery=event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
+    const jobByLottery: Record<string,string>={'今彩539':'matrix-539-refresh-v2','天天樂':'matrix-fantasy5-refresh-v2','六合彩':'matrix-marksix-refresh-v2','大樂透':'matrix-649-refresh-v2'};
+    return systemJobTracker.run(jobByLottery[trackedLottery],trackedLottery,async()=>{
+        const refreshHour = event.payload?.refreshHour;
+        if (refreshHour !== undefined && isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
+            if (event.payload?.refreshAll) return scheduledLotteryRefresh();
+            if (event.payload?.sourceId) return scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
+        }
+        const result = await matrixAnalysisPipeline.ensureCurrent(trackedLottery);
+        return {statusCode:200,result};
+    });
 };
 
 export const scheduledHistoricalBackfill = async (event: { payload?: { sourceId?: string } }) => {

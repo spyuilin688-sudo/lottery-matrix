@@ -1,0 +1,18 @@
+.systemStatusHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.systemStatusHeader h2 { margin: 0 0 4px; font-size: 18px; }
+.systemStatusHeader span { color: #888d96; font-size: 12px; }
+.systemStatusHeader button { display: flex; align-items: center; gap: 6px; }
+.statusCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.statusCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 16px; }
+.statusCardTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.statusCard p { min-height: 38px; margin: 10px 0; color: #989ca5; font-size: 13px; line-height: 1.5; }
+.statusMeta { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid #24272d; }
+.statusMeta span { color: #888d96; font-size: 12px; }
+.statusMeta b { color: #c4c6cc; font-size: 12px; text-align: right; overflow-wrap: anywhere; }
+.statusErrorText { margin-top: 8px; padding: 8px; border-radius: 7px; background: #281616; color: #efb3b3; font-size: 12px; overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .systemStatusHeader { align-items: flex-end; }
+  .statusCards { grid-template-columns: 1fr; }
+  .statusCard p { min-height: 0; }
+}

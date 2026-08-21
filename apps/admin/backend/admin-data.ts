@@ -21,6 +21,11 @@ export type AdminAccountInput = {
   can_edit: boolean;
   can_delete: boolean;
 };
+export type SubscriptionAction = {
+  action: 'activate' | 'renew' | 'cancel' | 'adjustExpiry' | 'lifetime';
+  planId?: string;
+  expiresAt?: string;
+};
 
 type Row = Record<string, unknown>;
 type TableDefinition = {
@@ -40,7 +45,7 @@ export class AdminDataError extends Error {
 
 const definitions: Record<string, TableDefinition> = {
   users: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,status,referral_code,invitation_code&order=registered_at.desc&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       authUserId: row.auth_user_id,
@@ -50,13 +55,15 @@ const definitions: Record<string, TableDefinition> = {
       planStartedAt: row.plan_started_at,
       planExpiresAt: row.plan_expires_at,
       isLifetime: row.is_lifetime,
+      autoRenew: row.auto_renew,
       status: row.status,
       referralCode: row.referral_code,
       invitationCode: row.invitation_code,
+      planName: (row.current_plan as Row | null)?.name ?? null,
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,status,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
@@ -69,6 +76,7 @@ const definitions: Record<string, TableDefinition> = {
         planStartedAt: row.plan_started_at,
         planExpiresAt: row.plan_expires_at,
         isLifetime: row.is_lifetime,
+        autoRenew: row.auto_renew,
         status: row.status,
       };
     },
@@ -146,6 +154,30 @@ const definitions: Record<string, TableDefinition> = {
       status: row.status,
     }),
   },
+  plans: {
+    path: '/rest/v1/plans?select=id,name,price,duration_days&order=duration_days.asc',
+    map: (row) => ({
+      id: String(row.id),
+      name: row.name,
+      price: row.price,
+      durationDays: row.duration_days,
+    }),
+  },
+  transferRequests: {
+    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(auth_user_id)&order=submitted_at.desc&limit=200',
+    map: (row) => ({
+      id: String(row.id),
+      memberId: row.member_id,
+      authUserId: (row.member as Row | null)?.auth_user_id ?? null,
+      planId: row.plan_id,
+      planName: (row.plan as Row | null)?.name ?? null,
+      amount: row.amount,
+      transferredAt: row.transferred_at,
+      accountLastFive: row.account_last_five,
+      submittedAt: row.submitted_at,
+      status: row.status,
+    }),
+  },
 };
 
 export function getAdminTableDefinition(table: string): TableDefinition {
@@ -211,19 +243,32 @@ function validateAdminInput(input: AdminAccountInput) {
   if (!input.account.trim() || !input.name.trim()) throw new AdminDataError('管理員帳號與名稱必填');
   if (!adminRoles.includes(input.role)) throw new AdminDataError('角色不正確');
   if (!adminStatuses.includes(input.status)) throw new AdminDataError('帳號狀態不正確');
+  const permissions = input.role === '超級管理員'
+    ? { can_view: true, can_add: true, can_edit: true, can_delete: true }
+    : input.role === '營運管理員'
+      ? { can_view: true, can_add: true, can_edit: true, can_delete: false }
+      : { can_view: true, can_add: false, can_edit: false, can_delete: false };
   return {
     account: input.account.trim(),
     name: input.name.trim(),
     role: input.role,
     status: input.status,
-    can_view: input.role === '超級管理員' ? true : Boolean(input.can_view),
-    can_add: input.role === '超級管理員' ? true : Boolean(input.can_add),
-    can_edit: input.role === '超級管理員' ? true : Boolean(input.can_edit),
-    can_delete: input.role === '超級管理員' ? true : Boolean(input.can_delete),
+    ...permissions,
   };
 }
 
 export function createAdminData(transport: WriteTransport) {
+  async function protectLastEnabledSuper(before: Row, next?: { role: string; status: string }) {
+    if (before.role !== '超級管理員' || before.status !== '啟用') return;
+    if (next?.role === '超級管理員' && next.status === '啟用') return;
+    const enabled = await transport.selectRows<Row>(
+      'admin_accounts',
+      `select=id&role=eq.${encodeURIComponent('超級管理員')}&status=eq.${encodeURIComponent('啟用')}`,
+    );
+    const otherEnabled = enabled.some((row) => String(row.id) !== String(before.id));
+    if (!otherEnabled) throw new AdminDataError('系統必須保留至少一位啟用中的超級管理員');
+  }
+
   async function writeAudit(entry: {
     actor: AdminActor;
     operationType: string;
@@ -268,6 +313,7 @@ export function createAdminData(transport: WriteTransport) {
     const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
     if (!before) throw new AdminDataError('Not found', 404);
     const record = validateAdminInput(input);
+    await protectLastEnabledSuper(before, { role: record.role, status: record.status });
     const [updated] = await transport.updateRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`, record);
     if (!updated) throw new AdminDataError('更新管理員失敗', 500);
     await writeAudit({
@@ -304,7 +350,75 @@ export function createAdminData(transport: WriteTransport) {
     return definitions.admins.map(updated);
   }
 
+  async function updateMemberStatus(id: string, status: string, actor: AdminActor) {
+    if (!['active', 'disabled'].includes(status)) throw new AdminDataError('會員狀態不正確');
+    return transport.supabaseRequest<Row>('rpc/admin_set_member_status', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_member_id: id,
+        p_status: status,
+        p_actor_id: actor.id,
+        p_actor_name: actor.name || actor.account,
+      }),
+    });
+  }
+
+  async function updateSubscription(
+    id: string,
+    input: SubscriptionAction,
+    actor: AdminActor,
+    currentDate = new Date(),
+  ) {
+    if (!['activate', 'renew', 'cancel', 'adjustExpiry', 'lifetime'].includes(input.action)) {
+      throw new AdminDataError('訂閱操作不正確');
+    }
+    const planId = String(input.planId ?? '').trim() || null;
+    if ((input.action === 'activate' || input.action === 'renew') && !planId) {
+      throw new AdminDataError('訂閱方案必填');
+    }
+    let expiresAt: string | null = null;
+    if (input.action === 'adjustExpiry') {
+      const expiry = new Date(String(input.expiresAt ?? ''));
+      if (!Number.isFinite(expiry.getTime())) throw new AdminDataError('到期時間不正確');
+      expiresAt = expiry.toISOString();
+    }
+    return transport.supabaseRequest<Row>('rpc/admin_update_subscription', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_member_id: id,
+        p_action: input.action,
+        p_plan_id: planId,
+        p_expires_at: expiresAt,
+        p_now: currentDate.toISOString(),
+        p_actor_id: actor.id,
+        p_actor_name: actor.name || actor.account,
+      }),
+    });
+  }
+
+  async function reviewTransferRequest(
+    id: string,
+    decision: string,
+    actor: AdminActor,
+    currentDate = new Date(),
+  ) {
+    if (!['confirmed', 'rejected'].includes(decision)) throw new AdminDataError('審核結果不正確');
+    return transport.supabaseRequest<Row>('rpc/admin_review_transfer_request', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_transfer_id: id,
+        p_decision: decision,
+        p_now: currentDate.toISOString(),
+        p_actor_id: actor.id,
+        p_actor_name: actor.name || actor.account,
+      }),
+    });
+  }
   async function deleteAdminAccount(id: string, actor: AdminActor) {
+    if (id === actor.id) throw new AdminDataError('不得刪除自己的管理員帳號');
+    const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
+    if (!before) throw new AdminDataError('Not found', 404);
+    await protectLastEnabledSuper(before);
     const [deleted] = await transport.deleteRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`);
     if (!deleted) throw new AdminDataError('Not found', 404);
     await writeAudit({
@@ -313,7 +427,7 @@ export function createAdminData(transport: WriteTransport) {
       targetTable: 'admin_accounts',
       targetId: id,
       content: '刪除管理員帳號',
-      beforeData: deleted,
+      beforeData: before,
     });
   }
 
@@ -343,6 +457,9 @@ export function createAdminData(transport: WriteTransport) {
     createAdminAccount,
     updateAdminAccount,
     updateOwnAdminName,
+    updateMemberStatus,
+    updateSubscription,
+    reviewTransferRequest,
     deleteAdminAccount,
     generateActivationCodeBatch,
   };

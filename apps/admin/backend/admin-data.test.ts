@@ -12,9 +12,11 @@ describe('listAdminTable', () => {
       plan_started_at: '2026-08-01T00:00:00Z',
       plan_expires_at: null,
       is_lifetime: false,
+      auto_renew: true,
       status: 'active',
       referral_code: null,
       invitation_code: 'INVITE',
+      current_plan: { name: '月費方案' },
     }]) };
 
     await expect(listAdminTable('users', api)).resolves.toEqual({
@@ -27,9 +29,11 @@ describe('listAdminTable', () => {
         planStartedAt: '2026-08-01T00:00:00Z',
         planExpiresAt: null,
         isLifetime: false,
+        autoRenew: true,
         status: 'active',
         referralCode: null,
         invitationCode: 'INVITE',
+        planName: '月費方案',
       }],
     });
   });

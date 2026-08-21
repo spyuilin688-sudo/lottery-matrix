@@ -40,6 +40,7 @@ describe('Matrix member authentication', () => {
       jsonResponse([{
         id: 'member-1',
         auth_user_id: 'auth-1',
+        status: '啟用',
         is_lifetime: false,
         plan_expires_at: '2026-09-01T00:00:00Z',
         current_plan: { name: '季費方案' },
@@ -61,6 +62,7 @@ describe('Matrix member authentication', () => {
       headers: { apikey: 'anon-key', Authorization: 'Bearer access-token' },
     });
     expect(String(fetcher.mock.calls[1]?.[0])).toContain('auth_user_id=eq.auth-1');
+    expect(String(fetcher.mock.calls[1]?.[0])).toContain('status');
     expect(String(fetcher.mock.calls[2]?.[0])).toContain('payments.status=eq.confirmed');
   });
 
@@ -70,6 +72,7 @@ describe('Matrix member authentication', () => {
       jsonResponse([{
         id: 'member-1',
         auth_user_id: 'auth-1',
+        status: '啟用',
         is_lifetime: false,
         plan_expires_at: '2026-08-20T23:59:59Z',
         current_plan: { name: '月費方案' },
@@ -81,5 +84,25 @@ describe('Matrix member authentication', () => {
       createMemberAuth(config, fetcher, () => new Date('2026-08-21T00:00:00Z'))
         .requireMember('Bearer token'),
     ).resolves.toMatchObject({ plan: 'monthly', active: false, referralSuccessCount: 0 });
+  });
+
+  it('rejects a disabled member before resolving member-only access', async () => {
+    const fetcher = sequenceFetcher([
+      jsonResponse({ id: 'auth-1' }),
+      jsonResponse([{
+        id: 'member-1',
+        auth_user_id: 'auth-1',
+        status: '停用',
+        is_lifetime: true,
+        plan_expires_at: null,
+        current_plan: null,
+        referral_code: null,
+      }]),
+    ]);
+
+    await expect(
+      createMemberAuth(config, fetcher).requireMember('Bearer token'),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,0 +1,55 @@
+.managementToolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 180px auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.managementToolbar input,
+.managementToolbar select,
+.operationDialog input,
+.operationDialog select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #343840;
+  border-radius: 8px;
+  background: #0b0d11;
+  color: #eee;
+}
+
+.managementToolbar span { color: #8f939b; font-size: 13px; }
+.compactButton { border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 7px 10px; white-space: nowrap; }
+.mobileManagement { display: none; }
+.managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
+.cardHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.cardHeading > span { color: #b9a66f; font-size: 12px; }
+.cardRow { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #24272d; }
+.cardRow span { color: #888d96; font-size: 12px; }
+.cardRow b { font-size: 12px; text-align: right; overflow-wrap: anywhere; }
+.statusBadge { padding: 4px 8px; border-radius: 999px; font-size: 11px; }
+.statusBadge.good { color: #8ed7a3; background: #15311e; }
+.statusBadge.bad { color: #efabab; background: #371919; }
+.mobileManagement.subscriptionGrid { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cardActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.operationDialog { width: min(430px, 100%); padding: 18px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
+.operationDialog h2 { margin: 0 0 10px; font-size: 18px; }
+.operationDialog p { color: #989ca5; }
+.operationDialog label { display: block; color: #989ca5; font-size: 12px; }
+.operationDialog label input, .operationDialog label select { margin-top: 6px; }
+.transferPanel { margin-top: 12px; }
+.transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid #24272d; }
+.transferRow > div:first-child { display: grid; gap: 4px; }
+.transferRow span { color: #888d96; font-size: 12px; }
+.permissionBox span { font-size: 13px; color: #c4c6cc; }
+
+@media (max-width: 760px) {
+  .managementToolbar { grid-template-columns: 1fr 120px; }
+  .managementToolbar span { grid-column: 1 / -1; }
+  .desktopManagement { display: none; }
+  .mobileManagement { display: grid; gap: 10px; }
+  .mobileManagement.subscriptionGrid { display: grid; grid-template-columns: 1fr; }
+  .transferRow { grid-template-columns: 1fr auto; }
+  .transferRow .rowActions { grid-column: 1 / -1; }
+  .managementCard > .compactButton { width: 100%; margin-top: 10px; }
+}

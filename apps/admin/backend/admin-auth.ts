@@ -4,6 +4,9 @@ type Requester = {
 
 export type PermissionKey = 'view' | 'add' | 'edit' | 'delete';
 export type Permissions = Record<PermissionKey, boolean>;
+export type ModuleKey = 'users' | 'subscriptions' | 'activationCodes' | 'systemSettings' | 'admins';
+export type ModuleAction = 'view' | 'edit';
+export type ModulePermissions = Record<ModuleKey, Record<ModuleAction, boolean>>;
 export type AdminAccount = {
   id?: string;
   account?: string;
@@ -41,12 +44,46 @@ export function getPermissions(admin: AdminAccount): Permissions {
   if (admin.role === '超級管理員') {
     return { view: true, add: true, edit: true, delete: true };
   }
-  return {
-    view: Boolean(admin.permissions?.view),
-    add: Boolean(admin.permissions?.add),
-    edit: Boolean(admin.permissions?.edit),
-    delete: Boolean(admin.permissions?.delete),
-  };
+  if (admin.role === '營運管理員') {
+    return { view: true, add: true, edit: true, delete: false };
+  }
+  return { view: true, add: false, edit: false, delete: false };
+}
+
+const roleModules: Record<string, ModulePermissions> = {
+  超級管理員: {
+    users: { view: true, edit: true },
+    subscriptions: { view: true, edit: true },
+    activationCodes: { view: true, edit: true },
+    systemSettings: { view: true, edit: true },
+    admins: { view: true, edit: true },
+  },
+  營運管理員: {
+    users: { view: true, edit: true },
+    subscriptions: { view: true, edit: true },
+    activationCodes: { view: true, edit: true },
+    systemSettings: { view: true, edit: false },
+    admins: { view: false, edit: false },
+  },
+  查看人員: {
+    users: { view: true, edit: false },
+    subscriptions: { view: true, edit: false },
+    activationCodes: { view: true, edit: false },
+    systemSettings: { view: true, edit: false },
+    admins: { view: false, edit: false },
+  },
+};
+
+export function getModulePermissions(admin: AdminAccount): ModulePermissions {
+  return roleModules[String(admin.role)] ?? roleModules.查看人員;
+}
+
+export function requireModulePermission(
+  admin: AdminAccount,
+  module: ModuleKey,
+  action: ModuleAction,
+): void {
+  if (!getModulePermissions(admin)[module][action]) throw new AdminAccessError('權限不足');
 }
 
 export function requirePermission(admin: AdminAccount, key: PermissionKey): void {
@@ -75,6 +112,7 @@ export async function requireAdmin(email: string | null | undefined, api: Reques
       edit: Boolean(row.can_edit),
       delete: Boolean(row.can_delete),
     },
+    modulePermissions: getModulePermissions({ role: row.role }),
     lastLoginAt: row.last_login_at ?? null,
     createdAt: row.created_at,
   };

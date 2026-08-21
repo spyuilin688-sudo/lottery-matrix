@@ -9,6 +9,7 @@ type SupabaseConfig = {
 type MemberRow = {
   id?: unknown;
   auth_user_id?: unknown;
+  status?: unknown;
   is_lifetime?: unknown;
   plan_expires_at?: unknown;
   referral_code?: unknown;
@@ -80,7 +81,7 @@ export function createMemberAuth(
       const memberPath = new URL('/rest/v1/members', config.url);
       memberPath.searchParams.set(
         'select',
-        'id,auth_user_id,is_lifetime,plan_expires_at,referral_code,current_plan:plans!members_current_plan_id_fkey(name)',
+        'id,auth_user_id,status,is_lifetime,plan_expires_at,referral_code,current_plan:plans!members_current_plan_id_fkey(name)',
       );
       memberPath.searchParams.set('auth_user_id', `eq.${authUserId}`);
       memberPath.searchParams.set('limit', '1');
@@ -91,6 +92,9 @@ export function createMemberAuth(
       const member = members[0];
       const memberId = String(member?.id ?? '').trim();
       if (!member || !memberId) throw new MatrixAccessError('FORBIDDEN', 403);
+      if (['停用', 'disabled', 'inactive'].includes(String(member.status ?? ''))) {
+        throw new MatrixAccessError('FORBIDDEN', 403);
+      }
 
       const referralCode = String(member.referral_code ?? '').trim();
       let referralSuccessCount = 0;

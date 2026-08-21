@@ -1,7 +1,15 @@
 import { error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
-import { requireAdmin, requirePermission, type PermissionKey } from './admin-auth';
+import {
+  requireAdmin,
+  requireModulePermission,
+  requirePermission,
+  type ModuleAction,
+  type ModuleKey,
+  type PermissionKey,
+} from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
 import { algorithmApi } from './algorithm-api';
+import { createConnectionStatus } from './connection-status';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 
 type Context = {
@@ -23,6 +31,10 @@ type PermissionInput = {
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const adminData = createAdminData(supabase);
+const connectionStatus = createConnectionStatus({
+  supabase,
+  loadConfig: () => getSupabaseConfig(secrets),
+});
 const now = () => new Date().toISOString();
 const fail = (cause: unknown) => {
   const value = cause as { message?: string; statusCode?: number };
@@ -53,6 +65,15 @@ async function authorize(ctx: Context, permission: PermissionKey) {
 const guard = (permission: PermissionKey) => async (ctx: Context) => {
   try {
     await authorize(ctx, permission);
+  } catch (cause) {
+    return fail(cause);
+  }
+};
+
+const moduleGuard = (module: ModuleKey, action: ModuleAction) => async (ctx: Context) => {
+  try {
+    const admin = await getAdmin(ctx);
+    requireModulePermission(admin, module, action);
   } catch (cause) {
     return fail(cause);
   }
@@ -137,8 +158,22 @@ const routes: Record<string, unknown> = {
   'GET /api/algorithm-status': [requireAuth(), guard('view'), async () =>
     json(await algorithmApi.getAlgorithmStatus())],
 
+  'GET /api/system-status': [requireAuth(), moduleGuard('systemSettings', 'view'), async () =>
+    json(await connectionStatus.get())],
+
   'GET /api/data/:table': [requireAuth(), guard('view'), async (ctx: Context) => {
     try {
+      const admin = await getAdmin(ctx);
+      const modulesByTable: Partial<Record<string, ModuleKey>> = {
+        users: 'users',
+        subscriptions: 'subscriptions',
+        plans: 'subscriptions',
+        transferRequests: 'subscriptions',
+        activationCodes: 'activationCodes',
+        admins: 'admins',
+      };
+      const module = modulesByTable[ctx.params.table];
+      if (module) requireModulePermission(admin, module, 'view');
       return json(await listAdminTable(ctx.params.table, supabase));
     } catch (cause) {
       return fail(cause);
@@ -157,6 +192,46 @@ const routes: Record<string, unknown> = {
       const admin = await getAdmin(ctx);
       const created = await adminData.createAdminAccount(adminInput(bodyOf(ctx)), actorOf(admin));
       return json(created, 201);
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'PUT /api/members/:id/status': [requireAuth(), moduleGuard('users', 'edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.updateMemberStatus(
+        ctx.params.id,
+        String(bodyOf(ctx).status ?? ''),
+        actorOf(admin),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'PUT /api/subscriptions/:id': [requireAuth(), moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const body = bodyOf(ctx);
+      return json(await adminData.updateSubscription(ctx.params.id, {
+        action: String(body.action ?? '') as 'activate' | 'renew' | 'cancel' | 'adjustExpiry' | 'lifetime',
+        planId: body.planId === undefined ? undefined : String(body.planId),
+        expiresAt: body.expiresAt === undefined ? undefined : String(body.expiresAt),
+      }, actorOf(admin)));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'PUT /api/transfer-requests/:id': [requireAuth(), moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.reviewTransferRequest(
+        ctx.params.id,
+        String(bodyOf(ctx).decision ?? ''),
+        actorOf(admin),
+      ));
     } catch (cause) {
       return fail(cause);
     }
@@ -185,7 +260,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'POST /api/activation-codes/batch': [requireAuth(), guard('add'), async (ctx: Context) => {
+  'POST /api/activation-codes/batch': [requireAuth(), moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
     try {
       const body = bodyOf(ctx);
       const rawDuration = String(body.durationType ?? body.durationDays ?? '30_days');

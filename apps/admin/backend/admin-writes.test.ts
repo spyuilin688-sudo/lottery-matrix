@@ -142,4 +142,127 @@ describe('authorized Supabase writes', () => {
     await expect(data.generateActivationCodeBatch('30', actor)).rejects.toMatchObject({ statusCode: 400 });
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it('rejects deleting the signed-in administrator', async () => {
+    const deleteRows = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(),
+      selectRows: vi.fn(),
+      updateRows: vi.fn(),
+      deleteRows,
+      supabaseRequest: vi.fn(),
+    });
+
+    await expect(data.deleteAdminAccount('admin-1', actor)).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    expect(deleteRows).not.toHaveBeenCalled();
+  });
+
+  it('keeps the last enabled super administrator during deletion', async () => {
+    const deleteRows = vi.fn();
+    const selectRows = vi.fn(async (_table: string, query: string) => {
+      if (query.includes('id=eq.super-1')) return [{ id: 'super-1', role: '超級管理員', status: '啟用' }];
+      return [{ id: 'super-1' }];
+    });
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows, updateRows: vi.fn(), deleteRows,
+      supabaseRequest: vi.fn(),
+    });
+
+    await expect(data.deleteAdminAccount('super-1', actor)).rejects.toMatchObject({ statusCode: 400 });
+    expect(deleteRows).not.toHaveBeenCalled();
+  });
+
+  it('keeps the last enabled super administrator during role or status changes', async () => {
+    const updateRows = vi.fn();
+    const selectRows = vi.fn(async (_table: string, query: string) => {
+      if (query.includes('id=eq.super-1')) return [{
+        id: 'super-1', account: 'super@example.com', name: 'Super', role: '超級管理員', status: '啟用',
+      }];
+      return [{ id: 'super-1' }];
+    });
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows, updateRows, deleteRows: vi.fn(),
+      supabaseRequest: vi.fn(),
+    });
+
+    await expect(data.updateAdminAccount('super-1', {
+      ...input,
+      account: 'super@example.com',
+      name: 'Super',
+      role: '查看人員',
+    }, actor)).rejects.toMatchObject({ statusCode: 400 });
+    expect(updateRows).not.toHaveBeenCalled();
+  });
+
+  it('enables or disables a member and audits the change', async () => {
+    const rpc = vi.fn(async () => ({ id: 'member-1', status: 'disabled' }));
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await expect(data.updateMemberStatus('member-1', 'disabled', actor)).resolves.toMatchObject({
+      id: 'member-1', status: 'disabled',
+    });
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_set_member_status', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('cancels automatic renewal without removing the current expiry', async () => {
+    const rpc = vi.fn(async () => ({ id: 'member-1', plan_expires_at: '2026-09-20T00:00:00.000Z', auto_renew: false }));
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await data.updateSubscription('member-1', { action: 'cancel' }, actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_update_subscription', expect.objectContaining({
+      body: expect.stringContaining('"p_action":"cancel"'),
+    }));
+  });
+
+  it('activates and renews a selected plan using its configured duration', async () => {
+    const rpc = vi.fn(async () => ({ id: 'member-1' }));
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await data.updateSubscription('member-1', { action: 'activate', planId: 'plan-30' }, actor, new Date('2026-08-21T00:00:00Z'));
+    await data.updateSubscription('member-1', { action: 'renew', planId: 'plan-30' }, actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"activate"') }));
+    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"renew"') }));
+  });
+
+  it('adjusts expiry and supports a lifetime subscription', async () => {
+    const rpc = vi.fn(async () => ({ id: 'member-1' }));
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await data.updateSubscription('member-1', {
+      action: 'adjustExpiry', expiresAt: '2026-12-31T00:00:00Z',
+    }, actor, new Date('2026-08-21T00:00:00Z'));
+    await data.updateSubscription('member-1', { action: 'lifetime' }, actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenNthCalledWith(1, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_expires_at":"2026-12-31T00:00:00.000Z"') }));
+    expect(rpc).toHaveBeenNthCalledWith(2, 'rpc/admin_update_subscription', expect.objectContaining({ body: expect.stringContaining('"p_action":"lifetime"') }));
+  });
+
+  it('confirms a transfer request through one transactional RPC', async () => {
+    const rpc = vi.fn(async () => ({ id: 'transfer-1', status: 'confirmed' }));
+    const data = createAdminData({ insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc });
+
+    await data.reviewTransferRequest('transfer-1', 'confirmed', actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_review_transfer_request', expect.objectContaining({
+      body: expect.stringContaining('"p_decision":"confirmed"'),
+    }));
+  });
+
+  it('rejects a transfer request without creating a payment', async () => {
+    const rpc = vi.fn(async () => ({ id: 'transfer-1', status: 'rejected' }));
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await data.reviewTransferRequest('transfer-1', 'rejected', actor, new Date('2026-08-21T00:00:00Z'));
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_review_transfer_request', expect.objectContaining({ body: expect.stringContaining('"p_decision":"rejected"') }));
+  });
 });

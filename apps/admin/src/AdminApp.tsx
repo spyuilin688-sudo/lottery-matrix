@@ -21,7 +21,11 @@ import {
 } from "lucide-react";
 import "./admin.css";
 import "./profile-name.css";
+import "./admin-operations.css";
+import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
+import { filterRows, saveMemberStatus, saveSubscription } from "./admin-operations";
+import { loadSystemStatus, type SystemStatusItem } from "./system-status";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   totalUsers: number;
@@ -140,6 +144,7 @@ const zh: Record<string, string> = {
   planStartedAt: "方案開始時間",
   planExpiresAt: "方案到期時間",
   isLifetime: "永久方案",
+  autoRenew: "自動續訂",
   referralCode: "推薦碼",
   invitationCode: "邀請碼",
   planName: "方案名稱",
@@ -190,6 +195,8 @@ function AdminApp() {
   const [admin, setAdmin] = useState<Record<string, unknown> | null>(null);
   const [active, setActive] = useState("營運概覽");
   const [rows, setRows] = useState<Row[]>([]);
+  const [plans, setPlans] = useState<Row[]>([]);
+  const [transfers, setTransfers] = useState<Row[]>([]);
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [algorithmStatus, setAlgorithmStatus] =
     useState<AlgorithmStatus | null>(null);
@@ -208,6 +215,11 @@ function AdminApp() {
         admin?.role === "超級管理員",
     );
   const isSuper = admin?.role === "超級管理員";
+  const moduleCan = (module: string, action: "view" | "edit") =>
+    Boolean(
+      (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
+      ?? admin?.role === "超級管理員",
+    );
   const load = async (name = active) => {
     setBusy(true);
     setError("");
@@ -235,9 +247,20 @@ function AdminApp() {
         const r = await api.get("/api/dashboard");
         setDash(r.data);
         setRows([]);
-      } else if (name === "系統設定" || name === "管理員權限") {
+      } else if (name === "管理員權限") {
         const r = await api.get("/api/data/admins");
         setRows(r.data.items || []);
+      } else if (name === "訂閱管理") {
+        const [subscriptionsResult, plansResult, transfersResult] = await Promise.all([
+          api.get("/api/data/subscriptions"),
+          api.get("/api/data/plans"),
+          api.get("/api/data/transferRequests"),
+        ]);
+        setRows(subscriptionsResult.data.items || []);
+        setPlans(plansResult.data.items || []);
+        setTransfers(transfersResult.data.items || []);
+      } else if (name === "系統設定") {
+        setRows([]);
       } else {
         const t = tableMap[name];
         if (t) {
@@ -463,7 +486,57 @@ function AdminApp() {
           )}{" "}
           {active === "數據分析" && dash && <Analytics d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} />}{" "}
-          {active === "系統設定" && <SystemSettings rows={rows} />}{" "}
+          {active === "系統設定" && <SystemSettings />}{" "}
+          {active === "用戶管理" && (
+            <UserManager
+              rows={rows}
+              canEdit={moduleCan("users", "edit")}
+              onStatus={async (id, status) => {
+                setBusy(true);
+                setError("");
+                try {
+                  await saveMemberStatus(api, id, status);
+                  await load("用戶管理");
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "會員狀態更新失敗");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            />
+          )}{" "}
+          {active === "訂閱管理" && (
+            <SubscriptionManager
+              rows={rows}
+              plans={plans}
+              transfers={transfers}
+              canEdit={moduleCan("subscriptions", "edit")}
+              onSubscription={async (id, payload) => {
+                setBusy(true);
+                setError("");
+                try {
+                  await saveSubscription(api, id, payload);
+                  await load("訂閱管理");
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "訂閱更新失敗");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              onTransfer={async (id, decision) => {
+                setBusy(true);
+                setError("");
+                try {
+                  await api.put(`/api/transfer-requests/${id}`, { decision });
+                  await load("訂閱管理");
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "轉帳審核失敗");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            />
+          )}{" "}
           {active === "管理員權限" && (
             <AdminManager
               rows={rows}
@@ -479,7 +552,7 @@ function AdminApp() {
               onDelete={deleteAdmin}
             />
           )}{" "}
-          {tableMap[active] && (
+          {tableMap[active] && !["用戶管理", "訂閱管理"].includes(active) && (
             <>
               <div className="toolbar">
                 <div>{rows.length} 筆資料</div>
@@ -535,6 +608,157 @@ function AdminApp() {
     </div>
   );
 }
+function UserManager({
+  rows,
+  canEdit,
+  onStatus,
+}: {
+  rows: Row[];
+  canEdit: boolean;
+  onStatus: (id: string, status: "active" | "disabled") => Promise<void>;
+}) {
+  const [keyword, setKeyword] = useState("");
+  const [status, setStatus] = useState("all");
+  const filtered = filterRows(rows, keyword, status);
+  const fields = ["authUserId", "lineUserId", "planName", "planExpiresAt", "status", "referralCode", "invitationCode"];
+  const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
+  return (
+    <>
+      <div className="managementToolbar">
+        <input aria-label="搜尋會員" placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+        <select aria-label="篩選會員狀態" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="all">全部狀態</option>
+          <option value="active">啟用</option>
+          <option value="disabled">停用</option>
+        </select>
+        <span>{filtered.length} 筆資料</span>
+      </div>
+      <div className="desktopManagement tableWrap">
+        <table>
+          <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>操作</th></tr></thead>
+          <tbody>{filtered.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">目前沒有資料</td></tr> : filtered.map((row) => (
+            <tr key={row.id}>
+              {fields.map((field) => <td key={field}>{field === "status" ? statusText(row[field]) : text(row[field])}</td>)}
+              <td>{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟用" : "停用"}</button>}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      <div className="mobileManagement">
+        {filtered.map((row) => (
+          <article className="managementCard" key={row.id}>
+            <div className="cardHeading"><b>{text(row.authUserId)}</b><span className={statusText(row.status) === "停用" ? "statusBadge bad" : "statusBadge good"}>{statusText(row.status)}</span></div>
+            {fields.slice(1).map((field) => <div className="cardRow" key={field}><span>{zh[field] || field}</span><b>{field === "status" ? statusText(row[field]) : text(row[field])}</b></div>)}
+            {canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟用會員" : "停用會員"}</button>}
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
+type SubscriptionPayload = {
+  action: "activate" | "renew" | "cancel" | "adjustExpiry" | "lifetime";
+  planId?: string;
+  expiresAt?: string;
+};
+
+function SubscriptionManager({
+  rows,
+  plans,
+  transfers,
+  canEdit,
+  onSubscription,
+  onTransfer,
+}: {
+  rows: Row[];
+  plans: Row[];
+  transfers: Row[];
+  canEdit: boolean;
+  onSubscription: (id: string, payload: SubscriptionPayload) => Promise<void>;
+  onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
+}) {
+  const [keyword, setKeyword] = useState("");
+  const [status, setStatus] = useState("all");
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
+  const [planId, setPlanId] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const filtered = filterRows(rows, keyword, status);
+  const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
+    setEditing(row);
+    setAction(nextAction);
+    setPlanId(String(row.currentPlanId || plans[0]?.id || ""));
+    setExpiresAt(String(row.planExpiresAt || "").slice(0, 10));
+  };
+  const submit = async () => {
+    if (!editing) return;
+    const payload: SubscriptionPayload = { action };
+    if (action === "activate" || action === "renew") payload.planId = planId;
+    if (action === "adjustExpiry") payload.expiresAt = expiresAt;
+    await onSubscription(editing.id, payload);
+    setEditing(null);
+  };
+  const actionText: Record<SubscriptionPayload["action"], string> = {
+    activate: "開通", renew: "續訂", cancel: "取消續訂", adjustExpiry: "調整到期日", lifetime: "設為終生",
+  };
+  return (
+    <>
+      <div className="managementToolbar">
+        <input aria-label="搜尋訂閱" placeholder="搜尋會員或方案" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="all">全部狀態</option><option value="active">啟用</option><option value="disabled">停用</option>
+        </select>
+        <span>{filtered.length} 筆資料</span>
+      </div>
+      <div className="desktopManagement tableWrap">
+        <table>
+          <thead><tr><th>驗證用戶 ID</th><th>方案名稱</th><th>方案開始時間</th><th>方案到期時間</th><th>終生</th><th>自動續訂</th><th>操作</th></tr></thead>
+          <tbody>{filtered.length === 0 ? <tr><td colSpan={7} className="empty">目前沒有資料</td></tr> : filtered.map((row) => (
+            <tr key={row.id}>
+              <td>{text(row.authUserId)}</td><td>{text(row.planName)}</td><td>{text(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : text(row.planExpiresAt)}</td><td>{row.isLifetime ? "是" : "否"}</td><td>{row.autoRenew ? "是" : "否"}</td>
+              <td>{canEdit && <div className="cardActions">{(["activate", "renew", "cancel", "adjustExpiry", "lifetime"] as const).map((item) => <button key={item} className="compactButton" onClick={() => open(row, item)}>{actionText[item]}</button>)}</div>}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      <div className="mobileManagement subscriptionGrid">
+        {filtered.map((row) => (
+          <article className="managementCard" key={row.id}>
+            <div className="cardHeading"><b>{text(row.authUserId)}</b><span>{text(row.planName)}</span></div>
+            <div className="cardRow"><span>方案開始時間</span><b>{text(row.planStartedAt)}</b></div>
+            <div className="cardRow"><span>方案到期時間</span><b>{row.isLifetime ? "終生" : text(row.planExpiresAt)}</b></div>
+            <div className="cardRow"><span>自動續訂</span><b>{row.autoRenew ? "是" : "否"}</b></div>
+            {canEdit && <div className="cardActions">{(["activate", "renew", "cancel", "adjustExpiry", "lifetime"] as const).map((item) => <button key={item} className="compactButton" onClick={() => open(row, item)}>{actionText[item]}</button>)}</div>}
+          </article>
+        ))}
+      </div>
+      {editing && (
+        <div className="modalBackdrop" role="presentation">
+          <div className="operationDialog" role="dialog" aria-modal="true">
+            <h2>{actionText[action]}</h2>
+            <p>{text(editing.authUserId)}</p>
+            {(action === "activate" || action === "renew") && <label>方案<select value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
+            {action === "adjustExpiry" && <label>到期日<input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></label>}
+            {action === "cancel" && <p>取消後只停止自動續訂，權限保留至到期日。</p>}
+            <div className="formActions"><button onClick={() => setEditing(null)}>取消</button><button className="primary" onClick={submit}>確認</button></div>
+          </div>
+        </div>
+      )}
+      <div className="panel transferPanel">
+        <h2>轉帳申請</h2>
+        {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
+          <div className="transferRow" key={row.id}>
+            <div><b>{text(row.authUserId)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
+            <span>{text(row.status)}</span>
+            {canEdit && row.status === "pending" && <div className="rowActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="danger" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function AdminManager({
   rows,
   isSuper,
@@ -560,8 +784,11 @@ function AdminManager({
   onEdit: (r: Row) => void;
   onDelete: (id: string) => void;
 }) {
-  const setP = (k: keyof AdminForm["permissions"], v: boolean) =>
-    setForm({ ...form, permissions: { ...form.permissions, [k]: v } });
+  const roleDescription: Record<string, string> = {
+    超級管理員: "用戶管理、訂閱管理、啟動碼管理、系統設定、管理員權限",
+    營運管理員: "用戶管理、訂閱管理、啟動碼管理；系統設定僅查看",
+    查看人員: "用戶管理、訂閱管理、啟動碼管理、系統設定僅查看",
+  };
   return (
     <>
       <div className="toolbar">
@@ -613,22 +840,7 @@ function AdminManager({
               </select>
             </label>
           </div>
-          <div className="permissionBox">
-            <b>權限</b>
-            {(["view", "add", "edit", "delete"] as const).map((k, i) => (
-              <label key={k}>
-                <input
-                  type="checkbox"
-                  checked={
-                    form.role === "超級管理員" ? true : form.permissions[k]
-                  }
-                  disabled={form.role === "超級管理員"}
-                  onChange={(e) => setP(k, e.target.checked)}
-                />
-                {["查看", "新增", "修改", "刪除"][i]}
-              </label>
-            ))}
-          </div>
+          <div className="permissionBox"><b>角色權限</b><span>{roleDescription[form.role]}</span></div>
           <div className="formActions">
             <button onClick={() => setShowForm(false)}>取消</button>
             <button className="primary" onClick={onSave}>
@@ -646,23 +858,19 @@ function AdminManager({
               <th>角色</th>
               <th>帳號狀態</th>
               <th>最後登入時間</th>
-              <th>查看</th>
-              <th>新增</th>
-              <th>修改</th>
-              <th>刪除</th>
+              <th>功能權限</th>
               {isSuper && <th>操作</th>}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="empty">
+                <td colSpan={7} className="empty">
                   目前沒有資料
                 </td>
               </tr>
             ) : (
               rows.map((r) => {
-                const p = (r.permissions || {}) as Record<string, boolean>;
                 return (
                   <tr key={r.id}>
                     <td>{text(r.account)}</td>
@@ -670,11 +878,7 @@ function AdminManager({
                     <td>{text(r.role)}</td>
                     <td>{text(r.status)}</td>
                     <td>{text(r.lastLoginAt)}</td>
-                    {["view", "add", "edit", "delete"].map((k) => (
-                      <td key={k}>
-                        {r.role === "超級管理員" || p[k] ? "是" : "否"}
-                      </td>
-                    ))}
+                    <td>{roleDescription[String(r.role)] || "—"}</td>
                     {isSuper && (
                       <td>
                         <div className="rowActions">
@@ -803,29 +1007,57 @@ function Revenue({ d }: { d: Dashboard }) {
     </>
   );
 }
-function SystemSettings({ rows }: { rows: Row[] }) {
+function SystemSettings() {
+  const [items, setItems] = useState<SystemStatusItem[]>([]);
+  const [checkedAt, setCheckedAt] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [statusError, setStatusError] = useState("");
+  const refresh = async () => {
+    setChecking(true);
+    setStatusError("");
+    try {
+      const result = await loadSystemStatus(api);
+      setItems(result.items);
+      setCheckedAt(result.checkedAt);
+    } catch (cause) {
+      setStatusError(cause instanceof Error ? cause.message : "連線狀態檢查失敗");
+    } finally {
+      setChecking(false);
+    }
+  };
+  useEffect(() => { void refresh(); }, []);
   return (
-    <div className="panel">
-      <h2>系統設定</h2>
-      <div className="settingRows">
-        <div>
-          <b>管理員帳號管理</b>
-          <span>{rows.length} 個管理員帳號</span>
-        </div>
-        <div>
-          <b>管理員密碼修改</b>
-          <span>由登入帳號提供者管理</span>
-        </div>
-        <div>
-          <b>後台登入安全設定</b>
-          <span>登入驗證已啟用</span>
-        </div>
-        <div>
-          <b>操作日誌查看</b>
-          <span>請至「審計日誌」查看</span>
+    <>
+      <div className="systemStatusHeader">
+        <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt || "尚未檢查"}</span></div>
+        <button className="compactButton" onClick={refresh} disabled={checking}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
+      </div>
+      {statusError && <div className="error">{statusError}</div>}
+      <div className="statusCards">
+        {items.map((item) => {
+          const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
+          return (
+            <article className="statusCard" key={item.id}>
+              <div className="statusCardTitle"><b>{item.name}</b><span className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</span></div>
+              <p>{item.description}</p>
+              <div className="statusMeta"><span>最後檢查時間</span><b>{item.checkedAt}</b></div>
+              <div className="statusMeta"><span>回應時間</span><b>{item.responseMs} ms</b></div>
+              {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
+              {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{text(detail.finished_at)}</b></div>}
+              {item.error && <div className="statusErrorText">{item.error}</div>}
+            </article>
+          );
+        })}
+      </div>
+      <div className="panel">
+        <h2>其他設定</h2>
+        <div className="settingRows">
+          <div><b>管理員密碼修改</b><span>由登入帳號提供者管理</span></div>
+          <div><b>後台登入安全設定</b><span>登入驗證已啟用</span></div>
+          <div><b>操作日誌查看</b><span>請至「審計日誌」查看</span></div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 function DataTable({
