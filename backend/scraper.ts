@@ -1,8 +1,12 @@
+Warning: truncated output (original token count: 32571)
+Total output lines: 1040
+
 import * as cheerio from 'cheerio';
 import * as XLSX from 'xlsx';
 import { db } from '@appdeploy/sdk';
+import { deduplicateDrawRecords, materializeOrderFields, mergeDrawRecord, normalizeNumberList, sortDrawNumbers, type DrawRecord } from './draw-records';
 
-type Draw = { period: string; drawDate: string; numbers: string[]; sortedNumbers?: string[]; drawOrderNumbers?: string[] };
+type Draw = DrawRecord;
 type SourceConfig = { lottery: string; url: string; count: number; table: string };
 type HttpResult = { status: number; finalUrl: string; contentType: string; text: string };
 type PageForm = { method: string; url: string; params: Array<[string, string]> };
@@ -18,7 +22,7 @@ const sourceMap: Record<string, SourceConfig> = {
   taiwan649: { lottery: '大樂透', url: 'https://www.taiwanlottery.com/lotto/result/lotto649', count: 7, table: 'draw_lotto649' },
 };
 
-const tableByLottery: Record<string, string> = { '今彩539': 'draw_539', '天天樂': 'draw_tiantianle', '六合彩': 'draw_marksix', '大樂透': 'draw_lotto649' }; function normalizeNumberList(values: string[]) { return values.map(value => String(Number(value)).padStart(2, '0')); } function sortDrawNumbers(values: string[]) { const normalized = normalizeNumberList(values); if (normalized.length === 7) return [...normalized.slice(0, 6).sort((a, b) => Number(a) - Number(b)), normalized[6]]; return [...normalized].sort((a, b) => Number(a) - Number(b)); } function materializeOrderFields(draw: Draw): Draw { const sortedNumbers = sortDrawNumbers(draw.sortedNumbers?.length ? draw.sortedNumbers : draw.numbers); const drawOrderNumbers = draw.drawOrderNumbers?.length === sortedNumbers.length ? normalizeNumberList(draw.drawOrderNumbers) : undefined; return { ...draw, numbers: sortedNumbers, sortedNumbers, ...(drawOrderNumbers ? { drawOrderNumbers } : {}) }; } function mergeDrawRecord(existing: Draw, incoming: Draw) { const current = materializeOrderFields(existing); const next = materializeOrderFields(incoming); return { ...current, drawDate: next.drawDate || current.drawDate, numbers: next.sortedNumbers ?? current.numbers, sortedNumbers: next.sortedNumbers ?? current.sortedNumbers, ...(next.drawOrderNumbers ? { drawOrderNumbers: next.drawOrderNumbers } : current.drawOrderNumbers ? { drawOrderNumbers: current.drawOrderNumbers } : {}) }; }
+const tableByLottery: Record<string, string> = { '今彩539': 'draw_539', '天天樂': 'draw_tiantianle', '六合彩': 'draw_marksix', '大樂透': 'draw_lotto649' };
 const clean = (value: string) => value.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 const datePattern = /(?:20\d{2}|1\d{2})[年\/\-.](?:1[0-2]|0?[1-9])[月\/\-.](?:3[01]|[12]\d|0?[1-9])日?/;
 const explicitPeriodPattern = /第\s*(\d{4,12})\s*期/;
@@ -672,152 +676,7 @@ async function backfillNfdLegacy(year: string) { const config = sourceMap.nfdhk;
 
 export async function backfillYear(year: string) {
   monthRangeForYear(year);
-  const tasks = await Promise.allSettled([backfillTaiwan('taiwan539', year), backfillSc888(year), backfillNfd(year), backfillTaiwan('taiwan649', year)]);
-  const results = tasks.map((task, index) => task.status === 'fulfilled' ? task.value : { sourceId: ['taiwan539', 'sc888', 'nfdhk', 'taiwan649'][index], found: 0, inserted: 0, duplicates: 0, errors: [task.reason instanceof Error ? task.reason.message : '回填失敗'] });
-  return { year, ok: results.some(result => result.found > 0), results };
-}
-
-function validateBackfillRange(startYear: string, endYear: string) {
-  if (!/^20\d{2}$/.test(startYear) || !/^20\d{2}$/.test(endYear)) throw new Error('年份格式必須為四碼西元年');
-  const start = Number(startYear);
-  const end = Number(endYear);
-  const currentYear = Number(currentTaipeiMonth().slice(0, 4));
-  if (start > end) throw new Error('起始年份不得晚於結束年份');
-  if (end > currentYear) throw new Error('結束年份不得晚於目前年份');
-  if (end - start + 1 > 10) throw new Error('單次歷史回填最多 10 年');
-  return { start, end };
-}
-
-function validateSc888BackfillRange(startYear: string, endYear: string) { const start = Number(startYear), end = Number(endYear), currentYear = Number(currentTaipeiMonth().slice(0,4)); if (!/^(?:19|20)\d{2}$/.test(startYear) || !/^(?:19|20)\d{2}$/.test(endYear)) throw new Error('年份格式必須為四碼西元年'); if (start < 1992) throw new Error('天天樂歷史回填最早為1992年'); if (start > end) throw new Error('起始年份不得晚於結束年份'); if (end > currentYear) throw new Error('結束年份不得晚於目前年份'); if (end - start + 1 > 35) throw new Error('天天樂單次歷史回填最多35年'); return { start, end }; }
-function validateNfdBackfillRange(startYear: string, endYear: string) {
-  if (!/^(?:19|20)\d{2}$/.test(startYear) || !/^(?:19|20)\d{2}$/.test(endYear)) throw new Error('年份格式必須為四碼西元年');
-  const start = Number(startYear);
-  const end = Number(endYear);
-  const currentYear = Number(currentTaipeiMonth().slice(0, 4));
-  if (start < 1976) throw new Error('NFD 歷史回填最早為 1976 年');
-  if (start > end) throw new Error('起始年份不得晚於結束年份');
-  if (end > currentYear) throw new Error('結束年份不得晚於目前年份');
-  if (end - start + 1 > 10) throw new Error('單次歷史回填最多 10 年');
-  return { start, end };
-}
-
-export async function backfillRange(startYear: string, endYear: string) {
-  const { start, end } = validateBackfillRange(startYear, endYear);
-  const years = [];
-  for (let year = start; year <= end; year += 1) years.push(await backfillYear(String(year)));
-  return { startYear, endYear, ok: years.some(item => item.ok), years };
-}
-
-const historicalSourceIds = ['taiwan539', 'sc888', 'nfdhk', 'taiwan649'] as const;
-type HistoricalSourceId = typeof historicalSourceIds[number];
-
-async function backfillSourceYear(sourceId: HistoricalSourceId, year: string) {
-  if (sourceId === 'nfdhk') return backfillNfd(year);
-  monthRangeForYear(year);
-  if (sourceId === 'taiwan539' || sourceId === 'taiwan649') return backfillTaiwan(sourceId, year);
-  return backfillSc888(year);
-}
-
-export async function backfillSourceRange(sourceId: string, startYear: string, endYear: string) {
-  if (!historicalSourceIds.includes(sourceId as HistoricalSourceId)) throw new Error('單一來源回填只允許正式來源');
-  const { start, end } = sourceId === 'nfdhk' ? validateNfdBackfillRange(startYear, endYear) : sourceId === 'sc888' ? validateSc888BackfillRange(startYear,endYear) : validateBackfillRange(startYear, endYear);
-  if (sourceId === 'sc888') { const config = sourceMap.sc888; const recent = await fetchFantasy5RecentDownload(); const all = recent.length >= 1000 ? recent : await fetchFantasy5HistoryArchive(recent,start); const selected = all.filter(item => { const year = Number(item.drawDate.slice(0,4)); return year >= start && year <= end; }); const existing = await listAllTableRecords(config.table); const existingPeriods = new Set(existing.map(item => String(Number(item.period)))); const perYear = new Map<string,Draw[]>(); for (const draw of selected) { const year = draw.drawDate.slice(0,4); perYear.set(year,[...(perYear.get(year) ?? []),draw]); } const expectedInserted = selected.filter(item => !existingPeriods.has(String(Number(item.period)))).length; const saved = await saveMany(config.table,selected,false,6); if (saved.inserted !== expectedInserted) throw new Error('天天樂資料庫寫入不完整：預期新增 ' + expectedInserted + '、實際新增 ' + saved.inserted); const years = []; for (let year = start; year <= end; year += 1) { const yearText = String(year); const draws = perYear.get(yearText) ?? []; const inserted = draws.filter(item => !existingPeriods.has(String(Number(item.period)))).length; years.push({ year: yearText, ok: draws.length > 0, results: [{ sourceId, found: draws.length, inserted, duplicates: draws.length - inserted, enriched: 0, errors: [] as string[] }] }); } return { sourceId,startYear,endYear,ok:selected.length > 0,years }; }
-  const years = [];
-  for (let year = start; year <= end; year += 1) {
-    const yearText = String(year);
-    try {
-      const result = await backfillSourceYear(sourceId as HistoricalSourceId, yearText);
-      years.push({ year: yearText, ok: result.found > 0, results: [result] });
-    } catch (errorValue) {
-      years.push({ year: yearText, ok: false, results: [{ sourceId, found: 0, inserted: 0, duplicates: 0, errors: [errorValue instanceof Error ? errorValue.message : '單一來源回填失敗'] }] });
-    }
-  }
-  return { sourceId, startYear, endYear, ok: years.some(item => item.ok), years };
-}
-
-function brightstreamLotteryHint(value: string) {
-  if (/今彩\s*539|daily\s*539|539/i.test(value)) return '今彩539';
-  if (/大樂透|lotto\s*649|649/i.test(value)) return '大樂透';
-  if (/六合彩|mark\s*six|marksix/i.test(value)) return '六合彩';
-  if (/天天樂/i.test(value)) return '天天樂';
-  return '未辨識';
-}
-
-function brightstreamNumbers(value: unknown) {
-  const raw = Array.isArray(value) ? value.map(item => String(item)) : typeof value === 'string' ? value.split(/[,\s|、，]+/) : [];
-  return raw.map(item => item.trim()).filter(item => /^\d{1,2}$/.test(item) && Number(item) >= 1 && Number(item) <= 49).map(item => String(Number(item)).padStart(2, '0'));
-}
-
-function brightstreamString(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) if (item[key] !== undefined && item[key] !== null && item[key] !== '') return String(item[key]);
-  return '';
-}
-
-function collectBrightstreamJson(value: unknown, hint: string, output: Array<Draw & { lottery: string }>, depth = 0) {
-  if (depth > 8 || output.length >= 40) return;
-  if (Array.isArray(value)) { for (const child of value) collectBrightstreamJson(child, hint, output, depth + 1); return; }
-  const item = record(value);
-  if (!item) return;
-  const serialized = Object.values(item).filter(part => typeof part === 'string' || typeof part === 'number').map(String).join(' ');
-  const lottery = brightstreamLotteryHint(serialized) !== '未辨識' ? brightstreamLotteryHint(serialized) : hint;
-  const period = brightstreamString(item, ['period','issue','issueNo','drawNo','drawNumber','term','termNo','lotteryNo','openNo']);
-  const drawDate = brightstreamString(item, ['drawDate','draw_date','lotteryDate','openDate','date','drawTime','draw_time']);
-  let numbers = brightstreamNumbers(valueByKeys(item, ['numbers','drawNumbers','drawNumberSize','drawnNumbers','winningNumbers','winNumbers','number']));
-  const special = brightstreamNumbers(valueByKeys(item, ['specialNumber','special_number','extraNumber','extra_number','special','extra']));
-  if (numbers.length === 6 && special.length) numbers = [...numbers, special[0]];
-  if (period && drawDate && (numbers.length === 5 || numbers.length === 7)) output.push({ lottery, period, drawDate, numbers });
-  for (const child of Object.values(item)) if (typeof child === 'object' && child !== null) collectBrightstreamJson(child, lottery, output, depth + 1);
-}
-
-function parseBrightstreamHtmlSamples(html: string) {
-  const $ = cheerio.load(html);
-  const output: Array<Draw & { lottery: string }> = [];
-  $('tr').each((_, row) => {
-    const cells = $(row).find('th,td').map((__, cell) => clean($(cell).text())).get().filter(Boolean);
-    const rowText = cells.join(' ');
-    const period = findPeriod(cells);
-    const dateCell = cells.find(cell => datePattern.test(cell));
-    const drawDate = dateCell?.match(datePattern)?.[0] ?? '';
-    if (!period || !drawDate) return;
-    for (const cell of cells) {
-      for (const count of [5, 7]) {
-        const numbers = extractNumbers(cell, count);
-        if (numbers.length === count) { output.push({ lottery: brightstreamLotteryHint(rowText), period, drawDate, numbers: numbers.map(item => String(Number(item)).padStart(2, '0')) }); return; }
-      }
-    }
-  });
-  return output.slice(0, 40);
-}
-
-function inspectBrightstreamPayload(text: string, contentType: string, url: string) {
-  const samples: Array<Draw & { lottery: string }> = [];
-  if (/json/i.test(contentType) || /^[\s]*[\[{]/.test(text)) {
-    try { collectBrightstreamJson(JSON.parse(text) as unknown, brightstreamLotteryHint(url), samples); } catch { /* report as non-json below */ }
-  }
-  if (!samples.length && /<[^>]+>/.test(text)) samples.push(...parseBrightstreamHtmlSamples(text));
-  return samples.slice(0, 20);
-}
-
-function brightstreamEvidenceSnippets(text: string) {
-  const terms = ['draw_id','history?draw','search-history','fetch(','axios','XMLHttpRequest','/api/'];
-  const normalized = text.replace(/\s+/g, ' ');
-  const snippets: string[] = [];
-  for (const term of terms) {
-    let offset = 0;
-    while (snippets.length < 20) {
-      const index = normalized.indexOf(term, offset);
-      if (index < 0) break;
-      snippets.push(term + '｜' + normalized.slice(Math.max(0, index - 180), Math.min(normalized.length, index + term.length + 260)));
-      offset = index + term.length;
-    }
-  }
-  return snippets;
-}
-
-async function inspectBrightstreamSearchHistory() {
-  const searchUrl = 'https://lottery.brightstream.com.tw/search-history';
-  const inspection = await inspectPage(searchUrl, ['draw_id','search-history','history?draw','fetch(','axios','XMLHttpRequest']);
-  const $ = cheerio.load(inspection.page.text);
+  const tasks = await Promise.allSettled([backfillTaiwan('taiwan539', year), backfillSc888(year), backfillNfd(year), backfillTaiwan('taiwan649…2571 tokens truncated…ext);
   const scriptUrls = $('script[src]').map((_, script) => resolveUrl($(script).attr('src') ?? '', inspection.page.finalUrl)).get().filter(Boolean).filter(url => { try { return /(^|\.)brightstream\.com\.tw$/i.test(new URL(url).hostname); } catch { return false; } }).slice(0, 12);
   const scriptResponses = await Promise.all(scriptUrls.map(async url => { try { const response = await requestText(url, { headers: { referer: searchUrl } }, 8000); return { url, status: response.status, text: response.text }; } catch { return { url, status: 0, text: '' }; } }));
   const combined = [inspection.page.text, ...scriptResponses.map(item => item.text)].join('\n');
@@ -951,7 +810,7 @@ function sortDraws(items: Draw[]) {
 export async function getMatrixHistory(lottery: string, requestedLimit: number | null = 100) {
   const table = tableByLottery[lottery];
   if (!table) throw new Error('未知彩種');
-  const rows = sortDraws(await listAllTableRecords(table));
+  const rows = sortDraws(deduplicateDrawRecords(await listAllTableRecords(table)));
   const selected = requestedLimit === null ? rows : rows.slice(0, Math.min(Math.max(Math.trunc(requestedLimit) || 100, 1), 5000));
   return selected.map(item => { const materialized = materializeOrderFields(item); return { period: materialized.period, drawDate: materialized.drawDate, numbers: materialized.sortedNumbers ?? materialized.numbers, sortedNumbers: materialized.sortedNumbers ?? materialized.numbers, drawOrderNumbers: materialized.drawOrderNumbers ?? null }; });
 }
@@ -965,7 +824,7 @@ export async function getMatrixCoverage() {
   const targets = [1000, 3000, 5000];
   const coverage: Record<string, { total: number; latest: string | null; earliest: string | null; thresholds: Record<string, boolean>; missing: Record<string, number> }> = {};
   for (const lottery of Object.keys(tableByLottery)) {
-    const rows = sortDraws(await listAllTableRecords(tableByLottery[lottery]));
+    const rows = sortDraws(deduplicateDrawRecords(await listAllTableRecords(tableByLottery[lottery])));
     const total = rows.length;
     coverage[lottery] = {
       total,

@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+const url = import.meta.env.VITE_SUPABASE_URL?.trim()
+  || "https://wcimzbbapfrdotjsfyxa.supabase.co";
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+  || "sb_publishable_sJuiSZhS6bCOza_RGTMVPg_JFiVv0F8";
 let client: SupabaseClient | null = null;
 
 export function hasSupabaseConfig() {

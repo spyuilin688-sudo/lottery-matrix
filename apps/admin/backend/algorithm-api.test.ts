@@ -3,18 +3,18 @@ import { createAlgorithmApi } from './algorithm-api';
 
 describe('algorithm status adapter', () => {
   it('reads only the four approved status endpoints', async () => {
-    const paths: string[] = [];
+    const urls: string[] = [];
     const api = createAlgorithmApi(async (input) => {
-      paths.push(new URL(String(input)).pathname);
+      urls.push(String(input));
       return new Response('{}', { status: 200 });
     });
 
     await expect(api.getAlgorithmStatus()).resolves.toMatchObject({ ok: true });
-    expect(paths).toEqual([
-      '/api/_healthcheck',
-      '/api/matrix/coverage',
-      '/api/matrix/audit',
-      '/api/matrix/algorithm/cases',
+    expect(urls).toEqual([
+      'https://api-v2.appdeploy.ai/app/app-snsxet/api/_healthcheck',
+      'https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/coverage',
+      'https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/audit',
+      'https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/algorithm/cases',
     ]);
   });
 

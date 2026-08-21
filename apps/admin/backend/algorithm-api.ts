@@ -6,7 +6,7 @@ export type AlgorithmStatus = {
   cases: unknown | null;
 };
 
-const algorithmBaseUrl = 'https://app-snsxet.v2.appdeploy.ai';
+const algorithmBaseUrl = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 const endpoints = [
   '/api/_healthcheck',
   '/api/matrix/coverage',
