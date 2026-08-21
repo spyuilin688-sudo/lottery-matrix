@@ -323,11 +323,11 @@
   z-index: 20;
   top: -.5625rem;
   right: .125rem;
-  height: 16px;
-  min-height: 16px;
+  height: auto;
+  min-height: 0;
   padding: .0625rem .125rem;
   border: 1px solid #9a6f1e;
-  border-radius: 8px;
+  border-radius: 9999px;
   font-size: .4375rem;
   line-height: 1;
   white-space: nowrap;
@@ -433,15 +433,11 @@
   overflow: hidden;
 }
 
-.matrix-explore-main-screen .history-row,
-.matrix-explore-main-screen .history-row.history-head,
-.matrix-explore-main-screen .history-row:not(.history-head) {
+.matrix-explore-main-screen .history-row {
   display: grid;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 40px;
-  min-height: 40px;
   padding: 0;
   grid-template-columns: minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr);
   align-items: center;
@@ -728,8 +724,8 @@
   width: 100%;
   margin: 0;
   padding: 0 8px;
-  color: #c6c0b8;
-  font-size: clamp(11px, 3vw, 12px);
+  color: #aaa49a;
+  font-size: clamp(7px, 2vw, 8px);
   font-weight: 700;
   line-height: 1.55;
   text-align: center;
@@ -781,7 +777,6 @@
   align-items: center;
   gap: .125rem;
   text-align: center;
-  font-size: .6875rem;
 }
 
 .matrix-explore-main-screen .road-results-head {
@@ -799,6 +794,7 @@
   min-height: 46px;
   padding: .375rem 0;
   border-bottom: 1px solid rgba(90, 87, 80, .42);
+  font-size: .6875rem;
 }
 
 .matrix-explore-main-screen .road-result-row > span,
