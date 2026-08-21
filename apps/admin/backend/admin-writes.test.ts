@@ -161,6 +161,49 @@ describe('authorized Supabase writes', () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it('deletes the selected activation code and records the deleted value', async () => {
+    const deleteRows = vi.fn();
+    const insertRows = vi.fn();
+    const selectRows = vi.fn();
+    const supabaseRequest = vi.fn(async () => ({ deleted: true }));
+    const data = createAdminData({
+      insertRows,
+      selectRows,
+      updateRows: vi.fn(),
+      deleteRows,
+      supabaseRequest,
+    });
+
+    await expect(data.deleteActivationCode('code-1', actor)).resolves.toEqual({ deleted: true });
+    expect(supabaseRequest).toHaveBeenCalledWith('rpc/admin_delete_activation_code', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_code_id: 'code-1',
+        p_actor_id: 'admin-1',
+        p_actor_name: '管理員',
+      }),
+    });
+    expect(selectRows).not.toHaveBeenCalled();
+    expect(deleteRows).not.toHaveBeenCalled();
+    expect(insertRows).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to a non-transactional activation-code delete when the RPC fails', async () => {
+    const deleteRows = vi.fn();
+    const insertRows = vi.fn();
+    const data = createAdminData({
+      insertRows,
+      selectRows: vi.fn(),
+      updateRows: vi.fn(),
+      deleteRows,
+      supabaseRequest: vi.fn(async () => { throw new Error('audit failed'); }),
+    });
+
+    await expect(data.deleteActivationCode('code-1', actor)).rejects.toThrow('audit failed');
+    expect(deleteRows).not.toHaveBeenCalled();
+    expect(insertRows).not.toHaveBeenCalled();
+  });
+
   it('rejects deleting the signed-in administrator', async () => {
     const deleteRows = vi.fn();
     const data = createAdminData({
