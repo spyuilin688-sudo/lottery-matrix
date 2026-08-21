@@ -5,6 +5,7 @@ import { notifySubscribers, realtimeSubscriptionRoutes } from './realtime-subscr
 import { runMatrixAlgorithmCaseChecks } from './matrix-algorithm-cases';
 import { runNumberReference, runTongXing } from './matrix-tools';
 import { analysisStore } from './matrix-analysis-store';
+import { analysisVersionForDrawPeriod } from './matrix-analysis-version';
 import { createMemberAuth } from './matrix-member-auth';
 import { createMatrixExploreRoutes } from './matrix-explore-routes';
 import {
@@ -109,7 +110,7 @@ const matrixExploreRoutes = createMatrixExploreRoutes({
         return history[exploreDateOffset]?.period;
     },
     readAnalysis: async (kind,lottery,drawPeriod) => {
-        const artifact = await analysisStore.readAnalysis('explore',lottery,drawPeriod,`${drawPeriod}:matrix-v3`);
+        const artifact = await analysisStore.readAnalysis('explore',lottery,drawPeriod,analysisVersionForDrawPeriod(drawPeriod));
         return artifact === null ? null : { ...artifact,data:artifact.data as ExploreArtifact };
     },
     filterPartitionedExplore: filterStoredExploreArtifact,
