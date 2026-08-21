@@ -134,7 +134,10 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
       const history = await dependencies.getHistory(lottery, null);
       const drawPeriod = history[0]?.period;
       if (!drawPeriod) throw new Error('MATRIX_HISTORY_NOT_READY');
-      const completed = await dependencies.readAnalysis('status', lottery, drawPeriod);
+      const analysisVersion = `${drawPeriod}:matrix-v3`;
+      const completed = await dependencies.readAnalysis(
+        'status', lottery, drawPeriod, analysisVersion,
+      );
       if (completed) return { lottery, drawPeriod, skipped: true as const };
 
       const workUnits = dependencies.createExploreWorkUnits(lottery, history);
@@ -142,7 +145,7 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
       let job = await dependencies.progressStore.getOrCreate({
         lottery,
         drawPeriod,
-        analysisVersion: `${drawPeriod}:matrix-v2:${startedAt}`,
+        analysisVersion,
         startedAt,
         total: workUnits.length,
       });
