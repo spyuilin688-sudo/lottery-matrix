@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from './admin-operations';
+import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from './admin-operations';
 
 describe('admin operation helpers', () => {
   it('filters rows by keyword and status', () => {
@@ -27,6 +27,15 @@ describe('admin operation helpers', () => {
     await saveSubscription({ put }, 'member-1', { action: 'cancel' });
     expect(put).toHaveBeenNthCalledWith(1, '/api/members/member-1/status', { status: 'disabled' });
     expect(put).toHaveBeenNthCalledWith(2, '/api/subscriptions/member-1', { action: 'cancel' });
+  });
+
+  it('sends activation-code deletion to its dedicated backend route', async () => {
+    const del = vi.fn(async () => ({ data: { deleted: true } }));
+
+    await expect(deleteActivationCode({ delete: del }, 'code-1')).resolves.toMatchObject({
+      data: { deleted: true },
+    });
+    expect(del).toHaveBeenCalledWith('/api/activation-codes/code-1');
   });
 
   it('formats stored dates without seconds and preserves missing values', () => {
