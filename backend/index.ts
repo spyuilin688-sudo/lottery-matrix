@@ -16,7 +16,7 @@ import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 import { matrixAnalysisPipeline } from './matrix-analysis-pipeline';
-import { selectAnalysisLottery } from './matrix-analysis-cron';
+import { isTaipeiRefreshWindow, selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 
 async function loadMatrixSupabaseConfig() {
@@ -85,8 +85,13 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
     return { statusCode: 200,analysis:null };
 };
 
-export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透' } }) => {
+export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透'; sourceId?: string; refreshAll?: boolean; refreshHour?: number } }) => {
     const lottery = event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
+    const refreshHour = event.payload?.refreshHour;
+    if (refreshHour !== undefined && isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
+        if (event.payload?.refreshAll) return scheduledLotteryRefresh();
+        if (event.payload?.sourceId) return scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
+    }
     const result = await matrixAnalysisPipeline.ensureCurrent(lottery);
     return {statusCode:200,result};
 };

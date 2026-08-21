@@ -184,15 +184,26 @@ function validation(groups: CandidateGroup[], rules: string[], request: MatrixRe
 
 function ruleLabel(algorithmType: AlgorithmType, value: number) { return algorithmType === '合值' ? String(value) : '+' + String(value); }
 
-function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]) {
-  const history = [...newestFirst].reverse();
-  if (request.numberOrder === '依實際開獎順序排序') { const missing = history.filter(draw => !Array.isArray(draw.drawOrderNumbers) || draw.drawOrderNumbers.length !== ballCount(request.lottery)); if (missing.length > 0) return { valid: false, reason: '實際開獎順序（落球）資料不完整，不得以順球資料代替', searchCondition: request, missingDrawOrderCount: missing.length, missingDrawOrderPeriods: missing.slice(-20).map(draw => draw.period), results: [] }; }
-  const sourceIndexes = history.map((draw, index) => ({ draw, index })).filter(item => numberAt(item.draw, request.lottery, request.numberOrder, request.lockedPosition) === request.lockedNumber).map(item => item.index);
+function matchingSourceIndexes(request: MatrixRequest, history: Draw[]) {
+  return history
+    .map((draw, index) => ({ draw, index }))
+    .filter((item) => numberAt(
+      item.draw, request.lottery, request.numberOrder, request.lockedPosition,
+    ) === request.lockedNumber)
+    .map((item) => item.index);
+}
+
+function evaluatePreparedMatrixAlgorithm(
+  request: MatrixRequest,
+  history: Draw[],
+  sourceIndexes: number[],
+  requestedSourceIndex?: number,
+) {
   if (sourceIndexes.length === 0) return { valid: false, reason: '找不到符合鎖定條件的來源期', searchCondition: request, results: [] };
-  const requestedSourceIndex = request.lockedSourcePeriod
-    ? history.findIndex((draw) => draw.period === request.lockedSourcePeriod)
+  const exactSourceIndex = request.lockedSourcePeriod
+    ? requestedSourceIndex ?? history.findIndex((draw) => draw.period === request.lockedSourcePeriod)
     : -1;
-  const aIndex = request.lockedSourcePeriod ? requestedSourceIndex : sourceIndexes[sourceIndexes.length - 1];
+  const aIndex = request.lockedSourcePeriod ? exactSourceIndex : sourceIndexes[sourceIndexes.length - 1];
   if (aIndex < 0 || !sourceIndexes.includes(aIndex)) return { valid: false, reason: '找不到指定鎖定條件來源期', searchCondition: request, results: [] };
   const aBase = baseForSource(history, aIndex, request);
   if (!aBase) return { valid: false, reason: 'A組找不到完整參照期或參照位置號碼', searchCondition: request, results: [] };
@@ -231,6 +242,12 @@ function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]) {
   return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA: { sourcePeriod: history[aIndex].period, sourceNumbers: orderedNumbers(history[aIndex], request.lottery, request.numberOrder), sourceSortedNumbers: history[aIndex].sortedNumbers ?? history[aIndex].numbers, sourceDrawOrderNumbers: history[aIndex].drawOrderNumbers ?? null, referencePeriod: aBase.reference.period, baseNumber: aBase.baseNumber, predictionPeriod: aPrediction?.period ?? null, predictionCompleted: Boolean(aPrediction) }, results: resultSets };
 }
 
+function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]) {
+  const history = [...newestFirst].reverse();
+  if (request.numberOrder === '依實際開獎順序排序') { const missing = history.filter(draw => !Array.isArray(draw.drawOrderNumbers) || draw.drawOrderNumbers.length !== ballCount(request.lottery)); if (missing.length > 0) return { valid: false, reason: '實際開獎順序（落球）資料不完整，不得以順球資料代替', searchCondition: request, missingDrawOrderCount: missing.length, missingDrawOrderPeriods: missing.slice(-20).map(draw => draw.period), results: [] }; }
+  return evaluatePreparedMatrixAlgorithm(request, history, matchingSourceIndexes(request, history));
+}
+
 export function runMatrixAlgorithmWithHistory(input: unknown, newestFirst: Draw[]) {
   return evaluateMatrixAlgorithm(parseRequest(input), newestFirst);
 }
@@ -258,6 +275,21 @@ export function runMatrixExploreGroupWithHistory(input: MatrixExploreGroupInput,
   const source = newestFirst[input.lockedSourceIndex];
   const lockedNumber = numberAt(source, input.lottery, input.numberOrder, input.lockedPosition);
   if (lockedNumber === null) return { results: [] };
+  const history = [...newestFirst].reverse();
+  if (input.numberOrder === '依實際開獎順序排序') {
+    const missing = history.some((draw) => (
+      !Array.isArray(draw.drawOrderNumbers) || draw.drawOrderNumbers.length !== count
+    ));
+    if (missing) return { results: [] };
+  }
+  const sourceRequest = {
+    lottery: input.lottery,
+    numberOrder: input.numberOrder,
+    lockedPosition: input.lockedPosition,
+    lockedNumber,
+  } as MatrixRequest;
+  const sourceIndexes = matchingSourceIndexes(sourceRequest, history);
+  const requestedSourceIndex = history.length - input.lockedSourceIndex - 1;
   const referenceBack = 14;
   const results: Array<Record<string, unknown>> = [];
   const seen = new Set<string>();
@@ -281,7 +313,12 @@ export function runMatrixExploreGroupWithHistory(input: MatrixExploreGroupInput,
           algorithmType: input.algorithmType,
           ...(input.algorithmType === '拖牌' ? {} : { referenceOffset, referencePosition }),
         };
-        const evaluated = evaluateMatrixAlgorithm(request, newestFirst);
+        const evaluated = evaluatePreparedMatrixAlgorithm(
+          request,
+          history,
+          sourceIndexes,
+          requestedSourceIndex,
+        );
         if (!evaluated.valid || !evaluated.highestStreak) continue;
         const minimumStreak = ruleCount === 1 ? 4 : 5;
         if (evaluated.highestStreak < minimumStreak) continue;
