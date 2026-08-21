@@ -106,7 +106,7 @@ describe('Matrix analysis resumable progress store', () => {
     expect(tables.get('matrix_analysis_jobs')).toHaveLength(1);
   });
 
-  it('abandons same-period progress from an older algorithm revision', async () => {
+  it('resets same-period progress from an older algorithm revision without reading its artifacts', async () => {
     const { adapter, tables } = memoryAdapter();
     const saved = memoryStorage();
     const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
@@ -121,12 +121,13 @@ describe('Matrix analysis resumable progress store', () => {
       startedAt: '2026-08-21T10:01:00.000Z', total: 390,
     });
 
-    expect(currentJob.id).not.toBe(oldJob.id);
     expect(currentJob.analysisVersion).toBe('114000123:matrix-v3');
+    expect(currentJob).toMatchObject({ phase: 'explore', cursor: 0, total: 390 });
+    await expect(store.readExploreGroups(currentJob)).resolves.toEqual([]);
     expect(tables.get('matrix_analysis_jobs')).toEqual([
       expect.objectContaining({ id: currentJob.id, analysisVersion: '114000123:matrix-v3' }),
     ]);
-    expect(saved.files.size).toBe(0);
+    expect(saved.files.size).toBe(1);
   });
 
   it('persists multiple completed units with one storage write before advancing the cursor', async () => {
