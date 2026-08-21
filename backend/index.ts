@@ -16,7 +16,7 @@ import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 import { matrixAnalysisPipeline } from './matrix-analysis-pipeline';
-import { isTaipeiRefreshWindow, selectAnalysisLottery } from './matrix-analysis-cron';
+import { isTaipeiRefreshWindow, matrixWorkerLimits, runRefreshThenAnalysis, selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { createSystemJobStatusWriter, createSystemJobTracker } from './system-job-status';
 import { createMemberOnlineRpc, createMemberOnlineService } from './member-online';
@@ -100,15 +100,17 @@ export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: st
     const jobByLottery: Record<string,string>={'今彩539':'matrix-539-refresh-v2','天天樂':'matrix-fantasy5-refresh-v2','六合彩':'matrix-marksix-refresh-v2','大樂透':'matrix-649-refresh-v2'};
     return systemJobTracker.run(jobByLottery[trackedLottery],trackedLottery,async()=>{
         const refreshHour = event.payload?.refreshHour;
+        let refresh: (() => Promise<unknown>) | undefined;
         if (refreshHour !== undefined && isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
-            if (event.payload?.refreshAll) return scheduledLotteryRefresh();
-            if (event.payload?.sourceId) return scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
+            if (event.payload?.refreshAll) refresh = () => scheduledLotteryRefresh();
+            else if (event.payload?.sourceId) refresh = () => scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
         }
-        const result = await matrixAnalysisPipeline.ensureCurrent(trackedLottery, {
-            maxExploreGroups: 20,
-            batchBudgetMs: 22_000,
-        });
-        return {statusCode:200,result};
+        const limits = matrixWorkerLimits(trackedLottery, Boolean(refresh));
+        const cycle = await runRefreshThenAnalysis(
+            refresh,
+            () => matrixAnalysisPipeline.ensureCurrent(trackedLottery, limits),
+        );
+        return {statusCode:200,refresh:cycle.refresh,result:cycle.analysis};
     });
 };
 

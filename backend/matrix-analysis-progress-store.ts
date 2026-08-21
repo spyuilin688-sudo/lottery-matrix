@@ -1,5 +1,6 @@
 import { db, storage } from '@appdeploy/sdk';
 import type { LotteryId } from '../shared/matrix-contracts';
+import { readExploreGroupArtifacts } from './matrix-analysis-progress-reader';
 
 const JOB_TABLE = 'matrix_analysis_jobs';
 
@@ -203,30 +204,15 @@ export function createMatrixAnalysisProgressStore(
     },
 
     async readExploreGroups(job: MatrixAnalysisJob) {
-      const artifacts: unknown[] = [];
-      for (let index = 0; index < job.cursor; index += 10) {
-        const paths = Array.from({ length: Math.min(10, job.cursor - index) }, (_, offset) => (
-          groupPath(job, index + offset)
-        ));
-        const stored = await storageAdapter.read(paths);
-        if (stored.length !== paths.length) throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
-        const missingIndexes = stored.flatMap((file, offset) => file.content === null ? [offset] : []);
-        const legacy = missingIndexes.length
-          ? await storageAdapter.read(missingIndexes.map((offset) => legacyGroupPath(job, index + offset)))
-          : [];
-        if (legacy.some((file) => file.content === null)) {
-          throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
-        }
-        const legacyByOffset = new Map(missingIndexes.map((offset, legacyIndex) => (
-          [offset, String(legacy[legacyIndex]?.content)]
-        )));
-        artifacts.push(...await Promise.all(stored.map((file, offset) => (
-          file.content === null
-            ? JSON.parse(String(legacyByOffset.get(offset))) as unknown
-            : decodeArtifact(file.content)
-        ))));
-      }
-      return artifacts;
+      const paths = Array.from({ length: job.cursor }, (_, index) => groupPath(job, index));
+      const legacyPaths = Array.from({ length: job.cursor }, (_, index) => legacyGroupPath(job, index));
+      return readExploreGroupArtifacts(
+        storageAdapter,
+        paths,
+        legacyPaths,
+        decodeArtifact,
+        value => JSON.parse(value) as unknown,
+      );
     },
 
     setPhase(job: MatrixAnalysisJob, phase: MatrixAnalysisJob['phase']) {
