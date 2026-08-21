@@ -11,6 +11,7 @@
 .statusMeta span { color: #888d96; font-size: 12px; }
 .statusMeta b { color: #c4c6cc; font-size: 12px; text-align: right; overflow-wrap: anywhere; }
 .statusErrorText { margin-top: 8px; padding: 8px; border-radius: 7px; background: #281616; color: #efb3b3; font-size: 12px; overflow-wrap: anywhere; }
+.statusRetryButton { margin-top: 10px; gap: 5px; }
 
 @media (max-width: 760px) {
   .systemStatusHeader { align-items: flex-end; }
