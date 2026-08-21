@@ -2,6 +2,9 @@ type Row = Record<string, unknown> & { id: string };
 type ApiClient = {
   put(url: string, data?: unknown): Promise<{ data: unknown }>;
 };
+type DeleteApiClient = {
+  delete(url: string): Promise<{ data: unknown }>;
+};
 
 export function filterRows(rows: Row[], keyword: string, status: string) {
   const normalizedKeyword = keyword.trim().toLocaleLowerCase('zh-TW');
@@ -54,4 +57,8 @@ export async function saveSubscription(
   },
 ) {
   return api.put(`/api/subscriptions/${id}`, payload);
+}
+
+export async function deleteActivationCode(api: DeleteApiClient, id: string) {
+  return api.delete(`/api/activation-codes/${id}`);
 }

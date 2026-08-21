@@ -32,4 +32,33 @@ describe('connection status', () => {
     expect(fetcher).toHaveBeenCalledWith('https://matrix-sanqwn.v2.appdeploy.ai/');
     expect(fetcher).toHaveBeenCalledWith('https://api-v2.appdeploy.ai/app/app-snsxet');
   });
+
+  it('retries only the requested API endpoint and returns its new status', async () => {
+    const fetcher = vi.fn(async () => response({ ok: true }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
+      fetcher,
+      now: () => new Date('2026-08-21T03:00:00Z'),
+    });
+
+    await expect(status.retry('matrix-audit-api')).resolves.toMatchObject({
+      id: 'matrix-audit-api',
+      ok: true,
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith('https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/audit');
+  });
+
+  it('rejects retry requests for non-API status items without making a request', async () => {
+    const fetcher = vi.fn();
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
+      fetcher,
+    });
+
+    await expect(status.retry('supabase-database')).rejects.toMatchObject({ statusCode: 400 });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 });
