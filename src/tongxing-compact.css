@@ -18,12 +18,13 @@
 .tongxing-screen .feature-body {
   box-sizing: border-box;
   display: flex;
-  width: 100%;
+  width: calc(100% - (var(--layout-page-inline) * 2));
   min-width: 0;
+  margin-inline: var(--layout-page-inline);
+  padding-inline: 0;
   padding-top: var(--layout-section-gap);
   flex-direction: column;
   row-gap: var(--layout-section-gap);
-  overflow-x: hidden;
 }
 
 .tongxing-screen .matrix-title-banner {

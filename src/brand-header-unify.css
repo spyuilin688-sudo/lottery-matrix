@@ -20,6 +20,11 @@
   overflow: visible;
 }
 
+.tongxing-screen > .feature-brand-header,
+.number-reference-screen > .feature-brand-header {
+  width: 100%;
+}
+
 .feature-brand-header.integrated-title-header {
   margin-bottom: 0;
   padding-top: 8px;

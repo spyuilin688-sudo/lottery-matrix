@@ -17,7 +17,9 @@ const formal = css.slice(formalStartIndex, formalEndIndex);
 
 test("Matrix Explore uses the 12px page-inline token as the single viewport spacing source", () => {
   assert.match(tokens, /--layout-page-inline:\s*12px;/);
-  assert.match(css, /\.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) 24px;/s);
+  const genericFeatureBodyRules = css.match(/^\.feature-body\s*\{[^}]*\}/gm) ?? [];
+  assert.equal(genericFeatureBodyRules.length, 1);
+  assert.match(genericFeatureBodyRules[0], /padding-inline:\s*var\(--layout-page-inline\)/);
   assert.match(css, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
   assert.doesNotMatch(css, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
 });
