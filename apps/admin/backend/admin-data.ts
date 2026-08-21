@@ -444,6 +444,17 @@ export function createAdminData(transport: WriteTransport) {
     });
   }
 
+  async function deleteActivationCode(id: string, actor: AdminActor) {
+    return transport.supabaseRequest<{ deleted: boolean }>('rpc/admin_delete_activation_code', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_code_id: id,
+        p_actor_id: actor.id,
+        p_actor_name: actor.name || actor.account,
+      }),
+    });
+  }
+
   async function generateActivationCodeBatch(durationType: string, actor: AdminActor) {
     if (!durationTypes.includes(durationType)) throw new AdminDataError('啟動期限不正確');
     const rows = await transport.supabaseRequest<Row[]>('rpc/generate_activation_code_batch', {
@@ -474,6 +485,7 @@ export function createAdminData(transport: WriteTransport) {
     updateSubscription,
     reviewTransferRequest,
     deleteAdminAccount,
+    deleteActivationCode,
     generateActivationCodeBatch,
   };
 }
