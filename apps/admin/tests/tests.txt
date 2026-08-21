@@ -57,24 +57,6 @@ Viewport: mobile
 Covers: GET /api/system-status, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
 Description: 驗證進入系統設定會自動檢查所有項目，並可手動重新檢查；單一 API 異常不會清除其他項目的狀態。
 
-QA Faults:
-```json
-[
-  {
-    "method": "GET",
-    "path": "/api/system-status",
-    "status": 200,
-    "body_json": {
-      "checkedAt": "2026-08-21T03:00:00.000Z",
-      "items": [
-        { "id": "matrix-audit-api", "name": "Matrix audit API", "description": "檢查開獎資料是否缺期、重複或異常。", "ok": false, "checkedAt": "2026-08-21T03:00:00.000Z", "responseMs": 120, "error": "HTTP 500" },
-        { "id": "matrix-coverage-api", "name": "Matrix coverage API", "description": "檢查四個彩種的資料涵蓋範圍與筆數。", "ok": true, "checkedAt": "2026-08-21T03:00:00.000Z", "responseMs": 80 }
-      ]
-    }
-  }
-]
-```
-
 Steps:
 1. 進入「系統設定」
 2. 查看連線狀態卡片
