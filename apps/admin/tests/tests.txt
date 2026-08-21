@@ -26,7 +26,7 @@ Steps:
 4. 點擊列表中的「停權」或「啟動」
 5. 檢查二次確認內容後確認操作
 
-Expected: 列表每頁最多 30 筆，依序顯示 LINE用戶ID、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態；取消二次確認時狀態不得改變。
+Expected: 搜尋與狀態控制高度為 34px，列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態；取消二次確認時狀態不得改變。
 
 ## Test 3 - 手動管理會員訂閱
 Viewport: desktop
@@ -40,29 +40,32 @@ Steps:
 4. 在二次確認視窗確認修改
 5. 重新載入「訂閱管理」
 
-Expected: 列表每頁最多 30 筆，依序顯示 LINE用戶ID、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗的「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
+Expected: 搜尋與狀態控制高度為 34px，列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗的「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
 
-## Test 4 - 審核轉帳申請並套用角色統一權限
+## Test 4 - 審核轉帳、管理員權限與啟動碼刪除
 Viewport: desktop
-Covers: GET /api/data/transferRequests, PUT /api/transfer-requests/:id, payments linkage, role module permissions, last-super and self-delete protection
-Description: 驗證營運管理員可確認或拒絕待審核轉帳，查看人員只能查看，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
+Covers: GET /api/data/transferRequests, PUT /api/transfer-requests/:id, DELETE /api/activation-codes/:id, payments linkage, activation_codes, audit_logs, role module permissions, last-super and self-delete protection
+Description: 驗證營運管理員可審核轉帳與刪除啟動碼，查看人員只能查看，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
 
 Steps:
 1. 以營運管理員進入「訂閱管理」的「轉帳申請」
 2. 對待審核申請點擊「確認」或「拒絕」，再完成二次確認
 3. 以查看人員重新登入並開啟相同頁面
 4. 以超級管理員進入「管理員權限」，確認新增、修改、刪除都先顯示二次確認，並檢查自己的刪除操作
+5. 以營運管理員進入「啟動碼管理」，建立一批啟動碼後刪除其中一筆並完成二次確認
 
-Expected: 取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；管理員異動均先確認，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員。
+Expected: 取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；管理員列表操作按鈕為 32px 且列高已縮減，管理員異動均先確認，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
 
-## Test 5 - 系統連線狀態獨立呈現異常
+## Test 5 - 手機選單收合與異常 API 重新呼叫
 Viewport: mobile
-Covers: GET /api/system-status, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
-Description: 驗證進入系統設定會自動檢查所有項目，並可手動重新檢查；單一 API 異常不會清除其他項目的狀態。
+Covers: mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
+Description: 驗證手機選單可點擊外部收合；系統設定會自動檢查所有項目，異常 API 可真正重新呼叫且不影響其他項目。
 
 Steps:
-1. 進入「系統設定」
-2. 查看連線狀態卡片
-3. 點擊「重新檢查」
+1. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
+2. 重新開啟選單並進入「系統設定」
+3. 查看連線狀態卡片並讓 Matrix audit API 呈現異常
+4. 點擊 Matrix audit API 卡片的「重新呼叫」
+5. 點擊頁面上方的「重新檢查」
 
-Expected: Matrix audit API 顯示異常及錯誤內容，Matrix coverage API 仍顯示正常；每張卡片顯示項目說明、最後檢查時間及回應時間。
+Expected: 點擊外部後選單自動收合；Matrix audit API 異常時顯示錯誤內容與「重新呼叫」，按下後只實際呼叫該 API 並更新該卡片；正常 API 與排程卡片沒有多餘按鈕，Matrix coverage API 仍顯示正常；每張卡片顯示項目說明、最後檢查時間及回應時間。
