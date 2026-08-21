@@ -155,18 +155,21 @@ export function createMatrixAnalysisProgressStore(
   return {
     async getOrCreate(input: Omit<MatrixAnalysisJob, 'id' | 'phase' | 'cursor'>) {
       const jobs = await listAll<MatrixAnalysisJob>(adapter, JOB_TABLE);
-      const existing = jobs.find((job) => (
+      const sameDraw = jobs.find((job) => (
         job.lottery === input.lottery
         && job.drawPeriod === input.drawPeriod
-        && job.analysisVersion === input.analysisVersion
       ));
-      if (existing) return existing;
+      if (sameDraw?.analysisVersion === input.analysisVersion) return sameDraw;
+      if (sameDraw) {
+        return updateJob(sameDraw, {
+          ...input,
+          phase: 'explore',
+          cursor: 0,
+        });
+      }
       for (const stale of jobs.filter((job) => (
         job.lottery === input.lottery
-        && (
-          job.drawPeriod !== input.drawPeriod
-          || job.analysisVersion !== input.analysisVersion
-        )
+        && job.drawPeriod !== input.drawPeriod
       ))) {
         await deleteJob(stale);
       }
