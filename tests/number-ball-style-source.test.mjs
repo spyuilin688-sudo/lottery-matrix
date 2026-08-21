@@ -44,7 +44,7 @@ test("六合彩底線依正式使用情境套用對應間距", async () => {
   );
   assert.match(
     formal,
-    /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--underline-y:\s*\.3px/s,
+    /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--underline-y:\s*-1\.5px/s,
   );
   assert.match(
     formal,
@@ -63,7 +63,7 @@ test("近10期與歷史開獎六合彩使用各自正式響應規則", async () 
   assert.match(nearTenRule, /--number-y:\s*0px/);
   assert.match(nearTenRule, /--underline-width:\s*clamp\(8px, 2\.56vw, 10px\)/);
   assert.match(nearTenRule, /--underline-height:\s*\.7px/);
-  assert.match(nearTenRule, /--underline-y:\s*\.3px/);
+  assert.match(nearTenRule, /--underline-y:\s*-1\.5px/);
 
   assert.match(
     formal,

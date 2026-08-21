@@ -171,7 +171,7 @@
   --number-y: 0px;
   --underline-width: clamp(8px, 2.56vw, 10px);
   --underline-height: .7px;
-  --underline-y: .3px;
+  --underline-y: -1.5px;
 }
 
 .matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .number-ball-component.history-lottery-ball {

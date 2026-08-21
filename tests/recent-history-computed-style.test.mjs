@@ -74,7 +74,7 @@ test("近10期期數、年份與日期使用指定響應式字級並保留期數
   assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("六合彩使用 36px 列高、18–22px 彩球及指定數字與底線比例", () => {
+test("六合彩使用 40px 列高、18–22px 彩球及貼近數字的底線", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
@@ -84,8 +84,8 @@ test("六合彩使用 36px 列高、18–22px 彩球及指定數字與底線比�
   const specialBall = style(".history-special-ball");
   const mainBall = style(".history-main-numbers .history-lottery-ball");
 
-  assert.equal(row.height, "36px");
-  assert.equal(row.minHeight, "36px");
+  assert.equal(row.height, "40px");
+  assert.equal(row.minHeight, "40px");
   assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(18px,5.64vw,22px)");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(numbers.alignItems, "center");
@@ -101,7 +101,7 @@ test("六合彩使用 36px 列高、18–22px 彩球及指定數字與底線比�
   assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(7px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.56vw,10px)");
   assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), ".3px");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-1.5px");
 
   const expectedGeometry = [
     { viewport: 320, ball: 18.048, gap: 4.8 },
@@ -114,11 +114,11 @@ test("六合彩使用 36px 列高、18–22px 彩球及指定數字與底線比�
     const numberColumnWidth = rowWidth * 3.3 / 5;
     const sixPlusGroupWidth = 7 * ball + 7 * gap + 8;
     assert.ok(sixPlusGroupWidth <= numberColumnWidth, `${viewport}px viewport must contain the 6+1 group`);
-    assert.ok(ball / 36 >= .5, `${viewport}px ball must remain proportional to the 36px row`);
+    assert.ok(ball / 40 >= .45, `${viewport}px ball must remain proportional to the 40px row`);
   }
 });
 
-test("大樂透使用 36px 列高並讓正碼及特別號球同步下移 3px", () => {
+test("大樂透使用 40px 列高並讓正碼及特別號球同步下移 3px", () => {
   const { style } = historyFixture("大樂透", 6, true);
   const row = style(".history-row");
   const panel = style(".history-panel");
@@ -127,8 +127,8 @@ test("大樂透使用 36px 列高並讓正碼及特別號球同步下移 3px", (
   const specialBall = style(".history-special-ball .history-lottery-ball");
   const specialLabel = style(".history-special-label");
 
-  assert.equal(row.height, "36px");
-  assert.equal(row.minHeight, "36px");
+  assert.equal(row.height, "40px");
+  assert.equal(row.minHeight, "40px");
   assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(20px,6.15vw,24px)");
   assert.equal(mainBall.transform, "translateY(3px)");
   assert.equal(specialBall.transform, "translateY(3px)");
