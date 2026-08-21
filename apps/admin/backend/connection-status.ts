@@ -7,6 +7,13 @@ type Dependencies = {
   fetcher?: typeof fetch;
   now?: () => Date;
 };
+type CoreCheckDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  retryable?: boolean;
+  operation: () => Promise<unknown>;
+};
 
 export type ConnectionStatusItem = {
   id: string;
@@ -15,9 +22,20 @@ export type ConnectionStatusItem = {
   ok: boolean;
   checkedAt: string;
   responseMs: number;
+  retryable?: boolean;
   error?: string;
   detail?: unknown;
 };
+
+export class ConnectionStatusError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode = 400) {
+    super(message);
+    this.name = 'ConnectionStatusError';
+    this.statusCode = statusCode;
+  }
+}
 
 const apiBase = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai/';
@@ -53,33 +71,83 @@ export function createConnectionStatus(dependencies: Dependencies) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   };
+  const coreChecks: CoreCheckDefinition[] = [
+    {
+      id: 'admin-appdeploy',
+      name: '後臺 AppDeploy',
+      description: '顯示後臺系統的部署及服務狀態。',
+      operation: async () => {
+        const response = await fetcher(adminUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { status: response.status };
+      },
+    },
+    {
+      id: 'api-appdeploy',
+      name: 'API AppDeploy',
+      description: '顯示 Matrix API 的部署及服務狀態。',
+      retryable: true,
+      operation: async () => {
+        const response = await fetcher(apiBase);
+        if (response.status >= 500) throw new Error(`HTTP ${response.status}`);
+        return { status: response.status };
+      },
+    },
+    {
+      id: 'supabase-database',
+      name: 'Supabase Database',
+      description: '儲存會員、訂閱、付款及管理員資料。',
+      operation: () => dependencies.supabase.selectRows('plans', 'select=id&limit=1'),
+    },
+    {
+      id: 'supabase-auth',
+      name: 'Supabase Auth',
+      description: '處理會員登入、登出及帳號驗證。',
+      operation: async () => {
+        const config = await dependencies.loadConfig();
+        const response = await fetcher(`${config.url}/auth/v1/settings`, { headers: { apikey: config.serviceRoleKey } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      },
+    },
+    {
+      id: 'health-api',
+      name: '健康檢查 API',
+      description: '確認 Matrix API 服務是否正常運作。',
+      retryable: true,
+      operation: () => http('/api/_healthcheck'),
+    },
+    {
+      id: 'matrix-coverage-api',
+      name: 'Matrix coverage API',
+      description: '檢查四個彩種的資料涵蓋範圍與筆數。',
+      retryable: true,
+      operation: () => http('/api/matrix/coverage'),
+    },
+    {
+      id: 'matrix-audit-api',
+      name: 'Matrix audit API',
+      description: '檢查開獎資料是否缺期、重複或異常。',
+      retryable: true,
+      operation: () => http('/api/matrix/audit'),
+    },
+    {
+      id: 'matrix-algorithm-cases-api',
+      name: 'Matrix algorithm cases API',
+      description: '取得演算法案例與計算結果。',
+      retryable: true,
+      operation: () => http('/api/matrix/algorithm/cases'),
+    },
+  ];
+  const runCoreCheck = async (definition: typeof coreChecks[number]) => ({
+    ...await check(definition.id, definition.name, definition.description, definition.operation),
+    ...(definition.retryable ? { retryable: true } : {}),
+  });
 
   return {
     async get() {
       const checkedAt = now().toISOString();
-      const core = await Promise.all([
-        check('admin-appdeploy', '後臺 AppDeploy', '顯示後臺系統的部署及服務狀態。', async () => {
-          const response = await fetcher(adminUrl);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return { status: response.status };
-        }),
-        check('api-appdeploy', 'API AppDeploy', '顯示 Matrix API 的部署及服務狀態。', async () => {
-          const response = await fetcher(apiBase);
-          if (response.status >= 500) throw new Error(`HTTP ${response.status}`);
-          return { status: response.status };
-        }),
-        check('supabase-database', 'Supabase Database', '儲存會員、訂閱、付款及管理員資料。', () => dependencies.supabase.selectRows('plans', 'select=id&limit=1')),
-        check('supabase-auth', 'Supabase Auth', '處理會員登入、登出及帳號驗證。', async () => {
-          const config = await dependencies.loadConfig();
-          const response = await fetcher(`${config.url}/auth/v1/settings`, { headers: { apikey: config.serviceRoleKey } });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return response.json();
-        }),
-        check('health-api', '健康檢查 API', '確認 Matrix API 服務是否正常運作。', () => http('/api/_healthcheck')),
-        check('matrix-coverage-api', 'Matrix coverage API', '檢查四個彩種的資料涵蓋範圍與筆數。', () => http('/api/matrix/coverage')),
-        check('matrix-audit-api', 'Matrix audit API', '檢查開獎資料是否缺期、重複或異常。', () => http('/api/matrix/audit')),
-        check('matrix-algorithm-cases-api', 'Matrix algorithm cases API', '取得演算法案例與計算結果。', () => http('/api/matrix/algorithm/cases')),
-      ]);
+      const core = await Promise.all(coreChecks.map(runCoreCheck));
       let jobRows: Row[] = [];
       try {
         jobRows = await dependencies.supabase.selectRows<Row>('system_job_status', 'select=*&order=updated_at.desc');
@@ -101,6 +169,11 @@ export function createConnectionStatus(dependencies: Dependencies) {
         } satisfies ConnectionStatusItem;
       });
       return { checkedAt, items: [...core, ...jobs] };
+    },
+    async retry(id: string) {
+      const definition = coreChecks.find((item) => item.id === id && item.retryable);
+      if (!definition) throw new ConnectionStatusError('此項目不支援重新呼叫');
+      return runCoreCheck(definition);
     },
   };
 }
