@@ -1612,6 +1612,37 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .status-table-head { border-top: 0; border-radius: 6px; background: #02070b; color: #918a80; font-size: 9px; }
 .matrix-status-screen .status-table p:not(.status-table-head) { font-size: 10px; }
 .matrix-status-screen .status-table p:not(.status-table-head) strong { font-size: 12px; }
+
+/* Matrix custom status settings */
+.matrix-custom-status-screen .matrix-status-lottery-switcher { position: relative; width: 100%; min-height: 72px; margin-bottom: 10px; }
+.matrix-custom-status-screen .matrix-status-lottery-switcher > .home-asset-image { width: 100%; height: 72px; object-fit: fill; }
+.matrix-custom-status-screen .matrix-status-lottery-switcher .lottery-switcher-hit-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); }
+.matrix-custom-status-screen .matrix-status-lottery-switcher .lottery-card { border: 0; color: transparent; background: transparent; }
+.matrix-custom-status-screen .matrix-status-lottery-switcher .lottery-card[data-selected="true"] { box-shadow: inset 0 0 10px rgba(242, 196, 83, .42); }
+.matrix-custom-status-screen .custom-status-tabs { display: grid; margin-bottom: 10px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.matrix-custom-status-screen .custom-status-tabs button { display: flex; min-height: 54px; padding: 8px 4px; flex-direction: column; justify-content: center; border: 1px solid #39434b; border-radius: 8px; color: #afb6bc; background: #061017; }
+.matrix-custom-status-screen .custom-status-tabs button[aria-selected="true"] { border-color: #d9aa48; color: #f5d67d; box-shadow: 0 0 10px rgba(217,170,72,.25); }
+.matrix-custom-status-screen .custom-status-tabs strong { font-size: 13px; }
+.matrix-custom-status-screen .custom-status-tabs small { margin-top: 2px; font-size: 7px; }
+.matrix-custom-status-screen .custom-status-fixed-rule { margin: 0 0 12px; color: #aaa49a; text-align: center; font-size: 10px; }
+.matrix-custom-status-screen .custom-status-hit-section { margin-bottom: 12px; border: 1px solid #7d4686; border-radius: 11px; overflow: hidden; background: rgba(4,11,16,.96); }
+.matrix-custom-status-screen .custom-status-hit-header { display: grid; width: 100%; min-height: 54px; padding: 10px; grid-template-columns: 1fr auto 18px; align-items: center; border: 0; color: #bd62d4; background: transparent; text-align: left; }
+.matrix-custom-status-screen .custom-status-hit-header span { color: #aaa49a; font-size: 10px; }
+.matrix-custom-status-screen .custom-status-hit-header svg[data-open="true"] { transform: rotate(180deg); }
+.matrix-custom-status-screen .custom-status-groups { display: grid; padding: 0 9px 9px; gap: 9px; }
+.matrix-custom-status-screen .custom-status-group { padding: 8px; border: 1px solid rgba(205,162,73,.55); border-radius: 8px; background: #030a0f; }
+.matrix-custom-status-screen .custom-status-group > header { display: flex; margin-bottom: 7px; align-items: center; justify-content: space-between; color: #d7aa4d; }
+.matrix-custom-status-screen .custom-status-group button { border: 1px solid rgba(205,162,73,.55); border-radius: 6px; color: #d7aa4d; background: transparent; }
+.matrix-custom-status-screen .custom-status-condition-row { display: grid; margin-bottom: 7px; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
+.matrix-custom-status-screen .custom-status-condition-row label { display: grid; gap: 3px; color: #89847c; font-size: 8px; }
+.matrix-custom-status-screen .custom-status-condition-row select,
+.matrix-custom-status-screen .custom-status-condition-row input { width: 100%; min-width: 0; height: 30px; padding: 0 5px; border: 1px solid #38434b; border-radius: 5px; color: #e5dfd5; background: #071219; font-size: 10px; }
+.matrix-custom-status-screen .custom-status-group > button,
+.matrix-custom-status-screen .custom-status-groups > button { width: 100%; min-height: 34px; }
+.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: 8px; display: grid; padding: 8px 0; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(2,7,11,.92); }
+.matrix-custom-status-screen .custom-status-actions button { min-height: 42px; border: 1px solid #c69b42; border-radius: 7px; color: #efcb74; background: #050c11; font-weight: 700; }
+.matrix-custom-status-screen .custom-status-actions button:last-child { color: #17130b; background: linear-gradient(135deg,#e6b94d,#f4d77f); }
+.matrix-custom-status-screen .custom-status-message { color: #f0c86c; text-align: center; font-size: 11px; }
 .matrix-guide-screen .guide-intro { min-height: 82px; }
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
 .guide-category-strip {
@@ -1771,6 +1802,23 @@ width: 100%;
 .matrix-tiangong-screen .tiangong-settings fieldset .segmented button {
 height: 36px;
   min-height: 36px;
+}
+.matrix-tiangong-screen .tiangong-results-head,
+.matrix-tiangong-screen .tiangong-result-row {
+  display: grid;
+  grid-template-columns: .8fr .9fr .8fr 1.5fr;
+  align-items: center;
+  min-width: 0;
+}
+.matrix-tiangong-screen .tiangong-results-head span,
+.matrix-tiangong-screen .tiangong-result-row > span,
+.matrix-tiangong-screen .tiangong-result-row > strong {
+  min-width: 0;
+  text-align: center;
+}
+.matrix-tiangong-screen .tiangong-result-row .road-type-toggle {
+  width: 100%;
+  min-width: 0;
 }
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .select-box,
 .matrix-explore-screen:not(.matrix-explore-main-screen) .setting-grid .segmented,

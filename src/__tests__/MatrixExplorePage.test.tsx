@@ -4,8 +4,76 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../FeaturePages';
 
+const matrixApi = vi.hoisted(() => ({
+  fetchExploreList: vi.fn(),
+  fetchExploreValidation: vi.fn(),
+}));
+
+vi.mock('../matrix-algorithm-api', () => matrixApi);
+
+const exploreEnvelope = {
+  kind: 'explore',
+  lottery: '今彩539',
+  drawPeriod: '114000123',
+  analysisVersion: '114000123:v1',
+  status: 'complete',
+  total: 1,
+  duplicateStats: [{ number: '22', count: 1 }, { number: '26', count: 1 }],
+  items: [{
+    id: 'api-item-1',
+    number: '44',
+    lockedPosition: 2,
+    predictionDistance: 3,
+    consecutive: '準5進6',
+    highestStreak: 5,
+    predictionNumbers: ['22', '26'],
+    algorithmType: '加減',
+    numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13,
+    exploreDateOffset: 0,
+    ruleCount: 1,
+    referenceOffset: -7,
+  }],
+} as const;
+
+const exploreValidationEnvelope = {
+  kind: 'explore',
+  lottery: '今彩539',
+  drawPeriod: '114000123',
+  analysisVersion: '114000123:v1',
+  status: 'complete',
+  itemId: 'api-item-1',
+  validation: {
+    itemId: 'api-item-1',
+    ruleSets: [{
+      rules: [{ value: 14.24, display: '+14.24', algorithmType: '加減' }],
+      predictionNumbers: [22, 26],
+      historicalValidation: [{
+        group: 'B',
+        sourcePeriod: '114000120',
+        sourceNumbers: ['03', '10', '14', '22', '31'],
+        sourceSortedNumbers: ['03', '10', '14', '22', '31'],
+        sourceDrawOrderNumbers: null,
+        referencePeriod: '114000118',
+        referenceNumbers: ['01', '08', '14', '24', '30'],
+        referenceSortedNumbers: ['01', '08', '14', '24', '30'],
+        referenceDrawOrderNumbers: null,
+        baseNumber: 14,
+        predictionPeriod: '114000123',
+        predictionNumbers: ['22', '26'],
+        candidateRules: [14.24],
+        matchedRules: [14.24],
+        hitNumbers: ['22'],
+        success: true,
+      }],
+    }],
+  },
+} as const;
+
 beforeEach(() => {
   document.body.innerHTML = '';
+  matrixApi.fetchExploreList.mockReset().mockResolvedValue(exploreEnvelope);
+  matrixApi.fetchExploreValidation.mockReset().mockResolvedValue(exploreValidationEnvelope);
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ records: [] }),
@@ -85,28 +153,72 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
   );
 });
 
-test('展開版路後以可分色數字與右上外框標籤顯示版路概要', () => {
+test('展開版路後以 API 規則與可分色數字顯示驗證概要', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-  fireEvent.click(screen.getAllByRole('button', { name: /加減版路/ })[0]);
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
-  const summary = document.querySelector<HTMLElement>('.validation-summary-card');
-  expect(summary).not.toBeNull();
-  expect(summary?.querySelector('.validation-summary-primary')?.textContent).toBe('10');
-  expect(summary?.querySelectorAll('.validation-summary-position')).toHaveLength(2);
-  expect(summary?.querySelector('.validation-summary-lookback')?.textContent).toBe('2');
-  expect(summary?.querySelector('.validation-summary-formula')?.textContent).toBe('+14.24');
-  expect(summary?.querySelector('.validation-summary-future')?.textContent).toBe('2');
-  expect(summary?.querySelector('em')?.textContent).toBe('準7進8');
+  expect(await screen.findByText('+14.24')).toBeTruthy();
+  const validation = screen.getByRole('region', { name: '驗證過程' });
+  expect(validation.querySelector('.validation-summary-card')?.textContent).toBe('+14.24');
+  expect(validation.querySelectorAll('.validation-full-numbers i').length).toBeGreaterThan(0);
 });
 
-test('合值版路的概要顯示合值文字並沿用公式數字色彩類別', () => {
+test('合值版路的 API 驗證概要顯示合值規則', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{ ...exploreEnvelope.items[0], algorithmType: '合值' }],
+  });
+  matrixApi.fetchExploreValidation.mockResolvedValue({
+    ...exploreValidationEnvelope,
+    validation: {
+      ...exploreValidationEnvelope.validation,
+      ruleSets: [{
+        ...exploreValidationEnvelope.validation.ruleSets[0],
+        rules: [{ value: 14.24, display: '合值14.24', algorithmType: '合值' }],
+      }],
+    },
+  });
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '合值版路' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-  fireEvent.click(document.querySelector<HTMLButtonElement>('.road-type-toggle')!);
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
-  expect(document.querySelector('.validation-summary-formula')?.textContent).toBe('合值14.24');
+  expect(await screen.findByText('合值14.24')).toBeTruthy();
+});
+
+test('探索結果使用 API 資料而不是固定範例', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(screen.getByText('44')).toBeTruthy();
+  expect(screen.queryByText('03.09')).toBeNull();
+  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
+    lottery: '今彩539',
+    explorePeriods: 13,
+    ruleCount: 1,
+    roadTypes: ['加減'],
+  }));
+});
+
+test('只有展開結果時才讀取該筆驗證資料', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(matrixApi.fetchExploreValidation).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+
+  expect(matrixApi.fetchExploreValidation).toHaveBeenCalledTimes(1);
+  expect(matrixApi.fetchExploreValidation).toHaveBeenCalledWith(
+    expect.objectContaining({ analysisVersion: '114000123:v1', drawPeriod: '114000123' }),
+    'api-item-1',
+  );
 });

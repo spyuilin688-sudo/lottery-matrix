@@ -12,6 +12,7 @@ import {
   fetchActivationCodes,
   fetchDashboardStats,
   fetchMembers,
+  fetchMatrixCustomStatuses,
   fetchPayments,
   fetchTransfers,
   generateActivationCodes,
@@ -22,6 +23,7 @@ import type {
   MemberView,
   PaymentView,
   TransferView,
+  MatrixCustomStatusView,
 } from "../types";
 
 type QueryResult<T> = { data: T; error: Error | null };
@@ -95,6 +97,16 @@ const activationCode: ActivationCodeRecord = {
   status: "unused",
 };
 
+const matrixStatus: MatrixCustomStatusView = {
+  member_id: member.id,
+  lottery: "今彩539",
+  status: "ACTIVE",
+  config: { oneCodeGroups: [], twoCodeGroups: [] },
+  created_at: "2026-08-21T00:00:00.000Z",
+  updated_at: "2026-08-21T01:00:00.000Z",
+  member: { id: member.id, line_user_id: "line-member-1" },
+};
+
 beforeEach(() => {
   supabase.getClient.mockReset();
 });
@@ -113,6 +125,7 @@ describe("admin data API", () => {
     ["transfer requests", "submitted_at", [transfer], fetchTransfers],
     ["payments", "paid_at", [payment], fetchPayments],
     ["activation codes", "created_at", [activationCode], fetchActivationCodes],
+    ["matrix custom status configs", "updated_at", [matrixStatus], fetchMatrixCustomStatuses],
   ] as const)("returns %s ordered by %s descending", async (table, column, records, fetchRecords) => {
     const query = orderedQuery({ data: records, error: null });
     const from = vi.fn(() => query);
@@ -127,6 +140,7 @@ describe("admin data API", () => {
       payments:
         "*, member:members!payments_member_id_fkey(id,line_user_id), plan:plans!payments_plan_id_fkey(name)",
       "activation codes": "*, redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,line_user_id)",
+      "matrix custom status configs": "*, member:members!matrix_custom_status_configs_member_id_fkey(id,line_user_id)",
     }[table];
     expect(query.select).toHaveBeenCalledWith(expectedSelect);
     expect(query.order).toHaveBeenCalledWith(column, { ascending: false });
@@ -148,6 +162,7 @@ describe("admin data API", () => {
     ["transfer requests", fetchTransfers, "query"],
     ["payments", fetchPayments, "query"],
     ["activation codes", fetchActivationCodes, "query"],
+    ["matrix custom status configs", fetchMatrixCustomStatuses, "query"],
     ["activation-code generation", () => generateActivationCodes("7_days"), "rpc"],
   ] as const)("throws the Supabase error for %s", async (_name, request, source) => {
     const supabaseError = new Error("SUPABASE_UNAVAILABLE");

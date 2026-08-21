@@ -1,5 +1,5 @@
-import { LOTTERY_API_BASE } from './lottery-api';
 import type { NumberBallLottery } from './NumberBall';
+import { matrixApiFetch } from './matrix-api-client';
 import {
   buildMatrixResultCacheKey,
   readMatrixResultCache,
@@ -74,7 +74,250 @@ export type MatrixAlgorithmResponse = {
   conflictingRules?: number[];
 };
 
+export type ExploreApiRow = {
+  id: string;
+  number: string;
+  lockedPosition: number;
+  predictionDistance: number;
+  consecutive: string;
+  highestStreak: number;
+  predictionNumbers: string[];
+  algorithmType: '加減' | '合值' | '拖牌';
+  numberOrder: MatrixNumberOrder;
+  explorePeriods: 2 | 7 | 13;
+  exploreDateOffset: 0 | 1 | 2;
+  ruleCount: 1 | 2;
+  referenceOffset?: number;
+};
+
+export type ExploreListRequest = {
+  lottery: NumberBallLottery;
+  numberOrder: MatrixNumberOrder;
+  explorePeriods: 2 | 7 | 13;
+  exploreDateOffset: 0 | 1 | 2;
+  exploreRange: '標準範圍' | '完整範圍';
+  ruleCount: 1 | 2;
+  roadTypes: Array<'加減' | '合值' | '拖牌'>;
+  selectedStreaks: string[];
+  sameCode: boolean;
+};
+
+export type ExploreListResponse = {
+  kind: 'explore';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  items: ExploreApiRow[];
+  duplicateStats: Array<{ number: string; count: number }>;
+  total: number;
+};
+
+export type ExploreValidationRow = {
+  group: string;
+  sourcePeriod: string;
+  sourceNumbers: Array<string | number>;
+  sourceSortedNumbers: Array<string | number>;
+  sourceDrawOrderNumbers: Array<string | number> | null;
+  referencePeriod: string;
+  referenceNumbers: Array<string | number>;
+  referenceSortedNumbers: Array<string | number>;
+  referenceDrawOrderNumbers: Array<string | number> | null;
+  baseNumber: number;
+  predictionPeriod: string;
+  predictionNumbers: Array<string | number>;
+  candidateRules: number[];
+  matchedRules: number[];
+  hitNumbers: number[];
+  success: boolean;
+};
+
+export type ExploreValidation = {
+  itemId: string;
+  sourceA?: Record<string, unknown>;
+  ruleSets: Array<{
+    rules: Array<{ value: number; display: string; algorithmType: string }>;
+    predictionNumbers: number[];
+    historicalValidation: ExploreValidationRow[];
+  }>;
+};
+
+export type ExploreValidationResponse = {
+  kind: 'explore';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  itemId: string;
+  validation: ExploreValidation;
+};
+
+export type TianyanApiRow = {
+  id: string;
+  number: string;
+  lockedPosition: number;
+  predictionDistance: number;
+  consecutive: string;
+  highestStreak: number;
+  predictionNumbers: string[];
+  roadType: '複合';
+  hitCondition: '準5+（鎖定2碼）';
+  ruleIds: [string, string];
+};
+
+export type TianyanListResponse = {
+  kind: 'tianyan';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  items: TianyanApiRow[];
+  total: number;
+};
+
+export type TianyanValidation = {
+  itemId: string;
+  rules: Array<{
+    id: string;
+    referenceOffset: number;
+    referencePosition: number;
+    algorithmType: string;
+    value: number;
+  }>;
+  groupCount: number;
+  minimumIndependentHits: number;
+  rule1Only: number;
+  rule2Only: number;
+  bothHit: number;
+  historicalValidation: Array<{
+    id: string;
+    sourcePeriod: string;
+    predictionPeriod: string;
+    hitType: 'rule1Only' | 'rule2Only' | 'bothHit' | 'bothMiss';
+    success: boolean;
+  }>;
+};
+
+export type TianyanValidationResponse = {
+  kind: 'tianyan';
+  lottery: NumberBallLottery;
+  drawPeriod: string;
+  analysisVersion: string;
+  status: 'complete';
+  itemId: string;
+  validation: TianyanValidation;
+};
+
+export type TiangongApiRow = {
+  id: string;
+  sourceSequence: number[];
+  eligiblePeriodRange: 50 | 80;
+  interval: number;
+  predictionDistance: number;
+  predictedPosition: number;
+  predictionNumber: string;
+  roadType: string;
+  ruleIdentity: string;
+  mode: 'one-stage' | 'two-stage';
+  hitCondition: '準2進3' | '準3進4';
+  exploreDirection: '固定' | '依序遞增' | '依序遞減';
+  firstStageDirection: '固定' | '依序遞增' | '依序遞減';
+  firstRoadType: '加減' | '合值';
+  secondStageDirection?: '固定' | '依序遞增' | '依序遞減';
+  secondRoadType?: '加減' | '合值';
+};
+
+export type TiangongListRequest = {
+  lottery: NumberBallLottery;
+  periodRange: 50 | 80;
+  mode: 'one-stage' | 'two-stage';
+  hitCondition: '準2進3' | '準3進4';
+  exploreDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
+  firstStageDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
+  firstRoadTypes: Array<'加減' | '合值'>;
+  secondStageDirections?: Array<'固定' | '依序遞增' | '依序遞減'>;
+  secondRoadTypes?: Array<'加減' | '合值'>;
+};
+
+export type TiangongListResponse = {
+  kind: 'tiangong'; lottery: NumberBallLottery; drawPeriod: string;
+  analysisVersion: string; status: 'complete'; items: TiangongApiRow[]; total: number;
+};
+
+export type TiangongValidation = {
+  itemId: string;
+  ruleIdentity: string;
+  validationRows: Array<Record<string, unknown> & {
+    role: 'first-stage-evidence' | 'second-stage-validation' | 'prediction';
+    group: 'A' | 'B' | 'C' | 'D';
+    sourcePeriod: string;
+    resultPeriod: string;
+  }>;
+};
+
+export type TiangongValidationResponse = {
+  kind: 'tiangong'; lottery: NumberBallLottery; drawPeriod: string;
+  analysisVersion: string; status: 'complete'; itemId: string; validation: TiangongValidation;
+};
+
 const pendingRequests = new Map<string, Promise<MatrixAlgorithmResponse>>();
+
+export function fetchExploreList(request: ExploreListRequest) {
+  return matrixApiFetch<ExploreListResponse>('/api/matrix/algorithm/explore', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+}
+
+export function fetchExploreValidation(
+  meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
+  itemId: string,
+) {
+  return matrixApiFetch<ExploreValidationResponse>('/api/matrix/algorithm/explore/validation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...meta, itemId }),
+  });
+}
+
+export function fetchTianyanList(request: {
+  lottery: NumberBallLottery;
+  drawPeriod?: string;
+  selectedStreaks: string[];
+}) {
+  return matrixApiFetch<TianyanListResponse>('/api/matrix/algorithm/tianyan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+}
+
+export function fetchTianyanValidation(
+  meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
+  itemId: string,
+) {
+  return matrixApiFetch<TianyanValidationResponse>('/api/matrix/algorithm/tianyan/validation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...meta, itemId }),
+  });
+}
+
+export function fetchTiangongList(request: TiangongListRequest) {
+  return matrixApiFetch<TiangongListResponse>('/api/matrix/algorithm/tiangong', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request),
+  });
+}
+
+export function fetchTiangongValidation(
+  meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
+  itemId: string,
+) {
+  return matrixApiFetch<TiangongValidationResponse>('/api/matrix/algorithm/tiangong/validation', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...meta, itemId }),
+  });
+}
 
 export async function runMatrixAlgorithmExplore(payload: MatrixAlgorithmRequest) {
   if (!payload.drawPeriod.trim()) throw new Error('Matrix Algorithm API requires drawPeriod');
@@ -87,21 +330,11 @@ export async function runMatrixAlgorithmExplore(payload: MatrixAlgorithmRequest)
   if (pending) return pending;
 
   const request = (async () => {
-    const response = await fetch(`${LOTTERY_API_BASE}/api/matrix/algorithm/explore`, {
+    const result = await matrixApiFetch<MatrixAlgorithmResponse>('/api/matrix/algorithm/explore', {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-
-    if (!response.ok) {
-      throw new Error(`Matrix Algorithm API ${response.status}: ${response.statusText}`);
-    }
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) {
-      throw new Error(`Matrix Algorithm API returned ${contentType || 'non-JSON response'}`);
-    }
-
-    const result = await response.json() as MatrixAlgorithmResponse;
     writeMatrixResultCache(payload, result);
     return result;
   })();

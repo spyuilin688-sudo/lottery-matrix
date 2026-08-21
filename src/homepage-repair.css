@@ -512,6 +512,41 @@
   background: transparent;
 }
 
+.home-screen .matrix-status-hit-grid > button[data-active="true"] {
+  filter: drop-shadow(0 0 6px rgba(255, 214, 102, .92));
+}
+
+.home-screen .matrix-status-current {
+  position: absolute;
+  z-index: 3;
+  right: 7%;
+  bottom: 3%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 86%;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 213, 105, .44);
+  border-radius: 999px;
+  color: #fff3cb;
+  background: rgba(2, 11, 17, .8);
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.home-screen .matrix-status-current strong,
+.home-screen .matrix-status-current span {
+  color: #f6c759;
+  white-space: nowrap;
+}
+
+.home-screen .matrix-status-current small {
+  overflow: hidden;
+  color: #d8dde1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .home-screen .matrix-core-banner::before {
   position: absolute;
   z-index: 4;

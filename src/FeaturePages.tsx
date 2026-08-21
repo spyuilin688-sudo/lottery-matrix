@@ -43,6 +43,31 @@ import {
   redeemActivationCode,
   type ActivationRedemptionErrorCode,
 } from "./activation/redeemActivationCode";
+import {
+  fetchExploreList,
+  fetchExploreValidation,
+  fetchTianyanList,
+  fetchTianyanValidation,
+  fetchTiangongList,
+  fetchTiangongValidation,
+  type ExploreListResponse,
+  type ExploreValidation,
+  type TianyanListResponse,
+  type TianyanValidation,
+  type TiangongListResponse,
+  type TiangongValidation,
+} from "./matrix-algorithm-api";
+import {
+  fetchMatrixStatus,
+  listCustomStatusSettings,
+  resetCustomStatusSetting,
+  saveCustomStatusSetting,
+  type CustomConditionGroup,
+  type CustomConditionRow,
+  type CustomMatrixStatusCode,
+  type CustomStatusConfig,
+  type MatrixStatusResponse,
+} from "./matrix-status-api";
 
 export type ScreenId =
   | "home"
@@ -77,7 +102,8 @@ export type ScreenId =
   | "version-info"
   | "update-history"
   | "disclaimer"
-  | "status";
+  | "status"
+  | "status-settings";
 
 type Navigate = (screen: ScreenId) => void;
 
@@ -920,6 +946,85 @@ function RoadValidationProcess({
   );
 }
 
+function ExploreValidationProcess({
+  validation,
+  loading,
+}: {
+  validation?: ExploreValidation;
+  loading: boolean;
+}) {
+  if (loading) return <p className="empty-result">驗證資料載入中</p>;
+  if (!validation || validation.ruleSets.length === 0) {
+    return <p className="empty-result">無驗證資料</p>;
+  }
+  const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
+  return (
+    <section className="road-validation-process" aria-label="驗證過程">
+      {validation.ruleSets.map((ruleSet, ruleSetIndex) => (
+        <div className="validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
+          <header className="validation-summary-card">
+            <span>{ruleSet.rules.map((rule) => rule.display).join(".")}</span>
+          </header>
+          {ruleSet.historicalValidation.map((row) => (
+            <div className="validation-period-block" key={`${ruleSetIndex}-${row.group}-${row.predictionPeriod}`}>
+              <div className="validation-period-row">
+                <span className="validation-issue">{row.sourcePeriod}</span>
+                <span className="validation-full-numbers">{values(row.sourceNumbers).map((value) => <i key={value}>{value}</i>)}</span>
+                <span className="validation-formula"><b>{row.matchedRules.join(".")}</b></span>
+              </div>
+              <div className="validation-period-row">
+                <span className="validation-issue">{row.referencePeriod}</span>
+                <span className="validation-full-numbers">{values(row.referenceNumbers).map((value) => <i key={value}>{value}</i>)}</span>
+                <span className="validation-formula"><b>{row.baseNumber}</b></span>
+              </div>
+              <div className="validation-period-row">
+                <span className="validation-issue">{row.predictionPeriod}</span>
+                <span className="validation-full-numbers">{values(row.predictionNumbers).map((value) => <i key={value}>{value}</i>)}</span>
+                <span className="validation-formula"><strong>{values(row.hitNumbers).join("、")}</strong></span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function TianyanValidationProcess({
+  validation,
+  loading,
+}: {
+  validation?: TianyanValidation;
+  loading: boolean;
+}) {
+  if (loading) return <p className="empty-result">驗證資料載入中</p>;
+  if (!validation) return <p className="empty-result">無驗證資料</p>;
+  return (
+    <section className="road-validation-process" aria-label="天衍驗證過程">
+      <header className="validation-summary-card">
+        <span>獨立貢獻：規則一 {validation.rule1Only}／規則二 {validation.rule2Only}／同時命中 {validation.bothHit}</span>
+        <small>最低各 {validation.minimumIndependentHits} 組</small>
+      </header>
+      {validation.rules.map((rule, index) => (
+        <div className="validation-rule-set" key={rule.id}>
+          <header className="validation-summary-card">
+            <span>規則{index + 1}：第{rule.referencePosition}顆／{rule.algorithmType}／{rule.value}</span>
+          </header>
+        </div>
+      ))}
+      {validation.historicalValidation.map((row) => (
+        <div className="validation-period-block" key={`${row.id}-${row.predictionPeriod}`}>
+          <div className="validation-period-row">
+            <span className="validation-issue">{row.sourcePeriod}</span>
+            <span>{row.predictionPeriod}</span>
+            <span className="validation-formula"><strong>{row.hitType}</strong></span>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function MatrixExplorePage({
   onNavigate,
   title = "Matrix 探索",
@@ -941,13 +1046,15 @@ export function MatrixExplorePage({
     | "準17進18+";
 
   type ExploreResult = {
-    id: number;
+    id: string;
     position: number;
     number: string;
     predictionPeriod: number;
     consecutive: ConsecutiveOption;
     prediction: string;
     sameCode: boolean;
+    algorithmType: string;
+    numberOrder: string;
   };
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
@@ -958,19 +1065,6 @@ export function MatrixExplorePage({
     "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": ["準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
   };
-  const resultRows: ExploreResult[] = [
-    { id: 1, position: 1, number: "10", predictionPeriod: 1, consecutive: "準11進12", prediction: "03.09", sameCode: true },
-    { id: 2, position: 2, number: "25", predictionPeriod: 1, consecutive: "準9進10", prediction: "33.35", sameCode: true },
-    { id: 3, position: 1, number: "10", predictionPeriod: 2, consecutive: "準7進8", prediction: "11.39", sameCode: true },
-    { id: 4, position: 3, number: "32", predictionPeriod: 1, consecutive: "準7進8", prediction: "15.31", sameCode: false },
-    { id: 5, position: 2, number: "09", predictionPeriod: 2, consecutive: "準6進7", prediction: "02.12", sameCode: true },
-    { id: 6, position: 4, number: "36", predictionPeriod: 1, consecutive: "準6進7", prediction: "02.16", sameCode: false },
-    { id: 7, position: 1, number: "08", predictionPeriod: 3, consecutive: "準5進6", prediction: "05.24", sameCode: true },
-    { id: 8, position: 5, number: "03", predictionPeriod: 2, consecutive: "準5進6", prediction: "07.28", sameCode: false },
-    { id: 9, position: 3, number: "18", predictionPeriod: 1, consecutive: "準4進5", prediction: "12.29", sameCode: true },
-    { id: 10, position: 6, number: "29", predictionPeriod: 2, consecutive: "準4進5", prediction: "17.38", sameCode: false },
-  ];
-  const duplicateNumbers = ["38", "09", "08", "32", "03", "36", "18", "29", "12", "17", "21", "28", "05", "24", "30", "04", "27", "02"];
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [period, setPeriod] = useState("十三期");
   const [road, setRoad] = useState(roadTypes[0]);
@@ -981,12 +1075,19 @@ export function MatrixExplorePage({
   const [exploreRange, setExploreRange] = useState("標準範圍");
   const [searched, setSearched] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
-  const [expandedRoad, setExpandedRoad] = useState<number | null>(null);
+  const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
   const [sameCode, setSameCode] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
     defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
   );
+  const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
+  const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreError, setExploreError] = useState<string | null>(null);
+  const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
+  const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
+  const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -1005,31 +1106,88 @@ export function MatrixExplorePage({
   }, [filterOpen]);
 
   const visibleResults = useMemo(() => {
-    const consecutiveValue = (value: ConsecutiveOption) => Number(value.match(/\d+/)?.[0] ?? 0);
-    return resultRows
-      .filter((item) => selectedFilters.includes(item.consecutive))
-      .filter((item) => !sameCode || item.sameCode)
-      .sort((a, b) => (
-        consecutiveValue(b.consecutive) - consecutiveValue(a.consecutive)
-        || a.predictionPeriod - b.predictionPeriod
-        || a.position - b.position
-      ));
-  }, [sameCode, selectedFilters]);
+    if (title === "Matrix 探索") {
+      return (exploreResponse?.items ?? []).map((item): ExploreResult => ({
+        id: item.id,
+        position: item.lockedPosition,
+        number: item.number,
+        predictionPeriod: item.predictionDistance,
+        consecutive: item.consecutive as ConsecutiveOption,
+        prediction: item.predictionNumbers.join("."),
+        sameCode: true,
+        algorithmType: item.algorithmType,
+        numberOrder: item.numberOrder,
+      }));
+    }
+    return (tianyanResponse?.items ?? []).map((item): ExploreResult => ({
+      id: item.id,
+      position: item.lockedPosition,
+      number: item.number,
+      predictionPeriod: item.predictionDistance,
+      consecutive: item.consecutive as ConsecutiveOption,
+      prediction: item.predictionNumbers.join("."),
+      sameCode: true,
+      algorithmType: "複合版路",
+      numberOrder: "依號碼由小到大排序",
+    }));
+  }, [exploreResponse, tianyanResponse, title]);
 
   const duplicateStats = useMemo(() => {
-    const activeRatio = selectedFilters.length / Math.max(filterOptions[hit].length, 1);
-    return duplicateNumbers
-      .map((number, index) => ({
-        number,
-        count: Math.max(1, Math.round((80 - index * 1.45) * activeRatio) - (sameCode ? 0 : index % 3)),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 18);
-  }, [hit, sameCode, selectedFilters]);
+    if (title === "Matrix 探索") return exploreResponse?.duplicateStats ?? [];
+    const counts = new Map<string, number>();
+    for (const item of visibleResults) {
+      for (const number of item.prediction.split(".")) counts.set(number, (counts.get(number) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((left, right) => right[1] - left[1] || Number(left[0]) - Number(right[0]))
+      .map(([number, count]) => ({ number, count }));
+  }, [exploreResponse, title, visibleResults]);
 
-  const resultCount = selectedFilters.length === 0
-    ? 0
-    : visibleResults.length * 180;
+  const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
+
+  const loadExplore = async (
+    nextFilters = selectedFilters,
+    nextSameCode = sameCode,
+  ) => {
+    setExploreLoading(true);
+    setExploreError(null);
+    try {
+      if (title === "Matrix 天衍") {
+        const response = await fetchTianyanList({ lottery, selectedStreaks: nextFilters });
+        setTianyanResponse(response);
+        setTianyanValidationById({});
+        setExpandedRoad(null);
+        return;
+      }
+      if (title !== "Matrix 探索") return;
+      const roadType = road.startsWith("合值") ? "合值" : road.startsWith("拖牌") ? "拖牌" : "加減";
+      const response = await fetchExploreList({
+        lottery,
+        numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
+        explorePeriods: period === "十三期" ? 13 : period === "七期" ? 7 : 2,
+        exploreDateOffset: exploreDate.includes("前日") ? 2 : exploreDate.includes("昨日") ? 1 : 0,
+        exploreRange: exploreRange as "標準範圍" | "完整範圍",
+        ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
+        roadTypes: [roadType],
+        selectedStreaks: nextFilters,
+        sameCode: nextSameCode,
+      });
+      setExploreResponse(response);
+      setValidationById({});
+      setExpandedRoad(null);
+    } catch (cause) {
+      const code = String((cause as { code?: unknown })?.code ?? "");
+      setExploreError(
+        code === "ANALYSIS_NOT_READY"
+          ? "分析中，請稍後再試"
+          : code === "FORBIDDEN"
+            ? "目前會員權限無法使用此設定"
+            : "Matrix API 讀取失敗",
+      );
+    } finally {
+      setExploreLoading(false);
+    }
+  };
 
   const changeHit = (value: string) => {
     setHit(value);
@@ -1045,15 +1203,62 @@ export function MatrixExplorePage({
   const startExplore = () => {
     setSearched(true);
     if (title === "Matrix 探索") setHistoryExpanded(false);
+    void loadExplore();
   };
 
   const toggleFilter = (value: ConsecutiveOption) => {
-    setSelectedFilters((current) => (
-      current.includes(value)
-        ? current.filter((item) => item !== value)
-        : [...current, value]
-    ));
+    const next = selectedFilters.includes(value)
+      ? selectedFilters.filter((item) => item !== value)
+      : [...selectedFilters, value];
+    setSelectedFilters(next);
     setExpandedRoad(null);
+    if (searched) void loadExplore(next, sameCode);
+  };
+
+  const toggleSameCode = () => {
+    const next = !sameCode;
+    setSameCode(next);
+    if (searched) void loadExplore(selectedFilters, next);
+  };
+
+  const toggleRoad = (itemId: string) => {
+    if (expandedRoad === itemId) {
+      setExpandedRoad(null);
+      return;
+    }
+    setExpandedRoad(itemId);
+    if (title === "Matrix 天衍" && tianyanResponse) {
+      const cacheKey = `${tianyanResponse.analysisVersion}:${itemId}`;
+      if (tianyanValidationById[cacheKey]) return;
+      setValidationLoadingId(cacheKey);
+      void fetchTianyanValidation({
+        lottery: tianyanResponse.lottery,
+        drawPeriod: tianyanResponse.drawPeriod,
+        analysisVersion: tianyanResponse.analysisVersion,
+      }, itemId).then((response) => {
+        setTianyanValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+      }).catch(() => {
+        setExploreError("Matrix API 讀取失敗");
+      }).finally(() => {
+        setValidationLoadingId((current) => current === cacheKey ? null : current);
+      });
+      return;
+    }
+    if (title !== "Matrix 探索" || !exploreResponse) return;
+    const cacheKey = `${exploreResponse.analysisVersion}:${itemId}`;
+    if (validationById[cacheKey]) return;
+    setValidationLoadingId(cacheKey);
+    void fetchExploreValidation({
+      lottery: exploreResponse.lottery,
+      drawPeriod: exploreResponse.drawPeriod,
+      analysisVersion: exploreResponse.analysisVersion,
+    }, itemId).then((response) => {
+      setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+    }).catch(() => {
+      setExploreError("Matrix API 讀取失敗");
+    }).finally(() => {
+      setValidationLoadingId((current) => current === cacheKey ? null : current);
+    });
   };
 
   return (
@@ -1175,16 +1380,16 @@ export function MatrixExplorePage({
         <MagnifyingGlassIcon /><span>開始探索</span>
       </button>
 
-      <HistoryList
+      {title === "Matrix 探索" ? <HistoryList
         lottery={lottery}
         numberOrder={numberOrder}
         onOpenHistory={() => onNavigate("history")}
-        collapsible={title === "Matrix 探索"}
+        collapsible
         collapseControl="title"
-        showOrderText={title !== "Matrix 探索"}
-        expanded={title === "Matrix 探索" ? historyExpanded : undefined}
-        onExpandedChange={title === "Matrix 探索" ? setHistoryExpanded : undefined}
-      />
+        showOrderText={false}
+        expanded={historyExpanded}
+        onExpandedChange={setHistoryExpanded}
+      /> : null}
 
       {searched ? (
         <>
@@ -1195,7 +1400,7 @@ export function MatrixExplorePage({
                 type="button"
                 aria-pressed={sameCode}
                 data-selected={sameCode}
-                onClick={() => setSameCode(!sameCode)}
+                onClick={toggleSameCode}
               >
                 同碼
               </button>
@@ -1223,6 +1428,8 @@ export function MatrixExplorePage({
               </strong>
             </header>
             <div className="road-results">
+              {exploreLoading ? <p className="explore-request-state" role="status">分析結果載入中</p> : null}
+              {exploreError ? <p className="explore-request-state" role="alert">{exploreError}</p> : null}
               <div className="road-results-head" aria-hidden="true">
                 <span>位置</span>
                 <span>號碼</span>
@@ -1234,7 +1441,7 @@ export function MatrixExplorePage({
               {visibleResults.map((item) => (
                 <article key={item.id}>
                   <div className="road-result-row">
-                    <span className="tag"><span>順球</span><span className="numeric-text">{item.position}</span></span>
+                    <span className="tag"><span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span><span className="numeric-text">{item.position}</span></span>
                     <span className="result-number numeric-text">{item.number}</span>
                     <span className="result-period"><span>下</span><span className="numeric-text">{item.predictionPeriod}</span><span>期</span></span>
                     <span className="result-consecutive">
@@ -1245,14 +1452,25 @@ export function MatrixExplorePage({
                       type="button"
                       className="road-type-toggle"
                       aria-expanded={expandedRoad === item.id}
-                      onClick={() => setExpandedRoad(expandedRoad === item.id ? null : item.id)}
+                      aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
+                      onClick={() => toggleRoad(item.id)}
                     >
-                      <span>{road}</span>
+                      <span>{item.algorithmType.endsWith("版路") ? item.algorithmType : `${item.algorithmType}版路`}</span>
                       <ChevronDownIcon data-open={expandedRoad === item.id} />
                     </button>
                   </div>
                   {expandedRoad === item.id ? (
-                    <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} roadType={road} />
+                    title === "Matrix 探索" && exploreResponse
+                      ? <ExploreValidationProcess
+                          validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}
+                          loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}
+                        />
+                      : title === "Matrix 天衍" && tianyanResponse
+                        ? <TianyanValidationProcess
+                            validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
+                            loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
+                          />
+                        : <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} roadType={road} />
                   ) : null}
                 </article>
               ))}
@@ -1300,38 +1518,122 @@ export function MatrixExplorePage({
 }
 
 
-function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
+function TiangongValidationProcess({ validation, loading }: { validation?: TiangongValidation; loading: boolean }) {
+  if (loading) return <p className="empty-result">驗證資料載入中</p>;
+  if (!validation) return <p className="empty-result">無驗證資料</p>;
+  const roleLabels = {
+    "first-stage-evidence": "第一段成立",
+    "second-stage-validation": "第二段驗證",
+    prediction: "最終預測",
+  } as const;
+  const displayValue = (value: unknown) => value && typeof value === "object"
+    ? JSON.stringify(value)
+    : String(value);
+  return (
+    <section className="road-validation-process" aria-label="天工驗證過程">
+      {validation.validationRows.length === 0 ? <p className="empty-result">無驗證資料</p> : null}
+      {validation.validationRows.map((row, index) => (
+        <div className="validation-period-block" key={`${validation.itemId}-${index}`}>
+          <div className="validation-period-row">
+            <strong>{roleLabels[row.role]}</strong>
+            <span>{Object.entries(row).filter(([key]) => key !== "role").map(([, value]) => displayValue(value)).join("｜")}</span>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
+  type Direction = "固定" | "依序遞增" | "依序遞減";
+  type Road = "加減版路" | "合值版路";
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [period, setPeriod] = useState("五十期");
-  const [mode, setMode] = useState("一段式");
-  const [hit, setHit] = useState("準2進3");
-  const [searchPositions, setSearchPositions] = useState(["固定"]);
-  const [firstPositions, setFirstPositions] = useState(["固定"]);
-  const [firstRoads, setFirstRoads] = useState(["加減版路"]);
-  const [secondPositions, setSecondPositions] = useState(["固定"]);
-  const [secondRoads, setSecondRoads] = useState(["加減版路"]);
+  const [period, setPeriod] = useState<"五十期" | "八十期">("五十期");
+  const [mode, setMode] = useState<"一段式" | "二段式">("一段式");
+  const [hit, setHit] = useState<"準2進3" | "準3進4">("準2進3");
+  const [searchPositions, setSearchPositions] = useState<Direction[]>(["固定"]);
+  const [firstPositions, setFirstPositions] = useState<Direction[]>(["固定"]);
+  const [firstRoads, setFirstRoads] = useState<Road[]>(["加減版路"]);
+  const [secondPositions, setSecondPositions] = useState<Direction[]>(["固定"]);
+  const [secondRoads, setSecondRoads] = useState<Road[]>(["加減版路"]);
   const [searched, setSearched] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const toggle = (value: string, current: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
-  const positionOptions = ["固定", "依序遞增", "依序遞減"];
-  const roadOptions = ["加減版路", "合值版路"];
+  const [response, setResponse] = useState<TiangongListResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [validationById, setValidationById] = useState<Record<string, TiangongValidation>>({});
+  const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const positionOptions: Direction[] = ["固定", "依序遞增", "依序遞減"];
+  const roadOptions: Road[] = ["加減版路", "合值版路"];
+  const toggle = <T extends string>(value: T, current: T[], setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    if (current.includes(value)) {
+      if (current.length > 1) setter(current.filter((item) => item !== value));
+    } else setter([...current, value]);
+  };
+  const startExplore = async () => {
+    if (loading) return;
+    setSearched(true);
+    setLoading(true);
+    setRequestError(null);
+    try {
+      const next = await fetchTiangongList({
+        lottery,
+        periodRange: period === "五十期" ? 50 : 80,
+        mode: mode === "一段式" ? "one-stage" : "two-stage",
+        hitCondition: hit,
+        exploreDirections: searchPositions,
+        firstStageDirections: firstPositions,
+        firstRoadTypes: firstRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
+        ...(mode === "二段式" ? {
+          secondStageDirections: secondPositions,
+          secondRoadTypes: secondRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
+        } : {}),
+      });
+      setResponse(next);
+      setExpandedId(null);
+      setValidationById({});
+    } catch (cause) {
+      const code = String((cause as { code?: unknown })?.code ?? "");
+      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : "Matrix API 讀取失敗");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const toggleResult = (itemId: string) => {
+    if (expandedId === itemId) { setExpandedId(null); return; }
+    setExpandedId(itemId);
+    if (!response) return;
+    const cacheKey = `${response.analysisVersion}:${itemId}`;
+    if (validationById[cacheKey]) return;
+    setValidationLoadingId(cacheKey);
+    void fetchTiangongValidation({ lottery: response.lottery, drawPeriod: response.drawPeriod, analysisVersion: response.analysisVersion }, itemId)
+      .then((detail) => setValidationById((current) => ({ ...current, [cacheKey]: detail.validation })))
+      .catch(() => setRequestError("Matrix API 讀取失敗"))
+      .finally(() => setValidationLoadingId((current) => current === cacheKey ? null : current));
+  };
   return (
     <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen">
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="lottery" /><b>彩種</b></span><div className="select-box native-select"><select value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
-          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{["五十期", "八十期"].map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
-          <label><span><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{["一段式", "二段式"].map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
-          <label><span>命中條件</span><div className="segmented two">{["準2進3", "準3進4"].map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
+          <label><span><SettingLabelIcon type="lottery" /><b>彩種</b></span><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
+          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{(["五十期", "八十期"] as const).map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
+          <label><span><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{(["一段式", "二段式"] as const).map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
+          <label><span>命中條件</span><div className="segmented two">{(["準2進3", "準3進4"] as const).map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
           <fieldset><legend>探索球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{value}</button>)}</div></fieldset>
           <fieldset><legend>第一段球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{value}</button>)}</div></fieldset>
           <fieldset><legend>第一段版路類型</legend><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></fieldset>
           {mode === "二段式" ? <><fieldset><legend>第二段球位</legend><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{value}</button>)}</div></fieldset><fieldset><legend>第二段版路類型</legend><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></fieldset></> : null}
         </div>
       </section>
-      <button type="button" className="primary-action branded-explore-action" onClick={() => setSearched(true)}><MagnifyingGlassIcon /><span>開始探索</span></button>
-      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle></header><div className="road-results"><article><div className="road-result-row"><span className="tag"><span>順球</span><span className="numeric-text">4</span></span><span className="result-number numeric-text">25</span><span className="result-period"><span>下</span><span className="numeric-text">2</span><span>期</span></span><span className="result-consecutive">準3進4</span><strong className="numeric-text">08.37</strong><button type="button" className="road-type-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}><span>版路類型</span><ChevronDownIcon data-open={expanded} /></button></div>{expanded ? <RoadValidationProcess number="25" position={4} predictionPeriod={2} consecutive="準3進4" prediction="08.37" /> : null}</article></div></section> : null}
+      <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始探索</span></button>
+      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
+        {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
+        {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
+        <div className="road-results tiangong-results"><div className="tiangong-results-head" aria-hidden="true"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>
+          {(response?.items ?? []).map((item) => <article key={item.id}><div className="tiangong-result-row"><span className="numeric-text">{item.interval}</span><span className="numeric-text">{item.predictedPosition}</span><strong className="numeric-text">{item.predictionNumber}</strong><button type="button" className="road-type-toggle" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}><span>{item.roadType}</span><ChevronDownIcon data-open={expandedId === item.id} /></button></div>{expandedId === item.id && response ? <TiangongValidationProcess validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}</article>)}
+          {!loading && response && response.items.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+        </div></section> : null}
     </FeatureShell>
   );
 }
@@ -3200,50 +3502,207 @@ function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [open, setOpen] = useState("臨界");
-  const [openRoad, setOpenRoad] = useState<number | null>(null);
+  const [open, setOpen] = useState<MatrixStatusResponse['summary']['status'] | "">("");
+  const [result, setResult] = useState<MatrixStatusResponse | null>(null);
+  const [requestError, setRequestError] = useState("");
   const statuses = [
-    ["臨界", "CRITICAL", "2 組", "極為罕見版路狀態", "orange"],
-    ["共振", "RESONANCE", "3 組", "具備強烈共振效應", "purple"],
-    ["聚合", "FOCUS", "1 組", "具備明顯規律集中性", "blue"],
-    ["啟動", "ACTIVE", "2 組", "具備基本參考價值", "green"],
+    ["臨界", "CRITICAL", "極為罕見版路狀態", "orange"],
+    ["共振", "RESONANCE", "具備強烈共振效應", "purple"],
+    ["聚合", "FOCUS", "具備明顯規律集中性", "blue"],
+    ["啟動", "ACTIVE", "具備基本參考價值", "green"],
   ] as const;
-  const statusRoads = [
-    { position: 1, number: "05", period: 1, consecutive: "準7進8", prediction: "08", road: "加減" },
-    { position: 2, number: "24", period: 3, consecutive: "準7進8", prediction: "08", road: "加減" },
-    { position: 1, number: "03", period: 2, consecutive: "準6進7", prediction: "08", road: "合值" },
-    { position: 3, number: "11", period: 4, consecutive: "準6進7", prediction: "08", road: "合值" },
-    { position: 5, number: "33", period: 5, consecutive: "準7進8", prediction: "08", road: "拖牌" },
-  ] as const;
+
+  useEffect(() => {
+    let active = true;
+    setResult(null);
+    setRequestError("");
+    void fetchMatrixStatus(lottery)
+      .then((response) => {
+        if (!active) return;
+        setResult(response);
+        setOpen(response.summary.status === "DORMANT" ? "" : response.summary.status);
+      })
+      .catch((cause) => {
+        if (!active) return;
+        setRequestError((cause as { code?: string })?.code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : "Matrix 狀態讀取失敗");
+      });
+    return () => { active = false; };
+  }, [lottery]);
+
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={<button type="button" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}><GearIcon /></button>}>
       <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
+      {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
+      {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
       <div className="status-list">
-        {statuses.map(([title, titleEn, count, description, tone]) => (
+        {statuses.map(([title, titleEn, description, tone]) => {
+          const cards = result?.cards.filter((card) => card.status === titleEn) ?? [];
+          const count = result?.counts[titleEn] ?? 0;
+          return (
           <section className="status-block" data-tone={tone} key={title}>
-            <button type="button" onClick={() => { setOpen(open === title ? "" : title); setOpenRoad(null); }}>
-              <span><strong><i />{title}<small>{titleEn}</small></strong><small>{description}</small></span><em>{count}</em><ChevronRightIcon data-open={open === title} />
+            <button type="button" onClick={() => setOpen(open === titleEn ? "" : titleEn)}>
+              <span><strong><i />{title}<small>{titleEn}</small></strong><small>{description}</small></span><em>{count} 組</em><ChevronRightIcon data-open={open === titleEn} />
             </button>
-            {open === title ? <div className="status-detail">
+            {open === titleEn ? <div className="status-detail">
+              {result?.detailLocked ? <p className="matrix-api-state"><LockClosedIcon />月費以上可查看進階資訊</p> : null}
               <div className="status-road-table">
                 <div className="status-road-table-head" aria-hidden="true">
                   <span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>類型</span>
                 </div>
-                {statusRoads.map((road, index) => (
-                  <article key={`${title}-${road.number}-${index}`}>
-                    <button type="button" className="status-road-table-row" aria-expanded={openRoad === index} onClick={() => setOpenRoad(openRoad === index ? null : index)}>
-                      <span>順球{road.position}</span><span>{road.number}</span><span>下{road.period}期</span><span>{road.consecutive}</span><strong>{road.prediction}</strong><span>{road.road}<ChevronDownIcon data-open={openRoad === index} /></span>
-                    </button>
-                    {openRoad === index ? <RoadValidationProcess number={road.number} position={road.position} predictionPeriod={road.period} consecutive={road.consecutive} prediction={road.prediction} /> : null}
+                {cards.flatMap((card) => card.roads.map((road) => (
+                  <article key={`${card.id}-${road.id}`}>
+                    <div className="status-road-table-row">
+                      <span>{road.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}{road.position}</span><span>{road.lockedNumber}</span><span>下{road.predictionDistance}期</span><span>準{road.streak}進{road.streak + 1}</span><strong>{road.result.join("、")}</strong><span>{road.algorithmType}</span>
+                    </div>
                   </article>
-                ))}
+                )))}
               </div>
             </div> : null}
           </section>
-        ))}
+        );})}
       </div>
     </FeatureShell>
   );
+}
+
+const CUSTOM_STATUS_OPTIONS: Array<[CustomMatrixStatusCode, string, string]> = [
+  ["ACTIVE", "啟動", "green"], ["FOCUS", "聚合", "blue"],
+  ["RESONANCE", "共振", "purple"], ["CRITICAL", "臨界", "orange"],
+];
+const ONE_CODE_STREAKS = ["準4進5", "準5進6", "準6進7", "準7進8"];
+const TWO_CODE_STREAKS = ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"];
+
+function defaultCustomRow(hitType: "one" | "two"): CustomConditionRow {
+  return {
+    consecutive: hitType === "one" ? "準4進5" : "準5進6",
+    roadType: "加減",
+    numberOrder: "依號碼由小到大排序",
+    sameCodeQuantity: 1,
+  };
+}
+
+function duplicateCustomRows(groups: CustomConditionGroup[]) {
+  return groups.some((group) => {
+    const keys = group.rows.map((row) => [row.consecutive, row.roadType, row.numberOrder, row.sameCodeQuantity].join("|"));
+    return new Set(keys).size !== keys.length;
+  });
+}
+
+function CustomConditionSection({
+  title, hitType, groups, setGroups, compositeEnabled,
+}: {
+  title: string;
+  hitType: "one" | "two";
+  groups: CustomConditionGroup[];
+  setGroups: React.Dispatch<React.SetStateAction<CustomConditionGroup[]>>;
+  compositeEnabled: boolean;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const streaks = hitType === "one" ? ONE_CODE_STREAKS : TWO_CODE_STREAKS;
+  const updateRow = (groupIndex: number, rowIndex: number, patch: Partial<CustomConditionRow>) => {
+    setGroups((current) => current.map((group, index) => index === groupIndex
+      ? { ...group, rows: group.rows.map((row, itemIndex) => itemIndex === rowIndex ? { ...row, ...patch } : row) }
+      : group));
+  };
+  const removeRow = (groupIndex: number, rowIndex: number) => setGroups((current) => current.map((group, index) => index === groupIndex
+    ? { ...group, rows: group.rows.filter((_, itemIndex) => itemIndex !== rowIndex) }
+    : group));
+  return <section className="custom-status-hit-section">
+    <button type="button" className="custom-status-hit-header" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+      <strong>{title}</strong><span>觸發條件組合（{groups.length} 組）</span><ChevronDownIcon data-open={expanded} />
+    </button>
+    {expanded ? <div className="custom-status-groups">
+      {groups.map((group, groupIndex) => <article className="custom-status-group" key={group.id}>
+        <header><strong>組合 {groupIndex + 1}</strong><button type="button" aria-label={`刪除組合 ${groupIndex + 1}`} onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}><TrashIcon /></button></header>
+        {group.rows.map((condition, rowIndex) => <div className="custom-status-condition-row" key={`${group.id}-${rowIndex}`}>
+          <label>連準次數<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 連準次數`} value={condition.consecutive} onChange={(event) => updateRow(groupIndex, rowIndex, { consecutive: event.target.value })}>{streaks.map((streak) => <option key={streak}>{streak}</option>)}</select></label>
+          <label>版路類型<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 版路類型`} value={condition.roadType} onChange={(event) => updateRow(groupIndex, rowIndex, { roadType: event.target.value as CustomConditionRow['roadType'] })}>{["加減", "合值", "拖牌", "複合"].map((road) => <option key={road} value={road} disabled={road === "複合" && !compositeEnabled}>{road}{road === "複合" && !compositeEnabled ? "（季費以上）" : ""}</option>)}</select></label>
+          <label>號碼順序<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 號碼順序`} value={condition.numberOrder} onChange={(event) => updateRow(groupIndex, rowIndex, { numberOrder: event.target.value as CustomConditionRow['numberOrder'] })}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select></label>
+          <label>同碼數量<input aria-label="同碼數量" type="number" min={1} max={99} value={condition.sameCodeQuantity} onChange={(event) => updateRow(groupIndex, rowIndex, { sameCodeQuantity: Math.min(99, Math.max(1, Number(event.target.value) || 1)) })} /></label>
+          {group.rows.length > 1 ? <button type="button" aria-label={`組合 ${groupIndex + 1} 刪除條件 ${rowIndex + 1}`} onClick={() => removeRow(groupIndex, rowIndex)}><TrashIcon /></button> : null}
+        </div>)}
+        <button type="button" aria-label={`組合 ${groupIndex + 1} 新增條件`} disabled={group.rows.length >= 10} onClick={() => setGroups((current) => current.map((item) => item.id === group.id ? { ...item, rows: [...item.rows, defaultCustomRow(hitType)] } : item))}><PlusIcon />新增條件（最多 10 條）</button>
+      </article>)}
+      <button type="button" aria-label={`新增${hitType === "one" ? "一碼" : "二碼"}觸發條件組合`} disabled={groups.length >= 20} onClick={() => setGroups((current) => [...current, { id: `${hitType}-${Date.now()}-${current.length}`, rows: [defaultCustomRow(hitType)] }])}><PlusIcon />新增觸發條件組合（最多 20 組）</button>
+    </div> : null}
+  </section>;
+}
+
+export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const [status, setStatus] = useState<CustomMatrixStatusCode>("ACTIVE");
+  const [configs, setConfigs] = useState<CustomStatusConfig[]>([]);
+  const [oneCodeGroups, setOneCodeGroups] = useState<CustomConditionGroup[]>([]);
+  const [twoCodeGroups, setTwoCodeGroups] = useState<CustomConditionGroup[]>([]);
+  const [compositeEnabled, setCompositeEnabled] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState("");
+  const selectedSlotRef = useRef({ lottery, status });
+  selectedSlotRef.current = { lottery, status };
+
+  useEffect(() => {
+    let active = true;
+    void listCustomStatusSettings().then((response) => {
+      if (!active) return;
+      setConfigs(response.items.map((item) => item.config));
+      setCompositeEnabled(Boolean(response.entitlements?.canUseCompositeCustomRoad));
+      setLoaded(true);
+    }).catch(() => { if (active) { setMessage("自訂設定讀取失敗"); setLoaded(true); } });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const selected = configs.find((config) => config.lottery === lottery && config.status === status);
+    setOneCodeGroups(selected?.oneCodeGroups ?? []);
+    setTwoCodeGroups(selected?.twoCodeGroups ?? []);
+    setMessage("");
+  }, [loaded, lottery, status]);
+
+  const save = async () => {
+    if (duplicateCustomRows([...oneCodeGroups, ...twoCodeGroups])) {
+      setMessage("同一組合不能有完全相同的條件");
+      return;
+    }
+    const requestedSlot = { lottery, status };
+    const value: CustomStatusConfig = { ...requestedSlot, explorePeriods: 13, exploreRange: "完整範圍", oneCodeGroups, twoCodeGroups };
+    try {
+      const response = await saveCustomStatusSetting(value);
+      setConfigs((current) => [...current.filter((item) => item.lottery !== requestedSlot.lottery || item.status !== requestedSlot.status), response.item]);
+      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
+        setMessage("設定已儲存並套用至首頁");
+      }
+    } catch {
+      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
+        setMessage("目前方案或設定內容無法儲存");
+      }
+    }
+  };
+  const reset = async () => {
+    const requestedSlot = { lottery, status };
+    try {
+      await resetCustomStatusSetting(requestedSlot.lottery, requestedSlot.status);
+      setConfigs((current) => current.filter((item) => item.lottery !== requestedSlot.lottery || item.status !== requestedSlot.status));
+      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
+        setOneCodeGroups([]); setTwoCodeGroups([]);
+        setMessage("已恢復第15章預設");
+      }
+    } catch {
+      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) setMessage("重置設定失敗");
+    }
+  };
+
+  return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
+    <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
+    <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
+    <p className="custom-status-fixed-rule">探索期數均為十三期，探索範圍均為完整範圍。</p>
+    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : <>
+      <CustomConditionSection title="準4+（鎖定1碼）" hitType="one" groups={oneCodeGroups} setGroups={setOneCodeGroups} compositeEnabled={compositeEnabled} />
+      <CustomConditionSection title="準5+（鎖定2碼）" hitType="two" groups={twoCodeGroups} setGroups={setTwoCodeGroups} compositeEnabled={compositeEnabled} />
+      {message ? <p role="alert" className="custom-status-message">{message}</p> : null}
+      <div className="custom-status-actions"><button type="button" aria-label="重置設定" onClick={() => void reset()}><ReloadIcon />重置設定</button><button type="button" aria-label="儲存設定" onClick={() => void save()}><ReaderIcon />儲存設定</button></div>
+    </>}
+  </FeatureShell>;
 }
 
 export function FeaturePageRouter({
@@ -3286,5 +3745,6 @@ export function FeaturePageRouter({
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;
+  if (screen === "status-settings") return <MatrixCustomStatusPage onNavigate={onNavigate} />;
   return <MatrixStatusPage onNavigate={onNavigate} />;
 }

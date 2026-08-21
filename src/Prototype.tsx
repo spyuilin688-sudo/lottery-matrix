@@ -15,6 +15,7 @@ import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
+import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-api";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -282,22 +283,33 @@ export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className
   );
 }
 
-export type MatrixStatusSectionProps = { statuses?: MatrixStatusMap; onOpen?: () => void };
-export function MatrixStatusSection({ onOpen }: MatrixStatusSectionProps = {}) {
+export type MatrixStatusSectionProps = {
+  statuses?: MatrixStatusMap;
+  current?: Pick<MatrixStatusResponse['summary'], 'status' | 'count' | 'message'> | null;
+  onOpen?: () => void;
+};
+export function MatrixStatusSection({ current = null, onOpen }: MatrixStatusSectionProps = {}) {
+  const labels = { ACTIVE: "啟動", FOCUS: "聚合", RESONANCE: "共振", CRITICAL: "臨界", DORMANT: "沉寂" } as const;
   return (
     <section
       className="matrix-status-section home-status-box"
       aria-label="Matrix 狀態"
       data-testid="matrix-status-section"
+      data-current-status={current?.status}
     >
       <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
       <div className="matrix-status-hit-grid" aria-label="Matrix 四種狀態">
-        {["啟動", "聚合", "共振", "臨界"].map((label) => (
-          <button type="button" aria-label={label} key={label} onClick={onOpen}>
+        {(["ACTIVE", "FOCUS", "RESONANCE", "CRITICAL"] as const).map((status) => {
+          const label = labels[status];
+          return <button type="button" aria-label={label} data-active={current?.status === status} key={label} onClick={onOpen}>
             <span className="clean-hit-label">{label}</span>
-          </button>
-        ))}
+          </button>;
+        })}
       </div>
+      {current ? <button type="button" className="matrix-status-current" onClick={onOpen}>
+        {current.status === "DORMANT" ? <strong>{labels.DORMANT}</strong> : null}
+        <span>{current.count} 組</span><small>{current.message}</small>
+      </button> : null}
     </section>
   );
 }
@@ -337,6 +349,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
+  const [matrixStatus, setMatrixStatus] = useState<MatrixStatusResponse | null>(null);
   const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
     ? {
         nextDraw: formatNextDrawAt(latestDraw.nextDrawAt),
@@ -347,6 +360,12 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const drawResult: DrawResultData = latestDraw ? toDrawResult(selected, latestDraw) : DRAW_RESULTS[selected];
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
+  useEffect(() => {
+    let active = true;
+    setMatrixStatus(null);
+    void fetchMatrixStatus(selected).then((result) => { if (active) setMatrixStatus(result); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [selected]);
   useEffect(() => { setQuickSettingsHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
@@ -387,7 +406,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
           <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
-          <MatrixStatusSection onOpen={() => navigate("status")} />
+          <MatrixStatusSection current={matrixStatus?.summary ?? null} onOpen={() => navigate("status")} />
         </main>
         <div className="home-bottom-group">
           <MatrixCoreBanner onOpen={() => navigate("explore")} />

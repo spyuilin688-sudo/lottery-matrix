@@ -7,9 +7,10 @@ import type {
   MemberView,
   PaymentView,
   TransferView,
+  MatrixCustomStatusView,
 } from "./types";
 
-type AdminTable = "members" | "transfer_requests" | "payments" | "activation_codes";
+type AdminTable = "members" | "transfer_requests" | "payments" | "activation_codes" | "matrix_custom_status_configs";
 
 async function fetchOrderedRecords<T>(table: AdminTable, selectColumns: string, column: string): Promise<T[]> {
   const { data, error } = await getSupabaseClient()
@@ -59,6 +60,14 @@ export function fetchActivationCodes(): Promise<ActivationCodeView[]> {
     "activation_codes",
     "*, redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(id,line_user_id)",
     "created_at",
+  );
+}
+
+export function fetchMatrixCustomStatuses(): Promise<MatrixCustomStatusView[]> {
+  return fetchOrderedRecords<MatrixCustomStatusView>(
+    "matrix_custom_status_configs",
+    "*, member:members!matrix_custom_status_configs_member_id_fkey(id,line_user_id)",
+    "updated_at",
   );
 }
 

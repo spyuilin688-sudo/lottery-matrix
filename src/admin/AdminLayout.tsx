@@ -5,6 +5,7 @@ import AdminActivationCodes from "./AdminActivationCodes";
 import AdminMembers from "./AdminMembers";
 import AdminPayments from "./AdminPayments";
 import AdminTransfers from "./AdminTransfers";
+import AdminMatrixStatus from "./AdminMatrixStatus";
 import type { AdminSection } from "./types";
 
 const sections: Array<[AdminSection, string]> = [
@@ -13,6 +14,7 @@ const sections: Array<[AdminSection, string]> = [
   ["transfers", "轉帳審核"],
   ["payments", "付款紀錄"],
   ["activation-codes", "啟動碼管理"],
+  ["matrix-status", "Matrix 狀態設定"],
 ];
 
 export default function AdminLayout() {
@@ -44,6 +46,7 @@ export default function AdminLayout() {
         {section === "transfers" ? <AdminTransfers /> : null}
         {section === "payments" ? <AdminPayments /> : null}
         {section === "activation-codes" ? <AdminActivationCodes /> : null}
+        {section === "matrix-status" ? <AdminMatrixStatus /> : null}
       </div>
     </main>
   );

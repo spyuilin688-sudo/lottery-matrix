@@ -1,4 +1,4 @@
-export type AdminSection = "dashboard" | "members" | "transfers" | "payments" | "activation-codes";
+export type AdminSection = "dashboard" | "members" | "transfers" | "payments" | "activation-codes" | "matrix-status";
 
 export type ActivationDuration = "7_days" | "15_days" | "30_days" | "90_days" | "365_days" | "lifetime";
 
@@ -75,4 +75,17 @@ export type ActivationCodeRecord = {
 
 export type ActivationCodeView = ActivationCodeRecord & {
   redeemed_member: { id: string; line_user_id: string | null } | null;
+};
+
+export type MatrixCustomStatusView = {
+  member_id: string;
+  lottery: "今彩539" | "天天樂" | "六合彩" | "大樂透";
+  status: "ACTIVE" | "FOCUS" | "RESONANCE" | "CRITICAL";
+  config: {
+    oneCodeGroups: Array<{ rows: unknown[] }>;
+    twoCodeGroups: Array<{ rows: unknown[] }>;
+  };
+  created_at: string;
+  updated_at: string;
+  member: { id: string; line_user_id: string | null };
 };

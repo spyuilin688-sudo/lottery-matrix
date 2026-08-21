@@ -15,6 +15,7 @@ const adminApi = vi.hoisted(() => ({
   fetchPayments: vi.fn(),
   fetchActivationCodes: vi.fn(),
   generateActivationCodes: vi.fn(),
+  fetchMatrixCustomStatuses: vi.fn(),
 }));
 
 vi.mock("../../lib/supabase", () => ({
@@ -31,6 +32,7 @@ vi.mock("../api", () => ({
   fetchPayments: adminApi.fetchPayments,
   fetchActivationCodes: adminApi.fetchActivationCodes,
   generateActivationCodes: adminApi.generateActivationCodes,
+  fetchMatrixCustomStatuses: adminApi.fetchMatrixCustomStatuses,
 }));
 
 import AdminApp from "../AdminApp";
@@ -143,6 +145,7 @@ beforeEach(() => {
   adminApi.fetchPayments.mockReset();
   adminApi.fetchActivationCodes.mockReset();
   adminApi.generateActivationCodes.mockReset();
+  adminApi.fetchMatrixCustomStatuses.mockReset().mockResolvedValue([]);
   adminApi.fetchDashboardStats.mockResolvedValue({
     total_members: 12345,
     today_members: 67,
@@ -418,6 +421,7 @@ describe("AdminApp authorization boundary", () => {
     ["會員管理", "admin-members", "fetchMembers"],
     ["轉帳審核", "admin-transfers", "fetchTransfers"],
     ["付款紀錄", "admin-payments", "fetchPayments"],
+    ["Matrix 狀態設定", "admin-matrix-status", "fetchMatrixCustomStatuses"],
   ] as const)("renders %s with an empty data state and no fake records", async (label, testId, _fetchName) => {
     const client = createClient({ session: adminSession, isAdmin: true });
     supabase.getClient.mockReturnValue(client);
