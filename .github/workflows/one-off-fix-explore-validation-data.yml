@@ -1,15 +1,15 @@
 name: One-off fix explore validation data
 
 on:
-  push:
-    paths:
-      - '.github/workflows/one-off-fix-explore-validation-data.yml'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   fix:
+    if: github.head_ref == 'matrix-explore-validation-trigger'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout latest main
@@ -68,8 +68,8 @@ jobs:
           if (tsx.split(headerOld).length !== 2) throw new Error('Explore validation summary source mismatch');
           tsx = tsx.replace(headerOld, headerNew);
 
-          const callOld = `                      ? <ExploreValidationProcess\n                          validation={validationById[\`${'${exploreResponse.analysisVersion}:${item.id}'}\`]}\n                          loading={validationLoadingId === \`${'${exploreResponse.analysisVersion}:${item.id}'}\`}\n                        />`;
-          const callNew = `                      ? <ExploreValidationProcess\n                          validation={validationById[\`${'${exploreResponse.analysisVersion}:${item.id}'}\`]}\n                          loading={validationLoadingId === \`${'${exploreResponse.analysisVersion}:${item.id}'}\`}\n                          number={item.number}\n                          position={item.position}\n                          predictionPeriod={item.predictionPeriod}\n                          consecutive={item.consecutive}\n                          referenceOffset={item.referenceOffset}\n                          referencePosition={item.referencePosition}\n                        />`;
+          const callOld = '                      ? <ExploreValidationProcess\n                          validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}\n                          loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}\n                        />';
+          const callNew = '                      ? <ExploreValidationProcess\n                          validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}\n                          loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}\n                          number={item.number}\n                          position={item.position}\n                          predictionPeriod={item.predictionPeriod}\n                          consecutive={item.consecutive}\n                          referenceOffset={item.referenceOffset}\n                          referencePosition={item.referencePosition}\n                        />';
           if (tsx.split(callOld).length !== 2) throw new Error('Explore validation component call source mismatch');
           tsx = tsx.replace(callOld, callNew);
           fs.writeFileSync(tsxPath, tsx);
@@ -119,7 +119,7 @@ jobs:
         run: |
           rm -f .github/workflows/one-off-fix-explore-validation-data.yml
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '4189824+github-actions[bot]@users.noreply.github.com'
           git add src/FeaturePages.tsx src/matrix-algorithm-api.ts src/feature-pages.css .github/workflows/one-off-fix-explore-validation-data.yml
           git commit -m 'fix: render complete explore validation data'
           git push origin HEAD:main
