@@ -165,6 +165,14 @@ const routes: Record<string, unknown> = {
   'GET /api/system-status': [requireAuth(), moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
 
+  'POST /api/system-status/:id/retry': [requireAuth(), moduleGuard('systemSettings', 'view'), async (ctx: Context) => {
+    try {
+      return json({ item: await connectionStatus.retry(ctx.params.id) });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
   'GET /api/data/:table': [requireAuth(), guard('view'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
@@ -271,6 +279,15 @@ const routes: Record<string, unknown> = {
       const durationType = legacyDurations[rawDuration] ?? rawDuration;
       const admin = await getAdmin(ctx);
       return json(await adminData.generateActivationCodeBatch(durationType, actorOf(admin)));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'DELETE /api/activation-codes/:id': [requireAuth(), moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.deleteActivationCode(ctx.params.id, actorOf(admin)));
     } catch (cause) {
       return fail(cause);
     }
