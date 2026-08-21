@@ -9,6 +9,20 @@ export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceN
 export type MatrixAlgorithmRuleSet = { rules: MatrixAlgorithmRule[]; predictionNumbers: number[]; historicalValidation: MatrixValidationRow[] };
 export type MatrixExploreRow = { id: string; number: string; lockedPosition: number; predictionDistance: number; consecutive: string; highestStreak: number; predictionNumbers: string[]; algorithmType: MatrixAlgorithmType; searchCondition: MatrixAlgorithmRequest; sourceA?: Record<string, unknown>; ruleSets: MatrixAlgorithmRuleSet[] };
 export type MatrixValidationDetail = { itemId: string; sourceA?: Record<string, unknown>; ruleSets: MatrixAlgorithmRuleSet[] };
+type MatrixEvaluationResult = {
+  valid: boolean;
+  reason?: string;
+  searchCondition: MatrixAlgorithmRequest;
+  highestStreak?: number;
+  displayStreak?: string;
+  sourceA?: Record<string, unknown>;
+  predictionNumbers?: number[];
+  results?: MatrixAlgorithmRuleSet[];
+  ruleSets?: MatrixAlgorithmRuleSet[];
+  conflictingRules?: Array<number | string>;
+  missingDrawOrderCount?: number;
+  missingDrawOrderPeriods?: string[];
+};
 type Lottery = MatrixLottery;
 type NumberOrder = MatrixNumberOrder;
 type AlgorithmType = MatrixAlgorithmType;
@@ -198,7 +212,7 @@ function evaluatePreparedMatrixAlgorithm(
   history: Draw[],
   sourceIndexes: number[],
   requestedSourceIndex?: number,
-) {
+): MatrixEvaluationResult {
   if (sourceIndexes.length === 0) return { valid: false, reason: '找不到符合鎖定條件的來源期', searchCondition: request, results: [] };
   const exactSourceIndex = request.lockedSourcePeriod
     ? requestedSourceIndex ?? history.findIndex((draw) => draw.period === request.lockedSourcePeriod)
@@ -242,7 +256,7 @@ function evaluatePreparedMatrixAlgorithm(
   return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA: { sourcePeriod: history[aIndex].period, sourceNumbers: orderedNumbers(history[aIndex], request.lottery, request.numberOrder), sourceSortedNumbers: history[aIndex].sortedNumbers ?? history[aIndex].numbers, sourceDrawOrderNumbers: history[aIndex].drawOrderNumbers ?? null, referencePeriod: aBase.reference.period, baseNumber: aBase.baseNumber, predictionPeriod: aPrediction?.period ?? null, predictionCompleted: Boolean(aPrediction) }, results: resultSets };
 }
 
-function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]) {
+function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]): MatrixEvaluationResult {
   const history = [...newestFirst].reverse();
   if (request.numberOrder === '依實際開獎順序排序') { const missing = history.filter(draw => !Array.isArray(draw.drawOrderNumbers) || draw.drawOrderNumbers.length !== ballCount(request.lottery)); if (missing.length > 0) return { valid: false, reason: '實際開獎順序（落球）資料不完整，不得以順球資料代替', searchCondition: request, missingDrawOrderCount: missing.length, missingDrawOrderPeriods: missing.slice(-20).map(draw => draw.period), results: [] }; }
   return evaluatePreparedMatrixAlgorithm(request, history, matchingSourceIndexes(request, history));
