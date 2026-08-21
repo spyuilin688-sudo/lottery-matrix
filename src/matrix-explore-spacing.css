@@ -98,7 +98,7 @@
 
 .matrix-explore-main-screen .repeat-stats-panel {
   margin-top: 4px;
-  padding: 6px;
+  padding: 10px 6px;
 }
 
 .matrix-explore-main-screen .result-panel {
@@ -323,11 +323,11 @@
   z-index: 20;
   top: -.5625rem;
   right: .125rem;
-  height: auto;
-  min-height: 0;
+  height: 16px;
+  min-height: 16px;
   padding: .0625rem .125rem;
   border: 1px solid #9a6f1e;
-  border-radius: 9999px;
+  border-radius: 8px;
   font-size: .4375rem;
   line-height: 1;
   white-space: nowrap;
@@ -683,8 +683,8 @@
   margin-left: auto;
   padding-right: 8px;
   color: #9e9a93;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .matrix-explore-main-screen .result-summary {
@@ -728,8 +728,8 @@
   width: 100%;
   margin: 0;
   padding: 0 8px;
-  color: #aaa49a;
-  font-size: clamp(7px, 2vw, 8px);
+  color: #c6c0b8;
+  font-size: clamp(11px, 3vw, 12px);
   font-weight: 700;
   line-height: 1.55;
   text-align: center;
@@ -777,7 +777,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(0, 1.23fr) minmax(0, 1.46fr) minmax(0, 1.46fr) minmax(0, 1.46fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(0, 1.23fr) minmax(0, 1.6fr) minmax(0, 1.35fr) minmax(0, 1.6fr);
   align-items: center;
   gap: .125rem;
   text-align: center;
@@ -786,9 +786,9 @@
 
 .matrix-explore-main-screen .road-results-head {
   min-height: 32px;
-  border-bottom: 1px solid #755329;
+  border-bottom: 1px solid rgba(117, 83, 41, .45);
   color: #d2a52a;
-  font-size: .6875rem;
+  font-size: clamp(10px, 2.8vw, 12px);
 }
 
 .matrix-explore-main-screen .road-results article {
@@ -798,7 +798,7 @@
 .matrix-explore-main-screen .road-result-row {
   min-height: 46px;
   padding: .375rem 0;
-  border-bottom: 1px solid rgba(90, 87, 80, .7);
+  border-bottom: 1px solid rgba(90, 87, 80, .42);
 }
 
 .matrix-explore-main-screen .road-result-row > span,
