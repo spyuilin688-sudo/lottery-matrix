@@ -1,9 +1,13 @@
 .managementToolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 180px auto;
-  gap: 10px;
+  grid-template-columns: minmax(240px, 1fr) 180px auto;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #292c32;
+  border-radius: 12px;
+  background: #111419;
 }
 
 .managementToolbar input,
@@ -18,8 +22,16 @@
   color: #eee;
 }
 
+.managementToolbar input { min-height: 42px; }
+.managementToolbar select,
+.operationDialog input,
+.operationDialog select,
+.formGrid input,
+.formGrid select,
+.nameDialog input { min-height: 42px; }
+
 .managementToolbar span { color: #8f939b; font-size: 13px; }
-.compactButton { border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 7px 10px; white-space: nowrap; }
+.compactButton { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .formActions .primary { background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; border-color: #b48a35; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
@@ -53,8 +65,70 @@
 .userInfoRows span { color: #888d96; font-size: 12px; }
 .userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
+/* Shared hierarchy and rhythm across every admin surface. */
+.content { padding: 20px; }
+.side nav { gap: 6px; }
+.nav { min-height: 42px; padding: 10px 12px; font-size: 13px; }
+header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
+.actions button,
+.menu { min-width: 40px; min-height: 40px; }
+.cards { gap: 12px; }
+.metric,
+.panel,
+.formCard,
+.tableWrap { border-color: #30333a; box-shadow: 0 8px 24px #0002; }
+.metric { min-height: 108px; padding: 16px; }
+.metric span { font-size: 13px; }
+.metric strong { font-size: 26px; }
+.panel,
+.formCard { padding: 18px; }
+.panel h2,
+.formCard h3 { font-size: 17px; line-height: 1.4; }
+.toolbar { min-height: 42px; gap: 12px; }
+.toolbar .primary { min-height: 38px; }
+.tableWrap th { padding: 11px 14px; font-size: 12px; line-height: 1.35; }
+.tableWrap td { padding: 12px 14px; font-size: 13px; line-height: 1.45; }
+.tableWrap tbody tr:last-child td { border-bottom: 0; }
+.tableWrap tbody tr:hover td { background: #14171c; }
+.rowActions button { width: 36px; height: 36px; }
+.formActions button { min-width: 84px; min-height: 38px; }
+.pagination button { min-width: 36px; min-height: 36px; }
+
+.managementList th:last-child,
+.managementList td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #111419;
+  box-shadow: -1px 0 #2a2d33;
+}
+.managementList th:last-child { z-index: 3; background: #171a20; }
+
+.modalBackdrop { overflow-y: auto; }
+.confirmationBackdrop { z-index: 60; }
+.confirmationDialog {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  border: 1px solid #8c6d28;
+  border-radius: 14px;
+  background: #111419;
+  box-shadow: 0 24px 80px #000c;
+}
+.confirmationDialog h2 { margin: 0 0 10px; font-size: 19px; line-height: 1.4; }
+.confirmationDialog p { margin: 0; color: #a4a8b0; font-size: 14px; line-height: 1.65; }
+.confirmationDialog .formActions { margin-top: 20px; }
+.confirmationDialog .confirmDanger { border-color: #a84a4a; background: #6f2727; color: #fff; font-weight: 800; }
+
 @media (max-width: 760px) {
-  .managementToolbar { grid-template-columns: 1fr 120px; }
+  .content { padding: 12px; }
+  header { padding: 0 10px; }
+  .actions { gap: 6px; }
+  .cards { gap: 10px; }
+  .metric { min-height: 94px; padding: 14px; }
+  .panel,
+  .formCard { padding: 14px; }
+  .managementToolbar { grid-template-columns: minmax(0, 1fr) 118px; gap: 8px; padding: 10px; }
   .managementToolbar span { grid-column: 1 / -1; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
@@ -63,4 +137,9 @@
   .managementCard > .compactButton { width: 100%; margin-top: 10px; }
   .pagination { justify-content: center; }
   .userInfoRows > div { grid-template-columns: 105px minmax(0, 1fr); }
+  .formActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .formActions button { width: 100%; min-width: 0; }
+  .confirmationDialog,
+  .operationDialog,
+  .nameDialog { padding: 16px; }
 }

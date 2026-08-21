@@ -18,8 +18,8 @@
 }
 
 .nameDialog {
-  width: min(360px, 100%);
-  padding: 18px;
+  width: min(380px, 100%);
+  padding: 20px;
   border: 1px solid #8c6d28;
   border-radius: 12px;
   background: #111419;
@@ -28,7 +28,8 @@
 
 .nameDialog h2 {
   margin: 0 0 16px;
-  font-size: 18px;
+  font-size: 19px;
+  line-height: 1.4;
 }
 
 .nameDialog label {

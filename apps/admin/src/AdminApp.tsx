@@ -23,6 +23,7 @@ import "./admin-operations.css";
 import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
 import { filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
+import { runConfirmed } from "./admin-confirmation";
 import { loadSystemStatus, type SystemStatusItem } from "./system-status";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
@@ -43,6 +44,13 @@ type AdminForm = {
   role: string;
   status: string;
   permissions: { view: boolean; add: boolean; edit: boolean; delete: boolean };
+};
+type ConfirmationRequest = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  tone?: "default" | "danger";
+  resolve: (confirmed: boolean) => void;
 };
 const modules = [
   ["營運概覽", BarChart3],
@@ -192,6 +200,13 @@ function AdminApp() {
   const [editingAdmin, setEditingAdmin] = useState<string | null>(null);
   const [showProfileName, setShowProfileName] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const [confirmation, setConfirmation] = useState<ConfirmationRequest | null>(null);
+  const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) =>
+    new Promise<boolean>((resolve) => setConfirmation({ ...request, resolve }));
+  const finishConfirmation = (confirmed: boolean) => {
+    confirmation?.resolve(confirmed);
+    setConfirmation(null);
+  };
   const can = (k: string) =>
     Boolean(
       (admin?.permissions as Record<string, boolean> | undefined)?.[k] ??
@@ -298,49 +313,68 @@ function AdminApp() {
     setShowProfileName(true);
   };
   const saveProfileName = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const updated = await saveOwnAdminName(api, profileName);
-      setAdmin((current) => ({ ...current, ...updated }));
-      setShowProfileName(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
-    } finally {
-      setBusy(false);
-    }
+    await runConfirmed(
+      () => requestConfirmation({ title: "確認修改名稱", message: `管理員名稱將修改為「${profileName.trim() || "未填寫"}」`, confirmLabel: "確認修改" }),
+      async () => {
+        setBusy(true);
+        setError("");
+        try {
+          const updated = await saveOwnAdminName(api, profileName);
+          setAdmin((current) => ({ ...current, ...updated }));
+          setShowProfileName(false);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "管理員名稱更新失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
   };
   const fields = useMemo(() => labels[tableMap[active]] || [], [active]);
   const batchCodes = async () => {
-    setBusy(true);
-    try {
-      await api.post("/api/activation-codes/batch", {
-        durationType: form.durationType || "30_days",
-      });
-      setShowForm(false);
-      setForm({});
-      await load(active);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "批次建立失敗");
-    } finally {
-      setBusy(false);
-    }
+    await runConfirmed(
+      () => requestConfirmation({ title: "確認建立啟動碼", message: "將批次建立 10 組啟動碼。", confirmLabel: "確認建立" }),
+      async () => {
+        setBusy(true);
+        try {
+          await api.post("/api/activation-codes/batch", {
+            durationType: form.durationType || "30_days",
+          });
+          setShowForm(false);
+          setForm({});
+          await load(active);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "批次建立失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
   };
   const saveAdmin = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      if (editingAdmin) await api.put(`/api/admins/${editingAdmin}`, adminForm);
-      else await api.post("/api/admins", adminForm);
-      setAdminForm(defaultAdmin());
-      setEditingAdmin(null);
-      setShowForm(false);
-      await load("管理員權限");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "管理員儲存失敗");
-    } finally {
-      setBusy(false);
-    }
+    await runConfirmed(
+      () => requestConfirmation({
+        title: editingAdmin ? "確認修改管理員" : "確認新增管理員",
+        message: `${adminForm.account || "未填寫帳號"}／${adminForm.name || "未填寫名稱"}／${adminForm.role}`,
+        confirmLabel: editingAdmin ? "確認修改" : "確認新增",
+      }),
+      async () => {
+        setBusy(true);
+        setError("");
+        try {
+          if (editingAdmin) await api.put(`/api/admins/${editingAdmin}`, adminForm);
+          else await api.post("/api/admins", adminForm);
+          setAdminForm(defaultAdmin());
+          setEditingAdmin(null);
+          setShowForm(false);
+          await load("管理員權限");
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "管理員儲存失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
   };
   const editAdmin = (r: Row) => {
     const p = (r.permissions || {}) as Record<string, boolean>;
@@ -360,16 +394,20 @@ function AdminApp() {
     setShowForm(true);
   };
   const deleteAdmin = async (id: string) => {
-    if (!confirm("確認刪除此管理員帳號？")) return;
-    setBusy(true);
-    try {
-      await api.delete(`/api/admins/${id}`);
-      await load("管理員權限");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "刪除管理員失敗");
-    } finally {
-      setBusy(false);
-    }
+    await runConfirmed(
+      () => requestConfirmation({ title: "確認刪除管理員", message: "刪除後將無法使用此管理員帳號。", confirmLabel: "確認刪除", tone: "danger" }),
+      async () => {
+        setBusy(true);
+        try {
+          await api.delete(`/api/admins/${id}`);
+          await load("管理員權限");
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "刪除管理員失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
   };
   const roleChange = (role: string) => setAdminForm(defaultAdmin(role));
   if (!signed)
@@ -457,16 +495,26 @@ function AdminApp() {
               rows={rows}
               canEdit={moduleCan("users", "edit")}
               onStatus={async (id, status) => {
-                setBusy(true);
-                setError("");
-                try {
-                  await saveMemberStatus(api, id, status);
-                  await load("用戶管理");
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "會員狀態更新失敗");
-                } finally {
-                  setBusy(false);
-                }
+                await runConfirmed(
+                  () => requestConfirmation({
+                    title: status === "disabled" ? "確認停權用戶" : "確認啟動用戶",
+                    message: `LINE 用戶 ${id}`,
+                    confirmLabel: status === "disabled" ? "確認停權" : "確認啟動",
+                    tone: status === "disabled" ? "danger" : "default",
+                  }),
+                  async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await saveMemberStatus(api, id, status);
+                      await load("用戶管理");
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "會員狀態更新失敗");
+                    } finally {
+                      setBusy(false);
+                    }
+                  },
+                );
               }}
             />
           )}{" "}
@@ -477,28 +525,43 @@ function AdminApp() {
               transfers={transfers}
               canEdit={moduleCan("subscriptions", "edit")}
               onSubscription={async (id, payload) => {
-                setBusy(true);
-                setError("");
-                try {
-                  await saveSubscription(api, id, payload);
-                  await load("訂閱管理");
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "訂閱更新失敗");
-                } finally {
-                  setBusy(false);
-                }
+                return runConfirmed(
+                  () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
+                  async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await saveSubscription(api, id, payload);
+                      await load("訂閱管理");
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "訂閱更新失敗");
+                    } finally {
+                      setBusy(false);
+                    }
+                  },
+                );
               }}
               onTransfer={async (id, decision) => {
-                setBusy(true);
-                setError("");
-                try {
-                  await api.put(`/api/transfer-requests/${id}`, { decision });
-                  await load("訂閱管理");
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "轉帳審核失敗");
-                } finally {
-                  setBusy(false);
-                }
+                await runConfirmed(
+                  () => requestConfirmation({
+                    title: decision === "confirmed" ? "確認通過轉帳" : "確認拒絕轉帳",
+                    message: `轉帳申請 ${id}`,
+                    confirmLabel: decision === "confirmed" ? "確認通過" : "確認拒絕",
+                    tone: decision === "rejected" ? "danger" : "default",
+                  }),
+                  async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await api.put(`/api/transfer-requests/${id}`, { decision });
+                      await load("訂閱管理");
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "轉帳審核失敗");
+                    } finally {
+                      setBusy(false);
+                    }
+                  },
+                );
               }}
             />
           )}{" "}
@@ -569,10 +632,41 @@ function AdminApp() {
             </>
           )}
         </section>
+        {confirmation && (
+          <ConfirmationDialog
+            request={confirmation}
+            onCancel={() => finishConfirmation(false)}
+            onConfirm={() => finishConfirmation(true)}
+          />
+        )}
       </main>
     </div>
   );
 }
+
+function ConfirmationDialog({
+  request,
+  onCancel,
+  onConfirm,
+}: {
+  request: ConfirmationRequest;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="modalBackdrop confirmationBackdrop" role="presentation">
+      <div className="confirmationDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
+        <h2 id="confirmation-title">{request.title}</h2>
+        <p id="confirmation-message">{request.message}</p>
+        <div className="formActions">
+          <button onClick={onCancel}>取消</button>
+          <button className={request.tone === "danger" ? "confirmDanger" : "primary"} onClick={onConfirm}>{request.confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserManager({
   rows,
   canEdit,
@@ -637,7 +731,7 @@ function SubscriptionManager({
   plans: Row[];
   transfers: Row[];
   canEdit: boolean;
-  onSubscription: (id: string, payload: SubscriptionPayload) => Promise<void>;
+  onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
   const [keyword, setKeyword] = useState("");
@@ -661,8 +755,8 @@ function SubscriptionManager({
     const payload: SubscriptionPayload = { action };
     if (action === "activate" || action === "renew") payload.planId = planId;
     if (action === "adjustExpiry") payload.expiresAt = expiresAt;
-    await onSubscription(editing.id, payload);
-    setEditing(null);
+    const saved = await onSubscription(editing.id, payload);
+    if (saved) setEditing(null);
   };
   const actionText: Record<SubscriptionPayload["action"], string> = {
     activate: "開通", renew: "續訂", cancel: "取消續訂", adjustExpiry: "調整到期日", lifetime: "設為終生",
