@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { MatrixExplorePage } from '../FeaturePages';
+import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
 
 const matrixApi = vi.hoisted(() => ({
   fetchExploreList: vi.fn(),
@@ -72,12 +72,42 @@ const exploreValidationEnvelope = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  window.sessionStorage.clear();
+  HTMLElement.prototype.scrollIntoView = vi.fn();
   matrixApi.fetchExploreList.mockReset().mockResolvedValue(exploreEnvelope);
   matrixApi.fetchExploreValidation.mockReset().mockResolvedValue(exploreValidationEnvelope);
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ records: [] }),
   }) as typeof fetch;
+});
+
+test('Matrix 天衍的近10期與探索頁使用相同展開行為', () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+
+  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
+  expect(document.querySelector('.history-panel')?.classList.contains('matrix-explore-history-panel')).toBe(true);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' })).not.toBeNull();
+
+  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
+  expect(document.querySelector('.history-panel-order')).toBeNull();
+});
+
+test('Matrix 同星的近10期與探索頁使用相同展開行為', () => {
+  render(<TongXingPage onNavigate={vi.fn()} />);
+
+  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
+  expect(document.querySelector('.history-panel')?.classList.contains('matrix-explore-history-panel')).toBe(true);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' })).not.toBeNull();
+
+  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '天天樂' } });
+  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
+  expect(document.querySelector('.history-panel-order')).toBeNull();
 });
 
 test('近10期開獎號碼剛進頁面時保持展開', () => {
@@ -222,3 +252,4 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
     'api-item-1',
   );
 });
+

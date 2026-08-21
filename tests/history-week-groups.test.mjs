@@ -32,3 +32,14 @@ test("近10期依各彩種的跨週開獎日加深分隔線", () => {
   assert.equal(isNearHistoryWeekBoundary("大樂透", "2026/08/11（二）", "2026/08/07（五）"), true);
   assert.equal(isNearHistoryWeekBoundary("六合彩", "2026/08/08（六）", "2026/08/06（四）"), false);
 });
+
+test("過年加開日仍依週一至週日的曆週分隔", () => {
+  assert.equal(isNearHistoryWeekBoundary("今彩539", "2026/02/23（一）", "2026/02/22（日）"), true);
+  assert.equal(isNearHistoryWeekBoundary("大樂透", "2026/02/18（三）", "2026/02/15（日）"), true);
+  assert.equal(isNearHistoryWeekBoundary("大樂透", "2026/02/18（三）", "2026/02/17（二）"), false);
+});
+
+test("六合彩單週只開一期時該期上下都是週界線", () => {
+  assert.equal(isNearHistoryWeekBoundary("六合彩", "2026/08/25（二）", "2026/08/18（二）"), true);
+  assert.equal(isNearHistoryWeekBoundary("六合彩", "2026/08/18（二）", "2026/08/11（二）"), true);
+});

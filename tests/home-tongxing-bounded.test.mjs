@@ -22,8 +22,3 @@ test('tongxing uses 8px left inset and 32px controls with explore option text si
   assert.match(tongCss,/\.tongxing-screen \.query-selects select\s*\{[\s\S]*?font-size:\s*\.75rem;/);
   assert.match(tongCss,/\.tongxing-screen \.same-star-period-select select\s*\{[\s\S]*?font-size:\s*\.75rem;/);
 });
-
-test('tongxing recent draw removes parenthetical order copy and title container box without changing shared history markup',()=>{
-  assert.match(tongCss,/\.tongxing-screen \.history-panel-title\s*\{[\s\S]*?display:\s*contents;/);
-  assert.match(tongCss,/\.tongxing-screen \.history-panel-order\s*\{[\s\S]*?display:\s*none;/);
-});

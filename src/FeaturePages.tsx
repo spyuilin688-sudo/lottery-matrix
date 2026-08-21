@@ -579,7 +579,8 @@ function HistoryList({
   );
 
   return (
-    <section className="panel history-panel" data-lottery={lottery}>
+    <div className="matrix-explore-main-screen matrix-explore-history-scope">
+    <section className="panel history-panel matrix-explore-history-panel" data-lottery={lottery}>
       <header className="panel-heading">
         {collapsible && collapseControl === "title" ? (
           <button
@@ -653,6 +654,7 @@ function HistoryList({
         })}
       </div>
     </section>
+    </div>
   );
 }
 
@@ -1197,12 +1199,12 @@ export function MatrixExplorePage({
 
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
-    if (title === "Matrix 探索") setHistoryExpanded(true);
+    setHistoryExpanded(true);
   };
 
   const startExplore = () => {
     setSearched(true);
-    if (title === "Matrix 探索") setHistoryExpanded(false);
+    setHistoryExpanded(false);
     void loadExplore();
   };
 
@@ -1380,7 +1382,7 @@ export function MatrixExplorePage({
         <MagnifyingGlassIcon /><span>開始探索</span>
       </button>
 
-      {title === "Matrix 探索" ? <HistoryList
+      <HistoryList
         lottery={lottery}
         numberOrder={numberOrder}
         onOpenHistory={() => onNavigate("history")}
@@ -1389,7 +1391,7 @@ export function MatrixExplorePage({
         showOrderText={false}
         expanded={historyExpanded}
         onExpandedChange={setHistoryExpanded}
-      /> : null}
+      />
 
       {searched ? (
         <>
@@ -1648,12 +1650,18 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
   const historyOrder = getHistoryOrder(appliedOrder);
   const resultColumns = appliedLottery === "六合彩" || appliedLottery === "大樂透"
     ? ["一", "二", "三", "四", "五", "六", "特"]
     : ["一", "二", "三", "四", "五"];
+
+  const changeLottery = (value: LotteryId) => {
+    setLottery(value);
+    setHistoryExpanded(true);
+  };
 
   const updateInputValue = (index: number, rawValue: string) => {
     const nextValue = sanitizeReferenceNumber(rawValue);
@@ -1674,6 +1682,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
+    setHistoryExpanded(false);
     setAppliedValues(normalizedValues);
     setAppliedLottery(lottery);
     setAppliedOrder(order);
@@ -1736,7 +1745,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
             <select
               aria-label="彩種"
               value={lottery}
-              onChange={(event) => setLottery(event.target.value as LotteryId)}
+              onChange={(event) => changeLottery(event.target.value as LotteryId)}
             >
               {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
             </select>
@@ -1754,7 +1763,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
             <ChevronDownIcon aria-hidden="true" />
           </div>
         </div>
-        <LotteryTabs selected={lottery} onChange={setLottery} />
+        <LotteryTabs selected={lottery} onChange={changeLottery} />
         <div className="same-star-fields">
           {values.map((value, index) => (
             <input
@@ -1792,6 +1801,10 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
         numberOrder={order}
         onOpenHistory={() => onNavigate("history")}
         collapsible
+        collapseControl="title"
+        showOrderText={false}
+        expanded={historyExpanded}
+        onExpandedChange={setHistoryExpanded}
       />
       {searched ? (
         <>
@@ -3748,3 +3761,4 @@ export function FeaturePageRouter({
   if (screen === "status-settings") return <MatrixCustomStatusPage onNavigate={onNavigate} />;
   return <MatrixStatusPage onNavigate={onNavigate} />;
 }
+

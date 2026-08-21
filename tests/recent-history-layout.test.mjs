@@ -12,7 +12,6 @@ test("Matrix Explore 近10期標題整合收合箭頭並可隱藏排序文字", 
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel \.panel-heading\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*32px;[^}]*align-items:\s*center;/s);
   assert.match(source, /showOrderText \? <span className="history-panel-order">（\{numberOrder\}）<\/span> : null/);
-  assert.match(source, /collapseControl="title"[\s\S]*?showOrderText=\{title !== "Matrix 探索"\}/);
 });
 
 test("Matrix Explore 近10期標題收合按鍵保留狀態標籤", () => {

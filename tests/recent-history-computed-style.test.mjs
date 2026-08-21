@@ -11,10 +11,11 @@ const responsiveIssueRules = [
 const css = [
   responsiveIssueRules,
   readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../src/tongxing-compact.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8"),
 ].join("\n");
 
-function historyFixture(lottery, mainCount, hasSpecial) {
+function historyFixture(lottery, mainCount, hasSpecial, screenClass = "matrix-explore-main-screen") {
   const mainBalls = Array.from(
     { length: mainCount },
     (_, index) => `<span class="number-ball-component history-lottery-ball" data-lottery="${lottery}">${String(index + 1).padStart(2, "0")}</span>`,
@@ -30,8 +31,9 @@ function historyFixture(lottery, mainCount, hasSpecial) {
     : "";
   const dom = new JSDOM(`
     <style>${css}</style>
-    <main class="matrix-explore-main-screen">
-      <section class="history-panel" data-lottery="${lottery}">
+    <main class="${screenClass}">
+      <div class="matrix-explore-main-screen matrix-explore-history-scope">
+      <section class="history-panel matrix-explore-history-panel" data-lottery="${lottery}">
         <header class="panel-heading">
           <div class="history-panel-title"><h2 class="section-title"><span></span>近10期開獎號碼</h2></div>
           <div class="history-panel-actions"><button class="history-panel-collapse-button"><svg data-open="true"></svg></button><button>查看更多紀錄</button></div>
@@ -47,6 +49,7 @@ function historyFixture(lottery, mainCount, hasSpecial) {
           </div>
         </div>
       </section>
+      </div>
     </main>
   `, { pretendToBeVisual: true });
 
@@ -54,6 +57,20 @@ function historyFixture(lottery, mainCount, hasSpecial) {
   const style = (selector) => dom.window.getComputedStyle(document.querySelector(selector));
   return { style };
 }
+
+test("天衍與同星的近10期沿用探索頁排版", () => {
+  for (const screenClass of ["matrix-tianyan-screen", "tongxing-screen"]) {
+    const { style } = historyFixture("今彩539", 5, false, screenClass);
+    const row = style(".history-row");
+    const period = style('[data-testid="period"]');
+    const ball = style(".history-lottery-ball");
+
+    assert.equal(row.height, "32px", `${screenClass} row height`);
+    assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)", `${screenClass} columns`);
+    assert.equal(period.fontWeight, "800", `${screenClass} period weight`);
+    assert.equal(ball.getPropertyValue("--number-ball-size").trim(), "clamp(24px,7.18vw,28px)", `${screenClass} ball size`);
+  }
+});
 
 test("近10期期數、年份與日期使用指定響應式字級並保留期數粗體", () => {
   const { style } = historyFixture("六合彩", 6, true);

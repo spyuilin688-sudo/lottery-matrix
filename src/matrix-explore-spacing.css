@@ -11,6 +11,10 @@
   overflow-x: hidden;
 }
 
+.matrix-explore-history-scope {
+  display: contents;
+}
+
 .matrix-explore-main-screen .feature-body {
   box-sizing: border-box;
   display: flex;
@@ -77,6 +81,10 @@
 }
 
 .matrix-explore-main-screen .primary-action + .history-panel {
+  margin-top: 4px;
+}
+
+.primary-action + .matrix-explore-history-scope .history-panel {
   margin-top: 4px;
 }
 
