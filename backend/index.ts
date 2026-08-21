@@ -16,6 +16,7 @@ import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
 import { matrixAnalysisPipeline } from './matrix-analysis-pipeline';
+import { selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 
 async function loadMatrixSupabaseConfig() {
@@ -85,11 +86,10 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
     return { statusCode: 200,analysis };
 };
 
-export const scheduledMatrixAnalysisRefresh = async (event: { payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透' } }) => {
-    const lotteries = event.payload?.lottery ? [event.payload.lottery] : ['今彩539','天天樂','六合彩','大樂透'] as const;
-    const results=[];
-    for(const lottery of lotteries) results.push(await matrixAnalysisPipeline.ensureCurrent(lottery));
-    return {statusCode:200,results};
+export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透' } }) => {
+    const lottery = event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
+    const result = await matrixAnalysisPipeline.ensureCurrent(lottery);
+    return {statusCode:200,result};
 };
 
 export const scheduledHistoricalBackfill = async (event: { payload?: { sourceId?: string } }) => {

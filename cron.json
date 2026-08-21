@@ -1,6 +1,6 @@
 [
-  {"name":"matrix-all-refresh-v3","cron":"35-59/5 20 * * *","handler":"scheduledLotteryRefresh","timezone":"Asia/Taipei"},
+  {"name":"matrix-539-refresh-v2","cron":"*/5 * * * *","handler":"scheduledMatrixAnalysisRefresh","timezone":"Asia/Taipei"},
+  {"name":"matrix-649-refresh-v2","cron":"35-59/5 20 * * *","handler":"scheduledLotteryRefresh","timezone":"Asia/Taipei"},
   {"name":"matrix-marksix-refresh-v2","cron":"35-59/5 21 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"nfdhk"}},
-  {"name":"matrix-fantasy5-refresh-v2","cron":"35-59/5 18 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"sc888"}},
-  {"name":"matrix-analysis-bootstrap","cron":"*/5 * * * *","handler":"scheduledMatrixAnalysisRefresh","timezone":"Asia/Taipei"}
+  {"name":"matrix-fantasy5-refresh-v2","cron":"35-59/5 18 * * *","handler":"scheduledLotterySourceRefresh","timezone":"Asia/Taipei","payload":{"sourceId":"sc888"}}
 ]
