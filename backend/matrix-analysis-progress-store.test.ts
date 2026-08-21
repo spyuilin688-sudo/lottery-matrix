@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createMatrixAnalysisProgressStore,
   type MatrixAnalysisProgressAdapter,
+  type MatrixAnalysisProgressStorageAdapter,
 } from './matrix-analysis-progress-store';
 
 type Stored = Record<string, unknown> & { id: string };
@@ -41,10 +42,28 @@ function memoryAdapter() {
   return { adapter, tables };
 }
 
+function memoryStorage() {
+  const files = new Map<string, string>();
+  const adapter: MatrixAnalysisProgressStorageAdapter = {
+    async write(items) {
+      for (const item of items) files.set(item.path, item.content);
+      return items.map(() => true);
+    },
+    async read(paths) {
+      return paths.map((path) => ({ path, content: files.get(path) ?? null }));
+    },
+    async delete(paths) {
+      return paths.map((path) => files.delete(path));
+    },
+  };
+  return { adapter, files };
+}
+
 describe('Matrix analysis resumable progress store', () => {
   it('persists one completed Explore group before advancing its cursor', async () => {
-    const { adapter } = memoryAdapter();
-    const store = createMatrixAnalysisProgressStore(adapter);
+    const { adapter, tables } = memoryAdapter();
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
     const job = await store.getOrCreate({
       lottery: '今彩539',
       drawPeriod: '114000123',
@@ -63,11 +82,13 @@ describe('Matrix analysis resumable progress store', () => {
 
     expect(advanced).toMatchObject({ phase: 'explore', cursor: 1, total: 390 });
     await expect(store.readExploreGroups(advanced)).resolves.toEqual([artifact]);
+    expect(saved.files.size).toBe(1);
+    expect([...tables.keys()].filter((name) => name.startsWith('matrix_analysis_progress_'))).toEqual([]);
   });
 
   it('resumes the existing current-period job instead of creating another one', async () => {
     const { adapter, tables } = memoryAdapter();
-    const store = createMatrixAnalysisProgressStore(adapter);
+    const store = createMatrixAnalysisProgressStore(adapter, memoryStorage().adapter);
     const first = await store.getOrCreate({
       lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1',
       startedAt: '2026-08-21T10:00:00.000Z', total: 390,
@@ -84,7 +105,8 @@ describe('Matrix analysis resumable progress store', () => {
 
   it('abandons unfinished progress from an older draw when a newer draw becomes current', async () => {
     const { adapter, tables } = memoryAdapter();
-    const store = createMatrixAnalysisProgressStore(adapter);
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
     const oldJob = await store.getOrCreate({
       lottery: '今彩539', drawPeriod: '114000122', analysisVersion: 'old',
       startedAt: '2026-08-20T10:00:00.000Z', total: 390,
@@ -100,8 +122,6 @@ describe('Matrix analysis resumable progress store', () => {
     expect(tables.get('matrix_analysis_jobs')).toEqual([
       expect.objectContaining({ id: currentJob.id, drawPeriod: '114000123' }),
     ]);
-    expect([...tables.entries()].filter(([name]) => name.startsWith('matrix_analysis_progress_')))
-      .toEqual([expect.anything()]);
-    expect([...tables.entries()].find(([name]) => name.startsWith('matrix_analysis_progress_'))?.[1]).toEqual([]);
+    expect(saved.files.size).toBe(0);
   });
 });

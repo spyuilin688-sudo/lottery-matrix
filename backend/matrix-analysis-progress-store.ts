@@ -1,8 +1,7 @@
-import { db } from '@appdeploy/sdk';
+import { db, storage } from '@appdeploy/sdk';
 import type { LotteryId } from '../shared/matrix-contracts';
 
 const JOB_TABLE = 'matrix_analysis_jobs';
-const MAX_CHUNK_BYTES = 180_000;
 
 type StoredRecord = Record<string, unknown> & { id: string };
 
@@ -19,6 +18,12 @@ export type MatrixAnalysisProgressAdapter = {
   delete(table: string, ids: string[]): Promise<boolean[]>;
 };
 
+export type MatrixAnalysisProgressStorageAdapter = {
+  write(items: Array<{ path: string; content: string; contentType: string }>): Promise<boolean[]>;
+  read(paths: string[]): Promise<Array<{ path: string; content: string | null }>>;
+  delete(paths: string[]): Promise<boolean[]>;
+};
+
 export type MatrixAnalysisJob = StoredRecord & {
   lottery: LotteryId;
   drawPeriod: string;
@@ -27,14 +32,6 @@ export type MatrixAnalysisJob = StoredRecord & {
   phase: 'explore' | 'tianyan' | 'tiangong' | 'status';
   cursor: number;
   total: number;
-};
-
-type ExploreProgressChunk = StoredRecord & {
-  unitIndex: number;
-  attemptId?: string;
-  pieceIndex: number;
-  pieceCount: number;
-  payload: string;
 };
 
 async function listAll<T extends StoredRecord>(
@@ -49,30 +46,6 @@ async function listAll<T extends StoredRecord>(
     nextToken = page.nextToken;
   } while (nextToken);
   return items;
-}
-
-function splitUtf8(value: string) {
-  const encoder = new TextEncoder();
-  const pieces: string[] = [];
-  let start = 0;
-  while (start < value.length) {
-    let low = start + 1;
-    let high = Math.min(value.length, start + MAX_CHUNK_BYTES);
-    let best = start;
-    while (low <= high) {
-      const middle = Math.floor((low + high) / 2);
-      if (encoder.encode(value.slice(start, middle)).byteLength <= MAX_CHUNK_BYTES) {
-        best = middle;
-        low = middle + 1;
-      } else {
-        high = middle - 1;
-      }
-    }
-    if (best === start) throw new Error('MATRIX_ANALYSIS_PROGRESS_CHUNKING_FAILED');
-    pieces.push(value.slice(start, best));
-    start = best;
-  }
-  return pieces.length ? pieces : [''];
 }
 
 function hash(value: string) {
@@ -95,12 +68,23 @@ function progressTable(job: MatrixAnalysisJob) {
   return `matrix_analysis_progress_${lotterySlug(job.lottery)}_${hash(`${job.drawPeriod}:${job.analysisVersion}`)}`;
 }
 
+function progressPrefix(job: MatrixAnalysisJob) {
+  return `matrix-analysis-progress/${lotterySlug(job.lottery)}/${hash(`${job.drawPeriod}:${job.analysisVersion}`)}`;
+}
+
+function groupPath(job: MatrixAnalysisJob, unitIndex: number) {
+  return `${progressPrefix(job)}/groups/${unitIndex}.json`;
+}
+
 function withoutId(record: StoredRecord) {
   const { id: _id, ...value } = record;
   return value;
 }
 
-export function createMatrixAnalysisProgressStore(adapter: MatrixAnalysisProgressAdapter) {
+export function createMatrixAnalysisProgressStore(
+  adapter: MatrixAnalysisProgressAdapter,
+  storageAdapter: MatrixAnalysisProgressStorageAdapter,
+) {
   async function deleteIds(table: string, ids: string[]) {
     for (let index = 0; index < ids.length; index += 20) {
       const batch = ids.slice(index, index + 20);
@@ -113,8 +97,15 @@ export function createMatrixAnalysisProgressStore(adapter: MatrixAnalysisProgres
 
   async function deleteJob(job: MatrixAnalysisJob) {
     const table = progressTable(job);
-    const chunks = await listAll<ExploreProgressChunk>(adapter, table);
+    const chunks = await listAll<StoredRecord>(adapter, table);
     await deleteIds(table, chunks.map((chunk) => chunk.id));
+    for (let index = 0; index < job.total; index += 20) {
+      await storageAdapter.delete(
+        Array.from({ length: Math.min(20, job.total - index) }, (_, offset) => (
+          groupPath(job, index + offset)
+        )),
+      );
+    }
     await deleteIds(JOB_TABLE, [job.id]);
   }
 
@@ -147,46 +138,26 @@ export function createMatrixAnalysisProgressStore(adapter: MatrixAnalysisProgres
       if (job.phase !== 'explore' || unitIndex !== job.cursor) {
         throw new Error('MATRIX_ANALYSIS_PROGRESS_CURSOR_MISMATCH');
       }
-      const table = progressTable(job);
-      const attemptId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-      const pieces = splitUtf8(JSON.stringify(artifact));
-      const records = pieces.map((payload, pieceIndex) => ({
-        unitIndex, attemptId, pieceIndex, pieceCount: pieces.length, payload,
-      }));
-      for (let index = 0; index < records.length; index += 20) {
-        const batch = records.slice(index, index + 20);
-        const ids = await adapter.add(table, batch);
-        if (ids.length !== batch.length || ids.some((id) => !id)) {
-          throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
-        }
-      }
+      const [written] = await storageAdapter.write([{
+        path: groupPath(job, unitIndex),
+        content: JSON.stringify(artifact),
+        contentType: 'application/json',
+      }]);
+      if (!written) throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
       return updateJob(job, { cursor: unitIndex + 1 });
     },
 
     async readExploreGroups(job: MatrixAnalysisJob) {
-      const chunks = await listAll<ExploreProgressChunk>(adapter, progressTable(job));
-      const byUnit = new Map<number, Map<string, ExploreProgressChunk[]>>();
-      for (const chunk of chunks) {
-        const attempts = byUnit.get(chunk.unitIndex) ?? new Map<string, ExploreProgressChunk[]>();
-        const attemptId = chunk.attemptId ?? 'legacy';
-        const current = attempts.get(attemptId) ?? [];
-        current.push(chunk);
-        attempts.set(attemptId, current);
-        byUnit.set(chunk.unitIndex, attempts);
-      }
       const artifacts: unknown[] = [];
-      for (let unitIndex = 0; unitIndex < job.cursor; unitIndex += 1) {
-        const attempts = byUnit.get(unitIndex);
-        const pieces = [...(attempts?.values() ?? [])].find((candidate) => {
-          candidate.sort((left, right) => left.pieceIndex - right.pieceIndex);
-          return candidate.length > 0
-            && candidate.length === candidate[0].pieceCount
-            && candidate.every((piece, index) => (
-              piece.pieceIndex === index && piece.pieceCount === candidate.length
-            ));
-        });
-        if (!pieces) throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
-        artifacts.push(JSON.parse(pieces.map((piece) => piece.payload).join('')) as unknown);
+      for (let index = 0; index < job.cursor; index += 10) {
+        const paths = Array.from({ length: Math.min(10, job.cursor - index) }, (_, offset) => (
+          groupPath(job, index + offset)
+        ));
+        const stored = await storageAdapter.read(paths);
+        if (stored.length !== paths.length || stored.some((file) => file.content === null)) {
+          throw new Error('MATRIX_ANALYSIS_PROGRESS_INCOMPLETE');
+        }
+        artifacts.push(...stored.map((file) => JSON.parse(String(file.content)) as unknown));
       }
       return artifacts;
     },
@@ -208,4 +179,13 @@ const appDeployAdapter: MatrixAnalysisProgressAdapter = {
   delete: (table, ids) => db.delete(table, ids),
 };
 
-export const matrixAnalysisProgressStore = createMatrixAnalysisProgressStore(appDeployAdapter);
+const appDeployStorageAdapter: MatrixAnalysisProgressStorageAdapter = {
+  write: (items) => storage.write(items),
+  read: (paths) => storage.read(paths),
+  delete: (paths) => storage.delete(paths),
+};
+
+export const matrixAnalysisProgressStore = createMatrixAnalysisProgressStore(
+  appDeployAdapter,
+  appDeployStorageAdapter,
+);
