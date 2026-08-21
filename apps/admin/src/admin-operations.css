@@ -20,6 +20,7 @@
 
 .managementToolbar span { color: #8f939b; font-size: 13px; }
 .compactButton { border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 7px 10px; white-space: nowrap; }
+.formActions .primary { background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; border-color: #b48a35; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
 .cardHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
