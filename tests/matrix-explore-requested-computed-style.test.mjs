@@ -106,8 +106,8 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   assert.equal(style(".explore-settings").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingBottom, "4px");
-  assert.equal(style(".repeat-stats-panel").paddingTop, "6px");
-  assert.equal(style(".repeat-stats-panel").paddingBottom, "6px");
+  assert.equal(style(".repeat-stats-panel").paddingTop, "10px");
+  assert.equal(style(".repeat-stats-panel").paddingBottom, "10px");
   assert.equal(style(".result-panel").paddingTop, "6px");
   assert.equal(style(".repeat-stats-panel").paddingLeft, "6px");
   assert.equal(style(".repeat-stats-panel").paddingRight, "6px");
@@ -132,8 +132,8 @@ test("重複統計卡片與控制項使用指定比例", () => {
   assert.equal(filter.height, "24px");
   assert.equal(sameCode.fontSize, "11px");
   assert.equal(filter.fontSize, "11px");
-  assert.equal(style(".repeat-stats-heading > span").fontSize, "12px");
-  assert.equal(style(".repeat-stats-heading > span").fontWeight, "700");
+  assert.equal(style(".repeat-stats-heading > span").fontSize, "11px");
+  assert.equal(style(".repeat-stats-heading > span").fontWeight, "400");
   assert.equal(style(".repeat-stats-heading > span").paddingRight, "8px");
   assert.equal(style(".repeat-stats-heading > span").color, "rgb(158, 154, 147)");
   assert.equal(style(".result-summary b").fontSize, "14px");
@@ -160,7 +160,7 @@ test("六個結果標題與版路結果之間使用與外框相同的分隔線",
   const { style } = exploreFixture();
   const head = style(".road-results-head");
   assert.equal(head.borderBottomWidth, "1px");
-  assert.equal(head.borderBottomColor, "rgb(117, 83, 41)");
+  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.45)");
 });
 
 test("展開驗證內容使用 4px 左右內距，左側期數為預設字型 12px 字重 800", () => {

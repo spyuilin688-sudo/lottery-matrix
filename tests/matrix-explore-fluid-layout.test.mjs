@@ -78,11 +78,10 @@ test("Matrix Explore history table uses compact target proportions", () => {
   assert.match(heading, /min-height:\s*32px/);
   assert.match(heading, /padding:\s*5px 6px/);
 
-  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row,[\\s\\S]*?\\.history-row:not\\(\\.history-head\\)");
+  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row");
   assert.match(row, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
-  assert.match(row, /height:\s*40px/);
-  assert.match(row, /min-height:\s*40px/);
   assert.match(row, /padding:\s*0/);
+  assert.doesNotMatch(row, /(?:min-)?height\s*:/);
   assert.match(css, /\.history-row\.history-head\s*\{[^}]*height:\s*26px;[^}]*min-height:\s*26px/);
   assert.match(css, /data-lottery="今彩539"[^}]*data-lottery="天天樂"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*32px;[^}]*min-height:\s*32px/s);
   assert.match(css, /data-lottery="六合彩"[^}]*data-lottery="大樂透"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*36px;[^}]*min-height:\s*36px/s);

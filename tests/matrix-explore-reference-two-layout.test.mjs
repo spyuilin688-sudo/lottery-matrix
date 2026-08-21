@@ -8,7 +8,7 @@ const prototype = readFileSync("src/prototype.css", "utf8");
 test("Matrix Explore lower result sections match reference image two", () => {
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*6px;/s,
+    /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*10px 6px;/s,
   );
   assert.match(
     layout,
@@ -24,11 +24,11 @@ test("Matrix Explore lower result sections match reference image two", () => {
   );
   assert.match(
     layout,
-    /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.46fr\) minmax\(0, 1\.46fr\) minmax\(0, 1\.46fr\);/s,
+    /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.6fr\) minmax\(0, 1\.35fr\) minmax\(0, 1\.6fr\);/s,
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.7\);/s,
+    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.42\);/s,
   );
   assert.match(
     layout,
@@ -48,7 +48,7 @@ test("temporary global debug outlines are removed instead of covered", () => {
 });
 
 test("the six result columns retain usable proportional width at supported mobile sizes", () => {
-  const weights = [1, 1.08, 1.23, 1.46, 1.46, 1.46];
+  const weights = [1, 1.08, 1.23, 1.6, 1.35, 1.6];
   const totalWeight = weights.reduce((sum, value) => sum + value, 0);
 
   for (const viewport of [360, 375, 390]) {
