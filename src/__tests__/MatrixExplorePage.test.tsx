@@ -110,6 +110,70 @@ test('Matrix 同星的近10期與探索頁使用相同展開行為', () => {
   expect(document.querySelector('.history-panel-order')).toBeNull();
 });
 
+test('Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選', () => {
+  render(<TongXingPage onNavigate={vi.fn()} />);
+
+  const first = screen.getByRole('textbox', { name: '號碼 1' }) as HTMLInputElement;
+  const second = screen.getByRole('textbox', { name: '號碼 2' }) as HTMLInputElement;
+
+  fireEvent.change(first, { target: { value: '0' } });
+  expect(first.value).toBe('0');
+  fireEvent.blur(first);
+  expect(first.value).toBe('');
+
+  fireEvent.change(first, { target: { value: '8' } });
+  fireEvent.blur(first);
+  expect(first.value).toBe('08');
+  fireEvent.click(first);
+  expect(first.selectionStart).toBe(0);
+  expect(first.selectionEnd).toBe(2);
+
+  fireEvent.change(first, { target: { value: '00' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '50' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '123' } });
+  expect(first.value).toBe('12');
+
+  fireEvent.change(second, { target: { value: '12' } });
+  expect(second.value).toBe('');
+  fireEvent.change(first, { target: { value: '01' } });
+  fireEvent.change(second, { target: { value: '1' } });
+  fireEvent.blur(second);
+  expect(second.value).toBe('');
+});
+
+test('Matrix 同星探索結果左欄期數在上、日期在下', async () => {
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => {
+    const url = String(input);
+    const data = url.endsWith('/api/matrix/tongxing')
+      ? {
+          lottery: '今彩539',
+          numberOrder: '依號碼由小到大排序',
+          numbers: [],
+          futureOffset: 1,
+          groups: [{
+            lockedEntry: { period: '114001', drawDate: '2026/08/20', numbers: ['01', '02', '03', '04', '05'] },
+            predictedEntry: { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] },
+          }],
+        }
+      : { items: [] };
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  render(<TongXingPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  await waitFor(() => expect(document.querySelectorAll('.tongxing-period-cell')).toHaveLength(2));
+  for (const cell of document.querySelectorAll('.tongxing-period-cell')) {
+    expect(cell.children[0]?.tagName).toBe('STRONG');
+    expect(cell.children[1]?.tagName).toBe('TIME');
+  }
+});
+
 test('近10期開獎號碼剛進頁面時保持展開', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
@@ -183,6 +247,7 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
   );
 });
 
+
 test('展開版路後以 API 規則與可分色數字顯示驗證概要', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
@@ -252,4 +317,3 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
     'api-item-1',
   );
 });
-

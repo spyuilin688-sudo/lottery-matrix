@@ -1,9 +1,6 @@
 /* Matrix 同星：唯一頁面專屬版面來源。共用元件基礎樣式仍由 feature-pages.css 管理。 */
 
 .tongxing-screen {
-  --header-gap-bottom: 8px;
-  --section-gap: 12px;
-  --large-section-gap: 16px;
   --card-padding: 10px;
   --card-radius: 12px;
   --control-gap: 6px;
@@ -20,11 +17,17 @@
 
 .tongxing-screen .feature-body {
   box-sizing: border-box;
+  display: flex;
   width: 100%;
   min-width: 0;
-  padding-left: 8px;
-  padding-right: 16px;
+  padding-top: var(--layout-section-gap);
+  flex-direction: column;
+  row-gap: var(--layout-section-gap);
   overflow-x: hidden;
+}
+
+.tongxing-screen .matrix-title-banner {
+  width: calc(100% - (var(--layout-page-inline) * 2));
 }
 
 .tongxing-screen .tongxing-query {
@@ -32,7 +35,7 @@
   width: 100%;
   min-width: 0;
   height: auto;
-  margin-top: var(--header-gap-bottom);
+  margin: 0;
   padding: var(--card-padding);
   border-width: var(--border-width);
   border-radius: var(--card-radius);
@@ -68,7 +71,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  margin: var(--control-gap) 0;
+  margin: var(--layout-section-gap) 0;
   grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(52px, .9fr) max-content;
   gap: var(--control-gap);
   align-items: center;
@@ -142,7 +145,7 @@
 
 .tongxing-screen .primary-action svg { width: 20px; height: 20px; }
 
-.tongxing-screen .ornament-title { margin: var(--large-section-gap) 0 10px; font-size: 20px; font-weight: 600; line-height: 26px; }
+.tongxing-screen .ornament-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 26px; }
 
 .tongxing-screen .tongxing-results {
   box-sizing: border-box;
@@ -196,7 +199,7 @@
 .tongxing-screen .tongxing-table-row[data-row-type="locked"] { background: rgba(126, 83, 15, .12); }
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] { background: rgba(10, 61, 88, .13); }
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] > span { border-top: var(--border-width) solid rgba(105, 129, 140, .31); }
-.tongxing-screen .tongxing-period-cell { display: grid; min-height: var(--result-row-height); padding: 2px 3px; align-content: center; gap: 1px; }
+.tongxing-screen .tongxing-table-row > .tongxing-period-cell { display: grid; min-height: var(--result-row-height); padding: 2px 3px; grid-template-rows: auto auto; align-content: center; gap: 1px; }
 .tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 14px; font-weight: 700; line-height: 17px; white-space: nowrap; }
 .tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 10.5px; font-weight: 400; line-height: 13px; white-space: nowrap; }
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] .tongxing-period-cell strong { color: #78bfe3; }
@@ -205,4 +208,3 @@
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: clamp(11px, 3.4vw, 14px); }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell { padding-inline: 2px; }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 13px; }
-.tongxing-screen .tongxing-results-end { height: 12px; }

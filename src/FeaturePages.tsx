@@ -159,6 +159,21 @@ function useTimedState<T>(key: string, initialValue: T) {
 }
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
+
+function updateLookupInputValues(values: string[], index: number, rawValue: string) {
+  const candidate = sanitizeReferenceNumber(rawValue);
+  if (candidate.length === 2 && isDuplicateLookupNumber(values.map(formatReferenceNumber), index, candidate)) {
+    return values;
+  }
+  return values.map((value, valueIndex) => valueIndex === index ? candidate : value);
+}
+
+function finalizeLookupInputValues(values: string[], index: number) {
+  const formatted = formatReferenceNumber(values[index]);
+  const nextValue = isDuplicateLookupNumber(values.map(formatReferenceNumber), index, formatted) ? "" : formatted;
+  return values.map((value, valueIndex) => valueIndex === index ? nextValue : value);
+}
+
 const MATRIX_PAGE_ITEMS = [
   { screen: "explore", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索.png" },
   { screen: "tianyan", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍.png" },
@@ -1651,7 +1666,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
   const [historyExpanded, setHistoryExpanded] = useState(true);
-  const resultsEndRef = useRef<HTMLDivElement>(null);
+  const resultsEndRef = useRef<HTMLElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
   const historyOrder = getHistoryOrder(appliedOrder);
   const resultColumns = appliedLottery === "六合彩" || appliedLottery === "大樂透"
@@ -1664,15 +1679,11 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const updateInputValue = (index: number, rawValue: string) => {
-    const nextValue = sanitizeReferenceNumber(rawValue);
-    setValues(values.map((value, valueIndex) => valueIndex === index ? nextValue : value));
+    setValues(updateLookupInputValues(values, index, rawValue));
   };
 
   const validateInputValue = (index: number) => {
-    const value = values[index];
-    if (value === "") return;
-    const formatted = formatReferenceNumber(value);
-    setValues(values.map((currentValue, valueIndex) => valueIndex === index ? formatted : currentValue));
+    setValues(finalizeLookupInputValues(values, index));
   };
 
   const handleSearch = async () => {
@@ -1773,6 +1784,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
               inputMode="numeric"
               pattern="(0[1-9]|[1-4][0-9])"
               maxLength={2}
+              onClick={(event) => event.currentTarget.select()}
               onChange={(event) => updateInputValue(index, event.target.value)}
               onBlur={() => validateInputValue(index)}
             />
@@ -1809,7 +1821,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       {searched ? (
         <>
           <div className="ornament-title"><span />探索結果<span /></div>
-          <section className="panel tongxing-results">
+          <section ref={resultsEndRef} className="panel tongxing-results">
             <div
               className="tongxing-table"
               data-columns={resultColumns.length}
@@ -1827,7 +1839,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
               ))}
             </div>
           </section>
-          <div ref={resultsEndRef} className="tongxing-results-end" aria-hidden="true" />
         </>
       ) : null}
     </FeatureShell>
@@ -1993,18 +2004,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <section className="reference-search" aria-label="探索號碼">
           <div>
             {inputs.map((v, i) => (
-              <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" maxLength={2} data-filled={Boolean(v)}
+              <input key={i} value={v} aria-label={`探索號碼 ${i + 1}`} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} data-filled={Boolean(v)}
                 onClick={(event) => event.currentTarget.select()}
-                onChange={(event) => {
-                  const candidate = sanitizeReferenceNumber(event.target.value);
-                  if (candidate.length === 2 && isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, candidate)) return;
-                  setInputs(inputs.map((x, index) => index === i ? candidate : x));
-                }}
-                onBlur={() => {
-                  const formatted = formatReferenceNumber(inputs[i]);
-                  const nextValue = isDuplicateLookupNumber(inputs.map(formatReferenceNumber), i, formatted) ? "" : formatted;
-                  setInputs(inputs.map((x, index) => index === i ? nextValue : x));
-                }}
+                onChange={(event) => setInputs(updateLookupInputValues(inputs, i, event.target.value))}
+                onBlur={() => setInputs(finalizeLookupInputValues(inputs, i))}
               />
             ))}
             <button type="button" className="gold-button branded-explore-action" onClick={startReferenceSearch}><MagnifyingGlassIcon />開始探索</button>
@@ -3761,4 +3764,3 @@ export function FeaturePageRouter({
   if (screen === "status-settings") return <MatrixCustomStatusPage onNavigate={onNavigate} />;
   return <MatrixStatusPage onNavigate={onNavigate} />;
 }
-

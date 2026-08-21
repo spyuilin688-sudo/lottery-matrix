@@ -7,6 +7,7 @@ import { NumberReferencePage } from '../FeaturePages';
 beforeEach(() => {
   document.body.innerHTML = '';
   window.localStorage.clear();
+  window.sessionStorage.clear();
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ records: [] }),
@@ -54,6 +55,38 @@ test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {
 
   expect(input.selectionStart).toBe(0);
   expect(input.selectionEnd).toBe(2);
+});
+
+test('三個輸入框共同限定 01 到 49、失焦補零且不可重複', () => {
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+
+  const first = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  const second = screen.getByRole('textbox', { name: '探索號碼 2' }) as HTMLInputElement;
+
+  fireEvent.change(first, { target: { value: '0' } });
+  expect(first.value).toBe('0');
+  fireEvent.blur(first);
+  expect(first.value).toBe('');
+
+  fireEvent.change(first, { target: { value: '7' } });
+  expect(first.value).toBe('7');
+  fireEvent.blur(first);
+  expect(first.value).toBe('07');
+
+  fireEvent.change(first, { target: { value: '00' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '50' } });
+  expect(first.value).toBe('');
+  fireEvent.change(first, { target: { value: '123' } });
+  expect(first.value).toBe('12');
+
+  fireEvent.change(second, { target: { value: '12' } });
+  expect(second.value).toBe('');
+  fireEvent.change(first, { target: { value: '01' } });
+  fireEvent.change(second, { target: { value: '1' } });
+  expect(second.value).toBe('1');
+  fireEvent.blur(second);
+  expect(second.value).toBe('');
 });
 
 test('已存在 01 到 04 時仍可輸入 11 到 49', () => {
