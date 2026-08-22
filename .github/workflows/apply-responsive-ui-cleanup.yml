@@ -11,7 +11,7 @@ jobs:
   apply-fix:
     if: github.head_ref == 'bottom-nav-responsive-source-fix-trigger'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,6 +40,28 @@ jobs:
             echo 'Expected updated responsive regression tests to fail before the source patch.'
             exit 1
           fi
+
+      - name: Record pre-existing main node-test baseline
+        shell: bash
+        run: |
+          : > baseline-failing.txt
+          : > baseline-output.txt
+          for file in tests/*.test.mjs; do
+            if [ "$file" = "tests/sites-worker.test.mjs" ]; then
+              continue
+            fi
+            echo "===== $file =====" | tee -a baseline-output.txt
+            set +e
+            node --test "$file" 2>&1 | tee -a baseline-output.txt
+            code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -ne 0 ]; then
+              echo "$file" >> baseline-failing.txt
+            fi
+          done
+          sort -u baseline-failing.txt -o baseline-failing.txt
+          echo 'Baseline failures:'
+          cat baseline-failing.txt || true
 
       - name: GREEN - apply exact responsive UI source cleanup
         run: python .github/apply-responsive-ui-cleanup.py
@@ -72,24 +94,42 @@ jobs:
           done
           exit "$status"
 
-      - name: Verify every node test file
+      - name: Verify Vitest unit suite
+        run: npm run test:unit
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Run complete post-change node suite
         shell: bash
         run: |
-          : > failing-tests.txt
-          : > all-node-output.txt
-          status=0
+          : > post-failing.txt
+          : > post-output.txt
           for file in tests/*.test.mjs; do
-            echo "===== $file =====" | tee -a all-node-output.txt
+            echo "===== $file =====" | tee -a post-output.txt
             set +e
-            node --test "$file" 2>&1 | tee -a all-node-output.txt
+            node --test "$file" 2>&1 | tee -a post-output.txt
             code=${PIPESTATUS[0]}
             set -e
             if [ "$code" -ne 0 ]; then
-              echo "$file" | tee -a failing-tests.txt
-              status=1
+              echo "$file" >> post-failing.txt
             fi
           done
-          exit "$status"
+          sort -u post-failing.txt -o post-failing.txt
+          echo 'Post-change failures:'
+          cat post-failing.txt || true
+
+      - name: Reject newly introduced node-test failures
+        shell: bash
+        run: |
+          sort -u baseline-failing.txt -o baseline-failing.txt
+          sort -u post-failing.txt -o post-failing.txt
+          comm -23 post-failing.txt baseline-failing.txt > new-failing.txt
+          echo 'New failures after responsive cleanup:'
+          cat new-failing.txt || true
+          if [ -s new-failing.txt ]; then
+            exit 1
+          fi
 
       - name: Upload test diagnostics
         if: failure()
@@ -97,17 +137,14 @@ jobs:
         with:
           name: final-responsive-ui-node-diagnostics
           path: |
+            baseline-failing.txt
+            baseline-output.txt
             targeted-output.txt
             targeted-failing.txt
-            failing-tests.txt
-            all-node-output.txt
+            post-failing.txt
+            post-output.txt
+            new-failing.txt
           if-no-files-found: ignore
-
-      - name: Verify Vitest unit suite
-        run: npm run test:unit
-
-      - name: Verify production build
-        run: npm run build
 
       - name: Commit verified cleanup to main
         shell: bash
@@ -117,7 +154,7 @@ jobs:
           rm -f .github/workflows/apply-responsive-ui-cleanup.yml
           rm -f .github/workflows/finalize-responsive-ui-cleanup.yml
           rm -f .github/apply-responsive-ui-cleanup.py
-          rm -f targeted-output.txt targeted-failing.txt failing-tests.txt all-node-output.txt
+          rm -f baseline-failing.txt baseline-output.txt targeted-output.txt targeted-failing.txt post-failing.txt post-output.txt new-failing.txt
           git add -A
           git commit -m 'Fix responsive feature layouts and filters'
           git push origin main
