@@ -3,6 +3,8 @@ name: TongXing fix verification
 on:
   push:
     branches: [fix-tongxing-floating-density]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
