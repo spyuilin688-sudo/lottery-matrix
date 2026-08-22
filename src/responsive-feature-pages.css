@@ -9,18 +9,19 @@
 
 .title-card-compact-action {
   position: relative;
+  isolation: isolate;
   box-sizing: border-box;
   display: inline-flex;
   min-width: 0;
-  height: 23.4px;
-  min-height: 23.4px;
+  height: 44px;
+  min-height: 44px;
   padding: 0 5px;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border: 1px solid rgba(211, 166, 66, .62);
-  border-radius: 12px;
-  background: rgba(8, 20, 27, .92);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: #d3a642;
   font-size: 8.1px;
   font-weight: 700;
@@ -30,7 +31,30 @@
 
 .title-card-compact-action::before {
   position: absolute;
-  inset: -10px -3px;
+  z-index: -2;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 23.4px;
+  transform: translateY(-50%);
+  clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut));
+  background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618);
+  filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32));
+  pointer-events: none;
+  content: "";
+}
+
+.title-card-compact-action::after {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 1px;
+  width: calc(100% - 2px);
+  height: 21.4px;
+  transform: translateY(-50%);
+  clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut));
+  background: var(--select-tech-surface);
+  pointer-events: none;
   content: "";
 }
 
@@ -57,9 +81,6 @@
   height: auto;
   align-items: flex-end;
   justify-content: flex-end;
-}
-
-.draw-history-screen .matrix-title-banner-actions {
   transform: translateY(4px);
 }
 
@@ -76,6 +97,12 @@
   width: 100%;
   margin-inline: 0;
   padding-inline: var(--layout-page-inline);
+}
+
+.draw-history-screen .matrix-title-banner,
+.number-reference-screen .matrix-title-banner,
+.tongxing-screen .matrix-title-banner {
+  width: calc(100% - (var(--layout-page-inline) * 2));
 }
 
 .draw-history-history-scope {

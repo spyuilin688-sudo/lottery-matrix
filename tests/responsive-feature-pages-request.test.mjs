@@ -15,15 +15,18 @@ test('歷史開獎使用篩選設定文案、共用精簡按鈕及 sticky 頁首
   assert.match(source, /id="history-filter-title">篩選設定<\/h2>/);
   assert.match(source, /className="history-filter-trigger title-card-compact-action"/);
   assert.match(source, /className="draw-history-screen sticky-title-card-screen"/);
-  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*height:\s*23\.4px[^}]*font-size:\s*8\.1px/s);
+  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*height:\s*44px[^}]*font-size:\s*8\.1px/s);
+  assert.match(responsiveCss, /\.title-card-compact-action::before\s*\{[^}]*height:\s*23\.4px[^}]*clip-path:\s*polygon/s);
+  assert.match(responsiveCss, /\.title-card-compact-action::after\s*\{[^}]*background:\s*var\(--select-tech-surface\)/s);
   assert.match(responsiveCss, /\.sticky-title-card-screen \.feature-brand-header\s*\{[^}]*position:\s*sticky/s);
-  assert.match(responsiveCss, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*transform:\s*translateY\(4px\)/s);
+  assert.match(responsiveCss, /\.draw-history-screen \.matrix-title-banner-actions,[^{]*\.number-reference-screen \.matrix-title-banner-actions,[^{]*\.tongxing-screen \.matrix-title-banner-actions\s*\{[^}]*transform:\s*translateY\(4px\)/s);
 });
 
 test('歷史列表及功能頁使用唯一 12px 外距 token', () => {
   assert.match(tokens, /--layout-page-inline:\s*12px;/);
   assert.match(responsiveCss, /\.draw-history-screen \.feature-body,[^{]*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
   assert.match(responsiveCss, /\.draw-history-screen \.feature-body,[^{]*\.number-reference-screen \.feature-body,[^{]*\.tongxing-screen \.feature-body,[^{]*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
+  assert.match(responsiveCss, /\.draw-history-screen \.matrix-title-banner,[^{]*\.number-reference-screen \.matrix-title-banner,[^{]*\.tongxing-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\)/s);
 });
 
 test('號碼對照單標題操作共用按鈕規格且相距 6px', () => {
@@ -33,6 +36,11 @@ test('號碼對照單標題操作共用按鈕規格且相距 6px', () => {
   assert.match(responsiveCss, /\.reference-title-actions\s*\{[^}]*gap:\s*6px/s);
   assert.doesNotMatch(brandCss, /\.number-reference-screen \.reference-title-actions button:(?:first|last)-child/);
   assert.match(responsiveCss, /\.number-reference-screen \.reference-row:not\(\.head\)\s*\{[^}]*min-height:\s*32px/s);
+});
+
+test('對照單浮動探索設定維持原本三欄排列', () => {
+  assert.match(css, /\.reference-query-panel \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.85fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\)/s);
+  assert.doesNotMatch(css, /\.number-reference-screen \.query-selects\.three-cols/);
 });
 
 test('Matrix 同星設定可收合、頁首固定且不渲染近10期卡片', () => {
