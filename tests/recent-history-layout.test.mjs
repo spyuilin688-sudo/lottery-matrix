@@ -50,10 +50,10 @@ test("Matrix Explore 近10期六加一使用連續內容寬度群組且移除 32
 });
 
 test("Matrix Explore 近10期五顆彩球放大，六加一彩球響應式縮放", () => {
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(20px, 6vw, 22px\);[^}]*--number-font-size:\s*clamp\(10px, 2\.8vw, 11px\);/s);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);[^}]*--underline-width:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.2px;/s);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*var\(--matrix-history-ball-size\);[^}]*--number-font-size:\s*clamp\(7px, 2\.31vw, 9px\);[^}]*--underline-width:\s*clamp\(7px, 2\.31vw, 9px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*-1px;[^}]*transform:\s*translateY\(2px\);/s);
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel\[data-lottery="大樂透"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-font-size:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.3px;[^}]*transform:\s*translateY\(3px\);/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(20px, 6vw, 22px\);[^}]*--number-font-size:\s*clamp\(10px, 2\.8vw, 11px\);/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);[^}]*--underline-width:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.2px;/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*var\(--matrix-history-ball-size\);[^}]*--number-font-size:\s*clamp\(7px, 2\.31vw, 9px\);[^}]*--underline-width:\s*clamp\(7px, 2\.31vw, 9px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*-1px;[^}]*transform:\s*translateY\(2px\);/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="大樂透"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-font-size:\s*clamp\(9px, 2\.82vw, 11px\);[^}]*--underline-height:\s*\.7px;[^}]*--underline-y:\s*\.3px;[^}]*transform:\s*translateY\(3px\);/s);
 });
 
 test("Matrix Explore 六加一使用 40px 列高與各自彩球尺寸", () => {
