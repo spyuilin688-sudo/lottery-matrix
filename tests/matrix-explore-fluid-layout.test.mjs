@@ -89,7 +89,7 @@ test("Matrix Explore history table uses compact target proportions", () => {
   assert.match(css, /data-lottery="今彩539"[^}]*data-lottery="天天樂"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*32px;[^}]*min-height:\s*32px/s);
   assert.match(css, /data-lottery="六合彩"[^}]*data-lottery="大樂透"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px/s);
 
-  assert.match(ballCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);/s);
+  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);/s);
   assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(4px, 1\.8vw, 8px\);/s);
 });
 
