@@ -151,31 +151,12 @@
   margin-inline: 0;
 }
 
-/* Settings panels use the remaining width and keep no legacy fixed gutters. */
-.draw-history-screen .history-filter-panel,
-.number-reference-screen .reference-query-panel,
-.tongxing-screen .tongxing-query {
+/* History settings own their layout directly, so Portal rendering keeps exactly the same controls. */
+.history-filter-panel {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-}
-
-.draw-history-screen .history-filter-panel[data-floating="true"],
-.number-reference-screen .reference-query-panel[data-floating="true"],
-.tongxing-screen .tongxing-query[data-floating="true"] {
-  left: 12px;
-  right: 12px;
-  width: auto;
-  max-width: none;
-  min-width: 0;
-}
-
-/* History and same-star outer settings cards are intentionally removed. */
-.draw-history-screen .history-filter-panel,
-.draw-history-screen .history-filter-panel[data-floating="true"],
-.tongxing-screen .tongxing-query,
-.tongxing-screen .tongxing-query[data-floating="true"] {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -183,10 +164,24 @@
   box-shadow: none;
 }
 
-/* First settings row uses the shared original cut-corner select frame on all three pages. */
-.draw-history-screen .history-filter-primary-row .select-box,
-.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box,
-.tongxing-screen .query-selects .select-box {
+.history-filter-panel[data-floating="true"] {
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.history-filter-primary-row {
+  width: 100%;
+  min-width: 0;
+}
+
+.history-filter-primary-row > * {
+  min-width: 0;
+}
+
+.history-filter-primary-row .select-box {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -195,28 +190,68 @@
   background: transparent;
 }
 
-.draw-history-screen .history-filter-primary-row .select-box::before,
-.draw-history-screen .history-filter-primary-row .select-box::after,
-.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box::before,
-.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box::after,
-.tongxing-screen .query-selects .select-box::before,
-.tongxing-screen .query-selects .select-box::after {
+.history-filter-primary-row .select-box::before,
+.history-filter-primary-row .select-box::after {
   display: block;
 }
 
-.draw-history-screen .history-filter-primary-row,
-.number-reference-screen .reference-query-panel .query-selects.three-cols,
-.tongxing-screen .query-selects,
-.tongxing-screen .same-star-fields {
+/* Number-reference settings are scoped to the panel itself instead of the page ancestor. */
+.reference-query-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.reference-query-panel[data-floating="true"] {
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.reference-query-panel .query-selects.three-cols {
   width: 100%;
   min-width: 0;
 }
 
-.draw-history-screen .history-filter-primary-row > *,
-.number-reference-screen .reference-query-panel .query-selects.three-cols > *,
-.tongxing-screen .query-selects > *,
-.tongxing-screen .same-star-fields > * {
+.reference-query-panel .query-selects.three-cols > * {
   min-width: 0;
+}
+
+.reference-query-panel .query-selects.three-cols .select-box {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.reference-query-panel .query-selects.three-cols .select-box::before,
+.reference-query-panel .query-selects.three-cols .select-box::after {
+  display: block;
+}
+
+.reference-query-panel .reference-select select {
+  padding-left: 7px;
+  padding-right: 25px;
+  font-size: clamp(9px, 3vw, 13px);
+  font-weight: 600;
+  text-align: center;
+  text-align-last: center;
+}
+
+.reference-query-panel .reference-select svg {
+  right: 8px;
+  width: 15px;
+}
+
+.reference-query-panel .reference-order-select select {
+  padding-left: 5px;
+  padding-right: 22px;
+  font-size: clamp(8.5px, 2.8vw, 11.5px);
 }
 
 .reference-title-actions {
@@ -248,10 +283,6 @@
 .number-reference-screen .reference-row {
   min-width: 0;
   grid-template-columns: minmax(56px, .2fr) minmax(0, .8fr);
-}
-
-.tongxing-screen .tongxing-query[hidden] {
-  display: none;
 }
 
 /* Draw-history balls follow the same layout geometry as Matrix Explore recent-history balls. */
