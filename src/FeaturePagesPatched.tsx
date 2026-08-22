@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import {
@@ -251,14 +251,14 @@ function PatchedDrawHistoryPage({
   const toggleHistoryFilters = () => {
     if (filterExpanded) { setFilterExpanded(false); setFilterFloating(false); return; }
     const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
-    setFilterPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
+    setFilterPanelTop(header?.getBoundingClientRect().bottom ?? 0);
     setFilterExpanded(true);
     setFilterFloating(true);
   };
 
   const historyTitleActions = (
     <div className="history-title-actions title-card-compact-actions">
-      <button type="button" className="history-reset-trigger title-card-compact-action" onClick={resetHistory}>重設</button>
+      <button type="button" className="history-reset-trigger title-card-compact-action" onClick={resetHistory}><ReloadIcon aria-hidden="true" />重設</button>
       <button type="button" className="history-filter-trigger title-card-compact-action" aria-label={filterExpanded ? "收合篩選設定" : "展開篩選設定"} aria-expanded={filterExpanded} onClick={toggleHistoryFilters}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選設定
@@ -282,7 +282,7 @@ function PatchedDrawHistoryPage({
               <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             </div>
             <div className="select-box native-select history-range-select"><select aria-label="探索範圍" value={range} onChange={(event) => setRange(event.target.value)}>{["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-            <button type="button" className="history-filter-start" onClick={applyHistoryFilters}>開始探索</button>
+            <button type="button" className="history-filter-start branded-explore-action" onClick={applyHistoryFilters}><MagnifyingGlassIcon aria-hidden="true" /><span>開始探索</span></button>
           </div>
         </section>
       </MobilePagePortal>
