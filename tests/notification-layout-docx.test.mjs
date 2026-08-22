@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
 
 const featureCss = fs.readFileSync('src/feature-pages.css', 'utf8');
+const responsiveCss = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const runtimeCss = fs.readFileSync('src/styles.css', 'utf8');
 const prototypeCss = fs.readFileSync('src/prototype.css', 'utf8');
 const featureTsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
@@ -106,20 +107,22 @@ function readPngAlphaBounds(path) {
   };
 }
 
-test('notification page follows the uploaded 390px layout specification', () => {
-  assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 0 12px calc\(var\(--bottom-navigation-height\) \+ var\(--mobile-safe-area-height, 34px\) \+ 12px\); \}/);
+test('notification page follows the current compact responsive layout specification', () => {
+  assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 0 20px calc\(var\(--bottom-navigation-height\) \+ var\(--mobile-safe-area-height, 34px\) \+ 12px\); \}/);
   assert.match(featureCss, /\.notification-list \{ display: grid; gap: 8px; \}/);
-  assert.match(featureCss, /\.notification-row \{[^}]*width: 100%;[^}]*height: 80px;[^}]*padding: 8px;/);
-  assert.match(featureCss, /\.notification-heading \{[^}]*grid-template-columns: 58px minmax\(0, 1fr\) 88px 46px;[^}]*column-gap: 8px;/);
-  assert.match(featureCss, /\.notification-icon \{[^}]*width: 58px;[^}]*height: 58px;/);
-  assert.match(featureCss, /\.notification-icon img \{[^}]*width: 58px;[^}]*height: 58px;[^}]*object-fit: contain;/);
+  assert.match(responsiveCss, /\.notification-row \{[^}]*height:\s*auto;[^}]*min-height:\s*0;[^}]*padding:\s*4px;/);
+  assert.match(responsiveCss, /\.notification-heading \{[^}]*grid-template-columns:\s*48px minmax\(0, 1fr\) 76px 42px;[^}]*column-gap:\s*6px;/);
+  assert.match(responsiveCss, /\.notification-icon \{[^}]*width:\s*44px;[^}]*height:\s*44px;/);
+  assert.match(responsiveCss, /\.notification-icon img \{[^}]*width:\s*44px;[^}]*height:\s*44px;/);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*border:/);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*box-shadow:/);
   assert.match(featureCss, /\.notification-actions \{ display: contents; \}/);
-  assert.match(featureCss, /\.notification-actions > button:first-child \{[^}]*width: 88px;[^}]*height: 38px;[^}]*border-radius: 19px;[^}]*font-size: 14px;[^}]*font-weight: 600;/);
+  assert.match(responsiveCss, /\.notification-actions > button:first-child \{[^}]*width:\s*72px;[^}]*height:\s*32px;/);
   assert.match(featureCss, /\.notification-row h2 \{[^}]*color: #F2F2F2;[^}]*font-size: 17px;[^}]*font-weight: 700;[^}]*line-height: 23px;[^}]*letter-spacing: 0;/);
   assert.match(featureCss, /\.notification-row h2 em \{[^}]*height: 22px;[^}]*padding: 0 8px;[^}]*border-radius: 7px;[^}]*font-size: 12px;[^}]*font-weight: 600;/);
-  assert.match(featureCss, /\.notifications-screen \.notification-row \{[^}]*border-radius: 14px;[^}]*background: #020C12;/);
+  assert.match(featureCss, /\.notifications-screen \.notification-row \{[^}]*border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius: 14px;[^}]*background: #020C12;/);
+  assert.match(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*gap:\s*4px;[^}]*padding-inline:\s*20px;/);
+  assert.match(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\) \{[^}]*margin-bottom:\s*4px;/);
   assert.match(featureCss, /\.toggle \{[^}]*width: 46px;[^}]*height: 44px;/);
   assert.match(featureCss, /\.toggle::before \{[^}]*width: 46px;[^}]*height: 28px;[^}]*border: 1px solid #46505C;[^}]*border-radius: 14px;[^}]*background: #151B22;/);
   assert.match(featureCss, /\.toggle span \{[^}]*width: 24px;[^}]*height: 24px;/);
