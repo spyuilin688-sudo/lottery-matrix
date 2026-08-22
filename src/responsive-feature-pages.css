@@ -84,8 +84,16 @@
   transform: translateY(4px);
 }
 
-.draw-history-screen .history-filter-trigger {
+.draw-history-screen .history-title-actions {
+  gap: 6px;
+}
+
+.draw-history-screen .history-filter-trigger,
+.draw-history-screen .history-reset-trigger {
   min-width: clamp(49px, 14.13vw, 55.1px);
+}
+
+.draw-history-screen .history-filter-trigger {
   gap: 1px;
 }
 
@@ -109,7 +117,7 @@
   flex: 0 0 7px;
 }
 
-/* Three tool pages share one responsive page-width source. */
+/* Three tool pages share a single 12px responsive page gutter. */
 .draw-history-screen .feature-body,
 .number-reference-screen .feature-body,
 .tongxing-screen .feature-body {
@@ -117,7 +125,7 @@
   width: 100%;
   min-width: 0;
   margin-inline: 0;
-  padding-inline: var(--layout-page-inline);
+  padding-inline: 12px;
 }
 
 .draw-history-screen .feature-body {
@@ -134,7 +142,7 @@
 .draw-history-screen .matrix-title-banner,
 .number-reference-screen .matrix-title-banner,
 .tongxing-screen .matrix-title-banner {
-  width: calc(100% - (var(--layout-page-inline) * 2));
+  width: calc(100% - 24px);
 }
 
 .draw-history-history-scope {
@@ -143,7 +151,7 @@
   margin-inline: 0;
 }
 
-/* Settings panels must not keep legacy fixed 20px gutters or locked widths. */
+/* Settings panels use the remaining width and keep no legacy fixed gutters. */
 .draw-history-screen .history-filter-panel,
 .number-reference-screen .reference-query-panel,
 .tongxing-screen .tongxing-query {
@@ -156,8 +164,8 @@
 .draw-history-screen .history-filter-panel[data-floating="true"],
 .number-reference-screen .reference-query-panel[data-floating="true"],
 .tongxing-screen .tongxing-query[data-floating="true"] {
-  left: var(--layout-page-inline);
-  right: var(--layout-page-inline);
+  left: 12px;
+  right: 12px;
   width: auto;
   max-width: none;
   min-width: 0;
