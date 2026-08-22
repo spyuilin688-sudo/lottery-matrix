@@ -1,0 +1,9 @@
+/* Bottom-navigation clearance for scrollable feature pages. */
+.matrix-explore-main-screen {
+  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + env(safe-area-inset-bottom, 0px));
+}
+
+.matrix-explore-main-screen .feature-body,
+.calculator-screen > .feature-body {
+  padding-bottom: var(--layout-bottom-nav-clearance);
+}
