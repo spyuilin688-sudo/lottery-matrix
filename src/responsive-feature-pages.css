@@ -69,7 +69,21 @@
   background: #020b11;
 }
 
-.draw-history-screen .matrix-title-banner-actions,
+/* History uses one vertical anchor only, so the approved 4px downward offset is real and predictable. */
+.draw-history-screen .matrix-title-banner-actions {
+  top: auto;
+  right: 4%;
+  bottom: calc(8% - 4px);
+  left: auto;
+  width: 46%;
+  min-width: 0;
+  height: auto;
+  align-items: center;
+  justify-content: flex-end;
+  transform: none;
+}
+
+/* Other tool title actions keep their existing positioning. */
 .number-reference-screen .matrix-title-banner-actions,
 .tongxing-screen .matrix-title-banner-actions {
   top: 20%;
@@ -84,22 +98,28 @@
   transform: translateY(4px);
 }
 
-.draw-history-screen .history-title-actions {
+/* Match the legacy selector directly so height:100% / bottom alignment can no longer pin this row. */
+.draw-history-screen .matrix-title-banner-actions .history-title-actions {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  align-items: center;
+  justify-content: flex-end;
   gap: 6px;
 }
 
-/* History title actions are slightly tighter while keeping the approved 4px downward position. */
-.draw-history-screen .title-card-compact-action {
+/* History title actions are slightly tighter. */
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action {
   height: 22px;
   min-height: 22px;
   padding-inline: 4px;
 }
 
-.draw-history-screen .title-card-compact-action::before {
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action::before {
   height: 22px;
 }
 
-.draw-history-screen .title-card-compact-action::after {
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action::after {
   height: 20px;
 }
 
