@@ -8,7 +8,7 @@ import {
   CountdownTimerIcon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
-import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePages";
+import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePagesPatched";
 import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
@@ -394,7 +394,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     : null;
 
   if (screen !== "home") {
-    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
+    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
   }
 
   return (
