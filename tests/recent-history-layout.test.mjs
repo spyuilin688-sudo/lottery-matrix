@@ -21,7 +21,8 @@ test("Matrix Explore 近10期標題收合按鍵保留狀態標籤", () => {
 
 test("Matrix Explore 近10期三欄採期數窄日期中等號碼最大寬度", () => {
   assert.match(exploreCss, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\);/);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row,[\s\S]*?height:\s*40px;[\s\S]*?min-height:\s*40px;[\s\S]*?padding:\s*0;/);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-row\s*\{[^}]*padding:\s*0;[^}]*grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\);/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\) \.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px;/s);
   assert.doesNotMatch(css, /--mx-history-issue-size:/);
   assert.match(exploreCss, /--mx-history-issue-size:\s*clamp\(6px, 2\.1vw, 8px\);/);
   const issueRule = exploreCss.match(/\.matrix-explore-main-screen \.history-row:not\(\.history-head\) > :nth-child\(1\)\s*\{([^}]*)\}/s);

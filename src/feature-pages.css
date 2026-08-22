@@ -618,27 +618,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }
 
 .draw-history-screen .matrix-title-banner { width: calc(100% - 24px); margin-bottom: 8px; }
-.draw-history-screen .matrix-title-banner-actions { top: 20%; right: 8%; bottom: 20%; left: auto; width: 46%; height: auto; }
-.draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; justify-content: flex-end; }
+.draw-history-screen .matrix-title-banner-actions { top: 20%; right: 4%; bottom: 8%; left: auto; width: 46%; height: auto; }
+.draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; align-items: flex-end; justify-content: flex-end; }
 .draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
-.draw-history-panel { padding: 0 4px; overflow: visible; }
-.draw-history-row { display: grid; height: 54px; grid-template-columns: 62px 72px minmax(0, 1fr); align-items: center; border-top: 1px solid rgba(111, 82, 39, .42); color: #bcb7ae; font-size: 11px; text-align: center; }
-.draw-history-row:first-child { border-top: 0; }
-.draw-history-row > span { display: grid; min-width: 0; height: 100%; padding: 0; place-items: center; box-sizing: border-box; }
-.draw-history-row > span + span { border-left: 1px solid rgba(126, 91, 39, .24); }
-.draw-history-row > .history-numbers { display: flex; }
-.draw-history-head { height: 32px; border-bottom: 2px solid rgba(195, 145, 54, .64); color: #d9ad42; font-size: 13px; font-weight: 700; }
-.draw-history-head + .draw-history-row { border-top: 0; }
-.draw-history-row .draw-history-meta:first-child { width: 100%; padding-inline: 0; font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; }
-.draw-history-screen .history-date-stack strong { font-size: 14px; }
-.draw-history-screen .history-date-stack small { font-size: 13px; }
-.draw-history-screen .draw-history-row .history-numbers { padding: 0; align-items: center; justify-content: space-evenly; }
-.draw-history-screen .draw-history-row .history-main-numbers,
-.draw-history-screen .draw-history-row .history-special-number { display: contents; }
-.draw-history-screen .history-special-ball { height: 36px; grid-template-rows: 10px 26px; }
-.draw-history-screen .history-special-label { margin: 0; line-height: 8px; }
-.draw-history-screen .history-special-plus { display: grid; height: 26px; place-items: center; font-size: 13px; font-weight: 900; }
+.draw-history-panel { padding: 0; overflow: visible; }
 .history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
 .history-pagination button { display: grid; width: 38px; height: 36px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
 .history-pagination button:disabled { color: #5f574a; }
@@ -677,8 +661,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .history-filter-fields legend,
 .history-filter-row > span { color: #d9c9a6; font-size: 14px; font-weight: 600; }
 .history-filter-row { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 10px; }
-.history-filter-icon { display: grid; width: 52px; height: 52px; place-items: center; overflow: hidden; border: 1px solid #74521c; border-radius: 10px; background: #030507; }
-.history-filter-icon img { display: block; width: 50px; height: 50px; object-fit: contain; }
+.history-filter-icon { display: grid; place-items: center; overflow: hidden; }
+.history-filter-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .history-filter-fields input {
   min-width: 0;
   height: 42px;
@@ -707,15 +691,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .history-filter-sheet .select-box::before,
 .history-filter-sheet .select-box::after { display: none; }
 .history-range-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.history-range-options button {
-  min-height: 40px;
-  padding: 3px;
-  border: 1px solid #5b472b;
-  border-radius: 8px;
-  background: #071018;
-  color: #b9b5ae;
-  font-size: 10.5px;
-}
+.history-range-options button { min-width: 0; }
 .history-range-options button[data-selected="true"] {
   border-color: #c89622;
   background: linear-gradient(145deg, rgba(124, 85, 12, .3), rgba(31, 25, 13, .8));

@@ -767,12 +767,13 @@ export function DrawHistoryPage({
       className="draw-history-screen"
       headerAction={historyTitleActions}
     >
+      <div className="matrix-explore-main-screen draw-history-history-scope">
       <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
         {historyWeekGroups.map((weekRecords) => {
           const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
           return (
-            <section className="panel draw-history-panel" key={firstIssue}>
-              <div className="draw-history-row draw-history-head">
+            <section className="panel history-panel draw-history-panel" data-lottery={appliedHistorySettings.lottery} key={firstIssue}>
+              <div className="history-row draw-history-row history-head draw-history-head">
                 <span>期數</span>
                 <span>日期</span>
                 <span>開獎號碼</span>
@@ -783,7 +784,7 @@ export function DrawHistoryPage({
                 const date = record.drawDate ?? record.date ?? "";
 
                 return (
-                  <div className="draw-history-row" key={issue}>
+                  <div className="history-row draw-history-row" key={issue}>
                     <span className="draw-history-meta">{issue}</span>
                     <span className="draw-history-meta"><HistoryDate value={date} /></span>
                     <span className="history-numbers" data-has-special={Boolean(draw.special)}>
@@ -807,6 +808,7 @@ export function DrawHistoryPage({
           );
         })}
       </div>
+      </div>
       {paginatedHistory.totalPages > 1 ? (
         <nav className="history-pagination" aria-label="歷史開獎號碼分頁">
           <button type="button" aria-label="上一頁" disabled={paginatedHistory.currentPage === 1} onClick={() => setPage((current) => current - 1)}>
@@ -822,7 +824,7 @@ export function DrawHistoryPage({
         ? createPortal(
             <div className="filter-sheet-backdrop" role="presentation" onClick={() => setFilterOpen(false)}>
               <section
-                className="filter-sheet history-filter-sheet"
+                className="filter-sheet history-filter-sheet matrix-explore-main-screen"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="history-filter-title"
@@ -836,7 +838,7 @@ export function DrawHistoryPage({
                 </header>
                 <div className="history-filter-fields">
                   <div className="history-filter-row">
-                    <span className="history-filter-icon"><img src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
+                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
                     <div className="select-box native-select">
                       <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
                         {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
@@ -845,7 +847,7 @@ export function DrawHistoryPage({
                     </div>
                   </div>
                   <label>
-                    <span className="history-filter-icon"><img src="/assets/history-filter/issue.png" alt="期數" /></span>
+                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/issue.png" alt="期數" /></span>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -854,7 +856,7 @@ export function DrawHistoryPage({
                     />
                   </label>
                   <div className="history-filter-row">
-                    <span className="history-filter-icon"><img src="/assets/history-filter/date.png" alt="日期" /></span>
+                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/date.png" alt="日期" /></span>
                     <div className="history-date-selects">
                       <div className="select-box native-select">
                         <select aria-label="年份" value={year} onChange={(event) => setYear(event.target.value)}>
@@ -877,7 +879,7 @@ export function DrawHistoryPage({
                     </div>
                   </div>
                   <div className="history-filter-row">
-                    <span className="history-filter-icon"><img src="/assets/history-filter/order.png" alt="號碼順序" /></span>
+                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/order.png" alt="號碼順序" /></span>
                     <div className="select-box native-select history-order-select">
                       <select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}>
                         <option>依號碼由小到大排序</option>
@@ -887,7 +889,7 @@ export function DrawHistoryPage({
                     </div>
                   </div>
                   <fieldset aria-label="探索範圍">
-                    <div className="history-range-options">
+                    <div className="history-range-options segmented four">
                       {["1000期", "3000期", "5000期", "所有期數"].map((value) => (
                         <button
                           type="button"

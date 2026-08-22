@@ -1,4 +1,4 @@
-export const PRIMARY_BRAND_LOGO = "/assets/lottery/functions/NewLogo.png?v=20260816-2";
+export const PRIMARY_BRAND_LOGO = "/assets/lottery/functions/matrixya.png";
 
 export type BrandLogoProps = {
   className?: string;
