@@ -7,7 +7,11 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: tongxing-fix-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -15,14 +19,77 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Apply exact TongXing fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, expected=1):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} matches, got {count}: {old[:100]!r}')
+              p.write_text(text.replace(old, new))
+
+          css = 'src/tongxing-compact.css'
+          replace(css, '  --table-header-height: 32px;\n  --table-row-height: 44px;\n  --result-row-height: 44px;', '  --table-header-height: 28px;\n  --table-row-height: 36px;\n  --result-row-height: 36px;')
+          replace(css, '''.tongxing-panel-scope .query-selects .select-box,
+          .tongxing-panel-scope .same-star-period-select {
+            border: 1px solid #b98723;
+            border-radius: 0;
+            background: #07131d;
+          }
+
+          .tongxing-panel-scope .select-box::before,
+          .tongxing-panel-scope .select-box::after { display: none; }''', '''.tongxing-panel-scope .same-star-period-select {
+            border: 1px solid rgba(110, 74, 30, .72);
+            border-radius: 0;
+            background: #07131d;
+          }
+
+          .tongxing-panel-scope .same-star-period-select::before,
+          .tongxing-panel-scope .same-star-period-select::after { display: none; }''')
+          replace(css, '.tongxing-panel-scope .same-star-period-select select { padding-inline: 7px 21px; }', '.tongxing-panel-scope .same-star-period-select select { padding-inline: 7px 28px; }')
+          replace(css, '.tongxing-screen .tongxing-query .lottery-tabs { display: none; }', '.tongxing-query .lottery-tabs { display: none; }')
+          replace(css, '  padding-inline: 7px 21px;\n  font-size: clamp(9px, 3vw, 12px);', '  padding-inline: 7px 28px;\n  font-size: clamp(9px, 3vw, 12px);')
+          replace(css, '  font-size: clamp(14px, 4.2vw, 17px);', '  font-size: clamp(12px, 3.4vw, 14px);')
+          replace(css, '.tongxing-screen .tongxing-table-head > span { min-height: var(--table-header-height); color: #d8aa39; font-size: clamp(12px, 3.7vw, 15px); font-weight: 700; }', '.tongxing-screen .tongxing-table-head > span { min-height: var(--table-header-height); color: #d8aa39; font-size: clamp(10px, 3vw, 12px); font-weight: 700; }')
+          replace(css, '.tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 14px; font-weight: 700; line-height: 17px; white-space: nowrap; }', '.tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 12px; font-weight: 700; line-height: 14px; white-space: nowrap; }')
+          replace(css, '.tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 10.5px; font-weight: 400; line-height: 13px; white-space: nowrap; }', '.tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 9px; font-weight: 400; line-height: 11px; white-space: nowrap; }')
+          replace(css, '.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: 15px; font-weight: 700; }', '.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: 13px; font-weight: 700; }')
+          replace(css, '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: clamp(12px, 3.7vw, 16px); }', '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: clamp(11px, 3vw, 13px); }')
+          replace(css, '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: clamp(11px, 3.4vw, 14px); }', '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: clamp(10px, 2.8vw, 12px); }')
+          replace(css, '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 13px; }', '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: 11px; }')
+
+          test_path = 'tests/tongxing-reference-responsive-layout.test.mjs'
+          replace(test_path, "  assert.match(tongxing, /--table-header-height:\\s*32px;/);\n  assert.match(tongxing, /--result-row-height:\\s*44px;/);", "  assert.match(tongxing, /--table-header-height:\\s*28px;/);\n  assert.match(tongxing, /--table-row-height:\\s*36px;/);\n  assert.match(tongxing, /--result-row-height:\\s*36px;/);")
+
+          contract = 'tests/ui-responsive-cleanup-contract.test.mjs'
+          replace(contract, "  assert.match(tongxing, /\\.tongxing-panel-scope \\.select-box::before,[\\s\\S]*?\\.tongxing-panel-scope \\.select-box::after\\s*\\{\\s*display:\\s*none;/s);", "  assert.match(tongxing, /\\.tongxing-panel-scope \\.same-star-period-select::before,[\\s\\S]*?\\.tongxing-panel-scope \\.same-star-period-select::after\\s*\\{\\s*display:\\s*none;/s);\n  assert.doesNotMatch(tongxing, /\\.tongxing-panel-scope \\.select-box::before,[\\s\\S]*?\\.tongxing-panel-scope \\.select-box::after\\s*\\{\\s*display:\\s*none;/s);")
+          PY
       - name: TongXing regression
         run: node --test tests/tongxing-floating-density-regression.test.mjs
       - name: Existing TongXing responsive tests
-        run: node --test tests/tongxing-reference-responsive-layout.test.mjs
+        run: node --test tests/tongxing-reference-responsive-layout.test.mjs tests/ui-responsive-cleanup-contract.test.mjs
+      - name: Full node tests
+        run: node --test tests/*.test.mjs
       - name: Build
         run: npm run build
+      - name: Commit verified source fix
+        if: github.event_name == 'push'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/tongxing-compact.css tests/tongxing-reference-responsive-layout.test.mjs tests/ui-responsive-cleanup-contract.test.mjs
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix TongXing floating settings and result density"
+            git push origin HEAD:fix-tongxing-floating-density
+          fi
