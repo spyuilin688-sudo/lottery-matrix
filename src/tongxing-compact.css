@@ -7,8 +7,8 @@
   --control-height: 26px;
   --primary-button-height: 40px;
   --table-header-height: 32px;
-  --table-row-height: 44px;
-  --result-row-height: 44px;
+  --table-row-height: 36px;
+  --result-row-height: 36px;
   --border-width: 1px;
   --group-divider-width: 3px;
   --bottom-nav-height: var(--bottom-navigation-height);
@@ -40,6 +40,7 @@
   padding: var(--card-padding);
   border-width: var(--border-width);
   border-radius: var(--card-radius);
+  background: linear-gradient(145deg, rgba(3, 9, 13, .99), rgba(1, 4, 7, .99));
   box-shadow: none;
 }
 
@@ -56,7 +57,7 @@
   overflow-y: auto;
   border: 1px solid rgba(187, 134, 47, .9);
   border-radius: var(--card-radius, 12px);
-  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  background: linear-gradient(145deg, rgba(3, 9, 13, .99), rgba(1, 4, 7, .99));
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .06);
 }
 
@@ -81,16 +82,6 @@
 .tongxing-panel-scope .same-star-period-select {
   height: var(--control-height);
 }
-
-.tongxing-panel-scope .query-selects .select-box,
-.tongxing-panel-scope .same-star-period-select {
-  border: 1px solid #b98723;
-  border-radius: 0;
-  background: #07131d;
-}
-
-.tongxing-panel-scope .select-box::before,
-.tongxing-panel-scope .select-box::after { display: none; }
 
 .tongxing-panel-scope .query-selects select,
 .tongxing-panel-scope .same-star-period-select select {
