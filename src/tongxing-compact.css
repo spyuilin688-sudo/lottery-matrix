@@ -29,9 +29,9 @@
   width: calc(100% - 24px);
 }
 
-/* 一般與浮動設定區都不保留最外層卡片。 */
-.tongxing-screen .tongxing-query,
-.tongxing-screen .tongxing-query[data-floating="true"] {
+/* 設定元件本身是唯一樣式作用範圍；浮動前後共用，不依賴頁面父層。 */
+.tongxing-query,
+.tongxing-query[data-floating="true"] {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -45,7 +45,7 @@
   box-shadow: none;
 }
 
-.tongxing-screen .tongxing-query[data-floating="true"] {
+.tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
   left: 12px;
@@ -56,14 +56,23 @@
   overflow-y: auto;
 }
 
+.tongxing-query[hidden] {
+  display: none;
+}
+
 .tongxing-panel-scope {
   --control-gap: 6px;
   --control-height: 26px;
   --primary-button-height: 40px;
+  --border-width: 1px;
 }
 
-/* 第一列只有彩種與號碼順序；不再有額外左右切換彩種列。 */
-.tongxing-screen .query-selects {
+.tongxing-query .lottery-tabs {
+  display: none;
+}
+
+/* 第一列只有彩種與號碼順序；切角框由共用 select-box 樣式負責。 */
+.tongxing-query .query-selects {
   display: grid;
   width: 100%;
   min-width: 0;
@@ -71,20 +80,28 @@
   gap: var(--control-gap);
 }
 
-.tongxing-screen .query-selects > *,
-.tongxing-screen .same-star-fields > * {
+.tongxing-query .query-selects > *,
+.tongxing-query .same-star-fields > * {
   min-width: 0;
 }
 
-.tongxing-screen .query-selects .select-box {
+.tongxing-query .query-selects .select-box {
   width: 100%;
   max-width: 100%;
   min-width: 0;
   height: var(--control-height);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-.tongxing-screen .query-selects select,
-.tongxing-screen .same-star-period-select select {
+.tongxing-query .query-selects .select-box::before,
+.tongxing-query .query-selects .select-box::after {
+  display: block;
+}
+
+.tongxing-query .query-selects select,
+.tongxing-query .same-star-period-select select {
   min-width: 0;
   font-size: clamp(9px, 3vw, 12px);
   font-weight: 600;
@@ -92,25 +109,25 @@
   text-align-last: center;
 }
 
-.tongxing-screen .query-selects select { padding-inline: 10px 28px; }
-.tongxing-screen .tongxing-order-select select { padding-inline: 8px 24px; }
+.tongxing-query .query-selects select { padding-inline: 10px 28px; }
+.tongxing-query .tongxing-order-select select { padding-inline: 8px 24px; }
 
-.tongxing-screen .same-star-fields {
+.tongxing-query .same-star-fields {
   display: grid;
   width: 100%;
   min-width: 0;
-  margin: var(--layout-section-gap) 0;
+  margin: var(--layout-section-gap, 8px) 0;
   grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(52px, .9fr) max-content;
   gap: var(--control-gap);
   align-items: center;
 }
 
-.tongxing-screen .same-star-fields input,
-.tongxing-screen .same-star-period-select {
+.tongxing-query .same-star-fields input,
+.tongxing-query .same-star-period-select {
   height: var(--control-height);
 }
 
-.tongxing-screen .same-star-fields input {
+.tongxing-query .same-star-fields input {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -127,13 +144,13 @@
   text-align: center;
 }
 
-.tongxing-screen .same-star-fields input:focus-visible {
+.tongxing-query .same-star-fields input:focus-visible {
   border-color: #d4a238;
   outline: 1px solid rgba(212, 162, 56, .45);
   outline-offset: 1px;
 }
 
-.tongxing-screen .same-star-fields > span {
+.tongxing-query .same-star-fields > span {
   align-self: center;
   color: #d5cec2;
   font-size: clamp(11px, 3.2vw, 13px);
@@ -142,23 +159,23 @@
   white-space: nowrap;
 }
 
-.tongxing-screen .same-star-period-select {
+.tongxing-query .same-star-period-select {
   width: 100%;
   min-width: 0;
   min-height: var(--control-height);
 }
 
-.tongxing-screen .same-star-period-select select { padding-inline: 7px 21px; }
-.tongxing-screen .same-star-period-select svg { right: 6px; width: 16px; height: 16px; }
+.tongxing-query .same-star-period-select select { padding-inline: 7px 28px; }
+.tongxing-query .same-star-period-select svg { right: 6px; width: 16px; height: 16px; }
 
-.tongxing-screen .primary-action {
+.tongxing-query .primary-action {
   width: 100%;
   height: var(--primary-button-height);
   font-size: clamp(14px, 4.6vw, 18px);
   font-weight: 600;
 }
 
-.tongxing-screen .primary-action svg { width: 20px; height: 20px; }
+.tongxing-query .primary-action svg { width: 20px; height: 20px; }
 .tongxing-screen .ornament-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 24px; }
 
 /* 結果列表：一個表頭、緊湊列高、每組只用 1px 空隙區隔。 */
