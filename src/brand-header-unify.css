@@ -72,6 +72,34 @@
 .feature-brand-header[data-compact="true"] > .shared-brand-logo > img { display: block; width: 100%; max-width: 100%; height: var(--primary-brand-height); aspect-ratio: var(--primary-brand-ratio); margin: 0 auto; object-fit: contain; object-position: center; }
 .feature-brand-header .back-button { box-sizing: border-box; width: 44px; height: 44px; padding: 0; }
 .feature-brand-header .back-button svg { width: 40px; height: 40px; }
+
+/* 快捷、通知、我的共用品牌頁首：位置與尺寸直接比照首頁內容區與 75% Logo。 */
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) {
+  box-sizing: border-box;
+  width: min(100%, 390px);
+  margin: 0 auto var(--layout-section-gap);
+  padding: 0 var(--layout-page-inline);
+}
+
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) .feature-brand-lockup,
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) .feature-brand-lockup .shared-brand-logo,
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) > .shared-brand-logo {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) .feature-brand-lockup .shared-brand-logo > img,
+.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) > .shared-brand-logo > img {
+  display: block;
+  width: 75%;
+  max-width: 75%;
+  height: auto;
+  aspect-ratio: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  object-position: center;
+}
+
 .bottom-nav-brand-screen { --bottom-nav-brand-offset: 0px; }
-.bottom-nav-brand-screen > .feature-brand-header:not(.integrated-title-header) { top: auto; left: auto; margin-bottom: var(--layout-section-gap); }
 .bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
