@@ -15,7 +15,7 @@ function block(css, selector) {
 
 test('Matrix 同星 controls use the compact shared mobile dimensions', () => {
   assert.match(tongxing, /--control-gap:\s*6px;/);
-  assert.match(tongxing, /--control-height:\s*32px;/);
+  assert.match(tongxing, /--control-height:\s*26px;/);
   assert.match(tongxing, /--primary-button-height:\s*40px;/);
   assert.match(tongxing, /--table-header-height:\s*32px;/);
   assert.match(tongxing, /--result-row-height:\s*44px;/);
@@ -101,7 +101,7 @@ test('Matrix 同星與號碼對照單頁首不受 390px 寬度限制', () => {
 });
 
 test('號碼對照單 uses one responsive three-select grid without the old fixed override', () => {
-  assert.match(feature, /\.number-reference-screen \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.85fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\)/s);
+  assert.match(feature, /\.reference-query-panel \.query-selects\.three-cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, \.85fr\) minmax\(0, \.8fr\) minmax\(0, 1\.75fr\)/s);
   assert.doesNotMatch(feature, /\.number-reference-screen \.query-selects\.three-cols\s*\{\s*grid-template-columns:\s*100px 92px minmax\(0, 1fr\);\s*\}/);
   assert.match(feature, /\.reference-search > div\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) minmax\(0, 1\.7fr\);[^}]*gap:\s*6px/s);
 });
