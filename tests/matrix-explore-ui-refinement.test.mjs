@@ -6,6 +6,7 @@ const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const featureCss = readFileSync("src/feature-pages.css", "utf8");
 const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
+const tokens = readFileSync("src/design-tokens.css", "utf8");
 
 function ruleBlock(source, selectorPattern) {
   const match = source.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "s"));
@@ -15,7 +16,9 @@ function ruleBlock(source, selectorPattern) {
 
 test("Matrix Explore icons, controls, spacing and badges use the refined mobile rules", () => {
   const root = ruleBlock(css, "\\.matrix-explore-main-screen");
-  assert.match(root, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ var\(--mobile-safe-area-height, 34px\)\)/);
+  assert.doesNotMatch(root, /--layout-bottom-nav-clearance:/);
+  assert.match(tokens, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\)/s);
   assert.match(prototypeCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\)/s);
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
@@ -44,7 +47,6 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /background:\s*transparent/);
 
   assert.match(css, /\.matrix-explore-main-screen \.segmented button\[data-selected="true"\]\s*\{[^}]*border-color:\s*#c89622;[^}]*background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\);[^}]*color:\s*#f2cf67;/s);
-
   assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 4px;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
