@@ -151,7 +151,7 @@
   margin-inline: 0;
 }
 
-/* History settings own their layout directly, so Portal rendering keeps exactly the same controls. */
+/* History settings stay frameless inline, but the floating card matches number-reference. */
 .history-filter-panel {
   box-sizing: border-box;
   width: 100%;
@@ -170,6 +170,11 @@
   width: auto;
   max-width: none;
   min-width: 0;
+  padding: 8px;
+  border: 1px solid #6c4a20;
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
 .history-filter-primary-row {
