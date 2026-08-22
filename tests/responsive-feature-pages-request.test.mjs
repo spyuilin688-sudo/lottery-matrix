@@ -11,8 +11,9 @@ const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url)
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 
 test('歷史開獎使用篩選設定文案、共用精簡按鈕及 sticky 頁首', () => {
-  assert.match(source, /history-filter-trigger-icon[^>]*>[\s\S]*?篩選設定\s*<\/button>/);
-  assert.match(source, /id="history-filter-title">篩選設定<\/h2>/);
+  assert.match(source, /className="history-filter-panel"/);
+  assert.match(source, /role=\{filterFloating \? "dialog" : "region"\}/);
+  assert.match(source, /aria-label="歷史篩選設定"/);
   assert.match(source, /className="history-filter-trigger title-card-compact-action"/);
   assert.match(source, /className="draw-history-screen sticky-title-card-screen"/);
   assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*height:\s*44px[^}]*font-size:\s*8\.1px/s);
@@ -46,7 +47,10 @@ test('對照單浮動探索設定維持原本三欄排列', () => {
 test('Matrix 同星設定可收合、頁首固定且不渲染近10期卡片', () => {
   assert.match(source, /const \[settingsExpanded, setSettingsExpanded\] = useState\(true\)/);
   assert.match(source, /aria-label=\{settingsExpanded \? "收合同星探索設定" : "展開同星探索設定"\}/);
-  assert.match(source, /aria-label="同星探索設定" hidden=\{!settingsExpanded\}/);
+  assert.match(source, /className="panel tongxing-query tongxing-panel-scope"/);
+  assert.match(source, /role=\{settingsFloating \? "dialog" : "region"\}/);
+  assert.match(source, /aria-label="同星探索設定"/);
+  assert.match(source, /hidden=\{!settingsExpanded\}/);
   const start = source.indexOf('export function TongXingPage');
   const end = source.indexOf('export function NumberReferencePage', start);
   const page = source.slice(start, end);
@@ -62,7 +66,9 @@ test('快捷通知我的共用首頁 matrixya Logo 幾何', () => {
 });
 
 test('通知與我的頁採緊湊但可操作的密度', () => {
-  assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*72px/s);
+  assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*auto[^}]*min-height:\s*0[^}]*padding:\s*4px/s);
+  assert.match(responsiveCss, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px[^}]*padding-inline:\s*20px/s);
+  assert.match(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\)\s*\{[^}]*margin-bottom:\s*4px/s);
   assert.match(responsiveCss, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*48px minmax\(0, 1fr\) 76px 42px/s);
   assert.doesNotMatch(responsiveCss, /\.notification-row\s*\{[^}]*grid-template-columns:/s);
   assert.match(responsiveCss, /\.notification-icon\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
