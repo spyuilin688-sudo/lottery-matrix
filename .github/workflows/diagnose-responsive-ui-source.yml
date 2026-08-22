@@ -1,0 +1,102 @@
+name: Diagnose responsive UI source patterns
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'bottom-nav-responsive-source-fix-trigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Inspect exact source patterns
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          checks = []
+          def check(path, name, needle, expected=1):
+              text = Path(path).read_text()
+              count = text.count(needle)
+              checks.append((name, path, expected, count, needle[:160].replace('\n', '\\n')))
+
+          check('src/feature-pages.css', 'calculator_fixed_80', '.calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; min-height: 0; flex: 1 1 auto; padding-bottom: 80px; overflow-y: auto; overscroll-behavior-y: contain; }')
+          check('src/matrix-explore-spacing.css', 'matrix_local_clearance', '  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));\n')
+          check('src/matrix-explore-spacing.css', 'matrix_body_padding', '  padding: 0 16px 1rem;')
+          check('src/matrix-explore-spacing.css', 'matrix_title_width', '  width: calc(100% - 32px);')
+          check('src/main.tsx', 'temp_clearance_import', 'import "./bottom-nav-responsive-clearance.css";\n')
+
+          check('src/responsive-feature-pages.css', 'compact_44', '  height: 44px;\n  min-height: 44px;')
+          check('src/responsive-feature-pages.css', 'compact_gap3', '  gap: 3px;\n  border: 0;')
+          check('src/responsive-feature-pages.css', 'compact_font_8_1', '  font-size: 8.1px;')
+          check('src/responsive-feature-pages.css', 'pseudo_23_4', '  height: 23.4px;')
+          check('src/responsive-feature-pages.css', 'pseudo_21_4', '  height: 21.4px;')
+          check('src/responsive-feature-pages.css', 'clip_path', '  clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut));\n', expected=2)
+          check('src/responsive-feature-pages.css', 'draw_trigger_marker', '.draw-history-screen .history-filter-trigger {\n  min-width: 61.2px;\n}\n')
+          check('src/responsive-feature-pages.css', 'five_body_group', '.draw-history-screen .feature-body,\n.number-reference-screen .feature-body,\n.tongxing-screen .feature-body,\n.notifications-screen .feature-body,\n.profile-screen .feature-body {\n  box-sizing: border-box;\n  width: 100%;\n  margin-inline: 0;\n  padding-inline: var(--layout-page-inline);\n}\n')
+          check('src/responsive-feature-pages.css', 'notif_grid_fixed', '  grid-template-columns: 48px minmax(0, 1fr) 76px 42px;\n  column-gap: 6px;')
+          check('src/responsive-feature-pages.css', 'notif_icon_44', '  width: 44px;\n  height: 44px;', expected=2)
+          check('src/responsive-feature-pages.css', 'notif_button_72', '  width: 72px;\n  height: 32px;\n  padding-inline: 8px;\n  font-size: 11px;')
+
+          check('src/feature-pages.css', 'notification_row_fixed', '.notification-row { display: grid; width: 100%; height: 80px; min-height: 0; padding: 8px; }')
+          check('src/feature-pages.css', 'notification_heading_fixed', '.notification-heading { display: grid; grid-template-columns: 58px minmax(0, 1fr) 88px 46px; align-items: center; column-gap: 8px; }')
+          check('src/feature-pages.css', 'notification_icon_fixed', '.notification-icon { display: grid; width: 58px; height: 58px; place-items: center; justify-self: start; }')
+          check('src/feature-pages.css', 'notification_icon_img_fixed', '.notification-icon img { display: block; width: 58px; height: 58px; object-fit: contain; }')
+          check('src/feature-pages.css', 'notification_button_fixed', '.notification-actions > button:first-child { width: 88px; height: 38px; padding: 0 12px; justify-self: end; border: 1px solid rgba(211, 166, 66, .62); border-radius: 19px; background: transparent; box-shadow: none; color: rgba(211, 166, 66, .88); font-size: 14px; font-weight: 600; line-height: 18px; white-space: nowrap; }')
+          check('src/feature-pages.css', 'notification_body_mobile_safe', '.notifications-screen .feature-body { padding: 0 20px calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px) + 12px); }')
+          check('src/feature-pages.css', 'reference_float_block', '.reference-query-panel[data-floating="true"] {\n  position: absolute;\n  z-index: 40;\n  left: 50%;\n  box-sizing: border-box;\n  width: calc(100% - (var(--layout-page-inline) * 2));\n  max-height: calc(100dvh - 24px);\n  padding: 8px;\n  overflow-y: auto;\n  border: 1px solid #6c4a20;\n  border-radius: 11px;\n  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));\n  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);\n  transform: translateX(-50%);\n}\n')
+          check('src/feature-pages.css', 'reference_title_action', '.number-reference-screen .matrix-title-banner-actions {\n  inset: 0 0 0 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n')
+          check('src/feature-pages.css', 'history_order_font', '.history-order-select select { font-size: 11px; }\n')
+          check('src/feature-pages.css', 'history_filter_font_block', '  font-size: 10px;\n  font-weight: 600;\n  text-align: center;\n  text-align-last: center;\n}\n.history-filter-panel option')
+          check('src/feature-pages.css', 'history_start', '.history-filter-start { height: 26px; padding: 0 4px; border: 1px solid #c99a2e; border-radius: 7px; background: linear-gradient(135deg, #efbf4f, #c9800c); color: #17120a; font-size: 11px; font-weight: 700; white-space: nowrap; }')
+          check('src/feature-pages.css', 'reference_select_height', '.reference-query-panel .reference-select { height: 26px; }')
+          check('src/feature-pages.css', 'reference_select_font_block', '  font-size: 13px;\n  font-weight: 600;\n  text-align: center;\n  text-align-last: center;\n}\n.number-reference-screen .reference-select svg')
+          check('src/feature-pages.css', 'reference_order_font', '.number-reference-screen .reference-order-select select { padding-left: 5px; padding-right: 22px; font-size: 11.5px; }')
+          check('src/feature-pages.css', 'gold_button', '.gold-button { height: 42px; padding-inline: 4px; gap: 4px; border: 0; background: linear-gradient(135deg, #f4c95e, #d99513); color: #17120a; font-size: 11px; font-weight: 600; white-space: nowrap; }')
+
+          check('src/tongxing-compact.css', 'same_divider_2', '  --group-divider-width: 2px;')
+          check('src/tongxing-compact.css', 'same_body_12', '  width: calc(100% - (var(--layout-page-inline) * 2));\n  min-width: 0;\n  margin-inline: var(--layout-page-inline);')
+          check('src/tongxing-compact.css', 'same_query_width', '  width: calc(100% + (var(--layout-page-inline) * 2) - 40px);')
+          check('src/tongxing-compact.css', 'same_font_075', 'font-size: .75rem;', expected=1)
+          check('src/tongxing-compact.css', 'same_font_18', '  font-size: 18px;\n  font-weight: 600;\n}', expected=2)
+          check('src/tongxing-compact.css', 'same_divider_alpha', 'border-top: var(--group-divider-width) solid rgba(168, 119, 47, .7);')
+          check('src/tongxing-compact.css', 'same_locked_bg', 'background: rgba(126, 83, 15, .12);')
+          check('src/tongxing-compact.css', 'same_pred_bg', 'background: rgba(10, 61, 88, .13);')
+          check('src/tongxing-compact.css', 'same_control_marker', '.tongxing-panel-scope .query-selects .select-box,\n.tongxing-panel-scope .same-star-fields input,\n.tongxing-panel-scope .same-star-period-select {\n  height: var(--control-height);\n}\n')
+
+          check('src/FeaturePages.tsx', 'history_day_state', '  const [day, setDay] = useTimedState("history-day", "31日");')
+          check('src/FeaturePages.tsx', 'history_apply_date', '      date: `${year}/${month.replace("月", "")}/${day.replace("日", "")}`,')
+          check('src/FeaturePages.tsx', 'year_handler', 'value={year} onChange={(event) => setYear(event.target.value)}')
+          check('src/FeaturePages.tsx', 'month_handler', 'value={month} onChange={(event) => setMonth(event.target.value)}')
+          check('src/FeaturePages.tsx', 'day_handler', 'value={day} onChange={(event) => setDay(event.target.value)}')
+          check('src/FeaturePages.tsx', 'refresh_jsx', '<ReloadIcon />刷新')
+
+          lines = []
+          bad = False
+          for name, path, expected, count, needle in checks:
+              ok = count == expected
+              bad |= not ok
+              lines.append(f'{"OK" if ok else "BAD"}\t{name}\t{path}\texpected={expected}\tcount={count}\t{needle}')
+          Path('source-diagnostics.txt').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          if bad:
+              raise SystemExit(1)
+          PY
+
+      - name: Upload source diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-source-diagnostics
+          path: source-diagnostics.txt
+          if-no-files-found: error
