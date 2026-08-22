@@ -681,8 +681,9 @@ export function DrawHistoryPage({
   backTarget?: ScreenId;
 }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("history-lottery", "今彩539");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [issue, setIssue] = useTimedState("history-issue", "");
+  const [filterExpanded, setFilterExpanded] = useState(true);
+  const [filterFloating, setFilterFloating] = useState(false);
+  const [filterPanelTop, setFilterPanelTop] = useState(0);
   const [year, setYear] = useTimedState("history-year", "2026");
   const [month, setMonth] = useTimedState("history-month", "07月");
   const [day, setDay] = useTimedState("history-day", "31日");
@@ -718,43 +719,44 @@ export function DrawHistoryPage({
     if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage);
   }, [page, paginatedHistory.currentPage]);
 
-  useEffect(() => {
-    if (!filterOpen) return;
-
-    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
-    if (!mobilePage) return;
-    const previousOverflow = mobilePage.style.overflow;
-    mobilePage.style.overflow = "hidden";
-
-    return () => {
-      mobilePage.style.overflow = previousOverflow;
-    };
-  }, [filterOpen]);
-
-  const resetHistoryFilters = () => {
-    setIssue("");
-    setYear("2026");
-    setMonth("07月");
-    setDay("31日");
-    setRange("1000期");
-    setNumberOrder("依號碼由小到大排序");
-    setAppliedFilters({ issue: "", date: "" });
-  };
-
   const applyHistoryFilters = () => {
     setAppliedFilters({
-      issue,
+      issue: "",
       date: `${year}/${month.replace("月", "")}/${day.replace("日", "")}`,
     });
     setAppliedHistorySettings({ lottery, range, numberOrder });
-    setFilterOpen(false);
+    setFilterExpanded(false);
+    setFilterFloating(false);
+  };
+
+  const toggleHistoryFilters = () => {
+    if (filterExpanded) {
+      setFilterExpanded(false);
+      setFilterFloating(false);
+      return;
+    }
+    const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
+    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
+    const pageRect = mobilePage?.getBoundingClientRect();
+    const pageTop = pageRect?.top ?? 0;
+    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
+    setFilterPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
+    setFilterExpanded(true);
+    setFilterFloating(true);
   };
 
   const historyTitleActions = (
     <div className="history-title-actions title-card-compact-actions">
-      <button type="button" className="history-filter-trigger title-card-compact-action" onClick={() => setFilterOpen(true)}>
+      <button
+        type="button"
+        className="history-filter-trigger title-card-compact-action"
+        aria-label={filterExpanded ? "收合篩選設定" : "展開篩選設定"}
+        aria-expanded={filterExpanded}
+        onClick={toggleHistoryFilters}
+      >
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選設定
+        <ChevronDownIcon data-open={filterExpanded} />
       </button>
     </div>
   );
@@ -767,6 +769,67 @@ export function DrawHistoryPage({
       className="draw-history-screen sticky-title-card-screen"
       headerAction={historyTitleActions}
     >
+      <MobilePagePortal active={filterFloating}>
+        <section
+          className="history-filter-panel"
+          data-floating={filterFloating}
+          role={filterFloating ? "dialog" : "region"}
+          aria-label="歷史篩選設定"
+          hidden={!filterExpanded}
+          style={filterFloating ? {
+            top: `${filterPanelTop}px`,
+            "--select-tech-surface": "#030b13",
+            "--select-tech-accent": "#f0bd36",
+            "--select-tech-text": "#d4d0c8",
+            "--select-tech-cut": "8px",
+          } as React.CSSProperties : undefined}
+        >
+          <div className="history-filter-primary-row">
+            <div className="select-box native-select">
+              <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
+                {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+              </select>
+              <ChevronDownIcon aria-hidden="true" />
+            </div>
+            <div className="select-box native-select history-order-select">
+              <select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}>
+                <option>依號碼由小到大排序</option>
+                <option>依實際開獎順序排序</option>
+              </select>
+              <ChevronDownIcon aria-hidden="true" />
+            </div>
+          </div>
+          <div className="history-filter-secondary-row">
+            <div className="history-date-selects">
+              <div className="select-box native-select">
+                <select aria-label="年份" value={year} onChange={(event) => setYear(event.target.value)}>
+                  {["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}
+                </select>
+                <ChevronDownIcon aria-hidden="true" />
+              </div>
+              <div className="select-box native-select">
+                <select aria-label="月份" value={month} onChange={(event) => setMonth(event.target.value)}>
+                  {Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}
+                </select>
+                <ChevronDownIcon aria-hidden="true" />
+              </div>
+              <div className="select-box native-select">
+                <select aria-label="日期" value={day} onChange={(event) => setDay(event.target.value)}>
+                  {Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}
+                </select>
+                <ChevronDownIcon aria-hidden="true" />
+              </div>
+            </div>
+            <div className="select-box native-select history-range-select">
+              <select aria-label="探索範圍" value={range} onChange={(event) => setRange(event.target.value)}>
+                {["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}
+              </select>
+              <ChevronDownIcon aria-hidden="true" />
+            </div>
+            <button type="button" className="history-filter-start" onClick={applyHistoryFilters}>開始探索</button>
+          </div>
+        </section>
+      </MobilePagePortal>
       <div className="matrix-explore-main-screen draw-history-history-scope">
       <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
         {historyWeekGroups.map((weekRecords) => {
@@ -820,98 +883,6 @@ export function DrawHistoryPage({
           </button>
         </nav>
       ) : null}
-      {filterOpen && document.querySelector<HTMLElement>(".mobile-page")
-        ? createPortal(
-            <div className="filter-sheet-backdrop" role="presentation" onClick={() => setFilterOpen(false)}>
-              <section
-                className="filter-sheet history-filter-sheet matrix-explore-main-screen"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="history-filter-title"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <header>
-                  <h2 id="history-filter-title">篩選設定</h2>
-                  <button type="button" onClick={() => setFilterOpen(false)} aria-label="關閉">
-                    <Cross2Icon />
-                  </button>
-                </header>
-                <div className="history-filter-fields">
-                  <div className="history-filter-row">
-                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/彩種.png" alt="彩種" /></span>
-                    <div className="select-box native-select">
-                      <select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>
-                        {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
-                      </select>
-                      <ChevronDownIcon />
-                    </div>
-                  </div>
-                  <label>
-                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/issue.png" alt="期數" /></span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={issue}
-                      onChange={(event) => setIssue(event.target.value.replace(/\D/g, ""))}
-                    />
-                  </label>
-                  <div className="history-filter-row">
-                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/date.png" alt="日期" /></span>
-                    <div className="history-date-selects">
-                      <div className="select-box native-select">
-                        <select aria-label="年份" value={year} onChange={(event) => setYear(event.target.value)}>
-                          {["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}
-                        </select>
-                        <ChevronDownIcon />
-                      </div>
-                      <div className="select-box native-select">
-                        <select aria-label="月份" value={month} onChange={(event) => setMonth(event.target.value)}>
-                          {Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}
-                        </select>
-                        <ChevronDownIcon />
-                      </div>
-                      <div className="select-box native-select">
-                        <select aria-label="日期" value={day} onChange={(event) => setDay(event.target.value)}>
-                          {Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}
-                        </select>
-                        <ChevronDownIcon />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="history-filter-row">
-                    <span className="history-filter-icon"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/history-filter/order.png" alt="號碼順序" /></span>
-                    <div className="select-box native-select history-order-select">
-                      <select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}>
-                        <option>依號碼由小到大排序</option>
-                        <option>依實際開獎順序排序</option>
-                      </select>
-                      <ChevronDownIcon />
-                    </div>
-                  </div>
-                  <fieldset aria-label="探索範圍">
-                    <div className="history-range-options segmented four">
-                      {["1000期", "3000期", "5000期", "所有期數"].map((value) => (
-                        <button
-                          type="button"
-                          key={value}
-                          data-selected={range === value}
-                          onClick={() => setRange(value)}
-                        >
-                          {value}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
-                </div>
-                <footer className="history-filter-actions">
-                  <button type="button" onClick={resetHistoryFilters}>重設</button>
-                  <button type="button" onClick={applyHistoryFilters}>開始探索</button>
-                </footer>
-              </section>
-            </div>,
-            document.querySelector<HTMLElement>(".mobile-page")!,
-          )
-        : null}
     </FeatureShell>
   );
 }
@@ -1737,6 +1708,8 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
   const [settingsExpanded, setSettingsExpanded] = useState(true);
+  const [settingsFloating, setSettingsFloating] = useState(false);
+  const [settingsPanelTop, setSettingsPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
   const historyOrder = getHistoryOrder(appliedOrder);
@@ -1763,6 +1736,8 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
+    setSettingsExpanded(false);
+    setSettingsFloating(false);
     setAppliedValues(normalizedValues);
     setAppliedLottery(lottery);
     setAppliedOrder(order);
@@ -1784,6 +1759,22 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
         resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       });
     });
+  };
+
+  const toggleSettingsPanel = () => {
+    if (settingsExpanded) {
+      setSettingsExpanded(false);
+      setSettingsFloating(false);
+      return;
+    }
+    const header = document.querySelector<HTMLElement>(".tongxing-screen > .feature-brand-header");
+    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
+    const pageRect = mobilePage?.getBoundingClientRect();
+    const pageTop = pageRect?.top ?? 0;
+    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
+    setSettingsPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
+    setSettingsExpanded(true);
+    setSettingsFloating(true);
   };
 
   const renderResultRow = (
@@ -1829,7 +1820,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
             className="title-card-compact-action"
             aria-label={settingsExpanded ? "收合同星探索設定" : "展開同星探索設定"}
             aria-expanded={settingsExpanded}
-            onClick={() => setSettingsExpanded((current) => !current)}
+            onClick={toggleSettingsPanel}
           >
             <span>探索設定</span>
             <ChevronDownIcon data-open={settingsExpanded} />
@@ -1837,7 +1828,21 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       )}
     >
-      <section className="panel tongxing-query" aria-label="同星探索設定" hidden={!settingsExpanded}>
+      <MobilePagePortal active={settingsFloating}>
+      <section
+        className="panel tongxing-query tongxing-panel-scope"
+        data-floating={settingsFloating}
+        role={settingsFloating ? "dialog" : "region"}
+        aria-label="同星探索設定"
+        hidden={!settingsExpanded}
+        style={settingsFloating ? {
+          top: `${settingsPanelTop}px`,
+          "--select-tech-surface": "#030b13",
+          "--select-tech-accent": "#f0bd36",
+          "--select-tech-text": "#d4d0c8",
+          "--select-tech-cut": "8px",
+        } as React.CSSProperties : undefined}
+      >
         <div className="query-selects">
           <div className="select-box native-select">
             <select
@@ -1895,6 +1900,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
           <MagnifyingGlassIcon /><span>開始探索</span>
         </button>
       </section>
+      </MobilePagePortal>
       {searched ? (
         <>
           <div className="ornament-title"><span />探索結果<span /></div>
