@@ -1,0 +1,123 @@
+name: One-time bottom navigation source fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.head_ref == 'bottom-nav-responsive-source-fix-trigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: RED - define bottom navigation clearance contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          calc_path = Path('tests/calculator-responsive-layout.test.mjs')
+          calc = calc_path.read_text()
+          old = '  assert.match(body, /padding-bottom:\\s*80px/);'
+          new = '  assert.match(body, /padding-bottom:\\s*var\\(--layout-bottom-nav-clearance\\)/);\n  assert.doesNotMatch(body, /padding-bottom:\\s*80px/);'
+          if calc.count(old) != 1:
+              raise SystemExit(f'calculator 80px assertion count={calc.count(old)}')
+          calc_path.write_text(calc.replace(old, new, 1))
+
+          nav_path = Path('tests/bottom-navigation-safe-area-position.test.mjs')
+          nav = nav_path.read_text()
+          anchor = 'const homepageCss = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");'
+          if nav.count(anchor) != 1:
+              raise SystemExit(f'bottom-nav import anchor count={nav.count(anchor)}')
+          nav = nav.replace(
+              anchor,
+              anchor + '\nconst featureCss = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");\nconst matrixExploreCss = await readFile(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");',
+              1,
+          )
+          test_name = 'Matrix 探索與連碰立柱使用正式響應式底部安全區避讓'
+          if test_name in nav:
+              raise SystemExit('bottom-nav responsive source test already exists')
+          nav += f'''\n\ntest("{test_name}", () => {{\n  assert.doesNotMatch(matrixExploreCss, /--layout-bottom-nav-clearance:[^;]*var\\(--mobile-safe-area-height/);\n  assert.match(matrixExploreCss, /\\.matrix-explore-main-screen \\.feature-body\\s*\\{{[\\s\\S]*?padding:\\s*0 16px var\\(--layout-bottom-nav-clearance\\);/);\n  assert.match(featureCss, /\\.calculator-screen > \\.feature-body\\s*\\{{[^}}]*padding-bottom:\\s*var\\(--layout-bottom-nav-clearance\\);/);\n  assert.doesNotMatch(featureCss, /\\.calculator-screen > \\.feature-body\\s*\\{{[^}}]*padding-bottom:\\s*80px;/);\n}});\n'''
+          nav_path.write_text(nav)
+          PY
+
+          set +e
+          node --test tests/calculator-responsive-layout.test.mjs tests/bottom-navigation-safe-area-position.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'RED test unexpectedly passed before formal-source changes.'
+            exit 1
+          fi
+          echo 'RED confirmed.'
+
+      - name: GREEN - update formal style sources only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          feature_path = Path('src/feature-pages.css')
+          feature = feature_path.read_text()
+          old = '.calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; min-height: 0; flex: 1 1 auto; padding-bottom: 80px; overflow-y: auto; overscroll-behavior-y: contain; }'
+          new = '.calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; min-height: 0; flex: 1 1 auto; padding-bottom: var(--layout-bottom-nav-clearance); overflow-y: auto; overscroll-behavior-y: contain; }'
+          if feature.count(old) != 1:
+              raise SystemExit(f'calculator fixed-clearance source count={feature.count(old)}')
+          feature_path.write_text(feature.replace(old, new, 1))
+
+          explore_path = Path('src/matrix-explore-spacing.css')
+          explore = explore_path.read_text()
+          old_var = '  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));\n'
+          if explore.count(old_var) != 1:
+              raise SystemExit(f'explore local clearance source count={explore.count(old_var)}')
+          explore = explore.replace(old_var, '', 1)
+          old_padding = '  padding: 0 16px 1rem;'
+          new_padding = '  padding: 0 16px var(--layout-bottom-nav-clearance);'
+          if explore.count(old_padding) != 1:
+              raise SystemExit(f'explore bottom padding source count={explore.count(old_padding)}')
+          explore_path.write_text(explore.replace(old_padding, new_padding, 1))
+
+          main_path = Path('src/main.tsx')
+          main = main_path.read_text()
+          temporary_import = 'import "./bottom-nav-responsive-clearance.css";\n'
+          if main.count(temporary_import) != 1:
+              raise SystemExit(f'temporary clearance import count={main.count(temporary_import)}')
+          main_path.write_text(main.replace(temporary_import, '', 1))
+          PY
+
+          rm src/bottom-nav-responsive-clearance.css
+          rm tests/bottom-navigation-responsive-clearance.test.mjs
+
+      - name: Verify targeted tests
+        run: node --test tests/calculator-responsive-layout.test.mjs tests/bottom-navigation-safe-area-position.test.mjs
+
+      - name: Verify full unit suite
+        run: node --test tests/*.test.mjs
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Commit verified source fix to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/one-time-bottom-nav-source-fix.yml
+          git add src/feature-pages.css src/matrix-explore-spacing.css src/main.tsx tests/calculator-responsive-layout.test.mjs tests/bottom-navigation-safe-area-position.test.mjs
+          git add -u src/bottom-nav-responsive-clearance.css tests/bottom-navigation-responsive-clearance.test.mjs
+          git commit -m 'Fix responsive bottom navigation clearance'
+          git push origin main
