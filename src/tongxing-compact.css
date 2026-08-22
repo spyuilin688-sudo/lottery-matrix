@@ -10,7 +10,7 @@
   --table-row-height: 44px;
   --result-row-height: 44px;
   --border-width: 1px;
-  --group-divider-width: 2px;
+  --group-divider-width: 3px;
   --bottom-nav-height: var(--bottom-navigation-height);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
@@ -18,9 +18,9 @@
 .tongxing-screen .feature-body {
   box-sizing: border-box;
   display: flex;
-  width: calc(100% - (var(--layout-page-inline) * 2));
+  width: calc(100% - 40px);
   min-width: 0;
-  margin-inline: var(--layout-page-inline);
+  margin-inline: 20px;
   padding-inline: 0;
   padding-top: var(--layout-section-gap);
   flex-direction: column;
@@ -33,7 +33,7 @@
 
 .tongxing-screen .tongxing-query {
   box-sizing: border-box;
-  width: calc(100% + (var(--layout-page-inline) * 2) - 40px);
+  width: 100%;
   min-width: 0;
   height: auto;
   margin: 0 auto;
@@ -44,7 +44,7 @@
 }
 
 .tongxing-query[data-floating="true"] {
-  position: absolute;
+  position: fixed;
   z-index: 45;
   left: 20px;
   right: 20px;
@@ -82,10 +82,20 @@
   height: var(--control-height);
 }
 
+.tongxing-panel-scope .query-selects .select-box,
+.tongxing-panel-scope .same-star-period-select {
+  border: 1px solid #b98723;
+  border-radius: 0;
+  background: #07131d;
+}
+
+.tongxing-panel-scope .select-box::before,
+.tongxing-panel-scope .select-box::after { display: none; }
+
 .tongxing-panel-scope .query-selects select,
 .tongxing-panel-scope .same-star-period-select select {
   min-width: 0;
-  font-size: .75rem;
+  font-size: clamp(9px, 3vw, 12px);
   font-weight: 600;
   text-align: center;
   text-align-last: center;
@@ -130,7 +140,7 @@
 .tongxing-panel-scope .primary-action {
   width: 100%;
   height: var(--primary-button-height);
-  font-size: 18px;
+  font-size: clamp(14px, 4.6vw, 18px);
   font-weight: 600;
 }
 
@@ -151,7 +161,7 @@
 .tongxing-screen .query-selects select {
   min-width: 0;
   padding-inline: 10px 28px;
-  font-size: .75rem;
+  font-size: clamp(9px, 3vw, 12px);
   font-weight: 600;
   text-align: center;
   text-align-last: center;
@@ -216,7 +226,7 @@
 .tongxing-screen .same-star-period-select select {
   min-width: 0;
   padding-inline: 7px 21px;
-  font-size: .75rem;
+  font-size: clamp(9px, 3vw, 12px);
   font-weight: 600;
   text-align: center;
   text-align-last: center;
@@ -231,7 +241,7 @@
 .tongxing-screen .primary-action {
   width: 100%;
   height: var(--primary-button-height);
-  font-size: 18px;
+  font-size: clamp(14px, 4.6vw, 18px);
   font-weight: 600;
 }
 
@@ -287,12 +297,12 @@
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span:last-child { border-left-color: rgba(203, 151, 62, .92); }
 .tongxing-screen .tongxing-table-head { min-height: var(--table-header-height); border-bottom: var(--border-width) solid rgba(118, 80, 31, .65); background: rgba(104, 73, 23, .08); }
 .tongxing-screen .tongxing-table-head > span { min-height: var(--table-header-height); color: #d8aa39; font-size: clamp(12px, 3.7vw, 15px); font-weight: 700; }
-.tongxing-screen .tongxing-result-group { display: block; border-top: var(--group-divider-width) solid rgba(168, 119, 47, .7); box-shadow: none; }
+.tongxing-screen .tongxing-result-group { display: block; border-top: var(--group-divider-width) solid rgba(168, 119, 47, .9); box-shadow: none; }
 .tongxing-screen .tongxing-result-group:first-of-type { border-top: 0; }
 .tongxing-screen .tongxing-result-group + .tongxing-result-group { margin-top: 0; }
-.tongxing-screen .tongxing-table-row[data-row-type="locked"] { background: rgba(126, 83, 15, .12); }
-.tongxing-screen .tongxing-table-row[data-row-type="predicted"] { background: rgba(10, 61, 88, .13); }
-.tongxing-screen .tongxing-table-row[data-row-type="predicted"] > span { border-top: var(--border-width) solid rgba(105, 129, 140, .31); }
+.tongxing-screen .tongxing-table-row[data-row-type="locked"] { background: rgba(126, 83, 15, .24); }
+.tongxing-screen .tongxing-table-row[data-row-type="predicted"] { background: rgba(10, 61, 88, .25); }
+.tongxing-screen .tongxing-table-row[data-row-type="predicted"] > span { border-top: var(--border-width) solid rgba(105, 129, 140, .55); }
 .tongxing-screen .tongxing-table-row > .tongxing-period-cell { display: grid; min-height: var(--result-row-height); padding: 2px 3px; grid-template-rows: auto auto; align-content: center; gap: 1px; }
 .tongxing-screen .tongxing-period-cell strong { color: #e4c44e; font-size: 14px; font-weight: 700; line-height: 17px; white-space: nowrap; }
 .tongxing-screen .tongxing-period-cell time { color: #aaa49a; font-size: 10.5px; font-weight: 400; line-height: 13px; white-space: nowrap; }

@@ -41,7 +41,7 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(dialog.hidden).toBe(false);
   expect(dialog.getAttribute('data-floating')).toBe('true');
   expect(dialog.parentElement).toBe(mobilePage);
-  expect(dialog.style.top).toBe('208px');
+  expect(dialog.style.top).toBe('131px');
   expect(dialog.style.getPropertyValue('--select-tech-surface')).toBe('#030b13');
   expect(scrollIntoView).not.toHaveBeenCalled();
 });

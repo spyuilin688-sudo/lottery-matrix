@@ -13,17 +13,17 @@
   box-sizing: border-box;
   display: inline-flex;
   min-width: 0;
-  height: 44px;
-  min-height: 44px;
+  height: 27.4px;
+  min-height: 27.4px;
   padding: 0 5px;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: #d3a642;
-  font-size: 8.1px;
+  font-size: clamp(8px, 2.3vw, 10px);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -35,9 +35,8 @@
   top: 50%;
   left: 0;
   width: 100%;
-  height: 23.4px;
+  height: 27.4px;
   transform: translateY(-50%);
-  clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut));
   background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618);
   filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32));
   pointer-events: none;
@@ -50,9 +49,8 @@
   top: 50%;
   left: 1px;
   width: calc(100% - 2px);
-  height: 21.4px;
+  height: 25.4px;
   transform: translateY(-50%);
-  clip-path: polygon(var(--select-tech-cut) 0, calc(100% - var(--select-tech-cut)) 0, 100% var(--select-tech-cut), 100% calc(100% - var(--select-tech-cut)), calc(100% - var(--select-tech-cut)) 100%, var(--select-tech-cut) 100%, 0 calc(100% - var(--select-tech-cut)), 0 var(--select-tech-cut));
   background: var(--select-tech-surface);
   pointer-events: none;
   content: "";
@@ -88,10 +86,24 @@
   min-width: 61.2px;
 }
 
-.draw-history-screen .feature-body,
-.number-reference-screen .feature-body,
-.tongxing-screen .feature-body,
-.notifications-screen .feature-body,
+.number-reference-screen .matrix-title-banner-actions {
+  width: 40%;
+}
+
+.title-card-compact-action .reference-refresh-icon {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+}
+
+.draw-history-screen .feature-body {
+  box-sizing: border-box;
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: 20px;
+  gap: 12px;
+}
+
 .profile-screen .feature-body {
   box-sizing: border-box;
   width: 100%;
@@ -143,33 +155,12 @@
   display: none;
 }
 
-.bottom-nav-brand-screen > .feature-brand-header {
-  box-sizing: border-box;
-  width: 100%;
-  padding-inline: var(--layout-page-inline);
-}
-
-.bottom-nav-brand-screen .shared-brand-logo {
-  width: 75%;
-  height: auto;
-  margin-inline: auto;
-}
-
-.bottom-nav-brand-screen > .feature-brand-header[data-compact="true"] > .shared-brand-logo > img {
-  width: 100%;
-  height: auto;
-  margin-inline: auto;
-  object-fit: contain;
-}
 
 .notifications-screen .feature-body {
   gap: 4px;
   padding-inline: 20px;
 }
 
-.bottom-nav-brand-screen.notifications-screen > .feature-brand-header:not(.integrated-title-header) {
-  margin-bottom: 4px;
-}
 
 .notifications-screen .notification-list {
   gap: 6px;
@@ -182,25 +173,25 @@
 }
 
 .notification-heading {
-  grid-template-columns: 48px minmax(0, 1fr) 76px 42px;
-  column-gap: 6px;
+  grid-template-columns: clamp(40px, 12.3vw, 48px) minmax(0, 1fr) clamp(64px, 19.5vw, 76px) 42px;
+  column-gap: clamp(4px, 1.5vw, 6px);
 }
 
 .notification-icon {
-  width: 44px;
-  height: 44px;
+  width: clamp(40px, 11.3vw, 44px);
+  height: clamp(40px, 11.3vw, 44px);
 }
 
 .notification-icon img {
-  width: 44px;
-  height: 44px;
+  width: clamp(40px, 11.3vw, 44px);
+  height: clamp(40px, 11.3vw, 44px);
 }
 
 .notification-actions > button:first-child {
-  width: 72px;
+  width: clamp(64px, 18.5vw, 72px);
   height: 32px;
-  padding-inline: 8px;
-  font-size: 11px;
+  padding-inline: clamp(5px, 2vw, 8px);
+  font-size: clamp(10px, 2.8vw, 11px);
 }
 
 .notification-row h2 {
@@ -275,21 +266,3 @@
   font-size: 13px;
 }
 
-@media (max-width: 360px) {
-  .notification-heading {
-    grid-template-columns: 42px minmax(0, 1fr) 68px 40px;
-    column-gap: 4px;
-  }
-
-  .notification-icon,
-  .notification-icon img {
-    width: 40px;
-    height: 40px;
-  }
-
-  .notification-actions > button:first-child {
-    width: 64px;
-    padding-inline: 5px;
-    font-size: 10px;
-  }
-}

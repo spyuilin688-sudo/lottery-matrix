@@ -11,8 +11,8 @@ const exploreSource = source.slice(exploreStart, exploreEnd);
 
 test("Matrix Explore canonical scoped stylesheet remains the final loaded layout source", () => {
   assert.match(main, /import "\.\/matrix-explore-spacing\.css";/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding:\s*0 16px 1rem;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*max-width:\s*none;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*max-width:\s*none;/s);
 });
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {

@@ -687,6 +687,7 @@ export function DrawHistoryPage({
   const [year, setYear] = useTimedState("history-year", "2026");
   const [month, setMonth] = useTimedState("history-month", "07月");
   const [day, setDay] = useTimedState("history-day", "31日");
+  const [dateFilterTouched, setDateFilterTouched] = useState(false);
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
@@ -722,7 +723,7 @@ export function DrawHistoryPage({
   const applyHistoryFilters = () => {
     setAppliedFilters({
       issue: "",
-      date: `${year}/${month.replace("月", "")}/${day.replace("日", "")}`,
+      date: dateFilterTouched ? `${year}/${month.replace("月", "")}/${day.replace("日", "")}` : "",
     });
     setAppliedHistorySettings({ lottery, range, numberOrder });
     setFilterExpanded(false);
@@ -736,11 +737,7 @@ export function DrawHistoryPage({
       return;
     }
     const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
-    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
-    const pageRect = mobilePage?.getBoundingClientRect();
-    const pageTop = pageRect?.top ?? 0;
-    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
-    setFilterPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
+    setFilterPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setFilterExpanded(true);
     setFilterFloating(true);
   };
@@ -802,19 +799,19 @@ export function DrawHistoryPage({
           <div className="history-filter-secondary-row">
             <div className="history-date-selects">
               <div className="select-box native-select">
-                <select aria-label="年份" value={year} onChange={(event) => setYear(event.target.value)}>
+                <select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); }}>
                   {["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}
                 </select>
                 <ChevronDownIcon aria-hidden="true" />
               </div>
               <div className="select-box native-select">
-                <select aria-label="月份" value={month} onChange={(event) => setMonth(event.target.value)}>
+                <select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); }}>
                   {Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}
                 </select>
                 <ChevronDownIcon aria-hidden="true" />
               </div>
               <div className="select-box native-select">
-                <select aria-label="日期" value={day} onChange={(event) => setDay(event.target.value)}>
+                <select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); }}>
                   {Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}
                 </select>
                 <ChevronDownIcon aria-hidden="true" />
@@ -1768,11 +1765,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     const header = document.querySelector<HTMLElement>(".tongxing-screen > .feature-brand-header");
-    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
-    const pageRect = mobilePage?.getBoundingClientRect();
-    const pageTop = pageRect?.top ?? 0;
-    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
-    setSettingsPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
+    setSettingsPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setSettingsExpanded(true);
     setSettingsFloating(true);
   };
@@ -2012,11 +2005,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     const header = document.querySelector<HTMLElement>(".number-reference-screen > .feature-brand-header");
-    const mobilePage = document.querySelector<HTMLElement>(".mobile-page");
-    const pageRect = mobilePage?.getBoundingClientRect();
-    const pageTop = pageRect?.top ?? 0;
-    const pageScale = pageRect && mobilePage?.offsetWidth ? pageRect.width / mobilePage.offsetWidth : 1;
-    setQueryPanelTop(((header?.getBoundingClientRect().bottom ?? pageTop) - pageTop) / pageScale + 8);
+    setQueryPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setQueryExpanded(true);
     setQueryFloating(true);
   };
@@ -2028,7 +2017,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       className="number-reference-screen"
       headerAction={(
         <div className="reference-title-actions title-card-compact-actions">
-          <button type="button" className="title-card-compact-action" onClick={resetReference}><ReloadIcon />刷新</button>
+          <button type="button" className="title-card-compact-action" onClick={resetReference}><ReloadIcon className="reference-refresh-icon" />刷新</button>
           <button type="button" className="title-card-compact-action" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
             <span>探索設定</span>
             <ChevronDownIcon data-open={queryExpanded} />

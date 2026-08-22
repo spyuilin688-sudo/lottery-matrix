@@ -150,13 +150,17 @@
   --underline-y: .25px;
 }
 
-.matrix-explore-main-screen .history-panel .number-ball-component.history-lottery-ball {
+.draw-history-screen .draw-history-panel[data-lottery="今彩539"] .number-ball-component.history-lottery-ball {
+  --underline-y: .2px;
+}
+
+.matrix-explore-main-screen .matrix-explore-history-panel .number-ball-component.history-lottery-ball {
   --number-ball-size: clamp(20px, 6vw, 22px);
   --number-font-size: clamp(10px, 2.8vw, 11px);
   --underline-width: clamp(9px, 2.6vw, 10px);
 }
 
-.matrix-explore-main-screen .history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .number-ball-component.history-lottery-ball {
+.matrix-explore-main-screen .matrix-explore-history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .number-ball-component.history-lottery-ball {
   --number-ball-size: clamp(24px, 7.18vw, 28px);
   --number-font-size: clamp(12px, 3.59vw, 14px);
   --number-y: 0px;
@@ -165,7 +169,7 @@
   --underline-y: .2px;
 }
 
-.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball {
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball {
   --number-ball-size: var(--matrix-history-ball-size);
   --number-font-size: clamp(7px, 2.31vw, 9px);
   --number-y: 0px;
@@ -175,7 +179,7 @@
   transform: translateY(2px);
 }
 
-.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .number-ball-component.history-lottery-ball {
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="大樂透"] .number-ball-component.history-lottery-ball {
   --number-ball-size: var(--matrix-history-ball-size);
   --number-font-size: clamp(9px, 2.82vw, 11px);
   --number-y: 0px;

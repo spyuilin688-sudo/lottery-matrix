@@ -48,5 +48,5 @@ test('歷史篩選設定初始內嵌，探索後收合，再展開時固定為�
   const dialog = screen.getByRole('dialog', { name: '歷史篩選設定' });
   expect(dialog.getAttribute('data-floating')).toBe('true');
   expect(dialog.parentElement).toBe(mobilePage);
-  expect(dialog.style.top).toBe('208px');
+  expect(dialog.style.top).toBe('128px');
 });

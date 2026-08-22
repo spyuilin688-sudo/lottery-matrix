@@ -2,7 +2,6 @@
 
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
-  --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));
   --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
   --road-validation-inline-padding: 4px;
   --validation-issue-font-family: inherit;
@@ -25,7 +24,7 @@
   min-width: 0;
   min-height: 100%;
   margin: 0 auto;
-  padding: 0 16px 1rem;
+  padding: 0 12px var(--layout-bottom-nav-clearance);
   flex-direction: column;
   row-gap: 8px;
   overflow-x: hidden;
@@ -40,7 +39,7 @@
 
 .matrix-explore-main-screen .matrix-title-banner {
   box-sizing: border-box;
-  width: calc(100% - 32px);
+  width: calc(100% - 24px);
   max-width: none;
   min-width: 0;
 }

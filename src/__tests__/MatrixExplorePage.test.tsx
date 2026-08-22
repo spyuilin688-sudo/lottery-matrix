@@ -145,7 +145,7 @@ test('Matrix 同星開始探索後收合，再展開時固定為浮動設定卡'
   const dialog = screen.getByRole('dialog', { name: '同星探索設定' });
   expect(dialog.getAttribute('data-floating')).toBe('true');
   expect(dialog.parentElement).toBe(mobilePage);
-  expect(dialog.style.top).toBe('208px');
+  expect(dialog.style.top).toBe('128px');
 });
 
 test('Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選', () => {
