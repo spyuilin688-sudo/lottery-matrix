@@ -1987,12 +1987,15 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 .matrix-explore-main-screen .validation-summary-lookback { color: #a78bfa; }
 .matrix-explore-main-screen .validation-summary-future { color: #7ee2a8; }
 .matrix-explore-main-screen .validation-summary-formula { color: #f6c95f; }
+.validation-period-head { display: grid; grid-template-columns: minmax(0, 15fr) minmax(0, 59fr) minmax(0, 26fr); gap: 5px; color: #8fa2bb; font-size: 10px; text-align: center; }
+.validation-period-head span { min-width: 0; padding-inline: 7px; }
 .validation-period-block { display: grid; gap: 3px; padding-bottom: 7px; border-bottom: 1px solid rgba(223, 176, 68, .56); }
 .validation-period-block:last-child { padding-bottom: 0; border-bottom: 0; }
 .validation-period-row { display: grid; min-width: 0; min-height: 38px; grid-template-columns: minmax(0, 15fr) minmax(0, 59fr) minmax(0, 26fr); gap: 5px; align-items: stretch; }
 .validation-period-row > span { min-width: 0; padding: 0 7px; border: 1px solid rgba(91, 126, 169, .18); border-radius: 6px; background: rgba(8, 15, 27, .82); }
 .validation-issue { display: grid; place-items: center; color: #b8c5d6; font-family: var(--validation-issue-font-family, inherit); font-size: var(--validation-issue-font-size, 14px); font-weight: var(--validation-issue-font-weight, 400); white-space: nowrap; }
 .validation-full-numbers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; justify-items: center; }
+.validation-full-numbers[data-count="7"] { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .validation-full-numbers i { color: #edf2f8; font: 700 16px/1 Roboto, sans-serif; font-style: normal; }
 .validation-formula { display: grid; align-content: center; justify-items: center; gap: 1px; color: #cbd6e5; font-size: 10px; text-align: center; white-space: nowrap; }
 .validation-formula b { font-size: 11px; }

@@ -19,6 +19,7 @@ import {
   createPartitionedExploreArtifact,
   isPartitionedExploreArtifact,
 } from './matrix-explore-partitions';
+import { analysisVersionForDrawPeriod } from './matrix-analysis-version';
 
 const DEFAULT_BATCH_BUDGET_MS = 22_000;
 const PERSISTENCE_RESERVE_MS = 7_000;
@@ -163,11 +164,12 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
       });
       const drawPeriod = history[0]?.period;
       if (!drawPeriod) throw new Error('MATRIX_HISTORY_NOT_READY');
-      const analysisVersion = `${drawPeriod}:matrix-v3`;
-      const completed = await dependencies.readAnalysis(
-        'status', lottery, drawPeriod, analysisVersion,
-      );
-      if (completed) {
+      const analysisVersion = analysisVersionForDrawPeriod(drawPeriod)!;
+      const [completed, completedExplore] = await Promise.all([
+        dependencies.readAnalysis('status', lottery, drawPeriod, analysisVersion),
+        dependencies.readAnalysis('explore', lottery, drawPeriod, analysisVersion),
+      ]);
+      if (completed && completedExplore) {
         logEnsureCurrentStage(lottery, 'status:already-current', diagnosticStartedAt, {
           drawPeriod,
         });
@@ -183,6 +185,9 @@ export function createMatrixAnalysisPipeline(overrides: Partial<Dependencies> = 
         startedAt,
         total: workUnits.length,
       });
+      if (!completedExplore && job.phase !== 'explore') {
+        job = await dependencies.progressStore.setPhase(job, 'explore');
+      }
       await reportStage(`job:ready:${job.phase}:${job.cursor}/${job.total}`);
       logEnsureCurrentStage(lottery, 'job:ready', diagnosticStartedAt, {
         drawPeriod,

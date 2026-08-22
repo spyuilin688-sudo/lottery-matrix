@@ -180,6 +180,39 @@ export function mergeExploreArtifacts(
   };
 }
 
+export function enrichExploreValidationReferenceNumbers(
+  artifact: ExploreArtifact,
+  itemId: string,
+  history: MatrixDraw[],
+): ExploreArtifact {
+  const item = artifact.items.find((candidate) => candidate.id === itemId);
+  const validation = artifact.validationById[itemId];
+  const sourceA = validation?.sourceA;
+  if (!item || !sourceA || Array.isArray(sourceA.referenceNumbers)) return artifact;
+  const referencePeriod = String(sourceA.referencePeriod ?? '');
+  const referenceDraw = history.find((draw) => draw.period === referencePeriod);
+  if (!referenceDraw) return artifact;
+  const referenceNumbers = item.numberOrder === '依實際開獎順序排序'
+    ? referenceDraw.drawOrderNumbers
+    : referenceDraw.sortedNumbers ?? referenceDraw.numbers;
+  if (!Array.isArray(referenceNumbers)) return artifact;
+  return {
+    ...artifact,
+    validationById: {
+      ...artifact.validationById,
+      [itemId]: {
+        ...validation,
+        sourceA: {
+          ...sourceA,
+          referenceNumbers,
+          referenceSortedNumbers: referenceDraw.sortedNumbers ?? referenceDraw.numbers,
+          referenceDrawOrderNumbers: referenceDraw.drawOrderNumbers ?? null,
+        },
+      },
+    },
+  };
+}
+
 export function buildExploreArtifact(
   lottery: MatrixLottery,
   drawPeriod: string,

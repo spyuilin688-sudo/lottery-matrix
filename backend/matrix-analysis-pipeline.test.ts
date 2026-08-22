@@ -243,11 +243,49 @@ describe('Matrix completed-analysis pipeline', () => {
     });
   });
 
-  it('skips recomputation only when the current draw has a completion marker', async () => {
+  it.each(['tianyan', 'status'] as const)(
+    'restarts Explore when the completion marker exists, Explore is unreadable, and the job is in %s',
+    async (initialPhase) => {
+    const phases: string[] = [];
     const publishAnalysis = vi.fn(async () => ({}));
+    const progressStore = {
+      getOrCreate: async () => ({
+        id: 'job', lottery: '今彩539' as const, drawPeriod: '114000123', analysisVersion: '114000123:matrix-v3',
+        startedAt: '2026-08-21T00:00:00Z', phase: initialPhase, cursor: 0, total: 0,
+      }),
+      readExploreGroups: async () => [],
+      setPhase: async (job: object, phase: string) => {
+        phases.push(phase);
+        return { ...job, phase, cursor: 0 };
+      },
+      appendExploreGroups: async () => { throw new Error('unexpected'); },
+      finish: async () => undefined,
+    };
     const pipeline = createMatrixAnalysisPipeline({
       getHistory: async () => history,
       readAnalysis: async (kind) => kind === 'status' ? { analysisVersion: 'existing' } : null,
+      publishAnalysis,
+      createExploreWorkUnits: () => [],
+      mergeExplore: (lottery, drawPeriod) => ({ lottery, drawPeriod, items: [], validationById: {} }),
+      progressStore: progressStore as never,
+    });
+
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      pending: true,
+      phase: 'tianyan',
+    });
+    expect(phases).toEqual(['explore', 'tianyan']);
+    expect(publishAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'explore', analysisVersion: '114000123:matrix-v3' }),
+      expect.anything(),
+    );
+  });
+
+  it('skips recomputation only when the current completion marker and Explore are both readable', async () => {
+    const publishAnalysis = vi.fn(async () => ({}));
+    const pipeline = createMatrixAnalysisPipeline({
+      getHistory: async () => history,
+      readAnalysis: async (kind) => kind === 'status' || kind === 'explore' ? { analysisVersion: 'existing' } : null,
       publishAnalysis,
     });
     await expect(pipeline.ensureCurrent('今彩539')).resolves.toEqual({

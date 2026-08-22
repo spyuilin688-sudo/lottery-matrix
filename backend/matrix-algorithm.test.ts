@@ -89,6 +89,24 @@ describe('Matrix Explore algorithm invariants', () => {
       sourceSortedNumbers: ['10', '20', '25', '30', '35'],
       referenceSortedNumbers: ['10', '20', '25', '30', '35'],
       predictionNumbers: ['01', '02', '03', '04', '25'],
+      matchedRules: [{ algorithmType: '加減', value: 20, display: '+20' }],
+    });
+  });
+
+  it('keeps the current source and reference draws for the final prediction block', () => {
+    const history = [
+      draw('A', [10, 20, 25, 30, 35]),
+      draw('P1', [1, 2, 3, 4, 25]),
+      draw('S1', [10, 20, 25, 30, 35]),
+    ];
+
+    const result = runMatrixAlgorithmWithHistory(request, history);
+
+    expect(result.sourceA).toMatchObject({
+      sourcePeriod: 'A',
+      sourceSortedNumbers: ['10', '20', '25', '30', '35'],
+      referencePeriod: 'A',
+      referenceSortedNumbers: ['10', '20', '25', '30', '35'],
     });
   });
 });

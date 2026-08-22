@@ -5,7 +5,7 @@ export type MatrixDraw = { period: string; drawDate: string; numbers: string[]; 
 export type MatrixAlgorithmRequest = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; lockedPosition: number; lockedNumber: number; lockedSourcePeriod?: string; referenceOffset?: number; referencePosition?: number; predictionDistance: number; ruleCount: 1 | 2; algorithmType: MatrixAlgorithmType };
 export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 13; exploreDateOffset: 0; exploreRange: '完整範圍'; minPredictionDistance: 1; maxPredictionDistance: 13 };
 export type MatrixAlgorithmRule = { value: number; display: string; algorithmType: MatrixAlgorithmType };
-export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceNumbers: number[]; sourceSortedNumbers: Array<string | number>; sourceDrawOrderNumbers: Array<string | number> | null; referencePeriod: string; referenceNumbers: number[]; referenceSortedNumbers: Array<string | number>; referenceDrawOrderNumbers: Array<string | number> | null; baseNumber: number; predictionPeriod: string; predictionNumbers: Array<string | number>; candidateRules: number[]; matchedRules: number[]; hitNumbers: number[]; success: boolean };
+export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceNumbers: number[]; sourceSortedNumbers: Array<string | number>; sourceDrawOrderNumbers: Array<string | number> | null; referencePeriod: string; referenceNumbers: number[]; referenceSortedNumbers: Array<string | number>; referenceDrawOrderNumbers: Array<string | number> | null; baseNumber: number; predictionPeriod: string; predictionNumbers: Array<string | number>; candidateRules: number[]; matchedRules: MatrixAlgorithmRule[]; hitNumbers: number[]; success: boolean };
 export type MatrixAlgorithmRuleSet = { rules: MatrixAlgorithmRule[]; predictionNumbers: number[]; historicalValidation: MatrixValidationRow[] };
 export type MatrixExploreRow = { id: string; number: string; lockedPosition: number; predictionDistance: number; consecutive: string; highestStreak: number; predictionNumbers: string[]; algorithmType: MatrixAlgorithmType; searchCondition: MatrixAlgorithmRequest; sourceA?: Record<string, unknown>; ruleSets: MatrixAlgorithmRuleSet[] };
 export type MatrixValidationDetail = { itemId: string; sourceA?: Record<string, unknown>; ruleSets: MatrixAlgorithmRuleSet[] };
@@ -189,7 +189,10 @@ function validation(groups: CandidateGroup[], rules: string[], request: MatrixRe
     const hitNumbers = [...new Set(matchedRuleKeys.flatMap(rule => group.candidateMap.get(rule) ?? []))].sort((a, b) => a - b);
     const success = matchedRuleKeys.length > 0;
     const candidateRules = [...new Set([...group.candidateMap.keys()].map(rule => typedRuleParts(rule).value))].sort((a, b) => a - b);
-    const matchedRules = matchedRuleKeys.map(rule => typedRuleParts(rule).value);
+    const matchedRules = matchedRuleKeys.map(rule => {
+      const parsed = typedRuleParts(rule);
+      return { ...parsed, display: ruleLabel(parsed.algorithmType, parsed.value) };
+    });
     rows.push({ group: group.group, sourcePeriod: group.source.period, sourceNumbers: orderedNumbers(group.source, request.lottery, request.numberOrder), sourceSortedNumbers: group.source.sortedNumbers ?? group.source.numbers, sourceDrawOrderNumbers: group.source.drawOrderNumbers ?? null, referencePeriod: group.reference.period, referenceNumbers: orderedNumbers(group.reference, request.lottery, request.numberOrder), referenceSortedNumbers: group.reference.sortedNumbers ?? group.reference.numbers, referenceDrawOrderNumbers: group.reference.drawOrderNumbers ?? null, baseNumber: group.baseNumber, predictionPeriod: group.prediction.period, predictionNumbers: group.prediction.sortedNumbers ?? group.prediction.numbers, candidateRules, matchedRules, hitNumbers, success });
     if (!success) break;
   }
@@ -240,6 +243,19 @@ function evaluatePreparedMatrixAlgorithm(
   const max = maxNumber(request.lottery);
   const predictionIndex = aIndex + request.predictionDistance;
   const aPrediction = predictionIndex >= 0 && predictionIndex < history.length ? history[predictionIndex] : null;
+  const sourceA = {
+    sourcePeriod: history[aIndex].period,
+    sourceNumbers: orderedNumbers(history[aIndex], request.lottery, request.numberOrder),
+    sourceSortedNumbers: history[aIndex].sortedNumbers ?? history[aIndex].numbers,
+    sourceDrawOrderNumbers: history[aIndex].drawOrderNumbers ?? null,
+    referencePeriod: aBase.reference.period,
+    referenceNumbers: orderedNumbers(aBase.reference, request.lottery, request.numberOrder),
+    referenceSortedNumbers: aBase.reference.sortedNumbers ?? aBase.reference.numbers,
+    referenceDrawOrderNumbers: aBase.reference.drawOrderNumbers ?? null,
+    baseNumber: aBase.baseNumber,
+    predictionPeriod: aPrediction?.period ?? null,
+    predictionCompleted: Boolean(aPrediction),
+  };
   const resultSets = found.sets.map(rules => {
     const parsedRules = rules.map(rule => typedRuleParts(rule));
     const predictions = [...new Set(parsedRules.map(rule => applyRule(rule.algorithmType, rule.algorithmType === '拖牌' ? request.lockedNumber : aBase.baseNumber, rule.value, max)))].sort((a, b) => a - b);
@@ -251,9 +267,9 @@ function evaluatePreparedMatrixAlgorithm(
     if (distinctRules.length > 2) return { valid: false, reason: '相同連準層級需要三個以上規則才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出', searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules, results: [] };
     const merged = [...new Set(resultSets.flatMap(item => item.predictionNumbers))].sort((a, b) => a - b);
     if (merged.length > 2) return { valid: false, reason: '相同連準層級需要三個以上規則才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出', searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules: distinctRules, results: [] };
-    return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA: { sourcePeriod: history[aIndex].period, sourceNumbers: orderedNumbers(history[aIndex], request.lottery, request.numberOrder), sourceSortedNumbers: history[aIndex].sortedNumbers ?? history[aIndex].numbers, sourceDrawOrderNumbers: history[aIndex].drawOrderNumbers ?? null, referencePeriod: aBase.reference.period, baseNumber: aBase.baseNumber, predictionPeriod: aPrediction?.period ?? null, predictionCompleted: Boolean(aPrediction) }, predictionNumbers: merged, ruleSets: resultSets };
+    return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA, predictionNumbers: merged, ruleSets: resultSets };
   }
-  return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA: { sourcePeriod: history[aIndex].period, sourceNumbers: orderedNumbers(history[aIndex], request.lottery, request.numberOrder), sourceSortedNumbers: history[aIndex].sortedNumbers ?? history[aIndex].numbers, sourceDrawOrderNumbers: history[aIndex].drawOrderNumbers ?? null, referencePeriod: aBase.reference.period, baseNumber: aBase.baseNumber, predictionPeriod: aPrediction?.period ?? null, predictionCompleted: Boolean(aPrediction) }, results: resultSets };
+  return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA, results: resultSets };
 }
 
 function evaluateMatrixAlgorithm(request: MatrixRequest, newestFirst: Draw[]): MatrixEvaluationResult {
