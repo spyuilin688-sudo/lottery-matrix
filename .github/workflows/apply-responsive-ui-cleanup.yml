@@ -63,6 +63,16 @@ jobs:
           echo 'Baseline failures:'
           cat baseline-failing.txt || true
 
+      - name: Record pre-existing Vitest baseline
+        shell: bash
+        run: |
+          set +e
+          npm run test:unit 2>&1 | tee baseline-vitest-output.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "$code" > baseline-vitest-exit.txt
+          echo "Baseline Vitest exit: $code"
+
       - name: GREEN - apply exact responsive UI source cleanup
         run: python .github/apply-responsive-ui-cleanup.py
 
@@ -95,7 +105,14 @@ jobs:
           exit "$status"
 
       - name: Verify Vitest unit suite
-        run: npm run test:unit
+        shell: bash
+        run: |
+          set +e
+          npm run test:unit 2>&1 | tee vitest-output.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "$code" > vitest-exit.txt
+          exit "$code"
 
       - name: Verify production build
         run: npm run build
@@ -139,8 +156,12 @@ jobs:
           path: |
             baseline-failing.txt
             baseline-output.txt
+            baseline-vitest-output.txt
+            baseline-vitest-exit.txt
             targeted-output.txt
             targeted-failing.txt
+            vitest-output.txt
+            vitest-exit.txt
             post-failing.txt
             post-output.txt
             new-failing.txt
@@ -154,7 +175,7 @@ jobs:
           rm -f .github/workflows/apply-responsive-ui-cleanup.yml
           rm -f .github/workflows/finalize-responsive-ui-cleanup.yml
           rm -f .github/apply-responsive-ui-cleanup.py
-          rm -f baseline-failing.txt baseline-output.txt targeted-output.txt targeted-failing.txt post-failing.txt post-output.txt new-failing.txt
+          rm -f baseline-failing.txt baseline-output.txt baseline-vitest-output.txt baseline-vitest-exit.txt targeted-output.txt targeted-failing.txt vitest-output.txt vitest-exit.txt post-failing.txt post-output.txt new-failing.txt
           git add -A
           git commit -m 'Fix responsive feature layouts and filters'
           git push origin main
