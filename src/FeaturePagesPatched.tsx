@@ -213,13 +213,13 @@ function PatchedDrawHistoryPage({
   useEffect(() => { setPage(1); }, [appliedHistorySettings, appliedFilters]);
   useEffect(() => { if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage); }, [page, paginatedHistory.currentPage]);
   useEffect(() => {
+    if (dateFilterTouched) return;
     const match = latestSelectedDate.match(/^(\d{4})\/(\d{2})\/(\d{2})/);
     if (!match) return;
     setYear(match[1]);
     setMonth(`${match[2]}月`);
     setDay(`${match[3]}日`);
-    setDateFilterTouched(false);
-  }, [latestSelectedDate, lottery, setDay, setMonth, setYear]);
+  }, [dateFilterTouched, latestSelectedDate, lottery, setDay, setMonth, setYear]);
 
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
