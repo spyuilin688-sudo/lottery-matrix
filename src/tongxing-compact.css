@@ -4,7 +4,7 @@
   --card-padding: 10px;
   --card-radius: 12px;
   --control-gap: 6px;
-  --control-height: 32px;
+  --control-height: 26px;
   --primary-button-height: 40px;
   --table-header-height: 32px;
   --table-row-height: 44px;
@@ -33,14 +33,105 @@
 
 .tongxing-screen .tongxing-query {
   box-sizing: border-box;
-  width: 100%;
+  width: calc(100% + (var(--layout-page-inline) * 2) - 40px);
   min-width: 0;
   height: auto;
-  margin: 0;
+  margin: 0 auto;
   padding: var(--card-padding);
   border-width: var(--border-width);
   border-radius: var(--card-radius);
   box-shadow: none;
+}
+
+.tongxing-query[data-floating="true"] {
+  position: absolute;
+  z-index: 45;
+  left: 20px;
+  right: 20px;
+  box-sizing: border-box;
+  width: auto;
+  max-height: calc(100dvh - 24px);
+  margin: 0;
+  padding: var(--card-padding, 10px);
+  overflow-y: auto;
+  border: 1px solid rgba(187, 134, 47, .9);
+  border-radius: var(--card-radius, 12px);
+  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .06);
+}
+
+.tongxing-panel-scope {
+  --card-padding: 10px;
+  --card-radius: 12px;
+  --control-gap: 6px;
+  --control-height: 26px;
+  --primary-button-height: 40px;
+}
+
+.tongxing-panel-scope .query-selects {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr);
+  gap: var(--control-gap);
+}
+
+.tongxing-panel-scope .query-selects .select-box,
+.tongxing-panel-scope .same-star-fields input,
+.tongxing-panel-scope .same-star-period-select {
+  height: var(--control-height);
+}
+
+.tongxing-panel-scope .query-selects select,
+.tongxing-panel-scope .same-star-period-select select {
+  min-width: 0;
+  font-size: .75rem;
+  font-weight: 600;
+  text-align: center;
+  text-align-last: center;
+}
+
+.tongxing-panel-scope .query-selects select { padding-inline: 10px 28px; }
+.tongxing-panel-scope .same-star-period-select select { padding-inline: 7px 21px; }
+
+.tongxing-panel-scope .same-star-fields {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: var(--layout-section-gap, 8px) 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(52px, .9fr) max-content;
+  gap: var(--control-gap);
+  align-items: center;
+}
+
+.tongxing-panel-scope .same-star-fields input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0 4px;
+  border: 1px solid #6e4a1e;
+  border-radius: 9px;
+  outline: none;
+  background: #030a10;
+  color: #efe8dc;
+  font-size: clamp(16px, 4.5vw, 18px);
+  font-weight: 600;
+  line-height: var(--control-height);
+  text-align: center;
+}
+
+.tongxing-panel-scope .same-star-fields > span {
+  color: #d5cec2;
+  font-size: clamp(12px, 3.5vw, 14px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tongxing-panel-scope .primary-action {
+  width: 100%;
+  height: var(--primary-button-height);
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .tongxing-screen .query-selects {
@@ -154,7 +245,7 @@
   min-width: 0;
   margin-inline: 0;
   overflow: hidden;
-  border: var(--border-width) solid #6c4a20;
+  border: var(--border-width) solid rgba(187, 134, 47, .9);
   border-radius: var(--card-radius);
   box-shadow: none;
 }
@@ -184,7 +275,7 @@
   min-height: var(--table-row-height);
   align-items: center;
   justify-content: center;
-  border-left: var(--border-width) solid rgba(111, 78, 31, .28);
+  border-left: var(--border-width) solid rgba(151, 108, 48, .62);
   color: #f2eee7;
   font-size: clamp(14px, 4.2vw, 17px);
   font-weight: 500;
@@ -192,6 +283,8 @@
 }
 
 .tongxing-screen .tongxing-table-row > span:first-child { border-left: 0; }
+.tongxing-screen .tongxing-table-row > span:nth-child(2) { border-left-color: rgba(203, 151, 62, .88); }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span:last-child { border-left-color: rgba(203, 151, 62, .92); }
 .tongxing-screen .tongxing-table-head { min-height: var(--table-header-height); border-bottom: var(--border-width) solid rgba(118, 80, 31, .65); background: rgba(104, 73, 23, .08); }
 .tongxing-screen .tongxing-table-head > span { min-height: var(--table-header-height); color: #d8aa39; font-size: clamp(12px, 3.7vw, 15px); font-weight: 700; }
 .tongxing-screen .tongxing-result-group { display: block; border-top: var(--group-divider-width) solid rgba(168, 119, 47, .7); box-shadow: none; }
