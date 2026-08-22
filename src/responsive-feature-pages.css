@@ -108,10 +108,13 @@
   gap: 6px;
 }
 
-/* History title actions are slightly tighter. */
+/* History title actions are slightly tighter and size to their actual content. */
 .draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action {
+  width: auto;
+  min-width: 0;
   height: 22px;
   min-height: 22px;
+  flex: 0 0 auto;
   padding-inline: 4px;
 }
 
@@ -123,20 +126,19 @@
   height: 20px;
 }
 
-.draw-history-screen .history-filter-trigger,
-.draw-history-screen .history-reset-trigger {
-  min-width: clamp(49px, 14.13vw, 55.1px);
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-reset-trigger {
+  gap: 5px;
+  padding-inline: 4px 5px;
+  background-image: none;
 }
 
-.draw-history-screen .history-reset-trigger {
-  padding-left: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23d3a642' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 4v4H9'/%3E%3Cpath d='M13 8a5 5 0 1 0-1.5 3.6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: 4px 50%;
-  background-size: 7px 7px;
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-reset-trigger > svg {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
 }
 
-.draw-history-screen .history-filter-trigger {
+.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-filter-trigger {
   gap: 1px;
 }
 
@@ -154,13 +156,22 @@
   width: 40%;
 }
 
-.title-card-compact-action .reference-refresh-icon {
+/* Reference refresh uses the same compact icon treatment as history reset and grows with its text. */
+.number-reference-screen .reference-title-actions button:first-child {
+  width: max-content;
+  min-width: 0;
+  padding-inline: 4px 5px;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.number-reference-screen .reference-title-actions button:first-child > svg {
   width: 7px;
   height: 7px;
   flex: 0 0 7px;
 }
 
-/* Three tool pages share the same real 12px outer gutter from one token. */
+/* Three tool pages share the same real 16px outer gutter. */
 .draw-history-screen .feature-body,
 .number-reference-screen .feature-body,
 .tongxing-screen .feature-body {
@@ -169,10 +180,10 @@
   max-width: none;
   min-width: 0;
   margin-inline: 0;
-  padding-inline: var(--layout-page-inline);
+  padding-inline: 16px;
 }
 
-/* gap only works on flex/grid: history now owns a real vertical flex flow. */
+/* gap only works on flex/grid: history owns a real vertical flex flow. */
 .draw-history-screen .feature-body {
   display: flex;
   flex-direction: column;
@@ -189,7 +200,7 @@
 .draw-history-screen .matrix-title-banner,
 .number-reference-screen .matrix-title-banner,
 .tongxing-screen .matrix-title-banner {
-  width: calc(100% - (var(--layout-page-inline) * 2));
+  width: calc(100% - 32px);
 }
 
 .draw-history-history-scope {
@@ -212,13 +223,24 @@
   box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
-.history-filter-panel[data-floating="true"],
-.reference-query-panel[data-floating="true"] {
-  left: var(--layout-page-inline);
-  right: var(--layout-page-inline);
+.history-filter-panel[data-floating="true"] {
+  left: 16px;
+  right: 16px;
   width: auto;
   max-width: none;
   min-width: 0;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
+}
+
+/* Reference portal uses local absolute coordinates; clear the legacy 50% translation. */
+.reference-query-panel[data-floating="true"] {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  transform: none;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
@@ -243,6 +265,34 @@
 .history-filter-primary-row .select-box::before,
 .history-filter-primary-row .select-box::after {
   display: block;
+}
+
+/* History start action now uses the same Matrix branded action language as TongXing/reference. */
+.history-filter-start.branded-explore-action {
+  display: flex;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #c99a2e;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 135%, rgba(234, 171, 35, .34), transparent 55%),
+    linear-gradient(105deg, rgba(79, 50, 5, .2), rgba(6, 13, 18, .92) 42%, rgba(103, 67, 8, .2)),
+    #060d12;
+  color: #f6d472;
+  font-size: clamp(9px, 2.8vw, 11px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.history-filter-start.branded-explore-action > svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
 }
 
 .reference-query-panel .query-selects.three-cols {
