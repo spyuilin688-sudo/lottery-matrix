@@ -61,6 +61,15 @@ describe("BottomNavigation", () => {
     );
   });
 
+  it("快捷按鈕的原生點擊會開啟快捷功能", () => {
+    const onQuickOpen = vi.fn();
+    render(<BottomNavigation onQuickOpen={onQuickOpen} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "快捷；長按三秒開啟設定" }));
+
+    expect(onQuickOpen).toHaveBeenCalledTimes(1);
+  });
+
   it("快捷長按期間移出按鈕範圍仍會在三秒後開啟設定", () => {
     vi.useFakeTimers();
     const onQuickOpen = vi.fn();
