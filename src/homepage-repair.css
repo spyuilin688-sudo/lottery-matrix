@@ -115,7 +115,9 @@
 
 .home-screen .brand-header {
   display: flex;
+  box-sizing: border-box;
   width: 100%;
+  padding-top: 8px;
   align-items: center;
   justify-content: center;
   overflow: visible;
