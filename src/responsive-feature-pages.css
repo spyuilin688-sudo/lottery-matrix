@@ -88,9 +88,32 @@
   gap: 6px;
 }
 
+/* History title actions are slightly tighter while keeping the approved 4px downward position. */
+.draw-history-screen .title-card-compact-action {
+  height: 22px;
+  min-height: 22px;
+  padding-inline: 4px;
+}
+
+.draw-history-screen .title-card-compact-action::before {
+  height: 22px;
+}
+
+.draw-history-screen .title-card-compact-action::after {
+  height: 20px;
+}
+
 .draw-history-screen .history-filter-trigger,
 .draw-history-screen .history-reset-trigger {
   min-width: clamp(49px, 14.13vw, 55.1px);
+}
+
+.draw-history-screen .history-reset-trigger {
+  padding-left: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23d3a642' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 4v4H9'/%3E%3Cpath d='M13 8a5 5 0 1 0-1.5 3.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 4px 50%;
+  background-size: 7px 7px;
 }
 
 .draw-history-screen .history-filter-trigger {
@@ -117,19 +140,23 @@
   flex: 0 0 7px;
 }
 
-/* Three tool pages share a single 12px responsive page gutter. */
+/* Three tool pages share the same real 12px outer gutter from one token. */
 .draw-history-screen .feature-body,
 .number-reference-screen .feature-body,
 .tongxing-screen .feature-body {
   box-sizing: border-box;
   width: 100%;
+  max-width: none;
   min-width: 0;
   margin-inline: 0;
-  padding-inline: 12px;
+  padding-inline: var(--layout-page-inline);
 }
 
+/* gap only works on flex/grid: history now owns a real vertical flex flow. */
 .draw-history-screen .feature-body {
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--layout-section-gap);
 }
 
 .profile-screen .feature-body {
@@ -142,7 +169,7 @@
 .draw-history-screen .matrix-title-banner,
 .number-reference-screen .matrix-title-banner,
 .tongxing-screen .matrix-title-banner {
-  width: calc(100% - 24px);
+  width: calc(100% - (var(--layout-page-inline) * 2));
 }
 
 .draw-history-history-scope {
@@ -151,29 +178,27 @@
   margin-inline: 0;
 }
 
-/* History settings stay frameless inline, but the floating card matches number-reference. */
-.history-filter-panel {
+/* History and number-reference settings use the same outer card inline and floating. */
+.history-filter-panel,
+.reference-query-panel {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.history-filter-panel[data-floating="true"] {
-  left: 12px;
-  right: 12px;
-  width: auto;
-  max-width: none;
   min-width: 0;
   padding: 8px;
   border: 1px solid #6c4a20;
   border-radius: 11px;
   background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
+}
+
+.history-filter-panel[data-floating="true"],
+.reference-query-panel[data-floating="true"] {
+  left: var(--layout-page-inline);
+  right: var(--layout-page-inline);
+  width: auto;
+  max-width: none;
+  min-width: 0;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
@@ -198,22 +223,6 @@
 .history-filter-primary-row .select-box::before,
 .history-filter-primary-row .select-box::after {
   display: block;
-}
-
-/* Number-reference settings are scoped to the panel itself instead of the page ancestor. */
-.reference-query-panel {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.reference-query-panel[data-floating="true"] {
-  left: 12px;
-  right: 12px;
-  width: auto;
-  max-width: none;
-  min-width: 0;
 }
 
 .reference-query-panel .query-selects.three-cols {
