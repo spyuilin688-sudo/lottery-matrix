@@ -60,7 +60,7 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(style('.calculator-panel').paddingTop, '8px');
   assert.equal(style('.calculator-panel').paddingRight, '4px');
   assert.equal(style('.calculator-panel').borderColor, 'rgb(117, 83, 41)');
-  assert.equal(style('.calculator-screen .feature-body').paddingInline, 'var(--layout-page-inline)');
+  assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 20px var\(--layout-bottom-nav-clearance\)/);
   assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '12px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
@@ -113,7 +113,8 @@ test('calculator owns a viewport-height shell with independently scrolling conte
   assert.match(body, /flex:\s*1 1 auto/);
   assert.match(body, /min-height:\s*0/);
   assert.match(body, /overflow-y:\s*auto/);
-  assert.match(body, /padding-bottom:\s*80px/);
+  assert.match(body, /padding:\s*0 20px var\(--layout-bottom-nav-clearance\)/);
+  assert.doesNotMatch(body, /80px/);
 });
 
 test('calculator settings header separates copy and actions without overlap', () => {
@@ -159,7 +160,7 @@ test('temporary global debug outlines are absent', () => {
 
 test('calculator geometry remains inside 390px, 375px and 360px viewports', () => {
   for (const viewport of [390, 375, 360]) {
-    const bodyWidth = viewport - 24;
+    const bodyWidth = viewport - 40;
     const panelInnerWidth = bodyWidth - 10;
     const resultInnerWidth = bodyWidth - 10;
     const numberGridWidth = (7 * 38) + (6 * 6);
