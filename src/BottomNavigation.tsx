@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { useRef, type MouseEvent } from "react";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -37,21 +37,25 @@ export function BottomNavigation({
 
   const beginQuickPress = () => {
     quickLongPressed.current = false;
+    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = window.setTimeout(() => {
+      quickTimer.current = null;
       quickLongPressed.current = true;
       onQuickConfigure?.();
     }, 3000);
   };
 
-  const endQuickPress = () => {
+  const finishQuickPress = () => {
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = null;
-    if (!quickLongPressed.current) onQuickOpen?.();
   };
 
-  const cancelQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
+  const handleQuickClick = () => {
+    if (quickLongPressed.current) {
+      quickLongPressed.current = false;
+      return;
+    }
+    onQuickOpen?.();
   };
 
   const displayedActive = quickActive ? "快捷" : active;
@@ -75,15 +79,10 @@ export function BottomNavigation({
           ? {
               "aria-label": "快捷；長按三秒開啟設定",
               onPointerDown: beginQuickPress,
-              onPointerUp: endQuickPress,
-              onPointerCancel: cancelQuickPress,
+              onPointerUp: finishQuickPress,
+              onPointerCancel: finishQuickPress,
+              onClick: handleQuickClick,
               onContextMenu: (event: MouseEvent<HTMLButtonElement>) => event.preventDefault(),
-              onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onQuickOpen?.();
-                }
-              },
             }
           : { onClick: () => screen && onNavigate?.(screen) };
 
