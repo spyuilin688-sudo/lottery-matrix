@@ -45,6 +45,7 @@
   box-shadow: none;
 }
 
+/* 浮動設定卡與號碼對照單使用相同外卡規格。 */
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
@@ -53,7 +54,12 @@
   width: auto;
   max-width: none;
   max-height: calc(100dvh - 24px);
+  padding: 8px;
   overflow-y: auto;
+  border: 1px solid #6c4a20;
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
 .tongxing-query[hidden] {
@@ -178,7 +184,7 @@
 .tongxing-query .primary-action svg { width: 20px; height: 20px; }
 .tongxing-screen .ornament-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 24px; }
 
-/* 結果列表：一個表頭、緊湊列高、每組只用 1px 空隙區隔。 */
+/* 結果列表：一個表頭、緊湊列高，每筆結果用真實 6px 空白分組。 */
 .tongxing-screen .tongxing-results {
   box-sizing: border-box;
   width: 100%;
@@ -192,8 +198,10 @@
 }
 
 .tongxing-screen .tongxing-table {
+  display: flex;
   width: 100%;
   min-width: 0;
+  flex-direction: column;
   font-variant-numeric: tabular-nums;
 }
 
@@ -242,11 +250,12 @@
 
 .tongxing-screen .tongxing-result-group {
   display: block;
+  flex: 0 0 auto;
   border: 0;
   box-shadow: none;
 }
 
-.tongxing-screen .tongxing-result-group + .tongxing-result-group { margin-top: 1px; }
+.tongxing-screen .tongxing-result-group + .tongxing-result-group { margin-top: 6px; }
 
 /* 不用中間分隔線，改用底色區分鎖定期與預測期。 */
 .tongxing-screen .tongxing-table-row[data-row-type="locked"] { background: rgba(126, 83, 15, .32); }
