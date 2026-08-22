@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 
 const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
 const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
+const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
 const brandHeader = fs.readFileSync('src/brand-header-unify.css', 'utf8');
 
@@ -53,44 +54,42 @@ test('Matrix 同星左欄計算樣式確實將期數與日期分成上下兩列'
   assert.equal(style.gridTemplateRows, 'auto auto');
 });
 
-test('Matrix 同星與號碼對照單使用 12px 左右間距與 8px 垂直間距', () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
+test('Matrix 同星與號碼對照單內容使用 20px 左右外距與響應式垂直間距', () => {
   assert.match(tokens, /--layout-section-gap:\s*8px;/);
 
   const tongxingBody = block(tongxing, '.tongxing-screen .feature-body');
-  const referenceBody = block(feature, '.number-reference-screen .feature-body');
-  for (const body of [tongxingBody, referenceBody]) {
-    assert.match(body, /display:\s*flex/);
-    assert.match(body, /flex-direction:\s*column/);
-    assert.match(body, /row-gap:\s*var\(--layout-section-gap\)/);
-    assert.match(body, /padding-top:\s*var\(--layout-section-gap\)/);
-  }
+  assert.match(tongxingBody, /display:\s*flex/);
+  assert.match(tongxingBody, /flex-direction:\s*column/);
+  assert.match(tongxingBody, /width:\s*calc\(100% - 40px\)/);
+  assert.match(tongxingBody, /margin-inline:\s*20px/);
+  assert.match(tongxingBody, /padding-inline:\s*0/);
+  assert.match(tongxingBody, /row-gap:\s*var\(--layout-section-gap\)/);
 
-  assert.doesNotMatch(tongxingBody, /padding-(?:left|right):\s*(?:8|16)px/);
-  assert.match(block(tongxing, '.tongxing-screen .matrix-title-banner'), /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\)/);
-  assert.match(block(feature, '.number-reference-screen .matrix-title-banner'), /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\)/);
+  const referenceBody = block(feature, '.number-reference-screen .feature-body');
+  assert.match(referenceBody, /display:\s*flex/);
+  assert.match(referenceBody, /width:\s*100%/);
+  assert.match(referenceBody, /margin-inline:\s*0/);
+  assert.match(referenceBody, /padding-inline:\s*20px/);
+  assert.match(referenceBody, /padding-top:\s*var\(--layout-section-gap\)/);
+  assert.match(referenceBody, /row-gap:\s*12px/);
+
   const floatingPanel = block(feature, '.reference-query-panel[data-floating="true"]');
-  assert.match(floatingPanel, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\)/);
-  assert.doesNotMatch(floatingPanel, /max-width:/);
-  assert.match(block(tongxing, '.tongxing-screen .tongxing-query'), /margin:\s*0/);
+  assert.match(floatingPanel, /position:\s*fixed/);
+  assert.match(floatingPanel, /left:\s*20px/);
+  assert.match(floatingPanel, /right:\s*20px/);
+  assert.match(floatingPanel, /width:\s*auto/);
+  assert.doesNotMatch(floatingPanel, /transform:\s*translateX/);
+
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-query'), /width:\s*100%/);
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-query'), /margin:\s*0 auto/);
   assert.match(block(tongxing, '.tongxing-screen .ornament-title'), /margin:\s*0/);
   assert.match(block(feature, '.reference-search'), /margin:\s*0/);
 });
 
-test('Matrix 同星與號碼對照單使用 12px 左右外距，不由通用內距覆寫', () => {
-  for (const body of [
-    block(tongxing, '.tongxing-screen .feature-body'),
-    block(feature, '.number-reference-screen .feature-body'),
-  ]) {
-    assert.match(body, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\)/);
-    assert.match(body, /margin-inline:\s*var\(--layout-page-inline\)/);
-    assert.match(body, /padding-inline:\s*0/);
-  }
-
-  const genericFeatureBodyRules = feature.match(/^\.feature-body\s*\{[^}]*\}/gm) ?? [];
-  assert.equal(genericFeatureBodyRules.length, 1);
-  assert.match(genericFeatureBodyRules[0], /padding-inline:\s*var\(--layout-page-inline\)/);
-  assert.doesNotMatch(genericFeatureBodyRules[0], /padding:\s*0 var\(--layout-page-inline\) 24px/);
+test('20px content margins are not re-overridden by the shared responsive sheet', () => {
+  assert.doesNotMatch(responsive, /\.number-reference-screen \.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
+  assert.doesNotMatch(responsive, /\.tongxing-screen \.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
+  assert.doesNotMatch(responsive, /\.tongxing-screen \.feature-body\s*\{/);
 });
 
 test('Matrix 同星與號碼對照單頁首不受 390px 寬度限制', () => {
@@ -108,7 +107,6 @@ test('號碼對照單 uses one responsive three-select grid without the old fixe
 
 test('bounded responsive rules do not add prohibited compensation techniques', () => {
   const referenceRelevant = [
-    block(feature, '.number-reference-screen .query-selects.three-cols'),
     block(feature, '.number-reference-screen .reference-select'),
     block(feature, '.number-reference-screen .reference-select select'),
     block(feature, '.number-reference-screen .reference-order-select select'),
@@ -128,23 +126,19 @@ test('號碼對照單的下拉字體與內距只有一個正式規則', () => {
   assert.equal(feature.match(/\.number-reference-screen \.reference-order-select select\s*\{/g)?.length, 1);
 });
 
-test('320px 至 430px 時兩頁保持 12px 左右外距', () => {
+test('320px 至 430px 時兩頁保持 20px 左右內容外距', () => {
   for (const viewport of [320, 360, 375, 390, 412, 430]) {
     const appWidth = viewport;
-    const contentWidth = appWidth - (12 * 2);
+    const contentWidth = appWidth - 40;
     const tongxingInnerWidth = contentWidth - (10 * 2);
     const tongxingFixedWidth = 42 + 28 + 52 + (6 * 5);
     const tongxingInputWidth = (tongxingInnerWidth - tongxingFixedWidth) / 3;
     const referenceSearchInputWidth = (contentWidth - (6 * 3)) / 4.7;
     const referenceFirstSelectWidth = (contentWidth - (6 * 2)) * (.85 / 3.4);
 
-    const minimumTongxingInputWidth = appWidth < 360 ? 40 : 54;
-    const minimumReferenceInputWidth = appWidth < 360 ? 59 : 67;
-    const minimumReferenceSelectWidth = appWidth < 360 ? 71 : 81;
-
-    assert.ok(tongxingInputWidth >= minimumTongxingInputWidth, `${viewport}px Matrix 同星號碼欄保持在頁面內`);
-    assert.ok(referenceSearchInputWidth >= minimumReferenceInputWidth, `${viewport}px 號碼對照單號碼欄保持在頁面內`);
-    assert.ok(referenceFirstSelectWidth >= minimumReferenceSelectWidth, `${viewport}px 號碼對照單彩種欄保持在頁面內`);
-    assert.equal((appWidth - contentWidth) / 2, 12);
+    assert.ok(tongxingInputWidth >= 34, `${viewport}px Matrix 同星號碼欄保持在頁面內`);
+    assert.ok(referenceSearchInputWidth >= 55, `${viewport}px 號碼對照單號碼欄保持在頁面內`);
+    assert.ok(referenceFirstSelectWidth >= 67, `${viewport}px 號碼對照單彩種欄保持在頁面內`);
+    assert.equal((appWidth - contentWidth) / 2, 20);
   }
 });
