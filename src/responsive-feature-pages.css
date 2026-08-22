@@ -167,7 +167,7 @@
   padding-inline: 20px;
 }
 
-.notifications-screen > .feature-brand-header {
+.bottom-nav-brand-screen.notifications-screen > .feature-brand-header:not(.integrated-title-header) {
   margin-bottom: 4px;
 }
 
