@@ -8,15 +8,20 @@ test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () =>
   const end = source.indexOf('className="reference-query-panel"', start);
   const header = source.slice(start, end);
 
-  assert.equal((header.match(/>刷新<\/button>/g) ?? []).length, 1);
+  assert.equal((header.match(/刷新<\/button>/g) ?? []).length, 1);
+  assert.match(header, /<ReloadIcon className="reference-refresh-icon" \/>/);
   assert.match(header, /探索設定/);
 });
 
-test("刷新與探索設定置中於標題卡右半區域", () => {
-  const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+test("刷新與探索設定使用標題卡右側 40% 響應式操作區", () => {
+  const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
   assert.match(
-    css,
-    /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*inset:\s*0\s+0\s+0\s+50%;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;/s,
+    responsiveCss,
+    /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*width:\s*40%;/s,
+  );
+  assert.match(
+    responsiveCss,
+    /\.title-card-compact-action \.reference-refresh-icon\s*\{[^}]*width:\s*7px;[^}]*height:\s*7px;[^}]*flex:\s*0 0 7px;/s,
   );
 });
