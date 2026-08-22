@@ -1,0 +1,26 @@
+name: TongXing fix verification
+
+on:
+  push:
+    branches: [fix-tongxing-floating-density]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: TongXing regression
+        run: node --test tests/tongxing-floating-density-regression.test.mjs
+      - name: Existing TongXing responsive tests
+        run: node --test tests/tongxing-reference-responsive-layout.test.mjs
+      - name: Build
+        run: npm run build
