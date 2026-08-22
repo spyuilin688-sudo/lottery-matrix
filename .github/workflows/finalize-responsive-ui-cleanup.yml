@@ -1,0 +1,228 @@
+name: Finalize responsive UI cleanup
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'bottom-nav-responsive-source-fix-trigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: RED - updated regression tests fail on old source
+        shell: bash
+        run: |
+          set +e
+          node --test \
+            tests/calculator-responsive-layout.test.mjs \
+            tests/matrix-explore-fluid-layout.test.mjs \
+            tests/tongxing-reference-responsive-layout.test.mjs \
+            tests/draw-history-table-layout.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected the updated responsive regression suite to fail before source changes.'
+            exit 1
+          fi
+
+      - name: Reproduce formal GREEN source changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/apply-responsive-ui-cleanup.yml').read_text()
+          block = text.split('      - name: GREEN - apply exact requested cleanup\n', 1)[1].split('      - name: Verify requested regression tests\n', 1)[0]
+          script = block.split('        run: |\n', 1)[1]
+          Path('/tmp/apply-green.sh').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in script.splitlines()) + '\n')
+          PY
+          bash /tmp/apply-green.sh
+
+      - name: Consolidate responsive sources and permanent contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected 1 occurrence, got {count}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          # 號碼對照單 20px/12px 由 feature-pages.css 單一正式來源負責，移除 responsive sheet 的重複覆寫。
+          replace_once(
+              'src/feature-pages.css',
+              '''.number-reference-screen .feature-body {\n  display: flex;\n  width: calc(100% - (var(--layout-page-inline) * 2));\n  margin-inline: var(--layout-page-inline);\n  padding-inline: 0;\n  padding-top: var(--layout-section-gap);\n  flex-direction: column;\n  row-gap: var(--layout-section-gap);\n}\n''',
+              '''.number-reference-screen .feature-body {\n  display: flex;\n  box-sizing: border-box;\n  width: 100%;\n  margin-inline: 0;\n  padding-inline: 20px;\n  padding-top: var(--layout-section-gap);\n  flex-direction: column;\n  row-gap: 12px;\n}\n''',
+          )
+
+          replace_once(
+              'src/responsive-feature-pages.css',
+              '''.draw-history-screen .feature-body,\n.number-reference-screen .feature-body {\n  box-sizing: border-box;\n  width: 100%;\n  margin-inline: 0;\n  padding-inline: 20px;\n  gap: 12px;\n}\n''',
+              '''.draw-history-screen .feature-body {\n  box-sizing: border-box;\n  width: 100%;\n  margin-inline: 0;\n  padding-inline: 20px;\n  gap: 12px;\n}\n''',
+          )
+
+          Path('tests/ui-responsive-cleanup-contract.test.mjs').write_text(r'''import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+
+const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
+const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
+const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
+const explore = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
+const balls = fs.readFileSync('src/number-ball.css', 'utf8');
+const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+const main = fs.readFileSync('src/main.tsx', 'utf8');
+
+test('三頁標題操作按鈕為 27.4px 直角外框且文字箭頭零間距', () => {
+  assert.match(responsive, /\.title-card-compact-action\s*\{[^}]*height:\s*27\.4px;[^}]*min-height:\s*27\.4px;[^}]*gap:\s*0;/s);
+  assert.doesNotMatch(responsive.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
+  assert.doesNotMatch(responsive.match(/\.title-card-compact-action::after\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
+  assert.match(responsive, /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*width:\s*40%;/s);
+  assert.match(responsive, /\.title-card-compact-action \.reference-refresh-icon\s*\{[^}]*width:\s*7px;[^}]*height:\s*7px;/s);
+});
+
+test('同星、對照單、歷史與計算機使用指定內容外距', () => {
+  assert.match(tongxing, /\.tongxing-screen \.feature-body\s*\{[^}]*width:\s*calc\(100% - 40px\);[^}]*margin-inline:\s*20px;/s);
+  assert.match(feature, /\.number-reference-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*20px;[^}]*row-gap:\s*12px;/s);
+  assert.match(responsive, /\.draw-history-screen \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*gap:\s*12px;/s);
+  assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 20px var\(--layout-bottom-nav-clearance\);/s);
+  assert.doesNotMatch(responsive, /\.number-reference-screen \.feature-body\s*\{/);
+});
+
+test('三個浮動設定卡固定於 viewport 且左右 20px', () => {
+  assert.match(tongxing, /\.tongxing-query\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
+  assert.match(feature, /\.history-filter-panel\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
+  assert.match(feature, /\.reference-query-panel\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
+  assert.match(source, /setFilterPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
+  assert.match(source, /setSettingsPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
+  assert.match(source, /setQueryPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
+});
+
+test('設定選項直角矩形且文字響應式適配', () => {
+  assert.match(feature, /\.history-filter-panel \.select-box::before,[\s\S]*?\.history-filter-panel \.select-box::after\s*\{\s*display:\s*none;/s);
+  assert.match(feature, /\.reference-query-panel \.select-box::before,[\s\S]*?\.reference-query-panel \.select-box::after\s*\{\s*display:\s*none;/s);
+  assert.match(tongxing, /\.tongxing-panel-scope \.select-box::before,[\s\S]*?\.tongxing-panel-scope \.select-box::after\s*\{\s*display:\s*none;/s);
+  assert.match(feature, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
+  assert.match(feature, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
+  assert.match(tongxing, /\.tongxing-panel-scope \.query-selects select,[\s\S]*?font-size:\s*clamp\(/s);
+});
+
+test('歷史預設日期不會在切換彩種時被自動套用', () => {
+  assert.match(source, /const \[dateFilterTouched, setDateFilterTouched\] = useState\(false\);/);
+  assert.match(source, /date:\s*dateFilterTouched\s*\?/);
+  assert.match(source, /setDateFilterTouched\(true\)/);
+});
+
+test('Matrix Explore 與計算機使用正式底部安全區避讓', () => {
+  assert.doesNotMatch(explore, /--layout-bottom-nav-clearance:[^;]*--mobile-safe-area-height/);
+  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
+  assert.doesNotMatch(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*80px/s);
+  assert.doesNotMatch(main, /bottom-nav-responsive-clearance\.css/);
+  assert.equal(fs.existsSync('src/bottom-nav-responsive-clearance.css'), false);
+});
+
+test('歷史今彩539 .2px 底線不再被 Matrix Explore selector 誤套', () => {
+  assert.doesNotMatch(balls, /\.matrix-explore-main-screen \.history-panel/);
+  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
+  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="今彩539"\][^}]*--underline-y:\s*\.2px;/s);
+});
+
+test('通知移除 Logo 特例與小螢幕強拉規則', () => {
+  assert.match(feature, /\.notifications-screen \.feature-body\s*\{[^}]*var\(--layout-bottom-nav-clearance\)/s);
+  assert.doesNotMatch(feature, /\.notifications-screen \.feature-body\s*\{[^}]*--mobile-safe-area-height/s);
+  assert.doesNotMatch(responsive, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*width:\s*75%/s);
+  assert.doesNotMatch(responsive, /bottom-nav-brand-screen\.notifications-screen[^}]*margin-bottom:\s*4px/s);
+  assert.doesNotMatch(responsive, /@media \(max-width:\s*360px\)[\s\S]*?notification-heading/);
+  assert.match(responsive, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(/s);
+});
+
+test('同星結果背景與群組分隔提高辨識度', () => {
+  assert.match(tongxing, /--group-divider-width:\s*3px;/);
+  assert.match(tongxing, /data-row-type="locked"[^}]*rgba\(126, 83, 15, \.24\)/s);
+  assert.match(tongxing, /data-row-type="predicted"[^}]*rgba\(10, 61, 88, \.25\)/s);
+});
+''')
+          PY
+
+      - name: Verify requested regression suite
+        run: |
+          node --test \
+            tests/ui-responsive-cleanup-contract.test.mjs \
+            tests/calculator-responsive-layout.test.mjs \
+            tests/matrix-explore-option-layout.test.mjs \
+            tests/matrix-explore-fluid-layout.test.mjs \
+            tests/bottom-navigation-safe-area-position.test.mjs \
+            tests/bottom-navigation-height.test.mjs \
+            tests/tongxing-reference-responsive-layout.test.mjs \
+            tests/draw-history-table-layout.test.mjs
+
+      - name: Verify every node test file
+        shell: bash
+        run: |
+          : > failing-tests.txt
+          : > all-node-output.txt
+          status=0
+          for file in tests/*.test.mjs; do
+            echo "===== $file =====" | tee -a all-node-output.txt
+            set +e
+            node --test "$file" 2>&1 | tee -a all-node-output.txt
+            code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -ne 0 ]; then
+              echo "$file" | tee -a failing-tests.txt
+              status=1
+            fi
+          done
+          exit "$status"
+
+      - name: Upload full node diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-responsive-ui-node-diagnostics
+          path: |
+            failing-tests.txt
+            all-node-output.txt
+          if-no-files-found: ignore
+
+      - name: Verify Vitest unit suite
+        run: npm run test:unit
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Commit verified cleanup to main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/apply-responsive-ui-cleanup.yml
+          rm -f .github/workflows/one-time-bottom-nav-source-fix.yml
+          rm -f .github/workflows/diagnose-responsive-ui-source.yml
+          rm -f .github/workflows/diagnose-targeted-responsive-ui-tests.yml
+          rm -f .github/workflows/inspect-green-responsive-sources.yml
+          rm -f .github/workflows/finalize-responsive-ui-cleanup.yml
+          rm -f source-diagnostics.txt targeted-test-output.txt targeted-failing-tests.txt green-source-snippets.txt failing-tests.txt all-node-output.txt
+          git add -A
+          git commit -m 'Fix responsive feature layouts and filters'
+          git push origin main
