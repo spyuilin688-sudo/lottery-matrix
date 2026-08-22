@@ -108,15 +108,7 @@
   width: 100%;
   justify-content: flex-end;
 }
-.matrix-title-banner-actions .reference-title-actions button,
-.matrix-title-banner-actions .history-title-actions button {
-  min-height: 26px;
-  height: 26px;
-  padding-inline: 5px;
-  font-size: 9px;
-}
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
-.history-title-actions .history-filter-trigger { min-height: 30px; height: 30px; padding-inline: 6px; font-size: 10px; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
 .panel { border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
@@ -620,7 +612,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .draw-history-screen .matrix-title-banner { width: calc(100% - 24px); margin-bottom: 8px; }
 .draw-history-screen .matrix-title-banner-actions { top: 20%; right: 4%; bottom: 8%; left: auto; width: 46%; height: auto; }
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; align-items: flex-end; justify-content: flex-end; }
-.draw-history-screen .history-title-actions .history-filter-trigger { min-width: 68px; min-height: 26px; height: 26px; flex: 0 0 68px; padding-inline: 3px; justify-content: center; gap: 3px; font-size: 9px; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0; overflow: visible; }
 .history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
@@ -814,19 +805,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   align-items: center;
   gap: 6px;
 }
-.reference-title-actions button {
-  display: inline-flex;
-  height: 30px;
-  padding: 0 6px;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border: 0;
-  background: transparent;
-  color: #efbf43;
-  font-size: 11px;
-}
-.reference-title-actions button:last-child { width: auto; padding: 0 4px; }
 .reference-title-actions svg { width: 14px; height: 14px; }
 .reference-title-actions svg[data-open="true"] { transform: rotate(180deg); }
 .reference-query-panel[hidden] { display: none; }

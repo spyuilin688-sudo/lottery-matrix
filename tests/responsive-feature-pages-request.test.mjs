@@ -6,6 +6,7 @@ const source = readFileSync(new URL('../src/FeaturePages.tsx', import.meta.url),
 const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const tongxingCss = readFileSync(new URL('../src/tongxing-compact.css', import.meta.url), 'utf8');
 const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
+const brandCss = readFileSync(new URL('../src/brand-header-unify.css', import.meta.url), 'utf8');
 const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url), 'utf8');
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 
@@ -30,6 +31,7 @@ test('號碼對照單標題操作共用按鈕規格且相距 6px', () => {
   assert.match(source, /className="title-card-compact-action"[^>]*>\s*<ReloadIcon \/>刷新/);
   assert.match(source, /className="title-card-compact-action"[^>]*aria-label=\{queryExpanded/);
   assert.match(responsiveCss, /\.reference-title-actions\s*\{[^}]*gap:\s*6px/s);
+  assert.doesNotMatch(brandCss, /\.number-reference-screen \.reference-title-actions button:(?:first|last)-child/);
   assert.match(responsiveCss, /\.number-reference-screen \.reference-row:not\(\.head\)\s*\{[^}]*min-height:\s*32px/s);
 });
 
@@ -46,17 +48,25 @@ test('Matrix 同星設定可收合、頁首固定且不渲染近10期卡片', ()
 
 test('快捷通知我的共用首頁 matrixya Logo 幾何', () => {
   assert.match(brandSource, /matrixya\.png/);
+  assert.match(responsiveCss, /\.bottom-nav-brand-screen > \.feature-brand-header\s*\{[^}]*width:\s*100%[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
   assert.match(responsiveCss, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*width:\s*75%/s);
   assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*(?:transform|margin-top:\s*-)/s);
 });
 
 test('通知與我的頁採緊湊但可操作的密度', () => {
-  assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*64px/s);
+  assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*72px/s);
+  assert.match(responsiveCss, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*48px minmax\(0, 1fr\) 76px 42px/s);
+  assert.doesNotMatch(responsiveCss, /\.notification-row\s*\{[^}]*grid-template-columns:/s);
   assert.match(responsiveCss, /\.notification-icon\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s);
   assert.match(responsiveCss, /\.notification-actions > button:first-child\s*\{[^}]*width:\s*72px[^}]*height:\s*32px/s);
   assert.match(responsiveCss, /\.profile-card\s*\{[^}]*padding:\s*8px 12px/s);
   assert.match(responsiveCss, /\.profile-avatar\s*\{[^}]*width:\s*54px[^}]*height:\s*54px/s);
   assert.match(responsiveCss, /\.profile-menu-rows button\s*\{[^}]*height:\s*36px/s);
+});
+
+test('舊按鈕規則不再覆蓋正式精簡規格', () => {
+  assert.doesNotMatch(css, /\.draw-history-screen \.history-title-actions \.history-filter-trigger\s*\{/);
+  assert.doesNotMatch(css, /\.reference-title-actions button\s*\{/);
 });
 
 test('本次正式規則不新增整頁縮放、負位移或 important 補償', () => {
