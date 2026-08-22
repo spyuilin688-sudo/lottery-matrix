@@ -71,5 +71,5 @@ test("歷史設定卡維持原控制尺寸、改直角矩形選項並支援響�
   assert.match(css, /\.history-filter-panel \.select-box\s*\{[^}]*border-radius:\s*0;/s);
   assert.match(css, /\.history-filter-panel \.select-box::before,[\s\S]*?\.history-filter-panel \.select-box::after\s*\{\s*display:\s*none;/s);
   assert.match(css, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
-  assert.match(responsiveCss, /\.draw-history-screen \.feature-body\s*,[\s\S]*?padding-inline:\s*20px;[^}]*gap:\s*12px/s);
+  assert.match(responsiveCss, /\.draw-history-screen \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*gap:\s*12px/s);
 });
