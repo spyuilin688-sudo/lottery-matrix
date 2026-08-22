@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 5px;
 }
 
 .title-card-compact-action {
@@ -13,9 +13,9 @@
   box-sizing: border-box;
   display: inline-flex;
   min-width: 0;
-  height: 27.4px;
-  min-height: 27.4px;
-  padding: 0 5px;
+  height: 24.7px;
+  min-height: 24.7px;
+  padding: 0 4.5px;
   align-items: center;
   justify-content: center;
   gap: 0;
@@ -23,7 +23,7 @@
   border-radius: 0;
   background: transparent;
   color: #d3a642;
-  font-size: clamp(8px, 2.3vw, 10px);
+  font-size: clamp(7.2px, 2.1vw, 9px);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -35,7 +35,7 @@
   top: 50%;
   left: 0;
   width: 100%;
-  height: 27.4px;
+  height: 24.7px;
   transform: translateY(-50%);
   background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618);
   filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32));
@@ -49,7 +49,7 @@
   top: 50%;
   left: 1px;
   width: calc(100% - 2px);
-  height: 25.4px;
+  height: 22.7px;
   transform: translateY(-50%);
   background: var(--select-tech-surface);
   pointer-events: none;
@@ -57,8 +57,8 @@
 }
 
 .title-card-compact-action svg {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
 }
 
 .sticky-title-card-screen .feature-brand-header {
@@ -83,7 +83,18 @@
 }
 
 .draw-history-screen .history-filter-trigger {
-  min-width: 61.2px;
+  min-width: 55.1px;
+  gap: 1px;
+}
+
+.draw-history-screen .history-filter-trigger-icon {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+}
+
+.draw-history-screen .history-filter-trigger > svg:not(.history-filter-trigger-icon) {
+  display: none;
 }
 
 .number-reference-screen .matrix-title-banner-actions {
@@ -101,7 +112,7 @@
   width: 100%;
   margin-inline: 0;
   padding-inline: 20px;
-  gap: 12px;
+  gap: 8px;
 }
 
 .profile-screen .feature-body {
@@ -122,9 +133,34 @@
   margin-inline: 0;
 }
 
+/* History filter outer card is intentionally removed; controls remain individually framed. */
+.draw-history-screen .history-filter-panel,
+.draw-history-screen .history-filter-panel[data-floating="true"] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The first settings row uses the shared original cut-corner select frame. */
+.draw-history-screen .history-filter-primary-row .select-box,
+.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.draw-history-screen .history-filter-primary-row .select-box::before,
+.draw-history-screen .history-filter-primary-row .select-box::after,
+.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box::before,
+.number-reference-screen .reference-query-panel .query-selects.three-cols .select-box::after {
+  display: block;
+}
+
 .reference-title-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .number-reference-screen .reference-table-panel > header {
@@ -155,12 +191,133 @@
   display: none;
 }
 
+/* Draw-history balls follow the same layout geometry as Matrix Explore recent-history balls. */
+.draw-history-screen .draw-history-panel .history-numbers,
+.draw-history-screen .draw-history-panel .history-main-numbers,
+.draw-history-screen .draw-history-panel .history-special-number {
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.draw-history-screen .draw-history-panel .history-numbers {
+  width: 100%;
+  gap: .125rem;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.draw-history-screen .draw-history-panel .history-main-numbers {
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.8vw, 8px);
+}
+
+.draw-history-screen .draw-history-panel .history-special-number {
+  height: auto;
+  margin-left: .375rem;
+  flex: 0 0 auto;
+  gap: .25rem;
+  justify-content: center;
+  color: #d4a63b;
+  white-space: nowrap;
+}
+
+.draw-history-screen .draw-history-panel .history-special-number > span:first-child {
+  width: .5rem;
+  height: 22px;
+  flex: 0 0 .5rem;
+  font-size: .6875rem;
+}
+
+.draw-history-screen .draw-history-panel .history-special-ball {
+  display: flex;
+  height: auto;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.draw-history-screen .draw-history-panel .history-special-label {
+  --history-special-label-size: clamp(5px, 1.67vw, 6.5px);
+  display: none;
+  margin: 0;
+  font-size: var(--history-special-label-size);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] {
+  --matrix-history-ball-size: clamp(18px, 5.64vw, 22px);
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] {
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
+  gap: clamp(4px, 1.5vw, 7px);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
+  align-items: center;
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
+  margin-left: 0;
+  align-items: center;
+  gap: clamp(4px, 1.5vw, 7px);
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
+  display: grid;
+  height: var(--matrix-history-ball-size);
+  place-items: center;
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
+  position: relative;
+  display: grid;
+  width: var(--matrix-history-ball-size);
+  flex: 0 0 var(--matrix-history-ball-size);
+  grid-template-rows: 1fr;
+  align-items: center;
+  justify-items: center;
+  row-gap: 0;
+}
+
+.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
+  position: absolute;
+  left: 50%;
+  display: block;
+  transform: translateX(-50%);
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-ball {
+  height: 40px;
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-label {
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2);
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-ball {
+  height: 36px;
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-label {
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px);
+}
 
 .notifications-screen .feature-body {
   gap: 4px;
   padding-inline: 20px;
 }
-
 
 .notifications-screen .notification-list {
   gap: 6px;
@@ -265,4 +422,3 @@
   min-height: 36px;
   font-size: 13px;
 }
-

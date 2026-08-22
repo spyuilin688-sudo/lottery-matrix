@@ -24,7 +24,7 @@
   min-width: 0;
   min-height: 100%;
   margin: 0 auto;
-  padding: 0 12px var(--layout-bottom-nav-clearance);
+  padding: 0 16px var(--layout-bottom-nav-clearance);
   flex-direction: column;
   row-gap: 8px;
   overflow-x: hidden;
@@ -39,7 +39,7 @@
 
 .matrix-explore-main-screen .matrix-title-banner {
   box-sizing: border-box;
-  width: calc(100% - 24px);
+  width: calc(100% - 32px);
   max-width: none;
   min-width: 0;
 }

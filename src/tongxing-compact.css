@@ -31,16 +31,17 @@
   width: calc(100% - (var(--layout-page-inline) * 2));
 }
 
+/* Settings keep their responsive grid, but the duplicated outer card is removed. */
 .tongxing-screen .tongxing-query {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   height: auto;
   margin: 0 auto;
-  padding: var(--card-padding);
-  border-width: var(--border-width);
-  border-radius: var(--card-radius);
-  background: linear-gradient(145deg, rgba(3, 9, 13, .99), rgba(1, 4, 7, .99));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -53,12 +54,12 @@
   width: auto;
   max-height: calc(100dvh - 24px);
   margin: 0;
-  padding: var(--card-padding, 10px);
+  padding: 0;
   overflow-y: auto;
-  border: 1px solid rgba(187, 134, 47, .9);
-  border-radius: var(--card-radius, 12px);
-  background: linear-gradient(145deg, rgba(3, 9, 13, .99), rgba(1, 4, 7, .99));
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .06);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .tongxing-panel-scope {
@@ -135,6 +136,7 @@
   font-weight: 600;
 }
 
+/* First settings row inherits the shared original cut-corner .select-box frame. */
 .tongxing-screen .query-selects {
   display: grid;
   width: 100%;
