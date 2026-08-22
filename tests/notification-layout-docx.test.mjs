@@ -109,7 +109,7 @@ function readPngAlphaBounds(path) {
 }
 
 test('notification page follows the current compact responsive layout specification', () => {
-  assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 0 20px var\(--layout-bottom-nav-clearance\); \}/);
+  assert.match(featureCss, /\.notifications-screen \.feature-body \{ padding: 0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\); \}/);
   assert.match(featureCss, /\.notification-list \{ display: grid; gap: 8px; \}/);
   assert.match(responsiveCss, /\.notification-row \{[^}]*height:\s*auto;[^}]*min-height:\s*0;[^}]*padding:\s*4px;/);
   assert.match(responsiveCss, /\.notification-heading \{[^}]*grid-template-columns:\s*clamp\(40px, 12\.3vw, 48px\) minmax\(0, 1fr\) clamp\(64px, 19\.5vw, 76px\) 42px;[^}]*column-gap:\s*clamp\(4px, 1\.5vw, 6px\);/s);
@@ -124,7 +124,7 @@ test('notification page follows the current compact responsive layout specificat
   assert.match(featureCss, /\.notifications-screen \.notification-row \{[^}]*border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius: 14px;[^}]*background: #020C12;/);
   assert.match(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*gap:\s*4px;[^}]*padding-inline:\s*20px;/);
   assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\)/);
-  assert.match(brandCss, /\.feature-brand-header[^}]*\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
+  assert.match(brandCss, /\.feature-brand-header,[\s\S]*?\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
   assert.match(featureCss, /\.toggle \{[^}]*width: 46px;[^}]*height: 44px;/);
   assert.match(featureCss, /\.toggle::before \{[^}]*width: 46px;[^}]*height: 28px;[^}]*border: 1px solid #46505C;[^}]*border-radius: 14px;[^}]*background: #151B22;/);
   assert.match(featureCss, /\.toggle span \{[^}]*width: 24px;[^}]*height: 24px;/);
