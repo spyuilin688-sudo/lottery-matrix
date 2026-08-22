@@ -163,7 +163,12 @@
 }
 
 .notifications-screen .feature-body {
-  gap: 6px;
+  gap: 4px;
+  padding-inline: 20px;
+}
+
+.notifications-screen > .feature-brand-header {
+  margin-bottom: 4px;
 }
 
 .notifications-screen .notification-list {
@@ -171,8 +176,9 @@
 }
 
 .notification-row {
-  height: 72px;
-  padding: 8px;
+  height: auto;
+  min-height: 0;
+  padding: 4px;
 }
 
 .notification-heading {
