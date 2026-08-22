@@ -99,13 +99,14 @@ function appendSpecialNumber(
   return [...values, specialNumber];
 }
 
-function normalizePeriod(lottery: NumberBallLottery, value: unknown) {
+export function normalizePeriod(lottery: NumberBallLottery, value: unknown) {
   if (value === null || value === undefined) return undefined;
   const period = String(value).trim();
-  if (lottery === '今彩539' || lottery === '大樂透') {
-    return period.replace(/^(\d{3})000(\d{3})$/, '$1$2');
-  }
-  return period;
+  if (lottery !== '今彩539' && lottery !== '大樂透') return period;
+  const legacyPeriod = period.match(/^(\d{2,3})000(\d{3})$/);
+  return legacyPeriod
+    ? `${legacyPeriod[1].padStart(3, '0')}${legacyPeriod[2]}`
+    : period;
 }
 
 function normalizeDrawDate(value: unknown) {

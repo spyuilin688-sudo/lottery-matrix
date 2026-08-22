@@ -1,0 +1,213 @@
+/* Responsive feature pages formal source */
+
+.title-card-compact-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.title-card-compact-action {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 0;
+  height: 23.4px;
+  min-height: 23.4px;
+  padding: 0 5px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(211, 166, 66, .62);
+  border-radius: 12px;
+  background: rgba(8, 20, 27, .92);
+  color: #d3a642;
+  font-size: 8.1px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.title-card-compact-action::before {
+  position: absolute;
+  inset: -10px -3px;
+  content: "";
+}
+
+.title-card-compact-action svg {
+  width: 11px;
+  height: 11px;
+}
+
+.sticky-title-card-screen .feature-brand-header {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  background: #020b11;
+}
+
+.draw-history-screen .matrix-title-banner-actions {
+  transform: translateY(4px);
+}
+
+.draw-history-screen .feature-body,
+.number-reference-screen .feature-body,
+.tongxing-screen .feature-body,
+.notifications-screen .feature-body,
+.profile-screen .feature-body {
+  box-sizing: border-box;
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: var(--layout-page-inline);
+}
+
+.draw-history-history-scope {
+  width: 100%;
+  margin-inline: 0;
+}
+
+.reference-title-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.number-reference-screen .reference-table-panel > header {
+  min-height: 34px;
+  padding-inline: 8px;
+}
+
+.number-reference-screen .reference-row.head {
+  min-height: 26px;
+  font-size: 12px;
+}
+
+.number-reference-screen .reference-row:not(.head) {
+  min-height: 32px;
+  font-size: 11.5px;
+}
+
+.number-reference-screen .reference-row:not(.head) > span > button {
+  min-width: 0;
+  font-size: 14px;
+}
+
+.number-reference-screen .reference-row {
+  grid-template-columns: minmax(56px, .2fr) minmax(0, .8fr);
+}
+
+.tongxing-screen .tongxing-query[hidden] {
+  display: none;
+}
+
+.bottom-nav-brand-screen .shared-brand-logo {
+  width: 75%;
+  height: auto;
+  margin-inline: auto;
+}
+
+.bottom-nav-brand-screen > .feature-brand-header[data-compact="true"] > .shared-brand-logo > img {
+  width: 100%;
+  height: auto;
+  margin-inline: auto;
+  object-fit: contain;
+}
+
+.notifications-screen .feature-body {
+  gap: 6px;
+}
+
+.notifications-screen .notification-list {
+  gap: 6px;
+}
+
+.notification-row {
+  height: 64px;
+  padding: 6px;
+  grid-template-columns: 44px minmax(0, 1fr) 72px 40px;
+  gap: 6px;
+}
+
+.notification-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.notification-icon img {
+  width: 44px;
+  height: 44px;
+}
+
+.notification-actions > button:first-child {
+  width: 72px;
+  height: 32px;
+  padding-inline: 8px;
+  font-size: 11px;
+}
+
+.notification-row h2 {
+  gap: 2px;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.notification-row h2 em {
+  height: 18px;
+  padding-inline: 6px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.notification-row h2 em + span {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.profile-screen .feature-body {
+  gap: 8px;
+}
+
+.profile-card {
+  min-height: 78px;
+  padding: 8px 12px;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.profile-avatar {
+  width: 54px;
+  height: 54px;
+}
+
+.profile-card h2 {
+  font-size: 16px;
+}
+
+.profile-card p {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.profile-menu-rows button {
+  height: 36px;
+  min-height: 36px;
+  font-size: 13px;
+}
+
+@media (max-width: 360px) {
+  .notification-row {
+    grid-template-columns: 40px minmax(0, 1fr) 64px 38px;
+    gap: 4px;
+  }
+
+  .notification-icon,
+  .notification-icon img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .notification-actions > button:first-child {
+    width: 64px;
+    padding-inline: 5px;
+    font-size: 10px;
+  }
+}

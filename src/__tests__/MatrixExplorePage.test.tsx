@@ -96,18 +96,15 @@ test('Matrix 天衍的近10期與探索頁使用相同展開行為', () => {
   expect(document.querySelector('.history-panel-order')).toBeNull();
 });
 
-test('Matrix 同星的近10期與探索頁使用相同展開行為', () => {
+test('Matrix 同星移除近10期卡片並可收合探索設定', () => {
   render(<TongXingPage onNavigate={vi.fn()} />);
 
-  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
-  expect(document.querySelector('.history-panel')?.classList.contains('matrix-explore-history-panel')).toBe(true);
+  expect(screen.queryByText('近10期開獎號碼')).toBeNull();
+  expect(screen.getByRole('region', { name: '同星探索設定' })).not.toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' })).not.toBeNull();
-
-  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '天天樂' } });
-  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
-  expect(document.querySelector('.history-panel-order')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '收合同星探索設定' }));
+  expect(screen.queryByRole('region', { name: '同星探索設定' })).toBeNull();
+  expect(screen.getByRole('button', { name: '展開同星探索設定' })).not.toBeNull();
 });
 
 test('Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選', () => {

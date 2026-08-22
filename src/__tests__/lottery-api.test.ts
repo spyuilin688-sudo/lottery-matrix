@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing } from '../lottery-api';
+import { fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -16,6 +16,17 @@ function mockJsonResponse(body: unknown) {
 }
 
 describe('lottery-api response validation', () => {
+  it('所有同類舊期數格式都正規化為六碼且不誤改正常值', () => {
+    expect(normalizePeriod('今彩539', '96000024')).toBe('096024');
+    expect(normalizePeriod('今彩539', '105000123')).toBe('105123');
+    expect(normalizePeriod('大樂透', '97000456')).toBe('097456');
+    expect(normalizePeriod('大樂透', '114000789')).toBe('114789');
+    expect(normalizePeriod('今彩539', '096024')).toBe('096024');
+    expect(normalizePeriod('今彩539', 'unexpected')).toBe('unexpected');
+    expect(normalizePeriod('六合彩', '96000024')).toBe('96000024');
+    expect(normalizePeriod('天天樂', '96000024')).toBe('96000024');
+  });
+
   it('最新開獎缺少 numbers 時拒絕異常格式', async () => {
     mockJsonResponse({ period: '5899', drawDate: '2026/08/14' });
     await expect(fetchLatestLotteryDraw('今彩539')).rejects.toThrow('Lottery API invalid response: item');

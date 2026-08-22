@@ -751,10 +751,10 @@ export function DrawHistoryPage({
   };
 
   const historyTitleActions = (
-    <div className="history-title-actions">
-      <button type="button" className="history-filter-trigger" onClick={() => setFilterOpen(true)}>
+    <div className="history-title-actions title-card-compact-actions">
+      <button type="button" className="history-filter-trigger title-card-compact-action" onClick={() => setFilterOpen(true)}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
-        篩選條件
+        篩選設定
       </button>
     </div>
   );
@@ -764,7 +764,7 @@ export function DrawHistoryPage({
       title="歷史開獎號碼"
       onNavigate={onNavigate}
       backTarget={backTarget}
-      className="draw-history-screen"
+      className="draw-history-screen sticky-title-card-screen"
       headerAction={historyTitleActions}
     >
       <div className="matrix-explore-main-screen draw-history-history-scope">
@@ -831,7 +831,7 @@ export function DrawHistoryPage({
                 onClick={(event) => event.stopPropagation()}
               >
                 <header>
-                  <h2 id="history-filter-title">篩選條件</h2>
+                  <h2 id="history-filter-title">篩選設定</h2>
                   <button type="button" onClick={() => setFilterOpen(false)} aria-label="關閉">
                     <Cross2Icon />
                   </button>
@@ -1667,7 +1667,7 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
-  const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [settingsExpanded, setSettingsExpanded] = useState(true);
   const resultsEndRef = useRef<HTMLElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
   const historyOrder = getHistoryOrder(appliedOrder);
@@ -1677,7 +1677,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
 
   const changeLottery = (value: LotteryId) => {
     setLottery(value);
-    setHistoryExpanded(true);
   };
 
   const updateInputValue = (index: number, rawValue: string) => {
@@ -1695,7 +1694,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
-    setHistoryExpanded(false);
     setAppliedValues(normalizedValues);
     setAppliedLottery(lottery);
     setAppliedOrder(order);
@@ -1751,8 +1749,26 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   return (
-    <FeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen">
-      <section className="panel tongxing-query">
+    <FeatureShell
+      title="Matrix 同星"
+      onNavigate={onNavigate}
+      className="tongxing-screen sticky-title-card-screen"
+      headerAction={(
+        <div className="tongxing-title-actions title-card-compact-actions">
+          <button
+            type="button"
+            className="title-card-compact-action"
+            aria-label={settingsExpanded ? "收合同星探索設定" : "展開同星探索設定"}
+            aria-expanded={settingsExpanded}
+            onClick={() => setSettingsExpanded((current) => !current)}
+          >
+            <span>探索設定</span>
+            <ChevronDownIcon data-open={settingsExpanded} />
+          </button>
+        </div>
+      )}
+    >
+      <section className="panel tongxing-query" aria-label="同星探索設定" hidden={!settingsExpanded}>
         <div className="query-selects">
           <div className="select-box native-select">
             <select
@@ -1810,16 +1826,6 @@ export function TongXingPage({ onNavigate }: { onNavigate: Navigate }) {
           <MagnifyingGlassIcon /><span>開始探索</span>
         </button>
       </section>
-      <HistoryList
-        lottery={lottery}
-        numberOrder={order}
-        onOpenHistory={() => onNavigate("history")}
-        collapsible
-        collapseControl="title"
-        showOrderText={false}
-        expanded={historyExpanded}
-        onExpandedChange={setHistoryExpanded}
-      />
       {searched ? (
         <>
           <div className="ornament-title"><span />探索結果<span /></div>
@@ -1946,9 +1952,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       onNavigate={onNavigate}
       className="number-reference-screen"
       headerAction={(
-        <div className="reference-title-actions">
-          <button type="button" onClick={resetReference}><ReloadIcon />刷新</button>
-          <button type="button" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
+        <div className="reference-title-actions title-card-compact-actions">
+          <button type="button" className="title-card-compact-action" onClick={resetReference}><ReloadIcon />刷新</button>
+          <button type="button" className="title-card-compact-action" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
             <span>探索設定</span>
             <ChevronDownIcon data-open={queryExpanded} />
           </button>

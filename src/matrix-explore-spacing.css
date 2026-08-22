@@ -1,3 +1,5 @@
+@import "./responsive-feature-pages.css";
+
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + var(--mobile-safe-area-height, 34px));
