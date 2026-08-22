@@ -26,6 +26,7 @@ export type MatrixAlgorithmRequest = {
 export type MatrixAlgorithmRule = {
   value: number;
   display: string;
+  algorithmType: MatrixAlgorithmType;
 };
 
 export type MatrixAlgorithmValidationRow = {
@@ -35,11 +36,14 @@ export type MatrixAlgorithmValidationRow = {
   sourceSortedNumbers: Array<string | number>;
   sourceDrawOrderNumbers: Array<string | number> | null;
   referencePeriod: string;
+  referenceNumbers: number[];
+  referenceSortedNumbers: Array<string | number>;
+  referenceDrawOrderNumbers: Array<string | number> | null;
   baseNumber: number;
   predictionPeriod: string;
   predictionNumbers: Array<string | number>;
   candidateRules: number[];
-  matchedRules: number[];
+  matchedRules: MatrixAlgorithmRule[];
   hitNumbers: number[];
   success: boolean;
 };
@@ -63,6 +67,9 @@ export type MatrixAlgorithmResponse = {
     sourceSortedNumbers: Array<string | number>;
     sourceDrawOrderNumbers: Array<string | number> | null;
     referencePeriod: string;
+    referenceNumbers: number[];
+    referenceSortedNumbers: Array<string | number>;
+    referenceDrawOrderNumbers: Array<string | number> | null;
     baseNumber: number;
     predictionPeriod: string | null;
     predictionCompleted: boolean;
@@ -88,6 +95,7 @@ export type ExploreApiRow = {
   exploreDateOffset: 0 | 1 | 2;
   ruleCount: 1 | 2;
   referenceOffset?: number;
+  referencePosition?: number;
 };
 
 export type ExploreListRequest = {
@@ -127,14 +135,26 @@ export type ExploreValidationRow = {
   predictionPeriod: string;
   predictionNumbers: Array<string | number>;
   candidateRules: number[];
-  matchedRules: number[];
+  matchedRules: Array<MatrixAlgorithmRule | number>;
   hitNumbers: number[];
   success: boolean;
 };
 
 export type ExploreValidation = {
   itemId: string;
-  sourceA?: Record<string, unknown>;
+  sourceA?: {
+    sourcePeriod: string;
+    sourceNumbers: Array<string | number>;
+    sourceSortedNumbers: Array<string | number>;
+    sourceDrawOrderNumbers: Array<string | number> | null;
+    referencePeriod: string;
+    referenceNumbers?: Array<string | number>;
+    referenceSortedNumbers?: Array<string | number>;
+    referenceDrawOrderNumbers?: Array<string | number> | null;
+    baseNumber: number;
+    predictionPeriod: string | null;
+    predictionCompleted: boolean;
+  };
   ruleSets: Array<{
     rules: Array<{ value: number; display: string; algorithmType: string }>;
     predictionNumbers: number[];

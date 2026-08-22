@@ -966,9 +966,18 @@ function RoadValidationProcess({
 }
 
 function ExploreValidationProcess({
+  item,
   validation,
   loading,
 }: {
+  item: {
+    number: string;
+    position: number;
+    predictionPeriod: number;
+    algorithmType: string;
+    referenceOffset?: number;
+    referencePosition?: number;
+  };
   validation?: ExploreValidation;
   loading: boolean;
 }) {
@@ -977,34 +986,89 @@ function ExploreValidationProcess({
     return <p className="empty-result">無驗證資料</p>;
   }
   const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
+  const relation = item.referenceOffset === undefined || item.referenceOffset === 0
+    ? "同期"
+    : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
+  const numberCell = (numbers: Array<string | number>) => {
+    const formatted = values(numbers);
+    return (
+      <span className="validation-full-numbers" data-count={formatted.length}>
+        {formatted.map((value, index) => <i key={`${value}-${index}`}>{value}</i>)}
+      </span>
+    );
+  };
   return (
     <section className="road-validation-process" aria-label="驗證過程">
-      {validation.ruleSets.map((ruleSet, ruleSetIndex) => (
-        <div className="validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
-          <header className="validation-summary-card">
-            <span>{ruleSet.rules.map((rule) => rule.display).join(".")}</span>
-          </header>
-          {ruleSet.historicalValidation.map((row) => (
-            <div className="validation-period-block" key={`${ruleSetIndex}-${row.group}-${row.predictionPeriod}`}>
-              <div className="validation-period-row">
-                <span className="validation-issue">{row.sourcePeriod}</span>
-                <span className="validation-full-numbers">{values(row.sourceNumbers).map((value) => <i key={value}>{value}</i>)}</span>
-                <span className="validation-formula"><b>{row.matchedRules.join(".")}</b></span>
-              </div>
-              <div className="validation-period-row">
-                <span className="validation-issue">{row.referencePeriod}</span>
-                <span className="validation-full-numbers">{values(row.referenceNumbers).map((value) => <i key={value}>{value}</i>)}</span>
-                <span className="validation-formula"><b>{row.baseNumber}</b></span>
-              </div>
-              <div className="validation-period-row">
-                <span className="validation-issue">{row.predictionPeriod}</span>
-                <span className="validation-full-numbers">{values(row.predictionNumbers).map((value) => <i key={value}>{value}</i>)}</span>
-                <span className="validation-formula"><strong>{values(row.hitNumbers).join("、")}</strong></span>
-              </div>
+      {validation.ruleSets.map((ruleSet, ruleSetIndex) => {
+        const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+          if (!matchedRules) return ruleSet.rules.map((rule) => rule.display).join("、");
+          const displays = matchedRules.map((matched) => {
+            if (typeof matched !== "number") {
+              return ruleSet.rules.find((rule) => (
+                rule.value === matched.value && rule.algorithmType === matched.algorithmType
+              ))?.display ?? matched.display;
+            }
+            const valueMatches = ruleSet.rules.filter((rule) => rule.value === matched);
+            if (valueMatches.length === 1) return valueMatches[0].display;
+            return `共同值${matched}`;
+          });
+          return [...new Set(displays)].join("、");
+        };
+        const periodRow = (
+          key: string,
+          period: string,
+          numbers: Array<string | number>,
+          formula = "",
+        ) => (
+          <div className="validation-period-row" key={key}>
+            <span className="validation-issue">{period}</span>
+            {numberCell(numbers)}
+            <span className="validation-formula">{formula ? <b>{formula}</b> : null}</span>
+          </div>
+        );
+        const referenceFirst = (item.referenceOffset ?? 0) < 0;
+        return (
+          <div className="validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
+            <header className="validation-summary-card">
+              <span>
+                開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆｜
+                <i className="validation-summary-lookback">{relation}</i>｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
+                <i className="validation-summary-formula">{ruleDisplays()}</i>｜下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
+              </span>
+            </header>
+            <div className="validation-period-head" aria-hidden="true">
+              <span>期數</span><span>開獎號碼</span><span>驗證公式</span>
             </div>
-          ))}
-        </div>
-      ))}
+            {ruleSet.historicalValidation.map((row) => {
+              const source = periodRow(`source-${row.group}`, row.sourcePeriod, row.sourceNumbers);
+              const reference = periodRow(
+                `reference-${row.group}`,
+                row.referencePeriod,
+                row.referenceNumbers,
+                ruleDisplays(row.matchedRules),
+              );
+              return (
+                <div className="validation-period-block" key={`${ruleSetIndex}-${row.group}-${row.predictionPeriod}`}>
+                  {referenceFirst ? reference : source}
+                  {referenceFirst ? source : reference}
+                  {periodRow(`prediction-${row.group}`, row.predictionPeriod, row.predictionNumbers)}
+                </div>
+              );
+            })}
+            {validation.sourceA ? (
+              <div className="validation-period-block validation-current-block">
+                {referenceFirst
+                  ? periodRow("current-reference", validation.sourceA.referencePeriod, validation.sourceA.referenceNumbers ?? [], ruleDisplays())
+                  : periodRow("current-source", validation.sourceA.sourcePeriod, validation.sourceA.sourceNumbers)}
+                {referenceFirst
+                  ? periodRow("current-source", validation.sourceA.sourcePeriod, validation.sourceA.sourceNumbers)
+                  : periodRow("current-reference", validation.sourceA.referencePeriod, validation.sourceA.referenceNumbers ?? [], ruleDisplays())}
+                {periodRow("current-prediction", "本期預測", ruleSet.predictionNumbers)}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -1074,6 +1138,8 @@ export function MatrixExplorePage({
     sameCode: boolean;
     algorithmType: string;
     numberOrder: string;
+    referenceOffset?: number;
+    referencePosition?: number;
   };
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
@@ -1085,7 +1151,7 @@ export function MatrixExplorePage({
     "準5+（鎖定2碼）": ["準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [period, setPeriod] = useState("十三期");
+  const [period, setPeriod] = useState("二期");
   const [road, setRoad] = useState(roadTypes[0]);
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
@@ -1136,6 +1202,8 @@ export function MatrixExplorePage({
         sameCode: true,
         algorithmType: item.algorithmType,
         numberOrder: item.numberOrder,
+        referenceOffset: item.referenceOffset,
+        referencePosition: item.referencePosition,
       }));
     }
     return (tianyanResponse?.items ?? []).map((item): ExploreResult => ({
@@ -1481,6 +1549,7 @@ export function MatrixExplorePage({
                   {expandedRoad === item.id ? (
                     title === "Matrix 探索" && exploreResponse
                       ? <ExploreValidationProcess
+                          item={item}
                           validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}
                           loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}
                         />

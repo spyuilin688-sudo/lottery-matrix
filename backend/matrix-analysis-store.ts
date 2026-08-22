@@ -124,31 +124,38 @@ export function createAnalysisStore(
       .filter((item) => !analysisVersion || item.analysisVersion === analysisVersion)
       .filter((item) => Date.parse(String(item.expiresAt ?? '')) >= clock().getTime())
       .sort((left, right) => String(right.completedAt).localeCompare(String(left.completedAt)));
-    const manifest = manifests[0];
-    if (!manifest) return null;
+    if (manifests.length === 0) return null;
 
-    const chunks = (await listAll(adapter, CHUNK_TABLE))
-      .filter((item) => sameVersion(item, manifest)) as AnalysisChunk[];
-    chunks.sort((left, right) => left.chunkIndex - right.chunkIndex);
-    if (
-      chunks.length !== manifest.chunkCount
-      || chunks.some((chunk, index) => chunk.chunkCount !== manifest.chunkCount || chunk.chunkIndex !== index)
-    ) {
-      throw new Error('MATRIX_ANALYSIS_CHUNKS_INCOMPLETE');
+    const allChunks = await listAll(adapter, CHUNK_TABLE);
+    for (const manifest of manifests) {
+      const chunks = allChunks
+        .filter((item) => sameVersion(item, manifest)) as AnalysisChunk[];
+      chunks.sort((left, right) => left.chunkIndex - right.chunkIndex);
+      if (
+        chunks.length !== manifest.chunkCount
+        || chunks.some((chunk, index) => chunk.chunkCount !== manifest.chunkCount || chunk.chunkIndex !== index)
+      ) {
+        continue;
+      }
+
+      try {
+        return {
+          kind: manifest.kind,
+          lottery: manifest.lottery,
+          drawPeriod: manifest.drawPeriod,
+          analysisVersion: manifest.analysisVersion,
+          status: 'complete' as const,
+          startedAt: manifest.startedAt,
+          completedAt: manifest.completedAt,
+          expiresAt: manifest.expiresAt,
+          itemCount: manifest.itemCount,
+          data: JSON.parse(chunks.map((chunk) => chunk.payload).join('')) as unknown,
+        };
+      } catch {
+        continue;
+      }
     }
-
-    return {
-      kind: manifest.kind,
-      lottery: manifest.lottery,
-      drawPeriod: manifest.drawPeriod,
-      analysisVersion: manifest.analysisVersion,
-      status: 'complete' as const,
-      startedAt: manifest.startedAt,
-      completedAt: manifest.completedAt,
-      expiresAt: manifest.expiresAt,
-      itemCount: manifest.itemCount,
-      data: JSON.parse(chunks.map((chunk) => chunk.payload).join('')) as unknown,
-    };
+    return null;
   }
 
   return {

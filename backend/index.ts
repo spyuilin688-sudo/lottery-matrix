@@ -9,6 +9,7 @@ import { analysisVersionForDrawPeriod } from './matrix-analysis-version';
 import { createMemberAuth } from './matrix-member-auth';
 import { createMatrixExploreRoutes } from './matrix-explore-routes';
 import {
+    enrichExploreValidationReferenceNumbers,
     filterExploreArtifact,
     type ExploreArtifact,
     type ExploreFilterRequest,
@@ -87,14 +88,21 @@ async function readStoredExploreValidationArtifact(
     artifact: ExploreArtifact,
     itemId: string,
 ) {
-    if (!isPartitionedExploreArtifact(artifact)) return artifact;
-    const partitionIndex = partitionIndexForItemId(artifact, itemId);
-    if (partitionIndex === null) return null;
-    const [group] = await matrixAnalysisProgressStore.readExploreGroupIndexes(
-        artifact.partitioned.job,
-        [partitionIndex],
-    ) as ExploreArtifact[];
-    return group ?? null;
+    let selectedArtifact = artifact;
+    if (isPartitionedExploreArtifact(artifact)) {
+        const partitionIndex = partitionIndexForItemId(artifact, itemId);
+        if (partitionIndex === null) return null;
+        const [group] = await matrixAnalysisProgressStore.readExploreGroupIndexes(
+            artifact.partitioned.job,
+            [partitionIndex],
+        ) as ExploreArtifact[];
+        if (!group) return null;
+        selectedArtifact = group;
+    }
+    const sourceA = selectedArtifact.validationById[itemId]?.sourceA;
+    if (!sourceA || Array.isArray(sourceA.referenceNumbers)) return selectedArtifact;
+    const history = await getMatrixHistory(selectedArtifact.lottery,50);
+    return enrichExploreValidationReferenceNumbers(selectedArtifact,itemId,history);
 }
 const matrixStatusRoutes = createMatrixStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
@@ -171,6 +179,13 @@ export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: st
         return {statusCode:200,refresh:cycle.refresh,result:cycle.analysis};
     });
 };
+
+export const scheduledFantasy5MatrixAnalysisRefresh = async (event: { scheduledTime?: string } = {}) => (
+    scheduledMatrixAnalysisRefresh({
+        scheduledTime:event.scheduledTime,
+        payload:{lottery:'天天樂',sourceId:'sc888',refreshHour:18},
+    })
+);
 
 export const scheduledHistoricalBackfill = async (event: { payload?: { sourceId?: string } }) => {
     const sourceId=event.payload?.sourceId;

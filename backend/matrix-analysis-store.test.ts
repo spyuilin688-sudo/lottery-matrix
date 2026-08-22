@@ -75,15 +75,52 @@ describe('Matrix analysis store', () => {
     await expect(store.readAnalysis('explore', '今彩539', '114000123', 'v1')).resolves.toMatchObject({ analysisVersion: 'v1', data: { value: 'first' } });
   });
 
-  it('rejects an incomplete chunk set instead of returning mixed data', async () => {
+  it('treats an incomplete chunk set as unavailable and allows the same version to rebuild', async () => {
     const { adapter, tables } = memoryAdapter();
-    const store = createAnalysisStore(adapter);
+    const store = createAnalysisStore(adapter, () => new Date('2026-08-21T01:00:00Z'));
     await store.publishAnalysis(meta, { value: '甲'.repeat(100_000) });
     const chunks = tables.get('matrix_analysis_chunks') ?? [];
     tables.set('matrix_analysis_chunks', chunks.slice(1));
 
-    await expect(store.readAnalysis('explore', '今彩539')).rejects.toThrow(
-      'MATRIX_ANALYSIS_CHUNKS_INCOMPLETE',
+    await expect(store.readAnalysis('explore', '今彩539')).resolves.toBeNull();
+
+    await store.publishAnalysis(meta, { value: '修復完成' });
+    await expect(store.readAnalysis('explore', '今彩539')).resolves.toMatchObject({
+      analysisVersion: meta.analysisVersion,
+      data: { value: '修復完成' },
+    });
+  });
+
+  it('skips a broken newest version when an earlier complete version is readable', async () => {
+    const { adapter, tables } = memoryAdapter();
+    const store = createAnalysisStore(adapter, () => new Date('2026-08-21T01:00:00Z'));
+    const first = {
+      ...meta,
+      drawPeriod: '114000122',
+      analysisVersion: '114000122:v1',
+      completedAt: '2026-08-21T00:00:00Z',
+    };
+    const second = {
+      ...meta,
+      analysisVersion: '114000123:v2',
+      completedAt: '2026-08-21T00:01:00Z',
+    };
+    await store.publishAnalysis(first, { value: '較早完整版本' });
+    await store.publishAnalysis(second, { value: '較新損壞版本' });
+    tables.set(
+      'matrix_analysis_chunks',
+      (tables.get('matrix_analysis_chunks') ?? []).filter((item) => item.analysisVersion !== second.analysisVersion),
     );
+
+    await expect(store.readAnalysis('explore', '今彩539')).resolves.toMatchObject({
+      analysisVersion: first.analysisVersion,
+      data: { value: '較早完整版本' },
+    });
+    await expect(store.readAnalysis(
+      'explore',
+      '今彩539',
+      second.drawPeriod,
+      second.analysisVersion,
+    )).resolves.toBeNull();
   });
 });

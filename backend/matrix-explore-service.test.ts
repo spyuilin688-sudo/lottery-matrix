@@ -3,6 +3,7 @@ import type { MatrixEntitlements } from './matrix-entitlements';
 import {
   buildExploreArtifact,
   createExploreWorkUnits,
+  enrichExploreValidationReferenceNumbers,
   filterExploreArtifact,
   getExploreValidation,
   type ExploreArtifact,
@@ -49,6 +50,59 @@ const history = Array.from({ length: 13 }, (_, index) => ({
 }));
 
 describe('canonical Matrix Explore artifact', () => {
+  it('enriches legacy validation with the reference draw needed by the expanded UI', () => {
+    const artifact: ExploreArtifact = {
+      lottery: '今彩539',
+      drawPeriod: '114000123',
+      items: [{
+        id: 'legacy', number: '10', lockedPosition: 1, predictionDistance: 1,
+        consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'],
+        algorithmType: '加減', numberOrder: '依號碼由小到大排序',
+        explorePeriods: 2, exploreDateOffset: 0, ruleCount: 1,
+      }],
+      validationById: {
+        legacy: {
+          itemId: 'legacy',
+          sourceA: { sourcePeriod: '114000123', referencePeriod: '114000122' },
+          ruleSets: [],
+        },
+      },
+    };
+    const enriched = enrichExploreValidationReferenceNumbers(artifact, 'legacy', [{
+      period: '114000122', drawDate: '2026-08-20',
+      numbers: ['9', '2', '35', '14', '21'],
+      sortedNumbers: ['02', '09', '14', '21', '35'],
+      drawOrderNumbers: ['09', '02', '35', '14', '21'],
+    }]);
+
+    expect(enriched.validationById.legacy.sourceA).toMatchObject({
+      referenceNumbers: ['02', '09', '14', '21', '35'],
+      referenceSortedNumbers: ['02', '09', '14', '21', '35'],
+      referenceDrawOrderNumbers: ['09', '02', '35', '14', '21'],
+    });
+    expect(artifact.validationById.legacy.sourceA).not.toHaveProperty('referenceNumbers');
+  });
+
+  it('does not substitute sorted numbers when a legacy actual-order validation lacks draw order', () => {
+    const artifact: ExploreArtifact = {
+      lottery: '今彩539', drawPeriod: '114000123',
+      items: [{
+        id: 'legacy', number: '10', lockedPosition: 1, predictionDistance: 1,
+        consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'],
+        algorithmType: '加減', numberOrder: '依實際開獎順序排序',
+        explorePeriods: 2, exploreDateOffset: 0, ruleCount: 1,
+      }],
+      validationById: { legacy: {
+        itemId: 'legacy', sourceA: { referencePeriod: '114000122' }, ruleSets: [],
+      } },
+    };
+    const enriched = enrichExploreValidationReferenceNumbers(artifact, 'legacy', [{
+      period: '114000122', drawDate: '2026-08-20', numbers: ['02', '09', '14', '21', '35'],
+    }]);
+
+    expect(enriched.validationById.legacy.sourceA).not.toHaveProperty('referenceNumbers');
+  });
+
   it('creates 390 five-ball groups and 546 seven-position groups from thirteen draws', () => {
     const fiveBallUnits = createExploreWorkUnits('今彩539', history);
     expect(fiveBallUnits).toHaveLength(390);
