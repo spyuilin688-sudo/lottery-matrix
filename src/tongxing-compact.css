@@ -13,7 +13,7 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
-/* 頁面只保留單一 12px token 外距；內部元件使用剩餘寬度。 */
+/* 頁面只保留單一 16px 外距；內部元件使用剩餘寬度。 */
 .tongxing-screen .feature-body {
   box-sizing: border-box;
   display: flex;
@@ -21,13 +21,13 @@
   max-width: none;
   min-width: 0;
   margin-inline: 0;
-  padding: var(--layout-section-gap) var(--layout-page-inline) var(--layout-bottom-nav-clearance);
+  padding: var(--layout-section-gap) 16px var(--layout-bottom-nav-clearance);
   flex-direction: column;
   row-gap: var(--layout-section-gap);
 }
 
 .tongxing-screen .matrix-title-banner {
-  width: calc(100% - (var(--layout-page-inline) * 2));
+  width: calc(100% - 32px);
 }
 
 /* 一般與浮動設定區共用同一張外卡，不依賴頁面父層。 */
@@ -49,8 +49,8 @@
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
-  left: var(--layout-page-inline);
-  right: var(--layout-page-inline);
+  left: 16px;
+  right: 16px;
   width: auto;
   max-width: none;
   max-height: calc(100dvh - 24px);
@@ -114,12 +114,13 @@
 .tongxing-query .query-selects select { padding-inline: 10px 28px; }
 .tongxing-query .tongxing-order-select select { padding-inline: 8px 24px; }
 
+/* 三個號碼輸入框只需容納兩位數，釋出寬度給最多兩位數的期數下拉。 */
 .tongxing-query .same-star-fields {
   display: grid;
   width: 100%;
   min-width: 0;
   margin: var(--layout-section-gap, 8px) 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) max-content minmax(52px, .9fr) max-content;
+  grid-template-columns: repeat(3, minmax(0, .8fr)) max-content minmax(66px, 1.15fr) max-content;
   gap: var(--control-gap);
   align-items: center;
 }
@@ -133,7 +134,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 0 4px;
+  padding: 0 3px;
   border: var(--border-width) solid #6e4a1e;
   border-radius: 9px;
   outline: none;
@@ -163,12 +164,12 @@
 
 .tongxing-query .same-star-period-select {
   width: 100%;
-  min-width: 0;
+  min-width: 66px;
   min-height: var(--control-height);
 }
 
-.tongxing-query .same-star-period-select select { padding-inline: 7px 28px; }
-.tongxing-query .same-star-period-select svg { right: 6px; width: 16px; height: 16px; }
+.tongxing-query .same-star-period-select select { padding: 0 22px 0 6px; }
+.tongxing-query .same-star-period-select svg { right: 5px; width: 14px; height: 14px; }
 
 .tongxing-query .primary-action {
   width: 100%;
@@ -180,7 +181,7 @@
 .tongxing-query .primary-action svg { width: 20px; height: 20px; }
 .tongxing-screen .ornament-title { margin: 0; font-size: 18px; font-weight: 600; line-height: 24px; }
 
-/* 結果列表本身不再包一個大外框；每筆結果有自己的卡片外框。 */
+/* 結果列表本身不再包一個大外框；表頭與每筆結果各自擁有完整外框。 */
 .tongxing-screen .tongxing-results {
   box-sizing: border-box;
   width: 100%;
@@ -204,6 +205,7 @@
 
 .tongxing-screen .tongxing-table-row {
   display: grid;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   grid-template-columns: minmax(64px, 1.65fr) repeat(5, minmax(0, 1fr));
@@ -234,7 +236,9 @@
 
 .tongxing-screen .tongxing-table-head {
   min-height: var(--table-header-height);
-  border-bottom: var(--border-width) solid rgba(118, 80, 31, .65);
+  overflow: hidden;
+  border: 1px solid rgba(187, 134, 47, .78);
+  border-radius: 8px;
   background: rgba(104, 73, 23, .12);
 }
 
@@ -261,9 +265,12 @@
 
 .tongxing-screen .tongxing-result-group + .tongxing-result-group { margin-top: 6px; }
 
-/* 每筆卡片內部不用水平分隔線，靠兩列底色辨識鎖定期與預測期。 */
+/* 卡片內兩列用較低層級的細線分開，外框仍是主要邊界。 */
 .tongxing-screen .tongxing-table-row[data-row-type="locked"] { background: rgba(126, 83, 15, .32); }
-.tongxing-screen .tongxing-table-row[data-row-type="predicted"] { background: rgba(10, 61, 88, .38); }
+.tongxing-screen .tongxing-table-row[data-row-type="predicted"] {
+  border-top: 1px solid rgba(187, 134, 47, .32);
+  background: rgba(10, 61, 88, .38);
+}
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] > span { border-top: 0; }
 
 .tongxing-screen .tongxing-table-row > .tongxing-period-cell {
