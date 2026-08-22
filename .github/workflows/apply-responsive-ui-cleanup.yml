@@ -45,8 +45,12 @@ jobs:
         run: python .github/apply-responsive-ui-cleanup.py
 
       - name: Verify requested regression suite
+        shell: bash
         run: |
-          node --test \
+          : > targeted-output.txt
+          : > targeted-failing.txt
+          status=0
+          for file in \
             tests/ui-responsive-cleanup-contract.test.mjs \
             tests/calculator-responsive-layout.test.mjs \
             tests/matrix-explore-option-layout.test.mjs \
@@ -55,6 +59,18 @@ jobs:
             tests/bottom-navigation-height.test.mjs \
             tests/tongxing-reference-responsive-layout.test.mjs \
             tests/draw-history-table-layout.test.mjs
+          do
+            echo "===== $file =====" | tee -a targeted-output.txt
+            set +e
+            node --test "$file" 2>&1 | tee -a targeted-output.txt
+            code=${PIPESTATUS[0]}
+            set -e
+            if [ "$code" -ne 0 ]; then
+              echo "$file" | tee -a targeted-failing.txt
+              status=1
+            fi
+          done
+          exit "$status"
 
       - name: Verify every node test file
         shell: bash
@@ -75,12 +91,14 @@ jobs:
           done
           exit "$status"
 
-      - name: Upload node-test diagnostics
+      - name: Upload test diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: final-responsive-ui-node-diagnostics
           path: |
+            targeted-output.txt
+            targeted-failing.txt
             failing-tests.txt
             all-node-output.txt
           if-no-files-found: ignore
@@ -99,7 +117,7 @@ jobs:
           rm -f .github/workflows/apply-responsive-ui-cleanup.yml
           rm -f .github/workflows/finalize-responsive-ui-cleanup.yml
           rm -f .github/apply-responsive-ui-cleanup.py
-          rm -f failing-tests.txt all-node-output.txt
+          rm -f targeted-output.txt targeted-failing.txt failing-tests.txt all-node-output.txt
           git add -A
           git commit -m 'Fix responsive feature layouts and filters'
           git push origin main
