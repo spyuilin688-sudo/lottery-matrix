@@ -1,0 +1,16 @@
+/* Portal-mounted floating settings must be styled without page-ancestor selectors. */
+.history-filter-panel[data-floating="true"],
+.tongxing-query[data-floating="true"] {
+  box-sizing: border-box;
+  left: 12px;
+  right: 12px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
