@@ -121,6 +121,33 @@ test('Matrix 同星移除近10期卡片並可收合探索設定', () => {
   expect(screen.getByRole('button', { name: '展開同星探索設定' })).not.toBeNull();
 });
 
+test('Matrix 同星開始探索後收合，再展開時固定為浮動設定卡', async () => {
+  const mobilePage = document.createElement('div');
+  mobilePage.className = 'mobile-page';
+  const root = document.createElement('div');
+  mobilePage.append(root);
+  document.body.append(mobilePage);
+  Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
+  vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 20, width: 195 } as DOMRect);
+  globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ groups: [] }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch;
+
+  render(<TongXingPage onNavigate={vi.fn()} />, { container: root });
+  const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
+  vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 120 } as DOMRect);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: '展開同星探索設定' })).not.toBeNull());
+
+  fireEvent.click(screen.getByRole('button', { name: '展開同星探索設定' }));
+  const dialog = screen.getByRole('dialog', { name: '同星探索設定' });
+  expect(dialog.getAttribute('data-floating')).toBe('true');
+  expect(dialog.parentElement).toBe(mobilePage);
+  expect(dialog.style.top).toBe('208px');
+});
+
 test('Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選', () => {
   render(<TongXingPage onNavigate={vi.fn()} />);
 
