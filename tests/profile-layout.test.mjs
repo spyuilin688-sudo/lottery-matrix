@@ -19,3 +19,4 @@ test('profile page uses one balanced responsive style source', () => {
   assert.ok(!css.includes('.profile-mark'));
   assert.ok(!css.includes('.line-login-button'));
 });
+
