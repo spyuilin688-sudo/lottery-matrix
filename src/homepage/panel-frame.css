@@ -1,6 +1,0 @@
-/* Shared homepage frame language for draw card, Matrix Core and five feature icons. */
-.home-screen .latest-draw-card,
-.home-screen .matrix-core-banner,
-.home-screen .home-shortcut img {
-  border-color: rgba(229, 179, 77, .56);
-}
