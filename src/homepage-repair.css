@@ -1,2 +1,6 @@
 @import "./homepage/base.css";
 @import "./homepage/lottery-switcher.css";
+@import "./homepage/draw-card.css";
+@import "./homepage/matrix-core.css";
+@import "./homepage/shortcuts.css";
+@import "./homepage/debug-cleanup.css";
