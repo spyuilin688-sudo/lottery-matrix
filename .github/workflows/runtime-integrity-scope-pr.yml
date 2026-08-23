@@ -1,0 +1,28 @@
+name: Runtime Integrity Scope PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/check-mobile-runtime.mjs"
+      - "scripts/update-mobile-runtime-lock.mjs"
+      - "mobile-runtime.lock.json"
+      - "tests/runtime-integrity-scope.test.mjs"
+      - ".github/workflows/runtime-integrity-scope-pr.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Runtime integrity scope test
+        run: node --test tests/runtime-integrity-scope.test.mjs
