@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 55173)
-Total output lines: 3881
-
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -2304,7 +2301,339 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "Matrix 首頁",
-      summary: "集中顯示目前彩種的最新開獎資訊、下次開獎時間、剩餘時間、Matrix 狀態及主要功能…5173 tokens truncated…r] = useState("");
+      summary: "集中顯示目前彩種的最新開獎資訊、下次開獎時間、剩餘時間、Matrix 狀態及主要功能入口。",
+      blocks: [
+        { title: "四彩種切換", items: ["固定顯示今彩539、天天樂、六合彩及大樂透。", "切換後，最新開獎資訊卡顯示該彩種的期數、日期與開獎號碼。"] },
+        { title: "Matrix 狀態", items: ["四個彩種固定顯示。", "狀態卡依資料呈現啟動、聚合、共振或臨界；同一彩種同時符合多種狀態時，只顯示最高等級狀態。", "點擊狀態卡可進入該彩種的 Matrix 狀態頁。"] },
+        { title: "功能入口", items: ["Matrix Core 為 Matrix 探索、Matrix 天衍及 Matrix 天工的核心入口。"] },
+      ],
+    },
+    {
+      title: "Matrix 探索",
+      summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
+      blocks: [
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
+        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "探索範圍：標準範圍或完整範圍；完整範圍為 Matrix Pro 功能。"] },
+        { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
+      ],
+    },
+    {
+      title: "Matrix 狀態",
+      summary: "顯示符合條件的版路結果，依規則分為啟動、聚合、共振及臨界。",
+      blocks: [
+        { title: "狀態層級", items: ["啟動 ACTIVE。", "聚合 FOCUS。", "共振 RESONANCE。", "臨界 CRITICAL。"] },
+        { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、預測期、連準次數及版路類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
+      ],
+    },
+    {
+      title: "Matrix 同星",
+      summary: "輸入指定號碼後，查詢指定期數的開獎結果。",
+      blocks: [
+        { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
+        { title: "結果內容", items: ["同頁顯示近10期開獎號碼。", "結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
+      ],
+    },
+    {
+      title: "號碼對照單",
+      summary: "瀏覽完整歷史開獎紀錄，並以探索號碼與手動標記比對歷史資料。",
+      blocks: [
+        { title: "查詢設定", items: ["選擇彩種、歷史範圍（1000／3000／5000期）及號碼順序。", "可輸入0至3個探索號碼；空白格不參與探索，號碼不可重複。"] },
+        { title: "開始探索", items: ["修改條件後，需按「開始探索」才更新歷史資料與標記。", "未輸入探索號碼時，仍可顯示完整歷史表格且不顯示探索標記。", "探索顏色固定依輸入格位置對應。"] },
+        { title: "手動標記與刷新", items: ["點擊期數或單一號碼可手動標記，並立即生效。", "刷新後清空探索號碼與所有標記，並重新載入資料。"] },
+      ],
+    },
+    {
+      title: "連碰立柱計算機",
+      summary: "提供連碰與立柱計算，並顯示二星、三星、四星及五星結果。",
+      blocks: [
+        { title: "連碰計算", items: ["切換至「連碰計算機」。", "選取號碼後查看已選數量。", "結果依序顯示二星、三星、四星與五星。"] },
+        { title: "立柱計算", items: ["切換至「立柱計算機」。", "調整各柱號碼數量，最多計算至五星。", "可使用批次設定或清除後重新輸入。"] },
+      ],
+    },
+    {
+      title: "Matrix 牌單",
+      summary: "依最新一期資料顯示牌單，並提供 PNG 下載。",
+      blocks: [
+        { title: "使用方式", items: ["選擇今彩539、天天樂、六合彩或大樂透。", "查看所選彩種的最新一期牌單。", "按下「下載 PNG」下載目前牌單。"] },
+      ],
+    },
+    {
+      title: "快捷與 Matrix 筆記本",
+      summary: "快捷可快速開啟已設定的功能；Matrix 筆記本提供筆記與紀錄兩種模式。",
+      blocks: [
+        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "長按三秒可設定快捷功能。"] },
+        { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
+        { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示玩法成本、已確認獎金及金額差額；統計提供本日、本週與自訂日期。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
+      ],
+    },
+    {
+      title: "通知",
+      summary: "可設定選號提醒、開獎結果、Matrix 狀態、Matrix 牌單下載、Matrix Pro 到期、系統通知。",
+      blocks: [
+        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "投注通知可依彩種設定時間。", "選號提醒、開獎結果、Matrix 牌單下載可依彩種設定。", "中獎通知可選擇彩種通知或中獎金額通知。"] },
+        { title: "Matrix Pro 通知", items: ["部分通知功能需具備 Matrix Pro 權限。", "到期通知可選擇提前1日、提前3日或提前7日。"] },
+      ],
+    },
+    {
+      title: "Matrix Pro",
+      summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
+      blocks: [
+        { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 會員方案與收費標準」查看。"] },
+        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
+      ],
+    },
+    {
+      title: "帳號與安全",
+      summary: "使用 LINE 官方授權登入，會員資料、記事、通知、設定與 Matrix Pro 權益會同步。",
+      blocks: [
+        { title: "登入規則", items: ["一個帳號僅允許一個有效 Session。", "新裝置登入時，舊裝置會自動登出。", "系統將定期驗證登入狀態。", "會員資料與權益依 LINE 帳號同步。"] },
+        { title: "安全機制", items: ["使用裝置驗證與資料加密保護。", "若帳號在其他裝置登入，目前裝置會自動登出。"] },
+      ],
+    },
+    {
+      title: "常見問題",
+      summary: "依目前功能整理操作時常見的查詢方式。",
+      blocks: [
+        { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
+        { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
+        { title: "設定常用功能", items: ["長按底部「快捷」三秒後，選擇要指定的功能。"] },
+        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」。"] },
+      ],
+    },
+    {
+      title: "關於 樂彩 Matrix",
+      summary: "樂彩 Matrix 提供開獎資料查詢與分析服務，協助查閱公開資訊、整理歷史數據與使用各項分析工具。",
+      blocks: [
+        { title: "服務內容", items: ["支援今彩539、天天樂、六合彩及大樂透。", "提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。"] },
+        { title: "品牌資訊", items: ["品牌名稱：樂彩 Matrix。", "Copyright © 2026 樂彩 Matrix. All Rights Reserved."] },
+      ],
+    },
+  ];
+  const [selected, setSelected] = useState(0);
+  const current = sections[selected];
+  return (
+    <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
+      <section className="guide-intro panel">
+        <img src="/assets/lottery/functions/matrix-guide.png" alt="" />
+        <div><p>樂彩 Matrix 功能說明</p></div>
+      </section>
+      <nav className="guide-category-strip" aria-label="Matrix 指南分類">
+        {sections.map((section, index) => (
+          <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+          </button>
+        ))}
+      </nav>
+      <section className="panel guide-preview">
+        <header><span>{String(selected + 1).padStart(2, "0")}</span><h2>{current.title}</h2></header>
+        <p className="guide-summary">{current.summary}</p>
+        <div className="guide-detail-list">
+          {current.blocks.map((block) => (
+            <section className="guide-detail-block" key={block.title}>
+              <h3>{block.title}</h3>
+              <ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>
+            </section>
+          ))}
+        </div>
+      </section>
+    </FeatureShell>
+  );
+}
+
+function LegacyMatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
+  type NotebookEntry = { id: string; title: string; content: string; updatedAt: string };
+  const [entries, setEntries] = useState<NotebookEntry[]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = window.localStorage.getItem("matrix-notebook-entries");
+    if (stored) {
+      try { return JSON.parse(stored) as NotebookEntry[]; } catch { /* use legacy content */ }
+    }
+    const legacy = window.localStorage.getItem("matrix-notebook-content");
+    return legacy ? [{ id: "legacy", title: "未命名筆記", content: legacy, updatedAt: new Date().toISOString() }] : [];
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftContent, setDraftContent] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    window.localStorage.setItem("matrix-notebook-entries", JSON.stringify(entries));
+  }, [entries]);
+
+  useEffect(() => {
+    if (editingId === null || (!draftTitle.trim() && !draftContent.trim())) return;
+    setSaved(false);
+    const timer = window.setTimeout(() => {
+      setEntries((current) => current.map((entry) => entry.id === editingId
+        ? { ...entry, title: draftTitle, content: draftContent, updatedAt: new Date().toISOString() }
+        : entry));
+      setSaved(true);
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [draftContent, draftTitle, editingId]);
+
+  const startNew = () => {
+    const id = `note-${Date.now()}`;
+    setEntries((current) => [{ id, title: "", content: "", updatedAt: new Date().toISOString() }, ...current]);
+    setEditingId(id);
+    setDraftTitle("");
+    setDraftContent("");
+    setSaved(false);
+  };
+
+  const startEdit = (entry: NotebookEntry) => {
+    setEditingId(entry.id);
+    setDraftTitle(entry.title);
+    setDraftContent(entry.content);
+    setSaved(true);
+  };
+
+  const finishEditing = () => {
+    if (editingId !== null && !draftTitle.trim() && !draftContent.trim()) {
+      setEntries((current) => current.filter((entry) => entry.id !== editingId));
+    }
+    setEditingId(null);
+  };
+
+  const deleteEntry = (id: string) => {
+    if (!window.confirm("確定刪除此筆記？")) return;
+    setEntries((current) => current.filter((entry) => entry.id !== id));
+    if (editingId === id) setEditingId(null);
+  };
+
+  const formatModifiedTime = (value: string) => new Intl.DateTimeFormat("zh-TW", {
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(new Date(value));
+
+  return (
+    <FeatureShell title="Matrix 筆記本" onNavigate={onNavigate} active="快捷" className="matrix-notebook-screen">
+      {editingId === null ? <>
+        <section className="notebook-heading">
+          <img src="/assets/quick/matrix-notebook.png" alt="" />
+          <div><h2>Matrix 筆記本</h2><span>{entries.length} 筆筆記</span></div>
+          <button type="button" onClick={startNew}><PlusIcon />新增筆記</button>
+        </section>
+        <section className="notebook-entry-list" aria-label="筆記列表">
+          {entries.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無筆記</strong></div> : entries.map((entry) => (
+            <article className="panel notebook-entry" key={entry.id}>
+              <button type="button" className="notebook-entry-open" onClick={() => startEdit(entry)}>
+                <span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatModifiedTime(entry.updatedAt)}</small></span>
+                <ChevronRightIcon />
+              </button>
+              <button type="button" className="notebook-entry-delete" onClick={() => deleteEntry(entry.id)} aria-label={`刪除${entry.title.trim() || "未命名筆記"}`}><TrashIcon /></button>
+            </article>
+          ))}
+        </section>
+      </> : <section className="panel matrix-notebook-editor">
+        <header><button type="button" onClick={finishEditing}><ChevronLeftIcon />返回列表</button><span>{saved ? "已自動儲存" : "儲存中"}</span></header>
+        <input aria-label="筆記標題" placeholder="標題" value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
+        <textarea aria-label="筆記內容" placeholder="輸入筆記內容" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} />
+        <footer><span>最後修改時間</span><strong>{formatModifiedTime(entries.find((entry) => entry.id === editingId)?.updatedAt ?? new Date().toISOString())}</strong></footer>
+        <button type="button" className="notebook-editor-delete" onClick={() => deleteEntry(editingId)}><TrashIcon />刪除筆記</button>
+      </section>}
+    </FeatureShell>
+  );
+}
+
+type NotebookView = "list" | "note" | "record" | "settings";
+type RecordMode = "單號" | "連碰" | "立柱";
+type RecordStatus = "等待開獎" | "已結算" | "已鎖定";
+type CostMode = "依照碰數" | "固定成本";
+type NotebookNote = { id: string; title: string; content: string; updatedAt: string };
+type TagSetting = { name: string; costMode: CostMode; defaultBets: number; costPerBet: number; fixedCost: number; prizePerBet: number };
+type LotteryRecordSettings = { tags: TagSetting[] };
+type RecordSnapshot = {
+  lottery: LotteryId;
+  plays: Array<{ name: string; bets: number; costPerBet: number; cost: number; playPrize: number }>;
+  quantity: number;
+  createdDate: string;
+  createdTime: string;
+};
+const formatNotebookAmount = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Number.isFinite(value) ? value : 0);
+type PlayDraft = { quantity: string };
+type NotebookRecord = {
+  id: string;
+  lottery: LotteryId;
+  date: string;
+  mode: RecordMode;
+  numbers: string[];
+  columns: string[][];
+  tags: string[];
+  quantity: number;
+  bets: number;
+  cost: number;
+  estimatedPrize: number;
+  actualPrize: number;
+  status: RecordStatus;
+  unlocked: boolean;
+  snapshot: RecordSnapshot;
+};
+
+const DEFAULT_RECORD_SETTINGS = (): Record<LotteryId, LotteryRecordSettings> => Object.fromEntries(
+  LOTTERIES.map((lottery) => {
+    const isThirtyNine = lottery === "今彩539" || lottery === "天天樂";
+    const singlePrize = isThirtyNine ? 21200 : 28500;
+    const singleBets = isThirtyNine ? 38 : 48;
+    const singleFixedCost = isThirtyNine ? 3040 : 3840;
+    const twoStarPrize = isThirtyNine ? 5300 : 5700;
+    const fourStarPrize = isThirtyNine ? 800000 : 750000;
+    return [lottery, {
+      tags: [
+        { name: "單號", costMode: "依照碰數" as CostMode, defaultBets: singleBets, costPerBet: 80, fixedCost: singleFixedCost, prizePerBet: singlePrize },
+        { name: "二星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: twoStarPrize },
+        { name: "三星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: 57000 },
+        { name: "四星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: fourStarPrize },
+      ],
+    }];
+  }),
+) as Record<LotteryId, LotteryRecordSettings>;
+
+function parseRecordNumbers(value: string, max: number) {
+  return value.split(/[^0-9]+/).filter(Boolean).map((number) => number.padStart(2, "0")).filter((number) => Number(number) >= 1 && Number(number) <= max);
+}
+
+function combinations(total: number, choose: number) {
+  if (choose < 0 || choose > total) return 0;
+  let result = 1;
+  for (let index = 1; index <= choose; index += 1) result = (result * (total - choose + index)) / index;
+  return Math.round(result);
+}
+
+export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [view, setView] = useState<NotebookView>("list");
+  const [notebookMode, setNotebookMode] = useState<"筆記" | "紀錄">("筆記");
+  const [notes, setNotes] = useState<NotebookNote[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(window.localStorage.getItem("matrix-notebook-entries") || "[]") as NotebookNote[]; } catch { return []; }
+  });
+  const [records, setRecords] = useState<NotebookRecord[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(window.localStorage.getItem("matrix-notebook-records") || "[]") as NotebookRecord[]; } catch { return []; }
+  });
+  const [settings, setSettings] = useState<Record<LotteryId, LotteryRecordSettings>>(() => {
+    if (typeof window === "undefined") return DEFAULT_RECORD_SETTINGS();
+    try {
+      const stored = JSON.parse(window.localStorage.getItem("matrix-notebook-record-settings") || "null") as Record<LotteryId, LotteryRecordSettings> | null;
+      if (!stored) return DEFAULT_RECORD_SETTINGS();
+      const defaults = DEFAULT_RECORD_SETTINGS();
+      return Object.fromEntries(LOTTERIES.map((item) => [item, { tags: [...defaults[item].tags, ...(stored[item]?.tags ?? []).filter((play) => !["單號", "二星", "三星", "四星", "自訂"].includes(play.name)).map((play) => ({ ...play, defaultBets: Math.min(9999999, Math.max(1, Number(play.defaultBets) || 1)), costPerBet: Math.min(9999999, Math.max(1, Number(play.costPerBet) || 1)), fixedCost: Math.min(9999999, Math.max(1, Number(play.fixedCost) || 1)), prizePerBet: Math.min(9999999, Math.max(1, Number(play.prizePerBet) || 1)) }))] }])) as Record<LotteryId, LotteryRecordSettings>;
+    } catch { return DEFAULT_RECORD_SETTINGS(); }
+  });
+  const [settingsDraft, setSettingsDraft] = useState<Record<LotteryId, LotteryRecordSettings>>(() => DEFAULT_RECORD_SETTINGS());
+  const [settingsBaseline, setSettingsBaseline] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [noteBaseline, setNoteBaseline] = useState({ title: "", content: "" });
+  const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const [recordDate, setRecordDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [mode, setMode] = useState<RecordMode>("單號");
+  const [numberText, setNumberText] = useState("");
+  const [columnTexts, setColumnTexts] = useState(() => Array.from({ length: 12 }, () => ""));
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [playDrafts, setPlayDrafts] = useState<Record<string, PlayDraft>>({});
+  const [numberPicker, setNumberPicker] = useState<{ type: "numbers" | "column" | "special"; column?: number } | null>(null);
+  const [specialNumber, setSpecialNumber] = useState("");
   const [dateInfoOpen, setDateInfoOpen] = useState(false);
   const [expandedRecordIds, setExpandedRecordIds] = useState<string[]>([]);
   const [recordLotteryFilters, setRecordLotteryFilters] = useState<LotteryId[]>([...LOTTERIES]);
