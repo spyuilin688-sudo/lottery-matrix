@@ -1,5 +1,7 @@
 # 樂彩 Matrix LINE Login Integration Implementation Plan
 
+> **Superseded on 2026-08-24:** Do not execute this plan. It adds a login screen and `LineAuthGate` that conflict with the approved API-only specification. Use `docs/superpowers/plans/2026-08-24-line-login-api-completion.md` against the latest `main` instead.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 將已設定完成的 Supabase `custom:line` Provider 接入現有 React/PWA，依 `public/assets/lottery/functions/LINE登入介面.png` 顯示未登入畫面，LINE 授權成功後建立/取得 `members` 紀錄並進入既有樂彩 Matrix，現有「登出」按鈕改為清除 Supabase session。
