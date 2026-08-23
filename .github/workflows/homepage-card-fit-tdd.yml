@@ -1,15 +1,15 @@
 name: Apply homepage card fit
 
 on:
-  push:
-    branches: [home-card-fit-tdd]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'chore: apply homepage card fit'
+    if: github.head_ref == 'home-card-fit-tdd'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
