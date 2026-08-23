@@ -1,6 +1,5 @@
-/* Production PWA adjustments for notification, profile, calculator and quick navigation. */
+/* Notification, profile and calculator adjustments requested for the production PWA. */
 
-/* Notifications: keep the existing Bottom Sheet flow and adjust only production proportions. */
 .notifications-screen .feature-body {
   box-sizing: border-box;
   width: 100%;
@@ -13,27 +12,62 @@
 }
 
 .notifications-screen .notification-row {
-  display: grid;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 68px;
+  overflow: hidden;
   border: 1px solid rgba(170, 119, 46, .72);
   border-radius: 12px;
-  background: #020C12;
+  background: #020c12;
   box-shadow: inset 0 0 10px rgba(150, 102, 34, .04);
 }
 
-.notifications-screen .notification-row:has(h2 em) {
-  min-height: 76px;
+.notifications-screen .notification-row:nth-child(1),
+.notifications-screen .notification-row:nth-child(4) {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.notifications-screen .notification-row:nth-child(2),
+.notifications-screen .notification-row:nth-child(5),
+.notifications-screen .notification-row:nth-child(6) {
+  margin-top: -9px;
+  border-top: 0;
+  border-radius: 0;
+}
+
+.notifications-screen .notification-row:nth-child(3),
+.notifications-screen .notification-row:nth-child(7) {
+  margin-top: -9px;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.notifications-screen .notification-row:nth-child(8) {
+  margin-top: 0;
+}
+
+.notifications-screen .notification-row:nth-child(2)::before,
+.notifications-screen .notification-row:nth-child(3)::before,
+.notifications-screen .notification-row:nth-child(5)::before,
+.notifications-screen .notification-row:nth-child(6)::before,
+.notifications-screen .notification-row:nth-child(7)::before {
+  display: block;
+  height: 1px;
+  margin: 0 10px;
+  background: rgba(170, 119, 46, .38);
+  content: "";
 }
 
 .notifications-screen .notification-heading {
   display: grid;
-  min-width: 0;
+  min-height: 68px;
   padding: 8px 10px;
   grid-template-columns: 56px minmax(0, 1fr) auto 46px;
-  column-gap: 8px;
   align-items: center;
+  column-gap: 8px;
+}
+
+.notifications-screen .notification-row:has(.notification-title h2 em) .notification-heading {
+  min-height: 76px;
 }
 
 .notifications-screen .notification-icon {
@@ -41,7 +75,6 @@
   width: 56px;
   height: 56px;
   place-items: center;
-  justify-self: start;
 }
 
 .notifications-screen .notification-icon img {
@@ -57,7 +90,6 @@
   display: grid;
   min-width: 0;
   align-content: center;
-  justify-items: start;
   overflow: hidden;
 }
 
@@ -69,7 +101,7 @@
   align-items: flex-start;
   gap: 3px;
   overflow: hidden;
-  color: #F2F2F2;
+  color: #f2f2f2;
   font-size: 17px;
   font-weight: 700;
   line-height: 22px;
@@ -105,7 +137,6 @@
 }
 
 .notifications-screen .notification-actions > button:first-child {
-  box-sizing: border-box;
   height: 36px;
   min-height: 36px;
   padding: 0 11px;
@@ -121,88 +152,30 @@
   white-space: nowrap;
 }
 
-.notifications-screen .notification-actions > button:first-child:active {
-  opacity: .86;
-}
-
 .notifications-screen .notification-actions > button:first-child:disabled {
   opacity: 1;
-  border-color: #46505C;
-  background: transparent;
+  border-color: #46505c;
   color: rgba(242, 242, 242, .38);
 }
 
 .notifications-screen .toggle {
-  position: relative;
   width: 46px;
   height: 44px;
   flex: 0 0 46px;
-  padding: 0;
-  justify-self: end;
-  border: 0;
-  background: transparent;
 }
 
 .notifications-screen .toggle::before {
-  position: absolute;
-  top: 8px;
-  left: 0;
-  box-sizing: border-box;
   width: 46px;
   height: 28px;
-  border: 1px solid #46505C;
-  border-radius: 14px;
-  background: #151B22;
-  content: "";
 }
 
 .notifications-screen .toggle span {
-  position: absolute;
-  top: 10px;
-  left: 2px;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background: #dadada;
-  transition: transform .18s;
-}
-
-.notifications-screen .toggle[data-checked="true"]::before {
-  border-color: #D99B00;
-  background: #D99B00;
-  box-shadow: 0 0 4px rgba(217, 155, 0, .14);
-}
-
-.notifications-screen .toggle[data-checked="true"] span {
-  transform: translateX(18px);
-  background: #FFFFFF;
-}
-
-.notifications-screen .toggle:disabled {
-  opacity: .5;
-}
-
-.notifications-screen .toggle:disabled::before {
-  border-color: #46505C;
-  background: #151B22;
-  box-shadow: none;
-}
-
-.notifications-screen .notification-row:has(.toggle:disabled) h2 span {
-  color: rgba(242, 242, 242, .65);
-}
-
-.notifications-screen .notification-row:has(.toggle:disabled) h2 em {
-  opacity: .5;
-}
-
-.notification-modal-backdrop {
-  align-items: flex-end;
 }
 
 .notification-modal {
   max-height: min(76vh, 600px);
-  overflow: hidden;
 }
 
 .notification-modal > header {
@@ -227,76 +200,42 @@
 
 .notification-modal-content {
   padding: 12px 14px 6px;
-  overflow-y: auto;
 }
 
 .notification-modal .notification-options {
-  display: grid;
-  padding-top: 2px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .notification-modal .notification-choice {
-  display: grid;
-  box-sizing: border-box;
-  min-width: 0;
   min-height: 40px;
   padding: 6px 8px;
   grid-template-columns: 16px minmax(0, 1fr);
-  align-items: center;
   gap: 6px;
-  border: 1px solid #4F4537;
   border-radius: 8px;
-  background: #081016;
-  color: #B7B0A5;
   font-size: 12px;
-  line-height: 1.25;
-  cursor: pointer;
-}
-
-.notification-modal .notification-choice:has(input:checked) {
-  border-color: #B78520;
-  background: rgba(191, 132, 18, .14);
-  color: #F1C85D;
 }
 
 .notification-modal .notification-choice input {
   width: 16px;
   height: 16px;
-  margin: 0;
-  accent-color: #D79C20;
-}
-
-.notification-modal .notification-choice span {
-  min-width: 0;
 }
 
 .notification-modal .notification-time-settings {
-  display: grid;
   gap: 10px;
 }
 
-.notification-modal .notification-time-settings .notification-lottery-row {
-  display: grid;
-  margin: 0;
-  padding: 0;
+.notification-modal .notification-lottery-row {
   gap: 5px;
-  border: 0;
 }
 
-.notification-modal .notification-time-settings .notification-lottery-row > strong {
-  padding: 0;
-  color: #E4D6BA;
+.notification-modal .notification-lottery-row > strong,
+.notification-modal .notification-lottery-row > legend {
   font-size: 12px;
-  font-weight: 650;
   line-height: 16px;
-  white-space: nowrap;
 }
 
-.notification-modal .notification-time-settings .notification-lottery-row > div {
-  display: grid;
-  min-width: 0;
+.notification-modal .notification-lottery-row > div {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
@@ -306,39 +245,24 @@
 }
 
 .notification-modal .notification-time-settings select {
-  height: 100%;
   font-size: 12px;
-  text-align: center;
-  text-align-last: center;
 }
 
 .notification-modal .notification-status-settings {
-  display: grid;
   gap: 6px;
 }
 
 .notification-status-settings .notification-lottery-row {
-  display: grid;
-  margin: 0;
-  padding: 0;
   grid-template-columns: 56px minmax(0, 1fr);
-  align-items: center;
   column-gap: 6px;
-  border: 0;
 }
 
 .notification-status-settings .notification-lottery-row > strong {
-  padding: 0;
-  color: #E4D6BA;
   font-size: 11px;
-  font-weight: 650;
   line-height: 15px;
-  white-space: nowrap;
 }
 
 .notification-status-settings .notification-lottery-row > div {
-  display: grid;
-  min-width: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
 }
@@ -347,19 +271,18 @@
   min-height: 36px;
   padding: 5px 3px;
   grid-template-columns: 14px minmax(0, 1fr);
-  justify-content: center;
   gap: 3px;
-  border: 1px solid #4F4537;
+  border: 1px solid #4f4537;
   border-radius: 8px;
   background: #081016;
-  color: #B7B0A5;
+  color: #b7b0a5;
   font-size: 10px;
 }
 
 .notification-modal .notification-status-settings .notification-choice:has(input:checked) {
-  border: 1px solid #B78520;
+  border-color: #b78520;
   background: rgba(191, 132, 18, .14);
-  color: #F1C85D;
+  color: #f1c85d;
 }
 
 .notification-modal .notification-status-settings .notification-choice input {
@@ -372,12 +295,8 @@
   height: 42px;
   min-height: 42px;
   margin: 8px 14px 14px;
-  border: 1px solid #B78520;
   border-radius: 9px;
-  background: linear-gradient(180deg, #D9A529, #A96D08);
-  color: #110B02;
   font-size: 13px;
-  font-weight: 700;
 }
 
 .notification-modal:has(.notification-status-settings) .notification-modal-done {
@@ -385,7 +304,14 @@
   min-height: 44px;
 }
 
-/* Existing profile / calculator / quick-navigation production adjustments remain unchanged. */
+.notifications-screen .notification-row:has(.toggle:disabled) h2 span {
+  color: rgba(242,242,242,.65);
+}
+
+.notifications-screen .notification-row:has(.toggle:disabled) h2 em {
+  opacity: .5;
+}
+
 .profile-screen .feature-body {
   padding-inline: 16px;
 }
