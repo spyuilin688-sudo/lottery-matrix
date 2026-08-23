@@ -39,7 +39,7 @@ OpenAI workspace sites can read the current user's email from
 SIWC-authenticated workspace sites may also receive
 `oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
 `name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+`oai-authenticated-user-full-name-encoding: percent-encoded-utf8`.
 
 Treat the full name as optional and fall back to email when it is absent:
 
@@ -104,7 +104,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 Use build and validation commands for targeted diagnosis after a remote failure, not as part of the normal checkpoint path.
 
-The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
+The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
 
 ## 版本標示
 
