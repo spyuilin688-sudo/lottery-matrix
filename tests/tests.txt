@@ -1,37 +1,31 @@
 # Tests
 
-## Test 1 - Open Number Reference settings [sanity]
-Viewport: mobile (375x667)
-Covers: home shortcut navigation, Number Reference page, settings toggle
-Description: Verifies that the Number Reference page opens from the home screen and its settings control can collapse and reopen the settings panel.
-
+## Test 1 - 號碼對照單探索設定 [sanity]
+Viewport: mobile
+Covers: 首頁功能入口、號碼對照單、刷新按鈕、探索設定收合
+Description: 驗證號碼對照單可從首頁進入，標題操作按鈕與探索設定可正常操作。
 Steps:
-1. From the home screen, tap 「號碼對照單」.
-2. Verify 「刷新」 and 「探索設定」 are visible in the title area.
-3. Tap 「探索設定」 to collapse the settings panel, then tap it again to reopen the panel.
+1. 從首頁點擊「號碼對照單」
+2. 確認「刷新」與「探索設定」可見
+3. 點擊「探索設定」收合，再次點擊重新展開
+Expected: 號碼對照單維持開啟，探索設定可正常收合與展開，標題操作按鈕沒有重疊。
 
-Expected: The Number Reference page remains open, the settings panel collapses and reopens correctly, and the title actions remain visible without overlap.
-
-## Test 2 - Reject invalid Number Reference input
-Viewport: mobile (375x667)
-Covers: Number Reference numeric input validation, invalid-value guardrail
-Description: Verifies that an out-of-range lottery number is rejected when the field loses focus.
-
+## Test 2 - 號碼對照單拒絕無效號碼
+Viewport: mobile
+Covers: 號碼對照單輸入驗證、01 至 49 範圍限制、無效輸入 guardrail
+Description: 驗證超出合法範圍的探索號碼在失焦時被清除。
 Steps:
-1. From the home screen, tap 「號碼對照單」.
-2. Enter 「50」 in the first exploration-number input.
-3. Move focus away from the input.
+1. 從首頁進入「號碼對照單」
+2. 在第一個探索號碼輸入框輸入「50」
+3. 將焦點移出輸入框
+Expected: 「50」被清除，且不會自動開始探索。
 
-Expected: The invalid value is cleared and no exploration is started automatically.
-
-## Test 3 - Select and clear calculator numbers
-Viewport: mobile (375x667)
-Covers: calculator navigation, number selection, clear action, responsive controls
-Description: Verifies that the collision-column calculator accepts a number selection and the clear action removes it without breaking the mobile layout.
-
+## Test 3 - 連碰計算選號與清除
+Viewport: mobile
+Covers: 連碰立柱計算機、連碰計算、選號、清除、手機響應式
+Description: 驗證連碰計算可以選取號碼並以清除按鈕恢復未選狀態。
 Steps:
-1. From the home screen, tap 「連碰立柱計算機」.
-2. In 「連碰計算」, select one available number.
-3. Tap 「清除」.
-
-Expected: The selected number returns to its unselected state, the calculator remains usable, and the controls stay inside the mobile viewport without overlap.
+1. 從首頁進入「連碰立柱計算機」
+2. 在「連碰計算」選取一個號碼
+3. 點擊「清除」
+Expected: 已選號碼恢復未選狀態，計算機仍可操作且控制項沒有超出手機畫面。
