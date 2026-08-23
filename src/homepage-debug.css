@@ -1,0 +1,7 @@
+/* TEMPORARY homepage container outlines for layout debugging. */
+.home-screen .brand-header { outline: 1px solid #ff3b30; }
+.home-screen .lottery-switcher { outline: 1px solid #34c759; }
+.home-screen .latest-draw-card { outline: 1px solid #0a84ff; }
+.home-screen .matrix-status-section { outline: 1px solid #bf5af2; }
+.home-screen .matrix-core-banner { outline: 1px solid #ff9f0a; }
+.home-screen .home-shortcut-row { outline: 1px solid #64d2ff; }
