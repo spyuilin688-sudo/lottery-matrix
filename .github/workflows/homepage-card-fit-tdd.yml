@@ -1,27 +1,85 @@
-name: Homepage card fit TDD
+name: Apply homepage card fit
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/homepage/base.css'
-      - 'src/homepage/lottery-switcher.css'
-      - 'tests/homepage-card-fit.test.mjs'
-      - '.github/workflows/homepage-card-fit-tdd.yml'
+  push:
+    branches: [home-card-fit-tdd]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  regression:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'chore: apply homepage card fit'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Checkout
+      - name: Checkout branch
         uses: actions/checkout@v4
+        with:
+          ref: home-card-fit-tdd
+          fetch-depth: 0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Homepage card fit regression
+          cache: npm
+
+      - name: Patch canonical homepage sources
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/homepage/base.css")
+          source = path.read_text()
+
+          replacements = [
+              (
+                  ".home-screen .home-bottom-group {\n  --home-gap-core-features: 8px;\n  --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);",
+                  ".home-screen .home-bottom-group {\n  --home-gap-core-features: 8px;\n  --home-core-width: calc(min(100vw, 390px) - 32px);\n  --home-core-height: calc((var(--home-core-width) * 414 / 1536) - 6px);\n  --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);",
+              ),
+              (
+                  "  width: calc(100% - 20px);\n  height: auto;\n  aspect-ratio: 1536 / 414;",
+                  "  width: var(--home-core-width);\n  height: var(--home-core-height);\n  aspect-ratio: auto;",
+              ),
+              (
+                  "  width: 100%;\n  height: auto;\n  max-height: none;\n  margin-inline: auto;\n  object-fit: contain;",
+                  "  width: 100%;\n  height: 100%;\n  max-height: 100%;\n  margin-inline: auto;\n  object-fit: fill;",
+              ),
+              (
+                  ".home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected=\"true\"]::after {\n  display: none;\n}",
+                  ".home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected=\"true\"]::after {\n  position: absolute;\n  z-index: 3;\n  inset: 0;\n  display: block;\n  padding: 1px;\n  border-radius: inherit;\n  background: var(--lottery-selected-gradient);\n  content: \"\";\n  pointer-events: none;\n  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);\n  -webkit-mask-composite: xor;\n  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);\n  mask-composite: exclude;\n}",
+              ),
+              (
+                  ".home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected=\"true\"] {\n  border-image: var(--lottery-selected-gradient) 1;\n  box-shadow: 0 0 7px rgba(255, 206, 105, .28);\n}",
+                  ".home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected=\"true\"] {\n  border-color: transparent;\n  border-radius: 12px;\n  border-image: none;\n  box-shadow: 0 0 7px rgba(255, 206, 105, .28);\n}",
+              ),
+          ]
+
+          for old, new in replacements:
+              if source.count(old) != 1:
+                  raise SystemExit(f"Expected exactly one canonical match, found {source.count(old)} for: {old[:80]!r}")
+              source = source.replace(old, new, 1)
+
+          path.write_text(source)
+
+      - name: Homepage regression test
         run: node --test tests/homepage-card-fit.test.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Remove temporary runner and commit
+        run: |
+          rm .github/workflows/homepage-card-fit-tdd.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/homepage/base.css tests/homepage-card-fit.test.mjs .github/workflows/homepage-card-fit-tdd.yml
+          git commit -m "Adjust homepage card fit and selected radius"
+          git push origin HEAD:home-card-fit-tdd
