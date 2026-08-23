@@ -653,17 +653,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   border-radius: 11px;
   background: linear-gradient(145deg, rgba(8, 16, 22, .98), rgba(2, 8, 13, .98));
 }
-.history-filter-panel[hidden] { display: none; }
-.history-filter-panel[data-floating="true"] {
-  position: fixed;
-  z-index: 45;
-  left: 20px;
-  right: 20px;
-  width: auto;
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .06);
-}
 .history-filter-primary-row,
 .history-filter-secondary-row { display: grid; width: 100%; min-width: 0; gap: 6px; }
 .history-filter-primary-row { grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr); }
