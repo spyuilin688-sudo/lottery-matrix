@@ -1,4 +1,6 @@
 /* TEMPORARY homepage container outlines for layout debugging. */
+.home-screen .home-layout { outline: 1px solid #ff2d55; }
+.home-screen .lottery-screen { outline: 1px solid #ffd60a; }
 .home-screen .brand-header { outline: 1px solid #ff3b30; }
 .home-screen .lottery-switcher { outline: 1px solid #34c759; }
 .home-screen .latest-draw-card { outline: 1px solid #0a84ff; }
