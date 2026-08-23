@@ -80,6 +80,11 @@
   white-space: nowrap;
 }
 
+.notifications-screen-v2 .notification-settings-toggle:disabled {
+  border-color: #46505c;
+  color: rgba(242, 242, 242, .38);
+}
+
 .notifications-screen-v2 .notification-settings-toggle svg {
   width: clamp(9px, 2.7vw, 12px);
   height: clamp(9px, 2.7vw, 12px);
@@ -97,10 +102,15 @@
   justify-content: flex-end;
 }
 
-.notifications-screen-v2 .toggle {
+.notifications-screen-v2 .notification-actions > .toggle {
   width: 42px;
   height: 26px;
   flex: 0 0 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .notifications-screen-v2 .toggle::before {
