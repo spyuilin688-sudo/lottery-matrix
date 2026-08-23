@@ -69,9 +69,6 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     expiry: ["提前1日", "提前3日", "提前7日"],
     system: ["維護", "更新"],
   });
-  const [betLotteries, setBetLotteries] = useState<Record<Lottery, boolean>>(
-    Object.fromEntries(LOTTERIES.map((lottery) => [lottery, true])) as Record<Lottery, boolean>,
-  );
   const [statusLotteries, setStatusLotteries] = useState<Record<Lottery, boolean>>(
     Object.fromEntries(LOTTERIES.map((lottery) => [lottery, true])) as Record<Lottery, boolean>,
   );
@@ -103,8 +100,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   const renderBetSettings = () => (
     <div className="notification-matrix-grid notification-bet-grid" aria-label="選號提醒設定">
-      <div className="notification-grid-row notification-grid-lottery-row">
-        {LOTTERIES.map((lottery) => <label key={lottery}><input type="checkbox" checked={betLotteries[lottery]} onChange={() => setBetLotteries((current) => ({ ...current, [lottery]: !current[lottery] }))} /><span>{lottery}</span></label>)}
+      <div className="notification-grid-row notification-grid-lottery-row notification-grid-lottery-labels">
+        {LOTTERIES.map((lottery) => <span key={lottery}>{lottery}</span>)}
       </div>
       {([0, 1] as const).map((index) => <div className="notification-grid-row notification-grid-time-row" key={index}>
         {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => setBetTimes((current) => ({ ...current, [lottery]: index === 0 ? [event.target.value, current[lottery][1]] : [current[lottery][0], event.target.value] }))}><option value="">選擇時間</option>{BET_TIME_OPTIONS[lottery].map((time) => <option value={time} key={time}>{time.replace(":", "：")}</option>)}</select></div>)}
@@ -143,9 +140,11 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
-        <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
-        <div className="notification-actions">
+        <div className="notification-title">
+          <h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2>
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
+        </div>
+        <div className="notification-actions">
           <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => setSettings((current) => ({ ...current, [key]: !current[key] }))} />
         </div>
       </div>
