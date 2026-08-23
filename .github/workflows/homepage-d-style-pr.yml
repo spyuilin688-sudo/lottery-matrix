@@ -73,7 +73,20 @@ jobs:
           echo 'RED confirmed.'
 
       - name: GREEN - apply D style through formal sources
-        run: python scripts/apply-homepage-d.py
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-homepage-d.py')
+          source = path.read_text()
+          old = """    (\n        '''  min-width: 0;\\n  padding: 0;\\n  border: 0;\\n  background: transparent;''',\n        '''  min-width: 0;\\n  margin: 2px 1px;\\n  padding: 0;\\n  border: 1px solid rgba(118, 84, 43, .72);\\n  border-radius: 8px;\\n  background: rgba(2, 7, 12, .08);\\n  box-shadow: inset 0 0 8px rgba(196, 145, 69, .035);''',\n    ),"""
+          new = """    (\n        '''.home-screen .matrix-status-hit-grid > button {\\n  appearance: none;\\n  min-width: 0;\\n  padding: 0;\\n  border: 0;\\n  background: transparent;\\n}''',\n        '''.home-screen .matrix-status-hit-grid > button {\\n  appearance: none;\\n  min-width: 0;\\n  margin: 2px 1px;\\n  padding: 0;\\n  border: 1px solid rgba(118, 84, 43, .72);\\n  border-radius: 8px;\\n  background: rgba(2, 7, 12, .08);\\n  box-shadow: inset 0 0 8px rgba(196, 145, 69, .035);\\n}''',\n    ),"""
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected one temporary patch source, found {count}')
+          path.write_text(source.replace(old, new, 1))
+          PY
+          python scripts/apply-homepage-d.py
 
       - name: Verify targeted, full tests and build
         run: |
