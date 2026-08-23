@@ -108,10 +108,11 @@
   height: auto;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
 }
 
 .draw-history-screen .history-title-actions { gap: 6px; }
+.tongxing-screen .tongxing-title-actions { gap: 5px; }
+.number-reference-screen .reference-title-actions { gap: 8px; }
 
 .draw-history-screen .history-title-actions .title-card-compact-action {
   width: auto;
@@ -125,17 +126,21 @@
 .draw-history-screen .history-title-actions .title-card-compact-action::before { height: 22px; }
 .draw-history-screen .history-title-actions .title-card-compact-action::after { height: 20px; }
 
-.tongxing-screen .tongxing-title-actions .title-card-compact-action,
-.number-reference-screen .reference-title-actions .title-card-compact-action {
+.tongxing-screen .tongxing-title-actions .title-card-compact-action {
   height: 22px;
   min-height: 22px;
 }
 
-.tongxing-screen .tongxing-title-actions .title-card-compact-action::before,
-.number-reference-screen .reference-title-actions .title-card-compact-action::before { height: 22px; }
+.number-reference-screen .reference-title-actions .title-card-compact-action {
+  height: 18px;
+  min-height: 18px;
+}
 
-.tongxing-screen .tongxing-title-actions .title-card-compact-action::after,
-.number-reference-screen .reference-title-actions .title-card-compact-action::after { height: 20px; }
+.tongxing-screen .tongxing-title-actions .title-card-compact-action::before { height: 22px; }
+.number-reference-screen .reference-title-actions .title-card-compact-action::before { height: 18px; }
+
+.tongxing-screen .tongxing-title-actions .title-card-compact-action::after { height: 20px; }
+.number-reference-screen .reference-title-actions .title-card-compact-action::after { height: 16px; }
 
 .draw-history-screen .history-reset-trigger {
   gap: 1px;
