@@ -26,7 +26,7 @@ for (const [relativePath, expectedHash] of Object.entries(lockedFiles)) {
 if (failures.length > 0) {
   console.error("Mobile runtime integrity check failed:\n");
   for (const failure of failures) console.error(`- ${failure}`);
-  console.error("\nRestore the protected runtime. Put app UI in src/Prototype.tsx and src/prototype.css.");
+  console.error("\nRestore the protected runtime, or intentionally refresh the runtime lock only after verifying a deliberate core-runtime change.");
   process.exit(1);
 }
 
