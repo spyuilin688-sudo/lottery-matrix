@@ -70,6 +70,18 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
+  it("快捷短按在 pointer up 即開啟且後續 click 不重複觸發", () => {
+    const onQuickOpen = vi.fn();
+    render(<BottomNavigation onQuickOpen={onQuickOpen} />);
+
+    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
+    fireEvent.pointerDown(quickButton);
+    fireEvent.pointerUp(quickButton);
+    fireEvent.click(quickButton);
+
+    expect(onQuickOpen).toHaveBeenCalledTimes(1);
+  });
+
   it("快捷長按期間移出按鈕範圍仍會在三秒後開啟設定", () => {
     vi.useFakeTimers();
     const onQuickOpen = vi.fn();
