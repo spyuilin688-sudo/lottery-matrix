@@ -14,11 +14,15 @@
 .notifications-screen-v2 .notification-group,
 .notifications-screen-v2 .notification-system-group {
   overflow: hidden;
-  padding-block: 8px;
+  padding-block: 2px;
   border: 1px solid rgba(170, 119, 46, .82);
   border-radius: 12px;
   background: #020c12;
   box-shadow: inset 0 0 10px rgba(150, 102, 34, .04);
+}
+
+.notifications-screen-v2 .notification-system-group {
+  padding-block: 4px;
 }
 
 .notifications-screen-v2 .notification-row {
@@ -35,7 +39,7 @@
 .notifications-screen-v2 .notification-heading {
   display: grid;
   min-height: 0;
-  padding: 4px 8px;
+  padding: 2px 4px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 8px;
@@ -49,7 +53,6 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-items: initial;
   overflow: visible;
 }
 
@@ -58,20 +61,27 @@
   margin: 0;
 }
 
+.notifications-screen-v2 .notification-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+}
+
 .notifications-screen-v2 .notification-settings-toggle {
   display: inline-flex;
   box-sizing: border-box;
   min-width: 0;
   height: 26px;
   min-height: 26px;
-  margin-left: 12px;
   padding: 0 7px;
   flex: 0 1 auto;
   align-items: center;
   justify-content: center;
   gap: 2px;
   border: 1px solid rgba(211, 166, 66, .62);
-  border-radius: 13px;
+  border-radius: 2px;
   background: transparent;
   color: #d2aa56;
   font-size: clamp(8px, 2.4vw, 10px);
@@ -96,15 +106,9 @@
   transform: rotate(180deg);
 }
 
-.notifications-screen-v2 .notification-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
 .notifications-screen-v2 .notification-actions > .toggle {
   width: 42px;
-  height: 26px;
+  height: 22px;
   flex: 0 0 42px;
   padding: 0;
   border: 0;
@@ -114,14 +118,14 @@
 }
 
 .notifications-screen-v2 .toggle::before {
-  top: 2px;
+  top: 0;
   width: 42px;
   height: 22px;
-  border-radius: 11px;
+  border-radius: 2px;
 }
 
 .notifications-screen-v2 .toggle span {
-  top: 4px;
+  top: 2px;
   width: 18px;
   height: 18px;
 }
@@ -131,31 +135,49 @@
 }
 
 .notifications-screen-v2 .notification-inline-settings {
-  padding: 8px;
+  padding: 4px;
   border-top: 1px solid rgba(170, 119, 46, .38);
   background: rgba(1, 8, 13, .72);
 }
 
 .notifications-screen-v2 .notification-matrix-grid {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
-.notifications-screen-v2 .notification-grid-row {
+.notifications-screen-v2 .notification-grid-row,
+.notifications-screen-v2 .notification-inline-option-row {
   display: grid;
+  min-width: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
-  min-width: 0;
+  align-items: center;
 }
 
-.notifications-screen-v2 .notification-grid-lottery-labels > span,
-.notifications-screen-v2 .notification-grid-lottery-row label,
-.notifications-screen-v2 .notification-grid-status-row label {
+.notifications-screen-v2 .notification-grid-lottery-labels > span {
   display: flex;
   box-sizing: border-box;
   min-width: 0;
   height: 26px;
   min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  color: #e2d9c8;
+  font-size: clamp(10px, 2.9vw, 12px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-grid-lottery-row label,
+.notifications-screen-v2 .notification-grid-status-row label,
+.notifications-screen-v2 .notification-inline-option-row .notification-choice {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 4px;
   align-items: center;
   justify-content: center;
   gap: 3px;
@@ -167,7 +189,10 @@
 
 .notifications-screen-v2 input[type="checkbox"],
 .notifications-screen-v2 input[type="radio"] {
+  width: 1em;
+  height: 1em;
   margin: 0;
+  flex: 0 0 1em;
   accent-color: #d99b00;
 }
 
@@ -178,34 +203,17 @@
 
 .notifications-screen-v2 .notification-time-select select {
   padding: 0 3px;
-  font-size: clamp(7px, 2.3vw, 9px);
+  font-size: clamp(9px, 2.7vw, 11px);
+  font-weight: 700;
   line-height: 1;
   text-align: center;
   text-align-last: center;
 }
 
-.notifications-screen-v2 .notification-inline-option-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-}
-
-.notifications-screen-v2 .notification-inline-option-row .notification-choice {
-  display: flex;
-  box-sizing: border-box;
-  min-width: 0;
-  height: 26px;
-  min-height: 26px;
-  padding: 0 4px;
-  flex: 1 1 0;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  font-size: clamp(8px, 2.5vw, 10px);
-  line-height: 1;
-  white-space: nowrap;
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="win"] .notification-choice,
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="system"] .notification-choice,
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="expiry"] .notification-choice {
+  justify-content: flex-start;
 }
 
 .profile-screen .feature-body {
