@@ -25,12 +25,12 @@ test('tool title actions use 22px controls and the 87.5% border anchor', () => {
   assert.match(responsive, /\.number-reference-screen \.reference-title-actions button:first-child\s*\{[^}]*gap:\s*1px;/s);
 });
 
-test('all three portal floating setting cards own explicit 16px inline offsets', () => {
-  for (const selector of ['.history-filter-panel[data-floating="true"]', '.reference-query-panel[data-floating="true"]', '.tongxing-query[data-floating="true"]']) {
-    const css = block(responsive, selector);
-    assert.match(css, /left:\s*16px\s*;/);
-    assert.match(css, /right:\s*16px\s*;/);
-  }
+test('all three portal floating setting cards share explicit 16px inline offsets', () => {
+  const match = responsive.match(/\.history-filter-panel\[data-floating="true"\],\s*\.reference-query-panel\[data-floating="true"\],\s*\.tongxing-query\[data-floating="true"\]\s*\{([\s\S]*?)\}/);
+  const css = match?.[1] ?? '';
+  assert.ok(match, 'the three floating panels must use one shared formal controller');
+  assert.match(css, /left:\s*16px\s*;/);
+  assert.match(css, /right:\s*16px\s*;/);
 });
 
 test('notification compact responsive layout is present in the canonical responsive stylesheet', () => {
