@@ -1,4 +1,12 @@
-/* Responsive feature pages formal source */
+/* Canonical responsive contract for History, Matrix TongXing and Number Reference. */
+
+.draw-history-screen,
+.tongxing-screen,
+.number-reference-screen {
+  --tool-page-inline: 16px;
+  --tool-section-gap: var(--layout-section-gap, 8px);
+  --tool-floating-clearance: clamp(96px, 18dvh, 148px);
+}
 
 .title-card-compact-actions {
   display: flex;
@@ -19,7 +27,7 @@
   padding: 0 4.5px;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -30,47 +38,56 @@
   white-space: nowrap;
 }
 
-.title-card-compact-action::before {
+.title-card-compact-action::before,
+.title-card-compact-action::after {
   position: absolute;
-  z-index: -2;
   top: 50%;
+  pointer-events: none;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.title-card-compact-action::before {
+  z-index: -2;
   left: 0;
   width: 100%;
   height: 24.7px;
-  transform: translateY(-50%);
   background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618);
   filter: drop-shadow(0 0 4px rgba(215, 165, 47, .32));
-  pointer-events: none;
-  content: "";
 }
 
 .title-card-compact-action::after {
-  position: absolute;
   z-index: -1;
-  top: 50%;
   left: 1px;
   width: calc(100% - 2px);
   height: 22.7px;
-  transform: translateY(-50%);
-  background: var(--select-tech-surface);
-  pointer-events: none;
-  content: "";
+  background: var(--select-tech-surface, #030b13);
 }
 
 .title-card-compact-action svg {
   width: 10px;
   height: 10px;
+  flex: 0 0 10px;
 }
 
-.sticky-title-card-screen .feature-brand-header {
+.sticky-title-card-screen .feature-brand-header,
+.number-reference-screen .feature-brand-header {
   position: sticky;
   z-index: 30;
   top: 0;
   background: #020b11;
 }
 
-/* History uses one vertical anchor only, so the approved 4px downward offset is real and predictable. */
-.draw-history-screen .matrix-title-banner-actions {
+.draw-history-screen .matrix-title-banner,
+.tongxing-screen .matrix-title-banner,
+.number-reference-screen .matrix-title-banner {
+  width: calc(100% - (var(--tool-page-inline) * 2));
+  margin-bottom: 0;
+}
+
+.draw-history-screen .matrix-title-banner-actions,
+.tongxing-screen .matrix-title-banner-actions,
+.number-reference-screen .matrix-title-banner-actions {
   top: auto;
   right: 4%;
   bottom: calc(8% - 4px);
@@ -83,33 +100,22 @@
   transform: none;
 }
 
-/* Other tool title actions keep their existing positioning. */
-.number-reference-screen .matrix-title-banner-actions,
-.tongxing-screen .matrix-title-banner-actions {
-  top: 20%;
-  right: 4%;
-  bottom: 8%;
-  left: auto;
-  width: 46%;
+.draw-history-screen .history-title-actions,
+.tongxing-screen .tongxing-title-actions,
+.number-reference-screen .reference-title-actions {
+  width: auto;
   min-width: 0;
   height: auto;
-  align-items: flex-end;
-  justify-content: flex-end;
-  transform: translateY(4px);
-}
-
-/* Match the legacy selector directly so height:100% / bottom alignment can no longer pin this row. */
-.draw-history-screen .matrix-title-banner-actions .history-title-actions {
-  width: 100%;
-  height: auto;
-  min-height: 0;
   align-items: center;
   justify-content: flex-end;
+  gap: 5px;
+}
+
+.draw-history-screen .history-title-actions {
   gap: 6px;
 }
 
-/* History title actions are slightly tighter and size to their actual content. */
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action {
+.draw-history-screen .history-title-actions .title-card-compact-action {
   width: auto;
   min-width: 0;
   height: 22px;
@@ -118,28 +124,32 @@
   padding-inline: 4px;
 }
 
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action::before {
-  height: 22px;
-}
+.draw-history-screen .history-title-actions .title-card-compact-action::before { height: 22px; }
+.draw-history-screen .history-title-actions .title-card-compact-action::after { height: 20px; }
 
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .title-card-compact-action::after {
-  height: 20px;
-}
-
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-reset-trigger {
+.draw-history-screen .history-reset-trigger {
   gap: 5px;
   padding-inline: 4px 5px;
   background-image: none;
 }
 
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-reset-trigger > svg {
+.draw-history-screen .history-reset-trigger > svg,
+.number-reference-screen .reference-title-actions button:first-child > svg {
   width: 7px;
   height: 7px;
   flex: 0 0 7px;
 }
 
-.draw-history-screen .matrix-title-banner-actions .history-title-actions .history-filter-trigger {
+.draw-history-screen .history-filter-trigger {
+  height: 22px;
+  min-height: 22px;
+  padding-inline: 4px;
   gap: 1px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d3a642;
+  font-size: clamp(7.2px, 2.1vw, 9px);
 }
 
 .draw-history-screen .history-filter-trigger-icon {
@@ -152,11 +162,6 @@
   display: none;
 }
 
-.number-reference-screen .matrix-title-banner-actions {
-  width: 40%;
-}
-
-/* Reference refresh uses the same compact icon treatment as history reset and grows with its text. */
 .number-reference-screen .reference-title-actions button:first-child {
   width: max-content;
   min-width: 0;
@@ -165,57 +170,39 @@
   white-space: nowrap;
 }
 
-.number-reference-screen .reference-title-actions button:first-child > svg {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-}
-
-/* Three tool pages share the same real 16px outer gutter. */
 .draw-history-screen .feature-body,
-.number-reference-screen .feature-body,
-.tongxing-screen .feature-body {
+.tongxing-screen .feature-body,
+.number-reference-screen .feature-body {
   box-sizing: border-box;
+  display: flex;
   width: 100%;
   max-width: none;
   min-width: 0;
   margin-inline: 0;
-  padding-inline: 16px;
-}
-
-/* gap only works on flex/grid: history owns a real vertical flex flow. */
-.draw-history-screen .feature-body {
-  display: flex;
+  padding: var(--tool-section-gap) var(--tool-page-inline) var(--layout-bottom-nav-clearance);
   flex-direction: column;
-  row-gap: var(--layout-section-gap);
+  row-gap: var(--tool-section-gap);
 }
 
-.profile-screen .feature-body {
-  box-sizing: border-box;
-  width: 100%;
-  margin-inline: 0;
-  padding-inline: var(--layout-page-inline);
-}
-
-.draw-history-screen .matrix-title-banner,
-.number-reference-screen .matrix-title-banner,
-.tongxing-screen .matrix-title-banner {
-  width: calc(100% - 32px);
-}
-
-.draw-history-history-scope {
-  width: 100%;
-  min-width: 0;
-  margin-inline: 0;
-}
-
-/* History and number-reference settings use the same outer card inline and floating. */
-.history-filter-panel,
-.reference-query-panel {
+.draw-history-history-scope,
+.tongxing-screen .tongxing-results,
+.number-reference-screen .reference-table-panel {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  margin-inline: 0;
+}
+
+.history-filter-panel,
+.reference-query-panel,
+.tongxing-query {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
   padding: 8px;
   border: 1px solid #6c4a20;
   border-radius: 11px;
@@ -223,37 +210,44 @@
   box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
-.history-filter-panel[data-floating="true"] {
-  left: 16px;
-  right: 16px;
+.history-filter-panel[data-floating="true"],
+.reference-query-panel[data-floating="true"],
+.tongxing-query[data-floating="true"] {
+  position: fixed;
+  z-index: 45;
+  left: var(--tool-page-inline);
+  right: var(--tool-page-inline);
   width: auto;
   max-width: none;
   min-width: 0;
+  max-height: calc(100dvh - var(--layout-bottom-nav-clearance) - var(--tool-floating-clearance));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
-/* Reference portal uses local absolute coordinates; clear the legacy 50% translation. */
-.reference-query-panel[data-floating="true"] {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  width: auto;
-  max-width: none;
+.history-filter-panel[hidden],
+.reference-query-panel[hidden],
+.tongxing-query[hidden] {
+  display: none;
+}
+
+.history-filter-primary-row,
+.history-filter-primary-row > *,
+.reference-query-panel .query-selects.three-cols,
+.reference-query-panel .query-selects.three-cols > * {
   min-width: 0;
-  transform: none;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
-.history-filter-primary-row {
+.history-filter-primary-row,
+.reference-query-panel .query-selects.three-cols {
   width: 100%;
-  min-width: 0;
 }
 
-.history-filter-primary-row > * {
-  min-width: 0;
-}
-
-.history-filter-primary-row .select-box {
+.history-filter-primary-row .select-box,
+.reference-query-panel .query-selects.three-cols .select-box {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -263,11 +257,12 @@
 }
 
 .history-filter-primary-row .select-box::before,
-.history-filter-primary-row .select-box::after {
+.history-filter-primary-row .select-box::after,
+.reference-query-panel .query-selects.three-cols .select-box::before,
+.reference-query-panel .query-selects.three-cols .select-box::after {
   display: block;
 }
 
-/* History start action now uses the same Matrix branded action language as TongXing/reference. */
 .history-filter-start.branded-explore-action {
   display: flex;
   height: 26px;
@@ -295,29 +290,6 @@
   flex: 0 0 12px;
 }
 
-.reference-query-panel .query-selects.three-cols {
-  width: 100%;
-  min-width: 0;
-}
-
-.reference-query-panel .query-selects.three-cols > * {
-  min-width: 0;
-}
-
-.reference-query-panel .query-selects.three-cols .select-box {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.reference-query-panel .query-selects.three-cols .select-box::before,
-.reference-query-panel .query-selects.three-cols .select-box::after {
-  display: block;
-}
-
 .reference-query-panel .reference-select select {
   padding-left: 7px;
   padding-right: 25px;
@@ -338,15 +310,14 @@
   font-size: clamp(8.5px, 2.8vw, 11.5px);
 }
 
-.reference-title-actions {
-  display: flex;
-  min-width: 0;
-  gap: 5px;
-}
-
 .number-reference-screen .reference-table-panel > header {
   min-height: 34px;
   padding-inline: 8px;
+}
+
+.number-reference-screen .reference-row {
+  min-width: 0;
+  grid-template-columns: minmax(52px, .22fr) minmax(0, .78fr);
 }
 
 .number-reference-screen .reference-row.head {
@@ -361,15 +332,27 @@
 
 .number-reference-screen .reference-row:not(.head) > span > button {
   min-width: 0;
-  font-size: 14px;
+  font-size: clamp(12px, 3.7vw, 14px);
 }
 
-.number-reference-screen .reference-row {
-  min-width: 0;
-  grid-template-columns: minmax(56px, .2fr) minmax(0, .8fr);
+.draw-history-screen .draw-history-panel {
+  --mx-history-head-height: 32px;
+  --mx-history-row-height: 54px;
+  --mx-history-columns: minmax(52px, .65fr) minmax(64px, .85fr) minmax(0, 3.5fr);
+  --mx-history-date-year-size: clamp(12px, 3.5vw, 14px);
+  --mx-history-date-detail-size: clamp(10px, 3.2vw, 13px);
+  padding: 0;
+  overflow: visible;
 }
 
-/* Draw-history balls follow the same layout geometry as Matrix Explore recent-history balls. */
+.draw-history-screen .draw-history-head {
+  font-size: clamp(11px, 3.3vw, 13px);
+}
+
+.draw-history-screen .draw-history-row .draw-history-meta {
+  font-size: clamp(12px, 3.6vw, 14px);
+}
+
 .draw-history-screen .draw-history-panel .history-numbers,
 .draw-history-screen .draw-history-panel .history-main-numbers,
 .draw-history-screen .draw-history-panel .history-special-number {
@@ -383,14 +366,12 @@
   width: 100%;
   gap: .125rem;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .draw-history-screen .draw-history-panel .history-main-numbers {
   min-width: 0;
   flex: 0 0 auto;
-  flex-wrap: nowrap;
-  align-items: center;
   justify-content: center;
   gap: clamp(4px, 1.8vw, 8px);
 }
@@ -442,10 +423,6 @@
   gap: clamp(4px, 1.5vw, 7px);
 }
 
-.draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
-  align-items: center;
-}
-
 .draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
   margin-left: 0;
   align-items: center;
@@ -476,127 +453,7 @@
   transform: translateX(-50%);
 }
 
-.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-ball {
-  height: 40px;
-}
-
-.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-label {
-  bottom: calc(50% + var(--matrix-history-ball-size) / 2);
-}
-
-.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-ball {
-  height: 36px;
-}
-
-.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-label {
-  bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px);
-}
-
-.notifications-screen .feature-body {
-  gap: 4px;
-  padding-inline: 20px;
-}
-
-.notifications-screen .notification-list {
-  gap: 6px;
-}
-
-.notification-row {
-  height: auto;
-  min-height: 0;
-  padding: 4px;
-}
-
-.notification-heading {
-  grid-template-columns: clamp(40px, 12.3vw, 48px) minmax(0, 1fr) clamp(64px, 19.5vw, 76px) 42px;
-  column-gap: clamp(4px, 1.5vw, 6px);
-}
-
-.notification-icon {
-  width: clamp(40px, 11.3vw, 44px);
-  height: clamp(40px, 11.3vw, 44px);
-}
-
-.notification-icon img {
-  width: clamp(40px, 11.3vw, 44px);
-  height: clamp(40px, 11.3vw, 44px);
-}
-
-.notification-actions > button:first-child {
-  width: clamp(64px, 18.5vw, 72px);
-  height: 32px;
-  padding-inline: clamp(5px, 2vw, 8px);
-  font-size: clamp(10px, 2.8vw, 11px);
-}
-
-.notification-row h2 {
-  gap: 2px;
-  font-size: 14px;
-  line-height: 18px;
-}
-
-.notification-row h2 em {
-  height: 18px;
-  padding-inline: 6px;
-  font-size: 10px;
-  line-height: 16px;
-}
-
-.notification-row h2 em + span {
-  font-size: 14px;
-  line-height: 18px;
-}
-
-.notification-heading .toggle {
-  width: 42px;
-  height: 44px;
-  flex-basis: 42px;
-}
-
-.notification-heading .toggle::before {
-  top: 9px;
-  width: 42px;
-  height: 26px;
-  border-radius: 13px;
-}
-
-.notification-heading .toggle span {
-  top: 11px;
-  width: 22px;
-  height: 22px;
-}
-
-.notification-heading .toggle[data-checked="true"] span {
-  transform: translateX(16px);
-}
-
-.profile-screen .feature-body {
-  gap: 8px;
-}
-
-.profile-card {
-  min-height: 78px;
-  padding: 8px 12px;
-  grid-template-columns: 54px minmax(0, 1fr) auto;
-  gap: 10px;
-}
-
-.profile-avatar {
-  width: 54px;
-  height: 54px;
-}
-
-.profile-card h2 {
-  font-size: 16px;
-}
-
-.profile-card p {
-  margin-top: 3px;
-  font-size: 11px;
-}
-
-.profile-menu-rows button {
-  height: 36px;
-  min-height: 36px;
-  font-size: 13px;
-}
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-ball { height: 40px; }
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-label { bottom: calc(50% + var(--matrix-history-ball-size) / 2); }
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-ball { height: 36px; }
+.draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-label { bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px); }
