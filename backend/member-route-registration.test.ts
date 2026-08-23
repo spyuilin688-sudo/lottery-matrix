@@ -30,6 +30,7 @@ describe('member route registration', () => {
       event?: { headers?: Record<string, string> };
     }) => Promise<unknown>>>;
     const memberPaths = [
+      'POST /api/member/bootstrap',
       'GET /api/member/profile',
       'GET /api/member/notification-settings',
       'PUT /api/member/notification-settings',

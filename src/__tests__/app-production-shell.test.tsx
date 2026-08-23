@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../admin/AdminApp", () => ({ default: () => <div>admin-root</div> }));
+vi.mock("../auth/LineAuthGate", () => ({ LineAuthGate: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
 
 import App from "../App";

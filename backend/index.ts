@@ -36,6 +36,8 @@ import { createMemberProfileStore } from './member-profile-store';
 import { createMemberProfileRoutes } from './member-profile-routes';
 import { createMemberNotificationStore } from './member-notification-store';
 import { createMemberNotificationRoutes } from './member-notification-routes';
+import { createMemberBootstrap } from './member-bootstrap';
+import { createMemberBootstrapRoutes } from './member-bootstrap-routes';
 import { createMemberRouteHandlers } from './member-route-handlers';
 
 async function loadMatrixSupabaseConfig() {
@@ -58,6 +60,10 @@ const memberNotificationStore = createMemberNotificationStore(loadMatrixSupabase
 const memberNotificationRoutes = createMemberNotificationRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
     store: memberNotificationStore,
+});
+const memberBootstrap = createMemberBootstrap(loadMatrixSupabaseConfig);
+const memberBootstrapRoutes = createMemberBootstrapRoutes({
+    bootstrap: authorization => memberBootstrap.bootstrap(authorization),
 });
 const systemJobTracker = createSystemJobTracker(createSystemJobStatusWriter(loadMatrixSupabaseConfig));
 const matrixCustomStatusStore = createCustomStatusStore(loadMatrixSupabaseConfig);
@@ -155,6 +161,7 @@ const matrixTiangongRoutes = createMatrixTiangongRoutes({
 });
 function authorizationHeader(event: { headers?: Record<string,string|undefined> } | undefined) { return event?.headers?.authorization ?? event?.headers?.Authorization; }
 const memberRouteHandlers = createMemberRouteHandlers({
+    bootstrapPost: input => memberBootstrapRoutes.post(input),
     profileGet: input => memberProfileRoutes.get(input),
     notificationGet: input => memberNotificationRoutes.get(input),
     notificationSave: input => memberNotificationRoutes.save(input),
