@@ -77,6 +77,8 @@
 
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
+  --home-core-width: calc(min(100vw, 390px) - 32px);
+  --home-core-height: calc((var(--home-core-width) * 414 / 1536) - 6px);
   --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);
   position: relative;
   isolation: isolate;
@@ -471,9 +473,9 @@
 
 .home-screen .matrix-core-banner {
   box-sizing: border-box;
-  width: calc(100% - 20px);
-  height: auto;
-  aspect-ratio: 1536 / 414;
+  width: var(--home-core-width);
+  height: var(--home-core-height);
+  aspect-ratio: auto;
   margin-inline: auto;
   align-self: start;
   border: 1px solid rgba(229, 179, 77, .56);
@@ -497,10 +499,10 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  height: auto;
-  max-height: none;
+  height: 100%;
+  max-height: 100%;
   margin-inline: auto;
-  object-fit: contain;
+  object-fit: fill;
 }
 
 .home-screen .matrix-status-hit-grid {
@@ -660,11 +662,25 @@
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
-  display: none;
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: block;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--lottery-selected-gradient);
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
-  border-image: var(--lottery-selected-gradient) 1;
+  border-color: transparent;
+  border-radius: 12px;
+  border-image: none;
   box-shadow: 0 0 7px rgba(255, 206, 105, .28);
 }
 
