@@ -34,9 +34,11 @@ export function BottomNavigation({
 }: BottomNavigationProps) {
   const quickTimer = useRef<number | null>(null);
   const quickLongPressed = useRef(false);
+  const suppressQuickClick = useRef(false);
 
   const beginQuickPress = () => {
     quickLongPressed.current = false;
+    suppressQuickClick.current = false;
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = window.setTimeout(() => {
       quickTimer.current = null;
@@ -46,13 +48,25 @@ export function BottomNavigation({
   };
 
   const finishQuickPress = () => {
+    const shortPress = quickTimer.current !== null && !quickLongPressed.current;
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = null;
+    if (shortPress) {
+      suppressQuickClick.current = true;
+      onQuickOpen?.();
+    }
+  };
+
+  const cancelQuickPress = () => {
+    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
+    quickTimer.current = null;
+    suppressQuickClick.current = false;
   };
 
   const handleQuickClick = () => {
-    if (quickLongPressed.current) {
+    if (quickLongPressed.current || suppressQuickClick.current) {
       quickLongPressed.current = false;
+      suppressQuickClick.current = false;
       return;
     }
     onQuickOpen?.();
@@ -80,7 +94,7 @@ export function BottomNavigation({
               "aria-label": "快捷；長按三秒開啟設定",
               onPointerDown: beginQuickPress,
               onPointerUp: finishQuickPress,
-              onPointerCancel: finishQuickPress,
+              onPointerCancel: cancelQuickPress,
               onClick: handleQuickClick,
               onContextMenu: (event: MouseEvent<HTMLButtonElement>) => event.preventDefault(),
             }
