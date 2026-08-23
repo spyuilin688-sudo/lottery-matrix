@@ -1,5 +1,19 @@
 /* Homepage lottery switcher component overrides. Keep this file small and focused. */
 
+.home-screen .lottery-switcher {
+  box-sizing: border-box;
+  padding-inline: 5px;
+}
+
+.home-screen .lottery-switcher-hit-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  background-size: calc(400% + 24px) 100%;
+}
+
 .home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
   filter: grayscale(.65) brightness(.72);
 }
