@@ -132,15 +132,15 @@
 }
 
 .number-reference-screen .reference-title-actions .title-card-compact-action {
-  height: 18px;
-  min-height: 18px;
+  height: 22px;
+  min-height: 22px;
 }
 
 .tongxing-screen .tongxing-title-actions .title-card-compact-action::before { height: 22px; }
-.number-reference-screen .reference-title-actions .title-card-compact-action::before { height: 18px; }
+.number-reference-screen .reference-title-actions .title-card-compact-action::before { height: 22px; }
 
 .tongxing-screen .tongxing-title-actions .title-card-compact-action::after { height: 20px; }
-.number-reference-screen .reference-title-actions .title-card-compact-action::after { height: 16px; }
+.number-reference-screen .reference-title-actions .title-card-compact-action::after { height: 20px; }
 
 .draw-history-screen .history-reset-trigger {
   gap: 1px;
