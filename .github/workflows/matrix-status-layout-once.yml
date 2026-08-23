@@ -1,14 +1,15 @@
 name: Matrix status layout once
 
 on:
-  push:
-    branches: ['狀態']
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   refine-status-layout:
+    if: github.head_ref == '狀態'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
