@@ -720,9 +720,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .reference-row { display: grid; width: 100%; min-width: 0; min-height: 40px; grid-template-columns: minmax(0, .24fr) minmax(0, .76fr); border-top: 1px solid rgba(161, 112, 40, .78); color: #ccc4b8; font-size: 13px; text-align: center; }
 .reference-row > span { display: flex; align-items: center; justify-content: center; }
 .reference-row > span + span,
-.reference-row > .reference-issue + span { border-left: 1px solid #704c1e; }
+.reference-row > .reference-issue + span { border-left: 1px solid rgba(112, 76, 30, .75); }
 .reference-issue { border: 0; background: transparent; color: inherit; font: inherit; }
-.reference-row button { height: 100%; flex: 1; border: 0; border-right: 1px solid #49351c; background: transparent; color: #d6cec2; }
+.reference-row button { height: 100%; flex: 1; border: 0; border-right: 1px solid rgba(73, 53, 28, .75); background: transparent; color: #d6cec2; }
 .reference-row button[data-auto-match="1"] { background: rgba(190, 35, 41, .56); color: white; }
 .reference-row button[data-auto-match="2"] { background: rgba(38, 105, 145, .56); color: white; }
 .reference-row button[data-auto-match="3"] { background: rgba(43, 119, 61, .56); color: white; }
@@ -739,7 +739,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   color: #fff7e9;
 }
 .reference-row[data-has-special="true"] > span > button:nth-last-child(2) {
-  border-right-color: rgba(167, 117, 32, .72);
+  border-right-color: rgba(167, 117, 32, .54);
 }
 .reference-row[data-has-special="true"] > span > button[data-special="true"] {
   border-left: 0;
@@ -765,7 +765,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: flex;
   height: 100%;
   align-items: center;
-  gap: 6px;
 }
 .reference-title-actions svg { width: 14px; height: 14px; }
 .reference-title-actions svg[data-open="true"] { transform: rotate(180deg); }
@@ -1368,7 +1367,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .reference-row button[data-special="true"]::after {
   position: absolute;
   inset: 0.3px;
-  border: 1px solid #C65353;
+  border: 1px solid rgba(198, 83, 83, .72);
   border-radius: inherit;
   pointer-events: none;
   content: "";
@@ -1695,7 +1694,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .calculator-screen .feature-body { padding-top: 4px; }
 .reference-table-panel h2 { font-weight: 700; }
-.reference-row:not(.head) .reference-issue { font-weight: 700; }
+.reference-row:not(.head) .reference-issue { color: #eee8df; font-weight: 700; }
 .reference-row:not(.head) > span > button { font-size: 16px; }
 /* Matrix Explore formal layout rules */
 .matrix-explore-screen .matrix-title-banner {
