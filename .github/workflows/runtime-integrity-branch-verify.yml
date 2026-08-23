@@ -3,6 +3,8 @@ name: Runtime Integrity Branch Verify
 on:
   push:
     branches: [runtime-integrity-scope-fix]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
