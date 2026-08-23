@@ -64,7 +64,7 @@ jobs:
           replace_once('.status-block > button strong { color: var(--tone); font-size: 21px; }', '.status-block > button strong { position: relative; display: flex; padding-left: 17px; flex-direction: column; gap: 0; color: var(--tone); font-size: 18px; line-height: 1.05; }\n.status-block > button strong > i { position: absolute; top: 5px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 7px var(--tone); }\n.status-block > button strong small { color: var(--tone); font-size: 8px; line-height: 1.15; }', 'status title hierarchy')
           replace_once('.status-block > button small { color: #aaa49a; font-size: 11px; font-weight: 400; }', '.status-block > button > span > small { color: #aaa49a; font-size: 11px; font-weight: 400; }', 'status description')
           replace_once('.status-block > button em { color: var(--tone); font-style: normal; }', '.status-block > button em { justify-self: end; color: var(--tone); font-size: 15px; font-weight: 700; font-style: normal; white-space: nowrap; }', 'status count')
-          replace_once('.status-block > button svg[data-open="true"] { transform: rotate(180deg); }', '.status-block > button > svg { width: 18px; height: 18px; color: #aaa49a; transition: transform .2s; }\n.status-block > button > svg[data-open="true"] { transform: rotate(90deg); }', 'status disclosure')
+          replace_once('.status-block > button svg { color: #99948b; }\n.status-block > button svg[data-open="true"] { transform: rotate(180deg); }', '.status-block > button > svg { width: 18px; height: 18px; color: #aaa49a; transition: transform .2s; }\n.status-block > button > svg[data-open="true"] { transform: rotate(90deg); }', 'status disclosure')
 
           for old, label in [
               ('.matrix-status-screen .status-list { gap: 11px; }\n', 'duplicate status list'),
@@ -78,7 +78,6 @@ jobs:
               ('.matrix-status-screen .status-block > button em { justify-self: end; color: var(--tone); font-size: 16px; font-weight: 700; }\n', 'duplicate status count'),
               ('.matrix-status-screen .status-block > button > svg { width: 18px; height: 18px; color: #aaa49a; transition: transform .2s; }\n', 'duplicate status arrow'),
               ('.matrix-status-screen .status-block > button > svg[data-open="true"] { transform: rotate(90deg); }\n', 'duplicate status arrow open'),
-              ('.matrix-status-screen .status-detail { padding: 0 10px 10px; }\n', 'duplicate status detail'),
           ]:
               count = css.count(old)
               if count != 1:
@@ -96,12 +95,44 @@ jobs:
           path.write_text(css)
           PY
 
-      - name: Verify targeted status tests and build
+      - name: Contract test after change
+        id: contract
+        continue-on-error: true
+        run: node --test tests/matrix-status-layout.test.mjs
+
+      - name: MatrixStatusPage unit test
+        id: page
+        continue-on-error: true
+        run: npm run test:unit -- src/__tests__/MatrixStatusPage.test.tsx
+
+      - name: MatrixStatusSection unit test
+        id: section
+        continue-on-error: true
+        run: npm run test:unit -- src/__tests__/MatrixStatusSection.test.tsx
+
+      - name: Existing Node tests
+        id: node_tests
+        continue-on-error: true
+        run: node --test tests/*.test.mjs
+
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Verification summary
+        shell: bash
         run: |
-          node --test tests/matrix-status-layout.test.mjs
-          npm run test:unit -- src/__tests__/MatrixStatusPage.test.tsx src/__tests__/MatrixStatusSection.test.tsx
-          node --test tests/*.test.mjs
-          npm run build
+          echo "contract=${{ steps.contract.outcome }}"
+          echo "page=${{ steps.page.outcome }}"
+          echo "section=${{ steps.section.outcome }}"
+          echo "node_tests=${{ steps.node_tests.outcome }}"
+          echo "build=${{ steps.build.outcome }}"
+          test "${{ steps.contract.outcome }}" = success
+          test "${{ steps.page.outcome }}" = success
+          test "${{ steps.section.outcome }}" = success
+          test "${{ steps.node_tests.outcome }}" = success
+          test "${{ steps.build.outcome }}" = success
 
       - name: Commit verified Matrix status refinement to branch
         run: |
