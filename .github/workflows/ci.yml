@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Runtime atomic-commit regression
+        run: node --test tests/runtime-integrity-atomic-commit.test.mjs
+
       - name: Targeted Explore tests
         run: node --test tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
 
