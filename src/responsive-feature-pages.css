@@ -88,16 +88,16 @@
 .draw-history-screen .matrix-title-banner-actions,
 .tongxing-screen .matrix-title-banner-actions,
 .number-reference-screen .matrix-title-banner-actions {
-  top: auto;
+  top: 100%;
   right: 4%;
-  bottom: calc(8% - 4px);
+  bottom: auto;
   left: auto;
   width: auto;
   min-width: 0;
   height: auto;
   align-items: center;
   justify-content: flex-end;
-  transform: none;
+  transform: translateY(-87.5%);
 }
 
 .draw-history-screen .history-title-actions,
@@ -125,8 +125,20 @@
 .draw-history-screen .history-title-actions .title-card-compact-action::before { height: 22px; }
 .draw-history-screen .history-title-actions .title-card-compact-action::after { height: 20px; }
 
+.tongxing-screen .tongxing-title-actions .title-card-compact-action,
+.number-reference-screen .reference-title-actions .title-card-compact-action {
+  height: 22px;
+  min-height: 22px;
+}
+
+.tongxing-screen .tongxing-title-actions .title-card-compact-action::before,
+.number-reference-screen .reference-title-actions .title-card-compact-action::before { height: 22px; }
+
+.tongxing-screen .tongxing-title-actions .title-card-compact-action::after,
+.number-reference-screen .reference-title-actions .title-card-compact-action::after { height: 20px; }
+
 .draw-history-screen .history-reset-trigger {
-  gap: 5px;
+  gap: 1px;
   padding-inline: 4px 5px;
   background-image: none;
 }
@@ -162,7 +174,7 @@
   width: max-content;
   min-width: 0;
   padding-inline: 4px 5px;
-  gap: 5px;
+  gap: 1px;
   white-space: nowrap;
 }
 
@@ -216,6 +228,8 @@
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
+  left: 16px;
+  right: 16px;
   width: auto;
   max-width: none;
   min-width: 0;
@@ -225,17 +239,6 @@
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
-}
-
-.history-filter-panel[data-floating="true"] {
-  left: 16px;
-  right: 16px;
-}
-
-.reference-query-panel[data-floating="true"],
-.tongxing-query[data-floating="true"] {
-  left: var(--tool-page-inline);
-  right: var(--tool-page-inline);
 }
 
 .history-filter-panel[hidden],
@@ -428,6 +431,80 @@
 .draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-label { bottom: calc(50% + var(--matrix-history-ball-size) / 2); }
 .draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-ball { height: 36px; }
 .draw-history-screen .draw-history-panel[data-lottery="大樂透"] .history-special-label { bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px); }
+
+.notifications-screen .feature-body {
+  gap: 4px;
+  padding-inline: 20px;
+}
+
+.notifications-screen .notification-list { gap: 6px; }
+
+.notification-row {
+  height: auto;
+  min-height: 0;
+  padding: 4px;
+}
+
+.notification-heading {
+  grid-template-columns: clamp(40px, 12.3vw, 48px) minmax(0, 1fr) clamp(64px, 19.5vw, 76px) 42px;
+  column-gap: clamp(4px, 1.5vw, 6px);
+}
+
+.notification-icon {
+  width: clamp(40px, 11.3vw, 44px);
+  height: clamp(40px, 11.3vw, 44px);
+}
+
+.notification-icon img {
+  width: clamp(40px, 11.3vw, 44px);
+  height: clamp(40px, 11.3vw, 44px);
+}
+
+.notification-actions > button:first-child {
+  width: clamp(64px, 18.5vw, 72px);
+  height: 32px;
+  padding-inline: clamp(5px, 2vw, 8px);
+  font-size: clamp(10px, 2.8vw, 11px);
+}
+
+.notification-row h2 {
+  gap: 2px;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.notification-row h2 em {
+  height: 18px;
+  padding-inline: 6px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.notification-row h2 em + span {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.notification-heading .toggle {
+  width: 42px;
+  height: 44px;
+  flex-basis: 42px;
+}
+
+.notification-heading .toggle::before {
+  top: 9px;
+  width: 42px;
+  height: 26px;
+  border-radius: 13px;
+}
+
+.notification-heading .toggle span {
+  top: 11px;
+  width: 22px;
+  height: 22px;
+}
+
+.notification-heading .toggle[data-checked="true"] span { transform: translateX(16px); }
 
 /* TEMP: container boundary diagnostics for History / Matrix TongXing / Number Reference. */
 .draw-history-screen > .feature-brand-header { outline: 2px solid #ff3b30; outline-offset: -2px; }
