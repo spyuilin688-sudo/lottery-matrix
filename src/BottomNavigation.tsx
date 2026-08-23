@@ -50,11 +50,6 @@ export function BottomNavigation({
     quickTimer.current = null;
   };
 
-  const cancelQuickPress = () => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
-  };
-
   const handleQuickClick = () => {
     if (quickLongPressed.current) {
       quickLongPressed.current = false;
@@ -83,9 +78,11 @@ export function BottomNavigation({
         const quickProps = label === "快捷"
           ? {
               "aria-label": "快捷；長按三秒開啟設定",
-              onPointerDown: beginQuickPress,
-              onPointerUp: finishQuickPress,
-              onPointerCancel: cancelQuickPress,
+              onTouchStart: beginQuickPress,
+              onTouchEnd: finishQuickPress,
+              onTouchCancel: finishQuickPress,
+              onMouseDown: beginQuickPress,
+              onMouseUp: finishQuickPress,
               onClick: handleQuickClick,
               onContextMenu: (event: MouseEvent<HTMLButtonElement>) => event.preventDefault(),
             }
