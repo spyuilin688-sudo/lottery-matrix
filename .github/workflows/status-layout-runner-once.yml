@@ -1,0 +1,113 @@
+name: Matrix status layout runner once
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine-status-layout:
+    if: github.head_ref == '狀態'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '狀態'
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: RED - confirm Matrix status layout contract fails before change
+        shell: bash
+        run: |
+          set +e
+          node --test tests/matrix-status-layout.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'RED test unexpectedly passed before production change.'
+            exit 1
+          fi
+          echo 'RED confirmed.'
+
+      - name: GREEN - refine existing Matrix status style source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/feature-pages.css')
+          css = path.read_text()
+
+          def replace_once(old, new, label):
+              global css
+              count = css.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} source count={count}')
+              css = css.replace(old, new, 1)
+
+          replace_once('.status-list { display: grid; gap: 12px; }', '.status-list { display: grid; gap: 10px; }', 'status list')
+          replace_once('.status-block { --tone: #d58b2d; --border: #8a561d; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: rgba(4, 11, 16, .96); }', '.status-block { --tone: var(--matrix-status-critical); --border: var(--matrix-status-critical-border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(4, 11, 16, .96); }', 'critical token source')
+          replace_once('.status-block[data-tone="purple"] { --tone: #bd62d4; --border: #804687; }', '.status-block[data-tone="purple"] { --tone: var(--matrix-status-resonance); --border: var(--matrix-status-resonance-border); }', 'resonance token source')
+          replace_once('.status-block[data-tone="blue"] { --tone: #2eb1ee; --border: #1e6d94; }', '.status-block[data-tone="blue"] { --tone: var(--matrix-status-focus); --border: var(--matrix-status-focus-border); }', 'focus token source')
+          replace_once('.status-block[data-tone="green"] { --tone: #44cf62; --border: #247839; }', '.status-block[data-tone="green"] { --tone: var(--matrix-status-active); --border: var(--matrix-status-active-border); }', 'active token source')
+          replace_once('.status-block > button { display: grid; width: 100%; min-height: 86px; padding: 12px 16px; grid-template-columns: 1fr 56px 24px; align-items: center; border: 0; background: transparent; color: inherit; text-align: left; }', '.status-block > button { display: grid; width: 100%; min-height: 68px; padding: 9px 12px; grid-template-columns: minmax(0, 1fr) auto 18px; align-items: center; gap: 8px; border: 0; background: transparent; color: inherit; text-align: left; }', 'status summary grid')
+          replace_once('.status-block > button span { display: flex; flex-direction: column; gap: 9px; }', '.status-block > button > span { display: flex; min-width: 0; flex-direction: column; gap: 7px; }', 'status summary copy')
+          replace_once('.status-block > button strong { color: var(--tone); font-size: 21px; }', '.status-block > button strong { position: relative; display: flex; padding-left: 17px; flex-direction: column; gap: 0; color: var(--tone); font-size: 18px; line-height: 1.05; }\n.status-block > button strong > i { position: absolute; top: 5px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 7px var(--tone); }\n.status-block > button strong small { color: var(--tone); font-size: 8px; line-height: 1.15; }', 'status title hierarchy')
+          replace_once('.status-block > button small { color: #aaa49a; font-size: 11px; font-weight: 400; }', '.status-block > button > span > small { color: #aaa49a; font-size: 11px; font-weight: 400; }', 'status description')
+          replace_once('.status-block > button em { color: var(--tone); font-style: normal; }', '.status-block > button em { justify-self: end; color: var(--tone); font-size: 15px; font-weight: 700; font-style: normal; white-space: nowrap; }', 'status count')
+          replace_once('.status-block > button svg[data-open="true"] { transform: rotate(180deg); }', '.status-block > button > svg { width: 18px; height: 18px; color: #aaa49a; transition: transform .2s; }\n.status-block > button > svg[data-open="true"] { transform: rotate(90deg); }', 'status disclosure')
+
+          for old, label in [
+              ('.matrix-status-screen .status-list { gap: 11px; }\n', 'duplicate status list'),
+              ('.matrix-status-screen .status-block { border-radius: 12px; }\n', 'duplicate status block'),
+              ('.matrix-status-screen .status-block > button {\n  min-height: 70px;\n  padding: 10px 13px;\n  grid-template-columns: minmax(0, 1fr) 50px 17px;\n}\n', 'duplicate status button'),
+              ('.matrix-status-screen .status-block > button > span { gap: 7px; }\n', 'duplicate status copy'),
+              ('.matrix-status-screen .status-block > button strong { display: flex; position: relative; padding-left: 17px; flex-direction: column; gap: 0; font-size: 18px; line-height: 1.05; }\n', 'duplicate status title'),
+              ('.matrix-status-screen .status-block > button strong > i { position: absolute; top: 5px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 7px var(--tone); }\n', 'duplicate status dot'),
+              ('.matrix-status-screen .status-block > button strong small { color: var(--tone); font-size: 8px; line-height: 1.15; }\n', 'duplicate status english'),
+              ('.matrix-status-screen .status-block > button > span > small { color: #aaa49a; font-size: 11px; }\n', 'duplicate status description'),
+              ('.matrix-status-screen .status-block > button em { justify-self: end; color: var(--tone); font-size: 16px; font-weight: 700; }\n', 'duplicate status count'),
+              ('.matrix-status-screen .status-block > button > svg { width: 18px; height: 18px; color: #aaa49a; transition: transform .2s; }\n', 'duplicate status arrow'),
+              ('.matrix-status-screen .status-block > button > svg[data-open="true"] { transform: rotate(90deg); }\n', 'duplicate status arrow open'),
+              ('.matrix-status-screen .status-detail { padding: 0 10px 10px; }\n', 'duplicate status detail'),
+          ]:
+              count = css.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} source count={count}')
+              css = css.replace(old, '', 1)
+
+          replace_once('.matrix-status-screen .status-road-table { display: grid; gap: 3px; background: transparent; }', '.matrix-status-screen .status-road-table { display: grid; min-width: 0; gap: 4px; background: transparent; }', 'status result table')
+          replace_once('.matrix-status-screen .status-road-table-head,\n.matrix-status-screen .status-road-table-row { display: grid; width: 100%; grid-template-columns: 1.02fr .7fr 1.05fr 1.25fr .72fr 1.04fr; align-items: center; text-align: center; }', '.matrix-status-screen .status-road-table-head,\n.matrix-status-screen .status-road-table-row { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, .86fr) minmax(0, .62fr) minmax(0, .9fr) minmax(0, 1.16fr) minmax(0, .82fr) minmax(0, 1.04fr); align-items: center; text-align: center; }', 'status result columns')
+          replace_once('.matrix-status-screen .status-road-table-head { min-height: 28px; color: #aaa49a; background: transparent; font-size: 12px; font-weight: 700; }', '.matrix-status-screen .status-road-table-head { min-height: 30px; color: #aaa49a; background: transparent; font-size: clamp(10.5px, 2.8vw, 12px); font-weight: 700; }\n.matrix-status-screen .status-road-table-head > span { min-width: 0; padding: 0 2px; white-space: nowrap; }', 'status result header')
+          replace_once('.matrix-status-screen .status-road-table-row { min-height: 34px; padding: 0; border: 0; color: #ddd8cf; background: transparent; font-size: 10px; }', '.matrix-status-screen .status-road-table-row { min-height: 36px; padding: 0; border: 0; color: #ddd8cf; background: transparent; font-size: clamp(10.5px, 2.8vw, 12px); }', 'status result row')
+          replace_once('.matrix-status-screen .status-road-table-row > span,\n.matrix-status-screen .status-road-table-row > strong { display: flex; min-width: 0; align-items: center; justify-content: center; white-space: nowrap; }', '.matrix-status-screen .status-road-table-row > span,\n.matrix-status-screen .status-road-table-row > strong { display: flex; min-width: 0; padding: 0 2px; align-items: center; justify-content: center; line-height: 1.2; }', 'status result cells')
+          replace_once('.matrix-status-screen .status-road-table-row > strong { color: #d3a24b; font-size: 13px; }', '.matrix-status-screen .status-road-table-row > strong { color: #d3a24b; font-size: clamp(12px, 3.2vw, 14px); white-space: normal; overflow-wrap: anywhere; }', 'status prediction result')
+          replace_once('.matrix-status-screen .status-road-table-row > span:last-child { gap: 3px; }', '.matrix-status-screen .status-road-table-row > span:not(:last-child) { white-space: nowrap; }\n.matrix-status-screen .status-road-table-row > span:last-child { gap: 3px; white-space: normal; overflow-wrap: anywhere; }', 'status road type wrapping')
+
+          path.write_text(css)
+          PY
+
+      - name: Verify targeted status tests and build
+        run: |
+          node --test tests/matrix-status-layout.test.mjs
+          npm run test:unit -- src/__tests__/MatrixStatusPage.test.tsx src/__tests__/MatrixStatusSection.test.tsx
+          node --test tests/*.test.mjs
+          npm run build
+
+      - name: Commit verified Matrix status refinement to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/status-layout-runner-once.yml
+          git add -- src/feature-pages.css tests/matrix-status-layout.test.mjs
+          git commit -m 'Refine Matrix status responsive layout'
+          git push origin HEAD:'狀態'
