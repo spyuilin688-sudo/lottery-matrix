@@ -77,16 +77,15 @@
 
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
-  --home-core-height: calc(var(--home-content-width) * 568 / 1774);
   --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);
   position: relative;
   isolation: isolate;
   display: grid;
   width: 100%;
-  height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features));
-  min-height: calc(var(--home-core-height) + var(--home-features-height) + var(--home-gap-core-features));
+  height: auto;
+  min-height: 0;
   padding-bottom: 0;
-  grid-template-rows: var(--home-core-height) var(--home-features-height);
+  grid-template-rows: auto var(--home-features-height);
   gap: var(--home-gap-core-features);
   align-self: end;
 }
@@ -473,11 +472,14 @@
 .home-screen .matrix-core-banner {
   box-sizing: border-box;
   width: calc(100% - 20px);
-  height: var(--home-core-height);
+  height: auto;
+  aspect-ratio: 1774 / 568;
   margin-inline: auto;
+  align-self: start;
   border: 1px solid rgba(229, 179, 77, .56);
   border-radius: 10px;
   isolation: isolate;
+  line-height: 0;
   overflow: hidden;
   animation: matrix-core-pulse 8s ease-in-out infinite;
 }
@@ -495,8 +497,8 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: none;
   margin-inline: auto;
   object-fit: contain;
 }
