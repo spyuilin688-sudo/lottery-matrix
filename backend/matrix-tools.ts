@@ -93,7 +93,7 @@ export async function runTongXing(input: unknown) {
     groups.push({ lockedEntry: projectDraw(lockedEntry, numberOrder), predictedEntry: projectDraw(predictedEntry, numberOrder) });
   }
 
-  return { lottery, numberOrder, numbers, futureOffset, groups };
+  return { lottery, numberOrder, numbers, futureOffset, groups: [...groups].reverse() };
 }
 
 export async function runNumberReference(input: unknown) {
