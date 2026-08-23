@@ -4,6 +4,7 @@ import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { BottomNavigation } from "./BottomNavigation";
 import { BrandLogo } from "./BrandLogo";
 import type { ScreenId } from "./FeaturePages";
+import "./feature-page-adjustments.css";
 
 type Navigate = (screen: ScreenId) => void;
 type Props = {
@@ -17,20 +18,16 @@ const LOTTERIES = ["今彩539", "天天樂", "六合彩", "大樂透"] as const;
 const MATRIX_STATUSES = ["啟動", "聚合", "共振", "臨界"] as const;
 
 type Lottery = (typeof LOTTERIES)[number];
-
 type SettingKey = "bet" | "result" | "win" | "status" | "card" | "collision" | "expiry" | "system";
-
 type NotificationRow = readonly [SettingKey, string, string, string];
 
 const BET_TIME_OPTIONS: Record<Lottery, string[]> = {
   今彩539: ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "19:45", "20:00", "20:10", "20:20", "20:25"],
   天天樂: ["05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "08:45", "09:00", "09:10", "09:20", "09:25"],
-  香港六合彩: [],
+  香港六合彩: ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "20:45", "21:00", "21:10", "21:20", "21:25"],
   大樂透: ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "19:45", "20:00", "20:10", "20:20", "20:25"],
 } as unknown as Record<Lottery, string[]>;
-
-// Keep the existing lottery label used by the project while preserving its existing time choices.
-BET_TIME_OPTIONS["六合彩"] = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "20:45", "21:00", "21:10", "21:20", "21:25"];
+BET_TIME_OPTIONS["六合彩"] = BET_TIME_OPTIONS["香港六合彩" as Lottery] ?? ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "20:45", "21:00", "21:10", "21:20", "21:25"];
 
 const PRIMARY_ROWS: NotificationRow[] = [
   ["bet", "選號提醒", "", "/resources/notify-bet.png"],
@@ -62,14 +59,7 @@ function NotificationBottomNavigation({ onNavigate, onQuickOpen, onQuickConfigur
 
 export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: Props) {
   const initialSettings = useMemo<Record<SettingKey, boolean>>(() => ({
-    bet: true,
-    result: true,
-    win: true,
-    status: true,
-    card: true,
-    collision: false,
-    expiry: true,
-    system: true,
+    bet: true, result: true, win: true, status: true, card: true, collision: false, expiry: true, system: true,
   }), []);
   const [settings, setSettings] = useState(initialSettings);
   const [expandedKey, setExpandedKey] = useState<SettingKey | null>(null);
@@ -98,11 +88,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       const selected = current[key] ?? [];
       return {
         ...current,
-        [key]: key === "win"
-          ? [option]
-          : selected.includes(option)
-            ? selected.filter((item) => item !== option)
-            : [...selected, option],
+        [key]: key === "win" ? [option] : selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option],
       };
     });
   };
