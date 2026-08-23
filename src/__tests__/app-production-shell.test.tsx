@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../admin/AdminApp", () => ({ default: () => <div>admin-root</div> }));
+vi.mock("../auth/LineAuthGate", () => ({ LineAuthGate: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
 
 import App from "../App";
