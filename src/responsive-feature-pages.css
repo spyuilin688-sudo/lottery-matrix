@@ -216,8 +216,6 @@
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
-  left: var(--tool-page-inline);
-  right: var(--tool-page-inline);
   width: auto;
   max-width: none;
   min-width: 0;
@@ -227,6 +225,17 @@
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
+}
+
+.history-filter-panel[data-floating="true"] {
+  left: 16px;
+  right: 16px;
+}
+
+.reference-query-panel[data-floating="true"],
+.tongxing-query[data-floating="true"] {
+  left: var(--tool-page-inline);
+  right: var(--tool-page-inline);
 }
 
 .history-filter-panel[hidden],
