@@ -69,15 +69,16 @@
   background: #020b11;
 }
 
-/* History uses one vertical anchor only, so the approved 4px downward offset is real and predictable. */
+/* History title actions use one normal top anchor; the requested 4px shift is a plain margin. */
 .draw-history-screen .matrix-title-banner-actions {
-  top: auto;
+  top: 20%;
   right: 4%;
-  bottom: calc(8% - 4px);
+  bottom: auto;
   left: auto;
-  width: 46%;
+  width: auto;
   min-width: 0;
   height: auto;
+  margin-top: 4px;
   align-items: center;
   justify-content: flex-end;
   transform: none;
@@ -98,9 +99,8 @@
   transform: translateY(4px);
 }
 
-/* Match the legacy selector directly so height:100% / bottom alignment can no longer pin this row. */
 .draw-history-screen .matrix-title-banner-actions .history-title-actions {
-  width: 100%;
+  width: auto;
   height: auto;
   min-height: 0;
   align-items: center;
