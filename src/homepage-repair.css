@@ -631,16 +631,34 @@
 }
 
 /* Homepage container visibility and Matrix Core particle light. */
-.home-screen .brand-header,
-.home-screen .lottery-switcher,
-.home-screen .latest-draw-card,
-.home-screen .matrix-status-section,
-.home-screen .home-shortcut-row {
-  outline: 0;
+.home-screen .brand-header {
+  outline: 2px solid #ff3b30;
   animation: none;
 }
 
-.home-screen .matrix-core-banner { outline: 0; }
+.home-screen .lottery-switcher {
+  outline: 2px solid #ff9500;
+  animation: none;
+}
+
+.home-screen .latest-draw-card {
+  outline: 2px solid #ffd60a;
+  animation: none;
+}
+
+.home-screen .matrix-status-section {
+  outline: 2px solid #34c759;
+  animation: none;
+}
+
+.home-screen .matrix-core-banner {
+  outline: 2px solid #0a84ff;
+}
+
+.home-screen .home-shortcut-row {
+  outline: 2px solid #bf5af2;
+  animation: none;
+}
 
 /* Canonical homepage flow gaps. Each adjacent pair has one source. */
 .home-screen .lottery-switcher {
