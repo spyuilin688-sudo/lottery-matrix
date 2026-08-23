@@ -1,16 +1,15 @@
 name: Member API integration runner once
 
 on:
-  push:
+  pull_request:
     branches: [main]
-    paths:
-      - '.github/workflows/member-api-integration-runner-once.yml'
 
 permissions:
   contents: write
 
 jobs:
   integrate-member-api:
+    if: github.head_ref == 'member-api-trigger'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
