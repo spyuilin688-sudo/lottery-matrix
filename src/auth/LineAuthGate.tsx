@@ -71,7 +71,9 @@ export function LineAuthGate({ children }: Props) {
     });
 
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, nextSession) => {
-      void applySession(nextSession);
+      window.setTimeout(() => {
+        void applySession(nextSession);
+      }, 0);
     });
 
     const handleLogoutClick = (event: MouseEvent) => {
