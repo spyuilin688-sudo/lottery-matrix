@@ -229,8 +229,6 @@
   box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
-.history-filter-panel[data-floating="true"] { margin-top: var(--tool-section-gap); }
-
 .history-filter-panel[hidden],
 .reference-query-panel[hidden],
 .tongxing-query[hidden] { display: none; }
