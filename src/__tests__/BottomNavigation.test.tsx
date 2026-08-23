@@ -70,13 +70,13 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("快捷短按只在 click 開啟，pointer up 不提前切換頁面", () => {
+  it("快捷短按只在 click 開啟，touch end 不提前切換頁面", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
     const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.pointerDown(quickButton);
-    fireEvent.pointerUp(quickButton);
+    fireEvent.touchStart(quickButton);
+    fireEvent.touchEnd(quickButton);
 
     expect(onQuickOpen).not.toHaveBeenCalled();
 
@@ -85,22 +85,18 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("快捷長按期間移出按鈕範圍仍會在三秒後開啟設定", () => {
+  it("手機觸控長按三秒會開啟快捷設定且不觸發快捷功能", () => {
     vi.useFakeTimers();
     const onQuickOpen = vi.fn();
     const onQuickConfigure = vi.fn();
 
-    render(
-      <BottomNavigation
-        onQuickOpen={onQuickOpen}
-        onQuickConfigure={onQuickConfigure}
-      />,
-    );
+    render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
 
     const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.pointerDown(quickButton);
-    fireEvent.pointerLeave(quickButton);
+    fireEvent.touchStart(quickButton);
     vi.advanceTimersByTime(3000);
+    fireEvent.touchEnd(quickButton);
+    fireEvent.click(quickButton);
 
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
     expect(onQuickOpen).not.toHaveBeenCalled();
