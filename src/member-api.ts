@@ -1,5 +1,10 @@
 import { matrixApiFetch } from './matrix-api-client';
 
+export type MemberBootstrapResponse = {
+  memberId: string;
+  lineUserId: string;
+};
+
 export type MemberProfileResponse = {
   lineUserId: string | null;
   planName: string | null;
@@ -30,6 +35,10 @@ export type MemberNotificationSettings = {
   statusOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;
   collisionOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;
 };
+
+export function bootstrapMember() {
+  return matrixApiFetch<MemberBootstrapResponse>('/api/member/bootstrap', { method: 'POST' });
+}
 
 export function fetchMemberProfile() {
   return matrixApiFetch<MemberProfileResponse>('/api/member/profile');
