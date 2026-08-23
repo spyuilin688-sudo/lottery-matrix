@@ -1,0 +1,8 @@
+/* Homepage Matrix Core canonical adjustments. */
+.home-screen .matrix-core-banner {
+  box-sizing: border-box;
+  width: calc(100% - 20px);
+  border: 1px solid rgba(229, 179, 77, .56);
+  border-radius: 10px;
+  outline: 0;
+}
