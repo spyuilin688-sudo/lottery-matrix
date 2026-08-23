@@ -1,0 +1,23 @@
+name: Runtime Integrity Branch Verify
+
+on:
+  push:
+    branches: [runtime-integrity-scope-fix]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/runtime-integrity-scope.test.mjs
+      - run: npm run check:runtime
+      - run: npm run build
