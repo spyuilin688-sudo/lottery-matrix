@@ -1,7 +1,8 @@
 {
   "scripts/check-mobile-runtime.mjs": "d8656f996e1e414be89b923bc9414f9a6e34c41fe122556b148ca6678eeae0a9",
+  "scripts/check-runtime-commit-integrity.mjs": "76e6d52edcb054cd6e5d8edbdb405db6beb3c747baeed50e206ecc70ff413f54",
   "scripts/prepare-sites-build.mjs": "27a075dd9d312787a21631245d1dc6c304fd4b1420cba7177aba91aaa0240239",
-  "scripts/update-mobile-runtime-lock.mjs": "e41f76efe6fca3012a28c523ae9bd625fdce8a120e9956fde63b810725e50957",
+  "scripts/update-mobile-runtime-lock.mjs": "15d0c06425b507e5cecede96bb8b15a146ab12a7b353ddf9b57179d3056dfae3",
   "vite.config.ts": "aa7bfcd65269d0aed4117e159dbf5bd880918f09d7da4d58c62d58e20e1455f3",
   "src/main.tsx": "cc91ced5bae2e8ff986b4c5ede7ae1deaca94daa20ba63256778d8cf8eac1baa",
   "src/mobile/BottomSheet.tsx": "f9c376dc78b8b5feb1c8752aa23414993ab66013d11e81b2ebb8342c570032ac",
