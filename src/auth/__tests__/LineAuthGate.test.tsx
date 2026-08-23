@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
   bootstrapMember: vi.fn(),
   signInWithLine: vi.fn(),
+  signOutFromMatrix: vi.fn(),
 }));
 
 vi.mock('../../lib/supabase', () => ({
@@ -26,6 +27,7 @@ vi.mock('../../member-api', () => ({
 
 vi.mock('../line-auth', () => ({
   signInWithLine: mocks.signInWithLine,
+  signOutFromMatrix: mocks.signOutFromMatrix,
 }));
 
 vi.mock('../../BrandLogo', () => ({
@@ -44,6 +46,7 @@ beforeEach(() => {
   mocks.unsubscribe.mockReset();
   mocks.bootstrapMember.mockReset().mockResolvedValue({ memberId: 'member-1', lineUserId: 'line-1' });
   mocks.signInWithLine.mockReset().mockResolvedValue(undefined);
+  mocks.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
 });
 
 describe('LineAuthGate', () => {
@@ -80,5 +83,21 @@ describe('LineAuthGate', () => {
     await waitFor(() => expect(mocks.bootstrapMember).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('authenticated-child')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '使用 LINE 登入' })).not.toBeInTheDocument();
+  });
+
+  it('uses the existing profile logout button to clear the Supabase session', async () => {
+    mocks.getSession.mockResolvedValue({
+      data: { session: { access_token: 'session-token', user: { id: 'auth-user-1' } } },
+      error: null,
+    });
+
+    render(
+      <LineAuthGate>
+        <button type="button" className="profile-logout">登出</button>
+      </LineAuthGate>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '登出' }));
+    expect(mocks.signOutFromMatrix).toHaveBeenCalledTimes(1);
   });
 });
