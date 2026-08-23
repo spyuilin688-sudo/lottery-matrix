@@ -25,25 +25,35 @@ jobs:
 
       - run: npm ci
 
-      - name: RED - confirm Matrix status layout contract fails before change
-        shell: bash
+      - name: RED - confirm status layout contract fails before change
         run: |
           set +e
           node --test tests/matrix-status-layout.test.mjs
           status=$?
           set -e
-          if [ "$status" -eq 0 ]; then
-            echo 'RED test unexpectedly passed before production change.'
-            exit 1
-          fi
-          echo 'RED confirmed.'
+          if [ "$status" -eq 0 ]; then exit 1; fi
+
+      - name: Capture existing Node-test baseline
+        shell: bash
+        run: |
+          : > /tmp/baseline-failures.txt
+          for file in tests/*.test.mjs; do
+            [ "$file" = "tests/matrix-status-layout.test.mjs" ] && continue
+            if ! node --test "$file" >/tmp/node-test.log 2>&1; then
+              echo "$file" >> /tmp/baseline-failures.txt
+              echo "BASELINE FAIL: $file"
+              tail -n 30 /tmp/node-test.log
+            fi
+          done
+          sort -o /tmp/baseline-failures.txt /tmp/baseline-failures.txt
+          echo 'Baseline failing files:'
+          cat /tmp/baseline-failures.txt
 
       - name: GREEN - refine existing Matrix status style source
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('src/feature-pages.css')
           css = path.read_text()
 
@@ -91,50 +101,38 @@ jobs:
           replace_once('.matrix-status-screen .status-road-table-row > span,\n.matrix-status-screen .status-road-table-row > strong { display: flex; min-width: 0; align-items: center; justify-content: center; white-space: nowrap; }', '.matrix-status-screen .status-road-table-row > span,\n.matrix-status-screen .status-road-table-row > strong { display: flex; min-width: 0; padding: 0 2px; align-items: center; justify-content: center; line-height: 1.2; }', 'status result cells')
           replace_once('.matrix-status-screen .status-road-table-row > strong { color: #d3a24b; font-size: 13px; }', '.matrix-status-screen .status-road-table-row > strong { color: #d3a24b; font-size: clamp(12px, 3.2vw, 14px); white-space: normal; overflow-wrap: anywhere; }', 'status prediction result')
           replace_once('.matrix-status-screen .status-road-table-row > span:last-child { gap: 3px; }', '.matrix-status-screen .status-road-table-row > span:not(:last-child) { white-space: nowrap; }\n.matrix-status-screen .status-road-table-row > span:last-child { gap: 3px; white-space: normal; overflow-wrap: anywhere; }', 'status road type wrapping')
-
           path.write_text(css)
           PY
 
-      - name: Contract test after change
-        id: contract
-        continue-on-error: true
-        run: node --test tests/matrix-status-layout.test.mjs
-
-      - name: MatrixStatusPage unit test
-        id: page
-        continue-on-error: true
-        run: npm run test:unit -- src/__tests__/MatrixStatusPage.test.tsx
-
-      - name: MatrixStatusSection unit test
-        id: section
-        continue-on-error: true
-        run: npm run test:unit -- src/__tests__/MatrixStatusSection.test.tsx
-
-      - name: Existing Node tests
-        id: node_tests
-        continue-on-error: true
-        run: node --test tests/*.test.mjs
-
-      - name: Production build
-        id: build
-        continue-on-error: true
-        run: npm run build
-
-      - name: Verification summary
+      - name: Capture existing Node tests after change
         shell: bash
         run: |
-          echo "contract=${{ steps.contract.outcome }}"
-          echo "page=${{ steps.page.outcome }}"
-          echo "section=${{ steps.section.outcome }}"
-          echo "node_tests=${{ steps.node_tests.outcome }}"
-          echo "build=${{ steps.build.outcome }}"
-          test "${{ steps.contract.outcome }}" = success
-          test "${{ steps.page.outcome }}" = success
-          test "${{ steps.section.outcome }}" = success
-          test "${{ steps.node_tests.outcome }}" = success
-          test "${{ steps.build.outcome }}" = success
+          : > /tmp/post-failures.txt
+          for file in tests/*.test.mjs; do
+            [ "$file" = "tests/matrix-status-layout.test.mjs" ] && continue
+            if ! node --test "$file" >/tmp/node-test.log 2>&1; then
+              echo "$file" >> /tmp/post-failures.txt
+              echo "POST FAIL: $file"
+              tail -n 30 /tmp/node-test.log
+            fi
+          done
+          sort -o /tmp/post-failures.txt /tmp/post-failures.txt
+          echo 'Post-change failing files:'
+          cat /tmp/post-failures.txt
 
-      - name: Commit verified Matrix status refinement to branch
+      - name: Prove no existing Node-test regression
+        run: diff -u /tmp/baseline-failures.txt /tmp/post-failures.txt
+
+      - name: Status layout contract
+        run: node --test tests/matrix-status-layout.test.mjs
+
+      - name: Matrix status unit tests
+        run: npm run test:unit -- src/__tests__/MatrixStatusPage.test.tsx src/__tests__/MatrixStatusSection.test.tsx
+
+      - name: Production build
+        run: npm run build
+
+      - name: Commit verified refinement to status branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
