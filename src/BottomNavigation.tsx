@@ -34,11 +34,9 @@ export function BottomNavigation({
 }: BottomNavigationProps) {
   const quickTimer = useRef<number | null>(null);
   const quickLongPressed = useRef(false);
-  const suppressQuickClick = useRef(false);
 
   const beginQuickPress = () => {
     quickLongPressed.current = false;
-    suppressQuickClick.current = false;
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = window.setTimeout(() => {
       quickTimer.current = null;
@@ -48,25 +46,18 @@ export function BottomNavigation({
   };
 
   const finishQuickPress = () => {
-    const shortPress = quickTimer.current !== null && !quickLongPressed.current;
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = null;
-    if (shortPress) {
-      suppressQuickClick.current = true;
-      onQuickOpen?.();
-    }
   };
 
   const cancelQuickPress = () => {
     if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
     quickTimer.current = null;
-    suppressQuickClick.current = false;
   };
 
   const handleQuickClick = () => {
-    if (quickLongPressed.current || suppressQuickClick.current) {
+    if (quickLongPressed.current) {
       quickLongPressed.current = false;
-      suppressQuickClick.current = false;
       return;
     }
     onQuickOpen?.();
