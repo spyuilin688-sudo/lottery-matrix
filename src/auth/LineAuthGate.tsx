@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { BrandLogo } from '../BrandLogo';
 import { getSupabaseClient } from '../lib/supabase';
 import { bootstrapMember } from '../member-api';
-import { signInWithLine } from './line-auth';
+import { signInWithLine, signOutFromMatrix } from './line-auth';
 import './line-login.css';
 
 type Props = {
@@ -74,9 +74,17 @@ export function LineAuthGate({ children }: Props) {
       void applySession(nextSession);
     });
 
+    const handleLogoutClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest('.profile-logout')) return;
+      void signOutFromMatrix();
+    };
+    document.addEventListener('click', handleLogoutClick);
+
     return () => {
       active = false;
       subscription.unsubscribe();
+      document.removeEventListener('click', handleLogoutClick);
     };
   }, []);
 
