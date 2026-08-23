@@ -122,7 +122,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   const renderGenericSettings = (key: SettingKey, title: string, subtitle: string) => {
     const options = subtitle ? subtitle.split("、") : [];
-    return <div className="notification-inline-option-row" role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
+    return <div className="notification-inline-option-row" data-setting-key={key} role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
   };
 
   const renderInlineSettings = (row: NotificationRow) => {
@@ -140,11 +140,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
-        <div className="notification-title">
-          <h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2>
-          <button type="button" className="notification-settings-toggle" disabled={disabled} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-        </div>
+        <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
         <div className="notification-actions">
+          <button type="button" className="notification-settings-toggle" disabled={disabled} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
           <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => setSettings((current) => ({ ...current, [key]: !current[key] }))} />
         </div>
       </div>
