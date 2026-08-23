@@ -57,25 +57,12 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
-          path = Path('src/FeaturePages.tsx')
+          path = Path("src/FeaturePages.tsx")
           source = path.read_text()
 
-          helper_anchor = '''function MobilePagePortal({ active, children }: { active: boolean; children: React.ReactNode }) {
-            if (!active || typeof document === "undefined") return children;
-            const host = document.querySelector<HTMLElement>(".mobile-page");
-            return host ? createPortal(children, host) : children;
-          }
-
-          function FeatureShell({'''
-
-          helper_replacement = '''function MobilePagePortal({ active, children }: { active: boolean; children: React.ReactNode }) {
-            if (!active || typeof document === "undefined") return children;
-            const host = document.querySelector<HTMLElement>(".mobile-page");
-            return host ? createPortal(children, host) : children;
-          }
-
-          const FLOATING_PANEL_GAP = 8;
+          helper = '''const FLOATING_PANEL_GAP = 8;
 
           function getFloatingPanelTop(screenSelector: string, actionSelector: string) {
             const screen = document.querySelector<HTMLElement>(screenSelector);
@@ -89,31 +76,35 @@ jobs:
             return visibleBottom + FLOATING_PANEL_GAP;
           }
 
-          function FeatureShell({'''
+          '''
 
-          if source.count(helper_anchor) != 1:
-            raise SystemExit(f'Expected one MobilePagePortal anchor, found {source.count(helper_anchor)}')
-          source = source.replace(helper_anchor, helper_replacement, 1)
+          marker = "\nfunction FeatureShell({"
+          if source.count(marker) != 1:
+            raise SystemExit(f"Expected FeatureShell marker once, found {source.count(marker)}")
+          source = source.replace(marker, "\n" + helper + "function FeatureShell({", 1)
 
-          replacements = {
-            '''    const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
-              setFilterPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);''':
-            '''    setFilterPanelTop(getFloatingPanelTop(".draw-history-screen", ".history-title-actions"));''',
-            '''    const header = document.querySelector<HTMLElement>(".number-reference-screen > .feature-brand-header");
-              setQueryPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);''':
-            '''    setQueryPanelTop(getFloatingPanelTop(".number-reference-screen", ".reference-title-actions"));''',
-            '''    const header = document.querySelector<HTMLElement>(".tongxing-screen > .feature-brand-header");
-              setSettingsPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);''':
-            '''    setSettingsPanelTop(getFloatingPanelTop(".tongxing-screen", ".tongxing-title-actions"));''',
-          }
+          replacements = [
+            (
+              r'^[ \t]*const header = document\.querySelector<HTMLElement>\("\.draw-history-screen > \.feature-brand-header"\);\n[ \t]*setFilterPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\);',
+              '    setFilterPanelTop(getFloatingPanelTop(".draw-history-screen", ".history-title-actions"));',
+            ),
+            (
+              r'^[ \t]*const header = document\.querySelector<HTMLElement>\("\.number-reference-screen > \.feature-brand-header"\);\n[ \t]*setQueryPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\);',
+              '    setQueryPanelTop(getFloatingPanelTop(".number-reference-screen", ".reference-title-actions"));',
+            ),
+            (
+              r'^[ \t]*const header = document\.querySelector<HTMLElement>\("\.tongxing-screen > \.feature-brand-header"\);\n[ \t]*setSettingsPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\);',
+              '    setSettingsPanelTop(getFloatingPanelTop(".tongxing-screen", ".tongxing-title-actions"));',
+            ),
+          ]
 
-          for old, new in replacements.items():
-            if source.count(old) != 1:
-              raise SystemExit(f'Expected one target block, found {source.count(old)}: {old.splitlines()[0]}')
-            source = source.replace(old, new, 1)
+          for pattern, replacement in replacements:
+            source, count = re.subn(pattern, replacement, source, count=1, flags=re.M)
+            if count != 1:
+              raise SystemExit(f"Expected one floating panel setter match, got {count}")
 
           path.write_text(source)
-          Path('.github/workflows/fix-floating-panel-gap-once.yml').unlink(missing_ok=True)
+          Path(".github/workflows/fix-floating-panel-gap-once.yml").unlink(missing_ok=True)
           PY
 
       - name: Verify GREEN full tests and build
