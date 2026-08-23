@@ -7,3 +7,18 @@
 .home-screen .matrix-status-section { outline: 1px solid #bf5af2; }
 .home-screen .matrix-core-banner { outline: 1px solid #ff9f0a; }
 .home-screen .home-shortcut-row { outline: 1px solid #64d2ff; }
+
+/* Homepage lottery switcher adjustment; kept here while debug stylesheet is active. */
+.home-screen .lottery-switcher {
+  box-sizing: border-box;
+  padding-inline: 5px;
+}
+
+.home-screen .lottery-switcher-hit-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+  background-size: calc(400% + 24px) 100%;
+}
