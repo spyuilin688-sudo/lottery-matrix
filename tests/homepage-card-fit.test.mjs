@@ -12,8 +12,19 @@ test("Matrix Core keeps 16px side spacing, trims 6px from the bottom, and fills 
 });
 
 test("selected lottery frame follows the artwork corner radius without square border-image corners", () => {
-  assert.match(baseCss, /\.lottery-card\[data-selected="true"\]\s*\{[\s\S]*?border-radius:\s*12px;[\s\S]*?border-image:\s*none;/);
-  assert.match(baseCss, /\.lottery-card\[data-selected="true"\]::after\s*\{[\s\S]*?display:\s*block;[\s\S]*?inset:\s*0;[\s\S]*?padding:\s*1px;[\s\S]*?border-radius:\s*inherit;[\s\S]*?background:\s*var\(--lottery-selected-gradient\);[\s\S]*?mask-composite:\s*exclude;/);
+  const selectedRule = baseCss.match(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
+  const selectedAfterRule = baseCss.match(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after\s*\{([\s\S]*?)\}/)?.[1];
+
+  assert.ok(selectedRule);
+  assert.match(selectedRule, /border-radius:\s*12px;/);
+  assert.match(selectedRule, /border-image:\s*none;/);
+  assert.ok(selectedAfterRule);
+  assert.match(selectedAfterRule, /display:\s*block;/);
+  assert.match(selectedAfterRule, /inset:\s*0;/);
+  assert.match(selectedAfterRule, /padding:\s*1px;/);
+  assert.match(selectedAfterRule, /border-radius:\s*inherit;/);
+  assert.match(selectedAfterRule, /background:\s*var\(--lottery-selected-gradient\);/);
+  assert.match(selectedAfterRule, /mask-composite:\s*exclude;/);
 });
 
 test("latest draw artwork continues to fill the whole card container", () => {
