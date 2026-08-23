@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { BottomNavigation } from "./BottomNavigation";
 import { BrandLogo } from "./BrandLogo";
 import type { ScreenId } from "./FeaturePages";
+import {
+  fetchNotificationSettings,
+  saveNotificationSettings,
+  type MemberNotificationSettings,
+} from "./member-api";
 import "./feature-page-adjustments.css";
 
 type Navigate = (screen: ScreenId) => void;
@@ -20,6 +25,11 @@ const MATRIX_STATUSES = ["啟動", "聚合", "共振", "臨界"] as const;
 type Lottery = (typeof LOTTERIES)[number];
 type SettingKey = "bet" | "result" | "win" | "status" | "card" | "collision" | "expiry" | "system";
 type NotificationRow = readonly [SettingKey, string, string, string];
+type NotificationSettingsEdit = (current: MemberNotificationSettings) => MemberNotificationSettings;
+
+const SAVE_DEBOUNCE_MS = 25;
+const SAVE_RETRY_INITIAL_MS = 100;
+const SAVE_RETRY_MAX_MS = 4_000;
 
 const BET_TIME_OPTIONS = {
   [LOTTERIES[0]]: ["16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "19:45", "20:00", "20:10", "20:20", "20:25"],
@@ -43,6 +53,25 @@ const MATRIX_ROWS: NotificationRow[] = [
 
 const SYSTEM_ROW: NotificationRow = ["system", "系統通知", "維護、更新", "/resources/notify-system.png"];
 
+function createDefaultNotificationSettings(): MemberNotificationSettings {
+  return {
+    settings: {
+      bet: true, result: true, win: true, status: true, card: true, collision: false, expiry: true, system: true,
+    },
+    selectedOptions: {
+      result: [...LOTTERIES],
+      win: ["彩種通知"],
+      status: [...LOTTERIES],
+      card: [...LOTTERIES],
+      expiry: ["提前1日", "提前3日", "提前7日"],
+      system: ["維護", "更新"],
+    },
+    betTimes: Object.fromEntries(LOTTERIES.map((lottery) => [lottery, ["", ""]])) as MemberNotificationSettings["betTimes"],
+    statusOptions: Object.fromEntries(LOTTERIES.map((lottery) => [lottery, [...MATRIX_STATUSES]])) as MemberNotificationSettings["statusOptions"],
+    collisionOptions: Object.fromEntries(LOTTERIES.map((lottery) => [lottery, ["獨碰二星", "獨碰三星"]])) as MemberNotificationSettings["collisionOptions"],
+  };
+}
+
 function Toggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return <button type="button" className="toggle" data-checked={checked} disabled={disabled} onClick={onChange}><span /></button>;
 }
@@ -57,44 +86,132 @@ function NotificationBottomNavigation({ onNavigate, onQuickOpen, onQuickConfigur
 }
 
 export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: Props) {
-  const initialSettings = useMemo<Record<SettingKey, boolean>>(() => ({
-    bet: true, result: true, win: true, status: true, card: true, collision: false, expiry: true, system: true,
-  }), []);
-  const [settings, setSettings] = useState(initialSettings);
   const [expandedKey, setExpandedKey] = useState<SettingKey | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({
-    result: [...LOTTERIES],
-    win: ["彩種通知"],
-    card: [...LOTTERIES],
-    expiry: ["提前1日", "提前3日", "提前7日"],
-    system: ["維護", "更新"],
-  });
-  const [statusLotteries, setStatusLotteries] = useState<Record<Lottery, boolean>>(
-    Object.fromEntries(LOTTERIES.map((lottery) => [lottery, true])) as Record<Lottery, boolean>,
-  );
-  const [betTimes, setBetTimes] = useState<Record<Lottery, [string, string]>>(
-    Object.fromEntries(LOTTERIES.map((lottery) => [lottery, ["", ""]])) as Record<Lottery, [string, string]>,
-  );
-  const [statusOptions, setStatusOptions] = useState<Record<Lottery, string[]>>(
-    Object.fromEntries(LOTTERIES.map((lottery) => [lottery, [...MATRIX_STATUSES]])) as Record<Lottery, string[]>,
-  );
+  const [notificationSettings, setNotificationSettings] = useState<MemberNotificationSettings>(createDefaultNotificationSettings);
+  const { settings, selectedOptions, betTimes, statusOptions } = notificationSettings;
+  const notificationSettingsLoadState = useRef<"loading" | "ready" | "failed">("loading");
+  const pendingLoadEdits = useRef<NotificationSettingsEdit[]>([]);
+  const lastSavedSettings = useRef("");
+  const latestNotificationSettings = useRef(notificationSettings);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlight = useRef(false);
+  const retryDelay = useRef(SAVE_RETRY_INITIAL_MS);
+  const componentActive = useRef(true);
+  const flushAfterInFlightOnUnmount = useRef(false);
+  const flushLatestSaveRef = useRef<(mode?: "normal" | "unmount") => void>(() => undefined);
+  const scheduleLatestSaveRef = useRef<(delayMs: number) => void>(() => undefined);
+  latestNotificationSettings.current = notificationSettings;
+
+  const flushLatestSave = (mode: "normal" | "unmount" = "normal") => {
+    if (notificationSettingsLoadState.current !== "ready" || (mode === "normal" && !componentActive.current)) return;
+    if (saveInFlight.current) {
+      if (mode === "unmount") flushAfterInFlightOnUnmount.current = true;
+      return;
+    }
+    const snapshot = latestNotificationSettings.current;
+    const serialized = JSON.stringify(snapshot);
+    if (serialized === lastSavedSettings.current) return;
+
+    saveInFlight.current = true;
+    let failed = false;
+    void saveNotificationSettings(snapshot)
+      .then(() => {
+        lastSavedSettings.current = serialized;
+        retryDelay.current = SAVE_RETRY_INITIAL_MS;
+      })
+      .catch(() => { failed = true; })
+      .finally(() => {
+        saveInFlight.current = false;
+        const dirty = JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current;
+        if (componentActive.current) {
+          if (!dirty) return;
+          if (failed) {
+            const delayMs = retryDelay.current;
+            retryDelay.current = Math.min(delayMs * 2, SAVE_RETRY_MAX_MS);
+            scheduleLatestSaveRef.current(delayMs);
+          } else {
+            scheduleLatestSaveRef.current(SAVE_DEBOUNCE_MS);
+          }
+          return;
+        }
+        const shouldFlush = flushAfterInFlightOnUnmount.current;
+        flushAfterInFlightOnUnmount.current = false;
+        if (shouldFlush && dirty) flushLatestSaveRef.current("unmount");
+      });
+  };
+
+  const scheduleLatestSave = (delayMs: number) => {
+    if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    if (!componentActive.current || notificationSettingsLoadState.current !== "ready") return;
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      flushLatestSaveRef.current();
+    }, delayMs);
+  };
+  flushLatestSaveRef.current = flushLatestSave;
+  scheduleLatestSaveRef.current = scheduleLatestSave;
+
+  useEffect(() => {
+    let active = true;
+    componentActive.current = true;
+    void fetchNotificationSettings().then((stored) => {
+      if (!active) return;
+      const merged = pendingLoadEdits.current.reduce((current, edit) => edit(current), stored);
+      pendingLoadEdits.current = [];
+      lastSavedSettings.current = JSON.stringify(stored);
+      latestNotificationSettings.current = merged;
+      setNotificationSettings(merged);
+      notificationSettingsLoadState.current = "ready";
+    }).catch(() => {
+      if (!active) return;
+      pendingLoadEdits.current = [];
+      notificationSettingsLoadState.current = "failed";
+    });
+    return () => {
+      active = false;
+      componentActive.current = false;
+      if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      if (notificationSettingsLoadState.current !== "ready") return;
+      const dirty = JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current;
+      if (!dirty) return;
+      if (saveInFlight.current) flushAfterInFlightOnUnmount.current = true;
+      else flushLatestSaveRef.current("unmount");
+    };
+  }, []);
+
+  useEffect(() => {
+    scheduleLatestSaveRef.current(SAVE_DEBOUNCE_MS);
+  }, [notificationSettings]);
+
+  const applyNotificationSettingsEdit = (edit: NotificationSettingsEdit) => {
+    if (notificationSettingsLoadState.current === "loading") pendingLoadEdits.current.push(edit);
+    setNotificationSettings(edit);
+  };
 
   const toggleOption = (key: SettingKey, option: string) => {
-    setSelectedOptions((current) => {
-      const selected = current[key] ?? [];
+    applyNotificationSettingsEdit((current) => {
+      const selected = current.selectedOptions[key] ?? [];
       return {
         ...current,
-        [key]: key === "win" ? [option] : selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option],
+        selectedOptions: {
+          ...current.selectedOptions,
+          [key]: key === "win" ? [option] : selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option],
+        },
       };
     });
   };
 
   const toggleStatus = (lottery: Lottery, status: string) => {
-    setStatusOptions((current) => ({
+    applyNotificationSettingsEdit((current) => ({
       ...current,
-      [lottery]: current[lottery].includes(status)
-        ? current[lottery].filter((item) => item !== status)
-        : [...current[lottery], status],
+      statusOptions: {
+        ...current.statusOptions,
+        [lottery]: current.statusOptions[lottery].includes(status)
+          ? current.statusOptions[lottery].filter((item) => item !== status)
+          : [...current.statusOptions[lottery], status],
+      },
     }));
   };
 
@@ -104,7 +221,16 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         {LOTTERIES.map((lottery) => <span key={lottery}>{lottery}</span>)}
       </div>
       {([0, 1] as const).map((index) => <div className="notification-grid-row notification-grid-time-row" key={index}>
-        {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => setBetTimes((current) => ({ ...current, [lottery]: index === 0 ? [event.target.value, current[lottery][1]] : [current[lottery][0], event.target.value] }))}><option value="">選擇時間</option>{BET_TIME_OPTIONS[lottery].map((time) => <option value={time} key={time}>{time.replace(":", "：")}</option>)}</select></div>)}
+        {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => {
+          const value = event.target.value;
+          applyNotificationSettingsEdit((current) => ({
+            ...current,
+            betTimes: {
+              ...current.betTimes,
+              [lottery]: index === 0 ? [value, current.betTimes[lottery][1]] : [current.betTimes[lottery][0], value],
+            },
+          }));
+        }}><option value="">選擇時間</option>{BET_TIME_OPTIONS[lottery].map((time) => <option value={time} key={time}>{time.replace(":", "：")}</option>)}</select></div>)}
       </div>)}
     </div>
   );
@@ -112,7 +238,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const renderStatusSettings = () => (
     <div className="notification-matrix-grid notification-status-grid" aria-label="Matrix 狀態設定">
       <div className="notification-grid-row notification-grid-lottery-row">
-        {LOTTERIES.map((lottery) => <label key={lottery}><input type="checkbox" checked={statusLotteries[lottery]} onChange={() => setStatusLotteries((current) => ({ ...current, [lottery]: !current[lottery] }))} /><span>{lottery}</span></label>)}
+        {LOTTERIES.map((lottery) => <label key={lottery}><input type="checkbox" checked={selectedOptions.status?.includes(lottery) ?? false} onChange={() => toggleOption("status", lottery)} /><span>{lottery}</span></label>)}
       </div>
       {MATRIX_STATUSES.map((status) => <div className="notification-grid-row notification-grid-status-row" key={status}>
         {LOTTERIES.map((lottery) => <label className="notification-choice" key={lottery}><input type="checkbox" checked={statusOptions[lottery].includes(status)} onChange={() => toggleStatus(lottery, status)} /><span>{status}</span></label>)}
@@ -143,7 +269,12 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => setSettings((current) => ({ ...current, [key]: !current[key] }))} />
+          <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => {
+            applyNotificationSettingsEdit((current) => ({
+              ...current,
+              settings: { ...current.settings, [key]: !current.settings[key] },
+            }));
+          }} />
         </div>
       </div>
       {expanded ? <div className="notification-inline-settings">{renderInlineSettings(row)}</div> : null}

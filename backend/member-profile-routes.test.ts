@@ -34,4 +34,16 @@ describe('member profile routes', () => {
     });
     expect(readProfile).toHaveBeenCalledWith('member-1');
   });
+
+  it('does not expose backend failure details', async () => {
+    const api = createMemberProfileRoutes({
+      requireMember: async () => member,
+      readProfile: async () => { throw new Error('SUPABASE_PRIVATE_DETAIL'); },
+    });
+
+    await expect(api.get({ authorization: 'Bearer token' })).resolves.toEqual({
+      status: 502,
+      body: { error: { code: 'MEMBER_PROFILE_READ_FAILED' } },
+    });
+  });
 });

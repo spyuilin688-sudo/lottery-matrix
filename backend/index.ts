@@ -32,6 +32,11 @@ import { isTaipeiRefreshWindow, matrixWorkerLimits, runRefreshThenAnalysis, sele
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { createSystemJobStatusWriter, createSystemJobTracker } from './system-job-status';
 import { createMemberOnlineRpc, createMemberOnlineService } from './member-online';
+import { createMemberProfileStore } from './member-profile-store';
+import { createMemberProfileRoutes } from './member-profile-routes';
+import { createMemberNotificationStore } from './member-notification-store';
+import { createMemberNotificationRoutes } from './member-notification-routes';
+import { createMemberRouteHandlers } from './member-route-handlers';
 
 async function loadMatrixSupabaseConfig() {
     const names = await secrets.listSecretNames();
@@ -44,6 +49,16 @@ async function loadMatrixSupabaseConfig() {
 
 const matrixMemberAuth = createMemberAuth(loadMatrixSupabaseConfig);
 const memberOnlineService = createMemberOnlineService(createMemberOnlineRpc(loadMatrixSupabaseConfig));
+const memberProfileStore = createMemberProfileStore(loadMatrixSupabaseConfig);
+const memberProfileRoutes = createMemberProfileRoutes({
+    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
+    readProfile: memberId => memberProfileStore.read(memberId),
+});
+const memberNotificationStore = createMemberNotificationStore(loadMatrixSupabaseConfig);
+const memberNotificationRoutes = createMemberNotificationRoutes({
+    requireMember: authorization => matrixMemberAuth.requireMember(authorization),
+    store: memberNotificationStore,
+});
 const systemJobTracker = createSystemJobTracker(createSystemJobStatusWriter(loadMatrixSupabaseConfig));
 const matrixCustomStatusStore = createCustomStatusStore(loadMatrixSupabaseConfig);
 const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
@@ -139,6 +154,13 @@ const matrixTiangongRoutes = createMatrixTiangongRoutes({
     },
 });
 function authorizationHeader(event: { headers?: Record<string,string|undefined> } | undefined) { return event?.headers?.authorization ?? event?.headers?.Authorization; }
+const memberRouteHandlers = createMemberRouteHandlers({
+    profileGet: input => memberProfileRoutes.get(input),
+    notificationGet: input => memberNotificationRoutes.get(input),
+    notificationSave: input => memberNotificationRoutes.save(input),
+    authorizationHeader,
+    json,
+});
 
 export const scheduledLotteryRefresh = async () => systemJobTracker.run('matrix-649-refresh-v2', '大樂透', async () => {
     const results = await refreshActiveSources();
@@ -234,6 +256,7 @@ export const handler = router({
     'POST /api/matrix/status/settings/reset': [async ({ body,event }) => { const response = await matrixCustomStatusRoutes.reset({ authorization:authorizationHeader(event),body }); return json(response.body,response.status); }],
     'POST /api/matrix/status': [async ({ body,event }) => { const response = await matrixStatusRoutes.get({ authorization:authorizationHeader(event),body }); return json(response.body,response.status); }],
     'GET /api/matrix/algorithm/cases': [async () => { try { return json(await runMatrixAlgorithmCaseChecks()); } catch (e) { const message = e instanceof Error ? e.message : 'Matrix 案例驗證失敗'; return error(message, 400); } }],
+    ...memberRouteHandlers,
     'POST /api/member-online/start': [async ({ event }) => { try { const member=await matrixMemberAuth.requireMember(authorizationHeader(event)); return json(await memberOnlineService.start(member.memberId)); } catch (e) { const value=e as { code?:string;status?:number;message?:string }; return error(value.code ?? value.message ?? 'MEMBER_ONLINE_START_FAILED',value.status ?? 500); } }],
     'POST /api/member-online/end': [async ({ body,event }) => { try { const member=await matrixMemberAuth.requireMember(authorizationHeader(event)); const sessionId=String((body as {sessionId?:unknown})?.sessionId ?? ''); if(!sessionId) return error('MEMBER_ONLINE_SESSION_REQUIRED',400); return json(await memberOnlineService.end(member.memberId,sessionId)); } catch (e) { const value=e as { code?:string;status?:number;message?:string }; return error(value.code ?? value.message ?? 'MEMBER_ONLINE_END_FAILED',value.status ?? 500); } }],
     'POST /api/matrix/tongxing': [async ({ body }) => { try { return json(await runTongXing(body)); } catch (e) { const message = e instanceof Error ? e.message : 'Matrix 同星執行失敗'; return error(message, 400); } }],

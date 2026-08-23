@@ -18,7 +18,14 @@ export type MemberNotificationSettings = {
     system: boolean;
     expiry: boolean;
   };
-  selectedOptions: Record<string, string[]>;
+  selectedOptions: Record<string, string[]> & {
+    result: string[];
+    win: string[];
+    status: string[];
+    card: string[];
+    system: string[];
+    expiry: string[];
+  };
   betTimes: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', [string, string]>;
   statusOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;
   collisionOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;

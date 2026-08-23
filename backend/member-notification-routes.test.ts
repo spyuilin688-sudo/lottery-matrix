@@ -26,6 +26,31 @@ describe('member notification routes', () => {
     expect(store.read).toHaveBeenCalledWith('member-1');
   });
 
+  it('tolerantly normalizes legacy saved settings on read', async () => {
+    const store = {
+      read: vi.fn(async () => ({
+        settings: { bet: false },
+        selectedOptions: { result: ['今彩539', 'unknown', '今彩539'] },
+        betTimes: { 今彩539: ['16:00'] },
+        statusOptions: { 今彩539: ['啟動', 'unknown'] },
+        collisionOptions: {},
+      })),
+      save: vi.fn(),
+    };
+    const api = createMemberNotificationRoutes({ requireMember: async () => member, store });
+
+    await expect(api.get({ authorization: 'Bearer token', body: {} })).resolves.toEqual({
+      status: 200,
+      body: {
+        ...createDefaultMemberNotificationSettings(),
+        settings: { ...createDefaultMemberNotificationSettings().settings, bet: false },
+        selectedOptions: { ...createDefaultMemberNotificationSettings().selectedOptions, result: ['今彩539'] },
+        betTimes: { ...createDefaultMemberNotificationSettings().betTimes, 今彩539: ['16:00', ''] },
+        statusOptions: { ...createDefaultMemberNotificationSettings().statusOptions, 今彩539: ['啟動'] },
+      },
+    });
+  });
+
   it('saves settings only for the authenticated member', async () => {
     const settings = createDefaultMemberNotificationSettings();
     settings.settings.collision = true;
@@ -40,5 +65,59 @@ describe('member notification routes', () => {
       body: settings,
     });
     expect(store.save).toHaveBeenCalledWith('member-1', settings);
+  });
+
+  it.each([
+    ['unknown option', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      settings.statusOptions['今彩539'] = ['啟動', '任意狀態'];
+    }],
+    ['duplicate oversized options', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      settings.selectedOptions.result = Array(20).fill('今彩539');
+    }],
+    ['missing required boolean', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      delete (settings.settings as Partial<typeof settings.settings>).bet;
+    }],
+    ['extra root field', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      (settings as Record<string, unknown>).unexpected = true;
+    }],
+    ['missing selected option key', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      delete settings.selectedOptions.status;
+    }],
+    ['empty radio selection', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      settings.selectedOptions.win = [];
+    }],
+    ['invalid bet time', (settings: ReturnType<typeof createDefaultMemberNotificationSettings>) => {
+      settings.betTimes['今彩539'] = ['16:00', '23:59'];
+    }],
+  ])('rejects %s instead of persisting data outside the current UI contract', async (_name, mutate) => {
+    const settings = createDefaultMemberNotificationSettings();
+    mutate(settings);
+    const store = { read: vi.fn(), save: vi.fn() };
+    const api = createMemberNotificationRoutes({ requireMember: async () => member, store });
+
+    await expect(api.save({ authorization: 'Bearer token', body: settings })).resolves.toEqual({
+      status: 400,
+      body: { error: { code: 'INVALID_NOTIFICATION_SETTINGS' } },
+    });
+    expect(store.save).not.toHaveBeenCalled();
+  });
+
+  it('does not expose backend read or save failure details', async () => {
+    const api = createMemberNotificationRoutes({
+      requireMember: async () => member,
+      store: {
+        read: async () => { throw new Error('SUPABASE_PRIVATE_READ_DETAIL'); },
+        save: async () => { throw new Error('unexpected private save detail'); },
+      },
+    });
+
+    await expect(api.get({ authorization: 'Bearer token', body: {} })).resolves.toEqual({
+      status: 502,
+      body: { error: { code: 'MEMBER_NOTIFICATION_SETTINGS_READ_FAILED' } },
+    });
+    await expect(api.save({ authorization: 'Bearer token', body: createDefaultMemberNotificationSettings() })).resolves.toEqual({
+      status: 500,
+      body: { error: { code: 'MEMBER_NOTIFICATION_SETTINGS_SAVE_FAILED' } },
+    });
   });
 });
