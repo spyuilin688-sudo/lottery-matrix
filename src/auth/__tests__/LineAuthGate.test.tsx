@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   signOutFromMatrix: vi.fn(),
 }));
 
+let authStateCallback: ((event: string, session: unknown) => void) | undefined;
+
 vi.mock('../../lib/supabase', () => ({
   getSupabaseClient: () => ({
     auth: {
@@ -39,9 +41,11 @@ import { LineAuthGate } from '../LineAuthGate';
 afterEach(cleanup);
 
 beforeEach(() => {
+  authStateCallback = undefined;
   mocks.getSession.mockReset();
-  mocks.onAuthStateChange.mockReset().mockReturnValue({
-    data: { subscription: { unsubscribe: mocks.unsubscribe } },
+  mocks.onAuthStateChange.mockReset().mockImplementation((callback) => {
+    authStateCallback = callback;
+    return { data: { subscription: { unsubscribe: mocks.unsubscribe } } };
   });
   mocks.unsubscribe.mockReset();
   mocks.bootstrapMember.mockReset().mockResolvedValue({ memberId: 'member-1', lineUserId: 'line-1' });
@@ -83,6 +87,21 @@ describe('LineAuthGate', () => {
     await waitFor(() => expect(mocks.bootstrapMember).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('authenticated-child')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '使用 LINE 登入' })).not.toBeInTheDocument();
+  });
+
+  it('handles a signed-in auth event after the initial signed-out state', async () => {
+    mocks.getSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    render(<LineAuthGate><div>authenticated-child</div></LineAuthGate>);
+    expect(await screen.findByRole('button', { name: '使用 LINE 登入' })).toBeInTheDocument();
+
+    authStateCallback?.('SIGNED_IN', {
+      access_token: 'event-session-token',
+      user: { id: 'auth-user-2' },
+    });
+
+    await waitFor(() => expect(mocks.bootstrapMember).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('authenticated-child')).toBeInTheDocument();
   });
 
   it('uses the existing profile logout button to clear the Supabase session', async () => {
