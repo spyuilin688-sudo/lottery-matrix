@@ -1,0 +1,11 @@
+/* Homepage five-feature canonical frame language. */
+.home-screen .home-shortcut-row {
+  outline: 0;
+}
+
+.home-screen .home-shortcut img {
+  box-sizing: border-box;
+  border: 1px solid rgba(229, 179, 77, .56);
+  border-radius: 10px;
+  box-shadow: inset 0 0 10px rgba(229, 179, 77, .10), 0 0 5px rgba(229, 179, 77, .08);
+}
