@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const homepageCss = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
+const homepageBaseCss = readFileSync(new URL("../homepage/base.css", import.meta.url), "utf8");
 const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), "utf8");
 
 describe("homepage control layout rules", () => {
@@ -16,6 +17,11 @@ describe("homepage control layout rules", () => {
 
   it("uses a 5px lower inset for the embedded next-draw information", () => {
     expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*padding:\s*0 20px 5px;/s);
+  });
+
+  it("lets the Matrix Core container follow the image ratio vertically", () => {
+    expect(homepageBaseCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*1774\s*\/\s*568;/s);
+    expect(homepageBaseCss).toMatch(/\.home-screen \.matrix-core-banner > \.home-asset-image\s*\{[^}]*height:\s*auto;/s);
   });
 
   it("does not paint a black background behind the bottom navigation artwork", () => {
