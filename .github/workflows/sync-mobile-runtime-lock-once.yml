@@ -1,0 +1,67 @@
+name: Sync mobile runtime lock once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/sync-mobile-runtime-lock-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync-runtime-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: RED - confirm current runtime lock blocks the formal runtime
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run check:runtime 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected the stale runtime lock to fail before repair.'
+            exit 1
+          fi
+          printf '%s\n' "$output" | grep -F 'src/main.tsx was modified'
+          printf '%s\n' "$output" | grep -F 'src/styles.css was modified'
+
+      - name: GREEN - sync lock to the current formal runtime
+        run: |
+          npm run update:runtime-lock
+          npm run check:runtime
+
+      - name: Verify production build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify scope and commit repair
+        shell: bash
+        run: |
+          git rm .github/workflows/sync-mobile-runtime-lock-once.yml
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          printf 'Changed files:\n%s\n' "${changed[*]}"
+          if [ "${#changed[@]}" -ne 2 ] || [ "${changed[0]}" != '.github/workflows/sync-mobile-runtime-lock-once.yml' ] || [ "${changed[1]}" != 'mobile-runtime.lock.json' ]; then
+            echo 'Unexpected repair scope.'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: sync mobile runtime lock with formal main'
+          git push origin main
