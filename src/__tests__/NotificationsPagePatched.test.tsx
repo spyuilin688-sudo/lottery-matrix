@@ -15,7 +15,18 @@ describe("NotificationsPagePatched", () => {
     expect(within(screen.getByRole("region", { name: "系統通知" })).getAllByRole("article")).toHaveLength(1);
   });
 
-  it("選號提醒在列下方展開四彩種與兩列時間選擇", () => {
+  it("設定選項位於通知名稱右側並保留後方開關", () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]');
+    expect(betRow).not.toBeNull();
+
+    const titleArea = betRow!.querySelector(".notification-title");
+    expect(titleArea).not.toBeNull();
+    expect(within(titleArea as HTMLElement).getByRole("button", { name: /設定選項/ })).toBeInTheDocument();
+    expect(betRow!.querySelector(".notification-actions .toggle")).not.toBeNull();
+  });
+
+  it("選號提醒展開後不顯示彩種勾選框，只保留四彩種標題與兩列時間選擇", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]');
     expect(betRow).not.toBeNull();
@@ -23,7 +34,8 @@ describe("NotificationsPagePatched", () => {
     fireEvent.click(within(betRow!).getByRole("button", { name: /設定選項/ }));
 
     ["今彩539", "天天樂", "六合彩", "大樂透"].forEach((lottery) => {
-      expect(within(betRow!).getByLabelText(lottery)).toBeChecked();
+      expect(within(betRow!).getByText(lottery)).toBeInTheDocument();
+      expect(within(betRow!).queryByLabelText(lottery)).not.toBeInTheDocument();
       expect(within(betRow!).getByRole("combobox", { name: `${lottery}時間1` })).toBeInTheDocument();
       expect(within(betRow!).getByRole("combobox", { name: `${lottery}時間2` })).toBeInTheDocument();
     });
