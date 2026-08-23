@@ -4,6 +4,7 @@ type RouteResult = { status: number; body: Record<string, unknown> };
 type RouteHandler<Response> = (input: HandlerInput) => Promise<Response>;
 
 type Dependencies<Response> = {
+  bootstrapPost(input: { authorization?: string }): Promise<RouteResult>;
   profileGet(input: { authorization?: string }): Promise<RouteResult>;
   notificationGet(input: { authorization?: string; body: unknown }): Promise<RouteResult>;
   notificationSave(input: { authorization?: string; body: unknown }): Promise<RouteResult>;
@@ -13,6 +14,10 @@ type Dependencies<Response> = {
 
 export function createMemberRouteHandlers<Response = unknown>(dependencies: Dependencies<Response>): Record<string, [RouteHandler<Response>]> {
   return {
+    'POST /api/member/bootstrap': [async ({ event }) => {
+      const response = await dependencies.bootstrapPost({ authorization: dependencies.authorizationHeader(event) });
+      return dependencies.json(response.body, response.status);
+    }],
     'GET /api/member/profile': [async ({ event }) => {
       const response = await dependencies.profileGet({ authorization: dependencies.authorizationHeader(event) });
       return dependencies.json(response.body, response.status);
