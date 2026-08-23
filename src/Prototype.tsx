@@ -314,7 +314,7 @@ export function MatrixStatusSection({ current = null, onOpen }: MatrixStatusSect
 }
 
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
-  return <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core｜分析核心・智慧運算" data-testid="matrix-core-banner" onClick={onOpen} />;
+  return <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen} />;
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
