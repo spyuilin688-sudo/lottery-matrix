@@ -3,7 +3,7 @@ import {
   QuickNavigationProvider,
   type ScreenId,
 } from "./FeaturePagesCore";
-import { NotificationsPagePatched } from "./NotificationsPagePatched";
+import "./feature-page-adjustments.css";
 
 export { QuickNavigationProvider };
 export type { ScreenId };
@@ -27,17 +27,6 @@ export function FeaturePageRouter({
   onNavigate: Navigate;
   historyReturnScreen?: ScreenId;
 } & BottomNavCallbacks) {
-  if (screen === "notifications") {
-    return (
-      <NotificationsPagePatched
-        onNavigate={onNavigate}
-        onQuickOpen={onQuickOpen}
-        onQuickConfigure={onQuickConfigure}
-        quickActive={quickActive}
-      />
-    );
-  }
-
   return (
     <CoreFeaturePageRouter
       screen={screen}
