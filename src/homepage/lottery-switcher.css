@@ -1,1 +1,9 @@
 /* Homepage lottery switcher component overrides. Keep this file small and focused. */
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
+  filter: grayscale(.65) brightness(.72);
+}
+
+.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  filter: none;
+}
