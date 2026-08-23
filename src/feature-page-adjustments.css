@@ -1,315 +1,219 @@
 /* Notification, profile and calculator adjustments requested for the production PWA. */
 
-.notifications-screen .feature-body {
+.notifications-screen-v2 .feature-body {
   box-sizing: border-box;
   width: 100%;
   padding: 0 16px calc(var(--layout-bottom-nav-clearance) + 12px);
 }
 
-.notifications-screen .notification-list {
+.notifications-screen-v2 .notification-list {
   display: grid;
   gap: 8px;
 }
 
-.notifications-screen .notification-row {
+.notifications-screen-v2 .notification-group,
+.notifications-screen-v2 .notification-system-group {
   overflow: hidden;
-  border: 1px solid rgba(170, 119, 46, .72);
+  padding-block: 2px;
+  border: 1px solid rgba(170, 119, 46, .82);
   border-radius: 12px;
   background: #020c12;
   box-shadow: inset 0 0 10px rgba(150, 102, 34, .04);
 }
 
-.notifications-screen .notification-row:nth-child(1),
-.notifications-screen .notification-row:nth-child(4) {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+.notifications-screen-v2 .notification-system-group {
+  padding-block: 4px;
 }
 
-.notifications-screen .notification-row:nth-child(2),
-.notifications-screen .notification-row:nth-child(5),
-.notifications-screen .notification-row:nth-child(6) {
-  margin-top: -9px;
-  border-top: 0;
+.notifications-screen-v2 .notification-row {
+  border: 0;
   border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.notifications-screen .notification-row:nth-child(3),
-.notifications-screen .notification-row:nth-child(7) {
-  margin-top: -9px;
-  border-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.notifications-screen-v2 .notification-group .notification-row + .notification-row {
+  border-top: 1px solid rgba(170, 119, 46, .38);
 }
 
-.notifications-screen .notification-row:nth-child(8) {
-  margin-top: 0;
-}
-
-.notifications-screen .notification-row:nth-child(2)::before,
-.notifications-screen .notification-row:nth-child(3)::before,
-.notifications-screen .notification-row:nth-child(5)::before,
-.notifications-screen .notification-row:nth-child(6)::before,
-.notifications-screen .notification-row:nth-child(7)::before {
-  display: block;
-  height: 1px;
-  margin: 0 10px;
-  background: rgba(170, 119, 46, .38);
-  content: "";
-}
-
-.notifications-screen .notification-heading {
+.notifications-screen-v2 .notification-heading {
   display: grid;
-  min-height: 68px;
-  padding: 8px 10px;
-  grid-template-columns: 56px minmax(0, 1fr) auto 46px;
+  min-height: 0;
+  padding: 2px 4px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 8px;
 }
 
-.notifications-screen .notification-row:has(.notification-title h2 em) .notification-heading {
-  min-height: 76px;
+.notifications-screen-v2 .notification-system-group .notification-heading {
+  padding-block: 0;
 }
 
-.notifications-screen .notification-icon {
-  display: grid;
-  width: 56px;
-  height: 56px;
-  place-items: center;
-}
-
-.notifications-screen .notification-icon img {
-  display: block;
-  width: 52px;
-  height: 52px;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.notifications-screen .notification-title {
-  display: grid;
-  min-width: 0;
-  align-content: center;
-  overflow: hidden;
-}
-
-.notifications-screen .notification-row h2 {
+.notifications-screen-v2 .notification-title {
   display: flex;
-  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  overflow: visible;
+}
+
+.notifications-screen-v2 .notification-title h2 {
+  min-width: 0;
   margin: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  overflow: hidden;
-  color: #f2f2f2;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 22px;
-  letter-spacing: 0;
 }
 
-.notifications-screen .notification-row h2 span,
-.notifications-screen .notification-row h2 em + span {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 17px;
-  line-height: 22px;
-  white-space: nowrap;
+.notifications-screen-v2 .notification-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
 }
 
-.notifications-screen .notification-row h2 em {
+.notifications-screen-v2 .notification-settings-toggle {
+  display: inline-flex;
   box-sizing: border-box;
-  height: 22px;
+  min-width: 0;
+  height: 26px;
+  min-height: 26px;
   padding: 0 7px;
-  border: 1px solid rgba(139, 100, 23, .74);
-  border-radius: 7px;
-  color: rgba(233, 186, 37, .74);
-  font-size: 11px;
-  font-weight: 600;
-  font-style: normal;
-  line-height: 20px;
-  white-space: nowrap;
-}
-
-.notifications-screen .notification-actions {
-  display: contents;
-}
-
-.notifications-screen .notification-actions > button:first-child {
-  height: 36px;
-  min-height: 36px;
-  padding: 0 11px;
-  justify-self: end;
-  border: 1px solid rgba(211, 166, 66, .55);
-  border-radius: 18px;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid rgba(211, 166, 66, .62);
+  border-radius: 2px;
   background: transparent;
-  box-shadow: none;
-  color: rgba(211, 166, 66, .82);
-  font-size: 13px;
+  color: #d2aa56;
+  font-size: clamp(8px, 2.4vw, 10px);
   font-weight: 600;
-  line-height: 18px;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.notifications-screen .notification-actions > button:first-child:disabled {
-  opacity: 1;
+.notifications-screen-v2 .notification-settings-toggle:disabled {
   border-color: #46505c;
   color: rgba(242, 242, 242, .38);
 }
 
-.notifications-screen .toggle {
-  width: 46px;
-  height: 44px;
-  flex: 0 0 46px;
+.notifications-screen-v2 .notification-settings-toggle svg {
+  width: clamp(9px, 2.7vw, 12px);
+  height: clamp(9px, 2.7vw, 12px);
+  flex: 0 0 auto;
+  transition: transform .18s ease;
 }
 
-.notifications-screen .toggle::before {
-  width: 46px;
-  height: 28px;
+.notifications-screen-v2 .notification-settings-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 
-.notifications-screen .toggle span {
-  width: 24px;
-  height: 24px;
+.notifications-screen-v2 .notification-actions > .toggle {
+  width: 42px;
+  height: 22px;
+  flex: 0 0 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.notification-modal {
-  max-height: min(76vh, 600px);
+.notifications-screen-v2 .toggle::before {
+  top: 0;
+  width: 42px;
+  height: 22px;
+  border-radius: 2px;
 }
 
-.notification-modal > header {
-  position: relative;
-  min-height: 44px;
-  justify-content: center;
+.notifications-screen-v2 .toggle span {
+  top: 2px;
+  width: 18px;
+  height: 18px;
 }
 
-.notification-modal > header h2 {
-  width: 100%;
-  padding-inline: 34px;
-  font-size: 16px;
-  text-align: center;
+.notifications-screen-v2 .toggle[data-checked="true"] span {
+  transform: translateX(20px);
 }
 
-.notification-modal > header button {
-  position: absolute;
-  right: 0;
-  width: 32px;
-  height: 32px;
+.notifications-screen-v2 .notification-inline-settings {
+  padding: 4px;
+  border-top: 1px solid rgba(170, 119, 46, .38);
+  background: rgba(1, 8, 13, .72);
 }
 
-.notification-modal-content {
-  padding: 12px 14px 6px;
-}
-
-.notification-modal .notification-options {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.notification-modal .notification-choice {
-  min-height: 40px;
-  padding: 6px 8px;
-  grid-template-columns: 16px minmax(0, 1fr);
-  gap: 6px;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
-.notification-modal .notification-choice input {
-  width: 16px;
-  height: 16px;
-}
-
-.notification-modal .notification-time-settings {
-  gap: 10px;
-}
-
-.notification-modal .notification-lottery-row {
-  gap: 5px;
-}
-
-.notification-modal .notification-lottery-row > strong,
-.notification-modal .notification-lottery-row > legend {
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.notification-modal .notification-lottery-row > div {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.notification-modal .notification-time-settings .select-box {
-  height: 34px;
-}
-
-.notification-modal .notification-time-settings select {
-  font-size: 12px;
-}
-
-.notification-modal .notification-status-settings {
-  gap: 6px;
-}
-
-.notification-status-settings .notification-lottery-row {
-  grid-template-columns: 56px minmax(0, 1fr);
-  column-gap: 6px;
-}
-
-.notification-status-settings .notification-lottery-row > strong {
-  font-size: 11px;
-  line-height: 15px;
-}
-
-.notification-status-settings .notification-lottery-row > div {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.notifications-screen-v2 .notification-matrix-grid {
+  display: grid;
   gap: 4px;
 }
 
-.notification-modal .notification-status-settings .notification-choice {
-  min-height: 36px;
-  padding: 5px 3px;
-  grid-template-columns: 14px minmax(0, 1fr);
+.notifications-screen-v2 .notification-grid-row,
+.notifications-screen-v2 .notification-inline-option-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  align-items: center;
+}
+
+.notifications-screen-v2 .notification-grid-lottery-labels > span {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 26px;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  color: #e2d9c8;
+  font-size: clamp(10px, 2.9vw, 12px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-grid-lottery-row label,
+.notifications-screen-v2 .notification-grid-status-row label,
+.notifications-screen-v2 .notification-inline-option-row .notification-choice {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: center;
   gap: 3px;
-  border: 1px solid #4f4537;
-  border-radius: 8px;
-  background: #081016;
-  color: #b7b0a5;
-  font-size: 10px;
+  color: #d9d3c8;
+  font-size: clamp(8px, 2.5vw, 10px);
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.notification-modal .notification-status-settings .notification-choice:has(input:checked) {
-  border-color: #b78520;
-  background: rgba(191, 132, 18, .14);
-  color: #f1c85d;
+.notifications-screen-v2 input[type="checkbox"],
+.notifications-screen-v2 input[type="radio"] {
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  flex: 0 0 1em;
+  accent-color: #d99b00;
 }
 
-.notification-modal .notification-status-settings .notification-choice input {
-  width: 14px;
-  height: 14px;
+.notifications-screen-v2 .notification-time-select {
+  height: 26px;
+  min-height: 26px;
 }
 
-.notification-modal-done {
-  width: calc(100% - 28px);
-  height: 42px;
-  min-height: 42px;
-  margin: 8px 14px 14px;
-  border-radius: 9px;
-  font-size: 13px;
+.notifications-screen-v2 .notification-time-select select {
+  padding: 0 3px;
+  font-size: clamp(9px, 2.7vw, 11px);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-align-last: center;
 }
 
-.notification-modal:has(.notification-status-settings) .notification-modal-done {
-  height: 44px;
-  min-height: 44px;
-}
-
-.notifications-screen .notification-row:has(.toggle:disabled) h2 span {
-  color: rgba(242,242,242,.65);
-}
-
-.notifications-screen .notification-row:has(.toggle:disabled) h2 em {
-  opacity: .5;
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="win"] .notification-choice,
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="system"] .notification-choice,
+.notifications-screen-v2 .notification-inline-option-row[data-setting-key="expiry"] .notification-choice {
+  justify-content: flex-start;
 }
 
 .profile-screen .feature-body {
