@@ -12,6 +12,7 @@ const css = [
   responsiveIssueRules,
   readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/tongxing-compact.css", import.meta.url), "utf8"),
+  readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8"),
 ].join("\n");
 
@@ -119,9 +120,10 @@ test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線"
   assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(9px,2.56vw,10px)");
   assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "0px");
-  assert.equal(mainBall.transform, "none");
-  assert.equal(specialNumberBall.transform, "none");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-.4px");
+  assert.equal(mainBall.transform, "translateY(2px)");
+  assert.equal(specialNumberBall.transform, "translateY(2px)");
+  assert.equal(style(".history-special-number > span:first-child").transform, "translateY(2px)");
   assert.equal(specialBall.position, "relative");
   assert.equal(specialBall.height, "40px");
   assert.equal(specialBall.gridTemplateRows, "1fr");
