@@ -17,12 +17,14 @@ class AnalysisPipeline:
         repository: AnalysisRepository,
         builders: Mapping[str, ArtifactBuilder],
         analysis_version: str = "matrix-python-v1",
+        explore_batch_size: int = 10,
     ) -> None:
         if set(builders) != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_BUILDERS_INCOMPLETE")
         self.repository = repository
         self.builders = builders
         self.analysis_version = analysis_version
+        self.explore_batch_size = max(1, explore_batch_size)
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
         self._validate_draw(draw)
@@ -35,12 +37,38 @@ class AnalysisPipeline:
 
         context = {"draw": draw, "history": list(history), "artifacts": {}}
         try:
-            total = len(PHASES)
-            for cursor, phase in enumerate(PHASES):
-                self.repository.update_progress(lottery, period, self.analysis_version, phase, cursor, total)
-                payload = self.builders[phase](context)
-                self.repository.save_artifact(lottery, period, self.analysis_version, phase, payload)
-                context["artifacts"][phase] = payload
+            phase_total = len(PHASES)
+            resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
+            for phase_index, phase in enumerate(PHASES):
+                existing = self.repository.read_artifact(lottery, period, self.analysis_version, phase)
+                if phase_index < resume_phase_index and existing is not None:
+                    context["artifacts"][phase] = existing
+                    continue
+                if phase == "explore":
+                    start = int(run.get("cursor", 0)) if run.get("phase") == "explore" else 0
+                    context["exploreBatch"] = {
+                        "start": start,
+                        "limit": self.explore_batch_size,
+                        "existing": existing,
+                    }
+                built = self.builders[phase](context)
+                checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
+                if isinstance(checkpoint, dict) and "artifact" in built:
+                    payload = built["artifact"]
+                    self.repository.save_artifact(lottery, period, self.analysis_version, phase, payload)
+                    self.repository.update_progress(
+                        lottery, period, self.analysis_version, phase,
+                        int(checkpoint["cursor"]), int(checkpoint["total"]),
+                    )
+                    context["artifacts"][phase] = payload
+                    context.pop("exploreBatch", None)
+                    if not checkpoint.get("complete"):
+                        result = self.repository.get_progress(lottery, period)
+                        return {**(result or {}), "skipped": False}
+                    continue
+                self.repository.update_progress(lottery, period, self.analysis_version, phase, phase_index, phase_total)
+                self.repository.save_artifact(lottery, period, self.analysis_version, phase, built)
+                context["artifacts"][phase] = built
             completed_at = datetime.now(UTC).isoformat()
             self.repository.complete_run(lottery, period, self.analysis_version, completed_at)
             result = self.repository.get_progress(lottery, period)
