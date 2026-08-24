@@ -69,7 +69,8 @@ import {
   type MatrixStatusResponse,
 } from "./matrix-status-api";
 import { fetchMemberProfile, type MemberProfileResponse } from "./member-api";
-import { signOutFromMatrix } from "./auth/line-auth";
+import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
+import { getSupabaseClient } from "./lib/supabase";
 import { downloadMatrixTicket } from "./matrix-ticket-download";
 
 export type ScreenId =
@@ -3266,10 +3267,38 @@ function memberExpiryInTaipei(planExpiresAt: string | null): { date: string; rem
 }
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
+  const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
-  const [logoutPending, setLogoutPending] = useState(false);
-  const [logoutFailed, setLogoutFailed] = useState(false);
+  const [authPending, setAuthPending] = useState(false);
+  const [authFailure, setAuthFailure] = useState<"login" | "logout" | null>(null);
   useEffect(() => {
+    let active = true;
+    let authRevision = 0;
+    const client = getSupabaseClient();
+    const applySession = (hasSession: boolean) => {
+      if (active) setAuthState(hasSession ? "authenticated" : "anonymous");
+    };
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+      authRevision += 1;
+      applySession(Boolean(session));
+    });
+    const initialRevision = authRevision;
+    void client.auth.getSession().then(({ data, error }) => {
+      if (!active || authRevision !== initialRevision) return;
+      applySession(!error && Boolean(data.session));
+    }).catch(() => {
+      if (active && authRevision === initialRevision) applySession(false);
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+  useEffect(() => {
+    if (authState !== "authenticated") {
+      setMemberProfile(null);
+      return;
+    }
     let active = true;
     void fetchMemberProfile().then((profile) => {
       if (active) setMemberProfile(profile);
@@ -3277,18 +3306,20 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       if (active) setMemberProfile(null);
     });
     return () => { active = false; };
-  }, []);
+  }, [authState]);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
-  const handleLogout = async () => {
-    if (logoutPending) return;
-    setLogoutPending(true);
-    setLogoutFailed(false);
+  const handleAuthAction = async () => {
+    if (authPending || authState === "loading") return;
+    const action = authState === "authenticated" ? "logout" : "login";
+    setAuthPending(true);
+    setAuthFailure(null);
     try {
-      await signOutFromMatrix();
+      if (action === "logout") await signOutFromMatrix();
+      else await signInWithLine();
     } catch {
-      setLogoutFailed(true);
+      setAuthFailure(action);
     } finally {
-      setLogoutPending(false);
+      setAuthPending(false);
     }
   };
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
@@ -3305,19 +3336,19 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <div className="profile-avatar"><span>LINE</span></div>
         <div className="profile-copy"><h2>樂彩玩家</h2><p>LINE ID：{memberProfile?.lineUserId ?? ""}</p></div>
         <div className="profile-watermark" aria-hidden="true">M</div>
-        <button
+        {authState !== "loading" ? <button
           type="button"
           className="profile-logout"
-          onClick={() => void handleLogout()}
-          disabled={logoutPending}
-          aria-busy={logoutPending}
-        >登出</button>
+          onClick={() => void handleAuthAction()}
+          disabled={authPending}
+          aria-busy={authPending}
+        >{authState === "authenticated" ? "登出" : "LINE 登入"}</button> : null}
         <p
           className="profile-logout-error"
-          role={logoutFailed ? "alert" : undefined}
-          aria-hidden={logoutFailed ? undefined : true}
-          data-visible={logoutFailed}
-        >{logoutFailed ? "登出失敗，請稍後再試" : ""}</p>
+          role={authFailure ? "alert" : undefined}
+          aria-hidden={authFailure ? undefined : true}
+          data-visible={Boolean(authFailure)}
+        >{authFailure === "login" ? "登入失敗，請稍後再試" : authFailure === "logout" ? "登出失敗，請稍後再試" : ""}</p>
       </section>
       <section className="panel subscription-status-card">
         <SectionTitle>目前訂閱狀態</SectionTitle>

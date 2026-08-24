@@ -8,10 +8,22 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 declare const process: { cwd(): string };
 
 const memberApi = vi.hoisted(() => ({ fetchMemberProfile: vi.fn() }));
-const lineAuth = vi.hoisted(() => ({ signOutFromMatrix: vi.fn() }));
+const lineAuth = vi.hoisted(() => ({ signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
+const supabase = vi.hoisted(() => {
+  const unsubscribe = vi.fn();
+  const auth = {
+    getSession: vi.fn(),
+    onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe } } })),
+  };
+  return { auth, getClient: vi.fn(() => ({ auth })), unsubscribe };
+});
 
 vi.mock("../member-api", () => ({ fetchMemberProfile: memberApi.fetchMemberProfile }));
-vi.mock("../auth/line-auth", () => ({ signOutFromMatrix: lineAuth.signOutFromMatrix }));
+vi.mock("../auth/line-auth", () => ({
+  signInWithLine: lineAuth.signInWithLine,
+  signOutFromMatrix: lineAuth.signOutFromMatrix,
+}));
+vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
 
 import { ProfilePage } from "../FeaturePages";
 
@@ -32,7 +44,15 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
+  supabase.unsubscribe.mockReset();
+  supabase.getClient.mockClear();
+  supabase.auth.onAuthStateChange.mockClear();
+  supabase.auth.getSession.mockReset().mockResolvedValue({
+    data: { session: { access_token: "member-session" } },
+    error: null,
+  });
   memberApi.fetchMemberProfile.mockReset().mockResolvedValue({
     lineUserId: "line-real",
     planName: "年費方案",
@@ -42,6 +62,30 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it("未登入時在既有會員卡顯示 LINE 登入並啟動登入流程", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const login = await screen.findByRole("button", { name: "LINE 登入" });
+    expect(screen.queryByRole("button", { name: "登出" })).not.toBeInTheDocument();
+    expect(memberApi.fetchMemberProfile).not.toHaveBeenCalled();
+
+    fireEvent.click(login);
+
+    expect(login).toBeDisabled();
+    expect(login).toHaveAttribute("aria-busy", "true");
+    expect(lineAuth.signInWithLine).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(login).toBeEnabled());
+  });
+
+  it("已登入時維持既有登出按鈕且不顯示 LINE 登入", async () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByRole("button", { name: "登出" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "LINE 登入" })).not.toBeInTheDocument();
+  });
+
   it("以登入會員 API 資料取代固定 LINE ID、方案與到期日", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
@@ -95,7 +139,7 @@ describe("ProfilePage member API", () => {
       rejectLogout = reject;
     }));
     render(<ProfilePage onNavigate={vi.fn()} />);
-    const logout = screen.getByRole("button", { name: "登出" });
+    const logout = await screen.findByRole("button", { name: "登出" });
     const feedback = document.querySelector<HTMLElement>(".profile-logout-error");
 
     expect(feedback).toBeInTheDocument();
