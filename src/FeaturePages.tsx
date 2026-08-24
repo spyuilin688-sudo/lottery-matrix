@@ -369,9 +369,12 @@ function SettingLabelIcon({
   type: "lottery" | "period" | "road" | "order" | "date" | "range";
 }) {
   return (
-    <span className="setting-label-icon" aria-hidden="true">
-      <img src={`/assets/matrix-explore/${type}.png`} alt="" />
-    </span>
+    <img
+      className="setting-label-icon matrix-explore-setting-icon"
+      src={`/assets/matrix-explore/${type}.png`}
+      alt=""
+      aria-hidden="true"
+    />
   );
 }
 
@@ -1341,13 +1344,13 @@ export function MatrixExplorePage({
       title={title}
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
-      className={`matrix-explore-screen ${title === "Matrix 探索" ? "matrix-explore-main-screen" : title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
+      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
       headerAction={title === "Matrix 探索" ? <MatrixPageSwitcher current="explore" onNavigate={onNavigate} /> : undefined}
     >
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/lottery.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="lottery" />}<b>彩球類型</b></span>
+          <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span>
             <div className="select-box native-select">
               <select
                 aria-label="彩種"
@@ -1359,7 +1362,7 @@ export function MatrixExplorePage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}探索期數</span>
+          <label><span><SettingLabelIcon type="period" />探索期數</span>
             <div className="segmented three">
               {(["二期", "七期", "十三期"] as const).map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -1369,7 +1372,7 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/road.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="road" />}版路類型</span>
+          <label><span><SettingLabelIcon type="road" />版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
@@ -1398,7 +1401,7 @@ export function MatrixExplorePage({
           <div className="advanced-panel">
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/order.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="order" />}號碼順序
+                <SettingLabelIcon type="order" />號碼順序
               </span>
               <div className="select-box native-select">
                 <select
@@ -1414,7 +1417,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/date.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="date" />}探索日期
+                <SettingLabelIcon type="date" />探索日期
               </span>
               <div className="segmented three">
                 {["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"].map((value) => (
@@ -1431,7 +1434,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}探索範圍
+                <SettingLabelIcon type="range" />探索範圍
               </span>
               <div className="segmented two">
                 {(["標準範圍", "完整範圍"] as const).map((value) => (
@@ -1688,7 +1691,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       .finally(() => setValidationLoadingId((current) => current === cacheKey ? null : current));
   };
   return (
-    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-tiangong-screen">
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">

@@ -37,6 +37,7 @@ beforeEach(() => {
 
 test('一段式不顯示第二段，且天工沒有近10期與連準篩選', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  expect(document.querySelector('.matrix-tiangong-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
   expect(screen.queryByText('第二段球位')).toBeNull();
   expect(screen.queryByText('第二段版路類型')).toBeNull();
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();

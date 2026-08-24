@@ -99,6 +99,8 @@ beforeEach(() => {
 test('Matrix 天衍的近10期與探索頁使用相同展開行為', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
 
+  expect(document.querySelector('.matrix-tianyan-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
+  expect(document.querySelectorAll('.matrix-tianyan-screen .matrix-explore-setting-icon')).toHaveLength(3);
   expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).not.toBeNull();
   expect(document.querySelector('.history-panel')?.classList.contains('matrix-explore-history-panel')).toBe(true);
 

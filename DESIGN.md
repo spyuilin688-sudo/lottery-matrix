@@ -20,7 +20,7 @@ rounded:
   DEFAULT: "10px"
   status-card: "8px"
 spacing:
-  page-inline: "12px"
+  page-inline: "16px"
   section-gap: "8px"
   bottom-navigation-height: "82px"
 components:
@@ -90,7 +90,7 @@ components:
 
 | Runtime token | Exact value | Role |
 |---|---|---|
-| `--layout-page-inline` | `12px` | 手機頁面左右留白 |
+| `--layout-page-inline` | `16px` | 一般手機頁面左右留白；首頁內容區可使用 12px 局部覆寫 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
 | `--bottom-navigation-height` | `82px` | 固定底部導覽高度 |

@@ -128,7 +128,7 @@
 .home-screen .latest-draw-card::before {
   position: absolute;
   z-index: 0;
-  inset: 44px 4px 24px;
+  inset: 36px 4px 24px;
   border-radius: 4px;
   background:
     radial-gradient(circle at 50% 82%, transparent 0 18%, rgba(0, 5, 10, .28) 48%, rgba(0, 5, 10, .56) 100%),
@@ -169,7 +169,6 @@
   width: 100%;
   aspect-ratio: 1532 / 214;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 3px;
   min-width: 0;
 }
 
@@ -230,8 +229,8 @@
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
-  grid-template-rows: 44px minmax(0, 1fr) 24px;
-  width: calc(100% - 16px);
+  grid-template-rows: 36px minmax(0, 1fr) 24px;
+  width: 100%;
   height: var(--draw-card-height);
   min-height: 0;
   padding: 9px 6px 0;
@@ -589,7 +588,7 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: calc(100% - (var(--layout-page-inline) * 2));
+  width: calc(100% - 8px);
   height: var(--home-features-height);
   aspect-ratio: 376.1 / 76.8;
   min-height: 0;

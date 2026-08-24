@@ -58,7 +58,7 @@
   display: flex;
   width: auto;
   height: auto;
-  gap: 8px;
+  gap: 4px;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {

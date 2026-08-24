@@ -31,9 +31,9 @@ test("Matrix Explore canonical scoped stylesheet remains the final loaded layout
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {
   assert.ok(exploreStart >= 0 && exploreEnd > exploreStart);
-  assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?matrix-explore-setting-icon[\s\S]*?<b>彩球類型<\/b><\/span>/s);
-  assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?period\.png[\s\S]*?探索期數<\/span>/s);
-  assert.match(exploreSource, /<label><span>\{title === "Matrix 探索"[\s\S]*?road\.png[\s\S]*?版路類型<\/span>/s);
+  assert.match(exploreSource, /<label><span><SettingLabelIcon type="lottery" \/><b>彩球類型<\/b><\/span>/s);
+  assert.match(exploreSource, /<label><span><SettingLabelIcon type="period" \/>探索期數<\/span>/s);
+  assert.match(exploreSource, /<label><span><SettingLabelIcon type="road" \/>版路類型<\/span>/s);
   assert.doesNotMatch(exploreSource, /style=\{/);
 });
 

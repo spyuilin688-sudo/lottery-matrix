@@ -18,7 +18,7 @@ const tokenTrace = [
   ["--lottery-neutral-950", "#02070c"],
   ["--lottery-gold-500", "#c49145"],
   ["--lottery-gold-300", "#f4ce67"],
-  ["--layout-page-inline", "12px"],
+  ["--layout-page-inline", "16px"],
   ["--layout-section-gap", "8px"],
   ["--lottery-card-radius", "10px"],
   ["--bottom-navigation-height", "82px"],

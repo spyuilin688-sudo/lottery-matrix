@@ -26,8 +26,10 @@ test('homepage brand header owns 8px top spacing and logo stays at 75 percent', 
 });
 
 test('lottery switcher and draw card use the 12px homepage inline baseline', () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
+  assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*12px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0 var\(--layout-page-inline\);/);
+  assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*4px;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
 });
 
@@ -49,9 +51,9 @@ test('embedded next draw info retains the requested compact metrics', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value', /line-height:\s*13px;/);
 });
 
-test('Matrix Core uses its 16px inset while five shortcuts use 12px and equal columns', () => {
+test('Matrix Core uses its 16px inset while five shortcuts use 4px and equal columns', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - 8px\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
 });

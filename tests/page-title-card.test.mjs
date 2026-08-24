@@ -51,7 +51,7 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(switcher, /Matrix天工\.png/);
   assert.doesNotMatch(switcher, /Matrix探索\.png/);
   assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
-  assert.match(exploreSpacingStyles, /\.matrix-page-switcher\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(exploreSpacingStyles, /\.matrix-page-switcher\s*\{[^}]*gap:\s*4px;/s);
   assert.match(exploreSpacingStyles, /\.matrix-page-switcher button\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;/s);
   assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
 });
@@ -91,7 +91,7 @@ test("home and Matrix status use the shared Matrixbba switcher and preserve sele
   assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*100%;/.test(body) && /margin-inline:\s*0;/.test(body)));
-  assert.ok(switcherBodies.some((body) => /padding-inline:\s*5px;/.test(body)));
+  assert.ok(switcherBodies.some((body) => /padding-inline:\s*4px;/.test(body)));
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
   const selectedOutline = ruleBodies(
