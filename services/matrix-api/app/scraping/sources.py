@@ -75,7 +75,19 @@ def _materialize_draw(
     }
 
 
-def parse_taiwan_lottery_payload(payload: Any, key: str, count: int) -> MatrixDraw:
+def _newest_unique(draws: list[MatrixDraw], limit: int | None = None) -> list[MatrixDraw]:
+    by_period: dict[str, MatrixDraw] = {}
+    for draw in draws:
+        by_period[draw["period"]] = draw
+    ordered = sorted(
+        by_period.values(),
+        key=lambda draw: (str(draw.get("drawDate", "")), str(draw["period"])),
+        reverse=True,
+    )
+    return ordered if limit is None else ordered[: max(0, limit)]
+
+
+def parse_taiwan_lottery_history(payload: Any, key: str, count: int) -> list[MatrixDraw]:
     if not isinstance(payload, dict) or not isinstance(payload.get("content"), dict):
         raise ValueError("TAIWAN_LOTTERY_PAYLOAD_INVALID")
     items = payload["content"].get(key)
@@ -93,9 +105,14 @@ def parse_taiwan_lottery_payload(payload: Any, key: str, count: int) -> MatrixDr
             parsed.append(_materialize_draw(str(item.get("period", "")), str(item.get("lotteryDate", "")), size, count, appear))
         except ValueError:
             continue
+    return _newest_unique(parsed)
+
+
+def parse_taiwan_lottery_payload(payload: Any, key: str, count: int) -> MatrixDraw:
+    parsed = parse_taiwan_lottery_history(payload, key, count)
     if not parsed:
         raise ValueError("TAIWAN_LOTTERY_DRAW_INCOMPLETE")
-    return max(parsed, key=lambda draw: int(draw["period"]))
+    return parsed[0]
 
 
 def _period(cells: list[str]) -> str:
@@ -127,7 +144,7 @@ def _fantasy_numbers(value: str) -> list[str]:
     return pairs if len(pairs) == 5 and all(1 <= int(number) <= 39 for number in pairs) else []
 
 
-def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
+def parse_sc888_fantasy5_history(html: str) -> list[MatrixDraw]:
     rows = parse_table_rows(html)
     drop_index = -1
     size_index = -1
@@ -155,12 +172,17 @@ def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
             draws.append(_materialize_draw(period, draw_date, size, 5, drop))
         except ValueError:
             continue
+    return _newest_unique(draws)
+
+
+def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
+    draws = parse_sc888_fantasy5_history(html)
     if not draws:
         raise ValueError("SC888_DRAW_INCOMPLETE")
-    return max(draws, key=lambda draw: (draw["drawDate"], draw["period"]))
+    return draws[0]
 
 
-def parse_nfd_marksix_html(html: str) -> MatrixDraw:
+def parse_nfd_marksix_history(html: str) -> list[MatrixDraw]:
     draws: list[MatrixDraw] = []
     for cells in parse_table_rows(html):
         if len(cells) < 10 or not re.fullmatch(r"20\d{2}", cells[0]) or not re.fullmatch(r"\d{1,3}", cells[2]):
@@ -175,9 +197,14 @@ def parse_nfd_marksix_html(html: str) -> MatrixDraw:
             draws.append(_materialize_draw(period, draw_date, cells[3:10], 7))
         except ValueError:
             continue
+    return _newest_unique(draws)
+
+
+def parse_nfd_marksix_html(html: str) -> MatrixDraw:
+    draws = parse_nfd_marksix_history(html)
     if not draws:
         raise ValueError("NFD_DRAW_INCOMPLETE")
-    return max(draws, key=lambda draw: (draw["drawDate"], draw["period"]))
+    return draws[0]
 
 
 def _response_text(response: httpx.Response) -> str:
@@ -190,6 +217,12 @@ def _response_text(response: httpx.Response) -> str:
         return response.content.decode(charset)
     except (LookupError, UnicodeDecodeError):
         return response.content.decode("utf-8", errors="replace")
+
+
+def _month_label(now: datetime, offset: int) -> str:
+    month_index = now.year * 12 + (now.month - 1) - offset
+    year, month_zero = divmod(month_index, 12)
+    return f"{year:04d}-{month_zero + 1:02d}"
 
 
 class LatestDrawSource:
@@ -211,17 +244,56 @@ class LatestDrawSource:
             return parse_nfd_marksix_html(_response_text(response))
         raise ValueError("UNKNOWN_LOTTERY")
 
+    def fetch_history(self, lottery: str, limit: int) -> list[MatrixDraw]:
+        if limit <= 0:
+            return []
+        if lottery in {"今彩539", "大樂透"}:
+            return self._fetch_taiwan_history(lottery, limit)
+        if lottery == "天天樂":
+            response = self.client.get(SC888_FANTASY5_URL, headers=HEADERS, timeout=20.0, follow_redirects=True)
+            response.raise_for_status()
+            return parse_sc888_fantasy5_history(_response_text(response))[:limit]
+        if lottery == "六合彩":
+            draws: list[MatrixDraw] = []
+            current_year = self.now().year
+            for year_offset in range(5):
+                response = self.client.get(
+                    NFD_MARKSIX_URL.format(year=current_year - year_offset),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                draws.extend(parse_nfd_marksix_history(_response_text(response)))
+                combined = _newest_unique(draws, limit)
+                if len(combined) >= limit:
+                    return combined
+            return _newest_unique(draws, limit)
+        raise ValueError("UNKNOWN_LOTTERY")
+
     def _fetch_taiwan(self, lottery: str) -> MatrixDraw:
+        history = self._fetch_taiwan_history(lottery, 1, max_months=1)
+        if not history:
+            raise ValueError("TAIWAN_LOTTERY_DRAW_INCOMPLETE")
+        return history[0]
+
+    def _fetch_taiwan_history(self, lottery: str, limit: int, max_months: int = 24) -> list[MatrixDraw]:
         is_539 = lottery == "今彩539"
         url = TAIWAN_539_URL if is_539 else TAIWAN_649_URL
         key = "daily539Res" if is_539 else "lotto649Res"
         count = 5 if is_539 else 7
-        month = self.now().strftime("%Y-%m")
-        response = self.client.get(
-            f"{url}?period&month={month}&pageSize=31",
-            headers={**HEADERS, "accept": "application/json,text/plain,*/*", "referer": FORMAL_PAGE_REFERERS[lottery]},
-            timeout=20.0,
-            follow_redirects=True,
-        )
-        response.raise_for_status()
-        return parse_taiwan_lottery_payload(response.json(), key, count)
+        draws: list[MatrixDraw] = []
+        for month_offset in range(max_months):
+            month = _month_label(self.now(), month_offset)
+            response = self.client.get(
+                f"{url}?period&month={month}&pageSize=31",
+                headers={**HEADERS, "accept": "application/json,text/plain,*/*", "referer": FORMAL_PAGE_REFERERS[lottery]},
+                timeout=20.0,
+                follow_redirects=True,
+            )
+            response.raise_for_status()
+            draws.extend(parse_taiwan_lottery_history(response.json(), key, count))
+            combined = _newest_unique(draws, limit)
+            if len(combined) >= limit:
+                return combined
+        return _newest_unique(draws, limit)
