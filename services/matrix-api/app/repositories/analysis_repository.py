@@ -12,6 +12,7 @@ class AnalysisRepository(Protocol):
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
+    def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
     def get_progress(self, lottery: str, draw_period: str) -> dict[str, Any] | None: ...
@@ -59,7 +60,7 @@ class InMemoryAnalysisRepository:
         return dict(self.runs[key])
 
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
-        self.runs[(lottery, draw_period, analysis_version)].update({"phase": phase, "cursor": cursor, "total": total})
+        self.runs[(lottery, draw_period, analysis_version)].update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completedAt": None, "error": None})
 
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
         if kind not in ARTIFACT_KINDS:
@@ -67,6 +68,10 @@ class InMemoryAnalysisRepository:
         self.artifacts[(lottery, draw_period, analysis_version, kind)] = {
             "payload": payload, "expiresAt": datetime.now(UTC) + RETENTION,
         }
+
+    def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
+        record = self.artifacts.get((lottery, draw_period, analysis_version, kind))
+        return None if record is None else record["payload"]
 
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
         available = {key[3] for key in self.artifacts if key[:3] == (lottery, draw_period, analysis_version)}
@@ -160,7 +165,7 @@ class SupabaseAnalysisRepository:
         return self._normalize_run(self._one(existing))
 
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
-        self.client.table("matrix_analysis_runs").update({"phase": phase, "cursor": cursor, "total": total}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
+        self.client.table("matrix_analysis_runs").update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completed_at": None, "error": None}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
 
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
         if kind not in ARTIFACT_KINDS:
@@ -168,6 +173,10 @@ class SupabaseAnalysisRepository:
         now = datetime.now(UTC)
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "kind": kind, "payload": payload, "completed_at": now.isoformat(), "expires_at": (now + RETENTION).isoformat()}
         self.client.table("matrix_analysis_artifacts").upsert(record, on_conflict="lottery,draw_period,analysis_version,kind").execute()
+
+    def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
+        artifact = self.client.table("matrix_analysis_artifacts").select("payload").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).eq("kind", kind).limit(1).execute()
+        return artifact.data[0]["payload"] if artifact.data else None
 
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
         response = self.client.table("matrix_analysis_artifacts").select("kind").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
