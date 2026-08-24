@@ -16,7 +16,7 @@ Expected: 點擊儲存後先出現二次確認，取消時不寫入；確認後�
 
 ## Test 2 - 手機版搜尋會員並停權或啟動
 Viewport: mobile
-Covers: GET /api/data/users, PUT /api/members/:id/status, member search/filter, 30-row pagination, audit_logs
+Covers: GET /api/data/users, PUT /api/members/:id/status, member search/filter, compact admin layout, 30-row pagination, audit_logs
 Description: 驗證營運管理員可在手機版列表搜尋會員、查看在線統計並切換帳號狀態。
 
 Steps:
@@ -26,11 +26,11 @@ Steps:
 4. 點擊列表中的「停權」或「啟動」
 5. 檢查二次確認內容後確認操作
 
-Expected: 搜尋與狀態控制高度為 34px，列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態；取消二次確認時狀態不得改變。
+Expected: 固定標題列維持內容置中且高度縮減，搜尋與狀態控制高度為 32px，搜尋卡沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態；取消二次確認時狀態不得改變。
 
 ## Test 3 - 手動管理會員訂閱
 Viewport: desktop
-Covers: GET /api/data/subscriptions, PUT /api/subscriptions/:id, adjustExpiry, user information dialog, 30-row pagination
+Covers: GET /api/data/subscriptions, PUT /api/subscriptions/:id, adjustExpiry, compact search card, user information dialog, 30-row pagination
 Description: 驗證營運管理員可查看訂閱列表、會員資訊並調整方案到期日。
 
 Steps:
@@ -40,7 +40,7 @@ Steps:
 4. 在二次確認視窗確認修改
 5. 重新載入「訂閱管理」
 
-Expected: 搜尋與狀態控制高度為 34px，列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗的「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
+Expected: 搜尋與狀態控制高度為 32px，搜尋卡高度依內容自動適配且沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE用戶ID、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗的「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
 
 ## Test 4 - 審核轉帳、管理員權限與啟動碼刪除
 Viewport: desktop
@@ -56,16 +56,17 @@ Steps:
 
 Expected: 取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；管理員列表操作按鈕為 32px 且列高已縮減，管理員異動均先確認，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
 
-## Test 5 - 手機選單收合與異常 API 重新呼叫
+## Test 5 - 概覽卡片、手機選單與異常 API 重新呼叫
 Viewport: mobile
-Covers: mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
-Description: 驗證手機選單可點擊外部收合；系統設定會自動檢查所有項目，異常 API 可真正重新呼叫且不影響其他項目。
+Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, compact system service cards, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
+Description: 驗證概覽、收入與系統服務卡片縮減後內容仍完整；手機選單可點擊外部收合，異常 API 可真正重新呼叫且不影響其他項目。
 
 Steps:
-1. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
-2. 重新開啟選單並進入「系統設定」
-3. 查看連線狀態卡片並讓 Matrix audit API 呈現異常
-4. 點擊 Matrix audit API 卡片的「重新呼叫」
-5. 點擊頁面上方的「重新檢查」
+1. 查看「營運概覽」與「收入報表」的統計卡片
+2. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
+3. 重新開啟選單並進入「系統設定」
+4. 查看連線狀態卡片並讓 Matrix audit API 呈現異常
+5. 點擊 Matrix audit API 卡片的「重新呼叫」，再點擊頁面上方的「重新檢查」
 
-Expected: 點擊外部後選單自動收合；Matrix audit API 異常時顯示錯誤內容與「重新呼叫」，按下後只實際呼叫該 API 並更新該卡片；正常 API 與排程卡片沒有多餘按鈕，Matrix coverage API 仍顯示正常；每張卡片顯示項目說明、最後檢查時間及回應時間。
+Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；系統服務卡片高度依內容自動適配且資訊不碰撞；Matrix audit API 異常時顯示錯誤內容與「重新呼叫」，按下後只實際呼叫該 API 並更新該卡片；正常 API 與排程卡片沒有多餘按鈕，Matrix coverage API 仍顯示正常；每張卡片顯示項目說明、最後檢查時間及回應時間。
+
