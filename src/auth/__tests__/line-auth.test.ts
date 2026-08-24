@@ -194,18 +194,14 @@ describe('LINE auth helper', () => {
     expect(revoke).toHaveBeenCalledWith('remembered-provider-token');
   });
 
-  it('fails closed without a provider token and leaves the Supabase session intact', async () => {
+  it('still signs out of Supabase when a restored session has no provider token', async () => {
     const { client, signOut } = createClient({ session: { access_token: 'supabase-access-token' } });
     const revoke = vi.fn();
 
-    await expect(signOutFromMatrix(client as never, revoke)).rejects.toMatchObject({
-      code: 'LINE_PROVIDER_TOKEN_REQUIRED',
-      status: 400,
-      message: 'LINE_PROVIDER_TOKEN_REQUIRED',
-    });
+    await signOutFromMatrix(client as never, revoke);
 
     expect(revoke).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('clears the in-memory provider token after successful revoke and sign-out', async () => {

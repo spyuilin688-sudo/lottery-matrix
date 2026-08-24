@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 declare const process: { cwd(): string };
 
-const memberApi = vi.hoisted(() => ({ fetchMemberProfile: vi.fn() }));
+const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({ signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
 const supabase = vi.hoisted(() => {
   const unsubscribe = vi.fn();
@@ -18,7 +18,10 @@ const supabase = vi.hoisted(() => {
   return { auth, getClient: vi.fn(() => ({ auth })), unsubscribe };
 });
 
-vi.mock("../member-api", () => ({ fetchMemberProfile: memberApi.fetchMemberProfile }));
+vi.mock("../member-api", () => ({
+  bootstrapMember: memberApi.bootstrapMember,
+  fetchMemberProfile: memberApi.fetchMemberProfile,
+}));
 vi.mock("../auth/line-auth", () => ({
   signInWithLine: lineAuth.signInWithLine,
   signOutFromMatrix: lineAuth.signOutFromMatrix,
@@ -59,6 +62,10 @@ beforeEach(() => {
     planExpiresAt: "2026-09-22T00:00:00.000Z",
     isLifetime: false,
   });
+  memberApi.bootstrapMember.mockReset().mockResolvedValue({
+    memberId: "member-real",
+    lineUserId: "line-real",
+  });
 });
 
 describe("ProfilePage member API", () => {
@@ -69,6 +76,7 @@ describe("ProfilePage member API", () => {
 
     const login = await screen.findByRole("button", { name: "LINE 登入" });
     expect(screen.queryByRole("button", { name: "登出" })).not.toBeInTheDocument();
+    expect(memberApi.bootstrapMember).not.toHaveBeenCalled();
     expect(memberApi.fetchMemberProfile).not.toHaveBeenCalled();
 
     fireEvent.click(login);
@@ -92,6 +100,10 @@ describe("ProfilePage member API", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     await act(async () => { await Promise.resolve(); });
+    expect(memberApi.bootstrapMember).toHaveBeenCalledTimes(1);
+    expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
+      memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
+    );
     expect(screen.getByText("LINE ID：line-real")).toBeInTheDocument();
     expect(screen.getByText("年費方案")).toBeInTheDocument();
     expect(screen.getByText("2026/09/22")).toBeInTheDocument();

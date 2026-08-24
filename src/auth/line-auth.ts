@@ -44,13 +44,11 @@ export async function signOutFromMatrix(
     const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
       ? sessionProviderToken
       : readLineProviderToken();
-    if (!providerAccessToken) {
-      throw new MatrixApiError('LINE_PROVIDER_TOKEN_REQUIRED', 400);
+    if (providerAccessToken) {
+      await revoke(providerAccessToken);
+      clearLineProviderToken();
+      markLineProviderTokenRevokedFor(accessToken);
     }
-
-    await revoke(providerAccessToken);
-    clearLineProviderToken();
-    markLineProviderTokenRevokedFor(accessToken);
   }
 
   try {
