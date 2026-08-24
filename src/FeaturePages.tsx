@@ -2462,10 +2462,6 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const current = sections[selected];
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
-      <section className="guide-intro panel">
-        <img src="/assets/lottery/functions/matrix-guide.png" alt="" />
-        <div><p>樂彩 Matrix 功能說明</p></div>
-      </section>
       <nav className="guide-category-strip" aria-label="Matrix 指南分類">
         {sections.map((section, index) => (
           <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
