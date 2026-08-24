@@ -162,7 +162,7 @@
   justify-content: center;
   border-left: var(--border-width) solid rgba(151, 108, 48, .48);
   color: #f2eee7;
-  font-size: clamp(11px, 3.6vw, 15px);
+  font-size: clamp(13px, calc(3.6vw + 2px), 17px);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -234,8 +234,8 @@
 }
 
 .tongxing-screen .tongxing-table-row[data-row-type="predicted"] .tongxing-period-cell strong { color: #78bfe3; }
-.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: clamp(12px, 3.6vw, 14px); font-weight: 700; }
-.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: clamp(9.5px, 3vw, 13px); }
+.tongxing-screen .tongxing-table-row .locked-input-number { color: #ef5b58; font-size: clamp(14px, calc(3.6vw + 2px), 16px); font-weight: 700; }
+.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span { font-size: clamp(11.5px, calc(3vw + 2px), 15px); }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-head > span { font-size: clamp(8px, 2.65vw, 10.5px); }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell { padding-inline: 1px; }
 .tongxing-screen .tongxing-table[data-columns="7"] .tongxing-period-cell strong { font-size: clamp(10px, 3vw, 12px); }
