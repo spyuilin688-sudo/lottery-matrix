@@ -2,7 +2,8 @@ name: Matrix scheduled analysis
 
 on:
   schedule:
-    - cron: "20 10 * * *"
+    - cron: "50 1 * * *"
+    - cron: "50 2 * * *"
     - cron: "50 12 * * 1-6"
     - cron: "50 13 * * *"
   workflow_dispatch:
@@ -47,7 +48,7 @@ jobs:
           EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           case "$EVENT_SCHEDULE" in
-            "20 10 * * *")
+            "50 1 * * *"|"50 2 * * *")
               lotteries=("天天樂")
               ;;
             "50 12 * * 1-6")
@@ -71,6 +72,13 @@ jobs:
 
           failed=0
           for lottery in "${lotteries[@]}"; do
+            if [[ "$EVENT_NAME" == "schedule" && "$lottery" == "天天樂" ]]; then
+              due="$(uv run python -m app.schedule --lottery "$lottery")"
+              if [[ "$due" != "due" ]]; then
+                echo "Skip 天天樂: current trigger is not Pacific 18:50"
+                continue
+              fi
+            fi
             if ! uv run python -m app.worker --lottery "$lottery"; then
               failed=1
             fi
