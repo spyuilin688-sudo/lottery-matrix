@@ -31,7 +31,7 @@ describe("BottomNavigation", () => {
     render(<BottomNavigation active={active} />);
 
     expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute("src", artwork);
-    expect(screen.getByRole("button", { name: active === "快捷" ? "快捷；長按三秒開啟設定" : active })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: active === "快捷" ? "快捷；向上滑開啟設定" : active })).toHaveAttribute(
       "data-selected",
       "true",
     );
@@ -49,7 +49,7 @@ describe("BottomNavigation", () => {
 
       expect(selectedItems).toHaveLength(1);
       expect(selectedItems[0]).toHaveAccessibleName(
-        active === "快捷" ? "快捷；長按三秒開啟設定" : active,
+        active === "快捷" ? "快捷；向上滑開啟設定" : active,
       );
       expect(navigation).toHaveAttribute("data-active", active);
       expect(within(selectedItems[0]).getByText(active)).toBeVisible();
@@ -63,7 +63,7 @@ describe("BottomNavigation", () => {
       "data-active",
       "快捷",
     );
-    expect(screen.getByRole("button", { name: "快捷；長按三秒開啟設定" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "快捷；向上滑開啟設定" })).toHaveAttribute(
       "data-selected",
       "true",
     );
@@ -77,7 +77,7 @@ describe("BottomNavigation", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "快捷；長按三秒開啟設定" }));
+    fireEvent.click(screen.getByRole("button", { name: "快捷；向上滑開啟設定" }));
 
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
@@ -102,7 +102,7 @@ describe("BottomNavigation", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
-    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
+    const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
     fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
     fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
 
@@ -113,36 +113,55 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("pointer cancel 會取消快捷長按計時", () => {
-    vi.useFakeTimers();
+  it("pointer cancel 會讓快捷按鈕回到原位且不開啟設定", () => {
     const onQuickOpen = vi.fn();
     const onQuickConfigure = vi.fn();
 
     render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
 
-    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 100 });
+    fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 55 });
     fireEvent.pointerCancel(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
-    vi.advanceTimersByTime(3000);
 
     expect(onQuickConfigure).not.toHaveBeenCalled();
     expect(onQuickOpen).not.toHaveBeenCalled();
+    expect(quickButton).toHaveStyle({ transform: "translateY(0px)" });
   });
 
-  it("手機 Pointer 長按三秒會開啟快捷設定且不觸發快捷功能", () => {
-    vi.useFakeTimers();
+  it("手機向上滑滿 32px 時按鈕跟隨手指，放開後開啟快捷設定", () => {
     const onQuickOpen = vi.fn();
     const onQuickConfigure = vi.fn();
 
     render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
 
-    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
-    vi.advanceTimersByTime(3000);
-    fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 100 });
+    fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 68 });
+
+    expect(quickButton).toHaveStyle({ transform: "translateY(-32px)" });
+
+    fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 68 });
     fireEvent.click(quickButton);
 
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
     expect(onQuickOpen).not.toHaveBeenCalled();
+    expect(quickButton).toHaveStyle({ transform: "translateY(0px)" });
+  });
+
+  it("手機向上滑未滿 32px 時放開會回彈，click 仍保留快捷功能", () => {
+    const onQuickOpen = vi.fn();
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
+
+    const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 100 });
+    fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 69 });
+    fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 69 });
+    fireEvent.click(quickButton);
+
+    expect(onQuickConfigure).not.toHaveBeenCalled();
+    expect(onQuickOpen).toHaveBeenCalledTimes(1);
+    expect(quickButton).toHaveStyle({ transform: "translateY(0px)" });
   });
 });

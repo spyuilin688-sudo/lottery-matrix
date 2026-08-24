@@ -51,7 +51,8 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(switcher, /Matrix天工\.png/);
   assert.doesNotMatch(switcher, /Matrix探索\.png/);
   assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
-  assert.match(exploreSpacingStyles, /\.matrix-page-switcher\s*\{[^}]*gap:\s*10px;/s);
+  assert.match(exploreSpacingStyles, /\.matrix-page-switcher\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(exploreSpacingStyles, /\.matrix-page-switcher button\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;/s);
   assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
 });
 

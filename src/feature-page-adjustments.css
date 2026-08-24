@@ -8,7 +8,7 @@
 
 .notifications-screen-v2 .notification-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .notifications-screen-v2 .notification-group,
@@ -42,7 +42,13 @@
   padding: 2px 4px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 6px;
+}
+
+.notifications-screen-v2 .notification-icon,
+.notifications-screen-v2 .notification-icon img {
+  width: 36px;
+  height: 36px;
 }
 
 .notifications-screen-v2 .notification-system-group .notification-heading {
@@ -62,20 +68,22 @@
 }
 
 .notifications-screen-v2 .notification-actions {
-  display: flex;
+  display: grid;
   min-width: 0;
+  grid-template-columns: 64px 38px;
   align-items: center;
   justify-content: flex-end;
-  gap: 20px;
+  gap: 8px;
 }
 
 .notifications-screen-v2 .notification-settings-toggle {
   display: inline-flex;
   box-sizing: border-box;
   min-width: 0;
-  height: 26px;
-  min-height: 26px;
-  padding: 0 7px;
+  width: 64px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 5px;
   flex: 0 1 auto;
   align-items: center;
   justify-content: center;
@@ -107,9 +115,9 @@
 }
 
 .notifications-screen-v2 .notification-actions > .toggle {
-  width: 42px;
-  height: 22px;
-  flex: 0 0 42px;
+  width: 38px;
+  height: 32px;
+  flex: 0 0 38px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -118,20 +126,20 @@
 }
 
 .notifications-screen-v2 .toggle::before {
-  top: 0;
-  width: 42px;
-  height: 22px;
+  top: 6px;
+  width: 38px;
+  height: 20px;
   border-radius: 2px;
 }
 
 .notifications-screen-v2 .toggle span {
-  top: 2px;
-  width: 18px;
-  height: 18px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
 }
 
 .notifications-screen-v2 .toggle[data-checked="true"] span {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 .notifications-screen-v2 .notification-inline-settings {
@@ -240,8 +248,16 @@
   border-color: #755329;
 }
 
-.bottom-navigation-item[aria-label="快捷；長按三秒開啟設定"] {
+.bottom-navigation-item[data-quick-gesture="true"] {
   touch-action: none;
   -webkit-touch-callout: none;
   user-select: none;
+  will-change: transform;
+  transition: transform .18s cubic-bezier(.22, 1, .36, 1);
+}
+
+.bottom-navigation-item[data-quick-gesture="true"][data-dragging="true"] { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-navigation-item[data-quick-gesture="true"] { transition-duration: 0s; }
 }

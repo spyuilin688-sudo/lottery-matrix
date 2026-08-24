@@ -215,7 +215,6 @@
 .advanced-panel label { display: grid; min-width: 0; width: 100%; grid-template-columns: 102px minmax(0, 1fr); align-items: center; gap: 8px; }
 .setting-grid label > span, .advanced-panel label > span { color: #c6c0b6; font-size: 13px; }
 .setting-grid label > span { display: flex; align-items: center; gap: 8px; text-align: left; white-space: nowrap; }
-.setting-grid .matrix-explore-setting-icon { width: 36px; height: 36px; flex: 0 0 36px; }
 .setting-grid .select-box,
 .setting-grid .segmented button { height: 32px; min-height: 32px; }
 .setting-label-icon {
@@ -1413,14 +1412,18 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .matrix-status-lottery-switcher { margin: 0 0 8px; }
 .matrix-status-screen .status-list { gap: 8px; }
 .matrix-status-screen .matrix-title-banner-actions {
-  inset: auto 3.5% 8% auto;
-  width: clamp(42px, 13vw, 50px);
-  height: clamp(42px, 13vw, 50px);
+  top: 100%;
+  right: 4%;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  height: auto;
+  transform: translateY(-87.5%);
 }
 .matrix-status-screen .status-title-trigger {
   display: grid;
-  width: 100%;
-  height: 100%;
+  width: 1.8rem;
+  height: 1.8rem;
   padding: 0;
   place-items: center;
   border: 0;
@@ -1926,7 +1929,7 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 .profile-screen .feature-body,
 .profile-detail-screen .feature-body {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   padding-bottom: 106px;
 }
 .profile-screen .panel {
@@ -1937,29 +1940,30 @@ color: #35bff0; font-size: 17px; font-weight: 700;
   min-height: 0;
   height: auto;
   max-height: none;
-  padding: 10px 12px 10px 14px;
-  grid-template-columns: 66px minmax(0, 1fr) auto;
-  gap: 10px;
+  padding: 8px 10px;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 8px;
   overflow: visible;
 }
 .profile-copy {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
+.profile-avatar { width: 56px; height: 56px; }
 .profile-card .profile-copy h2 {
   margin: 0;
   color: #f1ede6;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
 }
 .profile-card .profile-copy p {
   margin: 0;
-  padding: 4px 8px;
+  padding: 3px 7px;
   color: #aaa49a;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 14px;
 }
 .profile-watermark {
   color: rgba(199, 145, 42, .055);
@@ -1967,6 +1971,9 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 .profile-logout {
   margin-right: 0;
   align-self: center;
+  min-width: 58px;
+  height: 30px;
+  font-size: 12px;
 }
 .profile-logout:disabled {
   cursor: wait;
@@ -1987,19 +1994,20 @@ color: #35bff0; font-size: 17px; font-weight: 700;
   visibility: visible;
 }
 .subscription-status-card {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .subscription-status-card > .section-title {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #e7d5ac;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 .subscription-status-content {
   margin: 0;
-  grid-template-columns: 48px repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 40px repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
+.subscription-crown { width: 40px; height: 40px; font-size: 21px; }
 .subscription-status-content > div:not(:first-child) {
   display: grid;
   align-content: start;
@@ -2010,47 +2018,47 @@ color: #35bff0; font-size: 17px; font-weight: 700;
 }
 .subscription-status-content span {
   color: #9e978d;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 14px;
 }
 .subscription-status-content strong {
   margin-top: 2px;
   color: #e8bd59;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 17px;
 }
 .subscription-status-content p {
   margin: 2px 0 0;
   color: #aaa49a;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 14px;
 }
 .subscription-entry {
-  min-height: 40px;
-  height: 40px;
-  margin-top: 8px;
-  padding: 0 12px 0 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  min-height: 34px;
+  height: 34px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 12px;
   font-weight: 500;
 }
 .subscription-entry svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   justify-self: end;
 }
 .profile-menu {
-  padding: 0 12px;
+  padding: 0 10px;
 }
 .profile-menu .section-title {
-  height: 30px;
+  height: 26px;
   margin: 0;
-  gap: 8px;
+  gap: 6px;
   color: #e7d5ac;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 .profile-menu .section-title > span {
@@ -2060,13 +2068,13 @@ color: #35bff0; font-size: 17px; font-weight: 700;
   border-top: 1px solid rgba(48, 39, 28, .72);
 }
 .profile-menu-rows button {
-  min-height: 38px;
-  height: 38px;
-  padding: 0 12px 0 0;
-  grid-template-columns: minmax(0, 1fr) 18px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 10px 0 0;
+  grid-template-columns: minmax(0, 1fr) 16px;
   border-top: 0;
   color: #d8d1c6;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 .profile-menu-rows button:not(:last-child)::after {
@@ -2082,8 +2090,8 @@ color: #35bff0; font-size: 17px; font-weight: 700;
   position: relative;
 }
 .profile-menu-rows button svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   align-self: center;
   justify-self: end;
   color: #b98a31;

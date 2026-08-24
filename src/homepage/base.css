@@ -225,13 +225,13 @@
 
 .home-screen .latest-draw-card {
   --draw-special-label-height: 10px;
-  --draw-card-height: calc((var(--home-content-width) * 732 / 1672) - 4px);
+  --draw-card-height: calc(((var(--home-content-width) * 732 / 1672) - 4px) * .9);
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
   grid-template-rows: 44px minmax(0, 1fr) 24px;
-  width: 100%;
+  width: calc(100% - 16px);
   height: var(--draw-card-height);
   min-height: 0;
   padding: 9px 6px 0;

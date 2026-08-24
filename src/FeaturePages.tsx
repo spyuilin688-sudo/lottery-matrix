@@ -3943,7 +3943,7 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
   };
 
   return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
-    <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
+    <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <p className="custom-status-fixed-rule">探索期數均為十三期，探索範圍均為完整範圍。</p>
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : <>

@@ -23,9 +23,9 @@ test("Matrix Explore canonical scoped stylesheet remains the final loaded layout
   const body = oneRule(css, /^\.matrix-explore-main-screen \.feature-body$/);
   assert.match(body, /width:\s*100%;/);
   assert.match(body, /max-width:\s*none;/);
-  assert.match(body, /padding:\s*0 16px var\(--layout-bottom-nav-clearance\);/);
+  assert.match(body, /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/);
   const title = oneRule(css, /^\.matrix-explore-main-screen \.matrix-title-banner$/);
-  assert.match(title, /width:\s*calc\(100% - 32px\);/);
+  assert.match(title, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
   assert.match(title, /max-width:\s*none;/);
 });
 

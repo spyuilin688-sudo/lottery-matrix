@@ -20,7 +20,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   const root = ruleBlock(css, "\\.matrix-explore-main-screen");
   assert.doesNotMatch(root, /--layout-bottom-nav-clearance:/);
   assert.match(tokens, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px var\(--layout-bottom-nav-clearance\)/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/s);
   assert.match(prototypeCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\)/s);
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label > \\.advanced-setting-title");

@@ -18,7 +18,7 @@ beforeEach(() => {
 
 test('標題下第一列切彩種、第二列切狀態，並顯示固定探索範圍', async () => {
   render(<MatrixCustomStatusPage onNavigate={vi.fn()} />);
-  expect(screen.getByRole('radiogroup', { name: '選擇彩種' })).toBeTruthy();
+  expect(screen.getByTestId('lottery-switcher').classList.contains('lottery-switcher--home-style')).toBe(true);
   expect(screen.getByRole('tablist', { name: '選擇狀態' })).toBeTruthy();
   expect(screen.getByText('探索期數均為十三期，探索範圍均為完整範圍。')).toBeTruthy();
   expect(await screen.findByText('準4+（鎖定1碼）')).toBeTruthy();

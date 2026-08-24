@@ -36,27 +36,29 @@ test('all three portal floating setting cards share explicit 16px inline offsets
   assert.match(css, /right:\s*16px\s*;/);
 });
 
-test('notification compact responsive layout is present in the canonical responsive stylesheet', () => {
+test('notification compact responsive layout is present in the v2 canonical stylesheet', () => {
   assert.match(responsive, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px;/s);
-  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 16px/s);
-  assert.match(responsive, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(40px, 12\.3vw, 48px\) minmax\(0, 1fr\) clamp\(64px, 19\.5vw, 76px\) 42px;/s);
-  assert.match(responsive, /\.notification-icon\s*\{[^}]*width:\s*clamp\(40px, 11\.3vw, 44px\);[^}]*height:\s*clamp\(40px, 11\.3vw, 44px\);/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\)/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*grid-template-columns:\s*64px 38px;/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px;/s);
 });
 
-test('quick interaction uses one pointer path plus click and long-press behavior', () => {
+test('quick interaction uses one pointer path plus click and upward-swipe behavior', () => {
   const renderedButton = bottomNav.match(/<button[\s\S]*?<\/button>/)?.[0] ?? '';
   assert.ok(renderedButton, 'BottomNavigation must render its navigation button explicitly');
   assert.match(renderedButton, /onPointerDown=\{label === "快捷" \? beginQuickPress : undefined\}/);
+  assert.match(renderedButton, /onPointerMove=\{label === "快捷" \? moveQuickPress : undefined\}/);
   assert.match(renderedButton, /onPointerUp=\{label === "快捷" \? finishQuickPress : undefined\}/);
-  assert.match(renderedButton, /onPointerCancel=\{label === "快捷" \? finishQuickPress : undefined\}/);
+  assert.match(renderedButton, /onPointerCancel=\{label === "快捷" \? cancelQuickPress : undefined\}/);
   assert.doesNotMatch(renderedButton, /onTouchStart|onMouseDown/);
   assert.match(renderedButton, /onClick=\{label === "快捷" \? handleQuickClick : \(\) => screen && onNavigate\?\.\(screen\)\}/);
   assert.match(bottomNav, /onQuickOpen\?\.\(\)/);
   assert.match(bottomNav, /onQuickConfigure\?\.\(\)/);
+  assert.match(bottomNav, /QUICK_SWIPE_TRIGGER_PX\s*=\s*32/);
 });
 
 test('calculator uses the page token and homepage core keeps its current responsive geometry', () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.ok(ruleBodies(home, /^\.home-screen \.lottery-screen$/).some((body) => /padding:\s*0 var\(--layout-page-inline\);/.test(body)));
   assert.ok(ruleBodies(home, /^\.home-screen \.home-bottom-group$/).some((body) => /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/.test(body)));

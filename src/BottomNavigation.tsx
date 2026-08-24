@@ -1,4 +1,4 @@
-import { useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -25,6 +25,8 @@ const NAVIGATION_ARTWORK: Record<BottomNavigationLabel, string> = {
   "我的": "/assets/lottery/functions/matrixWW4.png",
 };
 
+const QUICK_SWIPE_TRIGGER_PX = 32;
+
 export function BottomNavigation({
   active = "首頁",
   quickActive = false,
@@ -32,37 +34,64 @@ export function BottomNavigation({
   onQuickOpen,
   onQuickConfigure,
 }: BottomNavigationProps) {
-  const quickTimer = useRef<number | null>(null);
-  const quickLongPressed = useRef(false);
+  const quickStartY = useRef(0);
+  const quickPointerId = useRef<number | null>(null);
+  const quickDragDistance = useRef(0);
+  const suppressQuickClick = useRef(false);
+  const [quickDragOffset, setQuickDragOffset] = useState(0);
+  const [quickDragging, setQuickDragging] = useState(false);
 
   const beginQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
-    quickLongPressed.current = false;
+    quickStartY.current = event.clientY;
+    quickPointerId.current = event.pointerId;
+    quickDragDistance.current = 0;
+    suppressQuickClick.current = false;
+    setQuickDragOffset(0);
+    setQuickDragging(true);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = window.setTimeout(() => {
-      quickTimer.current = null;
-      quickLongPressed.current = true;
-      onQuickConfigure?.();
-    }, 3000);
   };
 
-  const finishQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (quickTimer.current !== null) window.clearTimeout(quickTimer.current);
-    quickTimer.current = null;
+  const moveQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (quickPointerId.current !== event.pointerId) return;
+    const upwardDistance = Math.max(0, quickStartY.current - event.clientY);
+    quickDragDistance.current = upwardDistance;
+    setQuickDragOffset(-upwardDistance);
+  };
+
+  const releaseQuickPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (
       typeof event.currentTarget.hasPointerCapture === "function"
       && event.currentTarget.hasPointerCapture(event.pointerId)
     ) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    quickPointerId.current = null;
+    setQuickDragging(false);
+    setQuickDragOffset(0);
+  };
+
+  const finishQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const shouldConfigure = quickPointerId.current === event.pointerId
+      && quickDragDistance.current >= QUICK_SWIPE_TRIGGER_PX;
+    releaseQuickPointer(event);
+    if (shouldConfigure) {
+      suppressQuickClick.current = true;
+      onQuickConfigure?.();
+    }
+  };
+
+  const cancelQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    quickDragDistance.current = 0;
+    suppressQuickClick.current = false;
+    releaseQuickPointer(event);
   };
 
   const handleQuickClick = () => {
-    if (quickLongPressed.current) {
-      quickLongPressed.current = false;
+    if (suppressQuickClick.current) {
+      suppressQuickClick.current = false;
       return;
     }
     onQuickOpen?.();
@@ -92,10 +121,16 @@ export function BottomNavigation({
             data-selected={selected}
             type="button"
             aria-current={selected ? "page" : undefined}
-            aria-label={label === "快捷" ? "快捷；長按三秒開啟設定" : undefined}
+            aria-label={label === "快捷" ? "快捷；向上滑開啟設定" : undefined}
+            data-quick-gesture={label === "快捷" ? "true" : undefined}
+            data-dragging={label === "快捷" ? quickDragging : undefined}
+            style={label === "快捷" ? {
+              transform: `translateY(${quickDragOffset}px)`,
+            } : undefined}
             onPointerDown={label === "快捷" ? beginQuickPress : undefined}
+            onPointerMove={label === "快捷" ? moveQuickPress : undefined}
             onPointerUp={label === "快捷" ? finishQuickPress : undefined}
-            onPointerCancel={label === "快捷" ? finishQuickPress : undefined}
+            onPointerCancel={label === "快捷" ? cancelQuickPress : undefined}
             onClick={label === "快捷" ? handleQuickClick : () => screen && onNavigate?.(screen)}
             onContextMenu={label === "快捷" ? (event: MouseEvent<HTMLButtonElement>) => event.preventDefault() : undefined}
             key={label}

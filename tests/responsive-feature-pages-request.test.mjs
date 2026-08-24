@@ -39,8 +39,8 @@ test('歷史開獎使用內容驅動的精簡按鈕及 sticky 頁首', () => {
 });
 
 test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8px 垂直間距', () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
-  assert.match(responsiveCss, /--tool-page-inline:\s*16px;/);
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
+  assert.match(responsiveCss, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   for (const selector of [
     /^\.draw-history-screen \.feature-body$/,
     /^\.tongxing-screen \.feature-body$/,
@@ -102,17 +102,17 @@ test('快捷通知我的共用首頁 matrixya Logo 幾何與 8px 間距', () => 
   assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\)/);
 });
 
-test('通知頁使用單一 clamp 響應式密度且不保留小螢幕強拉覆寫', () => {
+test('通知頁使用 v2 緊密密度且右側動作固定欄對齊', () => {
   assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*auto[^}]*min-height:\s*0[^}]*padding:\s*4px/s);
   assert.match(responsiveCss, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 16px/s);
-  assert.match(responsiveCss, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(40px, 12\.3vw, 48px\) minmax\(0, 1fr\) clamp\(64px, 19\.5vw, 76px\) 42px;[^}]*column-gap:\s*clamp\(4px, 1\.5vw, 6px\)/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\)/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*8px/s);
   assert.doesNotMatch(responsiveCss, /\.notification-row\s*\{[^}]*grid-template-columns:/s);
-  assert.match(responsiveCss, /\.notification-icon\s*\{[^}]*width:\s*clamp\(40px, 11\.3vw, 44px\);[^}]*height:\s*clamp\(40px, 11\.3vw, 44px\)/s);
-  assert.match(responsiveCss, /\.notification-actions > button:first-child\s*\{[^}]*width:\s*clamp\(64px, 18\.5vw, 72px\);[^}]*height:\s*32px/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*64px;[^}]*height:\s*24px/s);
   assert.doesNotMatch(responsiveCss, /@media \(max-width: 360px\)[\s\S]*?notification-heading/);
   assert.match(responsiveCss, /\.notification-row h2\s*\{[^}]*font-size:\s*14px;[^}]*line-height:\s*18px;/s);
-  assert.match(responsiveCss, /\.notification-heading \.toggle\s*\{[^}]*width:\s*42px;[^}]*height:\s*44px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*32px;/s);
 });
 
 test('舊按鈕規則不再覆蓋正式精簡規格', () => {
@@ -123,7 +123,7 @@ test('舊按鈕規則不再覆蓋正式精簡規格', () => {
 test('本次正式規則不新增整頁縮放、負位移或 important 補償', () => {
   const screenContract = ruleBodies(responsiveCss, /^\.draw-history-screen$/);
   assert.equal(screenContract.length, 1);
-  assert.match(screenContract[0], /--tool-page-inline:\s*16px;/);
+  assert.match(screenContract[0], /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   assert.match(screenContract[0], /--tool-section-gap:\s*var\(--layout-section-gap, 8px\);/);
   assert.doesNotMatch(responsiveCss, /!important/);
   assert.doesNotMatch(responsiveCss, /margin(?:-inline|-left|-right|-top)?:\s*-/);
