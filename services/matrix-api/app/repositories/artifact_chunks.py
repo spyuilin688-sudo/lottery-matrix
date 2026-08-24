@@ -1,4 +1,58 @@
+import base64
+import json
+import zlib
 from typing import Any, Mapping, Sequence
+
+
+CHUNK_PAYLOAD_ENCODING = "zlib+base64"
+CHUNK_PAYLOAD_INVALID = "ANALYSIS_CHUNK_PAYLOAD_INVALID"
+
+
+def encode_chunk_payload(payload: Any) -> dict[str, Any]:
+    serialized = json.dumps(
+        payload,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return {
+        "encoding": CHUNK_PAYLOAD_ENCODING,
+        "schemaVersion": 1,
+        "data": base64.b64encode(zlib.compress(serialized)).decode("ascii"),
+    }
+
+
+def decode_chunk_payload(payload: Any) -> Any:
+    if not isinstance(payload, Mapping) or payload.get("encoding") != CHUNK_PAYLOAD_ENCODING:
+        return payload
+    if type(payload.get("schemaVersion")) is not int or payload["schemaVersion"] != 1:
+        raise ValueError(CHUNK_PAYLOAD_INVALID)
+    data = payload.get("data")
+    if not isinstance(data, str):
+        raise ValueError(CHUNK_PAYLOAD_INVALID)
+    try:
+        compressed = base64.b64decode(data, validate=True)
+    except ValueError as error:
+        raise ValueError(CHUNK_PAYLOAD_INVALID) from error
+    if base64.b64encode(compressed).decode("ascii") != data:
+        raise ValueError(CHUNK_PAYLOAD_INVALID)
+    try:
+        decompressor = zlib.decompressobj()
+        serialized = decompressor.decompress(compressed) + decompressor.flush()
+    except zlib.error as error:
+        raise ValueError(CHUNK_PAYLOAD_INVALID) from error
+    if not decompressor.eof or decompressor.unused_data or decompressor.unconsumed_tail:
+        raise ValueError(CHUNK_PAYLOAD_INVALID)
+    try:
+        decoded = json.loads(serialized.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(CHUNK_PAYLOAD_INVALID) from error
+    if (
+        not isinstance(decoded, Mapping)
+        or not isinstance(decoded.get("items"), list)
+        or not isinstance(decoded.get("validationById"), Mapping)
+    ):
+        raise ValueError(CHUNK_PAYLOAD_INVALID)
+    return decoded
 
 
 def chunk_manifest(chunk_count: int, cursor: int, total: int, item_count: int) -> dict[str, int | str]:
@@ -32,7 +86,7 @@ def materialize_chunks(
         if cursor_start != previous_cursor_end or cursor_end < cursor_start:
             raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
 
-        payload = chunk["payload"]
+        payload = decode_chunk_payload(chunk["payload"])
         items.extend(payload["items"])
         for identifier, validation in payload["validationById"].items():
             if identifier in validation_by_id and validation_by_id[identifier] != validation:

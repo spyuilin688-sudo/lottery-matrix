@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -200,3 +201,26 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
         ("analysis_version", "v1"), ("kind", "explore"),
     ]
     assert fake_client.last_orders == [("chunk_index", False)]
+
+
+def test_supabase_chunk_write_compacts_large_payload() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+    repeated_evidence = "matrix-validation-evidence-" * 8_000
+    delta = {
+        "items": [{"id": "large", "evidence": repeated_evidence}],
+        "validationById": {
+            "large": {"ruleSets": [{"evidence": repeated_evidence}]},
+        },
+    }
+
+    repository.save_artifact_chunk(
+        "大樂透", "115000205", "v1", "explore", 0, 0, 10, delta,
+    )
+
+    stored_payload = fake_client.last_record["payload"]
+    raw_size = len(json.dumps(delta, ensure_ascii=False, separators=(",", ":")))
+    stored_size = len(json.dumps(stored_payload, separators=(",", ":")))
+    assert stored_payload["encoding"] == "zlib+base64"
+    assert stored_payload["schemaVersion"] == 1
+    assert stored_size < raw_size // 10
