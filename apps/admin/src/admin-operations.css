@@ -3,8 +3,8 @@
   grid-template-columns: minmax(240px, 1fr) 180px auto;
   gap: 8px;
   align-items: center;
-  margin-bottom: 10px;
-  padding: 8px;
+  margin-bottom: 8px;
+  padding: 6px;
   border: 1px solid #292c32;
   border-radius: 12px;
   background: #111419;
@@ -22,8 +22,8 @@
   color: #eee;
 }
 
-.managementToolbar input { height: 34px; }
-.managementToolbar select { height: 34px; }
+.managementToolbar input { height: 32px; }
+.managementToolbar select { height: 32px; }
 .operationDialog input,
 .operationDialog select,
 .formGrid input,
@@ -79,10 +79,10 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .panel,
 .formCard,
 .tableWrap { border-color: #30333a; box-shadow: 0 8px 24px #0002; }
-.metric { min-height: 108px; padding: 16px; }
-.metric span { font-size: 13px; }
-.metric strong { font-size: 26px; }
-.panel,
+.metric { min-height: 82px; padding: 12px; }
+.metric span { font-size: 12px; }
+.metric strong { font-size: 23px; }
+.panel { padding: 14px; }
 .formCard { padding: 18px; }
 .panel h2,
 .formCard h3 { font-size: 17px; line-height: 1.4; }
@@ -114,10 +114,10 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   header { padding: 0 10px; }
   .actions { gap: 6px; }
   .cards { gap: 10px; }
-  .metric { min-height: 94px; padding: 14px; }
-  .panel,
+  .metric { min-height: 78px; padding: 12px; }
+  .panel { padding: 12px; }
   .formCard { padding: 14px; }
-  .managementToolbar { grid-template-columns: minmax(0, 1fr) 118px; gap: 8px; padding: 8px; }
+  .managementToolbar { grid-template-columns: minmax(0, 1fr) 118px; gap: 6px; padding: 6px; }
   .managementToolbar span { grid-column: 1 / -1; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
