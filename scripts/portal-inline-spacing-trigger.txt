@@ -1,0 +1,1 @@
+trigger portal inline spacing fix
