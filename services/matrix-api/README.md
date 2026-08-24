@@ -27,9 +27,11 @@ Never use the publishable/anon key for the Oracle worker, and never expose the s
 
 Only a completed four-artifact analysis version is returned. The worker pipeline is intentionally not exposed as a public trigger endpoint.
 
-## Worker data bootstrap
+## Draw-history boundary
 
-Before a lottery analysis can start, the worker requires 80 stored draws for that lottery. On an empty Supabase project it backfills formal history from the same approved draw sources, validates and idempotently upserts the rows, then refreshes the latest draw. If fewer than 80 valid draws are available, that lottery stops with `DRAW_HISTORY_INCOMPLETE` and no analysis version is published. Once 80 draws are stored, later timer cycles skip the historical network backfill and only refresh the latest draw. The backfill remains internal to the scheduled Oracle worker and does not add a public compute endpoint.
+`lottery_draws` is the durable historical store and is not capped at 80 rows per lottery. On an empty/new database, the first worker cycle loads the complete history exposed by the formal source and idempotently upserts every valid draw. The algorithm then reads only the newest 80 draws as its current maximum analysis window.
+
+After the database has at least the analysis minimum, scheduled worker cycles skip the historical network backfill and fetch only the latest draw. The 80-draw value is therefore a compute-window/minimum-data rule, not a database retention rule. Historical draw rows are retained; only completed Matrix analysis artifacts use the separate three-day retention policy.
 
 Each worker cycle also deletes analysis artifacts whose three-day retention window has expired before starting new work.
 
