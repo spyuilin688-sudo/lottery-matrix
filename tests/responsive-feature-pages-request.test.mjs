@@ -13,22 +13,23 @@ const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url)
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 const adjustmentsCss = readFileSync(new URL('../src/feature-page-adjustments.css', import.meta.url), 'utf8');
 
-test('歷史開獎使用 24.7px 基底與 22px 專用精簡按鈕及 sticky 頁首', () => {
+test('歷史開獎使用內容驅動的精簡按鈕及 sticky 頁首', () => {
   assert.match(source, /className="history-filter-panel"/);
   assert.match(source, /role=\{filterFloating \? "dialog" : "region"\}/);
   assert.match(source, /aria-label="歷史篩選設定"/);
   assert.match(source, /className="history-filter-trigger title-card-compact-action"/);
   assert.match(source, /className="draw-history-screen sticky-title-card-screen"/);
-  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*height:\s*24\.7px;[^}]*min-height:\s*24\.7px;[^}]*gap:\s*2px;[^}]*font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\)/s);
+  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*padding:\s*clamp\(3\.5px, 1vw, 4px\) 4\.5px;[^}]*gap:\s*2px;[^}]*font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\)/s);
   const historyControl = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/);
   assert.equal(historyControl.length, 1);
-  assert.match(historyControl[0], /height:\s*22px;/);
-  assert.match(historyControl[0], /min-height:\s*22px;/);
+  assert.doesNotMatch(historyControl[0], /(?:^|;)\s*(?:min-)?height\s*:/);
   const before = responsiveCss.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '';
   const after = ruleBodies(responsiveCss, /^\.title-card-compact-action::after$/)
-    .find((body) => /height:\s*22\.7px/.test(body)) ?? '';
-  assert.match(before, /height:\s*24\.7px/);
-  assert.match(after, /height:\s*22\.7px/);
+    .find((body) => /inset:\s*1px/.test(body)) ?? '';
+  assert.match(before, /inset:\s*0/);
+  assert.match(after, /inset:\s*1px/);
+  assert.doesNotMatch(before, /height\s*:/);
+  assert.doesNotMatch(after, /height\s*:/);
   assert.match(after, /background:\s*var\(--select-tech-surface, #030b13\)/);
   assert.doesNotMatch(before, /clip-path/);
   assert.doesNotMatch(after, /clip-path/);

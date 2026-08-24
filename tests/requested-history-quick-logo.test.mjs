@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { JSDOM } from 'jsdom';
 
 import { ruleBodies } from './helpers/css-rules.mjs';
 
@@ -41,8 +42,22 @@ test('篩選設定按鈕由標題卡內容寬度控制器定位', () => {
   assert.match(actionBodies[0], /width:\s*auto;/);
   const controlBodies = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-filter-trigger$/);
   assert.equal(controlBodies.length, 1);
-  assert.match(controlBodies[0], /height:\s*22px;/);
+  assert.doesNotMatch(controlBodies[0], /(?:^|;)\s*(?:min-)?height\s*:/);
+  assert.match(controlBodies[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
   assert.match(controlBodies[0], /gap:\s*1px;/);
+});
+
+test('歷史篩選設定按鈕的完整 cascade 不保留固定高度', () => {
+  const dom = new JSDOM(`
+    <style>${featureCss}\n${responsiveCss}</style>
+    <main class="draw-history-screen">
+      <button class="history-filter-trigger title-card-compact-action">篩選設定</button>
+    </main>
+  `);
+  const button = dom.window.document.querySelector('.history-filter-trigger');
+  const style = dom.window.getComputedStyle(button);
+
+  assert.equal(style.height, 'auto');
 });
 
 test('未設定快捷功能時點擊快捷會開啟既有設定', () => {

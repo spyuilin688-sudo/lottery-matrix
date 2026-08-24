@@ -10,15 +10,20 @@ const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
 const explore = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const balls = fs.readFileSync('src/number-ball.css', 'utf8');
 const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+const coreSource = fs.readFileSync('src/FeaturePagesCore.tsx', 'utf8');
 const main = fs.readFileSync('src/main.tsx', 'utf8');
 const adjustments = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');
 
-test('三頁標題操作按鈕使用 24.7px 基底、22px 變體與 7px 刷新圖示', () => {
-  assert.match(responsive, /\.title-card-compact-action\s*\{[^}]*height:\s*24\.7px;[^}]*min-height:\s*24\.7px;[^}]*gap:\s*2px;/s);
-  const referenceControl = ruleBodies(responsive, /^\.number-reference-screen \.reference-title-actions \.title-card-compact-action$/);
-  assert.equal(referenceControl.length, 1);
-  assert.match(referenceControl[0], /height:\s*22px;/);
-  assert.match(referenceControl[0], /min-height:\s*22px;/);
+test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字大小', () => {
+  const sharedControl = ruleBodies(responsive, /^\.title-card-compact-action$/);
+  assert.equal(sharedControl.length, 1);
+  assert.match(sharedControl[0], /padding:\s*clamp\(3\.5px, 1vw, 4px\) 4\.5px;/);
+  assert.match(sharedControl[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
+  assert.doesNotMatch(sharedControl[0], /(?:^|;)\s*(?:min-)?height\s*:/);
+  assert.match(coreSource, /history-reset-trigger title-card-compact-action/);
+  assert.match(coreSource, /tongxing-title-actions title-card-compact-actions/);
+  assert.match(source, /reference-title-actions title-card-compact-actions/);
+  assert.doesNotMatch(responsive, /(?:history|tongxing|reference)-title-actions[^{}]*\.title-card-compact-action\s*\{[^}]*(?:min-)?height\s*:/s);
   assert.doesNotMatch(responsive.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
   assert.doesNotMatch(responsive.match(/\.title-card-compact-action::after\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
   const actions = ruleBodies(responsive, /^\.number-reference-screen \.matrix-title-banner-actions$/);

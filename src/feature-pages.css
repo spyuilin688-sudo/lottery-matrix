@@ -615,7 +615,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .draw-history-row .mini-ball { width: 25px; height: 25px; font-size: 9px; }
 .history-filter-trigger {
   display: flex;
-  height: 30px;
   padding: 0 8px;
   align-items: center;
   gap: 5px;

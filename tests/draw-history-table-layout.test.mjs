@@ -45,7 +45,7 @@ test("歷史今彩539只保留明確的 .2px 數字底線間距，不受 Matrix 
   assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
 });
 
-test("篩選條件由標題卡內容寬度操作區與 22px 歷史控制器承接", () => {
+test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承接", () => {
   const actionBodies = ruleBodies(
     responsiveCss,
     /^\.draw-history-screen \.matrix-title-banner-actions$/,
@@ -61,8 +61,8 @@ test("篩選條件由標題卡內容寬度操作區與 22px 歷史控制器承�
     /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/,
   );
   assert.equal(controlBodies.length, 1);
-  assert.match(controlBodies[0], /height:\s*22px;/);
-  assert.match(controlBodies[0], /min-height:\s*22px;/);
+  assert.doesNotMatch(controlBodies[0], /(?:^|;)\s*(?:min-)?height\s*:/);
+  assert.match(controlBodies[0], /padding-inline:\s*4px;/);
 });
 
 test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", () => {

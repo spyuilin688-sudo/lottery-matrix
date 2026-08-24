@@ -17,21 +17,13 @@ function block(css, selector) {
   return ruleBodies(css, new RegExp(`^${escaped}$`))[0] ?? '';
 }
 
-test('tool title actions use 22px controls and the 87.5% border anchor', () => {
+test('tool title actions use content-driven compact controls and the 87.5% border anchor', () => {
   const actions = ruleBodies(responsive, /^\.draw-history-screen \.matrix-title-banner-actions$/)[0] ?? '';
   assert.match(actions, /top:\s*100%\s*;/);
   assert.match(actions, /bottom:\s*auto\s*;/);
   assert.match(actions, /width:\s*auto\s*;/);
   assert.match(actions, /transform:\s*translateY\(-87\.5%\)\s*;/);
-  for (const selector of [
-    /^\.tongxing-screen \.tongxing-title-actions \.title-card-compact-action$/,
-    /^\.number-reference-screen \.reference-title-actions \.title-card-compact-action$/,
-  ]) {
-    const bodies = ruleBodies(responsive, selector);
-    assert.equal(bodies.length, 1);
-    assert.match(bodies[0], /height:\s*22px;/);
-    assert.match(bodies[0], /min-height:\s*22px;/);
-  }
+  assert.doesNotMatch(responsive, /(?:tongxing|reference)-title-actions[^{}]*\.title-card-compact-action\s*\{[^}]*(?:min-)?height\s*:/s);
   assert.match(responsive, /\.draw-history-screen \.history-reset-trigger\s*\{[^}]*gap:\s*1px;/s);
   assert.match(responsive, /\.number-reference-screen \.reference-title-actions button:first-child\s*\{[^}]*gap:\s*1px;/s);
 });
