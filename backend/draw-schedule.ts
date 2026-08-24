@@ -75,3 +75,8 @@ export function nextFantasy5DrawAt(now = new Date()): string {
   }
   return draw.toISOString();
 }
+
+export function isFantasy5RefreshTime(now = new Date()): boolean {
+  const pacific = partsInPacific(now);
+  return pacific.hour === 18 && pacific.minute === 50;
+}
