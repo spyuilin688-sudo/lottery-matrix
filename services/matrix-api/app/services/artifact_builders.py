@@ -7,24 +7,73 @@ from app.domain.status import evaluate_chapter15
 from app.domain.tiangong_artifact import build_tiangong_artifact
 from app.domain.tiangong_generator import run_tiangong_candidates
 from app.domain.tianyan_artifact import build_tianyan_artifact
+from app.services.explore_batches import build_explore_batch, work_units
 
 
 ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
 
 
 def _work_units(lottery: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    units = []
-    for number_order in ("依號碼由小到大排序", "依實際開獎順序排序"):
-        for algorithm_type in ("加減", "合值", "拖牌"):
-            for source_index in range(min(13, len(history))):
-                for position in range(1, lottery_position_count(lottery) + 1):
-                    units.append({
-                        "lottery": lottery, "numberOrder": number_order, "algorithmType": algorithm_type,
-                        "lockedSourceIndex": source_index, "lockedPosition": position, "explorePeriods": 13,
-                        "exploreDateOffset": 0, "exploreRange": "完整範圍",
-                        "minPredictionDistance": 1, "maxPredictionDistance": 13,
-                    })
-    return units
+    return work_units(lottery, len(history), lottery_position_count(lottery))
+
+
+def _append_explore_result(
+    artifact: dict[str, Any],
+    unit: dict[str, Any],
+    response: dict[str, Any],
+    history: list[dict[str, Any]],
+) -> None:
+    for raw in response.get("results", []):
+        search = raw.get("searchCondition", {})
+        rule_count = int(raw.get("ruleCount", search.get("ruleCount", 0)))
+        if rule_count not in {1, 2}:
+            continue
+        identifier = "|".join(map(str, [
+            unit["numberOrder"], unit["lockedSourceIndex"], unit["lockedPosition"],
+            unit["exploreDateOffset"], unit["explorePeriods"], unit["algorithmType"], rule_count, raw.get("id", ""),
+        ]))
+        source_index = unit["lockedSourceIndex"]
+        item = {
+            "id": identifier, "number": str(raw.get("number", "")),
+            "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
+            "predictionDistance": int(raw.get("predictionDistance", 0)),
+            "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
+            "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
+            "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
+            "explorePeriods": 2 if source_index < 2 else 7 if source_index < 7 else 13,
+            "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
+            "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
+        }
+        for key in ("referenceOffset", "referencePosition"):
+            if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
+                item[key] = search[key]
+        artifact["items"].append(item)
+        validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
+        if isinstance(raw.get("sourceA"), dict):
+            validation["sourceA"] = raw["sourceA"]
+        artifact["validationById"][identifier] = validation
+
+
+def build_explore_artifact_chunk(
+    lottery: str,
+    draw_period: str,
+    history: list[dict[str, Any]],
+    start: int,
+    limit: int,
+    existing: dict[str, Any] | None = None,
+    runner: ExploreRunner = run_matrix_explore_group_with_history,
+) -> dict[str, Any]:
+    return build_explore_batch(
+        lottery=lottery,
+        draw_period=draw_period,
+        history=history,
+        position_count=lottery_position_count(lottery),
+        start=start,
+        limit=limit,
+        existing=existing,
+        runner=runner,
+        append_result=lambda artifact, unit, response: _append_explore_result(artifact, unit, response, history),
+    )
 
 
 def build_explore_artifact(
@@ -33,39 +82,9 @@ def build_explore_artifact(
     history: list[dict[str, Any]],
     runner: ExploreRunner = run_matrix_explore_group_with_history,
 ) -> dict[str, Any]:
-    items: list[dict[str, Any]] = []
-    validations: dict[str, Any] = {}
-    for unit in _work_units(lottery, history):
-        for raw in runner(unit, history).get("results", []):
-            search = raw.get("searchCondition", {})
-            rule_count = int(raw.get("ruleCount", search.get("ruleCount", 0)))
-            if rule_count not in {1, 2}:
-                continue
-            identifier = "|".join(map(str, [
-                unit["numberOrder"], unit["lockedSourceIndex"], unit["lockedPosition"],
-                unit["exploreDateOffset"], unit["explorePeriods"], unit["algorithmType"], rule_count, raw.get("id", ""),
-            ]))
-            source_index = unit["lockedSourceIndex"]
-            item = {
-                "id": identifier, "number": str(raw.get("number", "")),
-                "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
-                "predictionDistance": int(raw.get("predictionDistance", 0)),
-                "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
-                "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
-                "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
-                "explorePeriods": 2 if source_index < 2 else 7 if source_index < 7 else 13,
-                "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
-                "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
-            }
-            for key in ("referenceOffset", "referencePosition"):
-                if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
-                    item[key] = search[key]
-            items.append(item)
-            validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
-            if isinstance(raw.get("sourceA"), dict):
-                validation["sourceA"] = raw["sourceA"]
-            validations[identifier] = validation
-    return {"lottery": lottery, "drawPeriod": draw_period, "items": items, "validationById": validations}
+    return build_explore_artifact_chunk(
+        lottery, draw_period, history, 0, len(_work_units(lottery, history)), None, runner,
+    )["artifact"]
 
 
 def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong: dict[str, Any]) -> dict[str, Any]:
@@ -102,6 +121,21 @@ def create_artifact_builders(
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
+        batch = context.get("exploreBatch")
+        if isinstance(batch, dict):
+            result = build_explore_artifact_chunk(
+                draw["lottery"], draw["period"], context["history"],
+                int(batch.get("start", 0)), int(batch.get("limit", 10)),
+                batch.get("existing"), explore_runner,
+            )
+            return {
+                "artifact": result["artifact"],
+                "_checkpoint": {
+                    "cursor": result["cursor"],
+                    "total": result["total"],
+                    "complete": result["complete"],
+                },
+            }
         return build_explore_artifact(draw["lottery"], draw["period"], context["history"], explore_runner)
 
     def tianyan(context: dict[str, Any]) -> dict[str, Any]:
