@@ -103,6 +103,241 @@ def test_latest_draw_source_uses_existing_taiwan_539_endpoint() -> None:
     ]
 
 
+def test_fantasy5_limited_history_uses_california_official_api() -> None:
+    requested_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        return httpx.Response(
+            200,
+            json={
+                "PreviousDraws": [
+                    {
+                        "DrawNumber": 11977,
+                        "DrawDate": "2026-08-22T07:00:00",
+                        "WinningNumbers": {
+                            "4": {"Number": "38", "IsSpecial": False, "Name": None},
+                            "2": {"Number": "17", "IsSpecial": False, "Name": None},
+                            "0": {"Number": "3", "IsSpecial": False, "Name": None},
+                            "3": {"Number": "25", "IsSpecial": False, "Name": None},
+                            "1": {"Number": "9", "IsSpecial": False, "Name": None},
+                        },
+                    },
+                    {
+                        "DrawNumber": 11978,
+                        "DrawDate": "2026-08-23T07:00:00",
+                        "WinningNumbers": {
+                            "0": {"Number": "8", "IsSpecial": False, "Name": None},
+                            "1": {"Number": "10", "IsSpecial": False, "Name": None},
+                            "2": {"Number": "22", "IsSpecial": False, "Name": None},
+                            "3": {"Number": "23", "IsSpecial": False, "Name": None},
+                            "4": {"Number": "36", "IsSpecial": False, "Name": None},
+                        },
+                    },
+                ]
+            },
+        )
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", 2)
+
+    assert history == [
+        {
+            "period": "11978",
+            "drawDate": "2026-08-23",
+            "numbers": ["08", "10", "22", "23", "36"],
+            "sortedNumbers": ["08", "10", "22", "23", "36"],
+            "drawOrderNumbers": None,
+        },
+        {
+            "period": "11977",
+            "drawDate": "2026-08-22",
+            "numbers": ["03", "09", "17", "25", "38"],
+            "sortedNumbers": ["03", "09", "17", "25", "38"],
+            "drawOrderNumbers": None,
+        },
+    ]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/2"
+    ]
+
+
+def test_fantasy5_full_history_pages_within_official_size_limit() -> None:
+    requested_urls: list[str] = []
+
+    def official_draw(period: int) -> dict:
+        return {
+            "DrawNumber": period,
+            "DrawDate": "2026-08-23T07:00:00",
+            "WinningNumbers": {
+                "0": {"Number": "8"},
+                "1": {"Number": "10"},
+                "2": {"Number": "22"},
+                "3": {"Number": "23"},
+                "4": {"Number": "36"},
+            },
+        }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host != "www.calottery.com":
+            raise AssertionError("sc888 fallback must not be used for complete official history")
+        page = int(request.url.path.split("/")[-2])
+        first_period = 12000 if page == 1 else 11950
+        return httpx.Response(
+            200,
+            json={"PreviousDraws": [official_draw(first_period - offset) for offset in range(50)]},
+        )
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", None)
+
+    assert len(history) == 100
+    assert history[0]["period"] == "12000"
+    assert history[-1]["period"] == "11901"
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/50",
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/2/50",
+    ]
+
+
+def test_fantasy5_history_falls_back_when_official_unique_count_is_underfilled() -> None:
+    requested_urls: list[str] = []
+    sc888_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
+      <tr><td>第 11977 期</td><td>2026-08-22</td><td>03 09 17 25 38</td><td>03 09 17 25 38</td></tr>
+      <tr><td>第 11978 期</td><td>2026-08-23</td><td>08 10 22 23 36</td><td>08 10 22 23 36</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "www.calottery.com":
+            return httpx.Response(
+                200,
+                json={
+                    "PreviousDraws": [
+                        {
+                            "DrawNumber": 11978,
+                            "DrawDate": "2026-08-23T07:00:00",
+                            "WinningNumbers": {
+                                str(index): {"Number": number}
+                                for index, number in enumerate(("8", "10", "22", "23", "36"))
+                            },
+                        }
+                    ]
+                },
+            )
+        return httpx.Response(200, text=sc888_html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", 2)
+
+    assert [draw["period"] for draw in history] == ["11978", "11977"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/2",
+        "https://sc888.net/index.php?s=/LotteryFan/index",
+    ]
+
+
+def test_fantasy5_history_rejects_null_and_malformed_official_metadata() -> None:
+    requested_urls: list[str] = []
+    sc888_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
+      <tr><td>第 11978 期</td><td>2026-08-23</td><td>08 10 22 23 36</td><td>08 10 22 23 36</td></tr>
+    </table>
+    """
+    winning_numbers = {
+        str(index): {"Number": number}
+        for index, number in enumerate(("8", "10", "22", "23", "36"))
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "www.calottery.com":
+            return httpx.Response(
+                200,
+                json={
+                    "PreviousDraws": [
+                        {"DrawNumber": None, "DrawDate": None, "WinningNumbers": winning_numbers},
+                        {
+                            "DrawNumber": "not-a-period",
+                            "DrawDate": "08/23/2026",
+                            "WinningNumbers": winning_numbers,
+                        },
+                    ]
+                },
+            )
+        return httpx.Response(200, text=sc888_html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", 1)
+
+    assert [draw["period"] for draw in history] == ["11978"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/1",
+        "https://sc888.net/index.php?s=/LotteryFan/index",
+    ]
+
+
+def test_fantasy5_history_falls_back_to_sc888_when_official_request_fails() -> None:
+    requested_urls: list[str] = []
+    sc888_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
+      <tr><td>第 11978 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "www.calottery.com":
+            return httpx.Response(503)
+        return httpx.Response(200, text=sc888_html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", 1)
+
+    assert [draw["period"] for draw in history] == ["11978"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/1",
+        "https://sc888.net/index.php?s=/LotteryFan/index",
+    ]
+
+
+def test_fantasy5_latest_falls_back_when_official_response_is_malformed() -> None:
+    requested_urls: list[str] = []
+    sc888_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
+      <tr><td>第 11978 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "www.calottery.com":
+            return httpx.Response(200, json={"PreviousDraws": "unavailable"})
+        return httpx.Response(200, text=sc888_html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    draw = source.fetch("天天樂")
+
+    assert draw["period"] == "11978"
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/1",
+        "https://sc888.net/index.php?s=/LotteryFan/index",
+    ]
+
+
 def test_latest_draw_source_rejects_unknown_lottery() -> None:
     source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(500))))
 

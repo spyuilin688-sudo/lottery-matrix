@@ -90,8 +90,11 @@ def test_sc888_full_history_uses_download_source() -> None:
     history = source.fetch_history("天天樂", None)
 
     assert [draw["period"] for draw in history] == ["080124", "080123", "080122"]
-    assert len(requested_urls) == 1
-    assert "getDownloadXls" in requested_urls[0]
+    assert requested_urls[0] == (
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/50"
+    )
+    assert len(requested_urls) == 2
+    assert "getDownloadXls" in requested_urls[1]
 
 
 def test_sc888_limited_history_can_use_current_page() -> None:

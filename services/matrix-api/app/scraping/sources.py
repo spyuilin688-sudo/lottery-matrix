@@ -12,6 +12,9 @@ from app.scraping.html_tables import parse_table_rows
 
 TAIWAN_539_URL = "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result"
 TAIWAN_649_URL = "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Lotto649Result"
+CALIFORNIA_FANTASY5_HISTORY_URL = (
+    "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/{page}/{size}"
+)
 SC888_FANTASY5_URL = "https://sc888.net/index.php?s=/LotteryFan/index"
 SC888_FANTASY5_DOWNLOAD_URL = "https://sc888.net/index.php?s=/LotteryFan/getDownloadXls"
 NFD_MARKSIX_URL = "https://www.nfd.com.tw/house/year/{year}.htm"
@@ -116,6 +119,45 @@ def parse_taiwan_lottery_payload(payload: Any, key: str, count: int) -> MatrixDr
     if not parsed:
         raise ValueError("TAIWAN_LOTTERY_DRAW_INCOMPLETE")
     return parsed[0]
+
+
+def parse_california_fantasy5_history(payload: Any) -> list[MatrixDraw]:
+    if not isinstance(payload, dict) or not isinstance(payload.get("PreviousDraws"), list):
+        raise ValueError("CALIFORNIA_FANTASY5_PAYLOAD_INVALID")
+    draws: list[MatrixDraw] = []
+    for item in payload["PreviousDraws"]:
+        if not isinstance(item, dict):
+            continue
+        raw_period = item.get("DrawNumber")
+        if isinstance(raw_period, bool) or not isinstance(raw_period, (int, str)):
+            continue
+        period = str(raw_period)
+        if not re.fullmatch(r"\d{4,12}", period) or int(period) <= 0:
+            continue
+        raw_draw_date = item.get("DrawDate")
+        if not isinstance(raw_draw_date, str):
+            continue
+        try:
+            draw_date = datetime.fromisoformat(raw_draw_date.replace("Z", "+00:00")).date().isoformat()
+        except ValueError:
+            continue
+        winning_numbers = item.get("WinningNumbers")
+        if isinstance(winning_numbers, dict):
+            if not all(isinstance(key, str) and key.isdigit() for key in winning_numbers):
+                continue
+            number_records = [winning_numbers[key] for key in sorted(winning_numbers, key=int)]
+        elif isinstance(winning_numbers, list):
+            number_records = winning_numbers
+        else:
+            continue
+        if not all(isinstance(number, dict) and "Number" in number for number in number_records):
+            continue
+        values = [number["Number"] for number in number_records]
+        try:
+            draws.append(_materialize_draw(period, draw_date, values, 5))
+        except ValueError:
+            continue
+    return _newest_unique(draws)
 
 
 def _period(cells: list[str]) -> str:
@@ -237,9 +279,10 @@ class LatestDrawSource:
         if lottery in {"今彩539", "大樂透"}:
             return self._fetch_taiwan(lottery)
         if lottery == "天天樂":
-            response = self.client.get(SC888_FANTASY5_URL, headers=HEADERS, timeout=20.0, follow_redirects=True)
-            response.raise_for_status()
-            return parse_sc888_fantasy5_html(_response_text(response))
+            history = self.fetch_history(lottery, 1)
+            if not history:
+                raise ValueError("FANTASY5_DRAW_INCOMPLETE")
+            return history[0]
         if lottery == "六合彩":
             url = NFD_MARKSIX_URL.format(year=self.now().year)
             response = self.client.get(url, headers=HEADERS, timeout=20.0, follow_redirects=True)
@@ -253,13 +296,37 @@ class LatestDrawSource:
         if lottery in {"今彩539", "大樂透"}:
             return self._fetch_taiwan_history(lottery, limit)
         if lottery == "天天樂":
-            url = SC888_FANTASY5_DOWNLOAD_URL if limit is None else SC888_FANTASY5_URL
-            response = self.client.get(url, headers=HEADERS, timeout=30.0 if limit is None else 20.0, follow_redirects=True)
-            response.raise_for_status()
-            draws = parse_sc888_fantasy5_history(_response_text(response))
-            if limit is None and not draws:
-                raise ValueError("SC888_HISTORY_DOWNLOAD_INCOMPLETE")
-            return _newest_unique(draws, limit)
+            requested_count = 80 if limit is None else limit
+            page_size = min(50, requested_count)
+            page_count = (requested_count + page_size - 1) // page_size
+            try:
+                official_draws: list[MatrixDraw] = []
+                for page in range(1, page_count + 1):
+                    response = self.client.get(
+                        CALIFORNIA_FANTASY5_HISTORY_URL.format(page=page, size=page_size),
+                        headers=HEADERS,
+                        timeout=20.0,
+                        follow_redirects=True,
+                    )
+                    response.raise_for_status()
+                    official_draws.extend(parse_california_fantasy5_history(response.json()))
+                draws = _newest_unique(official_draws)
+                if len(draws) < requested_count:
+                    raise ValueError("CALIFORNIA_FANTASY5_HISTORY_INCOMPLETE")
+                return _newest_unique(draws, limit)
+            except (httpx.HTTPError, ValueError):
+                url = SC888_FANTASY5_DOWNLOAD_URL if limit is None else SC888_FANTASY5_URL
+                response = self.client.get(
+                    url,
+                    headers=HEADERS,
+                    timeout=30.0 if limit is None else 20.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                draws = parse_sc888_fantasy5_history(_response_text(response))
+                if limit is None and not draws:
+                    raise ValueError("SC888_HISTORY_DOWNLOAD_INCOMPLETE")
+                return _newest_unique(draws, limit)
         if lottery == "六合彩":
             draws: list[MatrixDraw] = []
             current_year = self.now().year
