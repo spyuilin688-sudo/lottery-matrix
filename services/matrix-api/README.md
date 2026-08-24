@@ -29,7 +29,7 @@ Only a completed four-artifact analysis version is returned. The worker pipeline
 
 ## Worker data bootstrap
 
-Before a lottery analysis can start, the worker requires 80 stored draws for that lottery. On an empty Supabase project it backfills formal history from the same approved draw sources, validates and idempotently upserts the rows, then refreshes the latest draw. If fewer than 80 valid draws are available, that lottery stops with `DRAW_HISTORY_INCOMPLETE` and no analysis version is published. Once 80 draws are stored, later timer cycles skip the historical network backfill and only refresh the latest draw.
+Before a lottery analysis can start, the worker requires 80 stored draws for that lottery. On an empty Supabase project it backfills formal history from the same approved draw sources, validates and idempotently upserts the rows, then refreshes the latest draw. If fewer than 80 valid draws are available, that lottery stops with `DRAW_HISTORY_INCOMPLETE` and no analysis version is published. Once 80 draws are stored, later timer cycles skip the historical network backfill and only refresh the latest draw. The backfill remains internal to the scheduled Oracle worker and does not add a public compute endpoint.
 
 Each worker cycle also deletes analysis artifacts whose three-day retention window has expired before starting new work.
 
