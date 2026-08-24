@@ -7,7 +7,7 @@ describe('Matrix analysis schedule', () => {
       name: string;
       payload?: Record<string, unknown>;
     }>;
-    expect(schedules.map((schedule) => schedule.payload)).toEqual([
+    expect(schedules.filter((schedule) => schedule.payload?.sourceId).map((schedule) => schedule.payload)).toEqual([
       expect.objectContaining({ lottery: '今彩539', sourceId: 'taiwan539', refreshHour: expect.any(Number) }),
       expect.objectContaining({ lottery: '天天樂', sourceId: 'sc888', refreshHour: expect.any(Number) }),
       expect.objectContaining({ lottery: '六合彩', sourceId: 'nfdhk', refreshHour: expect.any(Number) }),
@@ -22,9 +22,11 @@ describe('Matrix analysis schedule', () => {
       payload?: { lottery?: string };
     }>;
     for (const lottery of ['今彩539', '天天樂']) {
-      const schedule = schedules.find((entry) => entry.payload?.lottery === lottery);
-      expect(schedule?.cron).toMatch(/\/2/);
-      const runsPerDay = 24 * 30;
+      const lotterySchedules = schedules.filter((entry) => entry.payload?.lottery === lottery);
+      expect(lotterySchedules).toHaveLength(2);
+      expect(lotterySchedules.every((entry) => /\/5/.test(entry.cron))).toBe(true);
+      expect(lotterySchedules.filter((entry) => entry.payload?.sourceId)).toHaveLength(1);
+      const runsPerDay = lotterySchedules.length * 24 * 12;
       const explorePartitions = 390;
       const tianyanPartitions = 130;
       expect(runsPerDay).toBeGreaterThan(explorePartitions + tianyanPartitions + 3);
