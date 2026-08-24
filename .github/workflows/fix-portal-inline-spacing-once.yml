@@ -1,0 +1,98 @@
+name: Fix portal inline spacing once
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'fix-portal-inline-spacing-run-20260824'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix-portal-inline-spacing-run-20260824
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: RED - confirm portal spacing regression exists
+        shell: bash
+        run: |
+          set +e
+          node --test tests/history-floating-spacing.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'Expected the current portal spacing regression test to fail before the fix.'
+            exit 1
+          fi
+          echo 'RED confirmed.'
+
+      - name: Patch formal spacing sources and aligned regression contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one match, found {count}: {old!r}")
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "src/responsive-feature-pages.css",
+              '  left: var(--tool-page-inline);\n  right: var(--tool-page-inline);',
+              '  left: 16px;\n  right: 16px;',
+          )
+
+          replace_once(
+              "src/feature-pages.css",
+              '.draw-history-screen .matrix-title-banner { width: calc(100% - 24px); }\n',
+              '',
+          )
+
+          test_path = Path("tests/layout-inline-spacing.test.mjs")
+          test_text = test_path.read_text()
+          old = '''  assert.match(responsive, /--tool-page-inline:\\s*var\\(--layout-page-inline\\);/);\n  assert.match(responsive, /left:\\s*var\\(--tool-page-inline\\);/);\n  assert.match(responsive, /right:\\s*var\\(--tool-page-inline\\);/);'''
+          new = '''  assert.match(responsive, /--tool-page-inline:\\s*var\\(--layout-page-inline\\);/);\n  const portalMatch = responsive.match(/\\.history-filter-panel\\[data-floating="true"\\],\\s*\\.reference-query-panel\\[data-floating="true"\\],\\s*\\.tongxing-query\\[data-floating="true"\\]\\s*\\{([\\s\\S]*?)\\}/);\n  assert.ok(portalMatch, 'the three portaled tool settings cards must use one shared controller');\n  assert.match(portalMatch[1], /\\bleft:\\s*16px\\s*;/);\n  assert.match(portalMatch[1], /\\bright:\\s*16px\\s*;/);'''
+          if test_text.count(old) != 1:
+              raise SystemExit("tests/layout-inline-spacing.test.mjs: portal expectation block did not match exactly once")
+          test_text = test_text.replace(old, new, 1)
+
+          marker = '''  assert.doesNotMatch(featurePages, /\\.number-reference-screen \\.feature-body\\s*\\{[^}]*padding-inline:\\s*20px;/s);\n'''
+          addition = '''  assert.doesNotMatch(featurePages, /\\.number-reference-screen \\.feature-body\\s*\\{[^}]*padding-inline:\\s*20px;/s);\n  assert.doesNotMatch(featurePages, /\\.draw-history-screen \\.matrix-title-banner\\s*\\{[^}]*width:\\s*calc\\(100% - 24px\\)/s);\n\n  const profileBodyBlocks = [...featurePages.matchAll(/([^{}]*\\.profile-screen \\.feature-body[^{}]*)\\{([^}]*)\\}/g)];\n  assert.ok(profileBodyBlocks.length > 0, 'profile page should retain its existing feature-body rules');\n  for (const [, , block] of profileBodyBlocks) {\n    assert.doesNotMatch(block, /\\b(?:padding-inline|padding-left|padding-right|margin-inline|margin-left|margin-right|left|right|width|transform)\\s*:/);\n  }\n'''
+          if test_text.count(marker) != 1:
+              raise SystemExit("tests/layout-inline-spacing.test.mjs: final assertion marker did not match exactly once")
+          test_path.write_text(test_text.replace(marker, addition, 1))
+          PY
+
+      - name: GREEN - verify direct spacing tests
+        run: |
+          node --test tests/history-floating-spacing.test.mjs tests/layout-inline-spacing.test.mjs
+          git diff --check
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Commit verified fix to staging branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/responsive-feature-pages.css src/feature-pages.css tests/layout-inline-spacing.test.mjs
+          git commit -m 'Fix portal floating card inline spacing'
+          git push origin HEAD:fix-portal-inline-spacing-run-20260824
