@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
+from app.repositories.artifact_chunks import materialize_chunks
+
 
 ARTIFACT_KINDS = {"explore", "tianyan", "tiangong", "status"}
 RETENTION = timedelta(days=3)
@@ -8,11 +10,13 @@ RETENTION = timedelta(days=3)
 
 class AnalysisRepository(Protocol):
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
-    def upsert_draws(self, draws: list[dict[str, Any]]) -> None: ...
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
+    def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
+    def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
@@ -26,15 +30,12 @@ class InMemoryAnalysisRepository:
         self.draws: dict[tuple[str, str], dict[str, Any]] = {}
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.artifacts: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+        self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
 
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
         stored = dict(draw)
         self.draws[(stored["lottery"], stored["period"])] = stored
         return stored
-
-    def upsert_draws(self, draws: list[dict[str, Any]]) -> None:
-        for draw in draws:
-            self.upsert_draw(draw)
 
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
         matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
@@ -74,9 +75,39 @@ class InMemoryAnalysisRepository:
             "payload": payload, "expiresAt": datetime.now(UTC) + RETENTION,
         }
 
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
+        if kind not in ARTIFACT_KINDS:
+            raise ValueError("UNKNOWN_ARTIFACT_KIND")
+        self.artifact_chunks[(lottery, draw_period, analysis_version, kind, chunk_index)] = {
+            "cursor_start": cursor_start,
+            "cursor_end": cursor_end,
+            "payload": payload,
+            "expiresAt": datetime.now(UTC) + RETENTION,
+        }
+
+    def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
+        chunks = [
+            {"chunk_index": key[4], "cursor_start": record["cursor_start"], "cursor_end": record["cursor_end"], "payload": record["payload"]}
+            for key, record in self.artifact_chunks.items()
+            if key[:4] == (lottery, draw_period, analysis_version, kind)
+        ]
+        return sorted(chunks, key=lambda chunk: chunk["chunk_index"])
+
+    def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
+        return materialize_chunks(
+            lottery, draw_period,
+            self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
+            expected_total,
+        )
+
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         record = self.artifacts.get((lottery, draw_period, analysis_version, kind))
-        return None if record is None else record["payload"]
+        if record is None:
+            return None
+        payload = record["payload"]
+        if isinstance(payload, dict) and payload.get("storage") == "chunks":
+            return self.materialize_artifact(lottery, draw_period, analysis_version, kind, payload["total"])
+        return payload
 
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
         available = {key[3] for key in self.artifacts if key[:3] == (lottery, draw_period, analysis_version)}
@@ -96,14 +127,16 @@ class InMemoryAnalysisRepository:
         if not complete:
             return None
         run = max(complete, key=lambda item: item["completedAt"] or "")
-        record = self.artifacts.get((lottery, draw_period, run["analysisVersion"], kind))
-        return None if record is None else record["payload"]
+        return self.read_artifact(lottery, draw_period, run["analysisVersion"], kind)
 
     def cleanup_expired(self, now: datetime) -> int:
         expired = [key for key, record in self.artifacts.items() if record["expiresAt"] < now]
         for key in expired:
             del self.artifacts[key]
-        return len(expired)
+        expired_chunks = [key for key, record in self.artifact_chunks.items() if record["expiresAt"] < now]
+        for key in expired_chunks:
+            del self.artifact_chunks[key]
+        return len(expired) + len(expired_chunks)
 
 
 class SupabaseAnalysisRepository:
@@ -140,25 +173,14 @@ class SupabaseAnalysisRepository:
             "drawOrderNumbers": draw.get("draw_order_numbers"),
         }
 
-    @staticmethod
-    def _draw_record(draw: dict[str, Any]) -> dict[str, Any]:
-        return {
+    def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
+        record = {
             "lottery": draw["lottery"], "period": draw["period"], "draw_date": draw.get("drawDate") or None,
             "numbers": draw["numbers"], "sorted_numbers": draw.get("sortedNumbers", draw["numbers"]),
             "draw_order_numbers": draw.get("drawOrderNumbers"), "source_id": draw.get("sourceId"),
         }
-
-    def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
-        response = self.client.table("lottery_draws").upsert(self._draw_record(draw), on_conflict="lottery,period").execute()
+        response = self.client.table("lottery_draws").upsert(record, on_conflict="lottery,period").execute()
         return self._one(response)
-
-    def upsert_draws(self, draws: list[dict[str, Any]]) -> None:
-        records = [self._draw_record(draw) for draw in draws]
-        for start in range(0, len(records), 500):
-            self.client.table("lottery_draws").upsert(
-                records[start:start + 500],
-                on_conflict="lottery,period",
-            ).execute()
 
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
         response = (
@@ -190,9 +212,47 @@ class SupabaseAnalysisRepository:
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "kind": kind, "payload": payload, "completed_at": now.isoformat(), "expires_at": (now + RETENTION).isoformat()}
         self.client.table("matrix_analysis_artifacts").upsert(record, on_conflict="lottery,draw_period,analysis_version,kind").execute()
 
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
+        if kind not in ARTIFACT_KINDS:
+            raise ValueError("UNKNOWN_ARTIFACT_KIND")
+        now = datetime.now(UTC)
+        record = {
+            "lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version,
+            "kind": kind, "chunk_index": chunk_index, "cursor_start": cursor_start,
+            "cursor_end": cursor_end, "payload": payload, "expires_at": (now + RETENTION).isoformat(),
+        }
+        self.client.table("matrix_analysis_artifact_chunks").upsert(
+            record, on_conflict="lottery,draw_period,analysis_version,kind,chunk_index",
+        ).execute()
+
+    def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
+        response = (
+            self.client.table("matrix_analysis_artifact_chunks")
+            .select("chunk_index,cursor_start,cursor_end,payload")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .eq("kind", kind)
+            .order("chunk_index")
+            .execute()
+        )
+        return [dict(chunk) for chunk in response.data]
+
+    def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
+        return materialize_chunks(
+            lottery, draw_period,
+            self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
+            expected_total,
+        )
+
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         artifact = self.client.table("matrix_analysis_artifacts").select("payload").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).eq("kind", kind).limit(1).execute()
-        return artifact.data[0]["payload"] if artifact.data else None
+        if not artifact.data:
+            return None
+        payload = artifact.data[0]["payload"]
+        if isinstance(payload, dict) and payload.get("storage") == "chunks":
+            return self.materialize_artifact(lottery, draw_period, analysis_version, kind, payload["total"])
+        return payload
 
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
         response = self.client.table("matrix_analysis_artifacts").select("kind").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
@@ -212,14 +272,16 @@ class SupabaseAnalysisRepository:
         if not runs.data:
             return None
         version = runs.data[0]["analysis_version"]
-        artifact = self.client.table("matrix_analysis_artifacts").select("payload").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", version).eq("kind", kind).limit(1).execute()
-        return artifact.data[0]["payload"] if artifact.data else None
+        return self.read_artifact(lottery, draw_period, version, kind)
 
     def cleanup_expired(self, now: datetime) -> int:
         expired = self.client.table("matrix_analysis_artifacts").select("id").lt("expires_at", now.isoformat()).execute()
         if expired.data:
             self.client.table("matrix_analysis_artifacts").delete().lt("expires_at", now.isoformat()).execute()
-        return len(expired.data)
+        expired_chunks = self.client.table("matrix_analysis_artifact_chunks").select("id").lt("expires_at", now.isoformat()).execute()
+        if expired_chunks.data:
+            self.client.table("matrix_analysis_artifact_chunks").delete().lt("expires_at", now.isoformat()).execute()
+        return len(expired.data) + len(expired_chunks.data)
 
 
 def create_supabase_repository(url: str, secret_key: str) -> SupabaseAnalysisRepository:

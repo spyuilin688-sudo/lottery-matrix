@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 
@@ -6,6 +7,52 @@ from app.repositories.analysis_repository import InMemoryAnalysisRepository, Sup
 
 
 KINDS = ["explore", "tianyan", "tiangong", "status"]
+
+
+class FakeResponse:
+    def __init__(self, data: list[dict[str, Any]]) -> None:
+        self.data = data
+
+
+class FakeQuery:
+    def __init__(self, client: "FakeSupabaseClient", table: str) -> None:
+        self.client = client
+        self.table = table
+
+    def select(self, columns: str) -> "FakeQuery":
+        self.client.last_select = columns
+        return self
+
+    def upsert(self, record: dict[str, Any], **kwargs: Any) -> "FakeQuery":
+        self.client.last_record = record
+        self.client.last_on_conflict = kwargs.get("on_conflict")
+        return self
+
+    def eq(self, column: str, value: Any) -> "FakeQuery":
+        self.client.last_filters.append((column, value))
+        return self
+
+    def order(self, column: str, desc: bool = False) -> "FakeQuery":
+        self.client.last_orders.append((column, desc))
+        return self
+
+    def execute(self) -> FakeResponse:
+        return FakeResponse(self.client.responses.get(self.table, []))
+
+
+class FakeSupabaseClient:
+    def __init__(self) -> None:
+        self.last_table = ""
+        self.last_select = ""
+        self.last_on_conflict: str | None = None
+        self.last_record: dict[str, Any] | None = None
+        self.last_filters: list[tuple[str, Any]] = []
+        self.last_orders: list[tuple[str, bool]] = []
+        self.responses: dict[str, list[dict[str, Any]]] = {}
+
+    def table(self, name: str) -> FakeQuery:
+        self.last_table = name
+        return FakeQuery(self, name)
 
 
 def test_draw_upsert_is_idempotent_by_lottery_and_period() -> None:
@@ -86,3 +133,70 @@ def test_cleanup_removes_only_expired_artifacts() -> None:
     repository.artifacts[("今彩539", "new", "v2", "explore")] = {"payload": {}, "expiresAt": now + timedelta(days=1)}
     assert repository.cleanup_expired(now) == 1
     assert ("今彩539", "new", "v2", "explore") in repository.artifacts
+
+
+def test_artifact_chunks_are_idempotent_by_full_composite_key() -> None:
+    repository = InMemoryAnalysisRepository()
+    first = {"items": [{"id": "a"}], "validationById": {"a": {"ruleSets": []}}}
+
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 0, 0, 10, first)
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 0, 0, 10, first)
+
+    assert len(repository.read_artifact_chunks("今彩539", "115000205", "v1", "explore")) == 1
+
+
+def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.begin_run("今彩539", "115000205", "v1", "2026-08-24T10:00:00+00:00")
+    first = {"items": [{"id": "a"}], "validationById": {"a": {"ruleSets": []}}}
+    second = {"items": [{"id": "b"}], "validationById": {"b": {"ruleSets": []}}}
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 0, 0, 10, first)
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 1, 10, 20, second)
+    repository.save_artifact("今彩539", "115000205", "v1", "explore", {
+        "storage": "chunks", "schemaVersion": 1, "chunkCount": 2,
+        "cursor": 20, "total": 20, "itemCount": 2,
+    })
+    for kind in ("tianyan", "tiangong", "status"):
+        repository.save_artifact("今彩539", "115000205", "v1", kind, {"kind": kind})
+    repository.complete_run("今彩539", "115000205", "v1", "2026-08-24T10:01:00+00:00")
+
+    assert repository.read_completed_artifact("今彩539", "115000205", "explore") == {
+        "lottery": "今彩539",
+        "drawPeriod": "115000205",
+        "items": [{"id": "a"}, {"id": "b"}],
+        "validationById": {"a": {"ruleSets": []}, "b": {"ruleSets": []}},
+    }
+
+
+def test_cleanup_removes_expired_artifacts_and_chunks() -> None:
+    repository = InMemoryAnalysisRepository()
+    now = datetime(2026, 8, 24, tzinfo=UTC)
+    repository.artifacts[("今彩539", "old", "v1", "explore")] = {"payload": {}, "expiresAt": now - timedelta(seconds=1)}
+    repository.artifact_chunks[("今彩539", "old", "v1", "explore", 0)] = {
+        "cursor_start": 0, "cursor_end": 10, "payload": {}, "expiresAt": now - timedelta(seconds=1),
+    }
+
+    assert repository.cleanup_expired(now) == 2
+
+
+def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+    delta = {"items": [{"id": "b"}], "validationById": {"b": {"ruleSets": []}}}
+
+    repository.save_artifact_chunk("今彩539", "115000205", "v1", "explore", 1, 10, 20, delta)
+
+    assert fake_client.last_table == "matrix_analysis_artifact_chunks"
+    assert fake_client.last_on_conflict == "lottery,draw_period,analysis_version,kind,chunk_index"
+    fake_client.responses["matrix_analysis_artifact_chunks"] = [{
+        "chunk_index": 1, "cursor_start": 10, "cursor_end": 20, "payload": delta,
+    }]
+    assert repository.read_artifact_chunks("今彩539", "115000205", "v1", "explore") == [{
+        "chunk_index": 1, "cursor_start": 10, "cursor_end": 20, "payload": delta,
+    }]
+    assert fake_client.last_select == "chunk_index,cursor_start,cursor_end,payload"
+    assert fake_client.last_filters == [
+        ("lottery", "今彩539"), ("draw_period", "115000205"),
+        ("analysis_version", "v1"), ("kind", "explore"),
+    ]
+    assert fake_client.last_orders == [("chunk_index", False)]
