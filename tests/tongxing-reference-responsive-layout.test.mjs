@@ -42,6 +42,14 @@ test('Matrix 同星 result grids reserve readable issue/date width and keep date
   assert.match(block(tongxing, '.tongxing-screen .tongxing-table-row > .tongxing-period-cell'), /grid-template-rows:\s*auto auto/);
 });
 
+test('Matrix 同星只增加四彩種開獎號碼與特別號字級', () => {
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-table-row > span'), /font-size:\s*clamp\(13px, calc\(3\.6vw \+ 2px\), 17px\)/);
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-table-row .locked-input-number'), /font-size:\s*clamp\(14px, calc\(3\.6vw \+ 2px\), 16px\)/);
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-table[data-columns="7"] .tongxing-table-row > span'), /font-size:\s*clamp\(11\.5px, calc\(3vw \+ 2px\), 15px\)/);
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-period-cell strong'), /font-size:\s*clamp\(11px, 3\.2vw, 12\.5px\)/);
+  assert.match(block(tongxing, '.tongxing-screen .tongxing-period-cell time'), /font-size:\s*clamp\(8\.5px, 2\.5vw, 9\.5px\)/);
+});
+
 test('Matrix 同星左欄計算樣式確實將期數與日期分成上下兩列', () => {
   const dom = new JSDOM(`
     <style>${tongxing}</style>
