@@ -1,29 +1,7 @@
 [
-  {
-    "name": "fantasy5-refresh-analysis",
-    "cron": "50 18 * * *",
-    "handler": "scheduledFantasy5MatrixAnalysisRefresh",
-    "timezone": "America/Los_Angeles"
-  },
-  {
-    "name": "daily539-refresh-analysis",
-    "cron": "50 20 * * 1-6",
-    "handler": "scheduledMatrixAnalysisRefresh",
-    "timezone": "Asia/Taipei",
-    "payload": { "lottery": "今彩539", "sourceId": "taiwan539", "refreshHour": 20 }
-  },
-  {
-    "name": "lotto649-refresh-analysis",
-    "cron": "50 20 * * 2,5",
-    "handler": "scheduledMatrixAnalysisRefresh",
-    "timezone": "Asia/Taipei",
-    "payload": { "lottery": "大樂透", "sourceId": "taiwan649", "refreshHour": 20 }
-  },
-  {
-    "name": "marksix-refresh-analysis",
-    "cron": "50 21 * * *",
-    "handler": "scheduledMatrixAnalysisRefresh",
-    "timezone": "Asia/Taipei",
-    "payload": { "lottery": "六合彩", "sourceId": "nfdhk", "refreshHour": 21 }
-  }
+  {"name":"fantasy5-refresh-analysis","cron":"50 18 * * *","handler":"scheduledFantasy5MatrixAnalysisRefresh","timezone":"America/Los_Angeles"},
+  {"name":"daily539-refresh-analysis","cron":"50 20 * * 1-6","handler":"scheduledMatrixAnalysisRefresh","timezone":"Asia/Taipei","payload":{"lottery":"今彩539","sourceId":"taiwan539","refreshHour":20}},
+  {"name":"lotto649-refresh-analysis","cron":"50 20 * * 2,5","handler":"scheduledMatrixAnalysisRefresh","timezone":"Asia/Taipei","payload":{"lottery":"大樂透","sourceId":"taiwan649","refreshHour":20}},
+  {"name":"marksix-refresh-analysis","cron":"50 21 * * *","handler":"scheduledMatrixAnalysisRefresh","timezone":"Asia/Taipei","payload":{"lottery":"六合彩","sourceId":"nfdhk","refreshHour":21}},
+  {"name":"matrix-analysis-companion","cron":"*/5 * * * *","handler":"scheduledMatrixAnalysisRefresh","timezone":"UTC"}
 ]
