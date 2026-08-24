@@ -98,13 +98,13 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).not.toHaveBeenCalled();
   });
 
-  it("快捷短按只在 click 開啟，touch end 不提前切換頁面", () => {
+  it("快捷短按只在 click 開啟，pointer up 不提前切換頁面", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
     const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.touchStart(quickButton);
-    fireEvent.touchEnd(quickButton);
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
 
     expect(onQuickOpen).not.toHaveBeenCalled();
 
@@ -113,7 +113,7 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("手機觸控長按三秒會開啟快捷設定且不觸發快捷功能", () => {
+  it("pointer cancel 會取消快捷長按計時", () => {
     vi.useFakeTimers();
     const onQuickOpen = vi.fn();
     const onQuickConfigure = vi.fn();
@@ -121,9 +121,25 @@ describe("BottomNavigation", () => {
     render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
 
     const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
-    fireEvent.touchStart(quickButton);
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    fireEvent.pointerCancel(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
     vi.advanceTimersByTime(3000);
-    fireEvent.touchEnd(quickButton);
+
+    expect(onQuickConfigure).not.toHaveBeenCalled();
+    expect(onQuickOpen).not.toHaveBeenCalled();
+  });
+
+  it("手機 Pointer 長按三秒會開啟快捷設定且不觸發快捷功能", () => {
+    vi.useFakeTimers();
+    const onQuickOpen = vi.fn();
+    const onQuickConfigure = vi.fn();
+
+    render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
+
+    const quickButton = screen.getByRole("button", { name: "快捷；長按三秒開啟設定" });
+    fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    vi.advanceTimersByTime(3000);
+    fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
     fireEvent.click(quickButton);
 
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);

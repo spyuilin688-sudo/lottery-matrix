@@ -251,7 +251,7 @@ function PatchedDrawHistoryPage({
   const toggleHistoryFilters = () => {
     if (filterExpanded) { setFilterExpanded(false); setFilterFloating(false); return; }
     const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
-    setFilterPanelTop(header?.getBoundingClientRect().bottom ?? 0);
+    setFilterPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setFilterExpanded(true);
     setFilterFloating(true);
   };

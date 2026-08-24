@@ -11,6 +11,7 @@ const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css'
 const brandCss = readFileSync(new URL('../src/brand-header-unify.css', import.meta.url), 'utf8');
 const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url), 'utf8');
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
+const adjustmentsCss = readFileSync(new URL('../src/feature-page-adjustments.css', import.meta.url), 'utf8');
 
 test('歷史開獎使用 24.7px 基底與 22px 專用精簡按鈕及 sticky 頁首', () => {
   assert.match(source, /className="history-filter-panel"/);
@@ -102,7 +103,8 @@ test('快捷通知我的共用首頁 matrixya Logo 幾何與 8px 間距', () => 
 
 test('通知頁使用單一 clamp 響應式密度且不保留小螢幕強拉覆寫', () => {
   assert.match(responsiveCss, /\.notification-row\s*\{[^}]*height:\s*auto[^}]*min-height:\s*0[^}]*padding:\s*4px/s);
-  assert.match(responsiveCss, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px[^}]*padding-inline:\s*20px/s);
+  assert.match(responsiveCss, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 16px/s);
   assert.match(responsiveCss, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(40px, 12\.3vw, 48px\) minmax\(0, 1fr\) clamp\(64px, 19\.5vw, 76px\) 42px;[^}]*column-gap:\s*clamp\(4px, 1\.5vw, 6px\)/s);
   assert.doesNotMatch(responsiveCss, /\.notification-row\s*\{[^}]*grid-template-columns:/s);
   assert.match(responsiveCss, /\.notification-icon\s*\{[^}]*width:\s*clamp\(40px, 11\.3vw, 44px\);[^}]*height:\s*clamp\(40px, 11\.3vw, 44px\)/s);

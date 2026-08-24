@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   CalendarIcon,
@@ -72,6 +72,7 @@ import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from 
 import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
 import { getSupabaseClient } from "./lib/supabase";
 import { downloadMatrixTicket } from "./matrix-ticket-download";
+import { getExploreEntryDefaults } from "./explore-defaults";
 
 export type ScreenId =
   | "home"
@@ -197,7 +198,7 @@ const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
   "連碰計算機": "/assets/lottery/functions/連碰標題K.png",
   "立柱計算機": "/assets/lottery/functions/立柱標題K.png",
-  "Matrix Pro 方案與收費標準": "/assets/lottery/functions/會員方案標題K.png",
+  "Matrix Pro 會員方案與收費標準": "/assets/lottery/functions/會員方案標題K.png",
   "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
 };
 
@@ -236,6 +237,7 @@ function BrandHeader({
   compact = false,
   hideTitle = false,
   showBack = true,
+  artwork,
 }: {
   title: string;
   onBack: () => void;
@@ -243,9 +245,10 @@ function BrandHeader({
   compact?: boolean;
   hideTitle?: boolean;
   showBack?: boolean;
+  artwork?: string;
 }) {
-  const integratedArtwork = MATRIX_TITLE_ARTWORK[title];
-  if (integratedArtwork && !hideTitle) {
+  const integratedArtwork = artwork ?? MATRIX_TITLE_ARTWORK[title];
+  if (integratedArtwork && (!hideTitle || Boolean(artwork))) {
     return (
       <header className="feature-brand-header integrated-title-header" data-compact={compact}>
         <div className="matrix-title-banner">
@@ -324,6 +327,7 @@ function FeatureShell({
   headerAction,
   compactHeader = false,
   hidePageTitle = false,
+  headerArtwork,
 }: {
   title: string;
   children: React.ReactNode;
@@ -334,6 +338,7 @@ function FeatureShell({
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
   hidePageTitle?: boolean;
+  headerArtwork?: string;
 }) {
   const logoOnlyHeader = compactHeader || active !== "首頁";
   const hideTitle = hidePageTitle || compactHeader;
@@ -345,7 +350,8 @@ function FeatureShell({
         action={headerAction}
         compact={logoOnlyHeader}
         hideTitle={hideTitle}
-        showBack={Boolean(MATRIX_TITLE_ARTWORK[title]) || !logoOnlyHeader || (active === "我的" && backTarget === "profile")}
+        showBack={(Boolean(headerArtwork ?? MATRIX_TITLE_ARTWORK[title]) && !(active === "我的" && backTarget === "home")) || !logoOnlyHeader || (active === "我的" && backTarget === "profile")}
+        artwork={headerArtwork}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
@@ -1107,13 +1113,19 @@ export function MatrixExplorePage({
     "準5+（鎖定2碼）": ["準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [period, setPeriod] = useState("二期");
+  const initialExploreDefaults = useMemo(
+    () => title === "Matrix 探索"
+      ? getExploreEntryDefaults(null)
+      : { period: "二期", range: "標準範圍" } as const,
+    [title],
+  );
+  const [period, setPeriod] = useState(initialExploreDefaults.period);
   const [road, setRoad] = useState(roadTypes[0]);
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
   const [exploreDate, setExploreDate] = useState("本日 (最新)");
-  const [exploreRange, setExploreRange] = useState("標準範圍");
+  const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
   const [searched, setSearched] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
@@ -1129,6 +1141,26 @@ export function MatrixExplorePage({
   const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
   const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (title !== "Matrix 探索") return;
+    let active = true;
+    void bootstrapMember()
+      .then(() => fetchMemberProfile())
+      .then((profile) => {
+        if (!active) return;
+        const defaults = getExploreEntryDefaults(profile);
+        setPeriod(defaults.period);
+        setExploreRange(defaults.range);
+      })
+      .catch(() => {
+        if (!active) return;
+        const defaults = getExploreEntryDefaults(null);
+        setPeriod(defaults.period);
+        setExploreRange(defaults.range);
+      });
+    return () => { active = false; };
+  }, [title]);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -1329,7 +1361,7 @@ export function MatrixExplorePage({
           </label>
           <label><span>{title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/period.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="period" />}探索期數</span>
             <div className="segmented three">
-              {["二期", "七期", "十三期"].map((v) => (
+              {(["二期", "七期", "十三期"] as const).map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
                   {v}
                   {title === "Matrix 探索" && v === "十三期" ? <em><LockClosedIcon />Matrix Pro</em> : null}
@@ -1402,7 +1434,7 @@ export function MatrixExplorePage({
                 {title === "Matrix 探索" ? <img className="setting-label-icon matrix-explore-setting-icon" src="/assets/matrix-explore/range.png" alt="" aria-hidden="true" /> : <SettingLabelIcon type="range" />}探索範圍
               </span>
               <div className="segmented two">
-                {["標準範圍", "完整範圍"].map((value) => (
+                {(["標準範圍", "完整範圍"] as const).map((value) => (
                   <button
                     type="button"
                     key={value}
@@ -3382,7 +3414,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   ];
 
   return (
-    <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
+    <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
       <section className="panel profile-card">
         <div className="profile-avatar">
           <img
@@ -3443,9 +3475,9 @@ function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array
   );
 }
 
-function ProfileDetailShell({ title, children, onNavigate, className = "", hidePageTitle = false }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string; hidePageTitle?: boolean }) {
+function ProfileDetailShell({ title, children, onNavigate, className = "", hidePageTitle = false, headerArtwork = "/assets/lottery/functions/我的標題K2.png" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string; hidePageTitle?: boolean; headerArtwork?: string }) {
   return (
-    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" compactHeader className={`profile-detail-screen ${className}`.trim()} hidePageTitle={hidePageTitle}>
+    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" compactHeader className={`profile-detail-screen ${className}`.trim()} hidePageTitle={hidePageTitle} headerArtwork={headerArtwork}>
       {children}
     </FeatureShell>
   );
@@ -3532,7 +3564,7 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     if (!window.confirm(`確定以${selected.name}進行付款？`)) return;
   };
   return (
-    <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
+    <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/會員方案標題K.png">
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;
@@ -3748,8 +3780,8 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   }, [lottery]);
 
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={<button type="button" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}><GearIcon /></button>}>
-      <LotterySwitcher selected={lottery} onChange={setLottery} className="matrix-status-lottery-switcher" />
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={<button type="button" className="status-title-trigger" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}><img src="/assets/lottery/functions/自訂觸發條件.png" alt="自訂觸發條件" draggable={false} /></button>}>
+      <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
       {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
       <div className="status-list">
@@ -3869,7 +3901,7 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!loaded) return;
     const selected = configs.find((config) => config.lottery === lottery && config.status === status);
     setOneCodeGroups(selected?.oneCodeGroups ?? []);

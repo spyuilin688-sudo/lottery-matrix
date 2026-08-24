@@ -17,8 +17,8 @@ test("Matrix Core uses its 1536:414 token and container background without a chi
 });
 
 test("selected lottery frame follows the artwork corner radius without square border-image corners", () => {
-  const selectedRule = css.match(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
-  const selectedAfterRule = css.match(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after\s*\{([\s\S]*?)\}/)?.[1];
+  const selectedRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
+  const selectedAfterRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after\s*\{([\s\S]*?)\}/)?.[1];
 
   assert.ok(selectedRule);
   assert.match(selectedRule, /border-radius:\s*12px;/);

@@ -64,6 +64,15 @@ function deferred<T>() {
 }
 
 describe("NotificationsPagePatched", () => {
+  it("上方使用正式通知標題卡", () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+
+    expect(screen.getByRole("img", { name: "通知" })).toHaveAttribute(
+      "src",
+      "/assets/lottery/functions/通知標題K.png",
+    );
+  });
+
   it("依需求將通知分成兩個群組並保留獨立系統通知", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 

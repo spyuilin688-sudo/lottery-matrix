@@ -48,7 +48,7 @@
 .feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - 32px); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
 .feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
 .feature-title-actions { display: flex; min-width: 0; align-items: center; }
-.matrix-page-switcher { display: flex; height: 100%; align-items: center; justify-content: flex-end; gap: 4px; }
+.matrix-page-switcher { display: flex; height: 100%; align-items: center; justify-content: flex-end; gap: 10px; }
 .matrix-page-switcher button { display: grid; height: 100%; max-height: 38px; aspect-ratio: 1; padding: 0; place-items: center; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .matrix-title-banner {
@@ -90,18 +90,12 @@
   width: 100%;
   height: 100%;
 }
-.matrix-title-banner-actions .matrix-page-switcher {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(2px, 1vw, 6px);
-}
 .matrix-title-banner-actions .matrix-page-switcher button {
   width: 100%;
   height: 100%;
   border: 0;
   background: transparent;
   box-shadow: none;
-  opacity: 0;
 }
 .matrix-title-banner-actions .reference-title-actions,
 .matrix-title-banner-actions .history-title-actions {
@@ -921,7 +915,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .toggle[data-checked="true"] span { transform: translateX(18px); background: white; }
 .toggle:disabled { opacity: .5; }
 .toggle:disabled::before { border-color: #46505C; background: #151B22; box-shadow: none; }
-.notifications-screen .feature-body { padding: 0 20px calc(var(--layout-bottom-nav-clearance) + 12px); }
 .notifications-screen .notification-row { border: 1px solid rgba(170, 119, 46, .82); border-radius: 14px; background: #020C12; box-shadow: inset 0 0 10px rgba(150, 102, 34, .04); }
 .notification-modal-backdrop { align-items: flex-end; }
 .notification-modal { max-height: min(78vh, 620px); overflow: hidden; }
@@ -1419,57 +1412,25 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .lottery-logo-tabs img { display: block; width: 72px; max-width: 100%; height: 38px; object-fit: contain; }
 .lottery-logo-tabs span { font-size: 11px; white-space: nowrap; }
-.matrix-status-screen .matrix-status-lottery-switcher {
-  --lottery-switcher-height: calc(((min(100vw, 390px) - 18px) / 4) * .74);
-  position: relative;
-  display: block;
-  width: 100%;
-  height: var(--lottery-switcher-height);
-  margin: 0 0 8px;
-  padding: 0;
-  overflow: visible;
+.matrix-status-screen { --layout-page-inline: 16px; }
+.matrix-status-screen > .feature-brand-header { margin-bottom: 8px; }
+.matrix-status-screen .matrix-status-lottery-switcher { margin: 0 0 8px; }
+.matrix-status-screen .status-list { gap: 8px; }
+.matrix-status-screen .matrix-title-banner-actions {
+  inset: auto 3.5% 8% auto;
+  width: clamp(42px, 13vw, 50px);
+  height: clamp(42px, 13vw, 50px);
 }
-.matrix-status-screen .matrix-status-lottery-switcher > .home-asset-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-}
-.matrix-status-screen .matrix-status-lottery-switcher .lottery-switcher-hit-grid {
-  position: absolute;
-  inset: 0;
+.matrix-status-screen .status-title-trigger {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-.matrix-status-screen .matrix-status-lottery-switcher .lottery-card {
-  display: flex;
-  min-width: 0;
+  width: 100%;
   height: 100%;
   padding: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  place-items: center;
+  border: 0;
   background: transparent;
-  box-shadow: none;
-  overflow: hidden;
 }
-.matrix-status-screen .matrix-status-lottery-switcher .lottery-card[data-selected="true"] {
-  border-color: #e5bd57;
-  box-shadow: 0 0 10px rgba(226, 168, 39, .16);
-}
-.matrix-status-screen .matrix-status-lottery-switcher .lottery-card > img {
-  display: none;
-}
-.matrix-status-screen .matrix-status-lottery-switcher .clean-hit-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-.matrix-status-screen .status-list { gap: 11px; }
+.matrix-status-screen .status-title-trigger img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .matrix-status-screen .status-block { border-radius: 12px; }
 .matrix-status-screen .status-block > button {
   min-height: 70px;

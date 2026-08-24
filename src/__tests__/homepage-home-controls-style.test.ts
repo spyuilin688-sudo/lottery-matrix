@@ -9,7 +9,7 @@ const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), 
 
 describe("homepage control layout rules", () => {
   it("gives every homepage lottery card a gold outer border", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid rgba\(229, 179, 77, \.56\);/s);
+    expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid rgba\(229, 179, 77, \.56\);/s);
   });
 
   it("uses the reduced draw-order control height", () => {

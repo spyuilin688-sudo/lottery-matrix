@@ -28,7 +28,7 @@ test('homepage brand header owns 8px top spacing and logo stays at 75 percent', 
 test('lottery switcher and draw card use the 12px homepage inline baseline', () => {
   assert.match(tokens, /--layout-page-inline:\s*12px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0 var\(--layout-page-inline\);/);
-  assertLastBlock(css, '.home-screen .lottery-switcher-hit-grid', /gap:\s*6px;/);
+  assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
 });
 
 test('home bottom group has no black clearance above bottom navigation', () => {

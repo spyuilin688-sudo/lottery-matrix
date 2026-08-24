@@ -11,6 +11,7 @@ const explore = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const balls = fs.readFileSync('src/number-ball.css', 'utf8');
 const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
 const main = fs.readFileSync('src/main.tsx', 'utf8');
+const adjustments = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');
 
 test('三頁標題操作按鈕使用 24.7px 基底、22px 變體與 7px 刷新圖示', () => {
   assert.match(responsive, /\.title-card-compact-action\s*\{[^}]*height:\s*24\.7px;[^}]*min-height:\s*24\.7px;[^}]*gap:\s*2px;/s);
@@ -89,7 +90,7 @@ test('歷史今彩539真實使用 .2px 底線且 Matrix Explore 不洩漏', () =
 });
 
 test('通知與底部品牌頁移除固定 Logo 特例和小螢幕強拉', () => {
-  assert.match(feature, /\.notifications-screen \.feature-body\s*\{[^}]*var\(--layout-bottom-nav-clearance\)/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*var\(--layout-bottom-nav-clearance\)/s);
   assert.doesNotMatch(feature, /\.notifications-screen \.feature-body\s*\{[^}]*--mobile-safe-area-height/s);
   assert.doesNotMatch(responsive, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*width:\s*75%/s);
   assert.doesNotMatch(responsive, /bottom-nav-brand-screen\.notifications-screen[^}]*margin-bottom:\s*4px/s);

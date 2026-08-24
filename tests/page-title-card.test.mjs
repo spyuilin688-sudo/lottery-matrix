@@ -9,6 +9,7 @@ const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
 const homepageStyles = readLocalCss(new URL("../src/homepage-repair.css", import.meta.url));
+const exploreSpacingStyles = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 
 test("confirmed feature pages use the latest integrated title artwork", () => {
   const expectedArtwork = [
@@ -24,7 +25,7 @@ test("confirmed feature pages use the latest integrated title artwork", () => {
     ["歷史開獎號碼", "歷史開獎標題K.png"],
     ["連碰計算機", "連碰標題K.png"],
     ["立柱計算機", "立柱標題K.png"],
-    ["Matrix Pro 方案與收費標準", "會員方案標題K.png"],
+    ["Matrix Pro 會員方案與收費標準", "會員方案標題K.png"],
     ["Matrix 自訂觸發狀態", "自訂觸發標題K.png"],
   ];
 
@@ -48,6 +49,14 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(switcher, /Matrix天工\.png/);
   assert.doesNotMatch(switcher, /Matrix探索\.png/);
   assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
+  assert.match(exploreSpacingStyles, /\.matrix-page-switcher\s*\{[^}]*gap:\s*10px;/s);
+  assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
+});
+
+test("status and profile flows use the supplied title artwork and status trigger icon", () => {
+  assert.match(featurePages, /headerArtwork="\/assets\/lottery\/functions\/我的標題K\.png"/);
+  assert.match(featurePages, /headerArtwork = "\/assets\/lottery\/functions\/我的標題K2\.png"/);
+  assert.match(featurePages, /\/assets\/lottery\/functions\/自訂觸發條件\.png/);
 });
 
 test("history title card owns the filter trigger while the panel owns the lottery dropdown", () => {
@@ -75,15 +84,16 @@ test("number reference title card owns refresh and explore settings", () => {
 });
 
 test("home and Matrix status use the shared Matrixbba switcher and preserve selected outline only", () => {
-  assert.match(featurePages, /className="matrix-status-lottery-switcher" \/>/);
+  assert.match(featurePages, /className="lottery-switcher--home-style matrix-status-lottery-switcher" \/>/);
   assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
-  const switcherBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
+  const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*100%;/.test(body) && /margin-inline:\s*0;/.test(body)));
   assert.ok(switcherBodies.some((body) => /padding-inline:\s*5px;/.test(body)));
-  assert.ok(switcherBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
+  const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
+  assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
   const selectedOutline = ruleBodies(
     homepageStyles,
-    /^\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after$/,
+    /^\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after$/,
   );
   assert.equal(selectedOutline.length, 1);
   assert.match(selectedOutline[0], /mask-composite:\s*exclude;/);

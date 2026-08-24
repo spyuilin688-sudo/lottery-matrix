@@ -1,23 +1,23 @@
 /* Homepage lottery switcher component overrides. Keep this file small and focused. */
 
-.home-screen .lottery-switcher {
+.lottery-switcher--home-style {
   box-sizing: border-box;
   padding-inline: 5px;
 }
 
-.home-screen .lottery-switcher-hit-grid {
+.lottery-switcher--home-style .lottery-switcher-hit-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
   background-size: calc(400% + 24px) 100%;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
   filter: grayscale(.65) brightness(.72);
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
   filter: none;
 }

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { BottomNavigation } from "./BottomNavigation";
-import { BrandLogo } from "./BrandLogo";
 import type { ScreenId } from "./FeaturePages";
 import {
   fetchNotificationSettings,
@@ -283,7 +282,11 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   return (
     <main className="feature-screen compact-feature-screen bottom-nav-brand-screen notifications-screen notifications-screen-v2">
-      <header className="feature-brand-header" data-compact="true" data-hide-title="true"><BrandLogo /></header>
+      <header className="feature-brand-header integrated-title-header" data-compact="true">
+        <div className="matrix-title-banner">
+          <img src="/assets/lottery/functions/通知標題K.png" alt="通知" draggable={false} />
+        </div>
+      </header>
       <div className="feature-body">
         <div className="notification-list">
           <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>

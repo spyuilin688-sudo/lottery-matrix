@@ -69,6 +69,15 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it("我的頁面使用正式標題卡", () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(screen.getByRole("img", { name: "我的" })).toHaveAttribute(
+      "src",
+      "/assets/lottery/functions/我的標題K.png",
+    );
+  });
+
   it("未登入時在既有會員卡顯示 LINE 登入並啟動登入流程", async () => {
     supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
 

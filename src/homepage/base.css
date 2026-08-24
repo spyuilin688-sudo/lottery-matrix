@@ -145,7 +145,7 @@
   width: 75%;
 }
 
-.home-screen .lottery-switcher {
+.lottery-switcher--home-style {
   position: relative;
   display: block;
   flex: 0 0 auto;
@@ -157,10 +157,10 @@
   overflow: visible;
 }
 
-.home-screen .lottery-switcher > .home-asset-image {
+.lottery-switcher--home-style > .home-asset-image {
   display: none;
 }
-.home-screen .lottery-switcher-hit-grid {
+.lottery-switcher--home-style .lottery-switcher-hit-grid {
   position: relative;
   z-index: 2;
   inset: auto;
@@ -172,7 +172,7 @@
   min-width: 0;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
   appearance: none;
   position: relative;
   display: flex;
@@ -193,27 +193,27 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] {
   background-position: 0% 50%;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] {
   background-position: 33.333% 50%;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] {
   background-position: 66.667% 50%;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] {
   background-position: 100% 50%;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card::after {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {
   display: none;
 }
 
-.home-screen .clean-hit-label {
+.lottery-switcher--home-style .clean-hit-label {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -652,7 +652,7 @@
   margin-block-start: 0;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
   position: absolute;
   z-index: 3;
   inset: 0;
@@ -668,26 +668,26 @@
   mask-composite: exclude;
 }
 
-.home-screen .lottery-switcher > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
   border-color: transparent;
   border-radius: 12px;
   border-image: none;
   box-shadow: 0 0 7px rgba(255, 206, 105, .28);
 }
 
-.home-screen .lottery-card[data-selected="true"][data-lottery="今彩539"] {
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="今彩539"] {
   --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
 }
 
-.home-screen .lottery-card[data-selected="true"][data-lottery="天天樂"] {
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="天天樂"] {
   --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
 }
 
-.home-screen .lottery-card[data-selected="true"][data-lottery="六合彩"] {
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="六合彩"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
 }
 
-.home-screen .lottery-card[data-selected="true"][data-lottery="大樂透"] {
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="大樂透"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
 }
 

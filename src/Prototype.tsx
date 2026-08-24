@@ -403,7 +403,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <div className="home-layout">
         <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-          <LotterySwitcher selected={selected} onChange={setSelected} className="home-switcher-box" />
+          <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
           <MatrixStatusSection current={matrixStatus?.summary ?? null} onOpen={() => navigate("status")} />
         </main>

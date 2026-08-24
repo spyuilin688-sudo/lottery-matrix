@@ -44,6 +44,25 @@
   min-width: 0;
 }
 
+.matrix-explore-main-screen .matrix-title-banner-actions {
+  inset: auto 3.5% 8% auto;
+  width: auto;
+  height: auto;
+}
+
+.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
+  display: flex;
+  width: auto;
+  height: auto;
+  gap: 10px;
+}
+
+.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {
+  width: clamp(34px, 10vw, 38px);
+  height: clamp(34px, 10vw, 38px);
+  opacity: 1;
+}
+
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .history-panel,

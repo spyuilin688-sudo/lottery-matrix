@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixStatusPage } from '../FeaturePages';
@@ -37,4 +38,14 @@ test('切換彩種重新讀取狀態，且可進入自訂觸發條件', async ()
   await waitFor(() => expect(statusApi.fetchMatrixStatus).toHaveBeenCalledWith('六合彩'));
   fireEvent.click(screen.getByRole('button', { name: '自訂觸發條件' }));
   expect(navigate).toHaveBeenCalledWith('status-settings');
+});
+
+test('標題卡右下角使用正式自訂觸發條件圖示，彩種切換沿用首頁樣式', () => {
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+
+  expect(screen.getByRole('img', { name: '自訂觸發條件' })).toHaveAttribute(
+    'src',
+    '/assets/lottery/functions/自訂觸發條件.png',
+  );
+  expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
 });

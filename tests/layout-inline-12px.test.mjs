@@ -19,7 +19,7 @@ test('homepage uses one 12px page-edge source without compensatory child stretch
   assert.match(home, /\.home-screen \.lottery-screen\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\);/s);
   assert.doesNotMatch(home, /--home-main-inline:\s*16px;/);
   assert.doesNotMatch(home, /--home-wide-inline:\s*6px;/);
-  assert.match(home, /\.home-screen \.lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;/s);
+  assert.match(home, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*100%;/s);
   assert.match(home, /\.home-screen \.matrix-status-section > \.home-asset-image\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;/s);
   assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
