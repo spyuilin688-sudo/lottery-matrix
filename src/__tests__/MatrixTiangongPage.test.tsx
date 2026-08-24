@@ -42,6 +42,10 @@ test('一段式不顯示第二段，且天工沒有近10期與連準篩選', () 
   expect(screen.queryByText('第二段版路類型')).toBeNull();
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
   expect(screen.queryByText('連準篩選')).toBeNull();
+  expect(screen.getByRole('group', { name: '探索球位' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(screen.getByRole('group', { name: '第一段球位' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(screen.getByRole('group', { name: '第一段版路類型' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(document.querySelector('.tiangong-settings fieldset')).toBeNull();
 });
 
 test('二段式顯示第二段設定並提交完整正式條件', async () => {

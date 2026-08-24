@@ -62,12 +62,15 @@ describe("requested responsive layout refinement", () => {
         <section class="explore-settings"><div class="setting-grid"><label><span></span><div class="select-box"></div></label></div></section>
       </main>
       <main class="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
-        <section class="explore-settings tiangong-settings"><div class="setting-grid"><fieldset><legend>探索球位</legend><div class="segmented three"><button></button></div></fieldset></div></section>
+        <section class="explore-settings tiangong-settings"><div class="setting-grid"><div class="tiangong-setting-row"><span>探索球位</span><div class="segmented three"><button></button></div></div></div></section>
+        <section class="result-panel"><div class="road-results tiangong-results"><div class="tiangong-results-head"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div></div></section>
       </main>`;
 
     expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).gap).toBe("4px");
     expect(getComputedStyle(document.querySelector(".matrix-tianyan-screen .select-box")!).height).toBe("24px");
-    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen fieldset button")!).height).toBe("24px");
+    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row")!).gridTemplateColumns).toBe("88.8px minmax(0, 1fr)");
+    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row button")!).height).toBe("24px");
+    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-results-head")!).gridTemplateColumns).toBe("minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.25fr)");
   });
 
   it("uses eight-pixel profile rhythm and six-pixel card top padding", () => {
@@ -86,17 +89,37 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".profile-menu")!).paddingTop).toBe("6px");
   });
 
-  it("reduces activation and membership-plan cards structurally by fifteen percent", () => {
+  it("aligns activation and membership-plan cards with their title cards", () => {
     const style = mountStyles(readCss("src/feature-pages.css"));
     style.dataset.layoutContract = "profile-details";
     document.body.innerHTML = `
       <main class="activation-code-screen"><div class="feature-body"><section class="panel referral-summary-card"></section></div></main>
       <main class="pro-plans-screen"><div class="feature-body"><div class="plan-carousel"><section class="plan-card"></section></div><section class="renewal-card"></section></div></main>`;
 
-    expect(getComputedStyle(document.querySelector(".activation-code-screen .panel")!).width).toBe("85%");
+    expect(getComputedStyle(document.querySelector(".activation-code-screen .panel")!).width).toBe("100%");
     expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("12px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).margin).toBe("0px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).paddingLeft).toBe("0px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).flexBasis).toBe("100%");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("202px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("85%");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
+  });
+
+  it("uses compact dark-gold actions on activation and membership-plan pages", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "profile-actions";
+    document.body.innerHTML = `
+      <main class="activation-code-screen"><button class="gold-button"></button></main>
+      <main class="pro-plans-screen"><button class="confirm-payment"></button></main>`;
+
+    const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .gold-button")!);
+    const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
+    expect(activationButton.height).toBe("34px");
+    expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
+    expect(activationButton.borderTopWidth).toBe("1px");
+    expect(paymentButton.height).toBe("34px");
+    expect(paymentButton.backgroundColor).toBe("rgb(6, 13, 18)");
+    expect(paymentButton.borderTopWidth).toBe("1px");
   });
 });
