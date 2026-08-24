@@ -113,7 +113,7 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("pointer cancel 會讓快捷按鈕回到原位且不開啟設定", () => {
+  it("未達門檻時 pointer cancel 會讓快捷按鈕回到原位且不開啟設定", () => {
     const onQuickOpen = vi.fn();
     const onQuickConfigure = vi.fn();
 
@@ -121,8 +121,8 @@ describe("BottomNavigation", () => {
 
     const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
     fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 100 });
-    fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 55 });
-    fireEvent.pointerCancel(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
+    fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 80 });
+    fireEvent.pointerCancel(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 80 });
 
     expect(onQuickConfigure).not.toHaveBeenCalled();
     expect(onQuickOpen).not.toHaveBeenCalled();
@@ -140,6 +140,7 @@ describe("BottomNavigation", () => {
     fireEvent.pointerMove(quickButton, { pointerId: 1, pointerType: "touch", clientY: 68 });
 
     expect(quickButton).toHaveStyle({ transform: "translateY(-32px)" });
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
 
     fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0, clientY: 68 });
     fireEvent.click(quickButton);
@@ -147,6 +148,21 @@ describe("BottomNavigation", () => {
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
     expect(onQuickOpen).not.toHaveBeenCalled();
     expect(quickButton).toHaveStyle({ transform: "translateY(0px)" });
+  });
+
+  it("向上滑達門檻後即使收到 pointer cancel 也已開啟快捷設定", () => {
+    const onQuickOpen = vi.fn();
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} />);
+
+    const quickButton = screen.getByRole("button", { name: "快捷；向上滑開啟設定" });
+    fireEvent.pointerDown(quickButton, { pointerId: 2, pointerType: "touch", button: 0, clientY: 100 });
+    fireEvent.pointerMove(quickButton, { pointerId: 2, pointerType: "touch", clientY: 60 });
+    fireEvent.pointerCancel(quickButton, { pointerId: 2, pointerType: "touch", button: 0, clientY: 60 });
+    fireEvent.click(quickButton);
+
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+    expect(onQuickOpen).not.toHaveBeenCalled();
   });
 
   it("手機向上滑未滿 32px 時放開會回彈，click 仍保留快捷功能", () => {

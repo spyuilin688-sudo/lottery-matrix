@@ -37,6 +37,7 @@ export function BottomNavigation({
   const quickStartY = useRef(0);
   const quickPointerId = useRef<number | null>(null);
   const quickDragDistance = useRef(0);
+  const quickTriggered = useRef(false);
   const suppressQuickClick = useRef(false);
   const [quickDragOffset, setQuickDragOffset] = useState(0);
   const [quickDragging, setQuickDragging] = useState(false);
@@ -46,6 +47,7 @@ export function BottomNavigation({
     quickStartY.current = event.clientY;
     quickPointerId.current = event.pointerId;
     quickDragDistance.current = 0;
+    quickTriggered.current = false;
     suppressQuickClick.current = false;
     setQuickDragOffset(0);
     setQuickDragging(true);
@@ -59,6 +61,11 @@ export function BottomNavigation({
     const upwardDistance = Math.max(0, quickStartY.current - event.clientY);
     quickDragDistance.current = upwardDistance;
     setQuickDragOffset(-upwardDistance);
+    if (upwardDistance >= QUICK_SWIPE_TRIGGER_PX && !quickTriggered.current) {
+      quickTriggered.current = true;
+      suppressQuickClick.current = true;
+      onQuickConfigure?.();
+    }
   };
 
   const releaseQuickPointer = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -74,10 +81,13 @@ export function BottomNavigation({
   };
 
   const finishQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const finalUpwardDistance = Math.max(quickDragDistance.current, quickStartY.current - event.clientY);
     const shouldConfigure = quickPointerId.current === event.pointerId
-      && quickDragDistance.current >= QUICK_SWIPE_TRIGGER_PX;
+      && finalUpwardDistance >= QUICK_SWIPE_TRIGGER_PX
+      && !quickTriggered.current;
     releaseQuickPointer(event);
     if (shouldConfigure) {
+      quickTriggered.current = true;
       suppressQuickClick.current = true;
       onQuickConfigure?.();
     }
@@ -85,7 +95,7 @@ export function BottomNavigation({
 
   const cancelQuickPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
     quickDragDistance.current = 0;
-    suppressQuickClick.current = false;
+    if (!quickTriggered.current) suppressQuickClick.current = false;
     releaseQuickPointer(event);
   };
 

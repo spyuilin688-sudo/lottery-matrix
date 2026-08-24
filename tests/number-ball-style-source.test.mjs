@@ -38,7 +38,7 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
   assert.doesNotMatch(homepage, /--draw-special-ball-size\s*:/);
 });
 
-test("六合彩首頁與近10期保留既有基線，歷史開獎改為 0.5px 底線間距", async () => {
+test("六合彩首頁保留既有基線，近10期與歷史開獎底線各上移 0.4px", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
 
   assert.match(
@@ -47,10 +47,10 @@ test("六合彩首頁與近10期保留既有基線，歷史開獎改為 0.5px �
   );
   const nearTen = ruleBodies(formal, /^\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball$/);
   assert.equal(nearTen.length, 1);
-  assert.match(nearTen[0], /--underline-y:\s*-.4px;/);
+  assert.match(nearTen[0], /--underline-y:\s*-.8px;/);
   const history = ruleBodies(formal, /^\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball$/);
   assert.equal(history.length, 1);
-  assert.match(history[0], /--underline-y:\s*\.1px;/);
+  assert.match(history[0], /--underline-y:\s*-.3px;/);
   assert.match(history[0], /transform:\s*translateY\(2px\);/);
 });
 
@@ -68,7 +68,7 @@ test("近10期與歷史開獎六合彩使用各自正式響應規則", async () 
   assert.match(nearTenRule, /--number-y:\s*0px/);
   assert.match(nearTenRule, /--underline-width:\s*clamp\(8px, 2\.31vw, 9px\)/);
   assert.match(nearTenRule, /--underline-height:\s*\.7px/);
-  assert.match(nearTenRule, /--underline-y:\s*-.4px/);
+  assert.match(nearTenRule, /--underline-y:\s*-.8px/);
   assert.match(nearTenRule, /transform:\s*translateY\(2px\)/);
 
   assert.match(
@@ -84,12 +84,12 @@ test("近10期與歷史開獎六合彩使用各自正式響應規則", async () 
   assert.match(historyRules[0], /--number-ball-size:\s*var\(--matrix-history-ball-size\)/);
   assert.match(historyRules[0], /--number-font-size:\s*clamp\(9px, 2\.56vw, 10px\)/);
   assert.match(historyRules[0], /--number-x:\s*0px/);
-  assert.match(historyRules[0], /--number-y:\s*-\.5px/);
-  assert.match(historyRules[0], /--underline-y:\s*\.1px/);
+  assert.match(historyRules[0], /--number-y:\s*0px/);
+  assert.match(historyRules[0], /--underline-y:\s*-.3px/);
 
   assert.match(
     formal,
     /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball \.number-ball-value,\s*\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball \.number-ball-value\s*\{[^}]*font-weight:\s*900;/s,
   );
-  assert.doesNotMatch(formal, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\[data-tone=/);
+  assert.match(formal, /:is\(\.matrix-explore-main-screen \.matrix-explore-history-panel, \.draw-history-screen \.draw-history-panel\)\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\]/);
 });

@@ -120,7 +120,7 @@ test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線"
   assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(9px,2.56vw,10px)");
   assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-.4px");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-.8px");
   assert.equal(mainBall.transform, "translateY(2px)");
   assert.equal(specialNumberBall.transform, "translateY(2px)");
   assert.equal(style(".history-special-number > span:first-child").transform, "translateY(2px)");

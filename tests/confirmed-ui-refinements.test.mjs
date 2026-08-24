@@ -25,6 +25,8 @@ test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => 
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(feature, /\.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\);/s);
   assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*(?:margin-left|margin-right|margin-inline):\s*-/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532\s*\/\s*214;[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-tabs button\s*\{[^}]*height:\s*100%;[^}]*min-height:\s*0;[^}]*padding:\s*0;/s);
 });
 
 test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新增按鍵", () => {
@@ -46,9 +48,16 @@ test("Matrix 探索顯示天衍天工，兩顆圖示為 1.8rem 且間距 4px", (
   assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);
 });
 
-test("歷史六合彩球號使用一致置中與調整後底線間距", () => {
-  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--number-x:\s*0px;[^}]*--number-y:\s*-\.5px;[^}]*--underline-y:\s*\.1px;/s);
-  assert.doesNotMatch(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\[data-tone=/);
+test("近10期與歷史六合彩球號使用相同逐色對位、底線各上移 0.4px", () => {
+  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--underline-y:\s*-\.8px;/s);
+  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--number-x:\s*0px;[^}]*--number-y:\s*0px;[^}]*--underline-y:\s*-\.3px;/s);
+  assert.match(balls, /:is\(\.matrix-explore-main-screen \.matrix-explore-history-panel, \.draw-history-screen \.draw-history-panel\)\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\][^{]*\{[^}]*--number-x:\s*0\.48px;[^}]*--number-y:\s*-0\.16px;/s);
+});
+
+test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
+  const main = readFileSync("src/main.tsx", "utf8");
+  assert.match(main, /@fontsource\/roboto\/latin-900\.css/);
+  assert.match(balls, /font-weight:\s*900;/);
 });
 
 test("首頁開獎資訊卡維持 12px 外距且高度約縮 10%", () => {

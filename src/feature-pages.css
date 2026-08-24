@@ -1485,8 +1485,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 
 /* Matrix custom status settings */
 .matrix-custom-status-screen .matrix-status-lottery-switcher { margin: 0 0 8px; }
-.matrix-custom-status-screen .custom-status-tabs { display: grid; margin-bottom: 10px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.matrix-custom-status-screen .custom-status-tabs button { display: flex; min-height: 54px; padding: 8px 4px; flex-direction: column; justify-content: center; border: 1px solid #39434b; border-radius: 8px; color: #afb6bc; background: #061017; }
+.matrix-custom-status-screen .custom-status-tabs { display: grid; box-sizing: border-box; width: 100%; aspect-ratio: 1532 / 214; margin-bottom: 10px; padding-inline: 4px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.matrix-custom-status-screen .custom-status-tabs button { display: flex; height: 100%; min-height: 0; padding: 0; flex-direction: column; justify-content: center; border: 1px solid #39434b; border-radius: 8px; color: #afb6bc; background: #061017; }
 .matrix-custom-status-screen .custom-status-tabs button[aria-selected="true"] { border-color: #d9aa48; color: #f5d67d; box-shadow: 0 0 10px rgba(217,170,72,.25); }
 .matrix-custom-status-screen .custom-status-tabs strong { font-size: 13px; }
 .matrix-custom-status-screen .custom-status-tabs small { margin-top: 2px; font-size: 7px; }

@@ -67,8 +67,8 @@ test("Matrix Explore 近10期五顆彩球放大，六加一彩球響應式縮放
   assert.equal(markSix.length, 1);
   assert.match(markSix[0], /--number-font-size:\s*clamp\(9px, 2\.56vw, 10px\);/);
   assert.match(markSix[0], /--underline-width:\s*clamp\(8px, 2\.31vw, 9px\);/);
-  assert.match(markSix[0], /--underline-y:\s*0px;/);
-  assert.match(markSix[0], /transform:\s*none;/);
+  assert.match(markSix[0], /--underline-y:\s*-\.8px;/);
+  assert.match(markSix[0], /transform:\s*translateY\(2px\);/);
 
   const lotto = ruleBodies(ballCss, /^\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="大樂透"\] \.number-ball-component\.history-lottery-ball$/);
   assert.equal(lotto.length, 1);

@@ -55,6 +55,8 @@ test('quick interaction uses one pointer path plus click and upward-swipe behavi
   assert.match(bottomNav, /onQuickOpen\?\.\(\)/);
   assert.match(bottomNav, /onQuickConfigure\?\.\(\)/);
   assert.match(bottomNav, /QUICK_SWIPE_TRIGGER_PX\s*=\s*32/);
+  assert.match(bottomNav, /if \(upwardDistance >= QUICK_SWIPE_TRIGGER_PX && !quickTriggered\.current\) \{[\s\S]*?onQuickConfigure\?\.\(\);/);
+  assert.match(adjustments, /data-quick-gesture="true"\]\[data-dragging="true"\]::before\s*\{\s*opacity:\s*1;/);
 });
 
 test('calculator uses the page token and homepage core keeps its current responsive geometry', () => {
