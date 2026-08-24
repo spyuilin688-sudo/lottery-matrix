@@ -24,7 +24,7 @@ class FakeQuery:
         self.client.last_select = columns
         return self
 
-    def upsert(self, record: dict[str, Any], **kwargs: Any) -> "FakeQuery":
+    def upsert(self, record: dict[str, Any] | list[dict[str, Any]], **kwargs: Any) -> "FakeQuery":
         self.client.last_record = record
         self.client.last_on_conflict = kwargs.get("on_conflict")
         return self
@@ -46,7 +46,7 @@ class FakeSupabaseClient:
         self.last_table = ""
         self.last_select = ""
         self.last_on_conflict: str | None = None
-        self.last_record: dict[str, Any] | None = None
+        self.last_record: dict[str, Any] | list[dict[str, Any]] | None = None
         self.last_filters: list[tuple[str, Any]] = []
         self.last_orders: list[tuple[str, bool]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
@@ -62,6 +62,73 @@ def test_draw_upsert_is_idempotent_by_lottery_and_period() -> None:
     repository.upsert_draw({"lottery": "今彩539", "period": "114000123", "numbers": ["06", "07", "08", "09", "10"]})
     assert len(repository.draws) == 1
     assert repository.draws[("今彩539", "114000123")]["numbers"] == ["06", "07", "08", "09", "10"]
+
+
+def test_draw_history_bulk_upsert_preserves_single_draw_idempotency() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draws([
+        {
+            "lottery": "天天樂", "period": "11977", "drawDate": "2026/08/23",
+            "numbers": ["01", "02", "03", "04", "05"],
+        },
+    ])
+    stored = repository.upsert_draws([
+        {
+            "lottery": "天天樂", "period": "11977", "drawDate": "2026/08/23",
+            "numbers": ["06", "07", "08", "09", "10"],
+        },
+    ])
+
+    assert len(repository.draws) == 1
+    assert stored[-1]["numbers"] == ["06", "07", "08", "09", "10"]
+
+
+def test_supabase_draw_history_uses_one_bulk_upsert_with_draw_conflict_key() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["lottery_draws"] = [
+        {"lottery": "天天樂", "period": "11977"},
+        {"lottery": "天天樂", "period": "11978"},
+    ]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    stored = repository.upsert_draws([
+        {
+            "lottery": "天天樂", "period": "11977", "drawDate": "2026/08/23",
+            "numbers": ["01", "02", "03", "04", "05"],
+            "sortedNumbers": ["01", "02", "03", "04", "05"],
+            "drawOrderNumbers": None, "sourceId": "calottery:11977",
+        },
+        {
+            "lottery": "天天樂", "period": "11978", "drawDate": "2026/08/24",
+            "numbers": ["06", "07", "08", "09", "10"],
+        },
+    ])
+
+    assert stored == fake_client.responses["lottery_draws"]
+    assert fake_client.last_table == "lottery_draws"
+    assert fake_client.last_on_conflict == "lottery,period"
+    assert fake_client.last_record == [
+        {
+            "lottery": "天天樂", "period": "11977", "draw_date": "2026/08/23",
+            "numbers": ["01", "02", "03", "04", "05"],
+            "sorted_numbers": ["01", "02", "03", "04", "05"],
+            "draw_order_numbers": None, "source_id": "calottery:11977",
+        },
+        {
+            "lottery": "天天樂", "period": "11978", "draw_date": "2026/08/24",
+            "numbers": ["06", "07", "08", "09", "10"],
+            "sorted_numbers": ["06", "07", "08", "09", "10"],
+            "draw_order_numbers": None, "source_id": None,
+        },
+    ]
+
+
+def test_supabase_empty_draw_history_does_not_issue_an_upsert() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    assert repository.upsert_draws([]) == []
+    assert fake_client.last_table == ""
 
 
 def test_list_draws_returns_newest_first_and_normalized_shape() -> None:
