@@ -2,6 +2,7 @@ import { router, json, error, secrets } from '@appdeploy/sdk';
 import { backfillRange, backfillSourceRange, backfillYear, completeHistoricalSource, fetchSource, getHistoricalMaintenanceStatus, getMatrixAudit, getMatrixCoverage, getMatrixHistory, getMatrixLatest, inspectBrightstreamHistory, inspectBrightstreamMarkSixDeep, inspectHkHistoryCandidates, inspectLotto8HistoryOnly, inspectNfdDatabaseFiles, inspectNfdLotto8HistoryMap, inspectNfdNativeDateSources, listRecords, refreshActiveSources, refreshNextDrawCache } from './scraper';
 
 import { notifySubscribers, realtimeSubscriptionRoutes } from './realtime-subscribers';
+import { isFantasy5RefreshTime } from './draw-schedule';
 import { runMatrixAlgorithmCaseChecks } from './matrix-algorithm-cases';
 import { runNumberReference, runTongXing } from './matrix-tools';
 import { analysisStore } from './matrix-analysis-store';
@@ -227,13 +228,18 @@ export const scheduledLotterySourceRefresh = async (event: { payload?: { sourceI
     });
 };
 
-export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透'; sourceId?: string; refreshAll?: boolean; refreshHour?: number } }) => {
+export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: string; payload?: { lottery?: '今彩539'|'天天樂'|'六合彩'|'大樂透'; sourceId?: string; refreshAll?: boolean; refreshHour?: number; fantasy5Refresh?: boolean } }) => {
     const trackedLottery=event.payload?.lottery ?? selectAnalysisLottery(event.scheduledTime);
     const jobByLottery: Record<string,string>={'今彩539':'matrix-539-refresh-v2','天天樂':'matrix-fantasy5-refresh-v2','六合彩':'matrix-marksix-refresh-v2','大樂透':'matrix-649-refresh-v2'};
     return systemJobTracker.run(jobByLottery[trackedLottery],trackedLottery,async(reportStage)=>{
         const refreshHour = event.payload?.refreshHour;
         let refresh: (() => Promise<unknown>) | undefined;
-        if (refreshHour === undefined || isTaipeiRefreshWindow(event.scheduledTime,refreshHour)) {
+        const shouldRefresh = refreshHour !== undefined
+            ? isTaipeiRefreshWindow(event.scheduledTime,refreshHour)
+            : event.payload?.fantasy5Refresh === true && event.scheduledTime
+                ? isFantasy5RefreshTime(new Date(event.scheduledTime))
+                : Boolean(event.payload?.sourceId);
+        if (shouldRefresh) {
             if (event.payload?.refreshAll) refresh = () => scheduledLotteryRefresh();
             else if (event.payload?.sourceId) refresh = () => scheduledLotterySourceRefresh({payload:{sourceId:event.payload.sourceId}});
         }
@@ -249,7 +255,7 @@ export const scheduledMatrixAnalysisRefresh = async (event: { scheduledTime?: st
 export const scheduledFantasy5MatrixAnalysisRefresh = async (event: { scheduledTime?: string } = {}) => (
     scheduledMatrixAnalysisRefresh({
         scheduledTime:event.scheduledTime,
-        payload:{lottery:'天天樂',sourceId:'sc888'},
+        payload:{lottery:'天天樂',sourceId:'sc888',fantasy5Refresh:true},
     })
 );
 
