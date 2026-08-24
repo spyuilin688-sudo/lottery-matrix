@@ -43,8 +43,8 @@ test('home bottom group has no black clearance above bottom navigation', () => {
 test('embedded next draw info retains the requested compact metrics', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0 20px 5px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child', /padding-left:\s*16px;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*14px;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /height:\s*14px;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*12px;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /height:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label', /font-size:\s*11px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label', /line-height:\s*13px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value', /font-size:\s*11px;/);

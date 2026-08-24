@@ -15,18 +15,25 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
-test("僅期數日期、順球落球與查看更多紀錄上移 4px", () => {
+test("僅查看更多紀錄往左 2px 並往上 4px", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta,\s*\.home-screen \.latest-draw-card \.draw-order,\s*\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translateY\(-4px\);/s);
-  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-balls[^}]*transform:\s*translateY\(-4px\)/s);
-  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded[^}]*transform:\s*translateY\(-4px\)/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translate\(-2px, -4px\);/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-meta,[^}]*transform:/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-order,[^}]*transform:/s);
+});
+
+test("特別號標籤右移、分隔線縮短且底部圖示縮為 12px", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card \.special-label\s*\{[^}]*right:\s*calc\(50% - 1px\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.special-ball-separator\s*\{[^}]*height:\s*calc\(var\(--draw-special-ball-size\) \+ 4px\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*grid-template-columns:\s*12px auto minmax\(0, 1fr\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-icon\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;/s);
 });
 
 test("底部資訊左右兩欄垂直置中並降低時間字級", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\)[^}]*align-items:\s*center/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center/s);
-  assert.match(css, /\.next-draw-icon\s*\{[^}]*width:\s*14px[^}]*height:\s*14px/s);
+  assert.match(css, /\.next-draw-icon\s*\{[^}]*width:\s*12px[^}]*height:\s*12px/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);
   assert.match(css, /\.next-draw-value\s*\{[^}]*font-size:\s*11px/s);
 });

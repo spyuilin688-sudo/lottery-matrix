@@ -45,7 +45,7 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".home-shortcut-row")!).width).toBe("calc(100% - 8px)");
   });
 
-  it("moves only the draw-card top controls upward by four pixels", () => {
+  it("moves only the draw-card history link left two pixels and upward four pixels", () => {
     const style = mountStyles(readCss("src/homepage/base.css"));
     style.dataset.layoutContract = "draw-card";
     document.body.innerHTML = `
@@ -58,9 +58,9 @@ describe("requested responsive layout refinement", () => {
       </section></div>`;
 
     expect(getComputedStyle(document.querySelector(".latest-draw-card")!).gridTemplateRows).toBe("44px minmax(0, 1fr) 24px");
-    for (const selector of [".draw-meta", ".draw-order", ".history-link"]) {
-      expect(getComputedStyle(document.querySelector(selector)!).transform).toBe("translateY(-4px)");
-    }
+    expect(getComputedStyle(document.querySelector(".draw-meta")!).transform).toBe("none");
+    expect(getComputedStyle(document.querySelector(".draw-order")!).transform).toBe("none");
+    expect(getComputedStyle(document.querySelector(".history-link")!).transform).toBe("translate(-2px, -4px)");
     expect(getComputedStyle(document.querySelector(".draw-balls")!).transform).toBe("none");
     expect(getComputedStyle(document.querySelector(".next-draw-info--embedded")!).transform).toBe("none");
   });
