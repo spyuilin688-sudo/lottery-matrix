@@ -7,7 +7,7 @@ from app.worker import run_worker
 
 
 class Source:
-    def __init__(self, history_count: int = 80) -> None:
+    def __init__(self, history_count: int = 120) -> None:
         self.history_count = history_count
         self.events: list[str] = []
 
@@ -22,12 +22,13 @@ class Source:
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
         count = 5 if lottery in {"今彩539", "天天樂"} else 7
-        return self._draw(180, count)
+        return self._draw(220, count)
 
-    def fetch_history(self, lottery: str, limit: int) -> list[dict]:
-        self.events.append("history")
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
         count = 5 if lottery in {"今彩539", "天天樂"} else 7
-        return [self._draw(period, count) for period in range(180, 180 - min(limit, self.history_count), -1)]
+        rows = [self._draw(period, count) for period in range(220, 220 - self.history_count, -1)]
+        return rows if limit is None else rows[:limit]
 
 
 class TrackingRepository(InMemoryAnalysisRepository):
@@ -40,10 +41,12 @@ class TrackingRepository(InMemoryAnalysisRepository):
         return super().cleanup_expired(now)
 
 
-def _builders(calls: list[str], failing: str | None = None) -> dict:
+def _builders(calls: list[str], history_lengths: list[int] | None = None, failing: str | None = None) -> dict:
     def build(kind: str):
-        def selected(_: dict) -> dict:
+        def selected(context: dict) -> dict:
             calls.append(kind)
+            if history_lengths is not None:
+                history_lengths.append(len(context["history"]))
             if kind == failing:
                 raise RuntimeError("builder failed")
             return {"kind": kind}
@@ -51,21 +54,23 @@ def _builders(calls: list[str], failing: str | None = None) -> dict:
     return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
 
 
-def test_worker_backfills_history_refreshes_latest_and_publishes_four_artifacts_in_order() -> None:
+def test_worker_backfills_complete_history_but_analyzes_latest_80_only() -> None:
     repository = TrackingRepository()
-    source = Source()
+    source = Source(history_count=120)
     calls: list[str] = []
+    history_lengths: list[int] = []
 
-    result = run_worker("今彩539", repository, source, _builders(calls))
+    result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
     assert repository.events[0] == "cleanup"
-    assert source.events == ["history", "latest"]
+    assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
-    assert len(repository.list_draws("今彩539", 80)) == 80
+    assert history_lengths == [80, 80, 80, 80]
+    assert len(repository.list_draws("今彩539", 1000)) == 120
 
 
-def test_worker_rejects_analysis_when_history_is_under_80_draws() -> None:
+def test_worker_rejects_analysis_when_complete_history_is_under_80_draws() -> None:
     repository = TrackingRepository()
     source = Source(history_count=79)
     calls: list[str] = []
@@ -74,9 +79,9 @@ def test_worker_rejects_analysis_when_history_is_under_80_draws() -> None:
         run_worker("今彩539", repository, source, _builders(calls))
 
     assert repository.events == ["cleanup"]
-    assert source.events == ["history"]
+    assert source.events == ["history-all"]
     assert calls == []
-    assert repository.get_progress("今彩539", "000000180") is None
+    assert repository.get_progress("今彩539", "000000220") is None
 
 
 def test_worker_cleans_expired_artifacts_before_running() -> None:
@@ -97,5 +102,5 @@ def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None
     run_worker("今彩539", repository, Source(), _builders([]))
     with pytest.raises(RuntimeError, match="builder failed"):
         run_worker("大樂透", repository, Source(), _builders([], failing="tianyan"))
-    assert repository.read_completed_artifact("今彩539", "000000180", "status") == {"kind": "status"}
-    assert repository.get_progress("大樂透", "000000180")["status"] == "failed"
+    assert repository.read_completed_artifact("今彩539", "000000220", "status") == {"kind": "status"}
+    assert repository.get_progress("大樂透", "000000220")["status"] == "failed"
