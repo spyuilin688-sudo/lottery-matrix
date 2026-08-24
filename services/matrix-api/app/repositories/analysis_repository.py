@@ -8,6 +8,7 @@ RETENTION = timedelta(days=3)
 
 class AnalysisRepository(Protocol):
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
+    def upsert_draws(self, draws: list[dict[str, Any]]) -> None: ...
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
@@ -30,6 +31,10 @@ class InMemoryAnalysisRepository:
         stored = dict(draw)
         self.draws[(stored["lottery"], stored["period"])] = stored
         return stored
+
+    def upsert_draws(self, draws: list[dict[str, Any]]) -> None:
+        for draw in draws:
+            self.upsert_draw(draw)
 
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
         matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
@@ -135,14 +140,25 @@ class SupabaseAnalysisRepository:
             "drawOrderNumbers": draw.get("draw_order_numbers"),
         }
 
-    def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
-        record = {
+    @staticmethod
+    def _draw_record(draw: dict[str, Any]) -> dict[str, Any]:
+        return {
             "lottery": draw["lottery"], "period": draw["period"], "draw_date": draw.get("drawDate") or None,
             "numbers": draw["numbers"], "sorted_numbers": draw.get("sortedNumbers", draw["numbers"]),
             "draw_order_numbers": draw.get("drawOrderNumbers"), "source_id": draw.get("sourceId"),
         }
-        response = self.client.table("lottery_draws").upsert(record, on_conflict="lottery,period").execute()
+
+    def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
+        response = self.client.table("lottery_draws").upsert(self._draw_record(draw), on_conflict="lottery,period").execute()
         return self._one(response)
+
+    def upsert_draws(self, draws: list[dict[str, Any]]) -> None:
+        records = [self._draw_record(draw) for draw in draws]
+        for start in range(0, len(records), 500):
+            self.client.table("lottery_draws").upsert(
+                records[start:start + 500],
+                on_conflict="lottery,period",
+            ).execute()
 
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
         response = (
