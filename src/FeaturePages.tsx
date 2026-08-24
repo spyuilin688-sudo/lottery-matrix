@@ -3874,9 +3874,9 @@ function CustomConditionSection({
           <label>同碼數量<input aria-label="同碼數量" type="number" min={1} max={99} value={condition.sameCodeQuantity} onChange={(event) => updateRow(groupIndex, rowIndex, { sameCodeQuantity: Math.min(99, Math.max(1, Number(event.target.value) || 1)) })} /></label>
           {group.rows.length > 1 ? <button type="button" aria-label={`組合 ${groupIndex + 1} 刪除條件 ${rowIndex + 1}`} onClick={() => removeRow(groupIndex, rowIndex)}><TrashIcon /></button> : null}
         </div>)}
-        <button type="button" aria-label={`組合 ${groupIndex + 1} 新增條件`} disabled={group.rows.length >= 10} onClick={() => setGroups((current) => current.map((item) => item.id === group.id ? { ...item, rows: [...item.rows, defaultCustomRow(hitType)] } : item))}><PlusIcon />新增條件（最多 10 條）</button>
+        <button type="button" className="custom-status-add-button" aria-label={`組合 ${groupIndex + 1} 新增條件`} disabled={group.rows.length >= 10} onClick={() => setGroups((current) => current.map((item) => item.id === group.id ? { ...item, rows: [...item.rows, defaultCustomRow(hitType)] } : item))}><PlusIcon />新增條件（最多 10 條）</button>
       </article>)}
-      <button type="button" aria-label={`新增${hitType === "one" ? "一碼" : "二碼"}觸發條件組合`} disabled={groups.length >= 20} onClick={() => setGroups((current) => [...current, { id: `${hitType}-${Date.now()}-${current.length}`, rows: [defaultCustomRow(hitType)] }])}><PlusIcon />新增觸發條件組合（最多 20 組）</button>
+      <button type="button" className="custom-status-add-button" aria-label={`新增${hitType === "one" ? "一碼" : "二碼"}觸發條件組合`} disabled={groups.length >= 20} onClick={() => setGroups((current) => [...current, { id: `${hitType}-${Date.now()}-${current.length}`, rows: [defaultCustomRow(hitType)] }])}><PlusIcon />新增觸發條件組合（最多 20 組）</button>
     </div> : null}
   </section>;
 }

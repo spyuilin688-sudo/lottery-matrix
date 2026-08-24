@@ -10,9 +10,21 @@ const balls = readFileSync("src/number-ball.css", "utf8");
 const home = readFileSync("src/homepage/base.css", "utf8");
 const notification = readFileSync("src/feature-page-adjustments.css", "utf8");
 
-test("Matrix 狀態的自訂觸發條件採 1.8rem 且沿用歷史標題卡錨點", () => {
-  assert.match(feature, /\.matrix-status-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*100%;[^}]*right:\s*4%;[^}]*transform:\s*translateY\(-87\.5%\);/s);
+test("Matrix 狀態的自訂觸發條件位於標題文字右側 4px 且垂直置中", () => {
+  assert.match(feature, /\.matrix-status-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*right:\s*auto;[^}]*left:\s*calc\(83% \+ 4px\);[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;[^}]*transform:\s*translateY\(-50%\);/s);
   assert.match(feature, /\.matrix-status-screen \.status-title-trigger\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;/s);
+});
+
+test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => {
+  assert.match(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher\s*\{[^}]*margin:\s*0 0 8px;/s);
+  assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher[^}]*min-height:\s*72px/);
+  assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher > \.home-asset-image/);
+});
+
+test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新增按鍵", () => {
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-hit-header strong\s*\{[^}]*font-size:\s*12px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-add-button\s*\{[^}]*border:\s*1px solid rgba\(196, 145, 69, \.55\);[^}]*background:\s*#030a0f;[^}]*color:\s*var\(--lottery-gold-500\);[^}]*font-size:\s*11px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-actions button\s*\{[^}]*font-size:\s*11px;/s);
 });
 
 test("Matrix 探索顯示天衍天工，兩顆圖示為 1.8rem 且間距 4px", () => {
