@@ -93,3 +93,35 @@ def test_pipeline_rejects_incomplete_or_noncanonical_draw_before_writing() -> No
         AnalysisPipeline(repository, builders).run(invalid, history=[])
 
     assert repository.draws == {}
+
+def test_pipeline_resumes_checkpointed_explore_batch() -> None:
+    repository = InMemoryAnalysisRepository()
+
+    def explore(context: dict) -> dict:
+        batch = context["exploreBatch"]
+        start = batch["start"]
+        stop = min(3, start + batch["limit"])
+        existing = batch["existing"] or {"items": []}
+        artifact = {"items": [*existing["items"], *range(start, stop)]}
+        return {
+            "artifact": artifact,
+            "_checkpoint": {"cursor": stop, "total": 3, "complete": stop == 3},
+        }
+
+    builders = {
+        "explore": explore,
+        "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
+        "tiangong": lambda _: {"items": []},
+        "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
+    }
+    pipeline = AnalysisPipeline(repository, builders, explore_batch_size=2)
+
+    first = pipeline.run(DRAW, history=[])
+    second = pipeline.run(DRAW, history=[])
+
+    assert first["status"] == "running"
+    assert first["cursor"] == 2
+    assert second["status"] == "complete"
+    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
+        "source": [0, 1, 2],
+    }
