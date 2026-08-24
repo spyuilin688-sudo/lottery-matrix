@@ -14,6 +14,7 @@ from app.settings import load_settings
 
 
 REQUIRED_HISTORY_DRAWS = 80
+EXPLORE_BATCH_SIZE = 10
 
 
 def run_worker(
@@ -30,7 +31,7 @@ def run_worker(
     if len(history) < REQUIRED_HISTORY_DRAWS:
         raise ValueError("DRAW_HISTORY_INCOMPLETE")
     version = f'{draw["period"]}:matrix-python-v1'
-    return AnalysisPipeline(repository, builders or create_artifact_builders(), version, explore_batch_size=10).run(draw, history)
+    return AnalysisPipeline(repository, builders or create_artifact_builders(), version, explore_batch_size=EXPLORE_BATCH_SIZE).run(draw, history)
 
 
 def main(argv: list[str] | None = None) -> int:
