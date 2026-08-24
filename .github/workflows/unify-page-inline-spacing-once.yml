@@ -1,0 +1,57 @@
+name: Unify page inline spacing once
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  unify-page-inline-spacing:
+    if: github.head_ref == 'layout-inline-unify-20260824'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'layout-inline-unify-20260824'
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: RED - confirm unified spacing contract fails before change
+        shell: bash
+        run: |
+          set +e
+          node --test tests/layout-inline-spacing.test.mjs
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'RED test unexpectedly passed before production change.'
+            exit 1
+          fi
+          echo 'RED confirmed.'
+
+      - name: GREEN - unify formal page spacing sources
+        run: python scripts/unify-page-inline-spacing-once.py
+
+      - name: Verify unified spacing and production build
+        run: |
+          node --test tests/layout-inline-spacing.test.mjs
+          npm run build
+          node --test tests/*.test.mjs
+
+      - name: Commit verified spacing cleanup to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/unify-page-inline-spacing-once.yml scripts/unify-page-inline-spacing-once.py
+          git add -- src/design-tokens.css src/homepage/base.css src/responsive-feature-pages.css src/matrix-explore-spacing.css src/feature-page-adjustments.css src/feature-pages.css tests/layout-inline-spacing.test.mjs
+          git commit -m 'Unify feature page inline spacing'
+          git push origin HEAD:'layout-inline-unify-20260824'
