@@ -3266,8 +3266,32 @@ function memberExpiryInTaipei(planExpiresAt: string | null): { date: string; rem
   };
 }
 
+function lineAvatarFromSession(session: unknown) {
+  if (!session || typeof session !== "object") return null;
+  const user = (session as { user?: unknown }).user;
+  if (!user || typeof user !== "object") return null;
+  const metadata = (user as { user_metadata?: unknown }).user_metadata;
+  if (metadata && typeof metadata === "object") {
+    const picture = (metadata as { picture?: unknown }).picture;
+    if (typeof picture === "string" && picture.trim()) return picture.trim();
+  }
+  const identities = (user as { identities?: unknown }).identities;
+  if (!Array.isArray(identities)) return null;
+  const lineIdentity = identities.find((identity) => (
+    identity && typeof identity === "object"
+    && (identity as { provider?: unknown }).provider === "custom:line"
+  ));
+  const identityData = lineIdentity && typeof lineIdentity === "object"
+    ? (lineIdentity as { identity_data?: unknown }).identity_data
+    : null;
+  if (!identityData || typeof identityData !== "object") return null;
+  const picture = (identityData as { picture?: unknown }).picture;
+  return typeof picture === "string" && picture.trim() ? picture.trim() : null;
+}
+
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
+  const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
   const [authPending, setAuthPending] = useState(false);
   const [authFailure, setAuthFailure] = useState<"login" | "logout" | null>(null);
@@ -3275,19 +3299,21 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     let active = true;
     let authRevision = 0;
     const client = getSupabaseClient();
-    const applySession = (hasSession: boolean) => {
-      if (active) setAuthState(hasSession ? "authenticated" : "anonymous");
+    const applySession = (session: unknown) => {
+      if (!active) return;
+      setAuthState(session ? "authenticated" : "anonymous");
+      setLineAvatarUrl(lineAvatarFromSession(session));
     };
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       authRevision += 1;
-      applySession(Boolean(session));
+      applySession(session);
     });
     const initialRevision = authRevision;
     void client.auth.getSession().then(({ data, error }) => {
       if (!active || authRevision !== initialRevision) return;
-      applySession(!error && Boolean(data.session));
+      applySession(error ? null : data.session);
     }).catch(() => {
-      if (active && authRevision === initialRevision) applySession(false);
+      if (active && authRevision === initialRevision) applySession(null);
     });
     return () => {
       active = false;
@@ -3333,7 +3359,12 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <section className="panel profile-card">
-        <div className="profile-avatar"><span>LINE</span></div>
+        <div className="profile-avatar">
+          <img
+            src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
+            alt={lineAvatarUrl ? "LINE 頭貼" : "Matrix 預設頭貼"}
+          />
+        </div>
         <div className="profile-copy"><h2>樂彩玩家</h2><p>LINE ID：{memberProfile?.lineUserId ?? ""}</p></div>
         <div className="profile-watermark" aria-hidden="true">M</div>
         {authState !== "loading" ? <button

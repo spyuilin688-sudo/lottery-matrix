@@ -94,6 +94,34 @@ describe("ProfilePage member API", () => {
     expect(screen.queryByRole("button", { name: "LINE 登入" })).not.toBeInTheDocument();
   });
 
+  it("LINE 有頭貼時顯示 LINE 頭貼", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: {
+        session: {
+          access_token: "member-session",
+          user: { user_metadata: { picture: "https://profile.line-scdn.net/member-avatar" } },
+        },
+      },
+      error: null,
+    });
+
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByRole("img", { name: "LINE 頭貼" })).toHaveAttribute(
+      "src",
+      "https://profile.line-scdn.net/member-avatar",
+    );
+  });
+
+  it("LINE 沒有頭貼時顯示 Matrix 預設頭貼", async () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByRole("img", { name: "Matrix 預設頭貼" })).toHaveAttribute(
+      "src",
+      "/assets/lottery/matrix-profile-avatar.jpg",
+    );
+  });
+
   it("以登入會員 API 資料取代固定 LINE ID、方案與到期日", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));

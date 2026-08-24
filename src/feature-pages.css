@@ -949,7 +949,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-card { display: grid; min-height: 92px; padding: 14px; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 14px; }
 .profile-card { position: relative; min-height: 126px; grid-template-columns: 66px minmax(0, 1fr) auto; overflow: hidden; border-color: #9c722d; }
 .profile-avatar { z-index: 1; display: grid; width: 66px; height: 66px; place-items: center; border: 1px solid #b8872f; border-radius: 50%; background: radial-gradient(circle, #fff 0 34%, #16ad2d 35% 68%, #087d19 69% 100%); box-shadow: 0 0 15px rgba(213, 157, 39, .18); }
-.profile-avatar span { color: #0a921f; font-size: 13px; font-weight: 850; }
+.profile-avatar img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .profile-watermark { position: absolute; right: 16px; top: -13px; color: rgba(199, 145, 42, .1); font-size: 120px; font-weight: 800; line-height: 1; }
 .profile-copy { z-index: 1; align-self: center; }
 .profile-copy h2 { color: #f1ede6; }
