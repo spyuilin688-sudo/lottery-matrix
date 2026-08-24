@@ -3,7 +3,7 @@
 .draw-history-screen,
 .tongxing-screen,
 .number-reference-screen {
-  --tool-page-inline: 16px;
+  --tool-page-inline: var(--layout-page-inline);
   --tool-section-gap: var(--layout-section-gap, 8px);
   --tool-floating-clearance: clamp(96px, 18dvh, 148px);
 }
@@ -201,8 +201,8 @@
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
-  left: 16px;
-  right: 16px;
+  left: var(--tool-page-inline);
+  right: var(--tool-page-inline);
   width: auto;
   max-width: none;
   min-width: 0;

@@ -3,7 +3,7 @@
 .notifications-screen-v2 .feature-body {
   box-sizing: border-box;
   width: 100%;
-  padding: 0 16px calc(var(--layout-bottom-nav-clearance) + 12px);
+  padding: 0 var(--layout-page-inline) calc(var(--layout-bottom-nav-clearance) + 12px);
 }
 
 .notifications-screen-v2 .notification-list {
@@ -216,9 +216,6 @@
   justify-content: flex-start;
 }
 
-.profile-screen .feature-body {
-  padding-inline: 16px;
-}
 
 .calculator-screen .calculation-results {
   margin-top: 8px;
