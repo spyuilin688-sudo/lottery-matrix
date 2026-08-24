@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "services/matrix-api/**"
+      - ".github/workflows/matrix-analysis.yml"
   schedule:
     - cron: "50 1 * * *"
     - cron: "50 2 * * *"
@@ -34,7 +35,7 @@ jobs:
             lottery: 大樂透
     concurrency:
       group: matrix-scheduled-analysis-${{ matrix.id }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     defaults:
       run:
         working-directory: services/matrix-api
