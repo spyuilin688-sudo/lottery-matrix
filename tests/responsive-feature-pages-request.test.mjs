@@ -37,7 +37,7 @@ test('歷史開獎使用 24.7px 基底與 22px 專用精簡按鈕及 sticky 頁�
   assert.match(stickyHeader[0], /position:\s*sticky;/);
 });
 
-test('歷史、同星、對照單內容與標題卡共用目前 16px 工具頁外距', () => {
+test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8px 垂直間距', () => {
   assert.match(tokens, /--layout-page-inline:\s*12px;/);
   assert.match(responsiveCss, /--tool-page-inline:\s*16px;/);
   for (const selector of [
@@ -48,7 +48,7 @@ test('歷史、同星、對照單內容與標題卡共用目前 16px 工具頁�
     const bodies = ruleBodies(responsiveCss, selector);
     assert.equal(bodies.length, 1);
     assert.match(bodies[0], /width:\s*100%;/);
-    assert.match(bodies[0], /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
+    assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
     assert.match(bodies[0], /row-gap:\s*var\(--tool-section-gap\);/);
   }
   const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner$/);

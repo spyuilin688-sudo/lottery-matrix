@@ -84,7 +84,7 @@ test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", ()
   assert.doesNotMatch(css, /history-title-lottery|history-title-chevron/);
 });
 
-test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 流動外距", () => {
+test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 水平外距", () => {
   assert.match(source, /className="history-filter-panel"/);
   assert.match(source, /className="history-filter-primary-row"/);
   assert.match(source, /className="history-filter-secondary-row"/);
@@ -94,6 +94,6 @@ test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 流�
   assert.match(css, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
   const bodyRules = ruleBodies(responsiveCss, /^\.draw-history-screen \.feature-body$/);
   assert.equal(bodyRules.length, 1);
-  assert.match(bodyRules[0], /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
+  assert.match(bodyRules[0], /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
   assert.match(responsiveCss, /--tool-page-inline:\s*16px;/);
 });

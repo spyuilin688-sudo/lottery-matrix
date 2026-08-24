@@ -58,7 +58,7 @@ test('Matrix 同星左欄計算樣式確實將期數與日期分成上下兩列'
   assert.equal(style.gridTemplateRows, 'auto auto');
 });
 
-test('Matrix 同星與號碼對照單內容使用共享 16px 外距與響應式垂直間距', () => {
+test('Matrix 同星與號碼對照單內容使用共享 16px 水平外距且不重複標題卡垂直間距', () => {
   assert.match(tokens, /--layout-section-gap:\s*8px;/);
 
   assert.match(responsive, /--tool-page-inline:\s*16px;/);
@@ -67,14 +67,14 @@ test('Matrix 同星與號碼對照單內容使用共享 16px 外距與響應式�
   assert.match(tongxingBody, /flex-direction:\s*column/);
   assert.match(tongxingBody, /width:\s*100%/);
   assert.match(tongxingBody, /margin-inline:\s*0/);
-  assert.match(tongxingBody, /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
+  assert.match(tongxingBody, /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.match(tongxingBody, /row-gap:\s*var\(--tool-section-gap\)/);
 
   const referenceBody = block(responsive, '.number-reference-screen .feature-body');
   assert.match(referenceBody, /display:\s*flex/);
   assert.match(referenceBody, /width:\s*100%/);
   assert.match(referenceBody, /margin-inline:\s*0/);
-  assert.match(referenceBody, /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
+  assert.match(referenceBody, /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.match(referenceBody, /row-gap:\s*var\(--tool-section-gap\)/);
 
   const floatingPanel = block(responsive, '.reference-query-panel[data-floating="true"]');

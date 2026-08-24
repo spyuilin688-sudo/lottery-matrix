@@ -38,7 +38,9 @@ test("integrated title artwork uses current sixteen-pixel side margins and propo
   assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\)[^}]*margin:\s*0 auto/s);
   assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
   assert.match(styles, /\.integrated-title-back\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*background:\s*transparent/s);
-  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*0;[^}]*padding-top:\s*8px/s);
+  assert.match(brandHeaderStyles, /\.feature-brand-header,\s*\.feature-brand-header\[data-compact="true"\]\s*\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
+  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*padding-top:\s*8px/s);
+  assert.doesNotMatch(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/s);
 });
 
 test("Matrix explore title owns Tianyan and Tiangong controls", () => {

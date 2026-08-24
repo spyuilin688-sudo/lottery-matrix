@@ -82,7 +82,6 @@
 .tongxing-screen .matrix-title-banner,
 .number-reference-screen .matrix-title-banner {
   width: calc(100% - (var(--tool-page-inline) * 2));
-  margin-bottom: 0;
 }
 
 .draw-history-screen .matrix-title-banner-actions,
@@ -192,7 +191,7 @@
   max-width: none;
   min-width: 0;
   margin-inline: 0;
-  padding: var(--tool-section-gap) var(--tool-page-inline) var(--layout-bottom-nav-clearance);
+  padding: 0 var(--tool-page-inline) var(--layout-bottom-nav-clearance);
   flex-direction: column;
   row-gap: var(--tool-section-gap);
 }
