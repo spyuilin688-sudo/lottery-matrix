@@ -25,9 +25,11 @@ class DrawRefreshService:
         if len(existing) >= minimum:
             return existing
 
-        for raw in self.source.fetch_history(lottery, None):
-            draw = self._prepare_draw(lottery, raw)
-            self.repository.upsert_draw(draw)
+        draws = [
+            self._prepare_draw(lottery, raw)
+            for raw in self.source.fetch_history(lottery, None)
+        ]
+        self.repository.upsert_draws(draws)
 
         history = self.repository.list_draws(lottery, minimum)
         if len(history) < minimum:
