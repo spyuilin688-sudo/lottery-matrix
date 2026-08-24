@@ -10,10 +10,9 @@ describe('selectAnalysisLottery', () => {
     expect(selectAnalysisLottery('2026-08-21T09:20:00.000Z')).toBe('今彩539');
   });
 
-  it('recognizes the existing Taipei source-refresh window without changing its hours', () => {
-    expect(isTaipeiRefreshWindow('2026-08-21T10:34:00.000Z', 18)).toBe(false);
-    expect(isTaipeiRefreshWindow('2026-08-21T10:35:00.000Z', 18)).toBe(true);
-    expect(isTaipeiRefreshWindow('2026-08-21T10:59:00.000Z', 18)).toBe(true);
-    expect(isTaipeiRefreshWindow('2026-08-21T11:00:00.000Z', 18)).toBe(false);
+  it('refreshes exactly twenty minutes after a Taipei 20:30 draw', () => {
+    expect(isTaipeiRefreshWindow('2026-08-21T12:49:00.000Z', 20)).toBe(false);
+    expect(isTaipeiRefreshWindow('2026-08-21T12:50:00.000Z', 20)).toBe(true);
+    expect(isTaipeiRefreshWindow('2026-08-21T12:55:00.000Z', 20)).toBe(false);
   });
 });
