@@ -5,23 +5,43 @@ from app.repositories.analysis_repository import AnalysisRepository
 
 class DrawSource(Protocol):
     def fetch(self, lottery: str) -> dict[str, Any]: ...
+    def fetch_history(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
 
 
 class DrawRefreshService:
-    """Fetches one formal draw and persists it under the requested lottery."""
+    """Fetches formal draws and persists them under the requested lottery."""
 
     def __init__(self, repository: AnalysisRepository, source: DrawSource) -> None:
         self.repository = repository
         self.source = source
 
     def refresh(self, lottery: str) -> dict[str, Any]:
-        draw = dict(self.source.fetch(lottery))
+        draw = self._prepare_draw(lottery, self.source.fetch(lottery))
+        self.repository.upsert_draw(draw)
+        return draw
+
+    def ensure_history(self, lottery: str, limit: int = 80) -> list[dict[str, Any]]:
+        existing = self.repository.list_draws(lottery, limit)
+        if len(existing) >= limit:
+            return existing
+
+        for raw in self.source.fetch_history(lottery, limit):
+            draw = self._prepare_draw(lottery, raw)
+            self.repository.upsert_draw(draw)
+
+        history = self.repository.list_draws(lottery, limit)
+        if len(history) < limit:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        return history
+
+    @classmethod
+    def _prepare_draw(cls, lottery: str, raw: dict[str, Any]) -> dict[str, Any]:
+        draw = dict(raw)
         source_lottery = draw.get("lottery")
         if source_lottery is not None and source_lottery != lottery:
             raise ValueError("DRAW_LOTTERY_MISMATCH")
         draw["lottery"] = lottery
-        self._validate(draw)
-        self.repository.upsert_draw(draw)
+        cls._validate(draw)
         return draw
 
     @staticmethod
