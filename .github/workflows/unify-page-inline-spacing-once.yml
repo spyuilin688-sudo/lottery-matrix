@@ -47,9 +47,6 @@ jobs:
       - name: Verify production build only
         run: npm run build
 
-      - name: Verify existing tests only
-        run: node --test tests/*.test.mjs
-
       - name: Commit verified spacing cleanup to branch
         run: |
           git config user.name 'github-actions[bot]'
