@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.repositories.analysis_repository import ARTIFACT_KINDS, AnalysisRepository
+from app.repositories.artifact_chunks import chunk_manifest
 
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
@@ -40,17 +41,67 @@ class AnalysisPipeline:
             phase_total = len(PHASES)
             resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
             for phase_index, phase in enumerate(PHASES):
-                existing = self.repository.read_artifact(lottery, period, self.analysis_version, phase)
-                if phase_index < resume_phase_index and existing is not None:
-                    context["artifacts"][phase] = existing
-                    continue
                 if phase == "explore":
+                    if phase_index < resume_phase_index:
+                        existing = self.repository.read_artifact(
+                            lottery, period, self.analysis_version, phase,
+                        )
+                        if existing is not None:
+                            context["artifacts"][phase] = existing
+                            continue
                     start = int(run.get("cursor", 0)) if run.get("phase") == "explore" else 0
                     context["exploreBatch"] = {
                         "start": start,
                         "limit": self.explore_batch_size,
-                        "existing": existing,
                     }
+                    built = self.builders[phase](context)
+                    checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
+                    if isinstance(checkpoint, dict) and "artifact" in built:
+                        payload = built["artifact"]
+                        cursor_start = int(checkpoint.get("cursorStart", start))
+                        cursor = int(checkpoint["cursor"])
+                        total = int(checkpoint["total"])
+                        chunk_index = cursor_start // self.explore_batch_size
+                        self.repository.save_artifact_chunk(
+                            lottery, period, self.analysis_version, phase,
+                            chunk_index, cursor_start, cursor, payload,
+                        )
+                        self.repository.update_progress(
+                            lottery, period, self.analysis_version, phase, cursor, total,
+                        )
+                        context.pop("exploreBatch", None)
+                        if not checkpoint.get("complete"):
+                            result = self.repository.get_progress(lottery, period)
+                            return {**(result or {}), "skipped": False}
+                        materialized = self.repository.materialize_artifact(
+                            lottery, period, self.analysis_version, phase, total,
+                        )
+                        manifest = chunk_manifest(
+                            chunk_index + 1, cursor, total, len(materialized["items"]),
+                        )
+                        self.repository.save_artifact(
+                            lottery, period, self.analysis_version, phase, manifest,
+                        )
+                        context["artifacts"][phase] = materialized
+                        self.repository.update_progress(
+                            lottery, period, self.analysis_version,
+                            PHASES[phase_index + 1], phase_index + 1, phase_total,
+                        )
+                        continue
+                    context.pop("exploreBatch", None)
+                    self.repository.update_progress(
+                        lottery, period, self.analysis_version, phase, phase_index, phase_total,
+                    )
+                    self.repository.save_artifact(
+                        lottery, period, self.analysis_version, phase, built,
+                    )
+                    context["artifacts"][phase] = built
+                    continue
+
+                existing = self.repository.read_artifact(lottery, period, self.analysis_version, phase)
+                if phase_index < resume_phase_index and existing is not None:
+                    context["artifacts"][phase] = existing
+                    continue
                 built = self.builders[phase](context)
                 checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                 if isinstance(checkpoint, dict) and "artifact" in built:
