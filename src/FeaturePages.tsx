@@ -3289,9 +3289,33 @@ function lineAvatarFromSession(session: unknown) {
   return typeof picture === "string" && picture.trim() ? picture.trim() : null;
 }
 
+function lineNicknameFromSession(session: unknown) {
+  if (!session || typeof session !== "object") return null;
+  const user = (session as { user?: unknown }).user;
+  if (!user || typeof user !== "object") return null;
+  const metadata = (user as { user_metadata?: unknown }).user_metadata;
+  if (metadata && typeof metadata === "object") {
+    const name = (metadata as { name?: unknown }).name;
+    if (typeof name === "string" && name.trim()) return name.trim();
+  }
+  const identities = (user as { identities?: unknown }).identities;
+  if (!Array.isArray(identities)) return null;
+  const lineIdentity = identities.find((identity) => (
+    identity && typeof identity === "object"
+    && (identity as { provider?: unknown }).provider === "custom:line"
+  ));
+  const identityData = lineIdentity && typeof lineIdentity === "object"
+    ? (lineIdentity as { identity_data?: unknown }).identity_data
+    : null;
+  if (!identityData || typeof identityData !== "object") return null;
+  const name = (identityData as { name?: unknown }).name;
+  return typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
+  const [lineNickname, setLineNickname] = useState<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
   const [authPending, setAuthPending] = useState(false);
   const [authFailure, setAuthFailure] = useState<"login" | "logout" | null>(null);
@@ -3303,6 +3327,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       if (!active) return;
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
+      setLineNickname(lineNicknameFromSession(session));
     };
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       authRevision += 1;
@@ -3365,7 +3390,13 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             alt={lineAvatarUrl ? "LINE 頭貼" : "Matrix 預設頭貼"}
           />
         </div>
-        <div className="profile-copy"><h2>樂彩玩家</h2><p>LINE ID：{memberProfile?.lineUserId ?? ""}</p></div>
+        <div className="profile-copy">
+          <h2>樂彩玩家</h2>
+          <p
+            className="profile-nickname"
+            data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
+          >LINE 暱稱：{lineNickname ?? ""}</p>
+        </div>
         <div className="profile-watermark" aria-hidden="true">M</div>
         {authState !== "loading" ? <button
           type="button"

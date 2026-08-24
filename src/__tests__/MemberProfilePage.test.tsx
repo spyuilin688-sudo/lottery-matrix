@@ -122,6 +122,29 @@ describe("ProfilePage member API", () => {
     );
   });
 
+  it("顯示 LINE 暱稱，長暱稱在固定框內縮小並省略", async () => {
+    const nickname = "這是一個很長的 LINE 會員暱稱";
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: {
+        session: {
+          access_token: "member-session",
+          user: { user_metadata: { name: nickname } },
+        },
+      },
+      error: null,
+    });
+
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const nicknameFrame = await screen.findByText(`LINE 暱稱：${nickname}`);
+    expect(screen.queryByText(/LINE ID：/)).not.toBeInTheDocument();
+    expect(nicknameFrame).toHaveAttribute("data-name-fit", "compact");
+    expect(getComputedStyle(nicknameFrame).fontSize).toBe("10px");
+    expect(getComputedStyle(nicknameFrame).overflow).toBe("hidden");
+    expect(getComputedStyle(nicknameFrame).textOverflow).toBe("ellipsis");
+    expect(getComputedStyle(nicknameFrame).whiteSpace).toBe("nowrap");
+  });
+
   it("以登入會員 API 資料取代固定 LINE ID、方案與到期日", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
@@ -132,7 +155,7 @@ describe("ProfilePage member API", () => {
     expect(memberApi.bootstrapMember.mock.invocationCallOrder[0]).toBeLessThan(
       memberApi.fetchMemberProfile.mock.invocationCallOrder[0],
     );
-    expect(screen.getByText("LINE ID：line-real")).toBeInTheDocument();
+    expect(screen.getByText("LINE 暱稱：")).toBeInTheDocument();
     expect(screen.getByText("年費方案")).toBeInTheDocument();
     expect(screen.getByText("2026/09/22")).toBeInTheDocument();
     expect(screen.getByText("剩餘 10 天")).toBeInTheDocument();
@@ -150,7 +173,7 @@ describe("ProfilePage member API", () => {
 
     render(<ProfilePage onNavigate={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText("LINE ID：line-lifetime")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("LINE 暱稱：")).toBeInTheDocument());
     expect(screen.queryByText("2027/07/23")).not.toBeInTheDocument();
     expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
   });
