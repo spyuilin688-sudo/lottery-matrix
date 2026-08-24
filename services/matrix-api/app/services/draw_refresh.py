@@ -5,7 +5,7 @@ from app.repositories.analysis_repository import AnalysisRepository
 
 class DrawSource(Protocol):
     def fetch(self, lottery: str) -> dict[str, Any]: ...
-    def fetch_history(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict[str, Any]]: ...
 
 
 class DrawRefreshService:
@@ -20,17 +20,17 @@ class DrawRefreshService:
         self.repository.upsert_draw(draw)
         return draw
 
-    def ensure_history(self, lottery: str, limit: int = 80) -> list[dict[str, Any]]:
-        existing = self.repository.list_draws(lottery, limit)
-        if len(existing) >= limit:
+    def ensure_history(self, lottery: str, minimum: int = 80) -> list[dict[str, Any]]:
+        existing = self.repository.list_draws(lottery, minimum)
+        if len(existing) >= minimum:
             return existing
 
-        for raw in self.source.fetch_history(lottery, limit):
+        for raw in self.source.fetch_history(lottery, None):
             draw = self._prepare_draw(lottery, raw)
             self.repository.upsert_draw(draw)
 
-        history = self.repository.list_draws(lottery, limit)
-        if len(history) < limit:
+        history = self.repository.list_draws(lottery, minimum)
+        if len(history) < minimum:
             raise ValueError("DRAW_HISTORY_INCOMPLETE")
         return history
 
