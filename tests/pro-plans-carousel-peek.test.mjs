@@ -4,16 +4,16 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
-const mainPath = join(root, "src", "main.tsx");
+const routerPath = join(root, "src", "FeaturePagesPatched.tsx");
 const overridePath = join(root, "src", "pro-plans-carousel-peek.css");
 
 test("會員方案卡露出下一張並顯示跟隨方案的分頁指示", () => {
   assert.equal(existsSync(overridePath), true, "缺少會員方案 Carousel 視覺覆寫檔");
 
-  const main = readFileSync(mainPath, "utf8");
+  const router = readFileSync(routerPath, "utf8");
   const css = readFileSync(overridePath, "utf8");
 
-  assert.match(main, /import\s+["']\.\/pro-plans-carousel-peek\.css["'];/);
+  assert.match(router, /import\s+["']\.\/pro-plans-carousel-peek\.css["'];/);
   assert.match(css, /\.pro-plans-screen\s+\.plan-card\s*\{[\s\S]*?flex-basis:\s*calc\(100%\s*-\s*36px\)/);
   assert.match(css, /\.pro-plans-screen\s+\.plan-card\s*\{[\s\S]*?transform:\s*translateX\(-6px\)/);
   assert.match(css, /\.pro-plans-screen\s+\.plan-carousel\s*\{[\s\S]*?padding:\s*0\s+0\s+18px/);
