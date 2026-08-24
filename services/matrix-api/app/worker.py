@@ -1,5 +1,6 @@
 import argparse
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -12,14 +13,22 @@ from app.services.draw_refresh import DrawRefreshService, DrawSource
 from app.settings import load_settings
 
 
+REQUIRED_HISTORY_DRAWS = 80
+
+
 def run_worker(
     lottery: str,
     repository: AnalysisRepository,
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
 ) -> dict[str, Any]:
-    draw = DrawRefreshService(repository, source).refresh(lottery)
-    history = repository.list_draws(lottery, 80)
+    repository.cleanup_expired(datetime.now(UTC))
+    refresh = DrawRefreshService(repository, source)
+    refresh.ensure_history(lottery, REQUIRED_HISTORY_DRAWS)
+    draw = refresh.refresh(lottery)
+    history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
+    if len(history) < REQUIRED_HISTORY_DRAWS:
+        raise ValueError("DRAW_HISTORY_INCOMPLETE")
     version = f'{draw["period"]}:matrix-python-v1'
     return AnalysisPipeline(repository, builders or create_artifact_builders(), version).run(draw, history)
 

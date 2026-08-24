@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
@@ -5,18 +7,46 @@ from app.worker import run_worker
 
 
 class Source:
-    def fetch(self, lottery: str) -> dict:
-        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+    def __init__(self, history_count: int = 120) -> None:
+        self.history_count = history_count
+        self.events: list[str] = []
+
+    @staticmethod
+    def _draw(period: int, count: int) -> dict:
         return {
-            "period": "114000123", "drawDate": "2026-08-24",
+            "period": str(period).zfill(9),
+            "drawDate": f"2026-08-{((period - 1) % 28) + 1:02d}",
             "numbers": [str(value).zfill(2) for value in range(1, count + 1)],
         }
 
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        return self._draw(220, count)
 
-def _builders(calls: list[str], failing: str | None = None) -> dict:
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        rows = [self._draw(period, count) for period in range(220, 220 - self.history_count, -1)]
+        return rows if limit is None else rows[:limit]
+
+
+class TrackingRepository(InMemoryAnalysisRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.events: list[str] = []
+
+    def cleanup_expired(self, now: datetime) -> int:
+        self.events.append("cleanup")
+        return super().cleanup_expired(now)
+
+
+def _builders(calls: list[str], history_lengths: list[int] | None = None, failing: str | None = None) -> dict:
     def build(kind: str):
-        def selected(_: dict) -> dict:
+        def selected(context: dict) -> dict:
             calls.append(kind)
+            if history_lengths is not None:
+                history_lengths.append(len(context["history"]))
             if kind == failing:
                 raise RuntimeError("builder failed")
             return {"kind": kind}
@@ -24,13 +54,47 @@ def _builders(calls: list[str], failing: str | None = None) -> dict:
     return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
 
 
-def test_worker_refreshes_history_and_publishes_four_artifacts_in_order() -> None:
-    repository = InMemoryAnalysisRepository()
+def test_worker_backfills_complete_history_but_analyzes_latest_80_only() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=120)
     calls: list[str] = []
-    result = run_worker("今彩539", repository, Source(), _builders(calls))
+    history_lengths: list[int] = []
+
+    result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
+
     assert result["status"] == "complete"
+    assert repository.events[0] == "cleanup"
+    assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
-    assert repository.list_draws("今彩539", 80)[0]["period"] == "114000123"
+    assert history_lengths == [80, 80, 80, 80]
+    assert len(repository.list_draws("今彩539", 1000)) == 120
+
+
+def test_worker_rejects_analysis_when_complete_history_is_under_80_draws() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=79)
+    calls: list[str] = []
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
+        run_worker("今彩539", repository, source, _builders(calls))
+
+    assert repository.events == ["cleanup"]
+    assert source.events == ["history-all"]
+    assert calls == []
+    assert repository.get_progress("今彩539", "000000220") is None
+
+
+def test_worker_cleans_expired_artifacts_before_running() -> None:
+    repository = TrackingRepository()
+    source = Source()
+    repository.begin_run("今彩539", "old", "old-version", datetime.now(UTC).isoformat())
+    repository.save_artifact("今彩539", "old", "old-version", "explore", {"old": True})
+    old_key = ("今彩539", "old", "old-version", "explore")
+    repository.artifacts[old_key]["expiresAt"] = datetime.now(UTC) - timedelta(days=1)
+
+    run_worker("今彩539", repository, source, _builders([]))
+
+    assert old_key not in repository.artifacts
 
 
 def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None:
@@ -38,5 +102,5 @@ def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None
     run_worker("今彩539", repository, Source(), _builders([]))
     with pytest.raises(RuntimeError, match="builder failed"):
         run_worker("大樂透", repository, Source(), _builders([], failing="tianyan"))
-    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {"kind": "status"}
-    assert repository.get_progress("大樂透", "114000123")["status"] == "failed"
+    assert repository.read_completed_artifact("今彩539", "000000220", "status") == {"kind": "status"}
+    assert repository.get_progress("大樂透", "000000220")["status"] == "failed"

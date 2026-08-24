@@ -27,6 +27,14 @@ Never use the publishable/anon key for the Oracle worker, and never expose the s
 
 Only a completed four-artifact analysis version is returned. The worker pipeline is intentionally not exposed as a public trigger endpoint.
 
+## Draw-history boundary
+
+`lottery_draws` is the durable historical store and is not capped at 80 rows per lottery. On an empty/new database, the first worker cycle loads the complete history exposed by the formal source and idempotently upserts every valid draw. The algorithm then reads only the newest 80 draws as its current maximum analysis window.
+
+After the database has at least the analysis minimum, scheduled worker cycles skip the historical network backfill and fetch only the latest draw. The 80-draw value is therefore a compute-window/minimum-data rule, not a database retention rule. Historical draw rows are retained; only completed Matrix analysis artifacts use the separate three-day retention policy.
+
+Each worker cycle also deletes analysis artifacts whose three-day retention window has expired before starting new work.
+
 ## Deployment boundary
 
 Run `app.main:app` behind the Oracle Cloud process manager/reverse proxy. Configure the two environment variables above only on the Oracle host. FastAPI Cloud can be used for temporary API testing, but it is not the selected production compute target for this service.
@@ -55,7 +63,7 @@ The environment file must contain `SUPABASE_URL` and `SUPABASE_SECRET_KEY`; keep
 For each release, replace `<git-sha>` with the verified commit:
 
 ```bash
-sudo -u matrix git clone --no-checkout https://github.com/bolin1994/lottery-matrix.git /opt/lottery-matrix/releases/<git-sha>
+sudo -u matrix git clone --no-checkout https://github.com/spyuilin688-sudo/lottery-matrix.git /opt/lottery-matrix/releases/<git-sha>
 sudo -u matrix git -C /opt/lottery-matrix/releases/<git-sha> checkout --detach <git-sha>
 cd /opt/lottery-matrix/releases/<git-sha>/services/matrix-api
 sudo -u matrix /usr/local/bin/uv sync --frozen --no-dev
