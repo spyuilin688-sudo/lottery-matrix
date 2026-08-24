@@ -80,3 +80,15 @@ export function isFantasy5RefreshTime(now = new Date()): boolean {
   const pacific = partsInPacific(now);
   return pacific.hour === 18 && pacific.minute === 50;
 }
+
+export function nextTaipeiLotteryDrawAt(lottery: '今彩539' | '大樂透', now = new Date()): string {
+  const drawDays = lottery === '今彩539' ? new Set([1, 2, 3, 4, 5, 6]) : new Set([2, 5]);
+  const taipeiWallClock = new Date(now.getTime() + 8 * 60 * 60 * 1_000);
+  for (let offset = 0; offset < 8; offset += 1) {
+    const localDate = new Date(Date.UTC(taipeiWallClock.getUTCFullYear(), taipeiWallClock.getUTCMonth(), taipeiWallClock.getUTCDate() + offset));
+    if (!drawDays.has(localDate.getUTCDay())) continue;
+    const draw = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate(), 12, 30));
+    if (draw.getTime() > now.getTime()) return draw.toISOString();
+  }
+  throw new Error('NEXT_DRAW_NOT_FOUND');
+}
