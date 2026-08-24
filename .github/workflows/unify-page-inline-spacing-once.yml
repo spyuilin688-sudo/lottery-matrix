@@ -41,17 +41,20 @@ jobs:
       - name: GREEN - unify formal page spacing sources
         run: python scripts/unify-page-inline-spacing-once.py
 
-      - name: Verify unified spacing and production build
-        run: |
-          node --test tests/layout-inline-spacing.test.mjs
-          npm run build
-          node --test tests/*.test.mjs
+      - name: Verify spacing contract only
+        run: node --test tests/layout-inline-spacing.test.mjs
+
+      - name: Verify production build only
+        run: npm run build
+
+      - name: Verify existing tests only
+        run: node --test tests/*.test.mjs
 
       - name: Commit verified spacing cleanup to branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/unify-page-inline-spacing-once.yml scripts/unify-page-inline-spacing-once.py
+          git rm .github/workflows/unify-page-inline-spacing-once.yml scripts/unify-page-inline-spacing-once.py scripts/layout-inline-trigger.txt
           git add -- src/design-tokens.css src/homepage/base.css src/responsive-feature-pages.css src/matrix-explore-spacing.css src/feature-page-adjustments.css src/feature-pages.css tests/layout-inline-spacing.test.mjs
           git commit -m 'Unify feature page inline spacing'
           git push origin HEAD:'layout-inline-unify-20260824'
