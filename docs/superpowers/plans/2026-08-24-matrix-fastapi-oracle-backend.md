@@ -188,4 +188,4 @@
 - [x] Add systemd unit and timer files that execute only repository code and read secrets from the Oracle environment.
 - [x] Document exact install, start, status, and rollback commands without storing credentials.
 - [x] Run all Python tests, `npm run test:unit`, `npm run build:verified`, `git diff --check`, and secret-pattern checks.
-- [ ] Push verified source directly to `lottery-matrix/main`, then report whether actual Oracle deployment was possible with the available access.
+- [x] Push verified source directly to `lottery-matrix/main`, then report whether actual Oracle deployment was possible with the available access.
