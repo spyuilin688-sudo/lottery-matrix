@@ -27,6 +27,12 @@ Never use the publishable/anon key for the Oracle worker, and never expose the s
 
 Only a completed four-artifact analysis version is returned. The worker pipeline is intentionally not exposed as a public trigger endpoint.
 
+## Worker data bootstrap
+
+Before a lottery analysis can start, the worker requires 80 stored draws for that lottery. On an empty Supabase project it backfills formal history from the same approved draw sources, validates and idempotently upserts the rows, then refreshes the latest draw. If fewer than 80 valid draws are available, that lottery stops with `DRAW_HISTORY_INCOMPLETE` and no analysis version is published. Once 80 draws are stored, later timer cycles skip the historical network backfill and only refresh the latest draw.
+
+Each worker cycle also deletes analysis artifacts whose three-day retention window has expired before starting new work.
+
 ## Deployment boundary
 
 Run `app.main:app` behind the Oracle Cloud process manager/reverse proxy. Configure the two environment variables above only on the Oracle host. FastAPI Cloud can be used for temporary API testing, but it is not the selected production compute target for this service.
@@ -55,7 +61,7 @@ The environment file must contain `SUPABASE_URL` and `SUPABASE_SECRET_KEY`; keep
 For each release, replace `<git-sha>` with the verified commit:
 
 ```bash
-sudo -u matrix git clone --no-checkout https://github.com/bolin1994/lottery-matrix.git /opt/lottery-matrix/releases/<git-sha>
+sudo -u matrix git clone --no-checkout https://github.com/spyuilin688-sudo/lottery-matrix.git /opt/lottery-matrix/releases/<git-sha>
 sudo -u matrix git -C /opt/lottery-matrix/releases/<git-sha> checkout --detach <git-sha>
 cd /opt/lottery-matrix/releases/<git-sha>/services/matrix-api
 sudo -u matrix /usr/local/bin/uv sync --frozen --no-dev
