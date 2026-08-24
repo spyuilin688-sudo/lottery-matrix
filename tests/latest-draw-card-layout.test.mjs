@@ -15,6 +15,14 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
+test("僅期數日期、順球落球與查看更多紀錄上移 4px", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
+  assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta,\s*\.home-screen \.latest-draw-card \.draw-order,\s*\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translateY\(-4px\);/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-balls[^}]*transform:\s*translateY\(-4px\)/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded[^}]*transform:\s*translateY\(-4px\)/s);
+});
+
 test("底部資訊左右兩欄垂直置中並降低時間字級", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\)[^}]*align-items:\s*center/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center/s);

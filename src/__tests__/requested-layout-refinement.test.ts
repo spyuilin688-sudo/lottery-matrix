@@ -45,12 +45,24 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".home-shortcut-row")!).width).toBe("calc(100% - 8px)");
   });
 
-  it("moves the complete draw-card top row upward by four pixels through grid geometry", () => {
+  it("moves only the draw-card top controls upward by four pixels", () => {
     const style = mountStyles(readCss("src/homepage/base.css"));
     style.dataset.layoutContract = "draw-card";
-    document.body.innerHTML = '<div class="home-screen"><section class="latest-draw-card"></section></div>';
+    document.body.innerHTML = `
+      <div class="home-screen"><section class="latest-draw-card">
+        <div class="draw-meta"></div>
+        <div class="draw-order"></div>
+        <button class="history-link"></button>
+        <div class="draw-balls"></div>
+        <div class="next-draw-info--embedded"></div>
+      </section></div>`;
 
-    expect(getComputedStyle(document.querySelector(".latest-draw-card")!).gridTemplateRows).toBe("36px minmax(0, 1fr) 24px");
+    expect(getComputedStyle(document.querySelector(".latest-draw-card")!).gridTemplateRows).toBe("44px minmax(0, 1fr) 24px");
+    for (const selector of [".draw-meta", ".draw-order", ".history-link"]) {
+      expect(getComputedStyle(document.querySelector(selector)!).transform).toBe("translateY(-4px)");
+    }
+    expect(getComputedStyle(document.querySelector(".draw-balls")!).transform).toBe("none");
+    expect(getComputedStyle(document.querySelector(".next-draw-info--embedded")!).transform).toBe("none");
   });
 
   it("uses Matrix Explore density for Tianyan and Tiangong controls", () => {

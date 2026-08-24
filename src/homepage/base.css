@@ -128,7 +128,7 @@
 .home-screen .latest-draw-card::before {
   position: absolute;
   z-index: 0;
-  inset: 36px 4px 24px;
+  inset: 44px 4px 24px;
   border-radius: 4px;
   background:
     radial-gradient(circle at 50% 82%, transparent 0 18%, rgba(0, 5, 10, .28) 48%, rgba(0, 5, 10, .56) 100%),
@@ -229,7 +229,7 @@
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
-  grid-template-rows: 36px minmax(0, 1fr) 24px;
+  grid-template-rows: 44px minmax(0, 1fr) 24px;
   width: 100%;
   height: var(--draw-card-height);
   min-height: 0;
@@ -334,6 +334,12 @@
   font-weight: 700;
   gap: 6px;
   white-space: nowrap;
+}
+
+.home-screen .latest-draw-card .draw-meta,
+.home-screen .latest-draw-card .draw-order,
+.home-screen .latest-draw-card .history-link {
+  transform: translateY(-4px);
 }
 
 .home-screen .latest-draw-card .draw-balls,
