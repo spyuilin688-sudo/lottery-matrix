@@ -179,8 +179,8 @@
   --number-y: 0px;
   --underline-width: clamp(8px, 2.31vw, 9px);
   --underline-height: .7px;
-  --underline-y: 0px;
-  transform: none;
+  --underline-y: -.4px;
+  transform: translateY(2px);
 }
 
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="red"] {
@@ -206,13 +206,13 @@
   --number-y: -.5px;
   --underline-width: clamp(8px, 2.31vw, 9px);
   --underline-height: .7px;
-  --underline-y: .5px;
-  transform: none;
+  --underline-y: .1px;
+  transform: translateY(2px);
 }
 
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value,
 .draw-history-screen .draw-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value {
-  font-weight: 800;
+  font-weight: 900;
   font-feature-settings: "tnum" 1;
 }
 
