@@ -28,5 +28,5 @@ export function isTaipeiRefreshWindow(scheduledTime: string | undefined, hour: n
   const parsed = new Date(scheduledTime);
   if (Number.isNaN(parsed.getTime())) return false;
   const taipei = new Date(parsed.getTime() + 8 * 60 * 60 * 1_000);
-  return taipei.getUTCHours() === hour && taipei.getUTCMinutes() >= 35;
+  return taipei.getUTCHours() === hour && taipei.getUTCMinutes() === 50;
 }
