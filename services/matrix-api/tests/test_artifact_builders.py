@@ -23,6 +23,20 @@ def test_explore_builder_creates_canonical_detached_rows() -> None:
     assert artifact["validationById"][artifact["items"][0]["id"]]["ruleSets"] == [{"rules": []}]
 
 
+def test_explore_batch_builder_needs_only_start_and_limit() -> None:
+    builders = create_artifact_builders(explore_runner=lambda *_: {"results": []})
+    context = {
+        "draw": {"lottery": "今彩539", "period": "123"},
+        "history": [{"period": str(index)} for index in range(13)],
+        "exploreBatch": {"start": 10, "limit": 2},
+    }
+
+    result = builders["explore"](context)
+
+    assert result["artifact"]["items"] == []
+    assert result["_checkpoint"] == {"cursor": 12, "total": 390, "complete": False}
+
+
 def test_concrete_status_builder_uses_completed_explore_artifact() -> None:
     builders = create_artifact_builders(tiangong_runner=lambda *_: [])
     context = {

@@ -60,7 +60,6 @@ def build_explore_artifact_chunk(
     history: list[dict[str, Any]],
     start: int,
     limit: int,
-    existing: dict[str, Any] | None = None,
     runner: ExploreRunner = run_matrix_explore_group_with_history,
 ) -> dict[str, Any]:
     return build_explore_batch(
@@ -70,7 +69,6 @@ def build_explore_artifact_chunk(
         position_count=lottery_position_count(lottery),
         start=start,
         limit=limit,
-        existing=existing,
         runner=runner,
         append_result=lambda artifact, unit, response: _append_explore_result(artifact, unit, response, history),
     )
@@ -83,7 +81,7 @@ def build_explore_artifact(
     runner: ExploreRunner = run_matrix_explore_group_with_history,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
-        lottery, draw_period, history, 0, len(_work_units(lottery, history)), None, runner,
+        lottery, draw_period, history, 0, len(_work_units(lottery, history)), runner,
     )["artifact"]
 
 
@@ -126,7 +124,7 @@ def create_artifact_builders(
             result = build_explore_artifact_chunk(
                 draw["lottery"], draw["period"], context["history"],
                 int(batch.get("start", 0)), int(batch.get("limit", 10)),
-                batch.get("existing"), explore_runner,
+                explore_runner,
             )
             return {
                 "artifact": result["artifact"],
