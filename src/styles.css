@@ -88,6 +88,17 @@ body {
   overflow: hidden;
 }
 
+.app-mobile-canvas {
+  position: relative;
+  width: min(100%, var(--app-layout-viewport));
+  max-width: var(--app-layout-viewport);
+  height: 100dvh;
+  margin-inline: auto;
+  overflow: hidden;
+  contain: layout paint;
+  background: var(--lottery-neutral-950);
+}
+
 button,
 input,
 textarea {

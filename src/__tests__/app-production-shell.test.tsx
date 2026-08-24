@@ -29,6 +29,33 @@ describe("production member shell", () => {
     expect(bridge.render).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the production member app inside the canonical 390px mobile canvas", () => {
+    window.history.replaceState({}, "", "/");
+    const style = document.createElement("style");
+    style.textContent = readFileSync(`${process.cwd()}/src/styles.css`, "utf8");
+    document.head.append(style);
+
+    render(<App />);
+
+    const canvas = screen.getByTestId("app-mobile-canvas");
+    expect(canvas).toContainElement(
+      screen.getByText("member-root"),
+    );
+    const canvasStyles = getComputedStyle(canvas);
+    expect(canvasStyles.position).toBe("relative");
+    expect(canvasStyles.maxWidth).toBe("var(--app-layout-viewport)");
+    expect(canvasStyles.marginInline).toBe("auto");
+    expect(canvasStyles.overflow).toBe("hidden");
+    expect(canvasStyles.contain).toBe("layout paint");
+    expect(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--app-layout-viewport")
+        .trim(),
+    ).toBe("390px");
+
+    style.remove();
+  });
+
   it("keeps the removed visual auth gate and stylesheet out of the app shell", () => {
     const source = readFileSync(`${process.cwd()}/src/App.tsx`, "utf8");
 

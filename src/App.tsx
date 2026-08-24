@@ -12,13 +12,13 @@ export default function App() {
   if (isAdminPath) return <AdminApp />;
 
   return (
-    <>
+    <div className="app-mobile-canvas" data-testid="app-mobile-canvas">
       <MemberSessionBridge />
       <MobileDeviceProvider>
         <KeyboardProvider>
           <Prototype />
         </KeyboardProvider>
       </MobileDeviceProvider>
-    </>
+    </div>
   );
 }
