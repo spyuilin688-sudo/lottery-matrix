@@ -29,6 +29,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!services/matrix-api/.env.example
 
 # vercel
 .vercel
@@ -41,3 +42,9 @@ next-env.d.ts
 /outputs/
 /work/
 /.worktrees/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
