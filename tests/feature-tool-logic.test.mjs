@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildTongXingPairs,
   filterHistoryRecords,
   isDuplicateLookupNumber,
   normalizeLookupNumber,
@@ -32,19 +31,4 @@ test("filterHistoryRecords applies issue and selected date", () => {
 
   assert.deepEqual(filterHistoryRecords(records, { issue: "0031", date: "2026/07/31" }), [records[0]]);
   assert.deepEqual(filterHistoryRecords(records, { issue: "", date: "" }), records);
-});
-
-test("buildTongXingPairs finds matching locked draws and uses the selected future offset", () => {
-  const records = [
-    { issue: "D", numbers: ["20", "21", "22"] },
-    { issue: "C", numbers: ["30", "31", "32"] },
-    { issue: "B", numbers: ["40", "41", "42"] },
-    { issue: "A", numbers: ["01", "02", "03"] },
-  ];
-
-  const afterTwo = buildTongXingPairs(records, ["01", "02"], 2);
-  const afterThree = buildTongXingPairs(records, ["01", "02"], 3);
-  assert.deepEqual(afterTwo, [{ lockedEntry: records[3], predictedEntry: records[1] }]);
-  assert.deepEqual(afterThree, [{ lockedEntry: records[3], predictedEntry: records[0] }]);
-  assert.deepEqual(buildTongXingPairs(records, [], 2), []);
 });

@@ -8,6 +8,8 @@ const supabase = vi.hoisted(() => ({
   getClient: vi.fn(),
 }));
 
+const memberSessionBridge = vi.hoisted(() => ({ render: vi.fn(() => null) }));
+
 const adminApi = vi.hoisted(() => ({
   fetchDashboardStats: vi.fn(),
   fetchMembers: vi.fn(),
@@ -24,6 +26,7 @@ vi.mock("../../lib/supabase", () => ({
 }));
 
 vi.mock("../../Prototype", () => ({ default: () => <div>member-root</div> }));
+vi.mock("../../auth/MemberSessionBridge", () => ({ MemberSessionBridge: memberSessionBridge.render }));
 
 vi.mock("../api", () => ({
   fetchDashboardStats: adminApi.fetchDashboardStats,
@@ -135,6 +138,7 @@ const activationCodeRecords: ActivationCodeRecord[] = Array.from({ length: 10 },
 afterEach(cleanup);
 
 beforeEach(() => {
+  memberSessionBridge.render.mockClear();
   supabase.hasConfig.mockReset();
   supabase.getClient.mockReset();
   supabase.hasConfig.mockReturnValue(true);
@@ -172,6 +176,7 @@ describe("App route boundary", () => {
 
     expect(await screen.findByTestId("login")).toBeInTheDocument();
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
+    expect(memberSessionBridge.render).not.toHaveBeenCalled();
   });
 
   it("renders admin for nested /admin paths", async () => {
@@ -183,6 +188,7 @@ describe("App route boundary", () => {
     expect(await screen.findByTestId("login")).toBeInTheDocument();
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
     expect(screen.queryByTestId("mobile-app-viewport")).not.toBeInTheDocument();
+    expect(memberSessionBridge.render).not.toHaveBeenCalled();
   });
 
   it("keeps a non-admin path in the production member shell", async () => {
@@ -194,6 +200,7 @@ describe("App route boundary", () => {
     expect(screen.getByText("member-root")).toBeInTheDocument();
     expect(screen.queryByTestId("mobile-app-viewport")).not.toBeInTheDocument();
     expect(screen.queryByTestId("login")).not.toBeInTheDocument();
+    expect(memberSessionBridge.render).toHaveBeenCalledTimes(1);
   });
 });
 

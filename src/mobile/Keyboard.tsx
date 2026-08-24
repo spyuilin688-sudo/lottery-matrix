@@ -196,13 +196,15 @@ export function KeyboardInput(props: KeyboardInputProps) {
 
 export function KeyboardTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const keyboard = useKeyboard();
+  const { className, onFocus, ...textareaProps } = props;
 
   return (
     <textarea
-      {...props}
+      {...textareaProps}
+      className={[className, "mobile-textarea-resize-none"].filter(Boolean).join(" ")}
       onFocus={(event) => {
         keyboard.show(event.currentTarget);
-        props.onFocus?.(event);
+        onFocus?.(event);
       }}
     />
   );

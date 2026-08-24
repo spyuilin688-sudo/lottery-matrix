@@ -69,6 +69,63 @@ describe('authenticated Matrix API client', () => {
     await expect(client.fetchJson('/result')).rejects.toMatchObject({ code, status });
   });
 
+  it('preserves a recognized API error code', async () => {
+    const fetcher = vi.fn();
+    fetcher.mockResolvedValue(new Response(
+      JSON.stringify({ error: { code: 'LINE_IDENTITY_CONFLICT' } }),
+      { status: 409, headers: { 'content-type': 'application/json' } },
+    ));
+    const client = createMatrixApiClient(async () => 'token', fetcher, 'https://api.test');
+
+    await expect(client.fetchJson('/api/member/bootstrap', { method: 'POST' }))
+      .rejects.toMatchObject({ status: 409, code: 'LINE_IDENTITY_CONFLICT' });
+  });
+
+  it('falls back when a non-JSON media type merely mentions application/json', async () => {
+    const client = createMatrixApiClient(
+      async () => 'token',
+      async () => new Response(JSON.stringify({ error: { code: 'LINE_IDENTITY_CONFLICT' } }), {
+        status: 409,
+        headers: { 'content-type': 'text/plain; note=application/json' },
+      }),
+      'https://api.test',
+    );
+
+    await expect(client.fetchJson('/api/member/bootstrap', { method: 'POST' }))
+      .rejects.toMatchObject({ status: 409, code: 'ANALYSIS_VERSION_MISMATCH' });
+  });
+
+  it('preserves a recognized API error code from an application/*+json response', async () => {
+    const client = createMatrixApiClient(
+      async () => 'token',
+      async () => new Response(JSON.stringify({ error: { code: 'LINE_IDENTITY_CONFLICT' } }), {
+        status: 409,
+        headers: { 'content-type': 'application/problem+json; charset=utf-8' },
+      }),
+      'https://api.test',
+    );
+
+    await expect(client.fetchJson('/api/member/bootstrap', { method: 'POST' }))
+      .rejects.toMatchObject({ status: 409, code: 'LINE_IDENTITY_CONFLICT' });
+  });
+
+  it.each([
+    ['an unknown JSON error code', jsonResponse({ error: { code: 'UNKNOWN_REMOTE_CODE_PRIVATE_BODY' } }, 409), 409, 'ANALYSIS_VERSION_MISMATCH'],
+    ['a JSON error code paired with the wrong status', jsonResponse({ error: { code: 'LINE_IDENTITY_REQUIRED' } }, 409), 409, 'ANALYSIS_VERSION_MISMATCH'],
+    ['malformed JSON', new Response('MALFORMED_PRIVATE_BODY', { status: 409, headers: { 'content-type': 'application/json' } }), 409, 'ANALYSIS_VERSION_MISMATCH'],
+    ['a non-JSON response body', new Response('NON_JSON_PRIVATE_BODY', { status: 502, headers: { 'content-type': 'text/plain' } }), 502, 'API_ERROR'],
+  ] as const)('falls back for %s without exposing the response body', async (_caseName, response, status, code) => {
+    const client = createMatrixApiClient(async () => 'token', async () => response, 'https://api.test');
+
+    try {
+      await client.fetchJson('/api/member/bootstrap', { method: 'POST' });
+      throw new Error('expected API client to reject');
+    } catch (error) {
+      expect(error).toMatchObject({ status, code });
+      expect((error as Error).message).not.toContain('PRIVATE_BODY');
+    }
+  });
+
   it('rejects non-JSON success responses', async () => {
     const client = createMatrixApiClient(
       async () => 'token',

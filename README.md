@@ -89,6 +89,11 @@ or enforce explicit server-side membership or allowlist checks.
 Use SIWC for account pages, user-specific dashboards, saved records, and write
 actions tied to the current ChatGPT user. Leave public content anonymous.
 
+## LINE Login operator setup
+
+See [the LINE Login operator setup guide](docs/LINE_LOGIN_SETUP.md) for the
+required Supabase, LINE Console, return-URL, and server-secret boundaries.
+
 ## Diagnostic Commands
 
 - `npm run install:ci`: perform the one bounded lockfile install

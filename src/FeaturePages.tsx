@@ -69,6 +69,8 @@ import {
   type MatrixStatusResponse,
 } from "./matrix-status-api";
 import { fetchMemberProfile, type MemberProfileResponse } from "./member-api";
+import { signOutFromMatrix } from "./auth/line-auth";
+import { downloadMatrixTicket } from "./matrix-ticket-download";
 
 export type ScreenId =
   | "home"
@@ -418,22 +420,6 @@ function LotteryLogoTabs({ selected, onChange }: {
         </button>
       ))}
     </div>
-  );
-}
-
-function SelectBox({
-  children,
-  badge,
-}: {
-  children: React.ReactNode;
-  badge?: string;
-}) {
-  return (
-    <button type="button" className="select-box">
-      <span>{children}</span>
-      {badge ? <em>{badge}</em> : null}
-      <ChevronDownIcon />
-    </button>
   );
 }
 
@@ -2248,15 +2234,42 @@ export function CalculatorPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const [downloadPending, setDownloadPending] = useState(false);
+  const [downloadFailed, setDownloadFailed] = useState(false);
+  const ticketRef = useRef<HTMLElement | null>(null);
+  const downloadPendingRef = useRef(false);
+
+  const handleTicketDownload = async () => {
+    if (downloadPendingRef.current || !ticketRef.current) return;
+    downloadPendingRef.current = true;
+    setDownloadPending(true);
+    setDownloadFailed(false);
+    try {
+      await downloadMatrixTicket(ticketRef.current, "matrix-ticket.png");
+    } catch {
+      setDownloadFailed(true);
+    } finally {
+      downloadPendingRef.current = false;
+      setDownloadPending(false);
+    }
+  };
+
   return (
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
-      <section className="matrix-ticket">
+      <section className="matrix-ticket" ref={ticketRef}>
         <img src={PRIMARY_BRAND_LOGO} alt="樂彩 Matrix" />
         <span>{lottery}</span>
         <h2>最新一期牌單</h2>
       </section>
-      <button type="button" className="primary-action"><DownloadIcon />下載 PNG</button>
+      <button
+        type="button"
+        className="primary-action"
+        onClick={handleTicketDownload}
+        disabled={downloadPending}
+        aria-busy={downloadPending}
+      ><DownloadIcon />下載 PNG</button>
+      {downloadFailed ? <p role="alert">下載失敗，請稍後再試</p> : null}
     </FeatureShell>
   );
 }
@@ -2440,101 +2453,6 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   );
 }
 
-function LegacyMatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
-  type NotebookEntry = { id: string; title: string; content: string; updatedAt: string };
-  const [entries, setEntries] = useState<NotebookEntry[]>(() => {
-    if (typeof window === "undefined") return [];
-    const stored = window.localStorage.getItem("matrix-notebook-entries");
-    if (stored) {
-      try { return JSON.parse(stored) as NotebookEntry[]; } catch { /* use legacy content */ }
-    }
-    const legacy = window.localStorage.getItem("matrix-notebook-content");
-    return legacy ? [{ id: "legacy", title: "未命名筆記", content: legacy, updatedAt: new Date().toISOString() }] : [];
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [draftContent, setDraftContent] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    window.localStorage.setItem("matrix-notebook-entries", JSON.stringify(entries));
-  }, [entries]);
-
-  useEffect(() => {
-    if (editingId === null || (!draftTitle.trim() && !draftContent.trim())) return;
-    setSaved(false);
-    const timer = window.setTimeout(() => {
-      setEntries((current) => current.map((entry) => entry.id === editingId
-        ? { ...entry, title: draftTitle, content: draftContent, updatedAt: new Date().toISOString() }
-        : entry));
-      setSaved(true);
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [draftContent, draftTitle, editingId]);
-
-  const startNew = () => {
-    const id = `note-${Date.now()}`;
-    setEntries((current) => [{ id, title: "", content: "", updatedAt: new Date().toISOString() }, ...current]);
-    setEditingId(id);
-    setDraftTitle("");
-    setDraftContent("");
-    setSaved(false);
-  };
-
-  const startEdit = (entry: NotebookEntry) => {
-    setEditingId(entry.id);
-    setDraftTitle(entry.title);
-    setDraftContent(entry.content);
-    setSaved(true);
-  };
-
-  const finishEditing = () => {
-    if (editingId !== null && !draftTitle.trim() && !draftContent.trim()) {
-      setEntries((current) => current.filter((entry) => entry.id !== editingId));
-    }
-    setEditingId(null);
-  };
-
-  const deleteEntry = (id: string) => {
-    if (!window.confirm("確定刪除此筆記？")) return;
-    setEntries((current) => current.filter((entry) => entry.id !== id));
-    if (editingId === id) setEditingId(null);
-  };
-
-  const formatModifiedTime = (value: string) => new Intl.DateTimeFormat("zh-TW", {
-    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(new Date(value));
-
-  return (
-    <FeatureShell title="Matrix 筆記本" onNavigate={onNavigate} active="快捷" className="matrix-notebook-screen">
-      {editingId === null ? <>
-        <section className="notebook-heading">
-          <img src="/assets/quick/matrix-notebook.png" alt="" />
-          <div><h2>Matrix 筆記本</h2><span>{entries.length} 筆筆記</span></div>
-          <button type="button" onClick={startNew}><PlusIcon />新增筆記</button>
-        </section>
-        <section className="notebook-entry-list" aria-label="筆記列表">
-          {entries.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無筆記</strong></div> : entries.map((entry) => (
-            <article className="panel notebook-entry" key={entry.id}>
-              <button type="button" className="notebook-entry-open" onClick={() => startEdit(entry)}>
-                <span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatModifiedTime(entry.updatedAt)}</small></span>
-                <ChevronRightIcon />
-              </button>
-              <button type="button" className="notebook-entry-delete" onClick={() => deleteEntry(entry.id)} aria-label={`刪除${entry.title.trim() || "未命名筆記"}`}><TrashIcon /></button>
-            </article>
-          ))}
-        </section>
-      </> : <section className="panel matrix-notebook-editor">
-        <header><button type="button" onClick={finishEditing}><ChevronLeftIcon />返回列表</button><span>{saved ? "已自動儲存" : "儲存中"}</span></header>
-        <input aria-label="筆記標題" placeholder="標題" value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
-        <textarea aria-label="筆記內容" placeholder="輸入筆記內容" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} />
-        <footer><span>最後修改時間</span><strong>{formatModifiedTime(entries.find((entry) => entry.id === editingId)?.updatedAt ?? new Date().toISOString())}</strong></footer>
-        <button type="button" className="notebook-editor-delete" onClick={() => deleteEntry(editingId)}><TrashIcon />刪除筆記</button>
-      </section>}
-    </FeatureShell>
-  );
-}
-
 type NotebookView = "list" | "note" | "record" | "settings";
 type RecordMode = "單號" | "連碰" | "立柱";
 type RecordStatus = "等待開獎" | "已結算" | "已鎖定";
@@ -2646,6 +2564,9 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const importRef = useRef<HTMLInputElement | null>(null);
   const draggedTagIndex = useRef<number | null>(null);
   const draggedTagTargetIndex = useRef<number | null>(null);
+  const draggedTagStartPosition = useRef<{ x: number; y: number } | null>(null);
+  const draggedTagDidMove = useRef(false);
+  const skipTagReorderClick = useRef(false);
   const editingTagName = useRef("");
 
   useEffect(() => { window.localStorage.setItem("matrix-notebook-entries", JSON.stringify(notes)); }, [notes]);
@@ -2805,27 +2726,74 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       tags.splice(to, 0, moved);
       return { ...current, [settingsLottery]: { tags } };
     });
+    queueMicrotask(() => {
+      document.querySelector<HTMLButtonElement>(`[data-tag-setting-index="${to}"] .tag-drag-handle`)
+        ?.focus();
+    });
+  };
+  const moveSettingsTag = (index: number, delta: -1 | 1) => {
+    const lastIndex = settingsDraft[settingsLottery].tags.length - 1;
+    const targetIndex = Math.min(lastIndex, Math.max(0, index + delta));
+    reorderSettingsTag(index, targetIndex);
+  };
+  const suppressTagReorderFollowOnClick = () => {
+    skipTagReorderClick.current = true;
+    window.setTimeout(() => { skipTagReorderClick.current = false; }, 0);
+  };
+  const clickSettingsTagReorder = (index: number) => {
+    if (skipTagReorderClick.current) {
+      skipTagReorderClick.current = false;
+      return;
+    }
+    const lastIndex = settingsDraft[settingsLottery].tags.length - 1;
+    moveSettingsTag(index, index === lastIndex ? -1 : 1);
+  };
+  const keySettingsTagReorder = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    moveSettingsTag(index, event.key === "ArrowUp" ? -1 : 1);
   };
   const beginTagDrag = (event: React.PointerEvent<HTMLButtonElement>, index: number) => {
     draggedTagIndex.current = index;
     draggedTagTargetIndex.current = index;
+    draggedTagStartPosition.current = { x: event.clientX, y: event.clientY };
+    draggedTagDidMove.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const moveTagDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
     const from = draggedTagIndex.current;
     if (from === null) return;
+    const start = draggedTagStartPosition.current;
+    if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) >= 4) {
+      draggedTagDidMove.current = true;
+    }
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-tag-setting-index]");
     const to = Number(target?.dataset.tagSettingIndex);
-    if (Number.isInteger(to)) draggedTagTargetIndex.current = to;
+    if (Number.isInteger(to)) {
+      if (to !== from) draggedTagDidMove.current = true;
+      draggedTagTargetIndex.current = to;
+    }
   };
   const endTagDrag = () => {
     const from = draggedTagIndex.current;
     const to = draggedTagTargetIndex.current;
+    const didMove = draggedTagDidMove.current;
     draggedTagIndex.current = null;
     draggedTagTargetIndex.current = null;
+    draggedTagStartPosition.current = null;
+    draggedTagDidMove.current = false;
+    if (didMove) suppressTagReorderFollowOnClick();
     if (from === null || to === null || from === to) return;
     if (!window.confirm("確定變更玩法順序？")) return;
     reorderSettingsTag(from, to);
+  };
+  const cancelTagDrag = () => {
+    const hadActiveDrag = draggedTagIndex.current !== null;
+    draggedTagIndex.current = null;
+    draggedTagTargetIndex.current = null;
+    draggedTagStartPosition.current = null;
+    draggedTagDidMove.current = false;
+    if (hadActiveDrag) suppressTagReorderFollowOnClick();
   };
   const addSettingsTag = () => {
     if (!newTagName.trim()) return;
@@ -2954,7 +2922,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       {view === "note" ? <section className="panel matrix-notebook-editor">
         <header><button type="button" onClick={returnFromNote}><ChevronLeftIcon />返回列表</button></header>
         <input aria-label="筆記標題" placeholder="標題" value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} />
-        <textarea aria-label="筆記內容" placeholder="輸入筆記內容" value={noteContent} onChange={(event) => setNoteContent(event.target.value)} />
+        <textarea className="resize-none" aria-label="筆記內容" placeholder="輸入筆記內容" value={noteContent} onChange={(event) => setNoteContent(event.target.value)} />
         <button type="button" className="notebook-write-button" onClick={saveNote}>寫入筆記</button>
       </section> : null}
 
@@ -2974,9 +2942,9 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       {view === "settings" ? <section className="record-settings">
         <header className="record-page-header"><button type="button" onClick={() => leaveSettings(() => setView("list"))}><ChevronLeftIcon />返回列表</button><div className="record-settings-heading"><strong>設定</strong><button type="button" data-selected={settingsEditMode} onClick={() => setSettingsEditMode(true)}>編輯</button></div></header>
         <div className="record-lottery-tabs">{LOTTERIES.map((item) => <button type="button" data-selected={settingsLottery === item} onClick={() => setSettingsLottery(item)} key={item}>{item}</button>)}</div>
-        {settingsDraft[settingsLottery].tags.map((tag, index) => <section className="panel tag-setting-card" data-tag-setting-index={index} key={index}>
+        {settingsDraft[settingsLottery].tags.map((tag, index, tags) => <section className="panel tag-setting-card" data-tag-setting-index={index} key={index}>
           <header data-editing={settingsEditMode}>
-            {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`拖曳調整${tag.name}順序`} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={endTagDrag}><span aria-hidden="true">⠿</span></button> : null}
+            {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`調整${tag.name}順序，目前第${index + 1}項，共${tags.length}項；點擊${index === tags.length - 1 ? "上移" : "下移"}，方向鍵可調整`} onClick={() => clickSettingsTagReorder(index)} onKeyDown={(event) => keySettingsTagReorder(event, index)} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={cancelTagDrag}><span aria-hidden="true">⠿</span></button> : null}
             {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={() => { if (tag.name !== editingTagName.current && !window.confirm(`確定將「${editingTagName.current}」修改為「${tag.name}」？`)) updateTag(index, { name: editingTagName.current }); }} />}
             {settingsEditMode ? <button type="button" className="tag-delete-button" aria-label={`刪除${tag.name}`} onClick={() => deleteSettingsTag(index, tag.name)}><TrashIcon /></button> : null}
           </header>
@@ -3138,7 +3106,7 @@ export function NotesPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       </section>
       <section className="panel note-form">
-        <header><SectionTitle>新增投注紀錄</SectionTitle><button type="button"><GearIcon />紀錄設定<ChevronRightIcon /></button></header>
+        <header><SectionTitle>新增投注紀錄</SectionTitle><button type="button" disabled><GearIcon />紀錄設定<ChevronRightIcon /></button></header>
         <fieldset className="note-form-section"><legend>開獎資料</legend>
           <label className="note-full-field"><span>彩種</span><LotteryLogoTabs selected={lottery} onChange={switchLottery} /></label>
           <div className="note-two-fields">
@@ -3299,6 +3267,8 @@ function memberExpiryInTaipei(planExpiresAt: string | null): { date: string; rem
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const [logoutFailed, setLogoutFailed] = useState(false);
   useEffect(() => {
     let active = true;
     void fetchMemberProfile().then((profile) => {
@@ -3309,6 +3279,18 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { active = false; };
   }, []);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
+  const handleLogout = async () => {
+    if (logoutPending) return;
+    setLogoutPending(true);
+    setLogoutFailed(false);
+    try {
+      await signOutFromMatrix();
+    } catch {
+      setLogoutFailed(true);
+    } finally {
+      setLogoutPending(false);
+    }
+  };
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
     { title: "客服與支援", items: [["聯絡客服", "merchant-info"], ["問題回報", "problem-report"], ["商務合作", "business-cooperation"]] },
@@ -3323,7 +3305,19 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <div className="profile-avatar"><span>LINE</span></div>
         <div className="profile-copy"><h2>樂彩玩家</h2><p>LINE ID：{memberProfile?.lineUserId ?? ""}</p></div>
         <div className="profile-watermark" aria-hidden="true">M</div>
-        <button type="button" className="profile-logout">登出</button>
+        <button
+          type="button"
+          className="profile-logout"
+          onClick={() => void handleLogout()}
+          disabled={logoutPending}
+          aria-busy={logoutPending}
+        >登出</button>
+        <p
+          className="profile-logout-error"
+          role={logoutFailed ? "alert" : undefined}
+          aria-hidden={logoutFailed ? undefined : true}
+          data-visible={logoutFailed}
+        >{logoutFailed ? "登出失敗，請稍後再試" : ""}</p>
       </section>
       <section className="panel subscription-status-card">
         <SectionTitle>目前訂閱狀態</SectionTitle>
@@ -3544,9 +3538,9 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
         <h2>我的推薦碼</h2>
         <p className="referral-code-label">推薦碼：<strong className="referral-code-value">{myReferralCode}</strong></p>
         <p className="referral-success-count">推薦成功 {referralSuccessCount} 人</p>
-        <div className="referral-primary-actions"><button type="button" className="gold-button" onClick={copyReferralCode}>複製推薦碼</button><button type="button" className="gold-button">邀請好友</button></div>
+        <div className="referral-primary-actions"><button type="button" className="gold-button" onClick={copyReferralCode}>複製推薦碼</button><button type="button" className="gold-button" onClick={() => onNavigate("invite-friends")}>邀請好友</button></div>
       </section>
-      <section className="panel referral-input-card"><h2>輸入推薦碼</h2><div className="code-entry-block"><label htmlFor="referral-code">輸入推薦碼</label><input id="referral-code" value={referralCode} onChange={(event) => setReferralCode(event.target.value)} aria-label="推薦碼" /><button type="button" className="gold-button">確認</button></div></section>
+      <section className="panel referral-input-card"><h2>輸入推薦碼</h2><div className="code-entry-block"><label htmlFor="referral-code">輸入推薦碼</label><input id="referral-code" value={referralCode} onChange={(event) => setReferralCode(event.target.value)} aria-label="推薦碼" /><button type="button" className="gold-button" disabled>確認</button></div></section>
       <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", "輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"]} /></CollapsibleRuleCard>
       <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>
       <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></CollapsibleRuleCard>

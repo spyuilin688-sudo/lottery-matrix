@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
-const css = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const css = readLocalCss("src/homepage-repair.css");
 
 test("首頁彩種選取狀態只畫邊框，不覆蓋底圖內容", () => {
   assert.doesNotMatch(
@@ -11,6 +11,10 @@ test("首頁彩種選取狀態只畫邊框，不覆蓋底圖內容", () => {
   );
   assert.match(
     css,
-    /\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color\s*:\s*transparent;[^}]*border-image\s*:\s*var\(--lottery-selected-gradient\) 1;/s,
+    /\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after\s*\{[^}]*inset\s*:\s*0;[^}]*padding\s*:\s*1px;[^}]*border-radius\s*:\s*inherit;[^}]*background\s*:\s*var\(--lottery-selected-gradient\);[^}]*mask-composite\s*:\s*exclude;/s,
+  );
+  assert.match(
+    css,
+    /\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*border-color\s*:\s*transparent;[^}]*border-image\s*:\s*none;/s,
   );
 });

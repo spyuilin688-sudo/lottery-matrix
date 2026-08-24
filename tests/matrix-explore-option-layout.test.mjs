@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const main = readFileSync("src/main.tsx", "utf8");
 const source = readFileSync("src/FeaturePages.tsx", "utf8");
@@ -9,10 +11,22 @@ const exploreStart = source.indexOf("export function MatrixExplorePage");
 const exploreEnd = source.indexOf("function MatrixTiangongPage");
 const exploreSource = source.slice(exploreStart, exploreEnd);
 
+function oneRule(sourceText, selectorPattern) {
+  const bodies = ruleBodies(sourceText, selectorPattern);
+  assert.ok(bodies.length > 0);
+  return bodies[0];
+}
+
 test("Matrix Explore canonical scoped stylesheet remains the final loaded layout source", () => {
   assert.match(main, /import "\.\/matrix-explore-spacing\.css";/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*none;[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*max-width:\s*none;/s);
+  assert.ok(main.indexOf('import "./matrix-explore-spacing.css";') > main.indexOf('import "./responsive-feature-pages.css";'));
+  const body = oneRule(css, /^\.matrix-explore-main-screen \.feature-body$/);
+  assert.match(body, /width:\s*100%;/);
+  assert.match(body, /max-width:\s*none;/);
+  assert.match(body, /padding:\s*0 16px var\(--layout-bottom-nav-clearance\);/);
+  const title = oneRule(css, /^\.matrix-explore-main-screen \.matrix-title-banner$/);
+  assert.match(title, /width:\s*calc\(100% - 32px\);/);
+  assert.match(title, /max-width:\s*none;/);
 });
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {
@@ -24,23 +38,20 @@ test("Matrix Explore DOM keeps icon and field title in the same horizontal label
 });
 
 test("Matrix Explore setting icons are 28.8px", () => {
-  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span \.setting-label-icon,[\s\S]*?\.matrix-explore-main-screen \.matrix-explore-setting-icon\s*\{[^}]*inline-size:\s*1\.8rem;[^}]*block-size:\s*1\.8rem;[^}]*flex:\s*0 0 1\.8rem;/s);
+  const body = oneRule(css, /^\.matrix-explore-main-screen \.matrix-explore-setting-icon$/);
+  assert.match(body, /inline-size:\s*1\.8rem;/);
+  assert.match(body, /block-size:\s*1\.8rem;/);
+  assert.match(body, /flex:\s*0 0 1\.8rem;/);
 });
 
 test("Matrix Explore 兩組三列圖示的垂直邊距都是 7px", () => {
-  assert.match(
-    css,
-    /\.matrix-explore-main-screen \.explore-settings \.setting-grid,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel\s*\{[^}]*row-gap:\s*7px;/s,
-  );
-  assert.match(
-    css,
-    /\.matrix-explore-main-screen \.explore-settings \.setting-grid label > span,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel label > \.advanced-setting-title\s*\{[^}]*padding-bottom:\s*0;/s,
-  );
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel$/), /row-gap:\s*7px;/);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel label > \.advanced-setting-title$/), /padding-bottom:\s*0;/);
 });
 
 test("Matrix Explore selects and general option buttons are 24px high, hit options are 28px", () => {
-  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box select,[\s\S]*?\.matrix-explore-main-screen \.advanced-panel \.select-box select\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box select$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
   assert.match(css, /\.matrix-explore-main-screen \.segmented button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*28px;[^}]*min-height:\s*28px;[^}]*padding:\s*\.125rem \.25rem;[^}]*flex:\s*1 1 0;/s);
 });

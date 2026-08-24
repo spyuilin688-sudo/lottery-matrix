@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const bootstrapPost = vi.hoisted(() => vi.fn());
 
 vi.mock('./scraper', () => ({
   backfillRange: vi.fn(),
@@ -21,9 +23,20 @@ vi.mock('./scraper', () => ({
   listRecords: vi.fn(),
   refreshActiveSources: vi.fn(),
 }));
+vi.mock('./member-bootstrap-routes', () => ({
+  createMemberBootstrapRoutes: () => ({ post: bootstrapPost }),
+}));
 import { handler } from './index';
 
 describe('member route registration', () => {
+  beforeEach(() => {
+    bootstrapPost.mockReset().mockImplementation(async ({ authorization }: { authorization?: string }) => (
+      authorization
+        ? { status: 200, body: { memberId: 'member-1', lineUserId: 'line-user-1' } }
+        : { status: 401, body: { error: { code: 'AUTH_REQUIRED' } } }
+    ));
+  });
+
   it('registers all authenticated member routes in the AppDeploy router', async () => {
     const routes = handler as Record<string, Array<(input: {
       body?: unknown;
@@ -34,6 +47,7 @@ describe('member route registration', () => {
       'GET /api/member/profile',
       'GET /api/member/notification-settings',
       'PUT /api/member/notification-settings',
+      'POST /api/auth/line/logout',
     ] as const;
 
     for (const path of memberPaths) {
@@ -43,5 +57,22 @@ describe('member route registration', () => {
         statusCode: 401,
       });
     }
+  });
+
+  it('ignores a forged line_user_id body when bootstrapping', async () => {
+    const routes = handler as Record<string, Array<(input: {
+      body?: unknown;
+      event?: { headers?: Record<string, string> };
+    }) => Promise<unknown>>>;
+
+    await expect(routes['POST /api/member/bootstrap'][0]({
+      event: { headers: { authorization: 'Bearer supabase-access-token' } },
+      body: { line_user_id: 'forged-line-user-id' },
+    })).resolves.toEqual({
+      body: { memberId: 'member-1', lineUserId: 'line-user-1' },
+      statusCode: 200,
+    });
+
+    expect(bootstrapPost).toHaveBeenCalledWith({ authorization: 'Bearer supabase-access-token' });
   });
 });

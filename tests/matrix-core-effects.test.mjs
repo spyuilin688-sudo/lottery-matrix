@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
-const css = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const css = readLocalCss("src/homepage-repair.css");
 
 test("Matrix Core 使用 8 秒掃描、核心脈衝與能量軌跡", () => {
   assert.match(css, /animation: matrix-core-pulse 8s ease-in-out infinite;/);

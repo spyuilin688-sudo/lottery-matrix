@@ -1,47 +1,57 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { ruleBodies } from "./helpers/css-rules.mjs";
 
-const css = readFileSync("src/feature-pages.css", "utf8");
-const tokens = readFileSync("src/design-tokens.css", "utf8");
-const formalStart = "/* Matrix Explore formal layout rules */";
-const formalEnd = "/* v55 scoped density and hierarchy refinements */";
-const formalStartIndex = css.indexOf(formalStart);
-const formalEndIndex = css.indexOf(formalEnd);
+const mainSource = readFileSync("src/main.tsx", "utf8");
+const appSource = readFileSync("src/App.tsx", "utf8");
+const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
+const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 
-assert.notEqual(formalStartIndex, -1, "Matrix Explore formal rule block must exist");
-assert.notEqual(formalEndIndex, -1, "Matrix Explore formal rule block must have an end marker");
+function assertRule(selectorPattern, declarations) {
+  const bodies = ruleBodies(css, selectorPattern);
+  assert.ok(
+    bodies.some((body) => declarations.every((declaration) => declaration.test(body))),
+    `expected ${selectorPattern} to own ${declarations.join(", ")}`,
+  );
+}
 
-const beforeFormal = css.slice(0, formalStartIndex);
-const formal = css.slice(formalStartIndex, formalEndIndex);
-
-test("Matrix Explore uses the 12px page-inline token as the single viewport spacing source", () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
-  const genericFeatureBodyRules = css.match(/^\.feature-body\s*\{[^}]*\}/gm) ?? [];
-  assert.equal(genericFeatureBodyRules.length, 1);
-  assert.match(genericFeatureBodyRules[0], /padding-inline:\s*var\(--layout-page-inline\)/);
-  assert.match(css, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
-  assert.doesNotMatch(css, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
+test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
+  const appImportIndex = mainSource.indexOf('import App from "./App";');
+  const spacingImportIndex = mainSource.indexOf('import "./matrix-explore-spacing.css";');
+  assert.notEqual(appImportIndex, -1);
+  assert.notEqual(spacingImportIndex, -1);
+  assert.ok(appImportIndex < spacingImportIndex);
+  assert.match(appSource, /import Prototype from "\.\/Prototype";/);
+  assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
 });
 
-test("Matrix Explore content width flows from its parent instead of a 366px viewport-derived lock", () => {
-  assert.doesNotMatch(formal, /width:\s*366px;/);
-  assert.match(formal, /\.matrix-explore-screen \.explore-settings,[\s\S]*?\.matrix-explore-screen \.result-panel\s*\{[^}]*width:\s*100%;/s);
-  assert.match(formal, /\.matrix-explore-screen \.primary-action\s*\{[^}]*width:\s*100%;/s);
-  assert.match(formal, /\.matrix-explore-screen \.explore-result-disclaimer\s*\{[^}]*width:\s*100%;/s);
+test("Matrix Explore panels use scoped full-width auto-height flow", () => {
+  for (const selector of [
+    /^\.matrix-explore-main-screen \.explore-settings$/,
+    /^\.matrix-explore-main-screen \.hit-advanced-panel$/,
+    /^\.matrix-explore-main-screen \.repeat-stats-panel$/,
+    /^\.matrix-explore-main-screen \.result-panel$/,
+    /^\.matrix-explore-main-screen \.history-panel$/,
+  ]) {
+    assertRule(selector, [/width:\s*100%;/, /height:\s*auto;/]);
+  }
+  assert.doesNotMatch(css, /width:\s*366px;/);
 });
 
-test("stale Matrix Explore density rules are removed instead of being overridden later", () => {
-  assert.doesNotMatch(beforeFormal, /\.explore-settings \.setting-grid,\s*\.advanced-panel\s*\{\s*gap:\s*8px;/s);
-  assert.doesNotMatch(beforeFormal, /\.explore-settings \.segmented,[\s\S]*?\.advanced-panel \.select-box\s*\{\s*height:\s*36px;/s);
-  assert.doesNotMatch(beforeFormal, /\.explore-settings \.setting-grid label:nth-child\(2\)[\s\S]*?height:\s*32px;/s);
-  assert.doesNotMatch(beforeFormal, /\.advanced-row\s*\{[^}]*height:\s*52px;/s);
-  assert.doesNotMatch(beforeFormal, /\.repeat-stats-panel,\s*\.result-panel\s*\{[^}]*width:\s*366px;/s);
-});
-
-test("confirmed component dimensions remain in the canonical Matrix Explore rules", () => {
-  assert.match(formal, /\.matrix-explore-screen \.setting-grid \.select-box,[\s\S]*?height:\s*44px;[\s\S]*?min-height:\s*44px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.advanced-row\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.primary-action\s*\{[^}]*height:\s*50px;/s);
-  assert.match(formal, /\.matrix-explore-screen \.result-summary > div\s*\{[^}]*height:\s*48px;[^}]*min-height:\s*48px;/s);
+test("Matrix Explore controls keep the current scoped responsive dimensions", () => {
+  assertRule(/^\.matrix-explore-main-screen \.explore-settings \.setting-grid \.select-box$/, [
+    /height:\s*24px;/,
+    /min-height:\s*24px;/,
+  ]);
+  assertRule(/^\.matrix-explore-main-screen \.advanced-row$/, [/min-height:\s*32px;/, /height:\s*auto;/]);
+  assertRule(/^\.matrix-explore-main-screen \.primary-action$/, [
+    /width:\s*100%;/,
+    /min-height:\s*34px;/,
+    /height:\s*auto;/,
+  ]);
+  assertRule(/^\.matrix-explore-main-screen \.result-summary > div$/, [
+    /min-height:\s*clamp\(36px, 10vw, 40px\);/,
+    /height:\s*auto;/,
+  ]);
 });

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const prototypeCss = readFileSync("src/prototype.css", "utf8");
 const featureCss = readFileSync("src/feature-pages.css", "utf8");
@@ -9,28 +11,28 @@ const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
 const tokens = readFileSync("src/design-tokens.css", "utf8");
 
 function ruleBlock(source, selectorPattern) {
-  const match = source.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "s"));
-  assert.ok(match, `Missing rule block for ${selectorPattern}`);
-  return match[1];
+  const bodies = ruleBodies(source, new RegExp(`^(?:${selectorPattern})$`, "s"));
+  assert.ok(bodies.length > 0, `Expected a rule block for ${selectorPattern}`);
+  return bodies[0];
 }
 
 test("Matrix Explore icons, controls, spacing and badges use the refined mobile rules", () => {
   const root = ruleBlock(css, "\\.matrix-explore-main-screen");
   assert.doesNotMatch(root, /--layout-bottom-nav-clearance:/);
   assert.match(tokens, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\)/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px var\(--layout-bottom-nav-clearance\)/s);
   assert.match(prototypeCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\)/s);
 
-  const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
+  const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label > \\.advanced-setting-title");
   assert.match(left, /gap:\s*\.5rem/);
   assert.match(left, /font-size:\s*\.8125rem/);
 
-  const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
+  const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-explore-setting-icon");
   assert.match(icon, /inline-size:\s*1\.8rem/);
   assert.match(icon, /block-size:\s*1\.8rem/);
   assert.match(icon, /flex:\s*0 0 1\.8rem/);
 
-  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
+  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
 

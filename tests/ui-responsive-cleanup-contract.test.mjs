@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
+import { ruleBodies } from './helpers/css-rules.mjs';
+
 const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
 const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
@@ -10,40 +12,66 @@ const balls = fs.readFileSync('src/number-ball.css', 'utf8');
 const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
 const main = fs.readFileSync('src/main.tsx', 'utf8');
 
-test('三頁標題操作按鈕為 27.4px 直角外框、零文字箭頭間距，對照單刷新 7px', () => {
-  assert.match(responsive, /\.title-card-compact-action\s*\{[^}]*height:\s*27\.4px;[^}]*min-height:\s*27\.4px;[^}]*gap:\s*0;/s);
+test('三頁標題操作按鈕使用 24.7px 基底、22px 變體與 7px 刷新圖示', () => {
+  assert.match(responsive, /\.title-card-compact-action\s*\{[^}]*height:\s*24\.7px;[^}]*min-height:\s*24\.7px;[^}]*gap:\s*2px;/s);
+  const referenceControl = ruleBodies(responsive, /^\.number-reference-screen \.reference-title-actions \.title-card-compact-action$/);
+  assert.equal(referenceControl.length, 1);
+  assert.match(referenceControl[0], /height:\s*22px;/);
+  assert.match(referenceControl[0], /min-height:\s*22px;/);
   assert.doesNotMatch(responsive.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
   assert.doesNotMatch(responsive.match(/\.title-card-compact-action::after\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
-  assert.match(responsive, /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*width:\s*40%;/s);
-  assert.match(responsive, /\.title-card-compact-action \.reference-refresh-icon\s*\{[^}]*width:\s*7px;[^}]*height:\s*7px;/s);
+  const actions = ruleBodies(responsive, /^\.number-reference-screen \.matrix-title-banner-actions$/);
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /width:\s*auto;/);
+  const icon = ruleBodies(responsive, /^\.number-reference-screen \.reference-title-actions button:first-child > svg$/);
+  assert.equal(icon.length, 1);
+  assert.match(icon[0], /width:\s*7px;/);
+  assert.match(icon[0], /height:\s*7px;/);
 });
 
 test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距', () => {
-  assert.match(tongxing, /\.tongxing-screen \.feature-body\s*\{[^}]*width:\s*calc\(100% - 40px\);[^}]*margin-inline:\s*20px;/s);
-  assert.match(feature, /\.number-reference-screen \.feature-body\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*20px;[^}]*row-gap:\s*12px;/s);
-  assert.match(responsive, /\.draw-history-screen \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*gap:\s*12px;/s);
-  assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 20px var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 12px var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
-  assert.doesNotMatch(responsive, /\.number-reference-screen \.feature-body\s*\{/);
+  assert.match(responsive, /--tool-page-inline:\s*16px;/);
+  for (const selector of [
+    /^\.tongxing-screen \.feature-body$/,
+    /^\.number-reference-screen \.feature-body$/,
+    /^\.draw-history-screen \.feature-body$/,
+  ]) {
+    const bodies = ruleBodies(responsive, selector);
+    assert.equal(bodies.length, 1);
+    assert.match(bodies[0], /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
+  }
+  assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.doesNotMatch(tongxing, /\.tongxing-screen \.feature-body\s*\{/);
 });
 
-test('三個浮動設定卡固定於 viewport、左右 20px 且 top 使用 viewport 座標', () => {
-  assert.match(tongxing, /\.tongxing-query\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
-  assert.match(feature, /\.history-filter-panel\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
-  assert.match(feature, /\.reference-query-panel\[data-floating="true"\]\s*\{[^}]*position:\s*fixed;[^}]*left:\s*20px;[^}]*right:\s*20px;/s);
+test('三個浮動設定卡固定於 viewport、左右 16px 且 top 使用 viewport 座標', () => {
+  for (const selector of [
+    /^\.tongxing-query\[data-floating="true"\]$/,
+    /^\.history-filter-panel\[data-floating="true"\]$/,
+    /^\.reference-query-panel\[data-floating="true"\]$/,
+  ]) {
+    const bodies = ruleBodies(responsive, selector);
+    assert.equal(bodies.length, 1);
+    assert.match(bodies[0], /position:\s*fixed;/);
+    assert.match(bodies[0], /left:\s*16px;/);
+    assert.match(bodies[0], /right:\s*16px;/);
+  }
   assert.match(source, /setFilterPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
   assert.match(source, /setSettingsPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
   assert.match(source, /setQueryPanelTop\(\(header\?\.getBoundingClientRect\(\)\.bottom \?\? 0\) \+ 8\)/);
 });
 
-test('設定區直角選項與文字響應式適配', () => {
-  assert.match(feature, /\.history-filter-panel \.select-box::before,[\s\S]*?\.history-filter-panel \.select-box::after\s*\{\s*display:\s*none;/s);
-  assert.match(feature, /\.reference-query-panel \.select-box::before,[\s\S]*?\.reference-query-panel \.select-box::after\s*\{\s*display:\s*none;/s);
-  assert.match(tongxing, /\.tongxing-panel-scope \.select-box::before,[\s\S]*?\.tongxing-panel-scope \.select-box::after\s*\{\s*display:\s*none;/s);
+test('設定區沿用目前深色直角與原生選單圖層契約', () => {
+  assert.ok(ruleBodies(feature, /^\.history-filter-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
+  assert.ok(ruleBodies(feature, /^\.reference-query-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
+  assert.ok(ruleBodies(responsive, /^\.history-filter-primary-row \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
+  assert.ok(ruleBodies(tongxing, /^\.tongxing-query \.query-selects \.select-box::after$/).some((body) => /display:\s*block;/.test(body)));
   assert.match(feature, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
   assert.match(feature, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
-  assert.equal((tongxing.match(/font-size:\s*clamp\(9px, 3vw, 12px\);/g) ?? []).length, 3);
+  const tongxingSelect = ruleBodies(tongxing, /^\.tongxing-query \.same-star-period-select select$/);
+  assert.ok(tongxingSelect.some((body) => /font-size:\s*clamp\(9px, 3vw, 12px\);/.test(body)));
 });
 
 test('歷史日期未修改時不自動套用預設日期', () => {
@@ -55,7 +83,9 @@ test('歷史日期未修改時不自動套用預設日期', () => {
 test('歷史今彩539真實使用 .2px 底線且 Matrix Explore 不洩漏', () => {
   assert.doesNotMatch(balls, /\.matrix-explore-main-screen \.history-panel/);
   assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
-  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="今彩539"\][^}]*--underline-y:\s*\.2px;/s);
+  const bodies = ruleBodies(balls, /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball$/);
+  assert.equal(bodies.length, 1);
+  assert.match(bodies[0], /--underline-y:\s*\.2px;/);
 });
 
 test('通知與底部品牌頁移除固定 Logo 特例和小螢幕強拉', () => {
@@ -67,10 +97,12 @@ test('通知與底部品牌頁移除固定 Logo 特例和小螢幕強拉', () =>
   assert.match(responsive, /\.notification-heading\s*\{[^}]*grid-template-columns:\s*clamp\(/s);
 });
 
-test('同星結果列增加背景與群組分隔辨識', () => {
-  assert.match(tongxing, /--group-divider-width:\s*3px;/);
-  assert.match(tongxing, /data-row-type="locked"[^}]*rgba\(126, 83, 15, \.24\)/s);
-  assert.match(tongxing, /data-row-type="predicted"[^}]*rgba\(10, 61, 88, \.25\)/s);
+test('同星結果群組使用目前卡框、間距與雙列背景辨識', () => {
+  assert.match(tongxing, /\.tongxing-screen \.tongxing-result-group\s*\{[^}]*border:\s*1px solid rgba\(187, 134, 47, \.78\);[^}]*background:\s*#030b13;/s);
+  assert.match(tongxing, /\.tongxing-screen \.tongxing-result-group \+ \.tongxing-result-group\s*\{\s*margin-top:\s*6px;/s);
+  assert.match(tongxing, /data-row-type="locked"[^}]*rgba\(126, 83, 15, \.32\)/s);
+  assert.match(tongxing, /data-row-type="predicted"[^}]*rgba\(10, 61, 88, \.38\)/s);
+  assert.doesNotMatch(tongxing, /--group-divider-width/);
 });
 
 test('臨時底部安全區 override 已移除', () => {

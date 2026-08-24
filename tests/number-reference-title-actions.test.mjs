@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
 test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () => {
   const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
   const start = source.indexOf('title="號碼對照單"');
@@ -13,15 +15,20 @@ test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () =>
   assert.match(header, /探索設定/);
 });
 
-test("刷新與探索設定使用標題卡右側 40% 響應式操作區", () => {
+test("刷新與探索設定使用標題卡內容寬度操作區與 7px 刷新圖示", () => {
   const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
-  assert.match(
-    responsiveCss,
-    /\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*width:\s*40%;/s,
-  );
-  assert.match(
-    responsiveCss,
-    /\.title-card-compact-action \.reference-refresh-icon\s*\{[^}]*width:\s*7px;[^}]*height:\s*7px;[^}]*flex:\s*0 0 7px;/s,
-  );
+  const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
+  assert.equal(actionBodies.length, 1);
+  assert.match(actionBodies[0], /width:\s*auto;/);
+  assert.match(actionBodies[0], /min-width:\s*0;/);
+
+  const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.reference-title-actions$/);
+  assert.ok(titleBodies.some((body) => /width:\s*auto;/.test(body)));
+  assert.ok(titleBodies.some((body) => /gap:\s*8px;/.test(body)));
+  const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.reference-title-actions button:first-child > svg$/);
+  assert.equal(iconBodies.length, 1);
+  assert.match(iconBodies[0], /width:\s*7px;/);
+  assert.match(iconBodies[0], /height:\s*7px;/);
+  assert.match(iconBodies[0], /flex:\s*0 0 7px;/);
 });

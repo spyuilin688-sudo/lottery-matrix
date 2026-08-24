@@ -3,12 +3,28 @@ import { LOTTERY_API_BASE } from './lottery-api';
 
 export type MatrixApiErrorCode =
   | 'AUTH_REQUIRED'
+  | 'LINE_PROVIDER_TOKEN_REQUIRED'
+  | 'LINE_IDENTITY_REQUIRED'
+  | 'LINE_IDENTITY_CONFLICT'
+  | 'LINE_LOGIN_NOT_CONFIGURED'
+  | 'LINE_PROVIDER_REQUEST_FAILED'
+  | 'MEMBER_BOOTSTRAP_FAILED'
   | 'FORBIDDEN'
   | 'ANALYSIS_NOT_READY'
   | 'ANALYSIS_VERSION_MISMATCH'
   | 'NON_JSON_RESPONSE'
   | 'NETWORK_ERROR'
   | 'API_ERROR';
+
+const REMOTE_ERROR_STATUS = {
+  AUTH_REQUIRED: 401,
+  LINE_PROVIDER_TOKEN_REQUIRED: 400,
+  LINE_IDENTITY_REQUIRED: 403,
+  LINE_IDENTITY_CONFLICT: 409,
+  LINE_LOGIN_NOT_CONFIGURED: 503,
+  LINE_PROVIDER_REQUEST_FAILED: 502,
+  MEMBER_BOOTSTRAP_FAILED: 502,
+} as const;
 
 export class MatrixApiError extends Error {
   code: MatrixApiErrorCode;
@@ -28,6 +44,25 @@ function codeForStatus(status: number): MatrixApiErrorCode {
   if (status === 404) return 'ANALYSIS_NOT_READY';
   if (status === 409) return 'ANALYSIS_VERSION_MISMATCH';
   return 'API_ERROR';
+}
+
+function isRecognizedApiErrorCode(code: unknown, status: number): code is keyof typeof REMOTE_ERROR_STATUS {
+  return typeof code === 'string'
+    && Object.prototype.hasOwnProperty.call(REMOTE_ERROR_STATUS, code)
+    && REMOTE_ERROR_STATUS[code as keyof typeof REMOTE_ERROR_STATUS] === status;
+}
+
+function errorCodeFromPayload(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return undefined;
+  const error = (payload as { error?: unknown }).error;
+  if (!error || typeof error !== 'object') return undefined;
+  return (error as { code?: unknown }).code;
+}
+
+function isJsonContentType(contentType: string): boolean {
+  const mediaType = contentType.split(';', 1)[0]?.trim().toLowerCase();
+  return mediaType === 'application/json'
+    || /^application\/[!#$%&'*+\-.^_`|~0-9a-z]+\+json$/.test(mediaType);
 }
 
 export function createMatrixApiClient(
@@ -57,10 +92,23 @@ export function createMatrixApiClient(
       }
 
       if (!response.ok) {
-        throw new MatrixApiError(codeForStatus(response.status), response.status);
+        let payload: unknown;
+        const contentType = response.headers.get('content-type') ?? '';
+        if (isJsonContentType(contentType)) {
+          try {
+            payload = await response.json();
+          } catch {
+            payload = undefined;
+          }
+        }
+        const code = errorCodeFromPayload(payload);
+        const remoteCode = isRecognizedApiErrorCode(code, response.status)
+          ? code
+          : codeForStatus(response.status);
+        throw new MatrixApiError(remoteCode, response.status);
       }
       const contentType = response.headers.get('content-type') ?? '';
-      if (!contentType.includes('application/json')) {
+      if (!isJsonContentType(contentType)) {
         throw new MatrixApiError('NON_JSON_RESPONSE', response.status);
       }
       return response.json() as Promise<T>;

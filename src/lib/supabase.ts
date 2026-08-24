@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseAuthStorage } from './supabase-auth-storage';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
   || "https://wcimzbbapfrdotjsfyxa.supabase.co";
@@ -18,6 +19,7 @@ export function getSupabaseClient() {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      storage: createSupabaseAuthStorage(),
     },
   });
 

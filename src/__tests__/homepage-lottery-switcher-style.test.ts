@@ -1,8 +1,8 @@
-// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error Test helper is intentionally implemented as an untyped Node ESM module.
+import { readLocalCss } from "../../tests/helpers/read-local-css.mjs";
 
-const css = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
+const css = readLocalCss(new URL("../homepage-repair.css", import.meta.url));
 
 describe("homepage layout rules", () => {
   it("does not keep a second independent-logo visual rule over the shared switcher artwork", () => {

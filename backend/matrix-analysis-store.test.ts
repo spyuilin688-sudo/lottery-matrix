@@ -38,10 +38,12 @@ const meta = {
   completedAt: '2026-08-21T00:00:00Z',
 };
 
+const retentionBoundaryClock = () => new Date('2026-08-24T00:00:00Z');
+
 describe('Matrix analysis store', () => {
   it('never exposes a writing version', async () => {
     const { adapter } = memoryAdapter();
-    const store = createAnalysisStore(adapter);
+    const store = createAnalysisStore(adapter, retentionBoundaryClock);
 
     await store.beginAnalysis(meta);
     await expect(store.readAnalysis('explore', '今彩539')).resolves.toBeNull();
@@ -55,7 +57,7 @@ describe('Matrix analysis store', () => {
 
   it('keeps exactly three days and deletes versions older than three days', async () => {
     const { adapter } = memoryAdapter();
-    const store = createAnalysisStore(adapter);
+    const store = createAnalysisStore(adapter, retentionBoundaryClock);
     await store.publishAnalysis(meta, { items: [1] });
 
     await store.cleanupExpired(new Date('2026-08-24T00:00:00Z'));
@@ -67,7 +69,7 @@ describe('Matrix analysis store', () => {
 
   it('can read the exact committed analysis version after a newer version is published', async () => {
     const { adapter } = memoryAdapter();
-    const store = createAnalysisStore(adapter);
+    const store = createAnalysisStore(adapter, retentionBoundaryClock);
     const first = { ...meta, analysisVersion: 'v1', completedAt: '2026-08-21T00:00:00.000Z' };
     const second = { ...meta, analysisVersion: 'v2', completedAt: '2026-08-21T00:01:00.000Z' };
     await store.publishAnalysis(first, { value: 'first' });

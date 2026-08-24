@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const ballCss = readFileSync("src/number-ball.css", "utf8");
 
 function ruleBlock(source, selectorPattern) {
-  const match = source.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "s"));
-  assert.ok(match, `Missing rule block for ${selectorPattern}`);
-  return match[1];
+  const bodies = ruleBodies(source, new RegExp(`^(?:${selectorPattern})$`, "s"));
+  assert.ok(bodies.length > 0, `Expected a rule block for ${selectorPattern}`);
+  return bodies[0];
 }
 
 test("Matrix Explore control rows match the compact mobile reference density", () => {
@@ -22,28 +24,28 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(title, /font-size:\s*14px/);
   assert.match(title, /line-height:\s*1\.125rem/);
 
-  const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel");
+  const stack = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel");
   assert.match(stack, /row-gap:\s*7px/);
   assert.match(css, /\.explore-settings \.setting-grid\s*\{[^}]*margin-top:\s*8px/s);
 
-  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel label");
+  const row = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label");
   assert.match(row, /display:\s*flex/);
   assert.match(row, /width:\s*100%/);
   assert.match(row, /align-items:\s*center/);
   assert.match(row, /gap:\s*\.375rem/);
 
-  const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span,[\\s\\S]*?\\.advanced-setting-title");
+  const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label > \\.advanced-setting-title");
   assert.match(left, /width:\s*auto/);
   assert.match(left, /min-width:\s*88\.8px/);
   assert.match(left, /flex:\s*0 0 auto/);
   assert.match(left, /font-size:\s*\.8125rem/);
   assert.match(css, /@media \(min-width:\s*40rem\)[\s\S]*?min-width:\s*104\.8px/);
 
-  const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid label > span \\.setting-label-icon,[\\s\\S]*?\\.matrix-explore-setting-icon");
+  const icon = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-explore-setting-icon");
   assert.match(icon, /inline-size:\s*1\.8rem/);
   assert.match(icon, /block-size:\s*1\.8rem/);
 
-  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.explore-settings \\.setting-grid \\.select-box,[\\s\\S]*?\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
+  const select = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel \\.select-box");
   assert.match(select, /height:\s*24px/);
   assert.match(select, /min-height:\s*24px/);
 
@@ -52,7 +54,7 @@ test("Matrix Explore control rows match the compact mobile reference density", (
   assert.match(three, /gap:\s*\.375rem/);
   assert.doesNotMatch(three, /grid-template-columns/);
 
-  const two = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented\\.two,[\\s\\S]*?\\.matrix-explore-main-screen \\.hit-options");
+  const two = ruleBlock(css, "\\.matrix-explore-main-screen \\.hit-options");
   assert.match(two, /display:\s*flex/);
   assert.match(two, /gap:\s*\.375rem/);
 
@@ -85,11 +87,19 @@ test("Matrix Explore history table uses compact target proportions", () => {
   assert.match(row, /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
   assert.match(row, /padding:\s*0/);
   assert.doesNotMatch(row, /(?:min-)?height\s*:/);
-  assert.match(css, /\.history-row\.history-head\s*\{[^}]*height:\s*26px;[^}]*min-height:\s*26px/);
-  assert.match(css, /data-lottery="今彩539"[^}]*data-lottery="天天樂"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*32px;[^}]*min-height:\s*32px/s);
-  assert.match(css, /data-lottery="六合彩"[^}]*data-lottery="大樂透"[^}]*\.history-row:not\(\.history-head\)\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px/s);
+  const head = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-row\\.history-head");
+  assert.match(head, /height:\s*26px;/);
+  assert.match(head, /min-height:\s*26px/);
+  const fiveRow = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel:is\\(\\[data-lottery=\"今彩539\"\\], \\[data-lottery=\"天天樂\"\\]\\) \\.history-row:not\\(\\.history-head\\)");
+  assert.match(fiveRow, /height:\s*32px;/);
+  assert.match(fiveRow, /min-height:\s*32px/);
+  const sixRow = ruleBlock(css, "\\.matrix-explore-main-screen \\.history-panel:is\\(\\[data-lottery=\"六合彩\"\\], \\[data-lottery=\"大樂透\"\\]\\) \\.history-row:not\\(\\.history-head\\)");
+  assert.match(sixRow, /height:\s*40px;/);
+  assert.match(sixRow, /min-height:\s*40px/);
 
-  assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball\s*\{[^}]*--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);[^}]*--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);/s);
+  const fiveBall = ruleBlock(ballCss, "\\.matrix-explore-main-screen \\.matrix-explore-history-panel:is\\(\\[data-lottery=\"今彩539\"\\], \\[data-lottery=\"天天樂\"\\]\\) \\.number-ball-component\\.history-lottery-ball");
+  assert.match(fiveBall, /--number-ball-size:\s*clamp\(24px, 7\.18vw, 28px\);/);
+  assert.match(fiveBall, /--number-font-size:\s*clamp\(12px, 3\.59vw, 14px\);/);
   assert.match(css, /\.matrix-explore-main-screen \.history-main-numbers\s*\{[^}]*gap:\s*clamp\(4px, 1\.8vw, 8px\);/s);
 });
 

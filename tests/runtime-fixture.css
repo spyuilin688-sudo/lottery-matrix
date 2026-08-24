@@ -80,3 +80,7 @@
   background: white;
   border-top: 1px solid #ddd;
 }
+
+.fixture-textarea {
+  width: 100%;
+}

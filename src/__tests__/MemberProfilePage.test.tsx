@@ -1,13 +1,30 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
+import { readFileSync } from "node:fs";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+declare const process: { cwd(): string };
 
 const memberApi = vi.hoisted(() => ({ fetchMemberProfile: vi.fn() }));
+const lineAuth = vi.hoisted(() => ({ signOutFromMatrix: vi.fn() }));
 
 vi.mock("../member-api", () => ({ fetchMemberProfile: memberApi.fetchMemberProfile }));
+vi.mock("../auth/line-auth", () => ({ signOutFromMatrix: lineAuth.signOutFromMatrix }));
 
 import { ProfilePage } from "../FeaturePages";
+
+const style = document.createElement("style");
+
+beforeAll(() => {
+  style.textContent = readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8");
+  document.head.append(style);
+});
+
+afterAll(() => {
+  style.remove();
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -15,6 +32,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   memberApi.fetchMemberProfile.mockReset().mockResolvedValue({
     lineUserId: "line-real",
     planName: "年費方案",
@@ -69,5 +87,44 @@ describe("ProfilePage member API", () => {
     expect(screen.getByText("2026/09/13")).toBeInTheDocument();
     expect(screen.getByText("剩餘 1 天")).toBeInTheDocument();
     vi.useRealTimers();
+  });
+
+  it("由既有登出按鈕直接處理 pending、失敗提示與重試", async () => {
+    let rejectLogout!: (reason: Error) => void;
+    lineAuth.signOutFromMatrix.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => {
+      rejectLogout = reject;
+    }));
+    render(<ProfilePage onNavigate={vi.fn()} />);
+    const logout = screen.getByRole("button", { name: "登出" });
+    const feedback = document.querySelector<HTMLElement>(".profile-logout-error");
+
+    expect(feedback).toBeInTheDocument();
+    expect(feedback).toBeEmptyDOMElement();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(getComputedStyle(feedback!).visibility).toBe("hidden");
+    expect(getComputedStyle(feedback!).minHeight).toBe("16px");
+    expect(getComputedStyle(feedback!).marginTop).toBe("-4px");
+    expect(getComputedStyle(feedback!).color).toBe("rgb(207, 119, 119)");
+    expect(getComputedStyle(feedback!).fontSize).toBe("11px");
+
+    fireEvent.click(logout);
+
+    expect(logout).toBeDisabled();
+    expect(logout).toHaveAttribute("aria-busy", "true");
+    expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      rejectLogout(new Error("private logout detail"));
+    });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toBe(feedback);
+    expect(alert).toHaveTextContent("登出失敗，請稍後再試");
+    expect(getComputedStyle(alert).visibility).toBe("visible");
+    expect(logout).toBeEnabled();
+    expect(logout).toHaveAttribute("aria-busy", "false");
+
+    fireEvent.click(logout);
+    await waitFor(() => expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(2));
   });
 });

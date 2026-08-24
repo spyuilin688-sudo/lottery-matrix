@@ -76,16 +76,14 @@ export function DevicePicker() {
   return (
     <DropdownMenu.Root>
       <div className="device-menu-bar" data-testid="device-menu-bar">
-        <DropdownMenu.Trigger asChild>
-          <button
-            className="device-picker-trigger"
-            data-testid="device-picker"
-            aria-label={`Preview device: ${device.label}`}
-            type="button"
-          >
-            <span>{device.label}</span>
-            <ChevronDownIcon aria-hidden="true" />
-          </button>
+        <DropdownMenu.Trigger
+          className="device-picker-trigger"
+          data-testid="device-picker"
+          aria-label={`Preview device: ${device.label}`}
+          type="button"
+        >
+          <span>{device.label}</span>
+          <ChevronDownIcon aria-hidden="true" />
         </DropdownMenu.Trigger>
       </div>
       <DropdownMenu.Portal>

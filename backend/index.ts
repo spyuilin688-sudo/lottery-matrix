@@ -39,6 +39,9 @@ import { createMemberNotificationRoutes } from './member-notification-routes';
 import { createMemberBootstrap } from './member-bootstrap';
 import { createMemberBootstrapRoutes } from './member-bootstrap-routes';
 import { createMemberRouteHandlers } from './member-route-handlers';
+import { createLineLogout, LineLogoutError } from './line-logout';
+import { createLineLogoutRoutes } from './line-logout-routes';
+import { createLineAuthRouteHandlers } from './line-auth-route-handlers';
 
 async function loadMatrixSupabaseConfig() {
     const names = await secrets.listSecretNames();
@@ -47,6 +50,21 @@ async function loadMatrixSupabaseConfig() {
     const [url,anonKey,serviceRoleKey] = await Promise.all(required.map(name => secrets.readSecret(name)));
     if (!url?.trim() || !anonKey?.trim() || !serviceRoleKey?.trim()) throw new Error('SUPABASE_CONFIG_MISSING');
     return { url:url.trim().replace(/\/+$/,''),anonKey:anonKey.trim(),serviceRoleKey:serviceRoleKey.trim() };
+}
+
+async function loadLineLoginConfig() {
+    const names = await secrets.listSecretNames();
+    if (!names.includes('LINE_CHANNEL_ID') || !names.includes('LINE_CHANNEL_SECRET')) {
+        throw new LineLogoutError('LINE_LOGIN_NOT_CONFIGURED', 503);
+    }
+    const [channelId, channelSecret] = await Promise.all([
+        secrets.readSecret('LINE_CHANNEL_ID'),
+        secrets.readSecret('LINE_CHANNEL_SECRET'),
+    ]);
+    if (!channelId?.trim() || !channelSecret?.trim()) {
+        throw new LineLogoutError('LINE_LOGIN_NOT_CONFIGURED', 503);
+    }
+    return { channelId: channelId.trim(), channelSecret: channelSecret.trim() };
 }
 
 const matrixMemberAuth = createMemberAuth(loadMatrixSupabaseConfig);
@@ -168,6 +186,13 @@ const memberRouteHandlers = createMemberRouteHandlers({
     authorizationHeader,
     json,
 });
+const lineLogout = createLineLogout(loadMatrixSupabaseConfig, loadLineLoginConfig);
+const lineLogoutRoutes = createLineLogoutRoutes({ logout: lineLogout.logout });
+const lineAuthRouteHandlers = createLineAuthRouteHandlers({
+    logoutPost: input => lineLogoutRoutes.post(input),
+    authorizationHeader,
+    json,
+});
 
 export const scheduledLotteryRefresh = async () => systemJobTracker.run('matrix-649-refresh-v2', '大樂透', async () => {
     const results = await refreshActiveSources();
@@ -264,6 +289,7 @@ export const handler = router({
     'POST /api/matrix/status': [async ({ body,event }) => { const response = await matrixStatusRoutes.get({ authorization:authorizationHeader(event),body }); return json(response.body,response.status); }],
     'GET /api/matrix/algorithm/cases': [async () => { try { return json(await runMatrixAlgorithmCaseChecks()); } catch (e) { const message = e instanceof Error ? e.message : 'Matrix 案例驗證失敗'; return error(message, 400); } }],
     ...memberRouteHandlers,
+    ...lineAuthRouteHandlers,
     'POST /api/member-online/start': [async ({ event }) => { try { const member=await matrixMemberAuth.requireMember(authorizationHeader(event)); return json(await memberOnlineService.start(member.memberId)); } catch (e) { const value=e as { code?:string;status?:number;message?:string }; return error(value.code ?? value.message ?? 'MEMBER_ONLINE_START_FAILED',value.status ?? 500); } }],
     'POST /api/member-online/end': [async ({ body,event }) => { try { const member=await matrixMemberAuth.requireMember(authorizationHeader(event)); const sessionId=String((body as {sessionId?:unknown})?.sessionId ?? ''); if(!sessionId) return error('MEMBER_ONLINE_SESSION_REQUIRED',400); return json(await memberOnlineService.end(member.memberId,sessionId)); } catch (e) { const value=e as { code?:string;status?:number;message?:string }; return error(value.code ?? value.message ?? 'MEMBER_ONLINE_END_FAILED',value.status ?? 500); } }],
     'POST /api/matrix/tongxing': [async ({ body }) => { try { return json(await runTongXing(body)); } catch (e) { const message = e instanceof Error ? e.message : 'Matrix 同星執行失敗'; return error(message, 400); } }],

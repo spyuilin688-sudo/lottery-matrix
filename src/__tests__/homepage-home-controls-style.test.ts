@@ -1,9 +1,10 @@
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error Test helper is intentionally implemented as an untyped Node ESM module.
+import { readLocalCss } from "../../tests/helpers/read-local-css.mjs";
 
-const homepageCss = readFileSync(new URL("../homepage-repair.css", import.meta.url), "utf8");
-const homepageBaseCss = readFileSync(new URL("../homepage/base.css", import.meta.url), "utf8");
+const homepageCss = readLocalCss(new URL("../homepage-repair.css", import.meta.url));
 const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), "utf8");
 
 describe("homepage control layout rules", () => {
@@ -19,9 +20,9 @@ describe("homepage control layout rules", () => {
     expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*padding:\s*0 20px 5px;/s);
   });
 
-  it("lets the Matrix Core container follow the image ratio vertically", () => {
-    expect(homepageBaseCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*1774\s*\/\s*568;/s);
-    expect(homepageBaseCss).toMatch(/\.home-screen \.matrix-core-banner > \.home-asset-image\s*\{[^}]*height:\s*auto;/s);
+  it("uses the canonical Matrix Core container background and 1536 / 414 height token", () => {
+    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 6px\);/s);
+    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ 100% 100% no-repeat;/s);
   });
 
   it("does not paint a black background behind the bottom navigation artwork", () => {

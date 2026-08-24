@@ -1,0 +1,221 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const expectedManifest = {
+  profile: "product-admin",
+  sourceRoots: ["src"],
+  locale: "zh-TW",
+  canonicalMap: "UX-CONTRACT.md",
+  requiredCapabilities: ["Select/Listbox", "Date", "Form", "Scrollbar"],
+  ownership: {
+    "Select/Listbox": "native",
+    Date: "native",
+  },
+};
+
+const tokenTrace = [
+  ["--lottery-neutral-950", "#02070c"],
+  ["--lottery-gold-500", "#c49145"],
+  ["--lottery-gold-300", "#f4ce67"],
+  ["--layout-page-inline", "12px"],
+  ["--layout-section-gap", "8px"],
+  ["--lottery-card-radius", "10px"],
+  ["--bottom-navigation-height", "82px"],
+];
+
+const reachableConfirmations = [
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.returnFromNote",
+    copy: "內容尚未寫入，確定返回列表？",
+    sourcePattern: /const returnFromNote = \(\) => \{[\s\S]{0,240}?window\.confirm\("內容尚未寫入，確定返回列表？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.saveNote",
+    copy: "確定寫入筆記？",
+    sourcePattern: /const saveNote = \(\) => \{[\s\S]{0,200}?window\.confirm\("確定寫入筆記？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.deleteNote",
+    copy: "確定刪除此筆記？",
+    sourcePattern: /const deleteNote = \(id: string\) => \{[\s\S]{0,120}?window\.confirm\("確定刪除此筆記？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.leaveSettings",
+    copy: "設定尚未儲存，確定離開？",
+    sourcePattern: /const leaveSettings = \(action: \(\) => void\) => \{[\s\S]{0,180}?window\.confirm\("設定尚未儲存，確定離開？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.endTagDrag",
+    copy: "確定變更玩法順序？",
+    sourcePattern: /const endTagDrag = \(\) => \{[\s\S]{0,420}?window\.confirm\("確定變更玩法順序？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.addSettingsTag",
+    copy: "確定新增「{玩法名稱}」玩法？",
+    sourcePattern: /const addSettingsTag = \(\) => \{[\s\S]{0,360}?window\.confirm\(\x60確定新增「\$\{name\}」玩法？\x60\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.deleteSettingsTag",
+    copy: "確定刪除「{玩法名稱}」玩法？",
+    sourcePattern: /const deleteSettingsTag = \(index: number, name: string\) => \{[\s\S]{0,200}?window\.confirm\(\x60確定刪除「\$\{name\}」玩法？\x60\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.resetSettings",
+    copy: "確定重置設定？",
+    sourcePattern: /const resetSettings = \(\) => \{[\s\S]{0,120}?window\.confirm\("確定重置設定？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage.saveSettings",
+    copy: "確定儲存設定？",
+    sourcePattern: /const saveSettings = \(\) => \{[\s\S]{0,120}?window\.confirm\("確定儲存設定？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage record-card delete action",
+    copy: "確定刪除此紀錄？",
+    sourcePattern: /className="record-status-actions"[\s\S]{0,420}?window\.confirm\("確定刪除此紀錄？"\)/,
+  },
+  {
+    scope: "notebook",
+    location: "MatrixNotebookPage tag-name input onBlur",
+    copy: "確定將「{原玩法名稱}」修改為「{新玩法名稱}」？",
+    sourcePattern: /aria-label="玩法名稱"[\s\S]{0,520}?onBlur=\{\(\) => \{[\s\S]{0,180}?window\.confirm\(\x60確定將「\$\{editingTagName\.current\}」修改為「\$\{tag\.name\}」？\x60\)/,
+  },
+  {
+    scope: "plans",
+    location: "ProPlansPage.handleAutoRenewChange",
+    copy: "確定開啟自動續訂？／確定關閉自動續訂？",
+    sourcePattern: /const handleAutoRenewChange = \(\) => \{[\s\S]{0,200}?window\.confirm\(\x60確定\$\{nextState \? "開啟" : "關閉"\}自動續訂？\x60\)/,
+  },
+  {
+    scope: "plans",
+    location: "ProPlansPage.handlePayment",
+    copy: "確定以{方案名稱}進行付款？",
+    sourcePattern: /const handlePayment = \(\) => \{[\s\S]{0,120}?window\.confirm\(\x60確定以\$\{selected\.name\}進行付款？\x60\)/,
+  },
+];
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function assertSourceConfirmationInventory(sources) {
+  for (const { scope, location, sourcePattern } of reachableConfirmations) {
+    assert.match(
+      sources[scope],
+      sourcePattern,
+      `source confirmation mismatch for ${location}`,
+    );
+  }
+}
+
+test("declares the intentional minimum Premium manifest", () => {
+  const manifest = JSON.parse(readFileSync("premium-ui.json", "utf8"));
+  assert.deepEqual(manifest, expectedManifest);
+});
+
+test("declares runtime token ownership and traces the maintained values", () => {
+  const design = readFileSync("DESIGN.md", "utf8");
+  const tokenDocs = readFileSync("docs/DESIGN_TOKENS.md", "utf8");
+  const runtimeTokens = readFileSync("src/design-tokens.css", "utf8");
+
+  assert.match(
+    design,
+    /`src\/design-tokens\.css` is the authoring and runtime owner;/,
+  );
+
+  for (const [property, value] of tokenTrace) {
+    const tableEntry = `| \`${property}\` | \`${value}\` |`;
+    assert.ok(design.includes(tableEntry), `DESIGN.md must trace ${property}`);
+    assert.ok(tokenDocs.includes(tableEntry), `docs/DESIGN_TOKENS.md must trace ${property}`);
+    assert.match(runtimeTokens, new RegExp(`${escapeRegExp(property)}:\\s*${escapeRegExp(value)};`));
+  }
+});
+
+test("assigns every required capability to a complete canonical row", () => {
+  const contract = readFileSync("UX-CONTRACT.md", "utf8");
+  const exactHeading = "| Capability | Canonical owner | Source of truth | Allowed variants | Verification |";
+
+  assert.ok(contract.includes(exactHeading));
+
+  for (const capability of expectedManifest.requiredCapabilities) {
+    const row = contract
+      .split("\n")
+      .find((line) => line.startsWith(`| ${capability} |`));
+
+    assert.ok(row, `${capability} must have a canonical row`);
+    const cells = row.slice(1, -1).split("|").map((cell) => cell.trim());
+    assert.equal(cells.length, 5);
+    assert.ok(cells.every(Boolean), `${capability} canonical row must not contain empty cells`);
+  }
+});
+
+test("documents only evidenced font loading and route-focus behavior", () => {
+  const design = readFileSync("DESIGN.md", "utf8");
+  const contract = readFileSync("UX-CONTRACT.md", "utf8");
+  const main = readFileSync("src/main.tsx", "utf8");
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+
+  assert.match(main, /import "@fontsource\/roboto\/latin-500\.css";/);
+  assert.match(main, /import "@fontsource\/roboto\/latin-700\.css";/);
+  assert.equal(typeof packageJson.dependencies["@fontsource/roboto"], "string");
+  assert.ok(packageJson.dependencies["@fontsource/roboto"].trim());
+  assert.match(design, /Roboto Latin 500／700 由 `@fontsource\/roboto` 明確匯入/);
+  assert.match(design, /繁體中文字形則落到 system TC fallback stack/);
+  assert.doesNotMatch(design, /已載入的 Roboto/);
+
+  assert.match(contract, /Route-focus restoration is absent and unverified\./);
+  assert.doesNotMatch(contract, /restores route focus/);
+});
+
+test("inventories every reachable native confirmation and excludes the legacy owner", () => {
+  const contract = readFileSync("UX-CONTRACT.md", "utf8");
+  const featurePages = readFileSync("src/FeaturePages.tsx", "utf8");
+  const notebookSource = featurePages.slice(
+    featurePages.indexOf("export function MatrixNotebookPage"),
+    featurePages.indexOf("export function NotesPage"),
+  );
+  const plansSource = featurePages.slice(
+    featurePages.indexOf("function ProPlansPage"),
+    featurePages.indexOf("function AboutMatrixPage"),
+  );
+  const knownRisk = contract.slice(
+    contract.indexOf("## Known native-dialog risk"),
+    contract.indexOf("## Navigation, async and recovery"),
+  );
+
+  assert.equal(notebookSource.match(/window\.confirm\(/g)?.length, 11);
+  assert.equal(plansSource.match(/window\.confirm\(/g)?.length, 2);
+  assert.match(featurePages, /if \(screen === "notebook"\) return <MatrixNotebookPage /);
+  assert.equal(reachableConfirmations.length, 13);
+
+  assertSourceConfirmationInventory({ notebook: notebookSource, plans: plansSource });
+
+  const driftedNotebookSource = notebookSource.replace(
+    'window.confirm("確定寫入筆記？")',
+    'window.confirm("來源文案已漂移？")',
+  );
+  assert.throws(
+    () => assertSourceConfirmationInventory({ notebook: driftedNotebookSource, plans: plansSource }),
+    /MatrixNotebookPage\.saveNote/,
+  );
+
+  for (const { location, copy } of reachableConfirmations) {
+    assert.ok(
+      knownRisk.includes(`| \`src/FeaturePages.tsx — ${location}\` | \`${copy}\` |`),
+      `missing native-confirm inventory row for ${location}`,
+    );
+  }
+
+  assert.doesNotMatch(knownRisk, /LegacyMatrixNotebookPage/);
+});

@@ -49,13 +49,20 @@ beforeEach(() => {
   globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;
 });
 
-test('天衍固定顯示複合版路與二碼命中條件，且不顯示近10期', () => {
+test('天衍固定顯示複合版路與二碼命中條件，且近10期可收合再展開', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
 
   expect(screen.getByText('複合版路')).toBeTruthy();
   expect(screen.getByRole('button', { name: '準5+（鎖定2碼）' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: '準4+（鎖定1碼）' })).toBeNull();
-  expect(screen.queryByText('近10期開獎號碼')).toBeNull();
+  expect(screen.getByText('近10期開獎號碼')).toBeTruthy();
+
+  const historyTable = document.querySelector<HTMLElement>('.history-table');
+  expect(historyTable?.hidden).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '收合近10期開獎號碼' }));
+  expect(historyTable?.hidden).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '展開近10期開獎號碼' }));
+  expect(historyTable?.hidden).toBe(false);
 });
 
 test('天衍使用正式 API 資料與核准的預設連準篩選', async () => {

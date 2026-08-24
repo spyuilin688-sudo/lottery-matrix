@@ -38,9 +38,24 @@ describe('member bootstrap', () => {
 
     const service = createMemberBootstrap(config, fetcher as typeof fetch);
 
-    await expect(service.bootstrap('Bearer session-token')).resolves.toEqual({
+    await expect(service.bootstrap('Bearer supabase-access-token')).resolves.toEqual({
       memberId: 'member-1',
       lineUserId: 'line-user-1',
+    });
+
+    const authRequest = fetcher.mock.calls.find(([input]) => (
+      new URL(String(input)).pathname === '/auth/v1/user'
+    ))?.[1];
+    const createRequest = fetcher.mock.calls.find(([input, init]) => (
+      new URL(String(input)).pathname === '/rest/v1/members' && init?.method === 'POST'
+    ))?.[1];
+    expect(authRequest?.headers).toMatchObject({
+      apikey: 'anon-key',
+      Authorization: 'Bearer supabase-access-token',
+    });
+    expect(JSON.parse(createRequest?.body as string)).toEqual({
+      auth_user_id: 'auth-user-1',
+      line_user_id: 'line-user-1',
     });
   });
 
@@ -109,6 +124,44 @@ describe('member bootstrap', () => {
       if (url.searchParams.get('line_user_id')) {
         return json([{ id: 'member-2', auth_user_id: 'auth-user-2', line_user_id: 'line-user-1' }]);
       }
+      return json([]);
+    });
+
+    const service = createMemberBootstrap(config, fetcher as typeof fetch);
+
+    await expect(service.bootstrap('Bearer session-token')).rejects.toMatchObject({
+      status: 409,
+      code: 'LINE_IDENTITY_CONFLICT',
+    });
+  });
+
+  it('returns 409 when creating the verified identity hits a unique conflict', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.pathname === '/auth/v1/user') return json(authUser());
+      if (url.searchParams.get('auth_user_id')) return json([]);
+      if (url.searchParams.get('line_user_id')) return json([]);
+      if (init?.method === 'POST') return json({ private: 'unique-violation' }, 409);
+      return json([]);
+    });
+
+    const service = createMemberBootstrap(config, fetcher as typeof fetch);
+
+    await expect(service.bootstrap('Bearer session-token')).rejects.toMatchObject({
+      status: 409,
+      code: 'LINE_IDENTITY_CONFLICT',
+    });
+  });
+
+  it('returns 409 when filling the verified identity hits a unique conflict', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.pathname === '/auth/v1/user') return json(authUser());
+      if (url.searchParams.get('auth_user_id')) {
+        return json([{ id: 'member-1', auth_user_id: 'auth-user-1', line_user_id: null }]);
+      }
+      if (url.searchParams.get('line_user_id')) return json([]);
+      if (init?.method === 'PATCH') return json({ private: 'unique-violation' }, 409);
       return json([]);
     });
 

@@ -89,6 +89,41 @@
   min-height: 48px;
 }
 
+.admin-app .admin-login-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-app .admin-login-form input[aria-invalid="true"] {
+  border-color: #ff8f86;
+  outline-color: #ff8f86;
+}
+
+.admin-app .admin-login-field-error,
+.admin-app .admin-login-form-error {
+  display: block;
+  color: #ffb4ab;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.admin-app .admin-login-field-error {
+  min-height: 20px;
+}
+
+.admin-app .admin-login-form-error {
+  min-height: 40px;
+}
+
+.admin-app .admin-login-submit:not(:disabled) {
+  cursor: pointer;
+}
+
+.admin-app .admin-login-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .admin-app .admin-record-screen {
   width: 100%;
 }

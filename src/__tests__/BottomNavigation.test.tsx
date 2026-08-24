@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+// @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BottomNavigation } from "../BottomNavigation";
+
+declare const process: { cwd(): string };
 
 afterEach(() => {
   vi.useRealTimers();
@@ -10,6 +14,14 @@ afterEach(() => {
 });
 
 describe("BottomNavigation", () => {
+  it("renders an explicit click owner instead of spreading event props", () => {
+    const source = readFileSync(`${process.cwd()}/src/BottomNavigation.tsx`, "utf8");
+    const renderedButton = source.match(/<button[\s\S]*?<\/button>/)?.[0] ?? "";
+
+    expect(renderedButton).toContain('onClick={label === "快捷" ? handleQuickClick');
+    expect(renderedButton).not.toContain("{...quickProps}");
+  });
+
   it.each([
     ["首頁", "/assets/lottery/functions/matrixWW1.png"],
     ["快捷", "/assets/lottery/functions/matrixWW2.png"],
@@ -68,6 +80,22 @@ describe("BottomNavigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "快捷；長按三秒開啟設定" }));
 
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["首頁", "home"],
+    ["通知", "notifications"],
+    ["我的", "profile"],
+  ] as const)("一般入口 %s 每次點擊只導向一次", (label, target) => {
+    const onNavigate = vi.fn();
+    const onQuickOpen = vi.fn();
+    render(<BottomNavigation onNavigate={onNavigate} onQuickOpen={onQuickOpen} />);
+
+    fireEvent.click(screen.getByRole("button", { name: label }));
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith(target);
+    expect(onQuickOpen).not.toHaveBeenCalled();
   });
 
   it("快捷短按只在 click 開啟，touch end 不提前切換頁面", () => {

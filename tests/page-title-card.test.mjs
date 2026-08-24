@@ -2,10 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
+
 const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
-const homepageStyles = readFileSync(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const homepageStyles = readLocalCss(new URL("../src/homepage-repair.css", import.meta.url));
 
 test("confirmed feature pages use the latest integrated title artwork", () => {
   const expectedArtwork = [
@@ -30,11 +33,11 @@ test("confirmed feature pages use the latest integrated title artwork", () => {
   }
 });
 
-test("integrated title artwork uses twelve-pixel side margins, proportional height, and eight-pixel spacing", () => {
-  assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin:\s*0 auto/s);
+test("integrated title artwork uses current sixteen-pixel side margins and proportional height", () => {
+  assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\)[^}]*margin:\s*0 auto/s);
   assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
   assert.match(styles, /\.integrated-title-back\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*background:\s*transparent/s);
-  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*8px[^}]*padding-top:\s*8px/s);
+  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*0;[^}]*padding-top:\s*8px/s);
 });
 
 test("Matrix explore title owns Tianyan and Tiangong controls", () => {
@@ -47,13 +50,18 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(featurePages, /headerAction=\{title === "Matrix 探索" \? <MatrixPageSwitcher/);
 });
 
-test("history title card owns the lottery dropdown and filter trigger", () => {
+test("history title card owns the filter trigger while the panel owns the lottery dropdown", () => {
   const start = featurePages.indexOf("export function DrawHistoryPage");
   const end = featurePages.indexOf("function RoadValidationProcess", start);
   const historyPage = featurePages.slice(start, end);
-  assert.match(historyPage, /className="history-title-actions"/);
+  assert.match(historyPage, /className="history-title-actions title-card-compact-actions"/);
   assert.match(historyPage, /aria-label="彩種"/);
-  assert.match(historyPage, /篩選條件/);
+  assert.match(historyPage, /篩選設定/);
+  const titleActions = historyPage.slice(
+    historyPage.indexOf("const historyTitleActions"),
+    historyPage.indexOf("return (", historyPage.indexOf("const historyTitleActions")),
+  );
+  assert.doesNotMatch(titleActions, /aria-label="彩種"/);
   assert.doesNotMatch(historyPage, /<LotteryTabs/);
 });
 
@@ -61,7 +69,7 @@ test("number reference title card owns refresh and explore settings", () => {
   const start = featurePages.indexOf("export function NumberReferencePage");
   const end = featurePages.indexOf("export function CalculatorPage", start);
   const referencePage = featurePages.slice(start, end);
-  assert.match(referencePage, /className="reference-title-actions"/);
+  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions"/);
   assert.match(referencePage, /刷新/);
   assert.match(referencePage, /探索設定/);
 });
@@ -69,19 +77,29 @@ test("number reference title card owns refresh and explore settings", () => {
 test("home and Matrix status use the shared Matrixbba switcher and preserve selected outline only", () => {
   assert.match(featurePages, /className="matrix-status-lottery-switcher" \/>/);
   assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
-  assert.match(homepageStyles, /\.home-screen \.lottery-switcher\s*\{[^}]*width:\s*calc\(100% - 24px\)[^}]*margin-inline:\s*12px[^}]*margin-block-end:\s*8px/s);
+  const switcherBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
+  assert.ok(switcherBodies.some((body) => /width:\s*100%;/.test(body) && /margin-inline:\s*0;/.test(body)));
+  assert.ok(switcherBodies.some((body) => /padding-inline:\s*5px;/.test(body)));
+  assert.ok(switcherBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
+  const selectedOutline = ruleBodies(
+    homepageStyles,
+    /^\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after$/,
+  );
+  assert.equal(selectedOutline.length, 1);
+  assert.match(selectedOutline[0], /mask-composite:\s*exclude;/);
   assert.doesNotMatch(homepageStyles, /lottery-switcher\[data-independent-cards="true"\][^{]*home-asset-image[^}]*display:\s*none/s);
 });
 
-test("history filter keeps issue date order range reset and submit controls", () => {
-  for (const content of ["期數", "日期", "號碼順序", "1000期", "3000期", "5000期", "所有期數", "重設", "開始探索"]) {
+test("history filter keeps lottery date order range and submit controls without the obsolete reset", () => {
+  for (const content of ["彩種", "年份", "月份", "日期", "號碼順序", "1000期", "3000期", "5000期", "所有期數", "開始探索"]) {
     assert.match(featurePages, new RegExp(content));
   }
+  assert.doesNotMatch(featurePages.slice(featurePages.indexOf("export function DrawHistoryPage"), featurePages.indexOf("function RoadValidationProcess")), /history-reset-trigger/);
 });
 
 test("calculator keeps the approved compact responsive layout source", () => {
   assert.match(styles, /\.calculator-screen\s*\{[^}]*display:\s*flex[^}]*height:\s*100vh[^}]*flex-direction:\s*column[^}]*overflow:\s*hidden/s);
-  assert.match(styles, /\.calculator-screen\s*>\s*\.feature-body\s*\{[^}]*padding-bottom:\s*80px[^}]*overflow-y:\s*auto/s);
+  assert.match(styles, /\.calculator-screen\s*>\s*\.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);[^}]*overflow-y:\s*auto/s);
   assert.match(styles, /\.number-grid\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*6px/s);
   assert.match(styles, /\.column-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.calculation-results\s*>\s*div\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*8px/s);

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-test("號碼對照單特別號使用白色正常字重與指定紅色內框", () => {
+test("號碼對照單特別號使用白色正常字重與目前半透明紅色內框", () => {
   const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
   const rule = css.match(/\.reference-row button\[data-special="true"\]\s*\{([^}]*)\}/s)?.[1] ?? "";
 
@@ -13,6 +13,6 @@ test("號碼對照單特別號使用白色正常字重與指定紅色內框", ()
 
   const innerFrame = css.match(/\.reference-row button\[data-special="true"\]::after\s*\{([^}]*)\}/s)?.[1] ?? "";
   assert.match(innerFrame, /inset:\s*0\.3px\s*;/);
-  assert.match(innerFrame, /border:\s*1px\s+solid\s+#C65353\s*;/i);
+  assert.match(innerFrame, /border:\s*1px\s+solid\s+rgba\(198,\s*83,\s*83,\s*\.72\)\s*;/i);
   assert.match(innerFrame, /border-radius:\s*inherit\s*;/);
 });

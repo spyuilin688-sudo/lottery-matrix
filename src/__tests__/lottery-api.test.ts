@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -72,6 +72,63 @@ describe('lottery-api response validation', () => {
         futureOffset: 1,
       }),
     ).rejects.toThrow('Lottery API invalid response: groups[0]');
+  });
+
+  it('同星送出所選彩種、順序、正規化號碼與未來期距並正規化回傳群組', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        lottery: '大樂透',
+        numberOrder: '依實際開獎順序排序',
+        numbers: ['01', '09'],
+        futureOffset: 3,
+        groups: [{
+          lockedEntry: {
+            issue: '114000123',
+            date: '2026-8-3',
+            numbers: ['9', '02', '50'],
+          },
+          predictedEntry: {
+            period: '114000124',
+            drawDate: '2026年8月5日',
+            numbers: [3, '7', '00'],
+            drawOrderNumbers: ['7', '3'],
+          },
+        }],
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const request = {
+      lottery: '大樂透' as const,
+      numberOrder: '依實際開獎順序排序' as const,
+      numbers: ['01', '09'],
+      futureOffset: 3,
+    };
+
+    const result = await fetchTongXing(request);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe(`${LOTTERY_API_BASE}/api/matrix/tongxing`);
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init?.headers).get('content-type')).toBe('application/json');
+    expect(JSON.parse(String(init?.body))).toEqual(request);
+    expect(result.groups[0].lockedEntry).toMatchObject({
+      period: '114123',
+      issue: '114123',
+      drawDate: '2026/08/03',
+      date: '2026/08/03',
+      numbers: ['09', '02'],
+    });
+    expect(result.groups[0].predictedEntry).toMatchObject({
+      period: '114124',
+      issue: '114124',
+      drawDate: '2026/08/05',
+      date: '2026/08/05',
+      numbers: ['03', '07'],
+      drawOrderNumbers: ['07', '03'],
+    });
   });
 
   it('號碼對照單回傳缺少 items 時拒絕異常格式', async () => {

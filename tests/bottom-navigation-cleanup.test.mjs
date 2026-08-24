@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const prototype = await readFile(new URL("../src/prototype.css", import.meta.url), "utf8");
-const homepage = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const homepage = readLocalCss("src/homepage-repair.css");
 
 test("底部導覽只由共用樣式控制，不再受首頁覆寫", () => {
   assert.doesNotMatch(homepage, /\.bottom-navigation/);

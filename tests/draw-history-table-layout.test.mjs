@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const matrixCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
@@ -33,15 +35,34 @@ test("歷史開獎不再覆寫近10期欄寬、列高與文字位置", () => {
 });
 
 test("歷史今彩539只保留明確的 .2px 數字底線間距，不受 Matrix Explore 尺寸規則誤套", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-panel\[data-lottery="今彩539"\] \.number-ball-component\.history-lottery-ball\s*\{[^}]*--underline-y:\s*\.2px;/s);
+  const bodies = ruleBodies(
+    ballCss,
+    /^\.draw-history-screen \.draw-history-panel:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\) \.number-ball-component\.history-lottery-ball$/,
+  );
+  assert.equal(bodies.length, 1);
+  assert.match(bodies[0], /--underline-y:\s*\.2px;/);
   assert.doesNotMatch(ballCss, /\.matrix-explore-main-screen \.history-panel/);
   assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
 });
 
-test("篩選條件位於歷史標題卡右下角且操作高度為 27.4px", () => {
-  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions\s*\{[^}]*right:\s*4%[^}]*bottom:\s*8%/s);
-  assert.match(css, /\.draw-history-screen \.matrix-title-banner-actions \.history-title-actions\s*\{[^}]*align-items:\s*flex-end/s);
-  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*height:\s*27\.4px;[^}]*min-height:\s*27\.4px;/s);
+test("篩選條件由標題卡內容寬度操作區與 22px 歷史控制器承接", () => {
+  const actionBodies = ruleBodies(
+    responsiveCss,
+    /^\.draw-history-screen \.matrix-title-banner-actions$/,
+  );
+  assert.equal(actionBodies.length, 1);
+  assert.match(actionBodies[0], /top:\s*100%;/);
+  assert.match(actionBodies[0], /bottom:\s*auto;/);
+  assert.match(actionBodies[0], /width:\s*auto;/);
+  assert.match(actionBodies[0], /transform:\s*translateY\(-87\.5%\);/);
+
+  const controlBodies = ruleBodies(
+    responsiveCss,
+    /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/,
+  );
+  assert.equal(controlBodies.length, 1);
+  assert.match(controlBodies[0], /height:\s*22px;/);
+  assert.match(controlBodies[0], /min-height:\s*22px;/);
 });
 
 test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", () => {
@@ -63,13 +84,16 @@ test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", ()
   assert.doesNotMatch(css, /history-title-lottery|history-title-chevron/);
 });
 
-test("歷史設定卡維持原控制尺寸、改直角矩形選項並支援響應式文字", () => {
+test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 流動外距", () => {
   assert.match(source, /className="history-filter-panel"/);
   assert.match(source, /className="history-filter-primary-row"/);
   assert.match(source, /className="history-filter-secondary-row"/);
-  assert.match(css, /\.history-filter-panel \.select-box,[\s\S]*?height:\s*26px/s);
+  assert.ok(ruleBodies(css, /^\.history-filter-panel \.select-box$/).some((body) => /height:\s*26px;/.test(body)));
   assert.match(css, /\.history-filter-panel \.select-box\s*\{[^}]*border-radius:\s*0;/s);
-  assert.match(css, /\.history-filter-panel \.select-box::before,[\s\S]*?\.history-filter-panel \.select-box::after\s*\{\s*display:\s*none;/s);
+  assert.ok(ruleBodies(css, /^\.history-filter-panel \.select-box::after$/).some((body) => /display:\s*none;/.test(body)));
   assert.match(css, /\.history-filter-panel select\s*\{[^}]*font-size:\s*clamp\(/s);
-  assert.match(responsiveCss, /\.draw-history-screen \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*gap:\s*12px/s);
+  const bodyRules = ruleBodies(responsiveCss, /^\.draw-history-screen \.feature-body$/);
+  assert.equal(bodyRules.length, 1);
+  assert.match(bodyRules[0], /padding:\s*var\(--tool-section-gap\) var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
+  assert.match(responsiveCss, /--tool-page-inline:\s*16px;/);
 });

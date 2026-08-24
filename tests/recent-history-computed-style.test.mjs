@@ -91,7 +91,7 @@ test("近10期期數、年份與日期使用指定響應式字級並保留期數
   assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("六合彩使用 40px 列高、18–22px 彩球並讓正碼與特別號同線下移 2px", () => {
+test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
@@ -116,12 +116,12 @@ test("六合彩使用 40px 列高、18–22px 彩球並讓正碼與特別號同�
   assert.equal(special.gap, "clamp(4px, 1.5vw, 7px)");
   assert.equal(specialBall.rowGap, "0px");
   assert.equal(style(".history-special-label").getPropertyValue("--history-special-label-size").trim(), "clamp(5px,1.67vw,6.5px)");
-  assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(7px,2.31vw,9px)");
-  assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(7px,2.31vw,9px)");
+  assert.equal(mainBall.getPropertyValue("--number-font-size").trim(), "clamp(9px,2.56vw,10px)");
+  assert.equal(mainBall.getPropertyValue("--underline-width").trim(), "clamp(8px,2.31vw,9px)");
   assert.equal(mainBall.getPropertyValue("--underline-height").trim(), ".7px");
-  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "-1px");
-  assert.equal(mainBall.transform, "translateY(2px)");
-  assert.equal(specialNumberBall.transform, "translateY(2px)");
+  assert.equal(mainBall.getPropertyValue("--underline-y").trim(), "0px");
+  assert.equal(mainBall.transform, "none");
+  assert.equal(specialNumberBall.transform, "none");
   assert.equal(specialBall.position, "relative");
   assert.equal(specialBall.height, "40px");
   assert.equal(specialBall.gridTemplateRows, "1fr");

@@ -17,7 +17,7 @@ test("底部導覽全寬固定於內容畫布底部，保留四個可操作入�
 
   expect(await navigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
   expect(navigationBox.width).toBeCloseTo(mobilePageBox.width, 0);
-  expect(navigationBox.height).toBeCloseTo(93, 0);
+  expect(navigationBox.height).toBeCloseTo(82, 0);
   expect(navigationBox.x).toBeCloseTo(mobilePageBox.x, 0);
   expect(navigationBox.y + navigationBox.height).toBeCloseTo(mobilePageBox.y + mobilePageBox.height, 0);
 
@@ -38,7 +38,11 @@ test("選取狀態會跟隨首頁、通知與我的頁面", async ({ page }) => 
   const home = navigation.getByRole("button", { name: "首頁" });
 
   await expect(home).toHaveAttribute("aria-current", "page");
-  await expect(home.locator(".bottom-navigation-active-bar")).toHaveCSS("width", "16px");
+  await expect(navigation).toHaveAttribute("data-active", "首頁");
+  await expect(navigation.locator(".bottom-navigation-artwork")).toHaveAttribute(
+    "src",
+    "/assets/lottery/functions/matrixWW1.png",
+  );
 
   await navigation.getByRole("button", { name: "通知" }).click();
   const notificationNavigation = page.getByTestId("bottom-navigation");

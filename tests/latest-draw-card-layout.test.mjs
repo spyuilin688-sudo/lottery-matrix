@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
-const css = readFileSync(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const css = readLocalCss("src/homepage-repair.css");
 const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 
 test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(source, /<div className="draw-meta"[\s\S]*<div className="draw-order"[\s\S]*className="history-link"/);
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-toolbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 118px minmax\(0, 1fr\)/s);
+  assert.doesNotMatch(source, /className="draw-toolbar"/);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 118px minmax\(0, 1fr\)/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-issue strong\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-date\s*\{[^}]*font-size:\s*9px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);

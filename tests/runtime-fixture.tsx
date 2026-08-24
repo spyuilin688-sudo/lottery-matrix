@@ -5,11 +5,15 @@ import {
   Carousel,
   FlowStack,
   KeyboardInput,
+  KeyboardTextarea,
   MobileRuntime,
   MobileScroll,
   type FlowScreen,
 } from "../src/mobile";
+import { NotesPage } from "../src/FeaturePages";
+import AdminLogin from "../src/admin/AdminLogin";
 import "../src/styles.css";
+import "../src/admin/admin.css";
 import "./runtime-fixture.css";
 
 function CarouselFixture() {
@@ -139,13 +143,49 @@ function FlowFixture() {
   );
 }
 
+function NotesFixture() {
+  return (
+    <MobileRuntime>
+      <MobileScroll className="fixture-screen">
+        <NotesPage onNavigate={() => undefined} />
+      </MobileScroll>
+    </MobileRuntime>
+  );
+}
+
+function TextareaFixture() {
+  return (
+    <MobileRuntime>
+      <MobileScroll className="fixture-screen">
+        <main className="fixture-content">
+          <KeyboardTextarea
+            aria-label="Runtime note"
+            className="fixture-textarea"
+            style={{ height: 91, minHeight: 73 }}
+          />
+        </main>
+      </MobileScroll>
+    </MobileRuntime>
+  );
+}
+
+function AdminLoginFixture() {
+  return <AdminLogin />;
+}
+
 const fixture = new URLSearchParams(window.location.search).get("fixture");
 const fixtureElement =
   fixture === "keyboard"
     ? <KeyboardFixture />
     : fixture === "flow"
       ? <FlowFixture />
-      : <CarouselFixture />;
+      : fixture === "notes"
+        ? <NotesFixture />
+        : fixture === "textarea"
+          ? <TextareaFixture />
+          : fixture === "admin-login"
+            ? <AdminLoginFixture />
+            : <CarouselFixture />;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>{fixtureElement}</StrictMode>,

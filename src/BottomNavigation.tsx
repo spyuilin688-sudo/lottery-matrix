@@ -75,18 +75,6 @@ export function BottomNavigation({
 
       {NAVIGATION_ITEMS.map(({ label, screen }) => {
         const selected = label === "快捷" ? active === label || quickActive : active === label && !quickActive;
-        const quickProps = label === "快捷"
-          ? {
-              "aria-label": "快捷；長按三秒開啟設定",
-              onTouchStart: beginQuickPress,
-              onTouchEnd: finishQuickPress,
-              onTouchCancel: finishQuickPress,
-              onMouseDown: beginQuickPress,
-              onMouseUp: finishQuickPress,
-              onClick: handleQuickClick,
-              onContextMenu: (event: MouseEvent<HTMLButtonElement>) => event.preventDefault(),
-            }
-          : { onClick: () => screen && onNavigate?.(screen) };
 
         return (
           <button
@@ -94,8 +82,15 @@ export function BottomNavigation({
             data-selected={selected}
             type="button"
             aria-current={selected ? "page" : undefined}
+            aria-label={label === "快捷" ? "快捷；長按三秒開啟設定" : undefined}
+            onTouchStart={label === "快捷" ? beginQuickPress : undefined}
+            onTouchEnd={label === "快捷" ? finishQuickPress : undefined}
+            onTouchCancel={label === "快捷" ? finishQuickPress : undefined}
+            onMouseDown={label === "快捷" ? beginQuickPress : undefined}
+            onMouseUp={label === "快捷" ? finishQuickPress : undefined}
+            onClick={label === "快捷" ? handleQuickClick : () => screen && onNavigate?.(screen)}
+            onContextMenu={label === "快捷" ? (event: MouseEvent<HTMLButtonElement>) => event.preventDefault() : undefined}
             key={label}
-            {...quickProps}
           >
             <span className="bottom-navigation-a11y-label">{label}</span>
           </button>

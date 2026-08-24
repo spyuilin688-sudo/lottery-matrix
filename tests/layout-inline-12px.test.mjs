@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readLocalCss } from './helpers/read-local-css.mjs';
 
 const tokens = readFileSync('src/design-tokens.css', 'utf8');
 const features = readFileSync('src/feature-pages.css', 'utf8');
 const tongxing = readFileSync('src/tongxing-compact.css', 'utf8');
-const home = readFileSync('src/homepage-repair.css', 'utf8');
+const home = readLocalCss('src/homepage-repair.css');
 
 test('mobile page content uses the formal 12px inline spacing token', () => {
   assert.match(tokens, /--layout-page-inline:\s*12px;/);
@@ -21,5 +22,5 @@ test('homepage uses one 12px page-edge source without compensatory child stretch
   assert.match(home, /\.home-screen \.lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*100%;/s);
   assert.match(home, /\.home-screen \.matrix-status-section > \.home-asset-image\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;/s);
-  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;/s);
+  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
 });

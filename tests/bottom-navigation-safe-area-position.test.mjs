@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const navigationCss = await readFile(new URL("../src/prototype.css", import.meta.url), "utf8");
 const tokenCss = await readFile(new URL("../src/design-tokens.css", import.meta.url), "utf8");
 const runtimeCss = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
-const homepageCss = await readFile(new URL("../src/homepage-repair.css", import.meta.url), "utf8");
+const homepageCss = readLocalCss("src/homepage-repair.css");
 
 test("底部導覽固定貼底並以瀏覽器 safe area 為唯一底部安全區來源", () => {
   assert.match(navigationCss, /\.bottom-navigation\s*\{[\s\S]*?--bottom-nav-safe-area:\s*env\(safe-area-inset-bottom,\s*0px\);[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*auto 0 0;/);

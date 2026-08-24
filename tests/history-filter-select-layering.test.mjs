@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("歷史篩選下拉框直接停用金色圖層並使用深色背景", async () => {
+import { ruleBodies } from "./helpers/css-rules.mjs";
+
+test("歷史篩選深層下拉框保留直角深色表面並停用舊金色圖層", async () => {
   const css = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 
-  assert.match(css, /\.history-filter-sheet \.select-box\s*\{[^}]*border:\s*1px solid #b98723;[^}]*background:\s*#07131d;/s);
-  assert.match(css, /\.history-filter-sheet \.select-box::before,\s*\.history-filter-sheet \.select-box::after\s*\{\s*display:\s*none;/);
+  const selectBodies = ruleBodies(css, /^\.history-filter-panel \.select-box$/);
+  assert.ok(selectBodies.some((body) => /border:\s*1px solid #b98723;/.test(body) && /background:\s*#07131d;/.test(body)));
+
+  const afterBodies = ruleBodies(css, /^\.history-filter-panel \.select-box::after$/);
+  assert.equal(afterBodies.length, 1);
+  assert.match(afterBodies[0], /display:\s*none;/);
 });

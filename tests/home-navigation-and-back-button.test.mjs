@@ -4,9 +4,7 @@ import test from "node:test";
 
 const prototypeSource = await readFile(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const featurePagesSource = await readFile(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
-const featurePagesCss = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const headerCss = await readFile(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
-const overrideCss = await readFile(new URL("../src/project-overrides.css", import.meta.url), "utf8");
 
 test("首頁號碼對照單導向號碼對照單頁面", () => {
   assert.match(prototypeSource, /\{ label: "號碼對照單", image: HOME_ASSETS\.reference \}/);
@@ -14,12 +12,13 @@ test("首頁號碼對照單導向號碼對照單頁面", () => {
 });
 
 test("返回鍵由父容器自然排列且維持指定尺寸", () => {
-  assert.match(featurePagesSource, /className="back-button-slot"/);
-  assert.match(headerCss, /\.feature-brand-row\s*\{[^}]*display: grid;[^}]*width: calc\(100% \+ 16px\);[^}]*grid-template-columns: 100%;/s);
-  assert.match(headerCss, /\.feature-brand-lockup\s*\{[^}]*width: calc\(100% - 16px\) !important;/s);
-  assert.match(headerCss, /\.back-button-slot\s*\{[^}]*height: 60px;[^}]*padding-top: 16px;/s);
-  assert.doesNotMatch(overrideCss, /\.feature-brand-header:not\(\[data-compact='true'\]\) \.feature-brand-row/);
-  assert.doesNotMatch(featurePagesCss, /\.feature-screen:not\(\.compact-feature-screen\) \.feature-brand-row/);
+  assert.match(
+    featurePagesSource,
+    /<div className="back-button-slot">[\s\S]*?<button type="button" className="icon-button back-button" onClick=\{onBack\} aria-label="返回">/,
+  );
+  assert.match(headerCss, /\.feature-brand-row\s*\{[^}]*position:\s*relative;[^}]*display:\s*grid;[^}]*width:\s*100%;[^}]*grid-template-columns:\s*100%;/s);
+  assert.match(headerCss, /\.back-button-slot\s*\{[^}]*grid-area:\s*1 \/ 1;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*justify-self:\s*start;/s);
+  assert.match(headerCss, /\.feature-brand-lockup\s*\{[^}]*grid-area:\s*1 \/ 1;[^}]*justify-self:\s*center;/s);
   const backButtonRule = headerCss.match(/\.feature-brand-header \.back-button\s*\{([^}]*)\}/s)?.[1] ?? "";
   assert.doesNotMatch(backButtonRule, /position: absolute|top:|left:|transform:|margin/);
   assert.match(backButtonRule, /width: 44px;[^}]*height: 44px;/s);

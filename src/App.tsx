@@ -1,5 +1,5 @@
 import AdminApp from "./admin/AdminApp";
-import { LineAuthGate } from "./auth/LineAuthGate";
+import { MemberSessionBridge } from "./auth/MemberSessionBridge";
 import { MobileDeviceProvider } from "./mobile/Device";
 import { KeyboardProvider } from "./mobile/Keyboard";
 import Prototype from "./Prototype";
@@ -12,12 +12,13 @@ export default function App() {
   if (isAdminPath) return <AdminApp />;
 
   return (
-    <LineAuthGate>
+    <>
+      <MemberSessionBridge />
       <MobileDeviceProvider>
         <KeyboardProvider>
           <Prototype />
         </KeyboardProvider>
       </MobileDeviceProvider>
-    </LineAuthGate>
+    </>
   );
 }
