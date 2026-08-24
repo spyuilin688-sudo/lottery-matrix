@@ -381,6 +381,10 @@
   height: var(--matrix-history-ball-size);
   place-items: center;
 }
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .history-special-number > span:first-child,
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .history-special-number > span:first-child {
+  transform: translateY(2px);
+}
 
 .draw-history-screen .draw-history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
   position: relative;
