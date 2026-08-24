@@ -82,6 +82,10 @@ function legacyGroupPath(job: MatrixAnalysisJob, unitIndex: number) {
   return `${progressPrefix(job)}/groups/${unitIndex}.json`;
 }
 
+function tianyanGroupPath(job: MatrixAnalysisJob, unitIndex: number) {
+  return `${progressPrefix(job)}/tianyan/${unitIndex}.json.gz`;
+}
+
 function bytesToBase64(bytes: Uint8Array) {
   let binary = '';
   for (let index = 0; index < bytes.length; index += 32_768) {
@@ -142,6 +146,7 @@ export function createMatrixAnalysisProgressStore(
       await storageAdapter.delete([
         ...indexes.map((unitIndex) => groupPath(job, unitIndex)),
         ...indexes.map((unitIndex) => legacyGroupPath(job, unitIndex)),
+        ...indexes.map((unitIndex) => tianyanGroupPath(job, unitIndex)),
       ]);
     }
     await deleteIds(JOB_TABLE, [job.id]);
@@ -155,7 +160,8 @@ export function createMatrixAnalysisProgressStore(
   }
 
   async function readExploreGroupIndexes(job: MatrixAnalysisJob, indexes: number[]) {
-    if (indexes.some((index) => !Number.isInteger(index) || index < 0 || index >= job.cursor)) {
+    const readableCount = job.phase === 'explore' ? job.cursor : job.total;
+    if (indexes.some((index) => !Number.isInteger(index) || index < 0 || index >= readableCount)) {
       throw new Error('MATRIX_ANALYSIS_PROGRESS_INDEX_INVALID');
     }
     const paths = indexes.map((index) => groupPath(job, index));
@@ -169,6 +175,21 @@ export function createMatrixAnalysisProgressStore(
     );
   }
 
+  async function readTianyanGroupIndexes(job: MatrixAnalysisJob, indexes: number[]) {
+    if (indexes.some((index) => !Number.isInteger(index) || index < 0 || index >= job.total)) {
+      throw new Error('MATRIX_ANALYSIS_PROGRESS_INDEX_INVALID');
+    }
+    const paths = indexes.map((index) => tianyanGroupPath(job, index));
+    const stored = await storageAdapter.read(paths);
+    const values: unknown[] = [];
+    for (const path of paths) {
+      const content = stored.find((item) => item.path === path)?.content;
+      if (!content) throw new Error('MATRIX_ANALYSIS_PROGRESS_READ_FAILED');
+      values.push(await decodeArtifact(content));
+    }
+    return values;
+  }
+
   return {
     async getOrCreate(input: Omit<MatrixAnalysisJob, 'id' | 'phase' | 'cursor'>) {
       const jobs = await listAll<MatrixAnalysisJob>(adapter, JOB_TABLE);
@@ -178,11 +199,7 @@ export function createMatrixAnalysisProgressStore(
       ));
       if (sameDraw?.analysisVersion === input.analysisVersion) return sameDraw;
       if (sameDraw) {
-        return updateJob(sameDraw, {
-          ...input,
-          phase: 'explore',
-          cursor: 0,
-        });
+        await deleteJob(sameDraw);
       }
       const retentionCutoff = Date.parse(input.startedAt) - PROGRESS_RETENTION_MS;
       for (const stale of jobs.filter((job) => (
@@ -230,6 +247,22 @@ export function createMatrixAnalysisProgressStore(
         Array.from({ length: job.cursor }, (_, index) => index),
       );
     },
+
+    async appendTianyanGroup(job: MatrixAnalysisJob, unitIndex: number, artifact: unknown) {
+      if (job.phase !== 'tianyan' || unitIndex !== job.cursor || unitIndex >= job.total) {
+        throw new Error('MATRIX_ANALYSIS_PROGRESS_CURSOR_MISMATCH');
+      }
+      const content = await encodeArtifact(artifact);
+      const [written] = await storageAdapter.write([{
+        path: tianyanGroupPath(job, unitIndex),
+        content,
+        contentType: 'application/gzip',
+      }]);
+      if (!written) throw new Error('MATRIX_ANALYSIS_PROGRESS_WRITE_FAILED');
+      return updateJob(job, { cursor: unitIndex + 1 });
+    },
+
+    readTianyanGroupIndexes,
 
     setPhase(job: MatrixAnalysisJob, phase: MatrixAnalysisJob['phase']) {
       return updateJob(job, { phase, cursor: 0 });

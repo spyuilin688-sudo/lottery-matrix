@@ -5,7 +5,7 @@ import type { MatrixDraw } from './matrix-algorithm';
 const history: MatrixDraw[] = [{ period: '114000123', drawDate: '2026-08-21', numbers: ['01', '02', '03', '04', '05'] }];
 
 describe('Matrix completed-analysis pipeline', () => {
-  it('publishes completed Explore groups as a partition manifest without bulk-loading them', async () => {
+  it('continues from partitioned Explore through Tianyan, Tiangong, and the completion marker', async () => {
     const published = new Map<string, unknown>();
     const groups: unknown[] = [];
     let job = {
@@ -13,7 +13,9 @@ describe('Matrix completed-analysis pipeline', () => {
       analysisVersion: '114000123:matrix-v2', startedAt: '2026-08-21T01:02:03.000Z',
       phase: 'explore' as const, cursor: 0, total: 2,
     };
-    const readExploreGroups = vi.fn(async () => groups);
+    const tianyanGroups: unknown[] = [];
+    const readExploreGroupIndexes = vi.fn(async (_current: typeof job, indexes: number[]) => indexes.map((index) => groups[index]));
+    const readTianyanGroupIndexes = vi.fn(async (_current: typeof job, indexes: number[]) => indexes.map((index) => tianyanGroups[index]));
     const progressStore = {
       getOrCreate: async () => job,
       appendExploreGroups: async (current: typeof job, unitIndex: number, artifacts: unknown[]) => {
@@ -21,7 +23,14 @@ describe('Matrix completed-analysis pipeline', () => {
         job = { ...current, cursor: unitIndex + artifacts.length };
         return job;
       },
-      readExploreGroups,
+      readExploreGroups: vi.fn(async () => groups),
+      readExploreGroupIndexes,
+      appendTianyanGroup: async (current: typeof job, unitIndex: number, artifact: unknown) => {
+        tianyanGroups[unitIndex] = artifact;
+        job = { ...current, cursor: unitIndex + 1 };
+        return job;
+      },
+      readTianyanGroupIndexes,
       setPhase: async (current: typeof job, phase: typeof job.phase) => {
         job = { ...current, phase, cursor: 0 };
         return job;
@@ -38,7 +47,10 @@ describe('Matrix completed-analysis pipeline', () => {
       getHistory: async () => history,
       readAnalysis: async (kind) => published.get(kind) ?? null,
       publishAnalysis,
-      createExploreWorkUnits: () => [{ id: 'unit-1' }, { id: 'unit-2' }] as never,
+      createExploreWorkUnits: () => [
+        { numberOrder: '依號碼由小到大排序', algorithmType: '加減', lockedSourceIndex: 0, lockedPosition: 1 },
+        { numberOrder: '依號碼由小到大排序', algorithmType: '合值', lockedSourceIndex: 0, lockedPosition: 1 },
+      ] as never,
       buildExploreGroup: (_period, _history, unit: { id: string }) => ({
         lottery: '今彩539', drawPeriod: '114000123', items: [{ id: unit.id }], validationById: {},
       }) as never,
@@ -63,13 +75,40 @@ describe('Matrix completed-analysis pipeline', () => {
         job: { cursor: 2, total: 2 },
       },
     });
-    expect(readExploreGroups).not.toHaveBeenCalled();
+    expect(readExploreGroupIndexes).not.toHaveBeenCalled();
     await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
       pending: true,
       phase: 'tianyan',
+      cursor: 1,
+      total: 1,
     });
-    expect(buildTianyan).not.toHaveBeenCalled();
-    expect(buildTiangong).not.toHaveBeenCalled();
+    expect(readExploreGroupIndexes).toHaveBeenCalledWith(expect.anything(), [0, 1]);
+    expect(buildTianyan).toHaveBeenCalledWith(
+      '今彩539',
+      '114000123',
+      expect.objectContaining({ items: expect.any(Array) }),
+    );
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      pending: true,
+      phase: 'tiangong',
+    });
+    expect(readTianyanGroupIndexes).toHaveBeenCalled();
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      pending: true,
+      phase: 'status',
+    });
+    expect(buildTiangong).toHaveBeenCalledTimes(1);
+    await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
+      completed: true,
+      analysisVersion: '114000123:matrix-v2',
+    });
+    expect(publishAnalysis.mock.calls.map(([meta]) => meta.kind)).toEqual([
+      'explore', 'tianyan', 'tiangong', 'status',
+    ]);
+    expect(publishAnalysis.mock.calls.at(-1)?.[1]).toMatchObject({
+      artifactKinds: ['explore', 'tianyan', 'tiangong'],
+      explore: { validationById: {} },
+    });
   });
 
   it('does not treat a lone Explore artifact as a completed current analysis', async () => {
@@ -144,7 +183,10 @@ describe('Matrix completed-analysis pipeline', () => {
       'publish:explore', 'publish:tianyan', 'publish:tiangong', 'publish:status',
     ]);
     expect(publishAnalysis.mock.calls[0][0]).toMatchObject({ analysisVersion: '114000123:matrix-v1:2026-08-21T01:02:03.000Z', drawPeriod: '114000123' });
-    expect(publishAnalysis.mock.calls[3][1]).toEqual({ artifactKinds: ['explore', 'tianyan', 'tiangong'] });
+    expect(publishAnalysis.mock.calls[3][1]).toEqual({
+      artifactKinds: ['explore', 'tianyan', 'tiangong'],
+      explore: { lottery: '今彩539', drawPeriod: '114000123', items: [], validationById: {} },
+    });
   });
 
   it('uses complete history and builds all available artifacts before publishing any of them', async () => {
@@ -216,7 +258,7 @@ describe('Matrix completed-analysis pipeline', () => {
     const pipeline = createMatrixAnalysisPipeline({
       getHistory: async () => history,
       readAnalysis: async (kind, _lottery, _drawPeriod, analysisVersion) => (
-        kind === 'status' && analysisVersion !== '114000123:matrix-v3'
+        kind === 'status' && analysisVersion !== '114000123:matrix-v4'
           ? { analysisVersion: '114000123:matrix-v2' }
           : null
       ),
@@ -224,7 +266,7 @@ describe('Matrix completed-analysis pipeline', () => {
       progressStore: {
         getOrCreate: async () => ({
           id: 'job', lottery: '今彩539', drawPeriod: '114000123',
-          analysisVersion: '114000123:matrix-v3', startedAt: '2026-08-21T00:00:00Z',
+          analysisVersion: '114000123:matrix-v4', startedAt: '2026-08-21T00:00:00Z',
           phase: 'explore', cursor: 0, total: 0,
         }),
         readExploreGroups: async () => [],
@@ -250,7 +292,7 @@ describe('Matrix completed-analysis pipeline', () => {
     const publishAnalysis = vi.fn(async () => ({}));
     const progressStore = {
       getOrCreate: async () => ({
-        id: 'job', lottery: '今彩539' as const, drawPeriod: '114000123', analysisVersion: '114000123:matrix-v3',
+        id: 'job', lottery: '今彩539' as const, drawPeriod: '114000123', analysisVersion: '114000123:matrix-v4',
         startedAt: '2026-08-21T00:00:00Z', phase: initialPhase, cursor: 0, total: 0,
       }),
       readExploreGroups: async () => [],
@@ -276,7 +318,7 @@ describe('Matrix completed-analysis pipeline', () => {
     });
     expect(phases).toEqual(['explore', 'tianyan']);
     expect(publishAnalysis).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'explore', analysisVersion: '114000123:matrix-v3' }),
+      expect.objectContaining({ kind: 'explore', analysisVersion: '114000123:matrix-v4' }),
       expect.anything(),
     );
   });

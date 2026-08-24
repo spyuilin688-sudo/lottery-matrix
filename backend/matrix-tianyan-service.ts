@@ -235,6 +235,22 @@ export function buildTianyanArtifact(
   return { lottery, drawPeriod, items, validationById };
 }
 
+export function mergeTianyanArtifacts(
+  lottery: MatrixLottery,
+  drawPeriod: string,
+  artifacts: TianyanArtifact[],
+): TianyanArtifact {
+  const byId = new Map(artifacts.flatMap((artifact) => artifact.items).map((item) => [item.id, item]));
+  const items = [...byId.values()]
+    .sort((left, right) => right.highestStreak - left.highestStreak || left.id.localeCompare(right.id));
+  return {
+    lottery,
+    drawPeriod,
+    items,
+    validationById: Object.assign({}, ...artifacts.map((artifact) => artifact.validationById)),
+  };
+}
+
 export function filterTianyanArtifact(artifact: TianyanArtifact, selectedStreaks: string[]) {
   const items = artifact.items.filter((item) => selectedStreaks.includes(item.consecutive));
   return { items, total: items.length };

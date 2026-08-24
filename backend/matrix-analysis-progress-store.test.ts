@@ -106,7 +106,7 @@ describe('Matrix analysis resumable progress store', () => {
     expect(tables.get('matrix_analysis_jobs')).toHaveLength(1);
   });
 
-  it('resets same-period progress from an older algorithm revision without reading its artifacts', async () => {
+  it('deletes same-period progress from an older algorithm revision before starting the new version', async () => {
     const { adapter, tables } = memoryAdapter();
     const saved = memoryStorage();
     const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
@@ -114,7 +114,9 @@ describe('Matrix analysis resumable progress store', () => {
       lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:matrix-v2',
       startedAt: '2026-08-21T10:00:00.000Z', total: 390,
     });
-    await store.appendExploreGroup(oldJob, 0, { id: 'old-result' });
+    const exploredOldJob = await store.appendExploreGroup(oldJob, 0, { id: 'old-result' });
+    const tianyanOldJob = await store.setPhase(exploredOldJob, 'tianyan');
+    await store.appendTianyanGroup(tianyanOldJob, 0, { id: 'old-tianyan-result' });
 
     const currentJob = await store.getOrCreate({
       lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:matrix-v3',
@@ -127,7 +129,20 @@ describe('Matrix analysis resumable progress store', () => {
     expect(tables.get('matrix_analysis_jobs')).toEqual([
       expect.objectContaining({ id: currentJob.id, analysisVersion: '114000123:matrix-v3' }),
     ]);
-    expect(saved.files.size).toBe(1);
+    expect(saved.files.size).toBe(0);
+  });
+
+  it('keeps completed Explore partitions readable after entering Tianyan', async () => {
+    const { adapter } = memoryAdapter();
+    const store = createMatrixAnalysisProgressStore(adapter, memoryStorage().adapter);
+    const exploring = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1',
+      startedAt: '2026-08-21T10:00:00.000Z', total: 1,
+    });
+    const complete = await store.appendExploreGroup(exploring, 0, { id: 'explore-group' });
+    const tianyan = await store.setPhase(complete, 'tianyan');
+
+    await expect(store.readExploreGroupIndexes(tianyan, [0])).resolves.toEqual([{ id: 'explore-group' }]);
   });
 
   it('persists multiple completed units with one storage write before advancing the cursor', async () => {
@@ -144,6 +159,23 @@ describe('Matrix analysis resumable progress store', () => {
     expect(advanced.cursor).toBe(2);
     expect(saved.state.writeCalls).toBe(1);
     await expect(store.readExploreGroups(advanced)).resolves.toEqual([{ id: 'one' }, { id: 'two' }]);
+  });
+
+  it('persists resumable Tianyan partitions separately from Explore partitions', async () => {
+    const { adapter } = memoryAdapter();
+    const saved = memoryStorage();
+    const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
+    const exploring = await store.getOrCreate({
+      lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1',
+      startedAt: '2026-08-21T10:00:00.000Z', total: 390,
+    });
+    const tianyan = await store.setPhase(exploring, 'tianyan');
+
+    const advanced = await store.appendTianyanGroup(tianyan, 0, { id: 'pair-group' });
+
+    expect(advanced).toMatchObject({ phase: 'tianyan', cursor: 1, total: 390 });
+    await expect(store.readTianyanGroupIndexes(advanced, [0])).resolves.toEqual([{ id: 'pair-group' }]);
+    expect([...saved.files.keys()].some((path) => path.includes('/tianyan/0.json.gz'))).toBe(true);
   });
 
   it('retains completed Explore partitions for the three-day analysis window', async () => {

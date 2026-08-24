@@ -30,6 +30,7 @@ import {
 } from './matrix-explore-partitions';
 import { isTaipeiRefreshWindow, matrixWorkerLimits, runRefreshThenAnalysis, selectAnalysisLottery } from './matrix-analysis-cron';
 import { readReadyAnalysis } from './matrix-ready-analysis';
+import { readStoredStatusExplore } from './matrix-status-analysis-reader';
 import { createSystemJobStatusWriter, createSystemJobTracker } from './system-job-status';
 import { createMemberOnlineRpc, createMemberOnlineService } from './member-online';
 import { createMemberProfileStore } from './member-profile-store';
@@ -91,6 +92,18 @@ const matrixCustomStatusRoutes = createMatrixCustomStatusRoutes({
 });
 const readCompletedMatrixAnalysis = (kind: 'explore'|'tianyan'|'tiangong',lottery: '今彩539'|'天天樂'|'六合彩'|'大樂透',drawPeriod?: string) =>
     readReadyAnalysis((analysisKind,analysisLottery,analysisPeriod,analysisVersion) => analysisStore.readAnalysis(analysisKind,analysisLottery,analysisPeriod,analysisVersion),kind,lottery,drawPeriod);
+async function readStatusAnalysis(kind: 'explore'|'tianyan'|'tiangong'|'status',lottery: '今彩539'|'天天樂'|'六合彩'|'大樂透',drawPeriod?: string) {
+    if (kind !== 'explore') {
+        return kind === 'tianyan'
+            ? readCompletedMatrixAnalysis(kind,lottery,drawPeriod)
+            : analysisStore.readAnalysis(kind,lottery,drawPeriod);
+    }
+    return readStoredStatusExplore(
+        (analysisKind,analysisLottery,analysisPeriod) => analysisStore.readAnalysis(analysisKind,analysisLottery,analysisPeriod),
+        lottery,
+        drawPeriod,
+    );
+}
 async function filterStoredExploreArtifact(
     artifact: ExploreArtifact,
     request: ExploreFilterRequest,
@@ -145,9 +158,7 @@ async function readStoredExploreValidationArtifact(
 }
 const matrixStatusRoutes = createMatrixStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    readAnalysis: (kind,lottery,drawPeriod) => kind === 'explore' || kind === 'tianyan'
-        ? readCompletedMatrixAnalysis(kind,lottery,drawPeriod)
-        : analysisStore.readAnalysis(kind,lottery,drawPeriod),
+    readAnalysis: (kind,lottery,drawPeriod) => readStatusAnalysis(kind,lottery,drawPeriod),
     listConfigs: memberId => matrixCustomStatusStore.list(memberId),
 });
 const matrixExploreRoutes = createMatrixExploreRoutes({
