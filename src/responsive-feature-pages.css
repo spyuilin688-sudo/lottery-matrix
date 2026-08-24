@@ -201,8 +201,8 @@
 .tongxing-query[data-floating="true"] {
   position: fixed;
   z-index: 45;
-  left: var(--tool-page-inline);
-  right: var(--tool-page-inline);
+  left: 16px;
+  right: 16px;
   width: auto;
   max-width: none;
   min-width: 0;
