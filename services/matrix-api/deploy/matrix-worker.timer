@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Lottery Matrix analysis every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=30
+Unit=matrix-worker.service
+
+[Install]
+WantedBy=timers.target

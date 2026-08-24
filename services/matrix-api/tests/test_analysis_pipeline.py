@@ -29,6 +29,18 @@ def test_pipeline_publishes_only_after_all_four_artifacts_finish() -> None:
     }
 
 
+def test_later_builders_can_consume_earlier_artifacts() -> None:
+    repository = InMemoryAnalysisRepository()
+    builders = {
+        "explore": lambda _: {"items": ["road"]},
+        "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
+        "tiangong": lambda _: {"items": []},
+        "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
+    }
+    AnalysisPipeline(repository, builders).run(DRAW, history=[])
+    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {"source": ["road"]}
+
+
 def test_pipeline_failure_marks_run_failed_and_keeps_partial_output_private() -> None:
     repository = InMemoryAnalysisRepository()
 

@@ -33,13 +33,14 @@ class AnalysisPipeline:
         if run["status"] == "complete":
             return {**run, "skipped": True}
 
-        context = {"draw": draw, "history": list(history)}
+        context = {"draw": draw, "history": list(history), "artifacts": {}}
         try:
             total = len(PHASES)
             for cursor, phase in enumerate(PHASES):
                 self.repository.update_progress(lottery, period, self.analysis_version, phase, cursor, total)
                 payload = self.builders[phase](context)
                 self.repository.save_artifact(lottery, period, self.analysis_version, phase, payload)
+                context["artifacts"][phase] = payload
             completed_at = datetime.now(UTC).isoformat()
             self.repository.complete_run(lottery, period, self.analysis_version, completed_at)
             result = self.repository.get_progress(lottery, period)

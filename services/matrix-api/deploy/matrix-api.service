@@ -1,0 +1,24 @@
+[Unit]
+Description=Lottery Matrix FastAPI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=matrix
+Group=matrix
+WorkingDirectory=/opt/lottery-matrix/current/services/matrix-api
+EnvironmentFile=/etc/lottery-matrix/matrix-api.env
+Environment=UV_CACHE_DIR=/var/cache/lottery-matrix/uv
+ExecStart=/usr/local/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/cache/lottery-matrix
+
+[Install]
+WantedBy=multi-user.target

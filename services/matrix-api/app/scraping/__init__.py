@@ -1,0 +1,1 @@
+"""Formal lottery source adapters."""

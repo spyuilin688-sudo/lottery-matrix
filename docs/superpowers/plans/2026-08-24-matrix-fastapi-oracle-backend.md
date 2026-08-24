@@ -117,3 +117,75 @@
 - [ ] Commit and push directly to `main`.
 - [ ] Confirm the latest GitHub HEAD and existing Cloudflare／AppDeploy deployment boundary.
 
+### Task 7: Formal Latest-Draw Source Adapters
+
+**Files:**
+- Create: `services/matrix-api/app/scraping/__init__.py`
+- Create: `services/matrix-api/app/scraping/html_tables.py`
+- Create: `services/matrix-api/app/scraping/sources.py`
+- Create: `services/matrix-api/tests/test_scraping_sources.py`
+
+**Interfaces:**
+- Consumes: the four formal sources already declared in `backend/scraper.ts`.
+- Produces: `parse_taiwan_lottery_payload`, `parse_sc888_fantasy5_html`, `parse_nfd_marksix_html`, and `LatestDrawSource.fetch(lottery)`.
+
+- [x] Write literal fixtures for Taiwan Lottery JSON, sc888 table HTML, and NFD table HTML; assert period, date, sorted numbers, and draw-order numbers.
+- [x] Run `uv run pytest tests/test_scraping_sources.py -q` and confirm collection fails because `app.scraping.sources` does not exist.
+- [x] Implement a standard-library table parser plus the three formal parsers without adding a second HTML parsing dependency.
+- [x] Add an injected `httpx.Client` adapter that selects only the four existing formal source URLs and rejects incomplete responses.
+- [x] Run the focused tests and commit `feat: add Python lottery source adapters`.
+
+### Task 8: Supabase Draw History and Refresh Service
+
+**Files:**
+- Modify: `services/matrix-api/app/repositories/analysis_repository.py`
+- Create: `services/matrix-api/app/services/draw_refresh.py`
+- Create: `services/matrix-api/tests/test_draw_refresh.py`
+- Modify: `services/matrix-api/tests/test_analysis_repository.py`
+
+**Interfaces:**
+- Consumes: `LatestDrawSource.fetch(lottery)` and the existing `lottery_draws` table.
+- Produces: `AnalysisRepository.list_draws(lottery, limit)` and `DrawRefreshService.refresh(lottery)`.
+
+- [x] Write failing repository and refresh tests proving newest-first history, idempotent upsert, and rejection of a source response that does not match the requested lottery.
+- [x] Implement `list_draws` in both repository adapters with one normalized camel-case response shape.
+- [x] Implement `DrawRefreshService` so one lottery failure cannot write another lottery's data.
+- [x] Run repository and refresh tests and commit `feat: refresh lottery history in Supabase`.
+
+### Task 9: Complete Artifact Builders and Oracle Worker Entry Point
+
+**Files:**
+- Create: `services/matrix-api/app/domain/tianyan_artifact.py`
+- Create: `services/matrix-api/app/domain/tiangong_generator.py`
+- Create: `services/matrix-api/app/domain/tiangong_artifact.py`
+- Create: `services/matrix-api/app/services/artifact_builders.py`
+- Create: `services/matrix-api/app/worker.py`
+- Create: `services/matrix-api/tests/test_tianyan_artifact.py`
+- Create: `services/matrix-api/tests/test_tiangong_generator.py`
+- Create: `services/matrix-api/tests/test_worker.py`
+
+**Interfaces:**
+- Consumes: completed Python Explore output, draw history, `DrawRefreshService`, and `AnalysisPipeline`.
+- Produces: four concrete builders and `python -m app.worker --lottery <彩種>`.
+
+- [x] Port the existing TypeScript Tianyan artifact fixtures before implementing the Python pair builder.
+- [x] Port the existing TypeScript Tiangong generator fixtures before implementing position paths, rule derivation, source sequences, and artifact deduplication.
+- [x] Assemble concrete `explore`, `tianyan`, `tiangong`, and `status` builders; do not expose a public compute endpoint.
+- [x] Write a worker test proving refresh → history → four artifacts → complete status order and failure isolation.
+- [x] Run all Python tests and commit `feat: run complete Matrix analysis worker`.
+
+### Task 10: Oracle Runtime Files and Final Verification
+
+**Files:**
+- Create: `services/matrix-api/deploy/matrix-api.service`
+- Create: `services/matrix-api/deploy/matrix-worker.service`
+- Create: `services/matrix-api/deploy/matrix-worker.timer`
+- Modify: `services/matrix-api/README.md`
+
+**Interfaces:**
+- Produces: reproducible Oracle process and timer configuration; actual host deployment still requires Oracle host access.
+
+- [x] Add systemd unit and timer files that execute only repository code and read secrets from the Oracle environment.
+- [x] Document exact install, start, status, and rollback commands without storing credentials.
+- [x] Run all Python tests, `npm run test:unit`, `npm run build:verified`, `git diff --check`, and secret-pattern checks.
+- [ ] Push verified source directly to `lottery-matrix/main`, then report whether actual Oracle deployment was possible with the available access.

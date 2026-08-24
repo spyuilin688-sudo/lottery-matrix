@@ -8,6 +8,7 @@ RETENTION = timedelta(days=3)
 
 class AnalysisRepository(Protocol):
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
+    def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
@@ -28,6 +29,24 @@ class InMemoryAnalysisRepository:
         stored = dict(draw)
         self.draws[(stored["lottery"], stored["period"])] = stored
         return stored
+
+    def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
+        matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
+        newest = sorted(
+            matches,
+            key=lambda draw: (str(draw.get("drawDate", "")), str(draw["period"])),
+            reverse=True,
+        )[: max(0, limit)]
+        return [
+            {
+                "period": draw["period"],
+                "drawDate": draw.get("drawDate"),
+                "numbers": draw["numbers"],
+                "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),
+                "drawOrderNumbers": draw.get("drawOrderNumbers"),
+            }
+            for draw in newest
+        ]
 
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
         key = (lottery, draw_period, analysis_version)
@@ -101,6 +120,16 @@ class SupabaseAnalysisRepository:
             "error": run.get("error"),
         }
 
+    @staticmethod
+    def _normalize_draw(draw: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "period": draw["period"],
+            "drawDate": draw.get("draw_date"),
+            "numbers": draw["numbers"],
+            "sortedNumbers": draw.get("sorted_numbers", draw["numbers"]),
+            "drawOrderNumbers": draw.get("draw_order_numbers"),
+        }
+
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
         record = {
             "lottery": draw["lottery"], "period": draw["period"], "draw_date": draw.get("drawDate") or None,
@@ -109,6 +138,18 @@ class SupabaseAnalysisRepository:
         }
         response = self.client.table("lottery_draws").upsert(record, on_conflict="lottery,period").execute()
         return self._one(response)
+
+    def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:
+        response = (
+            self.client.table("lottery_draws")
+            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+            .eq("lottery", lottery)
+            .order("draw_date", desc=True)
+            .order("period", desc=True)
+            .limit(max(0, limit))
+            .execute()
+        )
+        return [self._normalize_draw(dict(draw)) for draw in response.data]
 
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "phase": "explore", "cursor": 0, "total": 0, "status": "running", "started_at": started_at, "error": None}
