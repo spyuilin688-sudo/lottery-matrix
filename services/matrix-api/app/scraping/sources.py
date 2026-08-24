@@ -7,13 +7,16 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from app.domain.models import MatrixDraw
-from app.scraping.html_tables import clean_text, parse_table_rows
+from app.scraping.html_tables import parse_table_rows
 
 
 TAIWAN_539_URL = "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result"
 TAIWAN_649_URL = "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Lotto649Result"
 SC888_FANTASY5_URL = "https://sc888.net/index.php?s=/LotteryFan/index"
+SC888_FANTASY5_DOWNLOAD_URL = "https://sc888.net/index.php?s=/LotteryFan/getDownloadXls"
 NFD_MARKSIX_URL = "https://www.nfd.com.tw/house/year/{year}.htm"
+NFD_MARKSIX_FIRST_YEAR = 1976
+MAX_TAIWAN_HISTORY_MONTHS = 360
 FORMAL_PAGE_REFERERS = {
     "今彩539": "https://www.taiwanlottery.com/lotto/result/daily_cash",
     "大樂透": "https://www.taiwanlottery.com/lotto/result/lotto649",
@@ -185,7 +188,7 @@ def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
 def parse_nfd_marksix_history(html: str) -> list[MatrixDraw]:
     draws: list[MatrixDraw] = []
     for cells in parse_table_rows(html):
-        if len(cells) < 10 or not re.fullmatch(r"20\d{2}", cells[0]) or not re.fullmatch(r"\d{1,3}", cells[2]):
+        if len(cells) < 10 or not re.fullmatch(r"20\d{2}|19\d{2}", cells[0]) or not re.fullmatch(r"\d{1,3}", cells[2]):
             continue
         date_match = re.fullmatch(r"(\d{1,2})/(\d{1,2})", cells[1])
         if not date_match:
@@ -244,21 +247,26 @@ class LatestDrawSource:
             return parse_nfd_marksix_html(_response_text(response))
         raise ValueError("UNKNOWN_LOTTERY")
 
-    def fetch_history(self, lottery: str, limit: int) -> list[MatrixDraw]:
-        if limit <= 0:
+    def fetch_history(self, lottery: str, limit: int | None) -> list[MatrixDraw]:
+        if limit is not None and limit <= 0:
             return []
         if lottery in {"今彩539", "大樂透"}:
             return self._fetch_taiwan_history(lottery, limit)
         if lottery == "天天樂":
-            response = self.client.get(SC888_FANTASY5_URL, headers=HEADERS, timeout=20.0, follow_redirects=True)
+            url = SC888_FANTASY5_DOWNLOAD_URL if limit is None else SC888_FANTASY5_URL
+            response = self.client.get(url, headers=HEADERS, timeout=30.0 if limit is None else 20.0, follow_redirects=True)
             response.raise_for_status()
-            return parse_sc888_fantasy5_history(_response_text(response))[:limit]
+            draws = parse_sc888_fantasy5_history(_response_text(response))
+            if limit is None and not draws:
+                raise ValueError("SC888_HISTORY_DOWNLOAD_INCOMPLETE")
+            return _newest_unique(draws, limit)
         if lottery == "六合彩":
             draws: list[MatrixDraw] = []
             current_year = self.now().year
-            for year_offset in range(5):
+            first_year = NFD_MARKSIX_FIRST_YEAR if limit is None else max(NFD_MARKSIX_FIRST_YEAR, current_year - 4)
+            for year in range(current_year, first_year - 1, -1):
                 response = self.client.get(
-                    NFD_MARKSIX_URL.format(year=current_year - year_offset),
+                    NFD_MARKSIX_URL.format(year=year),
                     headers=HEADERS,
                     timeout=20.0,
                     follow_redirects=True,
@@ -266,7 +274,7 @@ class LatestDrawSource:
                 response.raise_for_status()
                 draws.extend(parse_nfd_marksix_history(_response_text(response)))
                 combined = _newest_unique(draws, limit)
-                if len(combined) >= limit:
+                if limit is not None and len(combined) >= limit:
                     return combined
             return _newest_unique(draws, limit)
         raise ValueError("UNKNOWN_LOTTERY")
@@ -277,13 +285,20 @@ class LatestDrawSource:
             raise ValueError("TAIWAN_LOTTERY_DRAW_INCOMPLETE")
         return history[0]
 
-    def _fetch_taiwan_history(self, lottery: str, limit: int, max_months: int = 24) -> list[MatrixDraw]:
+    def _fetch_taiwan_history(
+        self,
+        lottery: str,
+        limit: int | None,
+        max_months: int | None = None,
+    ) -> list[MatrixDraw]:
         is_539 = lottery == "今彩539"
         url = TAIWAN_539_URL if is_539 else TAIWAN_649_URL
         key = "daily539Res" if is_539 else "lotto649Res"
         count = 5 if is_539 else 7
         draws: list[MatrixDraw] = []
-        for month_offset in range(max_months):
+        month_ceiling = max_months if max_months is not None else MAX_TAIWAN_HISTORY_MONTHS
+
+        for month_offset in range(month_ceiling):
             month = _month_label(self.now(), month_offset)
             response = self.client.get(
                 f"{url}?period&month={month}&pageSize=31",
@@ -292,8 +307,14 @@ class LatestDrawSource:
                 follow_redirects=True,
             )
             response.raise_for_status()
-            draws.extend(parse_taiwan_lottery_history(response.json(), key, count))
+            month_draws = parse_taiwan_lottery_history(response.json(), key, count)
+            if limit is None and draws and not month_draws:
+                return _newest_unique(draws)
+            draws.extend(month_draws)
             combined = _newest_unique(draws, limit)
-            if len(combined) >= limit:
+            if limit is not None and len(combined) >= limit:
                 return combined
+
+        if limit is None:
+            raise ValueError("TAIWAN_HISTORY_BOUNDARY_NOT_FOUND")
         return _newest_unique(draws, limit)
