@@ -31,3 +31,10 @@ jobs:
       - name: Run history backfill contract tests
         working-directory: services/matrix-api
         run: uv run pytest tests/test_scraping_history.py tests/test_history_backfill.py tests/test_worker.py -q
+
+      - name: Run complete Matrix API test suite
+        working-directory: services/matrix-api
+        run: uv run pytest -q
+
+      - name: Check patch whitespace
+        run: git diff --check origin/main...HEAD
