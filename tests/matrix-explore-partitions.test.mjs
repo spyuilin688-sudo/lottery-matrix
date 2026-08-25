@@ -33,7 +33,35 @@ test('selects only partitions that can satisfy the Explore request', () => {
     numberOrder: '依號碼由小到大排序',
     roadTypes: ['加減', '合值', '拖牌'],
     explorePeriods: 7,
+    exploreDateOffset: 0,
   }), [0, 1]);
+});
+
+test('shifts the selected partitions for yesterday and the day before', () => {
+  const shiftedWorkUnits = [
+    ...workUnits,
+    { numberOrder: '依號碼由小到大排序', algorithmType: '加減', lockedSourceIndex: 1, lockedPosition: 1 },
+    { numberOrder: '依號碼由小到大排序', algorithmType: '加減', lockedSourceIndex: 2, lockedPosition: 1 },
+    { numberOrder: '依號碼由小到大排序', algorithmType: '加減', lockedSourceIndex: 3, lockedPosition: 1 },
+    { numberOrder: '依號碼由小到大排序', algorithmType: '加減', lockedSourceIndex: 4, lockedPosition: 1 },
+  ];
+  const artifact = partitions.createPartitionedExploreArtifact(
+    '今彩539',
+    '115000001',
+    {
+      id: 'job-2', lottery: '今彩539', drawPeriod: '115000001',
+      analysisVersion: '115000001:matrix-v3', startedAt: '2026-08-22T00:00:00Z',
+      phase: 'explore', cursor: shiftedWorkUnits.length, total: shiftedWorkUnits.length,
+    },
+    shiftedWorkUnits,
+  );
+
+  assert.deepEqual(partitions.partitionIndexesForRequest(artifact, {
+    numberOrder: '依號碼由小到大排序',
+    roadTypes: ['加減'],
+    explorePeriods: 2,
+    exploreDateOffset: 2,
+  }), [5, 6]);
 });
 
 test('resolves an item id to exactly one stored partition', () => {
