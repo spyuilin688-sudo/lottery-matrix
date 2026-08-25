@@ -16,8 +16,8 @@ test('homepage removes draw-toolbar wrapper and halves next draw row height', ()
   assert.match(homeCss, /\.next-draw-item\s*\{[\s\S]*?gap:\s*4px;/);
 });
 
-test('Matrix 同星使用 12px 頁面邊距、26px 控制項與現行響應式字級', () => {
-  assert.match(tokens, /--layout-page-inline:\s*12px;/);
+test('Matrix 同星沿用功能頁共用外距、26px 控制項與現行響應式字級', () => {
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.doesNotMatch(tongCss, /\.tongxing-screen \.feature-body\s*\{[\s\S]*?padding-left:\s*8px;/);
   assert.doesNotMatch(tongCss, /\.tongxing-screen \.feature-body\s*\{[\s\S]*?padding-right:\s*16px;/);
   assert.match(tongCss, /--control-height:\s*26px;/);

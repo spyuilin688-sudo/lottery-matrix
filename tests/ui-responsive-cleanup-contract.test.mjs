@@ -36,7 +36,7 @@ test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字�
 });
 
 test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距', () => {
-  assert.match(responsive, /--tool-page-inline:\s*16px;/);
+  assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   for (const selector of [
     /^\.tongxing-screen \.feature-body$/,
     /^\.number-reference-screen \.feature-body$/,
@@ -47,8 +47,8 @@ test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外�
     assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
   }
   assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
   assert.doesNotMatch(tongxing, /\.tongxing-screen \.feature-body\s*\{/);
 });
 

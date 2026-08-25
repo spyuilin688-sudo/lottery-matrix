@@ -69,7 +69,7 @@ test('Matrix 同星左欄計算樣式確實將期數與日期分成上下兩列'
 test('Matrix 同星與號碼對照單內容使用共享 16px 水平外距且不重複標題卡垂直間距', () => {
   assert.match(tokens, /--layout-section-gap:\s*8px;/);
 
-  assert.match(responsive, /--tool-page-inline:\s*16px;/);
+  assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   const tongxingBody = block(responsive, '.tongxing-screen .feature-body');
   assert.match(tongxingBody, /display:\s*flex/);
   assert.match(tongxingBody, /flex-direction:\s*column/);

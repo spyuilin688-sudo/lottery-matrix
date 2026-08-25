@@ -66,8 +66,8 @@ jobs:
       - name: Targeted Explore tests
         run: node --test tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
 
+      - name: Production build for packaging tests
+        run: npm run build
+
       - name: Full tests
         run: node --test tests/*.test.mjs
-
-      - name: Build
-        run: npm run build

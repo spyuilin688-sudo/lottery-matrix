@@ -95,5 +95,5 @@ test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 水�
   const bodyRules = ruleBodies(responsiveCss, /^\.draw-history-screen \.feature-body$/);
   assert.equal(bodyRules.length, 1);
   assert.match(bodyRules[0], /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/);
-  assert.match(responsiveCss, /--tool-page-inline:\s*16px;/);
+  assert.match(responsiveCss, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
 });

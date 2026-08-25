@@ -61,7 +61,7 @@ test('calculator compact styles render at the approved sizes without shrinking n
   assert.equal(style('.calculator-panel').paddingRight, '4px');
   assert.equal(style('.calculator-panel').borderColor, 'rgb(117, 83, 41)');
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
-  assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '12px');
+  assert.equal(style('.calculator-screen .feature-body').getPropertyValue('--layout-page-inline'), '16px');
   assert.equal(style('.column-panel').paddingBottom, '4px');
   assert.equal(style('.calculator-screen .section-title').fontSize, '16px');
   assert.equal(style('.calculator-summary').fontSize, '12px');

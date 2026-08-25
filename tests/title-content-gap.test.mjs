@@ -17,5 +17,5 @@ test('all title cards use the shared eight-pixel content gap without page overri
   assert.doesNotMatch(featurePages, /(?:draw-history-screen|matrix-explore-screen)[^{]*\.matrix-title-banner\s*\{[^}]*margin-bottom\s*:/s);
   assert.doesNotMatch(responsive, /(?:draw-history-screen|tongxing-screen|number-reference-screen)[^{]*\.matrix-title-banner\s*\{[^}]*margin-bottom\s*:/s);
   assert.match(responsive, /\.draw-history-screen \.feature-body,\s*\.tongxing-screen \.feature-body,\s*\.number-reference-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)\s*;/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 16px var\(--layout-bottom-nav-clearance\)\s*;/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)\s*;/s);
 });

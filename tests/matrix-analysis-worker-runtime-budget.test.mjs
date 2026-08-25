@@ -55,10 +55,12 @@ test('analysis starts immediately after the latest draw refresh completes', asyn
 
 test('fantasy5 uses a new dedicated handler so a disabled scheduler is not reused', () => {
   const crons = JSON.parse(readFileSync(new URL('../cron.json', import.meta.url), 'utf8'));
-  const fantasy5 = crons.find((entry) => entry.payload?.lottery === '天天樂');
+  const fantasy5 = crons.find((entry) => entry.handler === 'scheduledFantasy5MatrixAnalysisRefresh');
   const backendIndex = readFileSync(new URL('../backend/index.ts', import.meta.url), 'utf8');
 
-  assert.equal(fantasy5?.name, 'matrix-fantasy5-worker-v11');
+  assert.equal(fantasy5?.name, 'fantasy5-worker');
+  assert.equal(fantasy5?.cron, '*/5 * * * *');
+  assert.equal(fantasy5?.timezone, 'America/Los_Angeles');
   assert.equal(fantasy5?.handler, 'scheduledFantasy5MatrixAnalysisRefresh');
   assert.match(backendIndex, /export const scheduledFantasy5MatrixAnalysisRefresh/);
 });
