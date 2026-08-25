@@ -91,5 +91,10 @@ test("近10期與歷史開獎六合彩使用各自正式響應規則", async () 
     formal,
     /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball \.number-ball-value,\s*\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball \.number-ball-value\s*\{[^}]*font-weight:\s*900;/s,
   );
-  assert.match(formal, /:is\(\.matrix-explore-main-screen \.matrix-explore-history-panel, \.draw-history-screen \.draw-history-panel\)\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\]/);
+  assert.match(formal, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\]/);
+  assert.doesNotMatch(formal, /:is\([^}]*draw-history-screen[^}]*\)\[data-lottery="六合彩"\][^}]*\[data-tone=/);
+  assert.match(
+    formal,
+    /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][\s\S]*?\.number-ball-value\s*\{[^}]*top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\);[^}]*left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\);/s,
+  );
 });

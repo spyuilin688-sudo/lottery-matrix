@@ -186,6 +186,42 @@ describe('canonical Matrix Explore artifact', () => {
     expect(filtered(13)).toBe(65);
   });
 
+  it('stores exact period and date dimensions instead of inferring them during filtering', () => {
+    const fifteenDrawHistory = Array.from({ length: 15 }, (_, index) => ({
+      ...history[index % history.length],
+      period: `shifted-${index}`,
+    }));
+    const artifact = buildExploreArtifact('今彩539', 'shifted-0', fifteenDrawHistory, (input) => ({
+      results: [{
+        id: `${input.lockedSourceIndex}:${input.lockedPosition}`,
+        number: '10',
+        lockedPosition: input.lockedPosition,
+        predictionDistance: 1,
+        consecutive: '準4進5',
+        highestStreak: 4,
+        predictionNumbers: ['03'],
+        algorithmType: input.algorithmType,
+        ruleCount: 1,
+        searchCondition: { referenceOffset: -7 },
+        ruleSets: [],
+      }],
+    }));
+
+    const shifted = filterExploreArtifact(artifact, {
+      ...request,
+      explorePeriods: 2,
+      exploreDateOffset: 2,
+      exploreRange: '標準範圍',
+    }, paid);
+
+    expect(createExploreWorkUnits('今彩539', fifteenDrawHistory)).toHaveLength(450);
+    expect(shifted.total).toBe(10);
+    expect(new Set(shifted.items.map((item) => item.lockedSourceIndex))).toEqual(new Set([2, 3]));
+    expect(shifted.items.every((item) => (
+      item.explorePeriods === 2 && item.exploreDateOffset === 2
+    ))).toBe(true);
+  });
+
   it('rejects seven, thirteen and full requests without entitlement', () => {
     const artifact = { lottery: '今彩539', drawPeriod: '114000123', items: [], validationById: {} } as ExploreArtifact;
     expect(() => filterExploreArtifact(artifact, { ...request, explorePeriods: 7, exploreRange: '標準範圍' }, free)).toThrow('FORBIDDEN');

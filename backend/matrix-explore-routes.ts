@@ -29,7 +29,6 @@ type ExploreRouteDependencies = {
     lottery: LotteryId,
     drawPeriod?: string,
   ): Promise<CompletedArtifact | null>;
-  resolveDrawPeriod?(lottery: LotteryId, exploreDateOffset: 0 | 1 | 2): Promise<string | undefined>;
   filterPartitionedExplore?(
     artifact: ExploreArtifact,
     request: ExploreFilterRequest,
@@ -127,26 +126,20 @@ export function createMatrixExploreRoutes(dependencies: ExploreRouteDependencies
       try {
         const member = await memberFor(input.authorization);
         const request = parseListRequest(input.body);
-        const resolvedDrawPeriod = request.drawPeriod ?? (
-          request.exploreDateOffset === 0
-            ? undefined
-            : await dependencies.resolveDrawPeriod?.(request.lottery, request.exploreDateOffset)
-        );
         const artifact = await dependencies.readAnalysis(
           'explore',
           request.lottery,
-          resolvedDrawPeriod,
+          request.drawPeriod,
         );
         if (!artifact) throw new Error('ANALYSIS_NOT_READY');
-        const normalizedRequest = { ...request, exploreDateOffset: 0 as const };
         const entitlements = resolveMatrixEntitlements(member, now());
         const filtered = dependencies.filterPartitionedExplore
           ? await dependencies.filterPartitionedExplore(
             artifact.data,
-            normalizedRequest,
+            request,
             entitlements,
           )
-          : filterExploreArtifact(artifact.data, normalizedRequest, entitlements);
+          : filterExploreArtifact(artifact.data, request, entitlements);
         return {
           status: 200,
           body: {

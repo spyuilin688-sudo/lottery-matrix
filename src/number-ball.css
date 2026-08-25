@@ -183,17 +183,17 @@
   transform: translateY(2px);
 }
 
-:is(.matrix-explore-main-screen .matrix-explore-history-panel, .draw-history-screen .draw-history-panel)[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="red"] {
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="red"] {
   --number-x: -0.06px;
   --number-y: 0.11px;
 }
 
-:is(.matrix-explore-main-screen .matrix-explore-history-panel, .draw-history-screen .draw-history-panel)[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="green"] {
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="green"] {
   --number-x: -0.02px;
   --number-y: 0.36px;
 }
 
-:is(.matrix-explore-main-screen .matrix-explore-history-panel, .draw-history-screen .draw-history-panel)[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="blue"] {
+.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="blue"] {
   --number-x: 0.48px;
   --number-y: -0.16px;
 }
@@ -208,6 +208,13 @@
   --underline-height: .7px;
   --underline-y: -.3px;
   transform: translateY(2px);
+}
+
+.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value {
+  position: absolute;
+  top: calc(50% + var(--number-ball-asset-y));
+  left: calc(50% + var(--number-ball-asset-x));
+  transform: translate(-50%, -50%);
 }
 
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value,

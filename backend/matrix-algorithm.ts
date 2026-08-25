@@ -3,7 +3,7 @@ export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎
 export type MatrixAlgorithmType = '加減' | '合值' | '拖牌';
 export type MatrixDraw = { period: string; drawDate: string; numbers: string[]; sortedNumbers?: string[]; drawOrderNumbers?: string[] | null };
 export type MatrixAlgorithmRequest = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; lockedPosition: number; lockedNumber: number; lockedSourcePeriod?: string; referenceOffset?: number; referencePosition?: number; predictionDistance: number; ruleCount: 1 | 2; algorithmType: MatrixAlgorithmType };
-export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 13; exploreDateOffset: 0; exploreRange: '完整範圍'; minPredictionDistance: 1; maxPredictionDistance: 13 };
+export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 2 | 7 | 13; exploreDateOffset: 0 | 1 | 2; exploreRange: '完整範圍'; minPredictionDistance: 1; maxPredictionDistance: 13 };
 export type MatrixAlgorithmRule = { value: number; display: string; algorithmType: MatrixAlgorithmType };
 export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceNumbers: number[]; sourceSortedNumbers: Array<string | number>; sourceDrawOrderNumbers: Array<string | number> | null; referencePeriod: string; referenceNumbers: number[]; referenceSortedNumbers: Array<string | number>; referenceDrawOrderNumbers: Array<string | number> | null; baseNumber: number; predictionPeriod: string; predictionNumbers: Array<string | number>; candidateRules: number[]; matchedRules: MatrixAlgorithmRule[]; hitNumbers: number[]; success: boolean };
 export type MatrixAlgorithmRuleSet = { rules: MatrixAlgorithmRule[]; predictionNumbers: number[]; historicalValidation: MatrixValidationRow[] };
@@ -300,7 +300,7 @@ export function runMatrixExploreGroupWithHistory(input: MatrixExploreGroupInput,
   const count = ballCount(input.lottery);
   if (!numberOrders.includes(input.numberOrder)) throw new Error('未知號碼順序');
   if (!algorithmTypes.includes(input.algorithmType)) throw new Error('未知版路類型');
-  if (!Number.isInteger(input.lockedSourceIndex) || input.lockedSourceIndex < 0 || input.lockedSourceIndex >= Math.min(13, newestFirst.length)) throw new Error('鎖定來源期超出前十三期');
+  if (!Number.isInteger(input.lockedSourceIndex) || input.lockedSourceIndex < 0 || input.lockedSourceIndex >= Math.min(15, newestFirst.length)) throw new Error('鎖定來源期超出探索日期與十三期範圍');
   if (!Number.isInteger(input.lockedPosition) || input.lockedPosition < 1 || input.lockedPosition > count) throw new Error('鎖定位置超出彩種位置範圍');
   const source = newestFirst[input.lockedSourceIndex];
   const lockedNumber = numberAt(source, input.lottery, input.numberOrder, input.lockedPosition);
