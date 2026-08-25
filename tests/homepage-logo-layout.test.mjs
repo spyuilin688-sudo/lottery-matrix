@@ -14,9 +14,9 @@ test("首頁使用正式 matrixya 圖檔並維持 75% 流式尺寸", () => {
 });
 
 test("首頁 Logo 不使用硬拉位移", () => {
-  const start = css.indexOf(".home-screen .home-logo-image");
-  const end = css.indexOf(".home-screen .lottery-switcher", start);
-  const logoRules = css.slice(start, end);
-  assert.ok(start >= 0 && end > start);
+  const logoRules = [...css.matchAll(/\.home-screen \.home-logo-image\s*\{[^}]*\}/gs)]
+    .map(([rule]) => rule)
+    .join("\n");
+  assert.notEqual(logoRules, "");
   assert.doesNotMatch(logoRules, /translateY\(|top\s*:\s*-|margin(?:-[a-z]+)?\s*:\s*-/);
 });
