@@ -568,6 +568,7 @@ function HistoryList({
   onExpandedChange?: (expanded: boolean) => void;
 }) {
   const history = useLotteryHistory(lottery, 10);
+  const displayedHistory = useMemo(() => [...history].reverse(), [history]);
   const order = getHistoryOrder(numberOrder);
   const [internalExpanded, setInternalExpanded] = useState(!collapsible);
   const expanded = controlledExpanded ?? internalExpanded;
@@ -635,11 +636,11 @@ function HistoryList({
         <div className="history-row history-head">
           <span>期數</span><span>日期</span><span>開獎號碼</span>
         </div>
-        {history.map((record, index) => {
+        {displayedHistory.map((record, index) => {
           const draw = getHistoryDrawNumbers(lottery, record, order);
           const issue = record.period ?? record.issue ?? "";
           const date = record.drawDate ?? record.date ?? "";
-          const previousDate = index > 0 ? getDrawDate(history[index - 1]) : undefined;
+          const previousDate = index > 0 ? getDrawDate(displayedHistory[index - 1]) : undefined;
 
           return (
             <div className="history-row" data-week-boundary={isNearHistoryWeekBoundary(lottery, previousDate, date)} key={issue}>
