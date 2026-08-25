@@ -67,10 +67,18 @@ function ballCount(lottery: MatrixLottery) {
   return lottery === '今彩539' || lottery === '天天樂' ? 5 : 7;
 }
 
-function minimumExplorePeriods(lockedSourceIndex: number): 2 | 7 | 13 {
-  if (lockedSourceIndex < 2) return 2;
-  if (lockedSourceIndex < 7) return 7;
-  return 13;
+function exploreSelectionsForSourceIndex(lockedSourceIndex: number) {
+  const selections: Array<Pick<ExploreRunInput, 'explorePeriods' | 'exploreDateOffset'>> = [];
+  for (const exploreDateOffset of [0, 1, 2] as const) {
+    const relativeSourceIndex = lockedSourceIndex - exploreDateOffset;
+    if (relativeSourceIndex < 0) continue;
+    for (const explorePeriods of [2, 7, 13] as const) {
+      if (relativeSourceIndex < explorePeriods) {
+        selections.push({ explorePeriods, exploreDateOffset });
+      }
+    }
+  }
+  return selections;
 }
 
 function canonicalId(config: ExploreRunInput, raw: Record<string, unknown>) {
@@ -91,7 +99,7 @@ export function createExploreWorkUnits(
   history: MatrixDraw[],
 ): ExploreRunInput[] {
   const units: ExploreRunInput[] = [];
-  const sourceCount = Math.min(13, history.length);
+  const sourceCount = Math.min(15, history.length);
   const positions = ballCount(lottery);
   for (const numberOrder of numberOrders) {
     for (const algorithmType of algorithmTypes) {
@@ -126,43 +134,46 @@ export function buildExploreGroupArtifact(
   const validationById: Record<string, ExploreValidation> = {};
   const result = runner(input, history);
   for (const raw of result.results ?? []) {
-    const id = canonicalId(input, raw);
     const searchCondition = (raw.searchCondition ?? {}) as Record<string, unknown>;
     const resultRuleCount = Number(raw.ruleCount ?? searchCondition.ruleCount) as 1 | 2;
     if (resultRuleCount !== 1 && resultRuleCount !== 2) continue;
-    items.push({
-      id,
-      number: String(raw.number ?? ''),
-      lockedPosition: Number(raw.lockedPosition),
-      predictionDistance: Number(raw.predictionDistance),
-      consecutive: String(raw.consecutive ?? ''),
-      highestStreak: Number(raw.highestStreak),
-      predictionNumbers: Array.isArray(raw.predictionNumbers)
-        ? raw.predictionNumbers.map(String)
-        : [],
-      algorithmType: input.algorithmType,
-      numberOrder: input.numberOrder,
-      explorePeriods: minimumExplorePeriods(input.lockedSourceIndex),
-      exploreDateOffset: 0,
-      ruleCount: resultRuleCount,
-      lockedSourceIndex: input.lockedSourceIndex,
-      lockedSourcePeriod: String(raw.lockedSourcePeriod ?? history[input.lockedSourceIndex]?.period ?? ''),
-      ...(Number.isInteger(searchCondition.referenceOffset)
-        ? { referenceOffset: Number(searchCondition.referenceOffset) }
-        : {}),
-      ...(Number.isInteger(searchCondition.referencePosition)
-        ? { referencePosition: Number(searchCondition.referencePosition) }
-        : {}),
-    });
-    validationById[id] = {
-      itemId: id,
-      ...(raw.sourceA && typeof raw.sourceA === 'object'
-        ? { sourceA: raw.sourceA as Record<string, unknown> }
-        : {}),
-      ruleSets: Array.isArray(raw.ruleSets)
-        ? raw.ruleSets as Array<Record<string, unknown>>
-        : [],
-    };
+    for (const selection of exploreSelectionsForSourceIndex(input.lockedSourceIndex)) {
+      const exactInput = { ...input, ...selection };
+      const id = canonicalId(exactInput, raw);
+      items.push({
+        id,
+        number: String(raw.number ?? ''),
+        lockedPosition: Number(raw.lockedPosition),
+        predictionDistance: Number(raw.predictionDistance),
+        consecutive: String(raw.consecutive ?? ''),
+        highestStreak: Number(raw.highestStreak),
+        predictionNumbers: Array.isArray(raw.predictionNumbers)
+          ? raw.predictionNumbers.map(String)
+          : [],
+        algorithmType: input.algorithmType,
+        numberOrder: input.numberOrder,
+        explorePeriods: selection.explorePeriods,
+        exploreDateOffset: selection.exploreDateOffset,
+        ruleCount: resultRuleCount,
+        lockedSourceIndex: input.lockedSourceIndex,
+        lockedSourcePeriod: String(raw.lockedSourcePeriod ?? history[input.lockedSourceIndex]?.period ?? ''),
+        ...(Number.isInteger(searchCondition.referenceOffset)
+          ? { referenceOffset: Number(searchCondition.referenceOffset) }
+          : {}),
+        ...(Number.isInteger(searchCondition.referencePosition)
+          ? { referencePosition: Number(searchCondition.referencePosition) }
+          : {}),
+      });
+      validationById[id] = {
+        itemId: id,
+        ...(raw.sourceA && typeof raw.sourceA === 'object'
+          ? { sourceA: raw.sourceA as Record<string, unknown> }
+          : {}),
+        ruleSets: Array.isArray(raw.ruleSets)
+          ? raw.ruleSets as Array<Record<string, unknown>>
+          : [],
+      };
+    }
   }
   return { lottery: input.lottery, drawPeriod, items, validationById };
 }
@@ -258,9 +269,7 @@ export function filterExploreArtifact(
 
   let items = artifact.items.filter((item) => (
     item.numberOrder === request.numberOrder
-    && (item.lockedSourceIndex === undefined
-      ? item.explorePeriods === request.explorePeriods
-      : item.explorePeriods <= request.explorePeriods)
+    && item.explorePeriods === request.explorePeriods
     && item.exploreDateOffset === request.exploreDateOffset
     && item.ruleCount === request.ruleCount
     && request.roadTypes.includes(item.algorithmType)
