@@ -81,6 +81,17 @@ export function isFantasy5RefreshTime(now = new Date()): boolean {
   return pacific.hour === 18 && pacific.minute === 50;
 }
 
+export function nextDrawAtForDisplay(
+  lottery: string,
+  cachedNextDrawAt: string | null,
+  now = new Date(),
+): string | null {
+  if (lottery === '天天樂') return nextFantasy5DrawAt(now);
+  if (cachedNextDrawAt) return cachedNextDrawAt;
+  if (lottery === '今彩539' || lottery === '大樂透') return nextTaipeiLotteryDrawAt(lottery, now);
+  return null;
+}
+
 export function nextTaipeiLotteryDrawAt(lottery: '今彩539' | '大樂透', now = new Date()): string {
   const drawDays = lottery === '今彩539' ? new Set([1, 2, 3, 4, 5, 6]) : new Set([2, 5]);
   const taipeiWallClock = new Date(now.getTime() + 8 * 60 * 60 * 1_000);
