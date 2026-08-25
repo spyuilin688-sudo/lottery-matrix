@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
-import { MatrixApiError, matrixApiFetch } from '../matrix-api-client';
+import { matrixApiFetch } from '../matrix-api-client';
 import {
   clearLineAuthEphemeralState,
   clearLineProviderToken,
@@ -33,26 +33,33 @@ export async function signOutFromMatrix(
   client: SupabaseClient = getSupabaseClient(),
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
 ) {
-  const { data, error: sessionError } = await client.auth.getSession();
-  if (sessionError) throw sessionError;
+  let session: Awaited<ReturnType<SupabaseClient['auth']['getSession']>>['data']['session'] = null;
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (!error) session = data.session;
+  } catch {
+    // Local sign-out must remain available even if the current session cannot be read.
+  }
 
-  const accessToken = data.session?.access_token ?? null;
-  if (!accessToken) throw new MatrixApiError('AUTH_REQUIRED', 401);
-
-  if (!isLineProviderTokenRevokedFor(accessToken)) {
-    const sessionProviderToken = data.session?.provider_token;
+  const accessToken = session?.access_token ?? null;
+  if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
+    const sessionProviderToken = session?.provider_token;
     const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
       ? sessionProviderToken
       : readLineProviderToken();
     if (providerAccessToken) {
-      await revoke(providerAccessToken);
-      clearLineProviderToken();
-      markLineProviderTokenRevokedFor(accessToken);
+      try {
+        await revoke(providerAccessToken);
+        clearLineProviderToken();
+        markLineProviderTokenRevokedFor(accessToken);
+      } catch {
+        // LINE revocation is best-effort; it must not trap an iOS browser in a logged-in state.
+      }
     }
   }
 
   try {
-    const { error } = await client.auth.signOut();
+    const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
   } catch {
     throw new Error('SUPABASE_SIGN_OUT_FAILED');

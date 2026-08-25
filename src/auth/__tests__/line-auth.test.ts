@@ -145,6 +145,7 @@ describe('LINE auth helper', () => {
 
     expect(order).toEqual(['revoke', 'signOut']);
     expect(revoke).toHaveBeenCalledWith('provider-token');
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('prefers the current session provider token over stale process memory', async () => {
@@ -164,24 +165,24 @@ describe('LINE auth helper', () => {
     expect(revoke).not.toHaveBeenCalledWith('stale-remembered-provider-token');
   });
 
-  it('does not clear Supabase when LINE revoke fails', async () => {
+  it('still clears the local Supabase session when LINE revoke fails', async () => {
     const { client, signOut } = createClient();
     const revoke = vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED'));
 
-    await expect(signOutFromMatrix(client as never, revoke)).rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
+    await expect(signOutFromMatrix(client as never, revoke)).resolves.toBeUndefined();
 
-    expect(signOut).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
-  it('rejects a getSession error without revoke or Supabase signOut', async () => {
+  it('still clears the local Supabase session when getSession fails', async () => {
     const sessionError = new Error('SUPABASE_SESSION_READ_FAILED');
     const { client, signOut } = createClient({ sessionError });
     const revoke = vi.fn();
 
-    await expect(signOutFromMatrix(client as never, revoke)).rejects.toBe(sessionError);
+    await expect(signOutFromMatrix(client as never, revoke)).resolves.toBeUndefined();
 
     expect(revoke).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('uses the provider token captured from the immediately preceding OAuth event', async () => {
