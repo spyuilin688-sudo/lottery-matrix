@@ -48,10 +48,10 @@ test("Matrix 探索顯示天衍天工，兩顆圖示為 1.8rem 且間距 4px", (
   assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);
 });
 
-test("近10期與歷史六合彩球號使用相同逐色對位、底線各上移 0.4px", () => {
+test("近10期保留逐色對位，歷史六合彩數字與底線共同置於白色球心", () => {
   assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--underline-y:\s*-\.8px;/s);
-  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--number-x:\s*0px;[^}]*--number-y:\s*0px;[^}]*--underline-y:\s*-\.3px;/s);
-  assert.match(balls, /:is\(\.matrix-explore-main-screen \.matrix-explore-history-panel, \.draw-history-screen \.draw-history-panel\)\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\][^{]*\{[^}]*--number-x:\s*0\.48px;[^}]*--number-y:\s*-0\.16px;/s);
+  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\][^{]*\{[^}]*--number-x:\s*0\.48px;[^}]*--number-y:\s*-0\.16px;/s);
+  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][\s\S]*?\.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\);[^}]*left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\);[^}]*transform:\s*translate\(-50%, -50%\);/s);
 });
 
 test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
