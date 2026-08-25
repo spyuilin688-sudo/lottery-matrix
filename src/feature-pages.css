@@ -991,7 +991,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .plan-name { display: block; padding-top: 2px; color: #e5c36e; font-size: 18px; font-weight: 650; white-space: nowrap; }
 .plan-tool-icons { position: absolute; top: 18px; right: 18px; display: flex; justify-content: flex-end; gap: 7px; }
 .plan-tool-icons--stacked { flex-direction: column; }
-.plan-tool-icons img { width: 72px; height: 72px; border: 1px solid rgba(220, 169, 57, .7); border-radius: 11px; object-fit: cover; box-shadow: 0 0 12px rgba(211, 155, 39, .2); }
+.plan-tool-icon { display: block; width: 72px; height: 72px; overflow: hidden; border: 1px solid rgba(220, 169, 57, .7); border-radius: 11px; box-shadow: 0 0 12px rgba(211, 155, 39, .2); }
+.plan-tool-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .plan-card--with-tools .plan-card-heading,
 .plan-card--with-tools > strong,
 .plan-card--with-tools > h2,

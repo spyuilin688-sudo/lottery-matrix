@@ -3572,7 +3572,7 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
           <div className="plan-card-heading">
             <span className="plan-name">{plan.name}</span>
             {plan.icons.length > 0 ? <div className={`plan-tool-icons${plan.icons.length > 1 ? " plan-tool-icons--stacked" : ""}`} aria-label={`${plan.name}開放工具`}>
-              {plan.icons.map((icon) => <img src={icon.src} alt={icon.alt} key={icon.alt} />)}
+              {plan.icons.map((icon) => <span className="plan-tool-icon" key={icon.alt}><img src={icon.src} alt={icon.alt} /></span>)}
             </div> : null}
           </div>
           <strong>{plan.price}<small>／{plan.days}天</small></strong>
