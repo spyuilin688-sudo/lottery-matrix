@@ -7,7 +7,7 @@ import type {
 import type { MatrixAnalysisJob } from './matrix-analysis-progress-store';
 import type { ExploreArtifact } from './matrix-explore-service';
 
-export const PARTITIONED_EXPLORE_FORMAT = 'matrix-explore-partitioned-v1' as const;
+export const PARTITIONED_EXPLORE_FORMAT = 'matrix-explore-partitioned-v2' as const;
 
 type PartitionDescriptor = Pick<
   MatrixExploreGroupInput,
@@ -31,6 +31,7 @@ type PartitionRequest = {
   numberOrder: MatrixNumberOrder;
   roadTypes: MatrixAlgorithmType[];
   explorePeriods: 2 | 7 | 13;
+  exploreDateOffset: 0 | 1 | 2;
 };
 
 export function createPartitionedExploreArtifact(
@@ -86,7 +87,8 @@ export function partitionIndexesForRequest(
     .filter((partition) => (
       partition.numberOrder === request.numberOrder
       && request.roadTypes.includes(partition.algorithmType)
-      && partition.lockedSourceIndex < request.explorePeriods
+      && partition.lockedSourceIndex >= request.exploreDateOffset
+      && partition.lockedSourceIndex < request.exploreDateOffset + request.explorePeriods
     ))
     .map((partition) => partition.index);
 }
