@@ -331,7 +331,7 @@ export function BrandLoading({ visible, onComplete, className = "" }: BrandLoadi
 }
 
 export type PrototypeProps = { isLoading?: boolean };
-export default function Prototype({ isLoading = false }: PrototypeProps) {
+export default function Prototype({ isLoading = true }: PrototypeProps) {
   const [startupVisible, setStartupVisible] = useState(isLoading);
   const [selected, setSelected] = useState<LotteryId>("今彩539");
   const [order, setOrder] = useState<DrawOrder>("順球");
