@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import * as XLSX from 'xlsx';
 import { db } from '@appdeploy/sdk';
 import { deduplicateDrawRecords, materializeOrderFields, mergeDrawRecord, normalizeNumberList, sortDrawNumbers, type DrawRecord } from './draw-records';
-import { nextFantasy5DrawAt, nextTaipeiLotteryDrawAt } from './draw-schedule';
+import { nextDrawAtForDisplay, nextFantasy5DrawAt, nextTaipeiLotteryDrawAt } from './draw-schedule';
 
 type Draw = DrawRecord;
 type SourceConfig = { lottery: string; url: string; count: number; table: string };
@@ -965,7 +965,7 @@ const nextDrawCacheTable = 'next_draw_cache';
 type NextDrawCacheRecord = { lottery: string; nextDrawAt: string; updatedAt: string };
 async function readNextDrawCache(lottery: string) { const page = await db.list<NextDrawCacheRecord>(nextDrawCacheTable,{limit:10,filter:{lottery}}); const current=page.items.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]; return current && Date.parse(current.nextDrawAt)>Date.now() ? current.nextDrawAt : null; }
 export async function refreshNextDrawCache(lottery: string) { if (!tableByLottery[lottery]) throw new Error('未知彩種'); const nextDrawAt=lottery==='天天樂'?nextFantasy5DrawAt():(await scrapeNextDrawAt(lottery))??(lottery==='今彩539'||lottery==='大樂透'?nextTaipeiLotteryDrawAt(lottery):null); if(!nextDrawAt) return null; const page=await db.list<NextDrawCacheRecord>(nextDrawCacheTable,{limit:10,filter:{lottery}}); const record={lottery,nextDrawAt,updatedAt:new Date().toISOString()}; const current=page.items[0]; if(current) { const [updated]=await db.update(nextDrawCacheTable,[{id:current.id,record}]); if(!updated) throw new Error('下次開獎時間快取更新失敗'); } else { const [id]=await db.add(nextDrawCacheTable,[record]); if(!id) throw new Error('下次開獎時間快取建立失敗'); } return nextDrawAt; }
-export async function getMatrixLatest(lottery: string) { const item = (await getMatrixHistory(lottery, 1))[0] ?? null; if (!item) return null; const nextDrawAt=(await readNextDrawCache(lottery))??(lottery==='天天樂'?nextFantasy5DrawAt():lottery==='今彩539'||lottery==='大樂透'?nextTaipeiLotteryDrawAt(lottery):null); return { ...item, nextDrawAt }; }
+export async function getMatrixLatest(lottery: string) { const item = (await getMatrixHistory(lottery, 1))[0] ?? null; if (!item) return null; const cachedNextDrawAt=await readNextDrawCache(lottery); const nextDrawAt=nextDrawAtForDisplay(lottery,cachedNextDrawAt); return { ...item, nextDrawAt }; }
 
 export async function getMatrixCoverage() {
   const targets = [1000, 3000, 5000];
