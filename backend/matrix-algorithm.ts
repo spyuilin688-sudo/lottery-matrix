@@ -300,7 +300,7 @@ export function runMatrixExploreGroupWithHistory(input: MatrixExploreGroupInput,
   const count = ballCount(input.lottery);
   if (!numberOrders.includes(input.numberOrder)) throw new Error('未知號碼順序');
   if (!algorithmTypes.includes(input.algorithmType)) throw new Error('未知版路類型');
-  if (!Number.isInteger(input.lockedSourceIndex) || input.lockedSourceIndex < 0 || input.lockedSourceIndex >= Math.min(15, newestFirst.length)) throw new Error('鎖定來源期超出前十五期');
+  if (!Number.isInteger(input.lockedSourceIndex) || input.lockedSourceIndex < 0 || input.lockedSourceIndex >= Math.min(15, newestFirst.length)) throw new Error('鎖定來源期超出探索日期與十三期範圍');
   if (!Number.isInteger(input.lockedPosition) || input.lockedPosition < 1 || input.lockedPosition > count) throw new Error('鎖定位置超出彩種位置範圍');
   const source = newestFirst[input.lockedSourceIndex];
   const lockedNumber = numberAt(source, input.lottery, input.numberOrder, input.lockedPosition);
