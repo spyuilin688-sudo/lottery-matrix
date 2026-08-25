@@ -39,11 +39,17 @@ const artifact: ExploreArtifact = {
     consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'], algorithmType: '加減',
     numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, ruleCount: 1,
     referenceOffset: -7,
+  }, {
+    id: 'item-shifted', number: '10', lockedPosition: 1, predictionDistance: 1,
+    consecutive: '準4進5', highestStreak: 4, predictionNumbers: ['03'], algorithmType: '加減',
+    numberOrder: '依號碼由小到大排序', explorePeriods: 2, exploreDateOffset: 2, ruleCount: 1,
+    referenceOffset: -7,
   }],
   validationById: {
     'item-1': { itemId: 'item-1', ruleSets: [] },
     'item-2': { itemId: 'item-2', ruleSets: [] },
     'item-7': { itemId: 'item-7', ruleSets: [] },
+    'item-shifted': { itemId: 'item-shifted', ruleSets: [] },
   },
 };
 
@@ -73,21 +79,22 @@ function routes(overrides: Partial<Parameters<typeof createMatrixExploreRoutes>[
 }
 
 describe('Matrix Explore routes', () => {
-  it('reads yesterday and the previous day from their stored draw periods without recomputing offsets', async () => {
+  it('reads shifted dates from the current artifact and preserves the requested offset', async () => {
     const readAnalysis = vi.fn(async () => ({
-      analysisVersion: '114000121:v1',
-      drawPeriod: '114000121',
-      data: { ...artifact, drawPeriod: '114000121' },
+      analysisVersion: '114000123:v1',
+      drawPeriod: '114000123',
+      data: artifact,
     }));
-    const resolveDrawPeriod = vi.fn(async () => '114000121');
-    const response = await routes({ readAnalysis, resolveDrawPeriod }).list({
+    const response = await routes({ readAnalysis }).list({
       authorization: 'Bearer token',
-      body: { ...listBody, exploreDateOffset: 2 },
+      body: { ...listBody, explorePeriods: 2, exploreDateOffset: 2, exploreRange: '標準範圍' },
     });
 
-    expect(resolveDrawPeriod).toHaveBeenCalledWith('今彩539', 2);
-    expect(readAnalysis).toHaveBeenCalledWith('explore', '今彩539', '114000121');
-    expect(response).toMatchObject({ status: 200, body: { drawPeriod: '114000121', total: 1 } });
+    expect(readAnalysis).toHaveBeenCalledWith('explore', '今彩539', undefined);
+    expect(response).toMatchObject({
+      status: 200,
+      body: { drawPeriod: '114000123', total: 1, items: [{ id: 'item-shifted' }] },
+    });
   });
 
   it('allows anonymous standard two-period exploration without calling member auth', async () => {
@@ -149,7 +156,7 @@ describe('Matrix Explore routes', () => {
       ...artifact,
       items: [],
       validationById: {},
-      partitioned: { format: 'matrix-explore-partitioned-v1' },
+      partitioned: { format: 'matrix-explore-partitioned-v2' },
     } as never;
     const filterPartitionedExplore = vi.fn(async () => ({
       items: [artifact.items[0]],
