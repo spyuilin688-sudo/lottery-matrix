@@ -40,12 +40,12 @@ export type NextDrawInfoData = {
 };
 
 export type MatrixStatusData = {
-  status: "啟動" | "聚合" | "共振" | "臨界";
-  statusEn: "ACTIVE" | "FOCUS" | "RESONANCE" | "CRITICAL";
+  status: "啟動" | "聚合" | "共振" | "臨界" | "沉寂";
+  statusEn: "ACTIVE" | "FOCUS" | "RESONANCE" | "CRITICAL" | "DORMANT";
   artwork: string;
   count: number;
   description: string;
-  tone: "green" | "blue" | "purple" | "orange";
+  tone: "green" | "blue" | "purple" | "orange" | "dormant";
 };
 
 export type MatrixStatusMap = Record<LotteryId, MatrixStatusData>;
@@ -76,7 +76,6 @@ const HOME_ASSETS = {
   logo: "/assets/lottery/functions/matrixya.png",
   lotterySwitcher: `${STATUS_ASSET_BASE}/Matrixbba.png`,
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
-  matrixStatus: `${STATUS_ASSET_BASE}/matrixAA.png`,
   matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,
   tongxing: `${HOME_ASSET_BASE}/同星.png`,
   reference: `${HOME_ASSET_BASE}/對照單.png`,
@@ -115,11 +114,11 @@ const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
   大樂透: { nextDraw: "", remainingTime: "00:00:00" },
 };
 
-const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
+export const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   今彩539: {
     status: "啟動",
     statusEn: "ACTIVE",
-    artwork: "/assets/lottery/status/active.png",
+    artwork: `${STATUS_ASSET_BASE}/啟動.png`,
     count: 2,
     description: "具備基本參考價值",
     tone: "green",
@@ -127,7 +126,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   天天樂: {
     status: "聚合",
     statusEn: "FOCUS",
-    artwork: "/assets/lottery/status/focus.png",
+    artwork: `${STATUS_ASSET_BASE}/聚合.png`,
     count: 1,
     description: "具備明顯規律集中性",
     tone: "blue",
@@ -135,7 +134,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   "六合彩": {
     status: "共振",
     statusEn: "RESONANCE",
-    artwork: "/assets/lottery/status/resonance.png",
+    artwork: `${STATUS_ASSET_BASE}/共振.png`,
     count: 3,
     description: "具備強烈共振效應",
     tone: "purple",
@@ -143,7 +142,7 @@ const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
   大樂透: {
     status: "臨界",
     statusEn: "CRITICAL",
-    artwork: "/assets/lottery/status/critical.png",
+    artwork: `${STATUS_ASSET_BASE}/臨界.png`,
     count: 4,
     description: "極為罕見版路狀態",
     tone: "orange",
@@ -287,8 +286,12 @@ export type MatrixStatusSectionProps = {
   current?: Pick<MatrixStatusResponse['summary'], 'status' | 'count' | 'message'> | null;
   onOpen?: () => void;
 };
-export function MatrixStatusSection({ current = null, onOpen }: MatrixStatusSectionProps = {}) {
-  const labels = { ACTIVE: "啟動", FOCUS: "聚合", RESONANCE: "共振", CRITICAL: "臨界", DORMANT: "沉寂" } as const;
+
+export function MatrixStatusSection({
+  statuses = MATRIX_STATUS_BY_LOTTERY,
+  current = null,
+  onOpen,
+}: MatrixStatusSectionProps = {}) {
   return (
     <section
       className="matrix-status-section home-status-box"
@@ -296,19 +299,36 @@ export function MatrixStatusSection({ current = null, onOpen }: MatrixStatusSect
       data-testid="matrix-status-section"
       data-current-status={current?.status}
     >
-      <img className="home-asset-image" src={HOME_ASSETS.matrixStatus} alt="" draggable={false} />
-      <div className="matrix-status-hit-grid" aria-label="Matrix 四種狀態">
-        {(["ACTIVE", "FOCUS", "RESONANCE", "CRITICAL"] as const).map((status) => {
-          const label = labels[status];
-          return <button type="button" aria-label={label} data-active={current?.status === status} key={label} onClick={onOpen}>
-            <span className="clean-hit-label">{label}</span>
-          </button>;
+      <div className="matrix-status-card-grid" aria-label="四個彩種 Matrix 狀態">
+        {LOTTERIES.map((lottery) => {
+          const status = statuses[lottery.id];
+          return (
+            <button
+              type="button"
+              className="matrix-status-card"
+              aria-label={`${lottery.id} ${status.status}`}
+              data-lottery={lottery.id}
+              data-status={status.statusEn}
+              key={lottery.id}
+              onClick={onOpen}
+            >
+              <img
+                className="matrix-status-artwork"
+                src={status.artwork}
+                alt=""
+                draggable={false}
+              />
+              <img
+                className="matrix-status-lottery-logo"
+                src={lottery.logo}
+                alt={lottery.id}
+                draggable={false}
+              />
+              <span className="clean-hit-label">{lottery.id} {status.status}</span>
+            </button>
+          );
         })}
       </div>
-      {current ? <button type="button" className="matrix-status-current" onClick={onOpen}>
-        {current.status === "DORMANT" ? <strong>{labels.DORMANT}</strong> : null}
-        <span>{current.count} 組</span><small>{current.message}</small>
-      </button> : null}
     </section>
   );
 }
