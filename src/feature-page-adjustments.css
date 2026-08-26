@@ -39,7 +39,7 @@
 .notifications-screen-v2 .notification-heading {
   display: grid;
   min-height: 0;
-  padding: 2px 4px;
+  padding: 4px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 6px;
@@ -49,10 +49,6 @@
 .notifications-screen-v2 .notification-icon img {
   width: 36px;
   height: 36px;
-}
-
-.notifications-screen-v2 .notification-system-group .notification-heading {
-  padding-block: 0;
 }
 
 .notifications-screen-v2 .notification-title {
@@ -81,8 +77,8 @@
   box-sizing: border-box;
   min-width: 0;
   width: 64px;
-  height: 24px;
-  min-height: 24px;
+  height: 20px;
+  min-height: 20px;
   padding: 0 5px;
   flex: 0 1 auto;
   align-items: center;
@@ -116,9 +112,9 @@
 
 .notifications-screen-v2 .notification-actions > .toggle {
   width: 38px;
-  height: 32px;
+  height: 20px;
   flex: 0 0 38px;
-  align-self: start;
+  align-self: center;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -127,14 +123,14 @@
 }
 
 .notifications-screen-v2 .toggle::before {
-  top: 6px;
+  top: 0;
   width: 38px;
   height: 20px;
   border-radius: 2px;
 }
 
 .notifications-screen-v2 .toggle span {
-  top: 8px;
+  top: 2px;
   width: 16px;
   height: 16px;
 }
