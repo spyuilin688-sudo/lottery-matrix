@@ -178,9 +178,10 @@ test("documents only evidenced font loading and route-focus behavior", () => {
   assert.doesNotMatch(contract, /restores route focus/);
 });
 
-test("inventories every reachable native confirmation and excludes the legacy owner", () => {
+test("routes every reachable confirmation through the shared accessible dialog owner", () => {
   const contract = readFileSync("UX-CONTRACT.md", "utf8");
   const featurePages = readFileSync("src/FeaturePages.tsx", "utf8");
+  const dialogSource = readFileSync("src/dialog/AppDialog.tsx", "utf8");
   const notebookSource = featurePages.slice(
     featurePages.indexOf("export function MatrixNotebookPage"),
     featurePages.indexOf("export function NotesPage"),
@@ -189,33 +190,20 @@ test("inventories every reachable native confirmation and excludes the legacy ow
     featurePages.indexOf("function ProPlansPage"),
     featurePages.indexOf("function AboutMatrixPage"),
   );
-  const knownRisk = contract.slice(
-    contract.indexOf("## Known native-dialog risk"),
+  const dialogContract = contract.slice(
+    contract.indexOf("## Shared application dialog"),
     contract.indexOf("## Navigation, async and recovery"),
   );
 
-  assert.equal(notebookSource.match(/window\.confirm\(/g)?.length, 11);
-  assert.equal(plansSource.match(/window\.confirm\(/g)?.length, 2);
+  assert.doesNotMatch(featurePages, /window\.(?:confirm|alert)\(/);
+  assert.match(featurePages, /import \{ useAppDialog \} from "\.\/dialog\/AppDialog"/);
+  assert.ok((notebookSource.match(/appDialog\.confirm\(/g) ?? []).length >= 11);
+  assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 2);
+  assert.match(notebookSource, /appDialog\.alert\(/);
   assert.match(featurePages, /if \(screen === "notebook"\) return <MatrixNotebookPage /);
-  assert.equal(reachableConfirmations.length, 13);
-
-  assertSourceConfirmationInventory({ notebook: notebookSource, plans: plansSource });
-
-  const driftedNotebookSource = notebookSource.replace(
-    'window.confirm("確定寫入筆記？")',
-    'window.confirm("來源文案已漂移？")',
-  );
-  assert.throws(
-    () => assertSourceConfirmationInventory({ notebook: driftedNotebookSource, plans: plansSource }),
-    /MatrixNotebookPage\.saveNote/,
-  );
-
-  for (const { location, copy } of reachableConfirmations) {
-    assert.ok(
-      knownRisk.includes(`| \`src/FeaturePages.tsx — ${location}\` | \`${copy}\` |`),
-      `missing native-confirm inventory row for ${location}`,
-    );
-  }
-
-  assert.doesNotMatch(knownRisk, /LegacyMatrixNotebookPage/);
+  assert.match(dialogSource, /@radix-ui\/react-dialog/);
+  assert.match(dialogSource, /returnFocus/);
+  assert.match(dialogContract, /AppDialogProvider/);
+  assert.match(dialogContract, /Escape/);
+  assert.doesNotMatch(dialogContract, /LegacyMatrixNotebookPage/);
 });
