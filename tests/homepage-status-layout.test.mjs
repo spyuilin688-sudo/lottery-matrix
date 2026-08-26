@@ -7,7 +7,11 @@ const css = readLocalCss("src/homepage-repair.css");
 test("狀態卡上下兩列的垂直間距固定為 4px", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*row-gap:\s*4px;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*100%;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*row-gap:\s*4px;[^}]*align-content:\s*center;/s,
+  );
+  assert.match(
+    css,
+    /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s,
   );
 });
 
