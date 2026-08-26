@@ -224,7 +224,7 @@
 
 .home-screen .latest-draw-card {
   --draw-special-label-height: 10px;
-  --draw-card-height: calc(((((var(--home-content-width) - 8px) * 732 / 1672) - 4px) * .9));
+  --draw-card-height: calc(((var(--home-content-width) - 8px) * 732 / 1672 - 4px) * .9);
   position: relative;
   isolation: isolate;
   display: grid;
