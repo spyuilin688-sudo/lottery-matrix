@@ -24,7 +24,7 @@ test("會員方案的天衍與天工圖示使用可裁切容器並填滿背景",
 test("通知頁右側開關由最終專用規則解除垂直置中限制", () => {
   assert.match(
     notificationStyles,
-    /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*align-self:\s*start;/s,
+    /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*align-self:\s*center;/s,
   );
   assert.doesNotMatch(
     notificationStyles,

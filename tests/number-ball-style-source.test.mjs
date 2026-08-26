@@ -38,19 +38,17 @@ test("shared special-ball geometry is declared by number-ball.css", async () => 
   assert.doesNotMatch(homepage, /--draw-special-ball-size\s*:/);
 });
 
-test("六合彩首頁保留既有基線，近10期與歷史開獎底線各上移 0.4px", async () => {
+test("首頁、近10期與歷史開獎的數字底線全部移除", async () => {
   const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
 
   assert.match(
     formal,
-    /\.home-screen[^}]*data-lottery="六合彩"[^}]*\{[^}]*--underline-y:\s*-1\.5px/s,
+    /\.home-screen \.latest-draw-card \.number-ball-value::after,\s*\.matrix-explore-main-screen \.matrix-explore-history-panel \.number-ball-value::after,\s*\.draw-history-screen \.draw-history-panel \.number-ball-value::after\s*\{[^}]*content:\s*none;/s,
   );
   const nearTen = ruleBodies(formal, /^\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball$/);
   assert.equal(nearTen.length, 1);
-  assert.match(nearTen[0], /--underline-y:\s*-.8px;/);
   const history = ruleBodies(formal, /^\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\] \.number-ball-component\.history-lottery-ball$/);
   assert.equal(history.length, 1);
-  assert.match(history[0], /--underline-y:\s*-.3px;/);
   assert.match(history[0], /transform:\s*translateY\(2px\);/);
 });
 

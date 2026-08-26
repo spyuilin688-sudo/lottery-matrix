@@ -35,7 +35,7 @@
 .notifications-screen-v2 .notification-heading {
   display: grid;
   min-height: 0;
-  padding: 4px;
+  padding: 4px 8px 4px 4px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 6px;
@@ -57,6 +57,19 @@
 .notifications-screen-v2 .notification-title h2 {
   min-width: 0;
   margin: 0;
+}
+
+.notifications-screen-v2 .notification-title h2:has(em) {
+  align-items: center;
+  gap: 1px;
+}
+
+.notifications-screen-v2 .notification-title h2 em {
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 5px;
+  font-size: 8px;
+  line-height: 12px;
 }
 
 .notifications-screen-v2 .notification-actions {
@@ -170,6 +183,7 @@
 }
 
 .notifications-screen-v2 .notification-grid-lottery-row label,
+.notifications-screen-v2 .notification-status-lottery-label,
 .notifications-screen-v2 .notification-grid-status-row label,
 .notifications-screen-v2 .notification-inline-option-row .notification-choice {
   display: flex;
@@ -199,15 +213,27 @@
 .notifications-screen-v2 .notification-time-select {
   height: 26px;
   min-height: 26px;
+  margin-inline: 2px;
 }
 
 .notifications-screen-v2 .notification-time-select select {
   padding: 0 3px;
-  font-size: clamp(9px, 2.7vw, 11px);
+  font-size: clamp(10px, 3vw, 12px);
   font-weight: 700;
   line-height: 1;
   text-align: center;
   text-align-last: center;
+}
+
+.notifications-screen-v2 .notification-status-grid .notification-grid-status-row label {
+  margin-inline: 4px;
+  font-size: clamp(9px, 2.8vw, 11px);
+}
+
+.notifications-screen-v2 .notification-status-grid .notification-grid-status-row input {
+  width: 12px;
+  height: 12px;
+  flex-basis: 12px;
 }
 
 .notifications-screen-v2 .notification-inline-option-row[data-setting-key="win"] .notification-choice,

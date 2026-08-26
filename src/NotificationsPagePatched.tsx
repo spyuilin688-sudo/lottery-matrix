@@ -237,7 +237,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const renderStatusSettings = () => (
     <div className="notification-matrix-grid notification-status-grid" aria-label="Matrix 狀態設定">
       <div className="notification-grid-row notification-grid-lottery-row">
-        {LOTTERIES.map((lottery) => <label key={lottery}><input type="checkbox" checked={selectedOptions.status?.includes(lottery) ?? false} onChange={() => toggleOption("status", lottery)} /><span>{lottery}</span></label>)}
+        {LOTTERIES.map((lottery) => <span className="notification-status-lottery-label" key={lottery}>{lottery}</span>)}
       </div>
       {MATRIX_STATUSES.map((status) => <div className="notification-grid-row notification-grid-status-row" key={status}>
         {LOTTERIES.map((lottery) => <label className="notification-choice" key={lottery}><input type="checkbox" checked={statusOptions[lottery].includes(status)} onChange={() => toggleStatus(lottery, status)} /><span>{status}</span></label>)}
