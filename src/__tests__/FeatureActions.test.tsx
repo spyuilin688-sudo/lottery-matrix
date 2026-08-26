@@ -11,9 +11,10 @@ vi.mock("../matrix-ticket-download", () => ({
 }));
 
 import { FeaturePageRouter, MatrixCardPage, MatrixNotebookPage, NotesPage } from "../FeaturePages";
+import { AppDialogProvider } from "../dialog/AppDialog";
 
 function openNotebookSettings() {
-  render(<MatrixNotebookPage onNavigate={vi.fn()} />);
+  render(<AppDialogProvider><MatrixNotebookPage onNavigate={vi.fn()} /></AppDialogProvider>);
   fireEvent.click(screen.getByRole("button", { name: "切換至紀錄模式" }));
   fireEvent.click(screen.getByRole("button", { name: "設定" }));
   fireEvent.click(screen.getByRole("button", { name: "編輯" }));
@@ -141,7 +142,6 @@ describe("notebook tag ordering", () => {
   });
 
   it("retains pointer drag reordering, suppresses its follow-on click, and focuses the moved tag", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     openNotebookSettings();
     const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
     Object.defineProperty(document, "elementFromPoint", {
@@ -156,14 +156,13 @@ describe("notebook tag ordering", () => {
     fireEvent.pointerUp(first, { pointerId: 7, clientX: 10, clientY: 10 });
     fireEvent.click(first);
 
-    expect(window.confirm).toHaveBeenCalledTimes(1);
-    expect(window.confirm).toHaveBeenCalledWith("確定變更玩法順序？");
-    expect(tagOrder()).toEqual(["二星", "三星", "單號", "四星"]);
+    expect(screen.getByRole("dialog", { name: "確認變更玩法順序？" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "確認變更" }));
+    await waitFor(() => expect(tagOrder()).toEqual(["二星", "三星", "單號", "四星"]));
     expect(await screen.findByRole("button", { name: reorderLabel("單號", 3) })).toHaveFocus();
   });
 
   it("does not reinterpret a drag back to its origin or a cancelled drag as a click reorder", () => {
-    const confirmReorder = vi.spyOn(window, "confirm").mockReturnValue(true);
     openNotebookSettings();
     const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
     const elementFromPoint = vi.fn()
@@ -181,7 +180,7 @@ describe("notebook tag ordering", () => {
     fireEvent.pointerUp(first, { pointerId: 8, clientX: 1, clientY: 1 });
     fireEvent.click(first);
 
-    expect(confirmReorder).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(tagOrder()).toEqual(["單號", "二星", "三星", "四星"]);
 
     fireEvent.pointerDown(first, { pointerId: 9, clientX: 1, clientY: 1 });
@@ -189,17 +188,17 @@ describe("notebook tag ordering", () => {
     fireEvent.pointerCancel(first, { pointerId: 9, clientX: 10, clientY: 10 });
     fireEvent.click(first);
 
-    expect(confirmReorder).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(tagOrder()).toEqual(["單號", "二星", "三星", "四星"]);
   });
 
-  it("keeps a custom tag name input mounted and focused across consecutive edits", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("keeps a custom tag name input mounted and focused across consecutive edits", async () => {
     openNotebookSettings();
     fireEvent.change(screen.getByPlaceholderText("新增自訂玩法"), { target: { value: "測" } });
     fireEvent.click(screen.getByRole("button", { name: "新增" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "新增" }));
 
-    const nameInput = screen.getByRole("textbox", { name: "玩法名稱" });
+    const nameInput = await screen.findByRole("textbox", { name: "玩法名稱" });
     nameInput.focus();
     fireEvent.change(nameInput, { target: { value: "測試" } });
     expect(screen.getByRole("textbox", { name: "玩法名稱" })).toBe(nameInput);
