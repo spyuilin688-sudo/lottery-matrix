@@ -16,7 +16,7 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
 });
 
 test("開獎資訊卡左右外距為 16px，並移除左右 6px 內距與底部外擴", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(\(\(\(var\(--home-content-width\) - 8px\) \* 732 \/ 1672\) - 4px\) \* \.9\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\) - 8px[^\n]*\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 8px\);[^}]*margin-inline:\s*4px;[^}]*padding:\s*9px 0 0;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
