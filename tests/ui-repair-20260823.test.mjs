@@ -55,8 +55,8 @@ test('quick interaction uses one pointer path plus click and 1.5-second long-pre
   assert.match(bottomNav, /setTimeout\([\s\S]*?onQuickConfigure\?\.\(\)[\s\S]*?QUICK_LONG_PRESS_MS/);
   assert.match(bottomNav, /onQuickOpen\?\.\(\)/);
   assert.doesNotMatch(bottomNav, /QUICK_SWIPE_TRIGGER_PX|moveQuickPress|quickDragOffset|translateY\(/);
-  assert.match(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\][^{}]*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;/s);
-  assert.doesNotMatch(adjustments, /data-dragging|will-change:\s*transform|touch-action:\s*none/);
+  assert.match(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\][^{}]*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;[^}]*touch-action:\s*none;/s);
+  assert.doesNotMatch(adjustments, /data-dragging|will-change:\s*transform/);
 });
 test('calculator uses the page token and homepage core keeps its current responsive geometry', () => {
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
