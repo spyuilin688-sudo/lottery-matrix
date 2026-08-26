@@ -1,5 +1,7 @@
+@import "./dialog/app-dialog.css";
+
 :root {
-  --app-layout-viewport: 390px;
+  --app-layout-max: 430px;
   color: #151515;
   background: #02070c;
   scrollbar-color: var(--bottom-nav-gold) var(--bottom-nav-panel-950);
@@ -90,8 +92,8 @@ body {
 
 .app-mobile-canvas {
   position: relative;
-  width: min(100%, var(--app-layout-viewport));
-  max-width: var(--app-layout-viewport);
+  width: 100%;
+  max-width: var(--app-layout-max);
   height: 100dvh;
   margin-inline: auto;
   overflow: hidden;
@@ -314,8 +316,8 @@ button {
   right: 0;
   bottom: 0;
   left: 0;
-  width: min(100%, var(--app-layout-viewport));
-  max-width: var(--app-layout-viewport);
+  width: 100%;
+  max-width: var(--app-layout-max);
   margin-inline: auto;
   overflow: hidden;
 }
