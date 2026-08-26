@@ -22,18 +22,19 @@ function renderReferenceList() {
   `, { pretendToBeVisual: true });
 }
 
-test("號碼對照單列表使用輕微交錯列背景且保留標記狀態", () => {
+test("號碼對照單列表使用可辨識的輕微交錯列背景且保留標記狀態", () => {
   const dom = renderReferenceList();
   const rows = dom.window.document.querySelectorAll(".reference-row:not(.head)");
   const styles = [...rows].map((row) => dom.window.getComputedStyle(row).backgroundColor);
 
-  assert.notEqual(styles[0], styles[1]);
+  assert.equal(styles[0], "rgba(20, 36, 48, 0.6)");
+  assert.equal(styles[1], "rgba(0, 0, 0, 0)");
   assert.equal(styles[2], "rgba(225, 184, 39, 0.24)");
 });
 
-test("號碼對照單列表底部保留 8px 額外安全間距", () => {
+test("號碼對照單列表底部保留 24px 額外安全間距", () => {
   const dom = renderReferenceList();
   const end = dom.window.document.querySelector(".reference-results-end");
 
-  assert.equal(dom.window.getComputedStyle(end).height, "8px");
+  assert.equal(dom.window.getComputedStyle(end).height, "24px");
 });
