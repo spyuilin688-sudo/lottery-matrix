@@ -79,7 +79,7 @@
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
   --home-core-width: calc(min(100vw, 390px) - 32px);
-  --home-core-height: calc((var(--home-core-width) * 414 / 1536) - 6px);
+  --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
   --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);
   position: relative;
   isolation: isolate;
@@ -483,7 +483,7 @@
   align-self: start;
   border: 1px solid rgba(229, 179, 77, .56);
   border-radius: 10px;
-  background: url("/assets/lottery/functions/matrixcore.png") center / 100% 100% no-repeat;
+  background: url("/assets/lottery/functions/matrixcore.png") center / cover no-repeat;
   isolation: isolate;
   line-height: 0;
   overflow: hidden;
