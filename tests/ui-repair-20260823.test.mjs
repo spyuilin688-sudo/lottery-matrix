@@ -58,11 +58,11 @@ test('quick interaction uses one pointer path plus click and 1.5-second long-pre
   assert.match(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\][^{}]*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;[^}]*touch-action:\s*none;/s);
   assert.doesNotMatch(adjustments, /data-dragging|will-change:\s*transform/);
 });
-test('calculator uses the page token and homepage core keeps its current responsive geometry', () => {
+test('calculator uses the page token and homepage core keeps its fitted responsive geometry', () => {
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.ok(ruleBodies(home, /^\.home-screen \.lottery-screen$/).some((body) => /padding:\s*0 var\(--layout-page-inline\);/.test(body)));
   assert.ok(ruleBodies(home, /^\.home-screen \.home-bottom-group$/).some((body) => /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/.test(body)));
   assert.ok(ruleBodies(home, /^\.home-screen \.matrix-core-banner$/).some((body) => /width:\s*var\(--home-core-width\);/.test(body) && /height:\s*var\(--home-core-height\);/.test(body)));
-  assert.match(home, /--home-core-height:\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 6px\);/);
+  assert.match(home, /--home-core-height:\\s*clamp\\(68px,\\s*calc\\(\\(var\\(--home-core-width\\) \\* 414 \\/ 1536\\) - 18px\\),\\s*79px\\);/);
 });
