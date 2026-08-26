@@ -29,6 +29,8 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
 | `--bottom-navigation-height` | `82px` | 固定底部導覽高度 |
 
+響應式外殼由 `src/styles.css` 的 `--app-layout-max: 430px` 控制，實際寬度維持 `100%`；`--layout-dialog-inline`、`--layout-card-padding` 使用 `clamp()` 在 320–430px 間平滑調整，並透過安全區 token 保留瀏海與底部手勢空間。
+
 首頁樣式由 `src/prototype.css` 引用 Token：
 
 ```css
