@@ -27,12 +27,12 @@ test("下次開獎與剩餘時間只把日期時間改成暖白灰", () => {
   assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*#E8E1D6;/s);
 });
 
-test("期數日期上移 2px、順落球從原位置上移 4px，查看更多紀錄左移 4px 並上移 16px", () => {
+test("期數日期再上移 6px，查看更多紀錄再左移 4px", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta\s*\{[^}]*transform:\s*translateY\(-2px\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta\s*\{[^}]*transform:\s*translateY\(-8px\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*transform:\s*translateY\(-6px\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translate\(-4px, -16px\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translate\(-8px, -16px\);/s);
 });
 
 test("特別號標籤右移、分隔線縮短且底部圖示縮為 12px", () => {
