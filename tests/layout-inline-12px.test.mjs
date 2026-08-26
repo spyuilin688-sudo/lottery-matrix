@@ -22,7 +22,7 @@ test('homepage components retain their independent widths and spacing', () => {
   assert.match(home, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*100%;/s);
   assert.match(home, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*width:\s*100%;[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/s);
-  assert.match(home, /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
+  assert.match(home, /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s);
   assert.doesNotMatch(home, /\.matrix-status-section > \.home-asset-image/);
   assert.match(home, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);/s);
   assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 8px\);[^}]*margin-inline:\s*auto;/s);
