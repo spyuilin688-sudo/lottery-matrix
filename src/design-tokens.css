@@ -51,14 +51,17 @@
   --lottery-card-gap: 4px;
   --lottery-card-internal: 6px;
   --layout-safe-area-top: env(safe-area-inset-top, 0px);
+  --layout-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --layout-page-inline: 16px;
+  --layout-dialog-inline: clamp(12px, 4vw, 20px);
+  --layout-touch-target: 44px;
   --layout-section-gap: 8px;
   --primary-brand-top: 0px;
   --primary-brand-height: 130px;
   --primary-brand-inline: 14px;
   --primary-brand-ratio: 3 / 1;
   --bottom-navigation-height: 82px;
-  --layout-card-padding: 12px;
+  --layout-card-padding: clamp(10px, 3.1vw, 12px);
   --layout-bottom-nav-clearance: calc(var(--bottom-navigation-height) + env(safe-area-inset-bottom, 0px));
   --lottery-card-radius: 10px;
   --lottery-logo-height: auto;
