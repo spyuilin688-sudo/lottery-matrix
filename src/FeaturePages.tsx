@@ -73,6 +73,7 @@ import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
 import { getSupabaseClient } from "./lib/supabase";
 import { downloadMatrixTicket } from "./matrix-ticket-download";
 import { getExploreEntryDefaults } from "./explore-defaults";
+import { useAppDialog } from "./dialog/AppDialog";
 
 export type ScreenId =
   | "home"
@@ -2551,6 +2552,7 @@ function combinations(total: number, choose: number) {
 }
 
 export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
+  const appDialog = useAppDialog();
   const [view, setView] = useState<NotebookView>("list");
   const [notebookMode, setNotebookMode] = useState<"筆記" | "紀錄">("筆記");
   const [notes, setNotes] = useState<NotebookNote[]>(() => {
@@ -2689,21 +2691,24 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     setNoteBaseline({ title: entry?.title ?? "", content: entry?.content ?? "" });
     setView("note");
   };
-  const returnFromNote = () => {
+  const returnFromNote = async () => {
     const changed = noteTitle !== noteBaseline.title || noteContent !== noteBaseline.content;
-    if (changed && !window.confirm("內容尚未寫入，確定返回列表？")) return;
+    if (changed && !await appDialog.confirm({ title: "內容尚未儲存", description: "確定返回列表？目前修改將不會保留。", confirmLabel: "直接離開" })) return;
     setView("list");
   };
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!noteTitle.trim() && !noteContent.trim()) return;
-    if (!window.confirm("確定寫入筆記？")) return;
+    if (!await appDialog.confirm({ title: "確認寫入筆記？", description: "確認後將寫入目前內容。", confirmLabel: "確認寫入" })) return;
     const now = new Date().toISOString();
     if (editingNoteId) setNotes((current) => current.map((entry) => entry.id === editingNoteId ? { ...entry, title: noteTitle, content: noteContent, updatedAt: now } : entry));
     else setNotes((current) => [{ id: `note-${Date.now()}`, title: noteTitle, content: noteContent, updatedAt: now }, ...current]);
     setView("list");
   };
-  const deleteNote = (id: string) => {
-    if (window.confirm("確定刪除此筆記？")) setNotes((current) => current.filter((entry) => entry.id !== id));
+  const deleteNote = async (id: string) => {
+    if (await appDialog.confirm({ title: "確認刪除？", description: "刪除後將移除此筆記。", confirmLabel: "刪除", tone: "danger" })) setNotes((current) => current.filter((entry) => entry.id !== id));
+  };
+  const deleteRecord = async (id: string) => {
+    if (await appDialog.confirm({ title: "確認刪除？", description: "刪除後將移除此紀錄。", confirmLabel: "刪除", tone: "danger" })) setRecords((current) => current.filter((item) => item.id !== id));
   };
   const startRecord = () => {
     setLottery("今彩539"); setRecordDate(new Date().toISOString().slice(0, 10)); setMode("單號"); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSelectedTags([]); setPlayDrafts({}); setSpecialNumber(""); setView("record");
@@ -2716,8 +2721,8 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     setNewTagName("");
     setView("settings");
   };
-  const leaveSettings = (action: () => void) => {
-    if (settingsDirty && !window.confirm("設定尚未儲存，確定離開？")) return;
+  const leaveSettings = async (action: () => void) => {
+    if (settingsDirty && !await appDialog.confirm({ title: "設定尚未儲存", description: "確定離開？目前修改將不會保留。", confirmLabel: "直接離開" })) return;
     action();
   };
   const navigateFromNotebook: Navigate = (screen) => {
@@ -2807,7 +2812,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       draggedTagTargetIndex.current = to;
     }
   };
-  const endTagDrag = () => {
+  const endTagDrag = async () => {
     const from = draggedTagIndex.current;
     const to = draggedTagTargetIndex.current;
     const didMove = draggedTagDidMove.current;
@@ -2817,7 +2822,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     draggedTagDidMove.current = false;
     if (didMove) suppressTagReorderFollowOnClick();
     if (from === null || to === null || from === to) return;
-    if (!window.confirm("確定變更玩法順序？")) return;
+    if (!await appDialog.confirm({ title: "確認變更玩法順序？", confirmLabel: "確認變更" })) return;
     reorderSettingsTag(from, to);
   };
   const cancelTagDrag = () => {
@@ -2828,11 +2833,11 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     draggedTagDidMove.current = false;
     if (hadActiveDrag) suppressTagReorderFollowOnClick();
   };
-  const addSettingsTag = () => {
+  const addSettingsTag = async () => {
     if (!newTagName.trim()) return;
     const name = newTagName.trim();
     if (settingsDraft[settingsLottery].tags.some((play) => play.name === name)) return;
-    if (!window.confirm(`確定新增「${name}」玩法？`)) return;
+    if (!await appDialog.confirm({ title: `確認新增「${name}」玩法？`, confirmLabel: "新增" })) return;
     setSettingsDraft((current) => ({
       ...current,
       [settingsLottery]: {
@@ -2848,19 +2853,19 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     }));
     setNewTagName("");
   };
-  const deleteSettingsTag = (index: number, name: string) => {
-    if (!window.confirm(`確定刪除「${name}」玩法？`)) return;
+  const deleteSettingsTag = async (index: number, name: string) => {
+    if (!await appDialog.confirm({ title: `確認刪除「${name}」玩法？`, description: "刪除後將移除此玩法。", confirmLabel: "刪除", tone: "danger" })) return;
     setSettingsDraft((current) => ({
       ...current,
       [settingsLottery]: { tags: current[settingsLottery].tags.filter((_, tagIndex) => tagIndex !== index) },
     }));
   };
-  const resetSettings = () => {
-    if (!window.confirm("確定重置設定？")) return;
+  const resetSettings = async () => {
+    if (!await appDialog.confirm({ title: "確認重置設定？", description: "目前彩種的玩法設定將恢復預設值。", confirmLabel: "重置", tone: "danger" })) return;
     setSettingsDraft((current) => ({ ...current, [settingsLottery]: DEFAULT_RECORD_SETTINGS()[settingsLottery] }));
   };
-  const saveSettings = () => {
-    if (!window.confirm("確定儲存設定？")) return;
+  const saveSettings = async () => {
+    if (!await appDialog.confirm({ title: "確認儲存設定？", confirmLabel: "儲存" })) return;
     const savedSettings = structuredClone(settingsDraft);
     setSettings(savedSettings);
     setSettingsBaseline(JSON.stringify(savedSettings));
@@ -2901,11 +2906,11 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const importBackup = (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const data = JSON.parse(String(reader.result)) as { notes?: NotebookNote[]; records?: NotebookRecord[]; settings?: Record<LotteryId, LotteryRecordSettings> };
         if (data.notes) setNotes(data.notes); if (data.records) setRecords(data.records); if (data.settings) setSettings(data.settings);
-      } catch { window.alert("匯入備份失敗"); }
+      } catch { await appDialog.alert({ title: "匯入備份失敗", description: "請確認備份檔案格式後再試一次。", tone: "danger" }); }
     };
     reader.readAsText(file);
   };
@@ -2944,7 +2949,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
               <button type="button" className="record-card-toggle" aria-expanded={expanded} onClick={() => setExpandedRecordIds((current) => current.includes(record.id) ? current.filter((id) => id !== record.id) : [...current, record.id])}>
                 <span><strong>{record.lottery}</strong><small>{record.date}</small></span><em>{record.status}</em><ChevronDownIcon data-open={expanded} />
               </button>
-              {expanded ? <div className="record-card-details"><p>{record.mode}｜{record.tags.join("、")}</p><div className="record-number-row">{record.numbers.map((number, index) => <i key={number + "-" + index}>{number}</i>)}</div><footer><span>總碰數 <strong>{formatNotebookAmount(record.bets)}</strong></span><span>玩法成本 <strong>NT {formatNotebookAmount(record.cost)}</strong></span><span>已確認獎金 <strong>{formatNotebookAmount(record.actualPrize)}</strong></span><span>金額差額 <strong>NT {formatNotebookAmount(record.actualPrize - record.cost)}</strong></span></footer><div className="record-status-actions"><em>{record.status}</em><button type="button" onClick={() => { if (window.confirm("確定刪除此紀錄？")) setRecords((current) => current.filter((item) => item.id !== record.id)); }}><TrashIcon />刪除</button></div></div> : null}
+              {expanded ? <div className="record-card-details"><p>{record.mode}｜{record.tags.join("、")}</p><div className="record-number-row">{record.numbers.map((number, index) => <i key={number + "-" + index}>{number}</i>)}</div><footer><span>總碰數 <strong>{formatNotebookAmount(record.bets)}</strong></span><span>玩法成本 <strong>NT {formatNotebookAmount(record.cost)}</strong></span><span>已確認獎金 <strong>{formatNotebookAmount(record.actualPrize)}</strong></span><span>金額差額 <strong>NT {formatNotebookAmount(record.actualPrize - record.cost)}</strong></span></footer><div className="record-status-actions"><em>{record.status}</em><button type="button" onClick={() => deleteRecord(record.id)}><TrashIcon />刪除</button></div></div> : null}
             </article>;
           })}
           {notebookMode === "筆記" && notes.length === 0 ? <div className="panel notebook-empty"><img src="/assets/quick/matrix-notebook.png" alt="" /><strong>尚無筆記</strong></div> : null}
@@ -2978,7 +2983,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
         {settingsDraft[settingsLottery].tags.map((tag, index, tags) => <section className="panel tag-setting-card" data-tag-setting-index={index} key={index}>
           <header data-editing={settingsEditMode}>
             {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`調整${tag.name}順序，目前第${index + 1}項，共${tags.length}項；點擊${index === tags.length - 1 ? "上移" : "下移"}，方向鍵可調整`} onClick={() => clickSettingsTagReorder(index)} onKeyDown={(event) => keySettingsTagReorder(event, index)} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={cancelTagDrag}><span aria-hidden="true">⠿</span></button> : null}
-            {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={() => { if (tag.name !== editingTagName.current && !window.confirm(`確定將「${editingTagName.current}」修改為「${tag.name}」？`)) updateTag(index, { name: editingTagName.current }); }} />}
+            {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={async () => { if (tag.name !== editingTagName.current && !await appDialog.confirm({ title: `確認修改玩法名稱？`, description: `將「${editingTagName.current}」修改為「${tag.name}」。`, confirmLabel: "修改" })) updateTag(index, { name: editingTagName.current }); }} />}
             {settingsEditMode ? <button type="button" className="tag-delete-button" aria-label={`刪除${tag.name}`} onClick={() => deleteSettingsTag(index, tag.name)}><TrashIcon /></button> : null}
           </header>
           <div className="tag-setting-fields">
@@ -3506,6 +3511,7 @@ function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
+  const appDialog = useAppDialog();
   const plans = [
     { name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
     { name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
@@ -3555,13 +3561,13 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     date.setDate(date.getDate() + selected.days);
     return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
   }, [selected.days]);
-  const handleAutoRenewChange = () => {
+  const handleAutoRenewChange = async () => {
     const nextState = !autoRenew;
-    if (!window.confirm(`確定${nextState ? "開啟" : "關閉"}自動續訂？`)) return;
+    if (!await appDialog.confirm({ title: `確認${nextState ? "開啟" : "關閉"}自動續訂？`, confirmLabel: "確認" })) return;
     setAutoRenew(nextState);
   };
-  const handlePayment = () => {
-    if (!window.confirm(`確定以${selected.name}進行付款？`)) return;
+  const handlePayment = async () => {
+    if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
   };
   return (
     <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/會員方案標題K.png">

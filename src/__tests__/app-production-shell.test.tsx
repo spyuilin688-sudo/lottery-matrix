@@ -29,7 +29,7 @@ describe("production member shell", () => {
     expect(bridge.render).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the production member app inside the canonical 390px mobile canvas", () => {
+  it("keeps the production member app inside a fluid mobile canvas capped at 430px", () => {
     window.history.replaceState({}, "", "/");
     const style = document.createElement("style");
     style.textContent = readFileSync(`${process.cwd()}/src/styles.css`, "utf8");
@@ -43,15 +43,16 @@ describe("production member shell", () => {
     );
     const canvasStyles = getComputedStyle(canvas);
     expect(canvasStyles.position).toBe("relative");
-    expect(canvasStyles.maxWidth).toBe("var(--app-layout-viewport)");
+    expect(canvasStyles.width).toBe("100%");
+    expect(canvasStyles.maxWidth).toBe("var(--app-layout-max)");
     expect(canvasStyles.marginInline).toBe("auto");
     expect(canvasStyles.overflow).toBe("hidden");
     expect(canvasStyles.contain).toBe("layout paint");
     expect(
       getComputedStyle(document.documentElement)
-        .getPropertyValue("--app-layout-viewport")
+        .getPropertyValue("--app-layout-max")
         .trim(),
-    ).toBe("390px");
+    ).toBe("430px");
 
     style.remove();
   });

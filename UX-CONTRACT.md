@@ -64,27 +64,11 @@ Supabase access token, refresh token and user data may persist through the sanit
 
 A reload discards the page-process provider token. When logout cannot obtain that token, it fails closed with `LINE_PROVIDER_TOKEN_REQUIRED`: no LINE revoke is claimed and Supabase `signOut()` is not called, so the current session remains intact. Re-authentication or an explicitly approved operator recovery is required; the UI must not bypass revoke ordering. Logout order is bearer session lookup, LINE token verification, LINE user/Channel match, LINE revoke, then Supabase sign-out.
 
-## Known native-dialog risk
+## Shared application dialog
 
-`FeaturePageRouter` routes `notebook` to the exported `MatrixNotebookPage`; `ProPlansPage` is reachable through the profile subscription flow. Those current owners contain exactly 13 reachable `window.confirm()` calls:
+`src/dialog/AppDialog.tsx` is the single reachable owner for confirmation and alert dialogs. `AppDialogProvider` wraps both member and admin roots, while `useAppDialog()` exposes Promise-based `confirm` and `alert` actions. Reachable product code must not call `window.confirm()` or `window.alert()`.
 
-| Reachable source location | User-visible confirmation copy | Current trigger and consequence |
-|---|---|---|
-| `src/FeaturePages.tsx — MatrixNotebookPage.returnFromNote` | `內容尚未寫入，確定返回列表？` | Returning with a changed note; cancel stays in the editor, confirm returns to the list without writing. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.saveNote` | `確定寫入筆記？` | Writing a non-empty note; confirm writes it and returns to the list. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.deleteNote` | `確定刪除此筆記？` | Deleting a note from the list; confirm removes it from local notebook state. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.leaveSettings` | `設定尚未儲存，確定離開？` | Leaving a dirty settings draft; cancel stays in settings, confirm runs the requested navigation action. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.endTagDrag` | `確定變更玩法順序？` | Ending a drag at a different index; confirm commits the draft reorder. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.addSettingsTag` | `確定新增「{玩法名稱}」玩法？` | Adding the trimmed, non-duplicate custom play name; confirm adds it to the settings draft. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.deleteSettingsTag` | `確定刪除「{玩法名稱}」玩法？` | Deleting a custom play; confirm removes it from the settings draft. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.resetSettings` | `確定重置設定？` | Resetting the selected lottery settings; confirm replaces that draft with defaults. |
-| `src/FeaturePages.tsx — MatrixNotebookPage.saveSettings` | `確定儲存設定？` | Saving the settings draft; confirm commits it to local settings state. |
-| `src/FeaturePages.tsx — MatrixNotebookPage record-card delete action` | `確定刪除此紀錄？` | Deleting an expanded record; confirm removes it from local record state. |
-| `src/FeaturePages.tsx — MatrixNotebookPage tag-name input onBlur` | `確定將「{原玩法名稱}」修改為「{新玩法名稱}」？` | Blurring a changed custom play name; cancel restores the original name, confirm keeps the draft rename. |
-| `src/FeaturePages.tsx — ProPlansPage.handleAutoRenewChange` | `確定開啟自動續訂？／確定關閉自動續訂？` | Toggling auto-renew; confirm changes local UI state only, with no subscription mutation API. |
-| `src/FeaturePages.tsx — ProPlansPage.handlePayment` | `確定以{方案名稱}進行付款？` | Pressing the selected plan payment action; after confirm no payment mutation is implemented. |
-
-These browser-native dialogs cannot satisfy the app-owned dialog focus, copy and recovery contract and remain known runtime debt. Unrouted legacy declarations are excluded from the reachable inventory. Replacing the 13 calls requires a separately approved confirmation-dialog UX contract and is outside this no-redesign remediation. Premium static ownership documents and later action fixes must not be represented as full runtime dialog compliance.
+The dialog preserves the existing navy, gold, danger-red and success-green visual language. It supplies a labelled title, optional description, explicit primary and secondary actions, a minimum 44px touch target, viewport-safe sizing, queued requests and reduced-motion behavior. Escape and overlay dismissal resolve as cancellation. When the queue is empty, focus returns to the control that opened the dialog; destructive actions use the danger tone and explicit destructive copy.
 
 ## Navigation, async and recovery
 

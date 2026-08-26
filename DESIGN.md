@@ -86,7 +86,7 @@ components:
 
 ## Layout
 
-版面以現有最大 390px 手機畫布與 mobile-first PWA 為準。頁面左右留白、區段間距、卡片圓角與底部導覽高度都由 runtime token 控制：
+版面以 320–430px 的流動手機畫布與 mobile-first PWA 為準；390px 保留為主要視覺基準，而不是固定寬度。頁面左右留白、區段間距、卡片圓角與底部導覽高度都由 runtime token 控制：
 
 | Runtime token | Exact value | Role |
 |---|---|---|
