@@ -1,0 +1,39 @@
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import assert from "node:assert/strict";
+import { JSDOM } from "jsdom";
+
+const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+
+function renderReferenceList() {
+  return new JSDOM(`
+    <style>${css}</style>
+    <main class="number-reference-screen">
+      <section class="reference-table-panel">
+        <div class="reference-table">
+          <div class="reference-row head"><span>期數</span><span>開獎號碼</span></div>
+          <div class="reference-row"><button class="reference-issue">115204</button><span><button>09</button></span></div>
+          <div class="reference-row"><button class="reference-issue">115205</button><span><button>26</button></span></div>
+          <div class="reference-row" data-row-marked="true"><button class="reference-issue">115206</button><span><button>31</button></span></div>
+        </div>
+        <div class="reference-results-end"></div>
+      </section>
+    </main>
+  `, { pretendToBeVisual: true });
+}
+
+test("號碼對照單列表使用輕微交錯列背景且保留標記狀態", () => {
+  const dom = renderReferenceList();
+  const rows = dom.window.document.querySelectorAll(".reference-row:not(.head)");
+  const styles = [...rows].map((row) => dom.window.getComputedStyle(row).backgroundColor);
+
+  assert.notEqual(styles[0], styles[1]);
+  assert.equal(styles[2], "rgba(225, 184, 39, 0.24)");
+});
+
+test("號碼對照單列表底部保留 8px 額外安全間距", () => {
+  const dom = renderReferenceList();
+  const end = dom.window.document.querySelector(".reference-results-end");
+
+  assert.equal(dom.window.getComputedStyle(end).height, "8px");
+});
