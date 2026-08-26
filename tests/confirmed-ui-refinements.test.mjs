@@ -60,8 +60,8 @@ test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
   assert.match(balls, /font-weight:\s*900;/);
 });
 
-test("首頁開獎資訊卡維持 12px 外距且高度約縮 10%", () => {
-  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(\(var\(--home-content-width\) \* 732 \/ 1672\) - 4px\) \* \.9\);[^}]*width:\s*100%;/s);
+test("首頁開獎資訊卡維持 16px 外距且高度約縮 10%", () => {
+  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(\(var\(--home-content-width\) - 8px\) \* 732 \/ 1672 - 4px\) \* \.9\);[^}]*width:\s*calc\(100% - 8px\);[^}]*margin-inline:\s*4px;/s);
 });
 
 test("我的與通知內容採較緊密比例，通知右側動作固定欄對齊", () => {
