@@ -15,6 +15,18 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
+test("開獎資訊卡左右外距為 16px，並移除左右 6px 內距與底部外擴", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\) - 8px[^\n]*\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 8px\);[^}]*margin-inline:\s*4px;[^}]*padding:\s*9px 0 0;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
+});
+
+test("下次開獎與剩餘時間只把日期時間改成暖白灰", () => {
+  assert.match(css, /\.next-draw-icon\s*\{[^}]*color:\s*#e6b34f;/s);
+  assert.match(css, /\.next-draw-label\s*\{[^}]*color:\s*#d8a653;/s);
+  assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*#E8E1D6;/s);
+});
+
 test("期數日期上移 2px、順落球從原位置上移 4px，查看更多紀錄左移 4px 並上移 16px", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
