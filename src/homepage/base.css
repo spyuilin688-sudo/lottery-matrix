@@ -224,16 +224,17 @@
 
 .home-screen .latest-draw-card {
   --draw-special-label-height: 10px;
-  --draw-card-height: calc(((var(--home-content-width) * 732 / 1672) - 4px) * .9);
+  --draw-card-height: calc(((((var(--home-content-width) - 8px) * 732 / 1672) - 4px) * .9));
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr);
   grid-template-rows: 44px minmax(0, 1fr) 24px;
-  width: 100%;
+  width: calc(100% - 8px);
   height: var(--draw-card-height);
   min-height: 0;
-  padding: 9px 6px 0;
+  margin-inline: 4px;
+  padding: 9px 0 0;
   border: 1px solid rgba(229, 179, 77, .56);
   border-radius: 10px;
   background: url("/assets/lottery/functions/開獎資訊卡.png") center / 100% 100% no-repeat;
@@ -412,7 +413,7 @@
   height: 24px;
   min-height: 24px;
   max-height: 24px;
-  margin: 0 -6px;
+  margin: 0;
   padding: 0 20px 5px;
   align-items: center;
   border-top: 1px solid rgba(232, 177, 76, .48);
@@ -448,7 +449,7 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
   min-width: 0;
-  color: #ffffff;
+  color: #E8E1D6;
   font-size: 11px;
   font-weight: 700;
   line-height: 13px;
