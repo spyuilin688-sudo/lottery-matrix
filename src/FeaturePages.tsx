@@ -210,18 +210,42 @@ const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
 };
 
-function MatrixPageSwitcher({ onNavigate }: {
-  current?: "explore" | "tianyan" | "tiangong";
+function MatrixPageSwitcher({ current, onNavigate }: {
+  current: "explore" | "tianyan" | "tiangong";
   onNavigate: Navigate;
 }) {
+  const switcherRef = useRef<HTMLElement>(null);
+  const scrollSettleRef = useRef<number | null>(null);
+  const currentIndex = MATRIX_PAGE_ITEMS.findIndex((item) => item.screen === current);
+
+  useEffect(() => {
+    const switcher = switcherRef.current;
+    if (!switcher) return;
+    switcher.scrollTo({ top: currentIndex * switcher.clientHeight, behavior: "auto" });
+  }, [currentIndex]);
+
+  useEffect(() => () => {
+    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current);
+  }, []);
+
+  const settleScrolledPage = () => {
+    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current);
+    scrollSettleRef.current = window.setTimeout(() => {
+      const switcher = switcherRef.current;
+      if (!switcher || switcher.clientHeight === 0) return;
+      const index = Math.max(0, Math.min(MATRIX_PAGE_ITEMS.length - 1, Math.round(switcher.scrollTop / switcher.clientHeight)));
+      const target = MATRIX_PAGE_ITEMS[index].screen;
+      if (target !== current) onNavigate(target);
+    }, 120);
+  };
+
   return (
-    <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
-      <button type="button" aria-label="Matrix 天衍" onClick={() => onNavigate("tianyan")}>
-        <img src="/assets/lottery/functions/Matrix天衍.png" alt="" draggable={false} />
-      </button>
-      <button type="button" aria-label="Matrix 天工" onClick={() => onNavigate("tiangong")}>
-        <img src="/assets/lottery/functions/Matrix天工.png" alt="" draggable={false} />
-      </button>
+    <nav ref={switcherRef} className="matrix-page-switcher" aria-label="Matrix Core 功能切換" onScroll={settleScrolledPage}>
+      {MATRIX_PAGE_ITEMS.map((item) => (
+        <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} data-selected={item.screen === current} onClick={() => onNavigate(item.screen)} key={item.screen}>
+          <img src={item.image} alt="" draggable={false} />
+        </button>
+      ))}
     </nav>
   );
 }
@@ -1355,7 +1379,7 @@ export function MatrixExplorePage({
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
-      headerAction={title === "Matrix 探索" ? <MatrixPageSwitcher current="explore" onNavigate={onNavigate} /> : undefined}
+      headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}
     >
       <section className="panel explore-settings">
         <SectionTitle>探索設定</SectionTitle>
@@ -1701,7 +1725,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       .finally(() => setValidationLoadingId((current) => current === cacheKey ? null : current));
   };
   return (
-    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen" headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}>
       <section className="panel explore-settings tiangong-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
@@ -1997,11 +2021,6 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const toggleMarkedCell = (issue: string, number: string) => {
     const key = `${issue}-${number}`;
-    setMarkedRows((current) => {
-      const next = new Set(current);
-      next.delete(issue);
-      return next;
-    });
     setMarkedCells((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);

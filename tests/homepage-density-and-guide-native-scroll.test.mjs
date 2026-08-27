@@ -20,7 +20,7 @@ test("順球與落球上移 2px且總高度縮減 3px", () => {
   );
 });
 
-test("開獎資訊卡底部資訊列使用指定內距與 0.5px 間距", () => {
+test("開獎資訊卡底部資訊列維持既有內距，紀錄箭頭間距為 1px", () => {
   assert.match(
     homeCss,
     /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*gap:\s*3px;/s,
@@ -32,7 +32,7 @@ test("開獎資訊卡底部資訊列使用指定內距與 0.5px 間距", () => {
   assert.doesNotMatch(homeCss, /\.next-draw-item:first-child\s*\{|\.next-draw-item:last-child\s*\{/s);
   assert.match(
     homeCss,
-    /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*0\.5px;/s,
+    /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*1px;/s,
   );
 });
 

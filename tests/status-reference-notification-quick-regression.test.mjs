@@ -30,8 +30,10 @@ test("號碼對照單輸入數字字型與 Matrix 同星一致", () => {
   assert.match(feature, /\.reference-search input\s*\{[^}]*font-size:\s*clamp\(15px, 4\.5vw, 18px\);[^}]*font-weight:\s*600;[^}]*font-variant-numeric:\s*tabular-nums;/s);
 });
 
-test("號碼對照單單碼與整列選取互相覆蓋，特別號也保留選取樣式", () => {
-  assert.match(pages, /const toggleMarkedCell[\s\S]*?setMarkedRows\(\(current\)[\s\S]*?next\.delete\(issue\)/);
+test("號碼對照單單碼覆蓋儲存格但保留整列選取，特別號也保留選取樣式", () => {
+  const toggleMarkedCell = pages.match(/const toggleMarkedCell = \(issue: string, number: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
+  assert.doesNotMatch(toggleMarkedCell, /setMarkedRows/);
+  assert.match(toggleMarkedCell, /setMarkedCells/);
   assert.match(referenceVisual, /button\[data-special="true"\]\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /data-row-marked="true"[^\{]*button\[data-special="true"\]\s*\{[^}]*background:\s*rgba\(225, 184, 39, \.16\)/s);
 });

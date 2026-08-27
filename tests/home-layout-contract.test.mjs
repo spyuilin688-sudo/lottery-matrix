@@ -41,8 +41,11 @@ test('home layout starts at the safe top and keeps the bottom navigation clearan
   assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto auto;/);
   assertBlock(css, '.home-screen .home-layout', /align-content:\s*safe start;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
-  assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/);
-  assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*8px;/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*8px;/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*8px;/);
+  assertBlock(css, '.home-screen .home-layout', /--home-gap-features-nav:\s*8px;/);
+  assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);
+  assert.ok(!blocks(css, '.home-screen .home-bottom-group').some((body) => /padding-bottom:\s*8px;|--home-gap-core-features\s*:/.test(body)));
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);

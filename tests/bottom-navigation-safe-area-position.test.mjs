@@ -45,8 +45,8 @@ test("通知頁維持 20px 左右間距並保留正式底部安全距離", () =>
 });
 
 test("首頁由頂部安全區開始排列並保留固定底部導覽空間", () => {
-  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });

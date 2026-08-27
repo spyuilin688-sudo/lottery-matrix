@@ -45,25 +45,21 @@
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions {
-  top: 100%;
-  right: 4%;
+  top: 50%;
+  right: auto;
   bottom: auto;
-  left: auto;
-  width: auto;
-  height: auto;
-  transform: translateY(-87.5%);
+  left: calc(83% + 4px);
+  width: 1.8rem;
+  height: 1.8rem;
+  transform: translateY(-50%);
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
-  display: flex;
-  width: auto;
-  height: auto;
-  gap: 4px;
+  width: 1.8rem;
+  height: 1.8rem;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {
-  width: 1.8rem;
-  height: 1.8rem;
   opacity: 1;
 }
 

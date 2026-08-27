@@ -199,6 +199,7 @@ function PatchedDrawHistoryPage({
   const [month, setMonth] = useTimedState("history-month", "08月");
   const [day, setDay] = useTimedState("history-day", "23日");
   const [dateFilterTouched, setDateFilterTouched] = useState(false);
+  const [historyFilterPriority, setHistoryFilterPriority] = useState<"date" | "range">("range");
   const [range, setRange] = useTimedState("history-range", "1000期");
   const [numberOrder, setNumberOrder] = useTimedState("history-order", "依號碼由小到大排序");
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
@@ -228,12 +229,14 @@ function PatchedDrawHistoryPage({
     setAppliedHistorySettings((current) => ({ ...current, lottery: value }));
     setAppliedFilters({ issue: "", date: "" });
     setDateFilterTouched(false);
+    setHistoryFilterPriority("range");
     setPage(1);
   };
 
   const applyHistoryFilters = () => {
-    setAppliedFilters({ issue: "", date: dateFilterTouched ? `${year}/${month.replace("月", "")}/${day.replace("日", "")}` : "" });
-    setAppliedHistorySettings({ lottery, range, numberOrder });
+    const dateIsPrimary = historyFilterPriority === "date";
+    setAppliedFilters({ issue: "", date: dateIsPrimary ? `${year}/${month.replace("月", "")}/${day.replace("日", "")}` : "" });
+    setAppliedHistorySettings({ lottery, range: dateIsPrimary ? "所有期數" : range, numberOrder });
     setFilterExpanded(false);
     setFilterFloating(false);
   };
@@ -245,6 +248,7 @@ function PatchedDrawHistoryPage({
     setAppliedFilters({ issue: "", date: "" });
     setAppliedHistorySettings({ lottery: "今彩539", range: "1000期", numberOrder: "依號碼由小到大排序" });
     setDateFilterTouched(false);
+    setHistoryFilterPriority("range");
     setPage(1);
     setFilterExpanded(true);
     setFilterFloating(false);
@@ -279,11 +283,11 @@ function PatchedDrawHistoryPage({
           </div>
           <div className="history-filter-secondary-row">
             <div className="history-date-selects">
-              <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); }}>{["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-              <div className="select-box native-select"><select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); }}>{Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
-              <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+              <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+              <div className="select-box native-select"><select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+              <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             </div>
-            <div className="select-box native-select history-range-select"><select aria-label="探索範圍" value={range} onChange={(event) => setRange(event.target.value)}>{["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+            <div className="select-box native-select history-range-select"><select aria-label="探索範圍" value={range} onChange={(event) => { setRange(event.target.value); setHistoryFilterPriority("range"); }}>{["1000期", "3000期", "5000期", "所有期數"].map((value) => <option value={value} key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             <button type="button" className="history-filter-start branded-explore-action" onClick={applyHistoryFilters}><MagnifyingGlassIcon aria-hidden="true" /><span>開始探索</span></button>
           </div>
         </section>
