@@ -176,6 +176,9 @@
 .notifications-screen-v2 .notification-inline-settings-inner {
   overflow: hidden;
   min-height: 0;
+}
+
+.notifications-screen-v2 .notification-inline-settings-content {
   padding: 4px;
   border-top: 1px solid rgba(170, 119, 46, .38);
 }
