@@ -6,6 +6,15 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 const css = readLocalCss("src/homepage-repair.css");
 const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 
+function ruleBodies(sourceText, selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return [...sourceText.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, "gs"))].map((match) => match[1]);
+}
+
+function hasRuleProperty(sourceText, selector, pattern) {
+  return ruleBodies(sourceText, selector).some((body) => pattern.test(body));
+}
+
 test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(source, /<div className="draw-meta"[\s\S]*<div className="draw-order"[\s\S]*className="history-link"/);
   assert.doesNotMatch(source, /className="draw-toolbar"/);
@@ -16,8 +25,16 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
 });
 
 test("順球落球還原為兩個獨立圓角按鈕且不靠位移補償", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*width:\s*clamp\(116px, 32vw, 124px\);[^}]*height:\s*30px;[^}]*gap:\s*3px;[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*justify-self:\s*center;[^}]*align-self:\s*center;/s);
-  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*transform\s*:/s);
+  const selector = ".home-screen .latest-draw-card .draw-order";
+  assert.ok(hasRuleProperty(css, selector, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/));
+  assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(116px, 32vw, 124px\);/));
+  assert.ok(hasRuleProperty(css, selector, /height:\s*30px;/));
+  assert.ok(hasRuleProperty(css, selector, /gap:\s*3px;/));
+  assert.ok(hasRuleProperty(css, selector, /border:\s*0;/));
+  assert.ok(hasRuleProperty(css, selector, /background:\s*transparent;/));
+  assert.ok(hasRuleProperty(css, selector, /justify-self:\s*center;/));
+  assert.ok(hasRuleProperty(css, selector, /align-self:\s*center;/));
+  assert.doesNotMatch(ruleBodies(css, selector).join("\n"), /transform\s*:/);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\s*\{[^}]*border:\s*1px solid rgba\(230, 177, 76, \.58\);[^}]*border-radius:\s*14px;[^}]*background:\s*linear-gradient/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*border-color:\s*rgba\(244, 192, 82, \.82\);[^}]*color:\s*#ffd36c;[^}]*radial-gradient/s);
 });
@@ -38,7 +55,7 @@ test("期數日期與查看更多紀錄維持既有定位，順落球由自然�
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta\s*\{[^}]*transform:\s*translateY\(-8px\);/s);
-  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*transform\s*:/s);
+  assert.doesNotMatch(ruleBodies(css, ".home-screen .latest-draw-card .draw-order").join("\n"), /transform\s*:/);
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translate\(-10px, -16px\);/s);
 });
 
