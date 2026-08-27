@@ -15,8 +15,8 @@ test("快捷設定僅在首頁顯示並由連續兩次點擊開啟", () => {
   assert.doesNotMatch(source, /QUICK_LONG_PRESS_MS|onPointerDown|onPointerUp|onPointerCancel|setPointerCapture|長按/);
 });
 
-test("快捷設定縮小約 15% 並維持 1px 邊距", () => {
-  assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(1px, env\(safe-area-inset-right, 0px\)\);[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 1px\);/s);
+test("快捷設定縮小約 15% 並由原位置向左上各移動 4px", () => {
+  assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(5px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 5px\);/s);
   assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*width:\s*25\.5px;[^}]*height:\s*25\.5px;/s);
   assert.match(css, /\.bottom-navigation-quick-settings-visual\s*\{[^}]*width:\s*25\.5px;[^}]*height:\s*25\.5px;/s);
 });
