@@ -49,19 +49,16 @@ test('notification compact responsive layout is present in the v2 canonical styl
   assert.match(adjustments, /\.notifications-screen-v2 \.toggle span\s*\{[^}]*top:\s*2px;[^}]*height:\s*16px;/s);
 });
 
-test('quick interaction uses one pointer path plus click and 1.5-second long-press behavior', () => {
+test('quick interaction keeps primary click and uses homepage-only double-click settings', () => {
   const renderedButton = bottomNav.match(/<button[\s\S]*?<\/button>/)?.[0] ?? '';
   assert.ok(renderedButton, 'BottomNavigation must render its navigation button explicitly');
-  assert.match(renderedButton, /onPointerDown=\{label === "快捷" \? beginQuickPress : undefined\}/);
-  assert.match(renderedButton, /onPointerUp=\{label === "快捷" \? finishQuickPress : undefined\}/);
-  assert.match(renderedButton, /onPointerCancel=\{label === "快捷" \? cancelQuickPress : undefined\}/);
-  assert.doesNotMatch(renderedButton, /onPointerMove|onTouchStart|onMouseDown/);
-  assert.match(renderedButton, /onClick=\{label === "快捷" \? handleQuickClick : \(\) => screen && onNavigate\?\.\(screen\)\}/);
-  assert.match(bottomNav, /const QUICK_LONG_PRESS_MS = 1_500;/);
-  assert.match(bottomNav, /setTimeout\([\s\S]*?onQuickConfigure\?\.\(\)[\s\S]*?QUICK_LONG_PRESS_MS/);
-  assert.match(bottomNav, /onQuickOpen\?\.\(\)/);
-  assert.doesNotMatch(bottomNav, /QUICK_SWIPE_TRIGGER_PX|moveQuickPress|quickDragOffset|translateY\(/);
-  assert.match(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\][^{}]*\{[^}]*-webkit-touch-callout:\s*none;[^}]*user-select:\s*none;[^}]*touch-action:\s*none;/s);
+  assert.match(renderedButton, /onClick=\{label === "快捷" \? onQuickOpen : \(\) => screen && onNavigate\?\.\(screen\)\}/);
+  assert.match(bottomNav, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 400;/);
+  assert.match(bottomNav, /showQuickSettings && onQuickConfigure \? \(/);
+  assert.match(bottomNav, /handleQuickSettingsClick/);
+  assert.match(bottomNav, /event\.detail === 0/);
+  assert.doesNotMatch(bottomNav, /QUICK_LONG_PRESS_MS|beginQuickPress|finishQuickPress|cancelQuickPress|onPointerDown|onPointerUp|onPointerCancel/);
+  assert.doesNotMatch(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\]/);
   assert.doesNotMatch(adjustments, /data-dragging|will-change:\s*transform/);
 });
 test('calculator uses the page token and homepage core keeps its fitted responsive geometry', () => {

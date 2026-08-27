@@ -37,7 +37,7 @@ test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新�
 
 test("Matrix 指南移除標題下方重複卡片", () => {
   assert.doesNotMatch(source, /<section className="guide-intro panel">/);
-  assert.match(source, /<nav className="guide-category-strip"/);
+  assert.match(source, /<nav[^>]*className="guide-category-strip"/);
 });
 
 test("Matrix 探索顯示天衍天工，兩顆圖示為 1.8rem 且間距 4px", () => {
