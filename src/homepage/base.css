@@ -24,7 +24,8 @@
   min-height: 0;
   margin: 0 auto;
   grid-template-rows: auto auto;
-  align-content: safe end;
+  align-content: safe start;
+  padding-top: var(--layout-safe-area-top);
   padding-bottom: var(--layout-bottom-nav-clearance);
   background: var(--lottery-neutral-950);
 }
@@ -533,7 +534,7 @@
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  gap: 1.5px;
+  gap: 0.8px;
   align-content: start;
 }
 
@@ -566,7 +567,7 @@
   position: absolute;
   z-index: 2;
   top: 50%;
-  left: calc(83.5% - 18px);
+  left: calc(83.5% - 24px);
   right: auto;
   width: 54%;
   height: auto;
