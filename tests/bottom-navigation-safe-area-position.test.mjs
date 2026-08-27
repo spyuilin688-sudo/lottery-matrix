@@ -31,7 +31,11 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
-test("首頁不再用 mobile safe-area 變數重複撐高底部空白", () => {
-  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
+test("首頁底部只保留瀏覽器安全區，不再預留整個導覽高度", () => {
+  const fullClearance = homepageCss.lastIndexOf("padding-bottom: var(--layout-bottom-nav-clearance)");
+  const safeAreaOnly = homepageCss.lastIndexOf("padding-bottom: env(safe-area-inset-bottom, 0px)");
+
+  assert.notEqual(fullClearance, -1);
+  assert.ok(safeAreaOnly > fullClearance);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
