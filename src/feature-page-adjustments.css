@@ -151,7 +151,7 @@
   overflow: hidden;
   padding: 0;
   border-top: 0;
-  grid-template-rows: 0fr;
+  grid-template-rows: minmax(0, 0fr);
   background: rgba(1, 8, 13, .72);
   opacity: 0;
   visibility: hidden;
@@ -164,7 +164,7 @@
 }
 
 .notifications-screen-v2 .notification-inline-settings[data-expanded="true"] {
-  grid-template-rows: 1fr;
+  grid-template-rows: minmax(0, 1fr);
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
