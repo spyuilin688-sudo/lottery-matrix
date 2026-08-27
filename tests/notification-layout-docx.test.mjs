@@ -11,6 +11,8 @@ const featureTsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
 const notificationsTsx = fs.readFileSync('src/NotificationsPagePatched.tsx', 'utf8');
 const brandCss = fs.readFileSync('src/brand-header-unify.css', 'utf8');
 const adjustmentsCss = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');
+const mainTsx = fs.readFileSync('src/main.tsx', 'utf8');
+const patchedNotificationsTsx = fs.readFileSync('src/NotificationsPagePatched.tsx', 'utf8');
 
 const iconPaths = [
   'public/resources/notify-bet.png',
@@ -180,4 +182,28 @@ test('notification icon source files use one square canvas and centered visible 
   }
   const dominantSizes = metrics.map((metric) => Math.max(metric.visibleWidth, metric.visibleHeight));
   assert.ok(Math.max(...dominantSizes) - Math.min(...dominantSizes) <= 2, `notification icons must use the same visible artwork scale: ${JSON.stringify(metrics)}`);
+});
+
+
+test('notification v2 has one stylesheet owner and legacy selectors cannot target it', () => {
+  const currentClassPattern = /\.(?:notification-list|notification-row|notification-heading|notification-icon|notification-title|notification-actions|notification-choice)(?![\w-])/;
+  const selectorGroups = (css) => [...css.matchAll(/(?:^|\})\s*([^@{}][^{}]*)\{/gm)].map((match) => match[1].trim());
+  const legacySelectors = [...selectorGroups(featureCss), ...selectorGroups(responsiveCss)]
+    .flatMap((group) => group.split(',').map((selector) => selector.trim()))
+    .filter((selector) => currentClassPattern.test(selector) && !selector.includes('.notification-modal'));
+
+  for (const selector of legacySelectors) {
+    assert.match(
+      selector,
+      /\.notifications-screen:not\(\.notifications-screen-v2\)/,
+      `legacy notification selector must exclude v2: ${selector}`,
+    );
+  }
+
+  assert.equal(
+    (mainTsx.match(/import "\.\/feature-page-adjustments\.css";/g) ?? []).length,
+    1,
+  );
+  assert.doesNotMatch(patchedNotificationsTsx, /import "\.\/feature-page-adjustments\.css";/);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{/);
 });
