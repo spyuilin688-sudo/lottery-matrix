@@ -60,8 +60,20 @@ test("六合彩紅球與藍03、10、14、15及綠16避開白色球心右下邊�
   assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="03"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;[^}]*--number-optical-y:\s*-\.25px;/s);
   assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="10"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;[^}]*--number-optical-y:\s*-\.25px;/s);
   assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="14"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;[^}]*--number-optical-y:\s*-\.25px;/s);
-  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="15"\]\s*\{[^}]*--number-optical-x:\s*-\.5px;[^}]*--number-optical-y:\s*-\.5px;/s);
-  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="16"\]\s*\{[^}]*--number-optical-x:\s*-\.5px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="15"\]\s*\{[^}]*--number-optical-x:\s*-\.75px;[^}]*--number-optical-y:\s*-\.5px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="16"\]\s*\{[^}]*--number-optical-x:\s*-\.75px;[^}]*--number-optical-y:\s*-\.75px;/s);
+});
+
+test("六合彩逐號光學校正維持每次四分之一像素", () => {
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="red"\]\[data-number="01"\]\s*\{[^}]*--number-optical-x:\s*0px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="red"\]\[data-number="02"\]\s*\{[^}]*--number-optical-x:\s*0px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="15"\]\s*\{[^}]*--number-optical-x:\s*-\.75px;[^}]*--number-optical-y:\s*-\.5px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="16"\]\s*\{[^}]*--number-optical-x:\s*-\.75px;[^}]*--number-optical-y:\s*-\.75px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="17"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;[^}]*--number-optical-y:\s*-\.25px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="36"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;[^}]*--number-optical-y:\s*-\.25px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="38"\]\s*\{[^}]*--number-optical-x:\s*-\.25px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="41"\]\s*\{[^}]*--number-optical-x:\s*\.25px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="red"\]\[data-number="46"\]\s*\{[^}]*--number-optical-y:\s*-\.5px;/s);
 });
 
 test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
