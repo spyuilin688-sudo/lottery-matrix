@@ -31,26 +31,27 @@ test("首頁狀態卡間距為 0.8px 且彩種圖示向左移動 6px", () => {
 test("號碼對照單第二列與浮動設定共用 Matrix 同星的 44px 控制高度", () => {
   assert.match(
     featureCss,
-    /\.number-reference-screen\s*\{[^}]*--reference-control-height:\s*44px;/s,
+    /\.reference-query-panel\s*\{[^}]*--reference-control-height:\s*44px;/s,
   );
   assert.match(
     featureCss,
-    /\.number-reference-screen \.reference-search input,\s*\.number-reference-screen \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s,
+    /\.reference-query-panel \.reference-search input,\s*\.reference-query-panel \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s,
   );
   assert.doesNotMatch(
     featureCss,
     /\.reference-search input,\s*\.reference-search \.gold-button\s*\{[^}]*height:\s*36px;/s,
   );
-  assert.doesNotMatch(
+  assert.match(
     featureCss,
-    /\.reference-search input,\s*\.note-form input\s*\{[^}]*height:\s*42px;/s,
+    /\.reference-search input,\s*\.note-form input\s*\{[^}]*min-width:\s*0;[^}]*border:\s*1px solid #6e4a1e;[^}]*background:\s*#030a10;[^}]*color:\s*#efe8dc;[^}]*text-align:\s*center;/s,
   );
+  assert.match(featureCss, /\.note-form input\s*\{[^}]*height:\s*42px;/s);
 });
 
 test("首頁快捷設定移至左側安全邊界 6px 並等比例縮小 10%", () => {
   assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(6px, env\(safe-area-inset-left, 0px\)\);[^}]*right:\s*auto;[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;/s,
+    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(6px, env\(safe-area-inset-left, 0px\)\);[^}]*right:\s*auto;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*end start;/s,
   );
   assert.match(
     navigationCss,
