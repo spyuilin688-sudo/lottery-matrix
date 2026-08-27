@@ -231,3 +231,23 @@ def test_materialize_chunks_rejects_conflicting_validation() -> None:
     ]
     with pytest.raises(ValueError, match="ANALYSIS_CHUNK_CONFLICT"):
         materialize_chunks("今彩539", "115000205", chunks, 20)
+
+
+def test_tiangong_materialization_keeps_first_duplicate_id_with_different_evidence() -> None:
+    first_item = {"id": "same-road", "sourceSequence": [1, 2, 3]}
+    second_item = {"id": "same-road", "sourceSequence": [2, 3, 4]}
+    first_validation = {"itemId": "same-road", "validationRows": [{"source": "first"}]}
+    second_validation = {"itemId": "same-road", "validationRows": [{"source": "second"}]}
+    chunks = [
+        {"chunk_index": 0, "cursor_start": 0, "cursor_end": 1,
+         "payload": {"items": [first_item], "validationById": {"same-road": first_validation}}},
+        {"chunk_index": 1, "cursor_start": 1, "cursor_end": 2,
+         "payload": {"items": [second_item], "validationById": {"same-road": second_validation}}},
+    ]
+
+    result = materialize_chunks(
+        "今彩539", "115000205", chunks, 2, deduplicate_by_id=True,
+    )
+
+    assert result["items"] == [first_item]
+    assert result["validationById"] == {"same-road": first_validation}

@@ -19,6 +19,7 @@ class AnalysisPipeline:
         builders: Mapping[str, ArtifactBuilder],
         analysis_version: str = "matrix-python-v1",
         explore_batch_size: int = 10,
+        tiangong_batch_size: int = 1,
     ) -> None:
         if set(builders) != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_BUILDERS_INCOMPLETE")
@@ -26,6 +27,7 @@ class AnalysisPipeline:
         self.builders = builders
         self.analysis_version = analysis_version
         self.explore_batch_size = max(1, explore_batch_size)
+        self.tiangong_batch_size = max(1, tiangong_batch_size)
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
         self._validate_draw(draw)
@@ -41,7 +43,7 @@ class AnalysisPipeline:
             phase_total = len(PHASES)
             resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
             for phase_index, phase in enumerate(PHASES):
-                if phase == "explore":
+                if phase in {"explore", "tiangong"}:
                     if phase_index < resume_phase_index:
                         existing = self.repository.read_artifact(
                             lottery, period, self.analysis_version, phase,
@@ -49,10 +51,12 @@ class AnalysisPipeline:
                         if existing is not None:
                             context["artifacts"][phase] = existing
                             continue
-                    start = int(run.get("cursor", 0)) if run.get("phase") == "explore" else 0
-                    context["exploreBatch"] = {
+                    start = int(run.get("cursor", 0)) if run.get("phase") == phase else 0
+                    batch_key = f"{phase}Batch"
+                    batch_size = self.explore_batch_size if phase == "explore" else self.tiangong_batch_size
+                    context[batch_key] = {
                         "start": start,
-                        "limit": self.explore_batch_size,
+                        "limit": batch_size,
                     }
                     built = self.builders[phase](context)
                     checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
@@ -61,7 +65,7 @@ class AnalysisPipeline:
                         cursor_start = int(checkpoint.get("cursorStart", start))
                         cursor = int(checkpoint["cursor"])
                         total = int(checkpoint["total"])
-                        chunk_index = cursor_start // self.explore_batch_size
+                        chunk_index = cursor_start // batch_size
                         self.repository.save_artifact_chunk(
                             lottery, period, self.analysis_version, phase,
                             chunk_index, cursor_start, cursor, payload,
@@ -69,7 +73,7 @@ class AnalysisPipeline:
                         self.repository.update_progress(
                             lottery, period, self.analysis_version, phase, cursor, total,
                         )
-                        context.pop("exploreBatch", None)
+                        context.pop(batch_key, None)
                         if not checkpoint.get("complete"):
                             result = self.repository.get_progress(lottery, period)
                             return {**(result or {}), "skipped": False}
@@ -88,7 +92,7 @@ class AnalysisPipeline:
                             PHASES[phase_index + 1], phase_index + 1, phase_total,
                         )
                         continue
-                    context.pop("exploreBatch", None)
+                    context.pop(batch_key, None)
                     self.repository.update_progress(
                         lottery, period, self.analysis_version, phase, phase_index, phase_total,
                     )

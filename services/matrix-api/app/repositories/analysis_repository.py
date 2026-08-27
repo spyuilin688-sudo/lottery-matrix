@@ -102,6 +102,7 @@ class InMemoryAnalysisRepository:
             lottery, draw_period,
             self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
             expected_total,
+            deduplicate_by_id=kind == "tiangong",
         )
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
@@ -264,6 +265,7 @@ class SupabaseAnalysisRepository:
             lottery, draw_period,
             self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
             expected_total,
+            deduplicate_by_id=kind == "tiangong",
         )
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:

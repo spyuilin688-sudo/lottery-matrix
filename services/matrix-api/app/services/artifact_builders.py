@@ -4,6 +4,7 @@ from typing import Any
 from app.domain.explore import run_matrix_explore_group_with_history
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
+from app.domain.tiangong import enumerate_equal_spacing_sequences
 from app.domain.tiangong_artifact import build_tiangong_artifact
 from app.domain.tiangong_generator import run_tiangong_candidates
 from app.domain.tianyan_artifact import build_tianyan_artifact
@@ -11,6 +12,21 @@ from app.services.explore_batches import build_explore_batch, work_units
 
 
 ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
+TiangongRunner = Callable[[str, list[dict[str, Any]], dict[str, Any]], list[dict[str, Any]]]
+
+
+def tiangong_work_units() -> list[dict[str, Any]]:
+    units: list[dict[str, Any]] = []
+    for mode in ("one-stage", "two-stage"):
+        for condition in ("準2進3", "準3進4"):
+            for sequence in enumerate_equal_spacing_sequences(80, condition):
+                units.append({
+                    "periodRanges": [80],
+                    "modes": [mode],
+                    "hitConditions": [condition],
+                    "sourceSequences": [sequence],
+                })
+    return units
 
 
 def _explore_selections(source_index: int) -> list[tuple[int, int]]:
@@ -98,6 +114,32 @@ def build_explore_artifact(
     )["artifact"]
 
 
+def build_tiangong_artifact_chunk(
+    lottery: str,
+    draw_period: str,
+    history: list[dict[str, Any]],
+    start: int,
+    limit: int,
+    runner: TiangongRunner = run_tiangong_candidates,
+) -> dict[str, Any]:
+    units = tiangong_work_units()
+    cursor_start = min(max(0, start), len(units))
+    cursor = min(len(units), cursor_start + max(1, limit))
+    candidates: list[dict[str, Any]] = []
+    for options in units[cursor_start:cursor]:
+        candidates.extend(runner(lottery, history, options))
+    artifact = build_tiangong_artifact(
+        lottery, draw_period, history, lambda *_: candidates,
+    )
+    return {
+        "artifact": artifact,
+        "cursorStart": cursor_start,
+        "cursor": cursor,
+        "total": len(units),
+        "complete": cursor == len(units),
+    }
+
+
 def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong: dict[str, Any]) -> dict[str, Any]:
     roads = []
     for item in explore["items"]:
@@ -128,7 +170,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
 
 def create_artifact_builders(
     explore_runner: ExploreRunner = run_matrix_explore_group_with_history,
-    tiangong_runner: Callable[[str, list[dict[str, Any]]], list[dict[str, Any]]] = run_tiangong_candidates,
+    tiangong_runner: TiangongRunner = run_tiangong_candidates,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
@@ -155,7 +197,25 @@ def create_artifact_builders(
 
     def tiangong(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
-        return build_tiangong_artifact(draw["lottery"], draw["period"], context["history"], tiangong_runner)
+        batch = context.get("tiangongBatch")
+        if isinstance(batch, dict):
+            result = build_tiangong_artifact_chunk(
+                draw["lottery"], draw["period"], context["history"],
+                int(batch.get("start", 0)), int(batch.get("limit", 1)), tiangong_runner,
+            )
+            return {
+                "artifact": result["artifact"],
+                "_checkpoint": {
+                    "cursorStart": result["cursorStart"],
+                    "cursor": result["cursor"],
+                    "total": result["total"],
+                    "complete": result["complete"],
+                },
+            }
+        return build_tiangong_artifact(
+            draw["lottery"], draw["period"], context["history"],
+            lambda lottery, history: tiangong_runner(lottery, history, {}),
+        )
 
     def status(context: dict[str, Any]) -> dict[str, Any]:
         artifacts = context["artifacts"]

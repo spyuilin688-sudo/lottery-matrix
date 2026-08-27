@@ -1,4 +1,8 @@
-from app.services.artifact_builders import build_explore_artifact, create_artifact_builders
+from app.services.artifact_builders import (
+    build_explore_artifact,
+    create_artifact_builders,
+    tiangong_work_units,
+)
 
 
 def test_explore_builder_creates_canonical_detached_rows() -> None:
@@ -35,6 +39,33 @@ def test_explore_batch_builder_needs_only_start_and_limit() -> None:
 
     assert result["artifact"]["items"] == []
     assert result["_checkpoint"] == {"cursor": 12, "total": 390, "complete": False}
+
+
+def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:
+    calls = []
+
+    def runner(lottery: str, history: list[dict], options: dict) -> list[dict]:
+        calls.append((lottery, options))
+        return []
+
+    builders = create_artifact_builders(tiangong_runner=runner)
+    context = {
+        "draw": {"lottery": "今彩539", "period": "123"},
+        "history": [],
+        "tiangongBatch": {"start": 1, "limit": 1},
+    }
+
+    result = builders["tiangong"](context)
+    units = tiangong_work_units()
+
+    assert len(calls) == 1
+    assert calls[0] == ("今彩539", units[1])
+    assert result["artifact"] == {
+        "lottery": "今彩539", "drawPeriod": "123", "items": [], "validationById": {},
+    }
+    assert result["_checkpoint"] == {
+        "cursorStart": 1, "cursor": 2, "total": len(units), "complete": False,
+    }
 
 
 def test_explore_builder_keeps_period_groups_cumulative() -> None:
