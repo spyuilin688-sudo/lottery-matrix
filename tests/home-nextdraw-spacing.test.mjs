@@ -20,11 +20,11 @@ test('next draw date has no space before weekday parentheses', () => {
   assert.match(countdown, /return `\$\{value\("month"\)\}\/\$\{value\("day"\)\}\(\$\{weekday\}\) \$\{value\("hour"\)\}:\$\{value\("minute"\)\}`;/);
 });
 
-test('homepage brand header is the final 8px spacing owner for the 75 percent logo', () => {
+test('homepage brand header is the final 8px spacing owner for the 68 percent logo', () => {
   const brandHeader = lastRuleBody(css, '.home-screen .brand-header');
   const logo = lastRuleBody(css, '.home-screen .home-logo-image');
 
   assert.match(brandHeader, /display:\s*flex;/);
   assert.match(brandHeader, /padding-top:\s*8px;/);
-  assert.match(logo, /width:\s*75%;/);
+  assert.match(logo, /width:\s*68%;/);
 });
