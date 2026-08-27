@@ -2,7 +2,7 @@
 
 .home-screen {
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
-  --home-frame-shadow: inset 0 0 0 var(--lottery-stroke-default) var(--home-frame-border), inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
+  --home-frame-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
   --home-gap-status-core: 16px;
 }
@@ -37,9 +37,13 @@
 .home-screen .latest-draw-card,
 .home-screen .matrix-core-banner,
 .home-screen .home-shortcut {
-  border-color: var(--home-frame-border);
+  border: var(--lottery-stroke-default) solid var(--home-frame-border);
   border-radius: var(--lottery-card-radius);
   box-shadow: var(--home-frame-shadow);
+}
+
+.home-screen .home-shortcut img {
+  border-radius: calc(var(--lottery-card-radius) - var(--lottery-stroke-default));
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
