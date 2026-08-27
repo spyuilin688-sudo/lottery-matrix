@@ -33,3 +33,10 @@ test("does not replace or redraw existing homepage artwork", () => {
   assert.doesNotMatch(visualLanguage, /background-image:\s*url\(/);
   assert.doesNotMatch(visualLanguage, /content:\s*["'][^"']+["']/);
 });
+
+test("derives homepage colors from the canonical runtime tokens", () => {
+  assert.doesNotMatch(visualLanguage, /#[0-9a-f]{3,8}\b/i);
+  assert.doesNotMatch(visualLanguage, /rgba?\(/i);
+  assert.match(visualLanguage, /var\(--lottery-gold-500\)/);
+  assert.match(visualLanguage, /var\(--matrix-status-active\)/);
+});
