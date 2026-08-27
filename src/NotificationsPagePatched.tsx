@@ -262,12 +262,13 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const [key, title, subtitle, icon] = row;
     const disabled = !settings[key] || key === "collision";
     const expanded = expandedKey === key && !disabled;
+    const settingsPanelId = `notification-settings-${key}`;
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
         <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
         <div className="notification-actions">
-          <button type="button" className="notification-settings-toggle" disabled={disabled} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
+          <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
           <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => {
             applyNotificationSettingsEdit((current) => ({
               ...current,
@@ -276,7 +277,13 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
           }} />
         </div>
       </div>
-      {expanded ? <div className="notification-inline-settings">{renderInlineSettings(row)}</div> : null}
+      {key === "collision" ? null : <div
+        id={settingsPanelId}
+        className="notification-inline-settings"
+        data-expanded={expanded}
+        aria-hidden={!expanded}
+        inert={!expanded}
+      ><div className="notification-inline-settings-inner">{renderInlineSettings(row)}</div></div>}
     </article>;
   };
 
