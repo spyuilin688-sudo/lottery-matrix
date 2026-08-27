@@ -8,6 +8,7 @@ const responsiveCss = fs.readFileSync('src/responsive-feature-pages.css', 'utf8'
 const runtimeCss = fs.readFileSync('src/styles.css', 'utf8');
 const prototypeCss = fs.readFileSync('src/prototype.css', 'utf8');
 const featureTsx = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+const notificationsTsx = fs.readFileSync('src/NotificationsPagePatched.tsx', 'utf8');
 const brandCss = fs.readFileSync('src/brand-header-unify.css', 'utf8');
 const adjustmentsCss = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');
 
@@ -142,8 +143,8 @@ test('notification page has no stale notification-only layout sources', () => {
   assert.doesNotMatch(featureTsx, /notification-icon--expanded/);
   assert.doesNotMatch(featureTsx, /className="notification-note"/);
   assert.doesNotMatch(featureTsx, /所有通知設定將立即生效/);
-  assert.match(featureTsx, /<article className="notification-row" data-notification-key=\{key\} key=\{key\}>/);
-  assert.match(featureTsx, /<div className="notification-icon"><img src=\{icon\} alt="" \/><\/div>/);
+  assert.match(notificationsTsx, /<article className="notification-row" data-notification-key=\{key\} key=\{key\}>/);
+  assert.match(notificationsTsx, /<div className="notification-icon"><img src=\{icon\} alt="" \/><\/div>/);
 });
 
 test('notification layout has one authoritative sizing and spacing source', () => {
