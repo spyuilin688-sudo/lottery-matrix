@@ -1,4 +1,5 @@
 from collections.abc import Callable
+import ssl
 from typing import Any
 
 import httpx
@@ -10,6 +11,13 @@ from app.worker import run_worker
 
 
 LOTTERIES = ("今彩539", "天天樂", "六合彩", "大樂透")
+
+
+def create_railway_ssl_context() -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    if hasattr(ssl, "VERIFY_X509_STRICT"):
+        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    return context
 
 
 def run_all_workers(run_one: Callable[[str], dict[str, Any]]) -> dict[str, Any]:
@@ -30,7 +38,7 @@ def main() -> int:
         settings.supabase_url,
         settings.supabase_secret_key,
     )
-    with httpx.Client() as client:
+    with httpx.Client(verify=create_railway_ssl_context()) as client:
         source = LatestDrawSource(client)
         result = run_all_workers(
             lambda lottery: run_worker(lottery, repository, source),

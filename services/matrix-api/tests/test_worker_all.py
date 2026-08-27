@@ -1,6 +1,8 @@
 import json
+import ssl
 from pathlib import Path
 
+from app import worker_all
 from app.worker_all import LOTTERIES, run_all_workers
 
 
@@ -41,6 +43,15 @@ def test_railway_config_runs_all_lotteries_every_15_minutes() -> None:
         (Path(__file__).parents[1] / "railway.json").read_text(encoding="utf-8")
     )
 
-    assert config["deploy"]["startCommand"] == "uv run python -m app.worker_all"
+    assert config["deploy"]["startCommand"] == "uv run python -u -m app.worker_all"
     assert config["deploy"]["cronSchedule"] == "*/15 * * * *"
     assert config["deploy"]["restartPolicyType"] == "NEVER"
+
+
+def test_railway_ssl_context_relaxes_only_python_strict_chain_checks() -> None:
+    context = worker_all.create_railway_ssl_context()
+
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname is True
+    if hasattr(ssl, "VERIFY_X509_STRICT"):
+        assert not context.verify_flags & ssl.VERIFY_X509_STRICT

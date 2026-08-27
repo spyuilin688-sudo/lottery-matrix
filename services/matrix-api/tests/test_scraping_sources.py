@@ -343,3 +343,32 @@ def test_latest_draw_source_rejects_unknown_lottery() -> None:
 
     with pytest.raises(ValueError, match="UNKNOWN_LOTTERY"):
         source.fetch("未知彩種")
+
+
+def test_fantasy5_history_retries_sc888_download_when_index_is_forbidden() -> None:
+    requested_urls: list[str] = []
+    sc888_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
+      <tr><td>第 11978 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "www.calottery.com":
+            return httpx.Response(503)
+        if "LotteryFan/index" in str(request.url):
+            return httpx.Response(403)
+        return httpx.Response(200, text=sc888_html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = source.fetch_history("天天樂", 1)
+
+    assert [draw["period"] for draw in history] == ["11978"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/1",
+        "https://sc888.net/index.php?s=/LotteryFan/index",
+        "https://sc888.net/index.php?s=/LotteryFan/getDownloadXls",
+    ]
