@@ -129,6 +129,7 @@ describe("NotificationsPagePatched", () => {
     const panel = statusRow!.querySelector<HTMLElement>(".notification-inline-settings");
 
     expect(panel).not.toBeNull();
+    expect(panel!.querySelector(":scope > .notification-inline-settings-inner > .notification-inline-settings-content")).not.toBeNull();
     expect(toggle).toHaveAttribute("aria-controls", panel!.id);
     expect(panel).toHaveAttribute("data-expanded", "false");
     expect(panel).toHaveAttribute("aria-hidden", "true");
