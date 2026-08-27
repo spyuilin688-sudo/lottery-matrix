@@ -41,7 +41,7 @@ test('notification compact responsive layout is present in the v2 canonical styl
   assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\)/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*grid-template-columns:\s*64px 38px;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px;/s);
-  assert.match(adjustments, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px;/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
   assert.doesNotMatch(adjustments, /\.notifications-screen-v2 \.notification-system-group \.notification-heading\s*\{[^}]*padding-block:\s*0;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*height:\s*20px;[^}]*min-height:\s*20px;[^}]*font-size:\s*clamp\(8px,\s*2\.4vw,\s*10px\);/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*height:\s*20px;[^}]*align-self:\s*center;/s);
