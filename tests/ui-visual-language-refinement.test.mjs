@@ -42,10 +42,10 @@ test("homepage status logos are 80 percent larger and shift left without a max-w
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
-test("homepage logo grows by 40 percent and five features use 8px outer and 2.5px inner gaps", () => {
+test("homepage logo grows by 40 percent and five features use 12px outer and responsive 2 to 2.5px inner gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "95.2%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 16px)");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "2.5px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 24px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "clamp(2px, .64vw, 2.5px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "100%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
 });

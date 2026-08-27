@@ -610,12 +610,12 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: calc(100% - 16px);
+  width: calc(100% - 24px);
   height: auto;
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  column-gap: 2.5px;
+  column-gap: clamp(2px, .64vw, 2.5px);
   row-gap: 0;
   align-items: stretch;
   overflow: visible;
