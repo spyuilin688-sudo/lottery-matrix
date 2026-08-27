@@ -4,10 +4,10 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const css = readLocalCss("src/homepage-repair.css");
 
-test("狀態卡上下兩列的垂直間距固定為 4px", () => {
+test("狀態卡使用一致的 8px 水平與垂直間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*100%;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*row-gap:\s*4px;[^}]*align-content:\s*center;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*100%;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*gap:\s*8px;[^}]*align-content:\s*center;/s,
   );
   assert.match(
     css,
