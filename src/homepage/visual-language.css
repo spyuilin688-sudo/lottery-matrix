@@ -38,18 +38,14 @@
 .home-screen .matrix-core-banner,
 .home-screen .home-shortcut {
   border-color: var(--home-frame-border);
-  box-shadow: var(--home-frame-shadow);
-}
-
-.home-screen .latest-draw-card,
-.home-screen .matrix-core-banner,
-.home-screen .home-shortcut {
   border-radius: var(--lottery-card-radius);
+  box-shadow: var(--home-frame-shadow);
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
 .home-screen .matrix-core-banner:active,
 .home-screen .home-shortcut:active {
+  border-radius: var(--lottery-card-radius);
   box-shadow: var(--home-frame-shadow-active);
 }
 
