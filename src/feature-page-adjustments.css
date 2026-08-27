@@ -397,7 +397,7 @@
   max-height: none;
   margin-top: 12px;
   margin-bottom: 5px;
-  padding: 3px 0 6px;
+  padding: 4px 0;
   gap: 6px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -405,7 +405,7 @@
   scroll-snap-type: x proximity;
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .matrix-guide-screen .guide-category-loop-group {
@@ -419,17 +419,18 @@
 .matrix-guide-screen .guide-category-strip .guide-category-card {
   display: grid;
   box-sizing: border-box;
-  flex: 0 0 clamp(116px, 34vw, 136px);
-  width: auto;
-  min-height: 43px;
-  padding: 6px 8px;
-  grid-template-columns: 27px minmax(0, 1fr);
+  flex: 0 0 auto;
+  width: max-content;
+  min-height: 22px;
+  padding: 4px 8px;
+  grid-template-columns: auto auto;
   align-items: center;
   gap: 4px;
   border: 1px solid #423521;
   border-radius: 8px;
   background: #061019;
   color: #bdb6aa;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;

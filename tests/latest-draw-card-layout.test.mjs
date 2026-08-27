@@ -24,12 +24,12 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
-test("順球落球使用 1px 近乎平面的內側接縫並自然上移", () => {
+test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
   const selector = ".home-screen .latest-draw-card .draw-order";
   assert.ok(hasRuleProperty(css, selector, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/));
-  assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(116px, 32vw, 124px\);/));
-  assert.ok(hasRuleProperty(css, selector, /height:\s*30px;/));
-  assert.ok(hasRuleProperty(css, selector, /gap:\s*1px;/));
+  assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(110px, calc\(32vw - 6px\), 118px\);/));
+  assert.ok(hasRuleProperty(css, selector, /height:\s*28px;/));
+  assert.ok(hasRuleProperty(css, selector, /gap:\s*2\.5px;/));
   assert.ok(hasRuleProperty(css, selector, /border:\s*0;/));
   assert.ok(hasRuleProperty(css, selector, /background:\s*transparent;/));
   assert.ok(hasRuleProperty(css, selector, /justify-self:\s*center;/));

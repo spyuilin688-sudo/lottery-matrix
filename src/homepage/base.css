@@ -33,7 +33,7 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - (var(--layout-page-inline) * 2));
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 2.5px;
+  --home-gap-switcher-draw: 4px;
   --home-gap-draw-status: 8px;
   --home-gap-status-core: 8px;
   --home-gap-core-features: 8px;
@@ -79,7 +79,6 @@
 
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
-  --home-feature-gap: 8px;
   --home-core-width: calc(min(100vw, 390px) - 32px);
   --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
   position: relative;
@@ -294,9 +293,9 @@
   grid-row: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: clamp(116px, 32vw, 124px);
-  height: 30px;
-  gap: 1px;
+  width: clamp(110px, calc(32vw - 6px), 118px);
+  height: 28px;
+  gap: 2.5px;
   justify-self: center;
   align-self: start;
   margin-block-start: 3px;
@@ -559,7 +558,7 @@
   position: absolute;
   z-index: 2;
   top: 50%;
-  left: calc(83.5% - 8px);
+  left: calc(83.5% - 18px);
   right: auto;
   width: 54%;
   height: auto;
@@ -611,12 +610,12 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%;
+  width: calc(100% - 16px);
   height: auto;
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  column-gap: 0;
+  column-gap: 2.5px;
   row-gap: 0;
   align-items: stretch;
   overflow: visible;
@@ -625,7 +624,7 @@
 .home-screen .home-shortcut {
   appearance: none;
   display: flex;
-  width: calc(100% - var(--home-feature-gap, 8px));
+  width: 100%;
   min-width: 0;
   height: auto;
   aspect-ratio: 386 / 496;
