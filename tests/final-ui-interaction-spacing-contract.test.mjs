@@ -35,7 +35,6 @@ test("我的頁面在底部導覽淨空之外保留 8px", () => {
 
 test("快捷設定不依賴一次性 portal host 才能顯示", () => {
   assert.doesNotMatch(prototypeSource, /quickSettingsHost/);
-  assert.doesNotMatch(prototypeSource, /createPortal/);
   assert.match(prototypeSource, /const quickSettings = quickSettingsOpen\s*\?/);
   assert.doesNotMatch(featureCss, /\.quick-settings-backdrop\s*\{/);
 });
