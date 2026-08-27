@@ -19,8 +19,8 @@ test("approved homepage uses 1.5px status gaps and responsive 2 to 2.5px feature
   assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*overflow:\s*visible;/s);
 });
 
-test("approved homepage enlarges the logo while keeping the responsive shell free of hard positioning", () => {
-  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*95\.2%;/s);
+test("approved homepage reduces the logo by 8 percent while keeping the responsive shell free of hard positioning", () => {
+  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*87\.584%;/s);
   assert.match(tokens, /--bottom-navigation-height:\s*72px;/);
   assert.doesNotMatch(css, /\.home-screen \.lottery-screen\s*\{[^}]*width:\s*\d+px/s);
   assert.doesNotMatch(css, /\.home-screen \.lottery-screen\s*\{[^}]*transform:/s);

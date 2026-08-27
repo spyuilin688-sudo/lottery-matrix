@@ -21,20 +21,20 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(104px, 30%\) minmax\(0, 1fr\)/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-issue strong\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-date\s*\{[^}]*font-size:\s*9px/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*0\.5px/s);
 });
 
 test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
   const selector = ".home-screen .latest-draw-card .draw-order";
   assert.ok(hasRuleProperty(css, selector, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/));
   assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(110px, calc\(32vw - 6px\), 118px\);/));
-  assert.ok(hasRuleProperty(css, selector, /height:\s*28px;/));
+  assert.ok(hasRuleProperty(css, selector, /height:\s*25px;/));
   assert.ok(hasRuleProperty(css, selector, /gap:\s*2\.5px;/));
   assert.ok(hasRuleProperty(css, selector, /border:\s*0;/));
   assert.ok(hasRuleProperty(css, selector, /background:\s*transparent;/));
   assert.ok(hasRuleProperty(css, selector, /justify-self:\s*center;/));
   assert.ok(hasRuleProperty(css, selector, /align-self:\s*start;/));
-  assert.ok(hasRuleProperty(css, selector, /margin-block-start:\s*3px;/));
+  assert.ok(hasRuleProperty(css, selector, /margin-block-start:\s*1px;/));
   assert.doesNotMatch(ruleBodies(css, selector).join("\n"), /transform\s*:/);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\s*\{[^}]*border:\s*1px solid rgba\(230, 177, 76, \.58\);[^}]*border-radius:\s*14px;[^}]*background:\s*linear-gradient/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button:first-child\s*\{[^}]*border-radius:\s*14px 2px 2px 14px;/s);
@@ -70,8 +70,10 @@ test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => 
 });
 
 test("底部資訊改為參考圖的兩個獨立圓角容器", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*3px;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*border:\s*1px solid rgba\(232, 177, 76, \.52\);[^}]*border-radius:\s*10px;[^}]*background:\s*linear-gradient/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0\.5px;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*gap:\s*0\.5px;[^}]*padding-inline:\s*0;[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*border:\s*1px solid rgba\(232, 177, 76, \.52\);[^}]*border-radius:\s*10px;[^}]*background:\s*linear-gradient/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:first-child\s*\{[^}]*padding-left:\s*1\.5px;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*padding-right:\s*1\.5px;/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*border-inline-start\s*:/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);

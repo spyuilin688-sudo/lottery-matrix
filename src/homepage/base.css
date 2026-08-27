@@ -143,7 +143,7 @@
 }
 
 .home-screen .home-logo-image {
-  width: 95.2%;
+  width: 87.584%;
 }
 
 .lottery-switcher--home-style {
@@ -294,11 +294,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: clamp(110px, calc(32vw - 6px), 118px);
-  height: 28px;
+  height: 25px;
   gap: 2.5px;
   justify-self: center;
   align-self: start;
-  margin-block-start: 3px;
+  margin-block-start: 1px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -351,7 +351,7 @@
   color: #f0c86c;
   font-size: 10px;
   font-weight: 700;
-  gap: 6px;
+  gap: 0.5px;
   transform: translate(-10px, -16px);
   white-space: nowrap;
 }
@@ -432,7 +432,7 @@
   max-height: 24px;
   margin: 0;
   padding: 0;
-  gap: 3px;
+  gap: 0.5px;
   align-items: stretch;
   border: 0;
   background: transparent;
@@ -442,15 +442,23 @@
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
   display: grid;
   grid-template-columns: 12px auto minmax(0, 1fr);
-  gap: 4px;
+  gap: 0.5px;
   min-width: 0;
-  padding-inline: clamp(6px, 2vw, 10px);
+  padding-inline: 0;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(232, 177, 76, .52);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(5, 10, 14, .34), rgba(1, 5, 9, .82));
   box-shadow: inset 0 0 8px rgba(225, 169, 62, .08);
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:first-child {
+  padding-left: 1.5px;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child {
+  padding-right: 1.5px;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {

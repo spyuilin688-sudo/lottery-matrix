@@ -20,9 +20,9 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns 8px top spacing and logo uses 95.2 percent fluid width', () => {
+test('homepage brand header owns 8px top spacing and logo is reduced by 8 percent', () => {
   assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*8px;/);
-  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*95\.2%;/);
+  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*87\.584%;/);
 });
 
 test('lottery switcher, draw card and status keep the 16px homepage inline baseline', () => {
@@ -47,7 +47,7 @@ test('home bottom group keeps 8px between five shortcuts and bottom navigation',
 test('embedded next draw info uses two independent rounded reference containers', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*3px;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*0\.5px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /border:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /border:\s*1px solid rgba\(232, 177, 76, \.52\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*12px;/);

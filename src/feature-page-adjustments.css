@@ -406,7 +406,8 @@
   scroll-snap-type: x proximity;
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
-  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .matrix-guide-screen .guide-category-loop-group {

@@ -42,20 +42,21 @@ test("homepage status logos are 80 percent larger and shift left without a max-w
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
-test("homepage logo grows by 40 percent and five features use 12px outer and responsive 2 to 2.5px inner gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "95.2%");
+test("homepage logo is reduced by 8 percent and five features keep their current responsive gaps", () => {
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "87.584%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 24px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "clamp(2px, .64vw, 2.5px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "100%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
 });
 
-test("draw order reference moves upward and uses a compact near-flat inner seam", () => {
+test("draw order moves up 2px, shrinks to 25px and keeps a compact near-flat inner seam", () => {
   const order = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order").join("\n");
   const button = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order button").join("\n");
   assert.match(order, /gap:\s*2\.5px;/);
   assert.match(order, /align-self:\s*start;/);
-  assert.match(order, /margin-block-start:\s*3px;/);
+  assert.match(order, /height:\s*25px;/);
+  assert.match(order, /margin-block-start:\s*1px;/);
   assert.match(order, /border:\s*0;/);
   assert.match(order, /background:\s*transparent;/);
   assert.match(button, /border:\s*1px solid rgba\(230, 177, 76, \.58\);/);
@@ -67,9 +68,11 @@ test("draw order reference moves upward and uses a compact near-flat inner seam"
 test("draw footer reference is composed from two rounded containers, not parent divider lines", () => {
   const footer = ruleBodies(homeCss, ".home-screen .latest-draw-card .next-draw-info--embedded").join("\n");
   const item = ruleBodies(homeCss, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item").join("\n");
-  assert.match(footer, /gap:\s*3px;/);
+  assert.match(footer, /gap:\s*0\.5px;/);
   assert.match(footer, /border:\s*0;/);
   assert.match(footer, /background:\s*transparent;/);
+  assert.match(item, /gap:\s*0\.5px;/);
+  assert.match(item, /padding-inline:\s*0;/);
   assert.match(item, /border:\s*1px solid rgba\(232, 177, 76, \.52\);/);
   assert.match(item, /background:\s*linear-gradient/);
   assert.doesNotMatch(footer, /border-top\s*:/);
