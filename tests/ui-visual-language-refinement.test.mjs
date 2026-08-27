@@ -27,18 +27,18 @@ function finalDeclaration(source, selector, property) {
   return value;
 }
 
-test("homepage status frame owns 16px viewport inset, 1.5px padding and 1.5px card gaps", () => {
+test("homepage status frame owns 16px viewport inset, 1.5px padding and 0.8px card gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(min(100vw, 390px) - 32px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding"), "1.5px");
   assert.match(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), /^1px solid/);
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "1.5px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "0.8px");
   assert.match(homeCss, /--home-gap-draw-status:\s*8px;/);
   assert.match(homeCss, /--home-gap-status-core:\s*8px;/);
 });
 
-test("homepage status logos are 80 percent larger and shift left without a max-width lock", () => {
+test("homepage status logos are 80 percent larger and shift left 6px without a max-width lock", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "width"), "54%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "left"), "calc(83.5% - 18px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "left"), "calc(83.5% - 24px)");
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
