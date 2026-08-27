@@ -20,7 +20,13 @@ test("keeps homepage sections in a compact content flow", () => {
 test("uses one restrained frame treatment for homepage entry surfaces", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
-  assert.match(visualLanguage, /\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner/);
+  assert.match(visualLanguage, /\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner,[\s\S]*\.home-screen \.home-shortcut/);
+  assert.match(visualLanguage, /--lottery-stroke-default/);
+});
+
+test("keeps only the real browser safe area above the fixed homepage navigation", () => {
+  assert.match(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
 });
 
 test("preserves the four semantic Matrix status tones", () => {
@@ -30,8 +36,8 @@ test("preserves the four semantic Matrix status tones", () => {
 });
 
 test("keeps idle status glow restrained and strengthens it only while pressed", () => {
-  assert.match(visualLanguage, /--home-status-glow:\\s*color-mix\\(in srgb, var\\(--home-status-tone\\) 18%, transparent\\);/);
-  assert.match(visualLanguage, /\\.home-screen \\.matrix-status-card:active\\s*\\{[^}]*26%/s);
+  assert.match(visualLanguage, /--home-status-glow:\s*color-mix\(in srgb, var\(--home-status-tone\) 18%, transparent\);/);
+  assert.match(visualLanguage, /\.home-screen \.matrix-status-card:active\s*\{[^}]*26%/s);
 });
 
 test("does not replace or redraw existing homepage artwork", () => {
