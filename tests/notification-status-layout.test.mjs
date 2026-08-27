@@ -101,8 +101,8 @@ test("所有通知設定內容使用一致的緊湊寬度與置中排列", () =>
   assert.equal(dom.window.getComputedStyle(optionRow).gap, "4px");
   assert.equal(dom.window.getComputedStyle(choice).height, "auto");
   assert.equal(dom.window.getComputedStyle(choice).minHeight, "26px");
-  assert.equal(dom.window.getComputedStyle(choice).paddingBlock, "6px");
-  assert.equal(dom.window.getComputedStyle(choice).paddingInline, "8px");
+  assert.equal(dom.window.getComputedStyle(choice).paddingTop, "6px");
+  assert.equal(dom.window.getComputedStyle(choice).paddingRight, "8px");
   assert.equal(dom.window.getComputedStyle(choice).gap, "4px");
   assert.equal(dom.window.getComputedStyle(choice).marginInline, "0px");
   assert.equal(dom.window.getComputedStyle(choice).fontSize, "11px");
