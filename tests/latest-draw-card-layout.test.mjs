@@ -15,10 +15,11 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
-test("順球落球使用置中的響應式雙選項膠囊且不靠位移補償", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*width:\s*clamp\(110px, 32vw, 124px\);[^}]*height:\s*30px;[^}]*justify-self:\s*center;[^}]*align-self:\s*center;/s);
+test("順球落球還原為兩個獨立圓角按鈕且不靠位移補償", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*width:\s*clamp\(116px, 32vw, 124px\);[^}]*height:\s*30px;[^}]*gap:\s*3px;[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*justify-self:\s*center;[^}]*align-self:\s*center;/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*transform\s*:/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*color:\s*#ffd36c;[^}]*background:\s*radial-gradient/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\s*\{[^}]*border:\s*1px solid rgba\(230, 177, 76, \.58\);[^}]*border-radius:\s*14px;[^}]*background:\s*linear-gradient/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*border-color:\s*rgba\(244, 192, 82, \.82\);[^}]*color:\s*#ffd36c;[^}]*radial-gradient/s);
 });
 
 test("開獎資訊卡完整使用 16px 內容區，不再額外內縮", () => {
@@ -33,7 +34,7 @@ test("下次開獎與剩餘時間數值使用中階暖灰色", () => {
   assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*color-mix\(in srgb, var\(--lottery-neutral-100\) 60%, var\(--lottery-neutral-400\)\);/s);
 });
 
-test("期數日期與查看更多紀錄維持既有定位，順落球改由自然置中", () => {
+test("期數日期與查看更多紀錄維持既有定位，順落球由自然置中", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta\s*\{[^}]*transform:\s*translateY\(-8px\);/s);
@@ -41,18 +42,18 @@ test("期數日期與查看更多紀錄維持既有定位，順落球改由自�
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*transform:\s*translate\(-10px, -16px\);/s);
 });
 
-test("特別號標籤右移、分隔線縮短且底部圖示縮為 12px", () => {
+test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.special-label\s*\{[^}]*right:\s*calc\(50% - 1px\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.special-ball-separator\s*\{[^}]*height:\s*calc\(var\(--draw-special-ball-size\) \+ 4px\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*grid-template-columns:\s*12px auto minmax\(0, 1fr\);/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-icon\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;/s);
 });
 
-test("底部資訊左右各半、完整分隔且垂直置中", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*align-items:\s*stretch[^}]*border-top:\s*1px solid rgba\(232, 177, 76, \.48\)/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*border-inline-start:\s*1px solid rgba\(232, 177, 76, \.48\);/s);
-  assert.match(css, /\.next-draw-icon\s*\{[^}]*width:\s*12px[^}]*height:\s*12px/s);
+test("底部資訊改為參考圖的兩個獨立圓角容器", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*3px;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*border:\s*1px solid rgba\(232, 177, 76, \.52\);[^}]*border-radius:\s*10px;[^}]*background:\s*linear-gradient/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
+  assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*border-inline-start\s*:/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);
   assert.match(css, /\.next-draw-value\s*\{[^}]*font-size:\s*11px/s);
 });
