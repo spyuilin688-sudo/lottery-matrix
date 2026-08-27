@@ -60,9 +60,9 @@ test("通知設定面板使用確認的展開收合動態與 reduced-motion 降�
 
   assert.equal(dom.window.getComputedStyle(panel).padding, "0px");
   assert.equal(dom.window.getComputedStyle(panel).borderTopWidth, "0px");
-  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "0fr");
+  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "minmax(0, 0fr)");
   panel.dataset.expanded = "true";
-  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "1fr");
+  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "minmax(0, 1fr)");
   assert.match(css, /grid-template-rows 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
   assert.match(css, /opacity 140ms ease-out 40ms/);
   assert.match(css, /transform 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
