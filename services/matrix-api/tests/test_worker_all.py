@@ -39,13 +39,25 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
 
 
 def test_railway_config_runs_one_lottery_per_service_every_15_minutes() -> None:
-    config = json.loads(
-        (Path(__file__).parents[1] / "railway.json").read_text(encoding="utf-8")
-    )
+    root = Path(__file__).parents[1]
+    configs = [
+        json.loads((root / name).read_text(encoding="utf-8"))
+        for name in (
+            "railway.json",
+            "railway.fantasy5.json",
+            "railway.marksix.json",
+            "railway.lotto649.json",
+        )
+    ]
 
-    assert config["deploy"]["startCommand"] == "uv run python -u -m app.worker"
-    assert config["deploy"]["cronSchedule"] == "*/15 * * * *"
-    assert config["deploy"]["restartPolicyType"] == "NEVER"
+    assert [config["deploy"]["startCommand"] for config in configs] == [
+        "uv run python -u -m app.worker --lottery 今彩539",
+        "uv run python -u -m app.worker --lottery 天天樂",
+        "uv run python -u -m app.worker --lottery 六合彩",
+        "uv run python -u -m app.worker --lottery 大樂透",
+    ]
+    assert all(config["deploy"]["cronSchedule"] == "*/15 * * * *" for config in configs)
+    assert all(config["deploy"]["restartPolicyType"] == "NEVER" for config in configs)
 
 
 def test_railway_ssl_context_relaxes_only_python_strict_chain_checks() -> None:
