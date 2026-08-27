@@ -12,20 +12,14 @@
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
 .home-screen .latest-draw-card,
-.home-screen .matrix-core-banner,
-.home-screen .home-shortcut {
+.home-screen .matrix-core-banner {
   border: var(--lottery-stroke-default) solid var(--home-frame-border);
   border-radius: var(--lottery-card-radius);
   box-shadow: var(--home-frame-shadow);
 }
 
-.home-screen .home-shortcut img {
-  border-radius: calc(var(--lottery-card-radius) - var(--lottery-stroke-default));
-}
-
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
-.home-screen .matrix-core-banner:active,
-.home-screen .home-shortcut:active {
+.home-screen .matrix-core-banner:active {
   border-radius: var(--lottery-card-radius);
   box-shadow: var(--home-frame-shadow-active);
 }
@@ -71,8 +65,7 @@
   .history-link,
   .draw-order button,
   .matrix-status-card,
-  .matrix-core-banner,
-  .home-shortcut
+  .matrix-core-banner
 ):focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
