@@ -1,8 +1,8 @@
 from app.services.explore_batches import build_explore_batch, work_units
 
 
-def test_work_units_keep_all_390_locked_conditions_for_five_ball_lottery() -> None:
-    assert len(work_units('今彩539', history_length=80, position_count=5)) == 390
+def test_work_units_keep_fifteen_sources_for_shifted_thirteen_period_searches() -> None:
+    assert len(work_units('今彩539', history_length=80, position_count=5)) == 450
 
 
 def test_batch_returns_only_current_delta() -> None:

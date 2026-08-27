@@ -8,5 +8,5 @@ test('current-day Explore lookup does not invent an undefined analysis version',
 });
 
 test('historical Explore lookup keeps the exact draw-period analysis version', () => {
-  assert.equal(analysisVersionForDrawPeriod('115000001'), '115000001:matrix-v5');
+  assert.equal(analysisVersionForDrawPeriod('115000001'), '115000001:matrix-v6');
 });

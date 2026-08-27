@@ -87,7 +87,7 @@ def _base_for_source(history: list[dict], source_index: int, request: dict) -> d
 
 
 def _candidate_rule(algorithm_type: str, base_number: int, target: int, maximum: int) -> int:
-    return normalize_matrix_number(base_number + target, maximum) if algorithm_type == "合值" else (target - base_number + maximum) % maximum
+    return base_number + target if algorithm_type == "合值" else (target - base_number + maximum) % maximum
 
 
 def _apply_rule(algorithm_type: str, base_number: int, rule: int, maximum: int) -> int:
@@ -139,8 +139,6 @@ def _build_group(history: list[dict], source_index: int, request: dict, group_na
                 _add_rule(candidate_map, "拖牌", 0, target)
             elif not (request["algorithmType"] == "加減" and locked_is_reference):
                 _add_rule(candidate_map, request["algorithmType"], rule, target)
-            if request["ruleCount"] == 2:
-                _add_rule(candidate_map, "拖牌", drag_rule, target)
     return {
         "group": group_name, "source": source, "reference": base["reference"], "prediction": prediction,
         "baseNumber": base["baseNumber"], "lockedBaseNumber": locked_base, "candidateMap": candidate_map,
@@ -349,7 +347,7 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
 def run_matrix_explore_group_with_history(value: dict, newest_first: list[dict]) -> dict:
     count = lottery_position_count(value["lottery"])
     source_index = value["lockedSourceIndex"]
-    if not isinstance(source_index, int) or source_index < 0 or source_index >= min(13, len(newest_first)): raise ValueError("鎖定來源期超出前十三期")
+    if not isinstance(source_index, int) or source_index < 0 or source_index >= min(15, len(newest_first)): raise ValueError("鎖定來源期超出探索日期與十三期範圍")
     if not 1 <= value["lockedPosition"] <= count: raise ValueError("鎖定位置超出彩種位置範圍")
     source = newest_first[source_index]
     locked_number = _number_at(source, value["lottery"], value["numberOrder"], value["lockedPosition"])

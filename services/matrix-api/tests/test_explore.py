@@ -68,3 +68,39 @@ def test_missing_draw_order_is_rejected_without_sorted_fallback() -> None:
     result = run_matrix_algorithm_with_history(request, history)
     assert result["valid"] is False
     assert result["missingDrawOrderCount"] == 1
+
+
+def test_drag_rules_do_not_rescue_invalid_two_code_add_subtract_road() -> None:
+    history = [
+        draw("A", [10, 23, 32, 33, 34]),
+        draw("P3", [1, 2, 3, 11, 12]),
+        draw("S3", [10, 22, 32, 33, 34]),
+        draw("P2", [4, 5, 6, 11, 12]),
+        draw("S2", [10, 21, 32, 33, 34]),
+        draw("P1", [7, 8, 9, 11, 12]),
+        draw("S1", [10, 20, 32, 33, 34]),
+    ]
+
+    result = run_matrix_algorithm_with_history({**REQUEST, "ruleCount": 2}, history)
+
+    assert result["valid"] is False
+    assert result["highestStreak"] == 3
+    assert result["conflictingRules"] == [28, 29, 30]
+    assert rule_sets(result) == []
+
+
+def test_combine_road_keeps_full_sum_as_rule_value() -> None:
+    result = run_matrix_algorithm_with_history({**REQUEST, "algorithmType": "合值版路"}, [
+        draw("A", [10, 35, 36, 37, 38]),
+        draw("P1", [1, 2, 3, 4, 29]),
+        draw("S1", [10, 30, 31, 32, 33]),
+    ])
+
+    combined_59 = next(
+        (item for item in rule_sets(result) if item["rules"][0]["value"] == 59),
+        None,
+    )
+
+    assert combined_59 is not None
+    assert combined_59["rules"] == [{"algorithmType": "合值", "value": 59, "display": "59"}]
+    assert combined_59["predictionNumbers"] == [24]

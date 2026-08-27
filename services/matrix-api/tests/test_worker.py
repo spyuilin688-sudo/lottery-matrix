@@ -63,6 +63,7 @@ def test_worker_backfills_complete_history_but_analyzes_latest_80_only() -> None
     result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
+    assert result["analysisVersion"] == "000000220:matrix-python-v2"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]

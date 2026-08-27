@@ -13,6 +13,18 @@ from app.services.explore_batches import build_explore_batch, work_units
 ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
 
 
+def _explore_selections(source_index: int) -> list[tuple[int, int]]:
+    selections: list[tuple[int, int]] = []
+    for date_offset in (0, 1, 2):
+        relative_source_index = source_index - date_offset
+        if relative_source_index < 0:
+            continue
+        for periods in (2, 7, 13):
+            if relative_source_index < periods:
+                selections.append((periods, date_offset))
+    return selections
+
+
 def _work_units(lottery: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return work_units(lottery, len(history), lottery_position_count(lottery))
 
@@ -28,30 +40,31 @@ def _append_explore_result(
         rule_count = int(raw.get("ruleCount", search.get("ruleCount", 0)))
         if rule_count not in {1, 2}:
             continue
-        identifier = "|".join(map(str, [
-            unit["numberOrder"], unit["lockedSourceIndex"], unit["lockedPosition"],
-            unit["exploreDateOffset"], unit["explorePeriods"], unit["algorithmType"], rule_count, raw.get("id", ""),
-        ]))
         source_index = unit["lockedSourceIndex"]
-        item = {
-            "id": identifier, "number": str(raw.get("number", "")),
-            "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
-            "predictionDistance": int(raw.get("predictionDistance", 0)),
-            "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
-            "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
-            "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
-            "explorePeriods": 2 if source_index < 2 else 7 if source_index < 7 else 13,
-            "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
-            "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
-        }
-        for key in ("referenceOffset", "referencePosition"):
-            if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
-                item[key] = search[key]
-        artifact["items"].append(item)
-        validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
-        if isinstance(raw.get("sourceA"), dict):
-            validation["sourceA"] = raw["sourceA"]
-        artifact["validationById"][identifier] = validation
+        for periods, date_offset in _explore_selections(source_index):
+            identifier = "|".join(map(str, [
+                unit["numberOrder"], source_index, unit["lockedPosition"],
+                date_offset, periods, unit["algorithmType"], rule_count, raw.get("id", ""),
+            ]))
+            item = {
+                "id": identifier, "number": str(raw.get("number", "")),
+                "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
+                "predictionDistance": int(raw.get("predictionDistance", 0)),
+                "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
+                "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
+                "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
+                "explorePeriods": periods, "exploreDateOffset": date_offset,
+                "ruleCount": rule_count, "lockedSourceIndex": source_index,
+                "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
+            }
+            for key in ("referenceOffset", "referencePosition"):
+                if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
+                    item[key] = search[key]
+            artifact["items"].append(item)
+            validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
+            if isinstance(raw.get("sourceA"), dict):
+                validation["sourceA"] = raw["sourceA"]
+            artifact["validationById"][identifier] = validation
 
 
 def build_explore_artifact_chunk(

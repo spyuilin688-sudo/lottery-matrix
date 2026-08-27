@@ -1,3 +1,3 @@
 export function analysisVersionForDrawPeriod(drawPeriod?: string) {
-  return drawPeriod === undefined ? undefined : `${drawPeriod}:matrix-v5`;
+  return drawPeriod === undefined ? undefined : `${drawPeriod}:matrix-v6`;
 }

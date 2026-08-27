@@ -99,7 +99,7 @@ function baseForSource(history: Draw[], sourceIndex: number, request: MatrixRequ
 }
 
 function candidateRule(algorithmType: AlgorithmType, baseNumber: number, targetNumber: number, max: number) {
-  if (algorithmType === '合值') return normalizeMatrixNumber(baseNumber + targetNumber, max);
+  if (algorithmType === '合值') return baseNumber + targetNumber;
   return (targetNumber - baseNumber + max) % max;
 }
 
@@ -136,7 +136,6 @@ function buildCandidateGroup(history: Draw[], sourceIndex: number, request: Matr
       const rule = candidateRule(request.algorithmType, base.baseNumber, target, max);
       if (request.algorithmType === '加減' && rule === 0) addTypedRule(candidateMap, '拖牌', 0, target);
       else if (!(request.algorithmType === '加減' && lockedConditionIsArithmeticReference)) addTypedRule(candidateMap, request.algorithmType, rule, target);
-      if (request.ruleCount === 2) addTypedRule(candidateMap, '拖牌', dragRule, target);
     }
   }
   return { group, source, reference: base.reference, prediction, baseNumber: base.baseNumber, lockedBaseNumber, candidateMap };
