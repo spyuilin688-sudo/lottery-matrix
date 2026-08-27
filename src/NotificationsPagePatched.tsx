@@ -8,7 +8,6 @@ import {
   saveNotificationSettings,
   type MemberNotificationSettings,
 } from "./member-api";
-import "./feature-page-adjustments.css";
 
 type Navigate = (screen: ScreenId) => void;
 type Props = {
