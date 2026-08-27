@@ -149,6 +149,8 @@
 .notifications-screen-v2 .notification-inline-settings {
   display: grid;
   overflow: hidden;
+  padding: 0;
+  border-top: 0;
   grid-template-rows: 0fr;
   background: rgba(1, 8, 13, .72);
   opacity: 0;
