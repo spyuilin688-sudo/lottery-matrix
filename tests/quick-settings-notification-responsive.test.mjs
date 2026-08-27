@@ -6,10 +6,10 @@ const prototype = readFileSync(new URL("../src/Prototype.tsx", import.meta.url),
 const navigationCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 const notificationCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("首頁快捷設定按鈕由原位置向左與向上各移動 4px", () => {
+test("首頁快捷設定按鈕位於左側安全區 6px", () => {
   assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(5px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 5px\);/s,
+    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(6px, env\(safe-area-inset-left, 0px\)\);[^}]*right:\s*auto;[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 5px\);/s,
   );
 });
 
