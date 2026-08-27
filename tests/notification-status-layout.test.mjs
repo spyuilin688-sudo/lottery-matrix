@@ -94,6 +94,8 @@ test("所有通知設定內容使用一致的緊湊寬度與置中排列", () =>
   assert.equal(dom.window.getComputedStyle(lotteryTitle).height, "20px");
   assert.equal(dom.window.getComputedStyle(lotteryTitle).fontSize, "11px");
   assert.equal(dom.window.getComputedStyle(timeSelect).marginInline, "8px");
+  assert.equal(dom.window.getComputedStyle(timeSelect).width, "auto");
+  assert.match(css, /notification-time-select\s*\{[^}]*width:\s*auto/);
   assert.equal(dom.window.getComputedStyle(optionRow).display, "flex");
   assert.equal(dom.window.getComputedStyle(optionRow).justifyContent, "center");
   assert.equal(dom.window.getComputedStyle(optionRow).gap, "4px");
