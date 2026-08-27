@@ -33,7 +33,7 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - (var(--layout-page-inline) * 2));
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 12px;
+  --home-gap-switcher-draw: 2.5px;
   --home-gap-draw-status: 8px;
   --home-gap-status-core: 8px;
   --home-gap-core-features: 8px;
@@ -296,14 +296,23 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: clamp(116px, 32vw, 124px);
   height: 30px;
-  gap: 3px;
+  gap: 1px;
   justify-self: center;
-  align-self: center;
+  align-self: start;
+  margin-block-start: 3px;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow: visible;
+}
+
+.home-screen .latest-draw-card .draw-order button:first-child {
+  border-radius: 14px 2px 2px 14px;
+}
+
+.home-screen .latest-draw-card .draw-order button:last-child {
+  border-radius: 2px 14px 14px 2px;
 }
 
 .home-screen .latest-draw-card .draw-order button {

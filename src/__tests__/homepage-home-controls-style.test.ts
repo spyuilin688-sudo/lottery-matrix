@@ -12,12 +12,12 @@ describe("homepage control layout rules", () => {
     expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid rgba\(229, 179, 77, \.56\);/s);
   });
 
-  it("uses the reduced draw-order control height", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*26px;/s);
+  it("uses the current draw-order control height and requested spacing", () => {
+    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*30px;[^}]*gap:\s*1px;/s);
   });
 
-  it("uses a 5px lower inset for the embedded next-draw information", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*padding:\s*0 20px 5px;/s);
+  it("lets the embedded next-draw information use the full card width", () => {
+    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0;/s);
   });
 
   it("uses the canonical Matrix Core container background and responsive 1536 / 414 height token", () => {

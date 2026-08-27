@@ -430,7 +430,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           <MatrixCoreBanner onOpen={() => navigate("explore")} />
           <HomeShortcutRow onNavigate={navigate} />
         </div>
-        <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} />
+        <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} showQuickSettings />
       </div>
       {quickSettings}
     </MobileScroll>

@@ -17,11 +17,11 @@ test("底部導覽全寬固定於內容畫布底部，保留四個可操作入�
 
   expect(await navigation.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
   expect(navigationBox.width).toBeCloseTo(mobilePageBox.width, 0);
-  expect(navigationBox.height).toBeCloseTo(82, 0);
+  expect(navigationBox.height).toBeCloseTo(72, 0);
   expect(navigationBox.x).toBeCloseTo(mobilePageBox.x, 0);
   expect(navigationBox.y + navigationBox.height).toBeCloseTo(mobilePageBox.y + mobilePageBox.height, 0);
 
-  const buttons = navigation.getByRole("button");
+  const buttons = navigation.locator(".bottom-navigation-item");
   await expect(buttons).toHaveCount(4);
 
   for (const label of labels) {

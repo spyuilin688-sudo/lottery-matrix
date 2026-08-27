@@ -2337,6 +2337,8 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
   );
 }
 
+const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
+
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
   const sections: GuideSection[] = [
@@ -2345,7 +2347,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
         { title: "開始使用", items: ["使用 LINE 登入之後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix 探索、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
-        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；長按三秒可變更快捷設定。", "通知：設定各類型的推播通知。", "我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] },
+        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；在首頁連續點擊右下角設定按鈕兩下可變更快捷設定。", "通知：設定各類型的推播通知。", "我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] },
         { title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] },
         { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
       ],
@@ -2412,7 +2414,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "快捷與 Matrix 筆記本",
       summary: "快捷可快速開啟已設定的功能；Matrix 筆記本提供筆記與紀錄兩種模式。",
       blocks: [
-        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "長按三秒可設定快捷功能。"] },
+        { title: "快捷", items: ["點擊快捷開啟目前設定的功能。", "在首頁連續點擊右下角設定按鈕兩下可設定快捷功能。"] },
         { title: "筆記模式", items: ["新增筆記後輸入標題與內容，再按「寫入筆記」。", "返回列表前若內容尚未寫入，將提醒是否儲存。", "只顯示筆記功能，不顯示損益與紀錄統計。"] },
         { title: "紀錄模式", items: ["可建立單號、連碰或立柱紀錄，號碼由彈窗選取。", "玩法可複選，各玩法分別設定碰數、1碰成本、成本與玩法獎金。", "摘要顯示玩法成本、已確認獎金及金額差額；統計提供本日、本週與自訂日期。", "每筆紀錄保存建立當下的設定快照，後續修改設定不影響歷史紀錄。"] },
       ],
@@ -2447,7 +2449,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
-        { title: "設定常用功能", items: ["長按底部「快捷」三秒後，選擇要指定的功能。"] },
+        { title: "設定常用功能", items: ["在首頁連續點擊底部右下角設定按鈕兩下後，選擇要指定的功能。"] },
         { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」。"] },
       ],
     },
@@ -2461,15 +2463,84 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
   ];
   const [selected, setSelected] = useState(0);
+  const stripRef = useRef<HTMLElement | null>(null);
   const current = sections[selected];
+
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+
+    let span = 0;
+    let initialized = false;
+    let correctionFrame: number | null = null;
+
+    const measure = () => {
+      const leadingStart = strip.querySelector<HTMLElement>('[data-guide-group="leading"] .guide-category-card');
+      const canonicalStart = strip.querySelector<HTMLElement>('[data-guide-group="canonical"] .guide-category-card');
+      if (!leadingStart || !canonicalStart) return;
+
+      const nextSpan = canonicalStart.offsetLeft - leadingStart.offsetLeft;
+      if (nextSpan <= 0) return;
+
+      if (!initialized) {
+        strip.scrollLeft = nextSpan;
+        initialized = true;
+      } else if (span > 0 && nextSpan !== span) {
+        const logicalOffset = strip.scrollLeft - span;
+        strip.scrollLeft = nextSpan + logicalOffset;
+      }
+      span = nextSpan;
+    };
+
+    const normalizeLoop = () => {
+      correctionFrame = null;
+      if (span <= 0) return;
+      if (strip.scrollLeft < span * 0.5) strip.scrollLeft += span;
+      else if (strip.scrollLeft > span * 1.5) strip.scrollLeft -= span;
+    };
+
+    const handleScroll = () => {
+      if (correctionFrame === null) correctionFrame = requestAnimationFrame(normalizeLoop);
+    };
+
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(strip);
+    strip.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      strip.removeEventListener("scroll", handleScroll);
+      resizeObserver.disconnect();
+      if (correctionFrame !== null) cancelAnimationFrame(correctionFrame);
+    };
+  }, []);
+
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
-      <nav className="guide-category-strip" aria-label="Matrix 指南分類">
-        {sections.map((section, index) => (
-          <button type="button" data-selected={selected === index} onClick={() => setSelected(index)} key={section.title}>
-            <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
-          </button>
-        ))}
+      <nav ref={stripRef} className="guide-category-strip" aria-label="Matrix 指南分類">
+        {GUIDE_LOOP_GROUPS.map((group) => {
+          const isClone = group !== "canonical";
+          return (
+            <div className="guide-category-loop-group" data-guide-group={group} aria-hidden={isClone} key={group}>
+              {sections.map((section, index) => isClone ? (
+                <span className="guide-category-card" data-selected={selected === index} key={`${group}-${section.title}`}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                </span>
+              ) : (
+                <button
+                  className="guide-category-card"
+                  type="button"
+                  data-selected={selected === index}
+                  aria-pressed={selected === index}
+                  onClick={() => setSelected(index)}
+                  key={`${group}-${section.title}`}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                </button>
+              ))}
+            </div>
+          );
+        })}
       </nav>
       <section className="panel guide-preview">
         <header><span>{String(selected + 1).padStart(2, "0")}</span><h2>{current.title}</h2></header>

@@ -6,6 +6,8 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 const navigationCss = await readFile(new URL("../src/prototype.css", import.meta.url), "utf8");
 const tokenCss = await readFile(new URL("../src/design-tokens.css", import.meta.url), "utf8");
 const runtimeCss = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+const featureCss = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const featureAdjustmentsCss = await readFile(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const homepageCss = readLocalCss("src/homepage-repair.css");
 
 test("底部導覽固定貼底並以瀏覽器 safe area 為唯一底部安全區來源", () => {
@@ -31,6 +33,16 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
+test("Matrix 指南、我的與我的子頁共用正式底部安全距離", () => {
+  assert.match(featureCss, /\.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(featureCss, /\.profile-screen \.feature-body,\s*\.profile-detail-screen \.feature-body,[^{]*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/s);
+});
+
+test("通知頁維持 16px 左右間距並保留正式底部安全距離", () => {
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
+  assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
+});
+
 test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補償", () => {
   assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe end;[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
@@ -41,7 +53,7 @@ test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補
 test("狀態卡外框與 Matrix Core 使用單一 8px 間距來源", () => {
   assert.match(homepageCss, /--home-gap-status-core:\s*8px;/);
   assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;[^}]*min-height:\s*0;/s);
-  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*4px;[^}]*align-content:\s*start;/s);
+  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*16px;/s);
 });

@@ -38,14 +38,14 @@ describe("requested responsive layout refinement", () => {
       </div>`;
 
     expect(getComputedStyle(document.querySelector(".lottery-switcher")!).paddingInline).toBe("4px");
-    expect(getComputedStyle(document.querySelector(".lottery-screen")!).getPropertyValue("--layout-page-inline")).toBe("12px");
+    expect(getComputedStyle(document.querySelector(".lottery-screen")!).getPropertyValue("--layout-page-inline")).toBe("16px");
     expect(getComputedStyle(document.querySelector(".latest-draw-card")!).width).toBe("100%");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).width).toBe("100%");
     expect(getComputedStyle(document.querySelector(".home-bottom-group")!).getPropertyValue("--home-core-width")).toContain("32px");
     expect(getComputedStyle(document.querySelector(".home-shortcut-row")!).width).toBe("calc(100% - 8px)");
   });
 
-  it("moves only the draw-card history link left two pixels and upward four pixels", () => {
+  it("keeps the current draw-card placement contracts", () => {
     const style = mountStyles(readCss("src/homepage/base.css"));
     style.dataset.layoutContract = "draw-card";
     document.body.innerHTML = `
@@ -58,9 +58,9 @@ describe("requested responsive layout refinement", () => {
       </section></div>`;
 
     expect(getComputedStyle(document.querySelector(".latest-draw-card")!).gridTemplateRows).toBe("44px minmax(0, 1fr) 24px");
-    expect(getComputedStyle(document.querySelector(".draw-meta")!).transform).toBe("none");
+    expect(getComputedStyle(document.querySelector(".draw-meta")!).transform).toBe("translateY(-8px)");
     expect(getComputedStyle(document.querySelector(".draw-order")!).transform).toBe("none");
-    expect(getComputedStyle(document.querySelector(".history-link")!).transform).toBe("translate(-2px, -4px)");
+    expect(getComputedStyle(document.querySelector(".history-link")!).transform).toBe("translate(-10px, -16px)");
     expect(getComputedStyle(document.querySelector(".draw-balls")!).transform).toBe("none");
     expect(getComputedStyle(document.querySelector(".next-draw-info--embedded")!).transform).toBe("none");
   });

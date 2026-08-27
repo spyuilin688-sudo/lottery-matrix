@@ -24,18 +24,21 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
-test("順球落球還原為兩個獨立圓角按鈕且不靠位移補償", () => {
+test("順球落球使用 1px 近乎平面的內側接縫並自然上移", () => {
   const selector = ".home-screen .latest-draw-card .draw-order";
   assert.ok(hasRuleProperty(css, selector, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/));
   assert.ok(hasRuleProperty(css, selector, /width:\s*clamp\(116px, 32vw, 124px\);/));
   assert.ok(hasRuleProperty(css, selector, /height:\s*30px;/));
-  assert.ok(hasRuleProperty(css, selector, /gap:\s*3px;/));
+  assert.ok(hasRuleProperty(css, selector, /gap:\s*1px;/));
   assert.ok(hasRuleProperty(css, selector, /border:\s*0;/));
   assert.ok(hasRuleProperty(css, selector, /background:\s*transparent;/));
   assert.ok(hasRuleProperty(css, selector, /justify-self:\s*center;/));
-  assert.ok(hasRuleProperty(css, selector, /align-self:\s*center;/));
+  assert.ok(hasRuleProperty(css, selector, /align-self:\s*start;/));
+  assert.ok(hasRuleProperty(css, selector, /margin-block-start:\s*3px;/));
   assert.doesNotMatch(ruleBodies(css, selector).join("\n"), /transform\s*:/);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\s*\{[^}]*border:\s*1px solid rgba\(230, 177, 76, \.58\);[^}]*border-radius:\s*14px;[^}]*background:\s*linear-gradient/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button:first-child\s*\{[^}]*border-radius:\s*14px 2px 2px 14px;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button:last-child\s*\{[^}]*border-radius:\s*2px 14px 14px 2px;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*border-color:\s*rgba\(244, 192, 82, \.82\);[^}]*color:\s*#ffd36c;[^}]*radial-gradient/s);
 });
 
@@ -51,7 +54,7 @@ test("下次開獎與剩餘時間數值使用中階暖灰色", () => {
   assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*color-mix\(in srgb, var\(--lottery-neutral-100\) 60%, var\(--lottery-neutral-400\)\);/s);
 });
 
-test("期數日期與查看更多紀錄維持既有定位，順落球由自然置中", () => {
+test("期數日期與查看更多紀錄維持既有定位，順落球由格線自然上移", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-rows:\s*44px minmax\(0, 1fr\) 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card::before\s*\{[^}]*inset:\s*44px 4px 24px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-meta\s*\{[^}]*transform:\s*translateY\(-8px\);/s);

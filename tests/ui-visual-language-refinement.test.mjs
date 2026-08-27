@@ -50,14 +50,17 @@ test("homepage logo grows by 40 percent and five features shrink together to 8px
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
 });
 
-test("draw order reference uses two independent rounded controls instead of an outer segmented shell", () => {
+test("draw order reference moves upward and uses a compact near-flat inner seam", () => {
   const order = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order").join("\n");
   const button = ruleBodies(homeCss, ".home-screen .latest-draw-card .draw-order button").join("\n");
-  assert.match(order, /gap:\s*3px;/);
+  assert.match(order, /gap:\s*1px;/);
+  assert.match(order, /align-self:\s*start;/);
+  assert.match(order, /margin-block-start:\s*3px;/);
   assert.match(order, /border:\s*0;/);
   assert.match(order, /background:\s*transparent;/);
   assert.match(button, /border:\s*1px solid rgba\(230, 177, 76, \.58\);/);
-  assert.match(button, /border-radius:\s*14px;/);
+  assert.match(homeCss, /\.home-screen \.latest-draw-card \.draw-order button:first-child\s*\{[^}]*border-radius:\s*14px 2px 2px 14px;/s);
+  assert.match(homeCss, /\.home-screen \.latest-draw-card \.draw-order button:last-child\s*\{[^}]*border-radius:\s*2px 14px 14px 2px;/s);
   assert.doesNotMatch(order, /transform\s*:/);
 });
 
@@ -72,9 +75,11 @@ test("draw footer reference is composed from two rounded containers, not parent 
   assert.doesNotMatch(footer, /border-top\s*:/);
 });
 
-test("bottom navigation exposes a dedicated quick-settings button without changing four primary columns", () => {
-  assert.match(navSource, /aria-label="快捷設定"/);
-  assert.match(navSource, /onClick=\{onQuickConfigure\}/);
+test("bottom navigation exposes homepage-only double-tap quick settings without changing four primary columns", () => {
+  assert.match(navSource, /showQuickSettings\?: boolean/);
+  assert.match(navSource, /showQuickSettings && onQuickConfigure \? \(/);
+  assert.match(navSource, /handleQuickSettingsClick/);
+  assert.doesNotMatch(navSource, /QUICK_LONG_PRESS_MS|onPointerDown|onPointerUp|onPointerCancel|setPointerCapture|長按/);
   assert.equal(finalDeclaration(navCss, ".bottom-navigation", "grid-template-columns"), "repeat(4, minmax(0, 1fr))");
   assert.equal(finalDeclaration(navCss, ".bottom-navigation-quick-settings", "position"), "absolute");
 });
@@ -82,7 +87,7 @@ test("bottom navigation exposes a dedicated quick-settings button without changi
 test("guide categories are horizontal native-scroll controls and status title action is visually subdued", () => {
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "display"), "flex");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "overflow-x"), "auto");
-  assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x mandatory");
+  assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
   assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), ".58");
   assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "filter"), "saturate(.55) brightness(.9)");
 });

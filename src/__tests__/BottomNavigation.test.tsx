@@ -18,7 +18,7 @@ describe("BottomNavigation", () => {
     const source = readFileSync(`${process.cwd()}/src/BottomNavigation.tsx`, "utf8");
     const renderedButton = source.match(/<button[\s\S]*?<\/button>/)?.[0] ?? "";
 
-    expect(renderedButton).toContain('onClick={label === "快捷" ? handleQuickClick');
+    expect(renderedButton).toContain('onClick={label === "快捷" ? onQuickOpen');
     expect(renderedButton).not.toContain("{...quickProps}");
   });
 
@@ -31,7 +31,7 @@ describe("BottomNavigation", () => {
     render(<BottomNavigation active={active} />);
 
     expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute("src", artwork);
-    expect(screen.getByRole("button", { name: active === "快捷" ? "快捷；長按 1.5 秒開啟設定" : active })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: active })).toHaveAttribute(
       "data-selected",
       "true",
     );
@@ -49,7 +49,7 @@ describe("BottomNavigation", () => {
 
       expect(selectedItems).toHaveLength(1);
       expect(selectedItems[0]).toHaveAccessibleName(
-        active === "快捷" ? "快捷；長按 1.5 秒開啟設定" : active,
+        active,
       );
       expect(navigation).toHaveAttribute("data-active", active);
       expect(within(selectedItems[0]).getByText(active)).toBeVisible();
@@ -63,7 +63,7 @@ describe("BottomNavigation", () => {
       "data-active",
       "快捷",
     );
-    expect(screen.getByRole("button", { name: "快捷；長按 1.5 秒開啟設定" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "快捷" })).toHaveAttribute(
       "data-selected",
       "true",
     );
@@ -77,16 +77,24 @@ describe("BottomNavigation", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "快捷；長按 1.5 秒開啟設定" }));
+    fireEvent.click(screen.getByRole("button", { name: "快捷" }));
 
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("右下快捷設定按鈕直接開啟既有設定流程", () => {
+  it("右下快捷設定按鈕只在指定時顯示，連續點擊兩下才開啟設定", () => {
+    vi.useFakeTimers();
     const onQuickConfigure = vi.fn();
-    render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
+    const { rerender } = render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "快捷設定" }));
+    expect(screen.queryByRole("button", { name: "快捷設定，連續點擊兩下開啟" })).not.toBeInTheDocument();
+
+    rerender(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+    const settingsButton = screen.getByRole("button", { name: "快捷設定，連續點擊兩下開啟" });
+
+    fireEvent.click(settingsButton, { detail: 1 });
+    expect(onQuickConfigure).not.toHaveBeenCalled();
+    fireEvent.click(settingsButton, { detail: 1 });
 
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
   });
@@ -111,7 +119,7 @@ describe("BottomNavigation", () => {
     const onQuickOpen = vi.fn();
     render(<BottomNavigation onQuickOpen={onQuickOpen} />);
 
-    const quickButton = screen.getByRole("button", { name: "快捷；長按 1.5 秒開啟設定" });
+    const quickButton = screen.getByRole("button", { name: "快捷" });
     fireEvent.pointerDown(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
     fireEvent.pointerUp(quickButton, { pointerId: 1, pointerType: "touch", button: 0 });
 
