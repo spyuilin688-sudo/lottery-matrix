@@ -21,7 +21,7 @@ const tokenTrace = [
   ["--layout-page-inline", "16px"],
   ["--layout-section-gap", "8px"],
   ["--lottery-card-radius", "10px"],
-  ["--bottom-navigation-height", "82px"],
+  ["--bottom-navigation-height", "72px"],
 ];
 
 const reachableConfirmations = [
