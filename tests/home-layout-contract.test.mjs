@@ -37,7 +37,7 @@ test('home bottom group has no black clearance above bottom navigation', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
-  assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto var\(--home-features-height\);/);
+  assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
 });
 
 test('embedded next draw info retains the requested compact metrics', () => {
