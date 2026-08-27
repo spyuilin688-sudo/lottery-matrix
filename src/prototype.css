@@ -89,10 +89,10 @@
   bottom: calc(var(--bottom-nav-safe-area) + 5px);
   display: grid;
   box-sizing: border-box;
-  width: 22.95px;
-  height: 22.95px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  place-items: center;
+  place-items: end start;
   border: 0;
   background: transparent;
   -webkit-tap-highlight-color: transparent;
