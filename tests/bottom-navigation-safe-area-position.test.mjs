@@ -38,8 +38,8 @@ test("Matrix 指南、我的與我的子頁共用正式底部安全距離", () =
   assert.match(featureCss, /\.profile-screen \.feature-body,\s*\.profile-detail-screen \.feature-body,[^{]*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/s);
 });
 
-test("通知頁維持 16px 左右間距並保留正式底部安全距離", () => {
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
+test("通知頁維持 20px 左右間距並保留正式底部安全距離", () => {
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });
 
