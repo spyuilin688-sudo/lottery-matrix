@@ -24,18 +24,17 @@ test("Android viewport 不再額外上縮 device safe area", () => {
 });
 
 test("內容底部只保留導覽高度加瀏覽器安全區", () => {
-  assert.match(tokenCss, /--bottom-navigation-height:\s*82px;/);
+  assert.match(tokenCss, /--bottom-navigation-height:\s*72px;/);
   assert.match(tokenCss, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom,\s*0px\)\);/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*var\(--mobile-safe-area-height/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*\+\s*12px/);
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
-test("首頁底部只保留瀏覽器安全區，不再預留整個導覽高度", () => {
+test("首頁底部預留精簡導覽高度與瀏覽器安全區", () => {
   const fullClearance = homepageCss.lastIndexOf("padding-bottom: var(--layout-bottom-nav-clearance)");
-  const safeAreaOnly = homepageCss.lastIndexOf("padding-bottom: env(safe-area-inset-bottom, 0px)");
 
   assert.notEqual(fullClearance, -1);
-  assert.ok(safeAreaOnly > fullClearance);
+  assert.doesNotMatch(homepageCss, /padding-bottom: env\(safe-area-inset-bottom, 0px\)/);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
