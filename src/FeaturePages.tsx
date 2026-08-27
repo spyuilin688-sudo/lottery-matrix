@@ -117,6 +117,7 @@ type Navigate = (screen: ScreenId) => void;
 type QuickNavigationContextValue = {
   onQuickOpen?: () => void;
   onQuickConfigure?: () => void;
+  onQuickBack?: () => void;
   currentScreen?: ScreenId;
   quickTarget?: ScreenId | null;
   quickActive?: boolean;
@@ -128,15 +129,20 @@ export function QuickNavigationProvider({
   children,
   onQuickOpen,
   onQuickConfigure,
+  onQuickBack,
   currentScreen,
   quickTarget,
   quickActive,
 }: QuickNavigationContextValue & { children: React.ReactNode }) {
   return (
-    <QuickNavigationContext.Provider value={{ onQuickOpen, onQuickConfigure, currentScreen, quickTarget, quickActive }}>
+    <QuickNavigationContext.Provider value={{ onQuickOpen, onQuickConfigure, onQuickBack, currentScreen, quickTarget, quickActive }}>
       {children}
     </QuickNavigationContext.Provider>
   );
+}
+
+export function useQuickNavigation() {
+  return useContext(QuickNavigationContext);
 }
 
 const QUICK_CACHE_MS = 30 * 60 * 1000;
@@ -342,13 +348,14 @@ function FeatureShell({
   hidePageTitle?: boolean;
   headerArtwork?: string;
 }) {
+  const { onQuickBack, quickActive } = useQuickNavigation();
   const logoOnlyHeader = compactHeader || active !== "首頁";
   const hideTitle = hidePageTitle || compactHeader;
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
         title={title}
-        onBack={() => onNavigate(backTarget)}
+        onBack={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)}
         action={headerAction}
         compact={logoOnlyHeader}
         hideTitle={hideTitle}
@@ -1990,6 +1997,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const toggleMarkedCell = (issue: string, number: string) => {
     const key = `${issue}-${number}`;
+    setMarkedRows((current) => {
+      const next = new Set(current);
+      next.delete(issue);
+      return next;
+    });
     setMarkedCells((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
