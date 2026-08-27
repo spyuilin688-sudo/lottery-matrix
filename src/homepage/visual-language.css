@@ -1,0 +1,104 @@
+/* Homepage visual-language overrides for the approved restrained black-gold system. */
+
+.home-screen {
+  --home-frame-border: rgba(229, 179, 77, 0.56);
+  --home-frame-shadow: inset 0 0 8px rgba(229, 179, 77, 0.1), 0 0 4px rgba(229, 179, 77, 0.08);
+  --home-frame-shadow-active: inset 0 0 10px rgba(244, 206, 103, 0.18), 0 0 7px rgba(244, 206, 103, 0.24);
+  --home-gap-status-core: 16px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+}
+
+.home-screen .home-layout {
+  grid-template-rows: auto auto;
+  align-content: start;
+}
+
+.home-screen .lottery-screen {
+  --home-gap-draw-status: 12px;
+}
+
+.home-screen .matrix-status-section {
+  flex: 0 0 auto;
+  height: auto;
+  overflow: visible;
+}
+
+.home-screen .matrix-status-card-grid {
+  height: auto;
+  grid-template-rows: repeat(2, auto);
+  align-content: start;
+}
+
+.home-screen .home-bottom-group {
+  margin-block-start: var(--home-gap-status-core);
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
+.home-screen .latest-draw-card,
+.home-screen .matrix-core-banner {
+  border-color: var(--home-frame-border);
+  box-shadow: var(--home-frame-shadow);
+}
+
+.home-screen .latest-draw-card,
+.home-screen .matrix-core-banner,
+.home-screen .home-shortcut {
+  border-radius: var(--lottery-card-radius);
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
+.home-screen .matrix-core-banner:active,
+.home-screen .home-shortcut:active {
+  box-shadow: var(--home-frame-shadow-active);
+}
+
+.home-screen .matrix-status-card {
+  --home-status-glow: rgba(244, 206, 103, 0.14);
+  border-radius: var(--matrix-status-card-radius);
+  background: var(--lottery-card-bg);
+  box-shadow: 0 0 4px var(--home-status-glow);
+}
+
+.home-screen .matrix-status-card[data-status="ACTIVE"] {
+  --home-status-glow: rgba(121, 201, 92, 0.22);
+}
+
+.home-screen .matrix-status-card[data-status="FOCUS"] {
+  --home-status-glow: rgba(55, 174, 232, 0.22);
+}
+
+.home-screen .matrix-status-card[data-status="RESONANCE"] {
+  --home-status-glow: rgba(184, 91, 201, 0.22);
+}
+
+.home-screen .matrix-status-card[data-status="CRITICAL"] {
+  --home-status-glow: rgba(208, 138, 50, 0.22);
+}
+
+.home-screen .draw-issue strong,
+.home-screen .draw-date,
+.home-screen .next-draw-value {
+  font-family: Roboto, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-screen :where(
+  .lottery-card,
+  .history-link,
+  .draw-order button,
+  .matrix-status-card,
+  .matrix-core-banner,
+  .home-shortcut
+):focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: 2px;
+}
+
+.home-screen .matrix-core-banner {
+  animation: none;
+}
+
+.home-screen .matrix-core-banner::after {
+  opacity: 0;
+  animation: none;
+}
