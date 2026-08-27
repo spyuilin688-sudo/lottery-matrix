@@ -20,8 +20,9 @@ test("keeps homepage sections in a compact content flow", () => {
 test("uses one restrained frame treatment for homepage entry surfaces", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
-  assert.match(visualLanguage, /\.home-screen \.lottery-switcher--home-style[\s\S]*\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner,[\s\S]*\.home-screen \.home-shortcut\s*\{[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
+  assert.match(visualLanguage, /\.home-screen \.lottery-switcher--home-style[\s\S]*\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner,[\s\S]*\.home-screen \.home-shortcut\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
   assert.match(visualLanguage, /\.lottery-card\[data-selected="true"\],[\s\S]*\.home-shortcut:active\s*\{[^}]*border-radius:\s*var\(--lottery-card-radius\);/s);
+  assert.match(visualLanguage, /\.home-screen \.home-shortcut img\s*\{[^}]*border-radius:\s*calc\(var\(--lottery-card-radius\) - var\(--lottery-stroke-default\)\);/s);
   assert.match(visualLanguage, /--lottery-stroke-default/);
 });
 
