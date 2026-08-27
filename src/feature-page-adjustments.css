@@ -397,13 +397,62 @@
   touch-action: none;
 }
 
+/* Final visual-language owners for the refined pages. */
+.matrix-guide-screen .guide-category-strip {
+  display: flex;
+  max-height: none;
+  margin-top: 12px;
+  padding: 6px 8px;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-padding-inline: 8px;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.matrix-guide-screen .guide-category-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.matrix-guide-screen .guide-category-strip button {
+  box-sizing: border-box;
+  flex: 0 0 clamp(116px, 34vw, 136px);
+  width: auto;
+  scroll-snap-align: start;
+}
+
+.matrix-status-screen .status-title-trigger {
+  border-radius: 8px;
+  background: radial-gradient(circle, rgba(190, 143, 51, .08), transparent 70%);
+}
+
+.matrix-status-screen .status-title-trigger img {
+  opacity: .58;
+  filter: saturate(.55) brightness(.9);
+  transition: opacity 140ms ease, filter 140ms ease;
+}
+
+.matrix-status-screen .status-title-trigger:is(:hover, :focus-visible, :active) img {
+  opacity: .86;
+  filter: saturate(.85) brightness(1);
+}
+
+.subscription-status-content > div:last-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .notifications-screen-v2 .notification-inline-settings {
     transform: none;
     transition: opacity 80ms linear;
   }
 
-  .notifications-screen-v2 .notification-settings-toggle svg {
+  .notifications-screen-v2 .notification-settings-toggle svg,
+  .matrix-status-screen .status-title-trigger img {
     transition-duration: 0s;
   }
 }

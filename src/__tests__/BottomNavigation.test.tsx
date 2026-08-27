@@ -82,6 +82,15 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
+  it("右下快捷設定按鈕直接開啟既有設定流程", () => {
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "快捷設定" }));
+
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ["首頁", "home"],
     ["通知", "notifications"],

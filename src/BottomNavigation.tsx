@@ -1,4 +1,5 @@
 import { useEffect, useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { GearIcon } from "@radix-ui/react-icons";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -139,6 +140,15 @@ export function BottomNavigation({
           </button>
         );
       })}
+
+      <button
+        className="bottom-navigation-quick-settings"
+        type="button"
+        aria-label="快捷設定"
+        onClick={onQuickConfigure}
+      >
+        <GearIcon aria-hidden="true" />
+      </button>
     </nav>
   );
 }
