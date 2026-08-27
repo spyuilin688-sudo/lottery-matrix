@@ -13,7 +13,8 @@ test("Matrix 指南使用三組原生捲動內容並在頭尾等距校正", () =
   assert.match(source, /canonicalStart\.offsetLeft - leadingStart\.offsetLeft/);
   assert.match(source, /strip\.scrollLeft \+= span/);
   assert.match(source, /strip\.scrollLeft -= span/);
-  assert.match(source, /requestAnimationFrame/);
+  assert.match(source, /window\.setTimeout\(normalizeLoop, GUIDE_LOOP_IDLE_MS\)/);
+  assert.doesNotMatch(source, /requestAnimationFrame\(normalizeLoop\)/);
   assert.match(source, /new ResizeObserver/);
   assert.match(source, /aria-hidden=\{isClone\}/);
   assert.match(source, /isClone \? \([\s\S]*?<span className="guide-category-card"[\s\S]*?\) : \([\s\S]*?<button[\s\S]*?aria-pressed=\{selected === index\}/);
@@ -21,9 +22,9 @@ test("Matrix 指南使用三組原生捲動內容並在頭尾等距校正", () =
 });
 
 test("Matrix 指南滑動卡片與說明維持指定間距、字級及原生觸控", () => {
-  assert.match(css, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin-bottom:\s*5px;[^}]*padding:\s*4px 0;[^}]*scroll-snap-type:\s*x proximity;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s);
-  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\s*\{[^}]*flex:\s*0 0 auto;[^}]*width:\s*max-content;[^}]*min-height:\s*22px;[^}]*padding:\s*4px 8px;[^}]*grid-template-columns:\s*auto auto;[^}]*gap:\s*4px;[^}]*white-space:\s*nowrap;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
-  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span\s*\{[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;/s);
+  assert.match(css, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin-bottom:\s*5px;[^}]*padding:\s*4px 0;[^}]*border:\s*0;[^}]*scroll-snap-type:\s*x proximity;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s);
+  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\s*\{[^}]*flex:\s*0 0 auto;[^}]*width:\s*max-content;[^}]*min-height:\s*26\.4px;[^}]*padding:\s*4\.8px 9\.6px;[^}]*grid-template-columns:\s*auto auto;[^}]*gap:\s*4\.8px;[^}]*white-space:\s*nowrap;[^}]*font-size:\s*14\.4px;[^}]*font-weight:\s*700;/s);
+  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span\s*\{[^}]*color:\s*#b58322;[^}]*font-size:\s*13\.2px;[^}]*font-weight:\s*700;/s);
   assert.match(css, /\.matrix-guide-screen \.guide-preview\s*\{[^}]*margin-top:\s*0;/s);
 });
 

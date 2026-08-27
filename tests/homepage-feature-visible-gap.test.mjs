@@ -10,13 +10,13 @@ function ruleBody(selector) {
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
 }
 
-test("five homepage feature cards keep 12px outer margins and responsive 2 to 2.5px container gaps", () => {
+test("five homepage feature cards keep 8px outer margins and responsive 2 to 2.5px container gaps", () => {
   const row = ruleBody(".home-screen .home-shortcut-row");
   const button = ruleBody(".home-screen .home-shortcut");
   const image = ruleBody(".home-screen .home-shortcut img");
 
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
-  assert.match(row, /width:\s*calc\(100% - 24px\);/);
+  assert.match(row, /width:\s*calc\(100% - 16px\);/);
   assert.match(row, /column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/);
   assert.match(button, /width:\s*100%;/);
   assert.match(button, /justify-self:\s*center;/);

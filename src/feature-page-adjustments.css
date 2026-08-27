@@ -400,6 +400,10 @@
   margin-bottom: 5px;
   padding: 4px 0;
   gap: 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-padding-inline: 0;
@@ -423,17 +427,17 @@
   box-sizing: border-box;
   flex: 0 0 auto;
   width: max-content;
-  min-height: 22px;
-  padding: 4px 8px;
+  min-height: 26.4px;
+  padding: 4.8px 9.6px;
   grid-template-columns: auto auto;
   align-items: center;
-  gap: 4px;
+  gap: 4.8px;
   border: 1px solid #423521;
-  border-radius: 8px;
+  border-radius: 9.6px;
   background: #061019;
   color: #bdb6aa;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 700;
   line-height: 1.25;
   text-align: left;
@@ -441,7 +445,8 @@
 }
 
 .matrix-guide-screen .guide-category-strip .guide-category-card > span {
-  font-size: 11px;
+  color: #b58322;
+  font-size: 13.2px;
   font-weight: 700;
 }
 

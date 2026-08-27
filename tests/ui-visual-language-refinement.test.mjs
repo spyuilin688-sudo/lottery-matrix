@@ -27,8 +27,8 @@ function finalDeclaration(source, selector, property) {
   return value;
 }
 
-test("homepage status frame owns 16px viewport inset, 1.5px padding and 0.8px card gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(min(100vw, 390px) - 32px)");
+test("homepage status frame owns 12px viewport inset, 1.5px padding and 0.8px card gaps", () => {
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(100% - 24px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding"), "1.5px");
   assert.match(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), /^1px solid/);
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "0.8px");
@@ -44,7 +44,7 @@ test("homepage status logos are 80 percent larger and shift left 6px without a m
 
 test("homepage logo is reduced by 8 percent and five features keep their current responsive gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "87.584%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 24px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 16px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "clamp(2px, .64vw, 2.5px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "100%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
@@ -68,11 +68,11 @@ test("draw order moves up 2px, shrinks to 25px and keeps a compact near-flat inn
 test("draw footer reference is composed from two rounded containers, not parent divider lines", () => {
   const footer = ruleBodies(homeCss, ".home-screen .latest-draw-card .next-draw-info--embedded").join("\n");
   const item = ruleBodies(homeCss, ".home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item").join("\n");
-  assert.match(footer, /gap:\s*0\.5px;/);
+  assert.match(footer, /gap:\s*3px;/);
   assert.match(footer, /border:\s*0;/);
   assert.match(footer, /background:\s*transparent;/);
-  assert.match(item, /gap:\s*0\.5px;/);
-  assert.match(item, /padding-inline:\s*0;/);
+  assert.match(item, /gap:\s*4px;/);
+  assert.match(item, /padding-inline:\s*clamp\(6px, 2vw, 10px\);/);
   assert.match(item, /border:\s*1px solid rgba\(232, 177, 76, \.52\);/);
   assert.match(item, /background:\s*linear-gradient/);
   assert.doesNotMatch(footer, /border-top\s*:/);
