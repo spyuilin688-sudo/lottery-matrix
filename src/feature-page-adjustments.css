@@ -3,12 +3,12 @@
 .notifications-screen-v2 .feature-body {
   box-sizing: border-box;
   width: 100%;
-  padding: 0 var(--layout-page-inline) calc(var(--layout-bottom-nav-clearance) + 12px);
+  padding: 0 20px calc(var(--layout-bottom-nav-clearance) + 12px);
 }
 
 .notifications-screen-v2 .notification-list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .notifications-screen-v2 .notification-group,
@@ -98,20 +98,20 @@
 
 .notifications-screen-v2 .notification-title h2:has(em) {
   align-items: center;
-  gap: 1px;
+  gap: 1.5px;
 }
 
 .notifications-screen-v2 .notification-title h2 em {
   box-sizing: border-box;
-  height: 14px;
-  padding: 0 4px;
+  height: 12px;
+  padding: 0 3.5px;
   border: 1px solid rgba(139, 100, 23, .74);
-  border-radius: 5px;
+  border-radius: 4px;
   color: rgba(233, 186, 37, .74);
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 600;
   font-style: normal;
-  line-height: 12px;
+  line-height: 10px;
   white-space: nowrap;
 }
 
@@ -129,7 +129,7 @@
   grid-template-columns: 64px 38px;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
 }
 
 .notifications-screen-v2 .notification-settings-toggle {
@@ -176,7 +176,7 @@
 
 .notifications-screen-v2 .notification-actions > .toggle {
   width: 38px;
-  height: 20px;
+  height: 18px;
   flex: 0 0 38px;
   align-self: center;
   padding: 0;
@@ -189,17 +189,18 @@
 .notifications-screen-v2 .toggle::before {
   top: 0;
   width: 38px;
-  height: 20px;
+  height: 18px;
+  border-radius: 9px;
 }
 
 .notifications-screen-v2 .toggle span {
   top: 2px;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .notifications-screen-v2 .toggle[data-checked="true"] span {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .notifications-screen-v2 .notification-inline-settings {
