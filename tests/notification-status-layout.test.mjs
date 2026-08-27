@@ -99,9 +99,14 @@ test("所有通知設定內容使用一致的緊湊寬度與置中排列", () =>
   assert.equal(dom.window.getComputedStyle(optionRow).display, "flex");
   assert.equal(dom.window.getComputedStyle(optionRow).justifyContent, "center");
   assert.equal(dom.window.getComputedStyle(optionRow).gap, "4px");
-  assert.equal(dom.window.getComputedStyle(choice).height, "26px");
+  assert.equal(dom.window.getComputedStyle(choice).height, "auto");
+  assert.equal(dom.window.getComputedStyle(choice).minHeight, "26px");
+  assert.equal(dom.window.getComputedStyle(choice).paddingBlock, "6px");
+  assert.equal(dom.window.getComputedStyle(choice).paddingInline, "8px");
+  assert.equal(dom.window.getComputedStyle(choice).gap, "4px");
   assert.equal(dom.window.getComputedStyle(choice).marginInline, "0px");
   assert.equal(dom.window.getComputedStyle(choice).fontSize, "11px");
+  assert.match(css, /notification-inline-option-row \.notification-choice\s*\{[^}]*width:\s*calc\(\(100% - 12px\) \/ 4\)/);
   assert.equal(dom.window.getComputedStyle(input).width, "12px");
   assert.equal(dom.window.getComputedStyle(input).height, "12px");
 });
