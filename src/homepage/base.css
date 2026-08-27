@@ -448,7 +448,7 @@
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value {
   min-width: 0;
-  color: #E8E1D6;
+  color: var(--lottery-text-secondary);
   font-size: 11px;
   font-weight: 700;
   line-height: 13px;
