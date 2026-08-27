@@ -23,6 +23,14 @@ def test_enumerates_complete_equal_spacing_sequences() -> None:
         enumerate_equal_spacing_sequences(49, "準2進3")
 
 
+def test_equal_spacing_counts_follow_selected_period_range() -> None:
+    fifty = enumerate_equal_spacing_sequences(50, "準2進3")
+    eighty = enumerate_equal_spacing_sequences(80, "準2進3")
+    assert len(fifty) == 208
+    assert len(eighty) == 533
+    assert [2, 3, 4] not in fifty
+
+
 def test_source_spacing_and_hit_count_are_validated() -> None:
     assert evaluate_tiangong_candidate(candidate(sourceSequence=[1, 3, 6]))["reason"] == "INVALID_SOURCE_SEQUENCE"
     assert evaluate_tiangong_candidate(candidate(hitCondition="準3進4"))["reason"] == "INVALID_SOURCE_SEQUENCE"

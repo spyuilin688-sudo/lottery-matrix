@@ -7,7 +7,7 @@ def enumerate_equal_spacing_sequences(periods: int, hit_condition: str) -> list[
     length = 3 if hit_condition == "準2進3" else 4
     sequences: list[list[int]] = []
     for first in range(1, periods + 1):
-        interval = 1
+        interval = first
         while first + interval * (length - 1) <= periods:
             sequences.append([first + interval * index for index in range(length)])
             interval += 1
