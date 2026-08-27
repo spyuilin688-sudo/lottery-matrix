@@ -105,3 +105,60 @@ def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None
         run_worker("大樂透", repository, Source(), _builders([], failing="tianyan"))
     assert repository.read_completed_artifact("今彩539", "000000220", "status") == {"kind": "status"}
     assert repository.get_progress("大樂透", "000000220")["status"] == "failed"
+
+
+def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
+    repository = TrackingRepository()
+    source = Source()
+    starts: list[int] = []
+
+    def explore(context: dict) -> dict:
+        start = context["exploreBatch"]["start"]
+        stop = min(25, start + context["exploreBatch"]["limit"])
+        starts.append(start)
+        return {
+            "artifact": {"items": list(range(start, stop)), "validationById": {}},
+            "_checkpoint": {
+                "cursorStart": start,
+                "cursor": stop,
+                "total": 25,
+                "complete": stop == 25,
+            },
+        }
+
+    builders = {
+        "explore": explore,
+        "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
+        "tiangong": lambda _: {"items": []},
+        "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
+    }
+
+    result = run_worker("今彩539", repository, source, builders)
+
+    assert result["status"] == "complete"
+    assert starts == [0, 10, 20]
+
+
+def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
+    repository = TrackingRepository()
+    source = Source()
+    attempts = 0
+
+    def tianyan(_: dict) -> dict:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("temporary calculation failure")
+        return {"items": []}
+
+    builders = {
+        "explore": lambda _: {"items": []},
+        "tianyan": tianyan,
+        "tiangong": lambda _: {"items": []},
+        "status": lambda _: {"items": []},
+    }
+
+    result = run_worker("今彩539", repository, source, builders)
+
+    assert result["status"] == "complete"
+    assert attempts == 2

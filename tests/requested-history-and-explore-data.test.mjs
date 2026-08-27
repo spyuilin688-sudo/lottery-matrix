@@ -15,8 +15,8 @@ test("近10期只反轉顯示順序，最新期顯示在最下方", () => {
   assert.match(featureSource, /\{displayedHistory\.map\(\(record, index\) => \{/);
 });
 
-test("歷史六合彩的數字與底線共同錨定在正式球圖白色中心", () => {
-  assert.match(ballCss, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][\s\S]*?\.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\);[^}]*left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\);[^}]*transform:\s*translate\(-50%, -50%\);/s);
+test("歷史六合彩的數字使用共用正式球圖中心", () => {
+  assert.match(ballCss, /\.number-ball-component\[data-lottery="六合彩"\] \.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*transform:\s*translate\(-50%, -50%\) translate\(var\(--number-optical-x\), var\(--number-optical-y\)\);/s);
   assert.doesNotMatch(ballCss, /:is\([^}]*draw-history-screen[^}]*\)\[data-lottery="六合彩"\][^}]*\.number-ball-component\.history-lottery-ball\[data-tone=/s);
 });
 
@@ -37,5 +37,5 @@ test("探索預計算保留今日昨日與前日的完整十三期來源並寫�
   assert.doesNotMatch(routeSource, /normalizedRequest/);
   assert.doesNotMatch(routeSource, /resolveDrawPeriod/);
   assert.match(routeSource, /filterPartitionedExplore\([\s\S]*artifact\.data,[\s\S]*request,/);
-  assert.match(versionSource, /matrix-v5/);
+  assert.match(versionSource, /matrix-v6/);
 });
