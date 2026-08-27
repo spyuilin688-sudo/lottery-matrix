@@ -662,7 +662,7 @@
   box-shadow: var(--home-frame-shadow-active);
 }
 
-.home-screen .home-shortcut:focus-visible {
+.home-screen :where(.home-shortcut):focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
 }
