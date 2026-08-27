@@ -7,7 +7,7 @@ const css = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "
 test("Matrix Core 上下外框內縮但素材維持等比例", () => {
   assert.match(
     css,
-    /--home-core-height:\s*calc\(var\(--home-core-width\) \* 414 \/ 1536\);/,
+    /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/,
   );
 
   const bannerRules = [...css.matchAll(/\.home-screen \.matrix-core-banner \{[\s\S]*?\n\}/g)].map(
