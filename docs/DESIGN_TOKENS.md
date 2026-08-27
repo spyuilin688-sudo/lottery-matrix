@@ -24,7 +24,7 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 | `--lottery-neutral-950` | `#02070c` | 應用背景 |
 | `--lottery-gold-500` | `#c49145` | 標籤金色 |
 | `--lottery-gold-300` | `#f4ce67` | 選取與亮金狀態 |
-| `--layout-page-inline` | `16px` | 一般手機頁面左右留白；首頁內容區可使用 12px 局部覆寫 |
+| `--layout-page-inline` | `16px` | 一般手機頁面與首頁內容區統一使用 16px 左右留白 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
 | `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
