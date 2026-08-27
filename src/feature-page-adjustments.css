@@ -21,6 +21,9 @@
 }
 
 .notifications-screen-v2 .notification-row {
+  display: grid;
+  width: 100%;
+  min-height: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -46,6 +49,17 @@
   height: 36px;
 }
 
+.notifications-screen-v2 .notification-icon {
+  display: grid;
+  place-items: center;
+  justify-self: start;
+}
+
+.notifications-screen-v2 .notification-icon img {
+  display: block;
+  object-fit: contain;
+}
+
 .notifications-screen-v2 .notification-title {
   display: flex;
   min-width: 0;
@@ -54,8 +68,32 @@
 }
 
 .notifications-screen-v2 .notification-title h2 {
+  display: flex;
+  max-width: 100%;
   min-width: 0;
   margin: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  overflow: hidden;
+  color: #f2f2f2;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 0;
+}
+
+.notifications-screen-v2 .notification-title h2 span {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-title h2 em + span {
+  font-size: 14px;
+  line-height: 18px;
 }
 
 .notifications-screen-v2 .notification-title h2:has(em) {
@@ -64,11 +102,25 @@
 }
 
 .notifications-screen-v2 .notification-title h2 em {
+  box-sizing: border-box;
   height: 14px;
   padding: 0 4px;
+  border: 1px solid rgba(139, 100, 23, .74);
   border-radius: 5px;
+  color: rgba(233, 186, 37, .74);
   font-size: 8px;
+  font-weight: 600;
+  font-style: normal;
   line-height: 12px;
+  white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 span {
+  color: rgba(242, 242, 242, .65);
+}
+
+.notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 em {
+  opacity: .5;
 }
 
 .notifications-screen-v2 .notification-actions {
@@ -100,6 +152,10 @@
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-settings-toggle:active {
+  opacity: .86;
 }
 
 .notifications-screen-v2 .notification-settings-toggle:disabled {
@@ -233,6 +289,9 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
+  border: 1px solid #4f4537;
+  border-radius: 9px;
+  background: #081016;
   color: #d9d3c8;
   font-size: 11px;
   line-height: 1;
@@ -242,6 +301,20 @@
 .notifications-screen-v2 .notification-grid-lottery-row label,
 .notifications-screen-v2 .notification-grid-status-row label {
   margin-inline: 8px;
+}
+
+.notifications-screen-v2 .notification-choice {
+  cursor: pointer;
+}
+
+.notifications-screen-v2 .notification-choice:has(input:checked) {
+  border-color: #b78520;
+  background: rgba(191, 132, 18, .16);
+  color: #f1c85d;
+}
+
+.notifications-screen-v2 .notification-choice span {
+  min-width: 0;
 }
 
 .notifications-screen-v2 .notification-inline-option-row .notification-choice {
