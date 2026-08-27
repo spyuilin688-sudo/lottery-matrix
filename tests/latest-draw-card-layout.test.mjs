@@ -24,7 +24,7 @@ test("開獎資訊卡左右外距為 16px，並移除左右 6px 內距與底部�
 test("下次開獎與剩餘時間數值使用既有次要文字色", () => {
   assert.match(css, /\.next-draw-icon\s*\{[^}]*color:\s*#e6b34f;/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*color:\s*#d8a653;/s);
-  assert.match(css, /\\.next-draw-value\\s*\\{[^}]*color:\\s*var\\(--lottery-text-secondary\\);/s);
+  assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*var\(--lottery-text-secondary\);/s);
 });
 
 test("期數日期維持上移，查看更多紀錄再左移 2px", () => {
