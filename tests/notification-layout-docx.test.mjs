@@ -113,28 +113,28 @@ function readPngAlphaBounds(path) {
 }
 
 test('notification page follows the current compact responsive layout specification', () => {
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*6px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*8px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*column-gap:\s*6px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px;/s);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*border:/);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*box-shadow:/);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*8px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*12px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*64px;[^}]*height:\s*20px;/s);
   assert.match(featureCss, /\.notification-row h2 \{[^}]*color: #F2F2F2;[^}]*font-size: 17px;[^}]*font-weight: 700;[^}]*line-height: 23px;[^}]*letter-spacing: 0;/);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*14px;[^}]*padding:\s*0 4px;[^}]*border-radius:\s*5px;[^}]*font-size:\s*8px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*12px;[^}]*padding:\s*0 3\.5px;[^}]*border-radius:\s*4px;[^}]*font-size:\s*7px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-group,[\s\S]*?border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius:\s*12px;[^}]*background:\s*#020c12;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-row\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
   assert.match(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*gap:\s*4px;/);
   assert.doesNotMatch(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*padding-inline:/);
   assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\)/);
   assert.match(brandCss, /\.feature-brand-header,[\s\S]*?\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*20px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle::before\s*\{[^}]*top:\s*0;[^}]*width:\s*38px;[^}]*height:\s*20px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle span\s*\{[^}]*top:\s*2px;[^}]*width:\s*16px;[^}]*height:\s*16px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*width:\s*38px;[^}]*height:\s*18px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle::before\s*\{[^}]*top:\s*0;[^}]*width:\s*38px;[^}]*height:\s*18px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle span\s*\{[^}]*top:\s*2px;[^}]*width:\s*14px;[^}]*height:\s*14px;/s);
   assert.match(featureCss, /\.toggle\[data-checked="true"\]::before \{[^}]*background: #D99B00;/);
-  assert.match(featureCss, /\.toggle\[data-checked="true"\] span \{[^}]*translateX\(18px\)/);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.toggle\[data-checked="true"\] span\s*\{[^}]*translateX\(20px\)/);
   assert.doesNotMatch(featureCss, /@media \(max-width: 370px\) \{\s*\.notification-heading/);
   assert.doesNotMatch(featureCss, /\.notifications-screen \.feature-body,\s*\.profile-screen \.feature-body/);
   assert.match(runtimeCss, /\.mobile-page:not\(:has\(\.notifications-screen\)\) \.mobile-scrollbar\[data-visible="true"\] \{\s*opacity: 1;\s*\}/);
