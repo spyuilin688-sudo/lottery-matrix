@@ -8,7 +8,7 @@ function ruleBody(selector) {
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
 }
 
-test("five homepage feature cards are equal-width with a visible 4px gap", () => {
+test("five homepage feature cards use one equal-size artwork frame with a visible 4px gap", () => {
   const row = ruleBody(".home-screen .home-shortcut-row");
   const button = ruleBody(".home-screen .home-shortcut");
   const image = ruleBody(".home-screen .home-shortcut img");
@@ -19,11 +19,11 @@ test("five homepage feature cards are equal-width with a visible 4px gap", () =>
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
   assert.match(row, /column-gap:\s*var\(--home-feature-gap,\s*4px\);/);
   assert.match(button, /aspect-ratio:\s*386\s*\/\s*496;/);
-  assert.match(button, /border:\s*1px solid rgba\(229,\s*179,\s*77,\s*\.56\);/);
+  assert.match(button, /border:\s*0;/);
+  assert.match(button, /box-shadow:\s*none;/);
   assert.match(button, /overflow:\s*hidden;/);
   assert.match(image, /width:\s*100%;/);
   assert.match(image, /height:\s*100%;/);
-  assert.match(image, /object-fit:\s*contain;/);
+  assert.match(image, /object-fit:\s*fill;/);
   assert.match(image, /border:\s*0;/);
-  assert.doesNotMatch(image, /object-fit:\s*(?:fill|cover);/);
 });
