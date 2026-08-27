@@ -275,6 +275,8 @@
 }
 
 .notifications-screen-v2 .notification-time-select {
+  width: auto;
+  min-width: 0;
   height: 26px;
   min-height: 26px;
   margin-inline: 8px;
