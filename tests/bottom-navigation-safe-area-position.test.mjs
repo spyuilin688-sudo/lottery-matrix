@@ -34,7 +34,7 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
 test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補償", () => {
   assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto;[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
-  assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:transform|bottom|margin-block-end)\s*:/s);
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
 
