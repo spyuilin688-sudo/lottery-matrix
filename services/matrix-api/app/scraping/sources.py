@@ -315,18 +315,34 @@ class LatestDrawSource:
                     raise ValueError("CALIFORNIA_FANTASY5_HISTORY_INCOMPLETE")
                 return _newest_unique(draws, limit)
             except (httpx.HTTPError, ValueError):
-                url = SC888_FANTASY5_DOWNLOAD_URL if limit is None else SC888_FANTASY5_URL
-                response = self.client.get(
-                    url,
-                    headers=HEADERS,
-                    timeout=30.0 if limit is None else 20.0,
-                    follow_redirects=True,
+                urls = (
+                    [SC888_FANTASY5_DOWNLOAD_URL]
+                    if limit is None
+                    else [SC888_FANTASY5_URL, SC888_FANTASY5_DOWNLOAD_URL]
                 )
-                response.raise_for_status()
-                draws = parse_sc888_fantasy5_history(_response_text(response))
-                if limit is None and not draws:
-                    raise ValueError("SC888_HISTORY_DOWNLOAD_INCOMPLETE")
-                return _newest_unique(draws, limit)
+                last_error: Exception | None = None
+                for url in urls:
+                    try:
+                        response = self.client.get(
+                            url,
+                            headers={
+                                **HEADERS,
+                                "accept": "text/html,application/xhtml+xml,application/vnd.ms-excel;q=0.9,*/*;q=0.8",
+                                "referer": "https://sc888.net/",
+                            },
+                            timeout=30.0 if url == SC888_FANTASY5_DOWNLOAD_URL else 20.0,
+                            follow_redirects=True,
+                        )
+                        response.raise_for_status()
+                        draws = parse_sc888_fantasy5_history(_response_text(response))
+                        if draws:
+                            return _newest_unique(draws, limit)
+                        last_error = ValueError("SC888_HISTORY_INCOMPLETE")
+                    except (httpx.HTTPError, ValueError) as error:
+                        last_error = error
+                if last_error is not None:
+                    raise last_error
+                raise ValueError("SC888_HISTORY_INCOMPLETE")
         if lottery == "六合彩":
             draws: list[MatrixDraw] = []
             current_year = self.now().year
