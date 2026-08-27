@@ -12,10 +12,10 @@ test("approved homepage uses the 16px primary inset and canonical rhythm", () =>
   assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
 });
 
-test("approved homepage uses 1.5px status gaps and 2.5px feature gaps without artwork collisions", () => {
+test("approved homepage uses 1.5px status gaps and responsive 2 to 2.5px feature gaps without artwork collisions", () => {
   assert.match(css, /\.lottery-switcher--home-style \.lottery-switcher-hit-grid\s*\{[^}]*gap:\s*6px;/s);
   assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*1\.5px;/s);
-  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);[^}]*column-gap:\s*2\.5px;/s);
+  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/s);
   assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*overflow:\s*visible;/s);
 });
 
