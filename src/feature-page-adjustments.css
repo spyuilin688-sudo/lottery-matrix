@@ -263,6 +263,14 @@
   gap: 4px;
 }
 
+.notifications-screen-v2 .notification-inline-option-row:is(
+  [data-setting-key="result"],
+  [data-setting-key="card"]
+) {
+  box-sizing: border-box;
+  padding-inline: 6px;
+}
+
 .notifications-screen-v2 .notification-grid-lottery-labels > span {
   display: flex;
   box-sizing: border-box;
@@ -471,17 +479,6 @@
   background: radial-gradient(circle, rgba(190, 143, 51, .08), transparent 70%);
 }
 
-.matrix-status-screen .status-title-trigger img {
-  opacity: .58;
-  filter: saturate(.55) brightness(.9);
-  transition: opacity 140ms ease, filter 140ms ease;
-}
-
-.matrix-status-screen .status-title-trigger:is(:hover, :focus-visible, :active) img {
-  opacity: .86;
-  filter: saturate(.85) brightness(1);
-}
-
 .subscription-status-content > div:last-child {
   padding-left: 0;
   border-left: 0;
@@ -493,8 +490,7 @@
     transition: opacity 80ms linear;
   }
 
-  .notifications-screen-v2 .notification-settings-toggle svg,
-  .matrix-status-screen .status-title-trigger img {
+  .notifications-screen-v2 .notification-settings-toggle svg {
     transition-duration: 0s;
   }
 }

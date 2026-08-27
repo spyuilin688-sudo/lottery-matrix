@@ -6,6 +6,7 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 const homeCss = readLocalCss("src/homepage-repair.css");
 const navCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
+const canonicalFeatureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const navSource = readFileSync(new URL("../src/BottomNavigation.tsx", import.meta.url), "utf8");
 
 function ruleBodies(source, selector) {
@@ -91,8 +92,9 @@ test("guide categories are horizontal native-scroll controls and status title ac
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "display"), "flex");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "overflow-x"), "auto");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), ".58");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "filter"), "saturate(.55) brightness(.9)");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), ".8");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), "");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "filter"), "");
 });
 
 test("profile expiry column no longer draws the unwanted vertical rule", () => {

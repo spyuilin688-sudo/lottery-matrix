@@ -23,7 +23,7 @@ test("通知選號提醒時間控制項為 23px 且兩列相距 6px", () => {
 
 test("開獎結果與 Matrix 牌單共用同一選項渲染器與樣式", () => {
   assert.match(notificationsSource, /return renderGenericSettings\(key, title, subtitle\);/);
-  assert.doesNotMatch(adjustmentCss, /data-setting-key=["']?(?:result|card)/);
+  assert.match(adjustmentCss, /notification-inline-option-row:is\([\s\S]*?data-setting-key="result"[\s\S]*?data-setting-key="card"[\s\S]*?\)\s*\{[^}]*padding-inline:\s*6px;/s);
 });
 
 test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {

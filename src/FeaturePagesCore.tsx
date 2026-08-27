@@ -16,6 +16,7 @@ import { filterHistoryRecords, normalizeLookupNumber } from "./feature-tool-logi
 import {
   FeaturePageRouter as OriginalFeaturePageRouter,
   QuickNavigationProvider,
+  useQuickNavigation,
   type ScreenId,
 } from "./FeaturePages";
 import type { DrawOrder, LotteryId } from "./Prototype";
@@ -92,12 +93,13 @@ function ToolFeatureShell({
   className: string;
   headerAction?: React.ReactNode;
 } & BottomNavCallbacks) {
+  const { onQuickBack } = useQuickNavigation();
   return (
     <main className={`feature-screen ${className}`}>
       <header className="feature-brand-header integrated-title-header">
         <div className="matrix-title-banner">
           <img src={TITLE_ARTWORK[title]} alt={title} draggable={false} />
-          <button type="button" className="integrated-title-back" onClick={() => onNavigate(backTarget)} aria-label="返回" />
+          <button type="button" className="integrated-title-back" onClick={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)} aria-label="返回" />
           {headerAction ? <div className="matrix-title-banner-actions">{headerAction}</div> : null}
         </div>
       </header>

@@ -152,7 +152,6 @@
 }
 
 .draw-history-screen .feature-body,
-.tongxing-screen .feature-body,
 .number-reference-screen .feature-body {
   box-sizing: border-box;
   display: flex;
@@ -161,6 +160,18 @@
   min-width: 0;
   margin-inline: 0;
   padding: 0 var(--tool-page-inline) var(--layout-bottom-nav-clearance);
+  flex-direction: column;
+  row-gap: var(--tool-section-gap);
+}
+
+.tongxing-screen .feature-body {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-inline: 0;
+  padding: 0 var(--tool-page-inline) calc(var(--layout-bottom-nav-clearance) + 8px);
   flex-direction: column;
   row-gap: var(--tool-section-gap);
 }
