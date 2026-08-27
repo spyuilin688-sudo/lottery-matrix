@@ -183,7 +183,6 @@
 }
 
 .notifications-screen-v2 .notification-grid-lottery-row label,
-.notifications-screen-v2 .notification-status-lottery-label,
 .notifications-screen-v2 .notification-grid-status-row label,
 .notifications-screen-v2 .notification-inline-option-row .notification-choice {
   display: flex;
@@ -197,6 +196,21 @@
   gap: 3px;
   color: #d9d3c8;
   font-size: clamp(8px, 2.5vw, 10px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-status-lottery-label {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 20px;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  color: #d9d3c8;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
@@ -226,7 +240,7 @@
 }
 
 .notifications-screen-v2 .notification-status-grid .notification-grid-status-row label {
-  margin-inline: 4px;
+  margin-inline: 8px;
   font-size: clamp(9px, 2.8vw, 11px);
 }
 
