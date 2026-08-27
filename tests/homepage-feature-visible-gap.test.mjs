@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const css = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const visualCss = readFileSync(new URL("../src/homepage/visual-language.css", import.meta.url), "utf8");
 function ruleBody(selector) {
   const escaped = selector.replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
