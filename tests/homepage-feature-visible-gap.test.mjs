@@ -8,16 +8,16 @@ function ruleBody(selector) {
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
 }
 
-test("five homepage feature cards keep their complete artwork frame with a visible 4px gap", () => {
+test("five homepage feature cards shrink fluidly to keep a visible 8px gap", () => {
   const row = ruleBody(".home-screen .home-shortcut-row");
   const button = ruleBody(".home-screen .home-shortcut");
   const image = ruleBody(".home-screen .home-shortcut img");
   const bottomGroup = ruleBody(".home-screen .home-bottom-group");
 
-  assert.match(bottomGroup, /--home-feature-gap:\s*4px;/);
+  assert.match(bottomGroup, /--home-feature-gap:\s*8px;/);
   assert.match(bottomGroup, /grid-template-rows:\s*auto auto;/);
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
-  assert.match(row, /column-gap:\s*var\(--home-feature-gap,\s*4px\);/);
+  assert.match(row, /column-gap:\s*var\(--home-feature-gap,\s*8px\);/);
   assert.match(button, /aspect-ratio:\s*386\s*\/\s*496;/);
   assert.match(button, /border:\s*0;/);
   assert.match(button, /box-shadow:\s*none;/);
