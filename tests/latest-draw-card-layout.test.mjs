@@ -21,7 +21,7 @@ test("開獎資訊卡左右外距為 16px，並移除左右 6px 內距與底部�
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
 
-test("下次開獎與剩餘時間只把日期時間改成暖白灰", () => {
+test("下次開獎與剩餘時間數值使用既有次要文字色", () => {
   assert.match(css, /\.next-draw-icon\s*\{[^}]*color:\s*#e6b34f;/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*color:\s*#d8a653;/s);
   assert.match(css, /\.next-draw-value\s*\{[^}]*color:\s*#E8E1D6;/s);
