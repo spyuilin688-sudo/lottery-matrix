@@ -33,9 +33,10 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
-test("Matrix 指南、我的與我的子頁共用正式底部安全距離", () => {
+test("Matrix 指南與我的子頁使用正式底部安全距離，我的頁面另加 8px", () => {
   assert.match(featureCss, /\.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(featureCss, /\.profile-screen \.feature-body,\s*\.profile-detail-screen \.feature-body,[^{]*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/s);
+  assert.match(featureCss, /\.profile-screen \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+  assert.match(featureCss, /\.profile-detail-screen \.feature-body,[^{]*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/s);
 });
 
 test("通知頁維持 20px 左右間距並保留正式底部安全距離", () => {
