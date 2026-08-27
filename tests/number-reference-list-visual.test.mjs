@@ -3,7 +3,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 
-const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const css = [
+  "../src/feature-pages.css",
+  "../src/number-reference-visual-refinement.css",
+].map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
 
 function renderReferenceList() {
   return new JSDOM(`
@@ -22,19 +25,36 @@ function renderReferenceList() {
   `, { pretendToBeVisual: true });
 }
 
-test("號碼對照單列表使用可辨識的輕微交錯列背景且保留標記狀態", () => {
+test("號碼對照單列表提高交錯列差異且降低整列標記透明度", () => {
   const dom = renderReferenceList();
   const rows = dom.window.document.querySelectorAll(".reference-row:not(.head)");
   const styles = [...rows].map((row) => dom.window.getComputedStyle(row).backgroundColor);
 
-  assert.equal(styles[0], "rgba(20, 36, 48, 0.6)");
+  assert.equal(styles[0], "rgba(20, 36, 48, 0.72)");
   assert.equal(styles[1], "rgba(0, 0, 0, 0)");
-  assert.equal(styles[2], "rgba(225, 184, 39, 0.24)");
+  assert.equal(styles[2], "rgba(225, 184, 39, 0.16)");
 });
 
-test("號碼對照單列表底部保留 24px 額外安全間距", () => {
+test("號碼對照單列表底部保留 12px 額外安全間距", () => {
   const dom = renderReferenceList();
   const end = dom.window.document.querySelector(".reference-results-end");
 
-  assert.equal(dom.window.getComputedStyle(end).height, "24px");
+  assert.equal(dom.window.getComputedStyle(end).height, "12px");
+});
+
+test("號碼對照單期數與號碼使用等寬數字並垂直置中", () => {
+  const dom = renderReferenceList();
+  const issue = dom.window.document.querySelector(".reference-issue");
+  const number = dom.window.document.querySelector(".reference-row:not(.head) > span > button");
+
+  for (const element of [issue, number]) {
+    const style = dom.window.getComputedStyle(element);
+
+    assert.equal(style.display, "flex");
+    assert.equal(style.alignItems, "center");
+    assert.equal(style.justifyContent, "center");
+    assert.match(style.fontVariantNumeric, /tabular-nums/);
+    assert.match(style.fontFeatureSettings, /"tnum" 1/);
+    assert.equal(style.lineHeight, "1");
+  }
 });
