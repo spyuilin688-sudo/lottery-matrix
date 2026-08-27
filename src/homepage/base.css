@@ -79,14 +79,14 @@
   --home-gap-core-features: 8px;
   --home-feature-gap: 4px;
   --home-core-width: calc(min(100vw, 390px) - 32px);
-  --home-core-height: calc(var(--home-core-width) * 414 / 1536);
+  --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
   position: relative;
   isolation: isolate;
   display: grid;
   width: 100%;
   height: auto;
   min-height: 0;
-  padding-bottom: 0;
+  padding-bottom: 8px;
   grid-template-rows: auto auto;
   gap: var(--home-gap-core-features);
   align-self: end;
