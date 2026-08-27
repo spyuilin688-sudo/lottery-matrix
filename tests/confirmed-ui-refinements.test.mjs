@@ -19,7 +19,7 @@ test("Matrix 狀態的自訂觸發條件位於標題文字右側 4px 且垂直�
 });
 
 test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => {
-  assert.match(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher\s*\{[^}]*margin:\s*0 0 8px;/s);
+  assert.match(feature, /:is\(\.matrix-status-screen, \.matrix-custom-status-screen\) \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
   assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher[^}]*min-height:\s*72px/);
   assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.matrix-status-lottery-switcher > \.home-asset-image/);
   assert.match(tokens, /--layout-page-inline:\s*16px;/);

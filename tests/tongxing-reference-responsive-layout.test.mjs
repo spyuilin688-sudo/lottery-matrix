@@ -75,7 +75,7 @@ test('Matrix 同星與號碼對照單內容使用共享 16px 水平外距且不�
   assert.match(tongxingBody, /flex-direction:\s*column/);
   assert.match(tongxingBody, /width:\s*100%/);
   assert.match(tongxingBody, /margin-inline:\s*0/);
-  assert.match(tongxingBody, /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
+  assert.match(tongxingBody, /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\)/);
   assert.match(tongxingBody, /row-gap:\s*var\(--tool-section-gap\)/);
 
   const referenceBody = block(responsive, '.number-reference-screen .feature-body');

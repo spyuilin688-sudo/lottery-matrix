@@ -91,8 +91,8 @@ test("guide categories are horizontal native-scroll controls and status title ac
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "display"), "flex");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "overflow-x"), "auto");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), ".58");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "filter"), "saturate(.55) brightness(.9)");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "opacity"), ".8");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .status-title-trigger img", "filter"), "");
 });
 
 test("profile expiry column no longer draws the unwanted vertical rule", () => {
