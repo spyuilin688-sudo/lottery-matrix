@@ -31,10 +31,8 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
-test("首頁底部預留精簡導覽高度與瀏覽器安全區", () => {
-  const fullClearance = homepageCss.lastIndexOf("padding-bottom: var(--layout-bottom-nav-clearance)");
-
-  assert.notEqual(fullClearance, -1);
-  assert.doesNotMatch(homepageCss, /padding-bottom: env\(safe-area-inset-bottom, 0px\)/);
+test("首頁五大功能與固定底部導覽只保留 8px 間距", () => {
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
