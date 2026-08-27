@@ -31,3 +31,11 @@ test("通知頁右側開關由最終專用規則解除垂直置中限制", () =>
     /\.notifications-screen-v2 \.notification-actions > \.toggle\s*\{[^}]*(?:top|transform):/s,
   );
 });
+
+
+test("推薦碼與啟動碼輸入卡不顯示重複的灰色說明文字", () => {
+  assert.doesNotMatch(featurePages, /<label htmlFor="referral-code">輸入推薦碼<\/label>/);
+  assert.doesNotMatch(featurePages, /<label htmlFor="activation-code">輸入啟動碼<\/label>/);
+  assert.match(featurePages, /<input id="referral-code"[^>]*aria-label="推薦碼"/);
+  assert.match(featurePages, /<input id="activation-code"[^>]*aria-label="啟動碼"/);
+});
