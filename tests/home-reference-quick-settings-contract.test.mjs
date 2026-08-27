@@ -55,7 +55,7 @@ test("首頁快捷設定移至左側安全邊界 6px 並等比例縮小 10%", ()
   );
   assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings-visual\s*\{[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;[^}]*border-radius:\s*7\.65px;/s,
+    /\.bottom-navigation-quick-settings-visual\s*\{[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;[^}]*justify-self:\s*start;[^}]*border-radius:\s*7\.65px;/s,
   );
   assert.match(
     navigationCss,
