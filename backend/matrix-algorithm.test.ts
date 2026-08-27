@@ -109,4 +109,42 @@ describe('Matrix Explore algorithm invariants', () => {
       referenceSortedNumbers: ['10', '20', '25', '30', '35'],
     });
   });
+
+  it('does not use drag rules to rescue an invalid two-code add-subtract road', () => {
+    const history = [
+      draw('A', [10, 23, 32, 33, 34]),
+      draw('P3', [1, 2, 3, 11, 12]),
+      draw('S3', [10, 22, 32, 33, 34]),
+      draw('P2', [4, 5, 6, 11, 12]),
+      draw('S2', [10, 21, 32, 33, 34]),
+      draw('P1', [7, 8, 9, 11, 12]),
+      draw('S1', [10, 20, 32, 33, 34]),
+    ];
+
+    const result = runMatrixAlgorithmWithHistory({
+      ...request,
+      ruleCount: 2,
+    }, history);
+
+    expect(result.valid).toBe(false);
+    expect(result.highestStreak).toBe(3);
+    expect(result.conflictingRules).toEqual([28, 29, 30]);
+    expect(ruleSets(result)).toHaveLength(0);
+  });
+
+  it('keeps the full sum as the combine-road rule value', () => {
+    const result = runMatrixAlgorithmWithHistory({
+      ...request,
+      algorithmType: '合值版路',
+    }, [
+      draw('A', [10, 35, 36, 37, 38]),
+      draw('P1', [1, 2, 3, 4, 29]),
+      draw('S1', [10, 30, 31, 32, 33]),
+    ]);
+
+    const combined59 = ruleSets(result).find((set) => set.rules[0]?.value === 59);
+
+    expect(combined59?.rules).toEqual([{ algorithmType: '合值', value: 59, display: '59' }]);
+    expect(combined59?.predictionNumbers).toEqual([24]);
+  });
 });
