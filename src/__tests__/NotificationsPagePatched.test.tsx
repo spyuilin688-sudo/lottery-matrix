@@ -121,6 +121,30 @@ describe("NotificationsPagePatched", () => {
     expect(within(statusRow!).getAllByText("臨界")).toHaveLength(4);
   });
 
+  it("設定選項以可中斷的收合面板呈現並在收合時停止互動", () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const statusRow = document.querySelector<HTMLElement>('[data-notification-key="status"]');
+    expect(statusRow).not.toBeNull();
+    const toggle = within(statusRow!).getByRole("button", { name: /設定選項/ });
+    const panel = statusRow!.querySelector<HTMLElement>(".notification-inline-settings");
+
+    expect(panel).not.toBeNull();
+    expect(toggle).toHaveAttribute("aria-controls", panel!.id);
+    expect(panel).toHaveAttribute("data-expanded", "false");
+    expect(panel).toHaveAttribute("aria-hidden", "true");
+    expect(panel).toHaveAttribute("inert");
+
+    fireEvent.click(toggle);
+    expect(panel).toHaveAttribute("data-expanded", "true");
+    expect(panel).toHaveAttribute("aria-hidden", "false");
+    expect(panel).not.toHaveAttribute("inert");
+
+    fireEvent.click(toggle);
+    expect(panel).toHaveAttribute("data-expanded", "false");
+    expect(panel).toHaveAttribute("aria-hidden", "true");
+    expect(panel).toHaveAttribute("inert");
+  });
+
   it("中獎通知、系統通知與 Matrix Pro 使用四等分選項列", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
@@ -162,10 +186,10 @@ describe("NotificationsPagePatched", () => {
     }));
   });
 
-  it("載入並儲存 Matrix 狀態的彩種啟用清單", async () => {
+  it("載入並儲存 Matrix 狀態勾選清單", async () => {
     memberApi.fetchNotificationSettings.mockResolvedValueOnce({
       ...structuredClone(storedSettings),
-      selectedOptions: { ...storedSettings.selectedOptions, status: ["今彩539"] },
+      statusOptions: { ...storedSettings.statusOptions, 今彩539: ["啟動"] },
     });
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 
@@ -173,13 +197,13 @@ describe("NotificationsPagePatched", () => {
     expect(statusRow).not.toBeNull();
     await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1));
     fireEvent.click(within(statusRow!).getByRole("button", { name: /設定選項/ }));
-    expect(within(statusRow!).getByRole("checkbox", { name: "今彩539" })).toBeChecked();
-    expect(within(statusRow!).getByRole("checkbox", { name: "天天樂" })).not.toBeChecked();
+    expect(within(statusRow!).getAllByRole("checkbox", { name: "啟動" })[0]).toBeChecked();
+    expect(within(statusRow!).getAllByRole("checkbox", { name: "聚合" })[0]).not.toBeChecked();
 
-    fireEvent.click(within(statusRow!).getByRole("checkbox", { name: "天天樂" }));
+    fireEvent.click(within(statusRow!).getAllByRole("checkbox", { name: "聚合" })[0]);
     await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalledWith({
       ...storedSettings,
-      selectedOptions: { ...storedSettings.selectedOptions, status: ["今彩539", "天天樂"] },
+      statusOptions: { ...storedSettings.statusOptions, 今彩539: ["啟動", "聚合"] },
     }));
   });
 
@@ -196,7 +220,6 @@ describe("NotificationsPagePatched", () => {
     fireEvent.click(within(resultRow).getByRole("button", { name: /設定選項/ }));
     fireEvent.click(within(resultRow).getByRole("checkbox", { name: "今彩539" }));
     fireEvent.click(within(statusRow).getByRole("button", { name: /設定選項/ }));
-    fireEvent.click(within(statusRow).getByRole("checkbox", { name: "天天樂" }));
     fireEvent.click(within(statusRow).getAllByRole("checkbox", { name: "啟動" })[0]);
     fireEvent.click(within(betRow).getAllByRole("button")[1]);
     expect(within(betRow).getAllByRole("button")[1]).toHaveAttribute("data-checked", "false");
@@ -220,7 +243,6 @@ describe("NotificationsPagePatched", () => {
       selectedOptions: {
         ...remoteSettings.selectedOptions,
         result: ["天天樂", "六合彩", "大樂透"],
-        status: ["今彩539", "六合彩", "大樂透"],
       },
       betTimes: { ...remoteSettings.betTimes, 今彩539: ["19:45", ""] },
       statusOptions: { ...remoteSettings.statusOptions, 今彩539: ["聚合", "共振", "臨界"] },
