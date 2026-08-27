@@ -33,8 +33,8 @@ test('lottery switcher and draw card use the 16px homepage inline baseline', () 
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
 });
 
-test('home bottom group has no black clearance above bottom navigation', () => {
-  assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*0;/);
+test('home bottom group keeps 8px between five shortcuts and bottom navigation', () => {
+  assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*8px;/);
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
