@@ -56,10 +56,10 @@ test('embedded next draw info uses two independent rounded reference containers'
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value', /font-size:\s*11px;/);
 });
 
-test('Matrix Core keeps its 16px inset while five shortcuts use 8px outer margins and equal columns', () => {
+test('Matrix Core keeps its 16px inset while five shortcuts use 12px outer margins and responsive 2 to 2.5px gaps', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - 16px\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*2\.5px;/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - 24px\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
 });
