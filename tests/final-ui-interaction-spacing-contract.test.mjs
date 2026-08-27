@@ -3,15 +3,17 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const homeCss = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const homeVisualCss = readFileSync(new URL("../src/homepage/visual-language.css", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const adjustmentCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const guideSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 
-test("首頁 Matrix Core 與五大功能維持上下 8px 節奏", () => {
-  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:\s*8px;/s);
-  assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*--home-gap-core-features:\s*8px;[^}]*padding-bottom:\s*8px;/s);
+test("首頁 Matrix Core 與五大功能維持單一 8px 節奏", () => {
+  assert.doesNotMatch(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:/s);
+  assert.match(homeVisualCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
+  assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*--home-gap-core-features:\s*8px;[^}]*padding-bottom:\s*8px;[^}]*gap:\s*var\(--home-gap-core-features\);/s);
 });
 
 test("通知選號提醒時間控制項為 23px 且兩列相距 6px", () => {
