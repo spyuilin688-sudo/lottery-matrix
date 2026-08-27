@@ -27,8 +27,8 @@ test("uses one restrained frame treatment for homepage entry surfaces", () => {
 });
 
 test("reserves navigation clearance above the fixed homepage navigation", () => {
-  assert.match(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/s);
-  assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\);/s);
 });
 
 test("preserves the four semantic Matrix status tones", () => {
