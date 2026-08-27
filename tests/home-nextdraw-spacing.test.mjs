@@ -11,9 +11,11 @@ function lastRuleBody(source, selector) {
   return [...source.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'gs'))].at(-1)?.[1] ?? '';
 }
 
-test('next draw row uses 5px bottom padding and 4px internal gaps', () => {
-  assert.match(css, /\.next-draw-info--embedded\s*\{[\s\S]*?padding:\s*0 20px 5px;/);
-  assert.match(css, /\.next-draw-item\s*\{[\s\S]*?gap:\s*4px;/);
+test('next draw row uses equal halves, full dividers and no bottom padding', () => {
+  assert.match(css, /\.next-draw-info--embedded\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?padding:\s*0;[\s\S]*?align-items:\s*stretch;[\s\S]*?border-top:\s*1px solid rgba\(232, 177, 76, \.48\);/);
+  assert.match(css, /\.next-draw-item\s*\{[\s\S]*?gap:\s*4px;[\s\S]*?padding-inline:\s*clamp\(6px, 2vw, 10px\);/);
+  assert.match(css, /\.next-draw-item:last-child\s*\{[\s\S]*?border-inline-start:\s*1px solid rgba\(232, 177, 76, \.48\);/);
+  assert.doesNotMatch(css, /\.next-draw-item:last-child\s*\{[^}]*padding-left:\s*16px;/s);
 });
 
 test('next draw date has no space before weekday parentheses', () => {

@@ -40,9 +40,11 @@ test('home bottom group keeps 8px between five shortcuts and bottom navigation',
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
 });
 
-test('embedded next draw info retains the requested compact metrics', () => {
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0 20px 5px;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child', /padding-left:\s*16px;/);
+test('embedded next draw info retains the approved compact split layout', () => {
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /align-items:\s*stretch;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child', /border-inline-start:\s*1px solid rgba\(232, 177, 76, \.48\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /height:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label', /font-size:\s*11px;/);

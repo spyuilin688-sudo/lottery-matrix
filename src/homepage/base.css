@@ -292,16 +292,15 @@
   grid-column: 2;
   grid-row: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 110px;
-  height: 26px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: clamp(110px, 32vw, 124px);
+  height: 30px;
   justify-self: center;
   align-self: center;
   border: 1px solid rgba(230, 177, 76, .46);
-  border-radius: 14px;
+  border-radius: 15px;
   background: rgba(2, 7, 17, .38);
   box-shadow: inset 0 0 13px rgba(228, 169, 57, .12);
-  transform: translateY(-6px);
   overflow: hidden;
 }
 
@@ -409,13 +408,14 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: auto;
+  box-sizing: border-box;
+  width: 100%;
   height: 24px;
   min-height: 24px;
   max-height: 24px;
   margin: 0;
-  padding: 0 20px 5px;
-  align-items: center;
+  padding: 0;
+  align-items: stretch;
   border-top: 1px solid rgba(232, 177, 76, .48);
   background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
 }
@@ -425,12 +425,13 @@
   grid-template-columns: 12px auto minmax(0, 1fr);
   gap: 4px;
   min-width: 0;
+  padding-inline: clamp(6px, 2vw, 10px);
   align-items: center;
   justify-content: center;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child {
-  padding-left: 16px;
+  border-inline-start: 1px solid rgba(232, 177, 76, .48);
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
