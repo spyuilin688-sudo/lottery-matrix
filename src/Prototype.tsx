@@ -324,7 +324,6 @@ export function MatrixStatusSection({
                 alt={lottery.id}
                 draggable={false}
               />
-              <span className="clean-hit-label">{lottery.id} {status.status}</span>
             </button>
           );
         })}
