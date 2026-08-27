@@ -6,10 +6,10 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 const css = readLocalCss("src/homepage-repair.css");
 const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 
-test("首頁使用正式 matrixya 圖檔並以 95.2% 流式尺寸呈現", () => {
+test("首頁使用正式 matrixya 圖檔並以縮減 8% 後的流式尺寸呈現", () => {
   assert.match(source, /logo:\s*"\/assets\/lottery\/functions\/matrixya\.png"/);
   assert.match(source, /<header className="brand-header home-logo-box"><img className="home-logo-image" src=\{HOME_ASSETS\.logo\}/);
-  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*95\.2%;/s);
+  assert.match(css, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*87\.584%;/s);
   assert.doesNotMatch(css, /HomeLogo\.svg|visibility:\s*hidden/);
 });
 
