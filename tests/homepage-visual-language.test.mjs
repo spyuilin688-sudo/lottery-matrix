@@ -29,6 +29,11 @@ test("preserves the four semantic Matrix status tones", () => {
   }
 });
 
+test("keeps idle status glow restrained and strengthens it only while pressed", () => {
+  assert.match(visualLanguage, /--home-status-glow:\\s*color-mix\\(in srgb, var\\(--home-status-tone\\) 18%, transparent\\);/);
+  assert.match(visualLanguage, /\\.home-screen \\.matrix-status-card:active\\s*\\{[^}]*26%/s);
+});
+
 test("does not replace or redraw existing homepage artwork", () => {
   assert.doesNotMatch(visualLanguage, /background-image:\s*url\(/);
   assert.doesNotMatch(visualLanguage, /content:\s*["'][^"']+["']/);
