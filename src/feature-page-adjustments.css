@@ -190,8 +190,7 @@
   gap: 4px;
 }
 
-.notifications-screen-v2 .notification-grid-row,
-.notifications-screen-v2 .notification-inline-option-row {
+.notifications-screen-v2 .notification-grid-row {
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -199,17 +198,25 @@
   align-items: center;
 }
 
+.notifications-screen-v2 .notification-inline-option-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
 .notifications-screen-v2 .notification-grid-lottery-labels > span {
   display: flex;
   box-sizing: border-box;
   min-width: 0;
-  height: 26px;
-  min-height: 26px;
+  height: 20px;
+  min-height: 20px;
   align-items: center;
   justify-content: center;
   color: #e2d9c8;
-  font-size: clamp(10px, 2.9vw, 12px);
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
@@ -222,14 +229,25 @@
   min-width: 0;
   height: 26px;
   min-height: 26px;
-  padding: 0 4px;
+  padding: 0 2px;
   align-items: center;
   justify-content: center;
   gap: 3px;
   color: #d9d3c8;
-  font-size: clamp(8px, 2.5vw, 10px);
+  font-size: 11px;
   line-height: 1;
   white-space: nowrap;
+}
+
+.notifications-screen-v2 .notification-grid-lottery-row label,
+.notifications-screen-v2 .notification-grid-status-row label {
+  margin-inline: 8px;
+}
+
+.notifications-screen-v2 .notification-inline-option-row .notification-choice {
+  width: calc((100% - 12px) / 4 - 16px);
+  flex: 0 0 calc((100% - 12px) / 4 - 16px);
+  margin-inline: 0;
 }
 
 .notifications-screen-v2 .notification-status-lottery-label {
@@ -249,17 +267,17 @@
 
 .notifications-screen-v2 input[type="checkbox"],
 .notifications-screen-v2 input[type="radio"] {
-  width: 1em;
-  height: 1em;
+  width: 12px;
+  height: 12px;
   margin: 0;
-  flex: 0 0 1em;
+  flex: 0 0 12px;
   accent-color: #d99b00;
 }
 
 .notifications-screen-v2 .notification-time-select {
   height: 26px;
   min-height: 26px;
-  margin-inline: 2px;
+  margin-inline: 8px;
 }
 
 .notifications-screen-v2 .notification-time-select select {
@@ -270,24 +288,6 @@
   text-align: center;
   text-align-last: center;
 }
-
-.notifications-screen-v2 .notification-status-grid .notification-grid-status-row label {
-  margin-inline: 8px;
-  font-size: clamp(9px, 2.8vw, 11px);
-}
-
-.notifications-screen-v2 .notification-status-grid .notification-grid-status-row input {
-  width: 12px;
-  height: 12px;
-  flex-basis: 12px;
-}
-
-.notifications-screen-v2 .notification-inline-option-row[data-setting-key="win"] .notification-choice,
-.notifications-screen-v2 .notification-inline-option-row[data-setting-key="system"] .notification-choice,
-.notifications-screen-v2 .notification-inline-option-row[data-setting-key="expiry"] .notification-choice {
-  justify-content: flex-start;
-}
-
 
 .calculator-screen .calculation-results {
   margin-top: 8px;
