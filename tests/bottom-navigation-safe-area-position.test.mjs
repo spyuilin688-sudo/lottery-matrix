@@ -31,8 +31,17 @@ test("內容底部只保留導覽高度加瀏覽器安全區", () => {
   assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
 });
 
-test("首頁五大功能與固定底部導覽只保留 8px 間距", () => {
-  assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補償", () => {
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto;[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
+});
+
+test("狀態卡與 Matrix Core 使用單一 8px 間距來源並由彈性狀態區承接剩餘高度", () => {
+  assert.match(homepageCss, /--home-gap-status-core:\s*8px;/);
+  assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;/s);
+  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*100%;[^}]*align-content:\s*end;/s);
+  assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
+  assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*16px;/s);
 });

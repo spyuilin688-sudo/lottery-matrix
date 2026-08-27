@@ -6,23 +6,6 @@
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
 }
 
-.home-screen .home-layout {
-  grid-template-rows: auto auto;
-  align-content: start;
-}
-
-.home-screen .matrix-status-section {
-  flex: 0 0 auto;
-  height: auto;
-  overflow: visible;
-}
-
-.home-screen .matrix-status-card-grid {
-  height: auto;
-  grid-template-rows: repeat(2, auto);
-  align-content: start;
-}
-
 .home-screen .home-bottom-group {
   margin-block-start: var(--home-gap-status-core);
 }
