@@ -609,7 +609,7 @@
   border-radius: 10px;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .home-screen .home-shortcut img {
@@ -622,7 +622,7 @@
   object-fit: fill;
   object-position: center;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   clip-path: none;
   box-shadow: none;
   filter: none;

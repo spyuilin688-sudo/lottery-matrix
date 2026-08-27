@@ -8,7 +8,7 @@ function ruleBody(selector) {
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
 }
 
-test("five homepage feature cards use one equal-size artwork frame with a visible 4px gap", () => {
+test("five homepage feature cards keep their complete artwork frame with a visible 4px gap", () => {
   const row = ruleBody(".home-screen .home-shortcut-row");
   const button = ruleBody(".home-screen .home-shortcut");
   const image = ruleBody(".home-screen .home-shortcut img");
@@ -21,9 +21,10 @@ test("five homepage feature cards use one equal-size artwork frame with a visibl
   assert.match(button, /aspect-ratio:\s*386\s*\/\s*496;/);
   assert.match(button, /border:\s*0;/);
   assert.match(button, /box-shadow:\s*none;/);
-  assert.match(button, /overflow:\s*hidden;/);
+  assert.match(button, /overflow:\s*visible;/);
   assert.match(image, /width:\s*100%;/);
   assert.match(image, /height:\s*100%;/);
   assert.match(image, /object-fit:\s*fill;/);
   assert.match(image, /border:\s*0;/);
+  assert.match(image, /border-radius:\s*0;/);
 });
