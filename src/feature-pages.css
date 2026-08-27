@@ -97,15 +97,6 @@
   background: transparent;
   box-shadow: none;
 }
-.matrix-explore-screen .matrix-title-banner-actions {
-  top: 50%;
-  right: auto;
-  bottom: auto;
-  left: calc(83% + 4px);
-  width: 1.8rem;
-  height: 1.8rem;
-  transform: translateY(-50%);
-}
 .matrix-title-banner-actions .reference-title-actions,
 .matrix-title-banner-actions .history-title-actions {
   width: 100%;
