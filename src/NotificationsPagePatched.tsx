@@ -283,7 +283,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         data-expanded={expanded}
         aria-hidden={!expanded}
         inert={!expanded}
-      ><div className="notification-inline-settings-inner">{renderInlineSettings(row)}</div></div>}
+      ><div className="notification-inline-settings-inner"><div className="notification-inline-settings-content">{renderInlineSettings(row)}</div></div></div>}
     </article>;
   };
 
