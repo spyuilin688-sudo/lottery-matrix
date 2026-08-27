@@ -4,14 +4,14 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const css = readLocalCss("src/homepage-repair.css");
 
-test("狀態卡共同外框使用 12px 外距、4px 內距與 4px 卡片間距", () => {
+test("狀態卡共同外框使用 16px 外距、1.5px 內距與 1.5px 卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(min\(100vw, 390px\) - 24px\);[^}]*padding:\s*4px;[^}]*border:\s*1px solid[^}]*border-radius:\s*12px;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(min\(100vw, 390px\) - 32px\);[^}]*padding:\s*1\.5px;[^}]*border:\s*1px solid[^}]*border-radius:\s*12px;/s,
   );
   assert.match(
     css,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*gap:\s*4px;[^}]*align-content:\s*start;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s,
   );
   assert.match(
     css,

@@ -17,7 +17,9 @@ test("five homepage feature cards shrink fluidly to keep a visible 8px gap", () 
   assert.match(bottomGroup, /--home-feature-gap:\s*8px;/);
   assert.match(bottomGroup, /grid-template-rows:\s*auto auto;/);
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
-  assert.match(row, /column-gap:\s*var\(--home-feature-gap,\s*8px\);/);
+  assert.match(row, /column-gap:\s*0;/);
+  assert.match(button, /width:\s*calc\(100% - var\(--home-feature-gap,\s*8px\)\);/);
+  assert.match(button, /justify-self:\s*center;/);
   assert.match(button, /aspect-ratio:\s*386\s*\/\s*496;/);
   assert.match(button, /border:\s*0;/);
   assert.match(button, /box-shadow:\s*none;/);

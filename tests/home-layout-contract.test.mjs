@@ -25,13 +25,13 @@ test('homepage brand header owns 8px top spacing and logo uses 95.2 percent flui
   assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*95\.2%;/);
 });
 
-test('lottery switcher and draw card keep the 16px homepage inline baseline while status owns 12px', () => {
+test('lottery switcher, draw card and status keep the 16px homepage inline baseline', () => {
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0 var\(--layout-page-inline\);/);
   assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*0;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
-  assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(min\(100vw, 390px\) - 24px\);/);
+  assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
 });
 
 test('home bottom group keeps 8px between five shortcuts and bottom navigation', () => {
