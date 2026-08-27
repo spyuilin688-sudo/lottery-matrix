@@ -668,7 +668,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .mini-ball[data-tone="purple"] { background: radial-gradient(circle at 35% 28%, #c9a1ff, #6d25a8 46%, #24043e); }
 .mini-ball[data-tone="dark"] { background: radial-gradient(circle at 35% 28%, #8b8b8b, #282828 55%, #050505); border-color: #777; }
 
-.number-reference-screen {
+.reference-query-panel {
   --reference-control-height: 44px;
 }
 
@@ -679,7 +679,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .number-reference-screen .reference-select select { padding-left: 7px; padding-right: 25px; font-size: clamp(9px, 3vw, 13px); font-weight: 600; text-align: center; text-align-last: center; }
 .number-reference-screen .reference-select svg { right: 8px; width: 15px; }
 .number-reference-screen .reference-order-select select { padding-left: 5px; padding-right: 22px; font-size: clamp(8.5px, 2.8vw, 11.5px); }
-.note-form input { min-width: 0; height: 42px; padding: 0 8px; border: 1px solid #6e4a1e; border-radius: 7px; outline: none; background: #030a10; color: #efe8dc; text-align: center; }
+.reference-search input,
+.note-form input { min-width: 0; padding: 0 8px; border: 1px solid #6e4a1e; border-radius: 7px; outline: none; background: #030a10; color: #efe8dc; text-align: center; }
+.note-form input { height: 42px; }
 .ornament-title {
   display: flex;
   margin: 16px 0 10px;
@@ -696,8 +698,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .empty-state { display: grid; min-height: 190px; place-items: center; color: #77736e; font-size: 13px; }
 .reference-search { margin: 0; }
 .reference-search > div { display: grid; width: 100%; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.7fr); gap: 6px; }
-.number-reference-screen .reference-search input,
-.number-reference-screen .reference-search .gold-button { height: var(--reference-control-height); }
+.reference-query-panel .reference-search input,
+.reference-query-panel .reference-search .gold-button { height: var(--reference-control-height); }
 .reference-search input { padding-inline: 4px; }
 .reference-search input:nth-child(1) { border-color: #b92727; }
 .reference-search input:nth-child(2) { border-color: #326c86; }
