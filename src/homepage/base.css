@@ -25,6 +25,7 @@
   margin: 0 auto;
   grid-template-rows: auto auto;
   align-content: safe start;
+  row-gap: 8px;
   padding-top: var(--layout-safe-area-top);
   padding-bottom: var(--layout-bottom-nav-clearance);
   background: var(--lottery-neutral-950);
