@@ -48,3 +48,22 @@ for (const width of [390, 375, 360]) {
   });
 }
 
+test("通知設定面板使用確認的展開收合動態與 reduced-motion 降級", () => {
+  const dom = new JSDOM(`<!doctype html>
+    <style>${css}</style>
+    <main class="notifications-screen-v2">
+      <div class="notification-inline-settings" data-expanded="false">
+        <div class="notification-inline-settings-inner">設定內容</div>
+      </div>
+    </main>`, { pretendToBeVisual: true });
+  const panel = dom.window.document.querySelector(".notification-inline-settings");
+
+  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "0fr");
+  panel.dataset.expanded = "true";
+  assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "1fr");
+  assert.match(css, /grid-template-rows 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
+  assert.match(css, /opacity 140ms ease-out 40ms/);
+  assert.match(css, /transform 220ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
+  assert.match(css, /notification-settings-toggle svg[\s\S]*transition: transform 160ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*opacity 80ms linear/);
+});
