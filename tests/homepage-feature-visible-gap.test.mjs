@@ -38,5 +38,5 @@ test("homepage feature cards have one canonical CSS owner without late overrides
   assert.equal(rowRules.length, 1);
   assert.doesNotMatch(visualCss, /\.home-shortcut(?:\b|[.: ])/);
   assert.match(css, /\.home-screen \.home-shortcut:active\s*\{[^}]*box-shadow:\s*var\(--home-frame-shadow-active\);/s);
-  assert.match(css, /\.home-screen \.home-shortcut:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--lottery-gold-300\);/s);
+  assert.match(css, /\.home-screen :where\(\.home-shortcut\):focus-visible\s*\{[^}]*outline:\s*2px solid var\(--lottery-gold-300\);/s);
 });
