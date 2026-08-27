@@ -18,10 +18,11 @@ test('homepage history link moves two more pixels left without changing its vert
 test('notification controls use the approved compact spacing and larger option text', () => {
   const css = read('src/feature-page-adjustments.css');
   assert.match(css, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-time-select\s*\{[^}]*margin-inline:\s*2px;/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-time-select\s*\{[^}]*margin-inline:\s*8px;/s);
   assert.match(css, /\.notifications-screen-v2 \.notification-time-select select\s*\{[^}]*font-size:\s*clamp\(10px,\s*3vw,\s*12px\);/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-status-grid \.notification-grid-status-row label\s*\{[^}]*margin-inline:\s*4px;[^}]*font-size:\s*clamp\(9px,\s*2\.8vw,\s*11px\);/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-status-grid \.notification-grid-status-row input\s*\{[^}]*width:\s*12px;[^}]*height:\s*12px;/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-grid-lottery-row label,\s*\.notifications-screen-v2 \.notification-grid-status-row label\s*\{[^}]*margin-inline:\s*8px;/s);
+  assert.match(css, /\.notifications-screen-v2 input\[type="checkbox"\],[\s\S]*?width:\s*12px;[^}]*height:\s*12px;/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-inline-option-row \.notification-choice\s*\{[^}]*padding:\s*6px 8px;[^}]*gap:\s*4px;/s);
 });
 
 test('Matrix status lottery labels have no checkbox and Matrix Pro is centered above the title', () => {
