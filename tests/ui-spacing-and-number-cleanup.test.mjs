@@ -33,5 +33,5 @@ test('Matrix status lottery labels have no checkbox and Matrix Pro is centered a
 
   const css = read('src/feature-page-adjustments.css');
   assert.match(css, /\.notifications-screen-v2 \.notification-title h2:has\(em\)\s*\{[^}]*align-items:\s*center;/s);
-  assert.match(css, /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*14px;[^}]*padding:\s*0 4px;[^}]*font-size:\s*8px;/s);
+  assert.match(css, /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*12px;[^}]*padding:\s*0 3\.5px;[^}]*font-size:\s*7px;/s);
 });
