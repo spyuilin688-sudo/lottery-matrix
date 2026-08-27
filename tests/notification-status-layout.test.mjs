@@ -69,3 +69,37 @@ test("通知設定面板使用確認的展開收合動態與 reduced-motion 降�
   assert.match(css, /notification-settings-toggle svg[\s\S]*transition: transform 160ms cubic-bezier\(\.2, \.8, \.2, 1\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*opacity 80ms linear/);
 });
+
+test("所有通知設定內容使用一致的緊湊寬度與置中排列", () => {
+  const dom = new JSDOM(`<!doctype html>
+    <style>${css}</style>
+    <main class="notifications-screen-v2">
+      <div class="notification-grid-row notification-grid-lottery-row notification-grid-lottery-labels">
+        <span>今彩539</span><span>天天樂</span><span>六合彩</span><span>大樂透</span>
+      </div>
+      <div class="notification-grid-row notification-grid-time-row">
+        <div class="notification-time-select"><select><option>選擇時間</option></select></div>
+      </div>
+      <div class="notification-inline-option-row" data-setting-key="system">
+        <label class="notification-choice"><input type="checkbox"><span>維護</span></label>
+        <label class="notification-choice"><input type="checkbox"><span>更新</span></label>
+      </div>
+    </main>`, { pretendToBeVisual: true });
+  const lotteryTitle = dom.window.document.querySelector(".notification-grid-lottery-labels > span");
+  const timeSelect = dom.window.document.querySelector(".notification-time-select");
+  const optionRow = dom.window.document.querySelector(".notification-inline-option-row");
+  const choice = dom.window.document.querySelector(".notification-choice");
+  const input = dom.window.document.querySelector(".notification-choice input");
+
+  assert.equal(dom.window.getComputedStyle(lotteryTitle).height, "20px");
+  assert.equal(dom.window.getComputedStyle(lotteryTitle).fontSize, "11px");
+  assert.equal(dom.window.getComputedStyle(timeSelect).marginInline, "8px");
+  assert.equal(dom.window.getComputedStyle(optionRow).display, "flex");
+  assert.equal(dom.window.getComputedStyle(optionRow).justifyContent, "center");
+  assert.equal(dom.window.getComputedStyle(optionRow).gap, "4px");
+  assert.equal(dom.window.getComputedStyle(choice).height, "26px");
+  assert.equal(dom.window.getComputedStyle(choice).marginInline, "0px");
+  assert.equal(dom.window.getComputedStyle(choice).fontSize, "11px");
+  assert.equal(dom.window.getComputedStyle(input).width, "12px");
+  assert.equal(dom.window.getComputedStyle(input).height, "12px");
+});
