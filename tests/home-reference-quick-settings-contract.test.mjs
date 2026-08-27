@@ -28,10 +28,10 @@ test("首頁狀態卡間距為 0.8px 且彩種圖示向左移動 6px", () => {
   );
 });
 
-test("號碼對照單第二列與浮動設定共用 Matrix 同星的 44px 控制高度", () => {
+test("號碼對照單第二列與浮動設定共用 26px 控制高度", () => {
   assert.match(
     featureCss,
-    /\.reference-query-panel\s*\{[^}]*--reference-control-height:\s*44px;/s,
+    /\.reference-query-panel\s*\{[^}]*--reference-control-height:\s*26px;/s,
   );
   assert.match(
     featureCss,

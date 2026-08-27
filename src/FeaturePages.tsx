@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   CalendarIcon,
@@ -2338,7 +2339,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
-const GUIDE_LOOP_IDLE_MS = 120;
+const GUIDE_LOOP_IDLE_MS = 200;
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
   const sections: GuideSection[] = [
@@ -2466,6 +2467,13 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   const stripRef = useRef<HTMLElement | null>(null);
   const current = sections[selected];
 
+  const selectGuideCategory = (event: ReactMouseEvent<HTMLElement>) => {
+    const card = (event.target as Element).closest<HTMLElement>("[data-guide-index]");
+    if (!card || !event.currentTarget.contains(card)) return;
+    const index = Number(card.dataset.guideIndex);
+    if (Number.isInteger(index) && index >= 0 && index < sections.length) setSelected(index);
+  };
+
   useLayoutEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
@@ -2522,22 +2530,23 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         ref={stripRef}
         className="guide-category-strip"
         aria-label="Matrix 指南分類"
+        onClick={selectGuideCategory}
       >
         {GUIDE_LOOP_GROUPS.map((group) => {
           const isClone = group !== "canonical";
           return (
             <div className="guide-category-loop-group" data-guide-group={group} aria-hidden={isClone} key={group}>
               {sections.map((section, index) => isClone ? (
-                <span className="guide-category-card" data-selected={selected === index} key={`${group}-${section.title}`}>
+                <span className="guide-category-card" data-guide-index={index} data-selected={selected === index} key={`${group}-${section.title}`}>
                   <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
                 </span>
               ) : (
                 <button
                   className="guide-category-card"
                   type="button"
+                  data-guide-index={index}
                   data-selected={selected === index}
                   aria-pressed={selected === index}
-                  onClick={() => setSelected(index)}
                   key={`${group}-${section.title}`}
                 >
                   <span>{String(index + 1).padStart(2, "0")}</span>{section.title}

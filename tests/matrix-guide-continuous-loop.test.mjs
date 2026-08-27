@@ -37,5 +37,6 @@ test("Matrix 指南移除半速指標攔截並使用原生橫向慣性", () => {
   assert.doesNotMatch(guidePage, /GUIDE_DRAG_RATE|GUIDE_DRAG_THRESHOLD|guideDragRef|guideSuppressClickRef/);
   assert.doesNotMatch(guidePage, /onPointerDown=|onPointerMove=|onPointerUp=|onPointerCancel=/);
   assert.match(guidePage, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
-  assert.match(guidePage, /onClick=\{\(\) => setSelected\(index\)\}/);
+  assert.match(guidePage, /onClick=\{selectGuideCategory\}/);
+  assert.match(guidePage, /data-guide-index=\{index\}/);
 });

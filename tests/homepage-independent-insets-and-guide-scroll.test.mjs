@@ -26,7 +26,7 @@ test("開獎資訊卡底列回復修改前的內部排版", () => {
 });
 
 test("Matrix 指南不在原生慣性滑動期間改寫 scrollLeft", () => {
-  assert.match(source, /const GUIDE_LOOP_IDLE_MS = 120;/);
+  assert.match(source, /const GUIDE_LOOP_IDLE_MS = 200;/);
   assert.match(guideSource, /window\.setTimeout\(normalizeLoop, GUIDE_LOOP_IDLE_MS\)/);
   assert.doesNotMatch(guideSource, /requestAnimationFrame\(normalizeLoop\)/);
   assert.match(guideSource, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);

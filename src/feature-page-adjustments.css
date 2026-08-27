@@ -355,9 +355,13 @@
 .notifications-screen-v2 .notification-time-select {
   width: auto;
   min-width: 0;
-  height: 26px;
-  min-height: 26px;
+  height: 23px;
+  min-height: 23px;
   margin-inline: 8px;
+}
+
+.notifications-screen-v2 .notification-bet-grid .notification-grid-time-row + .notification-grid-time-row {
+  margin-block-start: 2px;
 }
 
 .notifications-screen-v2 .notification-time-select select {
@@ -446,7 +450,9 @@
 
 .matrix-guide-screen .guide-category-strip .guide-category-card > span {
   color: #b58322;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 13.2px;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
