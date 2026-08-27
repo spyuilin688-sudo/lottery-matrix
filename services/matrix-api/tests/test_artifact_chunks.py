@@ -231,3 +231,18 @@ def test_materialize_chunks_rejects_conflicting_validation() -> None:
     ]
     with pytest.raises(ValueError, match="ANALYSIS_CHUNK_CONFLICT"):
         materialize_chunks("今彩539", "115000205", chunks, 20)
+
+
+def test_materialize_chunks_deduplicates_identical_items() -> None:
+    item = {"id": "same-road", "predictionNumber": "01"}
+    validation = {"itemId": "same-road", "validationRows": []}
+    chunks = [
+        {"chunk_index": 0, "cursor_start": 0, "cursor_end": 1,
+         "payload": {"items": [item], "validationById": {"same-road": validation}}},
+        {"chunk_index": 1, "cursor_start": 1, "cursor_end": 2,
+         "payload": {"items": [item], "validationById": {"same-road": validation}}},
+    ]
+
+    result = materialize_chunks("今彩539", "115000205", chunks, 2)
+
+    assert result["items"] == [item]

@@ -77,6 +77,7 @@ def materialize_chunks(
         raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
 
     items: list[Any] = []
+    items_by_id: dict[str, Any] = {}
     validation_by_id: dict[str, Any] = {}
     previous_cursor_end = 0
 
@@ -87,7 +88,17 @@ def materialize_chunks(
             raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
 
         payload = decode_chunk_payload(chunk["payload"])
-        items.extend(payload["items"])
+        for item in payload["items"]:
+            identifier = item.get("id") if isinstance(item, Mapping) else None
+            if not isinstance(identifier, str):
+                items.append(item)
+                continue
+            if identifier in items_by_id:
+                if items_by_id[identifier] != item:
+                    raise ValueError("ANALYSIS_CHUNK_CONFLICT")
+                continue
+            items_by_id[identifier] = item
+            items.append(item)
         for identifier, validation in payload["validationById"].items():
             if identifier in validation_by_id and validation_by_id[identifier] != validation:
                 raise ValueError("ANALYSIS_CHUNK_CONFLICT")

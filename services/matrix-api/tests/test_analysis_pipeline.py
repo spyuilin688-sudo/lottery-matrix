@@ -271,3 +271,49 @@ def test_retry_after_final_explore_publication_does_not_overwrite_final_chunk() 
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
         "source": [0, 1, 2],
     }
+
+
+def test_pipeline_resumes_checkpointed_tiangong_and_materializes_chunks() -> None:
+    repository = InMemoryAnalysisRepository()
+    starts: list[int] = []
+
+    def tiangong(context: dict) -> dict:
+        start = context["tiangongBatch"]["start"]
+        starts.append(start)
+        stop = min(2, start + context["tiangongBatch"]["limit"])
+        identifier = f"road-{start}"
+        return {
+            "artifact": {
+                "items": [{"id": identifier}],
+                "validationById": {identifier: {"itemId": identifier}},
+            },
+            "_checkpoint": {
+                "cursorStart": start, "cursor": stop, "total": 2, "complete": stop == 2,
+            },
+        }
+
+    builders = {
+        "explore": lambda _: {"items": [], "validationById": {}},
+        "tianyan": lambda _: {"items": []},
+        "tiangong": tiangong,
+        "status": lambda context: {
+            "ids": [item["id"] for item in context["artifacts"]["tiangong"]["items"]],
+        },
+    }
+    pipeline = AnalysisPipeline(
+        repository, builders, analysis_version="v1", tiangong_batch_size=1,
+    )
+
+    first = pipeline.run(DRAW, history=[])
+    second = pipeline.run(DRAW, history=[])
+
+    assert first["status"] == "running"
+    assert first["phase"] == "tiangong"
+    assert first["cursor"] == 1
+    assert second["status"] == "complete"
+    assert starts == [0, 1]
+    manifest = repository.artifacts[("今彩539", "114000123", "v1", "tiangong")]["payload"]
+    assert manifest["storage"] == "chunks"
+    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
+        "ids": ["road-0", "road-1"],
+    }
