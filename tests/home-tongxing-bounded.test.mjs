@@ -13,7 +13,7 @@ test('homepage removes draw-toolbar wrapper and halves next draw row height', ()
   assert.doesNotMatch(prototype, /className="draw-toolbar"/);
   assert.match(homeCss, /grid-template-rows:\s*44px minmax\(0, 1fr\) 24px;/);
   assert.match(homeCss, /\.next-draw-info--embedded\s*\{[\s\S]*?height:\s*24px;[\s\S]*?min-height:\s*24px;[\s\S]*?max-height:\s*24px;/);
-  assert.match(homeCss, /\.next-draw-item\s*\{[\s\S]*?gap:\s*0\.5px;/);
+  assert.match(homeCss, /\.next-draw-item\s*\{[\s\S]*?gap:\s*4px;/);
 });
 
 test('Matrix 同星沿用功能頁共用外距、26px 控制項與現行響應式字級', () => {

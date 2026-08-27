@@ -2338,6 +2338,7 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
+const GUIDE_LOOP_IDLE_MS = 120;
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
   const sections: GuideSection[] = [
@@ -2471,7 +2472,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
 
     let span = 0;
     let initialized = false;
-    let correctionFrame: number | null = null;
+    let correctionTimer: number | null = null;
 
     const measure = () => {
       const leadingStart = strip.querySelector<HTMLElement>('[data-guide-group="leading"] .guide-category-card');
@@ -2492,14 +2493,15 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     };
 
     const normalizeLoop = () => {
-      correctionFrame = null;
+      correctionTimer = null;
       if (span <= 0) return;
       if (strip.scrollLeft < span * 0.5) strip.scrollLeft += span;
       else if (strip.scrollLeft > span * 1.5) strip.scrollLeft -= span;
     };
 
     const handleScroll = () => {
-      if (correctionFrame === null) correctionFrame = requestAnimationFrame(normalizeLoop);
+      if (correctionTimer !== null) window.clearTimeout(correctionTimer);
+      correctionTimer = window.setTimeout(normalizeLoop, GUIDE_LOOP_IDLE_MS);
     };
 
     measure();
@@ -2510,7 +2512,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     return () => {
       strip.removeEventListener("scroll", handleScroll);
       resizeObserver.disconnect();
-      if (correctionFrame !== null) cancelAnimationFrame(correctionFrame);
+      if (correctionTimer !== null) window.clearTimeout(correctionTimer);
     };
   }, []);
 

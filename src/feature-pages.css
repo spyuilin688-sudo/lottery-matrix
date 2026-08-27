@@ -1521,21 +1521,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-custom-status-screen .custom-status-message { color: #f0c86c; text-align: center; font-size: 11px; }
 .matrix-guide-screen .guide-intro { min-height: 82px; }
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
-.guide-category-strip {
-  display: grid;
-  max-height: 250px;
-  margin-top: 12px;
-  padding: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  border: 1px solid #624a28;
-  border-radius: 11px;
-  background: rgba(4, 11, 17, .88);
-  overflow-y: auto;
-}
-.guide-category-strip button { display: grid; min-height: 43px; padding: 6px 8px; grid-template-columns: 27px minmax(0, 1fr); align-items: center; gap: 6px; border: 1px solid #423521; border-radius: 8px; background: #061019; color: #bdb6aa; font-size: 11px; line-height: 1.25; text-align: left; }
-.guide-category-strip button > span { color: #b58322; font-size: 9px; }
-.guide-category-strip button[data-selected="true"] { border-color: #c9952b; background: linear-gradient(145deg, rgba(117, 78, 13, .3), rgba(6, 16, 25, .96)); color: #f0d58a; }
+
+
+
+
 .guide-preview { min-height: 132px; margin-top: 12px; padding: 17px; }
 .guide-preview header { display: flex; align-items: center; gap: 10px; }
 .guide-preview header > span { display: grid; width: 33px; height: 33px; place-items: center; border: 1px solid #a97b23; border-radius: 8px; color: #e9bc4b; font-size: 11px; }

@@ -6,16 +6,16 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 const css = readLocalCss("src/homepage-repair.css");
 const tokens = readFileSync(new URL("../src/design-tokens.css", import.meta.url), "utf8");
 
-test("approved homepage uses the 16px primary inset and canonical rhythm", () => {
+test("approved homepage uses independent component insets and canonical rhythm", () => {
   assert.match(css, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;[^}]*--home-gap-logo-switcher:\s*8px;[^}]*--home-gap-switcher-draw:\s*4px;[^}]*--home-gap-draw-status:\s*8px;[^}]*--home-gap-status-core:\s*8px;/s);
   assert.match(css, /--home-content-width:\s*calc\(min\(100vw, 390px\) - \(var\(--layout-page-inline\) \* 2\)\);/);
-  assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
+  assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
 });
 
 test("approved homepage uses 0.8px status gaps and responsive 2 to 2.5px feature gaps without artwork collisions", () => {
   assert.match(css, /\.lottery-switcher--home-style \.lottery-switcher-hit-grid\s*\{[^}]*gap:\s*6px;/s);
   assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*0\.8px;/s);
-  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/s);
+  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);[^}]*column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/s);
   assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*overflow:\s*visible;/s);
 });
 

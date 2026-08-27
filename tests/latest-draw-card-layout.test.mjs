@@ -42,9 +42,9 @@ test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*border-color:\s*rgba\(244, 192, 82, \.82\);[^}]*color:\s*#ffd36c;[^}]*radial-gradient/s);
 });
 
-test("開獎資訊卡完整使用 16px 內容區，不再額外內縮", () => {
+test("開獎資訊卡使用獨立 12px 左右外距", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\)[^\n]*\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
 
@@ -70,10 +70,9 @@ test("特別號標籤右移、分隔線縮短且底部圖示維持 12px", () => 
 });
 
 test("底部資訊改為參考圖的兩個獨立圓角容器", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*0\.5px;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*gap:\s*0\.5px;[^}]*padding-inline:\s*0;[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*border:\s*1px solid rgba\(232, 177, 76, \.52\);[^}]*border-radius:\s*10px;[^}]*background:\s*linear-gradient/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:first-child\s*\{[^}]*padding-left:\s*1\.5px;/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*padding-right:\s*1\.5px;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*width:\s*100%[^}]*padding:\s*0;[^}]*gap:\s*3px;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*gap:\s*4px;[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*border:\s*1px solid rgba\(232, 177, 76, \.52\);[^}]*border-radius:\s*10px;[^}]*background:\s*linear-gradient/s);
+  assert.doesNotMatch(css, /\.next-draw-item:first-child\s*\{|\.next-draw-item:last-child\s*\{/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*border-top\s*:/s);
   assert.doesNotMatch(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item:last-child\s*\{[^}]*border-inline-start\s*:/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);
