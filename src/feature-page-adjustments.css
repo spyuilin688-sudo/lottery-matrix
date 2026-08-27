@@ -20,7 +20,6 @@
   box-shadow: inset 0 0 10px rgba(150, 102, 34, .04);
 }
 
-
 .notifications-screen-v2 .notification-row {
   border: 0;
   border-radius: 0;
@@ -112,7 +111,7 @@
   width: clamp(9px, 2.7vw, 12px);
   height: clamp(9px, 2.7vw, 12px);
   flex: 0 0 auto;
-  transition: transform .18s ease;
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .notifications-screen-v2 .notification-settings-toggle[aria-expanded="true"] svg {
@@ -148,9 +147,37 @@
 }
 
 .notifications-screen-v2 .notification-inline-settings {
+  display: grid;
+  overflow: hidden;
+  grid-template-rows: 0fr;
+  background: rgba(1, 8, 13, .72);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 180ms cubic-bezier(.2, .8, .2, 1),
+    opacity 100ms ease-out,
+    transform 180ms cubic-bezier(.2, .8, .2, 1),
+    visibility 0s linear 180ms;
+}
+
+.notifications-screen-v2 .notification-inline-settings[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    grid-template-rows 220ms cubic-bezier(.2, .8, .2, 1),
+    opacity 140ms ease-out 40ms,
+    transform 220ms cubic-bezier(.2, .8, .2, 1),
+    visibility 0s linear;
+}
+
+.notifications-screen-v2 .notification-inline-settings-inner {
+  overflow: hidden;
+  min-height: 0;
   padding: 4px;
   border-top: 1px solid rgba(170, 119, 46, .38);
-  background: rgba(1, 8, 13, .72);
 }
 
 .notifications-screen-v2 .notification-matrix-grid {
@@ -284,4 +311,15 @@
   -webkit-touch-callout: none;
   user-select: none;
   touch-action: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notifications-screen-v2 .notification-inline-settings {
+    transform: none;
+    transition: opacity 80ms linear;
+  }
+
+  .notifications-screen-v2 .notification-settings-toggle svg {
+    transition-duration: 0s;
+  }
 }
