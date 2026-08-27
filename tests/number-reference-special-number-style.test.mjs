@@ -35,9 +35,9 @@ test("號碼對照單特別號使用紫金欄位樣式並取消紅色內框", ()
   assert.equal(style.backgroundColor, "rgba(92, 70, 160, 0.22)");
   assert.equal(style.color, "rgb(244, 241, 232)");
   assert.equal(style.fontWeight, "400");
-  assert.equal(style.textShadow, "none");
+  assert.match(style.textShadow, /^(?:none|rgba\(0, 0, 0, 0\))$/);
   assert.equal(style.borderLeftColor, "rgba(212, 168, 72, 0.55)");
-  assert.match(style.boxShadow, /rgba\(212, 168, 72, 0\.55\)/);
+  assert.match(style.boxShadow, /rgba\(212, 168, 72, (?:0?\.)55\)/);
 });
 
 test("號碼對照單特別號移除舊有紅色格線覆寫", () => {

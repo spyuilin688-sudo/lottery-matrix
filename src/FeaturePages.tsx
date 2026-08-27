@@ -2338,6 +2338,8 @@ export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
+const GUIDE_DRAG_RATE = 0.5;
+const GUIDE_DRAG_THRESHOLD = 6;
 
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
@@ -2464,7 +2466,43 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
   ];
   const [selected, setSelected] = useState(0);
   const stripRef = useRef<HTMLElement | null>(null);
+  const guideDragRef = useRef({ pointerId: -1, startX: 0, startScrollLeft: 0 });
+  const guideSuppressClickRef = useRef(false);
   const current = sections[selected];
+
+  const handleGuidePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse") return;
+    guideDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: event.currentTarget.scrollLeft,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleGuidePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const guideDrag = guideDragRef.current;
+    if (guideDrag.pointerId !== event.pointerId) return;
+    const deltaX = guideDrag.startX - event.clientX;
+    if (Math.abs(deltaX) < GUIDE_DRAG_THRESHOLD) return;
+    guideSuppressClickRef.current = true;
+    event.currentTarget.scrollLeft = guideDrag.startScrollLeft + deltaX * GUIDE_DRAG_RATE;
+    event.preventDefault();
+  };
+
+  const finishGuidePointer = (event: React.PointerEvent<HTMLElement>) => {
+    if (guideDragRef.current.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    guideDragRef.current.pointerId = -1;
+    window.setTimeout(() => { guideSuppressClickRef.current = false; }, 0);
+  };
+
+  const selectGuideSection = (index: number) => {
+    if (guideSuppressClickRef.current) return;
+    setSelected(index);
+  };
 
   useLayoutEffect(() => {
     const strip = stripRef.current;
@@ -2517,7 +2555,15 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
-      <nav ref={stripRef} className="guide-category-strip" aria-label="Matrix 指南分類">
+      <nav
+        ref={stripRef}
+        className="guide-category-strip"
+        aria-label="Matrix 指南分類"
+        onPointerDown={handleGuidePointerDown}
+        onPointerMove={handleGuidePointerMove}
+        onPointerUp={finishGuidePointer}
+        onPointerCancel={finishGuidePointer}
+      >
         {GUIDE_LOOP_GROUPS.map((group) => {
           const isClone = group !== "canonical";
           return (
@@ -2532,7 +2578,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
                   type="button"
                   data-selected={selected === index}
                   aria-pressed={selected === index}
-                  onClick={() => setSelected(index)}
+                  onClick={() => selectGuideSection(index)}
                   key={`${group}-${section.title}`}
                 >
                   <span>{String(index + 1).padStart(2, "0")}</span>{section.title}

@@ -25,5 +25,5 @@ test('homepage components retain their independent widths and spacing', () => {
   assert.match(home, /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s);
   assert.doesNotMatch(home, /\.matrix-status-section > \.home-asset-image/);
   assert.match(home, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);/s);
-  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*auto;/s);
+  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);[^}]*margin-inline:\s*auto;/s);
 });
