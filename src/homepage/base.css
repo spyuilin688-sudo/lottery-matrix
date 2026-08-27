@@ -35,7 +35,7 @@
   --home-gap-draw-status: 1px;
   --home-gap-status-core: 6px;
   --home-gap-core-features: 8px;
-  --home-feature-gap: 1.5px;
+  --home-feature-gap: 4px;
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -80,7 +80,6 @@
   --home-gap-core-features: 8px;
   --home-core-width: calc(min(100vw, 390px) - 32px);
   --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
-  --home-features-height: calc(var(--home-content-width) * 76.8 / 376.1);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -88,7 +87,7 @@
   height: auto;
   min-height: 0;
   padding-bottom: 0;
-  grid-template-rows: auto var(--home-features-height);
+  grid-template-rows: auto auto;
   gap: var(--home-gap-core-features);
   align-self: end;
 }
@@ -583,10 +582,10 @@
 
 .home-screen .home-shortcut-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: .822222fr .820961fr .778226fr .778226fr .828947fr;
   width: calc(100% - 8px);
-  height: var(--home-features-height);
-  aspect-ratio: 376.1 / 76.8;
+  height: auto;
+  aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
   gap: var(--home-feature-gap);
@@ -599,7 +598,7 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  height: 100%;
+  height: auto;
   min-height: 0;
   padding: 0;
   align-items: center;
@@ -614,8 +613,8 @@
 .home-screen .home-shortcut img {
   display: block;
   box-sizing: border-box;
-  width: auto;
-  height: 100%;
+  width: 100%;
+  height: auto;
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
