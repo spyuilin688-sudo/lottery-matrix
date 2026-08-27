@@ -17,6 +17,6 @@ test("快捷設定僅在首頁顯示並由連續兩次點擊開啟", () => {
 
 test("快捷設定移至左側 6px 並縮小 10%", () => {
   assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(6px, env\(safe-area-inset-left, 0px\)\);[^}]*right:\s*auto;[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 5px\);/s);
-  assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;/s);
+  assert.match(css, /\.bottom-navigation-quick-settings\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*end start;/s);
   assert.match(css, /\.bottom-navigation-quick-settings-visual\s*\{[^}]*width:\s*22\.95px;[^}]*height:\s*22\.95px;/s);
 });
