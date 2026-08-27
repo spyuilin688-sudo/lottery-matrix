@@ -713,8 +713,3 @@
   .home-screen .matrix-core-banner::before { animation: none; opacity: 0; }
   .home-screen .matrix-core-banner::after { animation: none; opacity: .35; }
 }
-
-/* The uploaded navigation is fixed to the bottom edge and remains full width. */
-.home-screen .home-layout {
-  padding-bottom: var(--layout-bottom-nav-clearance);
-}
