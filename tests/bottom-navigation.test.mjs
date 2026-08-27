@@ -18,7 +18,7 @@ test("底部導覽只保留四個既有入口與動態選取狀態", () => {
 });
 
 test("底部導覽在 390px 基準畫布全寬固定於底部", () => {
-  assert.match(tokenCss, /--bottom-navigation-height:\s*82px;/);
+  assert.match(tokenCss, /--bottom-navigation-height:\s*72px;/);
   assert.match(navigationCss, /position:\s*fixed;/);
   assert.match(navigationCss, /inset:\s*auto 0 0;/);
   assert.match(navigationCss, /width:\s*100%;/);
