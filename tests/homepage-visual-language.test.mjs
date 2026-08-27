@@ -3,6 +3,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const visualLanguage = readFileSync("src/homepage/visual-language.css", "utf8");
+const homepageEntry = readFileSync("src/homepage-repair.css", "utf8");
+
+test("loads the visual-language layer as a separate CSS import", () => {
+  assert.equal(
+    homepageEntry,
+    '@import "./homepage/base.css";\n@import "./homepage/lottery-switcher.css";\n@import "./homepage/visual-language.css";\n',
+  );
+});
 
 test("keeps homepage sections in a compact content flow", () => {
   assert.match(visualLanguage, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;/s);
