@@ -52,26 +52,32 @@
 }
 
 .home-screen .matrix-status-card {
-  --home-status-glow: color-mix(in srgb, var(--lottery-gold-300) 14%, transparent);
+  --home-status-tone: var(--lottery-gold-300);
+  --home-status-glow: color-mix(in srgb, var(--home-status-tone) 18%, transparent);
   border-radius: var(--matrix-status-card-radius);
   background: var(--lottery-card-bg);
-  box-shadow: 0 0 4px var(--home-status-glow);
+  box-shadow: 0 0 3px var(--home-status-glow);
 }
 
 .home-screen .matrix-status-card[data-status="ACTIVE"] {
-  --home-status-glow: color-mix(in srgb, var(--matrix-status-active) 22%, transparent);
+  --home-status-tone: var(--matrix-status-active);
 }
 
 .home-screen .matrix-status-card[data-status="FOCUS"] {
-  --home-status-glow: color-mix(in srgb, var(--matrix-status-focus) 22%, transparent);
+  --home-status-tone: var(--matrix-status-focus);
 }
 
 .home-screen .matrix-status-card[data-status="RESONANCE"] {
-  --home-status-glow: color-mix(in srgb, var(--matrix-status-resonance) 22%, transparent);
+  --home-status-tone: var(--matrix-status-resonance);
 }
 
 .home-screen .matrix-status-card[data-status="CRITICAL"] {
-  --home-status-glow: color-mix(in srgb, var(--matrix-status-critical) 22%, transparent);
+  --home-status-tone: var(--matrix-status-critical);
+}
+
+.home-screen .matrix-status-card:active {
+  --home-status-glow: color-mix(in srgb, var(--home-status-tone) 26%, transparent);
+  box-shadow: 0 0 5px var(--home-status-glow);
 }
 
 .home-screen .draw-issue strong,
