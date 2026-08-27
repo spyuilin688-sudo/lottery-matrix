@@ -23,7 +23,8 @@
   height: 100%;
   min-height: 0;
   margin: 0 auto;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: safe end;
   padding-bottom: var(--layout-bottom-nav-clearance);
   background: var(--lottery-neutral-950);
 }
@@ -33,7 +34,7 @@
   --home-content-width: calc(min(100vw, 390px) - (var(--layout-page-inline) * 2));
   --home-gap-logo-switcher: 8px;
   --home-gap-switcher-draw: 12px;
-  --home-gap-draw-status: 16px;
+  --home-gap-draw-status: 8px;
   --home-gap-status-core: 8px;
   --home-gap-core-features: 8px;
   box-sizing: border-box;
@@ -71,14 +72,14 @@
 }
 
 .home-screen .matrix-status-section {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
 }
 
 .home-screen .home-bottom-group {
   --home-gap-core-features: 8px;
-  --home-feature-gap: 4px;
+  --home-feature-gap: 8px;
   --home-core-width: calc(min(100vw, 390px) - 32px);
   --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
   position: relative;
@@ -143,7 +144,7 @@
 }
 
 .home-screen .home-logo-image {
-  width: 68%;
+  width: 95.2%;
 }
 
 .lottery-switcher--home-style {
@@ -293,29 +294,37 @@
   grid-row: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: clamp(110px, 32vw, 124px);
+  width: clamp(116px, 32vw, 124px);
   height: 30px;
+  gap: 3px;
   justify-self: center;
   align-self: center;
-  border: 1px solid rgba(230, 177, 76, .46);
-  border-radius: 15px;
-  background: rgba(2, 7, 17, .38);
-  box-shadow: inset 0 0 13px rgba(228, 169, 57, .12);
-  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .home-screen .latest-draw-card .draw-order button {
-  border: 0;
-  background: transparent;
-  color: rgba(255, 236, 185, .72);
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(230, 177, 76, .58);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(35, 25, 10, .78), rgba(3, 8, 13, .82));
+  box-shadow: inset 0 0 10px rgba(228, 169, 57, .12), 0 0 4px rgba(228, 169, 57, .12);
+  color: rgba(232, 220, 194, .76);
   font-size: 12px;
   font-weight: 700;
 }
 
 .home-screen .latest-draw-card .draw-order button[data-selected="true"] {
+  border-color: rgba(244, 192, 82, .82);
   color: #ffd36c;
-  background: radial-gradient(circle at 50% 58%, rgba(255, 186, 54, .24), transparent 66%);
-  box-shadow: inset 0 0 14px rgba(255, 188, 50, .22);
+  background:
+    radial-gradient(circle at 50% 58%, rgba(255, 186, 54, .28), transparent 68%),
+    linear-gradient(180deg, rgba(47, 32, 10, .88), rgba(5, 9, 13, .86));
+  box-shadow: inset 0 0 14px rgba(255, 188, 50, .22), 0 0 6px rgba(238, 178, 55, .24);
 }
 
 .home-screen .latest-draw-card .history-link {
@@ -415,9 +424,11 @@
   max-height: 24px;
   margin: 0;
   padding: 0;
+  gap: 3px;
   align-items: stretch;
-  border-top: 1px solid rgba(232, 177, 76, .48);
-  background: linear-gradient(180deg, rgba(1, 6, 13, .12), rgba(1, 6, 13, .38));
+  border: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
@@ -428,10 +439,10 @@
   padding-inline: clamp(6px, 2vw, 10px);
   align-items: center;
   justify-content: center;
-}
-
-.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item:last-child {
-  border-inline-start: 1px solid rgba(232, 177, 76, .48);
+  border: 1px solid rgba(232, 177, 76, .52);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(5, 10, 14, .34), rgba(1, 5, 9, .82));
+  box-shadow: inset 0 0 8px rgba(225, 169, 62, .08);
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
@@ -472,8 +483,15 @@
 
 .home-screen .matrix-status-section {
   display: flex;
-  width: 100%;
+  box-sizing: border-box;
+  width: calc(min(100vw, 390px) - 24px);
+  padding: 4px;
   justify-content: center;
+  border: 1px solid rgba(229, 179, 77, .56);
+  border-radius: 12px;
+  background: rgba(2, 8, 13, .72);
+  box-shadow: inset 0 0 8px rgba(229, 179, 77, .08), 0 0 4px rgba(229, 179, 77, .08);
+  overflow: hidden;
 }
 
 .home-screen .matrix-core-banner {
@@ -495,12 +513,12 @@
 .home-screen .matrix-status-card-grid {
   display: grid;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  gap: 8px;
-  align-content: end;
+  gap: 4px;
+  align-content: start;
 }
 
 .home-screen .matrix-status-card {
@@ -532,12 +550,12 @@
   position: absolute;
   z-index: 2;
   top: 50%;
-  left: 83.5%;
+  left: calc(83.5% - 8px);
   right: auto;
-  width: 30%;
+  width: 54%;
   height: auto;
-  max-width: 56px;
-  max-height: 78%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -589,7 +607,7 @@
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  column-gap: var(--home-feature-gap, 4px);
+  column-gap: var(--home-feature-gap, 8px);
   row-gap: 0;
   align-items: stretch;
   overflow: visible;
