@@ -70,6 +70,7 @@ export function NumberBall({
       className={`number-ball-component number-ball ${className}`.trim()}
       data-lottery={lottery}
       data-tone={tone}
+      data-number={value}
       data-special={isSpecial}
       aria-label={`${isSpecial ? "特別號" : "號碼"} ${value}`}
     >

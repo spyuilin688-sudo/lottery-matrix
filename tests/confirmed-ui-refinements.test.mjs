@@ -55,6 +55,12 @@ test("六合彩三色球號在首頁、近10期與歷史紀錄共用白色球心
   assert.doesNotMatch(balls, /\.draw-history-screen[^}]*\.number-ball-value\s*\{[^}]*(?:--number-x|--number-y|top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\)|left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\))/s);
 });
 
+test("六合彩紅球與藍15、綠16避開白色球心右下邊界", () => {
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="red"\]\s*\{[^}]*--number-optical-x:\s*-\.5px;[^}]*--number-optical-y:\s*-\.5px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="blue"\]\[data-number="15"\]\s*\{[^}]*--number-optical-x:\s*-\.5px;[^}]*--number-optical-y:\s*-\.5px;/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\[data-number="16"\]\s*\{[^}]*--number-optical-x:\s*-\.5px;/s);
+});
+
 test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
   const main = readFileSync("src/main.tsx", "utf8");
   assert.match(main, /@fontsource\/roboto\/latin-900\.css/);

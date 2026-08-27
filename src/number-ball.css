@@ -53,6 +53,8 @@
 .number-ball-component[data-lottery="六合彩"][data-tone="red"] {
   --number-ball-asset-x: -0.292%;
   --number-ball-asset-y: 0.563%;
+  --number-optical-x: -.5px;
+  --number-optical-y: -.5px;
 }
 
 .number-ball-component[data-lottery="六合彩"][data-tone="green"] {
@@ -64,6 +66,15 @@
 .number-ball-component[data-lottery="六合彩"][data-tone="blue"] {
   --number-ball-asset-x: 2.375%;
   --number-ball-asset-y: -0.771%;
+}
+
+.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="15"] {
+  --number-optical-x: -.5px;
+  --number-optical-y: -.5px;
+}
+
+.number-ball-component[data-lottery="六合彩"][data-tone="green"][data-number="16"] {
+  --number-optical-x: -.5px;
 }
 
 .number-ball-component[data-lottery="大樂透"] {
