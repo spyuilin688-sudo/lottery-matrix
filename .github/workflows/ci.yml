@@ -71,3 +71,27 @@ jobs:
 
       - name: Full tests
         run: node --test tests/*.test.mjs
+
+  matrix-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Matrix API tests
+        run: uv run pytest -q
