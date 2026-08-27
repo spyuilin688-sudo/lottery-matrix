@@ -27,7 +27,7 @@ const NAVIGATION_ARTWORK: Record<BottomNavigationLabel, string> = {
   "我的": "/assets/lottery/functions/matrixWW4.png",
 };
 
-const QUICK_SETTINGS_DOUBLE_TAP_MS = 400;
+const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;
 
 export function BottomNavigation({
   active = "首頁",
