@@ -18,6 +18,7 @@ REQUIRED_HISTORY_DRAWS = 80
 EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
+ANALYSIS_VERSION = "matrix-python-v3"
 
 
 def run_worker(
@@ -45,7 +46,7 @@ def run_worker(
         assert preparation_error is not None
         raise preparation_error
 
-    version = f'{draw["period"]}:matrix-python-v2'
+    version = f'{draw["period"]}:{ANALYSIS_VERSION}'
     pipeline = AnalysisPipeline(
         repository,
         builders or create_artifact_builders(),
