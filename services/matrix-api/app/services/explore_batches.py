@@ -8,7 +8,7 @@ def work_units(lottery: str, history_length: int, position_count: int) -> list[d
     units: list[dict[str, Any]] = []
     for number_order in ('依號碼由小到大排序', '依實際開獎順序排序'):
         for algorithm_type in ('加減', '合值', '拖牌'):
-            for source_index in range(min(13, history_length)):
+            for source_index in range(min(15, history_length)):
                 for position in range(1, position_count + 1):
                     units.append({
                         'lottery': lottery,
