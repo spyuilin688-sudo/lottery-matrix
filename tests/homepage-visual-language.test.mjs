@@ -12,8 +12,10 @@ test("loads the visual-language layer as a separate CSS import", () => {
   );
 });
 
-test("keeps homepage sections in a compact content flow", () => {
-  assert.match(visualLanguage, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;/s);
+test("visual-language layer does not override homepage spacing geometry", () => {
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.home-layout\s*\{[^}]*(?:grid-template-rows|align-content|padding-bottom)\s*:/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.matrix-status-section\s*\{[^}]*(?:flex|height|overflow)\s*:/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*(?:height|grid-template-rows|align-content)\s*:/s);
   assert.match(visualLanguage, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
 });
 
