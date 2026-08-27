@@ -90,7 +90,7 @@ test("home and Matrix status use the shared Matrixbba switcher and preserve sele
   assert.match(featurePages, /className="lottery-switcher--home-style matrix-status-lottery-switcher" \/>/);
   assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
-  assert.ok(switcherBodies.some((body) => /width:\s*100%;/.test(body) && /margin-inline:\s*0;/.test(body)));
+  assert.ok(switcherBodies.some((body) => /width:\s*calc\(100% - 32px\);/.test(body) && /margin-inline:\s*0;/.test(body)));
   assert.ok(switcherBodies.some((body) => /padding-inline:\s*0;/.test(body)));
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
