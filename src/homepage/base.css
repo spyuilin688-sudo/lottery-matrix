@@ -484,8 +484,8 @@
 .home-screen .matrix-status-section {
   display: flex;
   box-sizing: border-box;
-  width: calc(min(100vw, 390px) - 24px);
-  padding: 4px;
+  width: calc(min(100vw, 390px) - 32px);
+  padding: 1.5px;
   justify-content: center;
   border: 1px solid rgba(229, 179, 77, .56);
   border-radius: 12px;
@@ -517,7 +517,7 @@
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  gap: 4px;
+  gap: 1.5px;
   align-content: start;
 }
 
@@ -607,7 +607,7 @@
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  column-gap: var(--home-feature-gap, 8px);
+  column-gap: 0;
   row-gap: 0;
   align-items: stretch;
   overflow: visible;
@@ -616,7 +616,7 @@
 .home-screen .home-shortcut {
   appearance: none;
   display: flex;
-  width: 100%;
+  width: calc(100% - var(--home-feature-gap, 8px));
   min-width: 0;
   height: auto;
   aspect-ratio: 386 / 496;
@@ -624,6 +624,7 @@
   padding: 0;
   align-items: center;
   justify-content: center;
+  justify-self: center;
   border: 0;
   border-radius: 10px;
   background: transparent;

@@ -27,11 +27,11 @@ function finalDeclaration(source, selector, property) {
   return value;
 }
 
-test("homepage status frame owns 12px viewport inset, 4px padding and 4px card gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(min(100vw, 390px) - 24px)");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding"), "4px");
+test("homepage status frame owns 16px viewport inset, 1.5px padding and 1.5px card gaps", () => {
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(min(100vw, 390px) - 32px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding"), "1.5px");
   assert.match(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), /^1px solid/);
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "4px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "1.5px");
   assert.match(homeCss, /--home-gap-draw-status:\s*8px;/);
   assert.match(homeCss, /--home-gap-status-core:\s*8px;/);
 });
@@ -42,10 +42,12 @@ test("homepage status logos are 80 percent larger and shift left without a max-w
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
-test("homepage logo grows by 40 percent and five features use 8px responsive gaps", () => {
+test("homepage logo grows by 40 percent and five features shrink together to 8px visual gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "95.2%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-bottom-group", "--home-feature-gap"), "8px");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "var(--home-feature-gap, 8px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "0");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "calc(100% - var(--home-feature-gap, 8px))");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
 });
 
 test("draw order reference uses two independent rounded controls instead of an outer segmented shell", () => {
