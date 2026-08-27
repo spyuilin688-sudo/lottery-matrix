@@ -105,7 +105,7 @@
   width: 22.95px;
   height: 22.95px;
   margin: 0;
-  justify-self: end;
+  justify-self: start;
   align-self: end;
   place-items: center;
   border: 1px solid rgba(230, 180, 76, .7);
