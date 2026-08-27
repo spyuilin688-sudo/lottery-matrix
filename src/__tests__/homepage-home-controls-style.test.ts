@@ -20,9 +20,9 @@ describe("homepage control layout rules", () => {
     expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*padding:\s*0 20px 5px;/s);
   });
 
-  it("uses the canonical Matrix Core container background and 1536 / 414 height token", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 6px\);/s);
-    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ 100% 100% no-repeat;/s);
+  it("uses the canonical Matrix Core container background and responsive 1536 / 414 height token", () => {
+    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*calc\(var\(--home-core-width\) \* 414 \/ 1536\);/s);
+    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
   });
 
   it("does not paint a black background behind the bottom navigation artwork", () => {
