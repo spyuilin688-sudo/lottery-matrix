@@ -1,11 +1,10 @@
 /* Homepage visual-language overrides for the approved restrained black-gold system. */
 
 .home-screen {
-  --home-frame-border: rgba(229, 179, 77, 0.56);
-  --home-frame-shadow: inset 0 0 8px rgba(229, 179, 77, 0.1), 0 0 4px rgba(229, 179, 77, 0.08);
-  --home-frame-shadow-active: inset 0 0 10px rgba(244, 206, 103, 0.18), 0 0 7px rgba(244, 206, 103, 0.24);
+  --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
+  --home-frame-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
+  --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
   --home-gap-status-core: 16px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
 .home-screen .home-layout {
@@ -53,26 +52,26 @@
 }
 
 .home-screen .matrix-status-card {
-  --home-status-glow: rgba(244, 206, 103, 0.14);
+  --home-status-glow: color-mix(in srgb, var(--lottery-gold-300) 14%, transparent);
   border-radius: var(--matrix-status-card-radius);
   background: var(--lottery-card-bg);
   box-shadow: 0 0 4px var(--home-status-glow);
 }
 
 .home-screen .matrix-status-card[data-status="ACTIVE"] {
-  --home-status-glow: rgba(121, 201, 92, 0.22);
+  --home-status-glow: color-mix(in srgb, var(--matrix-status-active) 22%, transparent);
 }
 
 .home-screen .matrix-status-card[data-status="FOCUS"] {
-  --home-status-glow: rgba(55, 174, 232, 0.22);
+  --home-status-glow: color-mix(in srgb, var(--matrix-status-focus) 22%, transparent);
 }
 
 .home-screen .matrix-status-card[data-status="RESONANCE"] {
-  --home-status-glow: rgba(184, 91, 201, 0.22);
+  --home-status-glow: color-mix(in srgb, var(--matrix-status-resonance) 22%, transparent);
 }
 
 .home-screen .matrix-status-card[data-status="CRITICAL"] {
-  --home-status-glow: rgba(208, 138, 50, 0.22);
+  --home-status-glow: color-mix(in srgb, var(--matrix-status-critical) 22%, transparent);
 }
 
 .home-screen .draw-issue strong,
