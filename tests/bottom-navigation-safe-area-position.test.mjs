@@ -43,8 +43,8 @@ test("通知頁維持 20px 左右間距並保留正式底部安全距離", () =>
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });
 
-test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補償", () => {
-  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe end;[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
+test("首頁由頂部安全區開始排列並保留固定底部導覽空間", () => {
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
@@ -53,7 +53,7 @@ test("首頁五大功能與固定底部導覽實際維持 8px 且不靠位移補
 test("狀態卡外框與 Matrix Core 使用單一 8px 間距來源", () => {
   assert.match(homepageCss, /--home-gap-status-core:\s*8px;/);
   assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;[^}]*min-height:\s*0;/s);
-  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s);
+  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*0\.8px;[^}]*align-content:\s*start;/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*16px;/s);
 });

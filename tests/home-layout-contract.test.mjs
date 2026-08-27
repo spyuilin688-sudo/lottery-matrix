@@ -35,9 +35,11 @@ test('lottery switcher, draw card and status keep the 16px homepage inline basel
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
 });
 
-test('home bottom group keeps 8px between five shortcuts and bottom navigation', () => {
+test('home layout starts at the safe top and keeps the bottom navigation clearance', () => {
   assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto auto;/);
-  assertBlock(css, '.home-screen .home-layout', /align-content:\s*safe end;/);
+  assertBlock(css, '.home-screen .home-layout', /align-content:\s*safe start;/);
+  assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
+  assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/);
   assertBlock(css, '.home-screen .home-bottom-group', /padding-bottom:\s*8px;/);
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);

@@ -53,7 +53,7 @@ test('quick interaction keeps primary click and uses homepage-only double-click 
   const renderedButton = bottomNav.match(/<button[\s\S]*?<\/button>/)?.[0] ?? '';
   assert.ok(renderedButton, 'BottomNavigation must render its navigation button explicitly');
   assert.match(renderedButton, /onClick=\{label === "快捷" \? onQuickOpen : \(\) => screen && onNavigate\?\.\(screen\)\}/);
-  assert.match(bottomNav, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 400;/);
+  assert.match(bottomNav, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;/);
   assert.match(bottomNav, /showQuickSettings && onQuickConfigure \? \(/);
   assert.match(bottomNav, /handleQuickSettingsClick/);
   assert.match(bottomNav, /event\.detail === 0/);
