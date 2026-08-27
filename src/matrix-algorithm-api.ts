@@ -1,5 +1,6 @@
 import type { NumberBallLottery } from './NumberBall';
-import { matrixApiFetch } from './matrix-api-client';
+import { matrixApiFetch, MatrixApiError } from './matrix-api-client';
+import { getSupabaseClient } from './lib/supabase';
 import {
   buildMatrixResultCacheKey,
   readMatrixResultCache,
@@ -282,23 +283,34 @@ export type TiangongValidationResponse = {
 
 const pendingRequests = new Map<string, Promise<MatrixAlgorithmResponse>>();
 
+function matrixRpcError(error: { message?: string } | null): never {
+  const message = String(error?.message ?? 'API_ERROR');
+  if (message.includes('FORBIDDEN')) throw new MatrixApiError('FORBIDDEN', 403);
+  if (message.includes('ANALYSIS_NOT_READY')) throw new MatrixApiError('ANALYSIS_NOT_READY', 404);
+  if (message.includes('ANALYSIS_VERSION_MISMATCH')) {
+    throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+  }
+  throw new MatrixApiError('API_ERROR', 500);
+}
+
+async function matrixExploreRpc<T>(name: 'matrix_explore_list' | 'matrix_explore_validation', request: unknown) {
+  const { data, error } = await getSupabaseClient().rpc(name, { p_request: request });
+  if (error) matrixRpcError(error);
+  return data as T;
+}
+
 export function fetchExploreList(request: ExploreListRequest) {
-  return matrixApiFetch<ExploreListResponse>('/api/matrix/algorithm/explore', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  }, { auth: 'optional' });
+  return matrixExploreRpc<ExploreListResponse>('matrix_explore_list', request);
 }
 
 export function fetchExploreValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixApiFetch<ExploreValidationResponse>('/api/matrix/algorithm/explore/validation', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...meta, itemId }),
-  }, { auth: 'optional' });
+  return matrixExploreRpc<ExploreValidationResponse>(
+    'matrix_explore_validation',
+    { ...meta, itemId },
+  );
 }
 
 export function fetchTianyanList(request: {
