@@ -9,15 +9,15 @@ const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "u
 test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(source, /<div className="draw-meta"[\s\S]*<div className="draw-order"[\s\S]*className="history-link"/);
   assert.doesNotMatch(source, /className="draw-toolbar"/);
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 118px minmax\(0, 1fr\)/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(104px, 30%\) minmax\(0, 1fr\)/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-issue strong\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-date\s*\{[^}]*font-size:\s*9px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*6px/s);
 });
 
-test("開獎資訊卡左右外距為 16px，並移除左右 6px 內距與底部外擴", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\) - 8px[^\n]*\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 8px\);[^}]*margin-inline:\s*4px;[^}]*padding:\s*9px 0 0;/s);
+test("開獎資訊卡完整使用 16px 內容區，不再額外內縮", () => {
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\)[^\n]*\);/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*100%;[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
 
@@ -43,7 +43,7 @@ test("特別號標籤右移、分隔線縮短且底部圖示縮為 12px", () => 
 });
 
 test("底部資訊左右兩欄垂直置中並降低時間字級", () => {
-  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1fr\)[^}]*align-items:\s*center/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*align-items:\s*center/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center/s);
   assert.match(css, /\.next-draw-icon\s*\{[^}]*width:\s*12px[^}]*height:\s*12px/s);
   assert.match(css, /\.next-draw-label\s*\{[^}]*font-size:\s*11px/s);

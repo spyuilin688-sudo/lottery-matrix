@@ -93,7 +93,7 @@ components:
 | `--layout-page-inline` | `16px` | 一般手機頁面左右留白；首頁內容區可使用 12px 局部覆寫 |
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
-| `--bottom-navigation-height` | `82px` | 固定底部導覽高度 |
+| `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
 
 頂端與底部使用 `env(safe-area-inset-*)`，內容清除量由 `--layout-bottom-nav-clearance` 推導。資料面板可擁有內部捲動，但不得讓新容器遮住 82px 導覽或安全區；載入、失敗與 busy 狀態保留控制尺寸。
 

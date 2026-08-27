@@ -20,16 +20,16 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns 8px top spacing and logo stays at 75 percent', () => {
+test('homepage brand header owns 8px top spacing and logo stays at 68 percent', () => {
   assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*8px;/);
-  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*75%;/);
+  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*68%;/);
 });
 
-test('lottery switcher and draw card use the 12px homepage inline baseline', () => {
+test('lottery switcher and draw card use the 16px homepage inline baseline', () => {
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
-  assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*12px;/);
+  assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0 var\(--layout-page-inline\);/);
-  assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*4px;/);
+  assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*0;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
 });
 
@@ -54,6 +54,6 @@ test('embedded next draw info retains the requested compact metrics', () => {
 test('Matrix Core uses its 16px inset while five shortcuts use 4px and equal columns', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - 8px\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*100%;/);
   assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
 });
