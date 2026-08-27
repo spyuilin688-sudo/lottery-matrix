@@ -1,0 +1,49 @@
+/* 號碼對照單：特別號、整列選取與數字對齊的最終覆寫。 */
+
+.number-reference-screen .reference-row:nth-child(even) {
+  background: rgba(20, 36, 48, .72);
+}
+
+.number-reference-screen .reference-row:not(.head) .reference-issue,
+.number-reference-screen .reference-row:not(.head) > span > button {
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  font-family: Roboto, Inter, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  line-height: 1;
+}
+
+.number-reference-screen .reference-row[data-row-marked="true"] {
+  background: rgba(225, 184, 39, .16);
+}
+
+.number-reference-screen .reference-row[data-row-marked="true"] > button,
+.number-reference-screen .reference-row[data-row-marked="true"] > span > button {
+  background: rgba(225, 184, 39, .16);
+  color: #fff1bb;
+}
+
+.number-reference-screen .reference-row[data-has-special="true"] > span > button[data-special="true"] {
+  border-left: 1px solid rgba(212, 168, 72, .55);
+  background: rgba(92, 70, 160, .22);
+  box-shadow: inset 0 0 0 1px rgba(212, 168, 72, .55);
+  color: #f4f1e8;
+  font-weight: 400;
+  text-shadow: none;
+}
+
+.number-reference-screen .reference-row[data-has-special="true"] > span > button[data-special="true"]::after {
+  display: none;
+}
+
+.number-reference-screen .reference-row[data-row-marked="true"] > span > button[data-special="true"] {
+  background: rgba(92, 70, 160, .22);
+  color: #f4f1e8;
+}
+
+.number-reference-screen .reference-results-end {
+  height: 12px;
+}

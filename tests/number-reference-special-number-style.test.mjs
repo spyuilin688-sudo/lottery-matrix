@@ -1,18 +1,48 @@
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { JSDOM } from "jsdom";
 
-test("號碼對照單特別號使用白色正常字重與目前半透明紅色內框", () => {
-  const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-  const rule = css.match(/\.reference-row button\[data-special="true"\]\s*\{([^}]*)\}/s)?.[1] ?? "";
+const css = [
+  "../src/feature-pages.css",
+  "../src/number-reference-visual-refinement.css",
+].map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
 
-  assert.match(rule, /color:\s*#fff(?:fff)?\s*;/i);
-  assert.match(rule, /font-weight:\s*400\s*;/);
-  assert.match(rule, /text-shadow:\s*none\s*;/);
-  assert.doesNotMatch(rule, /border\s*:/);
+const refinementCss = readFileSync(new URL("../src/number-reference-visual-refinement.css", import.meta.url), "utf8");
 
-  const innerFrame = css.match(/\.reference-row button\[data-special="true"\]::after\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.match(innerFrame, /inset:\s*0\.3px\s*;/);
-  assert.match(innerFrame, /border:\s*1px\s+solid\s+rgba\(198,\s*83,\s*83,\s*\.72\)\s*;/i);
-  assert.match(innerFrame, /border-radius:\s*inherit\s*;/);
+test("號碼對照單特別號使用紫金欄位樣式並取消紅色內框", () => {
+  const dom = new JSDOM(`
+    <style>${css}</style>
+    <main class="number-reference-screen">
+      <div class="reference-row" data-has-special="true">
+        <button class="reference-issue">106103</button>
+        <span>
+          <button>16</button>
+          <button>19</button>
+          <button>28</button>
+          <button>37</button>
+          <button>38</button>
+          <button>41</button>
+          <button data-special="true">10</button>
+        </span>
+      </div>
+    </main>
+  `, { pretendToBeVisual: true });
+
+  const special = dom.window.document.querySelector('[data-special="true"]');
+  const style = dom.window.getComputedStyle(special);
+
+  assert.equal(style.backgroundColor, "rgba(92, 70, 160, 0.22)");
+  assert.equal(style.color, "rgb(244, 241, 232)");
+  assert.equal(style.fontWeight, "400");
+  assert.equal(style.textShadow, "none");
+  assert.equal(style.borderLeftColor, "rgba(212, 168, 72, 0.55)");
+  assert.match(style.boxShadow, /rgba\(212, 168, 72, 0\.55\)/);
+});
+
+test("號碼對照單特別號移除舊有紅色格線覆寫", () => {
+  const afterRule = refinementCss.match(/button\[data-special="true"\]::after\s*\{([^}]*)\}/s)?.[1] ?? "";
+
+  assert.match(afterRule, /display:\s*none\s*;/);
+  assert.doesNotMatch(refinementCss, /rgba\(198,\s*83,\s*83,\s*\.72\)/i);
 });
