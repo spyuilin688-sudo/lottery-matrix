@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
   CalendarIcon,
@@ -359,7 +358,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const [quickReturnScreen, setQuickReturnScreen] = useState<ScreenId>("home");
   const [quickActive, setQuickActive] = useState(false);
   const [quickSettingsOpen, setQuickSettingsOpen] = useState(false);
-  const [quickSettingsHost, setQuickSettingsHost] = useState<HTMLElement | null>(null);
   const [quickTarget, setQuickTarget] = useState<ScreenId | null>(() => {
     if (typeof window === "undefined") return null;
     const stored = window.localStorage.getItem("matrix-quick-target") as ScreenId | null;
@@ -384,7 +382,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     void fetchMatrixStatus(selected).then((result) => { if (active) setMatrixStatus(result); }).catch(() => undefined);
     return () => { active = false; };
   }, [selected]);
-  useEffect(() => { setQuickSettingsHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
 
@@ -392,8 +389,8 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const openQuick = () => { if (quickActive) { setQuickActive(false); setScreen(quickReturnScreen); return; } if (!quickTarget) { setQuickSettingsOpen(true); return; } setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); };
   const selectQuickTarget = (next: ScreenId) => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); };
 
-  const quickSettings = quickSettingsOpen && quickSettingsHost
-    ? createPortal(
+  const quickSettings = quickSettingsOpen
+    ? (
         <div className="quick-settings-backdrop" role="presentation" onClick={() => setQuickSettingsOpen(false)}>
           <section className="quick-settings-dialog" role="dialog" aria-modal="true" aria-label="快捷設定" onClick={(event) => event.stopPropagation()}>
             <h2>快捷設定</h2>
@@ -407,8 +404,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
               ))}
             </div>
           </section>
-        </div>,
-        quickSettingsHost,
+        </div>
       )
     : null;
 
