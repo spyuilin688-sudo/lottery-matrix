@@ -36,6 +36,7 @@ test('首頁狀態卡依指定位置顯示四個彩種與暫定狀態', () => {
     '大樂透',
   ]);
   expect(section.querySelector('img[src*="matrixAA.png"]')).toBeNull();
+  expect(section.querySelector('.clean-hit-label')).toBeNull();
 });
 
 test('未觸發的彩種可切換為沉寂圖片', () => {
