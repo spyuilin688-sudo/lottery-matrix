@@ -218,8 +218,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       <div className="notification-grid-row notification-grid-lottery-row notification-grid-lottery-labels">
         {LOTTERIES.map((lottery) => <span key={lottery}>{lottery}</span>)}
       </div>
-      {([0, 1] as const).map((index) => <div className="notification-grid-row notification-grid-time-row" key={index}>
-        <span className="notification-time-row-label">提醒 {index + 1}</span>
+      {([0, 1] as const).map((index) => <div className="notification-grid-row notification-grid-time-row" aria-label={`第${index + 1}組提醒時間`} key={index}>
         {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => {
           const value = event.target.value;
           applyNotificationSettingsEdit((current) => ({

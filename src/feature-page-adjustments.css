@@ -237,7 +237,7 @@
 }
 
 .notifications-screen-v2 .notification-inline-settings-content {
-  padding: 6px 4px;
+  padding: 6px 4px 8px;
   border-top: 1px solid rgba(170, 119, 46, .38);
 }
 
@@ -349,16 +349,6 @@
   margin: 0;
   flex: 0 0 12px;
   accent-color: #d99b00;
-}
-
-.notifications-screen-v2 .notification-time-row-label {
-  grid-column: 1 / -1;
-  padding-inline: 8px;
-  color: var(--lottery-label, #d2aa56);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: .04em;
 }
 
 .notifications-screen-v2 .notification-time-select {
