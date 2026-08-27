@@ -9,9 +9,7 @@
 .home-screen .home-layout {
   grid-template-rows: auto auto;
   align-content: start;
-  padding-bottom: var(--layout-bottom-nav-clearance);
 }
-
 
 .home-screen .matrix-status-section {
   flex: 0 0 auto;
