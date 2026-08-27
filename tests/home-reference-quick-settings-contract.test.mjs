@@ -65,3 +65,8 @@ test("首頁快捷設定移至左側安全邊界 6px 並等比例縮小 10%", ()
     /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(5px,/s,
   );
 });
+
+test("首頁快捷設定保留一般手機兩次點擊的有效時間", () => {
+  const navigationSource = readFileSync(new URL("../src/BottomNavigation.tsx", import.meta.url), "utf8");
+  assert.match(navigationSource, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;/);
+});
