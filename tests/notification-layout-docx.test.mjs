@@ -208,3 +208,18 @@ test('notification v2 has one stylesheet owner and legacy selectors cannot targe
   assert.doesNotMatch(patchedNotificationsTsx, /import "\.\/feature-page-adjustments\.css";/);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{/);
 });
+
+
+test('bet reminder keeps two time rows without visible reminder labels and uses compact panel spacing', () => {
+  assert.doesNotMatch(notificationsTsx, /className="notification-time-row-label"/);
+  assert.doesNotMatch(notificationsTsx, />提醒 \{index \+ 1\}</);
+  assert.match(
+    notificationsTsx,
+    /className="notification-grid-row notification-grid-time-row" aria-label=\{`第\$\{index \+ 1\}組提醒時間`\}/,
+  );
+  assert.match(
+    adjustmentsCss,
+    /\.notifications-screen-v2 \.notification-inline-settings-content\s*\{[^}]*padding:\s*6px 4px 8px;/s,
+  );
+  assert.doesNotMatch(adjustmentsCss, /\.notifications-screen-v2 \.notification-time-row-label\s*\{/);
+});
