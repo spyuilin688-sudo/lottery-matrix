@@ -58,6 +58,8 @@ test("通知設定面板使用確認的展開收合動態與 reduced-motion 降�
     </main>`, { pretendToBeVisual: true });
   const panel = dom.window.document.querySelector(".notification-inline-settings");
 
+  assert.equal(dom.window.getComputedStyle(panel).padding, "0px");
+  assert.equal(dom.window.getComputedStyle(panel).borderTopWidth, "0px");
   assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "0fr");
   panel.dataset.expanded = "true";
   assert.equal(dom.window.getComputedStyle(panel).gridTemplateRows, "1fr");
