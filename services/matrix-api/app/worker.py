@@ -30,7 +30,7 @@ def run_worker(
     history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
     if len(history) < REQUIRED_HISTORY_DRAWS:
         raise ValueError("DRAW_HISTORY_INCOMPLETE")
-    version = f'{draw["period"]}:matrix-python-v1'
+    version = f'{draw["period"]}:matrix-python-v2'
     return AnalysisPipeline(repository, builders or create_artifact_builders(), version, explore_batch_size=EXPLORE_BATCH_SIZE).run(draw, history)
 
 
