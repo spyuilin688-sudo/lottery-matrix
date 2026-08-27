@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+const base = readFileSync("src/homepage/base.css", "utf8");
 const visualLanguage = readFileSync("src/homepage/visual-language.css", "utf8");
 const homepageEntry = readFileSync("src/homepage-repair.css", "utf8");
 
@@ -19,13 +20,14 @@ test("visual-language layer does not override homepage spacing geometry", () => 
   assert.match(visualLanguage, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
 });
 
-test("uses one restrained frame treatment for homepage entry surfaces", () => {
+test("uses one restrained frame treatment with homepage shortcuts owned by base", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
-  assert.match(visualLanguage, /\.home-screen \.lottery-switcher--home-style[\s\S]*\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner,[\s\S]*\.home-screen \.home-shortcut\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
-  assert.match(visualLanguage, /\.lottery-card\[data-selected="true"\],[\s\S]*\.home-shortcut:active\s*\{[^}]*border-radius:\s*var\(--lottery-card-radius\);/s);
-  assert.match(visualLanguage, /\.home-screen \.home-shortcut img\s*\{[^}]*border-radius:\s*calc\(var\(--lottery-card-radius\) - var\(--lottery-stroke-default\)\);/s);
-  assert.match(visualLanguage, /--lottery-stroke-default/);
+  assert.match(visualLanguage, /\.home-screen \.lottery-switcher--home-style[\s\S]*\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
+  assert.doesNotMatch(visualLanguage, /\.home-shortcut(?:\b|[.: ])/);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*box-shadow:\s*var\(--home-frame-shadow-active\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut img\s*\{[^}]*border-radius:\s*calc\(var\(--lottery-card-radius\) - var\(--lottery-stroke-default\)\);/s);
 });
 
 test("does not add navigation-height clearance above the fixed homepage navigation", () => {
