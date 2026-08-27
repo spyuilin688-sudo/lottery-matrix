@@ -48,10 +48,11 @@ test("Matrix 探索顯示天衍天工，兩顆圖示為 1.8rem 且間距 4px", (
   assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);
 });
 
-test("近10期保留逐色對位，歷史六合彩數字與底線共同置於白色球心", () => {
-  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--underline-y:\s*-\.8px;/s);
-  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\[data-tone="blue"\][^{]*\{[^}]*--number-x:\s*0\.48px;[^}]*--number-y:\s*-0\.16px;/s);
-  assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][\s\S]*?\.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\);[^}]*left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\);[^}]*transform:\s*translate\(-50%, -50%\);/s);
+test("六合彩三色球號在首頁、近10期與歷史紀錄共用白色球心定位", () => {
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\] \.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*width:\s*2ch;[^}]*min-width:\s*0;[^}]*font-weight:\s*900;[^}]*transform:\s*translate\(-50%, -50%\) translate\(var\(--number-optical-x\), var\(--number-optical-y\)\);/s);
+  assert.match(balls, /\.number-ball-component\[data-lottery="六合彩"\]\[data-tone="green"\]\s*\{[^}]*--number-optical-y:\s*-\.5px;/s);
+  assert.doesNotMatch(balls, /\.matrix-explore-main-screen[^}]*\[data-tone="(?:red|green|blue)"\][^{]*\{[^}]*(?:--number-x|--number-y):/s);
+  assert.doesNotMatch(balls, /\.draw-history-screen[^}]*\.number-ball-value\s*\{[^}]*(?:--number-x|--number-y|top:\s*calc\(50% \+ var\(--number-ball-asset-y\)\)|left:\s*calc\(50% \+ var\(--number-ball-asset-x\)\))/s);
 });
 
 test("六合彩球號載入並使用實際 Roboto 900 字重", () => {

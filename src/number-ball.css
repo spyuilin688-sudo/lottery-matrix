@@ -6,6 +6,8 @@
   --number-font-size: 23px;
   --number-x: 0px;
   --number-y: 0px;
+  --number-optical-x: 0px;
+  --number-optical-y: 0px;
   --underline-width: 20px;
   --underline-height: 1px;
   --underline-y: 1px;
@@ -56,6 +58,7 @@
 .number-ball-component[data-lottery="六合彩"][data-tone="green"] {
   --number-ball-asset-x: -0.104%;
   --number-ball-asset-y: 1.813%;
+  --number-optical-y: -.5px;
 }
 
 .number-ball-component[data-lottery="六合彩"][data-tone="blue"] {
@@ -87,6 +90,18 @@
   text-align: center;
   white-space: nowrap;
   transform: translate(var(--number-x), var(--number-y));
+}
+
+/* Every Mark Six surface anchors the digits to the same white-panel center. */
+.number-ball-component[data-lottery="六合彩"] .number-ball-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2ch;
+  min-width: 0;
+  font-weight: 900;
+  font-feature-settings: "tnum" 1;
+  transform: translate(-50%, -50%) translate(var(--number-optical-x), var(--number-optical-y));
 }
 
 .number-ball-value::after {
@@ -178,7 +193,7 @@
   transform: none;
 }
 
-/* Both history surfaces keep the established per-tone optical compensation. */
+/* Both history surfaces keep the same shared Mark Six number center. */
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball {
   --number-ball-size: var(--matrix-history-ball-size);
   --number-font-size: clamp(9px, 2.56vw, 10px);
@@ -188,21 +203,6 @@
   --underline-height: .7px;
   --underline-y: -.8px;
   transform: translateY(2px);
-}
-
-.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="red"] {
-  --number-x: -0.06px;
-  --number-y: 0.11px;
-}
-
-.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="green"] {
-  --number-x: -0.02px;
-  --number-y: 0.36px;
-}
-
-.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball[data-tone="blue"] {
-  --number-x: 0.48px;
-  --number-y: -0.16px;
 }
 
 /* Draw History shares the Mark Six optical alignment and keeps the underline close to the digits. */
@@ -215,19 +215,6 @@
   --underline-height: .7px;
   --underline-y: -.3px;
   transform: translateY(2px);
-}
-
-.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value {
-  position: absolute;
-  top: calc(50% + var(--number-ball-asset-y));
-  left: calc(50% + var(--number-ball-asset-x));
-  transform: translate(-50%, -50%);
-}
-
-.matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value,
-.draw-history-screen .draw-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball .number-ball-value {
-  font-weight: 900;
-  font-feature-settings: "tnum" 1;
 }
 
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="大樂透"] .number-ball-component.history-lottery-ball,
