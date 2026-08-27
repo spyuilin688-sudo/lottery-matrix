@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('feature pages use one 16px global inline spacing source while homepage stays 12px', () => {
+test('feature pages use one 16px global inline spacing source with the homepage aligned to the same 16px source', () => {
   const tokens = read('src/design-tokens.css');
   const home = read('src/homepage/base.css');
   const responsive = read('src/responsive-feature-pages.css');
@@ -13,7 +13,7 @@ test('feature pages use one 16px global inline spacing source while homepage sta
   const featurePages = read('src/feature-pages.css');
 
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
-  assert.match(home, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*12px;/s);
+  assert.match(home, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;/s);
 
   assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
   const portalMatch = responsive.match(/\.history-filter-panel\[data-floating="true"\],\s*\.reference-query-panel\[data-floating="true"\],\s*\.tongxing-query\[data-floating="true"\]\s*\{([\s\S]*?)\}/);
