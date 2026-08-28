@@ -98,6 +98,15 @@
   background: transparent;
   box-shadow: none;
 }
+.matrix-explore-screen .matrix-title-banner-actions {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: calc(83% + 4px);
+  width: 2.34rem;
+  height: 2.34rem;
+  transform: translateY(-50%);
+}
 .matrix-title-banner-actions .reference-title-actions,
 .matrix-title-banner-actions .history-title-actions {
   width: 100%;
@@ -1425,12 +1434,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .status-table p:not(.status-table-head) { font-size: 10px; }
 .matrix-status-screen .status-table p:not(.status-table-head) strong { font-size: 12px; }
 
-/* Matrix custom status settings */
-.matrix-custom-status-screen .custom-status-tabs { display: grid; box-sizing: border-box; width: 100%; aspect-ratio: 1532 / 214; margin-bottom: 10px; padding-inline: 4px; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.matrix-custom-status-screen .custom-status-tabs button { display: flex; height: 100%; min-height: 0; padding: 0; flex-direction: column; justify-content: center; border: 1px solid #39434b; border-radius: 8px; color: #afb6bc; background: #061017; }
-.matrix-custom-status-screen .custom-status-tabs button[aria-selected="true"] { border-color: #d9aa48; color: #f5d67d; box-shadow: 0 0 10px rgba(217,170,72,.25); }
-.matrix-custom-status-screen .custom-status-tabs strong { font-size: 13px; }
-.matrix-custom-status-screen .custom-status-tabs small { margin-top: 2px; font-size: 7px; }
+/* Matrix custom status settings. Tab geometry is owned by homepage/lottery-switcher.css. */
 .matrix-custom-status-screen .custom-status-fixed-rule { margin: 0 0 12px; color: #aaa49a; text-align: center; font-size: 10px; }
 .matrix-custom-status-screen .custom-status-hit-section { margin-bottom: 12px; border: 1px solid #7d4686; border-radius: 11px; overflow: hidden; background: rgba(4,11,16,.96); }
 .matrix-custom-status-screen .custom-status-hit-header { display: grid; width: 100%; min-height: 54px; padding: 10px; grid-template-columns: 1fr auto 18px; align-items: center; border: 0; color: #bd62d4; background: transparent; text-align: left; }

@@ -34,18 +34,24 @@ test("切換彩種、Matrix Core 與五大功能共用雙層八角框線", () =>
   assert.doesNotMatch(home, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
-test("下次開獎與剩餘時間合併成單一切角資訊欄", () => {
+test("下次開獎與剩餘時間鑲嵌在卡內並各自保留完整切角框", () => {
   assert.match(
     home,
-    /\.next-draw-info--embedded\s*\{[^}]*gap:\s*0;[^}]*clip-path:\s*polygon\([^}]*background:[^}]*;/s,
+    /\.next-draw-info--embedded\s*\{[^}]*gap:\s*0;[^}]*background:\s*transparent;[^}]*overflow:\s*visible;/s,
   );
   assert.match(
     home,
-    /\.next-draw-info--embedded::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s,
+    /\.next-draw-info--embedded::before\s*\{[^}]*display:\s*none;/s,
   );
-  assert.match(home, /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*clip-path:\s*none;/s);
-  assert.match(home, /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*display:\s*none;/s);
-  assert.match(home, /\.next-draw-info--embedded \.next-draw-item \+ \.next-draw-item\s*\{[^}]*border-left:/s);
+  assert.match(home, /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*border:\s*0;[^}]*background:\s*linear-gradient[^}]*clip-path:\s*polygon\(/s);
+  assert.match(home, /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*content:\s*"";/s);
+  assert.doesNotMatch(home, /\.next-draw-info--embedded \.next-draw-item \+ \.next-draw-item\s*\{[^}]*border-left:/s);
+});
+
+test("五大功能先遮蔽素材舊框再套用共用切角框", () => {
+  assert.match(home, /\.home-shortcut::before\s*\{[^}]*background:\s*var\(--lottery-neutral-950\);[^}]*-webkit-mask-composite:\s*xor;[^}]*mask-composite:\s*exclude;/s);
+  assert.match(home, /\.home-shortcut::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+  assert.doesNotMatch(home, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
 test("開獎資訊卡與狀態區共同容器外框隱藏", () => {

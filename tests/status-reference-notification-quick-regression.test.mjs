@@ -11,9 +11,23 @@ const core = readFileSync(new URL("../src/FeaturePagesCore.tsx", import.meta.url
 const prototype = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const notifications = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
+const lotterySwitcher = readFileSync(new URL("../src/homepage/lottery-switcher.css", import.meta.url), "utf8");
 
 test("Matrix 狀態兩頁的彩種切換器只由頁面內距控制左右外距", () => {
   assert.match(feature, /:is\(\.matrix-status-screen, \.matrix-custom-status-screen\) \.matrix-status-lottery-switcher\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0 0 8px;/s);
+});
+
+test("彩種按鈕的選取範圍跟隨共用切角外框", () => {
+  assert.match(lotterySwitcher, /--matrix-option-cut:\s*clamp\(4px, 1\.54vw, 6px\);/);
+  assert.match(lotterySwitcher, /\.lottery-card\s*\{[^}]*clip-path:\s*polygon\(/s);
+  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*clip-path:\s*inherit;[^}]*border-radius:\s*0;/s);
+});
+
+test("自訂觸發四狀態與上方彩種切換同步長寬高間距及切角", () => {
+  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532 \/ 214;[^}]*padding:\s*0;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
+  assert.match(lotterySwitcher, /\.lottery-card,[\s\S]*?\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*clip-path:\s*polygon\(/s);
+  assert.doesNotMatch(feature, /\.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;/s);
+  assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
 });
 
 test("Matrix 狀態標題圖示不再被最終覆寫壓暗", () => {
@@ -30,19 +44,14 @@ test("號碼對照單輸入數字字型與 Matrix 同星一致", () => {
   assert.match(feature, /\.reference-search input\s*\{[^}]*font-size:\s*clamp\(15px, 4\.5vw, 18px\);[^}]*font-weight:\s*600;[^}]*font-variant-numeric:\s*tabular-nums;/s);
 });
 
-test("號碼對照單單碼覆蓋儲存格但保留整列選取，特別號也保留選取樣式", () => {
-  const toggleMarkedRow = pages.match(/const toggleMarkedRow = \(issue: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
-  const toggleMarkedCell = pages.match(/const toggleMarkedCell = \(issue: string, number: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
-  assert.match(toggleMarkedRow, /setMarkedCells/);
-  assert.doesNotMatch(toggleMarkedCell, /setMarkedRows/);
-  assert.match(toggleMarkedCell, /setMarkedCells/);
-  assert.match(referenceVisual, /data-row-marked="true"[^}]*button\[data-cell-marked="true"\][^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
+test("號碼對照單單碼與整列選取互相覆蓋，特別號也保留選取樣式", () => {
+  assert.match(pages, /const toggleMarkedCell[\s\S]*?setMarkedRows\(\(current\)[\s\S]*?next\.delete\(issue\)/);
   assert.match(referenceVisual, /button\[data-special="true"\]\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /data-row-marked="true"[^\{]*button\[data-special="true"\]\s*\{[^}]*background:\s*rgba\(225, 184, 39, \.16\)/s);
 });
 
 test("號碼對照單期數與開獎號碼分隔線使用清楚一致的色值", () => {
-  assert.match(referenceVisual, /\.reference-row > span \+ span,[\s\S]*?\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*2px solid rgba\(212, 168, 72, \.88\);/s);
+  assert.match(referenceVisual, /\.reference-row > span \+ span,[\s\S]*?\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一按鈕渲染器與 6px 外框內距", () => {

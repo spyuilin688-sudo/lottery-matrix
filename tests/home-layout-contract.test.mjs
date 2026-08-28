@@ -37,33 +37,32 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
-test('home layout keeps the top section in flow and anchors shortcuts 8px above fixed navigation', () => {
+test('home bottom group fills the remaining row and ends 8px above the fixed bottom navigation', () => {
   assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto minmax\(min-content, 1fr\);/);
   assertBlock(css, '.home-screen .home-layout', /align-content:\s*stretch;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
-  assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*8px;/);
-  assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*8px;/);
-  assertBlock(css, '.home-screen .home-layout', /--home-gap-features-nav:\s*8px;/);
   assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);
-  assert.ok(!blocks(css, '.home-screen .home-bottom-group').some((body) => /padding-bottom:\s*8px;|--home-gap-core-features\s*:/.test(body)));
   assertBlock(css, '.home-screen .home-bottom-group', /align-self:\s*end;/);
+  assert.ok(!blocks(css, '.home-screen .home-bottom-group').some((body) => /padding-bottom:\s*8px;/.test(body)));
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
 });
-test('embedded next draw info uses two independent rounded reference containers', () => {
+
+test('embedded next draw info uses two independent inset octagon containers', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*3px;/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /gap:\s*0;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /border:\s*0;/);
-  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /border:\s*1px solid rgba\(232, 177, 76, \.52\);/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item', /clip-path:\s*polygon\(/);
+  assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item::before', /background:\s*var\(--home-octagon-frame\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /width:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon', /height:\s*12px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-label', /font-size:\s*11px;/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-value', /font-size:\s*11px;/);
 });
 
-test('Matrix Core keeps its 16px inset while five shortcuts use 8px outer margins and responsive 2 to 2.5px gaps', () => {
+test('Matrix Core keeps its 16px inset while five shortcuts use 8px outer margins and equal columns', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);/);

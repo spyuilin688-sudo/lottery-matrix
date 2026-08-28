@@ -20,10 +20,10 @@ test("順球與落球上移 2px且總高度縮減 3px", () => {
   );
 });
 
-test("開獎資訊卡底部資訊列維持既有內距，紀錄箭頭間距為 1px", () => {
+test("開獎資訊卡底部資訊列使用無縫鑲嵌框", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*gap:\s*3px;/s,
+    /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*gap:\s*0;/s,
   );
   assert.match(
     homeCss,
@@ -41,8 +41,7 @@ test("Matrix 指南只使用原生橫向滑動並保留循環校正", () => {
   assert.doesNotMatch(matrixGuideSource, /GUIDE_DRAG_RATE|GUIDE_DRAG_THRESHOLD|guideDragRef|guideSuppressClickRef/);
   assert.doesNotMatch(matrixGuideSource, /onPointerDown=|onPointerMove=|onPointerUp=|onPointerCancel=/);
   assert.match(matrixGuideSource, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
-  assert.match(matrixGuideSource, /onClick=\{selectGuideCategory\}/);
-  assert.match(matrixGuideSource, /data-guide-index=\{index\}/);
+  assert.match(matrixGuideSource, /onClick=\{\(\) => setSelected\(index\)\}/);
   assert.match(
     guideCss,
     /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*overflow-x:\s*auto;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s,

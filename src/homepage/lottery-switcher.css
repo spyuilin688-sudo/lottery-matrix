@@ -1,4 +1,9 @@
-/* Homepage lottery switcher component overrides. Keep this file small and focused. */
+/* Shared lottery and Matrix status option geometry. */
+
+.lottery-switcher--home-style,
+.matrix-custom-status-screen .custom-status-tabs {
+  --matrix-option-cut: clamp(4px, 1.54vw, 6px);
+}
 
 .lottery-switcher--home-style {
   box-sizing: border-box;
@@ -11,7 +16,19 @@
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
+  height: 100%;
+  border-radius: 0;
   background-size: calc(400% + 24px) 100%;
+  clip-path: polygon(
+    var(--matrix-option-cut) 0,
+    calc(100% - var(--matrix-option-cut)) 0,
+    100% var(--matrix-option-cut),
+    100% calc(100% - var(--matrix-option-cut)),
+    calc(100% - var(--matrix-option-cut)) 100%,
+    var(--matrix-option-cut) 100%,
+    0 calc(100% - var(--matrix-option-cut)),
+    0 var(--matrix-option-cut)
+  );
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
@@ -19,5 +36,69 @@
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  border-radius: 0;
   filter: none;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+  clip-path: inherit;
+  border-radius: 0;
+}
+
+.matrix-custom-status-screen .custom-status-tabs {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1532 / 214;
+  margin: 0 0 10px;
+  padding: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
+.matrix-custom-status-screen .custom-status-tabs > button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  clip-path: polygon(
+    var(--matrix-option-cut) 0,
+    calc(100% - var(--matrix-option-cut)) 0,
+    100% var(--matrix-option-cut),
+    100% calc(100% - var(--matrix-option-cut)),
+    calc(100% - var(--matrix-option-cut)) 100%,
+    var(--matrix-option-cut) 100%,
+    0 calc(100% - var(--matrix-option-cut)),
+    0 var(--matrix-option-cut)
+  );
+  border-radius: 0;
+}
+
+.matrix-custom-status-screen .custom-status-tabs > button {
+  appearance: none;
+  display: flex;
+  padding: 0;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #39434b;
+  background: #061017;
+  color: #afb6bc;
+  overflow: hidden;
+}
+
+.matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"] {
+  border-color: #d9aa48;
+  color: #f5d67d;
+  box-shadow: 0 0 10px rgba(217, 170, 72, .25);
+}
+
+.matrix-custom-status-screen .custom-status-tabs strong {
+  font-size: 13px;
+}
+
+.matrix-custom-status-screen .custom-status-tabs small {
+  margin-top: 2px;
+  font-size: 7px;
 }

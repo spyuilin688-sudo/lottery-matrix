@@ -183,7 +183,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(229, 179, 77, .56);
-  border-radius: 8px;
+  border-radius: 0;
   background-color: transparent;
   background-image: url("/assets/lottery/status/Matrixbba.png");
   background-repeat: no-repeat;
@@ -379,7 +379,7 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
-  gap: 3px;
+  gap: 0;
   flex: 0 1 auto;
 }
 
@@ -433,7 +433,7 @@
   max-height: 24px;
   margin: 0;
   padding: 0;
-  gap: 3px;
+  gap: 0;
   align-items: stretch;
   border: 0;
   background: transparent;
@@ -448,12 +448,11 @@
   padding-inline: clamp(6px, 2vw, 10px);
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(232, 177, 76, .52);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(5, 10, 14, .34), rgba(1, 5, 9, .82));
-  box-shadow: inset 0 0 8px rgba(225, 169, 62, .08);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-icon {
   width: 12px;
@@ -512,7 +511,7 @@
   margin-inline: auto;
   align-self: start;
   border: 1px solid rgba(229, 179, 77, .56);
-  border-radius: 10px;
+  border-radius: 0;
   background: url("/assets/lottery/functions/matrixcore.png") center / cover no-repeat;
   isolation: isolate;
   line-height: 0;
@@ -527,7 +526,7 @@
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  gap: 0.8px;
+  gap: 1.5px;
   align-content: start;
 }
 
@@ -560,7 +559,7 @@
   position: absolute;
   z-index: 2;
   top: 50%;
-  left: calc(83.5% - 24px);
+  left: calc(83.5% - 18px);
   right: auto;
   width: 54%;
   height: auto;
@@ -635,10 +634,10 @@
   align-items: center;
   justify-content: center;
   justify-self: center;
-  border: var(--lottery-stroke-default) solid var(--home-frame-border);
-  border-radius: var(--lottery-card-radius);
+  border: 0;
+  border-radius: 10px;
   background: transparent;
-  box-shadow: var(--home-frame-shadow);
+  box-shadow: none;
   overflow: visible;
 }
 
@@ -652,20 +651,10 @@
   object-fit: fill;
   object-position: center;
   border: 0;
-  border-radius: calc(var(--lottery-card-radius) - var(--lottery-stroke-default));
+  border-radius: 0;
   clip-path: none;
   box-shadow: none;
   filter: none;
-}
-
-.home-screen .home-shortcut:active {
-  border-radius: var(--lottery-card-radius);
-  box-shadow: var(--home-frame-shadow-active);
-}
-
-.home-screen :where(.home-shortcut):focus-visible {
-  outline: 2px solid var(--lottery-gold-300);
-  outline-offset: 2px;
 }
 
 /* Canonical homepage flow gaps. Each adjacent pair has one source. */
@@ -687,7 +676,8 @@
   inset: 0;
   display: block;
   padding: 1px;
-  border-radius: inherit;
+  border-radius: 0;
+  clip-path: inherit;
   background: var(--lottery-selected-gradient);
   content: "";
   pointer-events: none;
@@ -699,7 +689,7 @@
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
   border-color: transparent;
-  border-radius: 12px;
+  border-radius: 0;
   border-image: none;
   box-shadow: 0 0 7px rgba(255, 206, 105, .28);
 }
