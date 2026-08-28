@@ -40,8 +40,7 @@
   box-shadow: var(--home-frame-shadow);
 }
 
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
-.home-screen .home-shortcut {
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
   position: relative;
   isolation: isolate;
   border: 0;
@@ -52,8 +51,7 @@
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
 .home-screen .latest-draw-card,
 .home-screen .matrix-status-card,
-.home-screen .matrix-core-banner,
-.home-screen .home-shortcut {
+.home-screen .matrix-core-banner {
   clip-path: polygon(
     var(--home-octagon-cut) 0,
     calc(100% - var(--home-octagon-cut)) 0,
@@ -90,28 +88,7 @@
   box-shadow: none;
 }
 
-.home-screen .home-shortcut img {
-  clip-path: inherit;
-  border-radius: 0;
-}
-
-.home-screen .home-shortcut::before {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  padding: 3px;
-  clip-path: inherit;
-  background: var(--lottery-neutral-950);
-  content: "";
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after,
-.home-screen .home-shortcut::after {
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {
   position: absolute;
   z-index: 3;
   inset: 0;
@@ -192,8 +169,7 @@
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
-.home-screen .matrix-core-banner:active,
-.home-screen .home-shortcut:active {
+.home-screen .matrix-core-banner:active {
   border-radius: 0;
   box-shadow: var(--home-frame-shadow-active);
 }
@@ -239,8 +215,7 @@
   .history-link,
   .draw-order button,
   .matrix-status-card,
-  .matrix-core-banner,
-  .home-shortcut
+  .matrix-core-banner
 ):focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
