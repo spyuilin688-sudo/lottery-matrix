@@ -14,8 +14,8 @@ vi.mock('../matrix-algorithm-api', () => matrixApi);
 test('天工重排一般、進階與兩段探索設定', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
 
-  const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section');
-  const stageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
+  const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section') as HTMLElement;
+  const stageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
   const generalPosition = within(generalCard!).getByRole('group', { name: '探索球位' });
   const firstPosition = within(stageCard!).getByRole('group', { name: '探索球位' });
   const firstRoad = within(stageCard!).getByRole('group', { name: '版路類型' });
@@ -39,7 +39,7 @@ test('天工重排一般、進階與兩段探索設定', () => {
   fireEvent.click(screen.getByRole('button', { name: '二段式' }));
 
   const secondTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
-  const secondBlock = secondTitle.closest('.tiangong-stage-block');
+  const secondBlock = secondTitle.closest('.tiangong-stage-block') as HTMLElement;
   expect(stageCard?.contains(secondTitle)).toBe(true);
   expect(secondBlock?.getAttribute('data-stage')).toBe('second');
   expect(within(secondBlock!).getByRole('group', { name: '探索球位' })).toBeTruthy();
