@@ -6,6 +6,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
 const homepageStyles = readLocalCss(new URL("../src/homepage-repair.css", import.meta.url));
@@ -88,12 +89,19 @@ test("number reference title card owns refresh and explore settings", () => {
   assert.match(referencePage, /探索設定/);
 });
 
-test("home and Matrix status use the shared Matrixbba switcher and preserve selected outline only", () => {
+test("home uses independent logos while Matrix status preserves the shared switcher artwork", () => {
   assert.match(featurePages, /className="lottery-switcher--home-style matrix-status-lottery-switcher" \/>/);
-  assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
+  assert.doesNotMatch(featurePages, /matrix-status-lottery-switcher" independentLogos/);
+  assert.match(prototypeSource, /home-switcher-box" independentLogos/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*calc\(100% - 32px\);/.test(body) && /margin-inline:\s*0;/.test(body)));
   assert.ok(switcherBodies.some((body) => /padding-inline:\s*4px;/.test(body)));
+  const sharedCardBodies = ruleBodies(
+    homepageStyles,
+    /^\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card$/,
+  );
+  assert.ok(sharedCardBodies.some((body) => /background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/.test(body)));
+  assert.match(homepageStyles, /\.lottery-switcher--home-style\.lottery-switcher--independent-logos > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*linear-gradient/s);
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
   const hiddenSelectedOutline = ruleBodies(
@@ -110,7 +118,6 @@ test("home and Matrix status use the shared Matrixbba switcher and preserve sele
   assert.match(selectedOutline[0], /--matrix-selected-frame-width:\s*\.7px;/);
   assert.match(selectedOutline[0], /inset:\s*\.5px;/);
   assert.doesNotMatch(selectedOutline[0], /clip-path|(?:-webkit-)?mask|mask-composite/);
-  assert.doesNotMatch(homepageStyles, /lottery-switcher\[data-independent-cards="true"\][^{]*home-asset-image[^}]*display:\s*none/s);
 });
 
 test("history filter keeps lottery date order range and submit controls without the obsolete reset", () => {

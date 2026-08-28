@@ -52,3 +52,19 @@ test("天工指定選項共用探索期數的右側欄寬並平均分配", () =>
     /\.tiangong-settings \.segmented\.three\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/s,
   );
 });
+
+
+test("天工探索期數以下沿用相同右側欄寬，且彩球類型與探索期數保留 10px 間距", () => {
+  assert.match(
+    spacing,
+    /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*88\.8px;/s,
+  );
+  assert.match(
+    spacing,
+    /\.tiangong-general-settings \.setting-grid > label:first-child \+ label\s*\{[^}]*margin-top:\s*10px;/s,
+  );
+  assert.match(
+    spacing,
+    /@media \(min-width:\s*40rem\)[\s\S]*?\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*104\.8px;/s,
+  );
+});
