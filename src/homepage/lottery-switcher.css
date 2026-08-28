@@ -52,51 +52,63 @@
   filter: none;
 }
 
-.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before {
-  --matrix-selected-frame-width: .7px;
-  --matrix-selected-frame-half: .35px;
-  position: absolute;
-  z-index: 4;
-  inset: .5px;
-  display: block;
-  clip-path: inherit;
-  background: var(--lottery-selected-gradient);
-  content: "";
-  pointer-events: none;
-  -webkit-mask:
-    linear-gradient(#000 0 0) top center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
-    linear-gradient(#000 0 0) bottom center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
-    linear-gradient(#000 0 0) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
-    linear-gradient(#000 0 0) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat;
-  mask:
-    linear-gradient(#000 0 0) top center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
-    linear-gradient(#000 0 0) bottom center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
-    linear-gradient(#000 0 0) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
-    linear-gradient(#000 0 0) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
-    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat;
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+  display: none;
 }
 
+.lottery-switcher--home-style .lottery-selected-frame {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.lottery-switcher--home-style .lottery-selected-frame-path {
+  fill: none;
+  stroke: url("#lottery-selected-gradient");
+  stroke-width: .7px;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+.lottery-switcher--home-style .lottery-selected-stop--1 { stop-color: var(--lottery-selected-stop-1); }
+.lottery-switcher--home-style .lottery-selected-stop--2 { stop-color: var(--lottery-selected-stop-2); }
+.lottery-switcher--home-style .lottery-selected-stop--3 { stop-color: var(--lottery-selected-stop-3); }
+.lottery-switcher--home-style .lottery-selected-stop--4 { stop-color: var(--lottery-selected-stop-4); }
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="今彩539"] {
   --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+  --lottery-selected-stop-1: #34c759;
+  --lottery-selected-stop-2: #ffd640;
+  --lottery-selected-stop-3: #3484ff;
+  --lottery-selected-stop-4: #ff3b30;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="天天樂"] {
   --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
+  --lottery-selected-stop-1: #1e76ff;
+  --lottery-selected-stop-2: #ffffff;
+  --lottery-selected-stop-3: #ffffff;
+  --lottery-selected-stop-4: #1e76ff;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="六合彩"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
+  --lottery-selected-stop-1: #ff3b30;
+  --lottery-selected-stop-2: #1e76ff;
+  --lottery-selected-stop-3: #1e76ff;
+  --lottery-selected-stop-4: #34c759;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="大樂透"] {
   --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
+  --lottery-selected-stop-1: #ffd640;
+  --lottery-selected-stop-2: #1e76ff;
+  --lottery-selected-stop-3: #1e76ff;
+  --lottery-selected-stop-4: #ffd640;
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {

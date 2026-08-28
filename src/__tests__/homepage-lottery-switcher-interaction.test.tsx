@@ -24,6 +24,9 @@ describe("homepage lottery switcher interaction", () => {
       expect(selected).toHaveLength(1);
       expect(screen.getByRole("radio", { name: label })).toHaveAttribute("aria-checked", "true");
       expect(screen.getByTestId("lottery-switcher")).toHaveAttribute("data-selected-lottery", label);
+      const selectedFrame = screen.getByTestId("lottery-selected-frame");
+      expect(screen.getAllByTestId("lottery-selected-frame")).toHaveLength(1);
+      expect(selectedFrame.closest(".lottery-card")).toBe(screen.getByRole("radio", { name: label }));
     }
   });
 });
