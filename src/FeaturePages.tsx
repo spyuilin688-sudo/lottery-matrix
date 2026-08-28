@@ -1677,6 +1677,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [period, setPeriod] = useState<"五十期" | "八十期">("五十期");
   const [mode, setMode] = useState<"一段式" | "二段式">("一段式");
   const [hit, setHit] = useState<"準2進3" | "準3進4">("準2進3");
+  const [advanced, setAdvanced] = useState(false);
   const [searchPositions, setSearchPositions] = useState<Direction[]>(["固定"]);
   const [firstPositions, setFirstPositions] = useState<Direction[]>(["固定"]);
   const [firstRoads, setFirstRoads] = useState<Road[]>(["加減版路"]);
@@ -1689,7 +1690,11 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validationById, setValidationById] = useState<Record<string, TiangongValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
-  const positionOptions: Direction[] = ["固定", "依序遞增", "依序遞減"];
+  const positionOptions: Array<{ value: Direction; label: string }> = [
+    { value: "依序遞增", label: "由左至右" },
+    { value: "固定", label: "固定" },
+    { value: "依序遞減", label: "由右至左" },
+  ];
   const roadOptions: Road[] = ["加減版路", "合值版路"];
   const toggle = <T extends string>(value: T, current: T[], setter: React.Dispatch<React.SetStateAction<T[]>>) => {
     if (current.includes(value)) {
@@ -1742,20 +1747,38 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       <section className="panel explore-settings tiangong-settings tiangong-general-settings">
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="lottery" /><b>彩種</b></span><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
+          <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
           <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{(["五十期", "八十期"] as const).map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
-          <label><span><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{(["一段式", "二段式"] as const).map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
-          <label><span><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/命中條件.png" alt="" aria-hidden="true" />命中條件</span><div className="segmented two">{(["準2進3", "準3進4"] as const).map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
-          <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{value}</button>)}</div></div>
+          <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
+          <button type="button" className="advanced-row tiangong-advanced-row" aria-expanded={advanced} aria-controls="tiangong-advanced-settings" onClick={() => setAdvanced(!advanced)}>
+            <img src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" />
+            <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
+          </button>
+          {advanced ? (
+            <div id="tiangong-advanced-settings" className="advanced-panel tiangong-advanced-panel">
+              <label><span className="advanced-setting-title"><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{(["一段式", "二段式"] as const).map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
+              <label><span className="advanced-setting-title"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/命中條件.png" alt="" aria-hidden="true" />命中條件</span><div className="segmented two">{(["準2進3", "準3進4"] as const).map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
+            </div>
+          ) : null}
         </div>
       </section>
       <section className="panel explore-settings tiangong-settings tiangong-stage-settings">
-        <SectionTitle>第一段探索設定</SectionTitle>
-        <div className="setting-grid">
-          <div className="tiangong-setting-row" role="group" aria-label="第一段球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第一段球位.png" alt="" aria-hidden="true" />第一段球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{value}</button>)}</div></div>
-          <div className="tiangong-setting-row" role="group" aria-label="第一段版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />第一段版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></div>
-          {mode === "二段式" ? <><SectionTitle>第二段探索設定</SectionTitle><div className="tiangong-setting-row" role="group" aria-label="第二段球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />第二段球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{value}</button>)}</div></div><div className="tiangong-setting-row" role="group" aria-label="第二段版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />第二段版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div></> : null}
+        <div className="tiangong-stage-block" data-stage="first">
+          <SectionTitle>第一段 探索設定</SectionTitle>
+          <div className="setting-grid">
+            <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第一段球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{label}</button>)}</div></div>
+            <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></div>
+          </div>
         </div>
+        {mode === "二段式" ? (
+          <div className="tiangong-stage-block" data-stage="second">
+            <SectionTitle>第二段 探索設定</SectionTitle>
+            <div className="setting-grid">
+              <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{label}</button>)}</div></div>
+              <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div>
+            </div>
+          </div>
+        ) : null}
       </section>
       <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始探索</span></button>
       {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
