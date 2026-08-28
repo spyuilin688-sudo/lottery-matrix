@@ -180,29 +180,6 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
               aria-label={lottery.id}
               type="button"
             >
-              {isSelected ? (
-                <svg
-                  className="lottery-selected-frame"
-                  data-testid="lottery-selected-frame"
-                  viewBox="0 0 82 50"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <defs>
-                    <linearGradient id="lottery-selected-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop className="lottery-selected-stop lottery-selected-stop--1" offset="0%" />
-                      <stop className="lottery-selected-stop lottery-selected-stop--2" offset="33%" />
-                      <stop className="lottery-selected-stop lottery-selected-stop--3" offset="66%" />
-                      <stop className="lottery-selected-stop lottery-selected-stop--4" offset="100%" />
-                    </linearGradient>
-                  </defs>
-                  <polygon
-                    className="lottery-selected-frame-path"
-                    points="5,.35 77,.35 81.65,5 81.65,45 77,49.65 5,49.65 .35,45 .35,5"
-                  />
-                </svg>
-              ) : null}
               <span className="clean-hit-label">{lottery.id}</span>
             </button>
           );
