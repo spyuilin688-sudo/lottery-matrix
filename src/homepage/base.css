@@ -17,6 +17,7 @@
 }
 
 .home-screen .home-layout {
+  --home-feature-inline: 8px;
   --home-gap-status-core: 8px;
   --home-gap-core-features: 8px;
   --home-gap-features-nav: 8px;
@@ -35,9 +36,9 @@
 
 .home-screen .lottery-screen {
   --layout-page-inline: 16px;
-  --home-content-width: calc(min(100vw, 390px) - 24px);
+  --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 4px;
+  --home-gap-switcher-draw: 6px;
   --home-gap-draw-status: 8px;
   box-sizing: border-box;
   display: flex;
@@ -230,7 +231,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(104px, 30%) minmax(0, 1fr);
   grid-template-rows: 44px minmax(0, 1fr) 24px;
-  width: calc(100% - 24px);
+  width: calc(100% - 32px);
   height: var(--draw-card-height);
   min-height: 0;
   margin-inline: 0;
@@ -493,7 +494,7 @@
 .home-screen .matrix-status-section {
   display: flex;
   box-sizing: border-box;
-  width: calc(100% - 24px);
+  width: calc(100% - 32px);
   padding: 1.5px;
   justify-content: center;
   border: 1px solid rgba(229, 179, 77, .56);
@@ -611,12 +612,11 @@
 .home-screen .home-shortcut-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: calc(100% - 16px);
+  width: calc(100% - (var(--home-feature-inline) * 2));
   height: auto;
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  margin-block-start: 0;
   column-gap: clamp(2px, .64vw, 2.5px);
   row-gap: 0;
   align-items: stretch;
