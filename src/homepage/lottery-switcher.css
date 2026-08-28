@@ -63,12 +63,11 @@
   z-index: 4;
   inset: .5px;
   display: block;
-  clip-path: inherit;
   background:
     var(--lottery-selected-horizontal-gradient) top center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
     var(--lottery-selected-horizontal-gradient) bottom center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
-    var(--lottery-selected-vertical-gradient) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
-    var(--lottery-selected-vertical-gradient) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    var(--lottery-selected-left-edge) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    var(--lottery-selected-right-edge) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
     linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-start) calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-start) calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
     linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-end) calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-end) calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
     linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-start) calc(50% - var(--matrix-selected-frame-half)), var(--lottery-selected-corner-start) calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
@@ -79,28 +78,32 @@
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="今彩539"] {
   --lottery-selected-horizontal-gradient: linear-gradient(90deg, #34c759, #ffd640, #3484ff, #ff3b30);
-  --lottery-selected-vertical-gradient: linear-gradient(180deg, #34c759, #ffd640, #3484ff, #ff3b30);
+  --lottery-selected-left-edge: linear-gradient(#34c759, #34c759);
+  --lottery-selected-right-edge: linear-gradient(#ff3b30, #ff3b30);
   --lottery-selected-corner-start: #34c759;
   --lottery-selected-corner-end: #ff3b30;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="天天樂"] {
   --lottery-selected-horizontal-gradient: linear-gradient(90deg, #1e76ff, #ffffff, #1e76ff);
-  --lottery-selected-vertical-gradient: linear-gradient(180deg, #1e76ff, #ffffff, #1e76ff);
+  --lottery-selected-left-edge: linear-gradient(#1e76ff, #1e76ff);
+  --lottery-selected-right-edge: linear-gradient(#1e76ff, #1e76ff);
   --lottery-selected-corner-start: #1e76ff;
   --lottery-selected-corner-end: #1e76ff;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="六合彩"] {
   --lottery-selected-horizontal-gradient: linear-gradient(90deg, #ff3b30, #1e76ff, #34c759);
-  --lottery-selected-vertical-gradient: linear-gradient(180deg, #ff3b30, #1e76ff, #34c759);
+  --lottery-selected-left-edge: linear-gradient(#ff3b30, #ff3b30);
+  --lottery-selected-right-edge: linear-gradient(#34c759, #34c759);
   --lottery-selected-corner-start: #ff3b30;
   --lottery-selected-corner-end: #34c759;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="大樂透"] {
   --lottery-selected-horizontal-gradient: linear-gradient(90deg, #ffd640, #1e76ff, #ffd640);
-  --lottery-selected-vertical-gradient: linear-gradient(180deg, #ffd640, #1e76ff, #ffd640);
+  --lottery-selected-left-edge: linear-gradient(#ffd640, #ffd640);
+  --lottery-selected-right-edge: linear-gradient(#ffd640, #ffd640);
   --lottery-selected-corner-start: #ffd640;
   --lottery-selected-corner-end: #ffd640;
 }
