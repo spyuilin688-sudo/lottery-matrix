@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixTiangongPage } from '../FeaturePages';
 
@@ -37,38 +37,36 @@ beforeEach(() => {
 
 test('一段式不顯示第二段，且天工沒有近10期與連準篩選', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section');
-  const firstStageCard = screen.getByRole('heading', { name: '第一段探索設定' }).closest('section');
-  const firstPosition = screen.getByRole('group', { name: '第一段球位' });
-  const firstRoad = screen.getByRole('group', { name: '第一段版路類型' });
+  const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section') as HTMLElement;
+  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
+  const firstPosition = within(firstStageCard).getByRole('group', { name: '探索球位' });
+  const firstRoad = within(firstStageCard).getByRole('group', { name: '版路類型' });
   expect(document.querySelector('.matrix-tiangong-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
-  expect(generalCard).toBeTruthy();
-  expect(firstStageCard).toBeTruthy();
   expect(generalCard).not.toBe(firstStageCard);
-  expect(generalCard?.contains(firstPosition)).toBe(false);
-  expect(generalCard?.contains(firstRoad)).toBe(false);
-  expect(firstStageCard?.contains(firstPosition)).toBe(true);
-  expect(firstStageCard?.contains(firstRoad)).toBe(true);
-  expect(screen.queryByText('第二段球位')).toBeNull();
-  expect(screen.queryByText('第二段版路類型')).toBeNull();
+  expect(generalCard.contains(firstPosition)).toBe(false);
+  expect(generalCard.contains(firstRoad)).toBe(false);
+  expect(firstStageCard.contains(firstPosition)).toBe(true);
+  expect(firstStageCard.contains(firstRoad)).toBe(true);
+  expect(screen.queryByRole('heading', { name: '第二段 探索設定' })).toBeNull();
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
   expect(screen.queryByText('連準篩選')).toBeNull();
-  expect(screen.getByRole('group', { name: '探索球位' }).classList.contains('tiangong-setting-row')).toBe(true);
-  expect(screen.getByRole('group', { name: '第一段球位' }).classList.contains('tiangong-setting-row')).toBe(true);
-  expect(screen.getByRole('group', { name: '第一段版路類型' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(within(generalCard).getByRole('group', { name: '探索球位' }).classList.contains('tiangong-setting-row')).toBe(true);
+  expect(firstPosition.classList.contains('tiangong-setting-row')).toBe(true);
+  expect(firstRoad.classList.contains('tiangong-setting-row')).toBe(true);
   expect(document.querySelector('.tiangong-settings fieldset')).toBeNull();
 });
 
 test('二段式顯示第二段設定並提交完整正式條件', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
   fireEvent.click(screen.getByRole('button', { name: '二段式' }));
   fireEvent.click(screen.getByRole('button', { name: '八十期' }));
   fireEvent.click(screen.getByRole('button', { name: '準3進4' }));
-  fireEvent.click(screen.getAllByRole('button', { name: '依序遞增' })[0]);
-  const secondStageTitle = screen.getByRole('heading', { name: '第二段探索設定' });
-  const firstStageCard = screen.getByRole('heading', { name: '第一段探索設定' }).closest('section');
+  fireEvent.click(screen.getAllByRole('button', { name: '由左至右' })[0]);
+  const secondStageTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
+  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
   expect(firstStageCard?.contains(secondStageTitle)).toBe(true);
-  expect(screen.getByText('第二段球位')).toBeTruthy();
+  expect(screen.getAllByRole('group', { name: '探索球位' })).toHaveLength(3);
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
   expect(await screen.findByText('12')).toBeTruthy();
