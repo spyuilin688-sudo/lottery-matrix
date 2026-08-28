@@ -913,7 +913,7 @@
 
 /* Matrix Tiangong compact responsive setting layout. */
 .matrix-tiangong-screen .tiangong-settings {
-  --tiangong-label-column: clamp(106px, 32vw, 124px);
+  --tiangong-label-column: 88.8px;
 }
 
 .matrix-tiangong-screen .tiangong-settings .setting-grid > label > .segmented,
@@ -957,6 +957,10 @@
 
 .matrix-tiangong-screen .tiangong-general-settings .setting-grid > * + * {
   margin-top: 7px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid > label:first-child + label {
+  margin-top: 10px;
 }
 
 .matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider {
@@ -1005,4 +1009,11 @@
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(212, 165, 47, .45);
+}
+
+
+@media (min-width: 40rem) {
+  .matrix-tiangong-screen .tiangong-settings {
+    --tiangong-label-column: 104.8px;
+  }
 }
