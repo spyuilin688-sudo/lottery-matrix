@@ -1,9 +1,13 @@
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
-from app.worker import run_worker
+from app.worker import run_scheduled_worker, run_worker
+
+
+TAIPEI = ZoneInfo("Asia/Taipei")
 
 
 class Source:
@@ -12,10 +16,10 @@ class Source:
         self.events: list[str] = []
 
     @staticmethod
-    def _draw(period: int, count: int) -> dict:
+    def _draw(period: int, count: int, draw_date: str | None = None) -> dict:
         return {
             "period": str(period).zfill(9),
-            "drawDate": f"2026-08-{((period - 1) % 28) + 1:02d}",
+            "drawDate": draw_date or f"2026-08-{((period - 1) % 28) + 1:02d}",
             "numbers": [str(value).zfill(2) for value in range(1, count + 1)],
         }
 
@@ -29,6 +33,13 @@ class Source:
         count = 5 if lottery in {"今彩539", "天天樂"} else 7
         rows = [self._draw(period, count) for period in range(220, 220 - self.history_count, -1)]
         return rows if limit is None else rows[:limit]
+
+
+class ScheduledSource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        return self._draw(221, count, "2026-08-28")
 
 
 class TrackingRepository(InMemoryAnalysisRepository):
@@ -162,3 +173,57 @@ def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
 
     assert result["status"] == "complete"
     assert attempts == 2
+
+
+def test_scheduled_worker_skips_when_current_draw_date_is_already_stored() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539",
+        "period": "000000221",
+        "drawDate": "2026-08-28",
+        "numbers": ["01", "02", "03", "04", "05"],
+    })
+    source = ScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "already-acquired"
+    assert source.events == []
+
+
+def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = ScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "complete"
+    assert source.events == ["history-all", "latest"]
+
+
+def test_scheduled_worker_does_nothing_outside_call_schedule() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = ScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "not-due"
+    assert source.events == []
