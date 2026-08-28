@@ -74,7 +74,6 @@ const STATUS_ASSET_BASE = "/assets/lottery/status";
 
 const HOME_ASSETS = {
   logo: "/assets/lottery/functions/matrixya.png",
-  lotterySwitcher: `${STATUS_ASSET_BASE}/Matrixbba.png`,
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
   matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,
   tongxing: `${HOME_ASSET_BASE}/同星.png`,
@@ -163,7 +162,6 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
       data-selected-lottery={selected}
       data-testid="lottery-switcher"
     >
-      <img className="home-asset-image" src={HOME_ASSETS.lotterySwitcher} alt="" draggable={false} />
       <div className="lottery-switcher-hit-grid" role="radiogroup" aria-label="選擇彩種">
         {LOTTERIES.map((lottery) => {
           const isSelected = lottery.id === selected;
@@ -180,6 +178,7 @@ export function LotterySwitcher({ selected, onChange, className = "" }: LotteryS
               aria-label={lottery.id}
               type="button"
             >
+              <img className="lottery-card-logo" src={lottery.logo} alt="" aria-hidden="true" draggable={false} />
               <span className="clean-hit-label">{lottery.id}</span>
             </button>
           );
