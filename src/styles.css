@@ -4,8 +4,6 @@
   --app-layout-max: 430px;
   color: #151515;
   background: #02070c;
-  scrollbar-color: var(--bottom-nav-gold) var(--bottom-nav-panel-950);
-  scrollbar-width: thin;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -15,46 +13,14 @@
 
 * {
   box-sizing: border-box;
-  scrollbar-color: inherit;
-  scrollbar-width: inherit;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: var(--bottom-nav-panel-950);
-}
-
-*::-webkit-scrollbar-thumb {
-  border: 2px solid var(--bottom-nav-panel-950);
-  border-radius: 999px;
-  background: var(--bottom-nav-gold);
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--bottom-nav-gold-bright);
-}
-
-*::-webkit-scrollbar-thumb:active {
-  background: var(--lottery-gold-300);
-}
-
-@media (forced-colors: active) {
-  :root {
-    scrollbar-color: auto;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: Canvas;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    border-color: Canvas;
-    background: ButtonText;
-  }
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 html,
@@ -84,6 +50,11 @@ body,
 .mobile-carousel-scrollbar { position: absolute; z-index: 4; inset: 0; opacity: 0; pointer-events: none; transition: opacity 150ms ease; }
 .mobile-carousel-scrollbar[data-visible="true"] { opacity: 1; }
 .mobile-carousel-scrollbar-thumb { position: absolute; right: 4px; bottom: 4px; height: 3px; border-radius: 999px; background: rgba(0, 0, 0, 0.35); }
+
+.mobile-carousel-scrollbar,
+.mobile-scrollbar {
+  display: none;
+}
 
 body {
   min-width: 320px;
