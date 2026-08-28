@@ -51,6 +51,7 @@ test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器�
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*--home-frame-color:\s*var\(--lottery-gold-300\);/s);
   assert.match(visual, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card,[\s\S]*?--home-octagon-frame:/s);
+  assert.doesNotMatch(visual.match(/:is\\(\\.home-screen,[\\s\\S]*?\\n\\}/)?.[0] ?? "", /--home-octagon-frame:/);
   assert.doesNotMatch(base, /lottery-card\[data-selected="true"\]::after/);
   assert.doesNotMatch(visual, /lottery-card\[data-selected="true"\]::after/);
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
