@@ -49,14 +49,14 @@
   right: auto;
   bottom: auto;
   left: calc(83% + 4px);
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.34rem;
+  height: 2.34rem;
   transform: translateY(-50%);
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.34rem;
+  height: 2.34rem;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {
@@ -189,9 +189,9 @@
 .matrix-explore-main-screen .explore-settings .setting-grid label > span .setting-label-icon,
 .matrix-explore-main-screen .advanced-panel .advanced-setting-title .setting-label-icon,
 .matrix-explore-main-screen .matrix-explore-setting-icon {
-  inline-size: 1.8rem;
-  block-size: 1.8rem;
-  flex: 0 0 1.8rem;
+  inline-size: 2.34rem;
+  block-size: 2.34rem;
+  flex: 0 0 2.34rem;
   border-radius: .375rem;
   object-fit: contain;
 }
