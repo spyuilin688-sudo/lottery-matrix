@@ -28,9 +28,10 @@ test("selected lottery frame follows the responsive octagonal card corners", () 
   assert.match(selectedBeforeRule, /display:\s*block;/);
   assert.match(selectedBeforeRule, /--matrix-selected-frame-width:\s*\.7px;/);
   assert.match(selectedBeforeRule, /inset:\s*\.5px;/);
-  assert.match(selectedBeforeRule, /clip-path:\s*inherit;/);
+  assert.doesNotMatch(selectedBeforeRule, /clip-path/);
   assert.match(selectedBeforeRule, /var\(--lottery-selected-horizontal-gradient\)/);
-  assert.match(selectedBeforeRule, /var\(--lottery-selected-vertical-gradient\)/);
+  assert.match(selectedBeforeRule, /var\(--lottery-selected-left-edge\)/);
+  assert.match(selectedBeforeRule, /var\(--lottery-selected-right-edge\)/);
   assert.doesNotMatch(selectedBeforeRule, /(?:-webkit-)?mask|mask-composite|content-box/);
 });
 
