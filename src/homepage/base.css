@@ -18,6 +18,8 @@
 
 .home-screen .home-layout {
   --home-feature-inline: 8px;
+  --home-feature-gap: clamp(2px, .64vw, 2.5px);
+  --home-feature-card-aspect: 386 / 496;
   --home-gap-status-core: 8px;
   --home-gap-core-features: 8px;
   --home-gap-features-nav: 8px;
@@ -609,14 +611,16 @@
 }
 
 .home-screen .home-shortcut-row {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: calc(100% - (var(--home-feature-inline) * 2));
+  width: 100%;
   height: auto;
   aspect-ratio: auto;
   min-height: 0;
   margin-inline: auto;
-  column-gap: clamp(2px, .64vw, 2.5px);
+  padding-inline: var(--home-feature-inline);
+  column-gap: var(--home-feature-gap);
   row-gap: 0;
   align-items: stretch;
   overflow: visible;
@@ -624,11 +628,13 @@
 
 .home-screen .home-shortcut {
   appearance: none;
+  position: relative;
+  isolation: isolate;
   display: flex;
   width: 100%;
   min-width: 0;
   height: auto;
-  aspect-ratio: 386 / 496;
+  aspect-ratio: var(--home-feature-card-aspect);
   min-height: 0;
   padding: 0;
   align-items: center;
@@ -637,7 +643,17 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: none;
+  clip-path: polygon(
+    var(--home-octagon-cut) 0,
+    calc(100% - var(--home-octagon-cut)) 0,
+    100% var(--home-octagon-cut),
+    100% calc(100% - var(--home-octagon-cut)),
+    calc(100% - var(--home-octagon-cut)) 100%,
+    var(--home-octagon-cut) 100%,
+    0 calc(100% - var(--home-octagon-cut)),
+    0 var(--home-octagon-cut)
+  );
+  box-shadow: var(--home-frame-shadow);
   overflow: visible;
 }
 
@@ -652,9 +668,47 @@
   object-position: center;
   border: 0;
   border-radius: 0;
-  clip-path: none;
+  clip-path: inherit;
   box-shadow: none;
   filter: none;
+}
+
+.home-screen .home-shortcut::before {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  padding: 3px;
+  clip-path: inherit;
+  background: var(--lottery-neutral-950);
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.home-screen .home-shortcut::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: block;
+  padding: 0;
+  clip-path: inherit;
+  border-radius: 0;
+  background: var(--home-octagon-frame);
+  content: "";
+  pointer-events: none;
+}
+
+.home-screen .home-shortcut:active {
+  border-radius: 0;
+  box-shadow: var(--home-frame-shadow-active);
+}
+
+.home-screen .home-shortcut:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: 2px;
 }
 
 /* Canonical homepage flow gaps. Each adjacent pair has one source. */
