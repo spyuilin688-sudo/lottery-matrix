@@ -37,7 +37,7 @@
 | Select/Listbox | Native HTML `select` on product forms | `premium-ui.json` and this contract | OS-owned native popup only; authored replacement requires a separate approved contract | Keyboard and open-popup checks on supported mobile PWA browsers |
 | Date | Native HTML `input[type="date"]` | `premium-ui.json` and this contract | OS-owned Gregorian date popup; ISO date-only form value | Locale, keyboard, narrow-viewport and open-calendar checks |
 | Form | The React screen that owns each product form | This contract and the owning component test | Sign-in, settings and data-entry forms with app-owned validation | Component tests for validation, busy, recovery and first-error focus |
-| Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Browser-native scrollbar; documented geometry exceptions may stabilize layout | Computed style plus WebKit fallback and forced-colors source checks |
+| Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Scrolling remains enabled while native and app-owned scrollbar visuals stay hidden | Computed overflow plus Firefox and WebKit hidden-scrollbar source checks |
 
 ## Form behavior
 
@@ -47,7 +47,7 @@ Native Select/Listbox and Date are intentional for the supported mobile PWA. The
 
 ## Scrollbar behavior
 
-Every reachable product overflow surface inherits a browser-native scrollbar baseline from `src/styles.css`. Normal color mode uses product thumb, track, hover and active styling with standards-based `scrollbar-color` and `scrollbar-width`, plus WebKit pseudo-element fallbacks. Forced-colors mode yields usable system colors. Scrollbars remain visible and operable; a component may change gutter or geometry only when it documents the exception and preserves keyboard, pointer and touch access.
+Every reachable product overflow surface keeps its existing overflow and touch behavior while scrollbar visuals are hidden globally in `src/styles.css`. Firefox uses `scrollbar-width: none`; WebKit uses a hidden zero-size `::-webkit-scrollbar`; app-owned mobile and carousel scrollbar layers are also hidden. Keyboard, pointer and touch scrolling remain enabled.
 
 ## Direct action ledger
 
