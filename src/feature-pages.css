@@ -2079,7 +2079,8 @@ opacity: .30; box-shadow: none;
   max-height: none;
 }
 .activation-code-screen .feature-body {
-  gap: 8px;
+  padding-inline: 16px;
+  gap: 12px;
 }
 .activation-code-screen .panel {
   box-sizing: border-box;
@@ -2089,12 +2090,20 @@ opacity: .30; box-shadow: none;
   border-color: rgba(177, 129, 43, .72);
   border-radius: 10px;
 }
+.referral-code-section,
+.activation-code-section {
+  display: grid;
+  min-width: 0;
+  padding: 16px;
+  gap: 12px;
+}
 .referral-summary-card,
 .referral-input-card,
 .activation-card {
   display: grid;
-  padding: 12px;
-  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  gap: 12px;
 }
 .referral-summary-card h2,
 .referral-input-card h2,
@@ -2107,33 +2116,47 @@ opacity: .30; box-shadow: none;
 .referral-code-label,
 .referral-success-count {
   margin: 0;
-  color: #c9c2b8;
+  color: #d5cfc6;
   font-size: 12px;
   line-height: 1.5;
 }
-.referral-code-value,
-.referral-success-count {
+.referral-code-value {
+  color: #f0ede7;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.referral-success-value {
   color: #f3c45c;
   font-weight: 700;
 }
-.referral-code-value {
-  font-size: 15px;
-  letter-spacing: 1px;
-}
 .referral-primary-actions {
   display: grid;
+  margin-top: 4px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.referral-primary-actions button,
-.referral-input-card .gold-button,
-.activation-card .gold-button {
+.referral-primary-actions button {
   min-width: 0;
   height: 34px;
   min-height: 34px;
   font-size: 13px;
 }
-.activation-code-screen .gold-button,
+.activation-code-screen .gold-button {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid rgba(220, 172, 57, .84);
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 135%, rgba(234, 171, 35, .22), transparent 55%), #060d12;
+  color: #f0cc72;
+  font-size: 13px;
+  font-weight: 700;
+}
+.referral-input-card .gold-button,
+.activation-card .gold-button {
+  height: 44px;
+  min-height: 44px;
+}
 .pro-plans-screen .confirm-payment {
   box-sizing: border-box;
   height: 34px;
@@ -2147,16 +2170,17 @@ opacity: .30; box-shadow: none;
 }
 .referral-input-card .code-entry-block,
 .activation-card .code-entry-block {
-  gap: 8px;
+  gap: 10px;
 }
 .referral-input-card input,
 .activation-card input {
   box-sizing: border-box;
   width: 100%;
+  height: 44px;
   min-width: 0;
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid #76521d;
+  border: 1px solid rgba(118, 82, 29, .5);
   border-radius: 8px;
   outline: 0;
   background: #071018;
@@ -2164,20 +2188,24 @@ opacity: .30; box-shadow: none;
   font-size: 14px;
 }
 .referral-rule-card {
-  padding: 0 12px;
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid rgba(118, 82, 29, .58);
+  border-radius: 8px;
+  overflow: hidden;
 }
 .referral-rule-toggle {
   display: grid;
   width: 100%;
-  min-height: 41px;
-  padding: 0;
+  min-height: 56px;
+  padding: 0 16px;
   grid-template-columns: minmax(0, 1fr) 20px;
   align-items: center;
   border: 0;
   background: transparent;
   color: #e5c36e;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: left;
 }
 .referral-rule-toggle svg {
@@ -2191,7 +2219,7 @@ opacity: .30; box-shadow: none;
   rotate: 90deg;
 }
 .referral-rule-content {
-  padding: 0 0 12px;
+  padding: 0 16px 16px;
   color: #c9c2b8;
   font-size: 11px;
   line-height: 1.65;
