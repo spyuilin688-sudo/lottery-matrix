@@ -40,7 +40,7 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 4px;
+  --home-gap-switcher-draw: 6px;
   --home-gap-draw-status: 8px;
   box-sizing: border-box;
   display: flex;
@@ -162,9 +162,6 @@
   overflow: visible;
 }
 
-.lottery-switcher--home-style > .home-asset-image {
-  display: none;
-}
 .lottery-switcher--home-style .lottery-switcher-hit-grid {
   position: relative;
   z-index: 2;
@@ -352,9 +349,9 @@
   justify-content: flex-end;
   border: 0;
   background: transparent;
-  color: #f0c86c;
+  color: rgba(240, 200, 108, .64);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   gap: 2px;
   transform: translate(-10px, -16px);
   white-space: nowrap;

@@ -51,7 +51,7 @@ test("homepage assigns surplus height to the logo and keeps the requested sectio
   assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "4px");
   assert.equal(layout.getPropertyValue("--home-gap-status-core").trim(), "10px");
   assert.equal(layout.getPropertyValue("--home-gap-core-features").trim(), "14px");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim(), "4px");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim(), "6px");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").trim(), "8px");
   assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 28px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");
