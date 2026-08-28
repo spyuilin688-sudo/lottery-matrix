@@ -44,16 +44,6 @@
   min-width: 0;
 }
 
-.matrix-explore-main-screen .matrix-title-banner-actions {
-  top: 50%;
-  right: auto;
-  bottom: auto;
-  left: calc(83% + 4px);
-  width: 2.34rem;
-  height: 2.34rem;
-  transform: translateY(-50%);
-}
-
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
   width: 2.34rem;
   height: 2.34rem;
