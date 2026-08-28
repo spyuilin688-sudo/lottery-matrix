@@ -57,14 +57,14 @@ test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器�
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
 });
 
-test("首頁 Matrix Core 使用能量環流框與八節點脈衝框", () => {
-  assert.match(prototypeView, /className="matrix-core-energy-loop"/);
-  assert.equal((prototypeView.match(/className="matrix-core-node"/g) ?? []).length, 8);
-  assert.match(visual, /\.matrix-core-energy-loop\s*\{[^}]*animation:\s*matrix-core-energy-circulation/s);
-  assert.match(visual, /\.matrix-core-node\s*\{[^}]*animation:\s*matrix-core-node-pulse/s);
-  assert.match(visual, /@keyframes matrix-core-energy-circulation/);
-  assert.match(visual, /@keyframes matrix-core-node-pulse/);
+test("首頁 Matrix Core 能量沿 M 與圓環運行且不保留外框節點", () => {
+  assert.match(prototypeView, /className="matrix-core-symbol-energy"/);
+  assert.match(prototypeView, /className="matrix-core-energy-path matrix-core-energy-path--m"/);
+  assert.match(prototypeView, /className="matrix-core-energy-path matrix-core-energy-path--ring"/);
+  assert.doesNotMatch(prototypeView, /className="matrix-core-energy-loop"/);
+  assert.doesNotMatch(prototypeView, /className="matrix-core-node"/);
+  assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*animation:\s*matrix-core-symbol-circulation/s);
+  assert.match(visual, /@keyframes matrix-core-symbol-circulation/);
   assert.doesNotMatch(base, /matrix-core-stardust-scan/);
   assert.doesNotMatch(base, /matrix-core-pulse/);
-  assert.doesNotMatch(visual, /\.matrix-core-banner::after\s*\{[^}]*animation:\s*none/s);
 });
