@@ -68,21 +68,24 @@ def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:
     }
 
 
-def test_explore_builder_keeps_period_groups_cumulative() -> None:
+def test_explore_builder_keeps_each_result_on_its_exact_target_boundary() -> None:
     history = [
         {"period": str(15 - index), "numbers": ["01", "02", "03", "04", "05"]}
         for index in range(15)
     ]
 
     def runner(unit: dict, _: list[dict]) -> dict:
-        return {"results": [{
-            "id": f'{unit["lockedSourceIndex"]}:{unit["lockedPosition"]}',
-            "number": "01", "lockedPosition": unit["lockedPosition"],
-            "predictionDistance": 1, "consecutive": "準4進5", "highestStreak": 4,
-            "predictionNumbers": ["06"], "ruleCount": 1,
-            "searchCondition": {"referenceOffset": -1, "referencePosition": 2},
-            "ruleSets": [],
-        }]}
+        return {"results": [
+            {
+                "id": f'{unit["lockedSourceIndex"]}:{unit["lockedPosition"]}:{distance}',
+                "number": "01", "lockedPosition": unit["lockedPosition"],
+                "predictionDistance": distance, "consecutive": "準4進5", "highestStreak": 4,
+                "predictionNumbers": ["06"], "ruleCount": 1,
+                "searchCondition": {"referenceOffset": -1, "referencePosition": 2},
+                "ruleSets": [],
+            }
+            for distance in range(unit["minPredictionDistance"], unit["maxPredictionDistance"] + 1)
+        ]}
 
     artifact = build_explore_artifact("今彩539", "13", history, runner)
     counts = {

@@ -19,8 +19,8 @@ def work_units(lottery: str, history_length: int, position_count: int) -> list[d
                         'explorePeriods': 13,
                         'exploreDateOffset': 0,
                         'exploreRange': '完整範圍',
-                        'minPredictionDistance': 1,
-                        'maxPredictionDistance': 13,
+                        'minPredictionDistance': max(1, source_index - 1),
+                        'maxPredictionDistance': min(13, source_index + 1),
                     })
     return units
 

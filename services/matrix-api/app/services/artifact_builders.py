@@ -29,11 +29,13 @@ def tiangong_work_units() -> list[dict[str, Any]]:
     return units
 
 
-def _explore_selections(source_index: int) -> list[tuple[int, int]]:
+def _explore_selections(source_index: int, prediction_distance: int) -> list[tuple[int, int]]:
     selections: list[tuple[int, int]] = []
     for date_offset in (0, 1, 2):
         relative_source_index = source_index - date_offset
         if relative_source_index < 0:
+            continue
+        if prediction_distance != relative_source_index + 1:
             continue
         for periods in (2, 7, 13):
             if relative_source_index < periods:
@@ -57,7 +59,8 @@ def _append_explore_result(
         if rule_count not in {1, 2}:
             continue
         source_index = unit["lockedSourceIndex"]
-        for periods, date_offset in _explore_selections(source_index):
+        prediction_distance = int(raw.get("predictionDistance", 0))
+        for periods, date_offset in _explore_selections(source_index, prediction_distance):
             identifier = "|".join(map(str, [
                 unit["numberOrder"], source_index, unit["lockedPosition"],
                 date_offset, periods, unit["algorithmType"], rule_count, raw.get("id", ""),
@@ -65,7 +68,7 @@ def _append_explore_result(
             item = {
                 "id": identifier, "number": str(raw.get("number", "")),
                 "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
-                "predictionDistance": int(raw.get("predictionDistance", 0)),
+                "predictionDistance": prediction_distance,
                 "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
                 "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
                 "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],

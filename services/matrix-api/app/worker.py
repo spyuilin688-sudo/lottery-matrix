@@ -45,7 +45,7 @@ def run_worker(
         assert preparation_error is not None
         raise preparation_error
 
-    version = f'{draw["period"]}:matrix-python-v2'
+    version = f'{draw["period"]}:matrix-python-v3'
     pipeline = AnalysisPipeline(
         repository,
         builders or create_artifact_builders(),

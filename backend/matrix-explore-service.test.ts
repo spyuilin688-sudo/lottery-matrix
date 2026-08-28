@@ -49,6 +49,33 @@ const history = Array.from({ length: 13 }, (_, index) => ({
   )),
 }));
 
+function boundaryResults(input: {
+  lockedSourceIndex: number;
+  lockedPosition: number;
+  algorithmType: '加減' | '合值' | '拖牌';
+  minPredictionDistance: number;
+  maxPredictionDistance: number;
+}) {
+  return Array.from({
+    length: input.maxPredictionDistance - input.minPredictionDistance + 1,
+  }, (_, index) => {
+    const predictionDistance = input.minPredictionDistance + index;
+    return {
+      id: `${input.lockedSourceIndex}:${input.lockedPosition}:${predictionDistance}`,
+      number: '10',
+      lockedPosition: input.lockedPosition,
+      predictionDistance,
+      consecutive: '準4進5',
+      highestStreak: 4,
+      predictionNumbers: ['03'],
+      algorithmType: input.algorithmType,
+      ruleCount: 1,
+      searchCondition: { referenceOffset: -7 },
+      ruleSets: [],
+    };
+  });
+}
+
 describe('canonical Matrix Explore artifact', () => {
   it('enriches legacy validation with the reference draw needed by the expanded UI', () => {
     const artifact: ExploreArtifact = {
@@ -103,13 +130,16 @@ describe('canonical Matrix Explore artifact', () => {
     expect(enriched.validationById.legacy.sourceA).not.toHaveProperty('referenceNumbers');
   });
 
-  it('creates 390 five-ball groups and 546 seven-position groups from thirteen draws', () => {
+  it('creates source groups with only the distances that reach a selectable target boundary', () => {
     const fiveBallUnits = createExploreWorkUnits('今彩539', history);
     expect(fiveBallUnits).toHaveLength(390);
     expect(new Set(fiveBallUnits.map((unit) => [
       unit.minPredictionDistance,
       unit.maxPredictionDistance,
-    ].join('-')))).toEqual(new Set(['1-13']));
+    ].join('-')))).toEqual(new Set([
+      '1-1', '1-2', '1-3', '2-4', '3-5', '4-6', '5-7',
+      '6-8', '7-9', '8-10', '9-11', '10-12', '11-13',
+    ]));
     const sevenPositionHistory = history.map((draw) => ({
       ...draw,
       numbers: [...draw.numbers, '06', '07'],
@@ -119,7 +149,10 @@ describe('canonical Matrix Explore artifact', () => {
     expect(new Set(sevenPositionUnits.map((unit) => [
       unit.minPredictionDistance,
       unit.maxPredictionDistance,
-    ].join('-')))).toEqual(new Set(['1-13']));
+    ].join('-')))).toEqual(new Set([
+      '1-1', '1-2', '1-3', '2-4', '3-5', '4-6', '5-7',
+      '6-8', '7-9', '8-10', '9-11', '10-12', '11-13',
+    ]));
   });
 
   it('runs only the current thirteen-draw lock groups and detaches validation from list rows', () => {
@@ -158,21 +191,9 @@ describe('canonical Matrix Explore artifact', () => {
     });
   });
 
-  it('filters two and seven draws from one thirteen-draw calculation', () => {
+  it('filters two and seven draws from exact distance-to-target calculations', () => {
     const artifact = buildExploreArtifact('今彩539', '114000123', history, (input) => ({
-      results: [{
-        id: `${input.lockedSourceIndex}:${input.lockedPosition}`,
-        number: '10',
-        lockedPosition: input.lockedPosition,
-        predictionDistance: 1,
-        consecutive: '準4進5',
-        highestStreak: 4,
-        predictionNumbers: ['03'],
-        algorithmType: input.algorithmType,
-        ruleCount: 1,
-        searchCondition: { referenceOffset: -7 },
-        ruleSets: [],
-      }],
+      results: boundaryResults(input),
     }));
 
     const filtered = (explorePeriods: 2 | 7 | 13) => filterExploreArtifact(artifact, {
@@ -192,19 +213,7 @@ describe('canonical Matrix Explore artifact', () => {
       period: `shifted-${index}`,
     }));
     const artifact = buildExploreArtifact('今彩539', 'shifted-0', fifteenDrawHistory, (input) => ({
-      results: [{
-        id: `${input.lockedSourceIndex}:${input.lockedPosition}`,
-        number: '10',
-        lockedPosition: input.lockedPosition,
-        predictionDistance: 1,
-        consecutive: '準4進5',
-        highestStreak: 4,
-        predictionNumbers: ['03'],
-        algorithmType: input.algorithmType,
-        ruleCount: 1,
-        searchCondition: { referenceOffset: -7 },
-        ruleSets: [],
-      }],
+      results: boundaryResults(input),
     }));
 
     const shifted = filterExploreArtifact(artifact, {
@@ -217,6 +226,7 @@ describe('canonical Matrix Explore artifact', () => {
     expect(createExploreWorkUnits('今彩539', fifteenDrawHistory)).toHaveLength(450);
     expect(shifted.total).toBe(10);
     expect(new Set(shifted.items.map((item) => item.lockedSourceIndex))).toEqual(new Set([2, 3]));
+    expect(new Set(shifted.items.map((item) => item.predictionDistance))).toEqual(new Set([1, 2]));
     expect(shifted.items.every((item) => (
       item.explorePeriods === 2 && item.exploreDateOffset === 2
     ))).toBe(true);

@@ -3,7 +3,7 @@ export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎
 export type MatrixAlgorithmType = '加減' | '合值' | '拖牌';
 export type MatrixDraw = { period: string; drawDate: string; numbers: string[]; sortedNumbers?: string[]; drawOrderNumbers?: string[] | null };
 export type MatrixAlgorithmRequest = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; lockedPosition: number; lockedNumber: number; lockedSourcePeriod?: string; referenceOffset?: number; referencePosition?: number; predictionDistance: number; ruleCount: 1 | 2; algorithmType: MatrixAlgorithmType };
-export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 2 | 7 | 13; exploreDateOffset: 0 | 1 | 2; exploreRange: '完整範圍'; minPredictionDistance: 1; maxPredictionDistance: 13 };
+export type MatrixExploreGroupInput = { lottery: MatrixLottery; numberOrder: MatrixNumberOrder; algorithmType: MatrixAlgorithmType; lockedSourceIndex: number; lockedPosition: number; explorePeriods: 2 | 7 | 13; exploreDateOffset: 0 | 1 | 2; exploreRange: '完整範圍'; minPredictionDistance: number; maxPredictionDistance: number };
 export type MatrixAlgorithmRule = { value: number; display: string; algorithmType: MatrixAlgorithmType };
 export type MatrixValidationRow = { group: string; sourcePeriod: string; sourceNumbers: number[]; sourceSortedNumbers: Array<string | number>; sourceDrawOrderNumbers: Array<string | number> | null; referencePeriod: string; referenceNumbers: number[]; referenceSortedNumbers: Array<string | number>; referenceDrawOrderNumbers: Array<string | number> | null; baseNumber: number; predictionPeriod: string; predictionNumbers: Array<string | number>; candidateRules: number[]; matchedRules: MatrixAlgorithmRule[]; hitNumbers: number[]; success: boolean };
 export type MatrixAlgorithmRuleSet = { rules: MatrixAlgorithmRule[]; predictionNumbers: number[]; historicalValidation: MatrixValidationRow[] };
@@ -104,7 +104,10 @@ function candidateRule(algorithmType: AlgorithmType, baseNumber: number, targetN
 }
 
 function applyRule(algorithmType: AlgorithmType, baseNumber: number, rule: number, max: number) {
-  if (algorithmType === '合值') return normalizeMatrixNumber(rule - baseNumber, max);
+  if (algorithmType === '合值') {
+    const result = rule - baseNumber;
+    return result >= 1 && result <= max ? result : null;
+  }
   return normalizeMatrixNumber(baseNumber + rule, max);
 }
 
@@ -134,8 +137,7 @@ function buildCandidateGroup(history: Draw[], sourceIndex: number, request: Matr
     if (request.algorithmType === '拖牌') addTypedRule(candidateMap, '拖牌', dragRule, target);
     else {
       const rule = candidateRule(request.algorithmType, base.baseNumber, target, max);
-      if (request.algorithmType === '加減' && rule === 0) addTypedRule(candidateMap, '拖牌', 0, target);
-      else if (!(request.algorithmType === '加減' && lockedConditionIsArithmeticReference)) addTypedRule(candidateMap, request.algorithmType, rule, target);
+      if (!(request.algorithmType === '加減' && lockedConditionIsArithmeticReference)) addTypedRule(candidateMap, request.algorithmType, rule, target);
     }
   }
   return { group, source, reference: base.reference, prediction, baseNumber: base.baseNumber, lockedBaseNumber, candidateMap };
@@ -255,11 +257,16 @@ function evaluatePreparedMatrixAlgorithm(
     predictionPeriod: aPrediction?.period ?? null,
     predictionCompleted: Boolean(aPrediction),
   };
-  const resultSets = found.sets.map(rules => {
+  const resultSets = found.sets.flatMap(rules => {
     const parsedRules = rules.map(rule => typedRuleParts(rule));
-    const predictions = [...new Set(parsedRules.map(rule => applyRule(rule.algorithmType, rule.algorithmType === '拖牌' ? request.lockedNumber : aBase.baseNumber, rule.value, max)))].sort((a, b) => a - b);
-    return { rules: parsedRules.map(rule => ({ value: rule.value, display: ruleLabel(rule.algorithmType, rule.value), algorithmType: rule.algorithmType })), predictionNumbers: predictions, historicalValidation: validation(groups, rules, request) };
+    const predictions = [...new Set(parsedRules
+      .map(rule => applyRule(rule.algorithmType, rule.algorithmType === '拖牌' ? request.lockedNumber : aBase.baseNumber, rule.value, max))
+      .filter((prediction): prediction is number => prediction !== null))]
+      .sort((a, b) => a - b);
+    if (predictions.length === 0) return [];
+    return [{ rules: parsedRules.map(rule => ({ value: rule.value, display: ruleLabel(rule.algorithmType, rule.value), algorithmType: rule.algorithmType })), predictionNumbers: predictions, historicalValidation: validation(groups, rules, request) }];
   });
+  if (resultSets.length === 0) return { valid: false, reason: '本期參照值沒有合法預測號碼', searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), results: [] };
   if (request.ruleCount === 2 && resultSets.length > 1) {
     const distinctRules = [...new Set(found.sets.flat())].sort();
     const conflictingRules = distinctRules.map(rule => typedRuleParts(rule).value);

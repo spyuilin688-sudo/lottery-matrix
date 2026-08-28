@@ -23,18 +23,42 @@ def test_normalization_wraps_each_lottery_range() -> None:
     assert normalize_matrix_number(0, 39) == 39
 
 
-def test_zero_is_drag_and_validation_keeps_full_draws() -> None:
+def test_zero_stays_add_subtract_when_reference_is_not_the_locked_ball() -> None:
+    request = {
+        **REQUEST,
+        "lockedPosition": 4,
+        "lockedNumber": 32,
+        "referenceOffset": -1,
+        "referencePosition": 1,
+    }
     history = [
-        draw("A", [10, 20, 25, 30, 35]), draw("P1", [1, 2, 3, 4, 20]),
+        draw("A", [4, 14, 27, 32, 34]),
+        draw("RA", [9, 12, 20, 30, 35]),
+        draw("P1", [1, 6, 18, 25, 36]),
+        draw("S1", [2, 6, 22, 32, 36]),
+        draw("R1", [18, 20, 25, 30, 35]),
+    ]
+
+    result = run_matrix_algorithm_with_history(request, history)
+    zero_sets = [
+        item for item in rule_sets(result)
+        if item["rules"] == [{"algorithmType": "加減", "value": 0, "display": "+0"}]
+    ]
+
+    assert len(zero_sets) == 1
+    assert zero_sets[0]["predictionNumbers"] == [9]
+
+
+def test_validation_keeps_full_draws() -> None:
+    history = [
+        draw("A", [10, 20, 25, 30, 35]), draw("P1", [1, 2, 3, 4, 25]),
         draw("S1", [10, 20, 25, 30, 35]),
     ]
     result = run_matrix_algorithm_with_history(REQUEST, history)
-    zero_rules = [rule for item in rule_sets(result) for rule in item["rules"] if rule["value"] == 0]
-    assert [rule["algorithmType"] for rule in zero_rules] == ["拖牌"]
     row = rule_sets(result)[0]["historicalValidation"][0]
     assert row["sourceSortedNumbers"] == ["10", "20", "25", "30", "35"]
     assert row["referenceSortedNumbers"] == ["10", "20", "25", "30", "35"]
-    assert row["predictionNumbers"] == ["01", "02", "03", "04", "20"]
+    assert row["predictionNumbers"] == ["01", "02", "03", "04", "25"]
 
 
 def test_validation_stops_at_thirteen_groups() -> None:
@@ -104,3 +128,26 @@ def test_combine_road_keeps_full_sum_as_rule_value() -> None:
     assert combined_59 is not None
     assert combined_59["rules"] == [{"algorithmType": "合值", "value": 59, "display": "59"}]
     assert combined_59["predictionNumbers"] == [24]
+
+
+def test_combine_road_omits_out_of_range_complements_instead_of_wrapping() -> None:
+    request = {
+        **REQUEST,
+        "lockedPosition": 3,
+        "lockedNumber": 7,
+        "referenceOffset": -1,
+        "referencePosition": 5,
+        "algorithmType": "合值版路",
+    }
+    history = [
+        draw("A", [1, 4, 7, 20, 30]),
+        draw("RA", [2, 8, 14, 20, 26]),
+        draw("P1", [32, 33, 34, 36, 39]),
+        draw("S1", [1, 4, 7, 20, 30]),
+        draw("R1", [2, 8, 14, 20, 35]),
+    ]
+
+    result = run_matrix_algorithm_with_history(request, history)
+
+    assert result["valid"] is False
+    assert rule_sets(result) == []

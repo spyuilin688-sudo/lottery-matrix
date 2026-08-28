@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-from app.repositories.artifact_chunks import encode_chunk_payload, materialize_chunks
+from app.repositories.artifact_chunks import materialize_chunks
 
 
 ARTIFACT_KINDS = {"explore", "tianyan", "tiangong", "status"}
@@ -85,7 +85,7 @@ class InMemoryAnalysisRepository:
         self.artifact_chunks[(lottery, draw_period, analysis_version, kind, chunk_index)] = {
             "cursor_start": cursor_start,
             "cursor_end": cursor_end,
-            "payload": encode_chunk_payload(payload),
+            "payload": payload,
             "expiresAt": datetime.now(UTC) + RETENTION,
         }
 
@@ -240,7 +240,7 @@ class SupabaseAnalysisRepository:
         record = {
             "lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version,
             "kind": kind, "chunk_index": chunk_index, "cursor_start": cursor_start,
-            "cursor_end": cursor_end, "payload": encode_chunk_payload(payload),
+            "cursor_end": cursor_end, "payload": payload,
             "expires_at": (now + RETENTION).isoformat(),
         }
         self.client.table("matrix_analysis_artifact_chunks").upsert(

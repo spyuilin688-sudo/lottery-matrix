@@ -90,8 +90,11 @@ def _candidate_rule(algorithm_type: str, base_number: int, target: int, maximum:
     return base_number + target if algorithm_type == "合值" else (target - base_number + maximum) % maximum
 
 
-def _apply_rule(algorithm_type: str, base_number: int, rule: int, maximum: int) -> int:
-    return normalize_matrix_number(rule - base_number, maximum) if algorithm_type == "合值" else normalize_matrix_number(base_number + rule, maximum)
+def _apply_rule(algorithm_type: str, base_number: int, rule: int, maximum: int) -> int | None:
+    if algorithm_type == "合值":
+        result = rule - base_number
+        return result if 1 <= result <= maximum else None
+    return normalize_matrix_number(base_number + rule, maximum)
 
 
 def _typed_key(algorithm_type: str, value: int) -> str:
@@ -135,9 +138,7 @@ def _build_group(history: list[dict], source_index: int, request: dict, group_na
             _add_rule(candidate_map, "拖牌", drag_rule, target)
         else:
             rule = _candidate_rule(request["algorithmType"], base["baseNumber"], target, maximum)
-            if request["algorithmType"] == "加減" and rule == 0:
-                _add_rule(candidate_map, "拖牌", 0, target)
-            elif not (request["algorithmType"] == "加減" and locked_is_reference):
+            if not (request["algorithmType"] == "加減" and locked_is_reference):
                 _add_rule(candidate_map, request["algorithmType"], rule, target)
     return {
         "group": group_name, "source": source, "reference": base["reference"], "prediction": prediction,
@@ -259,12 +260,29 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
     result_sets = []
     for rules in found["sets"]:
         parsed = [_typed_parts(rule) for rule in rules]
-        predictions = sorted({_apply_rule(rule["algorithmType"], request["lockedNumber"] if rule["algorithmType"] == "拖牌" else a_base["baseNumber"], rule["value"], maximum) for rule in parsed})
+        predictions = sorted({
+            prediction
+            for rule in parsed
+            if (prediction := _apply_rule(
+                rule["algorithmType"],
+                request["lockedNumber"] if rule["algorithmType"] == "拖牌" else a_base["baseNumber"],
+                rule["value"], maximum,
+            )) is not None
+        })
+        if not predictions:
+            continue
         result_sets.append({
             "rules": [{**rule, "display": _rule_label(rule["algorithmType"], rule["value"])} for rule in parsed],
             "predictionNumbers": predictions, "historicalValidation": _validation(groups, rules, request),
         })
     display = f'準{found["highest"]}進{found["highest"] + 1}'
+    if not result_sets:
+        return {
+            **empty,
+            "reason": "本期參照值沒有合法預測號碼",
+            "highestStreak": found["highest"],
+            "displayStreak": display,
+        }
     if request["ruleCount"] == 2 and len(result_sets) > 1:
         distinct = sorted({rule for rules in found["sets"] for rule in rules})
         merged = sorted({number for result in result_sets for number in result["predictionNumbers"]})

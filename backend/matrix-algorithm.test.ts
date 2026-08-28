@@ -29,19 +29,30 @@ function ruleSets(result: ReturnType<typeof runMatrixAlgorithmWithHistory>) {
 }
 
 describe('Matrix Explore algorithm invariants', () => {
-  it('+0 is emitted as drag and never as arithmetic', () => {
+  it('+0 stays add-subtract when the reference is not the locked ball', () => {
     const history = [
-      draw('A', [10, 20, 25, 30, 35]),
-      draw('P1', [1, 2, 3, 4, 20]),
-      draw('S1', [10, 20, 25, 30, 35]),
+      draw('A', [4, 14, 27, 32, 34]),
+      draw('RA', [9, 12, 20, 30, 35]),
+      draw('P1', [1, 6, 18, 25, 36]),
+      draw('S1', [2, 6, 22, 32, 36]),
+      draw('R1', [18, 20, 25, 30, 35]),
     ];
 
-    const result = runMatrixAlgorithmWithHistory(request, history);
-    const zeroRules = ruleSets(result)
-      .flatMap((set) => set.rules)
-      .filter((rule) => rule.value === 0);
+    const result = runMatrixAlgorithmWithHistory({
+      ...request,
+      lockedPosition: 4,
+      lockedNumber: 32,
+      referenceOffset: -1,
+      referencePosition: 1,
+    }, history);
+    const zeroSets = ruleSets(result).filter((set) => (
+      set.rules.length === 1
+      && set.rules[0].algorithmType === '加減'
+      && set.rules[0].value === 0
+    ));
 
-    expect(zeroRules.map((rule) => rule.algorithmType)).toEqual(['拖牌']);
+    expect(zeroSets).toHaveLength(1);
+    expect(zeroSets[0].predictionNumbers).toEqual([9]);
   });
 
   it('stops validation at thirteen historical groups', () => {
@@ -146,5 +157,25 @@ describe('Matrix Explore algorithm invariants', () => {
 
     expect(combined59?.rules).toEqual([{ algorithmType: '合值', value: 59, display: '59' }]);
     expect(combined59?.predictionNumbers).toEqual([24]);
+  });
+
+  it('omits out-of-range combine complements instead of wrapping them', () => {
+    const result = runMatrixAlgorithmWithHistory({
+      ...request,
+      lockedPosition: 3,
+      lockedNumber: 7,
+      referenceOffset: -1,
+      referencePosition: 5,
+      algorithmType: '合值版路',
+    }, [
+      draw('A', [1, 4, 7, 20, 30]),
+      draw('RA', [2, 8, 14, 20, 26]),
+      draw('P1', [32, 33, 34, 36, 39]),
+      draw('S1', [1, 4, 7, 20, 30]),
+      draw('R1', [2, 8, 14, 20, 35]),
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(ruleSets(result)).toHaveLength(0);
   });
 });

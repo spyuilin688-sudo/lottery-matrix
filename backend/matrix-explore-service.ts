@@ -67,11 +67,12 @@ function ballCount(lottery: MatrixLottery) {
   return lottery === '今彩539' || lottery === '天天樂' ? 5 : 7;
 }
 
-function exploreSelectionsForSourceIndex(lockedSourceIndex: number) {
+function exploreSelectionsForSourceIndex(lockedSourceIndex: number, predictionDistance: number) {
   const selections: Array<Pick<ExploreRunInput, 'explorePeriods' | 'exploreDateOffset'>> = [];
   for (const exploreDateOffset of [0, 1, 2] as const) {
     const relativeSourceIndex = lockedSourceIndex - exploreDateOffset;
     if (relativeSourceIndex < 0) continue;
+    if (predictionDistance !== relativeSourceIndex + 1) continue;
     for (const explorePeriods of [2, 7, 13] as const) {
       if (relativeSourceIndex < explorePeriods) {
         selections.push({ explorePeriods, exploreDateOffset });
@@ -114,8 +115,8 @@ export function createExploreWorkUnits(
             explorePeriods: 13,
             exploreDateOffset: 0,
             exploreRange: '完整範圍',
-            minPredictionDistance: 1,
-            maxPredictionDistance: 13,
+            minPredictionDistance: Math.max(1, lockedSourceIndex - 1),
+            maxPredictionDistance: Math.min(13, lockedSourceIndex + 1),
           });
         }
       }
@@ -137,14 +138,15 @@ export function buildExploreGroupArtifact(
     const searchCondition = (raw.searchCondition ?? {}) as Record<string, unknown>;
     const resultRuleCount = Number(raw.ruleCount ?? searchCondition.ruleCount) as 1 | 2;
     if (resultRuleCount !== 1 && resultRuleCount !== 2) continue;
-    for (const selection of exploreSelectionsForSourceIndex(input.lockedSourceIndex)) {
+    const predictionDistance = Number(raw.predictionDistance);
+    for (const selection of exploreSelectionsForSourceIndex(input.lockedSourceIndex, predictionDistance)) {
       const exactInput = { ...input, ...selection };
       const id = canonicalId(exactInput, raw);
       items.push({
         id,
         number: String(raw.number ?? ''),
         lockedPosition: Number(raw.lockedPosition),
-        predictionDistance: Number(raw.predictionDistance),
+        predictionDistance,
         consecutive: String(raw.consecutive ?? ''),
         highestStreak: Number(raw.highestStreak),
         predictionNumbers: Array.isArray(raw.predictionNumbers)
