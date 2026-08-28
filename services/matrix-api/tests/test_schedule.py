@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.schedule import call_due, lottery_call_time, retry_offsets
 
 
-TAIPEI = timezone.utc
+TAIPEI = ZoneInfo("Asia/Taipei")
 
 
 def test_retry_offsets_follow_formal_call_rule() -> None:
@@ -17,9 +18,10 @@ def test_retry_offsets_follow_formal_call_rule() -> None:
 
 
 def test_taipei_lottery_call_times() -> None:
-    assert lottery_call_time("今彩539", datetime(2026, 8, 28, tzinfo=TAIPEI)).strftime("%H:%M") == "20:33"
-    assert lottery_call_time("大樂透", datetime(2026, 8, 28, tzinfo=TAIPEI)).strftime("%H:%M") == "20:53"
-    assert lottery_call_time("六合彩", datetime(2026, 8, 28, tzinfo=TAIPEI)).strftime("%H:%M") == "21:33"
+    day = datetime(2026, 8, 28, tzinfo=TAIPEI)
+    assert lottery_call_time("今彩539", day).strftime("%H:%M") == "20:33"
+    assert lottery_call_time("大樂透", day).strftime("%H:%M") == "20:53"
+    assert lottery_call_time("六合彩", day).strftime("%H:%M") == "21:33"
 
 
 def test_fantasy5_uses_summer_and_winter_call_times() -> None:
