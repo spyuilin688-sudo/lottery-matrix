@@ -25,5 +25,6 @@ test('首頁彩種選取框為 0.7px 並取消額外高亮陰影', () => {
   const selected = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]');
   const selectedFrame = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before');
   assert.match(selected, /box-shadow:\s*none;/);
-  assert.match(selectedFrame, /inset:\s*\.5px;/);\n  assert.match(selectedFrame, /padding:\s*\.7px;/);
+  assert.match(selectedFrame, /inset:\s*\.5px;/);
+  assert.match(selectedFrame, /padding:\s*\.7px;/);
 });
