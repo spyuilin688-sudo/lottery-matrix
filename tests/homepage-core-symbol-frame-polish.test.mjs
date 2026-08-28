@@ -30,9 +30,8 @@ test("五大功能圖片恢復 100% 且不改變既有排列", () => {
   assert.match(base, /--home-feature-inline:\s*10px;/);
 });
 
-test("開獎資訊卡使用專用深切角且不影響底部資訊卡", () => {
-  assert.match(visual, /\.home-screen \.latest-draw-card\s*\{[^}]*--home-draw-card-cut:\s*clamp\(6px, 2\.05vw, 8px\);/s);
-  const drawCard = visual.match(/\.home-screen \.latest-draw-card\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.doesNotMatch(drawCard, /--home-octagon-cut:/);
-  assert.match(visual, /\.home-screen \.latest-draw-card::after\s*\{[^}]*--home-octagon-cut:\s*var\(--home-draw-card-cut\);[^}]*box-shadow:\s*inset 0 0 0 1px/s);
+test("開獎資訊卡加深外切角且重設底部資訊卡切角", () => {
+  assert.match(visual, /\.home-screen \.latest-draw-card\s*\{[^}]*--home-octagon-cut:\s*clamp\(6px, 2\.05vw, 8px\);/s);
+  assert.match(visual, /\.home-screen \.latest-draw-card::after\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s);
+  assert.match(visual, /\.latest-draw-card \.next-draw-info--embedded \.next-draw-item\s*\{[^}]*--home-octagon-cut:\s*clamp\(4px, 1\.54vw, 6px\);/s);
 });
