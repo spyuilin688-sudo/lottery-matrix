@@ -17,7 +17,7 @@ test('首頁使用指定內距、84% 功能圖片與 14px Matrix Core 外距', (
   assert.match(block(base, '.home-screen .home-layout'), /--home-feature-inline:\s*10px;/);
   assert.match(block(base, '.home-screen .home-shortcut img'), /width:\s*84%;/);
   assert.match(block(base, '.home-screen .home-shortcut img'), /height:\s*84%;/);
-  assert.match(block(base, '.home-screen .matrix-status-section'), /padding-inline:\s*0;/);
+  assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-inline:\s*0;/s);
   assert.match(block(base, '.home-screen .home-bottom-group'), /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
 });
 
