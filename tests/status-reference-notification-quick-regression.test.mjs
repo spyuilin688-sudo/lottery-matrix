@@ -20,7 +20,7 @@ test("Matrix 狀態兩頁的彩種切換器只由頁面內距控制左右外距"
 test("彩種按鈕的選取範圍跟隨共用切角外框", () => {
   assert.match(lotterySwitcher, /--matrix-option-cut:\s*clamp\(4px, 1\.54vw, 6px\);/);
   assert.match(lotterySwitcher, /\.lottery-card\s*\{[^}]*clip-path:\s*polygon\(/s);
-  assert.match(lotterySwitcher, /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*clip-path:\s*inherit;[^}]*border-radius:\s*0;/s);
+  assert.match(lotterySwitcher, /\.lottery-card::after\s*\{[^}]*clip-path:\s*inherit;[^}]*border-radius:\s*0;[^}]*background:\s*var\(--home-octagon-frame\);/s);
 });
 
 test("自訂觸發四狀態與上方彩種切換同步長寬高間距及切角", () => {
@@ -52,7 +52,7 @@ test("號碼對照單單碼與整列選取互相覆蓋，特別號也保留選�
 });
 
 test("號碼對照單期數與開獎號碼分隔線使用清楚一致的色值", () => {
-  assert.match(referenceVisual, /\.reference-row > span \+ span,[\s\S]*?\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.match(referenceVisual, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一按鈕渲染器與 6px 外框內距", () => {
