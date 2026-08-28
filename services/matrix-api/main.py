@@ -1,3 +1,5 @@
-from app.main import app
+from app.api_server import main
 
-__all__ = ["app"]
+
+if __name__ == "__main__":
+    main()
