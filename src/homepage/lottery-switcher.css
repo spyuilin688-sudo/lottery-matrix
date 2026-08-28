@@ -53,19 +53,34 @@
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before {
+  --matrix-selected-frame-width: .7px;
+  --matrix-selected-frame-half: .35px;
   position: absolute;
   z-index: 4;
   inset: .5px;
   display: block;
-  padding: .7px;
   clip-path: inherit;
   background: var(--lottery-selected-gradient);
   content: "";
   pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
+    linear-gradient(#000 0 0) bottom center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
+    linear-gradient(#000 0 0) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    linear-gradient(#000 0 0) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat;
+  mask:
+    linear-gradient(#000 0 0) top center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
+    linear-gradient(#000 0 0) bottom center / calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) var(--matrix-selected-frame-width) no-repeat,
+    linear-gradient(#000 0 0) left center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    linear-gradient(#000 0 0) right center / var(--matrix-selected-frame-width) calc(100% - var(--matrix-option-cut) - var(--matrix-option-cut)) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) top right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom left / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% - var(--matrix-selected-frame-half)), #000 calc(50% + var(--matrix-selected-frame-half)), transparent calc(50% + var(--matrix-selected-frame-half))) bottom right / var(--matrix-option-cut) var(--matrix-option-cut) no-repeat;
 }
 
 .lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="今彩539"] {
