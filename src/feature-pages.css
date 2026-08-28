@@ -1597,6 +1597,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   gap: .375rem;
   border: 0;
 }
+.matrix-tiangong-screen .tiangong-settings .tiangong-setting-row > .tiangong-setting-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
 .matrix-tiangong-screen .tiangong-settings .tiangong-setting-row > span {
   width: auto;
   min-width: 88.8px;
