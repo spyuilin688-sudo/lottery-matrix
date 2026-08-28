@@ -24,8 +24,9 @@ test("彩種按鈕的選取範圍跟隨共用切角外框", () => {
 });
 
 test("自訂觸發四狀態與上方彩種切換同步長寬高間距及切角", () => {
-  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532 \/ 214;[^}]*padding:\s*0;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
+  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532 \/ 214;[^}]*padding-block:\s*0;[^}]*padding-inline:\s*4px;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
   assert.match(lotterySwitcher, /\.lottery-card,[\s\S]*?\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*clip-path:\s*polygon\(/s);
+  assert.match(lotterySwitcher, /\.custom-status-tabs > button::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
   assert.doesNotMatch(feature, /\.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;/s);
   assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
 });
