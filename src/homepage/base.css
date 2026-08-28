@@ -18,7 +18,7 @@
 
 .home-screen .home-layout {
   --home-feature-inline: 10px;
-  --home-feature-gap: clamp(2px, .77vw, 3px);
+  --home-feature-gap: 4px;
   --home-feature-card-aspect: 386 / 496;
   --home-gap-status-core: 10px;
   --home-gap-core-features: 14px;
