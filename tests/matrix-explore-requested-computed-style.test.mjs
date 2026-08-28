@@ -128,7 +128,7 @@ test("命中條件分隔線下移 4px 並與進階探索設定相距 4px", () =>
   assert.equal(unselected.minHeight, selected.minHeight);
   assert.equal(unselected.padding, selected.padding);
   assert.equal(unselected.boxSizing, selected.boxSizing);
-  assert.equal(style(".hit-options").paddingBottom, "4px");
+  assert.equal(style(".hit-options").paddingBottom, "6px");
   assert.equal(style(".hit-options").marginBottom, "4px");
 });
 

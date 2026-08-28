@@ -44,13 +44,11 @@ test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外�
   ]) {
     const bodies = ruleBodies(responsive, selector);
     assert.equal(bodies.length, 1);
-    const expectedBottom = selector.source.includes("tongxing-screen")
-      ? /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/
-      : /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/;
-    assert.match(bodies[0], expectedBottom);
+    assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/);
   }
   assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
   assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
+  assert.match(feature, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\)/s);
   assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
   assert.doesNotMatch(tongxing, /\.tongxing-screen \.feature-body\s*\{/);
 });

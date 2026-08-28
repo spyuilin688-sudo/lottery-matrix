@@ -69,12 +69,12 @@ test('calculator compact styles render at the approved sizes without shrinking n
 
   assert.equal(style('.calculator-panel header button').height, '28px');
   assert.equal(style('.calculator-panel header button').fontSize, '12px');
-  assert.equal(style('.calculator-panel header button svg').width, '8px');
-  assert.equal(style('.calculator-panel header button svg').height, '8px');
+  assert.equal(style('.calculator-panel header button svg').width, '10px');
+  assert.equal(style('.calculator-panel header button svg').height, '10px');
   assert.equal(style('.quick-actions button').height, '28px');
   assert.equal(style('.quick-actions button').fontSize, '12px');
-  assert.equal(style('.quick-actions .clear-button svg').width, '8px');
-  assert.equal(style('.quick-actions .clear-button svg').height, '8px');
+  assert.equal(style('.quick-actions .clear-button svg').width, '10px');
+  assert.equal(style('.quick-actions .clear-button svg').height, '10px');
 
   assert.equal(style('.calculation-results').paddingTop, '6px');
   assert.equal(style('.calculation-results').paddingRight, '4px');

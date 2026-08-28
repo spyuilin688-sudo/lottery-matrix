@@ -33,8 +33,9 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
   assert.match(featureCss, /\.reference-query-panel \.reference-search input,\s*\.reference-query-panel \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s);
 });
 
-test("我的頁面在底部導覽淨空之外保留 8px", () => {
-  assert.match(featureCss, /\.profile-screen \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+test("我的頁面由非首頁共用規則保留底部導覽淨空之外 8px", () => {
+  assert.match(featureCss, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+  assert.doesNotMatch(featureCss, /\.profile-screen \.feature-body\s*\{[^}]*padding-bottom:/s);
 });
 
 test("快捷設定不依賴一次性 portal host 才能顯示", () => {

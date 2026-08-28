@@ -46,7 +46,17 @@ test("號碼對照單輸入數字字型與 Matrix 同星一致", () => {
 });
 
 test("號碼對照單單碼與整列選取互相覆蓋，特別號也保留選取樣式", () => {
-  assert.match(pages, /const toggleMarkedCell[\s\S]*?setMarkedRows\(\(current\)[\s\S]*?next\.delete\(issue\)/);
+  const rowHandler = pages.slice(pages.indexOf("const toggleMarkedRow"), pages.indexOf("const toggleMarkedCell"));
+  const cellHandler = pages.slice(pages.indexOf("const toggleMarkedCell"), pages.indexOf("const startReferenceSearch"));
+  assert.match(
+    rowHandler,
+    /setMarkedCells\(\(cells\) => new Set\(\s*\[\.\.\.cells\]\.filter\(\(key\) => !key\.startsWith\(`\$\{issue\}-`\)\),\s*\)\);/s,
+  );
+  assert.match(
+    cellHandler,
+    /setMarkedCells\(\(current\) => \{[\s\S]*?if \(next\.has\(key\)\) next\.delete\(key\);[\s\S]*?else next\.add\(key\);[\s\S]*?return next;/,
+  );
+  assert.doesNotMatch(cellHandler, /setMarkedRows/);
   assert.match(referenceVisual, /button\[data-special="true"\]\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /data-row-marked="true"[^\{]*button\[data-special="true"\]\s*\{[^}]*background:\s*rgba\(225, 184, 39, \.16\)/s);
 });

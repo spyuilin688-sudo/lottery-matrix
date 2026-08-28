@@ -52,7 +52,8 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工\.png" \}/);
   assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
   assert.match(featurePages, /headerAction=\{<MatrixPageSwitcher current=\{title === "Matrix 天衍" \? "tianyan" : "explore"\}/);
-  assert.match(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 4px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher\s*\{[^}]*(?:gap:\s*4px|width:\s*auto|height:\s*auto)/s);
   assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
 });
@@ -92,15 +93,23 @@ test("home and Matrix status use the shared Matrixbba switcher and preserve sele
   assert.doesNotMatch(featurePages, /className="matrix-status-lottery-switcher" independentCards/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*calc\(100% - 32px\);/.test(body) && /margin-inline:\s*0;/.test(body)));
-  assert.ok(switcherBodies.some((body) => /padding-inline:\s*0;/.test(body)));
+  assert.ok(switcherBodies.some((body) => /padding-inline:\s*4px;/.test(body)));
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
   assert.ok(homeFlowBodies.some((body) => /margin-block-start:\s*var\(--home-gap-logo-switcher\);/.test(body)));
-  const selectedOutline = ruleBodies(
+  const hiddenSelectedOutline = ruleBodies(
     homepageStyles,
     /^\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after$/,
   );
+  assert.equal(hiddenSelectedOutline.length, 1);
+  assert.match(hiddenSelectedOutline[0], /display:\s*none;/);
+  const selectedOutline = ruleBodies(
+    homepageStyles,
+    /^\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::before$/,
+  );
   assert.equal(selectedOutline.length, 1);
-  assert.match(selectedOutline[0], /mask-composite:\s*exclude;/);
+  assert.match(selectedOutline[0], /--matrix-selected-frame-width:\s*\.7px;/);
+  assert.match(selectedOutline[0], /inset:\s*\.5px;/);
+  assert.doesNotMatch(selectedOutline[0], /clip-path|(?:-webkit-)?mask|mask-composite/);
   assert.doesNotMatch(homepageStyles, /lottery-switcher\[data-independent-cards="true"\][^{]*home-asset-image[^}]*display:\s*none/s);
 });
 

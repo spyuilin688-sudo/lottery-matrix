@@ -22,8 +22,10 @@ test("Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () 
 test("首頁彩種容器外框隱藏且選取時切換為單一 0.7px 響應式框", () => {
   assert.match(switcher, /\.lottery-switcher--home-style\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
   assert.match(switcher, /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s);
-  assert.match(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*--matrix-selected-frame-width:\s*\.7px;[^}]*clip-path:\s*inherit;/s);
-  assert.doesNotMatch(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*-webkit-mask:/s);
+  const selectedFrame = switcher.match(/\.lottery-card\[data-selected="true"\]::before\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(selectedFrame, /--matrix-selected-frame-width:\s*\.7px;/);
+  assert.match(selectedFrame, /inset:\s*\.5px;/);
+  assert.doesNotMatch(selectedFrame, /clip-path|(?:-webkit-)?mask|mask-composite/);
   assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);
 });
 

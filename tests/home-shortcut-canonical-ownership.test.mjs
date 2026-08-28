@@ -13,10 +13,11 @@ test("五大功能的外距、間距與比例只由 base.css 的共用變數控�
   assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*aspect-ratio:\s*var\(--home-feature-card-aspect\);/s);
 });
 
-test("五大功能的八角框與互動狀態只由 base.css 擁有", () => {
+test("五大功能的八角框與互動狀態由 base.css 擁有，visual-language 只共享塗裝變數", () => {
   assert.match(base, /\.home-screen \.home-shortcut::before\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut::after\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:focus-visible\s*\{/);
-  assert.doesNotMatch(visual, /\.home-shortcut(?:\b|[.: ])/);
+  assert.match(visual, /\.home-screen \.home-shortcut\s*\{[^}]*--home-octagon-frame:/s);
+  assert.doesNotMatch(visual, /\.home-screen \.home-shortcut(?::active|:focus-visible|::before|::after)\s*\{/);
 });

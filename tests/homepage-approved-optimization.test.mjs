@@ -13,10 +13,10 @@ test("approved homepage uses independent component insets and canonical rhythm",
   assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
 });
 
-test("approved homepage uses 0.8px status gaps and responsive 2 to 2.5px feature gaps without artwork collisions", () => {
+test("approved homepage uses 1.5px status gaps and canonical 4px feature gaps without artwork collisions", () => {
   assert.match(css, /\.lottery-switcher--home-style \.lottery-switcher-hit-grid\s*\{[^}]*gap:\s*6px;/s);
-  assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*0\.8px;/s);
-  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);[^}]*column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/s);
+  assert.match(css, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*1\.5px;/s);
+  assert.match(css, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*var\(--home-feature-inline\);[^}]*column-gap:\s*var\(--home-feature-gap\);/s);
   assert.match(css, /\.home-screen \.home-shortcut\s*\{[^}]*overflow:\s*visible;/s);
 });
 

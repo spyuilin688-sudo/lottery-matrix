@@ -47,7 +47,7 @@ test("快捷設定使用指定的五個最新圖示", () => {
 test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s,
+    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s,
   );
   assert.match(notificationCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*8px;/s);
   assert.match(

@@ -22,16 +22,17 @@ test("號碼對照單由最後點擊覆蓋同一範圍且分隔線清楚", () =>
   assert.match(rowHandler, /setMarkedCells/);
   assert.doesNotMatch(cellHandler, /setMarkedRows/);
   assert.match(reference, /data-row-marked="true"[^}]*button\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
-  assert.match(reference, /border-left:\s*2px solid rgba\(212, 168, 72, \.88\)/);
+  assert.match(reference, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.doesNotMatch(reference, /\.reference-row > span \+ span,[\s\S]*?border-left:\s*2px/s);
 });
 
-test("首頁使用指定 8px 功能外距與導覽淨空、16px 資訊容器外距及 6px 區段間距", () => {
-  assert.match(home, /--home-feature-inline:\s*8px/);
+test("首頁使用指定 10px 功能外距與導覽淨空、16px 資訊容器外距及 4px 區段間距", () => {
+  assert.match(home, /--home-feature-inline:\s*10px/);
   assert.match(home, /--home-gap-features-nav:\s*8px/);
-  assert.match(home, /--home-gap-switcher-draw:\s*6px/);
+  assert.match(home, /--home-gap-switcher-draw:\s*4px/);
   assert.match(home, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\)/);
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
-  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\)/s);
+  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*var\(--home-feature-inline\);[^}]*column-gap:\s*var\(--home-feature-gap\)/s);
   assert.doesNotMatch(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*margin-block-start:\s*0/s);
 });

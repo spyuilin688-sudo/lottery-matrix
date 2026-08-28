@@ -32,7 +32,7 @@ test("開獎資訊卡底部資訊列使用無縫鑲嵌框", () => {
   assert.doesNotMatch(homeCss, /\.next-draw-item:first-child\s*\{|\.next-draw-item:last-child\s*\{/s);
   assert.match(
     homeCss,
-    /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*1px;/s,
+    /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*2px;/s,
   );
 });
 
@@ -41,7 +41,8 @@ test("Matrix 指南只使用原生橫向滑動並保留循環校正", () => {
   assert.doesNotMatch(matrixGuideSource, /GUIDE_DRAG_RATE|GUIDE_DRAG_THRESHOLD|guideDragRef|guideSuppressClickRef/);
   assert.doesNotMatch(matrixGuideSource, /onPointerDown=|onPointerMove=|onPointerUp=|onPointerCancel=/);
   assert.match(matrixGuideSource, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
-  assert.match(matrixGuideSource, /onClick=\{\(\) => setSelected\(index\)\}/);
+  assert.match(matrixGuideSource, /onClick=\{selectGuideCategory\}/);
+  assert.match(matrixGuideSource, /data-guide-index=\{index\}/);
   assert.match(
     guideCss,
     /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*overflow-x:\s*auto;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s,

@@ -113,7 +113,7 @@ function readPngAlphaBounds(path) {
 }
 
 test('notification page follows the current compact responsive layout specification', () => {
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*8px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*column-gap:\s*6px;/s);
@@ -163,11 +163,11 @@ test('notification layout has one authoritative sizing and spacing source', () =
   );
   assert.match(
     prototypeCss,
-    /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body \{\s*padding-bottom: var\(--layout-bottom-nav-clearance\);\s*\}/,
+    /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body \{\s*padding-bottom: calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);\s*\}/,
   );
   assert.doesNotMatch(
     prototypeCss,
-    /\.bottom-nav-brand-screen > \.feature-body \{\s*padding-bottom: var\(--layout-bottom-nav-clearance\);\s*\}/,
+    /\.bottom-nav-brand-screen > \.feature-body \{\s*padding-bottom: calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);\s*\}/,
   );
 });
 

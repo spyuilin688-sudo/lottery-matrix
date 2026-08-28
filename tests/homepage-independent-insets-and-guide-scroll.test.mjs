@@ -10,12 +10,12 @@ const guideEnd = source.indexOf("export function MatrixNotebookPage", guideStart
 const guideSource = source.slice(guideStart, guideEnd);
 
 test("首頁各區塊獨立擁有指定左右外距", () => {
-  assert.match(homeCss, /\.home-screen \.lottery-screen\s*\{[^}]*--home-content-width:\s*calc\(min\(100vw, 390px\) - 24px\);[^}]*padding:\s*0;/s);
+  assert.match(homeCss, /\.home-screen \.lottery-screen\s*\{[^}]*--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\);[^}]*padding:\s*0;/s);
   assert.match(homeCss, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
-  assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
-  assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
-  assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
-  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);/s);
+  assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/s);
+  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*var\(--home-feature-inline\);/s);
 });
 
 test("開獎資訊卡底列使用無縫鑲嵌排版", () => {
@@ -25,7 +25,7 @@ test("開獎資訊卡底列使用無縫鑲嵌排版", () => {
 });
 
 test("Matrix 指南不在原生慣性滑動期間改寫 scrollLeft", () => {
-  assert.match(source, /const GUIDE_LOOP_IDLE_MS = 120;/);
+  assert.match(source, /const GUIDE_LOOP_IDLE_MS = 200;/);
   assert.match(guideSource, /window\.setTimeout\(normalizeLoop, GUIDE_LOOP_IDLE_MS\)/);
   assert.doesNotMatch(guideSource, /requestAnimationFrame\(normalizeLoop\)/);
   assert.match(guideSource, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
