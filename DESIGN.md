@@ -95,7 +95,7 @@ components:
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
 | `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
 
-頂端與底部使用 `env(safe-area-inset-*)`，內容清除量由 `--layout-bottom-nav-clearance` 推導。資料面板可擁有內部捲動，但不得讓新容器遮住 72px 導覽或安全區；載入、失敗與 busy 狀態保留控制尺寸。
+頂端與底部使用 `env(safe-area-inset-*)`，內容清除量由 `--layout-bottom-nav-clearance` 推導。資料面板可擁有內部捲動，但不得讓新容器遮住 72px 導覽或安全區；載入、失敗與 busy 狀態保留控制尺寸。 所有頁面保留滑動功能，但隱藏原生與應用程式捲動條。
 
 ## Elevation & Depth
 
@@ -103,7 +103,7 @@ components:
 
 ## Shapes
 
-標準卡片以 10px 圓角為基準，Matrix 狀態卡使用既有 8px 圓角；彩球、頭像、狀態點與少數標章可使用圓形或 pill。表單與動作控制沿用各 canonical component 的既有半徑，不把所有元件統一成 pill，也不改動正式素材比例。
+標準卡片以 10px 圓角為基準，Matrix 狀態卡使用既有 8px 圓角；彩球、頭像、狀態點與少數標章可使用圓形或 pill。表單與動作控制沿用各 canonical component 的既有半徑，不把所有元件統一成 pill，也不改動正式素材比例。 首頁指定圖示與卡片使用響應式八角切角；開獎資訊卡與狀態區不顯示額外共同容器外框。
 
 ## Components
 
@@ -140,4 +140,4 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 - **Do:** 從 `src/design-tokens.css` 讀取 shared value，並在同一 changeset 同步本文件與 drift test。
 - **Do:** 保留繁體中文、手機 safe area、彩種素材與深藍／金色資訊階層。
 - **Don't:** 從 `DESIGN.md` 反向產生或覆寫 canonical CSS，也不要為單頁複製相同 token。
-- **Don't:** 為了稽核改變版面、隱藏原生 scrollbar、用假 handler 或把 provider credential 寫入持久儲存。
+- **Don't:** 為了稽核改變版面、用假 handler 或把 provider credential 寫入持久儲存。
