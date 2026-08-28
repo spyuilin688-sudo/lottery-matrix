@@ -8,6 +8,9 @@
 .lottery-switcher--home-style {
   box-sizing: border-box;
   padding-inline: 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .lottery-switcher--home-style .lottery-switcher-hit-grid {
@@ -52,9 +55,9 @@
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before {
   position: absolute;
   z-index: 4;
-  inset: 0;
+  inset: .5px;
   display: block;
-  padding: 1px;
+  padding: .7px;
   clip-path: inherit;
   background: var(--lottery-selected-gradient);
   content: "";
