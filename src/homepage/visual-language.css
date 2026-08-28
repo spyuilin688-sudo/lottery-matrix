@@ -40,15 +40,6 @@
   box-shadow: var(--home-frame-shadow);
 }
 
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
-  position: relative;
-  isolation: isolate;
-  border: 0;
-  border-radius: 0;
-  box-shadow: var(--home-frame-shadow);
-}
-
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
 .home-screen .latest-draw-card,
 .home-screen .matrix-status-card,
 .home-screen .matrix-core-banner {
@@ -86,21 +77,6 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-}
-
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
-  display: block;
-  padding: 0;
-  clip-path: inherit;
-  border-radius: 0;
-  background: var(--home-octagon-frame);
-  content: "";
-  pointer-events: none;
-  -webkit-mask: none;
-  mask: none;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded {
@@ -154,21 +130,6 @@
   z-index: 1;
 }
 
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
-  --home-frame-color: var(--lottery-gold-300);
-  --home-frame-inner-color: color-mix(in srgb, var(--lottery-gold-300) 62%, transparent);
-}
-
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
-  padding: 1px;
-  background: var(--lottery-selected-gradient);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
 .home-screen .matrix-core-banner:active {
   border-radius: 0;
   box-shadow: var(--home-frame-shadow-active);
