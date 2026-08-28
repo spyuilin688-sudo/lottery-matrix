@@ -19,8 +19,9 @@ test("Matrix Core 能量只沿 M 與圓環路徑運行", () => {
 });
 
 test("首頁彩種容器外框隱藏且 0.7px 選取框完整內縮", () => {
-  assert.match(base, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*0;/s);
-  assert.match(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*inset:\s*\.5px;[^}]*padding:\s*\.7px;/s);
+  assert.match(switcher, /\\.lottery-switcher--home-style\\s*\\{[^}]*border:\\s*0;[^}]*background:\\s*transparent;[^}]*box-shadow:\\s*none;/s);
+  assert.match(switcher, /\\.lottery-card\\[data-selected="true"\\]::before\\s*\\{[^}]*--matrix-selected-frame-width:\\s*\\.7px;[^}]*inset:\\s*\\.5px;[^}]*-webkit-mask:/s);
+  assert.doesNotMatch(switcher.match(/\\.lottery-card\\[data-selected="true"\\]::before\\s*\\{([^}]*)\\}/s)?.[1] ?? "", /content-box|mask-composite/);
 });
 
 test("五大功能圖片恢復 100% 且不改變既有排列", () => {
@@ -29,6 +30,8 @@ test("五大功能圖片恢復 100% 且不改變既有排列", () => {
 });
 
 test("開獎資訊卡使用較深切角與覆蓋式外框遮住原圖邊角", () => {
-  assert.match(visual, /\.home-screen \.latest-draw-card\s*\{[^}]*--home-octagon-cut:\s*clamp\(6px, 2\.05vw, 8px\);/s);
+  assert.match(visual, /\\.home-screen \\.latest-draw-card\\s*\\{[^}]*--home-draw-card-cut:\\s*clamp\\(6px, 2\\.05vw, 8px\\);/s);
+  assert.doesNotMatch(visual.match(/\\.home-screen \\.latest-draw-card\\s*\\{([^}]*)\\}/s)?.[1] ?? "", /--home-octagon-cut:/);
+  assert.match(visual, /\\.home-screen \\.latest-draw-card::after\\s*\\{[^}]*--home-octagon-cut:\\s*var\\(--home-draw-card-cut\\);/s);
   assert.match(visual, /\.home-screen \.latest-draw-card::after\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/s);
 });
