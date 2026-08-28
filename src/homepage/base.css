@@ -379,7 +379,7 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .main-balls {
-  gap: 0;
+  gap: 3px;
   flex: 0 1 auto;
 }
 
@@ -635,7 +635,7 @@
   justify-content: center;
   justify-self: center;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow: visible;
