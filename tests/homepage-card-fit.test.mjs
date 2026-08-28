@@ -17,7 +17,7 @@ test("Matrix Core uses its fitted responsive token and container background with
   assert.doesNotMatch(component, /<img\b/);
 });
 
-test("selected lottery frame follows both outer and inner octagonal corners", () => {
+test("selected lottery frame follows the responsive octagonal card corners", () => {
   const selectedRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
   const selectedBeforeRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::before\s*\{([\s\S]*?)\}/)?.[1];
 
@@ -28,9 +28,11 @@ test("selected lottery frame follows both outer and inner octagonal corners", ()
   assert.match(selectedBeforeRule, /display:\s*block;/);
   assert.match(selectedBeforeRule, /--matrix-selected-frame-width:\s*\.7px;/);
   assert.match(selectedBeforeRule, /inset:\s*\.5px;/);
-  assert.match(selectedBeforeRule, /background:\s*var\(--lottery-selected-gradient\);/);
-  assert.match(selectedBeforeRule, /-webkit-mask:[\s\S]*linear-gradient\(135deg,[\s\S]*linear-gradient\(45deg,/);
-  assert.doesNotMatch(selectedBeforeRule, /mask-composite|content-box/);
+  assert.doesNotMatch(selectedBeforeRule, /clip-path/);
+  assert.match(selectedBeforeRule, /var\(--lottery-selected-horizontal-gradient\)/);
+  assert.match(selectedBeforeRule, /var\(--lottery-selected-left-edge\)/);
+  assert.match(selectedBeforeRule, /var\(--lottery-selected-right-edge\)/);
+  assert.doesNotMatch(selectedBeforeRule, /(?:-webkit-)?mask|mask-composite|content-box/);
 });
 
 test("latest draw artwork continues to fill the whole card container", () => {

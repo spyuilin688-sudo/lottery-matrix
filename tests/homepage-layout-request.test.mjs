@@ -60,17 +60,17 @@ test("homepage assigns surplus height to the logo and keeps the requested sectio
 test("homepage selected lottery cards use the original per-lottery palettes", () => {
   const window = renderHomepageStyles();
   const palettes = new Map([
-    ["今彩539", "linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30)"],
-    ["天天樂", "linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff)"],
-    ["六合彩", "linear-gradient(135deg, #ff3b30, #1e76ff, #34c759)"],
-    ["大樂透", "linear-gradient(135deg, #ffd640, #1e76ff, #ffd640)"],
+    ["今彩539", "linear-gradient(90deg, #34c759, #ffd640, #3484ff, #ff3b30)"],
+    ["天天樂", "linear-gradient(90deg, #1e76ff, #ffffff, #1e76ff)"],
+    ["六合彩", "linear-gradient(90deg, #ff3b30, #1e76ff, #34c759)"],
+    ["大樂透", "linear-gradient(90deg, #ffd640, #1e76ff, #ffd640)"],
   ]);
 
   for (const [lottery, expected] of palettes) {
     const card = window.document.querySelector(`.lottery-card[data-lottery="${lottery}"]`);
     const computed = window.getComputedStyle(card);
     assert.equal(
-      computed.getPropertyValue("--lottery-selected-gradient").replaceAll(" ", ""),
+      computed.getPropertyValue("--lottery-selected-horizontal-gradient").replaceAll(" ", ""),
       expected.replaceAll(" ", ""),
     );
     assert.equal(computed.filter, "none");

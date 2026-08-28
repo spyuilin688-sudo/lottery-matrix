@@ -278,7 +278,7 @@
 .matrix-explore-main-screen .hit-options {
   width: 100%;
   margin: 8px 0 4px;
-  padding: 0 0 4px;
+  padding: 0 0 6px;
   border-bottom: 1px solid rgba(212, 165, 47, .28);
 }
 
@@ -916,24 +916,57 @@
   --tiangong-label-column: clamp(106px, 32vw, 124px);
 }
 
-.matrix-tiangong-screen .tiangong-setting-row .segmented.three {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(2px, .8vw, 4px);
+.matrix-tiangong-screen .tiangong-settings .setting-grid > label > .segmented,
+.matrix-tiangong-screen .tiangong-settings .tiangong-setting-row > .segmented,
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel label > .segmented {
+  width: 100%;
+  min-width: 0;
 }
 
-.matrix-tiangong-screen .tiangong-setting-row .segmented.three button {
+.matrix-tiangong-screen .tiangong-settings .segmented.two,
+.matrix-tiangong-screen .tiangong-settings .segmented.three {
+  display: grid;
+  gap: .375rem;
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.two button,
+.matrix-tiangong-screen .tiangong-settings .segmented.three button {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.three button {
   padding-inline: clamp(1px, .8vw, 4px);
   overflow: hidden;
   font-size: clamp(9px, 2.7vw, 11px);
   white-space: nowrap;
 }
 
-.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-row {
-  margin-top: 1px;
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid {
+  row-gap: 0;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid > * + * {
+  margin-top: 7px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider {
+  box-sizing: border-box;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider + .tiangong-advanced-row {
+  margin-top: 4px;
 }
 
 .matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel {

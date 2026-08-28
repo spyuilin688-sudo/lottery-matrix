@@ -19,11 +19,12 @@ test("Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () 
   assert.match(visual, /@keyframes matrix-core-node-pulse/);
 });
 
-test("首頁彩種容器外框隱藏且 0.7px 選取框完整內縮", () => {
+test("首頁彩種容器外框隱藏且選取時切換為單一 0.7px 響應式框", () => {
   assert.match(switcher, /\.lottery-switcher--home-style\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
-  assert.match(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*--matrix-selected-frame-width:\s*\.7px;[^}]*inset:\s*\.5px;[^}]*-webkit-mask:/s);
-  const selectedFrame = switcher.match(/\.lottery-card\[data-selected="true"\]::before\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.doesNotMatch(selectedFrame, /content-box|mask-composite/);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s);
+  assert.match(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*--matrix-selected-frame-width:\s*\.7px;[^}]*clip-path:\s*inherit;/s);
+  assert.doesNotMatch(switcher, /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*-webkit-mask:/s);
+  assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);
 });
 
 test("五大功能圖片恢復 100% 且不改變既有排列", () => {
