@@ -152,14 +152,13 @@ export type LotterySwitcherProps = {
   selected: LotteryId;
   onChange: (lottery: LotteryId) => void;
   className?: string;
-  independentLogos?: boolean;
 };
 
-export function LotterySwitcher({ selected, onChange, className = "", independentLogos = false }: LotterySwitcherProps) {
+export function LotterySwitcher({ selected, onChange, className = "" }: LotterySwitcherProps) {
   return (
     <div
       data-lottery-switcher=""
-      className={`lottery-switcher ${independentLogos ? "lottery-switcher--independent-logos" : ""} ${className}`.trim()}
+      className={`lottery-switcher ${className}`.trim()}
       data-selected-lottery={selected}
       data-testid="lottery-switcher"
     >
@@ -179,7 +178,6 @@ export function LotterySwitcher({ selected, onChange, className = "", independen
               aria-label={lottery.id}
               type="button"
             >
-              {independentLogos ? <img className="lottery-card-logo" src={lottery.logo} alt="" aria-hidden="true" draggable={false} /> : null}
               <span className="clean-hit-label">{lottery.id}</span>
             </button>
           );
@@ -447,7 +445,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       <div className="home-layout">
         <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-          <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" independentLogos />
+          <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
           <MatrixStatusSection current={matrixStatus?.summary ?? null} onOpen={() => navigate("status")} />
         </main>
