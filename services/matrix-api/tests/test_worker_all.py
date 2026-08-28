@@ -53,7 +53,7 @@ def test_railway_config_runs_scheduled_worker_on_five_minute_grid() -> None:
     assert [config["deploy"]["startCommand"] for config in configs] == [
         "uv run python -u -m app.worker --lottery 今彩539 --scheduled",
         "uv run python -u -m app.worker --lottery 天天樂 --scheduled",
-        "uv run python -u -m app.worker --lottery 亚洲日韩六合彩 --scheduled".replace("紐西蘭", ""),
+        "uv run python -u -m app.worker --lottery 六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
     assert [config["deploy"]["cronSchedule"] for config in configs] == [
