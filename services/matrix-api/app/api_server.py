@@ -14,6 +14,24 @@ LOTTERIES = {"今彩539", "天天樂", "六合彩", "大樂透"}
 NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 HISTORY_RANGES = {1000, 3000, 5000}
 PAGE_SIZE = 1000
+SERVICE_NAME = "matrix-railway-api"
+
+
+def _service_version() -> str:
+    return (
+        environ.get("MATRIX_SERVICE_VERSION", "").strip()
+        or environ.get("RAILWAY_GIT_COMMIT_SHA", "").strip()
+        or "unknown"
+    )
+
+
+def _health_payload(status: str) -> dict[str, Any]:
+    return {
+        "status": status,
+        "service": SERVICE_NAME,
+        "version": _service_version(),
+        "database": {"status": status},
+    }
 
 
 def _normalize_number(value: Any) -> str:
@@ -196,7 +214,13 @@ def handle_api_request(
     path = parsed.path
     try:
         if method == "GET" and path == "/health":
-            return 200, {"status": "ok"}
+            try:
+                repository.health_check()
+            except Exception:
+                return 503, _health_payload("error")
+            return 200, _health_payload("ok")
+        if method == "GET" and path == "/jobs/status":
+            return 200, {"items": repository.list_job_statuses()}
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
