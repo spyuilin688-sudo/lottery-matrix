@@ -8,7 +8,7 @@ function ruleBody(selector) {
   return css.match(new RegExp(escaped + "\\s*\\{([^}]*)\\}", "s"))?.[1] ?? "";
 }
 
-test("five homepage feature cards keep 10px outer margins and responsive 2–3px gaps", () => {
+test("five homepage feature cards keep 10px outer margins and 4px gaps", () => {
   const layout = ruleBody(".home-screen .home-layout");
   const row = ruleBody(".home-screen .home-shortcut-row");
   const button = ruleBody(".home-screen .home-shortcut");
@@ -16,7 +16,7 @@ test("five homepage feature cards keep 10px outer margins and responsive 2–3px
 
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
   assert.match(layout, /--home-feature-inline:\s*10px;/);
-  assert.match(layout, /--home-feature-gap:\s*clamp\(2px,\s*\.77vw,\s*3px\);/);
+  assert.match(layout, /--home-feature-gap:\s*4px;/);
   assert.match(row, /width:\s*100%;/);
   assert.match(row, /padding-inline:\s*var\(--home-feature-inline\);/);
   assert.match(row, /column-gap:\s*var\(--home-feature-gap\);/);
