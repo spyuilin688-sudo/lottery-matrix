@@ -18,12 +18,13 @@ test('天工一般設定與段落設定由兩張同規格卡片各自承載', ()
 
   const generalCard = page.slice(generalStart, stageStart);
   const stageCard = page.slice(stageStart, actionStart);
-  assert.doesNotMatch(generalCard, /aria-label="第一段球位"/);
-  assert.doesNotMatch(generalCard, /aria-label="第一段版路類型"/);
-  assert.match(stageCard, /<SectionTitle>第一段探索設定<\/SectionTitle>/);
-  assert.match(stageCard, /aria-label="第一段球位"/);
-  assert.match(stageCard, /aria-label="第一段版路類型"/);
-  assert.match(stageCard, /mode === "二段式"[\s\S]*<SectionTitle>第二段探索設定<\/SectionTitle>/);
-  assert.match(stageCard, /aria-label="第二段球位"/);
-  assert.match(stageCard, /aria-label="第二段版路類型"/);
+  assert.match(generalCard, /彩球類型/);
+  assert.match(generalCard, /aria-label="探索球位"/);
+  assert.match(generalCard, /進階探索設定/);
+  assert.match(generalCard, /探索模式/);
+  assert.match(generalCard, /命中條件/);
+  assert.match(stageCard, /data-stage="first"[\s\S]*<SectionTitle>第一段 探索設定<\/SectionTitle>/);
+  assert.match(stageCard, /data-stage="first"[\s\S]*aria-label="探索球位"[\s\S]*aria-label="版路類型"/);
+  assert.match(stageCard, /mode === "二段式"[\s\S]*data-stage="second"[\s\S]*<SectionTitle>第二段 探索設定<\/SectionTitle>/);
+  assert.match(stageCard, /data-stage="second"[\s\S]*aria-label="探索球位"[\s\S]*aria-label="版路類型"/);
 });

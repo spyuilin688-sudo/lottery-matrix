@@ -34,7 +34,7 @@ function mountHomepage() {
         </main>
         <div class="home-bottom-group">
           <button class="matrix-core-banner"></button>
-          <nav class="home-shortcut-row"></nav>
+          <nav class="home-shortcut-row"><button class="home-shortcut"><img alt="" /></button></nav>
         </div>
       </div>
     </div>`;
@@ -64,13 +64,16 @@ describe("homepage requested spacing and selection", () => {
     const bottomGroup = getComputedStyle(document.querySelector(".home-bottom-group")!);
 
     expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("10px");
-    expect(layout.getPropertyValue("--home-feature-gap").replaceAll(" ", "")).toBe("clamp(2px,.77vw,3px)");
+    expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("4px");
     expect(layout.getPropertyValue("--home-gap-status-core").trim()).toBe("10px");
     expect(layout.getPropertyValue("--home-gap-core-features").trim()).toBe("14px");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim()).toBe("4px");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").trim()).toBe("8px");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
+    const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
+    expect(shortcutImage.width).toBe("100%");
+    expect(shortcutImage.height).toBe("100%");
   });
 
   it.each([

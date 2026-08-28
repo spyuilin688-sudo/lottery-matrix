@@ -25,9 +25,9 @@ test("Matrix Explore hit and advanced card owns a 6px bottom inset", () => {
   );
 });
 
-test("Tiangong second-stage rows use their matching setting icons", () => {
-  assert.match(featureSource, /第二段球位\.png[^\n]*第二段球位/);
-  assert.match(featureSource, /版路類型\.png[^\n]*第二段版路類型/);
+test("Tiangong second-stage rows keep their matching icons with unified labels", () => {
+  assert.match(featureSource, /第二段球位\.png[^\n]*探索球位/);
+  assert.match(featureSource, /版路類型\.png[^\n]*版路類型/);
 });
 
 test("Matrix Guide contains the requested chapters and exact notification set", () => {
