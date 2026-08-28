@@ -24,7 +24,7 @@ test("Matrix 同星開始探索高度上下各縮減 2px", () => {
 });
 
 test("Matrix 天工所有設定列共用同一個響應式標籤欄與選項欄", () => {
-  assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*clamp\(112px, 32vw, 124px\);/s);
+  assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings\s*\{[^}]*--tiangong-label-column:\s*clamp\(130px, 35vw, 136px\);/s);
   assert.match(feature, /\.matrix-tiangong-screen \.tiangong-settings \.setting-grid > label,[\s\S]*?\.tiangong-setting-row\s*\{[^}]*grid-template-columns:\s*var\(--tiangong-label-column\) minmax\(0, 1fr\);/s);
   assert.match(feature, /\.tiangong-setting-row \.segmented\s*\{[^}]*width:\s*100%;[^}]*min-width:\s*0;/s);
 });
