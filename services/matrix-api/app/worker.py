@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
+from app.schedule import due_call_cycle
 from app.scraping.sources import LatestDrawSource
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
 from app.services.artifact_builders import create_artifact_builders
@@ -68,10 +69,38 @@ def run_worker(
     return result
 
 
+def _normalized_draw_date(value: Any) -> str:
+    return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
+
+
+def run_scheduled_worker(
+    lottery: str,
+    now: datetime | None,
+    repository: AnalysisRepository,
+    source: DrawSource,
+    builders: Mapping[str, ArtifactBuilder] | None = None,
+) -> dict[str, Any]:
+    cycle = due_call_cycle(lottery, now)
+    if cycle is None:
+        return {"lottery": lottery, "status": "not-due"}
+
+    latest = repository.list_draws(lottery, 1)
+    cycle_date = cycle.date().isoformat()
+    if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
+        return {
+            "lottery": lottery,
+            "drawPeriod": latest[0]["period"],
+            "status": "already-acquired",
+        }
+
+    return run_worker(lottery, repository, source, builders)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Refresh and analyze one Matrix lottery")
     lotteries = ["今彩539", "天天樂", "六合彩", "大樂透"]
     parser.add_argument("--lottery", choices=lotteries)
+    parser.add_argument("--scheduled", action="store_true")
     args = parser.parse_args(argv)
     lottery = args.lottery or environ.get("MATRIX_LOTTERY", "").strip()
     if lottery not in lotteries:
@@ -79,8 +108,14 @@ def main(argv: list[str] | None = None) -> int:
     settings = load_settings()
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
     with httpx.Client() as client:
-        result = run_worker(lottery, repository, LatestDrawSource(client))
-    print(f'{result["lottery"]} {result["drawPeriod"]} {result["status"]}')
+        source = LatestDrawSource(client)
+        result = (
+            run_scheduled_worker(lottery, None, repository, source)
+            if args.scheduled
+            else run_worker(lottery, repository, source)
+        )
+    draw_period = result.get("drawPeriod", "-")
+    print(f'{result["lottery"]} {draw_period} {result["status"]}')
     return 0
 
 
