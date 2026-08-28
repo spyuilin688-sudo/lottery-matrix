@@ -155,7 +155,7 @@
   height: auto;
   min-height: 0;
   margin-inline: 0;
-  padding: 0;
+  padding-block: 0;
   overflow: visible;
 }
 
