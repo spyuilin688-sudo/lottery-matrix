@@ -40,7 +40,7 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 4px;
+  --home-gap-switcher-draw: 6px;
   --home-gap-draw-status: 8px;
   box-sizing: border-box;
   display: flex;
