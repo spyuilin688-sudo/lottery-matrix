@@ -48,7 +48,7 @@ test("homepage assigns surplus height to the logo and keeps the requested sectio
   assert.equal(style(".brand-header").flexGrow, "1");
   assert.equal(style(".home-logo-image").height, "100%");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "6px");
-  assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "clamp(2px, .77vw, 3px)");
+  assert.equal(layout.getPropertyValue("--home-feature-gap").replaceAll(" ", ""), "clamp(2px,.77vw,3px)");
   assert.equal(layout.getPropertyValue("--home-gap-status-core").trim(), "10px");
   assert.equal(layout.getPropertyValue("--home-gap-core-features").trim(), "14px");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim(), "4px");

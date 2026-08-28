@@ -64,7 +64,7 @@ describe("homepage requested spacing and selection", () => {
     const bottomGroup = getComputedStyle(document.querySelector(".home-bottom-group")!);
 
     expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("6px");
-    expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("clamp(2px, .77vw, 3px)");
+    expect(layout.getPropertyValue("--home-feature-gap").replaceAll(" ", "")).toBe("clamp(2px,.77vw,3px)");
     expect(layout.getPropertyValue("--home-gap-status-core").trim()).toBe("10px");
     expect(layout.getPropertyValue("--home-gap-core-features").trim()).toBe("14px");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim()).toBe("4px");
