@@ -26,6 +26,12 @@
   color: #fff1bb;
 }
 
+.number-reference-screen .reference-row[data-row-marked="true"] > span > button[data-cell-marked="true"] {
+  background: rgba(224, 124, 24, .68);
+  box-shadow: inset 0 0 0 1px rgba(226, 153, 51, .82);
+  color: #fff7e9;
+}
+
 .number-reference-screen .reference-row[data-has-special="true"] > span > button[data-special="true"] {
   border-left: 1px solid rgba(212, 168, 72, .55);
   background: rgba(92, 70, 160, .22);
@@ -53,7 +59,7 @@
 
 .number-reference-screen .reference-row > span + span,
 .number-reference-screen .reference-row > .reference-issue + span {
-  border-left: 1px solid rgba(161, 112, 40, .78);
+  border-left: 2px solid rgba(212, 168, 72, .88);
 }
 
 .number-reference-screen .reference-results-end {
