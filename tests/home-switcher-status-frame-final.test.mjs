@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+const baseCss=fs.readFileSync(new URL("../src/homepage/base.css",import.meta.url),"utf8");
+const switcherCss=fs.readFileSync(new URL("../src/homepage/lottery-switcher.css",import.meta.url),"utf8");
+const visualCss=fs.readFileSync(new URL("../src/homepage/visual-language.css",import.meta.url),"utf8");
+const featureSource=fs.readFileSync(new URL("../src/FeaturePages.tsx",import.meta.url),"utf8");
+test("homepage and status lottery switchers use a shared 4px inline inset",()=>{assert.match(switcherCss,/\.lottery-switcher--home-style\s*\{[^}]*padding-inline:\s*4px;/s);assert.doesNotMatch(switcherCss,/\.lottery-switcher--home-style\s*\{[^}]*padding-inline:\s*0;/s);assert.doesNotMatch(baseCss,/\.lottery-switcher--home-style\s*\{[^}]*padding:\s*0;/s);});
+test("selected homepage lottery keeps its lottery-specific clipped gradient",()=>assert.match(visualCss,/\.home-screen \.lottery-switcher--home-style[^}]*\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*background:\s*var\(--lottery-selected-gradient\);[^}]*mask-composite:\s*exclude;/s));
+test("latest draw card renders a visible octagon frame layer",()=>assert.match(visualCss,/\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s));
+test("custom status tabs match the shared inset and octagon frame language",()=>{assert.match(switcherCss,/\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);assert.match(switcherCss,/\.matrix-custom-status-screen \.custom-status-tabs > button::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);});
+test("profile legal copy does not expose the internal payment-provider note",()=>assert.doesNotMatch(featureSource,/實際金流服務商尚未確認/));
