@@ -10,8 +10,8 @@ const visual = read("src/homepage/visual-language.css");
 
 test("Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () => {
   assert.match(prototype, /className="matrix-core-symbol-energy"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--m" d="M259 71V17H266L274 43L282 17H289V71"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--ring" cx="274" cy="40" rx="50" ry="34"/);
+  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340"/);
+  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144"/);
   assert.match(prototype, /className="matrix-core-energy-loop"/);
   assert.equal((prototype.match(/className="matrix-core-node"/g) ?? []).length, 8);
   assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*stroke-dasharray:\s*5 95;[^}]*animation:\s*matrix-core-symbol-circulation/s);
