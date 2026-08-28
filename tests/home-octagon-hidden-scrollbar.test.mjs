@@ -16,13 +16,14 @@ test("首頁指定圖示與卡片共用同一個響應式八角切角", () => {
 });
 
 test("切換彩種與五大功能使用獨立八角框線層避免裁切缺框", () => {
+  assert.match(home, /--home-octagon-frame:\s*[\s\S]*?linear-gradient\(/);
   assert.match(
     home,
     /\.lottery-card,[\s\S]*?\.home-shortcut\s*\{[^}]*border:\s*0;/s,
   );
   assert.match(
     home,
-    /\.lottery-card::after,[\s\S]*?\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*clip-path:\s*inherit;[^}]*background:\s*var\(--home-frame-border\);[^}]*mask-composite:\s*exclude;/s,
+    /\.lottery-card::after,[\s\S]*?\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
   );
 });
 
@@ -33,7 +34,7 @@ test("下次開獎與剩餘時間使用完整八角切角框", () => {
   );
   assert.match(
     home,
-    /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-frame-border\);[^}]*mask-composite:\s*exclude;/s,
+    /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
   );
 });
 
