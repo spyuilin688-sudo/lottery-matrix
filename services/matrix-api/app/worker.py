@@ -19,6 +19,7 @@ REQUIRED_HISTORY_DRAWS = 80
 EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
+ANALYSIS_VERSION = "matrix-python-v3"
 
 
 def _run_analysis(
@@ -27,7 +28,7 @@ def _run_analysis(
     history: list[dict[str, Any]],
     builders: Mapping[str, ArtifactBuilder] | None,
 ) -> dict[str, Any]:
-    version = f'{draw["period"]}:matrix-python-v2'
+    version = f'{draw["period"]}:{ANALYSIS_VERSION}'
     pipeline = AnalysisPipeline(
         repository,
         builders or create_artifact_builders(),
