@@ -184,12 +184,30 @@
   justify-content: center;
   border: 0;
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(11, 18, 22, .98), rgba(3, 9, 13, .98));
+  background-color: transparent;
+  background-image: url("/assets/lottery/status/Matrixbba.png");
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
   color: transparent;
   box-shadow: none;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="今彩539"] {
+  background-position: 0% 50%;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="天天樂"] {
+  background-position: 33.333% 50%;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="六合彩"] {
+  background-position: 66.667% 50%;
+}
+
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-lottery="大樂透"] {
+  background-position: 100% 50%;
 }
 
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {
