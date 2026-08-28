@@ -14,11 +14,11 @@ test("首頁彩種在選取後只保留單一 0.7px 響應式八角外框", () =
     switcher,
     /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s,
   );
-  assert.match(
-    switcher,
-    /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*--matrix-selected-frame-width:\s*\.7px;[^}]*clip-path:\s*inherit;[^}]*background:[^}]*var\(--lottery-selected-horizontal-gradient\)[^}]*var\(--lottery-selected-vertical-gradient\);/s,
-  );
   const selectedFrame = switcher.match(/\.lottery-card\[data-selected="true"\]::before\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(selectedFrame, /--matrix-selected-frame-width:\s*\.7px;/);
+  assert.match(selectedFrame, /clip-path:\s*inherit;/);
+  assert.match(selectedFrame, /var\(--lottery-selected-horizontal-gradient\)/);
+  assert.match(selectedFrame, /var\(--lottery-selected-vertical-gradient\)/);
   assert.doesNotMatch(selectedFrame, /(?:-webkit-)?mask|mask-composite/);
 });
 
