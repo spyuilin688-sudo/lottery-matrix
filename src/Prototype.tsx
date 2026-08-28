@@ -335,17 +335,19 @@ export function MatrixStatusSection({
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   return (
     <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}>
-      <span className="matrix-core-energy-loop" aria-hidden="true" />
-      <span className="matrix-core-node-frame" aria-hidden="true">
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-      </span>
+      <svg className="matrix-core-symbol-energy" viewBox="0 0 362 79" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="matrix-core-symbol-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(203, 146, 36, .08)" />
+            <stop offset="48%" stopColor="rgba(244, 190, 73, .72)" />
+            <stop offset="68%" stopColor="rgba(255, 241, 190, .98)" />
+            <stop offset="84%" stopColor="rgba(238, 174, 51, .62)" />
+            <stop offset="100%" stopColor="rgba(203, 146, 36, .08)" />
+          </linearGradient>
+        </defs>
+        <ellipse className="matrix-core-energy-path matrix-core-energy-path--ring" cx="279" cy="40" rx="54" ry="36" pathLength="100" />
+        <path className="matrix-core-energy-path matrix-core-energy-path--m" d="M256 18H268L279 44L290 18H302V62H293V37L284 62H275L266 37V62H256Z" pathLength="100" />
+      </svg>
     </button>
   );
 }
