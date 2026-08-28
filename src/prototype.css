@@ -84,9 +84,9 @@
   appearance: none;
   position: absolute;
   z-index: 2;
-  left: max(6px, env(safe-area-inset-left, 0px));
+  left: max(10px, calc(env(safe-area-inset-left, 0px) + 4px));
   right: auto;
-  bottom: calc(var(--bottom-nav-safe-area) + 5px);
+  bottom: calc(var(--bottom-nav-safe-area) + 9px);
   display: grid;
   box-sizing: border-box;
   width: 44px;
