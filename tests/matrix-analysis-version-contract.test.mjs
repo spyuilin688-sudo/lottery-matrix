@@ -13,4 +13,5 @@ test("Matrix Explore algorithm revisions invalidate completed TypeScript artifac
   assert.match(pipelineSource, /progressStore\.getOrCreate\(\{[^}]*analysisVersion,/s);
   assert.match(progressSource, /const sameVersion = jobs\.find\(\(job\) => \([^)]*job\.analysisVersion === input\.analysisVersion/s);
   assert.doesNotMatch(progressSource, /if \(sameDraw\)\s*\{\s*await deleteJob\(sameDraw\);/s);
+  assert.match(progressSource, /job\.drawPeriod !== input\.drawPeriod/);
 });
