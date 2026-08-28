@@ -45,7 +45,7 @@
   border-color: transparent;
   border-radius: 0;
   border-image: none;
-  box-shadow: var(--home-frame-shadow-active);
+  box-shadow: none;
   filter: none;
 }
 
@@ -54,7 +54,7 @@
   z-index: 4;
   inset: 0;
   display: block;
-  padding: 2px;
+  padding: 1px;
   clip-path: inherit;
   background: var(--lottery-selected-gradient);
   content: "";

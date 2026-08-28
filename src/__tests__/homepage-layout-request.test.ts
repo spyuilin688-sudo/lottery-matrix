@@ -63,14 +63,14 @@ describe("homepage requested spacing and selection", () => {
     const lotteryScreen = getComputedStyle(document.querySelector(".lottery-screen")!);
     const bottomGroup = getComputedStyle(document.querySelector(".home-bottom-group")!);
 
-    expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("6px");
+    expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("10px");
     expect(layout.getPropertyValue("--home-feature-gap").replaceAll(" ", "")).toBe("clamp(2px,.77vw,3px)");
     expect(layout.getPropertyValue("--home-gap-status-core").trim()).toBe("10px");
     expect(layout.getPropertyValue("--home-gap-core-features").trim()).toBe("14px");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim()).toBe("4px");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").trim()).toBe("8px");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
-    expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("2px");
+    expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
   });
 
   it.each([
