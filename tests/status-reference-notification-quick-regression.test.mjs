@@ -31,15 +31,18 @@ test("號碼對照單輸入數字字型與 Matrix 同星一致", () => {
 });
 
 test("號碼對照單單碼覆蓋儲存格但保留整列選取，特別號也保留選取樣式", () => {
+  const toggleMarkedRow = pages.match(/const toggleMarkedRow = \(issue: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
   const toggleMarkedCell = pages.match(/const toggleMarkedCell = \(issue: string, number: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
+  assert.match(toggleMarkedRow, /setMarkedCells/);
   assert.doesNotMatch(toggleMarkedCell, /setMarkedRows/);
   assert.match(toggleMarkedCell, /setMarkedCells/);
+  assert.match(referenceVisual, /data-row-marked="true"[^}]*button\[data-cell-marked="true"\][^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /button\[data-special="true"\]\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /data-row-marked="true"[^\{]*button\[data-special="true"\]\s*\{[^}]*background:\s*rgba\(225, 184, 39, \.16\)/s);
 });
 
 test("號碼對照單期數與開獎號碼分隔線使用清楚一致的色值", () => {
-  assert.match(referenceVisual, /\.reference-row > span \+ span,[\s\S]*?\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);
+  assert.match(referenceVisual, /\.reference-row > span \+ span,[\s\S]*?\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*2px solid rgba\(212, 168, 72, \.88\);/s);
 });
 
 test("開獎結果與 Matrix 牌單共用同一按鈕渲染器與 6px 外框內距", () => {
