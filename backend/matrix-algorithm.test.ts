@@ -55,6 +55,40 @@ describe('Matrix Explore algorithm invariants', () => {
     expect(zeroSets[0].predictionNumbers).toEqual([9]);
   });
 
+  it('suppresses drag-equivalent add-subtract only for the exact source and position', () => {
+    const history = [
+      draw('A', [10, 20, 25, 30, 35]),
+      draw('RA', [20, 22, 26, 32, 38]),
+      draw('P1', [2, 10, 14, 20, 29]),
+      draw('S1', [10, 20, 24, 31, 36]),
+      draw('R1', [20, 23, 27, 33, 39]),
+    ];
+
+    const exactReference = runMatrixAlgorithmWithHistory({
+      ...request,
+      referenceOffset: 0,
+      referencePosition: 1,
+    }, history);
+
+    expect(exactReference.valid).toBe(false);
+    expect(ruleSets(exactReference)).toHaveLength(0);
+
+    for (const reference of [
+      { referenceOffset: -1, referencePosition: 1 },
+      { referenceOffset: 0, referencePosition: 2 },
+    ]) {
+      const result = runMatrixAlgorithmWithHistory({ ...request, ...reference }, history);
+      const zeroSets = ruleSets(result).filter((set) => (
+        set.rules.length === 1
+        && set.rules[0].algorithmType === '加減'
+        && set.rules[0].value === 0
+      ));
+
+      expect(zeroSets).toHaveLength(1);
+      expect(zeroSets[0].predictionNumbers).toEqual([20]);
+    }
+  });
+
   it('stops validation at thirteen historical groups', () => {
     const chronological: MatrixDraw[] = [];
     for (let index = 1; index <= 14; index += 1) {
@@ -177,5 +211,36 @@ describe('Matrix Explore algorithm invariants', () => {
 
     expect(result.valid).toBe(false);
     expect(ruleSets(result)).toHaveLength(0);
+  });
+
+  it('keeps a valid combine complement when its paired complement is out of range', () => {
+    const sourceAndPrediction = [
+      [draw('S1', [10, 11, 25, 30, 35]), draw('P1', [1, 5, 19, 28, 37])],
+      [draw('S2', [10, 20, 25, 30, 35]), draw('P2', [2, 7, 15, 26, 39])],
+      [draw('S3', [10, 12, 25, 30, 35]), draw('P3', [3, 8, 18, 27, 38])],
+      [draw('S4', [10, 21, 25, 30, 35]), draw('P4', [3, 10, 18, 30, 38])],
+      [draw('S5', [10, 13, 25, 30, 35]), draw('P5', [4, 11, 17, 25, 34])],
+    ];
+    const history = [
+      draw('A', [10, 35, 36, 37, 38]),
+      ...[...sourceAndPrediction].reverse().flatMap(([source, prediction]) => [prediction, source]),
+    ];
+
+    const result = runMatrixAlgorithmWithHistory({
+      ...request,
+      referencePosition: 2,
+      ruleCount: 2,
+      algorithmType: '合值版路',
+    }, history);
+
+    expect(result.valid).toBe(true);
+    expect(ruleSets(result)).toEqual([{
+      rules: [
+        { algorithmType: '合值', value: 30, display: '30' },
+        { algorithmType: '合值', value: 59, display: '59' },
+      ],
+      predictionNumbers: [24],
+      historicalValidation: expect.any(Array),
+    }]);
   });
 });

@@ -49,6 +49,38 @@ def test_zero_stays_add_subtract_when_reference_is_not_the_locked_ball() -> None
     assert zero_sets[0]["predictionNumbers"] == [9]
 
 
+def test_add_subtract_suppression_applies_only_to_the_exact_source_and_position() -> None:
+    history = [
+        draw("A", [10, 20, 25, 30, 35]),
+        draw("RA", [20, 22, 26, 32, 38]),
+        draw("P1", [2, 10, 14, 20, 29]),
+        draw("S1", [10, 20, 24, 31, 36]),
+        draw("R1", [20, 23, 27, 33, 39]),
+    ]
+
+    exact_reference = run_matrix_algorithm_with_history({
+        **REQUEST,
+        "referenceOffset": 0,
+        "referencePosition": 1,
+    }, history)
+
+    assert exact_reference["valid"] is False
+    assert rule_sets(exact_reference) == []
+
+    for reference in (
+        {"referenceOffset": -1, "referencePosition": 1},
+        {"referenceOffset": 0, "referencePosition": 2},
+    ):
+        result = run_matrix_algorithm_with_history({**REQUEST, **reference}, history)
+        zero_sets = [
+            item for item in rule_sets(result)
+            if item["rules"] == [{"algorithmType": "加減", "value": 0, "display": "+0"}]
+        ]
+
+        assert len(zero_sets) == 1
+        assert zero_sets[0]["predictionNumbers"] == [20]
+
+
 def test_validation_keeps_full_draws() -> None:
     history = [
         draw("A", [10, 20, 25, 30, 35]), draw("P1", [1, 2, 3, 4, 25]),
@@ -151,3 +183,31 @@ def test_combine_road_omits_out_of_range_complements_instead_of_wrapping() -> No
 
     assert result["valid"] is False
     assert rule_sets(result) == []
+
+
+def test_combine_road_keeps_a_valid_candidate_when_its_pair_is_out_of_range() -> None:
+    groups = [
+        (draw("S1", [10, 11, 25, 30, 35]), draw("P1", [1, 5, 19, 28, 37])),
+        (draw("S2", [10, 20, 25, 30, 35]), draw("P2", [2, 7, 15, 26, 39])),
+        (draw("S3", [10, 12, 25, 30, 35]), draw("P3", [3, 8, 18, 27, 38])),
+        (draw("S4", [10, 21, 25, 30, 35]), draw("P4", [3, 10, 18, 30, 38])),
+        (draw("S5", [10, 13, 25, 30, 35]), draw("P5", [4, 11, 17, 25, 34])),
+    ]
+    history = [draw("A", [10, 35, 36, 37, 38])]
+    for source, prediction in reversed(groups):
+        history.extend([prediction, source])
+
+    result = run_matrix_algorithm_with_history({
+        **REQUEST,
+        "referencePosition": 2,
+        "ruleCount": 2,
+        "algorithmType": "合值版路",
+    }, history)
+
+    assert result["valid"] is True
+    assert len(rule_sets(result)) == 1
+    assert rule_sets(result)[0]["rules"] == [
+        {"algorithmType": "合值", "value": 30, "display": "30"},
+        {"algorithmType": "合值", "value": 59, "display": "59"},
+    ]
+    assert rule_sets(result)[0]["predictionNumbers"] == [24]

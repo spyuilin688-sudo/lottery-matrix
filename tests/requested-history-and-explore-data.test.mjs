@@ -20,9 +20,12 @@ test("歷史六合彩的數字使用共用正式球圖中心", () => {
   assert.doesNotMatch(ballCss, /:is\([^}]*draw-history-screen[^}]*\)\[data-lottery="六合彩"\][^}]*\.number-ball-component\.history-lottery-ball\[data-tone=/s);
 });
 
-test("探索預計算保留今日昨日與前日的完整十三期來源並寫入精確維度", () => {
+test("探索預計算只把來源版路寫入日期選擇對應的精確預測期距", () => {
   assert.match(exploreService, /Math\.min\(15, history\.length\)/);
-  assert.match(exploreService, /function exploreSelectionsForSourceIndex\(lockedSourceIndex: number\)/);
+  assert.match(exploreService, /function exploreSelectionsForSourceIndex\(lockedSourceIndex: number, predictionDistance: number\)/);
+  assert.match(exploreService, /predictionDistance !== relativeSourceIndex \+ 1/);
+  assert.match(exploreService, /minPredictionDistance:\s*Math\.max\(1, lockedSourceIndex - 1\)/);
+  assert.match(exploreService, /maxPredictionDistance:\s*Math\.min\(13, lockedSourceIndex \+ 1\)/);
   assert.match(exploreService, /for \(const exploreDateOffset of \[0, 1, 2\] as const\)/);
   assert.match(exploreService, /for \(const explorePeriods of \[2, 7, 13\] as const\)/);
   assert.match(exploreService, /explorePeriods:\s*selection\.explorePeriods/);

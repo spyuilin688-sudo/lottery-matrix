@@ -1,8 +1,10 @@
 from app.services.artifact_builders import (
     build_explore_artifact,
+    build_explore_artifact_chunk,
     create_artifact_builders,
     tiangong_work_units,
 )
+from app.services.explore_batches import work_units
 
 
 def test_explore_builder_creates_canonical_detached_rows() -> None:
@@ -105,6 +107,58 @@ def test_explore_builder_keeps_each_result_on_its_exact_target_boundary() -> Non
         1: {2: 60, 7: 210, 13: 390},
         2: {2: 60, 7: 210, 13: 390},
     }
+
+
+def test_group_runner_maps_newest_first_distance_before_attaching_date_dimensions() -> None:
+    history = []
+    for index in range(12):
+        values = sorted(set([
+            10,
+            11 + index % 7,
+            18 + (index * 2) % 7,
+            25 + (index * 3) % 7,
+            32 + (index * 4) % 8,
+        ]))
+        while len(values) < 5:
+            candidate = 11
+            while candidate in values:
+                candidate += 1
+            values.append(candidate)
+            values.sort()
+        numbers = [str(value).zfill(2) for value in values]
+        history.append({
+            "period": f"N{index}",
+            "drawDate": "",
+            "numbers": numbers,
+            "sortedNumbers": numbers,
+            "drawOrderNumbers": numbers,
+        })
+
+    units = work_units("今彩539", len(history), 5)
+    unit_index = next(index for index, unit in enumerate(units) if (
+        unit["numberOrder"] == "依號碼由小到大排序"
+        and unit["algorithmType"] == "拖牌"
+        and unit["lockedSourceIndex"] == 2
+        and unit["lockedPosition"] == 1
+    ))
+    artifact = build_explore_artifact_chunk(
+        "今彩539", "N0", history, unit_index, 1,
+    )["artifact"]
+
+    assert len(artifact["items"]) == 16
+    expected = {
+        1: {"dateOffset": 2, "periods": {2, 7, 13}, "predictionPeriod": "N1"},
+        2: {"dateOffset": 1, "periods": {2, 7, 13}, "predictionPeriod": "N0"},
+        3: {"dateOffset": 0, "periods": {7, 13}, "predictionPeriod": None},
+    }
+    for distance, row in expected.items():
+        items = [item for item in artifact["items"] if item["predictionDistance"] == distance]
+        assert {item["exploreDateOffset"] for item in items} == {row["dateOffset"]}
+        assert {item["explorePeriods"] for item in items} == row["periods"]
+        assert {
+            artifact["validationById"][item["id"]]["sourceA"]["predictionPeriod"]
+            for item in items
+        } == {row["predictionPeriod"]}
 
 
 def test_concrete_status_builder_uses_completed_explore_artifact() -> None:

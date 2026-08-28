@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatrixEntitlements } from './matrix-entitlements';
 import {
   buildExploreArtifact,
+  buildExploreGroupArtifact,
   createExploreWorkUnits,
   enrichExploreValidationReferenceNumbers,
   filterExploreArtifact,
@@ -230,6 +231,57 @@ describe('canonical Matrix Explore artifact', () => {
     expect(shifted.items.every((item) => (
       item.explorePeriods === 2 && item.exploreDateOffset === 2
     ))).toBe(true);
+  });
+
+  it('maps newest-first source distance to the exact target period before attaching date dimensions', () => {
+    const newestFirst = Array.from({ length: 12 }, (_, index) => {
+      const values = [
+        10,
+        11 + (index % 7),
+        18 + ((index * 2) % 7),
+        25 + ((index * 3) % 7),
+        32 + ((index * 4) % 8),
+      ];
+      const unique = [...new Set(values)].sort((left, right) => left - right);
+      while (unique.length < 5) {
+        let candidate = 11;
+        while (unique.includes(candidate)) candidate += 1;
+        unique.push(candidate);
+        unique.sort((left, right) => left - right);
+      }
+      const numbers = unique.map((value) => String(value).padStart(2, '0'));
+      return {
+        period: `N${index}`,
+        drawDate: '',
+        numbers,
+        sortedNumbers: numbers,
+        drawOrderNumbers: numbers,
+      };
+    });
+    const unit = createExploreWorkUnits('今彩539', newestFirst).find((candidate) => (
+      candidate.numberOrder === '依號碼由小到大排序'
+      && candidate.algorithmType === '拖牌'
+      && candidate.lockedSourceIndex === 2
+      && candidate.lockedPosition === 1
+    ));
+
+    expect(unit).toBeDefined();
+    const artifact = buildExploreGroupArtifact('N0', newestFirst, unit!);
+    expect(artifact.items).toHaveLength(16);
+
+    const expected = [
+      { distance: 1, dateOffset: 2, periods: [2, 7, 13], predictionPeriod: 'N1' },
+      { distance: 2, dateOffset: 1, periods: [2, 7, 13], predictionPeriod: 'N0' },
+      { distance: 3, dateOffset: 0, periods: [7, 13], predictionPeriod: null },
+    ];
+    for (const row of expected) {
+      const items = artifact.items.filter((item) => item.predictionDistance === row.distance);
+      expect(new Set(items.map((item) => item.exploreDateOffset))).toEqual(new Set([row.dateOffset]));
+      expect(new Set(items.map((item) => item.explorePeriods))).toEqual(new Set(row.periods));
+      expect(new Set(items.map((item) => (
+        artifact.validationById[item.id].sourceA?.predictionPeriod ?? null
+      )))).toEqual(new Set([row.predictionPeriod]));
+    }
   });
 
   it('rejects seven, thirteen and full requests without entitlement', () => {
