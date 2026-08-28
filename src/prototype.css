@@ -84,10 +84,6 @@
   background: rgba(0, 4, 8, .16);
 }
 
-.bottom-navigation-item[data-selected="true"] {
-  background: transparent;
-}
-
 .bottom-navigation-quick-settings {
   appearance: none;
   position: absolute;
