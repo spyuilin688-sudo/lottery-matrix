@@ -48,7 +48,6 @@
   box-shadow: var(--home-frame-shadow);
 }
 
-.home-screen .latest-draw-card,
 .home-screen .matrix-status-card,
 .home-screen .matrix-core-banner {
   clip-path: polygon(
@@ -65,12 +64,24 @@
 }
 
 .home-screen .latest-draw-card {
-  --home-octagon-cut: clamp(6px, 2.05vw, 8px);
+  --home-draw-card-cut: clamp(6px, 2.05vw, 8px);
+  clip-path: polygon(
+    var(--home-draw-card-cut) 0,
+    calc(100% - var(--home-draw-card-cut)) 0,
+    100% var(--home-draw-card-cut),
+    100% calc(100% - var(--home-draw-card-cut)),
+    calc(100% - var(--home-draw-card-cut)) 100%,
+    var(--home-draw-card-cut) 100%,
+    0 calc(100% - var(--home-draw-card-cut)),
+    0 var(--home-draw-card-cut)
+  );
   border: 0;
+  border-radius: 0;
   box-shadow: var(--home-frame-shadow);
 }
 
 .home-screen .latest-draw-card::after {
+  --home-octagon-cut: var(--home-draw-card-cut);
   position: absolute;
   z-index: 4;
   inset: 0;
@@ -212,7 +223,7 @@
   stroke-dasharray: 18 82;
   stroke-dashoffset: 0;
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 2px rgba(244, 190, 73, .68));
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--lottery-gold-300) 68%, transparent));
   opacity: .96;
   animation: matrix-core-symbol-circulation 4.8s linear infinite;
 }
