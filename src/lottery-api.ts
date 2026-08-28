@@ -1,6 +1,6 @@
 import type { NumberBallLottery } from './NumberBall';
 
-export const LOTTERY_API_BASE = 'https://api-v2.appdeploy.ai/app/app-snsxet';
+export const LOTTERY_API_BASE = String(import.meta.env.VITE_RAILWAY_API_BASE ?? '').replace(/\/+$/, '');
 
 export type LotteryDrawRecord = {
   period?: string;
@@ -157,6 +157,9 @@ function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord):
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!LOTTERY_API_BASE) {
+    throw new Error('Railway Lottery API is not configured');
+  }
   const headers = new Headers(init?.headers);
   headers.set('Accept', 'application/json');
   const response = await fetch(`${LOTTERY_API_BASE}${path}`, {
