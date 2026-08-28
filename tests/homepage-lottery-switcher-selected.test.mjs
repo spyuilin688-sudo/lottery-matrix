@@ -13,9 +13,10 @@ test("首頁彩種選取狀態只畫 0.7px 響應式八角框，不覆蓋底圖�
   const selectedFrame = css.match(/\.lottery-card\[data-selected="true"\]::before\s*\{([^}]*)\}/s)?.[1] ?? "";
   assert.match(selectedFrame, /--matrix-selected-frame-width:\s*\.7px;/);
   assert.match(selectedFrame, /inset:\s*\.5px;/);
-  assert.match(selectedFrame, /clip-path:\s*inherit;/);
+  assert.doesNotMatch(selectedFrame, /clip-path/);
   assert.match(selectedFrame, /var\(--lottery-selected-horizontal-gradient\)/);
-  assert.match(selectedFrame, /var\(--lottery-selected-vertical-gradient\)/);
+  assert.match(selectedFrame, /var\(--lottery-selected-left-edge\)/);
+  assert.match(selectedFrame, /var\(--lottery-selected-right-edge\)/);
   assert.doesNotMatch(selectedFrame, /(?:-webkit-)?mask|mask-composite/);
   assert.match(
     css,
