@@ -333,7 +333,21 @@ export function MatrixStatusSection({
 }
 
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
-  return <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen} />;
+  return (
+    <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}>
+      <span className="matrix-core-energy-loop" aria-hidden="true" />
+      <span className="matrix-core-node-frame" aria-hidden="true">
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+        <span className="matrix-core-node" />
+      </span>
+    </button>
+  );
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
