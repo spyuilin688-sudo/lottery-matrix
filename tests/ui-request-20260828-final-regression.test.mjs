@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const reference = read("src/number-reference-visual-refinement.css");
 const tongxing = read("src/tongxing-compact.css");
 const feature = read("src/feature-pages.css");
+const exploreSpacing = read("src/matrix-explore-spacing.css");
 const prototype = read("src/prototype.css");
 const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
@@ -38,6 +39,7 @@ test("首頁狀態圖示、狀態標題圖示與探索滑動圖示使用指定�
   assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
   assert.match(feature, /\.matrix-status-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
   assert.match(feature, /\.matrix-status-screen \.status-title-trigger\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.doesNotMatch(exploreSpacing, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
 });
 
 test("查看更多紀錄間距為 1px", () => {
