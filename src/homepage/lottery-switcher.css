@@ -38,46 +38,11 @@
   );
 }
 
-.lottery-switcher--home-style.lottery-switcher--independent-logos > .lottery-switcher-hit-grid > .lottery-card {
-  background:
-    linear-gradient(180deg, rgba(11, 18, 22, .98), rgba(3, 9, 13, .98));
-}
-
-.lottery-switcher--home-style.lottery-switcher--independent-logos .lottery-card-logo {
-  position: relative;
-  z-index: 2;
-  display: block;
-  width: 76%;
-  height: 76%;
-  max-width: 100%;
-  object-fit: contain;
-  transform: scale(var(--lottery-logo-scale, 1));
-  transform-origin: center;
-  pointer-events: none;
-  user-select: none;
-}
-
-.lottery-switcher--home-style.lottery-switcher--independent-logos .lottery-card[data-lottery="今彩539"] {
-  --lottery-logo-scale: .88;
-}
-
-.lottery-switcher--home-style.lottery-switcher--independent-logos .lottery-card[data-lottery="天天樂"] {
-  --lottery-logo-scale: .96;
-}
-
-.lottery-switcher--home-style.lottery-switcher--independent-logos .lottery-card[data-lottery="六合彩"] {
-  --lottery-logo-scale: 1.1;
-}
-
-.lottery-switcher--home-style.lottery-switcher--independent-logos .lottery-card[data-lottery="大樂透"] {
-  --lottery-logo-scale: 1.08;
-}
-
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
   filter: grayscale(.65) brightness(.72);
 }
 
-.lottery-switcher--home-style.lottery-switcher--independent-logos > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
+.home-screen .home-switcher-box > .lottery-switcher-hit-grid > .lottery-card:not([data-selected="true"]) {
   filter: grayscale(.35) brightness(.82);
 }
 
