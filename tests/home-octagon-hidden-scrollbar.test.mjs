@@ -15,6 +15,28 @@ test("首頁指定圖示與卡片共用同一個響應式八角切角", () => {
   assert.match(home, /border-radius:\s*0;/);
 });
 
+test("切換彩種與五大功能使用獨立八角框線層避免裁切缺框", () => {
+  assert.match(
+    home,
+    /\.lottery-card,[\s\S]*?\.home-shortcut\s*\{[^}]*border:\s*0;/s,
+  );
+  assert.match(
+    home,
+    /\.lottery-card::after,[\s\S]*?\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*clip-path:\s*inherit;[^}]*background:\s*var\(--home-frame-border\);[^}]*mask-composite:\s*exclude;/s,
+  );
+});
+
+test("下次開獎與剩餘時間使用完整八角切角框", () => {
+  assert.match(
+    home,
+    /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*position:\s*relative;[^}]*clip-path:\s*polygon\(/s,
+  );
+  assert.match(
+    home,
+    /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-frame-border\);[^}]*mask-composite:\s*exclude;/s,
+  );
+});
+
 test("開獎資訊卡與狀態區共同容器外框隱藏", () => {
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
