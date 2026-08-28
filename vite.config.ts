@@ -9,5 +9,10 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: ["terminal.local"],
   },
+  test: {
+    env: {
+      VITE_RAILWAY_API_BASE: "https://railway-api.test",
+    },
+  },
   plugins: [react()],
 });
