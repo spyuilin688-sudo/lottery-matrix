@@ -15,7 +15,9 @@ test("首頁指定圖示與卡片共用同一個響應式八角切角", () => {
   assert.match(home, /border-radius:\s*0;/);
 });
 
-test("切換彩種與五大功能使用獨立八角框線層避免裁切缺框", () => {
+test("切換彩種、Matrix Core 與五大功能共用雙層八角框線", () => {
+  assert.match(home, /--home-frame-inset:\s*2px;/);
+  assert.match(home, /--home-frame-inner-color:/);
   assert.match(home, /--home-octagon-frame:\s*[\s\S]*?linear-gradient\(/);
   assert.match(
     home,
@@ -25,17 +27,25 @@ test("切換彩種與五大功能使用獨立八角框線層避免裁切缺框",
     home,
     /\.lottery-card::after,[\s\S]*?\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
   );
+  assert.match(
+    home,
+    /\.matrix-core-banner\s*\{[^}]*border:\s*0;[^}]*background:\s*var\(--home-octagon-frame\),\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\)/s,
+  );
+  assert.doesNotMatch(home, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
-test("下次開獎與剩餘時間使用完整八角切角框", () => {
+test("下次開獎與剩餘時間合併成單一切角資訊欄", () => {
   assert.match(
     home,
-    /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*position:\s*relative;[^}]*clip-path:\s*polygon\(/s,
+    /\.next-draw-info--embedded\s*\{[^}]*gap:\s*0;[^}]*clip-path:\s*polygon\([^}]*background:[^}]*;/s,
   );
   assert.match(
     home,
-    /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
+    /\.next-draw-info--embedded::before\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s,
   );
+  assert.match(home, /\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*clip-path:\s*none;/s);
+  assert.match(home, /\.next-draw-info--embedded \.next-draw-item::before\s*\{[^}]*display:\s*none;/s);
+  assert.match(home, /\.next-draw-info--embedded \.next-draw-item \+ \.next-draw-item\s*\{[^}]*border-left:/s);
 });
 
 test("開獎資訊卡與狀態區共同容器外框隱藏", () => {
