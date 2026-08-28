@@ -20,10 +20,10 @@ test('homepage components retain their independent widths and spacing', () => {
   assert.doesNotMatch(home, /--home-main-inline:\s*16px;/);
   assert.doesNotMatch(home, /--home-wide-inline:\s*6px;/);
   assert.match(home, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*margin-inline:\s*0;/s);
-  assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
+  assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(home, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*width:\s*100%;[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/s);
   assert.match(home, /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s);
   assert.doesNotMatch(home, /\.matrix-status-section > \.home-asset-image/);
   assert.match(home, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);/s);
-  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);[^}]*margin-inline:\s*auto;/s);
+  assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);[^}]*margin-inline:\s*auto;/s);
 });
