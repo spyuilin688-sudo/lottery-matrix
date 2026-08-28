@@ -42,6 +42,13 @@ class ScheduledSource(Source):
         return self._draw(221, count, "2026-08-28")
 
 
+class StaleScheduledSource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        return self._draw(220, count, "2026-08-27")
+
+
 class TrackingRepository(InMemoryAnalysisRepository):
     def __init__(self) -> None:
         super().__init__()
@@ -211,6 +218,24 @@ def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> No
 
     assert result["status"] == "complete"
     assert source.events == ["history-all", "latest"]
+
+
+def test_scheduled_worker_does_not_analyze_stale_draw() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = StaleScheduledSource()
+    calls: list[str] = []
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders(calls),
+    )
+
+    assert result["status"] == "not-acquired"
+    assert source.events == ["history-all", "latest"]
+    assert calls == []
 
 
 def test_scheduled_worker_does_nothing_outside_call_schedule() -> None:
