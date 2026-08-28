@@ -1,5 +1,4 @@
 import { getSupabaseClient } from './lib/supabase';
-import { LOTTERY_API_BASE } from './lottery-api';
 
 export type MatrixApiErrorCode =
   | 'AUTH_REQUIRED'
@@ -15,6 +14,8 @@ export type MatrixApiErrorCode =
   | 'NON_JSON_RESPONSE'
   | 'NETWORK_ERROR'
   | 'API_ERROR';
+
+const LEGACY_MATRIX_API_BASE = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 
 const REMOTE_ERROR_STATUS = {
   AUTH_REQUIRED: 401,
@@ -68,7 +69,7 @@ function isJsonContentType(contentType: string): boolean {
 export function createMatrixApiClient(
   getAccessToken: () => Promise<string | null>,
   fetcher: typeof fetch = fetch,
-  baseUrl = LOTTERY_API_BASE,
+  baseUrl = LEGACY_MATRIX_API_BASE,
 ) {
   return {
     async fetchJson<T>(
