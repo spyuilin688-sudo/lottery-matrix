@@ -4,7 +4,7 @@
   --card-radius: 12px;
   --control-gap: 6px;
   --control-height: 26px;
-  --primary-button-height: 40px;
+  --primary-button-height: 36px;
   --table-header-height: 26px;
   --table-row-height: 30px;
   --result-row-height: 30px;
@@ -17,7 +17,7 @@
 .tongxing-panel-scope {
   --control-gap: 6px;
   --control-height: 26px;
-  --primary-button-height: 40px;
+  --primary-button-height: 36px;
   --border-width: 1px;
 }
 
