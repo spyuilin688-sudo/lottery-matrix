@@ -54,8 +54,9 @@ test("五大功能先遮蔽素材舊框再套用共用切角框", () => {
   assert.doesNotMatch(home, /\.home-shortcut:(?:first-child|nth-child)/);
 });
 
-test("開獎資訊卡與狀態區共同容器外框隱藏", () => {
-  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
+test("開獎資訊卡使用切角框，狀態區共同容器外框維持隱藏", () => {
+  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
+  assert.match(home, /\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*content:\s*"";/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
 });
 
