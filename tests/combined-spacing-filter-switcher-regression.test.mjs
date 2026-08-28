@@ -46,7 +46,9 @@ test("Matrix switcher exposes all three pages in one vertical scroll-snap contro
   assert.match(switcher, /onScroll/);
   assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);
   assert.match(source, /current="tiangong"/);
-  assert.match(css, /\.matrix-page-switcher\s*\{[\s\S]*?flex-direction:\s*column/);
+  assert.match(css, /\.matrix-page-switcher\s*\{[\s\S]*?width:\s*2\.34rem;[\s\S]*?flex-direction:\s*column/);
+  assert.match(css, /scrollbar-width:\s*none/);
+  assert.match(source, /const MATRIX_LOOP_ITEMS = \[MATRIX_PAGE_ITEMS\[2\], \.\.\.MATRIX_PAGE_ITEMS, MATRIX_PAGE_ITEMS\[0\]\]/);
   assert.match(css, /scroll-snap-type:\s*y mandatory/);
   assert.match(css, /touch-action:\s*pan-y/);
 });
