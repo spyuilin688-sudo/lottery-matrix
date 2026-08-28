@@ -64,16 +64,16 @@
 }
 
 .home-screen .latest-draw-card {
-  --home-draw-card-cut: clamp(6px, 2.05vw, 8px);
+  --home-octagon-cut: clamp(6px, 2.05vw, 8px);
   clip-path: polygon(
-    var(--home-draw-card-cut) 0,
-    calc(100% - var(--home-draw-card-cut)) 0,
-    100% var(--home-draw-card-cut),
-    100% calc(100% - var(--home-draw-card-cut)),
-    calc(100% - var(--home-draw-card-cut)) 100%,
-    var(--home-draw-card-cut) 100%,
-    0 calc(100% - var(--home-draw-card-cut)),
-    0 var(--home-draw-card-cut)
+    var(--home-octagon-cut) 0,
+    calc(100% - var(--home-octagon-cut)) 0,
+    100% var(--home-octagon-cut),
+    100% calc(100% - var(--home-octagon-cut)),
+    calc(100% - var(--home-octagon-cut)) 100%,
+    var(--home-octagon-cut) 100%,
+    0 calc(100% - var(--home-octagon-cut)),
+    0 var(--home-octagon-cut)
   );
   border: 0;
   border-radius: 0;
@@ -81,7 +81,6 @@
 }
 
 .home-screen .latest-draw-card::after {
-  --home-octagon-cut: var(--home-draw-card-cut);
   position: absolute;
   z-index: 4;
   inset: 0;
@@ -116,6 +115,7 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
+  --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   position: relative;
   isolation: isolate;
   border: 0;
