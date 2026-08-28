@@ -8,21 +8,18 @@ const switcher = read("src/homepage/lottery-switcher.css");
 const spacing = read("src/matrix-explore-spacing.css");
 const pages = read("src/FeaturePages.tsx");
 
-test("首頁彩種在選取後只保留單一 0.7px SVG 八角外框", () => {
-  assert.match(prototype, /isSelected\s*\?\s*\(\s*<svg[^>]*className="lottery-selected-frame"/s);
-  assert.match(prototype, /<polygon[^>]*className="lottery-selected-frame-path"/s);
+test("首頁彩種在選取後只保留單一 0.7px 響應式八角外框", () => {
+  assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);
   assert.match(
     switcher,
     /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s,
   );
   assert.match(
     switcher,
-    /\.lottery-selected-frame-path\s*\{[^}]*stroke:\s*url\("#lottery-selected-gradient"\);[^}]*stroke-width:\s*\.7px;[^}]*vector-effect:\s*non-scaling-stroke;/s,
+    /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*--matrix-selected-frame-width:\s*\.7px;[^}]*clip-path:\s*inherit;[^}]*background:[^}]*var\(--lottery-selected-horizontal-gradient\)[^}]*var\(--lottery-selected-vertical-gradient\);/s,
   );
-  assert.doesNotMatch(
-    switcher,
-    /\.lottery-card\[data-selected="true"\]::before\s*\{[^}]*-webkit-mask:/s,
-  );
+  const selectedFrame = switcher.match(/\.lottery-card\[data-selected="true"\]::before\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.doesNotMatch(selectedFrame, /(?:-webkit-)?mask|mask-composite/);
 });
 
 test("探索、天衍與天工的進階設定分隔線上方間距統一為 6px", () => {
