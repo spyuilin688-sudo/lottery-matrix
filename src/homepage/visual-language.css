@@ -1,6 +1,7 @@
 /* Homepage visual-language overrides for the approved restrained black-gold system. */
 
 .home-screen {
+  --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
   --home-frame-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
@@ -11,23 +12,58 @@
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
-.home-screen .latest-draw-card,
 .home-screen .matrix-core-banner {
   border: var(--lottery-stroke-default) solid var(--home-frame-border);
-  border-radius: var(--lottery-card-radius);
+  border-radius: 0;
   box-shadow: var(--home-frame-shadow);
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
+.home-screen .latest-draw-card,
+.home-screen .matrix-status-card,
+.home-screen .matrix-core-banner,
+.home-screen .home-shortcut {
+  clip-path: polygon(
+    var(--home-octagon-cut) 0,
+    calc(100% - var(--home-octagon-cut)) 0,
+    100% var(--home-octagon-cut),
+    100% calc(100% - var(--home-octagon-cut)),
+    calc(100% - var(--home-octagon-cut)) 100%,
+    var(--home-octagon-cut) 100%,
+    0 calc(100% - var(--home-octagon-cut)),
+    0 var(--home-octagon-cut)
+  );
+  border-radius: 0;
+}
+
+.home-screen .latest-draw-card {
+  border: 0;
+  box-shadow: none;
+}
+
+.home-screen .matrix-status-section {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after,
+.home-screen .home-shortcut img {
+  clip-path: inherit;
+  border-radius: 0;
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
 .home-screen .matrix-core-banner:active {
-  border-radius: var(--lottery-card-radius);
+  border-radius: 0;
   box-shadow: var(--home-frame-shadow-active);
 }
 
 .home-screen .matrix-status-card {
   --home-status-tone: var(--lottery-gold-300);
   --home-status-glow: color-mix(in srgb, var(--home-status-tone) 18%, transparent);
-  border-radius: var(--matrix-status-card-radius);
+  border-radius: 0;
   background: var(--lottery-card-bg);
   box-shadow: 0 0 3px var(--home-status-glow);
 }
