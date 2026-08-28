@@ -21,6 +21,35 @@ MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
 
 
+def _run_analysis(
+    repository: AnalysisRepository,
+    draw: dict[str, Any],
+    history: list[dict[str, Any]],
+    builders: Mapping[str, ArtifactBuilder] | None,
+) -> dict[str, Any]:
+    version = f'{draw["period"]}:matrix-python-v2'
+    pipeline = AnalysisPipeline(
+        repository,
+        builders or create_artifact_builders(),
+        version,
+        explore_batch_size=EXPLORE_BATCH_SIZE,
+    )
+    failures = 0
+    result: dict[str, Any] = {}
+    for _ in range(MAX_CYCLES_PER_INVOCATION):
+        try:
+            result = pipeline.run(draw, history)
+            failures = 0
+        except Exception:
+            failures += 1
+            if failures >= MAX_FAILURES_PER_INVOCATION:
+                raise
+            continue
+        if result.get("status") != "running":
+            return result
+    return result
+
+
 def run_worker(
     lottery: str,
     repository: AnalysisRepository,
@@ -46,27 +75,7 @@ def run_worker(
         assert preparation_error is not None
         raise preparation_error
 
-    version = f'{draw["period"]}:matrix-python-v2'
-    pipeline = AnalysisPipeline(
-        repository,
-        builders or create_artifact_builders(),
-        version,
-        explore_batch_size=EXPLORE_BATCH_SIZE,
-    )
-    failures = 0
-    result: dict[str, Any] = {}
-    for _ in range(MAX_CYCLES_PER_INVOCATION):
-        try:
-            result = pipeline.run(draw, history)
-            failures = 0
-        except Exception:
-            failures += 1
-            if failures >= MAX_FAILURES_PER_INVOCATION:
-                raise
-            continue
-        if result.get("status") != "running":
-            return result
-    return result
+    return _run_analysis(repository, draw, history, builders)
 
 
 def _normalized_draw_date(value: Any) -> str:
@@ -93,7 +102,22 @@ def run_scheduled_worker(
             "status": "already-acquired",
         }
 
-    return run_worker(lottery, repository, source, builders)
+    repository.cleanup_expired(datetime.now(UTC))
+    refresh = DrawRefreshService(repository, source)
+    refresh.ensure_history(lottery, REQUIRED_HISTORY_DRAWS)
+    draw = refresh.refresh(lottery)
+
+    if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
+        return {
+            "lottery": lottery,
+            "drawPeriod": draw["period"],
+            "status": "not-acquired",
+        }
+
+    history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
+    if len(history) < REQUIRED_HISTORY_DRAWS:
+        raise ValueError("DRAW_HISTORY_INCOMPLETE")
+    return _run_analysis(repository, draw, history, builders)
 
 
 def main(argv: list[str] | None = None) -> int:
