@@ -27,9 +27,10 @@ test("selected lottery frame follows the artwork corner radius without square bo
   assert.ok(selectedAfterRule);
   assert.match(selectedAfterRule, /display:\s*block;/);
   assert.match(selectedAfterRule, /inset:\s*\.5px;/);
-  assert.match(selectedAfterRule, /padding:\s*\.7px;/);
+  assert.match(selectedAfterRule, /--matrix-selected-frame-width:\\s*\\.7px;/);
   assert.match(selectedAfterRule, /background:\s*var\(--lottery-selected-gradient\);/);
-  assert.match(selectedAfterRule, /mask-composite:\s*exclude;/);
+  assert.match(selectedAfterRule, /-webkit-mask:[\\s\\S]*linear-gradient\\(135deg,[\\s\\S]*linear-gradient\\(45deg,/);
+  assert.doesNotMatch(selectedAfterRule, /mask-composite|content-box/);
 });
 
 test("latest draw artwork continues to fill the whole card container", () => {
