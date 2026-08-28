@@ -1588,7 +1588,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .reference-row:not(.head) > span > button { font-size: 16px; }
 /* Shared Matrix visual foundation. Page-specific sizing lives in matrix-explore-spacing.css. */
 .matrix-tiangong-screen .tiangong-settings {
-  --tiangong-label-column: clamp(112px, 32vw, 124px);
+  --tiangong-label-column: clamp(130px, 35vw, 136px);
 }
 
 .matrix-tiangong-screen .tiangong-settings .setting-grid > label,
