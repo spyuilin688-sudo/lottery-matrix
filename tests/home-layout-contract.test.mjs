@@ -65,7 +65,8 @@ test('embedded next draw info uses two independent inset octagon containers', ()
 test('Matrix Core keeps its 16px inset while five shortcuts use 8px outer margins and equal columns', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*100%;/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /padding-inline:\s*var\(--home-feature-inline\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*var\(--home-feature-gap\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
 });
