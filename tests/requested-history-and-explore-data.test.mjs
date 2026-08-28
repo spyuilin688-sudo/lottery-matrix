@@ -40,5 +40,5 @@ test("探索預計算只把來源版路寫入日期選擇對應的精確預測�
   assert.doesNotMatch(routeSource, /normalizedRequest/);
   assert.doesNotMatch(routeSource, /resolveDrawPeriod/);
   assert.match(routeSource, /filterPartitionedExplore\([\s\S]*artifact\.data,[\s\S]*request,/);
-  assert.match(versionSource, /matrix-v6/);
+  assert.match(versionSource, /matrix-v7/);
 });

@@ -106,7 +106,7 @@ describe('Matrix analysis resumable progress store', () => {
     expect(tables.get('matrix_analysis_jobs')).toHaveLength(1);
   });
 
-  it('deletes same-period progress from an older algorithm revision before starting the new version', async () => {
+  it('keeps same-period progress from an older algorithm revision when starting the new version', async () => {
     const { adapter, tables } = memoryAdapter();
     const saved = memoryStorage();
     const store = createMatrixAnalysisProgressStore(adapter, saved.adapter);
@@ -126,10 +126,14 @@ describe('Matrix analysis resumable progress store', () => {
     expect(currentJob.analysisVersion).toBe('114000123:matrix-v3');
     expect(currentJob).toMatchObject({ phase: 'explore', cursor: 0, total: 390 });
     await expect(store.readExploreGroups(currentJob)).resolves.toEqual([]);
-    expect(tables.get('matrix_analysis_jobs')).toEqual([
+    await expect(store.readExploreGroupIndexes(tianyanOldJob, [0])).resolves.toEqual([{ id: 'old-result' }]);
+    await expect(store.readTianyanGroupIndexes(tianyanOldJob, [0])).resolves.toEqual([{ id: 'old-tianyan-result' }]);
+    expect(tables.get('matrix_analysis_jobs')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: oldJob.id, analysisVersion: '114000123:matrix-v2' }),
       expect.objectContaining({ id: currentJob.id, analysisVersion: '114000123:matrix-v3' }),
-    ]);
-    expect(saved.files.size).toBe(0);
+    ]));
+    expect(tables.get('matrix_analysis_jobs')).toHaveLength(2);
+    expect(saved.files.size).toBe(2);
   });
 
   it('keeps completed Explore partitions readable after entering Tianyan', async () => {

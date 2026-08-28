@@ -71,7 +71,7 @@ describe('Matrix completed-analysis pipeline', () => {
       items: [],
       validationById: {},
       partitioned: {
-        format: 'matrix-explore-partitioned-v1',
+        format: 'matrix-explore-partitioned-v2',
         job: { cursor: 2, total: 2 },
       },
     });
@@ -255,18 +255,21 @@ describe('Matrix completed-analysis pipeline', () => {
   });
 
   it('restarts the current draw when only an older algorithm revision is complete', async () => {
+    const requestedVersions: Array<string | undefined> = [];
+    const publishAnalysis = vi.fn(async () => ({}));
     const pipeline = createMatrixAnalysisPipeline({
       getHistory: async () => history,
-      readAnalysis: async (kind, _lottery, _drawPeriod, analysisVersion) => (
-        kind === 'status' && analysisVersion !== '114000123:matrix-v4'
-          ? { analysisVersion: '114000123:matrix-v2' }
-          : null
-      ),
+      readAnalysis: async (kind, _lottery, _drawPeriod, analysisVersion) => {
+        requestedVersions.push(analysisVersion);
+        return (kind === 'status' || kind === 'explore') && analysisVersion === '114000123:matrix-v6'
+          ? { analysisVersion: '114000123:matrix-v6' }
+          : null;
+      },
       createExploreWorkUnits: () => [],
       progressStore: {
         getOrCreate: async () => ({
           id: 'job', lottery: '今彩539', drawPeriod: '114000123',
-          analysisVersion: '114000123:matrix-v4', startedAt: '2026-08-21T00:00:00Z',
+          analysisVersion: '114000123:matrix-v7', startedAt: '2026-08-21T00:00:00Z',
           phase: 'explore', cursor: 0, total: 0,
         }),
         readExploreGroups: async () => [],
@@ -274,7 +277,7 @@ describe('Matrix completed-analysis pipeline', () => {
         appendExploreGroups: async () => { throw new Error('unexpected'); },
         finish: async () => undefined,
       } as never,
-      publishAnalysis: vi.fn(async () => ({})),
+      publishAnalysis,
       mergeExplore: (lottery, drawPeriod) => ({
         lottery, drawPeriod, items: [], validationById: {},
       }),
@@ -283,6 +286,11 @@ describe('Matrix completed-analysis pipeline', () => {
     await expect(pipeline.ensureCurrent('今彩539')).resolves.toMatchObject({
       drawPeriod: '114000123', pending: true, phase: 'tianyan',
     });
+    expect(requestedVersions).toEqual(['114000123:matrix-v7', '114000123:matrix-v7']);
+    expect(publishAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'explore', analysisVersion: '114000123:matrix-v7' }),
+      expect.anything(),
+    );
   });
 
   it.each(['tianyan', 'status'] as const)(
