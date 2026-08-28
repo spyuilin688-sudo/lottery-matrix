@@ -207,3 +207,11 @@ test("routes every reachable confirmation through the shared accessible dialog o
   assert.match(dialogContract, /Escape/);
   assert.doesNotMatch(dialogContract, /LegacyMatrixNotebookPage/);
 });
+
+test("keeps shared confirmation prompt typography compact on mobile", () => {
+  const dialogStyles = readFileSync("src/dialog/app-dialog.css", "utf8");
+  const titleRule = dialogStyles.match(/\.app-dialog-title\s*\{[\s\S]*?\}/)?.[0] ?? "";
+
+  assert.match(titleRule, /font-size:\s*clamp\(18px,\s*5\.2vw,\s*22px\);/);
+  assert.doesNotMatch(titleRule, /font-size:\s*clamp\(23px,\s*7vw,\s*31px\);/);
+});
