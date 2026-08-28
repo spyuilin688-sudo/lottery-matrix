@@ -8,14 +8,15 @@ const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
 const visual = read("src/homepage/visual-language.css");
 
-test("Matrix Core 能量只沿 M 與圓環路徑運行", () => {
+test("Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () => {
   assert.match(prototype, /className="matrix-core-symbol-energy"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--m"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--ring"/);
-  assert.doesNotMatch(prototype, /className="matrix-core-node"/);
-  assert.doesNotMatch(prototype, /className="matrix-core-energy-loop"/);
-  assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*animation:\s*matrix-core-symbol-circulation/s);
-  assert.match(visual, /@keyframes matrix-core-symbol-circulation/);
+  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340"/);
+  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144"/);
+  assert.match(prototype, /className="matrix-core-energy-loop"/);
+  assert.equal((prototype.match(/className="matrix-core-node"/g) ?? []).length, 8);
+  assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*stroke-dasharray:\s*5 95;[^}]*animation:\s*matrix-core-symbol-circulation/s);
+  assert.match(visual, /@keyframes matrix-core-energy-circulation/);
+  assert.match(visual, /@keyframes matrix-core-node-pulse/);
 });
 
 test("首頁彩種容器外框隱藏且 0.7px 選取框完整內縮", () => {
