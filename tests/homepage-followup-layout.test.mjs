@@ -27,6 +27,8 @@ test("首頁彩種選取框為 0.7px 等厚八角框並取消額外高亮陰影"
   assert.match(selected, /box-shadow:\s*none;/);
   assert.match(selectedFrame, /--matrix-selected-frame-width:\s*\.7px;/);
   assert.match(selectedFrame, /inset:\s*\.5px;/);
-  assert.match(selectedFrame, /-webkit-mask:/);
-  assert.doesNotMatch(selectedFrame, /content-box|mask-composite/);
+  assert.match(selectedFrame, /clip-path:\s*inherit;/);
+  assert.match(selectedFrame, /var\(--lottery-selected-horizontal-gradient\)/);
+  assert.match(selectedFrame, /var\(--lottery-selected-vertical-gradient\)/);
+  assert.doesNotMatch(selectedFrame, /(?:-webkit-)?mask|mask-composite|content-box/);
 });
