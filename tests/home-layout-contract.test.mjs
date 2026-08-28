@@ -38,7 +38,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
 });
 
 test('home logo receives the remaining height above the bottom anchored sections', () => {
-  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*minmax\(0, 1fr\) auto;/);
+  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*minmax\(min-content, 1fr\) auto;/);
   assertBlock(css, '.home-screen .home-layout', /align-content:\s*stretch;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
   assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);

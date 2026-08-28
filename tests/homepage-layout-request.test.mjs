@@ -43,7 +43,7 @@ test("homepage assigns surplus height to the logo and keeps the requested sectio
   const lotteryScreen = style(".lottery-screen");
   const bottomGroup = style(".home-bottom-group");
 
-  assert.equal(layout.gridTemplateRows, "minmax(0, 1fr) auto");
+  assert.equal(layout.gridTemplateRows, "minmax(min-content, 1fr) auto");
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(style(".brand-header").flexGrow, "1");
   assert.equal(style(".home-logo-image").height, "100%");

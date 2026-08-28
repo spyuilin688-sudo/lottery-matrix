@@ -50,7 +50,7 @@ describe("homepage requested spacing and selection", () => {
   it("assigns surplus vertical space to the responsive logo region", () => {
     mountHomepage();
 
-    expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("minmax(0, 1fr) auto");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("minmax(min-content, 1fr) auto");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
     expect(getComputedStyle(document.querySelector(".brand-header")!).flexGrow).toBe("1");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("100%");
