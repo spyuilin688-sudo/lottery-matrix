@@ -55,7 +55,7 @@ def _candidate_call_times(lottery: str, now: datetime) -> list[datetime]:
     ]
 
 
-def call_due(lottery: str, now: datetime | None = None) -> bool:
+def due_call_cycle(lottery: str, now: datetime | None = None) -> datetime | None:
     current = now or datetime.now(TAIPEI)
     if current.tzinfo is None:
         raise ValueError("schedule time must include a timezone")
@@ -66,8 +66,12 @@ def call_due(lottery: str, now: datetime | None = None) -> bool:
             *(base + timedelta(minutes=offset) for offset in RETRY_OFFSETS_MINUTES),
         ]
         if taipei_now in scheduled:
-            return True
-    return False
+            return base
+    return None
+
+
+def call_due(lottery: str, now: datetime | None = None) -> bool:
+    return due_call_cycle(lottery, now) is not None
 
 
 def main() -> None:
