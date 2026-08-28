@@ -1749,7 +1749,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
           <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{value}</button>)}</div></div>
           <div className="tiangong-setting-row" role="group" aria-label="第一段球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第一段球位.png" alt="" aria-hidden="true" />第一段球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{value}</button>)}</div></div>
           <div className="tiangong-setting-row" role="group" aria-label="第一段版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />第一段版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></div>
-          {mode === "二段式" ? <><div className="tiangong-setting-row" role="group" aria-label="第二段球位"><span>第二段球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{value}</button>)}</div></div><div className="tiangong-setting-row" role="group" aria-label="第二段版路類型"><span>第二段版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div></> : null}
+          {mode === "二段式" ? <><div className="tiangong-setting-row" role="group" aria-label="第二段球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />第二段球位</span><div className="segmented three">{positionOptions.map((value) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{value}</button>)}</div></div><div className="tiangong-setting-row" role="group" aria-label="第二段版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />第二段版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div></> : null}
         </div>
       </section>
       <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始探索</span></button>
@@ -2407,12 +2407,37 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       ],
     },
     {
+      title: "歷史開獎紀錄",
+      summary: "依彩種、日期或期數查詢歷史開獎資料。",
+      blocks: [
+        { title: "查詢方式", items: ["選擇彩種後，可依年、月、日或期數設定查詢條件。", "按下「開始探索」後顯示符合條件的歷史開獎紀錄。"] },
+        { title: "條件優先順序", items: ["開始探索前最後選擇年、月、日，以日期條件為主。", "開始探索前最後選擇期數，以期數條件為主。"] },
+      ],
+    },
+    {
       title: "Matrix 探索",
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
         { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
-        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "探索範圍：標準範圍或完整範圍；完整範圍為 Matrix Pro 功能。"] },
+        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
+      ],
+    },
+    {
+      title: "Matrix 天衍",
+      summary: "使用複合版路進行探索，命中條件固定為準5+（鎖定2碼）。",
+      blocks: [
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "版路類型使用複合版路。", "命中條件固定為準5+（鎖定2碼）。"] },
+        { title: "查看結果", items: ["按下「開始探索」後顯示符合條件的結果。", "可使用連準篩選，並展開版路查看驗證過程。"] },
+      ],
+    },
+    {
+      title: "Matrix 天工",
+      summary: "依探索期數、探索模式、命中條件、球位與版路類型進行自訂探索。",
+      blocks: [
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：五十期或八十期。", "探索模式：一段式或二段式。", "命中條件：準2進3或準3進4。"] },
+        { title: "球位與版路", items: ["探索球位、第一段球位可選固定、依序遞增或依序遞減。", "第一段版路類型可選加減版路或合值版路。", "二段式可另外設定第二段球位與第二段版路類型。"] },
+        { title: "查看結果", items: ["按下「開始探索」後顯示間距期數、預測位置、預測及版路類型。", "可展開版路查看驗證過程。"] },
       ],
     },
     {
@@ -2421,6 +2446,8 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       blocks: [
         { title: "狀態層級", items: ["啟動 ACTIVE。", "聚合 FOCUS。", "共振 RESONANCE。", "臨界 CRITICAL。"] },
         { title: "查看方式", items: ["切換彩種查看各自狀態。", "點擊狀態下拉可展開符合觸發條件的版路。", "每條版路顯示位置、號碼、預測期、連準次數及版路類型。", "符合一組以上觸發條件時，各組內容以間隔區分。"] },
+        { title: "自訂觸發條件", items: ["各彩種的自訂觸發條件分開設定。", "可重置或儲存目前設定。"] },
+        { title: "四狀態條件設定", items: ["啟動、聚合、共振、臨界四個狀態分別設定。", "每組條件包含命中條件、連準次數、版路類型、號碼順序與同碼數量。", "同一組內有多列條件時，需全部符合。"] },
       ],
     },
     {
@@ -2466,10 +2493,9 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "通知",
-      summary: "可設定選號提醒、開獎結果、Matrix 狀態、Matrix 牌單下載、Matrix Pro 到期、系統通知。",
+      summary: "可設定選號提醒、開獎結果、中獎通知、Matrix 牌單、Matrix 狀態、系統通知。",
       blocks: [
-        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "投注通知可依彩種設定時間。", "選號提醒、開獎結果、Matrix 牌單下載可依彩種設定。", "中獎通知可選擇彩種通知或中獎金額通知。"] },
-        { title: "Matrix Pro 通知", items: ["部分通知功能需具備 Matrix Pro 權限。", "到期通知可選擇提前1日、提前3日或提前7日。"] },
+        { title: "通知設定", items: ["各通知可個別開啟或關閉。", "選號提醒可依彩種設定提醒時間。", "開獎結果可依彩種設定。", "中獎通知可選擇彩種通知或中獎金額通知。", "Matrix 牌單可依彩種設定。", "Matrix 狀態與系統通知可個別設定。"] },
       ],
     },
     {
