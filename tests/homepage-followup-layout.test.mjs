@@ -13,17 +13,17 @@ function block(source, selector) {
   return source.slice(open + 1, close);
 }
 
-test('首頁使用指定內距、84% 功能圖片與 14px Matrix Core 外距', () => {
+test('首頁使用指定內距、100% 功能圖片與 14px Matrix Core 外距', () => {
   assert.match(block(base, '.home-screen .home-layout'), /--home-feature-inline:\s*10px;/);
-  assert.match(block(base, '.home-screen .home-shortcut img'), /width:\s*84%;/);
-  assert.match(block(base, '.home-screen .home-shortcut img'), /height:\s*84%;/);
+  assert.match(block(base, '.home-screen .home-shortcut img'), /width:\s*100%;/);
+  assert.match(block(base, '.home-screen .home-shortcut img'), /height:\s*100%;/);
   assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-inline:\s*0;/s);
   assert.match(block(base, '.home-screen .home-bottom-group'), /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
 });
 
-test('首頁彩種選取框降低為 1px 並取消額外高亮陰影', () => {
+test('首頁彩種選取框為 0.7px 並取消額外高亮陰影', () => {
   const selected = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]');
   const selectedFrame = block(switcher, '.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before');
   assert.match(selected, /box-shadow:\s*none;/);
-  assert.match(selectedFrame, /padding:\s*1px;/);
+  assert.match(selectedFrame, /inset:\s*\.5px;/);\n  assert.match(selectedFrame, /padding:\s*\.7px;/);
 });
