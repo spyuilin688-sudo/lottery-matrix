@@ -4,10 +4,14 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const css = readLocalCss("src/homepage-repair.css");
 
-test("狀態卡共同外框使用 12px 外距、1.5px 內距與 0.8px 卡片間距", () => {
+test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 0.8px 卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding:\s*1\.5px;[^}]*border:\s*1px solid[^}]*border-radius:\s*12px;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding:\s*1\.5px;/s,
+  );
+  assert.match(
+    css,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s,
   );
   assert.match(
     css,
@@ -18,7 +22,6 @@ test("狀態卡共同外框使用 12px 外距、1.5px 內距與 0.8px 卡片間�
     /\.home-screen \.matrix-status-artwork\s*\{[^}]*width:\s*100%;[^}]*height:\s*auto;/s,
   );
 });
-
 test("彩種圖示再向左 6px，並維持流動尺寸", () => {
   assert.match(
     css,
