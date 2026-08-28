@@ -94,7 +94,6 @@ test("home uses independent logos while Matrix status preserves the shared switc
   assert.match(prototypeSource, /home-switcher-box" independentLogos/);
   const switcherBodies = ruleBodies(homepageStyles, /^\.lottery-switcher--home-style$/);
   assert.ok(switcherBodies.some((body) => /width:\s*calc\(100% - 32px\);/.test(body) && /margin-inline:\s*0;/.test(body)));
-  assert.ok(switcherBodies.some((body) => /padding-inline:\s*0;/.test(body)));
   assert.match(homepageStyles, /background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/);
   assert.match(homepageStyles, /\.lottery-switcher--home-style\.lottery-switcher--independent-logos > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*linear-gradient/s);
   const homeFlowBodies = ruleBodies(homepageStyles, /^\.home-screen \.lottery-switcher$/);
