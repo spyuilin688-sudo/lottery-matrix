@@ -42,7 +42,7 @@ test("Matrix switcher exposes all three pages in one vertical scroll-snap contro
     read("src/feature-pages.css"),
   ]);
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
-  assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
+  assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
   assert.match(switcher, /onScroll/);
   assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);
   assert.match(source, /current="tiangong"/);
