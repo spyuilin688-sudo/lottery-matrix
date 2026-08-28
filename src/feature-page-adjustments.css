@@ -3,7 +3,7 @@
 .notifications-screen-v2 .feature-body {
   box-sizing: border-box;
   width: 100%;
-  padding: 0 20px calc(var(--layout-bottom-nav-clearance) + 12px);
+  padding: 0 20px calc(var(--layout-bottom-nav-clearance) + 8px);
 }
 
 .notifications-screen-v2 .notification-list {
