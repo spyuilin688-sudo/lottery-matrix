@@ -43,13 +43,14 @@ test("首頁狀態圖示、狀態標題圖示與探索滑動圖示使用指定�
   assert.doesNotMatch(exploreSpacing, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
 });
 
-test("查看更多紀錄間距為 1px", () => {
-  assert.match(base, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*1px;/s);
+test("查看更多紀錄間距為 2px", () => {
+  assert.match(base, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*gap:\s*2px;/s);
 });
 
 test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器樣式管理", () => {
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
   assert.match(switcher, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{[^}]*--home-frame-color:\s*var\(--lottery-gold-300\);/s);
+  assert.match(visual, /\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card,[\s\S]*?--home-octagon-frame:/s);
   assert.doesNotMatch(base, /lottery-card\[data-selected="true"\]::after/);
   assert.doesNotMatch(visual, /lottery-card\[data-selected="true"\]::after/);
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
