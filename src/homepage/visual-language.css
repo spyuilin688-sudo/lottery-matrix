@@ -11,9 +11,17 @@
   margin-block-start: var(--home-gap-status-core);
 }
 
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
 .home-screen .matrix-core-banner {
   border: var(--lottery-stroke-default) solid var(--home-frame-border);
+  border-radius: 0;
+  box-shadow: var(--home-frame-shadow);
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
+.home-screen .home-shortcut {
+  position: relative;
+  isolation: isolate;
+  border: 0;
   border-radius: 0;
   box-shadow: var(--home-frame-shadow);
 }
@@ -48,14 +56,64 @@
   box-shadow: none;
 }
 
-.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after,
 .home-screen .home-shortcut img {
   clip-path: inherit;
   border-radius: 0;
 }
 
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after,
+.home-screen .home-shortcut::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: block;
+  padding: var(--lottery-stroke-default);
+  clip-path: inherit;
+  border-radius: 0;
+  background: var(--home-frame-border);
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(
+    var(--home-octagon-cut) 0,
+    calc(100% - var(--home-octagon-cut)) 0,
+    100% var(--home-octagon-cut),
+    100% calc(100% - var(--home-octagon-cut)),
+    calc(100% - var(--home-octagon-cut)) 100%,
+    var(--home-octagon-cut) 100%,
+    0 calc(100% - var(--home-octagon-cut)),
+    0 var(--home-octagon-cut)
+  );
+}
+
+.home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  padding: var(--lottery-stroke-default);
+  clip-path: inherit;
+  background: var(--home-frame-border);
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
-.home-screen .matrix-core-banner:active {
+.home-screen .matrix-core-banner:active,
+.home-screen .home-shortcut:active {
   border-radius: 0;
   box-shadow: var(--home-frame-shadow-active);
 }
@@ -101,7 +159,8 @@
   .history-link,
   .draw-order button,
   .matrix-status-card,
-  .matrix-core-banner
+  .matrix-core-banner,
+  .home-shortcut
 ):focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
