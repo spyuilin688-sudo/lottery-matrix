@@ -37,20 +37,20 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
-test('home layout starts at the safe top and keeps the bottom navigation clearance', () => {
-  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto auto;/);
-  assertBlock(css, '.home-screen .home-layout', /align-content:\s*safe start;/);
+test('home layout keeps the top section in flow and anchors shortcuts 8px above fixed navigation', () => {
+  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto minmax\(min-content, 1fr\);/);
+  assertBlock(css, '.home-screen .home-layout', /align-content:\s*stretch;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
   assertBlock(css, '.home-screen .home-layout', /--home-gap-status-core:\s*8px;/);
   assertBlock(css, '.home-screen .home-layout', /--home-gap-core-features:\s*8px;/);
   assertBlock(css, '.home-screen .home-layout', /--home-gap-features-nav:\s*8px;/);
   assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);
   assert.ok(!blocks(css, '.home-screen .home-bottom-group').some((body) => /padding-bottom:\s*8px;|--home-gap-core-features\s*:/.test(body)));
+  assertBlock(css, '.home-screen .home-bottom-group', /align-self:\s*end;/);
   assertBlock(css, '.home-screen .home-bottom-group', /height:\s*auto;/);
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
 });
-
 test('embedded next draw info uses two independent rounded reference containers', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
