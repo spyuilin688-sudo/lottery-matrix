@@ -65,7 +65,7 @@ test('calculator uses the page token and homepage core keeps its fitted responsi
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(block(feature, '.calculator-screen > .feature-body'), /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/);
   assert.ok(ruleBodies(home, /^\.home-screen \.lottery-screen$/).some((body) => /padding:\s*0;/.test(body)));
-  assert.ok(ruleBodies(home, /^\.home-screen \.home-bottom-group$/).some((body) => /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/.test(body)));
+  assert.ok(ruleBodies(home, /^\.home-screen \.home-bottom-group$/).some((body) => /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/.test(body)));
   assert.ok(ruleBodies(home, /^\.home-screen \.matrix-core-banner$/).some((body) => /width:\s*var\(--home-core-width\);/.test(body) && /height:\s*var\(--home-core-height\);/.test(body)));
   assert.match(home, /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/);
 });

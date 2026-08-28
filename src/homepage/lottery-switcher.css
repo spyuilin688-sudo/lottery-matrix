@@ -49,6 +49,38 @@
   filter: none;
 }
 
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::before {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: block;
+  padding: 2px;
+  clip-path: inherit;
+  background: var(--lottery-selected-gradient);
+  content: "";
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="今彩539"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30);
+}
+
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="天天樂"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff);
+}
+
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="六合彩"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #ff3b30, #1e76ff, #34c759);
+}
+
+.lottery-switcher--home-style .lottery-card[data-selected="true"][data-lottery="大樂透"] {
+  --lottery-selected-gradient: linear-gradient(135deg, #ffd640, #1e76ff, #ffd640);
+}
+
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card::after {
   position: absolute;
   z-index: 3;

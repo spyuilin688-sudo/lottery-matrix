@@ -10,10 +10,10 @@ const guideSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 
-test("首頁 Matrix Core 與五大功能維持單一 8px 節奏", () => {
+test("首頁狀態區、Matrix Core 與五大功能使用指定節奏", () => {
   assert.doesNotMatch(homeCss, /\.home-screen \.home-layout\s*\{[^}]*row-gap:/s);
   assert.match(homeVisualCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
-  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*8px;[^}]*--home-gap-core-features:\s*8px;[^}]*--home-gap-features-nav:\s*8px;/s);
+  assert.match(homeCss, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*10px;[^}]*--home-gap-core-features:\s*14px;[^}]*--home-gap-features-nav:\s*8px;/s);
   assert.match(homeCss, /\.home-bottom-group\s*\{[^}]*gap:\s*var\(--home-gap-core-features\);/s);
   assert.doesNotMatch(homeCss, /\.home-bottom-group\s*\{[^}]*(?:--home-gap-core-features\s*:|padding-bottom:\s*8px)/s);
 });

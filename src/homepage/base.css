@@ -17,11 +17,11 @@
 }
 
 .home-screen .home-layout {
-  --home-feature-inline: 8px;
-  --home-feature-gap: clamp(2px, .64vw, 2.5px);
+  --home-feature-inline: 6px;
+  --home-feature-gap: clamp(2px, .77vw, 3px);
   --home-feature-card-aspect: 386 / 496;
-  --home-gap-status-core: 8px;
-  --home-gap-core-features: 8px;
+  --home-gap-status-core: 10px;
+  --home-gap-core-features: 14px;
   --home-gap-features-nav: 8px;
   box-sizing: border-box;
   display: grid;
@@ -29,7 +29,7 @@
   height: 100%;
   min-height: 0;
   margin: 0 auto;
-  grid-template-rows: auto minmax(min-content, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   align-content: stretch;
   padding-top: var(--layout-safe-area-top);
   padding-bottom: calc(var(--layout-bottom-nav-clearance) + var(--home-gap-features-nav));
@@ -40,14 +40,14 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 6px;
+  --home-gap-switcher-draw: 4px;
   --home-gap-draw-status: 8px;
   box-sizing: border-box;
   display: flex;
   width: 100%;
   min-width: 0;
   min-height: 0;
-  height: auto;
+  height: 100%;
   margin: 0;
   padding: 0;
   flex-direction: column;
@@ -72,7 +72,7 @@
 }
 
 .home-screen .lottery-screen > .brand-header {
-  flex: 0 0 auto;
+  flex: 1 1 0%;
   min-height: 0;
 }
 
@@ -83,7 +83,7 @@
 }
 
 .home-screen .home-bottom-group {
-  --home-core-width: calc(min(100vw, 390px) - 32px);
+  --home-core-width: calc(min(100vw, 390px) - 28px);
   --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
   position: relative;
   isolation: isolate;
@@ -147,6 +147,7 @@
 
 .home-screen .home-logo-image {
   width: 87.584%;
+  height: 100%;
 }
 
 .lottery-switcher--home-style {
@@ -496,7 +497,8 @@
   display: flex;
   box-sizing: border-box;
   width: calc(100% - 32px);
-  padding: 1.5px;
+  padding-block: 1.5px;
+  padding-inline: 2px;
   justify-content: center;
   border: 1px solid rgba(229, 179, 77, .56);
   border-radius: 12px;
