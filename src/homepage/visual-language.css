@@ -1,6 +1,6 @@
 /* Homepage visual-language overrides for the approved restrained black-gold system. */
 
-.home-screen {
+:is(.home-screen, .matrix-status-screen, .matrix-custom-status-screen) {
   --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   --home-frame-inset: 2px;
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
@@ -69,7 +69,18 @@
 
 .home-screen .latest-draw-card {
   border: 0;
-  box-shadow: none;
+  box-shadow: var(--home-frame-shadow);
+}
+
+.home-screen .latest-draw-card::after {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: block;
+  clip-path: inherit;
+  background: var(--home-octagon-frame);
+  content: "";
+  pointer-events: none;
 }
 
 .home-screen .matrix-status-section {
@@ -172,10 +183,12 @@
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
-  padding: 0;
-  background: var(--home-octagon-frame);
-  -webkit-mask: none;
-  mask: none;
+  padding: 1px;
+  background: var(--lottery-selected-gradient);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
