@@ -4,15 +4,14 @@ import test from "node:test";
 
 const home = readFileSync(new URL("../src/homepage/visual-language.css", import.meta.url), "utf8");
 const base = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const switcher = readFileSync(new URL("../src/homepage/lottery-switcher.css", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 
 test("首頁指定圖示與卡片共用同一個響應式八角切角", () => {
   assert.match(home, /--home-octagon-cut:\s*clamp\(4px, 1\.54vw, 6px\);/);
-  assert.match(
-    home,
-    /\.lottery-card,[\s\S]*?\.latest-draw-card,[\s\S]*?\.matrix-status-card,[\s\S]*?\.matrix-core-banner[\s\S]*?clip-path:\s*polygon\(/,
-  );
+  assert.match(home, /\.latest-draw-card,[\s\S]*?\.matrix-status-card,[\s\S]*?\.matrix-core-banner[\s\S]*?clip-path:\s*polygon\(/);
+  assert.match(switcher, /\.lottery-card\s*\{[^}]*clip-path:\s*polygon\(/s);
   assert.match(base, /\.home-shortcut\s*\{[^}]*clip-path:\s*polygon\(/s);
   assert.match(home, /border-radius:\s*0;/);
 });
@@ -21,10 +20,10 @@ test("切換彩種、Matrix Core 與五大功能共用雙層八角框線", () =>
   assert.match(home, /--home-frame-inset:\s*2px;/);
   assert.match(home, /--home-frame-inner-color:/);
   assert.match(home, /--home-octagon-frame:\s*[\s\S]*?linear-gradient\(/);
-  assert.match(home, /\.lottery-card\s*\{[^}]*border:\s*0;/s);
+  assert.match(switcher, /\.lottery-card\s*\{[^}]*border:\s*0;/s);
   assert.match(base, /\.home-shortcut\s*\{[^}]*border:\s*0;/s);
   assert.match(
-    home,
+    switcher,
     /\.lottery-card::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s,
   );
   assert.match(base, /\.home-shortcut::after\s*\{[^}]*display:\s*block;[^}]*background:\s*var\(--home-octagon-frame\);/s);
