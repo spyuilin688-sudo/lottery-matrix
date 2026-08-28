@@ -1314,7 +1314,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   font-size: 15px;
 }
 .calculator-panel header button svg,
-.quick-actions .clear-button svg { width: 8px; height: 8px; }
+.quick-actions .clear-button svg { width: 10px; height: 10px; }
 .feature-bottom-nav { width: 100%; }
 .road-validation {
   font-size: 11px;
