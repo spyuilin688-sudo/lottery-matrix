@@ -20,7 +20,7 @@ function block(css, selector) {
 test('Matrix 同星 controls use the compact shared mobile dimensions', () => {
   assert.match(tongxing, /--control-gap:\s*6px;/);
   assert.match(tongxing, /--control-height:\s*26px;/);
-  assert.match(tongxing, /--primary-button-height:\s*40px;/);
+  assert.match(tongxing, /--primary-button-height:\s*36px;/);
   assert.match(tongxing, /--table-header-height:\s*26px;/);
   assert.match(tongxing, /--table-row-height:\s*30px;/);
   assert.match(tongxing, /--result-row-height:\s*30px;/);
