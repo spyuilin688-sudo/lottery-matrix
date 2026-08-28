@@ -30,11 +30,11 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .lottery-screen', /--layout-page-inline:\s*16px;/);
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0;/);
   assertBlock(css, '.lottery-switcher--home-style', /width:\s*calc\(100% - 32px\);/);
-  assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 24px\);/);
-  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*4px;/);
+  assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 32px\);/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*6px;/);
   assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*0;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
-  assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 24px\);/);
+  assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
 test('home layout starts at the safe top and keeps the bottom navigation clearance', () => {
@@ -66,7 +66,7 @@ test('embedded next draw info uses two independent rounded reference containers'
 test('Matrix Core keeps its 16px inset while five shortcuts use 8px outer margins and responsive 2 to 2.5px gaps', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assertBlock(css, '.home-screen .matrix-core-banner', /width:\s*var\(--home-core-width\);/);
-  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - 16px\);/);
+  assertBlock(css, '.home-screen .home-shortcut-row', /width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/);
   assertBlock(css, '.home-screen .home-shortcut-row', /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\);/);
 });
