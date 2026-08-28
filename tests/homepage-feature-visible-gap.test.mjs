@@ -26,8 +26,8 @@ test("five homepage feature cards keep 10px outer margins and responsive 2–3px
   assert.match(button, /border:\s*0;/);
   assert.match(button, /box-shadow:\s*var\(--home-frame-shadow\);/);
   assert.match(button, /overflow:\s*visible;/);
-  assert.match(image, /width:\s*84%;/);
-  assert.match(image, /height:\s*84%;/);
+  assert.match(image, /width:\s*100%;/);
+  assert.match(image, /height:\s*100%;/);
   assert.match(image, /object-fit:\s*fill;/);
   assert.match(image, /border:\s*0;/);
   assert.match(image, /border-radius:\s*0;/);

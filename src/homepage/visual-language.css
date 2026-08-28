@@ -48,7 +48,6 @@
   box-shadow: var(--home-frame-shadow);
 }
 
-.home-screen .latest-draw-card,
 .home-screen .matrix-status-card,
 .home-screen .matrix-core-banner {
   clip-path: polygon(
@@ -65,7 +64,19 @@
 }
 
 .home-screen .latest-draw-card {
+  --home-octagon-cut: clamp(6px, 2.05vw, 8px);
+  clip-path: polygon(
+    var(--home-octagon-cut) 0,
+    calc(100% - var(--home-octagon-cut)) 0,
+    100% var(--home-octagon-cut),
+    100% calc(100% - var(--home-octagon-cut)),
+    calc(100% - var(--home-octagon-cut)) 100%,
+    var(--home-octagon-cut) 100%,
+    0 calc(100% - var(--home-octagon-cut)),
+    0 var(--home-octagon-cut)
+  );
   border: 0;
+  border-radius: 0;
   box-shadow: var(--home-frame-shadow);
 }
 
@@ -76,6 +87,7 @@
   display: block;
   clip-path: inherit;
   background: var(--home-octagon-frame);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lottery-gold-500) 38%, transparent);
   content: "";
   pointer-events: none;
 }
@@ -103,6 +115,7 @@
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
+  --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   position: relative;
   isolation: isolate;
   border: 0;
@@ -190,132 +203,40 @@
   outline-offset: 2px;
 }
 
-@property --matrix-core-energy-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-.home-screen .matrix-core-energy-loop,
-.home-screen .matrix-core-node-frame {
+.home-screen .matrix-core-symbol-energy {
   position: absolute;
+  z-index: 4;
   inset: 0;
-  clip-path: inherit;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
 }
 
-.home-screen .matrix-core-energy-loop {
-  --matrix-core-energy-angle: 0deg;
-  z-index: 4;
-  padding: 2px;
-  background: conic-gradient(
-    from var(--matrix-core-energy-angle) at 50% 50%,
-    transparent 0deg,
-    rgba(203, 146, 36, .12) 216deg,
-    rgba(244, 190, 73, .72) 270deg,
-    rgba(255, 241, 190, .96) 296deg,
-    rgba(238, 174, 51, .64) 320deg,
-    transparent 360deg
-  );
-  filter: drop-shadow(0 0 3px rgba(244, 190, 73, .42));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: matrix-core-energy-circulation 4.8s linear infinite;
+.home-screen .matrix-core-energy-path {
+  fill: none;
+  stroke: url("#matrix-core-symbol-gradient");
+  stroke-width: 1.15px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 82;
+  stroke-dashoffset: 0;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--lottery-gold-300) 68%, transparent));
+  opacity: .96;
+  animation: matrix-core-symbol-circulation 4.8s linear infinite;
 }
 
-.home-screen .matrix-core-node-frame {
-  z-index: 5;
-}
-
-.home-screen .matrix-core-node {
-  position: absolute;
-  width: clamp(3px, 1.03vw, 4px);
-  height: clamp(3px, 1.03vw, 4px);
-  border: 1px solid rgba(255, 231, 164, .82);
-  border-radius: 50%;
-  background: #e9ad3e;
-  box-shadow: 0 0 3px rgba(244, 190, 73, .62), 0 0 7px rgba(225, 155, 30, .26);
-  opacity: .32;
-  transform: translate(-50%, -50%) scale(.7);
-  animation: matrix-core-node-pulse 2.8s ease-in-out infinite;
-}
-
-.home-screen .matrix-core-node:nth-child(1) {
-  top: 0;
-  left: var(--home-octagon-cut);
-  animation-delay: 0s;
-}
-
-.home-screen .matrix-core-node:nth-child(2) {
-  top: 0;
-  left: calc(100% - var(--home-octagon-cut));
-  animation-delay: .35s;
-}
-
-.home-screen .matrix-core-node:nth-child(3) {
-  top: var(--home-octagon-cut);
-  left: 100%;
-  animation-delay: .7s;
-}
-
-.home-screen .matrix-core-node:nth-child(4) {
-  top: calc(100% - var(--home-octagon-cut));
-  left: 100%;
-  animation-delay: 1.05s;
-}
-
-.home-screen .matrix-core-node:nth-child(5) {
-  top: 100%;
-  left: calc(100% - var(--home-octagon-cut));
-  animation-delay: 1.4s;
-}
-
-.home-screen .matrix-core-node:nth-child(6) {
-  top: 100%;
-  left: var(--home-octagon-cut);
-  animation-delay: 1.75s;
-}
-
-.home-screen .matrix-core-node:nth-child(7) {
-  top: calc(100% - var(--home-octagon-cut));
-  left: 0;
-  animation-delay: 2.1s;
-}
-
-.home-screen .matrix-core-node:nth-child(8) {
-  top: var(--home-octagon-cut);
-  left: 0;
-  animation-delay: 2.45s;
-}
-
-@keyframes matrix-core-energy-circulation {
+@keyframes matrix-core-symbol-circulation {
   to {
-    --matrix-core-energy-angle: 360deg;
-  }
-}
-
-@keyframes matrix-core-node-pulse {
-  0%, 12%, 100% {
-    opacity: .32;
-    transform: translate(-50%, -50%) scale(.7);
-  }
-
-  6% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.35);
+    stroke-dashoffset: -100;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-screen .matrix-core-energy-loop,
-  .home-screen .matrix-core-node {
+  .home-screen .matrix-core-energy-path {
     animation: none;
-  }
-
-  .home-screen .matrix-core-node {
-    opacity: .62;
-    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
   }
 }
