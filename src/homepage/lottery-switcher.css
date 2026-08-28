@@ -7,7 +7,7 @@
 
 .lottery-switcher--home-style {
   box-sizing: border-box;
-  padding-inline: 0;
+  padding-inline: 4px;
 }
 
 .lottery-switcher--home-style .lottery-switcher-hit-grid {
@@ -51,7 +51,8 @@
   width: 100%;
   aspect-ratio: 1532 / 214;
   margin: 0 0 10px;
-  padding: 0;
+  padding-block: 0;
+  padding-inline: 4px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
@@ -78,21 +79,46 @@
 
 .matrix-custom-status-screen .custom-status-tabs > button {
   appearance: none;
+  position: relative;
+  isolation: isolate;
   display: flex;
   padding: 0;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid #39434b;
+  --home-frame-color: #39434b;
+  --home-frame-inner-color: color-mix(in srgb, var(--home-frame-color) 48%, transparent);
+  border: 0;
   background: #061017;
   color: #afb6bc;
+  box-shadow: inset 0 0 6px rgba(57, 67, 75, .18);
   overflow: hidden;
 }
 
+.matrix-custom-status-screen .custom-status-tabs > button::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  clip-path: inherit;
+  background: var(--home-octagon-frame);
+  content: "";
+  pointer-events: none;
+}
+
+.matrix-custom-status-screen .custom-status-tabs > button > * {
+  position: relative;
+  z-index: 1;
+}
+
 .matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"] {
-  border-color: #d9aa48;
   color: #f5d67d;
   box-shadow: 0 0 10px rgba(217, 170, 72, .25);
 }
+
+.matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"][data-tone="green"] { --home-frame-color: var(--matrix-status-active); }
+.matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"][data-tone="blue"] { --home-frame-color: var(--matrix-status-focus); }
+.matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"][data-tone="purple"] { --home-frame-color: var(--matrix-status-resonance); }
+.matrix-custom-status-screen .custom-status-tabs > button[aria-selected="true"][data-tone="orange"] { --home-frame-color: var(--matrix-status-critical); }
 
 .matrix-custom-status-screen .custom-status-tabs strong {
   font-size: 13px;
