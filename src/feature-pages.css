@@ -1358,8 +1358,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   right: auto;
   bottom: auto;
   left: calc(83% + 4px);
-  width: 2.34rem;
-  height: 2.34rem;
+  width: 1.8rem;
+  height: 1.8rem;
   transform: translateY(-50%);
 }
 .matrix-status-screen .status-title-trigger {
