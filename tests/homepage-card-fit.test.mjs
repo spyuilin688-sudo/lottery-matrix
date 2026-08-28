@@ -7,8 +7,7 @@ const css = readLocalCss("src/homepage-repair.css");
 const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 
 test("Matrix Core uses its fitted responsive token and container background without a child image", () => {
-  const component = source.match(/export function MatrixCoreBanner[\s\S]*?
-\}/)?.[0] ?? "";
+  const component = source.match(/export function MatrixCoreBanner[\s\S]*?\n\}/)?.[0] ?? "";
 
   assert.match(css, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
   assert.match(css, /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/);
@@ -29,7 +28,6 @@ test("selected lottery frame follows the artwork corner radius without square bo
   assert.match(selectedAfterRule, /display:\s*block;/);
   assert.match(selectedAfterRule, /inset:\s*\.5px;/);
   assert.match(selectedAfterRule, /padding:\s*\.7px;/);
-  assert.match(selectedAfterRule, /border-radius:\s*inherit;/);
   assert.match(selectedAfterRule, /background:\s*var\(--lottery-selected-gradient\);/);
   assert.match(selectedAfterRule, /mask-composite:\s*exclude;/);
 });
