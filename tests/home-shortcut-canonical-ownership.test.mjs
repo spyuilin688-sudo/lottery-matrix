@@ -7,7 +7,7 @@ const visual = readFileSync(new URL("../src/homepage/visual-language.css", impor
 
 test("五大功能的外距、間距與比例只由 base.css 的共用變數控制", () => {
   assert.match(base, /--home-feature-inline:\s*10px;/);
-  assert.match(base, /--home-feature-gap:\s*clamp\(2px, \.77vw, 3px\);/);
+  assert.match(base, /--home-feature-gap:\s*4px;/);
   assert.match(base, /--home-feature-card-aspect:\s*386 \/ 496;/);
   assert.match(base, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*var\(--home-feature-inline\);[^}]*column-gap:\s*var\(--home-feature-gap\);/s);
   assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*aspect-ratio:\s*var\(--home-feature-card-aspect\);/s);
