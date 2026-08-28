@@ -3,6 +3,16 @@
 .home-screen {
   --home-octagon-cut: clamp(4px, 1.54vw, 6px);
   --home-frame-border: color-mix(in srgb, var(--lottery-gold-500) 56%, transparent);
+  --home-frame-color: var(--home-frame-border);
+  --home-octagon-frame:
+    linear-gradient(var(--home-frame-color) 0 0) top center / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
+    linear-gradient(var(--home-frame-color) 0 0) bottom center / calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) var(--lottery-stroke-default) no-repeat,
+    linear-gradient(var(--home-frame-color) 0 0) left center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
+    linear-gradient(var(--home-frame-color) 0 0) right center / var(--lottery-stroke-default) calc(100% - var(--home-octagon-cut) - var(--home-octagon-cut)) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) top left / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) top right / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) bottom left / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - .5px), var(--home-frame-color) calc(50% - .5px), var(--home-frame-color) calc(50% + .5px), transparent calc(50% + .5px)) bottom right / var(--home-octagon-cut) var(--home-octagon-cut) no-repeat;
   --home-frame-shadow: inset 0 0 8px color-mix(in srgb, var(--lottery-gold-500) 10%, transparent), 0 0 4px color-mix(in srgb, var(--lottery-gold-500) 8%, transparent);
   --home-frame-shadow-active: inset 0 0 10px color-mix(in srgb, var(--lottery-gold-300) 18%, transparent), 0 0 7px color-mix(in srgb, var(--lottery-gold-300) 24%, transparent);
 }
@@ -67,16 +77,14 @@
   z-index: 3;
   inset: 0;
   display: block;
-  padding: var(--lottery-stroke-default);
+  padding: 0;
   clip-path: inherit;
   border-radius: 0;
-  background: var(--home-frame-border);
+  background: var(--home-octagon-frame);
   content: "";
   pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  -webkit-mask: none;
+  mask: none;
 }
 
 .home-screen .latest-draw-card .next-draw-info--embedded .next-draw-item {
@@ -100,15 +108,24 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  padding: var(--lottery-stroke-default);
+  padding: 0;
   clip-path: inherit;
-  background: var(--home-frame-border);
+  background: var(--home-octagon-frame);
   content: "";
   pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"] {
+  --home-frame-color: var(--lottery-gold-300);
+}
+
+.home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"]::after {
+  padding: 0;
+  background: var(--home-octagon-frame);
+  -webkit-mask: none;
+  mask: none;
 }
 
 .home-screen .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card[data-selected="true"],
