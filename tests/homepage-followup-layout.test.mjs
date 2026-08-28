@@ -6,7 +6,7 @@ const base = readFileSync(new URL('../src/homepage/base.css', import.meta.url), 
 const switcher = readFileSync(new URL('../src/homepage/lottery-switcher.css', import.meta.url), 'utf8');
 
 function block(source, selector) {
-  const start = source.indexOf(selector);
+  const start = source.lastIndexOf(`${selector} {`);
   assert.notEqual(start, -1, `missing selector: ${selector}`);
   const open = source.indexOf('{', start);
   const close = source.indexOf('}', open);
