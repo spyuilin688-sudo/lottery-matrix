@@ -17,6 +17,8 @@ RETENTION = timedelta(days=3)
 class AnalysisRepository(Protocol):
     def health_check(self) -> None: ...
     def list_job_statuses(self) -> list[dict[str, Any]]: ...
+    def start_job(self, job_name: str, lottery: str, started_at: str) -> None: ...
+    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None: ...
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
     def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]: ...
@@ -40,9 +42,29 @@ class InMemoryAnalysisRepository:
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.artifacts: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
+        self.job_statuses: dict[str, dict[str, Any]] = {}
 
     def health_check(self) -> None:
         return None
+
+    def start_job(self, job_name: str, lottery: str, started_at: str) -> None:
+        self.job_statuses[job_name] = {
+            "jobName": job_name,
+            "lottery": lottery,
+            "status": "running",
+            "startedAt": started_at,
+            "finishedAt": None,
+            "error": None,
+            "updatedAt": started_at,
+        }
+
+    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
+        self.job_statuses[job_name].update({
+            "status": status,
+            "finishedAt": finished_at,
+            "error": error,
+            "updatedAt": finished_at,
+        })
 
     def list_job_statuses(self) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
@@ -51,10 +73,11 @@ class InMemoryAnalysisRepository:
             latest_draw = latest_draws[0] if latest_draws else None
             runs = [dict(run) for key, run in self.runs.items() if key[0] == lottery]
             latest_analysis = max(runs, key=lambda run: str(run.get("startedAt", ""))) if runs else None
+            job = self.job_statuses.get(job_name)
             items.append({
                 "lottery": lottery,
                 "jobName": job_name,
-                "job": None,
+                "job": None if job is None else dict(job),
                 "latestDraw": None if latest_draw is None else {
                     "period": latest_draw["period"],
                     "drawDate": latest_draw.get("drawDate"),
@@ -262,6 +285,23 @@ class SupabaseAnalysisRepository:
 
     def health_check(self) -> None:
         self.client.table("lottery_draws").select("id").limit(1).execute()
+
+    def start_job(self, job_name: str, lottery: str, started_at: str) -> None:
+        self.client.table("system_job_status").upsert({
+            "job_name": job_name,
+            "lottery": lottery,
+            "status": "running",
+            "started_at": started_at,
+            "finished_at": None,
+            "error": None,
+        }, on_conflict="job_name").execute()
+
+    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
+        self.client.table("system_job_status").update({
+            "status": status,
+            "finished_at": finished_at,
+            "error": error,
+        }).eq("job_name", job_name).execute()
 
     def list_job_statuses(self) -> list[dict[str, Any]]:
         job_response = self.client.table("system_job_status").select("*").execute()
