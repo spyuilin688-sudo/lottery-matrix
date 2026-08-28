@@ -26,10 +26,11 @@ test("號碼對照單由最後點擊覆蓋同一範圍且分隔線清楚", () =>
   assert.doesNotMatch(reference, /\.reference-row > span \+ span,[\s\S]*?border-left:\s*2px/s);
 });
 
-test("首頁使用指定 10px 功能外距與導覽淨空、16px 資訊容器外距及 4px 區段間距", () => {
+test("首頁使用指定 10px 功能外距、4px 功能間距、6px 彩種開獎間距及 16px 資訊容器外距", () => {
   assert.match(home, /--home-feature-inline:\s*10px/);
+  assert.match(home, /--home-feature-gap:\s*4px/);
   assert.match(home, /--home-gap-features-nav:\s*8px/);
-  assert.match(home, /--home-gap-switcher-draw:\s*4px/);
+  assert.match(home, /--home-gap-switcher-draw:\s*6px/);
   assert.match(home, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\)/);
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
