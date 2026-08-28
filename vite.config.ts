@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Railway API test environment is intentionally fixed for unit tests.
 export default defineConfig({
   build: {
     outDir: "dist",
