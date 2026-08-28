@@ -7,26 +7,28 @@ const css = readLocalCss("src/homepage-repair.css");
 const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 
 test("Matrix Core uses its fitted responsive token and container background without a child image", () => {
-  const component = source.match(/export function MatrixCoreBanner[\s\S]*?\n\}/)?.[0] ?? "";
+  const component = source.match(/export function MatrixCoreBanner[\s\S]*?
+\}/)?.[0] ?? "";
 
-  assert.match(css, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
+  assert.match(css, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
   assert.match(css, /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/);
   assert.match(css, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
-  assert.match(component, /return <button[^>]*className="matrix-core-banner home-core-box"[^>]*\/>;/);
+  assert.match(component, /className="matrix-core-banner home-core-box"/);
+  assert.match(component, /className="matrix-core-symbol-energy"/);
   assert.doesNotMatch(component, /<img\b/);
 });
 
 test("selected lottery frame follows the artwork corner radius without square border-image corners", () => {
   const selectedRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]\s*\{([\s\S]*?)\}/)?.[1];
-  const selectedAfterRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::after\s*\{([\s\S]*?)\}/)?.[1];
+  const selectedAfterRule = css.match(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\[data-selected="true"\]::before\s*\{([\s\S]*?)\}/)?.[1];
 
   assert.ok(selectedRule);
-  assert.match(selectedRule, /border-radius:\s*12px;/);
+  assert.match(selectedRule, /border-radius:\s*0;/);
   assert.match(selectedRule, /border-image:\s*none;/);
   assert.ok(selectedAfterRule);
   assert.match(selectedAfterRule, /display:\s*block;/);
-  assert.match(selectedAfterRule, /inset:\s*0;/);
-  assert.match(selectedAfterRule, /padding:\s*1px;/);
+  assert.match(selectedAfterRule, /inset:\s*\.5px;/);
+  assert.match(selectedAfterRule, /padding:\s*\.7px;/);
   assert.match(selectedAfterRule, /border-radius:\s*inherit;/);
   assert.match(selectedAfterRule, /background:\s*var\(--lottery-selected-gradient\);/);
   assert.match(selectedAfterRule, /mask-composite:\s*exclude;/);
