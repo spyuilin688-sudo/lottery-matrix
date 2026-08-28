@@ -57,9 +57,8 @@
   color: #fff7e9;
 }
 
-.number-reference-screen .reference-row > span + span,
 .number-reference-screen .reference-row > .reference-issue + span {
-  border-left: 2px solid rgba(212, 168, 72, .88);
+  border-left: 1px solid rgba(161, 112, 40, .78);
 }
 
 .number-reference-screen .reference-results-end {
