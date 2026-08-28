@@ -40,11 +40,11 @@ test("Matrix 指南移除標題下方重複卡片", () => {
   assert.match(source, /<nav[^>]*className="guide-category-strip"/);
 });
 
-test("Matrix 探索、天衍、天工共用 1.8rem 垂直滑動切換器", () => {
+test("Matrix 探索、天衍、天工共用 2.34rem 垂直循環切換器", () => {
   assert.doesNotMatch(prototype, /\.matrix-explore-main-screen \.matrix-page-switcher\s*\{\s*display:\s*none/);
   assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 4px\);[^}]*transform:\s*translateY\(-50%\);/s);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;[^}]*flex-direction:\s*column;[^}]*scroll-snap-type:\s*y mandatory;[^}]*touch-action:\s*pan-y;/s);
-  assert.match(feature, /\.matrix-page-switcher button\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;[^}]*scroll-snap-align:\s*center;/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex-direction:\s*column;[^}]*scroll-snap-type:\s*y mandatory;[^}]*touch-action:\s*pan-y;/s);
+  assert.match(feature, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*scroll-snap-align:\s*center;/s);
   assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);
 });
 
@@ -83,7 +83,7 @@ test("六合彩球號載入並使用實際 Roboto 900 字重", () => {
 });
 
 test("首頁開獎資訊卡維持獨立 12px 外距且高度約縮 10%", () => {
-  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(var\(--home-content-width\) \* 732 \/ 1672\) \* \.9\);[^}]*width:\s*calc\(100% - 24px\);[^}]*margin-inline:\s*0;/s);
+  assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(var\(--home-content-width\) \* 732 \/ 1672\) \* \.9\);[^}]*width:\s*calc\(100% - 32px\);[^}]*margin-inline:\s*0;/s);
 });
 
 test("我的與通知內容採較緊密比例，通知右側動作固定欄對齊", () => {

@@ -48,8 +48,9 @@
 .feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - 32px); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
 .feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
 .feature-title-actions { display: flex; min-width: 0; align-items: center; }
-.matrix-page-switcher { display: flex; width: 1.8rem; height: 1.8rem; flex-direction: column; overflow-x: hidden; overflow-y: auto; align-items: stretch; scroll-snap-type: y mandatory; overscroll-behavior-y: contain; touch-action: pan-y; }
-.matrix-page-switcher button { display: grid; width: 1.8rem; height: 1.8rem; min-height: 1.8rem; flex: 0 0 1.8rem; padding: 0; place-items: center; scroll-snap-align: center; scroll-snap-stop: always; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
+.matrix-page-switcher { display: flex; width: 2.34rem; height: 2.34rem; flex-direction: column; overflow-x: hidden; overflow-y: auto; align-items: stretch; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior-y: contain; touch-action: pan-y; }
+.matrix-page-switcher::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.matrix-page-switcher button { display: grid; width: 2.34rem; height: 2.34rem; min-height: 2.34rem; flex: 0 0 2.34rem; padding: 0; place-items: center; scroll-snap-align: center; scroll-snap-stop: always; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .matrix-title-banner {
   position: relative;

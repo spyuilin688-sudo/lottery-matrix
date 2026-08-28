@@ -7,7 +7,7 @@ const css = readLocalCss("src/homepage-repair.css");
 test("狀態卡共同外框使用 12px 外距、1.5px 內距與 0.8px 卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*padding:\s*1\.5px;[^}]*border:\s*1px solid[^}]*border-radius:\s*12px;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding:\s*1\.5px;[^}]*border:\s*1px solid[^}]*border-radius:\s*12px;/s,
   );
   assert.match(
     css,

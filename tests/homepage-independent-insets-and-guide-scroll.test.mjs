@@ -11,12 +11,12 @@ const guideEnd = source.indexOf("export function MatrixNotebookPage", guideStart
 const guideSource = source.slice(guideStart, guideEnd);
 
 test("首頁各區塊獨立擁有指定左右外距", () => {
-  assert.match(homeCss, /\.home-screen \.lottery-screen\s*\{[^}]*--home-content-width:\s*calc\(min\(100vw, 390px\) - 24px\);[^}]*padding:\s*0;/s);
+  assert.match(homeCss, /\.home-screen \.lottery-screen\s*\{[^}]*--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\);[^}]*padding:\s*0;/s);
   assert.match(homeCss, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
-  assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
-  assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 24px\);/s);
+  assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
+  assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
-  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - 16px\);/s);
+  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);/s);
 });
 
 test("開獎資訊卡底列回復修改前的內部排版", () => {

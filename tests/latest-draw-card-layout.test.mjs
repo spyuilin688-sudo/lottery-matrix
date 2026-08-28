@@ -44,7 +44,7 @@ test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
 
 test("開獎資訊卡使用獨立 12px 左右外距", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\)[^\n]*\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
 

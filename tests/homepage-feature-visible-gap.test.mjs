@@ -16,7 +16,7 @@ test("five homepage feature cards keep 8px outer margins and responsive 2 to 2.5
   const image = ruleBody(".home-screen .home-shortcut img");
 
   assert.match(row, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/);
-  assert.match(row, /width:\s*calc\(100% - 16px\);/);
+  assert.match(row, /width:\s*calc\(100% - \(var\(--home-feature-inline\) \* 2\)\);/);
   assert.match(row, /column-gap:\s*clamp\(2px, \.64vw, 2\.5px\);/);
   assert.match(button, /width:\s*100%;/);
   assert.match(button, /justify-self:\s*center;/);

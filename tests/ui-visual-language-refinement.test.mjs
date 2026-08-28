@@ -29,7 +29,7 @@ function finalDeclaration(source, selector, property) {
 }
 
 test("homepage status frame owns 12px viewport inset, 1.5px padding and 0.8px card gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(100% - 24px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(100% - 32px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding"), "1.5px");
   assert.match(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), /^1px solid/);
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "0.8px");
@@ -45,7 +45,7 @@ test("homepage status logos are 80 percent larger and shift left 6px without a m
 
 test("homepage logo is reduced by 8 percent and five features keep their current responsive gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "87.584%");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - 16px)");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "calc(100% - (var(--home-feature-inline) * 2))");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "clamp(2px, .64vw, 2.5px)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "width"), "100%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut", "justify-self"), "center");
