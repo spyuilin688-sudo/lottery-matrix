@@ -8,6 +8,7 @@ const tongxing = read("src/tongxing-compact.css");
 const feature = read("src/feature-pages.css");
 const exploreSpacing = read("src/matrix-explore-spacing.css");
 const prototype = read("src/prototype.css");
+const prototypeView = read("src/Prototype.tsx");
 const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
 const visual = read("src/homepage/visual-language.css");
@@ -52,4 +53,16 @@ test("首頁、Matrix 狀態與自訂頁的彩種選取框只由共用切換器�
   assert.doesNotMatch(base, /lottery-card\[data-selected="true"\]::after/);
   assert.doesNotMatch(visual, /lottery-card\[data-selected="true"\]::after/);
   assert.match(pages, /className="lottery-switcher--home-style matrix-status-lottery-switcher"/);
+});
+
+test("首頁 Matrix Core 使用能量環流框與八節點脈衝框", () => {
+  assert.match(prototypeView, /className="matrix-core-energy-loop"/);
+  assert.equal((prototypeView.match(/className="matrix-core-node"/g) ?? []).length, 8);
+  assert.match(visual, /\.matrix-core-energy-loop\s*\{[^}]*animation:\s*matrix-core-energy-circulation/s);
+  assert.match(visual, /\.matrix-core-node\s*\{[^}]*animation:\s*matrix-core-node-pulse/s);
+  assert.match(visual, /@keyframes matrix-core-energy-circulation/);
+  assert.match(visual, /@keyframes matrix-core-node-pulse/);
+  assert.doesNotMatch(base, /matrix-core-stardust-scan/);
+  assert.doesNotMatch(base, /matrix-core-pulse/);
+  assert.doesNotMatch(visual, /\.matrix-core-banner::after\s*\{[^}]*animation:\s*none/s);
 });
