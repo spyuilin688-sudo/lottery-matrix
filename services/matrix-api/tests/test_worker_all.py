@@ -38,7 +38,7 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
     assert result["failed"] == {"天天樂": "source failed"}
 
 
-def test_railway_config_runs_one_lottery_per_service_every_15_minutes() -> None:
+def test_railway_config_runs_scheduled_worker_on_five_minute_grid() -> None:
     root = Path(__file__).parents[1]
     configs = [
         json.loads((root / name).read_text(encoding="utf-8"))
@@ -51,12 +51,17 @@ def test_railway_config_runs_one_lottery_per_service_every_15_minutes() -> None:
     ]
 
     assert [config["deploy"]["startCommand"] for config in configs] == [
-        "uv run python -u -m app.worker --lottery 今彩539",
-        "uv run python -u -m app.worker --lottery 天天樂",
-        "uv run python -u -m app.worker --lottery 六合彩",
-        "uv run python -u -m app.worker --lottery 大樂透",
+        "uv run python -u -m app.worker --lottery 今彩539 --scheduled",
+        "uv run python -u -m app.worker --lottery 天天樂 --scheduled",
+        "uv run python -u -m app.worker --lottery 香港六合彩 --scheduled".replace("香港", ""),
+        "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
-    assert all(config["deploy"]["cronSchedule"] == "*/15 * * * *" for config in configs)
+    assert [config["deploy"]["cronSchedule"] for config in configs] == [
+        "3/5 * * * 1-6",
+        "3/5 * * * *",
+        "3/5 * * * *",
+        "3/5 * * * 2,5",
+    ]
     assert all(config["deploy"]["restartPolicyType"] == "NEVER" for config in configs)
 
 
