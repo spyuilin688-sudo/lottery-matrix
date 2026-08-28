@@ -193,6 +193,8 @@ const MATRIX_PAGE_ITEMS = [
   { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工.png" },
 ] as const;
 
+const MATRIX_LOOP_ITEMS = [MATRIX_PAGE_ITEMS[2], ...MATRIX_PAGE_ITEMS, MATRIX_PAGE_ITEMS[0]] as const;
+
 const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
   "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
@@ -216,7 +218,7 @@ function MatrixPageSwitcher({ current, onNavigate }: {
 }) {
   const switcherRef = useRef<HTMLElement>(null);
   const scrollSettleRef = useRef<number | null>(null);
-  const currentIndex = MATRIX_PAGE_ITEMS.findIndex((item) => item.screen === current);
+  const currentIndex = MATRIX_PAGE_ITEMS.findIndex((item) => item.screen === current) + 1;
 
   useEffect(() => {
     const switcher = switcherRef.current;
@@ -233,19 +235,30 @@ function MatrixPageSwitcher({ current, onNavigate }: {
     scrollSettleRef.current = window.setTimeout(() => {
       const switcher = switcherRef.current;
       if (!switcher || switcher.clientHeight === 0) return;
-      const index = Math.max(0, Math.min(MATRIX_PAGE_ITEMS.length - 1, Math.round(switcher.scrollTop / switcher.clientHeight)));
-      const target = MATRIX_PAGE_ITEMS[index].screen;
+      const rawIndex = Math.max(0, Math.min(MATRIX_LOOP_ITEMS.length - 1, Math.round(switcher.scrollTop / switcher.clientHeight)));
+      const normalizedIndex = rawIndex === 0
+        ? MATRIX_LOOP_ITEMS.length - 2
+        : rawIndex === MATRIX_LOOP_ITEMS.length - 1
+          ? 1
+          : rawIndex;
+      if (normalizedIndex !== rawIndex) {
+        switcher.scrollTo({ top: normalizedIndex * switcher.clientHeight, behavior: "auto" });
+      }
+      const target = MATRIX_LOOP_ITEMS[rawIndex].screen;
       if (target !== current) onNavigate(target);
     }, 120);
   };
 
   return (
     <nav ref={switcherRef} className="matrix-page-switcher" aria-label="Matrix Core 功能切換" onScroll={settleScrolledPage}>
-      {MATRIX_PAGE_ITEMS.map((item) => (
-        <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} data-selected={item.screen === current} onClick={() => onNavigate(item.screen)} key={item.screen}>
-          <img src={item.image} alt="" draggable={false} />
-        </button>
-      ))}
+      {MATRIX_LOOP_ITEMS.map((item, index) => {
+        const isLoopClone = index === 0 || index === MATRIX_LOOP_ITEMS.length - 1;
+        return (
+          <button type="button" aria-label={item.label} aria-hidden={isLoopClone || undefined} tabIndex={isLoopClone ? -1 : 0} aria-current={!isLoopClone && item.screen === current ? "page" : undefined} data-loop-clone={isLoopClone || undefined} data-selected={!isLoopClone && item.screen === current} onClick={() => onNavigate(item.screen)} key={`${item.screen}-${index}`}>
+            <img src={item.image} alt="" draggable={false} />
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -2005,15 +2018,15 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const toggleMarkedRow = (issue: string) => {
+    setMarkedCells((cells) => new Set(
+      [...cells].filter((key) => !key.startsWith(`${issue}-`)),
+    ));
     setMarkedRows((current) => {
       const next = new Set(current);
       if (next.has(issue)) {
         next.delete(issue);
       } else {
         next.add(issue);
-        setMarkedCells((cells) => new Set(
-          [...cells].filter((key) => !key.startsWith(`${issue}-`)),
-        ));
       }
       return next;
     });
