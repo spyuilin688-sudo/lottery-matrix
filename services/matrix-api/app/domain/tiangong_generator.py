@@ -24,19 +24,10 @@ def _apply_rule(base: int, rule: dict[str, Any], maximum: int) -> int:
 
 
 def derive_tiangong_rules(base: int, target: int, maximum: int) -> list[dict[str, Any]]:
-    rules = []
-    delta = target - base
-    for cycle in range(-3, 4):
-        value = delta + cycle * maximum
-        if -49 <= value <= 49 and normalize_matrix_number(base + value, maximum) == target:
-            rules.append({"algorithmType": "加減", "value": value})
-    direct_sum = base + target
-    for cycle in range(-3, 4):
-        value = direct_sum + cycle * maximum
-        if 1 <= value <= 98 and normalize_matrix_number(value - base, maximum) == target:
-            rules.append({"algorithmType": "合值", "value": value})
-    order = {"加減": 0, "合值": 1}
-    return sorted(rules, key=lambda rule: (order[rule["algorithmType"]], rule["value"]))
+    return [
+        {"algorithmType": "加減", "value": (target - base + maximum) % maximum},
+        {"algorithmType": "合值", "value": base + target},
+    ]
 
 
 def enumerate_reference_positions(source_position: int, final_distance: int, history_length: int) -> list[int]:
@@ -259,7 +250,9 @@ def run_tiangong_candidates(lottery: str, matrix_history: list[dict[str, Any]], 
     history = _normalize_history(lottery, matrix_history)
     period_ranges = options.get("periodRanges", [80])
     modes = options.get("modes", ["one-stage", "two-stage"])
-    conditions = options.get("hitConditions", ["準2進3", "準3進4"])
+    conditions = options.get("hitConditions", ["準2進3"])
+    if any(condition != "準2進3" for condition in conditions):
+        raise ValueError("INVALID_HIT_CONDITION")
     candidates = []
     for mode in modes:
         for period_range in period_ranges:
