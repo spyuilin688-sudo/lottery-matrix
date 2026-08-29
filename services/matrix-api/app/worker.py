@@ -1,12 +1,12 @@
 import argparse
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from os import environ
 from typing import Any
 
 import httpx
 
-from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
+from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
 from app.schedule import due_call_cycle
 from app.scraping.sources import LatestDrawSource
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
@@ -50,7 +50,28 @@ def _run_analysis(
     return result
 
 
-def run_worker(
+def _run_tracked_job(
+    lottery: str,
+    repository: AnalysisRepository,
+    execute: Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    job_name = JOB_NAME_BY_LOTTERY[lottery]
+    repository.start_job(job_name, lottery, datetime.now(UTC).isoformat())
+    try:
+        result = execute()
+    except Exception as error:
+        repository.finish_job(
+            job_name,
+            "failed",
+            datetime.now(UTC).isoformat(),
+            str(error)[:1000],
+        )
+        raise
+    repository.finish_job(job_name, "success", datetime.now(UTC).isoformat())
+    return result
+
+
+def _run_worker_untracked(
     lottery: str,
     repository: AnalysisRepository,
     source: DrawSource,
@@ -78,6 +99,19 @@ def run_worker(
     return _run_analysis(repository, draw, history, builders)
 
 
+def run_worker(
+    lottery: str,
+    repository: AnalysisRepository,
+    source: DrawSource,
+    builders: Mapping[str, ArtifactBuilder] | None = None,
+) -> dict[str, Any]:
+    return _run_tracked_job(
+        lottery,
+        repository,
+        lambda: _run_worker_untracked(lottery, repository, source, builders),
+    )
+
+
 def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
@@ -102,22 +136,25 @@ def run_scheduled_worker(
             "status": "already-acquired",
         }
 
-    repository.cleanup_expired(datetime.now(UTC))
-    refresh = DrawRefreshService(repository, source)
-    refresh.ensure_history(lottery)
-    draw = refresh.refresh(lottery)
+    def execute() -> dict[str, Any]:
+        repository.cleanup_expired(datetime.now(UTC))
+        refresh = DrawRefreshService(repository, source)
+        refresh.ensure_history(lottery)
+        draw = refresh.refresh(lottery)
 
-    if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
-        return {
-            "lottery": lottery,
-            "drawPeriod": draw["period"],
-            "status": "not-acquired",
-        }
+        if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
+            return {
+                "lottery": lottery,
+                "drawPeriod": draw["period"],
+                "status": "not-acquired",
+            }
 
-    history = repository.list_draws(lottery, None)
-    if not history:
-        raise ValueError("DRAW_HISTORY_INCOMPLETE")
-    return _run_analysis(repository, draw, history, builders)
+        history = repository.list_draws(lottery, None)
+        if not history:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        return _run_analysis(repository, draw, history, builders)
+
+    return _run_tracked_job(lottery, repository, execute)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,42 +1,15 @@
-export type AlgorithmStatus = {
-  ok: boolean;
-  health: unknown | null;
-  coverage: unknown | null;
-  audit: unknown | null;
-  cases: unknown | null;
-};
+import { createWorkerApi, type WorkerStatus } from './worker-api';
 
-const algorithmBaseUrl = 'https://api-v2.appdeploy.ai/app/app-snsxet';
-const endpoints = [
-  '/api/_healthcheck',
-  '/api/matrix/coverage',
-  '/api/matrix/audit',
-  '/api/matrix/algorithm/cases',
-] as const;
+export type AlgorithmStatus = WorkerStatus;
 
-const unavailable = (): AlgorithmStatus => ({
-  ok: false,
-  health: null,
-  coverage: null,
-  audit: null,
-  cases: null,
-});
+type BaseUrlLoader = () => Promise<string>;
 
-export function createAlgorithmApi(fetcher: typeof fetch = fetch) {
+export function createAlgorithmApi(
+  fetcher: typeof fetch = fetch,
+  loadBaseUrl: BaseUrlLoader,
+) {
+  const workerApi = createWorkerApi(loadBaseUrl, fetcher);
   return {
-    async getAlgorithmStatus(): Promise<AlgorithmStatus> {
-      try {
-        const responses = await Promise.all(endpoints.map((path) => fetcher(`${algorithmBaseUrl}${path}`)));
-        if (responses.some((response) => !response.ok)) return unavailable();
-        const [health, coverage, audit, cases] = await Promise.all(
-          responses.map((response) => response.json()),
-        );
-        return { ok: true, health, coverage, audit, cases };
-      } catch {
-        return unavailable();
-      }
-    },
+    getAlgorithmStatus: () => workerApi.getStatus(),
   };
 }
-
-export const algorithmApi = createAlgorithmApi();

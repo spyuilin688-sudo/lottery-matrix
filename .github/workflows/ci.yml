@@ -7,119 +7,13 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: project-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apply-railway-status:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'api/railway-status-post-history-20260829'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout head branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: api/railway-status-post-history-20260829
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Set up uv and Python
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
-        with:
-          version: "0.11.28"
-          python-version: "3.12"
-          enable-cache: true
-          cache-dependency-glob: services/matrix-api/uv.lock
-
-      - name: Apply status implementation
-        run: |
-          git config user.name "spyuilin688-sudo"
-          git config user.email "spyuilin688@gmail.com"
-          git cherry-pick -n -X theirs ba53d51923bd68c52903f1268ee29222c935fbd6
-          git checkout 23362e58b79e977b9acb01165f9e53306224710f -- \
-            apps/admin/backend/algorithm-api.test.ts \
-            apps/admin/backend/worker-api.test.ts
-
-      - name: Preserve complete draw history semantics
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          repo_path = Path('services/matrix-api/app/repositories/analysis_repository.py')
-          text = repo_path.read_text()
-          if 'DRAW_PAGE_SIZE = 1000' not in text:
-              text = text.replace(
-                  'RETENTION = timedelta(days=3)\n',
-                  'RETENTION = timedelta(days=3)\nDRAW_PAGE_SIZE = 1000\n',
-                  1,
-              )
-
-          text = text.replace(
-              'def list_draws(self, lottery: str, limit: int) -> list[dict[str, Any]]:',
-              'def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:',
-          )
-
-          memory_marker = 'class InMemoryAnalysisRepository:'
-          memory_start = text.index(memory_marker)
-          memory_method_start = text.index('    def list_draws(', memory_start)
-          memory_method_end = text.index('\n    def begin_run', memory_method_start)
-          memory_method = '''    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:\n        matches = [draw for (name, _), draw in self.draws.items() if name == lottery]\n        ordered = sorted(\n            matches,\n            key=lambda draw: (str(draw.get("drawDate", "")), str(draw["period"])),\n            reverse=True,\n        )\n        newest = ordered if limit is None else ordered[: max(0, limit)]\n        return [\n            {\n                "period": draw["period"],\n                "drawDate": draw.get("drawDate"),\n                "numbers": draw["numbers"],\n                "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),\n                "drawOrderNumbers": draw.get("drawOrderNumbers"),\n            }\n            for draw in newest\n        ]\n'''
-          text = text[:memory_method_start] + memory_method + text[memory_method_end:]
-
-          supabase_marker = 'class SupabaseAnalysisRepository:'
-          supabase_start = text.index(supabase_marker)
-          supabase_method_start = text.index('    def list_draws(', supabase_start)
-          supabase_method_end = text.index('\n    def begin_run', supabase_method_start)
-          supabase_method = '''    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:\n        if limit is not None and limit <= 0:\n            return []\n\n        draws: list[dict[str, Any]] = []\n        offset = 0\n        while limit is None or len(draws) < limit:\n            page_size = DRAW_PAGE_SIZE if limit is None else min(DRAW_PAGE_SIZE, limit - len(draws))\n            response = (\n                self.client.table("lottery_draws")\n                .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")\n                .eq("lottery", lottery)\n                .order("draw_date", desc=True)\n                .order("period", desc=True)\n                .range(offset, offset + page_size - 1)\n                .execute()\n            )\n            page = [dict(draw) for draw in response.data]\n            draws.extend(page)\n            if len(page) < page_size:\n                break\n            offset += len(page)\n\n        return [self._normalize_draw(draw) for draw in draws]\n'''
-          text = text[:supabase_method_start] + supabase_method + text[supabase_method_end:]
-          repo_path.write_text(text)
-
-          worker_path = Path('services/matrix-api/app/worker.py')
-          worker = worker_path.read_text()
-          worker = worker.replace('REQUIRED_HISTORY_DRAWS = 80\n', '')
-          worker = worker.replace('refresh.ensure_history(lottery, REQUIRED_HISTORY_DRAWS)', 'refresh.ensure_history(lottery)')
-          worker = worker.replace('repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)', 'repository.list_draws(lottery, None)')
-          worker = worker.replace('if len(history) < REQUIRED_HISTORY_DRAWS:', 'if not history:')
-          if 'REQUIRED_HISTORY_DRAWS' in worker:
-              raise SystemExit('Fixed 80-draw rule remains in worker')
-          worker_path.write_text(worker)
-          PY
-
-      - name: Matrix API tests
-        working-directory: services/matrix-api
-        run: |
-          uv sync --frozen
-          uv run pytest -q
-
-      - name: Admin worker adapter tests
-        run: |
-          npm install --prefix apps/admin --no-package-lock
-          npm --prefix apps/admin test -- backend/worker-api.test.ts backend/algorithm-api.test.ts
-
-      - name: Regression guards
-        run: |
-          ! grep -R "REQUIRED_HISTORY_DRAWS" services/matrix-api/app/worker.py
-          grep -F "repository.list_draws(lottery, None)" services/matrix-api/app/worker.py
-          grep -F "DRAW_PAGE_SIZE = 1000" services/matrix-api/app/repositories/analysis_repository.py
-          grep -F '.range(offset, offset + page_size - 1)' services/matrix-api/app/repositories/analysis_repository.py
-          git diff --check
-
-      - name: Commit implementation and restore CI
-        run: |
-          git fetch origin main
-          git checkout origin/main -- .github/workflows/ci.yml
-          git rm -f .github/workflows/apply-railway-status-post-history-once.yml
-          git add services/matrix-api apps/admin/backend .github/workflows/ci.yml
-          git commit -m "feat: add Railway operational status after full-history fix"
-          git push origin HEAD:api/railway-status-post-history-20260829
-
   runtime-integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 15

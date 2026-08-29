@@ -9,9 +9,10 @@ import {
   type PermissionKey,
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
-import { algorithmApi } from './algorithm-api';
+import { createAlgorithmApi } from './algorithm-api';
 import { createConnectionStatus } from './connection-status';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
+import { createWorkerApi } from './worker-api';
 
 type Context = {
   body?: unknown;
@@ -30,8 +31,15 @@ type PermissionInput = {
   delete?: boolean;
 };
 
+const loadWorkerBaseUrl = async () => {
+  const names = await secrets.listSecretNames();
+  if (!names.includes('RAILWAY_WORKER_URL')) return '';
+  return String(await secrets.readSecret('RAILWAY_WORKER_URL'));
+};
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const adminData = createAdminData(supabase);
+const workerApi = createWorkerApi(loadWorkerBaseUrl);
+const algorithmApi = createAlgorithmApi(fetch, loadWorkerBaseUrl);
 const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
@@ -161,6 +169,9 @@ const routes: Record<string, unknown> = {
 
   'GET /api/algorithm-status': [requireAuth(), guard('view'), async () =>
     json(await algorithmApi.getAlgorithmStatus())],
+
+  'GET /api/admin/worker/status': [requireAuth(), guard('view'), async () =>
+    json(await workerApi.getStatus())],
 
   'GET /api/system-status': [requireAuth(), moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
