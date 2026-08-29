@@ -15,8 +15,6 @@ export type MatrixApiErrorCode =
   | 'NETWORK_ERROR'
   | 'API_ERROR';
 
-const LEGACY_MATRIX_API_BASE = 'https://api-v2.appdeploy.ai/app/app-snsxet';
-
 const REMOTE_ERROR_STATUS = {
   AUTH_REQUIRED: 401,
   LINE_PROVIDER_TOKEN_REQUIRED: 400,
@@ -66,10 +64,19 @@ function isJsonContentType(contentType: string): boolean {
     || /^application\/[!#$%&'*+\-.^_`|~0-9a-z]+\+json$/.test(mediaType);
 }
 
+function railwayApiBase() {
+  const configured = import.meta.env.VITE_RAILWAY_API_BASE?.trim();
+  if (configured) return configured;
+  if (typeof window !== 'undefined' && /^(?:localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
+    return 'http://localhost:8000';
+  }
+  return '';
+}
+
 export function createMatrixApiClient(
   getAccessToken: () => Promise<string | null>,
   fetcher: typeof fetch = fetch,
-  baseUrl = LEGACY_MATRIX_API_BASE,
+  baseUrl = railwayApiBase(),
 ) {
   return {
     async fetchJson<T>(
@@ -79,6 +86,7 @@ export function createMatrixApiClient(
     ): Promise<T> {
       const accessToken = await getAccessToken();
       if (!accessToken && options.auth !== 'optional') throw new MatrixApiError('AUTH_REQUIRED', 401);
+      if (!baseUrl) throw new MatrixApiError('API_ERROR', 0, 'RAILWAY_API_BASE_MISSING');
 
       const headers = new Headers(init.headers);
       headers.set('Accept', 'application/json');
