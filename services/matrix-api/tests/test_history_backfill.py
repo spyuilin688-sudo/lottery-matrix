@@ -1,5 +1,3 @@
-import pytest
-
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.services.draw_refresh import DrawRefreshService
 
@@ -28,36 +26,35 @@ class HistorySource:
         return [dict(draw) for draw in rows]
 
 
-def test_ensure_history_persists_complete_source_history_but_returns_latest_80() -> None:
+def test_ensure_history_persists_and_returns_complete_source_history() -> None:
     repository = InMemoryAnalysisRepository()
     source = HistorySource([_draw(period) for period in range(220, 99, -1)])
 
-    history = DrawRefreshService(repository, source).ensure_history("今彩539", 80)
+    history = DrawRefreshService(repository, source).ensure_history("今彩539")
 
-    assert len(history) == 80
+    assert len(history) == 121
     assert source.history_requests == [("今彩539", None)]
     assert len(repository.list_draws("今彩539", 1000)) == 121
-    assert history == repository.list_draws("今彩539", 80)
 
 
-def test_ensure_history_skips_full_backfill_after_database_has_analysis_minimum() -> None:
+def test_ensure_history_refreshes_from_complete_source_without_fixed_minimum() -> None:
     repository = InMemoryAnalysisRepository()
     for draw in [_draw(period) for period in range(180, 100, -1)]:
         repository.upsert_draw({**draw, "lottery": "今彩539"})
     source = HistorySource([_draw(999)])
 
-    history = DrawRefreshService(repository, source).ensure_history("今彩539", 80)
+    history = DrawRefreshService(repository, source).ensure_history("今彩539")
 
-    assert len(history) == 80
-    assert source.history_requests == []
+    assert len(history) == 81
+    assert source.history_requests == [("今彩539", None)]
 
 
-def test_ensure_history_rejects_complete_source_when_it_still_has_under_80_draws() -> None:
+def test_ensure_history_accepts_available_source_history_without_numeric_threshold() -> None:
     repository = InMemoryAnalysisRepository()
     source = HistorySource([_draw(period) for period in range(179, 100, -1)])
 
-    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
-        DrawRefreshService(repository, source).ensure_history("今彩539", 80)
+    history = DrawRefreshService(repository, source).ensure_history("今彩539")
 
     assert source.history_requests == [("今彩539", None)]
+    assert len(history) == 79
     assert len(repository.list_draws("今彩539", 1000)) == 79
