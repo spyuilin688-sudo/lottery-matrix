@@ -1,6 +1,7 @@
 import type { NumberBallLottery } from './NumberBall';
+import { RAILWAY_API_BASE } from './runtime-api-config';
 
-export const LOTTERY_API_BASE = String(import.meta.env.VITE_RAILWAY_API_BASE ?? '').replace(/\/+$/, '');
+export const LOTTERY_API_BASE = RAILWAY_API_BASE;
 
 export type LotteryDrawRecord = {
   period?: string;

@@ -16,18 +16,13 @@ import "./matrix-explore-spacing.css";
 import "./feature-page-adjustments.css";
 import "./number-reference-visual-refinement.css";
 
-import { matrixApiFetch } from "./matrix-api-client";
 import { startMemberOnlineTracking } from "./member-online";
+import { postMemberOnline } from "./member-online-api";
 
 installGlobalInputBehavior();
 
 if (!window.location.pathname.startsWith("/admin")) {
-  startMemberOnlineTracking((path, body) => matrixApiFetch<Record<string, unknown>>(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    keepalive: true,
-  }));
+  startMemberOnlineTracking(postMemberOnline);
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

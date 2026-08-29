@@ -293,21 +293,21 @@ function matrixRpcError(error: { message?: string } | null): never {
   throw new MatrixApiError('API_ERROR', 500);
 }
 
-async function matrixExploreRpc<T>(name: 'matrix_explore_list' | 'matrix_explore_validation', request: unknown) {
+async function matrixResultRpc<T>(name: string, request: unknown) {
   const { data, error } = await getSupabaseClient().rpc(name, { p_request: request });
   if (error) matrixRpcError(error);
   return data as T;
 }
 
 export function fetchExploreList(request: ExploreListRequest) {
-  return matrixExploreRpc<ExploreListResponse>('matrix_explore_list', request);
+  return matrixResultRpc<ExploreListResponse>('matrix_explore_list', request);
 }
 
 export function fetchExploreValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixExploreRpc<ExploreValidationResponse>(
+  return matrixResultRpc<ExploreValidationResponse>(
     'matrix_explore_validation',
     { ...meta, itemId },
   );
@@ -318,37 +318,31 @@ export function fetchTianyanList(request: {
   drawPeriod?: string;
   selectedStreaks: string[];
 }) {
-  return matrixApiFetch<TianyanListResponse>('/api/matrix/algorithm/tianyan', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
+  return matrixResultRpc<TianyanListResponse>('matrix_tianyan_list', request);
 }
 
 export function fetchTianyanValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixApiFetch<TianyanValidationResponse>('/api/matrix/algorithm/tianyan/validation', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...meta, itemId }),
-  });
+  return matrixResultRpc<TianyanValidationResponse>(
+    'matrix_tianyan_validation',
+    { ...meta, itemId },
+  );
 }
 
 export function fetchTiangongList(request: TiangongListRequest) {
-  return matrixApiFetch<TiangongListResponse>('/api/matrix/algorithm/tiangong', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request),
-  });
+  return matrixResultRpc<TiangongListResponse>('matrix_tiangong_list', request);
 }
 
 export function fetchTiangongValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixApiFetch<TiangongValidationResponse>('/api/matrix/algorithm/tiangong/validation', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...meta, itemId }),
-  });
+  return matrixResultRpc<TiangongValidationResponse>(
+    'matrix_tiangong_validation',
+    { ...meta, itemId },
+  );
 }
 
 export async function runMatrixAlgorithmExplore(payload: MatrixAlgorithmRequest) {

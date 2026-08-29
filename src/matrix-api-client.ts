@@ -1,4 +1,5 @@
 import { getSupabaseClient } from './lib/supabase';
+import { RAILWAY_API_BASE } from './runtime-api-config';
 
 export type MatrixApiErrorCode =
   | 'AUTH_REQUIRED'
@@ -15,7 +16,7 @@ export type MatrixApiErrorCode =
   | 'NETWORK_ERROR'
   | 'API_ERROR';
 
-const LEGACY_MATRIX_API_BASE = 'https://api-v2.appdeploy.ai/app/app-snsxet';
+const RAILWAY_MATRIX_API_BASE = RAILWAY_API_BASE;
 
 const REMOTE_ERROR_STATUS = {
   AUTH_REQUIRED: 401,
@@ -69,7 +70,7 @@ function isJsonContentType(contentType: string): boolean {
 export function createMatrixApiClient(
   getAccessToken: () => Promise<string | null>,
   fetcher: typeof fetch = fetch,
-  baseUrl = LEGACY_MATRIX_API_BASE,
+  baseUrl = RAILWAY_MATRIX_API_BASE,
 ) {
   return {
     async fetchJson<T>(
@@ -79,6 +80,7 @@ export function createMatrixApiClient(
     ): Promise<T> {
       const accessToken = await getAccessToken();
       if (!accessToken && options.auth !== 'optional') throw new MatrixApiError('AUTH_REQUIRED', 401);
+      if (!baseUrl) throw new MatrixApiError('NETWORK_ERROR', 0);
 
       const headers = new Headers(init.headers);
       headers.set('Accept', 'application/json');

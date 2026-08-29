@@ -1,5 +1,4 @@
-import type { MatrixLottery } from './matrix-algorithm';
-import type { MatrixNumberOrder } from './matrix-algorithm';
+import type { MatrixLottery, MatrixNumberOrder } from './matrix-custom-status.ts';
 
 export type MatrixStatus = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type StatusRoadType = '加減' | '合值' | '拖牌' | '複合';

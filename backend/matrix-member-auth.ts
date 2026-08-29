@@ -1,4 +1,4 @@
-import type { MatrixPlan, MemberContext } from './matrix-entitlements';
+import type { MatrixPlan, MemberContext } from './matrix-entitlements.ts';
 
 type SupabaseConfig = {
   url: string;

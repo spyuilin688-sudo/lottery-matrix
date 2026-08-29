@@ -34,9 +34,14 @@ class RepositorySpy(InMemoryAnalysisRepository):
         self.calls.append(f"update_progress:{phase}:{cursor}")
         super().update_progress(lottery, draw_period, analysis_version, phase, cursor, total)
 
-    def get_progress(self, lottery: str, draw_period: str) -> dict | None:
+    def get_progress(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str | None = None,
+    ) -> dict | None:
         self.calls.append("get_progress")
-        return super().get_progress(lottery, draw_period)
+        return super().get_progress(lottery, draw_period, analysis_version)
 
     def read_artifact(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,

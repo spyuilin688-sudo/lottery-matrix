@@ -184,7 +184,7 @@ def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
     assert attempts == 2
 
 
-def test_scheduled_worker_skips_when_current_draw_date_is_already_stored() -> None:
+def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis() -> None:
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw({
         "lottery": "今彩539",
@@ -208,7 +208,8 @@ def test_scheduled_worker_skips_when_current_draw_date_is_already_stored() -> No
         _builders([]),
     )
 
-    assert result["status"] == "already-acquired"
+    assert result["status"] == "complete"
+    assert result["analysisVersion"] == "000000221:matrix-python-v3"
     assert source.events == []
 
 

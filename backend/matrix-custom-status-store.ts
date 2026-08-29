@@ -1,5 +1,4 @@
-import type { MatrixLottery } from './matrix-algorithm';
-import type { CustomStatus, CustomStatusConfig } from './matrix-custom-status';
+import type { CustomStatus, CustomStatusConfig, MatrixLottery } from './matrix-custom-status.ts';
 
 type SupabaseStoreConfig = { url: string; serviceRoleKey: string };
 type StoredConfig = { lottery?: unknown; status?: unknown; config?: unknown };
