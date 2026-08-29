@@ -6,6 +6,7 @@ from os import environ
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
+from app.operational_status import check_repository_health, list_job_statuses
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.settings import load_settings
 
@@ -196,7 +197,24 @@ def handle_api_request(
     path = parsed.path
     try:
         if method == "GET" and path == "/health":
-            return 200, {"status": "ok"}
+            version = environ.get("MATRIX_SERVICE_VERSION", "unknown").strip() or "unknown"
+            try:
+                check_repository_health(repository)
+            except Exception:
+                return 503, {
+                    "status": "error",
+                    "service": "matrix-railway-api",
+                    "version": version,
+                    "database": {"status": "error"},
+                }
+            return 200, {
+                "status": "ok",
+                "service": "matrix-railway-api",
+                "version": version,
+                "database": {"status": "ok"},
+            }
+        if method == "GET" and path == "/jobs/status":
+            return 200, {"items": list_job_statuses(repository)}
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
