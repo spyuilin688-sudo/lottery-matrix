@@ -84,6 +84,7 @@ def test_drag_rules_do_not_rescue_invalid_two_code_add_subtract_road() -> None:
     result = run_matrix_algorithm_with_history({**REQUEST, "ruleCount": 2}, history)
 
     assert result["valid"] is False
+    assert result["reason"] == "規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出"
     assert result["highestStreak"] == 3
     assert result["conflictingRules"] == [28, 29, 30]
     assert rule_sets(result) == []

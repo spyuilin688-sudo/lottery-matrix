@@ -35,6 +35,7 @@ const lotteries: Lottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'
 const numberOrders: NumberOrder[] = ['依號碼由小到大排序', '依實際開獎順序排序'];
 const algorithmTypes: AlgorithmType[] = ['加減', '合值', '拖牌'];
 const MAX_VALIDATION_STREAK = 13;
+const INVALID_THREE_RULE_COVERAGE_REASON = '規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出';
 
 export function normalizeMatrixNumber(value: number, maxNumber: number) {
   return ((value - 1) % maxNumber + maxNumber) % maxNumber + 1;
@@ -263,9 +264,9 @@ function evaluatePreparedMatrixAlgorithm(
   if (request.ruleCount === 2 && resultSets.length > 1) {
     const distinctRules = [...new Set(found.sets.flat())].sort();
     const conflictingRules = distinctRules.map(rule => typedRuleParts(rule).value);
-    if (distinctRules.length > 2) return { valid: false, reason: '相同連準層級需要三個以上規則才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出', searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules, results: [] };
+    if (distinctRules.length > 2) return { valid: false, reason: INVALID_THREE_RULE_COVERAGE_REASON, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules, results: [] };
     const merged = [...new Set(resultSets.flatMap(item => item.predictionNumbers))].sort((a, b) => a - b);
-    if (merged.length > 2) return { valid: false, reason: '相同連準層級需要三個以上規則才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出', searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules: distinctRules, results: [] };
+    if (merged.length > 2) return { valid: false, reason: INVALID_THREE_RULE_COVERAGE_REASON, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), conflictingRules: distinctRules, results: [] };
     return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA, predictionNumbers: merged, ruleSets: resultSets };
   }
   return { valid: true, searchCondition: request, highestStreak: found.highest, displayStreak: '準' + found.highest + '進' + (found.highest + 1), sourceA, results: resultSets };
