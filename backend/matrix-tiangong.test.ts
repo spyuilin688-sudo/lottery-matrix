@@ -34,10 +34,9 @@ describe('enumerateEqualSpacingSequences', () => {
     expect(enumerateEqualSpacingSequences(80, '準2進3').every(([a, b, c]) => b - a === c - b && c <= 80)).toBe(true);
   });
 
-  it('enumerates complete four-source sequences for 準3進4', () => {
-    const fifty = enumerateEqualSpacingSequences(50, '準3進4');
-    expect(fifty).toContainEqual([1, 8, 15, 22]);
-    expect(fifty).not.toContainEqual([1, 18, 35, 52]);
+  it('rejects 準3進4', () => {
+    expect(() => enumerateEqualSpacingSequences(50, '準3進4' as never))
+      .toThrow('INVALID_HIT_CONDITION');
   });
 
   it('rejects exploration ranges other than fifty or eighty periods', () => {
@@ -51,7 +50,7 @@ describe('evaluateTiangongCandidate', () => {
   });
 
   it('requires a source count matching the hit condition', () => {
-    expect(evaluateTiangongCandidate(candidate({ hitCondition: '準3進4' })).reason).toBe('INVALID_SOURCE_SEQUENCE');
+    expect(evaluateTiangongCandidate(candidate({ hitCondition: '準3進4' as never })).reason).toBe('INVALID_SOURCE_SEQUENCE');
   });
 
   it('derives one-stage prediction distance independently from source spacing', () => {
@@ -104,13 +103,13 @@ describe('evaluateTiangongCandidate', () => {
     expect(result.predictedPosition).toBe(predictedPosition);
   });
 
-  it('uses the fourth position for 3→4 validation', () => {
+  it('rejects 3→4 validation', () => {
     const result = evaluateTiangongCandidate(candidate({
-      hitCondition: '準3進4',
-      sourceSequence: [1, 3, 5, 7],
+      hitCondition: '準3進4' as never,
+      sourceSequence: [1, 3, 5, 7] as never,
       firstStage: { startPosition: 1, direction: '依序遞增', algorithmType: '加減', value: 1, nextN: 1 },
     }));
-    expect(result.predictedPosition).toBe(4);
+    expect(result).toMatchObject({ valid: false, reason: 'INVALID_SOURCE_SEQUENCE' });
   });
 
   it('applies two stages in order and exposes the combined road identity', () => {
