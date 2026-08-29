@@ -4,6 +4,7 @@ type Row = Record<string, unknown>;
 type Dependencies = {
   supabase: { selectRows<T = unknown>(table: string, query: string): Promise<T[]> };
   loadConfig: () => Promise<SupabaseConfig>;
+  loadWorkerBaseUrl: () => Promise<string>;
   fetcher?: typeof fetch;
   now?: () => Date;
 };
@@ -37,7 +38,6 @@ export class ConnectionStatusError extends Error {
   }
 }
 
-const apiBase = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai/';
 const jobDefinitions = [
   ['matrix-539-refresh-v2', '今彩539'],
@@ -49,6 +49,7 @@ const jobDefinitions = [
 export function createConnectionStatus(dependencies: Dependencies) {
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
+
   const check = async (
     id: string,
     name: string,
@@ -58,40 +59,67 @@ export function createConnectionStatus(dependencies: Dependencies) {
     const started = now().getTime();
     try {
       const detail = await operation();
-      return { id, name, description, ok: true, checkedAt: now().toISOString(), responseMs: Math.max(0, now().getTime() - started), detail };
+      return {
+        id,
+        name,
+        description,
+        ok: true,
+        checkedAt: now().toISOString(),
+        responseMs: Math.max(0, now().getTime() - started),
+        detail,
+      };
     } catch (cause) {
       return {
-        id, name, description, ok: false, checkedAt: now().toISOString(), responseMs: Math.max(0, now().getTime() - started),
+        id,
+        name,
+        description,
+        ok: false,
+        checkedAt: now().toISOString(),
+        responseMs: Math.max(0, now().getTime() - started),
         error: cause instanceof Error ? cause.message : String(cause),
       };
     }
   };
-  const http = async (path: string) => {
-    const response = await fetcher(`${apiBase}${path}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+
+  const probe = async (url: string, init: RequestInit = {}, accepted = [200]) => {
+    const response = await fetcher(url, init);
+    if (!accepted.includes(response.status)) throw new Error(`HTTP ${response.status}`);
+    return { status: response.status };
   };
+
+  const workerBaseUrl = async () => {
+    const baseUrl = (await dependencies.loadWorkerBaseUrl()).trim().replace(/\/+$/, '');
+    if (!baseUrl) throw new Error('Railway Worker URL is not configured');
+    return baseUrl;
+  };
+  const workerUrl = async (path = '') => `${await workerBaseUrl()}${path}`;
+
   const coreChecks: CoreCheckDefinition[] = [
     {
       id: 'admin-appdeploy',
       name: '後臺 AppDeploy',
       description: '顯示後臺系統的部署及服務狀態。',
-      operation: async () => {
-        const response = await fetcher(adminUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { status: response.status };
-      },
+      operation: () => probe(adminUrl),
     },
     {
-      id: 'api-appdeploy',
-      name: 'API AppDeploy',
-      description: '顯示 Matrix API 的部署及服務狀態。',
+      id: 'worker-railway',
+      name: 'Railway Worker',
+      description: '顯示 Railway Worker 的公開服務狀態。',
+      operation: async () => probe(await workerUrl(), {}, [200, 404]),
+    },
+    {
+      id: 'worker-health-api',
+      name: 'Railway 健康檢查 API',
+      description: '確認 Railway Worker 與 Supabase 連線可正常回應。',
       retryable: true,
-      operation: async () => {
-        const response = await fetcher(apiBase);
-        if (response.status >= 500) throw new Error(`HTTP ${response.status}`);
-        return { status: response.status };
-      },
+      operation: async () => probe(await workerUrl('/health')),
+    },
+    {
+      id: 'worker-jobs-status-api',
+      name: 'Railway 工作狀態 API',
+      description: '讀取四彩種 Worker 最近執行狀態。',
+      retryable: true,
+      operation: async () => probe(await workerUrl('/jobs/status')),
     },
     {
       id: 'supabase-database',
@@ -105,40 +133,15 @@ export function createConnectionStatus(dependencies: Dependencies) {
       description: '處理會員登入、登出及帳號驗證。',
       operation: async () => {
         const config = await dependencies.loadConfig();
-        const response = await fetcher(`${config.url}/auth/v1/settings`, { headers: { apikey: config.serviceRoleKey } });
+        const response = await fetcher(`${config.url}/auth/v1/settings`, {
+          headers: { apikey: config.serviceRoleKey },
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       },
     },
-    {
-      id: 'health-api',
-      name: '健康檢查 API',
-      description: '確認 Matrix API 服務是否正常運作。',
-      retryable: true,
-      operation: () => http('/api/_healthcheck'),
-    },
-    {
-      id: 'matrix-coverage-api',
-      name: 'Matrix coverage API',
-      description: '檢查四個彩種的資料涵蓋範圍與筆數。',
-      retryable: true,
-      operation: () => http('/api/matrix/coverage'),
-    },
-    {
-      id: 'matrix-audit-api',
-      name: 'Matrix audit API',
-      description: '檢查開獎資料是否缺期、重複或異常。',
-      retryable: true,
-      operation: () => http('/api/matrix/audit'),
-    },
-    {
-      id: 'matrix-algorithm-cases-api',
-      name: 'Matrix algorithm cases API',
-      description: '取得演算法案例與計算結果。',
-      retryable: true,
-      operation: () => http('/api/matrix/algorithm/cases'),
-    },
   ];
+
   const runCoreCheck = async (definition: typeof coreChecks[number]) => ({
     ...await check(definition.id, definition.name, definition.description, definition.operation),
     ...(definition.retryable ? { retryable: true } : {}),
@@ -150,7 +153,10 @@ export function createConnectionStatus(dependencies: Dependencies) {
       const core = await Promise.all(coreChecks.map(runCoreCheck));
       let jobRows: Row[] = [];
       try {
-        jobRows = await dependencies.supabase.selectRows<Row>('system_job_status', 'select=*&order=updated_at.desc');
+        jobRows = await dependencies.supabase.selectRows<Row>(
+          'system_job_status',
+          'select=*&order=updated_at.desc',
+        );
       } catch {
         jobRows = [];
       }
@@ -165,7 +171,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
           checkedAt,
           responseMs: 0,
           detail: row ?? null,
-          ...(ok ? {} : { error: row ? String(row.error ?? `排程狀態：${row.status}`) : '尚無執行紀錄' }),
+          ...(ok ? {} : {
+            error: row ? String(row.error ?? `排程狀態：${row.status}`) : '尚無執行紀錄',
+          }),
         } satisfies ConnectionStatusItem;
       });
       return { checkedAt, items: [...core, ...jobs] };
