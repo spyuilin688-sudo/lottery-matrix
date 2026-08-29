@@ -127,6 +127,7 @@ describe('Matrix Explore algorithm invariants', () => {
     }, history);
 
     expect(result.valid).toBe(false);
+    expect(result.reason).toBe('規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出');
     expect(result.highestStreak).toBe(3);
     expect(result.conflictingRules).toEqual([28, 29, 30]);
     expect(ruleSets(result)).toHaveLength(0);
