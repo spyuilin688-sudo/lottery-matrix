@@ -6,7 +6,14 @@ vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => ({ rpc }),
 }));
 
-import { fetchExploreList, fetchExploreValidation } from './matrix-algorithm-api';
+import {
+  fetchExploreList,
+  fetchExploreValidation,
+  fetchTiangongList,
+  fetchTiangongValidation,
+  fetchTianyanList,
+  fetchTianyanValidation,
+} from './matrix-algorithm-api';
 
 describe('Matrix exploration Supabase RPC', () => {
   beforeEach(() => rpc.mockReset());
@@ -59,5 +66,46 @@ describe('Matrix exploration Supabase RPC', () => {
       selectedStreaks: ['準4進5'],
       sameCode: false,
     })).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
+  });
+
+  it('reads Tianyan results and validation from Supabase artifacts', async () => {
+    rpc.mockResolvedValue({ data: { kind: 'tianyan', items: [] }, error: null });
+
+    await fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'] });
+    await fetchTianyanValidation({
+      lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3',
+    }, 'tianyan-1');
+
+    expect(rpc.mock.calls).toEqual([
+      ['matrix_tianyan_list', { p_request: { lottery: '今彩539', selectedStreaks: ['準5進6'] } }],
+      ['matrix_tianyan_validation', { p_request: {
+        lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3', itemId: 'tianyan-1',
+      } }],
+    ]);
+  });
+
+  it('reads Tiangong results and validation from Supabase artifacts', async () => {
+    const request = {
+      lottery: '今彩539' as const,
+      periodRange: 50 as const,
+      mode: 'one-stage' as const,
+      hitCondition: '準2進3' as const,
+      exploreDirections: ['固定' as const],
+      firstStageDirections: ['固定' as const],
+      firstRoadTypes: ['加減' as const],
+    };
+    rpc.mockResolvedValue({ data: { kind: 'tiangong', items: [] }, error: null });
+
+    await fetchTiangongList(request);
+    await fetchTiangongValidation({
+      lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3',
+    }, 'tiangong-1');
+
+    expect(rpc.mock.calls).toEqual([
+      ['matrix_tiangong_list', { p_request: request }],
+      ['matrix_tiangong_validation', { p_request: {
+        lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3', itemId: 'tiangong-1',
+      } }],
+    ]);
   });
 });

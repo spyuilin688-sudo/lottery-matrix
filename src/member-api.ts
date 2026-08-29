@@ -1,4 +1,9 @@
-import { matrixApiFetch } from './matrix-api-client';
+import {
+  normalizeMemberNotificationSettings,
+  validateMemberNotificationSettings,
+  type MemberNotificationSettings,
+} from '../backend/member-notification-settings';
+import { getSupabaseClient } from './lib/supabase';
 
 export type MemberBootstrapResponse = {
   memberId: string;
@@ -12,46 +17,34 @@ export type MemberProfileResponse = {
   isLifetime: boolean;
 };
 
-export type MemberNotificationSettings = {
-  settings: {
-    bet: boolean;
-    result: boolean;
-    win: boolean;
-    status: boolean;
-    card: boolean;
-    collision: boolean;
-    system: boolean;
-    expiry: boolean;
-  };
-  selectedOptions: Record<string, string[]> & {
-    result: string[];
-    win: string[];
-    status: string[];
-    card: string[];
-    system: string[];
-    expiry: string[];
-  };
-  betTimes: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', [string, string]>;
-  statusOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;
-  collisionOptions: Record<'今彩539' | '天天樂' | '六合彩' | '大樂透', string[]>;
-};
+export type { MemberNotificationSettings };
+
+async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
+  const client = getSupabaseClient();
+  const { data, error } = args
+    ? await client.rpc(name, args)
+    : await client.rpc(name);
+  if (error) throw error;
+  return data as T;
+}
 
 export function bootstrapMember() {
-  return matrixApiFetch<MemberBootstrapResponse>('/api/member/bootstrap', { method: 'POST' });
+  return memberRpc<MemberBootstrapResponse>('member_bootstrap');
 }
 
 export function fetchMemberProfile() {
-  return matrixApiFetch<MemberProfileResponse>('/api/member/profile');
+  return memberRpc<MemberProfileResponse>('member_profile');
 }
 
-export function fetchNotificationSettings() {
-  return matrixApiFetch<MemberNotificationSettings>('/api/member/notification-settings');
+export async function fetchNotificationSettings() {
+  const data = await memberRpc<unknown>('member_notification_settings_get');
+  return normalizeMemberNotificationSettings(data);
 }
 
-export function saveNotificationSettings(settings: MemberNotificationSettings) {
-  return matrixApiFetch<MemberNotificationSettings>('/api/member/notification-settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings),
+export async function saveNotificationSettings(settings: MemberNotificationSettings) {
+  const normalized = validateMemberNotificationSettings(settings);
+  const data = await memberRpc<unknown>('member_notification_settings_save', {
+    p_settings: normalized,
   });
+  return normalizeMemberNotificationSettings(data);
 }

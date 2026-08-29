@@ -139,6 +139,25 @@ def build_tiangong_artifact_chunk(
     }
 
 
+_EXPLORE_STATUS_FIELDS = (
+    "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
+    "predictionNumbers", "algorithmType", "numberOrder", "explorePeriods", "exploreDateOffset",
+    "ruleCount", "lockedSourceIndex",
+)
+_TIANYAN_STATUS_FIELDS = (
+    "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
+    "predictionNumbers", "numberOrder", "explorePeriods", "exploreDateOffset", "lockedSourceIndex",
+)
+
+
+def _compact_status_items(items: list[dict[str, Any]], fields: tuple[str, ...]) -> list[dict[str, Any]]:
+    return [
+        {key: item[key] for key in fields if key in item}
+        for item in items
+        if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
+    ]
+
+
 def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong: dict[str, Any]) -> dict[str, Any]:
     roads = []
     for item in explore["items"]:
@@ -164,6 +183,18 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
         "artifactKinds": ["explore", "tianyan", "tiangong"], **status,
         "artifactCounts": {"explore": len(explore["items"]), "tianyan": len(tianyan["items"]), "tiangong": len(tiangong["items"])},
+        "statusSources": {
+            "explore": {
+                "lottery": explore["lottery"],
+                "drawPeriod": explore["drawPeriod"],
+                "items": _compact_status_items(explore["items"], _EXPLORE_STATUS_FIELDS),
+            },
+            "tianyan": {
+                "lottery": tianyan["lottery"],
+                "drawPeriod": tianyan["drawPeriod"],
+                "items": _compact_status_items(tianyan["items"], _TIANYAN_STATUS_FIELDS),
+            },
+        },
     }
 
 

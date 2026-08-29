@@ -186,7 +186,7 @@ def test_running_analysis_checkpoint_finishes_invocation_as_success(monkeypatch)
     assert repository.job_events[-1]["status"] == "success"
 
 
-def test_already_acquired_does_not_overwrite_job_status() -> None:
+def test_resumed_analysis_does_not_overwrite_job_status() -> None:
     repository = JobTrackingRepository()
     repository.upsert_draw({
         "lottery": "今彩539",
@@ -201,7 +201,7 @@ def test_already_acquired_does_not_overwrite_job_status() -> None:
         Source(),
         _builders(),
     )
-    assert result["status"] == "already-acquired"
+    assert result["status"] == "complete"
     assert repository.job_events == []
 
 

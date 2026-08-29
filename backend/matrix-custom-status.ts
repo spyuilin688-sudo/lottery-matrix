@@ -1,6 +1,7 @@
-import type { MatrixLottery, MatrixNumberOrder } from './matrix-algorithm';
-import type { MatrixEntitlements } from './matrix-entitlements';
-import type { MatrixStatus } from './matrix-status';
+import type { MatrixStatus } from './matrix-status.ts';
+
+export type MatrixLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
+export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 
 export type CustomStatus = Exclude<MatrixStatus, 'DORMANT'>;
 export type CustomRoadType = '加減' | '合值' | '拖牌' | '複合';
@@ -35,7 +36,10 @@ export type CustomConditionMatch = CustomConditionRow & {
   result: string[];
 };
 
-type CustomEntitlements = Pick<MatrixEntitlements, 'canCustomizeStatus' | 'canUseCompositeCustomRoad'>;
+type CustomEntitlements = {
+  canCustomizeStatus: boolean;
+  canUseCompositeCustomRoad: boolean;
+};
 type ValidationResult = { ok: true } | { ok: false; code: string; path: string };
 
 const lotteries: MatrixLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];

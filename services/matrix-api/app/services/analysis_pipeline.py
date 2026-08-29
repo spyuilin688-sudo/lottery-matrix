@@ -75,7 +75,9 @@ class AnalysisPipeline:
                         )
                         context.pop(batch_key, None)
                         if not checkpoint.get("complete"):
-                            result = self.repository.get_progress(lottery, period)
+                            result = self.repository.get_progress(
+                                lottery, period, self.analysis_version,
+                            )
                             return {**(result or {}), "skipped": False}
                         materialized = self.repository.materialize_artifact(
                             lottery, period, self.analysis_version, phase, total,
@@ -118,7 +120,9 @@ class AnalysisPipeline:
                     context["artifacts"][phase] = payload
                     context.pop("exploreBatch", None)
                     if not checkpoint.get("complete"):
-                        result = self.repository.get_progress(lottery, period)
+                        result = self.repository.get_progress(
+                            lottery, period, self.analysis_version,
+                        )
                         return {**(result or {}), "skipped": False}
                     continue
                 self.repository.update_progress(lottery, period, self.analysis_version, phase, phase_index, phase_total)
@@ -126,7 +130,9 @@ class AnalysisPipeline:
                 context["artifacts"][phase] = built
             completed_at = datetime.now(UTC).isoformat()
             self.repository.complete_run(lottery, period, self.analysis_version, completed_at)
-            result = self.repository.get_progress(lottery, period)
+            result = self.repository.get_progress(
+                lottery, period, self.analysis_version,
+            )
             return {**(result or {}), "skipped": False}
         except Exception as error:
             self.repository.fail_run(lottery, period, self.analysis_version, str(error))

@@ -10,6 +10,7 @@ import type { TiangongArtifact } from './matrix-tiangong-service';
 import { createCustomStatusStore } from './matrix-custom-status-store';
 import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import { createMatrixStatusRoutes } from './matrix-status-routes';
+import type { ExploreArtifact, TianyanArtifact as StatusTianyanArtifact } from './matrix-status-service';
 import { readReadyAnalysis } from './matrix-ready-analysis';
 import { readStoredStatusExplore } from './matrix-status-analysis-reader';
 import { createMemberOnlineRpc, createMemberOnlineService } from './member-online';
@@ -97,7 +98,18 @@ async function readStatusAnalysis(
 }
 const matrixStatusRoutes = createMatrixStatusRoutes({
     requireMember: authorization => matrixMemberAuth.requireMember(authorization),
-    readAnalysis: (kind,lottery,drawPeriod) => readStatusAnalysis(kind,lottery,drawPeriod),
+    readStatusSources: async (lottery,drawPeriod) => {
+        const explore=await readStatusAnalysis('explore',lottery,drawPeriod);
+        if (!explore) return null;
+        const tianyan=await readStatusAnalysis('tianyan',lottery,explore.drawPeriod);
+        if (!tianyan || tianyan.analysisVersion!==explore.analysisVersion || tianyan.drawPeriod!==explore.drawPeriod) return null;
+        return {
+            analysisVersion:explore.analysisVersion,
+            drawPeriod:explore.drawPeriod,
+            explore:explore.data as ExploreArtifact,
+            tianyan:tianyan.data as StatusTianyanArtifact,
+        };
+    },
     listConfigs: memberId => matrixCustomStatusStore.list(memberId),
 });
 const matrixTianyanRoutes = createMatrixTianyanRoutes({

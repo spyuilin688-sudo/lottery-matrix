@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
-import { matrixApiFetch } from '../matrix-api-client';
 import {
   clearLineAuthEphemeralState,
   clearLineProviderToken,
@@ -33,29 +32,27 @@ export async function signOutFromMatrix(
   client: SupabaseClient = getSupabaseClient(),
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
 ) {
-  let session: Awaited<ReturnType<SupabaseClient['auth']['getSession']>>['data']['session'] = null;
   try {
-    const { data, error } = await client.auth.getSession();
-    if (!error) session = data.session;
-  } catch {
-    // Local sign-out must remain available even if the current session cannot be read.
-  }
-
-  const accessToken = session?.access_token ?? null;
-  if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
-    const sessionProviderToken = session?.provider_token;
-    const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
-      ? sessionProviderToken
-      : readLineProviderToken();
-    if (providerAccessToken) {
-      try {
-        await revoke(providerAccessToken);
-        clearLineProviderToken();
-        markLineProviderTokenRevokedFor(accessToken);
-      } catch {
-        // LINE revocation is best-effort; it must not trap an iOS browser in a logged-in state.
+    const { data, error: sessionError } = await client.auth.getSession();
+    const session = sessionError ? null : data.session;
+    const accessToken = session?.access_token ?? null;
+    if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
+      const sessionProviderToken = session?.provider_token;
+      const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
+        ? sessionProviderToken
+        : readLineProviderToken();
+      if (providerAccessToken) {
+        try {
+          await revoke(providerAccessToken);
+          clearLineProviderToken();
+          markLineProviderTokenRevokedFor(accessToken);
+        } catch {
+          // LINE revocation is best-effort; local logout must remain available.
+        }
       }
     }
+  } catch {
+    // A stale or unreadable session must not prevent local logout.
   }
 
   try {
@@ -68,10 +65,12 @@ export async function signOutFromMatrix(
   clearLineAuthEphemeralState();
 }
 
-export async function revokeLineProviderToken(providerAccessToken: string) {
-  await matrixApiFetch<void>('/api/auth/line/logout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ providerAccessToken }),
+export async function revokeLineProviderToken(
+  providerAccessToken: string,
+  client: SupabaseClient = getSupabaseClient(),
+) {
+  const { error } = await client.functions.invoke('line-logout', {
+    body: { providerAccessToken },
   });
+  if (error) throw new Error('LINE_PROVIDER_REQUEST_FAILED');
 }

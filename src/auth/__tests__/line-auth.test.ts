@@ -7,13 +7,6 @@ import {
   rememberLineProviderToken,
 } from '../line-provider-token';
 
-const matrixApi = vi.hoisted(() => ({ fetch: vi.fn() }));
-
-vi.mock('../../matrix-api-client', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../../matrix-api-client')>(),
-  matrixApiFetch: matrixApi.fetch,
-}));
-
 import { revokeLineProviderToken, signInWithLine, signOutFromMatrix } from '../line-auth';
 
 function createClient({
@@ -38,7 +31,6 @@ function createClient({
 
 afterEach(() => {
   clearLineAuthEphemeralState();
-  matrixApi.fetch.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -165,21 +157,21 @@ describe('LINE auth helper', () => {
     expect(revoke).not.toHaveBeenCalledWith('stale-remembered-provider-token');
   });
 
-  it('still clears the local Supabase session when LINE revoke fails', async () => {
+  it('still signs out locally when LINE revoke fails', async () => {
     const { client, signOut } = createClient();
     const revoke = vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED'));
 
-    await expect(signOutFromMatrix(client as never, revoke)).resolves.toBeUndefined();
+    await signOutFromMatrix(client as never, revoke);
 
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
-  it('still clears the local Supabase session when getSession fails', async () => {
+  it('still signs out locally when the current session cannot be verified', async () => {
     const sessionError = new Error('SUPABASE_SESSION_READ_FAILED');
     const { client, signOut } = createClient({ sessionError });
     const revoke = vi.fn();
 
-    await expect(signOutFromMatrix(client as never, revoke)).resolves.toBeUndefined();
+    await signOutFromMatrix(client as never, revoke);
 
     expect(revoke).not.toHaveBeenCalled();
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
@@ -195,14 +187,14 @@ describe('LINE auth helper', () => {
     expect(revoke).toHaveBeenCalledWith('remembered-provider-token');
   });
 
-  it('still signs out of Supabase when a restored session has no provider token', async () => {
+  it('signs out a restored session when no LINE provider token is available', async () => {
     const { client, signOut } = createClient({ session: { access_token: 'supabase-access-token' } });
     const revoke = vi.fn();
 
     await signOutFromMatrix(client as never, revoke);
 
     expect(revoke).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('clears the in-memory provider token after successful revoke and sign-out', async () => {
@@ -215,19 +207,19 @@ describe('LINE auth helper', () => {
     expect(isLineProviderTokenRevokedFor('supabase-access-token')).toBe(false);
   });
 
-  it('retains the in-memory provider token when revoke fails so logout can be retried', async () => {
+  it('clears the in-memory provider token after local logout even when revoke fails', async () => {
     rememberLineProviderToken('remembered-provider-token');
     const { client } = createClient({ session: { access_token: 'supabase-access-token' } });
 
-    await expect(signOutFromMatrix(
+    await signOutFromMatrix(
       client as never,
       vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED')),
-    )).rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
+    );
 
-    expect(readLineProviderToken()).toBe('remembered-provider-token');
+    expect(readLineProviderToken()).toBeNull();
   });
 
-  it('retries revoke for the same session after revoke failure without setting a marker', async () => {
+  it('does not block local logout while a revoke attempt fails', async () => {
     const order: string[] = [];
     rememberLineProviderToken('remembered-provider-token');
     const signOut = vi.fn().mockImplementation(async () => {
@@ -238,28 +230,15 @@ describe('LINE auth helper', () => {
       session: { access_token: 'same-access-token' },
       signOut,
     });
-    const revoke = vi.fn()
-      .mockImplementationOnce(async () => {
-        order.push('revoke:failed');
-        throw new Error('LINE_PROVIDER_REQUEST_FAILED');
-      })
-      .mockImplementationOnce(async () => {
-        order.push('revoke:succeeded');
-      });
-
-    await expect(signOutFromMatrix(client as never, revoke)).rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
-
-    expect(revoke).toHaveBeenCalledTimes(1);
-    expect(signOut).not.toHaveBeenCalled();
-    expect(readLineProviderToken()).toBe('remembered-provider-token');
-    expect(isLineProviderTokenRevokedFor('same-access-token')).toBe(false);
+    const revoke = vi.fn().mockImplementation(async () => {
+      order.push('revoke:failed');
+      throw new Error('LINE_PROVIDER_REQUEST_FAILED');
+    });
 
     await signOutFromMatrix(client as never, revoke);
 
-    expect(order).toEqual(['revoke:failed', 'revoke:succeeded', 'signOut']);
-    expect(revoke).toHaveBeenCalledTimes(2);
-    expect(revoke).toHaveBeenNthCalledWith(1, 'remembered-provider-token');
-    expect(revoke).toHaveBeenNthCalledWith(2, 'remembered-provider-token');
+    expect(order).toEqual(['revoke:failed', 'signOut']);
+    expect(revoke).toHaveBeenCalledTimes(1);
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(readLineProviderToken()).toBeNull();
     expect(isLineProviderTokenRevokedFor('same-access-token')).toBe(false);
@@ -324,15 +303,16 @@ describe('LINE auth helper', () => {
     expect(revoke).toHaveBeenNthCalledWith(2, 'second-provider-token');
   });
 
-  it('posts the exact provider token JSON to the authenticated logout API', async () => {
-    matrixApi.fetch.mockResolvedValue(undefined);
+  it('invokes the authenticated Supabase logout function with the exact provider token', async () => {
+    const invoke = vi.fn().mockResolvedValue({ data: { ok: true }, error: null });
 
-    await revokeLineProviderToken('provider-token');
+    await revokeLineProviderToken(
+      'provider-token',
+      { functions: { invoke } } as never,
+    );
 
-    expect(matrixApi.fetch).toHaveBeenCalledWith('/api/auth/line/logout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ providerAccessToken: 'provider-token' }),
+    expect(invoke).toHaveBeenCalledWith('line-logout', {
+      body: { providerAccessToken: 'provider-token' },
     });
   });
 });

@@ -26,9 +26,12 @@ function member(plan: MemberContext['plan'], active = plan !== 'free'): MemberCo
 function routes(context: MemberContext, now = new Date('2026-08-21T00:00:00Z')) {
   return createMatrixStatusRoutes({
     requireMember: async () => context,
-    readAnalysis: async (kind) => kind === 'explore'
-      ? { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: artifact }
-      : { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} } },
+    readStatusSources: async () => ({
+      analysisVersion: 'v1',
+      drawPeriod: artifact.drawPeriod,
+      explore: artifact,
+      tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
+    }),
     listConfigs: async () => [],
     now: () => now,
   });
@@ -46,9 +49,12 @@ describe('Matrix status route', () => {
     let authCalls = 0;
     const api = createMatrixStatusRoutes({
       requireMember: async () => { authCalls += 1; throw new Error('should not authenticate'); },
-      readAnalysis: async (kind) => kind === 'explore'
-        ? { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: artifact }
-        : { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} } },
+      readStatusSources: async () => ({
+        analysisVersion: 'v1',
+        drawPeriod: artifact.drawPeriod,
+        explore: artifact,
+        tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
+      }),
       listConfigs: async () => [],
       now: () => new Date('2026-08-21T00:00:00Z'),
     });
@@ -70,17 +76,22 @@ describe('Matrix status route', () => {
   });
 
   it('returns analysis-not-ready instead of sample data', async () => {
-    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readAnalysis: async () => null, listConfigs: async () => [] });
+    const api = createMatrixStatusRoutes({ requireMember: async () => member('monthly'), readStatusSources: async () => null, listConfigs: async () => [] });
     await expect(api.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
   });
 
-  it('does not expose a partial version when Tianyan is missing or mismatched', async () => {
+  it('does not expose a partial source when Tianyan is missing or mismatched', async () => {
     const base = { requireMember: async () => member('monthly'), listConfigs: async () => [] };
-    const missing = createMatrixStatusRoutes({ ...base, readAnalysis: async (kind) => kind === 'explore' ? { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: artifact } : null });
+    const missing = createMatrixStatusRoutes({ ...base, readStatusSources: async () => ({
+      analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, explore: artifact, tianyan: null,
+    }) });
     await expect(missing.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
-    const mismatched = createMatrixStatusRoutes({ ...base, readAnalysis: async (kind) => kind === 'explore'
-      ? { analysisVersion: 'v1', drawPeriod: artifact.drawPeriod, data: artifact }
-      : { analysisVersion: 'v2', drawPeriod: artifact.drawPeriod, data: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} } } });
+    const mismatched = createMatrixStatusRoutes({ ...base, readStatusSources: async () => ({
+      analysisVersion: 'v1',
+      drawPeriod: artifact.drawPeriod,
+      explore: artifact,
+      tianyan: { lottery: '今彩539', drawPeriod: 'different-period', items: [], validationById: {} },
+    }) });
     await expect(mismatched.get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({ status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } } });
   });
 });

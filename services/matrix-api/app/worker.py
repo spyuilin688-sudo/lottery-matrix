@@ -18,7 +18,7 @@ from app.settings import load_settings
 EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
-ANALYSIS_VERSION = "matrix-python-v3"
+ANALYSIS_VERSION = "matrix-python-v4"
 
 
 def _run_analysis(
@@ -129,6 +129,27 @@ def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
 
+def _resume_stored_analysis(
+    lottery: str,
+    repository: AnalysisRepository,
+    latest_draw: dict[str, Any],
+    builders: Mapping[str, ArtifactBuilder] | None,
+) -> dict[str, Any] | None:
+    period = str(latest_draw["period"])
+    expected_version = f"{period}:{ANALYSIS_VERSION}"
+    progress = repository.get_progress(lottery, period, expected_version)
+    if progress is not None and progress.get("status") == "complete":
+        return None
+
+    history = repository.list_draws(lottery, None)
+    if not history:
+        return None
+
+    repository.cleanup_expired(datetime.now(UTC))
+    draw = {"lottery": lottery, **latest_draw}
+    return _run_analysis(repository, draw, history, builders)
+
+
 def run_scheduled_worker(
     lottery: str,
     now: datetime | None,
@@ -136,13 +157,21 @@ def run_scheduled_worker(
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
 ) -> dict[str, Any]:
+    latest = repository.list_draws(lottery, 1)
     cycle = due_call_cycle(lottery, now)
+
     if cycle is None:
+        if latest:
+            resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+            if resumed is not None:
+                return resumed
         return {"lottery": lottery, "status": "not-due"}
 
-    latest = repository.list_draws(lottery, 1)
     cycle_date = cycle.date().isoformat()
     if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
+        resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+        if resumed is not None:
+            return resumed
         return {
             "lottery": lottery,
             "drawPeriod": latest[0]["period"],

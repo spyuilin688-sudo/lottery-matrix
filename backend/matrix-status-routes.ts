@@ -1,17 +1,24 @@
-import type { LotteryId, MatrixAnalysisKind } from '../shared/matrix-contracts';
-import type { CustomStatusConfig } from './matrix-custom-status';
-import { anonymousMatrixMember, resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
-import type { ExploreArtifact } from './matrix-explore-service';
-import { MatrixAccessError } from './matrix-member-auth';
-import { buildMatrixStatusArtifact } from './matrix-status-service';
-import type { TianyanArtifact } from './matrix-tianyan-service';
+import type { CustomStatusConfig } from './matrix-custom-status.ts';
+import { anonymousMatrixMember, resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements.ts';
+import { MatrixAccessError } from './matrix-member-auth.ts';
+import {
+  buildMatrixStatusArtifact,
+  type ExploreArtifact,
+  type TianyanArtifact,
+} from './matrix-status-service.ts';
 
-type CompletedArtifact = { analysisVersion: string; drawPeriod: string; data: unknown };
+type LotteryId = '今彩539' | '天天樂' | '六合彩' | '大樂透';
+type StatusSources = {
+  analysisVersion: string;
+  drawPeriod: string;
+  explore: ExploreArtifact | null;
+  tianyan: TianyanArtifact | null;
+};
 type RouteInput = { authorization?: string; body: unknown };
 type RouteResult = { status: number; body: Record<string, unknown> };
 type Dependencies = {
   requireMember(authorization?: string): Promise<MemberContext>;
-  readAnalysis(kind: MatrixAnalysisKind, lottery: LotteryId, drawPeriod?: string): Promise<CompletedArtifact | null>;
+  readStatusSources(lottery: LotteryId, drawPeriod?: string): Promise<StatusSources | null>;
   listConfigs(memberId: string): Promise<CustomStatusConfig[]>;
   now?: () => Date;
 };
@@ -44,19 +51,21 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
         const lottery = String(body.lottery ?? '') as LotteryId;
         if (!lotteries.includes(lottery)) throw new Error('INVALID_REQUEST');
         const requestedPeriod = body.drawPeriod ? String(body.drawPeriod) : undefined;
-        const explore = await dependencies.readAnalysis('explore', lottery, requestedPeriod);
-        if (!explore) throw new Error('ANALYSIS_NOT_READY');
-        const [tianyan, configs] = await Promise.all([
-          dependencies.readAnalysis('tianyan', lottery, explore.drawPeriod),
+        const [sources, configs] = await Promise.all([
+          dependencies.readStatusSources(lottery, requestedPeriod),
           member.memberId ? dependencies.listConfigs(member.memberId) : Promise.resolve([]),
         ]);
-        if (!tianyan || tianyan.analysisVersion !== explore.analysisVersion || tianyan.drawPeriod !== explore.drawPeriod) {
+        if (!sources?.explore || !sources.tianyan
+          || sources.explore.drawPeriod !== sources.drawPeriod
+          || sources.tianyan.drawPeriod !== sources.drawPeriod
+          || sources.explore.lottery !== lottery
+          || sources.tianyan.lottery !== lottery) {
           throw new Error('ANALYSIS_NOT_READY');
         }
         const entitlements = resolveMatrixEntitlements(member, now());
         const artifact = buildMatrixStatusArtifact(
-          explore.data as ExploreArtifact,
-          tianyan.data as TianyanArtifact,
+          sources.explore,
+          sources.tianyan,
           configs,
           entitlements,
         );
@@ -66,8 +75,8 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
           body: {
             kind: 'status',
             lottery,
-            drawPeriod: explore.drawPeriod,
-            analysisVersion: `${explore.analysisVersion}:status`,
+            drawPeriod: sources.drawPeriod,
+            analysisVersion: `${sources.analysisVersion}:status`,
             ...artifact,
             detailLocked,
             cards: artifact.cards,

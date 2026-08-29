@@ -5,16 +5,54 @@ import {
   type CustomConditionMatch,
   type CustomConditionRow,
   type CustomStatusConfig,
-} from './matrix-custom-status';
-import type { MatrixEntitlements } from './matrix-entitlements';
-import type { ExploreArtifact, ExploreArtifactRow } from './matrix-explore-service';
+} from './matrix-custom-status.ts';
+import type { MatrixEntitlements } from './matrix-entitlements.ts';
 import {
   evaluateChapter15,
   type MatrixStatus,
   type StatusRoad,
   type StatusTriggerCard,
-} from './matrix-status';
-import type { TianyanArtifact } from './matrix-tianyan-service';
+} from './matrix-status.ts';
+
+type ExploreArtifactRow = {
+  id: string;
+  number: string;
+  lockedPosition: number;
+  predictionDistance: number;
+  consecutive: CustomConditionMatch['consecutive'];
+  highestStreak: number;
+  predictionNumbers: string[];
+  algorithmType: StatusRoad['algorithmType'];
+  numberOrder: CustomConditionMatch['numberOrder'];
+  explorePeriods: 2 | 7 | 13;
+  exploreDateOffset: number;
+  ruleCount: number;
+  lockedSourceIndex?: number;
+};
+
+export type ExploreArtifact = {
+  lottery: CustomStatusConfig['lottery'];
+  drawPeriod: string;
+  items: ExploreArtifactRow[];
+};
+
+export type TianyanArtifact = {
+  lottery: CustomStatusConfig['lottery'];
+  drawPeriod: string;
+  items: Array<{
+    id: string;
+    number: string;
+    lockedPosition: number;
+    predictionDistance: number;
+    consecutive: CustomConditionMatch['consecutive'];
+    highestStreak: number;
+    predictionNumbers: string[];
+    numberOrder: CustomConditionMatch['numberOrder'];
+    explorePeriods: 13;
+    exploreDateOffset: number;
+    lockedSourceIndex?: number;
+  }>;
+};
 
 const priority: MatrixStatus[] = ['CRITICAL', 'RESONANCE', 'FOCUS', 'ACTIVE', 'DORMANT'];
 const messages: Record<MatrixStatus, string> = {
