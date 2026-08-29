@@ -35,3 +35,12 @@ test('Matrix status source RPC reads the compact status artifact only', async ()
   assert.doesNotMatch(section, /matrix_artifact_payload\('explore'/);
   assert.doesNotMatch(section, /matrix_artifact_payload\('tianyan'/);
 });
+
+test('legacy completed status artifacts are backfilled without validation maps', async () => {
+  const sql = await read('supabase/migrations/20260829195500_backfill_compact_matrix_status_sources.sql');
+  assert.match(sql, /status\.payload->'statusSources' is null/);
+  assert.match(sql, /chunk\.kind in \('explore', 'tianyan'\)/);
+  assert.match(sql, /jsonb_set\(status\.payload, '\{statusSources\}'/);
+  assert.doesNotMatch(sql, /validationById/);
+  assert.match(sql, /encoded\.payload->>'encoding' is not null/);
+});

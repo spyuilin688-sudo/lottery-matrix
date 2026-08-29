@@ -18,7 +18,7 @@ from app.settings import load_settings
 EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
-ANALYSIS_VERSION = "matrix-python-v3"
+ANALYSIS_VERSION = "matrix-python-v4"
 
 
 def _run_analysis(
