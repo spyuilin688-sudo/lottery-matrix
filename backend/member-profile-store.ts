@@ -39,7 +39,9 @@ export function createMemberProfileStore(
       if (!row) throw new Error('SUPABASE_MEMBER_PROFILE_NOT_FOUND');
       const lineUserId = String(row.line_user_id ?? '').trim();
       const isLifetime = row.is_lifetime === true;
-      const planName = isLifetime ? '終身方案' : String(row.current_plan?.name ?? '').trim();
+      const planName = isLifetime
+        ? '終身方案'
+        : String(row.current_plan?.name ?? '').trim() || '免費會員';
       const planExpiresAt = String(row.plan_expires_at ?? '').trim();
       return {
         lineUserId: lineUserId || null,

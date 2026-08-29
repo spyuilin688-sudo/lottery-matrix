@@ -3579,6 +3579,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { active = false; };
   }, [authState]);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
+  const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
+  const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
   const handleAuthAction = async () => {
     if (authPending || authState === "loading") return;
     const action = authState === "authenticated" ? "logout" : "login";
@@ -3636,7 +3638,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <SectionTitle>目前訂閱狀態</SectionTitle>
         <div className="subscription-status-content">
           <div className="subscription-crown">♛</div>
-          <div><span>目前方案</span><strong>{memberProfile?.planName ?? ""}</strong><p>享有所有 Matrix Pro 功能</p></div>
+          <div><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
           <div><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
         </div>
         <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
