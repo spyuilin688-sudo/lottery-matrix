@@ -21,7 +21,7 @@ class AnalysisRepository(Protocol):
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
-    def get_progress(self, lottery: str, draw_period: str) -> dict[str, Any] | None: ...
+    def get_progress(self, lottery: str, draw_period: str, analysis_version: str | None = None) -> dict[str, Any] | None: ...
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None: ...
     def cleanup_expired(self, now: datetime) -> int: ...
 
@@ -123,8 +123,18 @@ class InMemoryAnalysisRepository:
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None:
         self.runs[(lottery, draw_period, analysis_version)].update({"status": "failed", "error": error[:1000]})
 
-    def get_progress(self, lottery: str, draw_period: str) -> dict[str, Any] | None:
-        matches = [run for key, run in self.runs.items() if key[:2] == (lottery, draw_period)]
+    def get_progress(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str | None = None,
+    ) -> dict[str, Any] | None:
+        matches = [
+            run
+            for key, run in self.runs.items()
+            if key[:2] == (lottery, draw_period)
+            and (analysis_version is None or key[2] == analysis_version)
+        ]
         return dict(max(matches, key=lambda run: run["startedAt"])) if matches else None
 
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None:
@@ -286,8 +296,21 @@ class SupabaseAnalysisRepository:
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None:
         self.client.table("matrix_analysis_runs").update({"status": "failed", "error": error[:1000]}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
 
-    def get_progress(self, lottery: str, draw_period: str) -> dict[str, Any] | None:
-        response = self.client.table("matrix_analysis_runs").select("*").eq("lottery", lottery).eq("draw_period", draw_period).order("started_at", desc=True).limit(1).execute()
+    def get_progress(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str | None = None,
+    ) -> dict[str, Any] | None:
+        query = (
+            self.client.table("matrix_analysis_runs")
+            .select("*")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+        )
+        if analysis_version is not None:
+            query = query.eq("analysis_version", analysis_version)
+        response = query.order("started_at", desc=True).limit(1).execute()
         return self._normalize_run(dict(response.data[0])) if response.data else None
 
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None:

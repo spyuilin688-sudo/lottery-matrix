@@ -91,12 +91,8 @@ def _resume_stored_analysis(
 ) -> dict[str, Any] | None:
     period = str(latest_draw["period"])
     expected_version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period)
-    if (
-        progress is not None
-        and progress.get("analysisVersion") == expected_version
-        and progress.get("status") == "complete"
-    ):
+    progress = repository.get_progress(lottery, period, expected_version)
+    if progress is not None and progress.get("status") == "complete":
         return None
 
     history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
