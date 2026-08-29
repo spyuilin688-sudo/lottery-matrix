@@ -29,7 +29,7 @@ export class MatrixApiError extends Error {
   code: MatrixApiErrorCode;
   status: number;
 
-  constructor(code: MatrixApiErrorCode, status: number, message = code) {
+  constructor(code: MatrixApiErrorCode, status: number, message: string = code) {
     super(message);
     this.name = 'MatrixApiError';
     this.code = code;
