@@ -118,7 +118,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   auditLogs: {
-    path: `/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device,admin_account:admin_accounts!inner(role)&admin_account.role=neq.${encodeURIComponent('超級管理員')}&order=operation_time.desc&limit=200`,
+    path: '/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device&order=operation_time.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       operationTime: row.operation_time,
@@ -292,7 +292,6 @@ export function createAdminData(transport: WriteTransport) {
     ip?: string | null;
     device?: string | null;
   }) {
-    if (entry.actor.role === '超級管理員') return;
     await transport.insertRows('audit_logs', [{
       admin_id: entry.actor.id,
       admin: entry.actor.name || entry.actor.account,
