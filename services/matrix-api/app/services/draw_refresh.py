@@ -20,19 +20,21 @@ class DrawRefreshService:
         self.repository.upsert_draw(draw)
         return draw
 
-    def ensure_history(self, lottery: str, minimum: int = 80) -> list[dict[str, Any]]:
-        existing = self.repository.list_draws(lottery, minimum)
-        if len(existing) >= minimum:
-            return existing
+    def ensure_history(self, lottery: str) -> list[dict[str, Any]]:
+        history = self.repository.list_draws(lottery, None)
+        if history:
+            return history
 
         draws = [
             self._prepare_draw(lottery, raw)
             for raw in self.source.fetch_history(lottery, None)
         ]
+        if not draws:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
         self.repository.upsert_draws(draws)
 
-        history = self.repository.list_draws(lottery, minimum)
-        if len(history) < minimum:
+        history = self.repository.list_draws(lottery, None)
+        if not history:
             raise ValueError("DRAW_HISTORY_INCOMPLETE")
         return history
 
