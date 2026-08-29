@@ -92,7 +92,7 @@ describe('authorized Supabase writes', () => {
     expect(calls).toEqual(['insert:admin_accounts', 'insert:audit_logs']);
   });
 
-  it('does not write audit records for a super administrator', async () => {
+  it('writes audit records for a super administrator', async () => {
     const insertRows = vi.fn(async (table: string) => table === 'admin_accounts'
       ? [{ id: 'new', ...input, last_login_at: null, created_at: '2026-08-21T00:00:00Z' }]
       : [{ id: 'audit' }]);
@@ -106,8 +106,12 @@ describe('authorized Supabase writes', () => {
 
     await data.createAdminAccount(input, { ...actor, role: '超級管理員' });
 
-    expect(insertRows).toHaveBeenCalledTimes(1);
+    expect(insertRows).toHaveBeenCalledTimes(2);
     expect(insertRows).toHaveBeenCalledWith('admin_accounts', [expect.any(Object)]);
+    expect(insertRows).toHaveBeenCalledWith('audit_logs', [expect.objectContaining({
+      admin_id: actor.id,
+      operation_type: '新增',
+    })]);
   });
 
   it('does not audit a failed mutation', async () => {
