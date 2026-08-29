@@ -69,7 +69,18 @@ import {
   type CustomStatusConfig,
   type MatrixStatusResponse,
 } from "./matrix-status-api";
-import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from "./member-api";
+import {
+  bootstrapMember,
+  fetchMemberPaymentHistory,
+  fetchMemberProfile,
+  fetchPendingTransferRequest,
+  submitTransferRequest,
+  type MemberPaymentHistoryItem,
+  type MemberProfileResponse,
+  type MemberTransferRequest,
+  type ManualTransferPlanCode,
+} from "./member-api";
+import { readManualTransferPlan, saveManualTransferPlan } from "./manual-transfer-selection";
 import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
 import { getSupabaseClient } from "./lib/supabase";
 import { downloadMatrixTicket } from "./matrix-ticket-download";
@@ -94,6 +105,7 @@ export type ScreenId =
   | "profile"
   | "subscription-management"
   | "pro-plans"
+  | "manual-transfer"
   | "about-matrix"
   | "activation-code"
   | "service-info"
@@ -3691,22 +3703,48 @@ function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigate }) {
   );
 }
 
-function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate}><DetailCard title="付款紀錄"><p>目前沒有付款紀錄。</p></DetailCard></ProfileDetailShell>;
+const transferStatusLabels = {
+  pending: "待確認",
+  confirmed: "已確認",
+  rejected: "已退回",
+} as const;
+
+export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
+  const [history, setHistory] = useState<MemberPaymentHistoryItem[] | null>(null);
+  useEffect(() => {
+    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistory([]));
+  }, []);
+  return (
+    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate}>
+      <DetailCard title="付款紀錄">
+        {history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
+          <div className="payment-history-list">
+            {history.map((item) => (
+              <article className="payment-history-item" key={item.id}>
+                <strong>{item.planName}</strong>
+                <span>{`NT$${item.amount.toLocaleString("en-US")}`}</span>
+                <time>{new Date(item.submittedAt).toLocaleString("zh-TW")}</time>
+                <b data-status={item.status}>{transferStatusLabels[item.status]}</b>
+              </article>
+            ))}
+          </div>
+        )}
+      </DetailCard>
+    </ProfileDetailShell>
+  );
 }
 
-function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
+export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const plans = [
-    { name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { name: "年費方案", price: "$16,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "month", name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "quarter", name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "year", name: "年費方案", price: "$16,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
   ] as const;
   const carouselPlans = [plans[2], ...plans, plans[0]] as const;
   const carouselRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedPlan, setSelectedPlan] = useState(0);
-  const [autoRenew, setAutoRenew] = useState(false);
   const selected = plans[selectedPlan];
   const scrollToCarouselPosition = (position: number, behavior: ScrollBehavior = "auto") => {
     const carousel = carouselRef.current;
@@ -3746,13 +3784,10 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     date.setDate(date.getDate() + selected.days);
     return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
   }, [selected.days]);
-  const handleAutoRenewChange = async () => {
-    const nextState = !autoRenew;
-    if (!await appDialog.confirm({ title: `確認${nextState ? "開啟" : "關閉"}自動續訂？`, confirmLabel: "確認" })) return;
-    setAutoRenew(nextState);
-  };
   const handlePayment = async () => {
     if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
+    saveManualTransferPlan(selected.code);
+    onNavigate("manual-transfer");
   };
   return (
     <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/會員方案標題K.png">
@@ -3781,15 +3816,100 @@ function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
         </dl>
         <div className="auto-renew-setting">
           <label>
-            <input type="checkbox" checked={autoRenew} onChange={handleAutoRenewChange} />
+            <input type="checkbox" checked={false} disabled readOnly />
             <span>自動續訂</span>
           </label>
-          <strong data-active={autoRenew}>{autoRenew ? "目前狀態：開啟" : "目前狀態：關閉"}</strong>
+          <strong data-active={false}>目前狀態：關閉</strong>
         </div>
-        <p className="auto-renew-note">到期後將依目前方案自動扣款續訂。</p>
+        <p className="auto-renew-note">手動轉帳不會自動扣款；金流 API 上線後再提供自動續訂。</p>
       </section>
       <button type="button" className="confirm-payment" onClick={handlePayment}>確定付款</button>
       <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
+    </ProfileDetailShell>
+  );
+}
+
+const manualTransferPlans: Record<ManualTransferPlanCode, { name: string; amount: number }> = {
+  month: { name: "月費方案", amount: 1880 },
+  quarter: { name: "季費方案", amount: 4580 },
+  year: { name: "年費方案", amount: 16800 },
+};
+
+export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
+  const planCode = readManualTransferPlan();
+  const plan = planCode ? manualTransferPlans[planCode] : null;
+  const [lastFive, setLastFive] = useState("");
+  const [pending, setPending] = useState<MemberTransferRequest | null>(null);
+  const [loading, setLoading] = useState(Boolean(plan));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!plan) {
+      onNavigate("pro-plans");
+      return;
+    }
+    void fetchPendingTransferRequest()
+      .then(setPending)
+      .catch(() => setError("無法讀取轉帳申請，請稍後再試。"))
+      .finally(() => setLoading(false));
+  }, [onNavigate, plan]);
+
+  if (!plan || !planCode) return null;
+
+  const submit = async () => {
+    if (lastFive.length !== 5 || submitting || pending) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      setPending(await submitTransferRequest(planCode, lastFive));
+    } catch (cause) {
+      const message = String((cause as { message?: unknown })?.message ?? cause);
+      if (message.includes("PENDING_TRANSFER_EXISTS")) {
+        setPending(await fetchPendingTransferRequest());
+      } else {
+        setError("提交失敗，請稍後再試。 ");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <ProfileDetailShell title="銀行轉帳付款" onNavigate={onNavigate} className="manual-transfer-screen">
+      <section className="panel detail-card manual-transfer-summary">
+        <h2>付款方案</h2>
+        <dl>
+          <div><dt>方案</dt><dd>{plan.name}</dd></div>
+          <div><dt>金額</dt><dd>{`NT$${plan.amount.toLocaleString("en-US")}`}</dd></div>
+        </dl>
+      </section>
+      <section className="panel detail-card manual-transfer-bank-card">
+        <h2>轉帳資料</h2>
+        <dl>
+          <div><dt>銀行</dt><dd>連線銀行</dd></div>
+          <div><dt>銀行代碼</dt><dd>824</dd></div>
+          <div className="manual-transfer-bank-row"><dt>帳號</dt><dd className="manual-transfer-account">111023004501</dd><button type="button" className="manual-transfer-copy" onClick={() => void navigator.clipboard.writeText("111023004501")}>複製帳號</button></div>
+          <div><dt>戶名</dt><dd>黎小姐</dd></div>
+        </dl>
+      </section>
+      <section className="panel detail-card manual-transfer-form-card">
+        <h2>回報轉帳</h2>
+        <label htmlFor="manual-transfer-last-five">帳號末五碼</label>
+        <input
+          id="manual-transfer-last-five"
+          className="manual-transfer-last-five"
+          inputMode="numeric"
+          maxLength={5}
+          value={lastFive}
+          onChange={(event) => setLastFive(event.target.value.replace(/\D/g, "").slice(0, 5))}
+          disabled={Boolean(pending)}
+        />
+        {loading ? <p role="status">申請狀態載入中</p> : null}
+        {pending ? <p className="manual-transfer-pending"><strong>{pending.status === "pending" ? "待確認" : transferStatusLabels[pending.status]}</strong><span>已有待確認申請</span></p> : null}
+        {error ? <p role="alert">{error}</p> : null}
+        <button type="button" className="confirm-payment manual-transfer-submit" disabled={loading || submitting || Boolean(pending) || lastFive.length !== 5} onClick={() => void submit()}>{submitting ? "提交中" : "提交"}</button>
+      </section>
     </ProfileDetailShell>
   );
 }
@@ -4191,6 +4311,7 @@ export function FeaturePageRouter({
   if (screen === "subscription-management") return <SubscriptionManagementPage onNavigate={onNavigate} />;
   if (screen === "payment-history") return <PaymentHistoryPage onNavigate={onNavigate} />;
   if (screen === "pro-plans") return <ProPlansPage onNavigate={onNavigate} />;
+  if (screen === "manual-transfer") return <ManualTransferPage onNavigate={onNavigate} />;
   if (screen === "about-matrix") return <AboutMatrixPage onNavigate={onNavigate} />;
   if (screen === "activation-code") return <ActivationCodePage onNavigate={onNavigate} />;
   if (screen === "service-info") return <ServiceInfoPage onNavigate={onNavigate} />;

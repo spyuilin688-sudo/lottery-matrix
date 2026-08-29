@@ -5,9 +5,12 @@ vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => supabase }));
 
 import {
   bootstrapMember,
+  fetchMemberPaymentHistory,
   fetchMemberProfile,
   fetchNotificationSettings,
+  fetchPendingTransferRequest,
   saveNotificationSettings,
+  submitTransferRequest,
 } from './member-api';
 
 const settings = {
@@ -52,5 +55,17 @@ describe('member Supabase RPC', () => {
     supabase.rpc.mockResolvedValue({ data: null, error: failure });
 
     await expect(fetchMemberProfile()).rejects.toBe(failure);
+  });
+
+  it('submits and loads the authenticated member transfer records', async () => {
+    await submitTransferRequest('month', '12345');
+    await fetchPendingTransferRequest();
+    await fetchMemberPaymentHistory();
+
+    expect(supabase.rpc.mock.calls).toEqual([
+      ['member_transfer_request_submit', { p_plan_code: 'month', p_account_last_five: '12345' }],
+      ['member_pending_transfer_request'],
+      ['member_payment_history'],
+    ]);
   });
 });

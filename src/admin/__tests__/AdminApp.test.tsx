@@ -14,6 +14,7 @@ const adminApi = vi.hoisted(() => ({
   fetchDashboardStats: vi.fn(),
   fetchMembers: vi.fn(),
   fetchTransfers: vi.fn(),
+  reviewTransferRequest: vi.fn(),
   fetchPayments: vi.fn(),
   fetchActivationCodes: vi.fn(),
   generateActivationCodes: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock("../api", () => ({
   fetchDashboardStats: adminApi.fetchDashboardStats,
   fetchMembers: adminApi.fetchMembers,
   fetchTransfers: adminApi.fetchTransfers,
+  reviewTransferRequest: adminApi.reviewTransferRequest,
   fetchPayments: adminApi.fetchPayments,
   fetchActivationCodes: adminApi.fetchActivationCodes,
   generateActivationCodes: adminApi.generateActivationCodes,
@@ -335,7 +337,7 @@ describe("AdminApp authorization boundary", () => {
     expect(screen.queryByText(memberRecord.current_plan_id!)).not.toBeInTheDocument();
   });
 
-  it("renders the confirmed transfer review fields with inactive review buttons", async () => {
+  it("renders pending transfer review fields with active review buttons", async () => {
     const client = createClient({ session: adminSession, isAdmin: true });
     supabase.getClient.mockReturnValue(client);
     adminApi.fetchTransfers.mockResolvedValue([transferRecord]);
@@ -363,10 +365,10 @@ describe("AdminApp authorization boundary", () => {
     }
 
     for (const button of screen.getAllByRole("button", { name: "確認收款" })) {
-      expect(button).toBeDisabled();
+      expect(button).toBeEnabled();
     }
     for (const button of screen.getAllByRole("button", { name: "退回" })) {
-      expect(button).toBeDisabled();
+      expect(button).toBeEnabled();
     }
     expect(screen.queryByText(transferRecord.member_id)).not.toBeInTheDocument();
     expect(screen.queryByText(transferRecord.plan_id)).not.toBeInTheDocument();

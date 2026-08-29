@@ -42,6 +42,8 @@ export type TransferRecord = {
   status: "pending" | "confirmed" | "rejected";
 };
 
+export type TransferReviewDecision = "confirmed" | "rejected";
+
 export type TransferView = TransferRecord & {
   member: { id: string; line_user_id: string | null };
   plan: { name: string };

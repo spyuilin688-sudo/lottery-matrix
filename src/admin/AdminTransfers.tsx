@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchTransfers } from "./api";
-import type { TransferRecord, TransferView } from "./types";
+import { fetchTransfers, reviewTransferRequest } from "./api";
+import type { TransferRecord, TransferReviewDecision, TransferView } from "./types";
 
 type DataState = "loading" | "ready" | "empty" | "error";
 
@@ -38,22 +38,27 @@ function TransferFields({ transfer, table }: { transfer: TransferView; table?: b
   );
 }
 
-function ReviewActions() {
-  return (
-    <div className="admin-record-actions">
-      <button type="button" disabled>
-        確認收款
-      </button>
-      <button type="button" disabled>
-        退回
-      </button>
-    </div>
-  );
+function ReviewButton({ transfer, decision, processing, onReview }: {
+  transfer: TransferView;
+  decision: TransferReviewDecision;
+  processing: boolean;
+  onReview: (transfer: TransferView, decision: TransferReviewDecision) => void;
+}) {
+  const disabled = transfer.status !== "pending" || processing;
+  return <button type="button" disabled={disabled} onClick={() => onReview(transfer, decision)}>{decision === "confirmed" ? "確認收款" : "退回"}</button>;
 }
 
 export default function AdminTransfers() {
   const [transfers, setTransfers] = useState<TransferView[]>([]);
   const [dataState, setDataState] = useState<DataState>("loading");
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState(false);
+
+  const loadTransfers = async () => {
+    const records = await fetchTransfers();
+    setTransfers(records);
+    setDataState(records.length === 0 ? "empty" : "ready");
+  };
 
   useEffect(() => {
     let active = true;
@@ -74,12 +79,27 @@ export default function AdminTransfers() {
     };
   }, []);
 
+  const handleReview = async (transfer: TransferView, decision: TransferReviewDecision) => {
+    if (transfer.status !== "pending" || processingId) return;
+    setProcessingId(transfer.id);
+    setReviewError(false);
+    try {
+      await reviewTransferRequest(transfer.id, decision);
+      await loadTransfers();
+    } catch {
+      setReviewError(true);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (dataState !== "ready") {
     return <section className="admin-record-screen" data-testid="admin-transfers" data-state={dataState} />;
   }
 
   return (
     <section className="admin-record-screen" data-testid="admin-transfers" data-state={dataState}>
+      {reviewError ? <p role="alert">轉帳審核失敗，請稍後再試。</p> : null}
       <div className="admin-record-table-wrap">
         <table className="admin-record-table">
           <thead>
@@ -98,14 +118,10 @@ export default function AdminTransfers() {
               <tr key={transfer.id}>
                 <TransferFields transfer={transfer} table />
                 <td>
-                  <button type="button" disabled>
-                    確認收款
-                  </button>
+                  <ReviewButton transfer={transfer} decision="confirmed" processing={processingId === transfer.id} onReview={handleReview} />
                 </td>
                 <td>
-                  <button type="button" disabled>
-                    退回
-                  </button>
+                  <ReviewButton transfer={transfer} decision="rejected" processing={processingId === transfer.id} onReview={handleReview} />
                 </td>
               </tr>
             ))}
@@ -116,7 +132,10 @@ export default function AdminTransfers() {
         {transfers.map((transfer) => (
           <article className="admin-record-card" key={transfer.id}>
             <TransferFields transfer={transfer} />
-            <ReviewActions />
+            <div className="admin-record-actions">
+              <ReviewButton transfer={transfer} decision="confirmed" processing={processingId === transfer.id} onReview={handleReview} />
+              <ReviewButton transfer={transfer} decision="rejected" processing={processingId === transfer.id} onReview={handleReview} />
+            </div>
           </article>
         ))}
       </div>

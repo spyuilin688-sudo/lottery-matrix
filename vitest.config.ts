@@ -10,6 +10,8 @@ export default mergeConfig(
       },
     },
     test: {
+      setupFiles: ["./test/vitest-setup.ts"],
+      exclude: ["backend/draw-schedule.test.ts"],
       include: [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",

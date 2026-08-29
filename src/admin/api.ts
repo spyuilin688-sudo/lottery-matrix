@@ -7,6 +7,8 @@ import type {
   MemberView,
   PaymentView,
   TransferView,
+  TransferRecord,
+  TransferReviewDecision,
   MatrixCustomStatusView,
 } from "./types";
 
@@ -45,6 +47,18 @@ export function fetchTransfers(): Promise<TransferView[]> {
     "*, member:members!transfer_requests_member_id_fkey(id,line_user_id), plan:plans!transfer_requests_plan_id_fkey(name)",
     "submitted_at",
   );
+}
+
+export async function reviewTransferRequest(
+  transferId: string,
+  decision: TransferReviewDecision,
+): Promise<TransferRecord> {
+  const { data, error } = await getSupabaseClient().rpc("admin_transfer_request_review", {
+    p_transfer_id: transferId,
+    p_decision: decision,
+  });
+  if (error) throw error;
+  return data as TransferRecord;
 }
 
 export function fetchPayments(): Promise<PaymentView[]> {

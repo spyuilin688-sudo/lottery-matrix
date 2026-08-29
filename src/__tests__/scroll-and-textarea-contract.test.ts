@@ -199,54 +199,26 @@ describe("textarea and scrollbar ownership", () => {
     expect(featureCss).not.toMatch(/\bresize:\s*vertical;/);
   });
 
-  it("provides root and inherited standards values plus complete engine fallbacks", () => {
+  it("hides native scrollbars consistently while preserving overflow", () => {
     const style = mountStyle(`${designTokensCss}\n${stylesCss}`);
     const overflow = document.createElement("div");
     overflow.style.cssText = "width: 10px; height: 10px; overflow: auto";
     overflow.append(Object.assign(document.createElement("div"), { textContent: "long content" }));
     document.body.append(overflow);
 
-    const expectedColors = "var(--bottom-nav-gold) var(--bottom-nav-panel-950)";
+    const expectedColors = "rgba(0, 0, 0, 0)";
     expect(getComputedStyle(document.documentElement).getPropertyValue("scrollbar-color")).toBe(
       expectedColors,
     );
-    expect(getComputedStyle(document.documentElement).getPropertyValue("scrollbar-width")).toBe("thin");
+    expect(getComputedStyle(document.documentElement).getPropertyValue("scrollbar-width")).toBe("none");
     expect(getComputedStyle(overflow).getPropertyValue("scrollbar-color")).toBe(expectedColors);
-    expect(getComputedStyle(overflow).getPropertyValue("scrollbar-width")).toBe("thin");
+    expect(getComputedStyle(overflow).getPropertyValue("scrollbar-width")).toBe("none");
 
     const sheet = style.sheet!;
     const scrollbar = cssRule(sheet.cssRules, "*::-webkit-scrollbar");
-    expect(scrollbar.style.width).toBe("8px");
-    expect(scrollbar.style.height).toBe("8px");
-
-    const track = cssRule(sheet.cssRules, "*::-webkit-scrollbar-track");
-    expect(track.style.background).toBe("var(--bottom-nav-panel-950)");
-
-    const thumb = cssRule(sheet.cssRules, "*::-webkit-scrollbar-thumb");
-    expect(thumb.style.border).toBe("2px solid var(--bottom-nav-panel-950)");
-    expect(thumb.style.borderRadius).toBe("999px");
-    expect(thumb.style.background).toBe("var(--bottom-nav-gold)");
-    expect(cssRule(sheet.cssRules, "*::-webkit-scrollbar-thumb:hover").style.background).toBe(
-      "var(--bottom-nav-gold-bright)",
-    );
-    expect(cssRule(sheet.cssRules, "*::-webkit-scrollbar-thumb:active").style.background).toBe(
-      "var(--lottery-gold-300)",
-    );
-
-    const forcedColors = Array.from(sheet.cssRules).find(
-      (rule): rule is CSSMediaRule =>
-        "conditionText" in rule && rule.conditionText === "(forced-colors: active)",
-    );
-    expect(forcedColors).toBeDefined();
-    expect(
-      cssRule(forcedColors!.cssRules, ":root").style.getPropertyValue("scrollbar-color"),
-    ).toBe("auto");
-    expect(cssRule(forcedColors!.cssRules, "*::-webkit-scrollbar-track").style.background).toBe(
-      "canvas",
-    );
-    const forcedThumb = cssRule(forcedColors!.cssRules, "*::-webkit-scrollbar-thumb");
-    expect(forcedThumb.style.borderColor).toBe("canvas");
-    expect(forcedThumb.style.background).toBe("buttontext");
+    expect(scrollbar.style.display).toBe("none");
+    expect(scrollbar.style.width).toBe("0px");
+    expect(scrollbar.style.height).toBe("0px");
   });
 
   it("keeps reachable scrolling behavior without hidden native scrollbars", () => {

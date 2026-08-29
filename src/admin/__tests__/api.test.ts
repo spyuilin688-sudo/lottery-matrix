@@ -16,6 +16,7 @@ import {
   fetchPayments,
   fetchTransfers,
   generateActivationCodes,
+  reviewTransferRequest,
 } from "../api";
 import type {
   ActivationCodeRecord,
@@ -156,6 +157,18 @@ describe("admin data API", () => {
     });
   });
 
+  it("reviews a transfer with the authenticated admin RPC", async () => {
+    const reviewed = { ...transfer, status: "confirmed" as const };
+    const rpc = vi.fn(() => Promise.resolve({ data: reviewed, error: null }));
+    supabase.getClient.mockReturnValue({ rpc });
+
+    await expect(reviewTransferRequest(transfer.id, "confirmed")).resolves.toEqual(reviewed);
+    expect(rpc).toHaveBeenCalledWith("admin_transfer_request_review", {
+      p_transfer_id: transfer.id,
+      p_decision: "confirmed",
+    });
+  });
+
   it.each([
     ["dashboard statistics", fetchDashboardStats, "rpc"],
     ["members", fetchMembers, "query"],
@@ -164,6 +177,7 @@ describe("admin data API", () => {
     ["activation codes", fetchActivationCodes, "query"],
     ["matrix custom status configs", fetchMatrixCustomStatuses, "query"],
     ["activation-code generation", () => generateActivationCodes("7_days"), "rpc"],
+    ["transfer review", () => reviewTransferRequest(transfer.id, "rejected"), "rpc"],
   ] as const)("throws the Supabase error for %s", async (_name, request, source) => {
     const supabaseError = new Error("SUPABASE_UNAVAILABLE");
 
