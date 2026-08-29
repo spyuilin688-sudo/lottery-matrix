@@ -15,7 +15,6 @@ from app.services.draw_refresh import DrawRefreshService, DrawSource
 from app.settings import load_settings
 
 
-REQUIRED_HISTORY_DRAWS = 80
 EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 100
 MAX_FAILURES_PER_INVOCATION = 3
@@ -62,10 +61,10 @@ def run_worker(
         try:
             repository.cleanup_expired(datetime.now(UTC))
             refresh = DrawRefreshService(repository, source)
-            refresh.ensure_history(lottery, REQUIRED_HISTORY_DRAWS)
+            refresh.ensure_history(lottery)
             draw = refresh.refresh(lottery)
-            history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
-            if len(history) < REQUIRED_HISTORY_DRAWS:
+            history = repository.list_draws(lottery, None)
+            if not history:
                 raise ValueError("DRAW_HISTORY_INCOMPLETE")
             break
         except Exception as error:
@@ -105,7 +104,7 @@ def run_scheduled_worker(
 
     repository.cleanup_expired(datetime.now(UTC))
     refresh = DrawRefreshService(repository, source)
-    refresh.ensure_history(lottery, REQUIRED_HISTORY_DRAWS)
+    refresh.ensure_history(lottery)
     draw = refresh.refresh(lottery)
 
     if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
@@ -115,8 +114,8 @@ def run_scheduled_worker(
             "status": "not-acquired",
         }
 
-    history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
-    if len(history) < REQUIRED_HISTORY_DRAWS:
+    history = repository.list_draws(lottery, None)
+    if not history:
         raise ValueError("DRAW_HISTORY_INCOMPLETE")
     return _run_analysis(repository, draw, history, builders)
 
