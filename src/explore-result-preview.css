@@ -1,0 +1,24 @@
+.explore-result-preview-screen {
+  min-height: 100%;
+  background: var(--lottery-neutral-950);
+}
+
+.explore-result-preview-screen > .feature-body {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px var(--layout-page-inline) calc(24px + env(safe-area-inset-bottom));
+}
+
+.explore-result-preview-screen .result-panel {
+  margin-top: 0;
+}
+
+.explore-result-preview-screen .road-type-toggle {
+  cursor: pointer;
+}
+
+.explore-result-preview-screen .road-type-toggle:focus-visible,
+.explore-result-preview-screen .integrated-title-back:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: 2px;
+}
