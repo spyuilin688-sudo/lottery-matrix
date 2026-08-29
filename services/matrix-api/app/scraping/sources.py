@@ -296,12 +296,12 @@ class LatestDrawSource:
         if lottery in {"今彩539", "大樂透"}:
             return self._fetch_taiwan_history(lottery, limit)
         if lottery == "天天樂":
-            requested_count = 80 if limit is None else limit
-            page_size = min(50, requested_count)
-            page_count = (requested_count + page_size - 1) // page_size
+            page_size = 50 if limit is None else min(50, limit)
             try:
                 official_draws: list[MatrixDraw] = []
-                for page in range(1, page_count + 1):
+                previous_count = 0
+                page = 1
+                while True:
                     response = self.client.get(
                         CALIFORNIA_FANTASY5_HISTORY_URL.format(page=page, size=page_size),
                         headers=HEADERS,
@@ -309,9 +309,20 @@ class LatestDrawSource:
                         follow_redirects=True,
                     )
                     response.raise_for_status()
-                    official_draws.extend(parse_california_fantasy5_history(response.json()))
+                    page_draws = parse_california_fantasy5_history(response.json())
+                    if not page_draws:
+                        break
+                    official_draws.extend(page_draws)
+                    draws = _newest_unique(official_draws)
+                    if limit is not None and len(draws) >= limit:
+                        return _newest_unique(draws, limit)
+                    if len(draws) == previous_count or len(page_draws) < page_size:
+                        break
+                    previous_count = len(draws)
+                    page += 1
+
                 draws = _newest_unique(official_draws)
-                if len(draws) < requested_count:
+                if not draws or (limit is not None and len(draws) < limit):
                     raise ValueError("CALIFORNIA_FANTASY5_HISTORY_INCOMPLETE")
                 return _newest_unique(draws, limit)
             except (httpx.HTTPError, ValueError):
