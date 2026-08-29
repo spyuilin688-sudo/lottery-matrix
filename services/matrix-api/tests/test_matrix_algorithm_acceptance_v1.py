@@ -198,12 +198,16 @@ CORRECTED_HISTORY = [
 # 共通固定規則 C-01 ～ C-06
 
 
-def test_c_01_history_is_not_mixed_between_lotteries() -> None:
+def test_c_01_history_is_not_mixed_between_lotteries(monkeypatch: pytest.MonkeyPatch) -> None:
     history = [
         draw("539-1", [10, 11, 12, 13, 14], lottery="今彩539"),
         draw("649-1", [10, 11, 12, 13, 14, 15, 16], lottery="大樂透"),
     ]
     assert _matching_source_indexes(_parse_request(explore_request()), history) == [0]
+    monkeypatch.setattr(explore, "_evaluate_prepared", lambda _request, prepared, _indexes: {
+        "periods": [item["period"] for item in prepared],
+    })
+    assert run_matrix_algorithm_with_history(explore_request(), history)["periods"] == ["539-1"]
 
 
 def test_c_02_sorted_and_draw_order_are_calculated_separately() -> None:
