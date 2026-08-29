@@ -72,7 +72,7 @@ def _builders(calls: list[str], history_lengths: list[int] | None = None, failin
     return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
 
 
-def test_worker_backfills_complete_history_but_analyzes_latest_80_only() -> None:
+def test_worker_backfills_complete_history_and_analyzes_all_available_draws() -> None:
     repository = TrackingRepository()
     source = Source(history_count=120)
     calls: list[str] = []
@@ -85,22 +85,23 @@ def test_worker_backfills_complete_history_but_analyzes_latest_80_only() -> None
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
-    assert history_lengths == [80, 80, 80, 80]
+    assert history_lengths == [120, 120, 120, 120]
     assert len(repository.list_draws("今彩539", 1000)) == 120
 
 
-def test_worker_rejects_analysis_when_complete_history_is_under_80_draws() -> None:
+def test_worker_analyzes_all_available_history_without_fixed_minimum() -> None:
     repository = TrackingRepository()
     source = Source(history_count=79)
     calls: list[str] = []
+    history_lengths: list[int] = []
 
-    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
-        run_worker("今彩539", repository, source, _builders(calls))
+    result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
-    assert repository.events == ["cleanup"]
-    assert source.events == ["history-all"]
-    assert calls == []
-    assert repository.get_progress("今彩539", "000000220") is None
+    assert result["status"] == "complete"
+    assert source.events == ["history-all", "latest"]
+    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert history_lengths == [79, 79, 79, 79]
+    assert len(repository.list_draws("今彩539", 1000)) == 79
 
 
 def test_worker_cleans_expired_artifacts_before_running() -> None:
