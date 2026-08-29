@@ -97,11 +97,12 @@ def run_scheduled_worker(
     latest = repository.list_draws(lottery, 1)
     cycle_date = cycle.date().isoformat()
     if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
-        return {
-            "lottery": lottery,
-            "drawPeriod": latest[0]["period"],
-            "status": "already-acquired",
-        }
+        repository.cleanup_expired(datetime.now(UTC))
+        history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
+        if len(history) < REQUIRED_HISTORY_DRAWS:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        draw = {"lottery": lottery, **latest[0]}
+        return _run_analysis(repository, draw, history, builders)
 
     repository.cleanup_expired(datetime.now(UTC))
     refresh = DrawRefreshService(repository, source)
