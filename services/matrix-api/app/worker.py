@@ -83,6 +83,31 @@ def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
 
+def _resume_stored_analysis(
+    lottery: str,
+    repository: AnalysisRepository,
+    latest_draw: dict[str, Any],
+    builders: Mapping[str, ArtifactBuilder] | None,
+) -> dict[str, Any] | None:
+    period = str(latest_draw["period"])
+    expected_version = f"{period}:{ANALYSIS_VERSION}"
+    progress = repository.get_progress(lottery, period)
+    if (
+        progress is not None
+        and progress.get("analysisVersion") == expected_version
+        and progress.get("status") == "complete"
+    ):
+        return None
+
+    history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
+    if len(history) < REQUIRED_HISTORY_DRAWS:
+        return None
+
+    repository.cleanup_expired(datetime.now(UTC))
+    draw = {"lottery": lottery, **latest_draw}
+    return _run_analysis(repository, draw, history, builders)
+
+
 def run_scheduled_worker(
     lottery: str,
     now: datetime | None,
@@ -90,23 +115,26 @@ def run_scheduled_worker(
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
 ) -> dict[str, Any]:
+    latest = repository.list_draws(lottery, 1)
     cycle = due_call_cycle(lottery, now)
+
     if cycle is None:
+        if latest:
+            resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+            if resumed is not None:
+                return resumed
         return {"lottery": lottery, "status": "not-due"}
 
-    latest = repository.list_draws(lottery, 1)
     cycle_date = cycle.date().isoformat()
     if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
-        history = repository.list_draws(lottery, REQUIRED_HISTORY_DRAWS)
-        if len(history) < REQUIRED_HISTORY_DRAWS:
-            return {
-                "lottery": lottery,
-                "drawPeriod": latest[0]["period"],
-                "status": "already-acquired",
-            }
-        repository.cleanup_expired(datetime.now(UTC))
-        draw = {"lottery": lottery, **latest[0]}
-        return _run_analysis(repository, draw, history, builders)
+        resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+        if resumed is not None:
+            return resumed
+        return {
+            "lottery": lottery,
+            "drawPeriod": latest[0]["period"],
+            "status": "already-acquired",
+        }
 
     repository.cleanup_expired(datetime.now(UTC))
     refresh = DrawRefreshService(repository, source)
