@@ -163,7 +163,7 @@ def test_fantasy5_limited_history_uses_california_official_api() -> None:
     ]
 
 
-def test_fantasy5_full_history_pages_within_official_size_limit() -> None:
+def test_fantasy5_full_history_pages_until_official_last_page() -> None:
     requested_urls: list[str] = []
 
     def official_draw(period: int) -> dict:
@@ -184,6 +184,8 @@ def test_fantasy5_full_history_pages_within_official_size_limit() -> None:
         if request.url.host != "www.calottery.com":
             raise AssertionError("sc888 fallback must not be used for complete official history")
         page = int(request.url.path.split("/")[-2])
+        if page == 3:
+            return httpx.Response(200, json={"PreviousDraws": []})
         first_period = 12000 if page == 1 else 11950
         return httpx.Response(
             200,
@@ -200,6 +202,7 @@ def test_fantasy5_full_history_pages_within_official_size_limit() -> None:
     assert requested_urls == [
         "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/50",
         "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/2/50",
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/3/50",
     ]
 
 
