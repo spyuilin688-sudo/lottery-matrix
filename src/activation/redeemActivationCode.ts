@@ -1,5 +1,5 @@
 import { getSupabaseClient } from "../lib/supabase";
-import type { ActivationDuration } from "../admin/types";
+import type { ActivationDuration } from "./types";
 
 export type ActivationRedemptionResult = {
   member_id: string;

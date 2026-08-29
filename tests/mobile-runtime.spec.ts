@@ -289,25 +289,6 @@ for (const width of MOBILE_WIDTHS) {
     await expectNoHorizontalDocumentOverflow(page);
   });
 
-  test(`AdminLogin keeps validation focus and errors inside ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: MOBILE_HEIGHT });
-    await page.goto("/tests/runtime-fixture.html?fixture=admin-login");
-    const email = page.locator("#admin-email");
-    const password = page.locator("#admin-password");
-    await expect(email).toBeVisible();
-    await page.getByRole("button", { name: "登入", exact: true }).click();
-
-    await expect(email).toBeFocused();
-    await expect(email).toHaveAttribute("aria-invalid", "true");
-    await expect(password).toHaveAttribute("aria-invalid", "true");
-    const emailError = page.locator("#admin-email-error");
-    const passwordError = page.locator("#admin-password-error");
-    await expect(emailError).toHaveText("請輸入 Email");
-    await expect(passwordError).toHaveText("請輸入密碼");
-    await expectWithinViewport(page, emailError);
-    await expectWithinViewport(page, passwordError);
-    await expectNoHorizontalDocumentOverflow(page);
-  });
 }
 
 test("horizontal intent stays in Carousel and cannot create parent momentum", async ({ page }) => {

@@ -9,7 +9,6 @@ declare const process: { cwd(): string };
 
 const bridge = vi.hoisted(() => ({ render: vi.fn(() => null) }));
 
-vi.mock("../admin/AdminApp", () => ({ default: () => <div>admin-root</div> }));
 vi.mock("../auth/MemberSessionBridge", () => ({ MemberSessionBridge: bridge.render }));
 vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
 
@@ -63,5 +62,19 @@ describe("production member shell", () => {
     expect(source).toContain('from "./auth/MemberSessionBridge"');
     expect(source).not.toContain("LineAuthGate");
     expect(source).not.toContain("line-login.css");
+  });
+
+  it("does not embed a second administration app in the member PWA", () => {
+    window.history.replaceState({}, "", "/admin");
+
+    render(<App />);
+
+    expect(screen.getByText("member-root")).toBeInTheDocument();
+    const appSource = readFileSync(`${process.cwd()}/src/App.tsx`, "utf8");
+    const mainSource = readFileSync(`${process.cwd()}/src/main.tsx`, "utf8");
+    expect(appSource).not.toContain("AdminApp");
+    expect(appSource).not.toContain("isAdminPath");
+    expect(mainSource).not.toContain("admin/admin.css");
+    expect(mainSource).not.toContain('startsWith("/admin")');
   });
 });
