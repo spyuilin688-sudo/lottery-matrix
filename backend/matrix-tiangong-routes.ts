@@ -52,7 +52,7 @@ function parseRequest(value: unknown): TiangongFilterRequest & { drawPeriod?: st
   if (
     ![50, 80].includes(periodRange)
     || !['one-stage', 'two-stage'].includes(mode)
-    || !['準2進3', '準3進4'].includes(hitCondition)
+    || hitCondition !== '準2進3'
     || !validDirections(exploreDirections)
     || !validDirections(firstStageDirections)
     || !validRoads(firstRoadTypes)
