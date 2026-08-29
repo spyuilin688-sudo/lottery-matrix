@@ -78,11 +78,18 @@ class InMemoryAnalysisRepository:
             items.append({
                 "lottery": lottery,
                 "jobName": job_name,
-                "job": None if job is None else dict(job),
+                "job": None if job is None else {
+                    "jobName": job["jobName"],
+                    "lottery": job["lottery"],
+                    "status": job["status"],
+                    "startedAt": job["startedAt"],
+                    "finishedAt": job.get("finishedAt"),
+                    "error": "WORKER_FAILED" if job.get("error") else None,
+                    "updatedAt": job["updatedAt"],
+                },
                 "latestDraw": None if latest_draw is None else {
                     "period": latest_draw["period"],
                     "drawDate": latest_draw.get("drawDate"),
-                    "updatedAt": None,
                 },
                 "latestAnalysis": None if latest_analysis is None else {
                     "drawPeriod": latest_analysis["drawPeriod"],
@@ -90,8 +97,7 @@ class InMemoryAnalysisRepository:
                     "phase": latest_analysis["phase"],
                     "startedAt": latest_analysis["startedAt"],
                     "completedAt": latest_analysis.get("completedAt"),
-                    "error": latest_analysis.get("error"),
-                    "updatedAt": latest_analysis.get("completedAt") or latest_analysis["startedAt"],
+                    "error": "ANALYSIS_FAILED" if latest_analysis.get("error") else None,
                 },
             })
         return items
@@ -108,7 +114,11 @@ class InMemoryAnalysisRepository:
         matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
         ordered = sorted(
             matches,
-            key=lambda draw: (str(draw.get("drawDate", "")), str(draw["period"])),
+            key=lambda draw: (
+                bool(str(draw.get("drawDate") or "").strip()),
+                str(draw.get("drawDate") or ""),
+                str(draw["period"]),
+            ),
             reverse=True,
         )
         newest = ordered if limit is None else ordered[: max(0, limit)]
@@ -261,7 +271,7 @@ class SupabaseAnalysisRepository:
             "status": row["status"],
             "startedAt": row["started_at"],
             "finishedAt": row.get("finished_at"),
-            "error": row.get("error"),
+            "error": "WORKER_FAILED" if row.get("error") else None,
             "updatedAt": row["updated_at"],
         }
 
@@ -270,7 +280,6 @@ class SupabaseAnalysisRepository:
         return {
             "period": row["period"],
             "drawDate": row.get("draw_date"),
-            "updatedAt": row.get("updated_at"),
         }
 
     @staticmethod
@@ -281,8 +290,7 @@ class SupabaseAnalysisRepository:
             "phase": row["phase"],
             "startedAt": row["started_at"],
             "completedAt": row.get("completed_at"),
-            "error": row.get("error"),
-            "updatedAt": row.get("updated_at"),
+            "error": "ANALYSIS_FAILED" if row.get("error") else None,
         }
 
     def health_check(self) -> None:
@@ -296,6 +304,7 @@ class SupabaseAnalysisRepository:
             "started_at": started_at,
             "finished_at": None,
             "error": None,
+            "updated_at": started_at,
         }, on_conflict="job_name").execute()
 
     def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
@@ -303,24 +312,28 @@ class SupabaseAnalysisRepository:
             "status": status,
             "finished_at": finished_at,
             "error": error,
+            "updated_at": finished_at,
         }).eq("job_name", job_name).execute()
 
     def list_job_statuses(self) -> list[dict[str, Any]]:
-        job_response = self.client.table("system_job_status").select("*").execute()
+        job_response = self.client.table("system_job_status").select(
+            "job_name,lottery,status,started_at,finished_at,error,updated_at"
+        ).execute()
         jobs = {str(row["job_name"]): dict(row) for row in job_response.data}
         items: list[dict[str, Any]] = []
         for lottery, job_name in JOB_NAME_BY_LOTTERY.items():
             draw_response = (
                 self.client.table("lottery_draws")
-                .select("period,draw_date,updated_at")
+                .select("period,draw_date")
                 .eq("lottery", lottery)
-                .order("updated_at", desc=True)
+                .order("draw_date", desc=True, nullsfirst=False)
+                .order("period", desc=True)
                 .limit(1)
                 .execute()
             )
             analysis_response = (
                 self.client.table("matrix_analysis_runs")
-                .select("draw_period,status,phase,started_at,completed_at,error,updated_at")
+                .select("draw_period,status,phase,started_at,completed_at,error")
                 .eq("lottery", lottery)
                 .order("started_at", desc=True)
                 .limit(1)
@@ -364,7 +377,7 @@ class SupabaseAnalysisRepository:
                 self.client.table("lottery_draws")
                 .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
                 .eq("lottery", lottery)
-                .order("draw_date", desc=True)
+                .order("draw_date", desc=True, nullsfirst=False)
                 .order("period", desc=True)
                 .range(offset, offset + page_size - 1)
                 .execute()

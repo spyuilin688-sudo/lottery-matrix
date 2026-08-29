@@ -1,69 +1,314 @@
-import { describe, expect, it } from 'vitest';
-import { createWorkerApi } from './worker-api';
+import { describe, expect, it, vi } from 'vitest';
+import { createWorkerApi, getWorkerConfig } from './worker-api';
+
+const health = {
+  status: 'ok',
+  service: 'matrix-railway-api',
+  version: 'test-sha',
+  database: { status: 'ok' },
+};
+const lotteryJobs = [
+  ['今彩539', 'matrix-539-refresh-v2'],
+  ['天天樂', 'matrix-fantasy5-refresh-v2'],
+  ['六合彩', 'matrix-marksix-refresh-v2'],
+  ['大樂透', 'matrix-649-refresh-v2'],
+] as const;
+const jobItem = (lottery: typeof lotteryJobs[number][0], jobName: string) => ({
+  lottery,
+  jobName,
+  job: {
+    jobName,
+    lottery,
+    status: 'success' as const,
+    startedAt: '2026-08-29T01:00:00Z',
+    finishedAt: '2026-08-29T01:01:00Z',
+    error: null,
+    updatedAt: '2026-08-29T01:01:00Z',
+  },
+  latestDraw: { period: '003117', drawDate: '2026-08-28' },
+  latestAnalysis: {
+    drawPeriod: '003117',
+    status: 'complete' as const,
+    phase: 'complete' as const,
+    startedAt: '2026-08-29T01:00:00Z',
+    completedAt: '2026-08-29T01:01:00Z',
+    error: null,
+  },
+});
+const jobs = {
+  items: lotteryJobs.map(([lottery, jobName]) => jobItem(lottery, jobName)),
+};
+const jsonResponse = (value: unknown, status = 200) =>
+  new Response(JSON.stringify(value), { status });
+const unavailable = { ok: false, health: null, jobs: null };
 
 describe('Railway worker status adapter', () => {
-  it('normalizes the configured URL and reads health plus job status', async () => {
-    const urls: string[] = [];
+  it('normalizes the URL and sends the token only to jobs with one signal', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request, _init?: RequestInit) =>
+      String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse(jobs));
     const api = createWorkerApi(
-      async () => 'https://railway.example/',
-      async (input) => {
-        urls.push(String(input));
-        return new Response(JSON.stringify({ ok: true }), { status: 200 });
-      },
+      async () => ({
+        baseUrl: 'https://railway.example/',
+        statusToken: 'server-token',
+      }),
+      fetcher,
     );
 
     await expect(api.getStatus()).resolves.toMatchObject({ ok: true });
-    expect(urls).toEqual([
-      'https://railway.example/health',
-      'https://railway.example/jobs/status',
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    const [healthUrl, healthInit] = fetcher.mock.calls[0];
+    const [jobsUrl, jobsInit] = fetcher.mock.calls[1];
+    expect(String(healthUrl)).toBe('https://railway.example/health');
+    expect(String(jobsUrl)).toBe('https://railway.example/jobs/status');
+    expect(healthInit).toMatchObject({ redirect: 'error', cache: 'no-store' });
+    expect(jobsInit).toMatchObject({
+      redirect: 'error',
+      cache: 'no-store',
+      headers: { 'X-Matrix-Admin-Token': 'server-token' },
+    });
+    expect((healthInit as RequestInit).headers).toBeUndefined();
+    expect((healthInit as RequestInit).signal).toBe((jobsInit as RequestInit).signal);
+  });
+
+  it.each([
+    null,
+    { baseUrl: '', statusToken: 'server-token' },
+    { baseUrl: 'https://railway.example', statusToken: '' },
+  ])('performs no fetch when config is unusable', async (config) => {
+    const fetcher = vi.fn();
+    const api = createWorkerApi(async () => config, fetcher as typeof fetch);
+    await expect(api.getStatus()).resolves.toEqual(unavailable);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not parse or expose a non-success response body', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health')
+        ? jsonResponse(health)
+        : jsonResponse({ error: 'fake-upstream-secret' }, 503));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+    const result = await api.getStatus();
+    expect(result).toEqual(unavailable);
+    expect(JSON.stringify(result)).not.toContain('fake-upstream-secret');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns unavailable for malformed JSON', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health')
+        ? jsonResponse(health)
+        : new Response('{', { status: 200 }));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+    await expect(api.getStatus()).resolves.toEqual(unavailable);
+  });
+
+  const invalidJobPayloads = [
+    { name: 'missing lottery', value: { items: jobs.items.slice(0, 3) } },
+    {
+      name: 'duplicate lottery',
+      value: { items: [jobs.items[0], jobs.items[0], jobs.items[2], jobs.items[3]] },
+    },
+    {
+      name: 'mismatched job name',
+      value: {
+        items: jobs.items.map((item, index) =>
+          index === 0 ? { ...item, jobName: 'matrix-fantasy5-refresh-v2' } : item),
+      },
+    },
+    {
+      name: 'wrong required field type',
+      value: {
+        items: jobs.items.map((item, index) =>
+          index === 0
+            ? { ...item, latestDraw: { ...item.latestDraw, period: 3117 } }
+            : item),
+      },
+    },
+  ];
+
+  it.each(invalidJobPayloads)('rejects $name', async ({ value }) => {
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse(value));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+    await expect(api.getStatus()).resolves.toEqual(unavailable);
+  });
+
+  it('rejects an invalid health DTO', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health')
+        ? jsonResponse({ ...health, version: 123 })
+        : jsonResponse(jobs));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+    await expect(api.getStatus()).resolves.toEqual(unavailable);
+  });
+
+  it('projects extra fields and raw errors to a safe DTO', async () => {
+    const tainted = structuredClone(jobs) as any;
+    tainted.secret = 'top-level-secret';
+    tainted.items[0].extra = 'row-secret';
+    tainted.items[0].job.error = 'raw-worker-secret';
+    tainted.items[0].latestAnalysis.error = 'raw-analysis-secret';
+    tainted.items[0].latestDraw.updatedAt = 'unreliable';
+    tainted.items[0].latestAnalysis.updatedAt = 'unreliable';
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse(tainted));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+
+    const result = await api.getStatus();
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected safe Railway status');
+    expect(result.jobs.items[0].job?.error).toBe('WORKER_FAILED');
+    expect(result.jobs.items[0].latestAnalysis?.error).toBe('ANALYSIS_FAILED');
+    expect(result.jobs.items[0].latestDraw).not.toHaveProperty('updatedAt');
+    expect(result.jobs.items[0].latestAnalysis).not.toHaveProperty('updatedAt');
+    expect(JSON.stringify(result)).not.toMatch(
+      /top-level-secret|row-secret|raw-worker-secret|raw-analysis-secret|server-token/,
+    );
+  });
+
+  it('times out a hanging config loader before making a request', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn();
+      const api = createWorkerApi(
+        () => new Promise(() => undefined),
+        fetcher as typeof fetch,
+      );
+      const pending = api.getStatus();
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(pending).resolves.toEqual(unavailable);
+      expect(fetcher).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('aborts hanging fetches at five seconds without retry', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn((_input: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError')));
+        }));
+      const api = createWorkerApi(
+        async () => ({
+          baseUrl: 'https://railway.example',
+          statusToken: 'server-token',
+        }),
+        fetcher as typeof fetch,
+      );
+      const pending = api.getStatus();
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(pending).resolves.toEqual(unavailable);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('times out hanging JSON parsing within the same deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const response = {
+        ok: true,
+        json: () => new Promise(() => undefined),
+      } as Response;
+      const fetcher = vi.fn(async () => response);
+      const api = createWorkerApi(
+        async () => ({
+          baseUrl: 'https://railway.example',
+          statusToken: 'server-token',
+        }),
+        fetcher as typeof fetch,
+      );
+      const pending = api.getStatus();
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(pending).resolves.toEqual(unavailable);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Railway worker secret configuration', () => {
+  it('loads only the two approved server secrets', async () => {
+    const reads: string[] = [];
+    const config = await getWorkerConfig({
+      listSecretNames: async () => [
+        'RAILWAY_WORKER_URL',
+        'MATRIX_ADMIN_STATUS_TOKEN',
+        'UNRELATED_SECRET',
+      ],
+      readSecret: async (name) => {
+        reads.push(name);
+        return name === 'RAILWAY_WORKER_URL'
+          ? 'https://railway.example/'
+          : 'server-token';
+      },
+    });
+    expect(config).toEqual({
+      baseUrl: 'https://railway.example',
+      statusToken: 'server-token',
+    });
+    expect(reads.sort()).toEqual([
+      'MATRIX_ADMIN_STATUS_TOKEN',
+      'RAILWAY_WORKER_URL',
     ]);
   });
 
-  it('returns unavailable without throwing when Railway cannot be reached', async () => {
-    const api = createWorkerApi(
-      async () => 'https://railway.example',
-      async () => { throw new Error('offline'); },
-    );
-
-    await expect(api.getStatus()).resolves.toEqual({
-      ok: false,
-      health: null,
-      jobs: null,
+  it.each([
+    ['missing token name', ['RAILWAY_WORKER_URL'], 'https://railway.example'],
+    ['missing URL name', ['MATRIX_ADMIN_STATUS_TOKEN'], 'server-token'],
+    ['blank stored value', ['RAILWAY_WORKER_URL', 'MATRIX_ADMIN_STATUS_TOKEN'], '   '],
+  ])('returns null for %s', async (_name, names, value) => {
+    const config = await getWorkerConfig({
+      listSecretNames: async () => names as string[],
+      readSecret: async () => value,
     });
+    expect(config).toBeNull();
   });
 
-  it('fails atomically when either Railway endpoint is unsuccessful', async () => {
-    let call = 0;
-    const api = createWorkerApi(
-      async () => 'https://railway.example',
-      async () => {
-        call += 1;
-        return new Response('{}', { status: call === 2 ? 503 : 200 });
-      },
-    );
-
-    await expect(api.getStatus()).resolves.toEqual({
-      ok: false,
-      health: null,
-      jobs: null,
+  it('maps secret-store errors to null without exposing their text', async () => {
+    const config = await getWorkerConfig({
+      listSecretNames: async () => { throw new Error('fake-secret-value'); },
+      readSecret: async () => '',
     });
-  });
-
-  it('does not issue a request when the Railway URL is missing', async () => {
-    let calls = 0;
-    const api = createWorkerApi(
-      async () => '',
-      async () => {
-        calls += 1;
-        return new Response('{}', { status: 200 });
-      },
-    );
-
-    await expect(api.getStatus()).resolves.toEqual({
-      ok: false,
-      health: null,
-      jobs: null,
-    });
-    expect(calls).toBe(0);
+    expect(config).toBeNull();
+    expect(JSON.stringify(config)).not.toContain('fake-secret-value');
   });
 });

@@ -50,24 +50,37 @@ def _run_analysis(
     return result
 
 
+def _best_effort_telemetry(write: Callable[[], None]) -> None:
+    try:
+        write()
+    except Exception:
+        pass
+
+
 def _run_tracked_job(
     lottery: str,
     repository: AnalysisRepository,
     execute: Callable[[], dict[str, Any]],
 ) -> dict[str, Any]:
     job_name = JOB_NAME_BY_LOTTERY[lottery]
-    repository.start_job(job_name, lottery, datetime.now(UTC).isoformat())
+    _best_effort_telemetry(
+        lambda: repository.start_job(job_name, lottery, datetime.now(UTC).isoformat())
+    )
     try:
         result = execute()
     except Exception as error:
-        repository.finish_job(
-            job_name,
-            "failed",
-            datetime.now(UTC).isoformat(),
-            str(error)[:1000],
+        _best_effort_telemetry(
+            lambda: repository.finish_job(
+                job_name,
+                "failed",
+                datetime.now(UTC).isoformat(),
+                str(error)[:1000],
+            )
         )
         raise
-    repository.finish_job(job_name, "success", datetime.now(UTC).isoformat())
+    _best_effort_telemetry(
+        lambda: repository.finish_job(job_name, "success", datetime.now(UTC).isoformat())
+    )
     return result
 
 

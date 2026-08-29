@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
+from secrets import compare_digest
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
@@ -110,7 +111,7 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
             client.table("lottery_draws")
             .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
             .eq("lottery", lottery)
-            .order("draw_date", desc=True)
+            .order("draw_date", desc=True, nullsfirst=False)
             .order("period", desc=True)
             .range(offset, offset + page_size - 1)
             .execute()
@@ -204,11 +205,22 @@ def _decode_body(body: bytes | None) -> dict[str, Any]:
     return value
 
 
+def _status_token_authorized(candidate_value: str | None) -> bool:
+    expected = environ.get("MATRIX_ADMIN_STATUS_TOKEN", "")
+    candidate = candidate_value or ""
+    matched = compare_digest(
+        candidate.encode("utf-8"),
+        expected.encode("utf-8"),
+    )
+    return bool(expected) and bool(candidate) and matched
+
+
 def handle_api_request(
     method: str,
     target: str,
     body: bytes | None,
     repository: AnalysisRepository,
+    request_monitor_token: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -220,7 +232,12 @@ def handle_api_request(
                 return 503, _health_payload("error")
             return 200, _health_payload("ok")
         if method == "GET" and path == "/jobs/status":
-            return 200, {"items": repository.list_job_statuses()}
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            try:
+                return 200, {"items": repository.list_job_statuses()}
+            except Exception:
+                return 503, {"error": "STATUS_UNAVAILABLE"}
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
@@ -246,30 +263,51 @@ def handle_api_request(
         return 404, {"error": "NOT_FOUND"}
     except (ValueError, json.JSONDecodeError) as error:
         return 400, {"error": str(error)}
-    except Exception as error:
-        return 500, {"error": str(error)}
+    except Exception:
+        return 500, {"error": "INTERNAL_ERROR"}
 
 
 class RailwayApiHandler(BaseHTTPRequestHandler):
     repository: AnalysisRepository
 
-    def _send(self, status: int, payload: dict[str, Any]) -> None:
+    def _send(
+        self,
+        status: int,
+        payload: dict[str, Any],
+        *,
+        allow_cors: bool = True,
+        no_store: bool = False,
+    ) -> None:
         encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        if no_store:
+            self.send_header("Cache-Control", "no-store")
+        if allow_cors:
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.end_headers()
         self.wfile.write(encoded)
 
+    def _is_protected_status_path(self) -> bool:
+        return urlsplit(self.path).path == "/jobs/status"
+
     def do_OPTIONS(self) -> None:
-        self._send(204, {})
+        protected = self._is_protected_status_path()
+        self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
-        status, payload = handle_api_request("GET", self.path, None, self.repository)
-        self._send(status, payload)
+        protected = self._is_protected_status_path()
+        status, payload = handle_api_request(
+            "GET",
+            self.path,
+            None,
+            self.repository,
+            request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+        )
+        self._send(status, payload, allow_cors=not protected, no_store=protected)
 
     def do_POST(self) -> None:
         try:
@@ -278,10 +316,18 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             length = 0
         body = self.rfile.read(length) if length > 0 else b""
         status, payload = handle_api_request("POST", self.path, body, self.repository)
-        self._send(status, payload)
+        protected = self._is_protected_status_path()
+        self._send(status, payload, allow_cors=not protected, no_store=protected)
+
+    def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
+        path = urlsplit(self.path).path
+        print(
+            f"railway-api {self.address_string()} "
+            f"{self.command} {path} {code} {size}"
+        )
 
     def log_message(self, format: str, *args: Any) -> None:
-        print(f"railway-api {self.address_string()} {format % args}")
+        print(f"railway-api {self.address_string()} handler-event")
 
 
 def create_repository() -> AnalysisRepository:

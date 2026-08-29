@@ -7,6 +7,7 @@
 ```text
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SECRET_KEY=<server-only-secret-key>
+MATRIX_ADMIN_STATUS_TOKEN=<shared-admin-status-token>
 ```
 
 ## Railway services
@@ -25,6 +26,7 @@ Endpoints:
 
 ```text
 GET  /health
+GET  /jobs/status
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
 POST /api/matrix/tongxing
@@ -32,6 +34,11 @@ POST /api/matrix/number-reference
 ```
 
 The PWA reads this service through `VITE_RAILWAY_API_BASE`.
+
+`GET /health` is public. `GET /jobs/status` is for the AppDeploy backend only
+and requires the `X-Matrix-Admin-Token` request header. Railway and AppDeploy
+must store the same server-only secret under `MATRIX_ADMIN_STATUS_TOKEN`. Never
+expose that value through a `VITE_` variable or other browser configuration.
 
 ### Scheduled workers
 

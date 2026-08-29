@@ -2,7 +2,9 @@ import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 import pytest
+from postgrest import SyncPostgrestClient
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository, SupabaseAnalysisRepository
 
@@ -157,6 +159,43 @@ def test_list_draws_returns_newest_first_and_normalized_shape() -> None:
         "sortedNumbers": ["06", "07", "08", "09", "10"],
         "drawOrderNumbers": None,
     }]
+
+
+def test_list_draws_puts_undated_rows_after_dated_rows() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "114000999", "drawDate": None,
+        "numbers": ["01", "02", "03", "04", "05"],
+    })
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "114000123", "drawDate": "2025/08/23",
+        "numbers": ["06", "07", "08", "09", "10"],
+    })
+
+    assert [
+        draw["period"] for draw in repository.list_draws("今彩539", limit=None)
+    ] == ["114000123", "114000999"]
+
+
+def test_supabase_list_draws_puts_undated_rows_last() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=[])
+
+    base_url = "https://example.supabase.co/rest/v1"
+    http_client = httpx.Client(
+        base_url=base_url,
+        transport=httpx.MockTransport(handler),
+    )
+    with SyncPostgrestClient(base_url, http_client=http_client) as client:
+        SupabaseAnalysisRepository(client).list_draws("今彩539", limit=1)
+
+    assert len(requests) == 1
+    assert requests[0].url.params["order"] == (
+        "draw_date.desc.nullslast,period.desc"
+    )
 
 
 def test_supabase_draw_normalization_converts_database_field_names() -> None:

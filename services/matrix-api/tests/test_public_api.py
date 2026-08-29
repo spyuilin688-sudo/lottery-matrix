@@ -3,8 +3,16 @@ from __future__ import annotations
 import json
 from urllib.parse import quote
 
+import httpx
+import pytest
+from postgrest import SyncPostgrestClient
+
+import app.api_server as api_server
 from app.api_server import handle_api_request
-from app.repositories.analysis_repository import InMemoryAnalysisRepository
+from app.repositories.analysis_repository import (
+    InMemoryAnalysisRepository,
+    SupabaseAnalysisRepository,
+)
 
 
 def _draw(lottery: str, period: str, draw_date: str, numbers: list[str], draw_order: list[str] | None = None) -> dict:
@@ -30,6 +38,7 @@ class OperationalRepository(InMemoryAnalysisRepository):
     def __init__(self) -> None:
         super().__init__()
         self.health_checks = 0
+        self.status_reads = 0
         self.status_rows = [{
             "lottery": "今彩539",
             "jobName": "matrix-539-refresh-v2",
@@ -42,6 +51,7 @@ class OperationalRepository(InMemoryAnalysisRepository):
         self.health_checks += 1
 
     def list_job_statuses(self) -> list[dict]:
+        self.status_reads += 1
         return list(self.status_rows)
 
 
@@ -83,13 +93,138 @@ def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
     }
 
 
-def test_jobs_status_returns_repository_operational_rows() -> None:
+def test_jobs_status_returns_repository_operational_rows(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = OperationalRepository()
 
-    status, payload = handle_api_request("GET", "/jobs/status", None, repository)
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status",
+        None,
+        repository,
+        request_monitor_token="expected-token",
+    )
 
     assert status == 200
     assert payload == {"items": repository.status_rows}
+    assert repository.status_reads == 1
+
+
+@pytest.mark.parametrize(
+    ("configured", "supplied"),
+    [
+        ("expected-token", None),
+        ("expected-token", "wrong-token"),
+        ("", "expected-token"),
+    ],
+)
+def test_jobs_status_rejects_invalid_configuration_or_token(
+    monkeypatch,
+    configured: str,
+    supplied: str | None,
+) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", configured)
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status",
+        None,
+        repository,
+        request_monitor_token=supplied,
+    )
+
+    assert status == 403
+    assert payload == {"error": "FORBIDDEN"}
+    assert repository.status_reads == 0
+
+
+def test_jobs_status_accepts_the_configured_header_token(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status",
+        None,
+        repository,
+        request_monitor_token="expected-token",
+    )
+
+    assert status == 200
+    assert payload == {"items": repository.status_rows}
+    assert repository.status_reads == 1
+
+
+def test_jobs_status_rejects_a_query_string_token(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status?token=expected-token",
+        None,
+        repository,
+    )
+
+    assert status == 403
+    assert payload == {"error": "FORBIDDEN"}
+    assert repository.status_reads == 0
+
+
+def test_jobs_status_uses_constant_time_byte_comparison(monkeypatch) -> None:
+    calls: list[tuple[bytes, bytes]] = []
+
+    def spy(candidate: bytes, expected: bytes) -> bool:
+        calls.append((candidate, expected))
+        return False
+
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    monkeypatch.setattr(api_server, "compare_digest", spy)
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status",
+        None,
+        OperationalRepository(),
+    )
+
+    assert (status, payload) == (403, {"error": "FORBIDDEN"})
+    assert calls == [(b"", b"expected-token")]
+
+
+class ExplodingStatusRepository(OperationalRepository):
+    def list_job_statuses(self) -> list[dict]:
+        self.status_reads += 1
+        raise RuntimeError("fake-database-secret")
+
+
+def test_jobs_status_returns_only_stable_unavailable_error(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    status, payload = handle_api_request(
+        "GET",
+        "/jobs/status",
+        None,
+        ExplodingStatusRepository(),
+        request_monitor_token="expected-token",
+    )
+    assert (status, payload) == (503, {"error": "STATUS_UNAVAILABLE"})
+    assert "fake-database-secret" not in str(payload)
+
+
+class ExplodingHistoryRepository(InMemoryAnalysisRepository):
+    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+        raise RuntimeError("fake-public-database-secret")
+
+
+def test_unexpected_public_error_is_stable() -> None:
+    status, payload = handle_api_request(
+        "GET",
+        "/api/matrix/latest/%E4%BB%8A%E5%BD%A9539",
+        None,
+        ExplodingHistoryRepository(),
+    )
+    assert (status, payload) == (500, {"error": "INTERNAL_ERROR"})
+    assert "fake-public-database-secret" not in str(payload)
 
 
 def test_latest_and_history_are_read_from_repository() -> None:
@@ -103,6 +238,34 @@ def test_latest_and_history_are_read_from_repository() -> None:
     status, history = handle_api_request("GET", f"/api/matrix/history/{lottery}?limit=2", None, repository)
     assert status == 200
     assert [item["period"] for item in history["items"]] == ["003117", "003116"]
+
+
+def test_public_latest_supabase_query_puts_undated_rows_last() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=[])
+
+    base_url = "https://example.supabase.co/rest/v1"
+    http_client = httpx.Client(
+        base_url=base_url,
+        transport=httpx.MockTransport(handler),
+    )
+    with SyncPostgrestClient(base_url, http_client=http_client) as client:
+        repository = SupabaseAnalysisRepository(client)
+        status, payload = handle_api_request(
+            "GET",
+            f"/api/matrix/latest/{quote('今彩539')}",
+            None,
+            repository,
+        )
+
+    assert (status, payload) == (200, {"item": None})
+    assert len(requests) == 1
+    assert requests[0].url.params["order"] == (
+        "draw_date.desc.nullslast,period.desc"
+    )
 
 
 def test_history_without_limit_returns_all_rows() -> None:
