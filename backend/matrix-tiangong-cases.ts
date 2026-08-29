@@ -29,12 +29,12 @@ export function runTiangongAcceptanceCases() {
   const oneStage = base();
   const twoStage = base({
     periodRange: 80,
-    sourceSequence: [1, 21, 41, 61],
+    sourceSequence: [14, 18, 22],
     mode: 'two-stage',
-    hitCondition: '準3進4',
+    hitCondition: '準2進3',
     baseNumber: 10,
-    firstStage: { startPosition: 1, direction: '依序遞增', algorithmType: '加減', value: 5, nextN: 1 },
-    secondStage: { startPosition: 2, direction: '依序遞增', algorithmType: '合值', value: 30, nextN: 1 },
+    firstStage: { startPosition: 1, direction: '依序遞增', algorithmType: '加減', value: 5, nextN: 9 },
+    secondStage: { startPosition: 3, direction: '依序遞增', algorithmType: '合值', value: 30, nextN: 5 },
   });
   const drag = base({
     sourceSequence: [1, 2, 3], baseNumber: 39,
@@ -61,7 +61,7 @@ export function runTiangongAcceptanceCases() {
 
   const rows = [
     ['五十期一段式固定加減上界', summary(oneStage), { valid: true, interval: 24, position: 2, prediction: '11', road: '加減版路' }],
-    ['八十期二段式遞增加減合值', summary(twoStage), { valid: true, interval: 20, position: 5, prediction: '15', road: '加減＋合值' }],
+    ['八十期二段式遞增加減合值', summary(twoStage), { valid: true, interval: 4, position: 5, prediction: '15', road: '加減＋合值' }],
     ['遞減球位加零歸拖牌', summary(drag), { valid: true, interval: 1, position: 3, prediction: '39', road: '拖牌版路' }],
     ['今彩539標準化', normalized('今彩539', 39), '01'],
     ['天天樂標準化', normalized('天天樂', 39), '01'],
