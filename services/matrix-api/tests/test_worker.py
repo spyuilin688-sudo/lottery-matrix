@@ -192,6 +192,12 @@ def test_scheduled_worker_skips_when_current_draw_date_is_already_stored() -> No
         "drawDate": "2026-08-28",
         "numbers": ["01", "02", "03", "04", "05"],
     })
+    repository.upsert_draw({
+        "lottery": "今彩539",
+        "period": "999999999",
+        "drawDate": None,
+        "numbers": ["06", "07", "08", "09", "10"],
+    })
     source = ScheduledSource()
 
     result = run_scheduled_worker(

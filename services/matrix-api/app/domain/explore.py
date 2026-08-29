@@ -8,6 +8,7 @@ LOTTERIES = {"今彩539", "天天樂", "六合彩", "大樂透"}
 NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 ALGORITHM_TYPES = {"加減", "合值", "拖牌"}
 MAX_VALIDATION_STREAK = 13
+INVALID_THREE_RULE_COVERAGE_REASON = "規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出"
 
 
 def _integer(value: Any, name: str) -> int:
@@ -277,7 +278,7 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
         distinct = sorted({rule for rules in found["sets"] for rule in rules})
         merged = sorted({number for result in result_sets for number in result["predictionNumbers"]})
         if len(distinct) > 2 or len(merged) > 2:
-            return {**empty, "reason": "相同連準層級需要三個以上規則才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出", "highestStreak": found["highest"], "displayStreak": display, "conflictingRules": [_typed_parts(rule)["value"] for rule in distinct]}
+            return {**empty, "reason": INVALID_THREE_RULE_COVERAGE_REASON, "highestStreak": found["highest"], "displayStreak": display, "conflictingRules": [_typed_parts(rule)["value"] for rule in distinct]}
         return {"valid": True, "searchCondition": request, "highestStreak": found["highest"], "displayStreak": display, "sourceA": source_a, "predictionNumbers": merged, "ruleSets": result_sets}
     return {"valid": True, "searchCondition": request, "highestStreak": found["highest"], "displayStreak": display, "sourceA": source_a, "results": result_sets}
 

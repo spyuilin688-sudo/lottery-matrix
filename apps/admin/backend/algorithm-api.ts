@@ -26,7 +26,9 @@ export function createAlgorithmApi(fetcher: typeof fetch = fetch) {
   return {
     async getAlgorithmStatus(): Promise<AlgorithmStatus> {
       try {
-        const responses = await Promise.all(endpoints.map((path) => fetcher(`${algorithmBaseUrl}${path}`)));
+        const responses = await Promise.all(
+          endpoints.map((path) => fetcher(`${algorithmBaseUrl}${path}`)),
+        );
         if (responses.some((response) => !response.ok)) return unavailable();
         const [health, coverage, audit, cases] = await Promise.all(
           responses.map((response) => response.json()),
