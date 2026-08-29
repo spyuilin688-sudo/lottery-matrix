@@ -65,7 +65,7 @@ describe('member Supabase RPC', () => {
     expect(supabase.rpc.mock.calls).toEqual([
       ['member_transfer_request_submit', { p_plan_code: 'month', p_account_last_five: '12345' }],
       ['member_pending_transfer_request'],
-      ['member_payment_history'],
+      ['member_payment_history_get'],
     ]);
   });
 });
