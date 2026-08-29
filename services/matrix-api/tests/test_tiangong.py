@@ -18,7 +18,8 @@ def candidate(**overrides) -> dict:
 def test_enumerates_complete_equal_spacing_sequences() -> None:
     assert [1, 25, 49] in enumerate_equal_spacing_sequences(50, "準2進3")
     assert [1, 26, 51] not in enumerate_equal_spacing_sequences(50, "準2進3")
-    assert [1, 8, 15, 22] in enumerate_equal_spacing_sequences(50, "準3進4")
+    with pytest.raises(ValueError, match="INVALID_HIT_CONDITION"):
+        enumerate_equal_spacing_sequences(50, "準3進4")
     with pytest.raises(ValueError, match="INVALID_PERIOD_RANGE"):
         enumerate_equal_spacing_sequences(49, "準2進3")
 
