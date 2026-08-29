@@ -67,7 +67,7 @@ class BulkTrackingRepository(InMemoryAnalysisRepository):
         super().upsert_draws(draws)
 
 
-def test_ensure_history_bulk_upserts_the_complete_download_once() -> None:
+def test_ensure_history_bulk_upserts_and_returns_the_complete_download_once() -> None:
     repository = BulkTrackingRepository()
     source = StubHistorySource([
         {
@@ -78,8 +78,8 @@ def test_ensure_history_bulk_upserts_the_complete_download_once() -> None:
         for index in range(1, 4)
     ])
 
-    history = DrawRefreshService(repository, source).ensure_history("今彩539", minimum=2)
+    history = DrawRefreshService(repository, source).ensure_history("今彩539")
 
     assert source.requests == ["history:今彩539:None"]
     assert repository.bulk_calls == 1
-    assert len(history) == 2
+    assert len(history) == 3
