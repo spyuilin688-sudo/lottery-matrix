@@ -1,5 +1,6 @@
 name: Apply Railway status post history once
 
+# trigger: 2026-08-29-2
 on:
   push:
     branches:
