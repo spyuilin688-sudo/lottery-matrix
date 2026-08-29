@@ -27,7 +27,7 @@ def _run_analysis(
     history: list[dict[str, Any]],
     builders: Mapping[str, ArtifactBuilder] | None,
 ) -> dict[str, Any]:
-    version = f'{draw["period"]}:matrix-python-v2'
+    version = f'{draw["period"]}:matrix-python-v3'
     pipeline = AnalysisPipeline(
         repository,
         builders or create_artifact_builders(),
