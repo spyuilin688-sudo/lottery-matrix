@@ -26,6 +26,72 @@ def _repository() -> InMemoryAnalysisRepository:
     return repository
 
 
+class OperationalRepository(InMemoryAnalysisRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.health_checks = 0
+        self.status_rows = [{
+            "lottery": "今彩539",
+            "jobName": "matrix-539-refresh-v2",
+            "job": {"status": "success"},
+            "latestDraw": {"period": "003117"},
+            "latestAnalysis": {"status": "complete"},
+        }]
+
+    def health_check(self) -> None:
+        self.health_checks += 1
+
+    def list_job_statuses(self) -> list[dict]:
+        return list(self.status_rows)
+
+
+class OfflineOperationalRepository(OperationalRepository):
+    def health_check(self) -> None:
+        self.health_checks += 1
+        raise RuntimeError("database offline")
+
+
+def test_health_checks_database_and_reports_service_metadata(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request("GET", "/health", None, repository)
+
+    assert status == 200
+    assert repository.health_checks == 1
+    assert payload == {
+        "status": "ok",
+        "service": "matrix-railway-api",
+        "version": "test-version",
+        "database": {"status": "ok"},
+    }
+
+
+def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
+    repository = OfflineOperationalRepository()
+
+    status, payload = handle_api_request("GET", "/health", None, repository)
+
+    assert status == 503
+    assert repository.health_checks == 1
+    assert payload == {
+        "status": "error",
+        "service": "matrix-railway-api",
+        "version": "test-version",
+        "database": {"status": "error"},
+    }
+
+
+def test_jobs_status_returns_repository_operational_rows() -> None:
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request("GET", "/jobs/status", None, repository)
+
+    assert status == 200
+    assert payload == {"items": repository.status_rows}
+
+
 def test_latest_and_history_are_read_from_repository() -> None:
     repository = _repository()
     lottery = quote("今彩539")
