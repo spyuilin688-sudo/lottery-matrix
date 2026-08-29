@@ -90,24 +90,10 @@ function applyRule(base: number, rule: DerivedRule, max: 39 | 49) {
 }
 
 export function deriveTiangongRules(base: number, target: number, max: 39 | 49): DerivedRule[] {
-  const rules: DerivedRule[] = [];
-  const delta = target - base;
-  for (let cycle = -3; cycle <= 3; cycle += 1) {
-    const value = delta + cycle * max;
-    if (value >= -49 && value <= 49 && normalizeMatrixNumber(base + value, max) === target) {
-      rules.push({ algorithmType: '加減', value });
-    }
-  }
-  const directSum = base + target;
-  for (let cycle = -3; cycle <= 3; cycle += 1) {
-    const value = directSum + cycle * max;
-    if (value >= 1 && value <= 98 && normalizeMatrixNumber(value - base, max) === target) {
-      rules.push({ algorithmType: '合值', value });
-    }
-  }
-  return rules.sort((left, right) => (
-    left.algorithmType.localeCompare(right.algorithmType) || left.value - right.value
-  ));
+  return [
+    { algorithmType: '加減', value: (target - base + max) % max },
+    { algorithmType: '合值', value: base + target },
+  ];
 }
 
 export function enumerateReferencePositions(
@@ -548,7 +534,10 @@ export function runTiangongCandidates(
   const history = normalizeHistory(lottery, matrixHistory);
   const periodRanges = options.periodRanges ?? [80];
   const modes = options.modes ?? ['one-stage', 'two-stage'];
-  const hitConditions = options.hitConditions ?? ['準2進3', '準3進4'];
+  const hitConditions = options.hitConditions ?? ['準2進3'];
+  if (hitConditions.some((hitCondition) => hitCondition !== '準2進3')) {
+    throw new Error('INVALID_HIT_CONDITION');
+  }
   const candidates: TiangongCandidate[] = [];
   if (modes.includes('one-stage')) {
     for (const periodRange of periodRanges) {
