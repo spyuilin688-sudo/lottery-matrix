@@ -1,6 +1,7 @@
 from typing import Any, Protocol
 
 from app.repositories.analysis_repository import AnalysisRepository
+from app.repositories.draw_history import list_all_draws
 
 
 class DrawSource(Protocol):
@@ -20,19 +21,15 @@ class DrawRefreshService:
         self.repository.upsert_draw(draw)
         return draw
 
-    def ensure_history(self, lottery: str, minimum: int = 80) -> list[dict[str, Any]]:
-        existing = self.repository.list_draws(lottery, minimum)
-        if len(existing) >= minimum:
-            return existing
-
+    def ensure_history(self, lottery: str) -> list[dict[str, Any]]:
         draws = [
             self._prepare_draw(lottery, raw)
             for raw in self.source.fetch_history(lottery, None)
         ]
         self.repository.upsert_draws(draws)
 
-        history = self.repository.list_draws(lottery, minimum)
-        if len(history) < minimum:
+        history = list_all_draws(self.repository, lottery)
+        if not history:
             raise ValueError("DRAW_HISTORY_INCOMPLETE")
         return history
 
