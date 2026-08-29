@@ -75,6 +75,10 @@ def _number_at(draw: dict, lottery: str, order: str, position: int) -> int | Non
     return values[position - 1] if 0 < position <= len(values) else None
 
 
+def _history_for_lottery(lottery: str, history: list[dict]) -> list[dict]:
+    return [draw for draw in history if draw.get("lottery", lottery) == lottery]
+
+
 def _base_for_source(history: list[dict], source_index: int, request: dict) -> dict | None:
     if request["algorithmType"] == "拖牌":
         base = _number_at(history[source_index], request["lottery"], request["numberOrder"], request["lockedPosition"])
@@ -215,7 +219,11 @@ def _validation(groups: list[dict], rules: list[str], request: dict) -> list[dic
 
 
 def _matching_source_indexes(request: dict, history: list[dict]) -> list[int]:
-    return [index for index, draw in enumerate(history) if _number_at(draw, request["lottery"], request["numberOrder"], request["lockedPosition"]) == request["lockedNumber"]]
+    return [
+        index for index, draw in enumerate(history)
+        if draw.get("lottery", request["lottery"]) == request["lottery"]
+        and _number_at(draw, request["lottery"], request["numberOrder"], request["lockedPosition"]) == request["lockedNumber"]
+    ]
 
 
 def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[int], requested_source_index: int | None = None) -> dict:
@@ -277,7 +285,7 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
 
 def run_matrix_algorithm_with_history(value: Any, newest_first: list[dict]) -> dict:
     request = _parse_request(value)
-    history = list(reversed(newest_first))
+    history = list(reversed(_history_for_lottery(request["lottery"], newest_first)))
     if request["numberOrder"] == "依實際開獎順序排序":
         count = lottery_position_count(request["lottery"])
         missing = [draw for draw in history if not isinstance(draw.get("drawOrderNumbers"), list) or len(draw["drawOrderNumbers"]) != count]
@@ -298,6 +306,7 @@ def _prediction_numbers(evaluated: dict) -> list[int]:
 
 def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[dict]) -> dict:
     lottery = value["lottery"]
+    newest_first = _history_for_lottery(lottery, newest_first)
     order_aliases = {"依號碼由小到大": "依號碼由小到大排序", "依實際開獎順序": "依實際開獎順序排序"}
     type_aliases = {"加減版路": "加減", "合值版路": "合值", "拖牌版路": "拖牌"}
     order = order_aliases.get(value.get("numberOrder"), value.get("numberOrder"))
@@ -305,7 +314,7 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
     period_digits = "".join(character for character in str(value.get("explorePeriods", value.get("period", ""))) if character.isdigit())
     periods = int(period_digits)
     hit_text = str(value.get("hitCondition", value.get("hit", "")))
-    rule_count = int(value.get("ruleCount", 2 if "鎖定2碼" in hit_text else 1))
+    rule_count = 2 if "鎖定2碼" in hit_text else 1 if "鎖定1碼" in hit_text else int(value.get("ruleCount", 1))
     date_text = str(value.get("exploreDate", "本日"))
     date_offset = int(value.get("exploreDateOffset", 2 if "前日" in date_text else 1 if "昨日" in date_text else 0))
     explore_range = value.get("exploreRange", "標準範圍")
@@ -313,7 +322,7 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
     maximum = _integer(value.get("maxPredictionDistance"), "最大預測期距離")
     explore = {"lottery": lottery, "numberOrder": order, "explorePeriods": periods, "algorithmType": algorithm_type, "ruleCount": rule_count, "exploreDateOffset": date_offset, "exploreRange": explore_range, "minPredictionDistance": minimum, "maxPredictionDistance": maximum}
     anchor = newest_first[date_offset:]
-    sources = anchor[:periods]
+    sources = anchor[1:periods + 1]
     count = lottery_position_count(lottery)
     reference_back = 14 if explore_range == "完整範圍" else 7
     results: list[dict] = []
@@ -327,7 +336,7 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
                 positions = [locked_position] if algorithm_type == "拖牌" else list(range(1, count + 1))
                 for offset in offsets:
                     for position in positions:
-                        request = {"lottery": lottery, "numberOrder": order, "lockedPosition": locked_position, "lockedNumber": locked_number, "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": algorithm_type}
+                        request = {"lottery": lottery, "numberOrder": order, "lockedPosition": locked_position, "lockedNumber": locked_number, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": algorithm_type}
                         if algorithm_type != "拖牌": request.update({"referenceOffset": offset, "referencePosition": position})
                         evaluated = run_matrix_algorithm_with_history(request, anchor)
                         if not evaluated.get("valid") or not evaluated.get("highestStreak") or evaluated["highestStreak"] < (4 if rule_count == 1 else 5): continue
@@ -346,6 +355,7 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
 
 
 def run_matrix_explore_group_with_history(value: dict, newest_first: list[dict]) -> dict:
+    newest_first = _history_for_lottery(value["lottery"], newest_first)
     count = lottery_position_count(value["lottery"])
     source_index = value["lockedSourceIndex"]
     if not isinstance(source_index, int) or source_index < 0 or source_index >= min(15, len(newest_first)): raise ValueError("鎖定來源期超出探索日期與十三期範圍")

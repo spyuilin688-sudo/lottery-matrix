@@ -18,14 +18,13 @@ TiangongRunner = Callable[[str, list[dict[str, Any]], dict[str, Any]], list[dict
 def tiangong_work_units() -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
     for mode in ("one-stage", "two-stage"):
-        for condition in ("準2進3", "準3進4"):
-            for sequence in enumerate_equal_spacing_sequences(80, condition):
-                units.append({
-                    "periodRanges": [80],
-                    "modes": [mode],
-                    "hitConditions": [condition],
-                    "sourceSequences": [sequence],
-                })
+        for sequence in enumerate_equal_spacing_sequences(80, "準2進3"):
+            units.append({
+                "periodRanges": [80],
+                "modes": [mode],
+                "hitConditions": ["準2進3"],
+                "sourceSequences": [sequence],
+            })
     return units
 
 

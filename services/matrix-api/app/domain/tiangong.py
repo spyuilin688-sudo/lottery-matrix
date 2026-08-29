@@ -4,7 +4,9 @@ from .models import lottery_maximum, lottery_position_count, normalize_matrix_nu
 def enumerate_equal_spacing_sequences(periods: int, hit_condition: str) -> list[list[int]]:
     if periods not in {50, 80}:
         raise ValueError("INVALID_PERIOD_RANGE")
-    length = 3 if hit_condition == "準2進3" else 4
+    if hit_condition != "準2進3":
+        raise ValueError("INVALID_HIT_CONDITION")
+    length = 3
     sequences: list[list[int]] = []
     for first in range(1, periods + 1):
         interval = first
@@ -15,8 +17,9 @@ def enumerate_equal_spacing_sequences(periods: int, hit_condition: str) -> list[
 
 
 def _valid_source_sequence(sequence: list[int], period_range: int, hit_condition: str) -> bool:
-    expected = 3 if hit_condition == "準2進3" else 4
-    if len(sequence) != expected or any(not isinstance(value, int) or isinstance(value, bool) for value in sequence):
+    if hit_condition != "準2進3":
+        return False
+    if len(sequence) != 3 or any(not isinstance(value, int) or isinstance(value, bool) for value in sequence):
         return False
     if sequence[0] < 1 or sequence[-1] > period_range:
         return False
@@ -48,7 +51,9 @@ def _apply_stage(value: int, stage: dict, maximum: int) -> int:
 
 
 def _predicted_position(stage: dict, hit_condition: str, count: int) -> int | None:
-    group = 3 if hit_condition == "準2進3" else 4
+    if hit_condition != "準2進3":
+        return None
+    group = 3
     delta = 1 if stage["direction"] == "依序遞增" else -1 if stage["direction"] == "依序遞減" else 0
     position = stage["startPosition"] + delta * (group - 1)
     return position if 1 <= position <= count else None

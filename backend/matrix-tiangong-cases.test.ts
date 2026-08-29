@@ -6,7 +6,7 @@ describe('Tiangong acceptance matrix', () => {
     const cases = runTiangongAcceptanceCases();
     expect(cases.map(({ name, actual }) => [name, actual])).toEqual([
       ['五十期一段式固定加減上界', { valid: true, interval: 24, position: 2, prediction: '11', road: '加減版路' }],
-      ['八十期二段式遞增加減合值', { valid: true, interval: 20, position: 5, prediction: '15', road: '加減＋合值' }],
+      ['八十期二段式遞增加減合值', { valid: true, interval: 4, position: 5, prediction: '15', road: '加減＋合值' }],
       ['遞減球位加零歸拖牌', { valid: true, interval: 1, position: 3, prediction: '39', road: '拖牌版路' }],
       ['今彩539標準化', '01'],
       ['天天樂標準化', '01'],

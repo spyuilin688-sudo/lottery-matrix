@@ -1,11 +1,9 @@
 import { normalizeMatrixNumber, type MatrixLottery } from './matrix-algorithm';
 
-export type TiangongSourceSequence =
-  | [number, number, number]
-  | [number, number, number, number];
+export type TiangongSourceSequence = [number, number, number];
 export type TiangongDirection = '固定' | '依序遞增' | '依序遞減';
 export type TiangongAlgorithmType = '加減' | '合值';
-export type TiangongHitCondition = '準2進3' | '準3進4';
+export type TiangongHitCondition = '準2進3';
 
 export type TiangongStage = {
   startPosition: number;
@@ -87,7 +85,8 @@ export function enumerateEqualSpacingSequences(
   hitCondition: TiangongHitCondition,
 ): TiangongSourceSequence[] {
   if (periods !== 50 && periods !== 80) throw new Error('INVALID_PERIOD_RANGE');
-  const length = hitCondition === '準2進3' ? 3 : 4;
+  if (hitCondition !== '準2進3') throw new Error('INVALID_HIT_CONDITION');
+  const length = 3;
   const sequences: TiangongSourceSequence[] = [];
   for (let first = 1; first <= periods; first += 1) {
     for (let interval = 1; first + interval * (length - 1) <= periods; interval += 1) {
@@ -110,8 +109,8 @@ function validSourceSequence(
   range: number,
   hitCondition: TiangongHitCondition,
 ) {
-  const expectedLength = hitCondition === '準2進3' ? 3 : 4;
-  if (sequence.length !== expectedLength || sequence.some((value) => !Number.isInteger(value))) return false;
+  if (hitCondition !== '準2進3') return false;
+  if (sequence.length !== 3 || sequence.some((value) => !Number.isInteger(value))) return false;
   if (sequence[0] < 1 || sequence[sequence.length - 1] > range) return false;
   const interval = sequence[1] - sequence[0];
   return interval > 0 && sequence.slice(2).every((value, index) => value - sequence[index + 1] === interval);
@@ -135,7 +134,8 @@ function applyStage(value: number, stage: TiangongStage, max: number) {
 }
 
 function predictedPosition(stage: TiangongStage, hitCondition: TiangongHitCondition, count: number) {
-  const predictionGroup = hitCondition === '準2進3' ? 3 : 4;
+  if (hitCondition !== '準2進3') return null;
+  const predictionGroup = 3;
   const delta = stage.direction === '依序遞增' ? 1 : stage.direction === '依序遞減' ? -1 : 0;
   const position = stage.startPosition + delta * (predictionGroup - 1);
   return position >= 1 && position <= count ? position : null;

@@ -54,6 +54,12 @@ describe('Matrix Tiangong routes', () => {
     });
   });
 
+  it('rejects 準3進4', async () => {
+    await expect(routes().list({ authorization: 'Bearer token', body: {
+      ...body, hitCondition: '準3進4',
+    } })).resolves.toMatchObject({ status: 400, body: { error: { code: 'INVALID_REQUEST' } } });
+  });
+
   it('returns not ready before a complete artifact exists', async () => {
     await expect(routes('yearly', false).list({ authorization: 'Bearer token', body })).resolves.toMatchObject({
       status: 404, body: { error: { code: 'ANALYSIS_NOT_READY' } },
