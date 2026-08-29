@@ -1,9 +1,11 @@
 import type { SupabaseConfig } from './supabase';
+import type { WorkerStatus } from './worker-api';
 
 type Row = Record<string, unknown>;
 type Dependencies = {
   supabase: { selectRows<T = unknown>(table: string, query: string): Promise<T[]> };
   loadConfig: () => Promise<SupabaseConfig>;
+  getWorkerStatus: () => Promise<WorkerStatus>;
   fetcher?: typeof fetch;
   now?: () => Date;
 };
@@ -45,6 +47,27 @@ const jobDefinitions = [
   ['matrix-marksix-refresh-v2', '六合彩'],
   ['matrix-649-refresh-v2', '大樂透'],
 ] as const;
+const jobStatuses = ['running', 'success', 'failed'] as const;
+
+const nullableString = (value: unknown): string | null =>
+  typeof value === 'string' ? value : null;
+
+const safeJobDetail = (row: Row, jobName: string, lottery: string) => {
+  const status = typeof row.status === 'string'
+    && jobStatuses.includes(row.status as typeof jobStatuses[number])
+    ? row.status
+    : 'unknown';
+  return {
+    jobName,
+    lottery,
+    status,
+    startedAt: nullableString(row.started_at),
+    finishedAt: nullableString(row.finished_at),
+    finished_at: nullableString(row.finished_at),
+    updatedAt: nullableString(row.updated_at),
+    error: row.error ? 'WORKER_FAILED' : null,
+  };
+};
 
 export function createConnectionStatus(dependencies: Dependencies) {
   const fetcher = dependencies.fetcher ?? fetch;
@@ -138,6 +161,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
       retryable: true,
       operation: () => http('/api/matrix/algorithm/cases'),
     },
+    {
+      id: 'railway-worker-api',
+      name: 'Railway Worker API',
+      description: '顯示 Railway 自動計算服務與工作狀態。',
+      retryable: true,
+      operation: async () => {
+        const status = await dependencies.getWorkerStatus();
+        if (!status.ok) throw new Error('Railway Worker API 暫時無法使用');
+        return status;
+      },
+    },
   ];
   const runCoreCheck = async (definition: typeof coreChecks[number]) => ({
     ...await check(definition.id, definition.name, definition.description, definition.operation),
@@ -150,13 +184,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
       const core = await Promise.all(coreChecks.map(runCoreCheck));
       let jobRows: Row[] = [];
       try {
-        jobRows = await dependencies.supabase.selectRows<Row>('system_job_status', 'select=*&order=updated_at.desc');
+        jobRows = await dependencies.supabase.selectRows<Row>(
+          'system_job_status',
+          'select=job_name,lottery,status,started_at,finished_at,updated_at,error&order=updated_at.desc',
+        );
       } catch {
         jobRows = [];
       }
       const jobs = jobDefinitions.map(([jobName, lottery]) => {
         const row = jobRows.find((item) => item.job_name === jobName);
-        const ok = row?.status === 'success';
+        const detail = row ? safeJobDetail(row, jobName, lottery) : null;
+        const ok = detail?.status === 'success';
         return {
           id: `cron-${jobName}`,
           name: `${lottery}資料更新排程`,
@@ -164,8 +202,10 @@ export function createConnectionStatus(dependencies: Dependencies) {
           ok,
           checkedAt,
           responseMs: 0,
-          detail: row ?? null,
-          ...(ok ? {} : { error: row ? String(row.error ?? `排程狀態：${row.status}`) : '尚無執行紀錄' }),
+          detail,
+          ...(ok ? {} : {
+            error: detail ? `排程狀態：${detail.status}` : '尚無執行紀錄',
+          }),
         } satisfies ConnectionStatusItem;
       });
       return { checkedAt, items: [...core, ...jobs] };

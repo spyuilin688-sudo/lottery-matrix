@@ -12,6 +12,7 @@ import { createAdminData, getDashboard, listAdminTable } from './admin-data';
 import { algorithmApi } from './algorithm-api';
 import { createConnectionStatus } from './connection-status';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
+import { createWorkerApi, getWorkerConfig } from './worker-api';
 
 type Context = {
   body?: unknown;
@@ -32,9 +33,11 @@ type PermissionInput = {
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const adminData = createAdminData(supabase);
+const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
+  getWorkerStatus: () => workerApi.getStatus(),
 });
 const now = () => new Date().toISOString();
 const fail = (cause: unknown) => {

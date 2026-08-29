@@ -5,11 +5,20 @@ describe('algorithm status adapter', () => {
   it('reads only the four approved status endpoints', async () => {
     const urls: string[] = [];
     const api = createAlgorithmApi(async (input) => {
-      urls.push(String(input));
-      return new Response('{}', { status: 200 });
+      const url = String(input);
+      urls.push(url);
+      return new Response(JSON.stringify({ source: url.split('/').at(-1) }), {
+        status: 200,
+      });
     });
 
-    await expect(api.getAlgorithmStatus()).resolves.toMatchObject({ ok: true });
+    await expect(api.getAlgorithmStatus()).resolves.toEqual({
+      ok: true,
+      health: { source: '_healthcheck' },
+      coverage: { source: 'coverage' },
+      audit: { source: 'audit' },
+      cases: { source: 'cases' },
+    });
     expect(urls).toEqual([
       'https://api-v2.appdeploy.ai/app/app-snsxet/api/_healthcheck',
       'https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/coverage',
@@ -29,16 +38,18 @@ describe('algorithm status adapter', () => {
     });
   });
 
-  it('fails the status atomically when any endpoint is non-successful', async () => {
+  it('fails atomically when any approved endpoint is unsuccessful', async () => {
     let call = 0;
     const api = createAlgorithmApi(async () => {
       call += 1;
       return new Response('{}', { status: call === 3 ? 500 : 200 });
     });
-    await expect(api.getAlgorithmStatus()).resolves.toMatchObject({
+    await expect(api.getAlgorithmStatus()).resolves.toEqual({
       ok: false,
       health: null,
       coverage: null,
+      audit: null,
+      cases: null,
     });
   });
 });

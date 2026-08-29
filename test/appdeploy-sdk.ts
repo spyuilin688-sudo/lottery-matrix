@@ -9,7 +9,10 @@ export const db = {
   delete: unavailable,
 };
 
-export const secrets = { readSecret: unavailable };
+export const secrets = {
+  listSecretNames: unavailable,
+  readSecret: unavailable,
+};
 export const ws = {};
 export const json = (body: unknown, statusCode = 200) => ({ body, statusCode });
 export const error = (message: string, statusCode = 500) => ({ body: { error: message }, statusCode });
