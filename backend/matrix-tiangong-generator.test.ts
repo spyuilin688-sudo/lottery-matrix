@@ -51,27 +51,6 @@ function twoStageHistory() {
   return history;
 }
 
-function fourSourceTwoStageHistory() {
-  const history = Array.from({ length: 24 }, (_, index) => (
-    draw(114233 - index, [1, 2, 3, 4, 5])
-  ));
-  const replacePosition = (position: number, ballPosition: number, value: number) => {
-    const current = history[position - 1].numbers.map(Number);
-    current[ballPosition - 1] = value;
-    history[position - 1] = draw(114234 - position, current);
-  };
-  [[18, 10], [14, 11], [10, 12], [6, 13]].forEach(([position, value]) => (
-    replacePosition(position, 1, value)
-  ));
-  [[15, 15], [11, 16], [7, 17], [3, 18]].forEach(([position, value]) => (
-    replacePosition(position, 2, value)
-  ));
-  [[11, 22], [7, 23], [3, 24]].forEach(([position, value]) => (
-    replacePosition(position, 3, value)
-  ));
-  return history;
-}
-
 const fixed = (position: number, length: 3 | 4): PositionPath => ({
   startPosition: position,
   direction: '固定',
@@ -95,14 +74,10 @@ describe('Tiangong generator primitives', () => {
     }));
   });
 
-  it('reverse-derives only cyclic rules that produce the known target', () => {
+  it('reverse-derives one canonical add rule and one direct sum rule', () => {
     expect(deriveTiangongRules(24, 26, 39)).toEqual([
-      { algorithmType: '加減', value: -37 },
       { algorithmType: '加減', value: 2 },
-      { algorithmType: '加減', value: 41 },
-      { algorithmType: '合值', value: 11 },
       { algorithmType: '合值', value: 50 },
-      { algorithmType: '合值', value: 89 },
     ]);
   });
 
@@ -207,35 +182,9 @@ describe('two-stage Tiangong production search', () => {
     expect(candidate!.validationRows.filter((row) => row.role === 'prediction')[0].resultPeriod).toBe('114234');
   });
 
-  it('uses four first-stage groups, three second-stage validations, and A for 準3進4 prediction', () => {
-    const options = {
-      periodRanges: [50] as Array<50 | 80>,
-      modes: ['two-stage'] as const,
-      hitConditions: ['準3進4'] as const,
-      sourceSequences: [[6, 10, 14, 18]] as [[number, number, number, number]],
-      referenceOffsets: [0],
-      explorePaths: [fixed(1, 4)],
-      firstStagePaths: [fixed(2, 4)],
-      secondStagePaths: [fixed(3, 4)],
-      firstStageDistances: [3],
-      secondStageDistances: [4],
-    };
-    const candidates = runTiangongCandidates('今彩539', fourSourceTwoStageHistory(), options);
-    const candidate = candidates.find((item) => (
-      item.firstStage.algorithmType === '加減'
-      && item.firstStage.value === 5
-      && item.secondStage?.algorithmType === '加減'
-      && item.secondStage.value === 7
-    ));
-    expect(candidate).toBeDefined();
-    expect(candidate!.validationRows.filter((row) => row.role === 'first-stage-evidence')).toHaveLength(4);
-    expect(candidate!.validationRows.filter((row) => row.role === 'second-stage-validation')).toHaveLength(3);
-    expect(candidate!.validationRows.filter((row) => row.role === 'prediction')).toHaveLength(1);
-
-    const changed = fourSourceTwoStageHistory();
-    const numbers = changed[2].numbers.map(Number);
-    numbers[1] = 19;
-    changed[2] = draw(114231, numbers);
-    expect(runTiangongCandidates('今彩539', changed, options)).toEqual([]);
+  it('rejects 準3進4 generation', () => {
+    expect(() => runTiangongCandidates('今彩539', oneStageHistory(), {
+      periodRanges: [50], modes: ['one-stage'], hitConditions: ['準3進4' as never],
+    })).toThrow('INVALID_HIT_CONDITION');
   });
 });
