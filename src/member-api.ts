@@ -83,5 +83,5 @@ export function fetchPendingTransferRequest() {
 }
 
 export function fetchMemberPaymentHistory() {
-  return memberRpc<MemberPaymentHistoryItem[]>('member_payment_history');
+  return memberRpc<MemberPaymentHistoryItem[]>('member_payment_history_get');
 }
