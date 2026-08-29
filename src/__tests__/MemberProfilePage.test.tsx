@@ -172,6 +172,22 @@ describe("ProfilePage member API", () => {
     vi.useRealTimers();
   });
 
+  it("沒有付費方案與到期日時顯示免費會員核心功能體驗", async () => {
+    memberApi.fetchMemberProfile.mockResolvedValueOnce({
+      lineUserId: "line-free",
+      planName: null,
+      planExpiresAt: null,
+      isLifetime: false,
+    });
+
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText("免費會員")).toBeInTheDocument();
+    expect(screen.getByText("核心功能體驗")).toBeInTheDocument();
+    expect(screen.queryByText("享有所有 Matrix Pro 功能")).not.toBeInTheDocument();
+    expect(screen.queryByText(/剩餘 .* 天/)).not.toBeInTheDocument();
+  });
+
   it("終身方案不顯示 API 內的固定到期日", async () => {
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
       lineUserId: "line-lifetime",

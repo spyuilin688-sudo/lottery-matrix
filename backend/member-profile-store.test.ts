@@ -2,6 +2,26 @@ import { describe, expect, it, vi } from 'vitest';
 import { createMemberProfileStore } from './member-profile-store';
 
 describe('member profile store', () => {
+  it('maps a member without a paid plan to the free member label', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify([{
+      line_user_id: 'line-free',
+      plan_expires_at: null,
+      is_lifetime: false,
+      current_plan: null,
+    }]), { status: 200 }));
+    const store = createMemberProfileStore(
+      () => ({ url: 'https://project.supabase.co', serviceRoleKey: 'service-role-secret' }),
+      fetcher,
+    );
+
+    await expect(store.read('member-free')).resolves.toEqual({
+      lineUserId: 'line-free',
+      planName: '免費會員',
+      planExpiresAt: null,
+      isLifetime: false,
+    });
+  });
+
   it('maps a lifetime member without a current plan to a real lifetime plan label', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify([{
       line_user_id: 'line-lifetime',
