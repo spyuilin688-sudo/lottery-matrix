@@ -1,11 +1,12 @@
 import argparse
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from os import environ
 from typing import Any
 
 import httpx
 
+from app.operational_status import finish_job, job_name_for_lottery, start_job
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import due_call_cycle
 from app.scraping.sources import LatestDrawSource
@@ -50,7 +51,34 @@ def _run_analysis(
     return result
 
 
-def run_worker(
+def _run_with_job_status(
+    lottery: str,
+    repository: AnalysisRepository,
+    operation: Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    job_name = job_name_for_lottery(lottery)
+    start_job(repository, job_name, lottery, datetime.now(UTC).isoformat())
+    try:
+        result = operation()
+    except Exception as error:
+        finish_job(
+            repository,
+            job_name,
+            "failed",
+            datetime.now(UTC).isoformat(),
+            str(error),
+        )
+        raise
+    finish_job(
+        repository,
+        job_name,
+        "success",
+        datetime.now(UTC).isoformat(),
+    )
+    return result
+
+
+def _execute_worker(
     lottery: str,
     repository: AnalysisRepository,
     source: DrawSource,
@@ -78,11 +106,24 @@ def run_worker(
     return _run_analysis(repository, draw, history, builders)
 
 
+def run_worker(
+    lottery: str,
+    repository: AnalysisRepository,
+    source: DrawSource,
+    builders: Mapping[str, ArtifactBuilder] | None = None,
+) -> dict[str, Any]:
+    return _run_with_job_status(
+        lottery,
+        repository,
+        lambda: _execute_worker(lottery, repository, source, builders),
+    )
+
+
 def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
 
-def run_scheduled_worker(
+def _execute_scheduled_worker(
     lottery: str,
     now: datetime | None,
     repository: AnalysisRepository,
@@ -118,6 +159,20 @@ def run_scheduled_worker(
     if not history:
         raise ValueError("DRAW_HISTORY_INCOMPLETE")
     return _run_analysis(repository, draw, history, builders)
+
+
+def run_scheduled_worker(
+    lottery: str,
+    now: datetime | None,
+    repository: AnalysisRepository,
+    source: DrawSource,
+    builders: Mapping[str, ArtifactBuilder] | None = None,
+) -> dict[str, Any]:
+    return _run_with_job_status(
+        lottery,
+        repository,
+        lambda: _execute_scheduled_worker(lottery, now, repository, source, builders),
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
