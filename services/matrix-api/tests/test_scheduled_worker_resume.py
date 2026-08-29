@@ -25,27 +25,50 @@ def _stored_draw(period: int, draw_date: str) -> dict:
     }
 
 
-def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored() -> None:
-    repository = InMemoryAnalysisRepository()
-    for offset in range(80):
-        repository.upsert_draw(_stored_draw(221 - offset, "2026-08-28" if offset == 0 else "2026-08-27"))
-
-    calls: list[str] = []
-
+def _builders(calls: list[str]) -> dict:
     def build(kind: str):
         def selected(_: dict) -> dict:
             calls.append(kind)
             return {"kind": kind}
         return selected
 
-    builders = {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+
+
+def _repository_with_history() -> InMemoryAnalysisRepository:
+    repository = InMemoryAnalysisRepository()
+    for offset in range(80):
+        repository.upsert_draw(_stored_draw(221 - offset, "2026-08-28" if offset == 0 else "2026-08-27"))
+    return repository
+
+
+def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored() -> None:
+    repository = _repository_with_history()
+    calls: list[str] = []
 
     result = run_scheduled_worker(
         "今彩539",
         datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
         repository,
         UnexpectedSource(),
-        builders,
+        _builders(calls),
+    )
+
+    assert result["status"] == "complete"
+    assert result["analysisVersion"] == "000000221:matrix-python-v3"
+    assert calls == ["explore", "tianyan", "tiangong", "status"]
+
+
+def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() -> None:
+    repository = _repository_with_history()
+    calls: list[str] = []
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        repository,
+        UnexpectedSource(),
+        _builders(calls),
     )
 
     assert result["status"] == "complete"
