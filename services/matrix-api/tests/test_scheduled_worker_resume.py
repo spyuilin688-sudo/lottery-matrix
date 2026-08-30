@@ -81,7 +81,7 @@ def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored(
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v6"
+    assert result["analysisVersion"] == "000000221:matrix-python-v7"
     assert calls == ["explore", "tianyan", "tiangong", "status"]
 
 
@@ -98,7 +98,7 @@ def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() 
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v6"
+    assert result["analysisVersion"] == "000000221:matrix-python-v7"
     assert calls == ["explore", "tianyan", "tiangong", "status"]
 
 
