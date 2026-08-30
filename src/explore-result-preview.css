@@ -173,7 +173,7 @@
   box-shadow: 0 0 3px rgba(212, 165, 47, .16);
 }
 
-.explore-result-preview-screen .explore-result-row {
+.explore-result-preview-screen .road-results .road-result-row.explore-result-row {
   min-height: 0;
   padding: 8px 0;
 }
@@ -218,7 +218,7 @@
 
 .explore-validation-card {
   --explore-validation-summary-font-size: clamp(14px, 3.85vw, 15px);
-  --explore-validation-row-height: clamp(27px, 7.18vw, 28px);
+  --explore-validation-row-height: clamp(32px, 8.46vw, 33px);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -250,7 +250,7 @@
   border: 1px solid rgba(218, 174, 72, .5);
   border-radius: 5px;
   color: #e5bd61;
-  background: rgba(112, 86, 21, .1);
+  background: #071018;
   font-size: 8px;
   font-weight: 700;
   line-height: 1.25;
