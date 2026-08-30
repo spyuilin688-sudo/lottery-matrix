@@ -50,6 +50,7 @@ describe('notification management client', () => {
   it.each([
     [400, { error: { code: 'INVALID_MEMBER_ID', message: 'INVALID_MEMBER_ID' } }, '會員資料無效，請重新選擇會員'],
     [409, { error: { code: 'NO_ACTIVE_SUBSCRIPTIONS', message: 'NO_ACTIVE_SUBSCRIPTIONS' } }, '此會員目前沒有有效的推播訂閱'],
+    [500, { error: { code: 'PUSH_STARTUP_FAILED_WEB_PUSH_SUBJECT' } }, '推播服務啟動失敗（階段：WEB_PUSH_SUBJECT）'],
     [503, { error: { code: 'UNAVAILABLE', message: 'Supabase is temporarily unavailable' } }, '發送失敗，請稍後再試'],
   ])('maps the production HTTP %i error envelope to fixed Traditional Chinese copy', (_status, cause, expected) => {
     expect(formatNotificationError(cause)).toBe(expected);
@@ -60,6 +61,12 @@ describe('notification management client', () => {
       response: { data: { error: { code: 'INVALID_REQUEST', message: 'private upstream detail' } } },
     })).toBe('會員資料無效，請重新選擇會員');
     expect(formatNotificationError(new Error('private upstream detail'))).toBe('發送失敗，請稍後再試');
+  });
+
+  it('does not display a non-allow-listed startup diagnostic stage', () => {
+    expect(formatNotificationError({
+      response: { data: { error: 'PUSH_STARTUP_FAILED_service-role-secret' } },
+    })).toBe('發送失敗，請稍後再試');
   });
 
   it('understands the AppDeploy adapter string error envelopes', () => {
