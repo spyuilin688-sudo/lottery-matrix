@@ -28,15 +28,14 @@ def tiangong_work_units() -> list[dict[str, Any]]:
     return units
 
 
-def _explore_selections(source_index: int) -> list[tuple[int, int]]:
+def _explore_selections(unit: dict[str, Any]) -> list[tuple[int, int]]:
     selections: list[tuple[int, int]] = []
-    for date_offset in (0, 1, 2):
-        relative_source_index = source_index - date_offset
-        if relative_source_index < 0:
-            continue
-        for periods in (2, 7, 13):
-            if relative_source_index < periods:
-                selections.append((periods, date_offset))
+    source_index = unit["lockedSourceIndex"]
+    date_offset = unit["exploreDateOffset"]
+    relative_source_index = source_index - date_offset
+    for periods in (2, 7, 13):
+        if relative_source_index < periods:
+            selections.append((periods, date_offset))
     return selections
 
 
@@ -56,7 +55,7 @@ def _append_explore_result(
         if rule_count not in {1, 2}:
             continue
         source_index = unit["lockedSourceIndex"]
-        for periods, date_offset in _explore_selections(source_index):
+        for periods, date_offset in _explore_selections(unit):
             identifier = "|".join(map(str, [
                 unit["numberOrder"], source_index, unit["lockedPosition"],
                 date_offset, periods, unit["algorithmType"], rule_count, raw.get("id", ""),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MatrixDraw } from './matrix-algorithm';
+import type { MatrixDraw } from './matrix-algorithm-shared';
 import { evaluateTiangongCandidate } from './matrix-tiangong';
 import {
   deriveTiangongRules,

@@ -91,8 +91,6 @@ def automatic_options(**overrides: object) -> dict:
         "ruleCount": 1,
         "exploreDateOffset": 0,
         "exploreRange": "標準範圍",
-        "minPredictionDistance": 1,
-        "maxPredictionDistance": 1,
     }
     value.update(overrides)
     return value
@@ -221,16 +219,25 @@ def test_c_03_add_subtract_wraps_by_each_lottery_maximum() -> None:
     assert normalize_matrix_number(50, 49) == 1
 
 
-def test_c_04_explore_zero_addition_is_drag_only() -> None:
+def test_c_04_zero_from_non_locked_reference_is_an_addition_rule() -> None:
     group = _build_group(
         [draw("S", [10, 20, 30, 35, 39]), draw("P", [10, 1, 2, 3, 4])],
         0,
-        _parse_request(explore_request(referencePosition=1)),
+        _parse_request(explore_request(referencePosition=2)),
         "B",
     )
     assert group is not None
-    assert "拖牌:0" in group["candidateMap"]
-    assert "加減:0" not in group["candidateMap"]
+    assert "加減:29" in group["candidateMap"]
+
+    zero_group = _build_group(
+        [draw("S", [10, 20, 30, 35, 39]), draw("P", [1, 2, 3, 4, 20])],
+        0,
+        _parse_request(explore_request(referencePosition=2)),
+        "B",
+    )
+    assert zero_group is not None
+    assert "加減:0" in zero_group["candidateMap"]
+    assert "拖牌:0" not in zero_group["candidateMap"]
 
 
 def test_c_05_insufficient_history_does_not_emit_obsolete_message() -> None:
@@ -254,7 +261,8 @@ def test_c_06_valid_result_contains_every_confirmed_output_field() -> None:
     result = run_matrix_explore_group_with_history({
         "lottery": "今彩539", "numberOrder": "依號碼由小到大排序",
         "lockedSourceIndex": 0, "lockedPosition": 1,
-        "minPredictionDistance": 1, "maxPredictionDistance": 1,
+        "exploreDateOffset": 0, "predictionDistance": 1,
+        "exploreRange": "完整範圍",
         "algorithmType": "加減",
     }, history)
     item = next(value for value in result["results"] if value["ruleSets"][0]["rules"][0]["value"] == 5)
@@ -265,15 +273,14 @@ def test_c_06_valid_result_contains_every_confirmed_output_field() -> None:
 # Matrix 探索 E-01 ～ E-30
 
 
-def test_e_01_today_two_period_sources_exclude_anchor(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_e_01_today_two_period_sources_are_latest_two_opened_draws(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(explore, "run_matrix_algorithm_with_history", accept_explore_request)
     history = [
-        draw("anchor", [1, 2, 3, 4, 5]),
-        draw("previous-1", [6, 7, 8, 9, 10]),
-        draw("previous-2", [11, 12, 13, 14, 15]),
+        draw("latest", [1, 2, 3, 4, 5]),
+        draw("previous", [6, 7, 8, 9, 10]),
     ]
     result = run_matrix_automatic_explore_with_history(automatic_options(explorePeriods=2), history)
-    assert {item["number"] for item in result["results"]} == {str(value).zfill(2) for value in range(6, 16)}
+    assert {item["number"] for item in result["results"]} == {str(value).zfill(2) for value in range(1, 11)}
 
 
 @pytest.mark.parametrize(
@@ -311,42 +318,52 @@ def test_e_08_yesterday_and_day_before_follow_draw_sequence(monkeypatch: pytest.
     result = run_matrix_automatic_explore_with_history(automatic_options(
         exploreDateOffset=1, explorePeriods=2,
     ), history)
-    assert {item["number"] for item in result["results"]} == {str(value).zfill(2) for value in range(11, 21)}
+    assert {item["number"] for item in result["results"]} == {str(value).zfill(2) for value in range(6, 16)}
     day_before = run_matrix_automatic_explore_with_history(automatic_options(
         exploreDateOffset=2, explorePeriods=1,
     ), history)
-    assert {item["number"] for item in day_before["results"]} == {str(value).zfill(2) for value in range(16, 21)}
+    assert {item["number"] for item in day_before["results"]} == {str(value).zfill(2) for value in range(11, 16)}
 
 
 def test_e_09_latest_matching_source_is_a_then_older_sources_are_b_c() -> None:
     history = [
         draw("A", [10, 20, 30, 35, 39]), draw("P2", [1, 2, 3, 4, 25]),
         draw("S2", [10, 20, 30, 35, 39]), draw("P1", [1, 2, 3, 4, 25]),
-        draw("S1", [10, 20, 30, 35, 39]),
+        draw("S1", [10, 20, 30, 35, 39]), draw("P0", [1, 2, 3, 4, 25]),
+        draw("S0", [10, 20, 30, 35, 39]), draw("P-1", [1, 2, 3, 4, 25]),
+        draw("S-1", [10, 20, 30, 35, 39]),
     ]
     result = run_matrix_algorithm_with_history(explore_request(), history)
     rows = result["results"][0]["historicalValidation"]
     assert result["sourceA"]["sourcePeriod"] == "A"
-    assert [(row["group"], row["sourcePeriod"]) for row in rows] == [("B", "S2"), ("C", "S1")]
+    assert [(row["group"], row["sourcePeriod"]) for row in rows[:2]] == [("B", "S2"), ("C", "S1")]
 
 
 def test_e_10_source_a_is_not_counted_in_historical_streak() -> None:
-    history = [
-        draw("A", [10, 20, 30, 35, 39]), draw("P", [1, 2, 3, 4, 25]),
-        draw("S", [10, 20, 30, 35, 39]),
-    ]
+    history = [draw("A", [10, 20, 30, 35, 39])]
+    for index in range(4, 0, -1):
+        history.extend([
+            draw(f"P{index}", [1, 2, 3, 4, 25]),
+            draw(f"S{index}", [10, 20, 30, 35, 39]),
+        ])
     result = run_matrix_algorithm_with_history(explore_request(), history)
     periods = [row["sourcePeriod"] for row in result["results"][0]["historicalValidation"]]
     assert "A" not in periods
 
 
-def test_e_11_each_source_searches_prediction_distance_one_through_thirteen(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_e_11_each_source_uses_its_fixed_prediction_distance(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(explore, "run_matrix_algorithm_with_history", accept_explore_request)
-    history = [draw("anchor", [1, 2, 3, 4, 5]), draw("source", [6, 7, 8, 9, 10])]
-    result = run_matrix_automatic_explore_with_history(automatic_options(
-        explorePeriods=1, minPredictionDistance=1, maxPredictionDistance=13,
-    ), history)
-    assert sorted({item["predictionDistance"] for item in result["results"]}) == list(range(1, 14))
+    history = [draw("latest", [1, 2, 3, 4, 5]), draw("previous", [6, 7, 8, 9, 10])]
+    result = run_matrix_automatic_explore_with_history(
+        automatic_options(explorePeriods=2), history,
+    )
+    assert {
+        (item["number"], item["predictionDistance"])
+        for item in result["results"]
+    } == {
+        *((str(value).zfill(2), 1) for value in range(1, 6)),
+        *((str(value).zfill(2), 2) for value in range(6, 11)),
+    }
 
 
 def test_e_12_prediction_hit_can_be_at_any_legal_position() -> None:
@@ -369,24 +386,53 @@ def test_e_13_special_number_is_a_legal_prediction_hit() -> None:
     assert group is not None and group["candidateMap"]["加減:5"] == [25]
 
 
-def test_e_14_standard_validation_offsets_are_exact(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(explore, "run_matrix_algorithm_with_history", accept_explore_request)
-    history = [draw("anchor", [1, 2, 3, 4, 5]), draw("source", [6, 7, 8, 9, 10])]
-    result = run_matrix_automatic_explore_with_history(automatic_options(
-        explorePeriods=1, algorithmType="加減", exploreRange="標準範圍",
-        minPredictionDistance=4, maxPredictionDistance=4,
-    ), history)
-    assert sorted({item["searchCondition"]["referenceOffset"] for item in result["results"]}) == list(range(-7, 4))
+@pytest.mark.parametrize(("algorithm_type", "distance", "expected_count"), [
+    ("加減", 1, 74),
+    ("合值", 2, 79),
+])
+def test_e_14_to_e_15_full_reference_range_excludes_locked_condition(
+    monkeypatch: pytest.MonkeyPatch,
+    algorithm_type: str,
+    distance: int,
+    expected_count: int,
+) -> None:
+    captured: list[dict] = []
+
+    def capture(request: dict, *_args: object) -> dict:
+        captured.append(request)
+        return {"valid": False, "results": []}
+
+    monkeypatch.setattr(explore, "_evaluate_prepared", capture)
+    run_matrix_explore_group_with_history({
+        "lottery": "今彩539",
+        "numberOrder": "依號碼由小到大排序",
+        "algorithmType": algorithm_type,
+        "lockedSourceIndex": distance - 1,
+        "lockedPosition": 1,
+        "exploreDateOffset": 0,
+        "predictionDistance": distance,
+        "exploreRange": "完整範圍",
+    }, [
+        draw("latest", [1, 2, 3, 4, 5]),
+        draw("previous", [6, 7, 8, 9, 10]),
+    ])
+
+    coordinates = {
+        (request["referenceOffset"], request["referencePosition"])
+        for request in captured
+    }
+    assert len(coordinates) == expected_count
+    assert (0, 1) not in coordinates
 
 
-def test_e_15_full_validation_offsets_are_exact(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(explore, "run_matrix_algorithm_with_history", accept_explore_request)
-    history = [draw("anchor", [1, 2, 3, 4, 5]), draw("source", [6, 7, 8, 9, 10])]
-    result = run_matrix_automatic_explore_with_history(automatic_options(
-        explorePeriods=1, algorithmType="加減", exploreRange="完整範圍",
-        minPredictionDistance=4, maxPredictionDistance=4,
-    ), history)
-    assert sorted({item["searchCondition"]["referenceOffset"] for item in result["results"]}) == list(range(-14, 4))
+@pytest.mark.parametrize("algorithm_type", ["加減版路", "合值版路"])
+def test_e_16_locked_condition_is_not_an_arithmetic_reference(algorithm_type: str) -> None:
+    with pytest.raises(ValueError, match="鎖定條件本身不屬於加減或合值驗證範圍"):
+        _parse_request(explore_request(
+            algorithmType=algorithm_type,
+            referenceOffset=0,
+            referencePosition=1,
+        ))
 
 
 def test_e_16_reference_at_or_after_result_is_invalid() -> None:
@@ -420,15 +466,15 @@ def test_e_22_sum_road_is_not_reduced_to_digit_sum() -> None:
     assert _candidate_rule("合值", 31, 19, 39) == 50
 
 
-def test_e_23_zero_addition_creates_drag_but_not_addition_candidate() -> None:
+def test_e_23_zero_addition_from_non_locked_reference_is_not_drag() -> None:
     group = _build_group(
-        [draw("S", [10, 20, 30, 35, 39]), draw("P", [10, 1, 2, 3, 4])],
+        [draw("S", [10, 20, 30, 35, 39]), draw("P", [1, 2, 3, 4, 20])],
         0,
-        _parse_request(explore_request(referencePosition=1)),
+        _parse_request(explore_request(referencePosition=2)),
         "B",
     )
     assert group is not None
-    assert set(key for key in group["candidateMap"] if key.endswith(":0")) == {"拖牌:0"}
+    assert set(key for key in group["candidateMap"] if key.endswith(":0")) == {"加減:0"}
 
 
 def test_e_24_ready4_locked_one_number_allows_one_rule_only() -> None:
@@ -462,7 +508,109 @@ def test_e_26_three_or_more_rules_covering_same_level_invalidates_result() -> No
     ]
     result = run_matrix_algorithm_with_history(explore_request(ruleCount=2), history)
     assert result["valid"] is False
-    assert result["conflictingRules"] == [28, 29, 30]
+    assert len(result["conflictingRules"]) > 2
+
+
+def test_e_26_locked_one_code_starts_only_from_b_c_intersection() -> None:
+    groups = [
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:2": [2]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 1)
+
+    assert found["highest"] == 0
+    assert found["sets"] == []
+
+
+def test_e_26_locked_two_code_candidates_never_enter_from_d_or_later() -> None:
+    groups = [
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 2)
+
+    assert found["highest"] == 0
+    assert found["sets"] == []
+
+
+def test_e_26_locked_two_code_pool_can_extend_disjoint_b_c_values() -> None:
+    groups = [
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 2)
+
+    assert found["highest"] == 5
+    assert found["sets"] == [["加減:1", "加減:2"]]
+
+
+def test_e_26_three_values_at_same_longest_streak_are_invalid_before_tie_break() -> None:
+    groups = [
+        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1], "加減:3": [3]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 2)
+
+    assert found["highest"] == 5
+    assert found["invalidMultipleRules"] is True
+    assert found["conflictingRules"] == ["加減:1", "加減:2", "加減:3"]
+
+
+def test_e_26_each_locked_one_code_rule_is_a_separate_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def evaluated(request: dict, *_args: object) -> dict:
+        if request["ruleCount"] == 2:
+            return {"valid": False, "results": []}
+        return {
+            "valid": True,
+            "highestStreak": 4,
+            "displayStreak": "準4進5",
+            "sourceA": {"baseNumber": 1},
+            "results": [
+                {
+                    "rules": [{"algorithmType": "拖牌", "value": 1, "display": "+1"}],
+                    "predictionNumbers": [2],
+                    "historicalValidation": [],
+                },
+                {
+                    "rules": [{"algorithmType": "拖牌", "value": 2, "display": "+2"}],
+                    "predictionNumbers": [3],
+                    "historicalValidation": [],
+                },
+            ],
+        }
+
+    monkeypatch.setattr(explore, "_evaluate_prepared", evaluated)
+    result = run_matrix_explore_group_with_history({
+        "lottery": "今彩539",
+        "numberOrder": "依號碼由小到大排序",
+        "algorithmType": "拖牌",
+        "lockedSourceIndex": 0,
+        "lockedPosition": 1,
+        "exploreDateOffset": 0,
+        "predictionDistance": 1,
+        "exploreRange": "完整範圍",
+    }, [draw("latest", [1, 2, 3, 4, 5])])
+
+    assert len(result["results"]) == 2
+    assert {tuple(item["predictionNumbers"]) for item in result["results"]} == {("02",), ("03",)}
+    assert all(len(item["ruleSets"]) == 1 for item in result["results"])
 
 
 def test_e_27_rule_with_one_middle_hit_can_form_two_rule_result() -> None:
@@ -495,10 +643,12 @@ def test_e_29_streak_stops_at_first_failed_group() -> None:
 
 
 def test_e_30_opened_prediction_for_a_stays_out_of_historical_streak() -> None:
-    history = [
-        draw("A_RESULT", [1, 2, 3, 4, 25]), draw("A", [10, 20, 30, 35, 39]),
-        draw("P", [1, 2, 3, 4, 25]), draw("S", [10, 20, 30, 35, 39]),
-    ]
+    history = [draw("A_RESULT", [1, 2, 3, 4, 25]), draw("A", [10, 20, 30, 35, 39])]
+    for index in range(4, 0, -1):
+        history.extend([
+            draw(f"P{index}", [1, 2, 3, 4, 25]),
+            draw(f"S{index}", [10, 20, 30, 35, 39]),
+        ])
     result = run_matrix_algorithm_with_history(explore_request(), history)
     periods = [row["predictionPeriod"] for row in result["results"][0]["historicalValidation"]]
     assert result["sourceA"]["predictionPeriod"] == "A_RESULT"

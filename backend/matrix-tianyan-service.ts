@@ -1,4 +1,4 @@
-import type { MatrixLottery, MatrixNumberOrder } from './matrix-algorithm';
+import type { MatrixLottery, MatrixNumberOrder } from './matrix-algorithm-shared';
 import type { ExploreArtifact, ExploreArtifactRow, ExploreValidation } from './matrix-explore-service';
 import {
   evaluateTianyanCandidate,

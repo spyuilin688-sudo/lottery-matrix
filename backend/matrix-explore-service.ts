@@ -1,4 +1,4 @@
-import type { MatrixAlgorithmType, MatrixLottery, MatrixNumberOrder } from './matrix-algorithm';
+import type { MatrixAlgorithmType, MatrixLottery, MatrixNumberOrder } from './matrix-algorithm-shared';
 
 /**
  * Compatibility types only.

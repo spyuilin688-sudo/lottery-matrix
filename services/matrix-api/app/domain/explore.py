@@ -7,8 +7,12 @@ from .models import lottery_maximum, lottery_position_count, normalize_matrix_nu
 LOTTERIES = {"今彩539", "天天樂", "六合彩", "大樂透"}
 NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 ALGORITHM_TYPES = {"加減", "合值", "拖牌"}
-MAX_VALIDATION_STREAK = 13
-INVALID_THREE_RULE_COVERAGE_REASON = "規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出"
+INVALID_THREE_RULE_COVERAGE_REASON = "相同最長連準出現超過2條可延續共同值，整條版路無效，不得輸出兩兩組合"
+STREAK_BOUNDS = {1: (4, 8), 2: (5, 12)}
+INVALID_STREAK_REASONS = {
+    1: "鎖定1碼連準達8次（包含8）以上，整條版路無效，不得截短",
+    2: "鎖定2碼連準達12次（包含12）以上，整條版路無效，不得截短",
+}
 
 
 def _integer(value: Any, name: str) -> int:
@@ -55,6 +59,8 @@ def _parse_request(value: Any) -> dict:
     reference_position = _integer(value.get("referencePosition"), "參照位置")
     if not 1 <= reference_position <= lottery_position_count(lottery): raise ValueError("參照位置超出彩種位置範圍")
     if reference_offset >= prediction_distance: raise ValueError("參照期不得等於或晚於預測期")
+    if reference_offset == 0 and reference_position == locked_position:
+        raise ValueError("鎖定條件本身不屬於加減或合值驗證範圍")
     return {**request, "referenceOffset": reference_offset, "referencePosition": reference_position}
 
 
@@ -114,6 +120,23 @@ def _add_rule(mapping: dict[str, list[int]], algorithm_type: str, value: int, ta
         targets.append(target)
 
 
+def _reference_coordinates(
+    algorithm_type: str,
+    locked_position: int,
+    position_count: int,
+    reference_back: int,
+    prediction_distance: int,
+) -> list[tuple[int, int]]:
+    if algorithm_type == "拖牌":
+        return [(0, locked_position)]
+    return [
+        (offset, position)
+        for offset in range(-reference_back, prediction_distance)
+        for position in range(1, position_count + 1)
+        if not (offset == 0 and position == locked_position)
+    ]
+
+
 def _group_name(index: int) -> str:
     code = 66 + index
     return chr(code) if code <= 90 else f"B{index + 1}"
@@ -133,17 +156,13 @@ def _build_group(history: list[dict], source_index: int, request: dict, group_na
     maximum = lottery_maximum(request["lottery"])
     prediction = history[prediction_index]
     candidate_map: dict[str, list[int]] = {}
-    locked_is_reference = request.get("referenceOffset") == 0 and request.get("referencePosition") == request["lockedPosition"]
     for target in [int(number) for number in prediction["numbers"]]:
         drag_rule = _candidate_rule("拖牌", locked_base, target, maximum)
         if request["algorithmType"] == "拖牌":
             _add_rule(candidate_map, "拖牌", drag_rule, target)
         else:
             rule = _candidate_rule(request["algorithmType"], base["baseNumber"], target, maximum)
-            if request["algorithmType"] == "加減" and rule == 0:
-                _add_rule(candidate_map, "拖牌", 0, target)
-            elif not (request["algorithmType"] == "加減" and locked_is_reference):
-                _add_rule(candidate_map, request["algorithmType"], rule, target)
+            _add_rule(candidate_map, request["algorithmType"], rule, target)
     return {
         "group": group_name, "source": source, "reference": base["reference"], "prediction": prediction,
         "baseNumber": base["baseNumber"], "lockedBaseNumber": locked_base, "candidateMap": candidate_map,
@@ -163,31 +182,53 @@ def _coverage(groups: list[dict], rules: list[str], streak_length: int) -> dict:
     covered = groups[:streak_length]
     indexes = [[index for index, group in enumerate(covered) if rule in group["candidateMap"]] for rule in rules]
     valid = all(values and (len(values) > 1 or 0 < values[0] < streak_length - 1) for values in indexes)
-    return {"valid": valid, "hitCounts": sorted(len(values) for values in indexes)}
+    return {"valid": valid}
 
 
 def _highest_rule_sets(groups: list[dict], rule_count: int) -> dict:
-    candidates = sorted({rule for group in groups for rule in group["candidateMap"]})
-    highest = best_minimum = best_maximum = 0
-    sets: list[list[str]] = []
-    candidates_to_check = ([candidate] for candidate in candidates) if rule_count == 1 else combinations(candidates, 2)
+    empty = {
+        "highest": 0,
+        "sets": [],
+        "invalidMultipleRules": False,
+        "conflictingRules": [],
+    }
+    if len(groups) < 2:
+        return empty
+    b_candidates = set(groups[0]["candidateMap"])
+    c_candidates = set(groups[1]["candidateMap"])
+    scored: list[tuple[int, list[str]]] = []
+    if rule_count == 1:
+        candidates_to_check = ([candidate] for candidate in sorted(b_candidates & c_candidates))
+    else:
+        candidate_pool = sorted(b_candidates | c_candidates)
+        if not b_candidates & c_candidates:
+            if len(groups) < 3 or not set(groups[2]["candidateMap"]) & set(candidate_pool):
+                return empty
+        candidates_to_check = combinations(candidate_pool, 2)
     for current_rules in candidates_to_check:
         rules = list(current_rules)
+        if rule_count == 2 and any(
+            not any(rule in group["candidateMap"] for rule in rules)
+            for group in groups[:2]
+        ):
+            continue
         current = _streak(groups, rules)
         if current == 0:
             continue
-        coverage = _coverage(groups, rules, current) if rule_count == 2 else {"valid": True, "hitCounts": [current, current]}
-        if not coverage["valid"]:
+        if rule_count == 2 and not _coverage(groups, rules, current)["valid"]:
             continue
-        minimum = coverage["hitCounts"][0]
-        maximum = coverage["hitCounts"][-1]
-        better = current > highest or (current == highest and (minimum > best_minimum or (minimum == best_minimum and maximum > best_maximum)))
-        equal = current == highest and minimum == best_minimum and maximum == best_maximum
-        if better:
-            highest, best_minimum, best_maximum, sets = current, minimum, maximum, [rules]
-        elif equal:
-            sets.append(rules)
-    return {"highest": highest, "sets": sets}
+        scored.append((current, rules))
+    if not scored:
+        return empty
+    highest = max(current for current, _rules in scored)
+    sets = [rules for current, rules in scored if current == highest]
+    distinct = sorted({rule for rules in sets for rule in rules})
+    return {
+        "highest": highest,
+        "sets": sets,
+        "invalidMultipleRules": rule_count == 2 and len(distinct) > 2,
+        "conflictingRules": distinct,
+    }
 
 
 def _rule_label(algorithm_type: str, value: int) -> str:
@@ -236,22 +277,45 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
     if a_base is None: return {**empty, "reason": "A組找不到完整參照期或參照位置號碼"}
     historical_indexes = list(reversed([index for index in source_indexes if index < a_index]))
     groups: list[dict] = []
-    counted: set[str] = set()
+    _minimum_streak, invalid_streak = STREAK_BOUNDS[request["ruleCount"]]
     for source_index in historical_indexes:
         if source_index + request["predictionDistance"] >= len(history):
             continue
         group = _build_group(history, source_index, request, _group_name(len(groups)))
         if group is None:
             break
-        if request["ruleCount"] == 2 and group["prediction"]["period"] in counted:
-            continue
-        counted.add(group["prediction"]["period"])
         groups.append(group)
-        if len(groups) >= MAX_VALIDATION_STREAK:
+        if len(groups) >= invalid_streak:
             break
     if not groups: return {**empty, "reason": "沒有可完成歷史驗證的來源組"}
     found = _highest_rule_sets(groups, request["ruleCount"])
     if found["highest"] == 0 or not found["sets"]: return {**empty, "reason": "找不到成立規則"}
+    display = f'準{found["highest"]}進{found["highest"] + 1}'
+    if found["invalidMultipleRules"]:
+        return {
+            **empty,
+            "reason": INVALID_THREE_RULE_COVERAGE_REASON,
+            "highestStreak": found["highest"],
+            "displayStreak": display,
+            "conflictingRules": [
+                _typed_parts(rule)["value"] for rule in found["conflictingRules"]
+            ],
+        }
+    minimum_streak, invalid_streak = STREAK_BOUNDS[request["ruleCount"]]
+    if found["highest"] >= invalid_streak:
+        return {
+            **empty,
+            "reason": INVALID_STREAK_REASONS[request["ruleCount"]],
+            "highestStreak": found["highest"],
+            "displayStreak": display,
+        }
+    if found["highest"] < minimum_streak:
+        return {
+            **empty,
+            "reason": f"連準次數未達鎖定{request['ruleCount']}碼最低{minimum_streak}次",
+            "highestStreak": found["highest"],
+            "displayStreak": display,
+        }
     maximum = lottery_maximum(request["lottery"])
     prediction_index = a_index + request["predictionDistance"]
     a_prediction = history[prediction_index] if 0 <= prediction_index < len(history) else None
@@ -273,13 +337,6 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
             "rules": [{**rule, "display": _rule_label(rule["algorithmType"], rule["value"])} for rule in parsed],
             "predictionNumbers": predictions, "historicalValidation": _validation(groups, rules, request),
         })
-    display = f'準{found["highest"]}進{found["highest"] + 1}'
-    if request["ruleCount"] == 2 and len(result_sets) > 1:
-        distinct = sorted({rule for rules in found["sets"] for rule in rules})
-        merged = sorted({number for result in result_sets for number in result["predictionNumbers"]})
-        if len(distinct) > 2 or len(merged) > 2:
-            return {**empty, "reason": INVALID_THREE_RULE_COVERAGE_REASON, "highestStreak": found["highest"], "displayStreak": display, "conflictingRules": [_typed_parts(rule)["value"] for rule in distinct]}
-        return {"valid": True, "searchCondition": request, "highestStreak": found["highest"], "displayStreak": display, "sourceA": source_a, "predictionNumbers": merged, "ruleSets": result_sets}
     return {"valid": True, "searchCondition": request, "highestStreak": found["highest"], "displayStreak": display, "sourceA": source_a, "results": result_sets}
 
 
@@ -298,10 +355,18 @@ def run_matrix_algorithm_with_history(value: Any, newest_first: list[dict]) -> d
     return _evaluate_prepared(request, history, _matching_source_indexes(request, history))
 
 
-def _prediction_numbers(evaluated: dict) -> list[int]:
-    if evaluated.get("predictionNumbers") is not None:
-        return sorted({int(number) for number in evaluated["predictionNumbers"]})
-    return sorted({int(number) for item in evaluated.get("results", []) for number in item["predictionNumbers"]})
+def _evaluated_road_sets(evaluated: dict) -> list[dict]:
+    values = evaluated.get("results", evaluated.get("ruleSets", []))
+    return [value for value in values if isinstance(value, dict)] if isinstance(values, list) else []
+
+
+def _road_identity(rule_set: dict) -> str:
+    rules = rule_set.get("rules", [])
+    return ".".join(
+        f'{rule.get("algorithmType", "")}:{rule.get("value", "")}'
+        for rule in rules
+        if isinstance(rule, dict)
+    )
 
 
 def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[dict]) -> dict:
@@ -318,34 +383,34 @@ def run_matrix_automatic_explore_with_history(value: dict, newest_first: list[di
     date_text = str(value.get("exploreDate", "本日"))
     date_offset = int(value.get("exploreDateOffset", 2 if "前日" in date_text else 1 if "昨日" in date_text else 0))
     explore_range = value.get("exploreRange", "標準範圍")
-    minimum = _integer(value.get("minPredictionDistance"), "最小預測期距離")
-    maximum = _integer(value.get("maxPredictionDistance"), "最大預測期距離")
-    explore = {"lottery": lottery, "numberOrder": order, "explorePeriods": periods, "algorithmType": algorithm_type, "ruleCount": rule_count, "exploreDateOffset": date_offset, "exploreRange": explore_range, "minPredictionDistance": minimum, "maxPredictionDistance": maximum}
+    explore = {"lottery": lottery, "numberOrder": order, "explorePeriods": periods, "algorithmType": algorithm_type, "ruleCount": rule_count, "exploreDateOffset": date_offset, "exploreRange": explore_range}
     anchor = newest_first[date_offset:]
-    sources = anchor[1:periods + 1]
+    sources = anchor[:periods]
     count = lottery_position_count(lottery)
     reference_back = 14 if explore_range == "完整範圍" else 7
     results: list[dict] = []
     seen: set[str] = set()
     for locked_position in range(1, count + 1):
-        for source in sources:
+        for relative_source_index, source in enumerate(sources):
             locked_number = _number_at(source, lottery, order, locked_position)
             if locked_number is None: continue
-            for distance in range(minimum, maximum + 1):
-                offsets = [0] if algorithm_type == "拖牌" else list(range(-reference_back, distance))
-                positions = [locked_position] if algorithm_type == "拖牌" else list(range(1, count + 1))
-                for offset in offsets:
-                    for position in positions:
-                        request = {"lottery": lottery, "numberOrder": order, "lockedPosition": locked_position, "lockedNumber": locked_number, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": algorithm_type}
-                        if algorithm_type != "拖牌": request.update({"referenceOffset": offset, "referencePosition": position})
-                        evaluated = run_matrix_algorithm_with_history(request, anchor)
-                        if not evaluated.get("valid") or not evaluated.get("highestStreak") or evaluated["highestStreak"] < (4 if rule_count == 1 else 5): continue
-                        predictions = _prediction_numbers(evaluated)
-                        if not 1 <= len(predictions) <= 2: continue
-                        key = "|".join(map(str, [locked_position, locked_number, offset, position, distance, algorithm_type, rule_count, evaluated["highestStreak"], ".".join(map(str, predictions))]))
-                        if key in seen: continue
-                        seen.add(key)
-                        results.append({"id": key, "number": str(locked_number).zfill(2), "lockedPosition": locked_position, "predictionDistance": distance, "consecutive": evaluated["displayStreak"], "highestStreak": evaluated["highestStreak"], "predictionNumbers": [str(number).zfill(2) for number in predictions], "algorithmType": algorithm_type, "searchCondition": request, "sourceA": evaluated.get("sourceA"), "ruleSets": evaluated.get("results", evaluated.get("ruleSets", []))})
+            distance = relative_source_index + 1
+            coordinates = _reference_coordinates(
+                algorithm_type, locked_position, count, reference_back, distance,
+            )
+            for offset, position in coordinates:
+                request = {"lottery": lottery, "numberOrder": order, "lockedPosition": locked_position, "lockedNumber": locked_number, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": algorithm_type}
+                if algorithm_type != "拖牌": request.update({"referenceOffset": offset, "referencePosition": position})
+                evaluated = run_matrix_algorithm_with_history(request, anchor)
+                if not evaluated.get("valid") or not evaluated.get("highestStreak") or evaluated["highestStreak"] < (4 if rule_count == 1 else 5): continue
+                for rule_set in _evaluated_road_sets(evaluated):
+                    predictions = sorted({int(number) for number in rule_set.get("predictionNumbers", [])})
+                    if rule_count == 1 and len(predictions) != 1: continue
+                    if rule_count == 2 and not 1 <= len(predictions) <= 2: continue
+                    key = "|".join(map(str, [locked_position, locked_number, offset, position, distance, algorithm_type, rule_count, evaluated["highestStreak"], _road_identity(rule_set), ".".join(map(str, predictions))]))
+                    if key in seen: continue
+                    seen.add(key)
+                    results.append({"id": key, "number": str(locked_number).zfill(2), "lockedPosition": locked_position, "predictionDistance": distance, "consecutive": evaluated["displayStreak"], "highestStreak": evaluated["highestStreak"], "predictionNumbers": [str(number).zfill(2) for number in predictions], "algorithmType": algorithm_type, "searchCondition": request, "sourceA": evaluated.get("sourceA"), "ruleSets": [rule_set]})
     results.sort(key=lambda item: (-item["highestStreak"], item["predictionDistance"], item["lockedPosition"]))
     duplicate: dict[str, int] = {}
     for result in results:
@@ -358,7 +423,10 @@ def run_matrix_explore_group_with_history(value: dict, newest_first: list[dict])
     newest_first = _history_for_lottery(value["lottery"], newest_first)
     count = lottery_position_count(value["lottery"])
     source_index = value["lockedSourceIndex"]
+    date_offset = value["exploreDateOffset"]
+    distance = value["predictionDistance"]
     if not isinstance(source_index, int) or source_index < 0 or source_index >= min(15, len(newest_first)): raise ValueError("鎖定來源期超出探索日期與十三期範圍")
+    if source_index - date_offset + 1 != distance: raise ValueError("鎖定來源期與預測期距離不一致")
     if not 1 <= value["lockedPosition"] <= count: raise ValueError("鎖定位置超出彩種位置範圍")
     source = newest_first[source_index]
     locked_number = _number_at(source, value["lottery"], value["numberOrder"], value["lockedPosition"])
@@ -371,19 +439,20 @@ def run_matrix_explore_group_with_history(value: dict, newest_first: list[dict])
     results: list[dict] = []
     seen: set[str] = set()
     for rule_count in [1, 2]:
-        for distance in range(value["minPredictionDistance"], value["maxPredictionDistance"] + 1):
-            offsets = [0] if value["algorithmType"] == "拖牌" else list(range(-14, distance))
-            positions = [value["lockedPosition"]] if value["algorithmType"] == "拖牌" else list(range(1, count + 1))
-            for offset in offsets:
-                for position in positions:
-                    request = {"lottery": value["lottery"], "numberOrder": value["numberOrder"], "lockedPosition": value["lockedPosition"], "lockedNumber": locked_number, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": value["algorithmType"]}
-                    if value["algorithmType"] != "拖牌": request.update({"referenceOffset": offset, "referencePosition": position})
-                    evaluated = _evaluate_prepared(request, history, source_indexes, requested_source_index)
-                    if not evaluated.get("valid") or not evaluated.get("highestStreak") or evaluated["highestStreak"] < (4 if rule_count == 1 else 5): continue
-                    predictions = _prediction_numbers(evaluated)
-                    if not 1 <= len(predictions) <= 2: continue
-                    key = "|".join(map(str, [source["period"], value["lockedPosition"], locked_number, offset, position, distance, value["algorithmType"], rule_count, evaluated["highestStreak"], ".".join(map(str, predictions))]))
-                    if key in seen: continue
-                    seen.add(key)
-                    results.append({"id": key, "number": str(locked_number).zfill(2), "lockedPosition": value["lockedPosition"], "lockedSourceIndex": source_index, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "consecutive": evaluated["displayStreak"], "highestStreak": evaluated["highestStreak"], "predictionNumbers": [str(number).zfill(2) for number in predictions], "algorithmType": value["algorithmType"], "ruleCount": rule_count, "searchCondition": request, "sourceA": evaluated.get("sourceA"), "ruleSets": evaluated.get("results", evaluated.get("ruleSets", []))})
+        coordinates = _reference_coordinates(
+            value["algorithmType"], value["lockedPosition"], count, 14, distance,
+        )
+        for offset, position in coordinates:
+            request = {"lottery": value["lottery"], "numberOrder": value["numberOrder"], "lockedPosition": value["lockedPosition"], "lockedNumber": locked_number, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "ruleCount": rule_count, "algorithmType": value["algorithmType"]}
+            if value["algorithmType"] != "拖牌": request.update({"referenceOffset": offset, "referencePosition": position})
+            evaluated = _evaluate_prepared(request, history, source_indexes, requested_source_index)
+            if not evaluated.get("valid") or not evaluated.get("highestStreak") or evaluated["highestStreak"] < (4 if rule_count == 1 else 5): continue
+            for rule_set in _evaluated_road_sets(evaluated):
+                predictions = sorted({int(number) for number in rule_set.get("predictionNumbers", [])})
+                if rule_count == 1 and len(predictions) != 1: continue
+                if rule_count == 2 and not 1 <= len(predictions) <= 2: continue
+                key = "|".join(map(str, [source["period"], value["lockedPosition"], locked_number, offset, position, distance, value["algorithmType"], rule_count, evaluated["highestStreak"], _road_identity(rule_set), ".".join(map(str, predictions))]))
+                if key in seen: continue
+                seen.add(key)
+                results.append({"id": key, "number": str(locked_number).zfill(2), "lockedPosition": value["lockedPosition"], "lockedSourceIndex": source_index, "lockedSourcePeriod": source["period"], "predictionDistance": distance, "consecutive": evaluated["displayStreak"], "highestStreak": evaluated["highestStreak"], "predictionNumbers": [str(number).zfill(2) for number in predictions], "algorithmType": value["algorithmType"], "ruleCount": rule_count, "searchCondition": request, "sourceA": evaluated.get("sourceA"), "ruleSets": [rule_set]})
     return {"results": results}

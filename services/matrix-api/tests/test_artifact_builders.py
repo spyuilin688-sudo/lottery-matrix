@@ -38,7 +38,7 @@ def test_explore_batch_builder_needs_only_start_and_limit() -> None:
     result = builders["explore"](context)
 
     assert result["artifact"]["items"] == []
-    assert result["_checkpoint"] == {"cursor": 12, "total": 390, "complete": False}
+    assert result["_checkpoint"] == {"cursor": 12, "total": 1080, "complete": False}
 
 
 def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:

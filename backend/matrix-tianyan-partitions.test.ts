@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MatrixExploreGroupInput } from './matrix-algorithm';
+import type { MatrixExploreGroupInput } from './matrix-algorithm-shared';
 import { createTianyanPartitionWorkUnits } from './matrix-tianyan-partitions';
 
 describe('resumable Tianyan partition plan', () => {
@@ -10,11 +10,9 @@ describe('resumable Tianyan partition plan', () => {
       algorithmType: '加減',
       lockedSourceIndex: 0,
       lockedPosition: 1,
-      explorePeriods: 13,
       exploreDateOffset: 0,
       exploreRange: '完整範圍',
-      minPredictionDistance: 1,
-      maxPredictionDistance: 13,
+      predictionDistance: 1,
     };
     const workUnits: MatrixExploreGroupInput[] = [
       base,

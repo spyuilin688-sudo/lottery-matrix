@@ -1,4 +1,4 @@
-import { normalizeMatrixNumber, type MatrixDraw, type MatrixLottery } from './matrix-algorithm';
+import { normalizeMatrixNumber, type MatrixDraw, type MatrixLottery } from './matrix-algorithm-shared';
 import {
   enumerateEqualSpacingSequences,
   evaluateTiangongCandidate,

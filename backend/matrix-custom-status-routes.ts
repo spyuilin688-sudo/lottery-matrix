@@ -1,4 +1,4 @@
-import type { MatrixLottery } from './matrix-algorithm';
+import type { MatrixLottery } from './matrix-algorithm-shared';
 import {
   resolveStatusEvaluationMode,
   validateCustomStatusConfig,

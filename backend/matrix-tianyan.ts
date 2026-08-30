@@ -1,4 +1,4 @@
-import { normalizeMatrixNumber, type MatrixAlgorithmType, type MatrixLottery } from './matrix-algorithm';
+import { normalizeMatrixNumber, type MatrixAlgorithmType, type MatrixLottery } from './matrix-algorithm-shared';
 
 export type TianyanAlgorithmType = MatrixAlgorithmType;
 

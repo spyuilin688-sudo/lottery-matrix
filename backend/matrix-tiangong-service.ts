@@ -1,4 +1,4 @@
-import type { MatrixDraw, MatrixLottery } from './matrix-algorithm';
+import type { MatrixDraw, MatrixLottery } from './matrix-algorithm-shared';
 import { runTiangongCandidates } from './matrix-tiangong-generator';
 import {
   evaluateTiangongCandidate,

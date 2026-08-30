@@ -1,4 +1,4 @@
-import { normalizeMatrixNumber, type MatrixLottery } from './matrix-algorithm';
+import { normalizeMatrixNumber, type MatrixLottery } from './matrix-algorithm-shared';
 
 export type TiangongSourceSequence = [number, number, number];
 export type TiangongDirection = '固定' | '依序遞增' | '依序遞減';

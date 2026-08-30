@@ -1,4 +1,4 @@
-import type { MatrixExploreGroupInput } from './matrix-algorithm';
+import type { MatrixExploreGroupInput } from './matrix-algorithm-shared';
 import type { ExploreArtifact } from './matrix-explore-service';
 import type { TianyanArtifact } from './matrix-tianyan-service';
 

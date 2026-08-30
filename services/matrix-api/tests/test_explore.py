@@ -23,21 +23,23 @@ def test_normalization_wraps_each_lottery_range() -> None:
     assert normalize_matrix_number(0, 39) == 39
 
 
-def test_zero_is_drag_and_validation_keeps_full_draws() -> None:
-    history = [
-        draw("A", [10, 20, 25, 30, 35]), draw("P1", [1, 2, 3, 4, 20]),
-        draw("S1", [10, 20, 25, 30, 35]),
-    ]
+def test_zero_from_non_locked_reference_stays_addition_and_validation_keeps_full_draws() -> None:
+    history = [draw("A", [10, 20, 25, 30, 35])]
+    for index in range(4, 0, -1):
+        history.extend([
+            draw(f"P{index}", [1, 2, 3, 4, 20]),
+            draw(f"S{index}", [10, 20, 25, 30, 35]),
+        ])
     result = run_matrix_algorithm_with_history(REQUEST, history)
     zero_rules = [rule for item in rule_sets(result) for rule in item["rules"] if rule["value"] == 0]
-    assert [rule["algorithmType"] for rule in zero_rules] == ["拖牌"]
+    assert [rule["algorithmType"] for rule in zero_rules] == ["加減"]
     row = rule_sets(result)[0]["historicalValidation"][0]
     assert row["sourceSortedNumbers"] == ["10", "20", "25", "30", "35"]
     assert row["referenceSortedNumbers"] == ["10", "20", "25", "30", "35"]
     assert row["predictionNumbers"] == ["01", "02", "03", "04", "20"]
 
 
-def test_validation_stops_at_thirteen_groups() -> None:
+def test_locked_one_code_rejects_entire_road_at_eight_groups() -> None:
     chronological = []
     for index in range(1, 15):
         chronological.extend([
@@ -46,15 +48,45 @@ def test_validation_stops_at_thirteen_groups() -> None:
         ])
     chronological.append(draw("A", [10, 20, 25, 30, 35]))
     result = run_matrix_algorithm_with_history(REQUEST, list(reversed(chronological)))
-    assert result["highestStreak"] == 13
-    assert len(rule_sets(result)[0]["historicalValidation"]) == 13
+    assert result["valid"] is False
+    assert result["highestStreak"] == 8
+    assert result["reason"] == "鎖定1碼連準達8次（包含8）以上，整條版路無效，不得截短"
+    assert rule_sets(result) == []
+
+
+def test_locked_two_codes_rejects_entire_road_at_twelve_groups() -> None:
+    chronological = []
+    for index in range(1, 13):
+        if index == 12:
+            prediction = [1, 2, 3, 4, 21]
+        elif index == 11:
+            prediction = [5, 6, 7, 8, 22]
+        else:
+            prediction = [21 if index % 2 == 0 else 22, 23, 24, 25, 26]
+        chronological.extend([
+            draw(f"S{index}", [10, 20, 30, 35, 39]),
+            draw(f"P{index}", prediction),
+        ])
+    chronological.append(draw("A", [10, 20, 30, 35, 39]))
+
+    result = run_matrix_algorithm_with_history(
+        {**REQUEST, "ruleCount": 2},
+        list(reversed(chronological)),
+    )
+
+    assert result["valid"] is False
+    assert result["highestStreak"] == 12
+    assert result["reason"] == "鎖定2碼連準達12次（包含12）以上，整條版路無效，不得截短"
+    assert rule_sets(result) == []
 
 
 def test_current_result_is_source_prediction_not_historical_validation() -> None:
-    history = [
-        draw("CURRENT_RESULT", [1, 2, 3, 4, 25]), draw("A", [10, 20, 25, 30, 35]),
-        draw("P1", [1, 2, 3, 4, 25]), draw("S1", [10, 20, 25, 30, 35]),
-    ]
+    history = [draw("CURRENT_RESULT", [1, 2, 3, 4, 25]), draw("A", [10, 20, 25, 30, 35])]
+    for index in range(4, 0, -1):
+        history.extend([
+            draw(f"P{index}", [1, 2, 3, 4, 25]),
+            draw(f"S{index}", [10, 20, 25, 30, 35]),
+        ])
     result = run_matrix_algorithm_with_history(REQUEST, history)
     periods = [row["predictionPeriod"] for item in rule_sets(result) for row in item["historicalValidation"]]
     assert result["sourceA"]["predictionPeriod"] == "CURRENT_RESULT"
@@ -84,18 +116,23 @@ def test_drag_rules_do_not_rescue_invalid_two_code_add_subtract_road() -> None:
     result = run_matrix_algorithm_with_history({**REQUEST, "ruleCount": 2}, history)
 
     assert result["valid"] is False
-    assert result["reason"] == "規則上限為2條；若必須使用3條（含3條）以上才能覆蓋全部歷史驗證組，整筆版路無效，不得輸出"
+    assert result["reason"] == "相同最長連準出現超過2條可延續共同值，整條版路無效，不得輸出兩兩組合"
     assert result["highestStreak"] == 3
-    assert result["conflictingRules"] == [28, 29, 30]
+    assert len(result["conflictingRules"]) > 2
     assert rule_sets(result) == []
 
 
 def test_combine_road_keeps_full_sum_as_rule_value() -> None:
-    result = run_matrix_algorithm_with_history({**REQUEST, "algorithmType": "合值版路"}, [
-        draw("A", [10, 35, 36, 37, 38]),
-        draw("P1", [1, 2, 3, 4, 29]),
-        draw("S1", [10, 30, 31, 32, 33]),
-    ])
+    history = [draw("A", [10, 35, 36, 37, 38])]
+    for index in range(4, 0, -1):
+        history.extend([
+            draw(f"P{index}", [1, 2, 3, 4, 29]),
+            draw(f"S{index}", [10, 30, 31, 32, 33]),
+        ])
+    result = run_matrix_algorithm_with_history(
+        {**REQUEST, "algorithmType": "合值版路"},
+        history,
+    )
 
     combined_59 = next(
         (item for item in rule_sets(result) if item["rules"][0]["value"] == 59),
