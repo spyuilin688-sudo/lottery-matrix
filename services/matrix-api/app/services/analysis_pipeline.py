@@ -8,6 +8,10 @@ from app.repositories.artifact_chunks import chunk_manifest
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
 PHASES = ("explore", "tianyan", "tiangong", "status")
+PHASE_DEPENDENCIES = {
+    "tianyan": ("explore",),
+    "status": ("explore", "tianyan", "tiangong"),
+}
 
 
 class AnalysisPipeline:
@@ -45,11 +49,9 @@ class AnalysisPipeline:
             for phase_index, phase in enumerate(PHASES):
                 if phase in {"explore", "tiangong"}:
                     if phase_index < resume_phase_index:
-                        existing = self.repository.read_artifact(
+                        if self.repository.has_artifact(
                             lottery, period, self.analysis_version, phase,
-                        )
-                        if existing is not None:
-                            context["artifacts"][phase] = existing
+                        ):
                             continue
                     start = int(run.get("cursor", 0)) if run.get("phase") == phase else 0
                     batch_key = f"{phase}Batch"
@@ -125,10 +127,11 @@ class AnalysisPipeline:
                     context["artifacts"][phase] = built
                     continue
 
-                existing = self.repository.read_artifact(lottery, period, self.analysis_version, phase)
-                if phase_index < resume_phase_index and existing is not None:
-                    context["artifacts"][phase] = existing
+                if phase_index < resume_phase_index and self.repository.has_artifact(
+                    lottery, period, self.analysis_version, phase,
+                ):
                     continue
+                self._hydrate_dependencies(context, lottery, period, phase)
                 built = self.builders[phase](context)
                 checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                 if isinstance(checkpoint, dict) and "artifact" in built:
@@ -158,6 +161,24 @@ class AnalysisPipeline:
         except Exception as error:
             self.repository.fail_run(lottery, period, self.analysis_version, str(error))
             raise
+
+    def _hydrate_dependencies(
+        self,
+        context: dict[str, Any],
+        lottery: str,
+        period: str,
+        phase: str,
+    ) -> None:
+        artifacts = context["artifacts"]
+        for dependency in PHASE_DEPENDENCIES.get(phase, ()):
+            if dependency in artifacts:
+                continue
+            artifact = self.repository.read_artifact(
+                lottery, period, self.analysis_version, dependency,
+            )
+            if artifact is None:
+                raise RuntimeError(f"ANALYSIS_REQUIRED_ARTIFACT_MISSING:{dependency}")
+            artifacts[dependency] = artifact
 
     @staticmethod
     def _validate_draw(draw: dict[str, Any]) -> None:

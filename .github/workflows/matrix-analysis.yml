@@ -2,7 +2,7 @@ name: Matrix scheduled analysis
 
 on:
   workflow_dispatch:
-  # Changing this workflow is the explicit one-shot recovery trigger.
+  # Changing this workflow is the explicit one-shot recovery trigger; checkpoints resume.
   push:
     branches: [main]
     paths:

@@ -368,6 +368,46 @@ def test_pipeline_resumes_checkpointed_tiangong_and_streams_chunk_summary() -> N
     }
 
 
+def test_nonterminal_tiangong_resume_does_not_hydrate_completed_artifacts() -> None:
+    repository = RepositorySpy()
+
+    def tiangong(context: dict) -> dict:
+        start = context["tiangongBatch"]["start"]
+        stop = min(3, start + context["tiangongBatch"]["limit"])
+        identifier = f"road-{start}"
+        return {
+            "artifact": {
+                "items": [{"id": identifier}],
+                "validationById": {identifier: {"itemId": identifier}},
+            },
+            "_checkpoint": {
+                "cursorStart": start, "cursor": stop, "total": 3,
+                "complete": stop == 3,
+            },
+        }
+
+    builders = {
+        "explore": lambda _: {"items": [], "validationById": {}},
+        "tianyan": lambda _: {"items": []},
+        "tiangong": tiangong,
+        "status": lambda _: {"items": []},
+    }
+    pipeline = AnalysisPipeline(
+        repository, builders, analysis_version="v1", tiangong_batch_size=1,
+    )
+
+    first = pipeline.run(DRAW, history=[])
+    repository.calls.clear()
+    second = pipeline.run(DRAW, history=[])
+
+    assert first["phase"] == "tiangong"
+    assert first["cursor"] == 1
+    assert second["phase"] == "tiangong"
+    assert second["cursor"] == 2
+    assert not any(call.startswith("read_artifact:") for call in repository.calls)
+    assert not any(call.startswith("materialize_artifact:") for call in repository.calls)
+
+
 def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
     class FailOnceSummaryRepository(InMemoryAnalysisRepository):
         def __init__(self) -> None:
