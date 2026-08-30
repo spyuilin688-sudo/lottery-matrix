@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,7 +25,7 @@ describe("production member shell", () => {
 
     expect(screen.getByRole("main", { name: "探索結果區" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "探索結果區" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /展開版路/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /展開版路/ })).toHaveLength(4);
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
   });
 
@@ -49,6 +49,96 @@ describe("production member shell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "關閉" }));
     expect(screen.queryByRole("dialog", { name: "連準篩選" })).not.toBeInTheDocument();
+  });
+
+  it("restores the four deployed preview results without changing the member app", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+
+    expect(screen.getByText(/探索到/).parentElement).toHaveTextContent("探索到 4 組符合條件版路");
+    for (const id of ["result-04", "result-09", "result-07", "result-14"]) {
+      expect(screen.getByRole("button", { name: `展開版路 ${id}` })).toBeInTheDocument();
+    }
+  });
+
+  it("allows more than one preview result to stay expanded", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+    expect(screen.getByRole("region", { name: "04 驗證過程" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "09 驗證過程" })).toBeInTheDocument();
+  });
+
+  it("uses the approved one-line summary format", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    expect(document.querySelector(".reference-card-summary")?.textContent)
+      .toBe("開 04 第 1 顆  |  同期  |  第 4 顆  |  +24.36  |  下 1 期開");
+  });
+
+  it("keeps the consecutive tag as a direct child of the summary card", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const summary = document.querySelector(".reference-summary-card");
+    expect(summary).not.toBeNull();
+    expect(summary?.querySelector(":scope > .reference-consecutive-tag")).toHaveTextContent("準6進7");
+  });
+
+  it("renders issue, number, and formula columns as independent cards", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-14" }));
+
+    const firstGroup = document.querySelector(".reference-validation-group");
+    expect(firstGroup).not.toBeNull();
+    expect(firstGroup?.children).toHaveLength(3);
+    expect(firstGroup?.children[0]).toHaveClass("reference-issues");
+    expect(firstGroup?.children[1]).toHaveClass("reference-numbers-card");
+    expect(firstGroup?.children[2]).toHaveClass("reference-formulas");
+  });
+
+  it("limits every validation group to at most three rows", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-14" }));
+
+    for (const group of document.querySelectorAll(".reference-validation-group")) {
+      expect(within(group as HTMLElement).getAllByText(/^\d{5}$/).length).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it("inserts one half-width space before formula plus signs", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
+  });
+
+  it("keeps the scoped tag selector and responsive three-column dimensions", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.reference-summary-card\s*>\s*\.reference-consecutive-tag\s*\{/);
+    expect(css).toMatch(/font-size:\s*8px/);
+    expect(css).toMatch(/grid-template-columns:\s*clamp\(44px,\s*12\.31vw,\s*48px\)\s+minmax\(0,\s*1fr\)\s+clamp\(110px,\s*32\.82vw,\s*128px\)/);
+    expect(css).toMatch(/column-gap:\s*2px/);
+    expect(css).toMatch(/row-gap:\s*3px/);
+    expect(css).not.toContain("!important");
+  });
+
+  it("keeps issue and formula typography aligned with the approved mobile layout", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.reference-issue\s*\{[^}]*font-size:\s*9px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.reference-formula-row\s*\{[^}]*padding:\s*0 6px/s);
+    expect(css).toMatch(/\.reference-card-summary\s*\{[^}]*padding:\s*4px 8px/s);
   });
 
   it("renders the member app without the virtual phone frame", () => {
