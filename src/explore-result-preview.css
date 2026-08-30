@@ -217,8 +217,8 @@
 }
 
 .explore-validation-card {
-  --explore-validation-summary-font-size: clamp(14px, 3.85vw, 15px);
-  --explore-validation-row-height: clamp(32px, 8.46vw, 33px);
+  --explore-validation-summary-font-size: clamp(13px, 3.59vw, 14px);
+  --explore-validation-row-min-height: clamp(27px, 7.18vw, 28px);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -297,16 +297,11 @@
   margin-top: 0;
 }
 
-.explore-validation-group[data-complete="false"] {
-  margin-top: 3px;
-  background: transparent;
-}
-
 .explore-validation-issues,
 .explore-validation-numbers-card,
 .explore-validation-formulas {
   display: grid;
-  grid-auto-rows: var(--explore-validation-row-height);
+  grid-auto-rows: minmax(var(--explore-validation-row-min-height), auto);
   gap: 0;
   min-width: 0;
   border: 1px solid rgba(61, 82, 113, .68);
@@ -328,8 +323,9 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  height: var(--explore-validation-row-height);
-  padding: 4px 0;
+  height: auto;
+  min-height: var(--explore-validation-row-min-height);
+  padding: 3px 0;
   font-size: 10.5px;
   line-height: 1.25;
 }
@@ -350,9 +346,11 @@
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  height: var(--explore-validation-row-height);
-  padding: 4px 3px;
+  height: auto;
+  min-height: var(--explore-validation-row-min-height);
+  padding: 3px 3px;
   color: #d8dbe2;
+  font-family: Roboto, Arial, sans-serif;
   font-size: 8px;
   font-weight: 700;
   letter-spacing: .02em;
@@ -450,8 +448,9 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  height: var(--explore-validation-row-height);
-  padding: 4px 6px;
+  height: auto;
+  min-height: var(--explore-validation-row-min-height);
+  padding: 3px 6px;
   white-space: nowrap;
 }
 
