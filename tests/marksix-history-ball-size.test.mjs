@@ -2,13 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const responsive = readFileSync("src/responsive-feature-pages.css", "utf8");
-const explore = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const balls = readFileSync("src/number-ball.css", "utf8");
 
 test("六合彩近10期與歷史開獎放大至 24px，號碼字級維持原設定", () => {
-  assert.match(explore, /\.matrix-explore-main-screen \.history-panel\[data-lottery="六合彩"\]\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);/s);
-  assert.match(responsive, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\]\s*\{\s*--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);\s*\}/s);
+  assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\.history-panel\[data-lottery="六合彩"\]\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);/s);
+  assert.match(balls, /\.draw-history-screen \.draw-history-panel\.history-panel\[data-lottery="六合彩"\]\s*\{[^}]*--matrix-history-ball-size:\s*clamp\(20px,\s*6\.15vw,\s*24px\);/s);
   assert.match(balls, /\.matrix-explore-main-screen \.matrix-explore-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--number-font-size:\s*clamp\(9px,\s*2\.56vw,\s*10px\);/s);
   assert.match(balls, /\.draw-history-screen \.draw-history-panel\[data-lottery="六合彩"\][^{]*\{[^}]*--number-font-size:\s*clamp\(9px,\s*2\.56vw,\s*10px\);/s);
 });
