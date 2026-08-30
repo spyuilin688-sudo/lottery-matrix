@@ -357,13 +357,15 @@ describe("production member shell", () => {
     render(<App />);
 
     const filterButton = screen.getByRole("button", { name: "連準篩選" });
-    const resultCount = document.querySelector(".result-count .numeric-text");
-    const resultNumber = document.querySelector(".explore-result-row .result-number");
+    const resultCount = document.querySelector(".explore-result-count-number");
+    const resultNumber = document.querySelector(".explore-result-column-number");
     const tableHead = document.querySelector(".road-results-head");
     const tableHeadLabel = document.querySelector(".road-results-head > span");
 
     expect(getComputedStyle(filterButton).borderTopColor).toBe("rgba(212, 165, 47, 0.72)");
     expect(getComputedStyle(filterButton).color).toBe("rgb(216, 169, 62)");
+    expect(resultCount).not.toBeNull();
+    expect(resultNumber).not.toBeNull();
     expect(getComputedStyle(resultCount!).color).toBe("rgb(88, 211, 230)");
     expect(getComputedStyle(resultNumber!).color).toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(tableHead!).paddingTop).toBe("8px");

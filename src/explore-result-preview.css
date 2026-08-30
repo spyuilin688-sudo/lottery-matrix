@@ -105,11 +105,11 @@
   color: #d8c38d;
 }
 
-.explore-result-preview-screen.matrix-explore-main-screen .result-title .result-count .numeric-text {
+.explore-result-preview-screen.matrix-explore-main-screen .result-title .result-count .explore-result-count-number {
   color: #58d3e6;
 }
 
-.explore-result-preview-screen.matrix-explore-main-screen .road-results .explore-result-row > .result-number {
+.explore-result-preview-screen.matrix-explore-main-screen .road-results .explore-result-row > .explore-result-column-number {
   color: #f2f5f8;
 }
 

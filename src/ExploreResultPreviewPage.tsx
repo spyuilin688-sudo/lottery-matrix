@@ -148,7 +148,7 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
               <ChevronDownIcon data-open={filterOpen} aria-hidden="true" />
             </button>
             <strong className="result-count">
-              <span>探索到&nbsp;</span><span className="numeric-text">{filteredResults.length}</span><span>&nbsp;組符合條件版路</span>
+              <span>探索到&nbsp;</span><span className="numeric-text explore-result-count-number">{filteredResults.length}</span><span>&nbsp;組符合條件版路</span>
             </strong>
           </header>
 
@@ -196,7 +196,7 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
                 <article key={result.id}>
                   <div className="road-result-row explore-result-row">
                     <span className="tag"><span>{result.numberOrder}</span><span className="numeric-text">{result.position}</span></span>
-                    <span className="result-number numeric-text">{result.number}</span>
+                    <span className="result-number numeric-text explore-result-column-number">{result.number}</span>
                     <span className="result-period">下<span className="numeric-text">{result.predictionPeriod}</span>期</span>
                     <span className="result-consecutive">{result.consecutive}</span>
                     <strong className="numeric-text">{result.prediction}</strong>
