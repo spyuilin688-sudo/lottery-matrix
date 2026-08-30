@@ -39,8 +39,17 @@ class FakeQuery:
         self.client.last_orders.append((column, desc))
         return self
 
+    def range(self, start: int, end: int) -> "FakeQuery":
+        self.client.last_ranges.append((start, end))
+        self.selected_range = (start, end)
+        return self
+
     def execute(self) -> FakeResponse:
-        return FakeResponse(self.client.responses.get(self.table, []))
+        rows = self.client.responses.get(self.table, [])
+        if hasattr(self, "selected_range"):
+            start, end = self.selected_range
+            rows = rows[start:end + 1]
+        return FakeResponse(rows)
 
 
 class FakeSupabaseClient:
@@ -51,6 +60,7 @@ class FakeSupabaseClient:
         self.last_record: dict[str, Any] | list[dict[str, Any]] | None = None
         self.last_filters: list[tuple[str, Any]] = []
         self.last_orders: list[tuple[str, bool]] = []
+        self.last_ranges: list[tuple[int, int]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
     def table(self, name: str) -> FakeQuery:
@@ -371,6 +381,22 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
         ("analysis_version", "v1"), ("kind", "explore"),
     ]
     assert fake_client.last_orders == [("chunk_index", False)]
+
+
+def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["matrix_analysis_artifact_chunks"] = [
+        {"chunk_index": index, "cursor_start": index * 3,
+         "cursor_end": (index + 1) * 3, "payload": {"items": []}}
+        for index in range(3)
+    ]
+
+    chunks = SupabaseAnalysisRepository(fake_client).read_artifact_chunks(
+        "今彩539", "115000210", "v6", "tiangong",
+    )
+
+    assert [chunk["chunk_index"] for chunk in chunks] == [0, 1, 2]
+    assert fake_client.last_ranges == [(0, 1), (2, 3)]
 
 
 def test_supabase_chunk_write_compacts_large_payload() -> None:
