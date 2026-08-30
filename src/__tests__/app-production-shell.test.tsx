@@ -83,16 +83,64 @@ describe("production member shell", () => {
     render(<App />);
 
     expect(getComputedStyle(screen.getByRole("main", { name: "探索結果區" })).color)
-      .toBe("rgb(245, 242, 234)");
+      .toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(screen.getByRole("heading", { name: "探索結果區" })).color)
-      .toBe("rgb(231, 213, 172)");
+      .toBe("rgb(216, 195, 141)");
     expect(getComputedStyle(document.querySelector(".road-results article")!).color)
-      .toBe("rgb(198, 192, 184)");
+      .toBe("rgb(170, 181, 196)");
     const positionTag = document.querySelector(".road-results .tag");
-    expect(getComputedStyle(positionTag!).color).toBe("rgb(240, 189, 52)");
+    expect(getComputedStyle(positionTag!).color).toBe("rgb(216, 195, 141)");
     expect(getComputedStyle(positionTag!).borderTopWidth).toBe("1px");
 
     previewStyle.remove();
+  });
+
+  it("applies the approved Scheme A palette through the production stylesheet order", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+    const main = screen.getByRole("main", { name: "探索結果區" });
+    const panel = document.querySelector(".result-panel");
+    const validation = document.querySelector(".explore-validation-card");
+    const summary = document.querySelector(".explore-validation-summary");
+    const issues = document.querySelector(".explore-validation-issues");
+    const numbers = document.querySelector(".explore-validation-numbers-card");
+    const formulas = document.querySelector(".explore-validation-formulas");
+    const prediction = document.querySelector(".explore-validation-prediction");
+    const secondFormula = document.querySelector(".explore-validation-formula-row:nth-child(2)");
+    const source = document.querySelector(".explore-validation-number--source");
+    const step = document.querySelector(".explore-validation-number--step");
+    const hit = document.querySelector(".explore-validation-number--hit");
+    const special = document.querySelector(".explore-validation-numbers em");
+
+    expect(getComputedStyle(main).backgroundColor).toBe("rgb(7, 11, 18)");
+    expect(getComputedStyle(main).color).toBe("rgb(242, 245, 248)");
+    expect(getComputedStyle(panel!).backgroundColor).toBe("rgb(13, 21, 32)");
+    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(52, 74, 102)");
+    expect(getComputedStyle(validation!).borderTopWidth).toBe("0px");
+    expect(getComputedStyle(summary!).backgroundColor).toBe("rgb(22, 36, 58)");
+    expect(getComputedStyle(issues!).backgroundColor).toBe("rgb(16, 28, 44)");
+    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgb(16, 28, 44)");
+    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgb(11, 22, 37)");
+    expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgb(11, 22, 37)");
+    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgb(18, 43, 73)");
+    expect(getComputedStyle(issues!).borderTopColor).toBe("rgb(52, 74, 102)");
+    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(38, 56, 78)");
+    expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
+    expect(getComputedStyle(source!).borderTopWidth).toBe("1px");
+    expect(getComputedStyle(source!).backgroundColor).toBe("rgba(88, 211, 230, 0.14)");
+    expect(getComputedStyle(step!).borderTopColor).toBe("rgb(230, 183, 106)");
+    expect(getComputedStyle(step!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
+    expect(getComputedStyle(hit!).borderTopColor).toBe("rgb(231, 132, 165)");
+    expect(getComputedStyle(hit!).backgroundColor).toBe("rgba(231, 132, 165, 0.14)");
+    expect(getComputedStyle(special!).borderTopColor).toBe("rgb(180, 155, 229)");
+    expect(getComputedStyle(special!).backgroundColor).toBe("rgba(180, 155, 229, 0.14)");
+
+    productionStyle.remove();
   });
 
   it("expands the consecutive filter inline and filters results immediately", () => {
@@ -233,8 +281,8 @@ describe("production member shell", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*0/s);
-    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.82\)/s);
-    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.68\)/s);
+    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid #344a66/s);
+    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid #26384e/s);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(-n \+ 2\)/);
   });
@@ -287,7 +335,7 @@ describe("production member shell", () => {
 
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
-    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(7, 16, 24)");
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(22, 36, 58)");
 
     productionStyle.remove();
   });
@@ -359,11 +407,11 @@ describe("production member shell", () => {
     expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/);
   });
 
-  it("keeps validation number states square and prediction styling matched to the summary card", () => {
+  it("keeps validation number states square and gives the prediction its unique blue surface", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
-    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.62\)[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(13,\s*31,\s*59,\s*\.78\)/s);
+    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #344a66[^}]*border-radius:\s*8px[^}]*background:\s*#122b49/s);
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {
