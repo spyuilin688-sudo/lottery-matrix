@@ -2,10 +2,94 @@
   font-weight: 600;
 }
 
+.notifications-screen-v2 .notification-content {
+  row-gap: 16px;
+}
+
+.notifications-screen-v2 .notification-list {
+  gap: 12px;
+}
+
+.notifications-screen-v2 .notification-heading {
+  padding: 5px 8px 5px 4px;
+}
+
+.notifications-screen-v2 .notification-bulk-actions button {
+  border: 1px solid rgba(212, 165, 47, .82);
+  color: #e8c65f;
+  box-shadow: inset 0 0 12px rgba(215, 165, 47, .07);
+}
+
+.notifications-screen-v2 .notification-bulk-enable {
+  background:
+    radial-gradient(circle at 50% 140%, rgba(199, 145, 34, .20), transparent 58%),
+    linear-gradient(145deg, rgba(42, 31, 13, .78), rgba(5, 13, 19, .96));
+}
+
 .notifications-screen-v2 .notification-bulk-disable {
-  border: 1px solid var(--lottery-gold-500);
-  background: var(--lottery-neutral-900);
-  color: var(--lottery-gold-500);
+  border: 1px solid rgba(212, 165, 47, .82);
+  background:
+    radial-gradient(circle at 50% 140%, rgba(199, 145, 34, .12), transparent 58%),
+    linear-gradient(145deg, rgba(28, 23, 13, .70), rgba(5, 13, 19, .98));
+  color: #e8c65f;
+}
+
+.notifications-screen-v2 .notification-bulk-enable::before,
+.notifications-screen-v2 .notification-bulk-enable::after {
+  display: none;
+}
+
+.notifications-screen-v2 .notification-actions {
+  grid-template-columns: 60px 38px;
+  gap: 10px;
+}
+
+.notifications-screen-v2 .notification-settings-toggle {
+  width: 60px;
+  padding-inline: 4px;
+}
+
+.notifications-screen-v2 .notification-title h2:has(em) {
+  gap: 3.5px;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-icon,
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-icon img {
+  opacity: 1;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] h2 span {
+  color: rgba(242, 242, 242, .84);
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] h2 em {
+  opacity: .72;
+}
+
+.notifications-screen-v2 .notification-group .notification-row + .notification-row {
+  border-top-color: rgba(170, 119, 46, .26);
+}
+
+.notifications-screen-v2 .notification-inline-settings-content {
+  border-top-color: rgba(170, 119, 46, .26);
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-title {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-push-status {
+  margin: 0;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-actions {
+  grid-template-columns: 58px 38px;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-settings-toggle {
+  width: 58px;
 }
 
 .notifications-screen-v2 .notification-inline-settings-content:has(.notification-bet-grid) {
