@@ -8,22 +8,22 @@ const CONSECUTIVE_OPTIONS = ["準4進5", "準5進6", "準6進7", "準7進8"] as 
 function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
   const state = value === row.source ? "source" : value === row.step ? "step" : value === row.hit ? "hit" : "";
 
-  return <i className={state ? `reference-number ${state}` : "reference-number"}>{value}</i>;
+  return <i className={state ? `explore-validation-number ${state}` : "explore-validation-number"}>{value}</i>;
 }
 
 function formatFormula(formula: string) {
   return formula.replace(/(?<=\d)\+/g, " +");
 }
 
-function ReferenceValidationCard({ result }: { result: PreviewResult }) {
+function ExploreValidationCard({ result }: { result: PreviewResult }) {
   return (
-    <section className="reference-validation-card" aria-label={`${result.number} 驗證過程`}>
-      <div className="reference-summary-card">
-        <p className="reference-card-summary">{result.summary}</p>
-        <strong className="reference-consecutive-tag">{result.consecutive}</strong>
+    <section className="explore-validation-card" aria-label={`${result.number} 驗證過程`}>
+      <div className="explore-validation-summary-card">
+        <p className="explore-validation-summary">{result.summary}</p>
+        <strong className="explore-validation-consecutive-tag">{result.consecutive}</strong>
       </div>
 
-      <div className="reference-groups">
+      <div className="explore-validation-groups">
         {result.groups.map((group, groupIndex) => {
           const complete = groupIndex < result.groups.length - 1;
           const rows = group.rows.slice(0, 3);
@@ -41,28 +41,28 @@ function ReferenceValidationCard({ result }: { result: PreviewResult }) {
 
           return (
             <div
-              className="reference-validation-group"
+              className="explore-validation-group"
               data-complete={complete ? "true" : "false"}
               data-road-type={result.algorithmType}
               data-wide-numbers={rows.some((row) => row.numbers.length >= 6 || Boolean(row.special)) ? "true" : "false"}
               key={`${result.id}-${groupIndex}`}
             >
-              <div className="reference-issues numeric-text">
+              <div className="explore-validation-issues numeric-text">
                 {Array.from({ length: rowCount }, (_, rowIndex) => (
-                  <span className="reference-issue" key={`issue-${rowIndex}`}>{rows[rowIndex]?.issue ?? ""}</span>
+                  <span className="explore-validation-issue" key={`issue-${rowIndex}`}>{rows[rowIndex]?.issue ?? ""}</span>
                 ))}
               </div>
 
-              <div className="reference-numbers-card">
+              <div className="explore-validation-numbers-card">
                 {Array.from({ length: rowCount }, (_, rowIndex) => {
                   const row = rows[rowIndex];
                   return (
                     <div
-                      className="reference-draw-row reference-number-row"
+                      className="explore-validation-draw-row explore-validation-number-row"
                       key={row ? `${row.issue}-${row.special ?? ""}` : `empty-${rowIndex}`}
                     >
                       {row ? (
-                        <span className="reference-numbers numeric-text">
+                        <span className="explore-validation-numbers numeric-text">
                           {row.numbers.map((value, index) => (
                             <PreviewNumber value={value} row={row} key={`${value}-${index}`} />
                           ))}
@@ -74,9 +74,9 @@ function ReferenceValidationCard({ result }: { result: PreviewResult }) {
                 })}
               </div>
 
-              <div className="reference-formulas numeric-text">
+              <div className="explore-validation-formulas numeric-text">
                 {formulas.map((formula, rowIndex) => (
-                  <span className="reference-formula-row" key={`formula-${rowIndex}`}>{formatFormula(formula)}</span>
+                  <span className="explore-validation-formula-row" key={`formula-${rowIndex}`}>{formatFormula(formula)}</span>
                 ))}
               </div>
             </div>
@@ -84,7 +84,7 @@ function ReferenceValidationCard({ result }: { result: PreviewResult }) {
         })}
       </div>
 
-      <footer className="reference-prediction">
+      <footer className="explore-validation-prediction">
         <strong>本期預測</strong>
         <b className="numeric-text">{result.finalPrediction}</b>
       </footer>
@@ -157,7 +157,7 @@ export function ExploreResultPreviewPage() {
                     </button>
                   </div>
 
-                  {expanded ? <ReferenceValidationCard result={result} /> : null}
+                  {expanded ? <ExploreValidationCard result={result} /> : null}
                 </article>
               );
             })}
