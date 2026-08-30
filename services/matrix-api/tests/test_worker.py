@@ -52,6 +52,44 @@ class StaleScheduledSource(Source):
         return self._draw(220, count, "2026-08-27")
 
 
+class CalendarHistorySource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        return self._draw(220, count, "2026-08-30")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        rows = [
+            self._draw(
+                220 - offset,
+                count,
+                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+            )
+            for offset in range(self.history_count)
+        ]
+        return rows if limit is None else rows[:limit]
+
+
+class SourceAheadOfDatabase(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        return self._draw(205, 5, "2026-08-30")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        rows = [
+            self._draw(
+                205 - offset,
+                5,
+                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+            )
+            for offset in range(36)
+        ]
+        return rows if limit is None else rows[:limit]
+
+
 class TrackingRepository(InMemoryAnalysisRepository):
     def __init__(self) -> None:
         super().__init__()
@@ -60,6 +98,17 @@ class TrackingRepository(InMemoryAnalysisRepository):
     def cleanup_expired(self, now: datetime) -> int:
         self.events.append("cleanup")
         return super().cleanup_expired(now)
+
+
+class FullHistoryReadTrackingRepository(TrackingRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.full_history_reads = 0
+
+    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+        if limit is None:
+            self.full_history_reads += 1
+        return super().list_draws(lottery, limit)
 
 
 def _builders(calls: list[str], history_lengths: list[int] | None = None, failing: str | None = None) -> dict:
@@ -92,6 +141,54 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     assert len(repository.list_draws("今彩539", None)) == 120
 
 
+def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None:
+    repository = TrackingRepository()
+    source = CalendarHistorySource(history_count=120)
+    history_lengths: list[int] = []
+
+    result = run_worker(
+        "今彩539", repository, source, _builders([], history_lengths),
+    )
+
+    assert result["status"] == "complete"
+    assert history_lengths == [120, 120, 120, 120]
+
+
+def test_completed_worker_run_does_not_read_all_history_again() -> None:
+    repository = FullHistoryReadTrackingRepository()
+    source = CalendarHistorySource(history_count=120)
+    run_worker("今彩539", repository, source, _builders([]))
+    repository.full_history_reads = 0
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["skipped"] is True
+    assert repository.full_history_reads == 0
+
+
+def test_worker_refreshes_latest_draw_before_targeting_recent_gap_repair() -> None:
+    repository = TrackingRepository()
+    source = SourceAheadOfDatabase()
+    for offset in range(31):
+        period = 200 - offset
+        if period == 198:
+            continue
+        repository.upsert_draw(
+            source._draw(
+                period,
+                5,
+                (datetime(2026, 8, 25) - timedelta(days=offset)).date().isoformat(),
+            )
+            | {"lottery": "今彩539"}
+        )
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["status"] == "complete"
+    assert repository.list_draws("今彩539", None)[0]["period"] == "000000205"
+    assert ("今彩539", "000000198") in repository.draws
+
+
 def test_worker_has_no_fixed_minimum_history_count() -> None:
     repository = TrackingRepository()
     source = Source(history_count=79)
@@ -106,6 +203,23 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     assert calls == ["explore", "tianyan", "tiangong", "status"]
     assert history_lengths == [79, 79, 79, 79]
     assert repository.get_progress("今彩539", "000000220")["status"] == "complete"
+
+
+def test_worker_stops_every_algorithm_when_missing_history_cannot_be_repaired() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=120)
+    incomplete = [
+        source._draw(period, 5)
+        for period in range(220, 100, -1)
+        if period not in {208, 209}
+    ]
+    source.fetch_history = lambda _lottery, _limit: [dict(draw) for draw in incomplete]
+    calls: list[str] = []
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
+        run_worker("今彩539", repository, source, _builders(calls))
+
+    assert calls == []
 
 
 def test_worker_cleans_expired_artifacts_before_running() -> None:
@@ -175,6 +289,7 @@ def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -
     monkeypatch.setattr(worker_module, "AnalysisPipeline", RecordingPipeline)
     draw = {
         "lottery": "今彩539", "period": "000000220",
+        "drawDate": "2026-08-30",
         "numbers": ["01", "02", "03", "04", "05"],
     }
 

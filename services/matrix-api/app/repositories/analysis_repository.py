@@ -29,6 +29,7 @@ class AnalysisRepository(Protocol):
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
@@ -140,6 +141,32 @@ class InMemoryAnalysisRepository:
                 "drawOrderNumbers": draw.get("drawOrderNumbers"),
             }
             for draw in newest
+        ]
+
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
+        matches = [
+            draw
+            for (name, _), draw in self.draws.items()
+            if name == lottery
+            and str(draw.get("drawDate") or "").replace("/", "-").replace(".", "-") >= since_date
+        ]
+        ordered = sorted(
+            matches,
+            key=lambda draw: (
+                str(draw.get("drawDate") or ""),
+                str(draw["period"]),
+            ),
+            reverse=True,
+        )
+        return [
+            {
+                "period": draw["period"],
+                "drawDate": draw.get("drawDate"),
+                "numbers": draw["numbers"],
+                "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),
+                "drawOrderNumbers": draw.get("drawOrderNumbers"),
+            }
+            for draw in ordered
         ]
 
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
@@ -432,6 +459,18 @@ class SupabaseAnalysisRepository:
             offset += len(page)
 
         return [self._normalize_draw(draw) for draw in draws]
+
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
+        response = (
+            self.client.table("lottery_draws")
+            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+            .eq("lottery", lottery)
+            .gte("draw_date", since_date)
+            .order("draw_date", desc=True, nullsfirst=False)
+            .order("period", desc=True)
+            .execute()
+        )
+        return [self._normalize_draw(dict(draw)) for draw in response.data]
 
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "phase": "explore", "cursor": 0, "total": 0, "status": "running", "started_at": started_at, "error": None}

@@ -1,6 +1,73 @@
+from datetime import date, timedelta
 from typing import Any, Protocol
 
 from app.repositories.analysis_repository import AnalysisRepository
+
+
+def missing_history_periods(
+    lottery: str, history: list[dict[str, Any]],
+) -> list[str]:
+    """Return internal numeric period gaps, grouped by yearly period series."""
+    groups: dict[str, dict[int, int]] = {}
+    for draw in history:
+        if not str(draw.get("drawDate") or "").strip():
+            continue
+        period = str(draw.get("period") or "").strip()
+        if not period.isdigit():
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        if lottery in {"今彩539", "大樂透"} and len(period) == 9:
+            prefix, sequence_text = period[:3], period[3:]
+        elif lottery in {"今彩539", "大樂透"} and len(period) == 8:
+            prefix, sequence_text = period[:2], period[2:]
+        elif len(period) == 6 and (
+            lottery == "六合彩"
+            or (lottery == "天天樂" and period.startswith("0"))
+        ):
+            prefix, sequence_text = period[:3], period[3:]
+        else:
+            prefix, sequence_text = "", period
+        groups.setdefault(prefix, {})[int(sequence_text)] = len(sequence_text)
+
+    missing: list[str] = []
+    for prefix, sequence_widths in groups.items():
+        sequences = sequence_widths.keys()
+        ordered = sorted(sequences)
+        for previous, current in zip(ordered, ordered[1:]):
+            width = min(sequence_widths[previous], sequence_widths[current])
+            missing.extend(
+                f"{prefix}{sequence:0{width}d}"
+                for sequence in range(previous + 1, current)
+            )
+    return sorted(missing, key=int, reverse=True)
+
+
+def require_complete_history(
+    lottery: str,
+    history: list[dict[str, Any]],
+    required_period: str | None = None,
+) -> None:
+    if not history or missing_history_periods(lottery, history):
+        raise ValueError("DRAW_HISTORY_INCOMPLETE")
+    if required_period is not None and not any(
+        str(draw.get("period")) == required_period for draw in history
+    ):
+        raise ValueError("DRAW_HISTORY_INCOMPLETE")
+
+
+def recent_history_window(
+    history: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    dated: list[tuple[date, dict[str, Any]]] = []
+    for draw in history:
+        normalized = str(draw.get("drawDate") or "").strip().replace("/", "-").replace(".", "-")[:10]
+        try:
+            dated.append((date.fromisoformat(normalized), draw))
+        except ValueError:
+            continue
+    if not dated:
+        raise ValueError("DRAW_HISTORY_INCOMPLETE")
+    cutoff = max(draw_date for draw_date, _ in dated) - timedelta(days=31)
+    return [draw for draw_date, draw in dated if draw_date >= cutoff]
 
 
 class DrawSource(Protocol):
@@ -21,22 +88,62 @@ class DrawRefreshService:
         return draw
 
     def ensure_history(self, lottery: str) -> list[dict[str, Any]]:
-        history = self.repository.list_draws(lottery, None)
-        if history:
-            return history
+        latest = self.repository.list_draws(lottery, 1)
+        if not latest:
+            self._fetch_and_store_history(lottery, None)
+            latest = self.repository.list_draws(lottery, 1)
 
+        history = self._recent_history(lottery, latest)
+
+        missing = missing_history_periods(lottery, history)
+        for _ in range(2):
+            if not missing:
+                break
+            previous_latest = (
+                str(latest[0].get("period") or ""),
+                str(latest[0].get("drawDate") or ""),
+            )
+            repair_limit = sum(
+                1
+                for draw in history
+                if str(draw.get("period") or "").isdigit()
+                and int(str(draw["period"])) >= int(missing[-1])
+            ) + len(missing)
+            self._fetch_and_store_history(lottery, repair_limit)
+            latest = self.repository.list_draws(lottery, 1)
+            history = self._recent_history(lottery, latest)
+            missing = missing_history_periods(lottery, history)
+            current_latest = (
+                str(latest[0].get("period") or ""),
+                str(latest[0].get("drawDate") or ""),
+            )
+            if missing and current_latest == previous_latest:
+                break
+
+        require_complete_history(lottery, history)
+        return history
+
+    def _recent_history(
+        self, lottery: str, latest: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        if not latest:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        normalized = str(latest[0].get("drawDate") or "").strip().replace("/", "-").replace(".", "-")[:10]
+        try:
+            latest_date = date.fromisoformat(normalized)
+        except ValueError as error:
+            raise ValueError("DRAW_HISTORY_INCOMPLETE") from error
+        since_date = (latest_date - timedelta(days=31)).isoformat()
+        return self.repository.list_draws_since(lottery, since_date)
+
+    def _fetch_and_store_history(self, lottery: str, limit: int | None) -> None:
         draws = [
             self._prepare_draw(lottery, raw)
-            for raw in self.source.fetch_history(lottery, None)
+            for raw in self.source.fetch_history(lottery, limit)
         ]
         if not draws:
             raise ValueError("DRAW_HISTORY_INCOMPLETE")
         self.repository.upsert_draws(draws)
-
-        history = self.repository.list_draws(lottery, None)
-        if not history:
-            raise ValueError("DRAW_HISTORY_INCOMPLETE")
-        return history
 
     @classmethod
     def _prepare_draw(cls, lottery: str, raw: dict[str, Any]) -> dict[str, Any]:

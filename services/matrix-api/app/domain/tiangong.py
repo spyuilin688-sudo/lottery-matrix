@@ -94,6 +94,8 @@ def evaluate_tiangong_candidate(value: dict) -> dict:
     }
     if stage_count == 2 and second:
         base["secondStage"] = second
+    if value.get("mode") != "two-stage":
+        return {**base, "reason": "INVALID_TIANGONG_MODE"}
     if value["periodRange"] not in {50, 80}:
         return {**base, "reason": "INVALID_PERIOD_RANGE"}
     if not _valid_source_sequence(source, value["periodRange"], value["hitCondition"]):

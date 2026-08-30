@@ -187,6 +187,32 @@ def test_list_draws_puts_undated_rows_after_dated_rows() -> None:
     ] == ["114000123", "114000999"]
 
 
+def test_in_memory_recent_draw_check_does_not_materialize_all_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "115000209", "drawDate": "2026/08/28",
+        "numbers": ["02", "04", "09", "12", "36"],
+    })
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "115000100", "drawDate": "2026/04/01",
+        "numbers": ["01", "02", "03", "04", "05"],
+    })
+    monkeypatch.setattr(
+        repository,
+        "list_draws",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("recent check must not read all history")
+        ),
+    )
+
+    assert [
+        draw["period"]
+        for draw in repository.list_draws_since("今彩539", "2026-07-28")
+    ] == ["115000209"]
+
+
 def test_supabase_list_draws_puts_undated_rows_last() -> None:
     requests: list[httpx.Request] = []
 
@@ -206,6 +232,27 @@ def test_supabase_list_draws_puts_undated_rows_last() -> None:
     assert requests[0].url.params["order"] == (
         "draw_date.desc.nullslast,period.desc"
     )
+
+
+def test_supabase_recent_draw_check_filters_by_draw_date() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=[])
+
+    base_url = "https://example.supabase.co/rest/v1"
+    http_client = httpx.Client(
+        base_url=base_url,
+        transport=httpx.MockTransport(handler),
+    )
+    with SyncPostgrestClient(base_url, http_client=http_client) as client:
+        SupabaseAnalysisRepository(client).list_draws_since(
+            "今彩539", "2026-07-30",
+        )
+
+    assert len(requests) == 1
+    assert requests[0].url.params["draw_date"] == "gte.2026-07-30"
 
 
 def test_supabase_draw_normalization_converts_database_field_names() -> None:
