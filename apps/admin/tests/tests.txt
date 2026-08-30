@@ -56,17 +56,16 @@ Steps:
 
 Expected: 取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；管理員列表操作按鈕為 32px 且列高已縮減，管理員異動均先確認，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
 
-## Test 5 - 概覽卡片、手機選單與異常 API 重新呼叫
+## Test 5 - 概覽卡片、手機選單與 Railway 重新呼叫
 Viewport: mobile
-Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, compact system service cards, AppDeploy status, Supabase Database/Auth, Matrix status APIs, four lottery cron statuses, fault isolation
-Description: 驗證概覽、收入與系統服務卡片縮減後內容仍完整；手機選單可點擊外部收合，異常 API 可真正重新呼叫且不影響其他項目。
+Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, compact system service cards, AppDeploy admin status, Supabase Database/Auth, Railway Worker, four lottery cron statuses, fault isolation
+Description: 驗證概覽、收入與系統服務卡片縮減後內容仍完整；手機選單可點擊外部收合，Railway Worker 可真正重新呼叫且不影響其他項目。
 
 Steps:
 1. 查看「營運概覽」與「收入報表」的統計卡片
 2. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
 3. 重新開啟選單並進入「系統設定」
-4. 查看連線狀態卡片並讓 Matrix audit API 呈現異常
-5. 點擊 Matrix audit API 卡片的「重新呼叫」，再點擊頁面上方的「重新檢查」
+4. 查看連線狀態卡片並讓 Railway Worker 呈現異常
+5. 點擊 Railway Worker 卡片的「重新呼叫」，再點擊頁面上方的「重新檢查」
 
-Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；系統服務卡片高度依內容自動適配且資訊不碰撞；Matrix audit API 異常時顯示錯誤內容與「重新呼叫」，按下後只實際呼叫該 API 並更新該卡片；正常 API 與排程卡片沒有多餘按鈕，Matrix coverage API 仍顯示正常；每張卡片顯示項目說明、最後檢查時間及回應時間。
-
+Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；系統服務卡片高度依內容自動適配且資訊不碰撞；Railway Worker 異常時顯示錯誤內容與「重新呼叫」，按下後只重新呼叫 Railway Worker 並更新該卡片；正常項目與排程卡片沒有多餘按鈕；每張卡片顯示項目說明、最後檢查時間及回應時間。

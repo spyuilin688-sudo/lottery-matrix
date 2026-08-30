@@ -59,12 +59,11 @@ import { handler } from './index';
 const routes = handler as unknown as Record<string, unknown[]>;
 
 describe('admin Railway route wiring', () => {
-  it('keeps the system and legacy routes without a duplicate Railway route', () => {
-    expect(routes).toHaveProperty('GET /api/algorithm-status');
+  it('keeps system status and removes the legacy algorithm status route', () => {
+    expect(routes).not.toHaveProperty('GET /api/algorithm-status');
     expect(routes).toHaveProperty('GET /api/system-status');
     expect(routes).toHaveProperty('POST /api/system-status/:id/retry');
     expect(routes).not.toHaveProperty('GET /api/admin/worker/status');
-    expect(routes['GET /api/algorithm-status']).toHaveLength(3);
     expect(routes['GET /api/system-status']).toHaveLength(3);
     expect(routes['POST /api/system-status/:id/retry']).toHaveLength(3);
   });
@@ -88,7 +87,7 @@ describe('admin Railway route wiring', () => {
     expect(wiring.workerGetStatus).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the approved permissions on the legacy and system status routes', async () => {
+  it('keeps the approved permissions on the system status routes', async () => {
     wiring.requirePermission.mockClear();
     wiring.requireModulePermission.mockClear();
     const context = {
@@ -96,19 +95,12 @@ describe('admin Railway route wiring', () => {
       user: { email: 'admin@example.com' },
     };
 
-    const algorithmGuard = routes['GET /api/algorithm-status'][1] as (
-      input: typeof context,
-    ) => Promise<unknown>;
     const systemGuard = routes['GET /api/system-status'][1] as (
       input: typeof context,
     ) => Promise<unknown>;
     const retryGuard = routes['POST /api/system-status/:id/retry'][1] as (
       input: typeof context,
     ) => Promise<unknown>;
-
-    await algorithmGuard(context);
-    expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'view');
-    expect(wiring.requireModulePermission).not.toHaveBeenCalled();
 
     await systemGuard(context);
     await retryGuard(context);
@@ -124,6 +116,6 @@ describe('admin Railway route wiring', () => {
       'systemSettings',
       'view',
     );
-    expect(wiring.requirePermission).toHaveBeenCalledTimes(1);
+    expect(wiring.requirePermission).not.toHaveBeenCalled();
   });
 });

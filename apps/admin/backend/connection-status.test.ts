@@ -15,12 +15,8 @@ const healthyWorkerStatus: WorkerStatus = {
 };
 
 describe('connection status', () => {
-  it('keeps successful items when one Matrix endpoint fails and includes every description', async () => {
-    const fetcher = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
-      if (url.includes('/matrix/audit')) return response({ error: true }, 500);
-      return response({ ok: true });
-    });
+  it('returns only the current AppDeploy admin, Supabase, Railway and job statuses', async () => {
+    const fetcher = vi.fn(async () => response({ ok: true }));
     const supabase = {
       selectRows: vi.fn(async (table: string) => table === 'system_job_status' ? [{
         job_name: 'matrix-539-refresh-v2', lottery: '今彩539', status: 'success',
@@ -36,16 +32,23 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'matrix-audit-api')).toMatchObject({ ok: false, description: '檢查開獎資料是否缺期、重複或異常。' });
-    expect(result.items.find((item) => item.id === 'matrix-coverage-api')).toMatchObject({ ok: true, description: '檢查四個彩種的資料涵蓋範圍與筆數。' });
     expect(result.items.find((item) => item.id === 'supabase-database')?.description).toBe('儲存會員、訂閱、付款及管理員資料。');
     expect(result.items.find((item) => item.id === 'supabase-auth')?.description).toBe('處理會員登入、登出及帳號驗證。');
-    expect(result.items).toHaveLength(13);
+    expect(result.items).toHaveLength(8);
+    expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
+      'api-appdeploy',
+      'health-api',
+      'matrix-coverage-api',
+      'matrix-audit-api',
+      'matrix-algorithm-cases-api',
+    ]));
     expect(fetcher).toHaveBeenCalledWith('https://matrix-sanqwn.v2.appdeploy.ai/');
-    expect(fetcher).toHaveBeenCalledWith('https://api-v2.appdeploy.ai/app/app-snsxet');
+    expect(fetcher.mock.calls.map(([input]) => String(input))).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('app-snsxet')]),
+    );
   });
 
-  it('retries only the requested API endpoint and returns its new status', async () => {
+  it('rejects retries for removed legacy AppDeploy status items', async () => {
     const fetcher = vi.fn(async () => response({ ok: true }));
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
@@ -55,12 +58,8 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
 
-    await expect(status.retry('matrix-audit-api')).resolves.toMatchObject({
-      id: 'matrix-audit-api',
-      ok: true,
-    });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(fetcher).toHaveBeenCalledWith('https://api-v2.appdeploy.ai/app/app-snsxet/api/matrix/audit');
+    await expect(status.retry('matrix-audit-api')).rejects.toMatchObject({ statusCode: 400 });
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it('rejects retry requests for non-API status items without making a request', async () => {
@@ -86,7 +85,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(13);
+    expect(result.items).toHaveLength(8);
     expect(result.items.find((item) => item.id === 'railway-worker-api')).toMatchObject({
       ok: true,
       retryable: true,
