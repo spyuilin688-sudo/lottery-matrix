@@ -101,7 +101,6 @@ describe("production member shell", () => {
 
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
     const main = screen.getByRole("main", { name: "探索結果區" });
     const panel = document.querySelector(".result-panel");
@@ -111,14 +110,12 @@ describe("production member shell", () => {
     const issues = document.querySelector(".explore-validation-issues");
     const issueRow = document.querySelector(".explore-validation-issue");
     const numbers = document.querySelector(".explore-validation-numbers-card");
-    const neutralNumber = document.querySelector(".explore-validation-numbers b");
     const formulas = document.querySelector(".explore-validation-formulas");
     const prediction = document.querySelector(".explore-validation-prediction");
     const secondFormula = document.querySelector(".explore-validation-formula-row:nth-child(2)");
     const source = document.querySelector(".explore-validation-number--source");
     const step = document.querySelector(".explore-validation-number--step");
     const hit = document.querySelector(".explore-validation-number--hit");
-    const special = document.querySelector(".explore-validation-numbers em");
     const primaryFormula = document.querySelector(".explore-validation-formula-row:first-child");
     const secondaryFormula = document.querySelector(".explore-validation-formula-row:last-child");
     const predictionTitle = document.querySelector(".explore-validation-prediction strong");
@@ -136,7 +133,6 @@ describe("production member shell", () => {
     expect(getComputedStyle(issues!).backgroundColor).toBe("rgb(22, 40, 62)");
     expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(numbers!).backgroundColor).toBe("rgb(22, 40, 62)");
-    expect(getComputedStyle(neutralNumber!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(formulas!).backgroundColor).toBe("rgb(18, 36, 58)");
     expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgb(18, 36, 58)");
     expect(getComputedStyle(prediction!).backgroundColor).toBe("rgb(21, 65, 95)");
@@ -152,6 +148,11 @@ describe("production member shell", () => {
     expect(getComputedStyle(step!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(hit!).borderTopColor).toBe("rgb(231, 132, 165)");
     expect(getComputedStyle(hit!).backgroundColor).toBe("rgba(231, 132, 165, 0.14)");
+
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+    const neutralNumber = document.querySelector(".explore-validation-numbers b");
+    const special = document.querySelector(".explore-validation-numbers em");
+    expect(getComputedStyle(neutralNumber!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(special!).borderTopColor).toBe("rgb(180, 155, 229)");
     expect(getComputedStyle(special!).backgroundColor).toBe("rgba(180, 155, 229, 0.14)");
 
@@ -212,15 +213,27 @@ describe("production member shell", () => {
     }
   });
 
-  it("allows more than one preview result to stay expanded", () => {
+  it("keeps only the most recently selected preview result expanded", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     render(<App />);
 
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+    const firstToggle = screen.getByRole("button", { name: "展開版路 result-04" });
+    fireEvent.click(firstToggle);
 
     expect(screen.getByRole("region", { name: "04 驗證過程" })).toBeInTheDocument();
+
+    const secondToggle = screen.getByRole("button", { name: "展開版路 result-09" });
+    fireEvent.click(secondToggle);
+
+    expect(screen.queryByRole("region", { name: "04 驗證過程" })).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "09 驗證過程" })).toBeInTheDocument();
+    expect(firstToggle).toHaveAttribute("aria-expanded", "false");
+    expect(secondToggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(secondToggle);
+
+    expect(screen.queryByRole("region", { name: "09 驗證過程" })).not.toBeInTheDocument();
+    expect(secondToggle).toHaveAttribute("aria-expanded", "false");
   });
 
   it("uses the approved one-line summary format", () => {
@@ -287,9 +300,9 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*clamp\(7px,\s*2\.05vw,\s*8px\)[^}]*font-weight:\s*700/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
-    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px[^}]*font-family:\s*"Noto Sans TC",\s*"PingFang TC",\s*"Microsoft JhengHei",\s*sans-serif/s);
   });
 
   it("keeps the expanded wrapper borderless, clarifies existing card outlines, and restores row separators", () => {
@@ -445,24 +458,29 @@ describe("production member shell", () => {
     }
   });
 
-  it("keeps issue numbers at 8px and 700 when the shared reference rule loads later", () => {
+  it("scopes the expanded spacing, separator, summary font, and responsive issue numbers", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
-    const previewStyle = document.createElement("style");
-    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
-    const sharedStyle = document.createElement("style");
-    sharedStyle.textContent = ".reference-issue { font: inherit; }";
-    document.head.append(previewStyle, sharedStyle);
+    const productionStyle = mountPreviewProductionStyles();
 
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
 
+    const expandedArticle = screen.getByRole("button", { name: "收合版路 result-04" }).closest("article");
+    const followingArticle = expandedArticle?.nextElementSibling;
+    const summary = document.querySelector(".explore-validation-summary");
     const issue = document.querySelector(".explore-validation-issue");
-    expect(issue).not.toBeNull();
-    expect(getComputedStyle(issue!).fontSize).toBe("8px");
-    expect(getComputedStyle(issue!).fontWeight).toBe("700");
 
-    previewStyle.remove();
-    sharedStyle.remove();
+    expect(expandedArticle).toHaveAttribute("data-expanded", "true");
+    expect(getComputedStyle(expandedArticle!).paddingBottom).toBe("8px");
+    expect(getComputedStyle(followingArticle!).borderTopColor).toBe("rgb(66, 97, 126)");
+    expect(getComputedStyle(summary!).fontFamily)
+      .toBe('"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif');
+    expect(issue).not.toBeNull();
+    expect(getComputedStyle(issue!).fontWeight).toBe("700");
+    expect(getComputedStyle(issue!).paddingLeft).toBe("4px");
+    expect(getComputedStyle(issue!).paddingRight).toBe("4px");
+
+    productionStyle.remove();
   });
 
   it("renders the member app without the virtual phone frame", () => {

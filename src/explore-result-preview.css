@@ -232,6 +232,14 @@
   border-top: 1px solid #26384e;
 }
 
+.explore-result-preview-screen .road-results article[data-expanded="true"] {
+  padding-bottom: 8px;
+}
+
+.explore-result-preview-screen .road-results article[data-expanded="true"] + article {
+  border-top-color: #42617e;
+}
+
 .explore-validation-card {
   --explore-validation-summary-font-size: clamp(11px, 3.08vw, 12px);
   --explore-validation-row-min-height: clamp(27px, 7.18vw, 28px);
@@ -282,6 +290,7 @@
   border-radius: 8px;
   color: #f2f5f8;
   background: #1a304b;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   font-size: var(--explore-validation-summary-font-size);
   font-weight: 600;
   line-height: 1.25;
@@ -362,7 +371,7 @@
   padding: 3px 4px;
   color: #bac5d2;
   font-family: Roboto, Arial, sans-serif;
-  font-size: 8px;
+  font-size: clamp(7px, 2.05vw, 8px);
   font-weight: 700;
   letter-spacing: .02em;
   white-space: nowrap;
