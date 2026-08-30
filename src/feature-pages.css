@@ -1364,25 +1364,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 0 0 8px;
 }
 .matrix-status-screen .status-list { gap: 8px; }
-.matrix-status-screen .matrix-title-banner-actions {
-  top: 50%;
-  right: auto;
-  bottom: auto;
-  left: calc(83% + 6px);
-  width: 2.34rem;
-  height: 2.34rem;
-  transform: translateY(-50%);
-}
-.matrix-status-screen .status-title-trigger {
-  display: grid;
-  width: 2.34rem;
-  height: 2.34rem;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  background: transparent;
-}
-.matrix-status-screen .status-title-trigger img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: .8; }
 .matrix-status-screen .status-block { border-radius: 12px; }
 .matrix-status-screen .status-block > button {
   min-height: 70px;

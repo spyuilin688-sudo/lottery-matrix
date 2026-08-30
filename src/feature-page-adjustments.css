@@ -526,9 +526,17 @@
   margin-top: 0;
 }
 
-.matrix-status-screen .status-title-trigger {
-  border-radius: 8px;
-  background: radial-gradient(circle, rgba(190, 143, 51, .08), transparent 70%);
+.matrix-status-screen .matrix-status-settings-entry {
+  position: fixed;
+  z-index: 21;
+  right: max(10px, calc(env(safe-area-inset-right, 0px) + 4px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 9px);
+  left: auto;
+  place-items: end end;
+}
+
+.matrix-status-screen .matrix-status-settings-entry .bottom-navigation-quick-settings-visual {
+  justify-self: end;
 }
 
 .subscription-status-content > div:last-child {

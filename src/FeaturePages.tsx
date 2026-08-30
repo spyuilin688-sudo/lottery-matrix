@@ -4128,7 +4128,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   }, [lottery]);
 
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={<button type="button" className="status-title-trigger" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}><img src="/assets/lottery/functions/自訂觸發條件.png" alt="自訂觸發條件" draggable={false} /></button>}>
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
       <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
       {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
@@ -4159,6 +4159,11 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
           </section>
         );})}
       </div>
+      <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}>
+        <span className="bottom-navigation-quick-settings-visual">
+          <GearIcon aria-hidden="true" />
+        </span>
+      </button>
     </FeatureShell>
   );
 }
