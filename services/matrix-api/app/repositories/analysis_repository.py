@@ -13,6 +13,7 @@ JOB_NAME_BY_LOTTERY = {
 }
 RETENTION = timedelta(days=3)
 DRAW_PAGE_SIZE = 1000
+ARTIFACT_CHUNK_PAGE_SIZE = 2
 
 
 class AnalysisRepository(Protocol):
@@ -463,17 +464,26 @@ class SupabaseAnalysisRepository:
         ).execute()
 
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
-        response = (
-            self.client.table("matrix_analysis_artifact_chunks")
-            .select("chunk_index,cursor_start,cursor_end,payload")
-            .eq("lottery", lottery)
-            .eq("draw_period", draw_period)
-            .eq("analysis_version", analysis_version)
-            .eq("kind", kind)
-            .order("chunk_index")
-            .execute()
-        )
-        return [dict(chunk) for chunk in response.data]
+        chunks: list[dict[str, Any]] = []
+        offset = 0
+        while True:
+            response = (
+                self.client.table("matrix_analysis_artifact_chunks")
+                .select("chunk_index,cursor_start,cursor_end,payload")
+                .eq("lottery", lottery)
+                .eq("draw_period", draw_period)
+                .eq("analysis_version", analysis_version)
+                .eq("kind", kind)
+                .order("chunk_index")
+                .range(offset, offset + ARTIFACT_CHUNK_PAGE_SIZE - 1)
+                .execute()
+            )
+            page = [dict(chunk) for chunk in response.data]
+            chunks.extend(page)
+            if len(page) < ARTIFACT_CHUNK_PAGE_SIZE:
+                break
+            offset += len(page)
+        return chunks
 
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
         return materialize_chunks(
