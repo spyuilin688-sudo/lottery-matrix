@@ -3763,7 +3763,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
     void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistory([]));
   }, []);
   return (
-    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate}>
+    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
       <DetailCard title="付款紀錄">
         {history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
           <div className="payment-history-list">

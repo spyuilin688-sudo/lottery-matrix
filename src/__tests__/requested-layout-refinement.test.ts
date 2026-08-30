@@ -131,11 +131,76 @@ describe("requested responsive layout refinement", () => {
     expect(activationButton.height).toBe("44px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
-    expect(paymentButton.height).toBe("48px");
+    expect(paymentButton.height).toBe("42px");
+    expect(paymentButton.getPropertyValue("--payment-button-font-size")).toBe("clamp(15px,4.4vw,17px)");
     expect(paymentButton.position).toBe("relative");
     expect(paymentButton.overflow).toBe("hidden");
     expect(paymentButton.color).toBe("rgb(246, 212, 114)");
     expect(paymentButton.borderTopWidth).toBe("1px");
+  });
+
+  it("separates membership plan hierarchy and removes tool icon frames", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "pro-plan-visual-hierarchy";
+    document.body.innerHTML = `
+      <main class="pro-plans-screen">
+        <article class="plan-card" data-current="true">
+          <span class="plan-name">季費方案</span>
+          <strong>$4,580</strong>
+          <span class="plan-tool-icon"><img alt="天衍" /></span>
+        </article>
+        <section class="panel renewal-card"></section>
+      </main>`;
+
+    const planCard = getComputedStyle(document.querySelector(".plan-card")!);
+    const planName = getComputedStyle(document.querySelector(".plan-name")!);
+    const planPrice = getComputedStyle(document.querySelector(".plan-card > strong")!);
+    const toolIcon = getComputedStyle(document.querySelector(".plan-tool-icon")!);
+    const renewalCard = getComputedStyle(document.querySelector(".renewal-card")!);
+
+    expect(planName.color).toBe("rgb(236, 231, 223)");
+    expect(planPrice.color).toBe("rgb(241, 195, 82)");
+    expect(toolIcon.borderTopWidth).toBe("0px");
+    expect(toolIcon.boxShadow).toBe("none");
+    expect(renewalCard.borderTopColor).toBe(planCard.borderTopColor);
+    expect(renewalCard.borderRadius).toBe(planCard.borderRadius);
+    expect(renewalCard.boxShadow).toBe(planCard.boxShadow);
+  });
+
+  it("compacts payment history without changing its two-column information order", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "payment-history-density";
+    document.body.innerHTML = `
+      <main class="payment-history-screen">
+        <section class="panel detail-card">
+          <h2>付款紀錄</h2>
+          <div class="payment-history-list">
+            <article class="payment-history-item">
+              <strong>月費方案</strong><span>NT$1,880</span>
+              <time>2026/8/30 上午6:51:44</time><b>已確認</b>
+            </article>
+          </div>
+        </section>
+      </main>`;
+
+    const card = getComputedStyle(document.querySelector(".payment-history-screen .detail-card")!);
+    const heading = getComputedStyle(document.querySelector(".payment-history-screen .detail-card h2")!);
+    const item = getComputedStyle(document.querySelector(".payment-history-item")!);
+    const name = getComputedStyle(document.querySelector(".payment-history-item strong")!);
+    const amount = getComputedStyle(document.querySelector(".payment-history-item > span")!);
+    const date = getComputedStyle(document.querySelector(".payment-history-item time")!);
+    const status = getComputedStyle(document.querySelector(".payment-history-item b")!);
+
+    expect(card.padding).toBe("10px");
+    expect(heading.marginBottom).toBe("6px");
+    expect(heading.fontSize).toBe("15px");
+    expect(item.gridTemplateColumns).toBe("minmax(0, 1fr) auto");
+    expect(item.padding).toBe("7px 9px");
+    expect(item.rowGap).toBe("2px");
+    expect(name.fontSize).toBe("13px");
+    expect(amount.fontSize).toBe("13px");
+    expect(date.fontSize).toBe("11px");
+    expect(status.fontSize).toBe("13px");
   });
 
   it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
