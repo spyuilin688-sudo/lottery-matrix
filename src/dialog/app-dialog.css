@@ -15,14 +15,14 @@
   top: 50%;
   left: 50%;
   display: grid;
-  width: min(calc(100vw - (var(--layout-dialog-inline) * 2)), 390px);
-  max-height: min(86dvh, 620px);
-  gap: clamp(14px, 4vw, 20px);
-  padding: clamp(22px, 7vw, 32px) clamp(16px, 5vw, 24px) clamp(18px, 5vw, 24px);
+  width: min(calc(100vw - (var(--layout-dialog-inline) * 2)), 330px);
+  max-height: min(82dvh, 520px);
+  gap: 12px;
+  padding: 18px 16px 16px;
   overflow: auto;
   transform: translate(-50%, -50%);
   border: 1px solid var(--dialog-accent);
-  border-radius: clamp(16px, 5vw, 22px);
+  border-radius: 14px;
   outline: none;
   background:
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--dialog-accent) 13%, transparent), transparent 42%),
@@ -45,7 +45,7 @@
 
 .app-dialog-icon {
   display: grid;
-  width: clamp(64px, 20vw, 86px);
+  width: 56px;
   aspect-ratio: 1;
   margin-inline: auto;
   place-items: center;
@@ -54,7 +54,7 @@
   background: color-mix(in srgb, var(--dialog-accent) 13%, #06101c);
   box-shadow: 0 0 22px color-mix(in srgb, var(--dialog-accent) 28%, transparent);
   color: var(--dialog-accent-bright);
-  font-size: clamp(36px, 11vw, 50px);
+  font-size: 32px;
   font-weight: 400;
   line-height: 1;
 }
@@ -62,7 +62,7 @@
 .app-dialog-title {
   margin: 0;
   color: var(--dialog-accent-bright);
-  font-size: clamp(18px, 5.2vw, 22px);
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -71,16 +71,16 @@
 .app-dialog-description {
   margin: -4px 0 2px;
   color: var(--lottery-text-primary);
-  font-size: clamp(15px, 4.3vw, 18px);
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .app-dialog-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 4px;
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .app-dialog-actions[data-single="true"] {
@@ -90,9 +90,9 @@
 .app-dialog-button {
   min-width: 0;
   min-height: var(--layout-touch-target);
-  padding: 12px 10px;
+  padding: 8px 10px;
   border: 1px solid var(--dialog-accent);
-  border-radius: 12px;
+  border-radius: 9px;
   font-weight: 800;
 }
 
