@@ -211,7 +211,7 @@
   overflow-wrap: normal;
 }
 
-.explore-validation-number.source {
+.explore-validation-number--source {
   border-color: #50d6ef;
   color: #baf5ff;
   background: rgba(80, 214, 239, .15);
@@ -219,13 +219,13 @@
   box-shadow: 0 0 0 1px rgba(80, 214, 239, .18);
 }
 
-.explore-validation-number.step {
+.explore-validation-number--step {
   border-color: #e7a351;
   color: #ffd39a;
   background: rgba(231, 163, 81, .14);
 }
 
-.explore-validation-number.hit {
+.explore-validation-number--hit {
   border-color: #f0788a;
   color: #ffb4bf;
   background: rgba(240, 120, 138, .14);
