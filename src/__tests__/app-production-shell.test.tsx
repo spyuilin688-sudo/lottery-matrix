@@ -83,19 +83,20 @@ describe("production member shell", () => {
     render(<App />);
 
     expect(getComputedStyle(screen.getByRole("main", { name: "探索結果區" })).color)
-      .toBe("rgb(242, 245, 248)");
+      .toBe("rgb(248, 250, 252)");
     expect(getComputedStyle(screen.getByRole("heading", { name: "探索結果區" })).color)
-      .toBe("rgb(216, 195, 141)");
+      .toBe("rgb(248, 250, 252)");
     expect(getComputedStyle(document.querySelector(".road-results article")!).color)
-      .toBe("rgb(170, 181, 196)");
+      .toBe("rgb(203, 213, 225)");
     const positionTag = document.querySelector(".road-results .tag");
-    expect(getComputedStyle(positionTag!).color).toBe("rgb(216, 195, 141)");
+    expect(getComputedStyle(positionTag!).color).toBe("rgb(248, 250, 252)");
+    expect(getComputedStyle(positionTag!).borderTopColor).toBe("rgb(51, 65, 85)");
     expect(getComputedStyle(positionTag!).borderTopWidth).toBe("1px");
 
     previewStyle.remove();
   });
 
-  it("brightens only the expanded validation palette through the production stylesheet order", () => {
+  it("applies the approved preview tokens through the production stylesheet order", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -113,6 +114,7 @@ describe("production member shell", () => {
     const formulas = document.querySelector(".explore-validation-formulas");
     const prediction = document.querySelector(".explore-validation-prediction");
     const secondFormula = document.querySelector(".explore-validation-formula-row:nth-child(2)");
+    const defaultNumber = document.querySelector(".explore-validation-number:not([class*='--'])");
     const source = document.querySelector(".explore-validation-number--source");
     const step = document.querySelector(".explore-validation-number--step");
     const hit = document.querySelector(".explore-validation-number--hit");
@@ -121,26 +123,31 @@ describe("production member shell", () => {
     const predictionTitle = document.querySelector(".explore-validation-prediction strong");
 
     expect(getComputedStyle(main).backgroundColor).toBe("rgb(7, 11, 18)");
-    expect(getComputedStyle(main).color).toBe("rgb(242, 245, 248)");
-    expect(getComputedStyle(panel!).backgroundColor).toBe("rgb(13, 21, 32)");
-    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(52, 74, 102)");
-    expect(getComputedStyle(validation!).borderTopWidth).toBe("0px");
-    expect(getComputedStyle(validation!).backgroundColor).toBe("rgb(17, 31, 50)");
-    expect(getComputedStyle(validation!).boxShadow).toBe("inset 0 1px 0 rgba(228, 201, 128, 0.12)");
-    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(26, 48, 75)");
-    expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
-    expect(getComputedStyle(summary!).backgroundColor).toBe("rgb(26, 48, 75)");
-    expect(getComputedStyle(issues!).backgroundColor).toBe("rgb(22, 40, 62)");
-    expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgb(22, 40, 62)");
-    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgb(18, 36, 58)");
-    expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgb(18, 36, 58)");
-    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgb(21, 65, 95)");
-    expect(getComputedStyle(issues!).borderTopColor).toBe("rgb(66, 97, 126)");
-    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(47, 73, 99)");
-    expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
-    expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
+    expect(getComputedStyle(main).color).toBe("rgb(248, 250, 252)");
+    expect(getComputedStyle(panel!).backgroundColor).toBe("rgb(15, 23, 42)");
+    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(51, 65, 85)");
+    expect(getComputedStyle(panel!).borderRadius).toBe("12px");
+    expect(getComputedStyle(validation!).borderTopWidth).toBe("1px");
+    expect(getComputedStyle(validation!).borderTopColor).toBe("rgb(51, 65, 85)");
+    expect(getComputedStyle(validation!).borderRadius).toBe("12px");
+    expect(getComputedStyle(validation!).backgroundColor).toBe("rgb(15, 23, 42)");
+    expect(getComputedStyle(validation!).boxShadow).toBe("none");
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(summaryTag!).color).toBe("rgb(248, 250, 252)");
+    expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(issueRow!).color).toBe("rgb(148, 163, 184)");
+    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
+    expect(getComputedStyle(issues!).borderTopColor).toBe("rgb(51, 65, 85)");
+    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(51, 65, 85)");
+    expect(getComputedStyle(defaultNumber!).borderTopColor).toBe("rgb(100, 116, 139)");
+    expect(getComputedStyle(defaultNumber!).color).toBe("rgb(100, 116, 139)");
+    expect(getComputedStyle(primaryFormula!).color).toBe("rgb(248, 250, 252)");
+    expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(203, 213, 225)");
+    expect(getComputedStyle(predictionTitle!).color).toBe("rgb(248, 250, 252)");
     expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
     expect(getComputedStyle(source!).borderTopWidth).toBe("1px");
     expect(getComputedStyle(source!).backgroundColor).toBe("rgba(88, 211, 230, 0.14)");
@@ -152,7 +159,7 @@ describe("production member shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
     const neutralNumber = document.querySelector(".explore-validation-numbers b");
     const special = document.querySelector(".explore-validation-numbers em");
-    expect(getComputedStyle(neutralNumber!).color).toBe("rgb(186, 197, 210)");
+    expect(getComputedStyle(neutralNumber!).color).toBe("rgb(203, 213, 225)");
     expect(getComputedStyle(special!).borderTopColor).toBe("rgb(180, 155, 229)");
     expect(getComputedStyle(special!).backgroundColor).toBe("rgba(180, 155, 229, 0.14)");
 
@@ -292,7 +299,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*clamp\(44px,\s*12\.31vw,\s*48px\)\s+minmax\(0,\s*1fr\)\s+clamp\(110px,\s*32\.82vw,\s*128px\)/);
-    expect(css).toMatch(/column-gap:\s*2px/);
+    expect(css).toMatch(/column-gap:\s*4px/);
     expect(css).toMatch(/row-gap:\s*3px/);
     expect(css).not.toContain("!important");
   });
@@ -300,17 +307,19 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*clamp\(7px,\s*2\.05vw,\s*8px\)[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*12px[^}]*font-weight:\s*600[^}]*line-height:\s*16px/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
-    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px[^}]*font-family:\s*"Noto Sans TC",\s*"PingFang TC",\s*"Microsoft JhengHei",\s*sans-serif/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px[^}]*font-family:\s*"Noto Sans TC",\s*"PingFang TC",\s*"Microsoft JhengHei",\s*sans-serif[^}]*font-size:\s*var\(--explore-validation-summary-font-size\)[^}]*font-weight:\s*600[^}]*line-height:\s*var\(--explore-validation-summary-line-height\)/s);
+    expect(css).toMatch(/\.explore-validation-numeric-text,\s*\.explore-validation-number\s*\{[^}]*font-variant-numeric:\s*tabular-nums/s);
+    expect(css).not.toMatch(/\.explore-validation-numeric-text,\s*\.explore-validation-number\s*\{[^}]*font-family:/s);
   });
 
-  it("keeps the expanded wrapper borderless, clarifies existing card outlines, and restores row separators", () => {
+  it("uses the default one-pixel border for the expanded wrapper, cards, and row separators", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*0/s);
-    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid #42617e/s);
-    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid #2f4963/s);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*1px solid #334155[^}]*border-radius:\s*12px/s);
+    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid #334155[^}]*border-radius:\s*12px/s);
+    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid #334155/s);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(-n \+ 2\)/);
   });
@@ -354,7 +363,7 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
-  it("renders the expanded summary consecutive tag with an opaque card background", () => {
+  it("renders the expanded summary consecutive tag with the secondary translucent surface", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -363,7 +372,7 @@ describe("production member shell", () => {
 
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
-    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(26, 48, 75)");
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(30, 41, 59, 0.4)");
 
     productionStyle.remove();
   });
@@ -395,7 +404,7 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
-  it("uses the loaded Roboto 700 face for left-column issue numbers", () => {
+  it("uses the approved 12px period typography for left-column issue numbers", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -405,7 +414,10 @@ describe("production member shell", () => {
     const issue = document.querySelector(".explore-validation-issue");
     expect(issue).not.toBeNull();
     expect(getComputedStyle(issue!).fontFamily).toBe("Roboto, Arial, sans-serif");
-    expect(getComputedStyle(issue!).fontWeight).toBe("700");
+    expect(getComputedStyle(issue!).fontSize).toBe("12px");
+    expect(getComputedStyle(issue!).lineHeight).toBe("16px");
+    expect(getComputedStyle(issue!).fontWeight).toBe("600");
+    expect(getComputedStyle(issue!).fontVariantNumeric).toBe("tabular-nums");
 
     productionStyle.remove();
   });
@@ -432,14 +444,17 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
     expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*6px 0[^}]*padding:\s*4px 0[^}]*border-top:[^;]+;[^}]*border-bottom:/s);
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
-    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/);
+    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.59vw,\s*14px\)/);
+    expect(css).toMatch(/--explore-validation-summary-line-height:\s*clamp\(16px,\s*5\.13vw,\s*20px\)/);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*row-gap:\s*24px/s);
   });
 
-  it("keeps validation number states square and gives the prediction its unique blue surface", () => {
+  it("keeps validation number states square and applies the approved hero type and surface", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
-    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #344a66[^}]*border-radius:\s*8px[^}]*background:\s*#15415f/s);
+    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #334155[^}]*border-radius:\s*12px[^}]*background:\s*rgba\(30,\s*41,\s*59,\s*\.4\)/s);
+    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*24px[^}]*font-weight:\s*800[^}]*line-height:\s*32px/s);
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {
@@ -472,11 +487,11 @@ describe("production member shell", () => {
 
     expect(expandedArticle).toHaveAttribute("data-expanded", "true");
     expect(getComputedStyle(expandedArticle!).paddingBottom).toBe("8px");
-    expect(getComputedStyle(followingArticle!).borderTopColor).toBe("rgb(66, 97, 126)");
+    expect(getComputedStyle(followingArticle!).borderTopColor).toBe("rgb(51, 65, 85)");
     expect(getComputedStyle(summary!).fontFamily)
       .toBe('"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif');
     expect(issue).not.toBeNull();
-    expect(getComputedStyle(issue!).fontWeight).toBe("700");
+    expect(getComputedStyle(issue!).fontWeight).toBe("600");
     expect(getComputedStyle(issue!).paddingLeft).toBe("4px");
     expect(getComputedStyle(issue!).paddingRight).toBe("4px");
 
