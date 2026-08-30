@@ -95,7 +95,7 @@ describe("production member shell", () => {
     previewStyle.remove();
   });
 
-  it("brightens only the expanded validation palette through the production stylesheet order", () => {
+  it("matches the reference navy surfaces and restrained gold and blue borders", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -123,25 +123,30 @@ describe("production member shell", () => {
     const secondaryFormula = document.querySelector(".explore-validation-formula-row:last-child");
     const predictionTitle = document.querySelector(".explore-validation-prediction strong");
 
-    expect(getComputedStyle(main).backgroundColor).toBe("rgb(7, 11, 18)");
+    expect(getComputedStyle(main).backgroundImage)
+      .toBe("linear-gradient(180deg, rgb(2, 7, 12) 0%, rgb(3, 11, 17) 100%)");
     expect(getComputedStyle(main).color).toBe("rgb(242, 245, 248)");
-    expect(getComputedStyle(panel!).backgroundColor).toBe("rgb(13, 21, 32)");
-    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(52, 74, 102)");
+    expect(getComputedStyle(panel!).backgroundImage)
+      .toBe("linear-gradient(145deg, rgba(8, 16, 22, 0.96), rgba(2, 8, 13, 0.98))");
+    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(108, 74, 32)");
     expect(getComputedStyle(validation!).borderTopWidth).toBe("0px");
-    expect(getComputedStyle(validation!).backgroundColor).toBe("rgb(17, 31, 50)");
-    expect(getComputedStyle(validation!).boxShadow).toBe("inset 0 1px 0 rgba(228, 201, 128, 0.12)");
-    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(26, 48, 75)");
+    expect(getComputedStyle(validation!).backgroundColor).toBe("rgba(3, 9, 20, 0.72)");
+    expect(getComputedStyle(validation!).boxShadow).toBe("inset 0 1px 0 rgba(102, 169, 255, .18)");
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
+    expect(getComputedStyle(summaryTag!).borderTopColor).toBe("rgba(223, 176, 68, 0.68)");
     expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
-    expect(getComputedStyle(summary!).backgroundColor).toBe("rgb(26, 48, 75)");
-    expect(getComputedStyle(issues!).backgroundColor).toBe("rgb(22, 40, 62)");
+    expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
+    expect(getComputedStyle(summary!).borderTopColor).toBe("rgba(223, 176, 68, 0.42)");
+    expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
     expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgb(22, 40, 62)");
+    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
     expect(getComputedStyle(neutralNumber!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgb(18, 36, 58)");
-    expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgb(18, 36, 58)");
-    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgb(21, 65, 95)");
-    expect(getComputedStyle(issues!).borderTopColor).toBe("rgb(66, 97, 126)");
-    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(47, 73, 99)");
+    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
+    expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
+    expect(getComputedStyle(prediction!).borderTopColor).toBe("rgba(223, 176, 68, 0.42)");
+    expect(getComputedStyle(issues!).borderTopColor).toBe("rgba(91, 126, 169, 0.18)");
+    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgba(91, 126, 169, 0.18)");
     expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
@@ -292,12 +297,12 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
   });
 
-  it("keeps the expanded wrapper borderless, clarifies existing card outlines, and restores row separators", () => {
+  it("keeps the expanded wrapper borderless and uses the reference blue card outlines", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*0/s);
-    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid #42617e/s);
-    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid #2f4963/s);
+    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid rgba\(91,\s*126,\s*169,\s*\.18\)/s);
+    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid rgba\(91,\s*126,\s*169,\s*\.18\)/s);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(-n \+ 2\)/);
   });
@@ -341,7 +346,7 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
-  it("renders the expanded summary consecutive tag with an opaque card background", () => {
+  it("renders the expanded summary consecutive tag with the reference dark surface", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -350,7 +355,7 @@ describe("production member shell", () => {
 
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
-    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(26, 48, 75)");
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
 
     productionStyle.remove();
   });
@@ -422,11 +427,11 @@ describe("production member shell", () => {
     expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/);
   });
 
-  it("keeps validation number states square and gives the prediction its unique blue surface", () => {
+  it("keeps validation number states square and gives the prediction the reference summary surface", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
-    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #344a66[^}]*border-radius:\s*8px[^}]*background:\s*#15415f/s);
+    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid rgba\(223,\s*176,\s*68,\s*\.42\)[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(10,\s*14,\s*24,\s*\.92\)/s);
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {

@@ -1,7 +1,7 @@
 .feature-screen.explore-result-preview-screen {
   height: 100%;
   min-height: 0;
-  background: #070b12;
+  background: linear-gradient(180deg, #02070c 0%, #030b11 100%);
   color: #f2f5f8;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   overflow-y: auto;
@@ -58,7 +58,7 @@
 }
 
 .explore-result-preview-screen .road-results .tag {
-  border: 1px solid #344a66;
+  border: 1px solid #a87712;
   color: #d8c38d;
   text-align: center;
   word-spacing: 2px;
@@ -81,9 +81,9 @@
 
 .explore-result-preview-screen.matrix-explore-main-screen .result-panel {
   margin-top: 0;
-  border: 1px solid #344a66;
-  background: #0d1520;
-  box-shadow: none;
+  border: 1px solid #6c4a20;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98));
+  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
 }
 
 .explore-result-preview-screen .road-results-head {
@@ -124,10 +124,10 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 1px solid #344a66;
+  border: 1px solid #6c4a20;
   border-radius: 8px;
   color: #aab5c4;
-  background: #0d1520;
+  background: #071018;
   font: inherit;
   font-size: 11px;
   line-height: 1;
@@ -161,8 +161,8 @@
   margin: 6px 0;
   padding: 4px 0;
   gap: 3px;
-  border-top: 1px solid #26384e;
-  border-bottom: 1px solid #26384e;
+  border-top: 1px solid #393731;
+  border-bottom: 1px solid #393731;
 }
 
 .explore-consecutive-filter-option {
@@ -171,10 +171,10 @@
   min-height: 24px;
   padding: 2px 3px;
   flex: 1 1 0;
-  border: 1px solid #344a66;
+  border: 1px solid #5b472b;
   border-radius: 6px;
   color: #aab5c4;
-  background: #0b1625;
+  background: #071018;
   font: inherit;
   font-size: clamp(8px, 2.56vw, 10px);
   font-weight: 700;
@@ -229,7 +229,7 @@
 }
 
 .explore-result-preview-screen .road-results article + article {
-  border-top: 1px solid #26384e;
+  border-top: 1px solid #393731;
 }
 
 .explore-validation-card {
@@ -244,8 +244,8 @@
   border: 0;
   border-radius: 10px;
   color: #f2f5f8;
-  background: #111f32;
-  box-shadow: inset 0 1px 0 rgba(228, 201, 128, 0.12);
+  background: rgba(3, 9, 20, .72);
+  box-shadow: inset 0 1px 0 rgba(102, 169, 255, .18);
   overflow: visible;
 }
 
@@ -264,10 +264,10 @@
   max-width: calc(100% - 20px);
   height: auto;
   padding: 1px 4px;
-  border: 1px solid #344a66;
+  border: 1px solid rgba(223, 176, 68, .68);
   border-radius: 5px;
   color: #e4c980;
-  background: #1a304b;
+  background: rgba(10, 14, 24, .98);
   font-size: 8px;
   font-weight: 700;
   line-height: 1.25;
@@ -278,10 +278,10 @@
   min-height: 0;
   margin: 0;
   padding: 4px 8px;
-  border: 1px solid #344a66;
+  border: 1px solid rgba(223, 176, 68, .42);
   border-radius: 8px;
   color: #f2f5f8;
-  background: #1a304b;
+  background: rgba(10, 14, 24, .92);
   font-size: var(--explore-validation-summary-font-size);
   font-weight: 600;
   line-height: 1.25;
@@ -306,7 +306,7 @@
   padding: 0;
   border: 0;
   border-radius: 8px;
-  background: #111f32;
+  background: rgba(3, 9, 20, .72);
   overflow: visible;
 }
 
@@ -321,18 +321,18 @@
   grid-auto-rows: minmax(var(--explore-validation-row-min-height), auto);
   gap: 0;
   min-width: 0;
-  border: 1px solid #42617e;
+  border: 1px solid rgba(91, 126, 169, .18);
   border-radius: 6px;
-  background: #16283e;
+  background: rgba(8, 15, 27, .82);
   overflow: hidden;
 }
 
 .explore-validation-issues {
-  background: #16283e;
+  background: rgba(8, 15, 27, .82);
 }
 
 .explore-validation-numbers-card {
-  background: #16283e;
+  background: rgba(8, 15, 27, .82);
 }
 
 .explore-validation-draw-row {
@@ -350,7 +350,7 @@
 .explore-validation-number-row:nth-child(n + 2),
 .explore-validation-issue:nth-child(n + 2),
 .explore-validation-formula-row:nth-child(n + 2) {
-  border-top: 1px solid #2f4963;
+  border-top: 1px solid rgba(91, 126, 169, .18);
 }
 
 .explore-validation-issue {
@@ -454,7 +454,7 @@
 
 .explore-validation-formulas {
   color: #bac5d2;
-  background: #12243a;
+  background: rgba(8, 15, 27, .82);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -466,7 +466,7 @@
   height: auto;
   min-height: var(--explore-validation-row-min-height);
   padding: 3px 6px;
-  background: #12243a;
+  background: transparent;
   white-space: nowrap;
 }
 
@@ -517,9 +517,9 @@
   gap: 12px;
   min-height: 0;
   padding: 4px 8px;
-  border: 1px solid #344a66;
+  border: 1px solid rgba(223, 176, 68, .42);
   border-radius: 8px;
-  background: #15415f;
+  background: rgba(10, 14, 24, .92);
   white-space: nowrap;
 }
 
