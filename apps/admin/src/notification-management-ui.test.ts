@@ -194,6 +194,7 @@ describe('NotificationManagement', () => {
   it.each([
     [400, 'INVALID_MEMBER_ID', '會員資料無效，請重新選擇會員'],
     [409, 'NO_ACTIVE_SUBSCRIPTIONS', '此會員目前沒有有效的推播訂閱'],
+    [500, 'PUSH_STARTUP_FAILED_WEB_PUSH_SUBJECT', '推播服務啟動失敗（階段：WEB_PUSH_SUBJECT）'],
     [503, 'UNAVAILABLE', '發送失敗，請稍後再試'],
   ])('shows fixed copy for a production HTTP %i error envelope', async (_status, code, expected) => {
     const post = vi.fn(async () => {
