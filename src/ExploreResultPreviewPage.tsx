@@ -106,7 +106,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
 }
 
 export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondition?: HitCondition }) {
-  const [expandedResultId, setExpandedResultId] = useState<string | null>(null);
+  const [expandedResultIds, setExpandedResultIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterConfig = CONSECUTIVE_FILTERS[hitCondition];
   const [selectedFilters, setSelectedFilters] = useState<string[]>(() => [...filterConfig.selected]);
@@ -186,10 +186,10 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
             </div>
 
             {filteredResults.map((result) => {
-              const expanded = expandedResultId === result.id;
+              const expanded = expandedResultIds.includes(result.id);
 
               return (
-                <article data-expanded={expanded ? "true" : "false"} key={result.id}>
+                <article key={result.id}>
                   <div className="road-result-row explore-result-row">
                     <span className="tag"><span>{result.numberOrder}</span><span className="numeric-text">{result.position}</span></span>
                     <span className="result-number numeric-text">{result.number}</span>
@@ -201,7 +201,9 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
                       className="explore-result-road-toggle"
                       aria-expanded={expanded}
                       aria-label={`${expanded ? "收合" : "展開"}版路 ${result.id}`}
-                      onClick={() => setExpandedResultId((current) => current === result.id ? null : result.id)}
+                      onClick={() => setExpandedResultIds((current) => current.includes(result.id)
+                        ? current.filter((id) => id !== result.id)
+                        : [...current, result.id])}
                     >
                       <span>{result.algorithmType}</span>
                       <ChevronDownIcon data-open={expanded} />
