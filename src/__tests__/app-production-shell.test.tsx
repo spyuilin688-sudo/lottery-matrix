@@ -14,6 +14,7 @@ vi.mock("../auth/MemberSessionBridge", () => ({ MemberSessionBridge: bridge.rend
 vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
 
 import App from "../App";
+import { ExploreResultPreviewPage } from "../ExploreResultPreviewPage";
 
 afterEach(cleanup);
 
@@ -38,17 +39,48 @@ describe("production member shell", () => {
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
   });
 
-  it("keeps the copied consecutive filter interactive on the isolated page", () => {
+  it("expands the consecutive filter inline and filters results immediately", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     render(<App />);
 
+    const disclosure = screen.getByRole("button", { name: "連準篩選" });
+    expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("group", { name: "準4+（鎖定1碼）連準篩選" })).not.toBeInTheDocument();
+
+    fireEvent.click(disclosure);
+
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    const filter = screen.getByRole("group", { name: "準4+（鎖定1碼）連準篩選" });
+    expect(within(filter).getAllByRole("button")).toHaveLength(4);
+    expect(within(filter).getByRole("button", { name: "準4進5" })).toBeInTheDocument();
+    expect(within(filter).getByRole("button", { name: "準5進6" })).toBeInTheDocument();
+    expect(within(filter).getByRole("button", { name: "準6進7" })).toBeInTheDocument();
+    const sevenToEight = within(filter).getByRole("button", { name: "準7進8" });
+    expect(sevenToEight).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(sevenToEight);
+
+    expect(screen.getByText(/探索到/).parentElement).toHaveTextContent("探索到 3 組符合條件版路");
+    expect(screen.queryByRole("button", { name: "展開版路 result-09" })).not.toBeInTheDocument();
+
+    fireEvent.click(disclosure);
+    expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("group", { name: "準4+（鎖定1碼）連準篩選" })).not.toBeInTheDocument();
+  });
+
+  it("provides the approved consecutive options for the 準5+ hit condition", () => {
+    render(<ExploreResultPreviewPage hitCondition="準5+" />);
+
     fireEvent.click(screen.getByRole("button", { name: "連準篩選" }));
 
-    expect(screen.getByRole("dialog", { name: "連準篩選" })).toBeInTheDocument();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(4);
-
-    fireEvent.click(screen.getByRole("button", { name: "關閉" }));
-    expect(screen.queryByRole("dialog", { name: "連準篩選" })).not.toBeInTheDocument();
+    const filter = screen.getByRole("group", { name: "準5+（鎖定2碼）連準篩選" });
+    expect(within(filter).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "準5進6",
+      "準6進7",
+      "準7進8",
+      "準9進10",
+      "準11進12",
+    ]);
   });
 
   it("restores the four deployed preview results without changing the member app", () => {
@@ -136,9 +168,34 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*font-size:\s*9px[^}]*font-weight:\s*700/s);
-    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*0 6px/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*4px 3px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*4px 6px/s);
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
+  });
+
+  it("uses the approved responsive result-row and consecutive-label dimensions", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.explore-result-preview-screen\s+\.explore-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*8px 0/s);
+    expect(css).toMatch(/\.explore-result-preview-screen\s+\.road-results\s+\.explore-result-consecutive-tag\s*\{[^}]*width:\s*max-content[^}]*padding:\s*2px[^}]*background:\s*#071018[^}]*font-size:\s*clamp\(11px,\s*3\.59vw,\s*14px\)/s);
+    expect(css).toMatch(/\.explore-result-preview-screen\s+\.road-results\s+\.explore-result-road-toggle\s*\{[^}]*grid-template-columns:\s*1fr auto 1fr/s);
+  });
+
+  it("uses the approved inline filter and expanded validation spacing", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.explore-consecutive-filter-button\s*\{[^}]*width:\s*max-content[^}]*height:\s*21\.2px[^}]*font-size:\s*11px/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*6px 0[^}]*padding:\s*4px 0[^}]*border-top:[^;]+;[^}]*border-bottom:/s);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
+    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(14px,\s*3\.85vw,\s*15px\)/);
+  });
+
+  it("keeps validation number states square and prediction styling matched to the summary card", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
+    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.62\)[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(13,\s*31,\s*59,\s*\.78\)/s);
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {
@@ -157,7 +214,7 @@ describe("production member shell", () => {
     }
   });
 
-  it("keeps issue numbers at 9px and 700 when the shared reference rule loads later", () => {
+  it("keeps issue numbers at 8px and 700 when the shared reference rule loads later", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const previewStyle = document.createElement("style");
     previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
@@ -170,7 +227,7 @@ describe("production member shell", () => {
 
     const issue = document.querySelector(".explore-validation-issue");
     expect(issue).not.toBeNull();
-    expect(getComputedStyle(issue!).fontSize).toBe("9px");
+    expect(getComputedStyle(issue!).fontSize).toBe("8px");
     expect(getComputedStyle(issue!).fontWeight).toBe("700");
 
     previewStyle.remove();

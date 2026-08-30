@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
-import { ChevronDownIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
 import "./explore-result-preview.css";
 
-const CONSECUTIVE_OPTIONS = ["準4進5", "準5進6", "準6進7", "準7進8"] as const;
+type HitCondition = "準4+" | "準5+";
+
+const CONSECUTIVE_FILTERS = {
+  "準4+": {
+    label: "準4+（鎖定1碼）",
+    options: ["準4進5", "準5進6", "準6進7", "準7進8"],
+    selected: ["準5進6", "準6進7", "準7進8"],
+  },
+  "準5+": {
+    label: "準5+（鎖定2碼）",
+    options: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+    selected: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+  },
+} as const satisfies Record<HitCondition, { label: string; options: readonly string[]; selected: readonly string[] }>;
 
 function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
   const state = value === row.source ? "source" : value === row.step ? "step" : value === row.hit ? "hit" : "";
@@ -92,14 +105,20 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
   );
 }
 
-export function ExploreResultPreviewPage() {
+export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondition?: HitCondition }) {
   const [expandedResultIds, setExpandedResultIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>(["準5進6", "準6進7", "準7進8"]);
+  const filterConfig = CONSECUTIVE_FILTERS[hitCondition];
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(() => [...filterConfig.selected]);
+  const filteredResults = PREVIEW_RESULTS.filter((result) => selectedFilters.includes(result.consecutive));
 
   useEffect(() => {
     document.title = "探索結果區 | 樂彩 Matrix";
   }, []);
+
+  useEffect(() => {
+    setSelectedFilters([...filterConfig.selected]);
+  }, [filterConfig]);
 
   return (
     <main className="feature-screen matrix-explore-screen matrix-explore-main-screen explore-result-preview-screen" aria-label="探索結果區">
@@ -114,13 +133,47 @@ export function ExploreResultPreviewPage() {
         <section className="panel result-panel">
           <header className="result-title">
             <h2 className="section-title"><span />探索結果區</h2>
-            <button type="button" className="consecutive-filter-button" onClick={() => setFilterOpen(true)}>
-              連準篩選
+            <button
+              type="button"
+              className="explore-consecutive-filter-button"
+              aria-expanded={filterOpen}
+              aria-controls="preview-consecutive-filter-options"
+              onClick={() => setFilterOpen((current) => !current)}
+            >
+              <span>連準篩選</span>
+              <ChevronDownIcon data-open={filterOpen} aria-hidden="true" />
             </button>
             <strong className="result-count">
-              <span>探索到&nbsp;</span><span className="numeric-text">{PREVIEW_RESULTS.length}</span><span>&nbsp;組符合條件版路</span>
+              <span>探索到&nbsp;</span><span className="numeric-text">{filteredResults.length}</span><span>&nbsp;組符合條件版路</span>
             </strong>
           </header>
+
+          {filterOpen ? (
+            <div
+              id="preview-consecutive-filter-options"
+              className="explore-consecutive-filter-options"
+              role="group"
+              aria-label={`${filterConfig.label}連準篩選`}
+            >
+              {filterConfig.options.map((option) => {
+                const selected = selectedFilters.includes(option);
+
+                return (
+                  <button
+                    type="button"
+                    className="explore-consecutive-filter-option"
+                    aria-pressed={selected}
+                    onClick={() => setSelectedFilters((current) => current.includes(option)
+                      ? current.filter((item) => item !== option)
+                      : [...current, option])}
+                    key={option}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           <div className="road-results">
             <div className="road-results-head" aria-hidden="true">
@@ -132,20 +185,20 @@ export function ExploreResultPreviewPage() {
               <span>版路類型</span>
             </div>
 
-            {PREVIEW_RESULTS.map((result) => {
+            {filteredResults.map((result) => {
               const expanded = expandedResultIds.includes(result.id);
 
               return (
                 <article key={result.id}>
-                  <div className="road-result-row">
+                  <div className="road-result-row explore-result-row">
                     <span className="tag"><span>{result.numberOrder}</span><span className="numeric-text">{result.position}</span></span>
                     <span className="result-number numeric-text">{result.number}</span>
                     <span className="result-period">下<span className="numeric-text">{result.predictionPeriod}</span>期</span>
-                    <span className="result-consecutive">{result.consecutive}</span>
+                    <span className="explore-result-consecutive-tag">{result.consecutive}</span>
                     <strong className="numeric-text">{result.prediction}</strong>
                     <button
                       type="button"
-                      className="road-type-toggle"
+                      className="explore-result-road-toggle"
                       aria-expanded={expanded}
                       aria-label={`${expanded ? "收合" : "展開"}版路 ${result.id}`}
                       onClick={() => setExpandedResultIds((current) => current.includes(result.id)
@@ -164,38 +217,6 @@ export function ExploreResultPreviewPage() {
           </div>
         </section>
       </div>
-
-      {filterOpen ? (
-        <div className="filter-sheet-backdrop" role="presentation" onClick={() => setFilterOpen(false)}>
-          <section
-            className="filter-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="preview-consecutive-filter-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header>
-              <h2 id="preview-consecutive-filter-title">連準篩選</h2>
-              <button type="button" onClick={() => setFilterOpen(false)} aria-label="關閉"><Cross2Icon /></button>
-            </header>
-            <div className="filter-options">
-              {CONSECUTIVE_OPTIONS.map((option) => (
-                <label key={option}>
-                  <input
-                    type="checkbox"
-                    checked={selectedFilters.includes(option)}
-                    onChange={() => setSelectedFilters((current) => current.includes(option)
-                      ? current.filter((item) => item !== option)
-                      : [...current, option])}
-                  />
-                  <span aria-hidden="true" />
-                  <strong>{option}</strong>
-                </label>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }
