@@ -22,10 +22,20 @@ type AuthUsersResponse = {
 };
 
 type EdgeBusinessErrorCode = 'INVALID_REQUEST' | 'NO_ACTIVE_SUBSCRIPTIONS';
+type EdgeStartupStage =
+  | 'SUPABASE_URL'
+  | 'SUPABASE_SERVICE_ROLE_KEY'
+  | 'WEB_PUSH_PUBLIC_KEY'
+  | 'WEB_PUSH_PRIVATE_KEY'
+  | 'WEB_PUSH_SUBJECT'
+  | 'SUPABASE_CLIENT'
+  | 'WEB_PUSH_CONFIGURATION'
+  | 'UNKNOWN';
+type EdgeStartupDiagnosticCode = `PUSH_STARTUP_FAILED_${EdgeStartupStage}`;
 type EdgeBusinessEnvelope = {
   edgeBusinessError: {
-    code: EdgeBusinessErrorCode;
-    statusCode: 400 | 409;
+    code: EdgeBusinessErrorCode | EdgeStartupDiagnosticCode;
+    statusCode: 400 | 409 | 500;
   };
 };
 
@@ -62,6 +72,16 @@ export class PushNotificationsError extends Error {
 
 const PAGE_SIZE = 1000;
 const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const EDGE_STARTUP_STAGES = new Set<EdgeStartupStage>([
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'WEB_PUSH_PUBLIC_KEY',
+  'WEB_PUSH_PRIVATE_KEY',
+  'WEB_PUSH_SUBJECT',
+  'SUPABASE_CLIENT',
+  'WEB_PUSH_CONFIGURATION',
+  'UNKNOWN',
+]);
 
 function optionalString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -79,7 +99,7 @@ export function requireMemberUuid(value: unknown) {
 }
 
 async function edgeBusinessEnvelope(response: Response): Promise<EdgeBusinessEnvelope | null> {
-  if (response.status !== 400 && response.status !== 409) return null;
+  if (response.status !== 400 && response.status !== 409 && response.status !== 500) return null;
   let body: Row;
   try {
     body = await response.clone().json() as Row;
@@ -93,6 +113,15 @@ async function edgeBusinessEnvelope(response: Response): Promise<EdgeBusinessEnv
   }
   if (response.status === 409 && code === 'NO_ACTIVE_SUBSCRIPTIONS') {
     return { edgeBusinessError: { code, statusCode: 409 } };
+  }
+  const stage = optionalString(error?.stage);
+  if (response.status === 500 && code === 'PUSH_STARTUP_FAILED' && EDGE_STARTUP_STAGES.has(stage as EdgeStartupStage)) {
+    return {
+      edgeBusinessError: {
+        code: `PUSH_STARTUP_FAILED_${stage as EdgeStartupStage}`,
+        statusCode: 500,
+      },
+    };
   }
   return null;
 }
