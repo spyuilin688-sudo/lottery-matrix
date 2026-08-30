@@ -2,16 +2,6 @@
   font-weight: 600;
 }
 
-.notifications-screen-v2 .notification-bulk-actions button {
-  height: calc(var(--layout-touch-target) - 8px);
-  min-height: calc(var(--layout-touch-target) - 8px);
-}
-
-.notifications-screen-v2 .notification-bulk-enable {
-  border-color: var(--lottery-gold-600);
-  background: var(--lottery-gold-600);
-}
-
 .notifications-screen-v2 .notification-bulk-disable {
   border: 1px solid var(--lottery-gold-500);
   background: var(--lottery-neutral-900);

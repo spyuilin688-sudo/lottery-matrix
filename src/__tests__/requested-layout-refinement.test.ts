@@ -119,20 +119,22 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
   });
 
-  it("uses compact dark-gold actions on activation and membership-plan pages", () => {
+  it("uses the branded explore action on the membership-plan payment button", () => {
     const style = mountStyles(readCss("src/feature-pages.css"));
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
       <main class="activation-code-screen"><section class="activation-card"><button class="gold-button"></button></section></main>
-      <main class="pro-plans-screen"><button class="confirm-payment"></button></main>`;
+      <main class="pro-plans-screen"><button class="primary-action branded-explore-action confirm-payment"><span>確定付款</span></button></main>`;
 
     const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .gold-button")!);
     const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
     expect(activationButton.height).toBe("44px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
-    expect(paymentButton.height).toBe("34px");
-    expect(paymentButton.backgroundColor).toBe("rgb(6, 13, 18)");
+    expect(paymentButton.height).toBe("48px");
+    expect(paymentButton.position).toBe("relative");
+    expect(paymentButton.overflow).toBe("hidden");
+    expect(paymentButton.color).toBe("rgb(246, 212, 114)");
     expect(paymentButton.borderTopWidth).toBe("1px");
   });
 
@@ -161,11 +163,11 @@ describe("requested responsive layout refinement", () => {
     expect(actions.display).toBe("grid");
     expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
     expect(actions.columnGap).toBe("8px");
-    expect(enable.height).toBe("var(--layout-touch-target)");
-    expect(disable.height).toBe("var(--layout-touch-target)");
+    expect(enable.height).toBe("32px");
+    expect(disable.height).toBe("32px");
     expect(enable.width).toBe("100%");
     expect(disable.width).toBe("100%");
-    expect(adjustmentCss).toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
+    expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
     expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
     expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
   });

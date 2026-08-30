@@ -1015,12 +1015,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .plan-name { display: block; padding-top: 2px; color: #e5c36e; font-size: 18px; font-weight: 650; white-space: nowrap; }
 .plan-tool-icons { position: absolute; top: 18px; right: 18px; display: flex; justify-content: flex-end; gap: 7px; }
 .plan-tool-icons--stacked { flex-direction: column; }
-.plan-tool-icon { display: block; width: 72px; height: 72px; overflow: hidden; border: 1px solid rgba(220, 169, 57, .7); border-radius: 11px; box-shadow: 0 0 12px rgba(211, 155, 39, .2); }
+.plan-tool-icon { display: block; width: 56px; height: 56px; overflow: hidden; border: 1px solid rgba(220, 169, 57, .7); border-radius: 11px; box-shadow: 0 0 12px rgba(211, 155, 39, .2); }
 .plan-tool-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .plan-card--with-tools .plan-card-heading,
 .plan-card--with-tools > strong,
 .plan-card--with-tools > h2,
-.plan-card--with-tools > ul { width: calc(100% - 88px); }
+.plan-card--with-tools > ul { width: calc(100% - 72px); }
 .plan-card > strong { display: block; margin: 10px 0 20px; color: #f1c352; font-size: 29px; }
 .plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
 .plan-card h2 { margin: 0 0 12px; color: #ece7df; font-size: 15px; }
@@ -1037,7 +1037,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .auto-renew-setting strong { color: #9f988e; font-size: 12px; font-weight: 600; }
 .auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
 .auto-renew-note { margin: 0; padding-top: 2px; color: #9f988e; font-size: 11px; line-height: 1.55; }
-.confirm-payment { width: 100%; min-height: 48px; border: 1px solid #d1a030; border-radius: 10px; background: linear-gradient(180deg, #d9a529, #a96d08); color: #130d03; font-size: 16px; font-weight: 750; }
+.confirm-payment:not(.branded-explore-action) { width: 100%; min-height: 48px; border: 1px solid #d1a030; border-radius: 10px; background: linear-gradient(180deg, #d9a529, #a96d08); color: #130d03; font-size: 16px; font-weight: 750; }
 .payment-note { margin: -4px 0 0; color: #9f988e; font-size: 11px; text-align: center; }
 .about-matrix-card { padding: 18px 16px; }
 .about-matrix-card p { margin: 0 0 14px; color: #c9c2b8; font-size: 13px; line-height: 1.85; }
@@ -1808,20 +1808,6 @@ opacity: .30; box-shadow: none;
   cursor: wait;
   opacity: .56;
 }
-.profile-card .profile-logout-error {
-  z-index: 1;
-  min-height: 16px;
-  margin: -4px 0 0;
-  grid-column: 2 / -1;
-  justify-self: end;
-  color: #cf7777;
-  font-size: 11px;
-  line-height: 16px;
-  visibility: hidden;
-}
-.profile-card .profile-logout-error[data-visible="true"] {
-  visibility: visible;
-}
 .subscription-status-card {
   padding: 6px 10px 8px;
 }
@@ -2096,6 +2082,15 @@ opacity: .30; box-shadow: none;
   font-size: 14px;
   font-weight: 700;
 }
+.referral-summary-heading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+.referral-summary-heading .referral-success-count {
+  white-space: nowrap;
+}
 .referral-code-label,
 .referral-success-count {
   margin: 0;
@@ -2140,7 +2135,7 @@ opacity: .30; box-shadow: none;
   height: 44px;
   min-height: 44px;
 }
-.pro-plans-screen .confirm-payment {
+.pro-plans-screen .confirm-payment:not(.branded-explore-action) {
   box-sizing: border-box;
   height: 34px;
   min-height: 34px;
@@ -2150,6 +2145,55 @@ opacity: .30; box-shadow: none;
   color: #e6c56a;
   font-size: 13px;
   font-weight: 700;
+}
+
+.activation-card-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  color: #e5c36e;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.activation-card-toggle:hover {
+  color: #f0cc72;
+}
+.activation-card-toggle:active {
+  opacity: .82;
+}
+.activation-card-toggle svg {
+  width: 16px;
+  height: 16px;
+  color: #b98a31;
+  transition: transform 160ms ease;
+}
+.activation-card-toggle svg[data-open="true"] {
+  transform: rotate(90deg);
+}
+.activation-card-toggle:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: 2px;
+}
+.activation-code-panel {
+  display: grid;
+}
+.activation-code-panel[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activation-card-toggle svg {
+    transition: none;
+  }
 }
 
 .manual-transfer-screen .detail-card dl {

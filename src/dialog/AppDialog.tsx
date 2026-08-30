@@ -1,4 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
+import { ExitIcon } from "@radix-ui/react-icons";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type AppDialogTone = "warning" | "danger" | "success";
@@ -9,6 +10,7 @@ export type AppDialogOptions = {
   confirmLabel?: string;
   cancelLabel?: string;
   tone?: AppDialogTone;
+  icon?: "logout";
 };
 
 type DialogRequest = AppDialogOptions & {
@@ -102,7 +104,9 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
               data-tone={request.tone ?? "warning"}
             >
               <div className="app-dialog-icon" aria-hidden="true">
-                {request.tone === "danger" ? "×" : request.tone === "success" ? "✓" : "!"}
+                {request.icon === "logout"
+                  ? <ExitIcon data-dialog-icon="logout" />
+                  : request.tone === "danger" ? "×" : request.tone === "success" ? "✓" : "!"}
               </div>
               <Dialog.Title className="app-dialog-title">{request.title}</Dialog.Title>
               {request.description ? (

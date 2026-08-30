@@ -31,6 +31,11 @@ function ConfirmHarness() {
   );
 }
 
+function LogoutHarness() {
+  const dialog = useAppDialog();
+  return <button type="button" onClick={() => void dialog.confirm({ title: "確認登出？", icon: "logout" })}>開啟登出確認</button>;
+}
+
 describe("AppDialog", () => {
   it("以可存取的共用對話框取代原生 confirm，並回傳使用者選擇", async () => {
     render(
@@ -65,5 +70,13 @@ describe("AppDialog", () => {
 
     expect(await screen.findByText("已取消")).toBeTruthy();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("支援登出確認稿使用的專用圖示", () => {
+    render(<AppDialogProvider><LogoutHarness /></AppDialogProvider>);
+
+    fireEvent.click(screen.getByRole("button", { name: "開啟登出確認" }));
+
+    expect(screen.getByRole("dialog", { name: "確認登出？" }).querySelector('[data-dialog-icon="logout"]')).toBeTruthy();
   });
 });

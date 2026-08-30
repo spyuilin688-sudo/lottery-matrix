@@ -22,7 +22,7 @@ test("referral and activation content appears once in the required order", () =>
   }
 
   const ordered = [
-    "<h2>我的推薦碼</h2>",
+    'className="referral-summary-heading"',
     "<h2>輸入推薦碼</h2>",
     'title="推薦成功認定"',
     'title="推薦成功獎勵"',
@@ -47,4 +47,8 @@ test("referral and activation layout keeps the approved responsive measurements"
   assert.match(css, /\.referral-input-card \.gold-button,\s*\.activation-card \.gold-button\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.referral-rule-toggle\s*\{[^}]*min-height:\s*56px;[^}]*padding:\s*0 16px;[^}]*font-weight:\s*600;/s);
   assert.match(page, /referral-success-count">推薦成功 <strong className="referral-success-value">/);
+  assert.match(page, /referral-summary-heading">\s*<h2>我的推薦碼<\/h2>\s*<p className="referral-success-count">/s);
+  assert.match(css, /\.referral-summary-heading\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(page, /className="activation-card-toggle"[^>]*aria-expanded=\{activationOpen\}[^>]*aria-controls="activation-code-panel"/s);
+  assert.match(page, /id="activation-code-panel"[^>]*hidden=\{!activationOpen\}/s);
 });

@@ -28,7 +28,7 @@ describe("notification visual refinement", () => {
       <main class="notifications-screen-v2">
         <div class="notification-title"><h2><span>選號提醒</span></h2></div>
         <div class="notification-bulk-actions">
-          <button class="notification-bulk-enable">全部開啟</button>
+          <button class="primary-action branded-explore-action notification-bulk-enable"><span>全部開啟</span></button>
           <button class="notification-bulk-disable">全部關閉</button>
         </div>
       </main>`;
@@ -37,11 +37,13 @@ describe("notification visual refinement", () => {
     const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
     const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
     const css = readCss("src/notification-visual-refinement.css");
+    const source = readCss("src/NotificationsPagePatched.tsx");
 
     expect(title.fontWeight).toBe("600");
-    expect(enable.height).toBe("calc(var(--layout-touch-target) - 8px)");
-    expect(disable.height).toBe("calc(var(--layout-touch-target) - 8px)");
-    expect(css).toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
+    expect(enable.height).toBe("32px");
+    expect(disable.height).toBe("32px");
+    expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
+    expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
   });

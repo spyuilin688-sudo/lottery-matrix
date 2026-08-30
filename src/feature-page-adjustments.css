@@ -22,8 +22,8 @@
 .notifications-screen-v2 .notification-bulk-actions button {
   box-sizing: border-box;
   width: 100%;
-  height: var(--layout-touch-target);
-  min-height: var(--layout-touch-target);
+  height: 32px;
+  min-height: 32px;
   padding: 0 12px;
   border-radius: var(--lottery-card-radius);
   font: inherit;
@@ -31,12 +31,6 @@
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-}
-
-.notifications-screen-v2 .notification-bulk-enable {
-  border: 1px solid var(--lottery-gold-500);
-  background: var(--lottery-gold-500);
-  color: var(--lottery-neutral-950);
 }
 
 .notifications-screen-v2 .notification-bulk-disable {

@@ -45,6 +45,7 @@ describe('Matrix Pro manual bank transfer', () => {
     render(<ProPlansPage onNavigate={onNavigate} />);
 
     expect(screen.queryByText('111023004501')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
     expect(screen.getByText(/手動轉帳不會自動扣款/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));

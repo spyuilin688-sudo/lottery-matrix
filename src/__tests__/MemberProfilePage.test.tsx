@@ -9,6 +9,7 @@ declare const process: { cwd(): string };
 
 const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({ signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
+const appDialog = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn() }));
 const supabase = vi.hoisted(() => {
   const unsubscribe = vi.fn();
   const auth = {
@@ -27,6 +28,7 @@ vi.mock("../auth/line-auth", () => ({
   signOutFromMatrix: lineAuth.signOutFromMatrix,
 }));
 vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
+vi.mock("../dialog/AppDialog", () => ({ useAppDialog: () => appDialog }));
 
 import { ProfilePage } from "../FeaturePages";
 
@@ -47,8 +49,11 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
+  appDialog.confirm.mockReset().mockResolvedValue(true);
+  appDialog.alert.mockReset().mockResolvedValue(undefined);
   supabase.unsubscribe.mockReset();
   supabase.getClient.mockClear();
   supabase.auth.onAuthStateChange.mockClear();
@@ -94,6 +99,38 @@ describe("ProfilePage member API", () => {
     expect(login).toHaveAttribute("aria-busy", "true");
     expect(lineAuth.signInWithLine).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(login).toBeEnabled());
+  });
+
+  it("LINE 登入失敗時使用共用危險提示，而不是頁內錯誤文字", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    lineAuth.signInWithLine.mockRejectedValueOnce(new Error("private oauth detail"));
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "LINE 登入" }));
+
+    await waitFor(() => expect(appDialog.alert).toHaveBeenCalledWith({
+      title: "登入失敗",
+      description: "請稍後再試。",
+      tone: "danger",
+    }));
+    expect(document.querySelector(".profile-logout-error")).toBeNull();
+  });
+
+  it("OAuth 回到頁面並取得 session 後只顯示一次登入成功提示", async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    const first = render(<ProfilePage onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "LINE 登入" }));
+    await waitFor(() => expect(lineAuth.signInWithLine).toHaveBeenCalledTimes(1));
+    first.unmount();
+
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: { access_token: "returned-member-session" } },
+      error: null,
+    });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    await waitFor(() => expect(appDialog.alert).toHaveBeenCalledWith({ title: "登入成功", tone: "success" }));
+    expect(window.sessionStorage.getItem("matrix-line-login-pending")).toBeNull();
   });
 
   it("已登入時維持既有登出按鈕且不顯示 LINE 登入", async () => {
@@ -221,38 +258,53 @@ describe("ProfilePage member API", () => {
     vi.useRealTimers();
   });
 
-  it("由既有登出按鈕直接處理 pending、失敗提示與重試", async () => {
+  it("登出前先確認，取消時不呼叫登出 API", async () => {
+    appDialog.confirm.mockResolvedValueOnce(false);
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "登出" }));
+
+    await waitFor(() => expect(appDialog.confirm).toHaveBeenCalledWith({
+      title: "確認登出？",
+      description: "登出後需重新登入才能繼續使用帳號功能。",
+      confirmLabel: "確認登出",
+      cancelLabel: "取消",
+      tone: "warning",
+      icon: "logout",
+    }));
+    expect(lineAuth.signOutFromMatrix).not.toHaveBeenCalled();
+  });
+
+  it("登出成功後使用共用成功提示", async () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "登出" }));
+
+    await waitFor(() => expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(appDialog.alert).toHaveBeenCalledWith({ title: "已登出", tone: "success" }));
+  });
+
+  it("登出失敗時使用共用危險提示並允許重試", async () => {
     let rejectLogout!: (reason: Error) => void;
     lineAuth.signOutFromMatrix.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => {
       rejectLogout = reject;
     }));
     render(<ProfilePage onNavigate={vi.fn()} />);
     const logout = await screen.findByRole("button", { name: "登出" });
-    const feedback = document.querySelector<HTMLElement>(".profile-logout-error");
-
-    expect(feedback).toBeInTheDocument();
-    expect(feedback).toBeEmptyDOMElement();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(getComputedStyle(feedback!).visibility).toBe("hidden");
-    expect(getComputedStyle(feedback!).minHeight).toBe("16px");
-    expect(getComputedStyle(feedback!).marginTop).toBe("-4px");
-    expect(getComputedStyle(feedback!).color).toBe("rgb(207, 119, 119)");
-    expect(getComputedStyle(feedback!).fontSize).toBe("11px");
 
     fireEvent.click(logout);
 
-    expect(logout).toBeDisabled();
-    expect(logout).toHaveAttribute("aria-busy", "true");
-    expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(1));
 
     await act(async () => {
       rejectLogout(new Error("private logout detail"));
     });
 
-    const alert = await screen.findByRole("alert");
-    expect(alert).toBe(feedback);
-    expect(alert).toHaveTextContent("登出失敗，請稍後再試");
-    expect(getComputedStyle(alert).visibility).toBe("visible");
+    await waitFor(() => expect(appDialog.alert).toHaveBeenCalledWith({
+      title: "登出失敗",
+      description: "請稍後再試。",
+      tone: "danger",
+    }));
+    expect(document.querySelector(".profile-logout-error")).toBeNull();
     expect(logout).toBeEnabled();
     expect(logout).toHaveAttribute("aria-busy", "false");
 

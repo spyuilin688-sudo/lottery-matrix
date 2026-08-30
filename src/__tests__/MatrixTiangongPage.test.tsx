@@ -35,19 +35,25 @@ beforeEach(() => {
   });
 });
 
-test('一段式不顯示第二段，且天工沒有近10期與連準篩選', () => {
+test('天工固定顯示二段式設定，且不再提供模式與命中條件選項', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section') as HTMLElement;
-  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
+  const stageSection = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
+  const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('.tiangong-stage-block') as HTMLElement;
   const firstPosition = within(firstStageCard).getByRole('group', { name: '探索球位' });
   const firstRoad = within(firstStageCard).getByRole('group', { name: '版路類型' });
   expect(document.querySelector('.matrix-tiangong-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
-  expect(generalCard).not.toBe(firstStageCard);
+  expect(generalCard).not.toBe(stageSection);
   expect(generalCard.contains(firstPosition)).toBe(false);
   expect(generalCard.contains(firstRoad)).toBe(false);
   expect(firstStageCard.contains(firstPosition)).toBe(true);
   expect(firstStageCard.contains(firstRoad)).toBe(true);
-  expect(screen.queryByRole('heading', { name: '第二段 探索設定' })).toBeNull();
+  expect(screen.getByRole('heading', { name: '第二段 探索設定' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '進階探索設定' })).toBeNull();
+  expect(screen.queryByText('探索模式')).toBeNull();
+  expect(screen.queryByText('命中條件')).toBeNull();
+  expect(screen.queryByRole('button', { name: '一段式' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '準3進4' })).toBeNull();
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
   expect(screen.queryByText('連準篩選')).toBeNull();
   expect(within(generalCard).getByRole('group', { name: '探索球位' }).classList.contains('tiangong-setting-row')).toBe(true);
@@ -56,12 +62,9 @@ test('一段式不顯示第二段，且天工沒有近10期與連準篩選', () 
   expect(document.querySelector('.tiangong-settings fieldset')).toBeNull();
 });
 
-test('二段式顯示第二段設定並提交完整正式條件', async () => {
+test('固定以二段式與準2進3提交完整正式條件', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
-  fireEvent.click(screen.getByRole('button', { name: '二段式' }));
   fireEvent.click(screen.getByRole('button', { name: '八十期' }));
-  fireEvent.click(screen.getByRole('button', { name: '準3進4' }));
   fireEvent.click(screen.getAllByRole('button', { name: '由左至右' })[0]);
   const secondStageTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
   const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
@@ -71,7 +74,7 @@ test('二段式顯示第二段設定並提交完整正式條件', async () => {
 
   expect(await screen.findByText('12')).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
-    lottery: '今彩539', periodRange: 80, mode: 'two-stage', hitCondition: '準3進4',
+    lottery: '今彩539', periodRange: 80, mode: 'two-stage', hitCondition: '準2進3',
     exploreDirections: ['固定', '依序遞增'],
     firstStageDirections: ['固定'], firstRoadTypes: ['加減'],
     secondStageDirections: ['固定'], secondRoadTypes: ['加減'],
