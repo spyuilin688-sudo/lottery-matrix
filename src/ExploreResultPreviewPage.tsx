@@ -194,7 +194,7 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
                     <span className="tag"><span>{result.numberOrder}</span><span className="numeric-text">{result.position}</span></span>
                     <span className="result-number numeric-text">{result.number}</span>
                     <span className="result-period">下<span className="numeric-text">{result.predictionPeriod}</span>期</span>
-                    <span className="explore-result-consecutive-tag">{result.consecutive}</span>
+                    <span className="result-consecutive">{result.consecutive}</span>
                     <strong className="numeric-text">{result.prediction}</strong>
                     <button
                       type="button"
