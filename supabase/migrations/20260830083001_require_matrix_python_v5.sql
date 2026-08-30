@@ -18,7 +18,7 @@ declare
   v_validations jsonb;
 begin
   if p_kind in ('explore', 'tianyan', 'status')
-    and p_analysis_version <> 'matrix-python-v5' then
+    and p_analysis_version <> p_draw_period || ':matrix-python-v5' then
     return null;
   end if;
 
@@ -107,7 +107,7 @@ begin
   select r.analysis_version,r.draw_period into v_version,v_draw
   from public.matrix_analysis_runs r
   where r.lottery=v_lottery and r.status='complete'
-    and r.analysis_version = 'matrix-python-v5'
+    and r.analysis_version = r.draw_period || ':matrix-python-v5'
     and (v_period is null or r.draw_period=v_period)
   order by r.completed_at desc nulls last limit 1;
   if v_version is null then raise exception using errcode='P0001', message='ANALYSIS_NOT_READY'; end if;
@@ -181,7 +181,7 @@ begin
   if v_lottery is null or v_draw is null or v_version is null or v_item_id is null then
     raise exception using errcode='P0001', message='INVALID_REQUEST';
   end if;
-  if v_version <> 'matrix-python-v5' then
+  if v_version <> v_draw || ':matrix-python-v5' then
     raise exception using errcode='P0001', message='ANALYSIS_VERSION_MISMATCH';
   end if;
   if not exists(select 1 from public.matrix_analysis_runs where lottery=v_lottery and draw_period=v_draw and analysis_version=v_version and status='complete') then

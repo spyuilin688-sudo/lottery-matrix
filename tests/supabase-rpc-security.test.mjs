@@ -50,7 +50,7 @@ test('Matrix v5 readers never fall back to completed v4 artifacts', async () => 
   const exploreList = sql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
   const exploreValidation = sql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
 
-  assert.match(exploreList, /r\.analysis_version\s*=\s*'matrix-python-v5'/);
-  assert.match(exploreValidation, /v_version\s*<>\s*'matrix-python-v5'/);
-  assert.match(sql, /p_analysis_version\s*<>\s*'matrix-python-v5'/);
+  assert.match(exploreList, /r\.analysis_version\s*=\s*r\.draw_period\s*\|\|\s*':matrix-python-v5'/);
+  assert.match(exploreValidation, /v_version\s*<>\s*v_draw\s*\|\|\s*':matrix-python-v5'/);
+  assert.match(sql, /p_analysis_version\s*<>\s*p_draw_period\s*\|\|\s*':matrix-python-v5'/);
 });
