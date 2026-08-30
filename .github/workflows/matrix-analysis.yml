@@ -14,17 +14,69 @@ permissions:
 jobs:
   release-stale:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        id: [daily539, fantasy5, marksix, lotto649]
-    concurrency:
-      group: matrix-scheduled-analysis-${{ matrix.id }}
-      cancel-in-progress: true
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      CURRENT_RUN_ID: ${{ github.run_id }}
+      CURRENT_RUN_NUMBER: ${{ github.run_number }}
     steps:
-      - name: Release stale lottery slot
-        run: echo "Released stale ${{ matrix.id }} slot"
+      - name: Cancel and drain older Matrix runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs_json="$(gh api --paginate --slurp \
+            "repos/$REPOSITORY/actions/workflows/matrix-analysis.yml/runs?per_page=100")"
+          newer_run_count="$(
+            jq -r --argjson current "$CURRENT_RUN_NUMBER" \
+              '[.[] | .workflow_runs[] | select(.run_number > $current)] | length' \
+              <<< "$runs_json"
+          )"
+          if (( newer_run_count > 0 )); then
+            echo "::error::NEWER_MATRIX_RUN_EXISTS"
+            exit 1
+          fi
+
+          stale_run_ids_text="$(
+            jq -r --argjson current "$CURRENT_RUN_NUMBER" \
+              '.[] | .workflow_runs[] | select(.run_number < $current and .status != "completed") | .id' \
+              <<< "$runs_json"
+          )"
+          stale_run_ids=()
+          if [[ -n "$stale_run_ids_text" ]]; then
+            mapfile -t stale_run_ids <<< "$stale_run_ids_text"
+          fi
+
+          for stale_run_id in "${stale_run_ids[@]}"; do
+            if ! gh api --silent --method POST \
+              "repos/$REPOSITORY/actions/runs/$stale_run_id/cancel"; then
+              status="$(gh api "repos/$REPOSITORY/actions/runs/$stale_run_id" --jq '.status')"
+              if [[ "$status" != "completed" ]]; then
+                exit 1
+              fi
+            fi
+          done
+
+          deadline=$((SECONDS + 300))
+          while (( SECONDS < deadline )); do
+            remaining=0
+            for stale_run_id in "${stale_run_ids[@]}"; do
+              status="$(gh api "repos/$REPOSITORY/actions/runs/$stale_run_id" --jq '.status')"
+              if [[ "$status" != "completed" ]]; then
+                remaining=$((remaining + 1))
+              fi
+            done
+            if (( remaining == 0 )); then
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "::error::STALE_MATRIX_RUNS_DID_NOT_STOP"
+          exit 1
 
   analyze:
     needs: release-stale
