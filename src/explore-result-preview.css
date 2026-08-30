@@ -225,7 +225,7 @@
   row-gap: 2px;
   margin: 6px 0 0;
   padding: 0;
-  border: 1px solid rgba(61, 82, 113, .82);
+  border: 0;
   border-radius: 10px;
   color: #f5f2ea;
   background: #09162d;
@@ -304,7 +304,7 @@
   grid-auto-rows: minmax(var(--explore-validation-row-min-height), auto);
   gap: 0;
   min-width: 0;
-  border: 1px solid rgba(61, 82, 113, .68);
+  border: 1px solid rgba(61, 82, 113, .82);
   border-radius: 6px;
   background: rgba(10, 25, 49, .82);
   overflow: hidden;
