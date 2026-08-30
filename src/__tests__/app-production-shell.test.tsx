@@ -229,10 +229,11 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
   });
 
-  it("uses a clear expanded outline and restores separators before the second and third rows", () => {
+  it("keeps the expanded wrapper borderless, clarifies existing card outlines, and restores row separators", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.82\)/s);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*0/s);
+    expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.82\)/s);
     expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.68\)/s);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(-n \+ 2\)/);
