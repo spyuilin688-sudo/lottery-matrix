@@ -29,6 +29,7 @@ class FakeQuery:
     def upsert(self, record: dict[str, Any] | list[dict[str, Any]], **kwargs: Any) -> "FakeQuery":
         self.client.last_record = record
         self.client.last_on_conflict = kwargs.get("on_conflict")
+        self.client.upsert_records.append(record)
         return self
 
     def eq(self, column: str, value: Any) -> "FakeQuery":
@@ -61,6 +62,7 @@ class FakeSupabaseClient:
         self.last_filters: list[tuple[str, Any]] = []
         self.last_orders: list[tuple[str, bool]] = []
         self.last_ranges: list[tuple[int, int]] = []
+        self.upsert_records: list[dict[str, Any] | list[dict[str, Any]]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
     def table(self, name: str) -> FakeQuery:
@@ -333,7 +335,7 @@ def test_explore_results_are_idempotent_and_keep_item_with_validation() -> None:
     assert stored["prediction_numbers"] == ["27"]
 
 
-def test_supabase_explore_results_use_one_batch_upsert_and_skip_empty_payload() -> None:
+def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payload() -> None:
     fake_client = FakeSupabaseClient()
     repository = SupabaseAnalysisRepository(fake_client)
     item = {
@@ -371,6 +373,32 @@ def test_supabase_explore_results_use_one_batch_upsert_and_skip_empty_payload() 
         {"items": [], "validationById": {}},
     )
     assert empty_client.last_table == ""
+
+
+def test_supabase_explore_results_split_large_payloads_into_bounded_batches() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+    items = [{
+        "id": f"road-{index}", "number": "02", "lockedPosition": 1,
+        "predictionDistance": 2, "consecutive": "準5進6", "highestStreak": 5,
+        "predictionNumbers": ["17"], "algorithmType": "加減",
+        "numberOrder": "依號碼由小到大排序", "ruleCount": 1,
+        "lockedSourceIndex": 1, "lockedSourcePeriod": "115000204",
+    } for index in range(201)]
+    validations = {
+        item["id"]: {"itemId": item["id"], "ruleSets": []}
+        for item in items
+    }
+
+    repository.save_explore_results(
+        "今彩539", "115000205", "matrix-python-v7",
+        {"items": items, "validationById": validations},
+    )
+
+    assert [len(batch) for batch in fake_client.upsert_records] == [100, 100, 1]
+    assert [record["item_id"] for batch in fake_client.upsert_records for record in batch] == [
+        f"road-{index}" for index in range(201)
+    ]
 
 
 def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None:

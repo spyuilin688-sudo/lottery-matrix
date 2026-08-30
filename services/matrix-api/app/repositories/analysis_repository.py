@@ -19,6 +19,7 @@ JOB_NAME_BY_LOTTERY = {
 RETENTION = timedelta(days=3)
 DRAW_PAGE_SIZE = 1000
 ARTIFACT_CHUNK_PAGE_SIZE = 2
+EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
 
 
 class AnalysisRepository(Protocol):
@@ -513,10 +514,11 @@ class SupabaseAnalysisRepository:
         )
         if not records:
             return
-        self.client.table("matrix_explore_results").upsert(
-            records,
-            on_conflict="lottery,draw_period,analysis_version,item_id",
-        ).execute()
+        for start in range(0, len(records), EXPLORE_RESULT_UPSERT_BATCH_SIZE):
+            self.client.table("matrix_explore_results").upsert(
+                records[start:start + EXPLORE_RESULT_UPSERT_BATCH_SIZE],
+                on_conflict="lottery,draw_period,analysis_version,item_id",
+            ).execute()
 
     def _iter_artifact_chunks(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
