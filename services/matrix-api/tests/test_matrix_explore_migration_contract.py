@@ -9,11 +9,9 @@ SQL_PATH = (
     / "20260830105558_matrix_python_v6_explore_results.sql"
 )
 SQL = SQL_PATH.read_text(encoding="utf-8")
-REPAIR_SQL_PATH = (
-    ROOT
-    / "supabase"
-    / "migrations"
-    / "20260830220000_fix_matrix_v6_rpc_nullif.sql"
+REPAIR_SQL_PATHS = (
+    ROOT / "supabase" / "migrations" / "20260830220000_fix_matrix_v6_rpc_nullif.sql",
+    ROOT / "supabase" / "migrations" / "20260830221500_fix_matrix_v6_rpc_coalesce.sql",
 )
 
 
@@ -55,12 +53,14 @@ def test_unapplied_broken_v5_migration_is_removed() -> None:
 
 
 def test_v6_rpc_uses_nullif_expression_and_has_a_production_repair_migration() -> None:
-    repair_sql = REPAIR_SQL_PATH.read_text(encoding="utf-8")
-
     assert "pg_catalog.nullif" not in SQL
-    assert "pg_catalog.nullif" not in repair_sql
-    for function_name in ("matrix_explore_list", "matrix_explore_validation"):
-        marker = f"create or replace function public.{function_name}"
-        canonical = marker + SQL.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
-        repair = marker + repair_sql.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
-        assert repair == canonical
+    assert "pg_catalog.coalesce" not in SQL
+    for repair_path in REPAIR_SQL_PATHS:
+        repair_sql = repair_path.read_text(encoding="utf-8")
+        assert "pg_catalog.nullif" not in repair_sql
+        assert "pg_catalog.coalesce" not in repair_sql
+        for function_name in ("matrix_explore_list", "matrix_explore_validation"):
+            marker = f"create or replace function public.{function_name}"
+            canonical = marker + SQL.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
+            repair = marker + repair_sql.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
+            assert repair == canonical

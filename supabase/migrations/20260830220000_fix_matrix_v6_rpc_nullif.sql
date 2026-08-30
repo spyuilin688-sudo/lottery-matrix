@@ -17,9 +17,9 @@ declare
   v_offset integer := (p_request->>'exploreDateOffset')::integer;
   v_range text := p_request->>'exploreRange';
   v_rule integer := (p_request->>'ruleCount')::integer;
-  v_roads jsonb := pg_catalog.coalesce(p_request->'roadTypes', '[]'::jsonb);
-  v_streaks jsonb := pg_catalog.coalesce(p_request->'selectedStreaks', '[]'::jsonb);
-  v_same boolean := pg_catalog.coalesce((p_request->>'sameCode')::boolean, false);
+  v_roads jsonb := coalesce(p_request->'roadTypes', '[]'::jsonb);
+  v_streaks jsonb := coalesce(p_request->'selectedStreaks', '[]'::jsonb);
+  v_same boolean := coalesce((p_request->>'sameCode')::boolean, false);
   v_prediction_number text := nullif(pg_catalog.btrim(p_request->>'predictionNumber'), '');
   v_entitlements jsonb;
   v_version text;
@@ -72,7 +72,7 @@ begin
       and result.rule_count = v_rule
       and v_roads ? result.algorithm_type
       and v_streaks ? result.consecutive
-      and (v_range = '完整範圍' or pg_catalog.coalesce(result.reference_offset, 0) >= -7)
+      and (v_range = '完整範圍' or coalesce(result.reference_offset, 0) >= -7)
   ), same_groups as (
     select prediction_numbers
     from base
@@ -98,7 +98,7 @@ begin
       or same_allowed.prediction_numbers ? v_prediction_number
   )
   select
-    pg_catalog.coalesce(
+    coalesce(
       pg_catalog.jsonb_agg(
         filtered.item || pg_catalog.jsonb_build_object(
           'explorePeriods', v_periods,
@@ -128,7 +128,7 @@ begin
       and result.rule_count = v_rule
       and v_roads ? result.algorithm_type
       and v_streaks ? result.consecutive
-      and (v_range = '完整範圍' or pg_catalog.coalesce(result.reference_offset, 0) >= -7)
+      and (v_range = '完整範圍' or coalesce(result.reference_offset, 0) >= -7)
   ), same_groups as (
     select prediction_numbers
     from base
@@ -153,7 +153,7 @@ begin
     order by count desc, number::integer
     limit 18
   )
-  select pg_catalog.coalesce(
+  select coalesce(
     pg_catalog.jsonb_agg(
       pg_catalog.jsonb_build_object('number', number, 'count', count)
       order by count desc, number::integer
@@ -228,7 +228,7 @@ begin
     and result.analysis_version = v_version
     and result.item_id = v_item_id
     and result.locked_source_index < v_periods
-    and (v_range = '完整範圍' or pg_catalog.coalesce(result.reference_offset, 0) >= -7)
+    and (v_range = '完整範圍' or coalesce(result.reference_offset, 0) >= -7)
   limit 1;
 
   if v_validation is null then

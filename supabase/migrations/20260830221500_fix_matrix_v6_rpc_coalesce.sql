@@ -1,50 +1,6 @@
--- Canonical Matrix Explore v6 result storage and RPCs.
+-- Complete the deployed Matrix Explore v6 RPC repair. NULLIF and COALESCE
+-- are SQL expressions, not pg_catalog-qualified functions.
 begin;
-
-create table if not exists public.matrix_explore_results (
-  lottery text not null check (lottery in ('今彩539', '天天樂', '六合彩', '大樂透')),
-  draw_period text not null,
-  analysis_version text not null,
-  item_id text not null,
-  number text not null,
-  locked_position integer not null check (locked_position > 0),
-  prediction_distance integer not null check (prediction_distance > 0),
-  consecutive text not null,
-  highest_streak integer not null check (highest_streak > 0),
-  prediction_numbers jsonb not null check (pg_catalog.jsonb_typeof(prediction_numbers) = 'array'),
-  algorithm_type text not null check (algorithm_type in ('加減', '合值', '拖牌')),
-  number_order text not null check (number_order in ('依號碼由小到大排序', '依實際開獎順序排序')),
-  rule_count integer not null check (rule_count in (1, 2)),
-  locked_source_index integer not null check (locked_source_index between 0 and 12),
-  locked_source_period text not null,
-  reference_offset integer,
-  reference_position integer,
-  item jsonb not null check (pg_catalog.jsonb_typeof(item) = 'object'),
-  validation jsonb not null check (pg_catalog.jsonb_typeof(validation) = 'object'),
-  expires_at timestamptz not null,
-  created_at timestamptz not null default pg_catalog.now(),
-  primary key (lottery, draw_period, analysis_version, item_id),
-  foreign key (lottery, draw_period, analysis_version)
-    references public.matrix_analysis_runs (lottery, draw_period, analysis_version)
-    on delete cascade
-);
-
-create index if not exists matrix_explore_results_list_idx
-  on public.matrix_explore_results (
-    lottery, draw_period, analysis_version, number_order, rule_count,
-    algorithm_type, consecutive, locked_source_index,
-    highest_streak desc, prediction_distance, locked_position
-  );
-
-create index if not exists matrix_explore_results_prediction_numbers_idx
-  on public.matrix_explore_results using gin (prediction_numbers);
-
-create index if not exists matrix_explore_results_expiry_idx
-  on public.matrix_explore_results (expires_at);
-
-alter table public.matrix_explore_results enable row level security;
-revoke all on table public.matrix_explore_results from public, anon, authenticated;
-grant select, insert, update, delete on table public.matrix_explore_results to service_role;
 
 create or replace function public.matrix_explore_list(p_request jsonb)
 returns jsonb
@@ -300,3 +256,4 @@ grant execute on function public.matrix_explore_list(jsonb) to anon, authenticat
 grant execute on function public.matrix_explore_validation(jsonb) to anon, authenticated;
 
 commit;
+
