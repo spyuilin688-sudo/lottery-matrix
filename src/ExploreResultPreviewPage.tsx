@@ -47,7 +47,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
               data-wide-numbers={rows.some((row) => row.numbers.length >= 6 || Boolean(row.special)) ? "true" : "false"}
               key={`${result.id}-${groupIndex}`}
             >
-              <div className="explore-validation-issues numeric-text">
+              <div className="explore-validation-issues explore-validation-numeric-text">
                 {Array.from({ length: rowCount }, (_, rowIndex) => (
                   <span className="explore-validation-issue" key={`issue-${rowIndex}`}>{rows[rowIndex]?.issue ?? ""}</span>
                 ))}
@@ -62,7 +62,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
                       key={row ? `${row.issue}-${row.special ?? ""}` : `empty-${rowIndex}`}
                     >
                       {row ? (
-                        <span className="explore-validation-numbers numeric-text">
+                        <span className="explore-validation-numbers explore-validation-numeric-text">
                           {row.numbers.map((value, index) => (
                             <PreviewNumber value={value} row={row} key={`${value}-${index}`} />
                           ))}
@@ -74,7 +74,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
                 })}
               </div>
 
-              <div className="explore-validation-formulas numeric-text">
+              <div className="explore-validation-formulas explore-validation-numeric-text">
                 {formulas.map((formula, rowIndex) => (
                   <span className="explore-validation-formula-row" key={`formula-${rowIndex}`}>{formatFormula(formula)}</span>
                 ))}
@@ -86,7 +86,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
 
       <footer className="explore-validation-prediction">
         <strong>本期預測</strong>
-        <b className="numeric-text">{result.finalPrediction}</b>
+        <b className="explore-validation-numeric-text">{result.finalPrediction}</b>
       </footer>
     </section>
   );
