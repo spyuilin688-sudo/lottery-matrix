@@ -287,8 +287,8 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+110px/);
-    expect(css).toMatch(/column-gap:\s*2px/);
-    expect(css).toMatch(/row-gap:\s*3px/);
+    expect(css).toMatch(/column-gap:\s*0/);
+    expect(css).toMatch(/row-gap:\s*4px/);
     expect(css).not.toContain("!important");
   });
 
@@ -376,7 +376,6 @@ describe("production member shell", () => {
 
     for (const selector of [
       ".explore-validation-issue",
-      ".explore-validation-draw-row",
       ".explore-validation-formula-row",
     ]) {
       const row = document.querySelector(selector);
@@ -386,6 +385,13 @@ describe("production member shell", () => {
       expect(getComputedStyle(row!).paddingTop).toBe("3px");
       expect(getComputedStyle(row!).paddingBottom).toBe("3px");
     }
+
+    const numberRow = document.querySelector(".explore-validation-draw-row");
+    expect(numberRow).not.toBeNull();
+    expect(getComputedStyle(numberRow!).height).toBe("auto");
+    expect(getComputedStyle(numberRow!).minHeight).toBe("var(--explore-validation-row-min-height)");
+    expect(getComputedStyle(numberRow!).paddingTop).toBe("1.5px");
+    expect(getComputedStyle(numberRow!).paddingBottom).toBe("1.5px");
 
     productionStyle.remove();
   });
@@ -405,7 +411,7 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
-  it("uses one three-pixel gap between every validation group", () => {
+  it("uses one four-pixel gap between every validation group", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -414,7 +420,7 @@ describe("production member shell", () => {
 
     const groups = document.querySelector(".explore-validation-groups");
     const incompleteGroup = document.querySelector('.explore-validation-group[data-complete="false"]');
-    expect(getComputedStyle(groups!).rowGap).toBe("3px");
+    expect(getComputedStyle(groups!).rowGap).toBe("4px");
     expect(getComputedStyle(incompleteGroup!).marginTop).toBe("0px");
 
     productionStyle.remove();
@@ -425,8 +431,18 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-consecutive-filter-button\s*\{[^}]*width:\s*max-content[^}]*height:\s*21\.2px[^}]*font-size:\s*11px/s);
     expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
-    expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*6px 0[^}]*padding:\s*4px 0[^}]*border-top:[^;]+;[^}]*border-bottom:/s);
+    expect(css).toMatch(/\.explore-result-preview-screen\.matrix-explore-main-screen \.result-title\s*\{[^}]*margin-bottom:\s*6px/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*0 0 6px[^}]*padding:\s*4px 0[^}]*border-top:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-bottom:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*animation:\s*explore-filter-options-expand \.18s ease-out/s);
+    expect(css).toMatch(/@keyframes explore-filter-options-expand[\s\S]*?from\s*\{[^}]*opacity:\s*0[^}]*transform:\s*translateY\(-2px\) scaleY\(\.96\)[\s\S]*?to\s*\{[^}]*opacity:\s*1[^}]*transform:\s*translateY\(0\) scaleY\(1\)/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*\.explore-consecutive-filter-options\s*\{[^}]*animation:\s*none/s);
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
+    expect(css).toMatch(/\.explore-validation-groups\s*\{[^}]*row-gap:\s*4px/s);
+    expect(css).toMatch(/\.explore-validation-group\s*\{[^}]*column-gap:\s*0/s);
+    expect(css).toMatch(/\.explore-validation-issues\s*\{[^}]*margin-right:\s*6px/s);
+    expect(css).toMatch(/\.explore-validation-numbers-card\s*\{[^}]*margin-right:\s*4px/s);
+    expect(css).toMatch(/\.explore-validation-draw-row\s*\{[^}]*padding:\s*1\.5px 0/s);
+    expect(css).toMatch(/\.explore-validation-numbers\s*\{[^}]*padding:\s*1px 3px/s);
+    expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*padding-inline:\s*3px/s);
     expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/);
     expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*margin-bottom:\s*8px/s);
   });
@@ -434,7 +450,7 @@ describe("production member shell", () => {
   it("matches the explore settings option style inside the isolated consecutive filter", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*28px[^}]*min-height:\s*28px[^}]*border:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*25px[^}]*min-height:\s*25px[^}]*border:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
     expect(css).toMatch(/\.explore-consecutive-filter-option\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*#d4a52f[^}]*color:\s*#f1c75a[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.1\)/s);
   });
 
