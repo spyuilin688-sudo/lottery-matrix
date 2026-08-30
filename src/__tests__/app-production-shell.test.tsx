@@ -16,7 +16,23 @@ vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
 import App from "../App";
 import { ExploreResultPreviewPage } from "../ExploreResultPreviewPage";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.querySelectorAll("style[data-preview-production-test]").forEach((style) => style.remove());
+});
+
+function mountPreviewProductionStyles() {
+  const style = document.createElement("style");
+  style.dataset.previewProductionTest = "true";
+  style.textContent = [
+    "src/design-tokens.css",
+    "src/explore-result-preview.css",
+    "src/feature-pages.css",
+    "src/matrix-explore-spacing.css",
+  ].map((path) => readFileSync(`${process.cwd()}/${path}`, "utf8").replace(/^@import[^;]+;\s*/, "")).join("\n");
+  document.head.append(style);
+  return style;
+}
 
 describe("production member shell", () => {
   it("renders the isolated exploration result page only on its direct path", () => {
@@ -235,6 +251,60 @@ describe("production member shell", () => {
     expect(getComputedStyle(summaryTag!).borderTopWidth).toBe("1px");
 
     previewStyle.remove();
+  });
+
+  it("keeps unexpanded result rows auto-sized with eight-pixel vertical padding after shared styles load", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+
+    const resultRow = document.querySelector(".explore-result-row");
+    expect(resultRow).not.toBeNull();
+    expect(getComputedStyle(resultRow!).minHeight).toBe("0px");
+    expect(getComputedStyle(resultRow!).paddingTop).toBe("8px");
+    expect(getComputedStyle(resultRow!).paddingBottom).toBe("8px");
+
+    productionStyle.remove();
+  });
+
+  it("renders the expanded summary consecutive tag with an opaque card background", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
+    expect(summaryTag).not.toBeNull();
+    expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgb(7, 16, 24)");
+
+    productionStyle.remove();
+  });
+
+  it("increases expanded validation rows by eight pixels while retaining four-pixel vertical padding", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const validationCard = document.querySelector(".explore-validation-card");
+    expect(getComputedStyle(validationCard!).getPropertyValue("--explore-validation-row-height").replace(/\s/g, ""))
+      .toBe("clamp(32px,8.46vw,33px)");
+
+    for (const selector of [
+      ".explore-validation-issue",
+      ".explore-validation-draw-row",
+      ".explore-validation-formula-row",
+    ]) {
+      const row = document.querySelector(selector);
+      expect(row).not.toBeNull();
+      expect(getComputedStyle(row!).paddingTop).toBe("4px");
+      expect(getComputedStyle(row!).paddingBottom).toBe("4px");
+    }
+
+    productionStyle.remove();
   });
 
   it("uses the approved inline filter and expanded validation spacing", () => {
