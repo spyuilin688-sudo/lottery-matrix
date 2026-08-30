@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
@@ -36,19 +37,79 @@ test('Matrix workflow runs every lottery for a push without scheduling the worke
   assert.doesNotMatch(workflow, /app\.worker[^\n]*--scheduled/);
 });
 
-test('Matrix workflow releases every stale lottery slot before bounded analysis starts', () => {
+test('Matrix workflow cancels and drains older runs before bounded analysis starts', () => {
   const releaseStale = workflow.match(/^  release-stale:\n[\s\S]*?(?=^  analyze:)/m)?.[0];
   const analyze = workflow.match(/^  analyze:\n[\s\S]*$/m)?.[0];
   assert.ok(releaseStale);
   assert.ok(analyze);
 
   assert.match(releaseStale, /^    runs-on: ubuntu-latest$/m);
-  assert.match(releaseStale, /^      max-parallel: 4$/m);
-  assert.match(releaseStale, /^        id: \[daily539, fantasy5, marksix, lotto649\]$/m);
-  assert.match(releaseStale, /^      group: matrix-scheduled-analysis-\$\{\{ matrix\.id \}\}$/m);
-  assert.match(releaseStale, /^      cancel-in-progress: true$/m);
+  assert.match(releaseStale, /^      actions: write$/m);
+  assert.match(releaseStale, /^      CURRENT_RUN_ID: \$\{\{ github\.run_id \}\}$/m);
+  assert.match(releaseStale, /^      CURRENT_RUN_NUMBER: \$\{\{ github\.run_number \}\}$/m);
+  assert.match(releaseStale, /gh api --paginate --slurp/);
+  assert.match(releaseStale, /actions\/workflows\/matrix-analysis\.yml\/runs\?per_page=100/);
+  assert.match(releaseStale, /select\(\.run_number < \$current and \.status != "completed"\)/);
+  assert.match(releaseStale, /actions\/runs\/\$stale_run_id\/cancel/);
+  assert.match(releaseStale, /while \(\( SECONDS < deadline \)\); do/);
+  assert.match(releaseStale, /if \[\[ "\$status" != "completed" \]\]; then/);
+  assert.match(releaseStale, /NEWER_MATRIX_RUN_EXISTS/);
+  assert.match(releaseStale, /STALE_MATRIX_RUNS_DID_NOT_STOP/);
 
   assert.match(analyze, /^    needs: release-stale$/m);
   assert.match(analyze, /^      group: matrix-scheduled-analysis-\$\{\{ matrix\.id \}\}$/m);
   assert.match(analyze, /^      cancel-in-progress: true$/m);
+});
+
+test('Matrix stale-run barrier fails closed when run selection cannot be parsed', () => {
+  const releaseStale = workflow.match(/^  release-stale:\n[\s\S]*?(?=^  analyze:)/m)?.[0];
+  const indentedScript = releaseStale?.match(/        run: \|\n([\s\S]*)$/)?.[1];
+  assert.ok(indentedScript);
+  const script = indentedScript
+    .split('\n')
+    .map((line) => line.startsWith('          ') ? line.slice(10) : line)
+    .join('\n');
+
+  const result = spawnSync('bash', ['-c', `
+    gh() { printf '[{"workflow_runs":[]}]'; }
+    jq() { return 7; }
+    ${script}
+  `], {
+    env: {
+      ...process.env,
+      CURRENT_RUN_ID: '200',
+      CURRENT_RUN_NUMBER: '20',
+      REPOSITORY: 'owner/repository',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+});
+
+test('Matrix stale-run barrier rejects an old attempt when a newer run exists', () => {
+  const releaseStale = workflow.match(/^  release-stale:\n[\s\S]*?(?=^  analyze:)/m)?.[0];
+  const indentedScript = releaseStale?.match(/        run: \|\n([\s\S]*)$/)?.[1];
+  assert.ok(indentedScript);
+  const script = indentedScript
+    .split('\n')
+    .map((line) => line.startsWith('          ') ? line.slice(10) : line)
+    .join('\n');
+
+  const result = spawnSync('bash', ['-c', `
+    gh() {
+      printf '[{"workflow_runs":[{"id":300,"run_number":21,"status":"completed"}]}]'
+    }
+    ${script}
+  `], {
+    env: {
+      ...process.env,
+      CURRENT_RUN_ID: '200',
+      CURRENT_RUN_NUMBER: '20',
+      REPOSITORY: 'owner/repository',
+    },
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
 });
