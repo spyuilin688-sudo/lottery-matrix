@@ -399,6 +399,41 @@ def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None
     assert fake_client.last_ranges == [(0, 1), (2, 3)]
 
 
+def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read() -> None:
+    class StreamingOnlyRepository(SupabaseAnalysisRepository):
+        def read_artifact_chunks(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+            raise AssertionError("summary must not accumulate every chunk")
+
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["matrix_analysis_artifact_chunks"] = [
+        {
+            "chunk_index": 0, "cursor_start": 0, "cursor_end": 1,
+            "payload": {
+                "items": [{"id": "same-road"}],
+                "validationById": {"same-road": {"source": "first"}},
+            },
+        },
+        {
+            "chunk_index": 1, "cursor_start": 1, "cursor_end": 2,
+            "payload": {
+                "items": [{"id": "same-road"}, {"id": "next-road"}],
+                "validationById": {"same-road": {"source": "second"}},
+            },
+        },
+        {
+            "chunk_index": 2, "cursor_start": 2, "cursor_end": 3,
+            "payload": {"items": [], "validationById": {}},
+        },
+    ]
+
+    count = StreamingOnlyRepository(fake_client).summarize_artifact(
+        "今彩539", "115000210", "v6", "tiangong", 3,
+    )
+
+    assert count == 2
+    assert fake_client.last_ranges == [(0, 1), (2, 3)]
+
+
 def test_supabase_chunk_write_compacts_large_payload() -> None:
     fake_client = FakeSupabaseClient()
     repository = SupabaseAnalysisRepository(fake_client)

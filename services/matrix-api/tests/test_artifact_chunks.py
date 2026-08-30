@@ -8,6 +8,7 @@ from app.repositories.artifact_chunks import (
     chunk_manifest,
     decode_chunk_payload,
     materialize_chunks,
+    summarize_chunks,
 )
 
 
@@ -251,3 +252,45 @@ def test_tiangong_materialization_keeps_first_duplicate_id_with_different_eviden
 
     assert result["items"] == [first_item]
     assert result["validationById"] == {"same-road": first_validation}
+
+
+def test_chunk_summary_counts_unique_ids_and_anonymous_items_incrementally() -> None:
+    chunks = iter([
+        {
+            "chunk_index": 0,
+            "cursor_start": 0,
+            "cursor_end": 1,
+            "payload": {
+                "items": [{"id": "same-road"}, {"anonymous": "first"}],
+                "validationById": {"same-road": {"source": "first"}},
+            },
+        },
+        {
+            "chunk_index": 1,
+            "cursor_start": 1,
+            "cursor_end": 2,
+            "payload": {
+                "items": [{"id": "same-road"}, {"id": "next-road"}],
+                "validationById": {"same-road": {"source": "second"}},
+            },
+        },
+    ])
+
+    assert summarize_chunks(chunks, 2, deduplicate_by_id=True) == 3
+
+
+@pytest.mark.parametrize(
+    "chunks, expected_total",
+    [
+        ([{"chunk_index": 1, "cursor_start": 1, "cursor_end": 2,
+           "payload": {"items": [], "validationById": {}}}], 2),
+        ([{"chunk_index": 0, "cursor_start": 0, "cursor_end": 1,
+           "payload": {"items": [], "validationById": {}}}], 2),
+    ],
+    ids=["missing-first-chunk", "missing-last-chunk"],
+)
+def test_chunk_summary_rejects_incomplete_cursor_coverage(
+    chunks: list[dict[str, object]], expected_total: int,
+) -> None:
+    with pytest.raises(ValueError, match="^ANALYSIS_CHUNKS_INCOMPLETE$"):
+        summarize_chunks(iter(chunks), expected_total, deduplicate_by_id=True)

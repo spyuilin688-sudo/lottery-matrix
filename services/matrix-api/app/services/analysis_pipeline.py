@@ -86,12 +86,25 @@ class AnalysisPipeline:
                                 lottery, period, self.analysis_version,
                             )
                             return {**(result or {}), "skipped": False}
-                        materialized = self.repository.materialize_artifact(
-                            lottery, period, self.analysis_version, phase, total,
-                        )
+                        if phase == "tiangong":
+                            item_count = self.repository.summarize_artifact(
+                                lottery, period, self.analysis_version, phase, total,
+                            )
+                            materialized = {
+                                "lottery": lottery,
+                                "drawPeriod": period,
+                                "items": [],
+                                "validationById": {},
+                                "itemCount": item_count,
+                            }
+                        else:
+                            materialized = self.repository.materialize_artifact(
+                                lottery, period, self.analysis_version, phase, total,
+                            )
+                            item_count = len(materialized["items"])
                         expected_chunks = (total + batch_size - 1) // batch_size
                         manifest = chunk_manifest(
-                            expected_chunks, cursor, total, len(materialized["items"]),
+                            expected_chunks, cursor, total, item_count,
                         )
                         self.repository.save_artifact(
                             lottery, period, self.analysis_version, phase, manifest,
