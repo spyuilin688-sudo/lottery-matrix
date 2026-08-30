@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const supabase = vi.hoisted(() => ({ rpc: vi.fn() }));
+const supabase = vi.hoisted(() => ({ rpc: vi.fn(), auth: { getSession: vi.fn() } }));
 vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => supabase }));
 
 import {
@@ -9,6 +9,10 @@ import {
   fetchMemberProfile,
   fetchNotificationSettings,
   fetchPendingTransferRequest,
+  fetchPushSubscriptionStatus,
+  hasAuthenticatedMemberSession,
+  disablePushSubscription,
+  savePushSubscription,
   saveNotificationSettings,
   submitTransferRequest,
 } from './member-api';
@@ -23,9 +27,15 @@ const settings = {
 
 beforeEach(() => {
   supabase.rpc.mockReset().mockResolvedValue({ data: {}, error: null });
+  supabase.auth.getSession.mockReset().mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
 });
 
 describe('member Supabase RPC', () => {
+  it('reports whether a current authenticated member session exists', async () => {
+    await expect(hasAuthenticatedMemberSession()).resolves.toBe(true);
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    await expect(hasAuthenticatedMemberSession()).resolves.toBe(false);
+  });
   it('bootstraps and loads only the authenticated member', async () => {
     await bootstrapMember();
     await fetchMemberProfile();
@@ -66,6 +76,38 @@ describe('member Supabase RPC', () => {
       ['member_transfer_request_submit', { p_plan_code: 'month', p_account_last_five: '12345' }],
       ['member_pending_transfer_request'],
       ['member_payment_history_get'],
+    ]);
+  });
+
+  it('loads, saves, and disables only the authenticated member push subscription', async () => {
+    const subscription = {
+      endpoint: 'https://push.test/device',
+      p256dh: 'p256dh-value',
+      auth: 'auth-value',
+    };
+
+    supabase.rpc
+      .mockResolvedValueOnce({ data: { enabled: false }, error: null })
+      .mockResolvedValueOnce({ data: { enabled: true }, error: null })
+      .mockResolvedValueOnce({
+        data: { disabled: true, endpoint: 'https://push.test/device' },
+        error: null,
+      });
+
+    await fetchPushSubscriptionStatus(subscription.endpoint);
+    await savePushSubscription(subscription);
+    const disabled: { disabled: boolean; endpoint: string } = await disablePushSubscription(subscription.endpoint);
+
+    expect(disabled).toEqual({ disabled: true, endpoint: 'https://push.test/device' });
+
+    expect(supabase.rpc.mock.calls).toEqual([
+      ['member_push_subscription_status', { p_endpoint: 'https://push.test/device' }],
+      ['member_push_subscription_save', {
+        p_endpoint: 'https://push.test/device',
+        p_p256dh: 'p256dh-value',
+        p_auth: 'auth-value',
+      }],
+      ['member_push_subscription_disable', { p_endpoint: 'https://push.test/device' }],
     ]);
   });
 });

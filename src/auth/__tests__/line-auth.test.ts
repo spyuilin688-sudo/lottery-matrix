@@ -197,6 +197,34 @@ describe('LINE auth helper', () => {
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
+  it('cleans up the current browser push subscription before local sign-out', async () => {
+    const order: string[] = [];
+    const signOut = vi.fn().mockImplementation(async () => {
+      order.push('signOut');
+      return { error: null };
+    });
+    const { client } = createClient({ signOut });
+    const cleanupPush = vi.fn().mockImplementation(async () => {
+      order.push('cleanupPush');
+    });
+
+    await signOutFromMatrix(client as never, vi.fn(), cleanupPush);
+
+    expect(order).toEqual(['cleanupPush', 'signOut']);
+  });
+
+  it('does not block local sign-out when push cleanup fails', async () => {
+    const { client, signOut } = createClient();
+
+    await signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn().mockRejectedValue(new Error('PUSH_CLEANUP_FAILED')),
+    );
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
   it('clears the in-memory provider token after successful revoke and sign-out', async () => {
     rememberLineProviderToken('remembered-provider-token');
     const { client } = createClient({ session: { access_token: 'supabase-access-token' } });

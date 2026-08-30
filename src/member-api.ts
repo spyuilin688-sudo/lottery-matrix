@@ -39,6 +39,17 @@ export type MemberPaymentHistoryItem = {
   status: TransferRequestStatus;
 };
 
+export type MemberPushSubscriptionInput = {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+};
+
+export type MemberPushSubscriptionDisableResponse = {
+  disabled: boolean;
+  endpoint: string;
+};
+
 export type { MemberNotificationSettings };
 
 async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
@@ -84,4 +95,28 @@ export function fetchPendingTransferRequest() {
 
 export function fetchMemberPaymentHistory() {
   return memberRpc<MemberPaymentHistoryItem[]>('member_payment_history_get');
+}
+
+export function fetchPushSubscriptionStatus(endpoint: string) {
+  return memberRpc<{ enabled: boolean }>('member_push_subscription_status', { p_endpoint: endpoint });
+}
+
+export async function hasAuthenticatedMemberSession() {
+  const { data, error } = await getSupabaseClient().auth.getSession();
+  if (error) throw error;
+  return Boolean(data.session);
+}
+
+export function savePushSubscription(input: MemberPushSubscriptionInput) {
+  return memberRpc<{ enabled: true }>('member_push_subscription_save', {
+    p_endpoint: input.endpoint,
+    p_p256dh: input.p256dh,
+    p_auth: input.auth,
+  });
+}
+
+export function disablePushSubscription(endpoint: string) {
+  return memberRpc<MemberPushSubscriptionDisableResponse>('member_push_subscription_disable', {
+    p_endpoint: endpoint,
+  });
 }

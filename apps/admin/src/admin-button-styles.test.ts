@@ -46,4 +46,18 @@ describe('admin interface styles', () => {
     expect(rule(operationsCss, '.confirmationBackdrop')).toMatch(/z-index\s*:\s*60/);
     expect(rule(operationsCss, '.confirmationDialog')).toMatch(/max-width\s*:\s*420px/);
   });
+
+  it('keeps the approved notification manager reachable without adding broadcast controls', () => {
+    expect(appSource).toContain('["通知管理", Bell]');
+    expect(appSource).toContain('active === "通知管理"');
+    expect(appSource).toContain('<NotificationManagement');
+    expect(appSource).not.toContain('全體會員群發');
+  });
+
+  it('stacks notification controls and records without horizontal overflow on phones', () => {
+    expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationComposer\{grid-template-columns:1fr\}/);
+    expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationLogTable table\{[^}]*min-width:0/);
+    expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationLogTable td\{[^}]*overflow-wrap:anywhere/);
+    expect(adminCss).not.toContain('.notificationLogCards');
+  });
 });

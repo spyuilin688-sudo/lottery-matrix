@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 
 const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
+const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
 function render(width) {
   const dom = new JSDOM(`<!doctype html>
@@ -109,4 +110,29 @@ test("所有通知設定內容使用一致的緊湊寬度與置中排列", () =>
   assert.match(css, /notification-inline-option-row \.notification-choice\s*\{[^}]*width:\s*calc\(\(100% - 12px\) \/ 4\)/);
   assert.equal(dom.window.getComputedStyle(input).width, "12px");
   assert.equal(dom.window.getComputedStyle(input).height, "12px");
+});
+
+test("390px 系統通知拒絕狀態使用實際狀態樣式並保留完整文案", () => {
+  const dom = new JSDOM(`<!doctype html>
+    <style>${responsiveCss}\n${css}</style>
+    <main class="notifications-screen notifications-screen-v2">
+      <div class="notification-title">
+        <h2><span>系統通知</span></h2>
+        <p class="notification-push-status" role="status" aria-live="polite" aria-atomic="true">
+          <span>手機通知未開啟</span><span class="notification-push-status-detail">通知權限已拒絕</span>
+        </p>
+      </div>
+    </main>`, { pretendToBeVisual: true });
+  Object.defineProperty(dom.window, "innerWidth", { configurable: true, value: 390 });
+  const status = dom.window.document.querySelector(".notification-push-status");
+  const detail = dom.window.document.querySelector(".notification-push-status-detail");
+  const title = dom.window.document.querySelector(".notification-title");
+
+  assert.equal(status.textContent.trim(), "手機通知未開啟通知權限已拒絕");
+  assert.equal(status.getAttribute("role"), "status");
+  assert.equal(dom.window.getComputedStyle(title).flexDirection, "column");
+  assert.equal(dom.window.getComputedStyle(status).minWidth, "0px");
+  assert.equal(dom.window.getComputedStyle(status).flexWrap, "wrap");
+  assert.equal(dom.window.getComputedStyle(status).overflowWrap, "anywhere");
+  assert.equal(dom.window.getComputedStyle(detail).color, "var(--lottery-label)");
 });

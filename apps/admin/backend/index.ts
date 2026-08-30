@@ -10,6 +10,7 @@ import {
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
 import { createConnectionStatus } from './connection-status';
+import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig } from './worker-api';
 
@@ -31,6 +32,7 @@ type PermissionInput = {
 };
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
+const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const adminData = createAdminData(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const connectionStatus = createConnectionStatus({
@@ -143,6 +145,35 @@ const routes: Record<string, unknown> = {
   'GET /api/dashboard': [requireAuth(), guard('view'), async () => {
     try {
       return json(await getDashboard(supabase));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'GET /api/push-members': [requireAuth(), guard('view'), async () => {
+    try {
+      return json({ items: await pushNotifications.listMemberPushStatus() });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'POST /api/push-members/:id/test': [requireAuth(), guard('edit'), async (ctx: Context) => {
+    try {
+      const userId = requireMemberUuid(ctx.params.id);
+      const admin = await getAdmin(ctx);
+      return json(await pushNotifications.sendMemberTestPush(
+        userId,
+        String(admin.account ?? ''),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'GET /api/push-delivery-logs': [requireAuth(), guard('view'), async () => {
+    try {
+      return json({ items: await pushNotifications.listPushDeliveryLogs() });
     } catch (cause) {
       return fail(cause);
     }
