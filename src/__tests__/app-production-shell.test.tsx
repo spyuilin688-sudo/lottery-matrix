@@ -281,12 +281,12 @@ describe("production member shell", () => {
     expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
   });
 
-  it("keeps the scoped tag selector and approved three-column dimensions", () => {
+  it("keeps the scoped tag selector and lets the period column fit its content", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
-    expect(css).toMatch(/grid-template-columns:\s*clamp\(48px,\s*13\.33vw,\s*52px\)\s+minmax\(0,\s*1fr\)\s+110px/);
+    expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+110px/);
     expect(css).toMatch(/column-gap:\s*2px/);
     expect(css).toMatch(/row-gap:\s*3px/);
     expect(css).not.toContain("!important");
