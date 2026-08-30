@@ -58,6 +58,27 @@ describe("production member shell", () => {
     previewStyle.remove();
   });
 
+  it("keeps isolated preview headings and result rows readable", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const previewStyle = document.createElement("style");
+    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+    document.head.append(previewStyle);
+
+    render(<App />);
+
+    expect(getComputedStyle(screen.getByRole("main", { name: "探索結果區" })).color)
+      .toBe("rgb(245, 242, 234)");
+    expect(getComputedStyle(screen.getByRole("heading", { name: "探索結果區" })).color)
+      .toBe("rgb(231, 213, 172)");
+    expect(getComputedStyle(document.querySelector(".road-results article")!).color)
+      .toBe("rgb(198, 192, 184)");
+    const positionTag = document.querySelector(".road-results .tag");
+    expect(getComputedStyle(positionTag!).color).toBe("rgb(240, 189, 52)");
+    expect(getComputedStyle(positionTag!).borderTopWidth).toBe("1px");
+
+    previewStyle.remove();
+  });
+
   it("expands the consecutive filter inline and filters results immediately", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     render(<App />);
@@ -192,12 +213,28 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
   });
 
-  it("uses the approved responsive result-row and consecutive-label dimensions", () => {
-    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+  it("styles only the expanded summary consecutive value as a tag card", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const previewStyle = document.createElement("style");
+    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+    document.head.append(previewStyle);
 
-    expect(css).toMatch(/\.explore-result-preview-screen\s+\.explore-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*8px 0/s);
-    expect(css).toMatch(/\.explore-result-preview-screen\s+\.road-results\s+\.explore-result-consecutive-tag\s*\{[^}]*width:\s*max-content[^}]*padding:\s*2px[^}]*background:\s*#071018[^}]*font-size:\s*clamp\(11px,\s*3\.59vw,\s*14px\)/s);
-    expect(css).toMatch(/\.explore-result-preview-screen\s+\.road-results\s+\.explore-result-road-toggle\s*\{[^}]*grid-template-columns:\s*1fr auto 1fr/s);
+    render(<App />);
+
+    const rowConsecutive = document.querySelector(".result-consecutive");
+    expect(rowConsecutive).not.toBeNull();
+    expect(document.querySelector(".explore-result-consecutive-tag")).toBeNull();
+    expect(getComputedStyle(rowConsecutive!).fontSize).toBe("10px");
+    expect(getComputedStyle(rowConsecutive!).borderTopWidth).toBe("0px");
+    expect(getComputedStyle(rowConsecutive!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+    const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
+    expect(summaryTag).not.toBeNull();
+    expect(getComputedStyle(summaryTag!).fontSize).toBe("8px");
+    expect(getComputedStyle(summaryTag!).borderTopWidth).toBe("1px");
+
+    previewStyle.remove();
   });
 
   it("uses the approved inline filter and expanded validation spacing", () => {
