@@ -28,7 +28,7 @@
 
 ### New files
 
-- `由 `supabase migration new mobile_push_notifications` 產生的 migration 檔`：訂閱表、發送紀錄表、RLS 與會員 RPC。
+- 執行 `supabase migration new mobile_push_notifications` 後產生的實際 migration 檔：訂閱表、發送紀錄表、RLS 與會員 RPC。
 - `supabase/functions/send-test-push/handler.ts`：驗證管理後臺請求、讀取會員有效訂閱、逐支手機發送、保存結果。
 - `supabase/functions/send-test-push/handler.test.ts`：Edge Function 行為測試。
 - `supabase/functions/send-test-push/index.ts`：Edge Function 啟動入口。
