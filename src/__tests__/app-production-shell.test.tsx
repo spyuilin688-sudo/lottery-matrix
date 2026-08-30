@@ -77,7 +77,7 @@ describe("production member shell", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
 
-    expect(document.querySelector(".reference-card-summary")?.textContent)
+    expect(document.querySelector(".explore-validation-summary")?.textContent)
       .toBe("開 04 第 1 顆  |  同期  |  第 4 顆  |  +24.36  |  下 1 期開");
   });
 
@@ -86,9 +86,9 @@ describe("production member shell", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
 
-    const summary = document.querySelector(".reference-summary-card");
+    const summary = document.querySelector(".explore-validation-summary-card");
     expect(summary).not.toBeNull();
-    expect(summary?.querySelector(":scope > .reference-consecutive-tag")).toHaveTextContent("準6進7");
+    expect(summary?.querySelector(":scope > .explore-validation-consecutive-tag")).toHaveTextContent("準6進7");
   });
 
   it("renders issue, number, and formula columns as independent cards", () => {
@@ -96,12 +96,12 @@ describe("production member shell", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-14" }));
 
-    const firstGroup = document.querySelector(".reference-validation-group");
+    const firstGroup = document.querySelector(".explore-validation-group");
     expect(firstGroup).not.toBeNull();
     expect(firstGroup?.children).toHaveLength(3);
-    expect(firstGroup?.children[0]).toHaveClass("reference-issues");
-    expect(firstGroup?.children[1]).toHaveClass("reference-numbers-card");
-    expect(firstGroup?.children[2]).toHaveClass("reference-formulas");
+    expect(firstGroup?.children[0]).toHaveClass("explore-validation-issues");
+    expect(firstGroup?.children[1]).toHaveClass("explore-validation-numbers-card");
+    expect(firstGroup?.children[2]).toHaveClass("explore-validation-formulas");
   });
 
   it("limits every validation group to at most three rows", () => {
@@ -109,7 +109,7 @@ describe("production member shell", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-14" }));
 
-    for (const group of document.querySelectorAll(".reference-validation-group")) {
+    for (const group of document.querySelectorAll(".explore-validation-group")) {
       expect(within(group as HTMLElement).getAllByText(/^\d{5}$/).length).toBeLessThanOrEqual(3);
     }
   });
@@ -125,7 +125,7 @@ describe("production member shell", () => {
   it("keeps the scoped tag selector and responsive three-column dimensions", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.reference-summary-card\s*>\s*\.reference-consecutive-tag\s*\{/);
+    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*clamp\(44px,\s*12\.31vw,\s*48px\)\s+minmax\(0,\s*1fr\)\s+clamp\(110px,\s*32\.82vw,\s*128px\)/);
     expect(css).toMatch(/column-gap:\s*2px/);
@@ -136,9 +136,39 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.reference-issue\s*\{[^}]*font-size:\s*9px[^}]*font-weight:\s*700/s);
-    expect(css).toMatch(/\.reference-formula-row\s*\{[^}]*padding:\s*0 6px/s);
-    expect(css).toMatch(/\.reference-card-summary\s*\{[^}]*padding:\s*4px 8px/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*font-size:\s*9px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*0 6px/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
+  });
+
+  it("keeps the complete expanded validation area independent from reference page classes", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const validation = screen.getByRole("region", { name: "04 驗證過程" });
+    expect(validation).toHaveClass("explore-validation-card");
+    expect(validation.querySelector('[class^="reference-"], [class*=" reference-"]')).toBeNull();
+  });
+
+  it("keeps issue numbers at 9px and 700 when the shared reference rule loads later", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const previewStyle = document.createElement("style");
+    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+    const sharedStyle = document.createElement("style");
+    sharedStyle.textContent = ".reference-issue { font: inherit; }";
+    document.head.append(previewStyle, sharedStyle);
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const issue = document.querySelector(".explore-validation-issue");
+    expect(issue).not.toBeNull();
+    expect(getComputedStyle(issue!).fontSize).toBe("9px");
+    expect(getComputedStyle(issue!).fontWeight).toBe("700");
+
+    previewStyle.remove();
+    sharedStyle.remove();
   });
 
   it("renders the member app without the virtual phone frame", () => {
