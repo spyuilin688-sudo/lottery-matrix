@@ -1,7 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import httpx
 import pytest
+from postgrest.exceptions import APIError
 
 from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
@@ -310,10 +312,11 @@ def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -
     assert explore_batches + tiangong_batches - 1 <= worker_module.MAX_CYCLES_PER_INVOCATION
 
 
-def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
+def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None:
     repository = TrackingRepository()
     source = Source()
     attempts = 0
+    waits: list[float] = []
 
     def tianyan(_: dict) -> dict:
         nonlocal attempts
@@ -328,11 +331,123 @@ def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
 
     result = run_worker("今彩539", repository, source, builders)
 
     assert result["status"] == "complete"
     assert attempts == 2
+    assert waits == []
+
+
+def test_worker_backs_off_before_retrying_transient_service_failure(monkeypatch) -> None:
+    class TransientServiceError(RuntimeError):
+        code = "521"
+
+    repository = TrackingRepository()
+    source = Source()
+    attempts = 0
+    waits: list[float] = []
+
+    def tianyan(_: dict) -> dict:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise TransientServiceError("web server is down")
+        return {"items": []}
+
+    builders = {
+        "explore": lambda _: {"items": []},
+        "tianyan": tianyan,
+        "tiangong": lambda _: {"items": []},
+        "status": lambda _: {"items": []},
+    }
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
+
+    result = run_worker("今彩539", repository, source, builders)
+
+    assert result["status"] == "complete"
+    assert attempts == 3
+    assert waits == [15.0, 45.0]
+
+
+def _postgrest_error(code: object) -> APIError:
+    return APIError({
+        "message": "service failure",
+        "code": code,
+        "hint": None,
+        "details": None,
+    })
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (_postgrest_error(500), True),
+        (_postgrest_error("PGRST000"), True),
+        (_postgrest_error("PGRST003"), True),
+        (_postgrest_error("57014"), True),
+        (
+            httpx.HTTPStatusError(
+                "service unavailable",
+                request=httpx.Request("GET", "https://example.test"),
+                response=httpx.Response(
+                    503,
+                    request=httpx.Request("GET", "https://example.test"),
+                ),
+            ),
+            True,
+        ),
+        (
+            httpx.HTTPStatusError(
+                "unauthorized",
+                request=httpx.Request("GET", "https://example.test"),
+                response=httpx.Response(
+                    401,
+                    request=httpx.Request("GET", "https://example.test"),
+                ),
+            ),
+            False,
+        ),
+        (
+            httpx.ConnectError(
+                "connection refused",
+                request=httpx.Request("GET", "https://example.test"),
+            ),
+            True,
+        ),
+        (RuntimeError("deterministic failure"), False),
+    ],
+)
+def test_transient_service_error_classification(error: Exception, expected: bool) -> None:
+    assert worker_module._is_transient_service_error(error) is expected
+
+
+def test_worker_backs_off_while_retrying_transient_preparation_failure(monkeypatch) -> None:
+    class TransientServiceError(RuntimeError):
+        code = "521"
+
+    class RecoveringSource(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.attempts = 0
+
+        def fetch(self, lottery: str) -> dict:
+            self.attempts += 1
+            if self.attempts < 3:
+                raise TransientServiceError("web server is down")
+            return super().fetch(lottery)
+
+    repository = TrackingRepository()
+    source = RecoveringSource()
+    waits: list[float] = []
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["status"] == "complete"
+    assert source.attempts == 3
+    assert waits == [15.0, 45.0]
 
 
 def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis() -> None:

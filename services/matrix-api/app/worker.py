@@ -2,6 +2,7 @@ import argparse
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from os import environ
+from time import sleep
 from typing import Any
 
 import httpx
@@ -24,7 +25,35 @@ EXPLORE_BATCH_SIZE = 10
 TIANGONG_BATCH_SIZE = 3
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
+RETRY_BACKOFF_SECONDS = (15.0, 45.0)
 ANALYSIS_VERSION = "matrix-python-v7"
+
+
+def _is_transient_service_error(error: Exception) -> bool:
+    code = str(getattr(error, "code", "") or "").upper()
+    if code == "57014" or code in {"PGRST000", "PGRST001", "PGRST002", "PGRST003"}:
+        return True
+    if code.isdigit() and 500 <= int(code) <= 599:
+        return True
+    if isinstance(error, httpx.HTTPStatusError):
+        return 500 <= error.response.status_code <= 599
+    if isinstance(error, httpx.TransportError):
+        return True
+    message = str(error).lower()
+    return any(marker in message for marker in (
+        "statement timeout",
+        "web server is down",
+        "connection reset",
+        "connection refused",
+        "temporarily unavailable",
+    ))
+
+
+def _wait_before_retry(error: Exception, failures: int) -> None:
+    if not _is_transient_service_error(error):
+        return
+    delay_index = min(max(0, failures - 1), len(RETRY_BACKOFF_SECONDS) - 1)
+    sleep(RETRY_BACKOFF_SECONDS[delay_index])
 
 
 def _run_analysis(
@@ -50,10 +79,11 @@ def _run_analysis(
         try:
             result = pipeline.run(draw, history)
             failures = 0
-        except Exception:
+        except Exception as error:
             failures += 1
             if failures >= MAX_FAILURES_PER_INVOCATION:
                 raise
+            _wait_before_retry(error, failures)
             continue
         if result.get("status") != "running":
             return result
@@ -101,7 +131,7 @@ def _run_worker_untracked(
     builders: Mapping[str, ArtifactBuilder] | None = None,
 ) -> dict[str, Any]:
     preparation_error: Exception | None = None
-    for _ in range(MAX_FAILURES_PER_INVOCATION):
+    for attempt in range(MAX_FAILURES_PER_INVOCATION):
         try:
             repository.cleanup_expired(datetime.now(UTC))
             refresh = DrawRefreshService(repository, source)
@@ -121,6 +151,8 @@ def _run_worker_untracked(
             if isinstance(error, ValueError):
                 raise
             preparation_error = error
+            if attempt + 1 < MAX_FAILURES_PER_INVOCATION:
+                _wait_before_retry(error, attempt + 1)
     else:
         assert preparation_error is not None
         raise preparation_error
