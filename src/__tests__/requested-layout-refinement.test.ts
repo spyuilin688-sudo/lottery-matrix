@@ -135,4 +135,68 @@ describe("requested responsive layout refinement", () => {
     expect(paymentButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(paymentButton.borderTopWidth).toBe("1px");
   });
+
+  it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
+    const adjustmentCss = readCss("src/feature-page-adjustments.css");
+    const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${adjustmentCss}`);
+    style.dataset.layoutContract = "notification-bulk-actions";
+    document.body.innerHTML = `
+      <main class="notifications-screen notifications-screen-v2">
+        <div class="feature-body">
+          <div class="notification-content">
+            <div class="notification-bulk-actions">
+              <button class="notification-bulk-enable">全部開啟</button>
+              <button class="notification-bulk-disable">全部關閉</button>
+            </div>
+            <div class="notification-list"><section class="notification-group"></section></div>
+          </div>
+        </div>
+      </main>`;
+
+    const content = getComputedStyle(document.querySelector(".notification-content")!);
+    const actions = getComputedStyle(document.querySelector(".notification-bulk-actions")!);
+    const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
+    const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
+    expect(content.rowGap).toBe("12px");
+    expect(actions.display).toBe("grid");
+    expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+    expect(actions.columnGap).toBe("8px");
+    expect(enable.height).toBe("var(--layout-touch-target)");
+    expect(disable.height).toBe("var(--layout-touch-target)");
+    expect(enable.width).toBe("100%");
+    expect(disable.width).toBe("100%");
+    expect(adjustmentCss).toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
+  });
+
+  it("tightens guide summary and bullet spacing without changing the existing type size", () => {
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    style.dataset.layoutContract = "guide-reading-rhythm";
+    document.body.innerHTML = `
+      <main class="matrix-guide-screen">
+        <nav class="guide-category-strip">
+          <button class="guide-category-card">01 未選中</button>
+          <button class="guide-category-card" data-selected="true">02 選中</button>
+        </nav>
+        <section class="guide-preview">
+          <p class="guide-summary">說明文字</p>
+          <section class="guide-detail-block"><ul><li>這是一段會折行的條列內容</li></ul></section>
+        </section>
+      </main>`;
+
+    const summary = getComputedStyle(document.querySelector(".guide-summary")!);
+    const list = getComputedStyle(document.querySelector(".guide-detail-block ul")!);
+    const item = getComputedStyle(document.querySelector(".guide-detail-block li")!);
+    const unselected = getComputedStyle(document.querySelector('.guide-category-card:not([data-selected="true"])')!);
+    const selected = getComputedStyle(document.querySelector('.guide-category-card[data-selected="true"]')!);
+    expect(summary.paddingBottom).toBe("10px");
+    expect(list.paddingLeft).toBe("0px");
+    expect(list.listStyleType).toBe("none");
+    expect(item.display).toBe("grid");
+    expect(item.gridTemplateColumns).toBe("4px minmax(0, 1fr)");
+    expect(item.columnGap).toBe("4px");
+    expect(item.fontSize).toBe("12px");
+    expect(unselected.borderTopColor).not.toBe(selected.borderTopColor);
+  });
 });

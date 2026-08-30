@@ -1468,13 +1468,14 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .guide-preview header { display: flex; align-items: center; gap: 10px; }
 .guide-preview header > span { display: grid; width: 33px; height: 26.4px; place-items: center; border: 1px solid #a97b23; border-radius: 8px; color: #e9bc4b; font-size: 11px; }
 .guide-preview h2 { margin: 0; color: #edcf7a; font-size: 18px; }
-.guide-preview .guide-summary { margin: 15px 0 0; padding-bottom: 14px; border-bottom: 1px solid #342a1d; color: #d4cdc2; font-size: 13px; line-height: 1.75; }
+.guide-preview .guide-summary { margin: 15px 0 0; padding-bottom: 10px; border-bottom: 1px solid #342a1d; color: #d4cdc2; font-size: 13px; line-height: 1.75; }
 .guide-detail-list { display: grid; margin-top: 2px; }
 .guide-detail-block { padding: 14px 0; border-bottom: 1px solid #30271c; }
 .guide-detail-block:last-child { padding-bottom: 2px; border-bottom: 0; }
 .guide-detail-block h3 { margin: 0 0 9px; color: #dfb84f; font-size: 14px; font-weight: 650; }
-.guide-detail-block ul { display: grid; margin: 0; padding-left: 19px; gap: 7px; color: #bbb4aa; font-size: 12px; line-height: 1.72; }
-.guide-detail-block li::marker { color: #b88525; }
+.guide-detail-block ul { display: grid; margin: 0; padding-left: 0; gap: 7px; color: #bbb4aa; font-size: 12px; line-height: 1.72; list-style-type: none; }
+.guide-detail-block li { display: grid; grid-template-columns: 4px minmax(0, 1fr); align-items: start; column-gap: 4px; }
+.guide-detail-block li::before { width: 4px; height: 4px; margin-top: .65em; border-radius: 50%; background: #b88525; content: ""; }
 .weekly-summary { margin-bottom: 8px; padding: 9px 10px 10px; border-color: #168ad0; }
 .weekly-summary > header { display: flex; height: 28px; align-items: center; gap: 8px; border-bottom: 1px solid #1d2c37; }
 .weekly-summary h2 { margin: 0; color: #e6cc84; font-size: 14px; font-weight: 550; }
