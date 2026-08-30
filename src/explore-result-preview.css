@@ -1,6 +1,11 @@
 .explore-result-preview-screen {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   background: var(--lottery-neutral-950);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .explore-result-preview-screen > .feature-body {
@@ -21,4 +26,311 @@
 .explore-result-preview-screen .integrated-title-back:focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: 2px;
+}
+
+.explore-result-preview-screen .road-results article + article {
+  border-top: 1px solid rgba(196, 145, 69, .35);
+}
+
+.reference-validation-card {
+  --reference-summary-font-size: clamp(10px, 2.82vw, 11px);
+  --reference-row-height: clamp(24px, 6.4vw, 25px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  row-gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: #f5f2ea;
+  background: #09162d;
+  overflow: visible;
+}
+
+.reference-summary-card {
+  position: relative;
+  margin: 0;
+}
+
+.reference-summary-card > .reference-consecutive-tag {
+  position: absolute;
+  z-index: 1;
+  top: -7px;
+  right: 10px;
+  display: inline-flex;
+  width: max-content;
+  max-width: calc(100% - 20px);
+  height: auto;
+  padding: 1px 4px;
+  border: 1px solid rgba(218, 174, 72, .5);
+  border-radius: 5px;
+  color: #e5bd61;
+  background: rgba(112, 86, 21, .1);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.reference-card-summary {
+  min-height: 0;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(61, 82, 113, .62);
+  border-radius: 8px;
+  color: #f4f0e8;
+  background: rgba(13, 31, 59, .78);
+  font-size: var(--reference-summary-font-size);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.04em;
+  white-space: pre;
+}
+
+.reference-groups {
+  display: grid;
+  row-gap: 3px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.reference-validation-group {
+  display: grid;
+  grid-template-columns: clamp(44px, 12.31vw, 48px) minmax(0, 1fr) clamp(110px, 32.82vw, 128px);
+  column-gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  overflow: visible;
+}
+
+.reference-validation-group + .reference-validation-group {
+  margin-top: 0;
+}
+
+.reference-validation-group[data-complete="false"] {
+  margin-top: 3px;
+  background: transparent;
+}
+
+.reference-issues,
+.reference-numbers-card,
+.reference-formulas {
+  display: grid;
+  grid-auto-rows: var(--reference-row-height);
+  gap: 0;
+  min-width: 0;
+  border: 1px solid rgba(61, 82, 113, .68);
+  border-radius: 6px;
+  background: rgba(10, 25, 49, .82);
+  overflow: hidden;
+}
+
+.reference-issues {
+  background: rgba(15, 34, 62, .88);
+}
+
+.reference-numbers-card {
+  background: rgba(10, 27, 52, .86);
+}
+
+.reference-draw-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: var(--reference-row-height);
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+
+.reference-number-row:nth-child(n + 3),
+.reference-issue:nth-child(n + 3),
+.reference-formula-row:nth-child(n + 3) {
+  border-top: 1px solid rgba(61, 82, 113, .24);
+}
+
+.reference-number-row:nth-child(-n + 2),
+.reference-issue:nth-child(-n + 2),
+.reference-formula-row:nth-child(-n + 2) {
+  border-top: 0;
+}
+
+.reference-issue {
+  display: grid;
+  place-items: center;
+  height: var(--reference-row-height);
+  color: #d8dbe2;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.reference-validation-group .reference-issue {
+  border-right: 0;
+  background: transparent;
+}
+
+.reference-numbers {
+  box-sizing: border-box;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(17px, 4.87vw, 19px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  padding: 1px 2px;
+  color: #f3f1eb;
+  white-space: nowrap;
+}
+
+.reference-number {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 clamp(17px, 4.87vw, 19px);
+  width: clamp(17px, 4.87vw, 19px);
+  min-width: clamp(17px, 4.87vw, 19px);
+  min-height: 19px;
+  padding: 0 1px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: inherit;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 17px;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.reference-number.source {
+  border-color: #50d6ef;
+  color: #baf5ff;
+  background: rgba(80, 214, 239, .15);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(80, 214, 239, .18);
+}
+
+.reference-number.step {
+  border-color: #e7a351;
+  color: #ffd39a;
+  background: rgba(231, 163, 81, .14);
+}
+
+.reference-number.hit {
+  border-color: #f0788a;
+  color: #ffb4bf;
+  background: rgba(240, 120, 138, .14);
+}
+
+.reference-numbers b {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  color: #8992a5;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.reference-numbers em {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  color: #9d69ea;
+  font-style: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.reference-formulas {
+  color: #d9dbe2;
+  background: rgba(3, 12, 26, .72);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.reference-formula-row {
+  display: flex;
+  align-items: center;
+  height: var(--reference-row-height);
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.reference-validation-group[data-wide-numbers="true"] .reference-numbers {
+  grid-auto-columns: clamp(16px, 4.36vw, 17px);
+  gap: 0;
+  padding-inline: 2px;
+}
+
+.reference-validation-group[data-wide-numbers="true"] .reference-number,
+.reference-validation-group[data-wide-numbers="true"] .reference-numbers em {
+  flex-basis: clamp(16px, 4.36vw, 17px);
+  width: clamp(16px, 4.36vw, 17px);
+  min-width: clamp(16px, 4.36vw, 17px);
+  font-size: clamp(10px, 2.7vw, 10.5px);
+}
+
+.reference-validation-group[data-wide-numbers="true"] .reference-formulas {
+  font-size: 10px;
+}
+
+.explore-result-preview-screen .reference-validation-card .numeric-text,
+.explore-result-preview-screen .reference-validation-card .reference-number {
+  font-family: ui-monospace, "Roboto Mono", SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 0;
+}
+
+.reference-formula-row:first-child {
+  color: #f0d58a;
+}
+
+.reference-formula-row:last-child {
+  color: #aeb5c3;
+}
+
+.reference-prediction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 6px 12px;
+  background: rgba(2, 7, 12, .4);
+  white-space: nowrap;
+}
+
+.reference-prediction strong {
+  color: #f4f0e8;
+  font-size: 12px;
+}
+
+.reference-prediction b {
+  color: #65c9f2;
+  font-size: 15px;
+  letter-spacing: .06em;
+}
+
+@media (max-width: 350px) {
+  .reference-groups {
+    padding-inline: 0;
+  }
+
+  .reference-formula-row {
+    padding-inline: 6px;
+  }
+
+  .reference-validation-group[data-wide-numbers="true"] .reference-numbers {
+    gap: 0;
+    padding-inline: 2px;
+  }
 }
