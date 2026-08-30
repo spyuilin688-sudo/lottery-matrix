@@ -50,6 +50,21 @@ def lottery_call_time(lottery: str, day: datetime) -> datetime:
     return taipei_day.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
 
+def next_lottery_call_time(lottery: str, now: datetime | None = None) -> datetime:
+    current = (now or datetime.now(TAIPEI)).astimezone(TAIPEI)
+    if current.tzinfo is None:
+        raise ValueError("schedule time must include a timezone")
+    draw_days = DRAW_WEEKDAYS.get(lottery, frozenset(range(7)))
+    for offset in range(8):
+        day = current + timedelta(days=offset)
+        if day.weekday() not in draw_days:
+            continue
+        call_time = lottery_call_time(lottery, day)
+        if call_time > current:
+            return call_time
+    raise ValueError("NEXT_DRAW_NOT_FOUND")
+
+
 def _candidate_call_times(lottery: str, now: datetime) -> list[datetime]:
     taipei_now = now.astimezone(TAIPEI)
     return [
