@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app.schedule import call_due, lottery_call_time, retry_offsets
+from app.schedule import call_due, lottery_call_time, next_lottery_call_time, retry_offsets
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -27,6 +27,21 @@ def test_fantasy5_uses_summer_and_winter_call_times() -> None:
     assert lottery_call_time("天天樂", datetime(2026, 11, 5, tzinfo=TAIPEI)).strftime("%H:%M") == "09:33"
     assert lottery_call_time("天天樂", datetime(2026, 11, 6, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
     assert lottery_call_time("天天樂", datetime(2027, 3, 12, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
+
+
+def test_next_call_time_uses_the_existing_draw_schedule() -> None:
+    assert next_lottery_call_time(
+        "今彩539", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)
+    ).isoformat() == "2026-08-31T20:33:00+08:00"
+    assert next_lottery_call_time(
+        "大樂透", datetime(2026, 8, 29, 12, 0, tzinfo=TAIPEI)
+    ).isoformat() == "2026-09-01T20:53:00+08:00"
+    assert next_lottery_call_time(
+        "六合彩", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)
+    ).isoformat() == "2026-08-30T21:33:00+08:00"
+    assert next_lottery_call_time(
+        "天天樂", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)
+    ).isoformat() == "2026-08-31T09:33:00+08:00"
 
 
 def test_pre_draw_calls_are_two_hours_one_hour_and_half_hour_before_call_time() -> None:
