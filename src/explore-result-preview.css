@@ -225,7 +225,7 @@
   row-gap: 2px;
   margin: 6px 0 0;
   padding: 0;
-  border: 0;
+  border: 1px solid rgba(61, 82, 113, .82);
   border-radius: 10px;
   color: #f5f2ea;
   background: #09162d;
@@ -330,16 +330,10 @@
   line-height: 1.25;
 }
 
-.explore-validation-number-row:nth-child(n + 3),
-.explore-validation-issue:nth-child(n + 3),
-.explore-validation-formula-row:nth-child(n + 3) {
-  border-top: 1px solid rgba(61, 82, 113, .24);
-}
-
-.explore-validation-number-row:nth-child(-n + 2),
-.explore-validation-issue:nth-child(-n + 2),
-.explore-validation-formula-row:nth-child(-n + 2) {
-  border-top: 0;
+.explore-validation-number-row:nth-child(n + 2),
+.explore-validation-issue:nth-child(n + 2),
+.explore-validation-formula-row:nth-child(n + 2) {
+  border-top: 1px solid rgba(61, 82, 113, .68);
 }
 
 .explore-validation-issue {
@@ -348,7 +342,7 @@
   place-items: center;
   height: auto;
   min-height: var(--explore-validation-row-min-height);
-  padding: 3px 3px;
+  padding: 3px 4px;
   color: #d8dbe2;
   font-family: Roboto, Arial, sans-serif;
   font-size: 8px;
