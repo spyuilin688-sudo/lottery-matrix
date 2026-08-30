@@ -6,9 +6,10 @@ from app.domain.tiangong import enumerate_equal_spacing_sequences, evaluate_tian
 def candidate(**overrides) -> dict:
     value = {
         "lottery": "今彩539", "periodRange": 50, "sourceSequence": [1, 3, 5],
-        "mode": "one-stage", "hitCondition": "準2進3", "exploreDirection": "固定",
+        "mode": "two-stage", "hitCondition": "準2進3", "exploreDirection": "固定",
         "baseNumber": 10,
         "firstStage": {"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 5, "nextN": 2},
+        "secondStage": {"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 0, "nextN": 1},
         "validationRows": [],
     }
     value.update(overrides)
@@ -37,12 +38,11 @@ def test_source_spacing_and_hit_count_are_validated() -> None:
     assert evaluate_tiangong_candidate(candidate(hitCondition="準3進4"))["reason"] == "INVALID_SOURCE_SEQUENCE"
 
 
+def test_removed_one_stage_candidate_is_invalid() -> None:
+    assert evaluate_tiangong_candidate(candidate(mode="one-stage"))["reason"] == "INVALID_TIANGONG_MODE"
+
+
 def test_prediction_distance_is_independent_from_source_spacing() -> None:
-    one = evaluate_tiangong_candidate(candidate(
-        sourceSequence=[5, 12, 19],
-        firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 2, "nextN": 5},
-    ))
-    assert (one["valid"], one["interval"], one["predictionDistance"]) == (True, 7, 1)
     two = evaluate_tiangong_candidate(candidate(
         sourceSequence=[14, 18, 22], mode="two-stage",
         firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 2, "nextN": 9},
@@ -77,6 +77,10 @@ def test_direction_and_future_period_are_enforced() -> None:
     positions = [("固定", 2, 2), ("依序遞增", 1, 3), ("依序遞減", 5, 3)]
     for direction, start, expected in positions:
         stage = {"startPosition": start, "direction": direction, "algorithmType": "加減", "value": 1, "nextN": 1}
-        assert evaluate_tiangong_candidate(candidate(firstStage=stage))["predictedPosition"] == expected
-    invalid = candidate(sourceSequence=[5, 12, 19], firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 1, "nextN": 4})
+        assert evaluate_tiangong_candidate(candidate(secondStage=stage))["predictedPosition"] == expected
+    invalid = candidate(
+        sourceSequence=[5, 12, 19],
+        firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 1, "nextN": 2},
+        secondStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 1, "nextN": 1},
+    )
     assert evaluate_tiangong_candidate(invalid)["reason"] == "PREDICTION_NOT_FUTURE"

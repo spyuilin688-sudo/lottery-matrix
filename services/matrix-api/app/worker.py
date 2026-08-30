@@ -11,7 +11,12 @@ from app.schedule import due_call_cycle
 from app.scraping.sources import LatestDrawSource
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
 from app.services.artifact_builders import create_artifact_builders
-from app.services.draw_refresh import DrawRefreshService, DrawSource
+from app.services.draw_refresh import (
+    DrawRefreshService,
+    DrawSource,
+    recent_history_window,
+    require_complete_history,
+)
 from app.settings import load_settings
 
 
@@ -28,6 +33,9 @@ def _run_analysis(
     history: list[dict[str, Any]],
     builders: Mapping[str, ArtifactBuilder] | None,
 ) -> dict[str, Any]:
+    require_complete_history(
+        str(draw["lottery"]), recent_history_window(history), str(draw["period"]),
+    )
     version = f'{draw["period"]}:{ANALYSIS_VERSION}'
     pipeline = AnalysisPipeline(
         repository,
@@ -97,11 +105,17 @@ def _run_worker_untracked(
         try:
             repository.cleanup_expired(datetime.now(UTC))
             refresh = DrawRefreshService(repository, source)
-            refresh.ensure_history(lottery)
+            if not repository.list_draws(lottery, 1):
+                refresh.ensure_history(lottery)
             draw = refresh.refresh(lottery)
+            refresh.ensure_history(lottery)
+            period = str(draw["period"])
+            progress = repository.get_progress(
+                lottery, period, f"{period}:{ANALYSIS_VERSION}",
+            )
+            if progress is not None and progress.get("status") == "complete":
+                return {**progress, "skipped": True}
             history = repository.list_draws(lottery, None)
-            if not history:
-                raise ValueError("DRAW_HISTORY_INCOMPLETE")
             break
         except Exception as error:
             if isinstance(error, ValueError):
@@ -134,20 +148,19 @@ def _normalized_draw_date(value: Any) -> str:
 def _resume_stored_analysis(
     lottery: str,
     repository: AnalysisRepository,
+    source: DrawSource,
     latest_draw: dict[str, Any],
     builders: Mapping[str, ArtifactBuilder] | None,
 ) -> dict[str, Any] | None:
+    DrawRefreshService(repository, source).ensure_history(lottery)
     period = str(latest_draw["period"])
     expected_version = f"{period}:{ANALYSIS_VERSION}"
     progress = repository.get_progress(lottery, period, expected_version)
     if progress is not None and progress.get("status") == "complete":
         return None
 
-    history = repository.list_draws(lottery, None)
-    if not history:
-        return None
-
     repository.cleanup_expired(datetime.now(UTC))
+    history = repository.list_draws(lottery, None)
     draw = {"lottery": lottery, **latest_draw}
     return _run_analysis(repository, draw, history, builders)
 
@@ -164,14 +177,14 @@ def run_scheduled_worker(
 
     if cycle is None:
         if latest:
-            resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+            resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
             if resumed is not None:
                 return resumed
         return {"lottery": lottery, "status": "not-due"}
 
     cycle_date = cycle.date().isoformat()
     if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
-        resumed = _resume_stored_analysis(lottery, repository, latest[0], builders)
+        resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
         if resumed is not None:
             return resumed
         return {
@@ -183,7 +196,8 @@ def run_scheduled_worker(
     def execute() -> dict[str, Any]:
         repository.cleanup_expired(datetime.now(UTC))
         refresh = DrawRefreshService(repository, source)
-        refresh.ensure_history(lottery)
+        if not repository.list_draws(lottery, 1):
+            refresh.ensure_history(lottery)
         draw = refresh.refresh(lottery)
 
         if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
@@ -193,9 +207,8 @@ def run_scheduled_worker(
                 "status": "not-acquired",
             }
 
+        refresh.ensure_history(lottery)
         history = repository.list_draws(lottery, None)
-        if not history:
-            raise ValueError("DRAW_HISTORY_INCOMPLETE")
         return _run_analysis(repository, draw, history, builders)
 
     return _run_tracked_job(lottery, repository, execute)

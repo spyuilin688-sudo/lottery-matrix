@@ -81,79 +81,6 @@ def _group_name(source_index: int) -> str:
     return ("A", "B", "C", "D")[source_index]
 
 
-def _one_stage_evidence(history: list[dict[str, Any]], sequence: list[int], offset: int, explore: dict[str, Any], result_path: dict[str, Any], stage: dict[str, Any], rule: dict[str, Any], maximum: int) -> list[dict[str, Any]]:
-    rows = []
-    source_positions = list(reversed(sequence))
-    length = len(sequence)
-    for traversal, source_position in enumerate(source_positions):
-        source_sequence_index = length - traversal - 1
-        source = history[source_position - 1]
-        reference_position = source_position + offset
-        reference = history[reference_position - 1]
-        reference_ball_position = explore["positionsOldestToNewest"][traversal]
-        base = reference["numbers"][reference_ball_position - 1]
-        output = _apply_rule(base, rule, maximum)
-        final_position = result_position(source_position, stage["nextN"])
-        actual_draw = history[final_position - 1] if final_position >= 1 else None
-        ball_position = result_path["positionsOldestToNewest"][traversal]
-        actual = actual_draw["numbers"][ball_position - 1] if actual_draw else None
-        row = {
-            "role": "prediction" if source_sequence_index == 0 else "first-stage-evidence",
-            "group": _group_name(source_sequence_index), "sourcePosition": source_position,
-            "sourcePeriod": source["period"], "sourceNumbers": source["numbers"],
-            "referenceOffset": offset, "referencePosition": reference_position,
-            "referencePeriod": reference["period"], "referenceBallPosition": reference_ball_position,
-            "baseNumber": base, "firstStage": _stage_evidence(stage, ball_position, base, output, actual),
-            "resultPeriod": actual_draw["period"] if actual_draw else _future_period(history[0]["period"], 1 - final_position),
-        }
-        row.update({"resultNumbers": actual_draw["numbers"]} if actual_draw else {"predictionDistance": 1 - final_position})
-        rows.append(row)
-    return rows
-
-
-def _one_stage_candidates(lottery: str, history: list[dict[str, Any]], period_range: int, hit_condition: str, options: dict[str, Any]) -> list[dict[str, Any]]:
-    length = 3 if hit_condition == "準2進3" else 4
-    maximum, count = lottery_maximum(lottery), lottery_position_count(lottery)
-    sequences = options.get("sourceSequences") or enumerate_equal_spacing_sequences(period_range, hit_condition)
-    sequences = [sequence for sequence in sequences if len(sequence) == length and sequence[-1] <= period_range]
-    explore_paths = options.get("explorePaths") or enumerate_position_paths(count, length)
-    result_paths = options.get("firstStagePaths") or enumerate_position_paths(count, length)
-    candidates = []
-    for sequence in sequences:
-        if sequence[-1] > len(history):
-            continue
-        a, interval = sequence[0], sequence[1] - sequence[0]
-        distances = options.get("firstStageDistances") or list(range(a, a + interval))
-        source_positions = list(reversed(sequence))
-        for next_n in distances:
-            if not isinstance(next_n, int) or not a <= next_n < a + interval:
-                continue
-            validation_positions = [result_position(position, next_n) for position in source_positions[:-1]]
-            if any(position < 1 or position > len(history) for position in validation_positions):
-                continue
-            offsets = _reference_offsets(source_positions, next_n, len(history), options.get("referenceOffsets"))
-            for explore in explore_paths:
-                for result_path in result_paths:
-                    if len(explore["positionsOldestToNewest"]) != length or len(result_path["positionsOldestToNewest"]) != length:
-                        continue
-                    for offset in offsets:
-                        pairs = []
-                        for index, source_position in enumerate(source_positions[:-1]):
-                            reference = history[source_position + offset - 1]
-                            result = history[result_position(source_position, next_n) - 1]
-                            pairs.append((reference["numbers"][explore["positionsOldestToNewest"][index] - 1], result["numbers"][result_path["positionsOldestToNewest"][index] - 1]))
-                        rules = [rule for rule in derive_tiangong_rules(*pairs[0], maximum) if all(_apply_rule(base, rule, maximum) == target for base, target in pairs[1:])]
-                        for rule in rules:
-                            stage = {"startPosition": result_path["startPosition"], "direction": result_path["direction"], "algorithmType": rule["algorithmType"], "value": rule["value"], "nextN": next_n}
-                            rows = _one_stage_evidence(history, sequence, offset, explore, result_path, stage, rule, maximum)
-                            candidates.append({
-                                "lottery": lottery, "periodRange": period_range, "sourceSequence": sequence,
-                                "mode": "one-stage", "hitCondition": hit_condition, "exploreDirection": explore["direction"],
-                                "baseNumber": rows[-1]["baseNumber"], "firstStage": stage, "validationRows": rows,
-                            })
-    return candidates
-
-
 def _two_stage_evidence(history: list[dict[str, Any]], sequence: list[int], offset: int, explore: dict[str, Any], first_path: dict[str, Any], second_path: dict[str, Any], first_stage: dict[str, Any], second_stage: dict[str, Any], first_rule: dict[str, Any], second_rule: dict[str, Any], maximum: int) -> list[dict[str, Any]]:
     first_rows, second_rows = [], []
     prediction_row = None
@@ -186,6 +113,45 @@ def _two_stage_evidence(history: list[dict[str, Any]], sequence: list[int], offs
             final_result = history[final_position - 1]
             second_rows.append({**common, "role": "second-stage-validation", "secondStage": _stage_evidence(second_stage, second_ball, first_output, second_output, final_result["numbers"][second_ball - 1]), "resultPeriod": final_result["period"], "resultNumbers": final_result["numbers"]})
     return first_rows + second_rows + ([prediction_row] if prediction_row else [])
+
+
+def _previous_path_position(path: dict[str, Any], count: int) -> int | None:
+    delta = 1 if path["direction"] == "依序遞增" else -1 if path["direction"] == "依序遞減" else 0
+    position = path["positionsOldestToNewest"][0] - delta
+    return position if 1 <= position <= count else None
+
+
+def _previous_group_passes_two_stages(
+    history: list[dict[str, Any]], sequence: list[int], offset: int,
+    explore: dict[str, Any], first_path: dict[str, Any], second_path: dict[str, Any],
+    n1: int, final_distance: int, first_rule: dict[str, Any],
+    second_rule: dict[str, Any], maximum: int, count: int,
+) -> bool | None:
+    interval = sequence[1] - sequence[0]
+    source_position = sequence[-1] + interval
+    reference_position = source_position + offset
+    first_result_position = result_position(source_position, n1)
+    final_position = result_position(source_position, final_distance)
+    required_positions = (
+        source_position, reference_position, first_result_position, final_position,
+    )
+    if any(position < 1 or position > len(history) for position in required_positions):
+        return None
+
+    explore_position = _previous_path_position(explore, count)
+    first_position = _previous_path_position(first_path, count)
+    second_position = _previous_path_position(second_path, count)
+    if None in {explore_position, first_position, second_position}:
+        return False
+
+    base = history[reference_position - 1]["numbers"][explore_position - 1]
+    first_output = _apply_rule(base, first_rule, maximum)
+    first_actual = history[first_result_position - 1]["numbers"][first_position - 1]
+    if first_output != first_actual:
+        return False
+    second_output = _apply_rule(first_output, second_rule, maximum)
+    second_actual = history[final_position - 1]["numbers"][second_position - 1]
+    return second_output == second_actual
 
 
 def _two_stage_candidates(lottery: str, history: list[dict[str, Any]], period_range: int, hit_condition: str, options: dict[str, Any]) -> list[dict[str, Any]]:
@@ -238,6 +204,13 @@ def _two_stage_candidates(lottery: str, history: list[dict[str, Any]], period_ra
                                     second_pairs = [(first_outputs[index], history[final_positions[index] - 1]["numbers"][second_path["positionsOldestToNewest"][index] - 1]) for index in range(length - 1)]
                                     second_rules = [rule for rule in derive_tiangong_rules(*second_pairs[0], maximum) if all(_apply_rule(base, rule, maximum) == target for base, target in second_pairs[1:])]
                                     for second_rule in second_rules:
+                                        previous_group_passes = _previous_group_passes_two_stages(
+                                            history, sequence, offset, explore, first_path,
+                                            second_path, n1, final_distance, first_rule,
+                                            second_rule, maximum, count,
+                                        )
+                                        if previous_group_passes is not False:
+                                            continue
                                         first_stage = {"startPosition": first_path["startPosition"], "direction": first_path["direction"], "algorithmType": first_rule["algorithmType"], "value": first_rule["value"], "nextN": n1}
                                         second_stage = {"startPosition": second_path["startPosition"], "direction": second_path["direction"], "algorithmType": second_rule["algorithmType"], "value": second_rule["value"], "nextN": n2}
                                         rows = _two_stage_evidence(history, sequence, offset, explore, first_path, second_path, first_stage, second_stage, first_rule, second_rule, maximum)
@@ -249,16 +222,19 @@ def run_tiangong_candidates(lottery: str, matrix_history: list[dict[str, Any]], 
     options = options or {}
     history = _normalize_history(lottery, matrix_history)
     period_ranges = options.get("periodRanges", [80])
-    modes = options.get("modes", ["one-stage", "two-stage"])
+    modes = options.get("modes", ["two-stage"])
     conditions = options.get("hitConditions", ["準2進3"])
+    if any(mode != "two-stage" for mode in modes):
+        raise ValueError("INVALID_TIANGONG_MODE")
     if any(condition != "準2進3" for condition in conditions):
         raise ValueError("INVALID_HIT_CONDITION")
     candidates = []
     for mode in modes:
         for period_range in period_ranges:
             for condition in conditions:
-                builder = _one_stage_candidates if mode == "one-stage" else _two_stage_candidates
-                candidates.extend(builder(lottery, history, period_range, condition, options))
+                candidates.extend(
+                    _two_stage_candidates(lottery, history, period_range, condition, options)
+                )
     unique, seen = [], set()
     for candidate in candidates:
         result = evaluate_tiangong_candidate(candidate)
