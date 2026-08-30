@@ -1,22 +1,99 @@
 import { useEffect, useState } from "react";
 import { ChevronDownIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
 import "./explore-result-preview.css";
-
-const PREVIEW_RESULT = {
-  id: "api-item-1",
-  position: 2,
-  number: "44",
-  predictionPeriod: 3,
-  consecutive: "準5進6",
-  prediction: "22.26",
-  algorithmType: "加減版路",
-  numberOrder: "順球",
-} as const;
 
 const CONSECUTIVE_OPTIONS = ["準4進5", "準5進6", "準6進7", "準7進8"] as const;
 
+function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
+  const state = value === row.source ? "source" : value === row.step ? "step" : value === row.hit ? "hit" : "";
+
+  return <i className={state ? `reference-number ${state}` : "reference-number"}>{value}</i>;
+}
+
+function formatFormula(formula: string) {
+  return formula.replace(/(?<=\d)\+/g, " +");
+}
+
+function ReferenceValidationCard({ result }: { result: PreviewResult }) {
+  return (
+    <section className="reference-validation-card" aria-label={`${result.number} 驗證過程`}>
+      <div className="reference-summary-card">
+        <p className="reference-card-summary">{result.summary}</p>
+        <strong className="reference-consecutive-tag">{result.consecutive}</strong>
+      </div>
+
+      <div className="reference-groups">
+        {result.groups.map((group, groupIndex) => {
+          const complete = groupIndex < result.groups.length - 1;
+          const rows = group.rows.slice(0, 3);
+          const rowCount = Math.min(3, Math.max(rows.length, group.formulas.length));
+          const formulas = Array.from({ length: rowCount }, () => "");
+
+          if (complete) {
+            formulas[0] = group.formulas[0] ?? "";
+            formulas[rowCount - 1] = group.formulas[1] ?? "";
+          } else {
+            group.formulas.slice(0, rowCount).forEach((formula, index) => {
+              formulas[index] = formula;
+            });
+          }
+
+          return (
+            <div
+              className="reference-validation-group"
+              data-complete={complete ? "true" : "false"}
+              data-road-type={result.algorithmType}
+              data-wide-numbers={rows.some((row) => row.numbers.length >= 6 || Boolean(row.special)) ? "true" : "false"}
+              key={`${result.id}-${groupIndex}`}
+            >
+              <div className="reference-issues numeric-text">
+                {Array.from({ length: rowCount }, (_, rowIndex) => (
+                  <span className="reference-issue" key={`issue-${rowIndex}`}>{rows[rowIndex]?.issue ?? ""}</span>
+                ))}
+              </div>
+
+              <div className="reference-numbers-card">
+                {Array.from({ length: rowCount }, (_, rowIndex) => {
+                  const row = rows[rowIndex];
+                  return (
+                    <div
+                      className="reference-draw-row reference-number-row"
+                      key={row ? `${row.issue}-${row.special ?? ""}` : `empty-${rowIndex}`}
+                    >
+                      {row ? (
+                        <span className="reference-numbers numeric-text">
+                          {row.numbers.map((value, index) => (
+                            <PreviewNumber value={value} row={row} key={`${value}-${index}`} />
+                          ))}
+                          {row.special ? <><b>＋</b><em>{row.special}</em></> : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="reference-formulas numeric-text">
+                {formulas.map((formula, rowIndex) => (
+                  <span className="reference-formula-row" key={`formula-${rowIndex}`}>{formatFormula(formula)}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <footer className="reference-prediction">
+        <strong>本期預測</strong>
+        <b className="numeric-text">{result.finalPrediction}</b>
+      </footer>
+    </section>
+  );
+}
+
 export function ExploreResultPreviewPage() {
-  const [expanded, setExpanded] = useState(false);
+  const [expandedResultIds, setExpandedResultIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>(["準5進6", "準6進7", "準7進8"]);
 
@@ -41,7 +118,7 @@ export function ExploreResultPreviewPage() {
               連準篩選
             </button>
             <strong className="result-count">
-              <span>探索到&nbsp;</span><span className="numeric-text">1</span><span>&nbsp;組符合條件版路</span>
+              <span>探索到&nbsp;</span><span className="numeric-text">{PREVIEW_RESULTS.length}</span><span>&nbsp;組符合條件版路</span>
             </strong>
           </header>
 
@@ -55,43 +132,35 @@ export function ExploreResultPreviewPage() {
               <span>版路類型</span>
             </div>
 
-            <article>
-              <div className="road-result-row">
-                <span className="tag"><span>{PREVIEW_RESULT.numberOrder}</span><span className="numeric-text">{PREVIEW_RESULT.position}</span></span>
-                <span className="result-number numeric-text">{PREVIEW_RESULT.number}</span>
-                <span className="result-period"><span>下</span><span className="numeric-text">{PREVIEW_RESULT.predictionPeriod}</span><span>期</span></span>
-                <span className="result-consecutive"><span>準</span><span className="numeric-text">5</span><span>進</span><span className="numeric-text">6</span></span>
-                <strong className="numeric-text">{PREVIEW_RESULT.prediction}</strong>
-                <button
-                  type="button"
-                  className="road-type-toggle"
-                  aria-expanded={expanded}
-                  aria-label={`${expanded ? "收合" : "展開"}版路 ${PREVIEW_RESULT.id}`}
-                  onClick={() => setExpanded((current) => !current)}
-                >
-                  <span>{PREVIEW_RESULT.algorithmType}</span>
-                  <ChevronDownIcon data-open={expanded} />
-                </button>
-              </div>
+            {PREVIEW_RESULTS.map((result) => {
+              const expanded = expandedResultIds.includes(result.id);
 
-              {expanded ? (
-                <section className="road-validation-process" aria-label="驗證過程">
-                  <header className="validation-summary-card">
-                    <span>開 44 第 2 顆｜上 7 期｜第 4 顆｜+14.24｜下 3 期開</span>
-                  </header>
-                  <div className="validation-period-head" aria-hidden="true">
-                    <span>期數</span><span>開獎號碼</span><span>驗證公式</span>
+              return (
+                <article key={result.id}>
+                  <div className="road-result-row">
+                    <span className="tag"><span>{result.numberOrder}</span><span className="numeric-text">{result.position}</span></span>
+                    <span className="result-number numeric-text">{result.number}</span>
+                    <span className="result-period">下<span className="numeric-text">{result.predictionPeriod}</span>期</span>
+                    <span className="result-consecutive">{result.consecutive}</span>
+                    <strong className="numeric-text">{result.prediction}</strong>
+                    <button
+                      type="button"
+                      className="road-type-toggle"
+                      aria-expanded={expanded}
+                      aria-label={`${expanded ? "收合" : "展開"}版路 ${result.id}`}
+                      onClick={() => setExpandedResultIds((current) => current.includes(result.id)
+                        ? current.filter((id) => id !== result.id)
+                        : [...current, result.id])}
+                    >
+                      <span>{result.algorithmType}</span>
+                      <ChevronDownIcon data-open={expanded} />
+                    </button>
                   </div>
-                  <div className="validation-period-block">
-                    <div className="validation-period-row">
-                      <span className="validation-issue">114000118</span>
-                      <span className="validation-full-numbers"><i>01</i><i>08</i><i>14</i><i>24</i><i>30</i></span>
-                      <span className="validation-formula"><strong>+14.24</strong></span>
-                    </div>
-                  </div>
-                </section>
-              ) : null}
-            </article>
+
+                  {expanded ? <ReferenceValidationCard result={result} /> : null}
+                </article>
+              );
+            })}
           </div>
         </section>
       </div>
