@@ -7,14 +7,44 @@ import type { MemberNotificationSettings } from "../member-api";
 const memberApi = vi.hoisted(() => ({
   fetchNotificationSettings: vi.fn(),
   saveNotificationSettings: vi.fn(),
+  hasAuthenticatedMemberSession: vi.fn(),
 }));
+
+const pushSubscription = vi.hoisted(() => ({
+  disablePushNotifications: vi.fn(),
+  enablePushNotifications: vi.fn(),
+  getPushStatus: vi.fn(),
+}));
+
+const reactStateTracker = vi.hoisted(() => ({ capture: false, updates: 0 }));
+
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return {
+    ...actual,
+    useState: ((initialState: unknown) => {
+      const [value, setValue] = actual.useState(initialState);
+      return [value, (next: unknown) => {
+        if (reactStateTracker.capture) reactStateTracker.updates += 1;
+        setValue(next as never);
+      }];
+    }) as typeof actual.useState,
+  };
+});
 
 vi.mock("../member-api", () => ({
   fetchNotificationSettings: memberApi.fetchNotificationSettings,
   saveNotificationSettings: memberApi.saveNotificationSettings,
+  hasAuthenticatedMemberSession: memberApi.hasAuthenticatedMemberSession,
+}));
+
+vi.mock("../push-subscription", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../push-subscription")>(),
+  ...pushSubscription,
 }));
 
 import { NotificationsPagePatched } from "../NotificationsPagePatched";
+import { PushSubscriptionError } from "../push-subscription";
 
 afterEach(cleanup);
 
@@ -49,8 +79,14 @@ const storedSettings: MemberNotificationSettings = {
 };
 
 beforeEach(() => {
+  reactStateTracker.capture = false;
+  reactStateTracker.updates = 0;
   memberApi.fetchNotificationSettings.mockReset().mockResolvedValue(structuredClone(storedSettings));
   memberApi.saveNotificationSettings.mockReset().mockImplementation(async (settings) => settings);
+  memberApi.hasAuthenticatedMemberSession.mockReset().mockResolvedValue(true);
+  pushSubscription.getPushStatus.mockReset().mockResolvedValue({ supported: true, permission: "default", enabled: false });
+  pushSubscription.enablePushNotifications.mockReset().mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+  pushSubscription.disablePushNotifications.mockReset().mockResolvedValue({ supported: true, permission: "granted", enabled: false });
 });
 
 function deferred<T>() {
@@ -64,6 +100,212 @@ function deferred<T>() {
 }
 
 describe("NotificationsPagePatched", () => {
+  it("未登入時不允許要求權限或建立手機訂閱", async () => {
+    memberApi.hasAuthenticatedMemberSession.mockResolvedValue(false);
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    expect(await screen.findByText("請先使用 LINE 登入")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "請先使用 LINE 登入" })).toBeDisabled();
+    expect(pushSubscription.getPushStatus).not.toHaveBeenCalled();
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
+  it("只在點擊既有系統通知開關後才開啟手機通知", async () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    await waitFor(() => expect(pushSubscription.getPushStatus).toHaveBeenCalledTimes(1));
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    await waitFor(() => expect(pushSubscription.enablePushNotifications).toHaveBeenCalledTimes(1));
+  });
+
+  it("成功保存手機訂閱後才顯示已開啟", async () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+  });
+
+  it("拒絕權限時維持未開啟並說明拒絕", async () => {
+    pushSubscription.enablePushNotifications.mockResolvedValue({ supported: true, permission: "denied", enabled: false });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+    expect(screen.getByText("通知權限已拒絕")).toBeVisible();
+  });
+
+  it("不支援的手機維持未開啟並顯示固定說明", async () => {
+    pushSubscription.enablePushNotifications.mockResolvedValue({ supported: false, permission: "default", enabled: false });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("此手機不支援通知")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "此手機不支援通知" })).toHaveAttribute("data-checked", "false");
+  });
+
+  it("保存失敗時安全讀取 PushSubscriptionError 的停用狀態", async () => {
+    pushSubscription.enablePushNotifications.mockRejectedValue(new PushSubscriptionError({ supported: true, permission: "granted", enabled: false }));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("手機通知開啟失敗，請稍後再試")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "開啟手機通知" })).toHaveAttribute("data-checked", "false");
+  });
+
+  it("關閉手機通知時停用既有手機訂閱", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    expect(await within(systemRow).findByRole("button", { name: "關閉手機通知" })).toBeVisible();
+    fireEvent.click(within(systemRow).getByRole("button", { name: "關閉手機通知" }));
+
+    await waitFor(() => expect(pushSubscription.disablePushNotifications).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+  });
+
+  it("手機通知處理期間維持開關尺寸並阻止重複點擊", async () => {
+    const request = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
+    pushSubscription.enablePushNotifications.mockReturnValue(request.promise);
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+    const toggle = await within(systemRow).findByRole("button", { name: "開啟手機通知" });
+
+    fireEvent.click(toggle);
+    fireEvent.click(toggle);
+
+    expect(pushSubscription.enablePushNotifications).toHaveBeenCalledTimes(1);
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("手機通知開啟中");
+    await act(async () => { request.resolve({ supported: true, permission: "granted", enabled: true }); });
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+  });
+
+  it("不讓較慢的初始狀態讀取覆寫剛完成的手機訂閱", async () => {
+    const initialStatus = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
+    pushSubscription.getPushStatus.mockReturnValue(initialStatus.promise);
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    await act(async () => { initialStatus.resolve({ supported: true, permission: "default", enabled: false }); });
+
+    expect(screen.getByText("手機通知已開啟")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+  });
+
+  it("頁面載入發現手機不支援時停用開關並且不要求權限", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: false, permission: "default", enabled: false });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    expect(await screen.findByText("此手機不支援通知")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "此手機不支援通知" })).toBeDisabled();
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
+
+  it("頁面載入發現通知權限已拒絕時停用開關並且不要求權限", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "denied", enabled: false });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+    expect(screen.getByText("通知權限已拒絕")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "通知權限已拒絕" })).toBeDisabled();
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
+
+  it("開啟手機訂閱不會儲存既有通知設定", async () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("關閉手機訂閱不會儲存既有通知設定", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "關閉手機通知" }));
+
+    expect(await screen.findByText("手機通知未開啟")).toBeVisible();
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
+  });
+
+  it("儲存既有通知設定不會改變手機訂閱狀態", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+    const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]')!;
+
+    await within(systemRow).findByRole("button", { name: "關閉手機通知" });
+    fireEvent.click(within(betRow).getAllByRole("button")[1]);
+
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1));
+    expect(within(systemRow).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+    expect(pushSubscription.disablePushNotifications).not.toHaveBeenCalled();
+  });
+
+  it("關閉手機訂閱失敗時顯示對應的失敗文案", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    pushSubscription.disablePushNotifications.mockRejectedValue(new PushSubscriptionError({ supported: true, permission: "granted", enabled: true }));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "關閉手機通知" }));
+
+    expect(await screen.findByText("手機通知關閉失敗，請稍後再試")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+  });
+
+  it("離頁後忽略已完成的手機通知開啟操作", async () => {
+    const request = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
+    pushSubscription.enablePushNotifications.mockReturnValue(request.promise);
+    const { unmount } = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+    unmount();
+    reactStateTracker.capture = true;
+    await act(async () => { request.resolve({ supported: true, permission: "granted", enabled: true }); });
+
+    expect(reactStateTracker.updates).toBe(0);
+  });
+
+  it("離頁後忽略已失敗的手機通知關閉操作", async () => {
+    const request = deferred<{ supported: boolean; permission: NotificationPermission; enabled: boolean }>();
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    pushSubscription.disablePushNotifications.mockReturnValue(request.promise);
+    const { unmount } = render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "關閉手機通知" }));
+    unmount();
+    reactStateTracker.capture = true;
+    await act(async () => { request.reject(new PushSubscriptionError({ supported: true, permission: "granted", enabled: false })); await request.promise.catch(() => undefined); });
+
+    expect(reactStateTracker.updates).toBe(0);
+  });
+
   it("上方使用正式通知標題卡", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
 

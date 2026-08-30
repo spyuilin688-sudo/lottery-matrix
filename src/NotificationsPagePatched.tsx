@@ -5,9 +5,17 @@ import { BottomNavigation } from "./BottomNavigation";
 import type { ScreenId } from "./FeaturePages";
 import {
   fetchNotificationSettings,
+  hasAuthenticatedMemberSession,
   saveNotificationSettings,
   type MemberNotificationSettings,
 } from "./member-api";
+import {
+  disablePushNotifications,
+  enablePushNotifications,
+  getPushStatus,
+  PushSubscriptionError,
+  type PushStatus,
+} from "./push-subscription";
 
 type Navigate = (screen: ScreenId) => void;
 type Props = {
@@ -70,8 +78,20 @@ function createDefaultNotificationSettings(): MemberNotificationSettings {
   };
 }
 
-function Toggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
-  return <button type="button" className="toggle" data-checked={checked} disabled={disabled} onClick={onChange}><span /></button>;
+function Toggle({
+  checked,
+  onChange,
+  disabled = false,
+  label,
+  busy = false,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  label?: string;
+  busy?: boolean;
+}) {
+  return <button type="button" className="toggle" data-checked={checked} disabled={disabled} aria-label={label} aria-busy={busy || undefined} onClick={onChange}><span /></button>;
 }
 
 function NotificationBottomNavigation({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: Props) {
@@ -86,6 +106,10 @@ function NotificationBottomNavigation({ onNavigate, onQuickOpen, onQuickConfigur
 export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: Props) {
   const [expandedKey, setExpandedKey] = useState<SettingKey | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<MemberNotificationSettings>(createDefaultNotificationSettings);
+  const [pushStatus, setPushStatus] = useState<PushStatus>({ supported: true, permission: "default", enabled: false });
+  const [pushNotice, setPushNotice] = useState<"idle" | "enabled" | "denied" | "unsupported" | "unauthenticated" | "enable-failed" | "disable-failed">("idle");
+  const [pushAuthenticated, setPushAuthenticated] = useState<boolean | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
   const { settings, selectedOptions, betTimes, statusOptions } = notificationSettings;
   const notificationSettingsLoadState = useRef<"loading" | "ready" | "failed">("loading");
   const pendingLoadEdits = useRef<NotificationSettingsEdit[]>([]);
@@ -98,6 +122,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const flushAfterInFlightOnUnmount = useRef(false);
   const flushLatestSaveRef = useRef<(mode?: "normal" | "unmount") => void>(() => undefined);
   const scheduleLatestSaveRef = useRef<(delayMs: number) => void>(() => undefined);
+  const pushOperationRevision = useRef(0);
+  const pushScreenActive = useRef(false);
   latestNotificationSettings.current = notificationSettings;
 
   const flushLatestSave = (mode: "normal" | "unmount" = "normal") => {
@@ -151,6 +177,14 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   scheduleLatestSaveRef.current = scheduleLatestSave;
 
   useEffect(() => {
+    pushScreenActive.current = true;
+    return () => {
+      pushScreenActive.current = false;
+      pushOperationRevision.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
     let active = true;
     componentActive.current = true;
     void fetchNotificationSettings().then((stored) => {
@@ -180,6 +214,31 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const requestRevision = pushOperationRevision.current;
+    void hasAuthenticatedMemberSession().then(async (authenticated) => {
+      if (!active || requestRevision !== pushOperationRevision.current) return;
+      setPushAuthenticated(authenticated);
+      if (!authenticated) return null;
+      return getPushStatus(true);
+    }).then((status) => {
+      if (!status) {
+        if (active && requestRevision === pushOperationRevision.current) setPushNotice("unauthenticated");
+        return;
+      }
+      if (!active || requestRevision !== pushOperationRevision.current) return;
+      setPushStatus(status);
+      setPushNotice(status.enabled ? "enabled" : !status.supported ? "unsupported" : status.permission === "denied" ? "denied" : "idle");
+    }).catch((error: unknown) => {
+      if (!active || requestRevision !== pushOperationRevision.current) return;
+      if (error instanceof PushSubscriptionError) setPushStatus(error.status);
+      else setPushStatus((current) => ({ ...current, enabled: false }));
+      setPushNotice("enable-failed");
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     scheduleLatestSaveRef.current(SAVE_DEBOUNCE_MS);
   }, [notificationSettings]);
 
@@ -187,6 +246,42 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     if (notificationSettingsLoadState.current === "loading") pendingLoadEdits.current.push(edit);
     setNotificationSettings(edit);
   };
+
+  const updatePushNotice = (status: PushStatus) => {
+    setPushStatus(status);
+    setPushNotice(status.enabled ? "enabled" : !status.supported ? "unsupported" : status.permission === "denied" ? "denied" : "idle");
+  };
+
+  const togglePushNotifications = async () => {
+    if (pushBusy || !pushStatus.supported) return;
+    const isDisabling = pushStatus.enabled;
+    const operationRevision = pushOperationRevision.current + 1;
+    pushOperationRevision.current = operationRevision;
+    setPushBusy(true);
+    try {
+      const status = isDisabling
+        ? await disablePushNotifications()
+        : await enablePushNotifications(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY, pushAuthenticated === true);
+      if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
+      updatePushNotice(status);
+    } catch (error: unknown) {
+      if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
+      if (error instanceof PushSubscriptionError) setPushStatus(error.status);
+      else setPushStatus((current) => ({ ...current, enabled: false }));
+      setPushNotice(isDisabling ? "disable-failed" : "enable-failed");
+    } finally {
+      if (pushScreenActive.current && operationRevision === pushOperationRevision.current) setPushBusy(false);
+    }
+  };
+
+  const pushStatusMessage = pushBusy
+    ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
+    : pushNotice === "enabled" ? "手機通知已開啟"
+      : pushNotice === "unsupported" ? "此手機不支援通知"
+        : pushNotice === "unauthenticated" ? "請先使用 LINE 登入"
+        : pushNotice === "enable-failed" ? "手機通知開啟失敗，請稍後再試"
+          : pushNotice === "disable-failed" ? "手機通知關閉失敗，請稍後再試"
+          : "手機通知未開啟";
 
   const toggleOption = (key: SettingKey, option: string) => {
     applyNotificationSettingsEdit((current) => {
@@ -262,13 +357,25 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     const disabled = !settings[key] || key === "collision";
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
+    const isSystemRow = key === "system";
+    const pushToggleUnavailable = pushAuthenticated !== true || !pushStatus.supported || pushStatus.permission === "denied";
+    const pushToggleLabel = pushBusy
+      ? `手機通知${pushStatus.enabled ? "關閉" : "開啟"}中`
+      : !pushStatus.supported ? "此手機不支援通知"
+        : pushAuthenticated !== true ? "請先使用 LINE 登入"
+        : pushStatus.permission === "denied" ? "通知權限已拒絕"
+          : pushStatus.enabled ? "關閉手機通知" : "開啟手機通知";
     return <article className="notification-row" data-notification-key={key} key={key}>
       <div className="notification-heading">
         <div className="notification-icon"><img src={icon} alt="" /></div>
-        <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2></div>
+        <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" || pushNotice === "disable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}</p> : null}</div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={settings[key]} disabled={key === "collision"} onChange={() => {
+          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision"} label={isSystemRow ? pushToggleLabel : undefined} busy={isSystemRow && pushBusy} onChange={() => {
+            if (isSystemRow) {
+              void togglePushNotifications();
+              return;
+            }
             applyNotificationSettingsEdit((current) => ({
               ...current,
               settings: { ...current.settings, [key]: !current.settings[key] },

@@ -6,6 +6,7 @@ import {
   CreditCard,
   Wallet,
   LogIn,
+  Bell,
   ScrollText,
   ShieldCheck,
   Settings,
@@ -25,6 +26,7 @@ import { saveOwnAdminName } from "./admin-profile";
 import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
 import { loadSystemStatus, retrySystemStatus, type SystemStatusItem } from "./system-status";
+import { NotificationManagement } from "./NotificationManagement";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   totalUsers: number;
@@ -58,6 +60,7 @@ const modules = [
   ["訂閱管理", CreditCard],
   ["收入報表", Wallet],
   ["登入紀錄", LogIn],
+  ["通知管理", Bell],
   ["審計日誌", ScrollText],
   ["管理員權限", ShieldCheck],
   ["系統設定", Settings],
@@ -242,7 +245,7 @@ function AdminApp() {
         setRows(subscriptionsResult.data.items || []);
         setPlans(plansResult.data.items || []);
         setTransfers(transfersResult.data.items || []);
-      } else if (name === "系統設定") {
+      } else if (name === "系統設定" || name === "通知管理") {
         setRows([]);
       } else {
         const t = tableMap[name];
@@ -511,6 +514,7 @@ function AdminApp() {
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} />}{" "}
           {active === "系統設定" && <SystemSettings />}{" "}
+          {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "用戶管理" && (
             <UserManager
               rows={rows}

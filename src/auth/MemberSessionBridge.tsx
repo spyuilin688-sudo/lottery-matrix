@@ -3,17 +3,19 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
 import { bootstrapMember } from '../member-api';
 import { clearLineAuthEphemeralState, rememberLineProviderToken } from './line-provider-token';
+import { cleanupBrowserPushSubscription } from '../push-subscription';
 
 type Props = {
   client?: SupabaseClient;
   bootstrap?: () => Promise<unknown>;
+  cleanupPush?: () => Promise<void>;
 };
 
 function sessionAccessToken(session: Session | null) {
   return session?.access_token || null;
 }
 
-export function MemberSessionBridge({ client = getSupabaseClient(), bootstrap = bootstrapMember }: Props) {
+export function MemberSessionBridge({ client = getSupabaseClient(), bootstrap = bootstrapMember, cleanupPush = cleanupBrowserPushSubscription }: Props) {
   const bootstrappedTokens = useRef(new Set<string>());
   const processingTokens = useRef(new Set<string>());
 
@@ -54,6 +56,7 @@ export function MemberSessionBridge({ client = getSupabaseClient(), bootstrap = 
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         clearLineAuthEphemeralState();
+        void cleanupPush().catch(() => undefined);
       } else if (session?.provider_token) {
         rememberLineProviderToken(session.provider_token);
       }
@@ -67,7 +70,7 @@ export function MemberSessionBridge({ client = getSupabaseClient(), bootstrap = 
       pendingTimers.clear();
       subscription.unsubscribe();
     };
-  }, [bootstrap, client]);
+  }, [bootstrap, cleanupPush, client]);
 
   return null;
 }

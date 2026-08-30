@@ -137,6 +137,16 @@ describe('MemberSessionBridge', () => {
     expect(isLineProviderTokenRevokedFor('access-token')).toBe(false);
   });
 
+  it('removes the current browser push subscription on signed out', async () => {
+    const { client, emit } = createClient(null);
+    const cleanupPush = vi.fn().mockResolvedValue(undefined);
+    render(<MemberSessionBridge client={client as never} bootstrap={vi.fn()} cleanupPush={cleanupPush} />);
+
+    emit('SIGNED_OUT', null);
+
+    await waitFor(() => expect(cleanupPush).toHaveBeenCalledTimes(1));
+  });
+
   it('cancels queued auth work and unsubscribes during cleanup', () => {
     vi.useFakeTimers();
     const { client, emit, unsubscribe } = createClient(null);

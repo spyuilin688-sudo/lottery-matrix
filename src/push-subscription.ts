@@ -1,0 +1,148 @@
+import { disablePushSubscription, fetchPushSubscriptionStatus, savePushSubscription } from './member-api';
+
+export type PushStatus = { supported: boolean; permission: NotificationPermission; enabled: boolean };
+type PushContext = { pushManager: PushManager };
+const SERVICE_WORKER_PATH = '/push-service-worker.js';
+const REGISTRATION_TIMEOUT_MS = 10_000;
+
+export class PushSubscriptionError extends Error {
+  readonly status: PushStatus;
+  constructor(status: PushStatus) {
+    super('PUSH_SUBSCRIPTION_FAILED');
+    this.name = 'PushSubscriptionError';
+    this.status = status;
+  }
+}
+
+function serviceWorkerContainer(): ServiceWorkerContainer | null {
+  if (typeof Notification === 'undefined' || typeof navigator === 'undefined') return null;
+  const serviceWorker = navigator.serviceWorker;
+  if (!serviceWorker || typeof serviceWorker.register !== 'function') return null;
+  return serviceWorker;
+}
+
+function withRegistrationTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('PUSH_SERVICE_WORKER_TIMEOUT')), REGISTRATION_TIMEOUT_MS);
+    void promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration> {
+  const serviceWorker = serviceWorkerContainer();
+  if (!serviceWorker) throw new Error('PUSH_SERVICE_WORKER_UNSUPPORTED');
+  return withRegistrationTimeout((async () => {
+    const existing = typeof serviceWorker.getRegistration === 'function'
+      ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
+      : undefined;
+    return existing ?? await serviceWorker.register(SERVICE_WORKER_PATH);
+  })());
+}
+
+async function getPushContext(): Promise<PushContext | null> {
+  try {
+    const registration = await registerPushServiceWorker();
+    const pushManager = registration?.pushManager;
+    if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') return null;
+    return { pushManager };
+  } catch {
+    return null;
+  }
+}
+
+function unsupportedStatus(): PushStatus {
+  return { supported: false, permission: 'default', enabled: false };
+}
+
+function failure(permission: NotificationPermission, enabled = false): never {
+  throw new PushSubscriptionError({ supported: true, permission, enabled });
+}
+
+function urlBase64ToUint8Array(value: string) {
+  const padded = `${value}${'='.repeat((4 - (value.length % 4)) % 4)}`.replace(/-/g, '+').replace(/_/g, '/');
+  const decoded = atob(padded);
+  return Uint8Array.from(decoded, (character) => character.charCodeAt(0));
+}
+
+function subscriptionInput(subscription: PushSubscription) {
+  const { endpoint, keys } = subscription.toJSON();
+  if (!endpoint || !keys?.p256dh || !keys.auth) return null;
+  return { endpoint, p256dh: keys.p256dh, auth: keys.auth };
+}
+
+export async function getPushStatus(authenticated = true): Promise<PushStatus> {
+  if (!authenticated) return { supported: true, permission: Notification.permission, enabled: false };
+  const context = await getPushContext();
+  if (!context) return unsupportedStatus();
+  const permission = Notification.permission;
+  if (permission !== 'granted') return { supported: true, permission, enabled: false };
+  try {
+    const subscription = await context.pushManager.getSubscription();
+    if (!subscription) return { supported: true, permission, enabled: false };
+    const { enabled } = await fetchPushSubscriptionStatus(subscription.endpoint);
+    return { supported: true, permission, enabled };
+  } catch {
+    return failure(permission);
+  }
+}
+
+export function enablePushNotifications(publicKey: string, authenticated = false): Promise<PushStatus> {
+  if (!serviceWorkerContainer()) return Promise.resolve(unsupportedStatus());
+  const permission = Notification.permission;
+  if (!authenticated) return Promise.reject(new PushSubscriptionError({ supported: true, permission, enabled: false }));
+  const permissionRequest = Notification.requestPermission();
+  return (async () => {
+    let resolvedPermission = permission;
+    try {
+      resolvedPermission = await permissionRequest;
+      if (resolvedPermission !== 'granted') return { supported: true, permission: resolvedPermission, enabled: false };
+      const context = await getPushContext();
+      if (!context) return failure(resolvedPermission);
+      const subscription = await context.pushManager.getSubscription() ?? await context.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+      const input = subscriptionInput(subscription);
+      if (!input) return failure(resolvedPermission);
+      const { enabled } = await savePushSubscription(input);
+      return { supported: true, permission: resolvedPermission, enabled };
+    } catch {
+      return failure(resolvedPermission);
+    }
+  })();
+}
+
+export async function disablePushNotifications(): Promise<PushStatus> {
+  const context = await getPushContext();
+  if (!context) return unsupportedStatus();
+  const permission = Notification.permission;
+  try {
+    const subscription = await context.pushManager.getSubscription();
+    if (!subscription) return { supported: true, permission, enabled: false };
+    try {
+      await disablePushSubscription(subscription.endpoint);
+    } catch {
+      return failure(permission, true);
+    }
+    if (!await subscription.unsubscribe()) return failure(permission);
+    return { supported: true, permission, enabled: false };
+  } catch (error) {
+    if (error instanceof PushSubscriptionError) throw error;
+    return failure(permission);
+  }
+}
+
+export async function cleanupBrowserPushSubscription(): Promise<void> {
+  const context = await getPushContext();
+  if (!context) return;
+  const subscription = await context.pushManager.getSubscription();
+  if (!subscription) return;
+  try {
+    await disablePushSubscription(subscription.endpoint);
+  } finally {
+    await subscription.unsubscribe();
+  }
+}

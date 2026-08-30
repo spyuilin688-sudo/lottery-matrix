@@ -7,6 +7,7 @@ import {
   markLineProviderTokenRevokedFor,
   readLineProviderToken,
 } from './line-provider-token';
+import { cleanupBrowserPushSubscription } from '../push-subscription';
 
 function resolveApprovedRedirect(redirectTo: string, origin: string) {
   const approved = new URL('/', origin).href;
@@ -31,6 +32,7 @@ export async function signInWithLine(
 export async function signOutFromMatrix(
   client: SupabaseClient = getSupabaseClient(),
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
+  cleanupPush: () => Promise<void> = cleanupBrowserPushSubscription,
 ) {
   try {
     const { data, error: sessionError } = await client.auth.getSession();
@@ -53,6 +55,12 @@ export async function signOutFromMatrix(
     }
   } catch {
     // A stale or unreadable session must not prevent local logout.
+  }
+
+  try {
+    await cleanupPush();
+  } catch {
+    // Push cleanup is best-effort; local logout must remain available.
   }
 
   try {
