@@ -16,6 +16,7 @@ import {
   PushSubscriptionError,
   type PushStatus,
 } from "./push-subscription";
+import { resolveWebPushPublicKey } from "./push-public-key";
 
 type Navigate = (screen: ScreenId) => void;
 type Props = {
@@ -261,7 +262,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     try {
       const status = isDisabling
         ? await disablePushNotifications()
-        : await enablePushNotifications(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY, pushAuthenticated === true);
+        : await enablePushNotifications(
+          resolveWebPushPublicKey(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY),
+          pushAuthenticated === true,
+        );
       if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
       updatePushNotice(status);
     } catch (error: unknown) {
