@@ -13,6 +13,12 @@ REPAIR_SQL_PATHS = (
     ROOT / "supabase" / "migrations" / "20260830220000_fix_matrix_v6_rpc_nullif.sql",
     ROOT / "supabase" / "migrations" / "20260830221500_fix_matrix_v6_rpc_coalesce.sql",
 )
+ENTITLEMENT_REPAIR_SQL_PATH = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20260830223000_fix_matrix_entitlement_coalesce.sql"
+)
 
 
 def test_v6_uses_indexable_canonical_rows_instead_of_compressed_chunks() -> None:
@@ -64,3 +70,17 @@ def test_v6_rpc_uses_nullif_expression_and_has_a_production_repair_migration() -
             canonical = marker + SQL.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
             repair = marker + repair_sql.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
             assert repair == canonical
+
+
+def test_logged_in_matrix_entitlements_have_a_safe_production_repair() -> None:
+    repair_sql = ENTITLEMENT_REPAIR_SQL_PATH.read_text(encoding="utf-8")
+    compact_sql = " ".join(repair_sql.split())
+
+    assert "create or replace function private.matrix_result_entitlements" in repair_sql
+    assert "pg_catalog.coalesce" not in repair_sql
+    assert "security definer" in repair_sql
+    assert "set search_path = ''" in repair_sql
+    assert (
+        "revoke all on function private.matrix_result_entitlements() "
+        "from public, anon, authenticated"
+    ) in compact_sql
