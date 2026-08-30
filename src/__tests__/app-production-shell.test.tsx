@@ -346,7 +346,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
     expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*6px 0[^}]*padding:\s*4px 0[^}]*border-top:[^;]+;[^}]*border-bottom:/s);
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
-    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(13px,\s*3\.59vw,\s*14px\)/);
+    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/);
   });
 
   it("keeps validation number states square and prediction styling matched to the summary card", () => {
