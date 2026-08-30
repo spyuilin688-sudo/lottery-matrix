@@ -14,8 +14,8 @@ from app.worker import run_scheduled_worker
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v6"
-LEGACY_VERSION = f"{PERIOD}:matrix-python-v3"
+CURRENT_VERSION = f"{PERIOD}:matrix-python-v7"
+LEGACY_VERSION = f"{PERIOD}:matrix-python-v6"
 
 
 class FakeResponse:

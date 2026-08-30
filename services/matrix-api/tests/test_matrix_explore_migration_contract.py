@@ -19,6 +19,17 @@ ENTITLEMENT_REPAIR_SQL_PATH = (
     / "migrations"
     / "20260830223000_fix_matrix_entitlement_coalesce.sql"
 )
+V7_SQL_PATH = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20260831213000_matrix_python_v7_explore_rpc.sql"
+)
+
+
+def _function_definition(sql: str, function_name: str) -> str:
+    marker = f"create or replace function public.{function_name}"
+    return marker + sql.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
 
 
 def test_v6_uses_indexable_canonical_rows_instead_of_compressed_chunks() -> None:
@@ -70,6 +81,49 @@ def test_v6_rpc_uses_nullif_expression_and_has_a_production_repair_migration() -
             canonical = marker + SQL.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
             repair = marker + repair_sql.split(marker, 1)[1].split("$$;", 1)[0] + "$$;"
             assert repair == canonical
+
+
+def test_v7_migration_updates_only_the_two_canonical_explore_rpc_versions() -> None:
+    v6_sql = REPAIR_SQL_PATHS[-1].read_text(encoding="utf-8")
+    v7_sql = V7_SQL_PATH.read_text(encoding="utf-8")
+
+    assert v7_sql.count("create or replace function") == 2
+    for function_name in ("matrix_explore_list", "matrix_explore_validation"):
+        expected = _function_definition(v6_sql, function_name).replace(
+            "matrix-python-v6", "matrix-python-v7"
+        )
+        assert _function_definition(v7_sql, function_name) == expected
+
+
+def test_v7_explore_rpcs_accept_only_complete_v7_analysis_runs() -> None:
+    v7_sql = V7_SQL_PATH.read_text(encoding="utf-8")
+    list_definition = _function_definition(v7_sql, "matrix_explore_list")
+    validation_definition = _function_definition(v7_sql, "matrix_explore_validation")
+
+    assert "run.status = 'complete'" in list_definition
+    assert "run.analysis_version = run.draw_period || ':matrix-python-v7'" in list_definition
+    assert "v_version <> v_draw || ':matrix-python-v7'" in validation_definition
+    assert "run.status = 'complete'" in validation_definition
+    assert "matrix-python-v6" not in v7_sql
+
+
+def test_v7_explore_rpcs_preserve_security_and_explicit_execute_grants() -> None:
+    v7_sql = V7_SQL_PATH.read_text(encoding="utf-8")
+    compact_sql = " ".join(v7_sql.split())
+
+    for function_name in ("matrix_explore_list", "matrix_explore_validation"):
+        definition = _function_definition(v7_sql, function_name)
+        assert "security definer" in definition
+        assert "set search_path = ''" in definition
+        assert (
+            f"revoke all on function public.{function_name}(jsonb) from public"
+            in compact_sql
+        )
+        assert (
+            f"grant execute on function public.{function_name}(jsonb) "
+            "to anon, authenticated"
+            in compact_sql
+        )
 
 
 def test_logged_in_matrix_entitlements_have_a_safe_production_repair() -> None:
