@@ -39,6 +39,25 @@ describe("production member shell", () => {
     expect(screen.queryByText("member-root")).not.toBeInTheDocument();
   });
 
+  it("keeps the isolated preview logo inside its responsive title banner", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const previewStyle = document.createElement("style");
+    previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+    document.head.append(previewStyle);
+
+    render(<App />);
+
+    const logo = screen.getByRole("img", { name: "Matrix 探索" });
+    const logoStyles = getComputedStyle(logo);
+    expect(logoStyles.display).toBe("block");
+    expect(logoStyles.width).toBe("100%");
+    expect(logoStyles.maxWidth).toBe("100%");
+    expect(logoStyles.height).toBe("auto");
+    expect(logoStyles.objectFit).toBe("contain");
+
+    previewStyle.remove();
+  });
+
   it("expands the consecutive filter inline and filters results immediately", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     render(<App />);
