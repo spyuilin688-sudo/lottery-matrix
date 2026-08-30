@@ -184,7 +184,7 @@ def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -
 
     assert result["status"] == "complete"
     assert captured["explore_batch_size"] == 10
-    assert captured["tiangong_batch_size"] == 20
+    assert captured["tiangong_batch_size"] == 3
     explore_batches = (
         len(work_units("今彩539", history_length=80, position_count=5))
         + worker_module.EXPLORE_BATCH_SIZE - 1
