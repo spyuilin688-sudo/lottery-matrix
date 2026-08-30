@@ -8,7 +8,7 @@ const CONSECUTIVE_OPTIONS = ["準4進5", "準5進6", "準6進7", "準7進8"] as 
 function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
   const state = value === row.source ? "source" : value === row.step ? "step" : value === row.hit ? "hit" : "";
 
-  return <i className={state ? `explore-validation-number ${state}` : "explore-validation-number"}>{value}</i>;
+  return <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>;
 }
 
 function formatFormula(formula: string) {
