@@ -35,3 +35,20 @@ test('Matrix workflow runs every lottery for a push without scheduling the worke
   assert.match(workflow, /uv run python -m app\.worker --lottery "\$LOTTERY"/);
   assert.doesNotMatch(workflow, /app\.worker[^\n]*--scheduled/);
 });
+
+test('Matrix workflow releases every stale lottery slot before bounded analysis starts', () => {
+  const releaseStale = workflow.match(/^  release-stale:\n[\s\S]*?(?=^  analyze:)/m)?.[0];
+  const analyze = workflow.match(/^  analyze:\n[\s\S]*$/m)?.[0];
+  assert.ok(releaseStale);
+  assert.ok(analyze);
+
+  assert.match(releaseStale, /^    runs-on: ubuntu-latest$/m);
+  assert.match(releaseStale, /^      max-parallel: 4$/m);
+  assert.match(releaseStale, /^        id: \[daily539, fantasy5, marksix, lotto649\]$/m);
+  assert.match(releaseStale, /^      group: matrix-scheduled-analysis-\$\{\{ matrix\.id \}\}$/m);
+  assert.match(releaseStale, /^      cancel-in-progress: true$/m);
+
+  assert.match(analyze, /^    needs: release-stale$/m);
+  assert.match(analyze, /^      group: matrix-scheduled-analysis-\$\{\{ matrix\.id \}\}$/m);
+  assert.match(analyze, /^      cancel-in-progress: true$/m);
+});
