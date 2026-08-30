@@ -2,7 +2,7 @@ name: Matrix scheduled analysis
 
 on:
   workflow_dispatch:
-  # Recovery trigger: resume checkpoints with keyset-paginated artifact finalization.
+  # Recovery trigger: resume checkpoints with keyset finalization and transient backoff.
   push:
     branches: [main]
     paths:
