@@ -25,8 +25,8 @@ const envelope = {
     number: '07',
     lockedPosition: 1,
     predictionDistance: 1,
-    consecutive: '準11進12',
-    highestStreak: 11,
+    consecutive: '準7進8',
+    highestStreak: 7,
     predictionNumbers: ['12', '34'],
     roadType: '複合',
     hitCondition: '準5+（鎖定2碼）',
@@ -41,8 +41,8 @@ beforeEach(() => {
     ...envelope,
     itemId: 'tianyan-api-1',
     validation: {
-      itemId: 'tianyan-api-1', rules: [], groupCount: 11,
-      minimumIndependentHits: 4, rule1Only: 4, rule2Only: 4, bothHit: 3,
+      itemId: 'tianyan-api-1', rules: [], groupCount: 7,
+      minimumIndependentHits: 3, rule1Only: 3, rule2Only: 3, bothHit: 1,
       historicalValidation: [],
     },
   });
@@ -73,7 +73,7 @@ test('天衍使用正式 API 資料與核准的預設連準篩選', async () => 
   expect(screen.queryByText('03.09')).toBeNull();
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledWith({
     lottery: '今彩539',
-    selectedStreaks: ['準9進10', '準11進12', '準13進14', '準15進16', '準17進18+'],
+    selectedStreaks: ['準5進6', '準6進7', '準7進8'],
   });
 });
 

@@ -555,6 +555,20 @@ def test_e_26_locked_two_code_pool_can_extend_disjoint_b_c_values() -> None:
     assert found["sets"] == [["加減:1", "加減:2"]]
 
 
+def test_e_26_locked_two_code_values_are_sorted_numerically() -> None:
+    groups = [
+        {"candidateMap": {"加減:2": [2], "加減:10": [10]}},
+        {"candidateMap": {"加減:2": [2], "加減:10": [10]}},
+        {"candidateMap": {"加減:2": [2], "加減:10": [10]}},
+        {"candidateMap": {"加減:2": [2], "加減:10": [10]}},
+        {"candidateMap": {"加減:2": [2], "加減:10": [10]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 2)
+
+    assert found["sets"] == [["加減:2", "加減:10"]]
+
+
 def test_e_26_three_values_at_same_longest_streak_are_invalid_before_tie_break() -> None:
     groups = [
         {"candidateMap": {"加減:1": [1], "加減:2": [2]}},

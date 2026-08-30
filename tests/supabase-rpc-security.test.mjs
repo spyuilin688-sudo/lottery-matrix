@@ -44,3 +44,13 @@ test('legacy completed status artifacts are backfilled without validation maps',
   assert.doesNotMatch(sql, /validationById/);
   assert.match(sql, /encoded\.payload->>'encoding' is not null/);
 });
+
+test('Matrix v5 readers never fall back to completed v4 artifacts', async () => {
+  const sql = await read('supabase/migrations/20260830083001_require_matrix_python_v5.sql');
+  const exploreList = sql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
+  const exploreValidation = sql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
+
+  assert.match(exploreList, /r\.analysis_version\s*=\s*'matrix-python-v5'/);
+  assert.match(exploreValidation, /v_version\s*<>\s*'matrix-python-v5'/);
+  assert.match(sql, /p_analysis_version\s*<>\s*'matrix-python-v5'/);
+});

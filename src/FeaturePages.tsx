@@ -1147,10 +1147,7 @@ export function MatrixExplorePage({
     | "準6進7"
     | "準7進8"
     | "準9進10"
-    | "準11進12"
-    | "準13進14"
-    | "準15進16"
-    | "準17進18+";
+    | "準11進12";
 
   type ExploreResult = {
     id: string;
@@ -1168,11 +1165,15 @@ export function MatrixExplorePage({
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
+    "準5+（鎖定2碼）": title === "Matrix 天衍"
+      ? ["準5進6", "準6進7", "準7進8"]
+      : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFilters: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": ["準9進10", "準11進12", "準13進14", "準15進16", "準17進18+"],
+    "準5+（鎖定2碼）": title === "Matrix 天衍"
+      ? ["準5進6", "準6進7", "準7進8"]
+      : ["準9進10", "準11進12"],
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const initialExploreDefaults = useMemo(

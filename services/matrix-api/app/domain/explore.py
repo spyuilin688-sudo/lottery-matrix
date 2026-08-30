@@ -114,6 +114,11 @@ def _typed_parts(key: str) -> dict:
     return {"algorithmType": algorithm_type, "value": int(value)}
 
 
+def _typed_sort_key(key: str) -> tuple[int, str]:
+    parts = _typed_parts(key)
+    return parts["value"], parts["algorithmType"]
+
+
 def _add_rule(mapping: dict[str, list[int]], algorithm_type: str, value: int, target: int) -> None:
     targets = mapping.setdefault(_typed_key(algorithm_type, value), [])
     if target not in targets:
@@ -198,9 +203,11 @@ def _highest_rule_sets(groups: list[dict], rule_count: int) -> dict:
     c_candidates = set(groups[1]["candidateMap"])
     scored: list[tuple[int, list[str]]] = []
     if rule_count == 1:
-        candidates_to_check = ([candidate] for candidate in sorted(b_candidates & c_candidates))
+        candidates_to_check = (
+            [candidate] for candidate in sorted(b_candidates & c_candidates, key=_typed_sort_key)
+        )
     else:
-        candidate_pool = sorted(b_candidates | c_candidates)
+        candidate_pool = sorted(b_candidates | c_candidates, key=_typed_sort_key)
         if not b_candidates & c_candidates:
             if len(groups) < 3 or not set(groups[2]["candidateMap"]) & set(candidate_pool):
                 return empty
@@ -222,7 +229,7 @@ def _highest_rule_sets(groups: list[dict], rule_count: int) -> dict:
         return empty
     highest = max(current for current, _rules in scored)
     sets = [rules for current, rules in scored if current == highest]
-    distinct = sorted({rule for rules in sets for rule in rules})
+    distinct = sorted({rule for rules in sets for rule in rules}, key=_typed_sort_key)
     return {
         "highest": highest,
         "sets": sets,
