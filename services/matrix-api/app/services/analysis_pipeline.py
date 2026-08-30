@@ -66,14 +66,17 @@ class AnalysisPipeline:
                         cursor = int(checkpoint["cursor"])
                         total = int(checkpoint["total"])
                         chunk_index = cursor_start // batch_size
-                        self.repository.save_artifact_chunk(
-                            lottery, period, self.analysis_version, phase,
-                            chunk_index, cursor_start, cursor, payload,
-                        )
-                        if phase == "explore":
-                            self.repository.save_explore_results(
-                                lottery, period, self.analysis_version, payload,
+                        if cursor > cursor_start:
+                            self.repository.save_artifact_chunk(
+                                lottery, period, self.analysis_version, phase,
+                                chunk_index, cursor_start, cursor, payload,
                             )
+                            if phase == "explore":
+                                self.repository.save_explore_results(
+                                    lottery, period, self.analysis_version, payload,
+                                )
+                        elif not checkpoint.get("complete"):
+                            raise RuntimeError("ANALYSIS_CHECKPOINT_MADE_NO_PROGRESS")
                         self.repository.update_progress(
                             lottery, period, self.analysis_version, phase, cursor, total,
                         )
@@ -86,8 +89,9 @@ class AnalysisPipeline:
                         materialized = self.repository.materialize_artifact(
                             lottery, period, self.analysis_version, phase, total,
                         )
+                        expected_chunks = (total + batch_size - 1) // batch_size
                         manifest = chunk_manifest(
-                            chunk_index + 1, cursor, total, len(materialized["items"]),
+                            expected_chunks, cursor, total, len(materialized["items"]),
                         )
                         self.repository.save_artifact(
                             lottery, period, self.analysis_version, phase, manifest,
