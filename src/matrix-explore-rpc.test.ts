@@ -29,6 +29,7 @@ describe('Matrix exploration Supabase RPC', () => {
       roadTypes: ['加減' as const],
       selectedStreaks: ['準4進5'],
       sameCode: false,
+      predictionNumber: '27',
     };
     rpc.mockResolvedValue({ data: { kind: 'explore', items: [] }, error: null });
 
@@ -45,10 +46,15 @@ describe('Matrix exploration Supabase RPC', () => {
     };
     rpc.mockResolvedValue({ data: { kind: 'explore', itemId: 'row-1' }, error: null });
 
-    await fetchExploreValidation(meta, 'row-1');
+    await fetchExploreValidation(meta, 'row-1', {
+      explorePeriods: 7,
+      exploreRange: '完整範圍',
+    });
 
     expect(rpc).toHaveBeenCalledWith('matrix_explore_validation', {
-      p_request: { ...meta, itemId: 'row-1' },
+      p_request: {
+        ...meta, itemId: 'row-1', explorePeriods: 7, exploreRange: '完整範圍',
+      },
     });
   });
 

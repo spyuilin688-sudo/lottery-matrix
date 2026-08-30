@@ -27,6 +27,12 @@ class RepositorySpy(InMemoryAnalysisRepository):
             chunk_index, cursor_start, cursor_end, payload,
         )
 
+    def save_explore_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: object,
+    ) -> None:
+        self.calls.append("save_explore_results")
+        super().save_explore_results(lottery, draw_period, analysis_version, payload)
+
     def update_progress(
         self, lottery: str, draw_period: str, analysis_version: str,
         phase: str, cursor: int, total: int,
@@ -225,11 +231,35 @@ def test_incomplete_explore_saves_delta_before_progress_without_cumulative_read(
     assert result["status"] == "running"
     assert repository.calls == [
         "save_artifact_chunk:explore:0",
+        "save_explore_results",
         "update_progress:explore:2",
         "get_progress",
     ]
     assert "read_artifact:explore" not in repository.calls
     assert "materialize_artifact:explore" not in repository.calls
+
+
+def test_explore_result_failure_does_not_advance_checkpoint() -> None:
+    class FailingExploreRepository(RepositorySpy):
+        def save_explore_results(
+            self, lottery: str, draw_period: str, analysis_version: str, payload: object,
+        ) -> None:
+            self.calls.append("save_explore_results")
+            raise RuntimeError("canonical result write failed")
+
+    repository = FailingExploreRepository()
+    pipeline = AnalysisPipeline(
+        repository, checkpoint_builders(total=3), analysis_version="v1", explore_batch_size=2,
+    )
+
+    with pytest.raises(RuntimeError, match="canonical result write failed"):
+        pipeline.run(DRAW, history=[])
+
+    assert repository.calls[:2] == [
+        "save_artifact_chunk:explore:0", "save_explore_results",
+    ]
+    assert not any(call.startswith("update_progress") for call in repository.calls)
+    assert repository.get_progress("今彩539", "114000123", "v1")["cursor"] == 0
 
 
 def test_final_explore_batch_materializes_once_and_publishes_manifest() -> None:

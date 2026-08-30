@@ -27,6 +27,7 @@ class AnalysisRepository(Protocol):
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
     def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
+    def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
@@ -43,6 +44,7 @@ class InMemoryAnalysisRepository:
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
         self.artifacts: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
+        self.explore_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.job_statuses: dict[str, dict[str, Any]] = {}
 
     def health_check(self) -> None:
@@ -163,6 +165,17 @@ class InMemoryAnalysisRepository:
             "expiresAt": datetime.now(UTC) + RETENTION,
         }
 
+    def save_explore_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+    ) -> None:
+        expires_at = datetime.now(UTC) + RETENTION
+        for record in _explore_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at.isoformat(),
+        ):
+            record["expiresAt"] = expires_at
+            key = (lottery, draw_period, analysis_version, record["item_id"])
+            self.explore_results[key] = record
+
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
         chunks = [
             {"chunk_index": key[4], "cursor_start": record["cursor_start"], "cursor_end": record["cursor_end"], "payload": record["payload"]}
@@ -225,7 +238,10 @@ class InMemoryAnalysisRepository:
         expired_chunks = [key for key, record in self.artifact_chunks.items() if record["expiresAt"] < now]
         for key in expired_chunks:
             del self.artifact_chunks[key]
-        return len(expired) + len(expired_chunks)
+        expired_results = [key for key, record in self.explore_results.items() if record["expiresAt"] < now]
+        for key in expired_results:
+            del self.explore_results[key]
+        return len(expired) + len(expired_chunks) + len(expired_results)
 
 
 class SupabaseAnalysisRepository:
@@ -432,6 +448,20 @@ class SupabaseAnalysisRepository:
             record, on_conflict="lottery,draw_period,analysis_version,kind,chunk_index",
         ).execute()
 
+    def save_explore_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+    ) -> None:
+        expires_at = (datetime.now(UTC) + RETENTION).isoformat()
+        records = _explore_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at,
+        )
+        if not records:
+            return
+        self.client.table("matrix_explore_results").upsert(
+            records,
+            on_conflict="lottery,draw_period,analysis_version,item_id",
+        ).execute()
+
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
         response = (
             self.client.table("matrix_analysis_artifact_chunks")
@@ -502,7 +532,10 @@ class SupabaseAnalysisRepository:
         expired_chunks = self.client.table("matrix_analysis_artifact_chunks").select("id").lt("expires_at", now.isoformat()).execute()
         if expired_chunks.data:
             self.client.table("matrix_analysis_artifact_chunks").delete().lt("expires_at", now.isoformat()).execute()
-        return len(expired.data) + len(expired_chunks.data)
+        expired_results = self.client.table("matrix_explore_results").select("item_id").lt("expires_at", now.isoformat()).execute()
+        if expired_results.data:
+            self.client.table("matrix_explore_results").delete().lt("expires_at", now.isoformat()).execute()
+        return len(expired.data) + len(expired_chunks.data) + len(expired_results.data)
 
 
 def create_supabase_repository(url: str, secret_key: str) -> SupabaseAnalysisRepository:
@@ -511,3 +544,47 @@ def create_supabase_repository(url: str, secret_key: str) -> SupabaseAnalysisRep
     from supabase import create_client
 
     return SupabaseAnalysisRepository(create_client(url, secret_key))
+
+
+def _explore_result_records(
+    lottery: str,
+    draw_period: str,
+    analysis_version: str,
+    payload: Any,
+    expires_at: str,
+) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict):
+        return []
+    items = payload.get("items", [])
+    validations = payload.get("validationById", {})
+    if not isinstance(items, list) or not isinstance(validations, dict):
+        return []
+    records: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict) or not str(item.get("id", "")):
+            continue
+        item_id = str(item["id"])
+        validation = validations.get(item_id, {})
+        records.append({
+            "lottery": lottery,
+            "draw_period": draw_period,
+            "analysis_version": analysis_version,
+            "item_id": item_id,
+            "number": str(item.get("number", "")),
+            "locked_position": int(item.get("lockedPosition", 0)),
+            "prediction_distance": int(item.get("predictionDistance", 0)),
+            "consecutive": str(item.get("consecutive", "")),
+            "highest_streak": int(item.get("highestStreak", 0)),
+            "prediction_numbers": [str(value) for value in item.get("predictionNumbers", [])],
+            "algorithm_type": str(item.get("algorithmType", "")),
+            "number_order": str(item.get("numberOrder", "")),
+            "rule_count": int(item.get("ruleCount", 0)),
+            "locked_source_index": int(item.get("lockedSourceIndex", 0)),
+            "locked_source_period": str(item.get("lockedSourcePeriod", "")),
+            "reference_offset": item.get("referenceOffset"),
+            "reference_position": item.get("referencePosition"),
+            "item": item,
+            "validation": validation if isinstance(validation, dict) else {},
+            "expires_at": expires_at,
+        })
+    return records

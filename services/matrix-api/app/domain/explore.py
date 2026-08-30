@@ -1,4 +1,3 @@
-from itertools import combinations
 from typing import Any
 
 from .models import lottery_maximum, lottery_position_count, normalize_matrix_number
@@ -9,6 +8,7 @@ NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 ALGORITHM_TYPES = {"加減", "合值", "拖牌"}
 INVALID_THREE_RULE_COVERAGE_REASON = "相同最長連準出現超過2條可延續共同值，整條版路無效，不得輸出兩兩組合"
 STREAK_BOUNDS = {1: (4, 8), 2: (5, 12)}
+ALLOWED_STREAKS = {1: {4, 5, 6, 7}, 2: {5, 6, 7, 9, 11}}
 INVALID_STREAK_REASONS = {
     1: "鎖定1碼連準達8次（包含8）以上，整條版路無效，不得截短",
     2: "鎖定2碼連準達12次（包含12）以上，整條版路無效，不得截短",
@@ -190,6 +190,57 @@ def _coverage(groups: list[dict], rules: list[str], streak_length: int) -> dict:
     return {"valid": valid}
 
 
+def _ordered_rule_pair(first: str, second: str) -> tuple[str, str]:
+    return tuple(sorted((first, second), key=_typed_sort_key))
+
+
+def _progressive_pair_scores(groups: list[dict]) -> list[tuple[int, list[str]]]:
+    active: set[tuple[str, ...]] = {
+        (candidate,) for candidate in groups[0]["candidateMap"]
+    }
+    completed: set[tuple[int, tuple[str, str]]] = set()
+    covered_count = 1
+
+    for group_index, group in enumerate(groups[1:], start=1):
+        candidates = set(group["candidateMap"])
+        next_active: set[tuple[str, ...]] = set()
+        for state in active:
+            if len(state) == 1:
+                rule = state[0]
+                if rule in candidates:
+                    next_active.add(state)
+                for candidate in candidates:
+                    if candidate != rule:
+                        next_active.add(_ordered_rule_pair(rule, candidate))
+                continue
+            pair = (state[0], state[1])
+            if candidates.intersection(pair):
+                next_active.add(pair)
+            else:
+                completed.add((group_index, pair))
+        active = next_active
+        covered_count = group_index + 1
+        if not active:
+            break
+
+    completed.update(
+        (covered_count, (state[0], state[1]))
+        for state in active
+        if len(state) == 2
+    )
+    return [
+        (streak, list(pair))
+        for streak, pair in sorted(
+            completed,
+            key=lambda value: (
+                value[0],
+                tuple(_typed_sort_key(rule) for rule in value[1]),
+            ),
+        )
+        if _coverage(groups, list(pair), streak)["valid"]
+    ]
+
+
 def _highest_rule_sets(groups: list[dict], rule_count: int) -> dict:
     empty = {
         "highest": 0,
@@ -201,39 +252,25 @@ def _highest_rule_sets(groups: list[dict], rule_count: int) -> dict:
         return empty
     b_candidates = set(groups[0]["candidateMap"])
     c_candidates = set(groups[1]["candidateMap"])
-    scored: list[tuple[int, list[str]]] = []
     if rule_count == 1:
-        candidates_to_check = (
-            [candidate] for candidate in sorted(b_candidates & c_candidates, key=_typed_sort_key)
-        )
+        scored = [
+            (_streak(groups, [candidate]), [candidate])
+            for candidate in sorted(b_candidates & c_candidates, key=_typed_sort_key)
+        ]
     else:
-        candidate_pool = sorted(b_candidates | c_candidates, key=_typed_sort_key)
-        if not b_candidates & c_candidates:
-            if len(groups) < 3 or not set(groups[2]["candidateMap"]) & set(candidate_pool):
-                return empty
-        candidates_to_check = combinations(candidate_pool, 2)
-    for current_rules in candidates_to_check:
-        rules = list(current_rules)
-        if rule_count == 2 and any(
-            not any(rule in group["candidateMap"] for rule in rules)
-            for group in groups[:2]
-        ):
-            continue
-        current = _streak(groups, rules)
-        if current == 0:
-            continue
-        if rule_count == 2 and not _coverage(groups, rules, current)["valid"]:
-            continue
-        scored.append((current, rules))
+        scored = _progressive_pair_scores(groups)
     if not scored:
         return empty
     highest = max(current for current, _rules in scored)
-    sets = [rules for current, rules in scored if current == highest]
+    sets = sorted(
+        [rules for current, rules in scored if current == highest],
+        key=lambda rules: tuple(_typed_sort_key(rule) for rule in rules),
+    )
     distinct = sorted({rule for rules in sets for rule in rules}, key=_typed_sort_key)
     return {
         "highest": highest,
         "sets": sets,
-        "invalidMultipleRules": rule_count == 2 and len(distinct) > 2,
+        "invalidMultipleRules": rule_count == 2 and len(sets) > 2,
         "conflictingRules": distinct,
     }
 
@@ -320,6 +357,13 @@ def _evaluate_prepared(request: dict, history: list[dict], source_indexes: list[
         return {
             **empty,
             "reason": f"連準次數未達鎖定{request['ruleCount']}碼最低{minimum_streak}次",
+            "highestStreak": found["highest"],
+            "displayStreak": display,
+        }
+    if found["highest"] not in ALLOWED_STREAKS[request["ruleCount"]]:
+        return {
+            **empty,
+            "reason": f"{display}不得進入探索與狀態結果",
             "highestStreak": found["highest"],
             "displayStreak": display,
         }

@@ -1,213 +1,130 @@
-# Matrix Explore Correct Algorithm Implementation Plan
+# Matrix Explore v6 Correct Algorithm Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For Codex:** Use `superpowers:executing-plans`, `superpowers:test-driven-development`, and `superpowers:verification-before-completion`.
 
-**Goal:** 以使用者上傳規格取代現行 Explore 的全期距、全域候選兩兩枚舉及錯誤連準上限，並移除重複的 TypeScript 舊探索演算法。
+**Goal:** 依 `docs/specs/matrix-explore-correct-algorithm-2026-08-30.md` 淘汰 Explore v5 錯誤候選組合與重複結果，建立只計算本日的 v6。
 
-**Architecture:** Railway Python 是唯一正式 Explore 計算來源。每個工作單元固定探索日期、來源期、球位、版路與預測期距；歷史組每組只產生5值，鎖1從B/C交集延伸，鎖2只從B/C最多10值形成候選並逐組淘汰。Supabase artifact欄位格式維持不變。
+**Architecture:** Railway Python Worker 是唯一 Explore 計算來源。鎖2依 B、C、D……逐組演進候選狀態；全部候選停止後才判斷相同最長結果是否超過2個。每條路只存一筆 canonical result；2／7／13期由 `lockedSourceIndex` 篩選。Supabase RPC 讀取可索引的 canonical result，不解析 zlib+base64 chunks。
 
-**Tech Stack:** Python 3.12、pytest、TypeScript、Vitest、Git。
+**Confirmed rules:**
 
-**Spec:** `docs/specs/matrix-explore-correct-algorithm-2026-08-30.md`
-
-## Global Constraints
-
-- 不修改天衍與天工演算法。
-- 加減與合值排除鎖定條件本身；拖牌只使用鎖定條件本身。
-- 鎖1連準達8整條無效；鎖2連準達12整條無效。
-- 不補寫附件「原文未完整定義」的規則。
-- 不讀取或續用 `matrix-python-v4` 的舊計算結果。
+- 加減與拖牌都允許 `+0`；版路類型由驗證範圍決定。
+- 拖牌只驗證鎖定條件本身；加減、合值排除鎖定條件本身。
+- 鎖1只輸出準4、5、6、7；達8整條無效。
+- 鎖2只輸出準5、6、7、9、11；準8、10不輸出；達12整條無效。
+- 搜尋途中出現超過2個候選不得提前失效；同一最長連準最終結果超過2個才整條無效。
+- 本日完整歷史工作量：2種號碼順序 × 3種版路 × 13來源 × 5球位 = 390 work units。
+- 同一條路只儲存一筆；2／7／13期不複製資料。
+- v6驗證通過前不刪v5；通過後只刪精確匹配 `draw_period || ':matrix-python-v5'` 的舊結果。
 
 ---
 
-### Task 1: 固定來源與預測期距
+### Task 1: 逐組候選狀態與最終失效判定
 
 **Files:**
 - Modify: `services/matrix-api/tests/test_matrix_algorithm_acceptance_v1.py`
-- Modify: `services/matrix-api/tests/test_explore_batches.py`
-- Modify: `services/matrix-api/app/domain/explore.py`
-- Modify: `services/matrix-api/app/services/explore_batches.py`
-
-**Interfaces:**
-- Consumes: `explorePeriods`, `exploreDateOffset`, `lockedSourceIndex`。
-- Produces: 每個 work unit 的 `predictionDistance` 與 `exploreDateOffset`。
-
-- [ ] **Step 1: 寫入來源位置固定預測期的失敗測試**
-
-```python
-assert [(item["number"], item["predictionDistance"]) for item in result["results"]] == [
-    ("01", 1), ("02", 1), ("03", 1), ("04", 1), ("05", 1),
-    ("06", 2), ("07", 2), ("08", 2), ("09", 2), ("10", 2),
-]
-```
-
-- [ ] **Step 2: 執行測試並確認舊程式因每個來源掃多個期距而失敗**
-
-Run: `uv run pytest -q tests/test_matrix_algorithm_acceptance_v1.py -k 'prediction_distance or lock_condition'`
-
-- [ ] **Step 3: 修改 automatic Explore 與 batch work units**
-
-```python
-for relative_source_index, source in enumerate(sources):
-    prediction_distance = relative_source_index + 1
-```
-
-工作單元必須包含固定 `exploreDateOffset`、`lockedSourceIndex`、`predictionDistance`，不得再包含1至13的期距範圍。
-
-- [ ] **Step 4: 執行來源、批次與artifact測試**
-
-Run: `uv run pytest -q tests/test_matrix_algorithm_acceptance_v1.py tests/test_explore_batches.py tests/test_artifact_builders.py`
-
-### Task 2: 正確驗證座標
-
-**Files:**
-- Modify: `services/matrix-api/tests/test_matrix_algorithm_acceptance_v1.py`
-- Modify: `services/matrix-api/app/domain/explore.py`
-
-**Interfaces:**
-- Produces: `_reference_coordinates(algorithm_type, locked_position, position_count, reference_back, prediction_distance)`。
-
-- [ ] **Step 1: 寫入74、79座標及鎖定格排除測試**
-
-```python
-assert len(_reference_coordinates("加減", 1, 5, 14, 1)) == 74
-assert len(_reference_coordinates("合值", 1, 5, 14, 2)) == 79
-assert (0, 1) not in _reference_coordinates("加減", 1, 5, 14, 1)
-assert _reference_coordinates("拖牌", 1, 5, 14, 2) == [(0, 1)]
-```
-
-- [ ] **Step 2: 執行測試並確認合值仍包含鎖定格而失敗**
-
-Run: `uv run pytest -q tests/test_matrix_algorithm_acceptance_v1.py -k reference_coordinates`
-
-- [ ] **Step 3: 所有 Explore 入口共用座標函式**
-
-移除加減 `+0` 自動改成拖牌的舊分支；版路型別只由使用者選擇的驗證範圍決定。
-
-- [ ] **Step 4: 執行 Explore 測試**
-
-Run: `uv run pytest -q tests/test_explore.py tests/test_matrix_algorithm_acceptance_v1.py`
-
-### Task 3: 逐組候選池與連準上下限
-
-**Files:**
 - Modify: `services/matrix-api/tests/test_explore.py`
-- Modify: `services/matrix-api/tests/test_matrix_algorithm_acceptance_v1.py`
 - Modify: `services/matrix-api/app/domain/explore.py`
 
-**Interfaces:**
-- Produces: `_highest_rule_sets(groups, rule_count)`，候選來源只允許B/C。
+- [ ] 先新增失敗測試：B/C後暫時有3個pair，完整延伸後只剩2個最長結果，必須有效。
+- [ ] 先新增失敗測試：完整延伸後仍有3個相同最長pair，必須整條無效。
+- [ ] 兩個最終pair即使合計使用3個不同值也仍有效；不得以distinct value數判定。
+- [ ] 新增單次值只在中間有效、在頭或尾無效的測試。
+- [ ] 新增B/C無共同值時，D命中B值後只保留該B值+C五值的測試；反向同理。
+- [ ] 執行測試確認RED。
+- [ ] 移除 `itertools.combinations(B ∪ C, 2)`，實作1值／2值逐組狀態。
+- [ ] 全部states結束後才找最高streak與最終sets，再判斷 `len(sets) > 2`。
+- [ ] 執行完整Explore測試確認GREEN。
 
-- [ ] **Step 1: 寫入B/C候選池、D停止、三值無效及上下限失敗測試**
+Run:
 
-```python
-groups = [
-    {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-    {"candidateMap": {"加減:1": [1], "加減:3": [3]}},
-    {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
-    {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-    {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
-]
-assert _highest_rule_sets(groups, 2)["invalidMultipleRules"] is True
+```bash
+cd services/matrix-api
+uv run pytest -q tests/test_explore.py tests/test_matrix_algorithm_acceptance_v1.py
 ```
 
-- [ ] **Step 2: 執行測試，確認全歷史聯集、命中數先篩選及13期上限使測試失敗**
-
-Run: `uv run pytest -q tests/test_explore.py tests/test_matrix_algorithm_acceptance_v1.py -k 'candidate_pool or streak_limit or three'`
-
-- [ ] **Step 3: 實作鎖1與鎖2的分離搜尋**
-
-鎖1只檢查 `B ∩ C`；鎖2只從 `B ∪ C` 形成最多45個二值候選，先覆蓋B/C，再依D、E逐組淘汰。禁止把D以後的新值加入候選。
-
-- [ ] **Step 4: 在結果建立前套用上下限**
-
-```python
-minimum = 4 if rule_count == 1 else 5
-invalid_at = 8 if rule_count == 1 else 12
-```
-
-達到 `invalid_at` 必須回傳無效，不能選擇較短候選。
-
-- [ ] **Step 5: 每個鎖1值建立獨立結果；鎖2同號只保留一個預測號碼**
-
-不得把多條鎖1規則的預測號碼先聯集成同一筆結果。
-
-- [ ] **Step 6: 執行所有 Explore 測試**
-
-Run: `uv run pytest -q tests/test_explore.py tests/test_matrix_algorithm_acceptance_v1.py tests/test_explore_batches.py tests/test_artifact_builders.py`
-
-### Task 4: 淘汰重複 TypeScript Explore 演算法
+### Task 2: +0、拖牌座標與連準輸出
 
 **Files:**
-- Create: `backend/matrix-algorithm-shared.ts`
-- Modify: `backend/matrix-explore-service.ts`
-- Modify: `backend/matrix-tianyan-partitions.ts`
-- Modify: `backend/matrix-tianyan-partitions.test.ts`
-- Modify imports in `backend/matrix-custom-status-routes.ts`, `backend/matrix-tianyan.ts`, `backend/matrix-tianyan-service.ts`, `backend/matrix-tiangong.ts`, `backend/matrix-tiangong-generator.ts`, `backend/matrix-tiangong-service.ts` and their type-only tests
-- Delete: `backend/matrix-algorithm.ts`
-- Delete: `backend/matrix-algorithm.test.ts`
-- Delete: `backend/matrix-algorithm-cases.ts`
-- Delete: `backend/matrix-algorithm-cases.test.ts`
+- Modify: `services/matrix-api/tests/test_matrix_algorithm_acceptance_v1.py`
+- Modify: `services/matrix-api/tests/test_explore.py`
+- Modify: `services/matrix-api/app/domain/explore.py`
 
-**Interfaces:**
-- Produces: `MatrixLottery`、`MatrixNumberOrder`、`MatrixAlgorithmType`、`MatrixDraw`、`MatrixExploreGroupInput`、`normalizeMatrixNumber` 共用定義。
+- [ ] 先新增四彩種的加減 `+0` 與拖牌 `+0` 失敗測試。
+- [ ] 驗證 `+0` 不改變使用者選擇的版路類型。
+- [ ] 驗證拖牌座標固定 `[(0, locked_position)]`；加減／合值排除該座標。
+- [ ] 驗證今彩539下1期完整範圍74座標、下2期79座標。
+- [ ] 新增鎖1與鎖2允許／禁止streak測試，禁止回退輸出較短streak。
+- [ ] 新增兩值與預測號碼由小到大、相同預測號碼去重測試。
+- [ ] 執行RED→最小實作→GREEN。
 
-- [ ] **Step 1: 新增共用型別測試所需的新 work unit 欄位**
+### Task 3: 本日390 work units與canonical artifact
 
-```ts
-export type MatrixExploreGroupInput = {
-  lottery: MatrixLottery;
-  numberOrder: MatrixNumberOrder;
-  algorithmType: MatrixAlgorithmType;
-  lockedSourceIndex: number;
-  lockedPosition: number;
-  exploreDateOffset: 0 | 1 | 2;
-  predictionDistance: number;
-  exploreRange: '完整範圍';
-};
-```
+**Files:**
+- Modify: `services/matrix-api/app/services/explore_batches.py`
+- Modify: `services/matrix-api/app/services/artifact_builders.py`
+- Modify: `services/matrix-api/app/domain/tianyan_artifact.py`
+- Modify: `services/matrix-api/tests/test_explore_batches.py`
+- Modify: `services/matrix-api/tests/test_artifact_builders.py`
+- Modify: `services/matrix-api/tests/test_tianyan_artifact.py`
+- Modify: `services/matrix-api/tests/test_status_artifact_sources.py`
 
-- [ ] **Step 2: 更新所有共用引用並刪除舊可執行 Explore 程式與案例**
+- [ ] 先把work unit測試改為只允許 `exploreDateOffset=0` 與總數390，確認RED。
+- [ ] 先把artifact測試改為同一raw result只存一筆，確認RED。
+- [ ] 刪除昨日／前日work unit與 `_explore_selections` 的2／7／13複製。
+- [ ] Stored item移除 `explorePeriods`；保留 `lockedSourceIndex` 與 `lockedSourcePeriod`。
+- [ ] 天衍只適配canonical row格式，不改演算法。
+- [ ] 狀態以13期範圍派生，不再重複計數。
+- [ ] 執行artifact、天衍、狀態測試。
 
-保留天衍、天工所需的型別及 `normalizeMatrixNumber`，不修改其演算法。
+### Task 4: Supabase canonical results與v6 RPC
 
-- [ ] **Step 3: 執行 TypeScript 測試與型別檢查**
+**Files:**
+- Modify: `services/matrix-api/app/repositories/analysis_repository.py`
+- Modify: `services/matrix-api/app/services/analysis_pipeline.py`
+- Modify: `services/matrix-api/tests/test_analysis_repository.py`
+- Modify: `services/matrix-api/tests/test_analysis_pipeline.py`
+- Create via `supabase migration new`: `supabase/migrations/*_matrix_python_v6_explore_results.sql`
+- Create: `services/matrix-api/tests/test_matrix_explore_migration_contract.py`
+- Modify: `src/matrix-algorithm-api.ts`
+- Modify: `src/matrix-explore-rpc.test.ts`
 
-Run: `npm test -- --run`
+- [ ] 先列出Supabase project與migration狀態，確認v5 migration是否已套用。
+- [ ] 由CLI產生migration檔，不猜timestamp。
+- [ ] 建立 `matrix_explore_results`：composite PK、analysis run FK cascade、RLS、service_role grant、list filter index、expiry index。
+- [ ] Repository先寫失敗測試：batch upsert idempotent、item與validation同列、空batch不upsert。
+- [ ] Pipeline先寫失敗測試：save chunk → save canonical results → update progress；失敗不得前進cursor。
+- [ ] RPC只讀v6 canonical rows；不讀 `chunk.payload->'items'`。
+- [ ] 2／7／13使用 `locked_source_index < requested_periods`。
+- [ ] 同碼使用完整排序後 `prediction_numbers` 陣列相等，不以單一號碼重疊判定。
+- [ ] 重複號碼統計最多18張；點擊號碼後只篩選包含該號碼的版路。
+- [ ] Validation從同一canonical row讀取，依source index與reference offset套用既有權限。
 
-Run: `npm run build`
+### Task 5: 探索頁只顯示本日與號碼卡篩選
 
-### Task 5: 新分析版本與完整驗證
+**Files:**
+- Modify: `src/FeaturePages.tsx`
+- Modify: `src/__tests__/MatrixExplorePage.test.tsx`
+- Modify only if necessary: `src/feature-pages.css`
+
+- [ ] 日期固定顯示「本日 (最新)」，移除昨日／前日互動選項。
+- [ ] 所有Explore request固定 `exploreDateOffset: 0`。
+- [ ] 號碼卡改為可鍵盤操作的button；點擊傳送 `predictionNumber`，再次點擊取消。
+- [ ] 保留現有手機畫面尺寸、深藍／金色視覺與三列排列，不增加新流程。
+- [ ] 執行MatrixExplorePage、RPC、premium contract與build。
+
+### Task 6: v6完整驗證、重算與刪除v5
 
 **Files:**
 - Modify: `services/matrix-api/app/worker.py`
-- Modify all tests expecting `matrix-python-v4`
+- Modify all exact v5 version tests.
 
-**Interfaces:**
-- Produces: `matrix-python-v5`。
-
-- [ ] **Step 1: 寫入v5版本期望並確認測試失敗**
-
-Run: `uv run pytest -q tests/test_worker.py tests/test_scheduled_worker_resume.py tests/test_analysis_version_progress.py`
-
-- [ ] **Step 2: 將 `ANALYSIS_VERSION` 更新為 `matrix-python-v5`**
-
-舊v4 chunks不得被v5續算或讀作同一批結果。
-
-- [ ] **Step 3: 執行完整Python與前端測試**
-
-Run: `uv run pytest -q`
-
-Run: `npm test -- --run`
-
-- [ ] **Step 4: 執行正式今彩539工作量檢查**
-
-確認每個work unit只有一個 `predictionDistance`，每個加減／合值座標排除鎖定格，鎖2候選最多來自B/C的10值。
-
-- [ ] **Step 5: 檢查Git差異並提交獨立分支**
-
-```bash
-git diff --check
-git status --short
-git commit -m "fix: replace explore algorithm with confirmed specification"
-```
+- [ ] 先更新version測試為 `matrix-python-v6`，確認RED，再修改worker constant。
+- [ ] Python完整pytest、Vitest、Node tests、build、`git diff --check`全部通過。
+- [ ] 套用migration並執行Supabase security/performance advisors。
+- [ ] 推送修正分支，整合main後核對遠端SHA。
+- [ ] 觸發最新一期v6；今彩539progress total必須390。
+- [ ] 回報canonical總數，以及2／7／13、加減／合值／拖牌、鎖1／鎖2、predictionDistance各筆數。
+- [ ] 驗證非本日=0、duplicate id=0、鎖2準8／10／12+=0、鎖1準8+=0。
+- [ ] 抽樣驗證加減、合值、拖牌公式與期數。
+- [ ] v6全部通過後，先列出v5精確刪除筆數，再刪除v5 runs並確認v5為0、v6仍存在。

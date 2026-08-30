@@ -93,7 +93,7 @@ export type ExploreApiRow = {
   algorithmType: '加減' | '合值' | '拖牌';
   numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
-  exploreDateOffset: 0 | 1 | 2;
+  exploreDateOffset: 0;
   ruleCount: 1 | 2;
   referenceOffset?: number;
   referencePosition?: number;
@@ -103,12 +103,13 @@ export type ExploreListRequest = {
   lottery: NumberBallLottery;
   numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
-  exploreDateOffset: 0 | 1 | 2;
+  exploreDateOffset: 0;
   exploreRange: '標準範圍' | '完整範圍';
   ruleCount: 1 | 2;
   roadTypes: Array<'加減' | '合值' | '拖牌'>;
   selectedStreaks: string[];
   sameCode: boolean;
+  predictionNumber?: string;
 };
 
 export type ExploreListResponse = {
@@ -306,10 +307,11 @@ export function fetchExploreList(request: ExploreListRequest) {
 export function fetchExploreValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
+  access: Pick<ExploreListRequest, 'explorePeriods' | 'exploreRange'>,
 ) {
   return matrixResultRpc<ExploreValidationResponse>(
     'matrix_explore_validation',
-    { ...meta, itemId },
+    { ...meta, itemId, ...access },
   );
 }
 

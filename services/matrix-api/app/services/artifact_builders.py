@@ -28,17 +28,6 @@ def tiangong_work_units() -> list[dict[str, Any]]:
     return units
 
 
-def _explore_selections(unit: dict[str, Any]) -> list[tuple[int, int]]:
-    selections: list[tuple[int, int]] = []
-    source_index = unit["lockedSourceIndex"]
-    date_offset = unit["exploreDateOffset"]
-    relative_source_index = source_index - date_offset
-    for periods in (2, 7, 13):
-        if relative_source_index < periods:
-            selections.append((periods, date_offset))
-    return selections
-
-
 def _work_units(lottery: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return work_units(lottery, len(history), lottery_position_count(lottery))
 
@@ -55,30 +44,28 @@ def _append_explore_result(
         if rule_count not in {1, 2}:
             continue
         source_index = unit["lockedSourceIndex"]
-        for periods, date_offset in _explore_selections(unit):
-            identifier = "|".join(map(str, [
-                unit["numberOrder"], source_index, unit["lockedPosition"],
-                date_offset, periods, unit["algorithmType"], rule_count, raw.get("id", ""),
-            ]))
-            item = {
-                "id": identifier, "number": str(raw.get("number", "")),
-                "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
-                "predictionDistance": int(raw.get("predictionDistance", 0)),
-                "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
-                "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
-                "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
-                "explorePeriods": periods, "exploreDateOffset": date_offset,
-                "ruleCount": rule_count, "lockedSourceIndex": source_index,
-                "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
-            }
-            for key in ("referenceOffset", "referencePosition"):
-                if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
-                    item[key] = search[key]
-            artifact["items"].append(item)
-            validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
-            if isinstance(raw.get("sourceA"), dict):
-                validation["sourceA"] = raw["sourceA"]
-            artifact["validationById"][identifier] = validation
+        identifier = "|".join(map(str, [
+            unit["numberOrder"], source_index, unit["lockedPosition"],
+            unit["algorithmType"], rule_count, raw.get("id", ""),
+        ]))
+        item = {
+            "id": identifier, "number": str(raw.get("number", "")),
+            "lockedPosition": int(raw.get("lockedPosition", unit["lockedPosition"])),
+            "predictionDistance": int(raw.get("predictionDistance", 0)),
+            "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
+            "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
+            "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
+            "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
+            "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
+        }
+        for key in ("referenceOffset", "referencePosition"):
+            if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
+                item[key] = search[key]
+        artifact["items"].append(item)
+        validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
+        if isinstance(raw.get("sourceA"), dict):
+            validation["sourceA"] = raw["sourceA"]
+        artifact["validationById"][identifier] = validation
 
 
 def build_explore_artifact_chunk(
@@ -140,7 +127,7 @@ def build_tiangong_artifact_chunk(
 
 _EXPLORE_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
-    "predictionNumbers", "algorithmType", "numberOrder", "explorePeriods", "exploreDateOffset",
+    "predictionNumbers", "algorithmType", "numberOrder", "exploreDateOffset",
     "ruleCount", "lockedSourceIndex",
 )
 _TIANYAN_STATUS_FIELDS = (
@@ -149,12 +136,18 @@ _TIANYAN_STATUS_FIELDS = (
 )
 
 
-def _compact_status_items(items: list[dict[str, Any]], fields: tuple[str, ...]) -> list[dict[str, Any]]:
-    return [
+def _compact_status_items(
+    items: list[dict[str, Any]], fields: tuple[str, ...], *, derive_full_range: bool = False,
+) -> list[dict[str, Any]]:
+    compact = [
         {key: item[key] for key in fields if key in item}
         for item in items
         if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
     ]
+    if derive_full_range:
+        for item in compact:
+            item["explorePeriods"] = 13
+    return compact
 
 
 def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong: dict[str, Any]) -> dict[str, Any]:
@@ -175,7 +168,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
                 "hitType": hit_type, "result": result, "algorithmType": item["algorithmType"],
                 "numberOrder": item["numberOrder"], "streak": item["highestStreak"],
                 "predictionDistance": item["predictionDistance"], "position": item["lockedPosition"],
-                "lockedNumber": item["number"], "explorePeriods": item["explorePeriods"],
+                "lockedNumber": item["number"], "explorePeriods": 13,
             })
     status = evaluate_chapter15({"lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"], "roads": roads})
     return {
@@ -186,7 +179,9 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
             "explore": {
                 "lottery": explore["lottery"],
                 "drawPeriod": explore["drawPeriod"],
-                "items": _compact_status_items(explore["items"], _EXPLORE_STATUS_FIELDS),
+                "items": _compact_status_items(
+                    explore["items"], _EXPLORE_STATUS_FIELDS, derive_full_range=True,
+                ),
             },
             "tianyan": {
                 "lottery": tianyan["lottery"],

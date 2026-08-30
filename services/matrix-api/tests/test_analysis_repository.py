@@ -252,6 +252,70 @@ def test_artifact_chunks_are_idempotent_by_full_composite_key() -> None:
     assert len(repository.read_artifact_chunks("今彩539", "115000205", "v1", "explore")) == 1
 
 
+def test_explore_results_are_idempotent_and_keep_item_with_validation() -> None:
+    repository = InMemoryAnalysisRepository()
+    item = {
+        "id": "road-1", "number": "02", "lockedPosition": 1,
+        "predictionDistance": 2, "consecutive": "準5進6", "highestStreak": 5,
+        "predictionNumbers": ["27"], "algorithmType": "加減",
+        "numberOrder": "依號碼由小到大排序", "exploreDateOffset": 0,
+        "ruleCount": 1, "lockedSourceIndex": 1, "lockedSourcePeriod": "115000204",
+        "referenceOffset": -8, "referencePosition": 4,
+    }
+    validation = {"itemId": "road-1", "ruleSets": [{"rules": [{"value": 34}]}]}
+    payload = {"items": [item], "validationById": {"road-1": validation}}
+
+    repository.save_explore_results("今彩539", "115000205", "matrix-python-v6", payload)
+    repository.save_explore_results("今彩539", "115000205", "matrix-python-v6", payload)
+
+    assert len(repository.explore_results) == 1
+    stored = next(iter(repository.explore_results.values()))
+    assert stored["item"] == item
+    assert stored["validation"] == validation
+    assert stored["locked_source_index"] == 1
+    assert stored["prediction_numbers"] == ["27"]
+
+
+def test_supabase_explore_results_use_one_batch_upsert_and_skip_empty_payload() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+    item = {
+        "id": "road-1", "number": "02", "lockedPosition": 1,
+        "predictionDistance": 2, "consecutive": "準5進6", "highestStreak": 5,
+        "predictionNumbers": ["17", "27"], "algorithmType": "拖牌",
+        "numberOrder": "依號碼由小到大排序", "ruleCount": 2,
+        "lockedSourceIndex": 1, "lockedSourcePeriod": "115000204",
+        "referenceOffset": 0, "referencePosition": 1,
+    }
+    validation = {"itemId": "road-1", "ruleSets": []}
+
+    repository.save_explore_results("今彩539", "115000205", "matrix-python-v6", {
+        "items": [item], "validationById": {"road-1": validation},
+    })
+
+    assert fake_client.last_table == "matrix_explore_results"
+    assert fake_client.last_on_conflict == "lottery,draw_period,analysis_version,item_id"
+    assert isinstance(fake_client.last_record, list)
+    assert fake_client.last_record[0] | {"expires_at": "ignored"} == {
+        "lottery": "今彩539", "draw_period": "115000205",
+        "analysis_version": "matrix-python-v6", "item_id": "road-1",
+        "number": "02", "locked_position": 1, "prediction_distance": 2,
+        "consecutive": "準5進6", "highest_streak": 5,
+        "prediction_numbers": ["17", "27"], "algorithm_type": "拖牌",
+        "number_order": "依號碼由小到大排序", "rule_count": 2,
+        "locked_source_index": 1, "locked_source_period": "115000204",
+        "reference_offset": 0, "reference_position": 1,
+        "item": item, "validation": validation, "expires_at": "ignored",
+    }
+
+    empty_client = FakeSupabaseClient()
+    SupabaseAnalysisRepository(empty_client).save_explore_results(
+        "今彩539", "115000205", "matrix-python-v6",
+        {"items": [], "validationById": {}},
+    )
+    assert empty_client.last_table == ""
+
+
 def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None:
     repository = InMemoryAnalysisRepository()
     repository.begin_run("今彩539", "115000205", "v1", "2026-08-24T10:00:00+00:00")

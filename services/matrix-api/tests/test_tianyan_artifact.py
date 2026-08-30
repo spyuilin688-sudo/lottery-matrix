@@ -8,7 +8,7 @@ def _row(identifier: str, prediction: str, position: int, algorithm_type: str) -
         "id": identifier, "number": "07", "lockedPosition": 1, "predictionDistance": 1,
         "consecutive": "準9進10", "highestStreak": 9, "predictionNumbers": [prediction],
         "algorithmType": algorithm_type, "numberOrder": "依號碼由小到大排序",
-        "explorePeriods": 13, "exploreDateOffset": 0, "ruleCount": 1,
+        "exploreDateOffset": 0, "ruleCount": 1,
         "referenceOffset": -1, "referencePosition": position,
     }
 
@@ -56,6 +56,8 @@ def test_builds_composite_rows_deduplicates_pairs_and_detaches_validation() -> N
     assert artifact["items"][0]["roadType"] == "複合"
     assert artifact["items"][0]["hitCondition"] == "準5+（鎖定2碼）"
     assert artifact["items"][0]["consecutive"] == "準9進10"
+    assert artifact["items"][0]["explorePeriods"] == 13
+    assert artifact["items"][0]["exploreDateOffset"] == 0
     assert "historicalValidation" not in str(artifact["items"])
     validations = [artifact["validationById"][item["id"]] for item in artifact["items"]]
     assert validations[0]["rules"] != validations[1]["rules"]
