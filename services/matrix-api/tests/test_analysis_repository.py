@@ -145,6 +145,24 @@ def test_supabase_empty_draw_history_does_not_issue_an_upsert() -> None:
     assert fake_client.last_table == ""
 
 
+def test_supabase_artifact_existence_check_reads_metadata_only() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["matrix_analysis_artifacts"] = [{"kind": "explore"}]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    exists = repository.has_artifact("今彩539", "114000123", "v1", "explore")
+
+    assert exists is True
+    assert fake_client.last_select == "kind"
+    assert fake_client.last_filters == [
+        ("lottery", "今彩539"),
+        ("draw_period", "114000123"),
+        ("analysis_version", "v1"),
+        ("kind", "explore"),
+    ]
+    assert fake_client.last_ranges == [(0, 0)]
+
+
 def test_list_draws_returns_newest_first_and_normalized_shape() -> None:
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw({

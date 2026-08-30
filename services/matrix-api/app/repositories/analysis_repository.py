@@ -39,6 +39,7 @@ class AnalysisRepository(Protocol):
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
+    def has_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> bool: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
@@ -236,6 +237,11 @@ class InMemoryAnalysisRepository:
             expected_total,
             deduplicate_by_id=kind == "tiangong",
         )
+
+    def has_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> bool:
+        return (lottery, draw_period, analysis_version, kind) in self.artifacts
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         record = self.artifacts.get((lottery, draw_period, analysis_version, kind))
@@ -566,6 +572,21 @@ class SupabaseAnalysisRepository:
             expected_total,
             deduplicate_by_id=kind == "tiangong",
         )
+
+    def has_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> bool:
+        response = (
+            self.client.table("matrix_analysis_artifacts")
+            .select("kind")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .eq("kind", kind)
+            .range(0, 0)
+            .execute()
+        )
+        return bool(response.data)
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         artifact = self.client.table("matrix_analysis_artifacts").select("payload").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).eq("kind", kind).limit(1).execute()
