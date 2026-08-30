@@ -73,13 +73,18 @@ beforeEach(() => {
   installSupportedPushApi();
 });
 
-async function expectFixedFailure(operation: Promise<unknown>, permission: NotificationPermission = 'granted') {
+async function expectFixedFailure(
+  operation: Promise<unknown>,
+  permission: NotificationPermission = 'granted',
+  stage?: string,
+) {
   const error = await operation.catch((failure: unknown) => failure);
   expect(error).toBeInstanceOf(PushSubscriptionError);
   expect(error).toMatchObject({
     message: 'PUSH_SUBSCRIPTION_FAILED',
     status: { supported: true, permission, enabled: false },
   });
+  if (stage) expect(error).toMatchObject({ stage });
 }
 
 describe('PWA push subscriptions', () => {
@@ -113,6 +118,19 @@ describe('PWA push subscriptions', () => {
 
     await expectFixedFailure(enablePushNotifications('key', true));
     expect(requestPermission).toHaveBeenCalledTimes(1);
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('identifies service worker registration failures', async () => {
+    requestPermission.mockResolvedValue('granted');
+    getRegistration.mockRejectedValue(new Error('registration failed'));
+
+    await expectFixedFailure(
+      enablePushNotifications('BElong-key', true),
+      'granted',
+      'service-worker-registration',
+    );
     expect(subscribe).not.toHaveBeenCalled();
     expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
   });
@@ -246,7 +264,7 @@ describe('PWA push subscriptions', () => {
     requestPermission.mockResolvedValue('granted');
     memberApi.savePushSubscription.mockRejectedValue(new Error('database unavailable'));
 
-    await expectFixedFailure(enablePushNotifications('BElong-key', true));
+    await expectFixedFailure(enablePushNotifications('BElong-key', true), 'granted', 'supabase-save');
   });
 
   it('throws the fixed failure with a disabled status when permission prompting fails', async () => {
@@ -268,7 +286,7 @@ describe('PWA push subscriptions', () => {
     getSubscription.mockResolvedValue(null);
     subscribe.mockRejectedValue(new Error('subscription rejected'));
 
-    await expectFixedFailure(enablePushNotifications('BElong-key', true));
+    await expectFixedFailure(enablePushNotifications('BElong-key', true), 'granted', 'browser-subscription');
   });
 
   it('throws the exported fixed error for malformed VAPID public keys', async () => {

@@ -99,6 +99,13 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
+function pushFailure(stage: "service-worker-registration" | "browser-subscription" | "supabase-save") {
+  return Object.assign(
+    new PushSubscriptionError({ supported: true, permission: "granted", enabled: false }),
+    { stage },
+  );
+}
+
 describe("NotificationsPagePatched", () => {
   it("未登入時不允許要求權限或建立手機訂閱", async () => {
     memberApi.hasAuthenticatedMemberSession.mockResolvedValue(false);
@@ -153,14 +160,36 @@ describe("NotificationsPagePatched", () => {
     expect(within(systemRow).getByRole("button", { name: "此手機不支援通知" })).toHaveAttribute("data-checked", "false");
   });
 
-  it("保存失敗時安全讀取 PushSubscriptionError 的停用狀態", async () => {
-    pushSubscription.enablePushNotifications.mockRejectedValue(new PushSubscriptionError({ supported: true, permission: "granted", enabled: false }));
+  it("推播程式註冊失敗時顯示對應文字", async () => {
+    pushSubscription.enablePushNotifications.mockRejectedValue(pushFailure("service-worker-registration"));
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
 
     fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
 
-    expect(await screen.findByText("手機通知開啟失敗，請稍後再試")).toBeVisible();
+    expect(await screen.findByText("推播程式註冊失敗")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "開啟手機通知" })).toHaveAttribute("data-checked", "false");
+  });
+
+  it("手機瀏覽器建立訂閱失敗時顯示對應文字", async () => {
+    pushSubscription.enablePushNotifications.mockRejectedValue(pushFailure("browser-subscription"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("手機瀏覽器建立訂閱失敗")).toBeVisible();
+    expect(within(systemRow).getByRole("button", { name: "開啟手機通知" })).toHaveAttribute("data-checked", "false");
+  });
+
+  it("Supabase 儲存失敗時顯示對應文字", async () => {
+    pushSubscription.enablePushNotifications.mockRejectedValue(pushFailure("supabase-save"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const systemRow = document.querySelector<HTMLElement>('[data-notification-key="system"]')!;
+
+    fireEvent.click(await within(systemRow).findByRole("button", { name: "開啟手機通知" }));
+
+    expect(await screen.findByText("Supabase 儲存失敗")).toBeVisible();
     expect(within(systemRow).getByRole("button", { name: "開啟手機通知" })).toHaveAttribute("data-checked", "false");
   });
 
