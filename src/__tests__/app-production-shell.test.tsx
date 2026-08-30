@@ -224,8 +224,8 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*4px 3px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
-    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*4px 6px/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 3px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
   });
 
@@ -282,7 +282,7 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
-  it("increases expanded validation rows by eight pixels while retaining four-pixel vertical padding", () => {
+  it("keeps expanded validation rows responsive without a fixed height", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -290,8 +290,8 @@ describe("production member shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
 
     const validationCard = document.querySelector(".explore-validation-card");
-    expect(getComputedStyle(validationCard!).getPropertyValue("--explore-validation-row-height").replace(/\s/g, ""))
-      .toBe("clamp(32px,8.46vw,33px)");
+    expect(getComputedStyle(validationCard!).getPropertyValue("--explore-validation-row-min-height").replace(/\s/g, ""))
+      .toBe("clamp(27px,7.18vw,28px)");
 
     for (const selector of [
       ".explore-validation-issue",
@@ -300,9 +300,41 @@ describe("production member shell", () => {
     ]) {
       const row = document.querySelector(selector);
       expect(row).not.toBeNull();
-      expect(getComputedStyle(row!).paddingTop).toBe("4px");
-      expect(getComputedStyle(row!).paddingBottom).toBe("4px");
+      expect(getComputedStyle(row!).height).toBe("auto");
+      expect(getComputedStyle(row!).minHeight).toBe("var(--explore-validation-row-min-height)");
+      expect(getComputedStyle(row!).paddingTop).toBe("3px");
+      expect(getComputedStyle(row!).paddingBottom).toBe("3px");
     }
+
+    productionStyle.remove();
+  });
+
+  it("uses the loaded Roboto 700 face for left-column issue numbers", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const issue = document.querySelector(".explore-validation-issue");
+    expect(issue).not.toBeNull();
+    expect(getComputedStyle(issue!).fontFamily).toBe("Roboto, Arial, sans-serif");
+    expect(getComputedStyle(issue!).fontWeight).toBe("700");
+
+    productionStyle.remove();
+  });
+
+  it("uses one three-pixel gap between every validation group", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const groups = document.querySelector(".explore-validation-groups");
+    const incompleteGroup = document.querySelector('.explore-validation-group[data-complete="false"]');
+    expect(getComputedStyle(groups!).rowGap).toBe("3px");
+    expect(getComputedStyle(incompleteGroup!).marginTop).toBe("0px");
 
     productionStyle.remove();
   });
@@ -314,7 +346,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
     expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*6px 0[^}]*padding:\s*4px 0[^}]*border-top:[^;]+;[^}]*border-bottom:/s);
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
-    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(14px,\s*3\.85vw,\s*15px\)/);
+    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(13px,\s*3\.59vw,\s*14px\)/);
   });
 
   it("keeps validation number states square and prediction styling matched to the summary card", () => {
