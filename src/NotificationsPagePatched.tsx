@@ -59,6 +59,7 @@ const MATRIX_ROWS: NotificationRow[] = [
 ];
 
 const SYSTEM_ROW: NotificationRow = ["system", "系統通知", "維護、更新", "/resources/notify-system.png"];
+const BULK_SETTING_KEYS: SettingKey[] = ["bet", "result", "win", "status", "card", "expiry"];
 
 function createDefaultNotificationSettings(): MemberNotificationSettings {
   return {
@@ -332,6 +333,14 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     }));
   };
 
+  const setAvailableNotifications = (enabled: boolean) => {
+    applyNotificationSettingsEdit((current) => {
+      const nextSettings = { ...current.settings };
+      BULK_SETTING_KEYS.forEach((key) => { nextSettings[key] = enabled; });
+      return { ...current, settings: nextSettings };
+    });
+  };
+
   const renderBetSettings = () => (
     <div className="notification-matrix-grid notification-bet-grid" aria-label="選號提醒設定">
       <div className="notification-grid-row notification-grid-lottery-row notification-grid-lottery-labels">
@@ -395,7 +404,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         <div className="notification-title"><h2>{key === "status" || key === "card" || key === "collision" ? <em>Matrix Pro</em> : null}<span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" || pushNotice === "disable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}</p> : null}</div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision"} label={isSystemRow ? pushToggleLabel : undefined} busy={isSystemRow && pushBusy} onChange={() => {
+          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision"} label={isSystemRow ? pushToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
             if (isSystemRow) {
               void togglePushNotifications();
               return;
@@ -425,10 +434,16 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         </div>
       </header>
       <div className="feature-body">
-        <div className="notification-list">
-          <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>
-          <section className="notification-group" aria-label="Matrix 通知">{MATRIX_ROWS.map(renderRow)}</section>
-          <section className="notification-system-group" aria-label="系統通知">{renderRow(SYSTEM_ROW)}</section>
+        <div className="notification-content">
+          <div className="notification-bulk-actions" role="group" aria-label="批次通知設定">
+            <button type="button" className="notification-bulk-enable" onClick={() => setAvailableNotifications(true)}>全部開啟</button>
+            <button type="button" className="notification-bulk-disable" onClick={() => setAvailableNotifications(false)}>全部關閉</button>
+          </div>
+          <div className="notification-list">
+            <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>
+            <section className="notification-group" aria-label="Matrix 通知">{MATRIX_ROWS.map(renderRow)}</section>
+            <section className="notification-system-group" aria-label="系統通知">{renderRow(SYSTEM_ROW)}</section>
+          </div>
         </div>
       </div>
       <NotificationBottomNavigation onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive} />
