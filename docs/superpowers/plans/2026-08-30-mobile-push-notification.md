@@ -28,7 +28,7 @@
 
 ### New files
 
-- `supabase/migrations/<generated>_mobile_push_notifications.sql`：訂閱表、發送紀錄表、RLS 與會員 RPC。
+- `由 `supabase migration new mobile_push_notifications` 產生的 migration 檔`：訂閱表、發送紀錄表、RLS 與會員 RPC。
 - `supabase/functions/send-test-push/handler.ts`：驗證管理後臺請求、讀取會員有效訂閱、逐支手機發送、保存結果。
 - `supabase/functions/send-test-push/handler.test.ts`：Edge Function 行為測試。
 - `supabase/functions/send-test-push/index.ts`：Edge Function 啟動入口。
@@ -58,7 +58,7 @@
 ### Task 1: 建立 Supabase 推播資料結構與會員權限
 
 **Files:**
-- Create: `supabase/migrations/<generated>_mobile_push_notifications.sql`
+- Create: 執行 `supabase migration new mobile_push_notifications` 後回報的實際檔案路徑
 - Test: migration 內建 SQL 驗證及 Supabase advisor
 
 **Interfaces:**
@@ -562,7 +562,7 @@ it('只傳送固定內容所需的會員與管理員身分', async () => {
 });
 ```
 
-路由測試另確認三條 API 都有 `requireAuth()`，並沿用「通知管理」模組的查看／發送權限。
+路由測試另確認三條 API 都有 `requireAuth()`，並沿用現有管理後臺的查看／編輯權限。
 
 - [ ] **Step 2: 執行測試確認失敗**
 
@@ -588,9 +588,9 @@ Expected: FAIL，因 API 尚未建立。
 在 `apps/admin/backend/index.ts`：
 
 ```ts
-'GET /api/push-members': [requireAuth(), moduleGuard('notifications', 'view'), ...],
-'POST /api/push-members/:id/test': [requireAuth(), moduleGuard('notifications', 'edit'), ...],
-'GET /api/push-delivery-logs': [requireAuth(), moduleGuard('notifications', 'view'), ...],
+'GET /api/push-members': [requireAuth(), guard('view'), ...],
+'POST /api/push-members/:id/test': [requireAuth(), guard('edit'), ...],
+'GET /api/push-delivery-logs': [requireAuth(), guard('view'), ...],
 ```
 
 發送路由從 `getAdmin(ctx)` 取得管理員帳號，不接受前端自行傳入管理員帳號。
@@ -787,7 +787,8 @@ VITE_WEB_PUSH_PUBLIC_KEY
 若整合驗證修正了缺陷：
 
 ```bash
-git add <verified-files>
+git status --short
+# 只加入本計畫於 Tasks 1–7 已列出的缺陷修正檔案，再提交：
 git commit -m "fix: complete mobile push verification"
 ```
 
