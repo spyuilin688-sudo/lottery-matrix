@@ -27,6 +27,17 @@ export type NotificationApiClient = {
   post(url: string, body?: unknown): Promise<{ data: unknown }>;
 };
 
+const PUSH_STARTUP_STAGES = new Set([
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'WEB_PUSH_PUBLIC_KEY',
+  'WEB_PUSH_PRIVATE_KEY',
+  'WEB_PUSH_SUBJECT',
+  'SUPABASE_CLIENT',
+  'WEB_PUSH_CONFIGURATION',
+  'UNKNOWN',
+]);
+
 function itemsFrom<T>(data: unknown): T[] {
   if (!data || typeof data !== 'object') return [];
   const items = (data as { items?: unknown }).items;
@@ -100,6 +111,12 @@ export function formatNotificationError(cause: unknown) {
   if (code === 'NO_ACTIVE_SUBSCRIPTIONS') return '此會員目前沒有有效的推播訂閱';
   if (code === 'INVALID_MEMBER_ID' || code === 'MEMBER_REQUIRED' || code === 'INVALID_REQUEST') {
     return '會員資料無效，請重新選擇會員';
+  }
+  const startupStage = code.startsWith('PUSH_STARTUP_FAILED_')
+    ? code.slice('PUSH_STARTUP_FAILED_'.length)
+    : '';
+  if (PUSH_STARTUP_STAGES.has(startupStage)) {
+    return `推播服務啟動失敗（階段：${startupStage}）`;
   }
   return '發送失敗，請稍後再試';
 }
