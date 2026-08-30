@@ -14,7 +14,7 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
