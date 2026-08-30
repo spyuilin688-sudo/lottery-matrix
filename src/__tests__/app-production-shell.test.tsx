@@ -150,6 +150,11 @@ describe("production member shell", () => {
     expect(validation).toHaveClass("explore-validation-card");
     expect(validation.querySelector('[class^="reference-"], [class*=" reference-"]')).toBeNull();
     expect(validation.querySelector(".numeric-text")).toBeNull();
+    for (const element of validation.querySelectorAll("[class]")) {
+      for (const className of element.classList) {
+        expect(className).toMatch(/^explore-validation-/);
+      }
+    }
   });
 
   it("keeps issue numbers at 9px and 700 when the shared reference rule loads later", () => {
