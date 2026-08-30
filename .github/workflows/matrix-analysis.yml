@@ -24,7 +24,7 @@ jobs:
           - id: fantasy5
             lottery: 天天樂
           - id: marksix
-            lottery: 香港六合彩
+            lottery: 六合彩
           - id: lotto649
             lottery: 大樂透
     concurrency:
