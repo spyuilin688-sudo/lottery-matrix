@@ -45,8 +45,23 @@ class FakeQuery:
         self.selected_range = (start, end)
         return self
 
+    def gt(self, column: str, value: Any) -> "FakeQuery":
+        self.client.last_gt_filters.append((column, value))
+        self.selected_gt = (column, value)
+        return self
+
+    def limit(self, count: int) -> "FakeQuery":
+        self.client.last_limits.append(count)
+        self.selected_limit = count
+        return self
+
     def execute(self) -> FakeResponse:
         rows = self.client.responses.get(self.table, [])
+        if hasattr(self, "selected_gt"):
+            column, value = self.selected_gt
+            rows = [row for row in rows if row[column] > value]
+        if hasattr(self, "selected_limit"):
+            rows = rows[:self.selected_limit]
         if hasattr(self, "selected_range"):
             start, end = self.selected_range
             rows = rows[start:end + 1]
@@ -62,6 +77,8 @@ class FakeSupabaseClient:
         self.last_filters: list[tuple[str, Any]] = []
         self.last_orders: list[tuple[str, bool]] = []
         self.last_ranges: list[tuple[int, int]] = []
+        self.last_gt_filters: list[tuple[str, Any]] = []
+        self.last_limits: list[int] = []
         self.upsert_records: list[dict[str, Any] | list[dict[str, Any]]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
@@ -476,7 +493,7 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
     assert fake_client.last_orders == [("chunk_index", False)]
 
 
-def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None:
+def test_supabase_chunk_reads_use_keyset_pagination_to_avoid_statement_timeout() -> None:
     fake_client = FakeSupabaseClient()
     fake_client.responses["matrix_analysis_artifact_chunks"] = [
         {"chunk_index": index, "cursor_start": index * 3,
@@ -489,7 +506,9 @@ def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None
     )
 
     assert [chunk["chunk_index"] for chunk in chunks] == [0, 1, 2]
-    assert fake_client.last_ranges == [(0, 1), (2, 3)]
+    assert fake_client.last_ranges == []
+    assert fake_client.last_limits == [2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1)]
 
 
 def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read() -> None:
@@ -524,7 +543,9 @@ def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read()
     )
 
     assert count == 2
-    assert fake_client.last_ranges == [(0, 1), (2, 3)]
+    assert fake_client.last_ranges == []
+    assert fake_client.last_limits == [2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1)]
 
 
 def test_supabase_chunk_write_compacts_large_payload() -> None:
