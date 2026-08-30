@@ -13,6 +13,7 @@ test('Matrix workflow triggers its one-shot recovery only when this workflow cha
     workflow,
     /^  push:\n    branches: \[main\]\n    paths:\n      - \.github\/workflows\/matrix-analysis\.yml\n/m,
   );
+  assert.match(workflow, /^    timeout-minutes: 120$/m);
 });
 
 test('Matrix workflow runs every lottery for a push without scheduling the worker', () => {
