@@ -51,3 +51,14 @@ def test_no_calls_after_final_six_hour_retry() -> None:
     final_retry = base.replace(day=29, hour=14, minute=18)
     assert call_due("今彩539", final_retry) is True
     assert call_due("今彩539", final_retry.replace(minute=23)) is False
+
+
+def test_lotteries_do_not_create_call_cycles_on_non_draw_days() -> None:
+    assert call_due("今彩539", datetime(2026, 8, 30, 20, 33, tzinfo=TAIPEI)) is False
+    assert call_due("大樂透", datetime(2026, 8, 26, 20, 53, tzinfo=TAIPEI)) is False
+
+
+def test_lotto649_stops_after_final_retry_until_nearest_draw_pre_calls() -> None:
+    assert call_due("大樂透", datetime(2026, 8, 26, 14, 38, tzinfo=TAIPEI)) is True
+    assert call_due("大樂透", datetime(2026, 8, 26, 14, 43, tzinfo=TAIPEI)) is False
+    assert call_due("大樂透", datetime(2026, 8, 28, 18, 53, tzinfo=TAIPEI)) is True

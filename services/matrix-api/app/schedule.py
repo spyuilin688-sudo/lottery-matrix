@@ -13,6 +13,11 @@ CALL_TIMES: dict[str, tuple[int, int]] = {
     "六合彩": (21, 33),
 }
 
+DRAW_WEEKDAYS: dict[str, frozenset[int]] = {
+    "今彩539": frozenset(range(6)),
+    "大樂透": frozenset({1, 4}),
+}
+
 PRE_CALL_OFFSETS_MINUTES = (-120, -60, -30)
 RETRY_OFFSETS_MINUTES = (
     0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
@@ -50,8 +55,12 @@ def lottery_call_time(lottery: str, day: datetime) -> datetime:
 def _candidate_call_times(lottery: str, now: datetime) -> list[datetime]:
     taipei_now = now.astimezone(TAIPEI)
     return [
-        lottery_call_time(lottery, taipei_now + timedelta(days=offset))
+        lottery_call_time(lottery, day)
         for offset in (-1, 0, 1)
+        if (
+            (day := taipei_now + timedelta(days=offset)).weekday()
+            in DRAW_WEEKDAYS.get(lottery, frozenset(range(7)))
+        )
     ]
 
 
