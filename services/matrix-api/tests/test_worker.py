@@ -3,7 +3,10 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
+from app.services.artifact_builders import tiangong_work_units
+from app.services.explore_batches import work_units
 from app.worker import run_scheduled_worker, run_worker
 
 
@@ -157,6 +160,39 @@ def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
 
     assert result["status"] == "complete"
     assert starts == [0, 10, 20]
+
+
+def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -> None:
+    captured: dict[str, int] = {}
+
+    class RecordingPipeline:
+        def __init__(self, _repository, _builders, _version, **options) -> None:
+            captured.update(options)
+
+        def run(self, _draw, _history) -> dict:
+            return {"status": "complete"}
+
+    monkeypatch.setattr(worker_module, "AnalysisPipeline", RecordingPipeline)
+    draw = {
+        "lottery": "今彩539", "period": "000000220",
+        "numbers": ["01", "02", "03", "04", "05"],
+    }
+
+    result = worker_module._run_analysis(
+        InMemoryAnalysisRepository(), draw, [draw], _builders([]),
+    )
+
+    assert result["status"] == "complete"
+    assert captured["explore_batch_size"] == 10
+    assert captured["tiangong_batch_size"] == 20
+    explore_batches = (
+        len(work_units("今彩539", history_length=80, position_count=5))
+        + worker_module.EXPLORE_BATCH_SIZE - 1
+    ) // worker_module.EXPLORE_BATCH_SIZE
+    tiangong_batches = (
+        len(tiangong_work_units()) + worker_module.TIANGONG_BATCH_SIZE - 1
+    ) // worker_module.TIANGONG_BATCH_SIZE
+    assert explore_batches + tiangong_batches - 1 <= worker_module.MAX_CYCLES_PER_INVOCATION
 
 
 def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:

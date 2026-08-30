@@ -365,3 +365,79 @@ def test_pipeline_resumes_checkpointed_tiangong_and_materializes_chunks() -> Non
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
         "ids": ["road-0", "road-1"],
     }
+
+
+def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
+    class FailOnceMaterializeRepository(InMemoryAnalysisRepository):
+        def __init__(self) -> None:
+            super().__init__()
+            self.failed = False
+
+        def save_artifact_chunk(
+            self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+            chunk_index: int, cursor_start: int, cursor_end: int, payload: object,
+        ) -> None:
+            if cursor_end <= cursor_start:
+                raise RuntimeError("zero-width chunk")
+            super().save_artifact_chunk(
+                lottery, draw_period, analysis_version, kind,
+                chunk_index, cursor_start, cursor_end, payload,
+            )
+
+        def materialize_artifact(
+            self, lottery: str, draw_period: str, analysis_version: str,
+            kind: str, expected_total: int,
+        ) -> dict:
+            if kind == "tiangong" and not self.failed:
+                self.failed = True
+                raise RuntimeError("temporary materialize failure")
+            return super().materialize_artifact(
+                lottery, draw_period, analysis_version, kind, expected_total,
+            )
+
+    repository = FailOnceMaterializeRepository()
+
+    def tiangong(context: dict) -> dict:
+        start = context["tiangongBatch"]["start"]
+        stop = min(2, start + context["tiangongBatch"]["limit"])
+        identifier = f"road-{start}"
+        return {
+            "artifact": {
+                "items": [] if start == stop else [{"id": identifier}],
+                "validationById": {} if start == stop else {
+                    identifier: {"itemId": identifier},
+                },
+            },
+            "_checkpoint": {
+                "cursorStart": start, "cursor": stop, "total": 2, "complete": stop == 2,
+            },
+        }
+
+    builders = {
+        "explore": lambda _: {"items": [], "validationById": {}},
+        "tianyan": lambda _: {"items": []},
+        "tiangong": tiangong,
+        "status": lambda context: {
+            "ids": [item["id"] for item in context["artifacts"]["tiangong"]["items"]],
+        },
+    }
+    pipeline = AnalysisPipeline(
+        repository, builders, analysis_version="v1", tiangong_batch_size=1,
+    )
+
+    first = pipeline.run(DRAW, history=[])
+    with pytest.raises(RuntimeError, match="temporary materialize failure"):
+        pipeline.run(DRAW, history=[])
+    retried = pipeline.run(DRAW, history=[])
+
+    assert first["status"] == "running"
+    assert retried["status"] == "complete"
+    assert [
+        (chunk["chunk_index"], chunk["cursor_start"], chunk["cursor_end"])
+        for chunk in repository.read_artifact_chunks(
+            "今彩539", "114000123", "v1", "tiangong",
+        )
+    ] == [(0, 0, 1), (1, 1, 2)]
+    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
+        "ids": ["road-0", "road-1"],
+    }
