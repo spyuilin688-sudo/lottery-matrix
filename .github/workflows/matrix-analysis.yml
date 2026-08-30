@@ -2,6 +2,10 @@ name: Matrix scheduled analysis
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/matrix-analysis.yml
 
 permissions:
   contents: read
