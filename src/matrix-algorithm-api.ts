@@ -294,10 +294,36 @@ function matrixRpcError(error: { message?: string } | null): never {
   throw new MatrixApiError('API_ERROR', 500);
 }
 
+function normalizeMatrixRpcResponse(name: string, data: unknown): unknown {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) return data;
+  const raw = data as Record<string, unknown>;
+  if (name === 'matrix_explore_list') {
+    return {
+      ...raw,
+      kind: 'explore',
+      status: 'complete',
+      drawPeriod: raw.draw_period,
+      analysisVersion: raw.analysis_version,
+      duplicateStats: raw.duplicate_stats ?? [],
+    };
+  }
+  if (name === 'matrix_explore_validation') {
+    return {
+      ...raw,
+      kind: 'explore',
+      status: 'complete',
+      drawPeriod: raw.draw_period,
+      analysisVersion: raw.analysis_version,
+      itemId: raw.item_id,
+    };
+  }
+  return data;
+}
+
 async function matrixResultRpc<T>(name: string, request: unknown) {
   const { data, error } = await getSupabaseClient().rpc(name, { p_request: request });
   if (error) matrixRpcError(error);
-  return data as T;
+  return normalizeMatrixRpcResponse(name, data) as T;
 }
 
 export function fetchExploreList(request: ExploreListRequest) {
