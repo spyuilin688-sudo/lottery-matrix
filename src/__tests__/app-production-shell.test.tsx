@@ -149,6 +149,7 @@ describe("production member shell", () => {
     const validation = screen.getByRole("region", { name: "04 驗證過程" });
     expect(validation).toHaveClass("explore-validation-card");
     expect(validation.querySelector('[class^="reference-"], [class*=" reference-"]')).toBeNull();
+    expect(validation.querySelector(".numeric-text")).toBeNull();
   });
 
   it("keeps issue numbers at 9px and 700 when the shared reference rule loads later", () => {
