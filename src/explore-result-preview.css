@@ -283,8 +283,8 @@
   font-size: 10px;
 }
 
-.explore-validation-card .numeric-text,
-.explore-validation-card .explore-validation-number {
+.explore-validation-numeric-text,
+.explore-validation-number {
   font-family: ui-monospace, "Roboto Mono", SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 0;
