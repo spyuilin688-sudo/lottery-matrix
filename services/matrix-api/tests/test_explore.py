@@ -1,3 +1,5 @@
+import pytest
+
 from app.domain.explore import normalize_matrix_number, run_matrix_algorithm_with_history
 
 
@@ -15,6 +17,23 @@ REQUEST = {
 
 def rule_sets(result: dict) -> list[dict]:
     return result.get("results") or result.get("ruleSets") or []
+
+
+def locked_two_history(streak: int) -> list[dict]:
+    chronological = []
+    for index in range(1, streak + 1):
+        if index == streak:
+            prediction = [1, 2, 3, 4, 21]
+        elif index == streak - 1:
+            prediction = [5, 6, 7, 8, 22]
+        else:
+            prediction = [21 if index % 2 == 0 else 22, 23, 24, 25, 26]
+        chronological.extend([
+            draw(f"S{index}", [10, 20, 30, 35, 39]),
+            draw(f"P{index}", prediction),
+        ])
+    chronological.append(draw("A", [10, 20, 30, 35, 39]))
+    return list(reversed(chronological))
 
 
 def test_normalization_wraps_each_lottery_range() -> None:
@@ -77,6 +96,18 @@ def test_locked_two_codes_rejects_entire_road_at_twelve_groups() -> None:
     assert result["valid"] is False
     assert result["highestStreak"] == 12
     assert result["reason"] == "鎖定2碼連準達12次（包含12）以上，整條版路無效，不得截短"
+    assert rule_sets(result) == []
+
+
+@pytest.mark.parametrize("streak", [8, 10])
+def test_locked_two_codes_do_not_output_excluded_streaks(streak: int) -> None:
+    result = run_matrix_algorithm_with_history(
+        {**REQUEST, "ruleCount": 2},
+        locked_two_history(streak),
+    )
+
+    assert result["valid"] is False
+    assert result["highestStreak"] == streak
     assert rule_sets(result) == []
 
 

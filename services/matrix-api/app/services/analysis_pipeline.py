@@ -70,6 +70,10 @@ class AnalysisPipeline:
                             lottery, period, self.analysis_version, phase,
                             chunk_index, cursor_start, cursor, payload,
                         )
+                        if phase == "explore":
+                            self.repository.save_explore_results(
+                                lottery, period, self.analysis_version, payload,
+                            )
                         self.repository.update_progress(
                             lottery, period, self.analysis_version, phase, cursor, total,
                         )

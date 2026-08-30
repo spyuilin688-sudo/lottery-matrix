@@ -12,8 +12,6 @@ def test_retry_offsets_follow_formal_call_rule() -> None:
         0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
         75, 105, 135, 165,
         225, 285, 345,
-        525, 705,
-        1065,
     ]
 
 
@@ -48,9 +46,10 @@ def test_retry_calls_begin_at_call_time_and_follow_offsets() -> None:
 
 def test_no_calls_after_final_six_hour_retry() -> None:
     base = lottery_call_time("今彩539", datetime(2026, 8, 28, tzinfo=TAIPEI))
-    final_retry = base.replace(day=29, hour=14, minute=18)
+    final_retry = base.replace(day=29, hour=2, minute=18)
     assert call_due("今彩539", final_retry) is True
     assert call_due("今彩539", final_retry.replace(minute=23)) is False
+    assert call_due("今彩539", base.replace(day=29, hour=14, minute=18)) is False
 
 
 def test_lotteries_do_not_create_call_cycles_on_non_draw_days() -> None:
@@ -59,6 +58,7 @@ def test_lotteries_do_not_create_call_cycles_on_non_draw_days() -> None:
 
 
 def test_lotto649_stops_after_final_retry_until_nearest_draw_pre_calls() -> None:
-    assert call_due("大樂透", datetime(2026, 8, 26, 14, 38, tzinfo=TAIPEI)) is True
+    assert call_due("大樂透", datetime(2026, 8, 26, 2, 38, tzinfo=TAIPEI)) is True
+    assert call_due("大樂透", datetime(2026, 8, 26, 14, 38, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 26, 14, 43, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 28, 18, 53, tzinfo=TAIPEI)) is True

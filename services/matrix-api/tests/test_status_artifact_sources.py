@@ -12,7 +12,6 @@ def _explore(identifier: str, source_index: int, date_offset: int = 0) -> dict:
         "predictionNumbers": ["06"],
         "algorithmType": "加減",
         "numberOrder": "依號碼由小到大排序",
-        "explorePeriods": 13,
         "exploreDateOffset": date_offset,
         "ruleCount": 1,
         "lockedSourceIndex": source_index,
@@ -60,5 +59,6 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
 
     assert [item["id"] for item in sources["explore"]["items"]] == ["keep-explore"]
     assert [item["id"] for item in sources["tianyan"]["items"]] == ["keep-tianyan"]
+    assert sources["explore"]["items"][0]["explorePeriods"] == 13
     assert "extraValidationData" not in sources["explore"]["items"][0]
     assert "extraValidationData" not in sources["tianyan"]["items"][0]

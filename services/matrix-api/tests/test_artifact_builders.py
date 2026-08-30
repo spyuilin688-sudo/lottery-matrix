@@ -22,7 +22,9 @@ def test_explore_builder_creates_canonical_detached_rows() -> None:
 
     artifact = build_explore_artifact("今彩539", "123", history, runner)
     assert len(calls) == 30
-    assert len(artifact["items"]) == 3
+    assert len(artifact["items"]) == 1
+    assert "explorePeriods" not in artifact["items"][0]
+    assert artifact["items"][0]["exploreDateOffset"] == 0
     assert "ruleSets" not in artifact["items"][0]
     assert artifact["validationById"][artifact["items"][0]["id"]]["ruleSets"] == [{"rules": []}]
 
@@ -38,7 +40,7 @@ def test_explore_batch_builder_needs_only_start_and_limit() -> None:
     result = builders["explore"](context)
 
     assert result["artifact"]["items"] == []
-    assert result["_checkpoint"] == {"cursor": 12, "total": 1080, "complete": False}
+    assert result["_checkpoint"] == {"cursor": 12, "total": 390, "complete": False}
 
 
 def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:
@@ -68,7 +70,7 @@ def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:
     }
 
 
-def test_explore_builder_keeps_period_groups_cumulative() -> None:
+def test_explore_builder_stores_each_today_road_once() -> None:
     history = [
         {"period": str(15 - index), "numbers": ["01", "02", "03", "04", "05"]}
         for index in range(15)
@@ -85,23 +87,11 @@ def test_explore_builder_keeps_period_groups_cumulative() -> None:
         }]}
 
     artifact = build_explore_artifact("今彩539", "13", history, runner)
-    counts = {
-        date_offset: {
-            period: sum(
-                item["exploreDateOffset"] == date_offset
-                and item["explorePeriods"] == period
-                for item in artifact["items"]
-            )
-            for period in (2, 7, 13)
-        }
-        for date_offset in (0, 1, 2)
-    }
-
-    assert counts == {
-        0: {2: 60, 7: 210, 13: 390},
-        1: {2: 60, 7: 210, 13: 390},
-        2: {2: 60, 7: 210, 13: 390},
-    }
+    assert len(artifact["items"]) == 390
+    assert len({item["id"] for item in artifact["items"]}) == 390
+    assert {item["exploreDateOffset"] for item in artifact["items"]} == {0}
+    assert {item["lockedSourceIndex"] for item in artifact["items"]} == set(range(13))
+    assert all("explorePeriods" not in item for item in artifact["items"])
 
 
 def test_concrete_status_builder_uses_completed_explore_artifact() -> None:

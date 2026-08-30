@@ -56,8 +56,8 @@ def _source_rules(artifact: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _same_search(left: dict[str, Any], right: dict[str, Any]) -> bool:
     keys = (
-        "number", "lockedPosition", "predictionDistance", "numberOrder", "explorePeriods",
-        "exploreDateOffset", "lockedSourceIndex", "lockedSourcePeriod",
+        "number", "lockedPosition", "predictionDistance", "numberOrder", "exploreDateOffset",
+        "lockedSourceIndex", "lockedSourcePeriod",
     )
     return all(left.get(key) == right.get(key) for key in keys)
 
@@ -135,7 +135,7 @@ def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dic
                 "predictionDistance": row["predictionDistance"], "consecutive": consecutive,
                 "highestStreak": result["groupCount"], "predictionNumbers": result["predictionNumbers"],
                 "roadType": "複合", "hitCondition": "準5+（鎖定2碼）", "numberOrder": row["numberOrder"],
-                "explorePeriods": row["explorePeriods"], "exploreDateOffset": row["exploreDateOffset"],
+                "explorePeriods": 13, "exploreDateOffset": row["exploreDateOffset"],
                 "ruleIds": [left["rule"]["id"], right["rule"]["id"]],
             }
             for optional in ("lockedSourceIndex", "lockedSourcePeriod"):

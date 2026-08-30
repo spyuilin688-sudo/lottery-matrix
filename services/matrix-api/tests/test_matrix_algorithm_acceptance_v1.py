@@ -477,6 +477,17 @@ def test_e_23_zero_addition_from_non_locked_reference_is_not_drag() -> None:
     assert set(key for key in group["candidateMap"] if key.endswith(":0")) == {"加減:0"}
 
 
+@pytest.mark.parametrize("algorithm_type", ["加減", "拖牌"])
+@pytest.mark.parametrize("maximum", [39, 49])
+def test_e_23_addition_and_drag_both_accept_and_display_zero(
+    algorithm_type: str,
+    maximum: int,
+) -> None:
+    assert _candidate_rule(algorithm_type, 7, 7, maximum) == 0
+    assert apply_explore_rule(algorithm_type, 7, 0, maximum) == 7
+    assert explore._rule_label(algorithm_type, 0) == "+0"
+
+
 def test_e_24_ready4_locked_one_number_allows_one_rule_only() -> None:
     options = automatic_options(hitCondition="準4+（鎖定1碼）")
     options.pop("ruleCount")
@@ -525,19 +536,19 @@ def test_e_26_locked_one_code_starts_only_from_b_c_intersection() -> None:
     assert found["sets"] == []
 
 
-def test_e_26_locked_two_code_candidates_never_enter_from_d_or_later() -> None:
+def test_e_26_locked_two_code_can_add_a_single_middle_value_after_common_b_c_value() -> None:
     groups = [
         {"candidateMap": {"加減:1": [1]}},
         {"candidateMap": {"加減:1": [1]}},
         {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
+        {"candidateMap": {"加減:1": [1]}},
+        {"candidateMap": {"加減:1": [1]}},
     ]
 
     found = explore._highest_rule_sets(groups, 2)
 
-    assert found["highest"] == 0
-    assert found["sets"] == []
+    assert found["highest"] == 5
+    assert found["sets"] == [["加減:1", "加減:2"]]
 
 
 def test_e_26_locked_two_code_pool_can_extend_disjoint_b_c_values() -> None:
@@ -569,20 +580,48 @@ def test_e_26_locked_two_code_values_are_sorted_numerically() -> None:
     assert found["sets"] == [["加減:2", "加減:10"]]
 
 
-def test_e_26_three_values_at_same_longest_streak_are_invalid_before_tie_break() -> None:
+@pytest.mark.parametrize("algorithm_type", ["加減", "合值", "拖牌"])
+def test_e_26_more_than_two_intermediate_pairs_can_finish_as_two_valid_results(
+    algorithm_type: str,
+) -> None:
+    key = lambda value: f"{algorithm_type}:{value}"
     groups = [
-        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-        {"candidateMap": {"加減:1": [1], "加減:3": [3]}},
-        {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
-        {"candidateMap": {"加減:1": [1], "加減:2": [2]}},
-        {"candidateMap": {"加減:1": [1], "加減:2": [2], "加減:3": [3]}},
+        {"candidateMap": {key(1): [1], key(2): [2], key(4): [4]}},
+        {"candidateMap": {key(3): [3]}},
+        {"candidateMap": {key(1): [1], key(2): [2]}},
+        {"candidateMap": {key(3): [3]}},
+        {"candidateMap": {key(1): [1], key(2): [2]}},
     ]
 
     found = explore._highest_rule_sets(groups, 2)
 
     assert found["highest"] == 5
+    assert found["sets"] == [[key(1), key(3)], [key(2), key(3)]]
+    assert found["invalidMultipleRules"] is False
+
+
+@pytest.mark.parametrize("algorithm_type", ["加減", "合值", "拖牌"])
+def test_e_26_three_final_pairs_at_same_longest_streak_invalidate_whole_road(
+    algorithm_type: str,
+) -> None:
+    key = lambda value: f"{algorithm_type}:{value}"
+    groups = [
+        {"candidateMap": {key(1): [1], key(2): [2], key(4): [4]}},
+        {"candidateMap": {key(3): [3]}},
+        {"candidateMap": {key(1): [1], key(2): [2], key(4): [4]}},
+        {"candidateMap": {key(3): [3]}},
+        {"candidateMap": {key(1): [1], key(2): [2], key(4): [4]}},
+    ]
+
+    found = explore._highest_rule_sets(groups, 2)
+
+    assert found["highest"] == 5
+    assert found["sets"] == [
+        [key(1), key(3)],
+        [key(2), key(3)],
+        [key(3), key(4)],
+    ]
     assert found["invalidMultipleRules"] is True
-    assert found["conflictingRules"] == ["加減:1", "加減:2", "加減:3"]
 
 
 def test_e_26_each_locked_one_code_rule_is_a_separate_result(

@@ -1187,12 +1187,12 @@ export function MatrixExplorePage({
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
-  const [exploreDate, setExploreDate] = useState("本日 (最新)");
   const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
   const [searched, setSearched] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
   const [sameCode, setSameCode] = useState(true);
+  const [selectedPredictionNumber, setSelectedPredictionNumber] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
     defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
@@ -1282,10 +1282,12 @@ export function MatrixExplorePage({
   }, [exploreResponse, title, visibleResults]);
 
   const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
+  const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
 
   const loadExplore = async (
     nextFilters = selectedFilters,
     nextSameCode = sameCode,
+    nextPredictionNumber = selectedPredictionNumber,
   ) => {
     setExploreLoading(true);
     setExploreError(null);
@@ -1302,13 +1304,14 @@ export function MatrixExplorePage({
       const response = await fetchExploreList({
         lottery,
         numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
-        explorePeriods: period === "十三期" ? 13 : period === "七期" ? 7 : 2,
-        exploreDateOffset: exploreDate.includes("前日") ? 2 : exploreDate.includes("昨日") ? 1 : 0,
+        explorePeriods: selectedExplorePeriods,
+        exploreDateOffset: 0,
         exploreRange: exploreRange as "標準範圍" | "完整範圍",
         ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
         roadTypes: [roadType],
         selectedStreaks: nextFilters,
         sameCode: nextSameCode,
+        ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
       });
       setExploreResponse(response);
       setValidationById({});
@@ -1341,7 +1344,8 @@ export function MatrixExplorePage({
   const startExplore = () => {
     setSearched(true);
     setHistoryExpanded(false);
-    void loadExplore();
+    setSelectedPredictionNumber(null);
+    void loadExplore(selectedFilters, sameCode, null);
   };
 
   const toggleFilter = (value: ConsecutiveOption) => {
@@ -1356,7 +1360,15 @@ export function MatrixExplorePage({
   const toggleSameCode = () => {
     const next = !sameCode;
     setSameCode(next);
-    if (searched) void loadExplore(selectedFilters, next);
+    if (searched) void loadExplore(selectedFilters, next, selectedPredictionNumber);
+  };
+
+  const togglePredictionNumber = (number: string) => {
+    if (title !== "Matrix 探索") return;
+    const next = selectedPredictionNumber === number ? null : number;
+    setSelectedPredictionNumber(next);
+    setExpandedRoad(null);
+    void loadExplore(selectedFilters, sameCode, next);
   };
 
   const toggleRoad = (itemId: string) => {
@@ -1390,7 +1402,10 @@ export function MatrixExplorePage({
       lottery: exploreResponse.lottery,
       drawPeriod: exploreResponse.drawPeriod,
       analysisVersion: exploreResponse.analysisVersion,
-    }, itemId).then((response) => {
+    }, itemId, {
+      explorePeriods: selectedExplorePeriods,
+      exploreRange: exploreRange as "標準範圍" | "完整範圍",
+    }).then((response) => {
       setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
     }).catch(() => {
       setExploreError("Matrix API 讀取失敗");
@@ -1479,17 +1494,8 @@ export function MatrixExplorePage({
               <span className="advanced-setting-title">
                 <SettingLabelIcon type="date" />探索日期
               </span>
-              <div className="segmented three">
-                {["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"].map((value) => (
-                  <button
-                    type="button"
-                    key={value}
-                    data-selected={exploreDate === value}
-                    onClick={() => setExploreDate(value)}
-                  >
-                    {value}
-                  </button>
-                ))}
+              <div className="segmented one">
+                <span className="segmented-static" data-selected="true">本日 (最新)</span>
               </div>
             </label>
             <label>
@@ -1545,7 +1551,18 @@ export function MatrixExplorePage({
               <span>點選進行版路篩選</span>
             </header>
             <div className="result-summary">
-              {duplicateStats.map(({ number, count }) => (
+              {duplicateStats.map(({ number, count }) => title === "Matrix 探索" ? (
+                <button
+                  type="button"
+                  key={number}
+                  aria-label={`篩選預測號碼 ${number}，${count}次`}
+                  aria-pressed={selectedPredictionNumber === number}
+                  data-selected={selectedPredictionNumber === number}
+                  onClick={() => togglePredictionNumber(number)}
+                >
+                  <b>{number}</b><small>{count}次</small>
+                </button>
+              ) : (
                 <div key={number}><b>{number}</b><small>{count}次</small></div>
               ))}
             </div>

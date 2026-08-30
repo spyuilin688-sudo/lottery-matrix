@@ -14,7 +14,7 @@ from app.worker import run_scheduled_worker
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v5"
+CURRENT_VERSION = f"{PERIOD}:matrix-python-v6"
 LEGACY_VERSION = f"{PERIOD}:matrix-python-v3"
 
 
