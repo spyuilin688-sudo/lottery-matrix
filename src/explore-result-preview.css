@@ -168,13 +168,14 @@
 .explore-consecutive-filter-option {
   box-sizing: border-box;
   min-width: 0;
-  min-height: 24px;
+  height: 28px;
+  min-height: 28px;
   padding: 2px 3px;
   flex: 1 1 0;
-  border: 1px solid #5b472b;
-  border-radius: 6px;
-  color: #aab5c4;
-  background: #071018;
+  border: 1px solid rgba(120, 100, 70, .65);
+  border-radius: 10px;
+  color: #b9b5ae;
+  background: rgba(3, 11, 17, .35);
   font: inherit;
   font-size: clamp(8px, 2.56vw, 10px);
   font-weight: 700;
@@ -183,10 +184,10 @@
 }
 
 .explore-consecutive-filter-option[aria-pressed="true"] {
-  border-color: #58d3e6;
-  color: #f2f5f8;
-  background: rgba(88, 211, 230, .1);
-  box-shadow: none;
+  border-color: #d4a52f;
+  color: #f1c75a;
+  background: rgba(212, 165, 47, .1);
+  box-shadow: 0 0 3px rgba(212, 165, 47, .16);
 }
 
 .explore-result-preview-screen .road-results .road-result-row.explore-result-row {
@@ -277,7 +278,7 @@
 .explore-validation-summary {
   min-height: 0;
   margin: 0;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border: 1px solid rgba(223, 176, 68, .42);
   border-radius: 8px;
   color: #f2f5f8;
@@ -299,7 +300,7 @@
 
 .explore-validation-group {
   display: grid;
-  grid-template-columns: clamp(44px, 12.31vw, 48px) minmax(0, 1fr) clamp(110px, 32.82vw, 128px);
+  grid-template-columns: clamp(48px, 13.33vw, 52px) minmax(0, 1fr) 110px;
   column-gap: 2px;
   min-height: 0;
   margin: 0;
@@ -321,7 +322,7 @@
   grid-auto-rows: minmax(var(--explore-validation-row-min-height), auto);
   gap: 0;
   min-width: 0;
-  border: 1px solid rgba(91, 126, 169, .18);
+  border: 1px solid rgba(91, 126, 169, .42);
   border-radius: 6px;
   background: rgba(8, 15, 27, .82);
   overflow: hidden;
@@ -350,7 +351,7 @@
 .explore-validation-number-row:nth-child(n + 2),
 .explore-validation-issue:nth-child(n + 2),
 .explore-validation-formula-row:nth-child(n + 2) {
-  border-top: 1px solid rgba(91, 126, 169, .18);
+  border-top: 1px solid rgba(91, 126, 169, .34);
 }
 
 .explore-validation-issue {
@@ -512,6 +513,7 @@
 .explore-validation-prediction {
   box-sizing: border-box;
   display: flex;
+  margin-bottom: 8px;
   align-items: center;
   justify-content: center;
   gap: 12px;
