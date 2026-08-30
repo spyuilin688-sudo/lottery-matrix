@@ -231,6 +231,34 @@ describe('createPushNotifications', () => {
     });
   });
 
+  it('preserves an allow-listed Edge startup diagnostic stage', async () => {
+    const fetcher = vi.fn(async () => response({
+      error: { code: 'PUSH_STARTUP_FAILED', stage: 'WEB_PUSH_SUBJECT' },
+    }, 500));
+    const api = createPushNotifications(config, fetcher);
+
+    await expect(api.sendMemberTestPush(USER_ONE, 'admin@test')).rejects.toMatchObject({
+      code: 'PUSH_STARTUP_FAILED_WEB_PUSH_SUBJECT',
+      message: 'PUSH_STARTUP_FAILED_WEB_PUSH_SUBJECT',
+      statusCode: 500,
+    });
+  });
+
+  it('does not expose a non-allow-listed Edge startup diagnostic stage', async () => {
+    const fetcher = vi.fn(async () => response({
+      error: { code: 'PUSH_STARTUP_FAILED', stage: 'service-role-secret' },
+    }, 500));
+    const api = createPushNotifications(config, fetcher);
+
+    const failure = await api.sendMemberTestPush(USER_ONE, 'admin@test').catch((error) => error);
+    expect(failure).toMatchObject({
+      code: 'UNAVAILABLE',
+      message: 'Supabase is temporarily unavailable',
+      statusCode: 503,
+    });
+    expect(String(failure)).not.toContain('service-role-secret');
+  });
+
   it.each([
     ['an unexpected Edge 5xx', vi.fn(async () => response({ error: 'private detail' }, 500))],
     ['an Edge network failure', vi.fn(async () => { throw new Error('private network detail'); })],
