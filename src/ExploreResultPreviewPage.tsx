@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDownIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
 import "./explore-result-preview.css";
 
@@ -98,8 +98,12 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
       </div>
 
       <footer className="explore-validation-prediction">
-        <strong>本期預測</strong>
-        <b className="explore-validation-numeric-text">{result.finalPrediction}</b>
+        <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
+        <span className="explore-validation-prediction-content">
+          <strong>本期預測</strong>
+          <b className="explore-validation-numeric-text">{result.finalPrediction}</b>
+        </span>
+        <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
       </footer>
     </section>
   );

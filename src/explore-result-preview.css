@@ -363,9 +363,9 @@
   padding: 3px 4px;
   color: #bac5d2;
   font-family: Roboto, Arial, sans-serif;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: .02em;
+  letter-spacing: -.06em;
   white-space: nowrap;
 }
 
@@ -512,17 +512,40 @@
 
 .explore-validation-prediction {
   box-sizing: border-box;
-  display: flex;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) 14px;
   margin-bottom: 8px;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  column-gap: 8px;
   min-height: 0;
   padding: 4px 8px;
-  border: 1px solid rgba(223, 176, 68, .42);
+  border: 1px solid #e6b76a;
   border-radius: 8px;
-  background: rgba(10, 14, 24, .92);
+  background: rgba(230, 183, 106, .14);
   white-space: nowrap;
+}
+
+.explore-validation-prediction-content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 12px;
+}
+
+.explore-validation-prediction-arrow {
+  width: 14px;
+  height: 14px;
+  color: #e6b76a;
+}
+
+.explore-validation-prediction-arrow--left {
+  justify-self: start;
+}
+
+.explore-validation-prediction-arrow--right {
+  justify-self: end;
 }
 
 .explore-result-preview-screen .road-results .explore-validation-prediction strong {
@@ -531,7 +554,7 @@
 }
 
 .explore-validation-prediction b {
-  color: #58d3e6;
+  color: #e6b76a;
   font-size: 15px;
   letter-spacing: .06em;
 }

@@ -139,8 +139,8 @@ describe("production member shell", () => {
     expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
     expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
     expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
-    expect(getComputedStyle(prediction!).borderTopColor).toBe("rgba(223, 176, 68, 0.42)");
+    expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
+    expect(getComputedStyle(prediction!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(issues!).borderTopColor).toBe("rgba(91, 126, 169, 0.42)");
     expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgba(91, 126, 169, 0.34)");
     expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
@@ -295,7 +295,7 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*9px[^}]*font-weight:\s*700[^}]*letter-spacing:\s*-\.06em/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*6px 8px/s);
   });
@@ -438,11 +438,23 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-option\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*#d4a52f[^}]*color:\s*#f1c75a[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.1\)/s);
   });
 
-  it("keeps validation number states square and gives the prediction the reference summary surface", () => {
+  it("keeps validation number states square and gives the prediction the transparent gold-orange reference surface", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
-    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid rgba\(223,\s*176,\s*68,\s*\.42\)[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(10,\s*14,\s*24,\s*\.92\)/s);
+    expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #e6b76a[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(230,\s*183,\s*106,\s*\.14\)/s);
+    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*color:\s*#e6b76a/s);
+  });
+
+  it("frames the current prediction with decorative double-arrow icons", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-04" }));
+
+    const prediction = document.querySelector(".explore-validation-prediction");
+    expect(prediction?.querySelector(".explore-validation-prediction-arrow--left")).toHaveAttribute("aria-hidden", "true");
+    expect(prediction?.querySelector(".explore-validation-prediction-arrow--right")).toHaveAttribute("aria-hidden", "true");
+    expect(prediction?.querySelector(".explore-validation-prediction-content")).toHaveTextContent("本期預測15、27");
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {
@@ -461,7 +473,7 @@ describe("production member shell", () => {
     }
   });
 
-  it("keeps issue numbers at 8px and 700 when the shared reference rule loads later", () => {
+  it("keeps issue numbers at 9px and 700 when the shared reference rule loads later", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const previewStyle = document.createElement("style");
     previewStyle.textContent = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
@@ -474,7 +486,7 @@ describe("production member shell", () => {
 
     const issue = document.querySelector(".explore-validation-issue");
     expect(issue).not.toBeNull();
-    expect(getComputedStyle(issue!).fontSize).toBe("8px");
+    expect(getComputedStyle(issue!).fontSize).toBe("9px");
     expect(getComputedStyle(issue!).fontWeight).toBe("700");
 
     previewStyle.remove();
