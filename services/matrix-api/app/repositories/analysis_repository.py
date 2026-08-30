@@ -529,9 +529,9 @@ class SupabaseAnalysisRepository:
     def _iter_artifact_chunks(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
     ) -> Iterator[dict[str, Any]]:
-        offset = 0
+        last_chunk_index: int | None = None
         while True:
-            response = (
+            query = (
                 self.client.table("matrix_analysis_artifact_chunks")
                 .select("chunk_index,cursor_start,cursor_end,payload")
                 .eq("lottery", lottery)
@@ -539,14 +539,19 @@ class SupabaseAnalysisRepository:
                 .eq("analysis_version", analysis_version)
                 .eq("kind", kind)
                 .order("chunk_index")
-                .range(offset, offset + ARTIFACT_CHUNK_PAGE_SIZE - 1)
-                .execute()
+                .limit(ARTIFACT_CHUNK_PAGE_SIZE)
             )
+            if last_chunk_index is not None:
+                query = query.gt("chunk_index", last_chunk_index)
+            response = query.execute()
             page = [dict(chunk) for chunk in response.data]
             yield from page
             if len(page) < ARTIFACT_CHUNK_PAGE_SIZE:
                 break
-            offset += len(page)
+            next_chunk_index = int(page[-1]["chunk_index"])
+            if last_chunk_index is not None and next_chunk_index <= last_chunk_index:
+                raise ValueError("ANALYSIS_CHUNK_PAGINATION_STALLED")
+            last_chunk_index = next_chunk_index
 
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
         return list(self._iter_artifact_chunks(
