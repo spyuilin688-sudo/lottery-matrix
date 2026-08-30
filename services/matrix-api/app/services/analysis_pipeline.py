@@ -17,7 +17,7 @@ class AnalysisPipeline:
         self,
         repository: AnalysisRepository,
         builders: Mapping[str, ArtifactBuilder],
-        analysis_version: str = "matrix-python-v1",
+        analysis_version: str,
         explore_batch_size: int = 10,
         tiangong_batch_size: int = 1,
     ) -> None:

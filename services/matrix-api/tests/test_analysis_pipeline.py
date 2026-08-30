@@ -82,6 +82,14 @@ def checkpoint_builders(total: int) -> dict:
     }
 
 
+def test_pipeline_requires_an_explicit_analysis_version() -> None:
+    repository = InMemoryAnalysisRepository()
+    builders = checkpoint_builders(total=1)
+
+    with pytest.raises(TypeError):
+        AnalysisPipeline(repository, builders)
+
+
 def test_pipeline_publishes_only_after_all_four_artifacts_finish() -> None:
     repository = InMemoryAnalysisRepository()
     calls: list[str] = []
@@ -108,7 +116,7 @@ def test_later_builders_can_consume_earlier_artifacts() -> None:
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
-    AnalysisPipeline(repository, builders).run(DRAW, history=[])
+    AnalysisPipeline(repository, builders, analysis_version="test-version").run(DRAW, history=[])
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {"source": ["road"]}
 
 
@@ -126,7 +134,7 @@ def test_pipeline_failure_marks_run_failed_and_keeps_partial_output_private() ->
     }
 
     try:
-        AnalysisPipeline(repository, builders).run(DRAW, history=[])
+        AnalysisPipeline(repository, builders, analysis_version="test-version").run(DRAW, history=[])
     except RuntimeError:
         pass
 
@@ -161,7 +169,7 @@ def test_pipeline_rejects_incomplete_or_noncanonical_draw_before_writing() -> No
     invalid = {**DRAW, "numbers": ["1", "02", "03", "04", "05"]}
 
     with pytest.raises(ValueError, match="DRAW_NUMBERS_INVALID"):
-        AnalysisPipeline(repository, builders).run(invalid, history=[])
+        AnalysisPipeline(repository, builders, analysis_version="test-version").run(invalid, history=[])
 
     assert repository.draws == {}
 
@@ -189,7 +197,12 @@ def test_pipeline_resumes_checkpointed_explore_batch() -> None:
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
-    pipeline = AnalysisPipeline(repository, builders, explore_batch_size=2)
+    pipeline = AnalysisPipeline(
+        repository,
+        builders,
+        analysis_version="test-version",
+        explore_batch_size=2,
+    )
 
     first = pipeline.run(DRAW, history=[])
     second = pipeline.run(DRAW, history=[])
