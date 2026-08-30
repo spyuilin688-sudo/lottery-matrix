@@ -1,16 +1,23 @@
 import { disablePushSubscription, fetchPushSubscriptionStatus, savePushSubscription } from './member-api';
 
 export type PushStatus = { supported: boolean; permission: NotificationPermission; enabled: boolean };
+export type PushSubscriptionFailureStage =
+  | 'service-worker-registration'
+  | 'browser-subscription'
+  | 'supabase-save';
 type PushContext = { pushManager: PushManager };
 const SERVICE_WORKER_PATH = '/push-service-worker.js';
 const REGISTRATION_TIMEOUT_MS = 10_000;
 
 export class PushSubscriptionError extends Error {
   readonly status: PushStatus;
-  constructor(status: PushStatus) {
+  readonly stage?: PushSubscriptionFailureStage;
+
+  constructor(status: PushStatus, stage?: PushSubscriptionFailureStage) {
     super('PUSH_SUBSCRIPTION_FAILED');
     this.name = 'PushSubscriptionError';
     this.status = status;
+    this.stage = stage;
   }
 }
 
@@ -57,8 +64,12 @@ function unsupportedStatus(): PushStatus {
   return { supported: false, permission: 'default', enabled: false };
 }
 
-function failure(permission: NotificationPermission, enabled = false): never {
-  throw new PushSubscriptionError({ supported: true, permission, enabled });
+function failure(
+  permission: NotificationPermission,
+  enabled = false,
+  stage?: PushSubscriptionFailureStage,
+): never {
+  throw new PushSubscriptionError({ supported: true, permission, enabled }, stage);
 }
 
 function urlBase64ToUint8Array(value: string) {
@@ -98,19 +109,40 @@ export function enablePushNotifications(publicKey: string, authenticated = false
     let resolvedPermission = permission;
     try {
       resolvedPermission = await permissionRequest;
-      if (resolvedPermission !== 'granted') return { supported: true, permission: resolvedPermission, enabled: false };
-      const context = await getPushContext();
-      if (!context) return failure(resolvedPermission);
-      const subscription = await context.pushManager.getSubscription() ?? await context.pushManager.subscribe({
+    } catch {
+      return failure(resolvedPermission);
+    }
+    if (resolvedPermission !== 'granted') return { supported: true, permission: resolvedPermission, enabled: false };
+
+    let registration: ServiceWorkerRegistration;
+    try {
+      registration = await registerPushServiceWorker();
+    } catch {
+      return failure(resolvedPermission, false, 'service-worker-registration');
+    }
+
+    const pushManager = registration?.pushManager;
+    if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') {
+      return failure(resolvedPermission, false, 'browser-subscription');
+    }
+
+    let input: ReturnType<typeof subscriptionInput>;
+    try {
+      const subscription = await pushManager.getSubscription() ?? await pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
-      const input = subscriptionInput(subscription);
-      if (!input) return failure(resolvedPermission);
+      input = subscriptionInput(subscription);
+    } catch {
+      return failure(resolvedPermission, false, 'browser-subscription');
+    }
+    if (!input) return failure(resolvedPermission, false, 'browser-subscription');
+
+    try {
       const { enabled } = await savePushSubscription(input);
       return { supported: true, permission: resolvedPermission, enabled };
     } catch {
-      return failure(resolvedPermission);
+      return failure(resolvedPermission, false, 'supabase-save');
     }
   })();
 }

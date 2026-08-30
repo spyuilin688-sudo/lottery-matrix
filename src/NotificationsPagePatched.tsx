@@ -108,7 +108,18 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const [expandedKey, setExpandedKey] = useState<SettingKey | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<MemberNotificationSettings>(createDefaultNotificationSettings);
   const [pushStatus, setPushStatus] = useState<PushStatus>({ supported: true, permission: "default", enabled: false });
-  const [pushNotice, setPushNotice] = useState<"idle" | "enabled" | "denied" | "unsupported" | "unauthenticated" | "enable-failed" | "disable-failed">("idle");
+  const [pushNotice, setPushNotice] = useState<
+    "idle"
+    | "enabled"
+    | "denied"
+    | "unsupported"
+    | "unauthenticated"
+    | "enable-failed"
+    | "disable-failed"
+    | "service-worker-registration"
+    | "browser-subscription"
+    | "supabase-save"
+  >("idle");
   const [pushAuthenticated, setPushAuthenticated] = useState<boolean | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const { settings, selectedOptions, betTimes, statusOptions } = notificationSettings;
@@ -272,7 +283,13 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       if (!pushScreenActive.current || operationRevision !== pushOperationRevision.current) return;
       if (error instanceof PushSubscriptionError) setPushStatus(error.status);
       else setPushStatus((current) => ({ ...current, enabled: false }));
-      setPushNotice(isDisabling ? "disable-failed" : "enable-failed");
+      setPushNotice(
+        isDisabling
+          ? "disable-failed"
+          : error instanceof PushSubscriptionError && error.stage
+            ? error.stage
+            : "enable-failed",
+      );
     } finally {
       if (pushScreenActive.current && operationRevision === pushOperationRevision.current) setPushBusy(false);
     }
@@ -283,6 +300,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     : pushNotice === "enabled" ? "手機通知已開啟"
       : pushNotice === "unsupported" ? "此手機不支援通知"
         : pushNotice === "unauthenticated" ? "請先使用 LINE 登入"
+        : pushNotice === "service-worker-registration" ? "推播程式註冊失敗"
+          : pushNotice === "browser-subscription" ? "手機瀏覽器建立訂閱失敗"
+            : pushNotice === "supabase-save" ? "Supabase 儲存失敗"
         : pushNotice === "enable-failed" ? "手機通知開啟失敗，請稍後再試"
           : pushNotice === "disable-failed" ? "手機通知關閉失敗，請稍後再試"
           : "手機通知未開啟";
