@@ -349,6 +349,31 @@ describe("production member shell", () => {
     productionStyle.remove();
   });
 
+  it("keeps the approved unexpanded result hierarchy after shared styles load", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    const productionStyle = mountPreviewProductionStyles();
+    const previewCss = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    render(<App />);
+
+    const filterButton = screen.getByRole("button", { name: "連準篩選" });
+    const resultCount = document.querySelector(".result-count .numeric-text");
+    const resultNumber = document.querySelector(".explore-result-row .result-number");
+    const tableHead = document.querySelector(".road-results-head");
+    const tableHeadLabel = document.querySelector(".road-results-head > span");
+
+    expect(getComputedStyle(filterButton).borderTopColor).toBe("rgba(212, 165, 47, 0.72)");
+    expect(getComputedStyle(filterButton).color).toBe("rgb(216, 169, 62)");
+    expect(getComputedStyle(resultCount!).color).toBe("rgb(88, 211, 230)");
+    expect(getComputedStyle(resultNumber!).color).toBe("rgb(242, 245, 248)");
+    expect(getComputedStyle(tableHead!).paddingTop).toBe("8px");
+    expect(getComputedStyle(tableHeadLabel!).fontSize).toBe("12px");
+    expect(getComputedStyle(tableHeadLabel!).fontWeight).toBe("800");
+    expect(previewCss).toMatch(/\.explore-result-preview-screen\.matrix-explore-main-screen \.road-results-head > span\s*\{[^}]*font-size:\s*12px;[^}]*font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/s);
+
+    productionStyle.remove();
+  });
+
   it("renders the expanded summary consecutive tag with the reference dark surface", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
