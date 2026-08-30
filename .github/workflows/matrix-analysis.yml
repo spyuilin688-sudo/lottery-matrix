@@ -2,6 +2,7 @@ name: Matrix scheduled analysis
 
 on:
   workflow_dispatch:
+  # Changing this workflow is the explicit one-shot recovery trigger.
   push:
     branches: [main]
     paths:
@@ -23,7 +24,7 @@ jobs:
           - id: fantasy5
             lottery: 天天樂
           - id: marksix
-            lottery: 六合彩
+            lottery: 香港六合彩
           - id: lotto649
             lottery: 大樂透
     concurrency:
