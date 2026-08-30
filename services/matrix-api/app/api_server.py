@@ -8,6 +8,7 @@ from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
+from app.schedule import next_lottery_call_time
 from app.settings import load_settings
 
 
@@ -243,7 +244,13 @@ def handle_api_request(
         if method == "GET" and path.startswith(latest_prefix):
             lottery = _parse_lottery(unquote(path[len(latest_prefix):]))
             items = _history(repository, lottery, 1)
-            return 200, {"item": items[0] if items else None}
+            item = items[0] if items else None
+            if item is not None:
+                item = {
+                    **item,
+                    "nextDrawAt": next_lottery_call_time(lottery).isoformat(),
+                }
+            return 200, {"item": item}
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))
             query = parse_qs(parsed.query)
