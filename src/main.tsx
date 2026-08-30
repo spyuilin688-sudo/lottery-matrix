@@ -11,7 +11,6 @@ import "./brand-header-unify.css";
 import "./homepage-repair.css";
 import "./responsive-feature-pages.css";
 import "./tongxing-compact.css";
-import "./admin/admin.css";
 import "./matrix-explore-spacing.css";
 import "./feature-page-adjustments.css";
 import "./number-reference-visual-refinement.css";
@@ -21,9 +20,7 @@ import { postMemberOnline } from "./member-online-api";
 
 installGlobalInputBehavior();
 
-if (!window.location.pathname.startsWith("/admin")) {
-  startMemberOnlineTracking(postMemberOnline);
-}
+startMemberOnlineTracking(postMemberOnline);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

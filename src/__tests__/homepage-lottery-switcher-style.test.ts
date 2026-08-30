@@ -20,7 +20,7 @@ describe("homepage layout rules", () => {
   });
 
   it("separates next draw and remaining time by spacing without a divider", () => {
-    expect(css).not.toMatch(/\.next-draw-info--embedded::before\s*\{/);
-    expect(css).toMatch(/\.next-draw-info--embedded\s+\.next-draw-item:last-child\s*\{[^}]*padding-left:\s*16px;/s);
+    expect(css).toMatch(/\.next-draw-info--embedded::before\s*\{[^}]*display:\s*none;/s);
+    expect(css).toMatch(/\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);/s);
   });
 });

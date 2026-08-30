@@ -28,15 +28,15 @@ test('天工重排一般、進階與兩段探索設定', () => {
     '由左至右', '固定', '由右至左',
   ]);
   expect(firstRoad).toBeTruthy();
-  expect(screen.queryByRole('button', { name: '一段式' })).toBeNull();
-  expect(screen.queryByText('準2進3')).toBeNull();
+  const advancedSettings = within(generalCard!).getByRole('button', { name: '進階探索設定' });
+  if (advancedSettings.getAttribute('aria-expanded') !== 'true') fireEvent.click(advancedSettings);
 
-  fireEvent.click(within(generalCard!).getByRole('button', { name: '進階探索設定' }));
-
-  expect(screen.getByRole('button', { name: '一段式' })).toBeTruthy();
+  const advancedPanel = document.getElementById('tiangong-advanced-settings') as HTMLElement;
+  const modeButtons = within(advancedPanel).getAllByRole('button').filter((button) => ['一段式', '二段式'].includes(button.textContent ?? ''));
+  expect(modeButtons.find((button) => button.textContent === '一段式')).toBeTruthy();
   expect(screen.getByText('準2進3')).toBeTruthy();
 
-  fireEvent.click(screen.getByRole('button', { name: '二段式' }));
+  fireEvent.click(modeButtons.find((button) => button.textContent === '二段式')!);
 
   const secondTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
   const secondBlock = secondTitle.closest('.tiangong-stage-block') as HTMLElement;

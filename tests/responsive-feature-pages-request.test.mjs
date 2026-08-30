@@ -49,10 +49,7 @@ test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8
     const bodies = ruleBodies(responsiveCss, selector);
     assert.equal(bodies.length, 1);
     assert.match(bodies[0], /width:\s*100%;/);
-    const expectedBottom = selector.source.includes("tongxing-screen")
-      ? /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/
-      : /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\);/;
-    assert.match(bodies[0], expectedBottom);
+    assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/);
     assert.match(bodies[0], /row-gap:\s*var\(--tool-section-gap\);/);
   }
   const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner$/);

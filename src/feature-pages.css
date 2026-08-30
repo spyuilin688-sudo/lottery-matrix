@@ -2168,6 +2168,53 @@ opacity: .30; box-shadow: none;
   font-size: 13px;
   font-weight: 700;
 }
+
+.manual-transfer-screen .detail-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.manual-transfer-screen .detail-card dl > div {
+  display: grid;
+  grid-template-columns: minmax(84px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.manual-transfer-screen .detail-card dt { color: #a9a39a; }
+.manual-transfer-screen .detail-card dd { min-width: 0; margin: 0; color: #f0cc72; }
+.manual-transfer-bank-row {
+  display: grid;
+  grid-template-columns: minmax(84px, auto) minmax(0, 1fr) auto !important;
+  align-items: center;
+  gap: 8px;
+}
+.manual-transfer-account { min-width: 0; overflow-wrap: anywhere; }
+.manual-transfer-copy,
+.manual-transfer-submit { min-height: 44px; }
+.manual-transfer-copy {
+  padding: 0 12px;
+  border: 1px solid rgba(201, 154, 46, .72);
+  border-radius: 8px;
+  background: #060d12;
+  color: #e6c56a;
+}
+.manual-transfer-last-five {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 8px 0;
+}
+.manual-transfer-pending { display: flex; gap: 8px; align-items: center; }
+.payment-history-list { display: grid; gap: 8px; }
+.payment-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  padding: 10px;
+  border: 1px solid rgba(201, 154, 46, .38);
+  border-radius: 8px;
+}
+.payment-history-item time { color: #a9a39a; font-size: 12px; }
 .referral-input-card .code-entry-block,
 .activation-card .code-entry-block {
   gap: 10px;

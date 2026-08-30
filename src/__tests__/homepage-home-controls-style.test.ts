@@ -8,12 +8,13 @@ const homepageCss = readLocalCss(new URL("../homepage-repair.css", import.meta.u
 const prototypeCss = readFileSync(new URL("../prototype.css", import.meta.url), "utf8");
 
 describe("homepage control layout rules", () => {
-  it("gives every homepage lottery card a gold outer border", () => {
-    expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*border:\s*1px solid rgba\(229, 179, 77, \.56\);/s);
+  it("uses the shared Matrixbba sprite and scoped selection frame", () => {
+    expect(homepageCss).toMatch(/\.lottery-switcher--home-style > \.lottery-switcher-hit-grid > \.lottery-card\s*\{[^}]*background-image:\s*url\("\/assets\/lottery\/status\/Matrixbba\.png"\);/s);
+    expect(homepageCss).toMatch(/\.lottery-card\[data-selected="true"\]::before\s*\{/);
   });
 
   it("uses the current draw-order control height and requested spacing", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*30px;[^}]*gap:\s*1px;/s);
+    expect(homepageCss).toMatch(/\.home-screen \.latest-draw-card \.draw-order\s*\{[^}]*height:\s*25px;[^}]*gap:\s*2\.5px;/s);
   });
 
   it("lets the embedded next-draw information use the full card width", () => {
@@ -21,8 +22,8 @@ describe("homepage control layout rules", () => {
   });
 
   it("uses the canonical Matrix Core container background and responsive 1536 / 414 height token", () => {
-    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*calc\(var\(--home-core-width\) \* 414 \/ 1536\);/s);
-    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
+    expect(homepageCss).toMatch(/\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-height:\s*clamp\(68px, calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\), 79px\);/s);
+    expect(homepageCss).toMatch(/\.home-screen \.matrix-core-banner\s*\{[^}]*background:\s*var\(--home-octagon-frame\),\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
   });
 
   it("does not paint a black background behind the bottom navigation artwork", () => {

@@ -100,8 +100,8 @@ describe("NotificationsPagePatched", () => {
 
     fireEvent.click(within(betRow!).getByRole("button", { name: /設定選項/ }));
 
-    expect(within(betRow!).getByText("提醒 1")).toBeInTheDocument();
-    expect(within(betRow!).getByText("提醒 2")).toBeInTheDocument();
+    expect(within(betRow!).getByLabelText("第1組提醒時間")).toBeInTheDocument();
+    expect(within(betRow!).getByLabelText("第2組提醒時間")).toBeInTheDocument();
 
     ["今彩539", "天天樂", "六合彩", "大樂透"].forEach((lottery) => {
       expect(within(betRow!).getByText(lottery)).toBeInTheDocument();

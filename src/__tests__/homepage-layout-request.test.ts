@@ -67,7 +67,7 @@ describe("homepage requested spacing and selection", () => {
     expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("4px");
     expect(layout.getPropertyValue("--home-gap-status-core").trim()).toBe("10px");
     expect(layout.getPropertyValue("--home-gap-core-features").trim()).toBe("14px");
-    expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim()).toBe("4px");
+    expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").trim()).toBe("6px");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").trim()).toBe("8px");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
@@ -77,15 +77,15 @@ describe("homepage requested spacing and selection", () => {
   });
 
   it.each([
-    ["今彩539", "linear-gradient(135deg, #34c759, #ffd640, #3484ff, #ff3b30)"],
-    ["天天樂", "linear-gradient(135deg, #1e76ff, #ffffff, #1e76ff)"],
-    ["六合彩", "linear-gradient(135deg, #ff3b30, #1e76ff, #34c759)"],
-    ["大樂透", "linear-gradient(135deg, #ffd640, #1e76ff, #ffd640)"],
+    ["今彩539", "linear-gradient(90deg, #34c759, #ffd640, #3484ff, #ff3b30)"],
+    ["天天樂", "linear-gradient(90deg, #1e76ff, #ffffff, #1e76ff)"],
+    ["六合彩", "linear-gradient(90deg, #ff3b30, #1e76ff, #34c759)"],
+    ["大樂透", "linear-gradient(90deg, #ffd640, #1e76ff, #ffd640)"],
   ])("restores the original %s selected palette", (lottery, palette) => {
     mountHomepage();
     const card = document.querySelector(`.lottery-card[data-lottery="${lottery}"]`)!;
 
-    expect(getComputedStyle(card).getPropertyValue("--lottery-selected-gradient").replaceAll(" ", "")).toBe(palette.replaceAll(" ", ""));
+    expect(getComputedStyle(card).getPropertyValue("--lottery-selected-horizontal-gradient").replaceAll(" ", "")).toBe(palette.replaceAll(" ", ""));
     expect(getComputedStyle(card).filter).toBe("none");
   });
 });

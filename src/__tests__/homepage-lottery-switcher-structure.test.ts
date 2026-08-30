@@ -5,8 +5,7 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(new URL("../Prototype.tsx", import.meta.url), "utf8");
 
 describe("homepage lottery switcher structure", () => {
-  it("uses the shared Matrixbba artwork as the only homepage switcher visual source", () => {
-    expect(source).toContain('lotterySwitcher: `${STATUS_ASSET_BASE}/Matrixbba.png`');
+  it("renders the shared LotterySwitcher as the only homepage switcher component", () => {
     expect(source).toContain('<LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />');
     expect(source).not.toContain('independentCards');
   });

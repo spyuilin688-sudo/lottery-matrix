@@ -39,10 +39,10 @@ describe("requested responsive layout refinement", () => {
 
     expect(getComputedStyle(document.querySelector(".lottery-switcher")!).paddingInline).toBe("4px");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).getPropertyValue("--layout-page-inline")).toBe("16px");
-    expect(getComputedStyle(document.querySelector(".latest-draw-card")!).width).toBe("100%");
-    expect(getComputedStyle(document.querySelector(".matrix-status-section")!).width).toBe("100%");
-    expect(getComputedStyle(document.querySelector(".home-bottom-group")!).getPropertyValue("--home-core-width")).toContain("32px");
-    expect(getComputedStyle(document.querySelector(".home-shortcut-row")!).width).toBe("calc(100% - 8px)");
+    expect(getComputedStyle(document.querySelector(".latest-draw-card")!).width).toBe("calc(100% - 32px)");
+    expect(getComputedStyle(document.querySelector(".matrix-status-section")!).width).toBe("calc(100% - 32px)");
+    expect(getComputedStyle(document.querySelector(".home-bottom-group")!).getPropertyValue("--home-core-width")).toContain("28px");
+    expect(getComputedStyle(document.querySelector(".home-shortcut-row")!).width).toBe("100%");
   });
 
   it("keeps the current draw-card placement contracts", () => {
@@ -78,15 +78,16 @@ describe("requested responsive layout refinement", () => {
         <section class="result-panel"><div class="road-results tiangong-results"><div class="tiangong-results-head"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div></div></section>
       </main>`;
 
-    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).gap).toBe("4px");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).width).toBe("2.34rem");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).overflowY).toBe("auto");
     expect(getComputedStyle(document.querySelector(".matrix-tianyan-screen .select-box")!).height).toBe("24px");
-    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row")!).gridTemplateColumns).toBe("88.8px minmax(0, 1fr)");
+    expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row")!).gridTemplateColumns).toBe("var(--tiangong-label-column) minmax(0, 1fr)");
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row button")!).height).toBe("24px");
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-results-head")!).gridTemplateColumns).toBe("minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.25fr)");
   });
 
   it("uses eight-pixel profile rhythm and six-pixel card top padding", () => {
-    const style = mountStyles(readCss("src/feature-pages.css"));
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}`);
     style.dataset.layoutContract = "profile";
     document.body.innerHTML = `
       <main class="profile-screen"><div class="feature-body">
@@ -109,10 +110,10 @@ describe("requested responsive layout refinement", () => {
       <main class="pro-plans-screen"><div class="feature-body"><div class="plan-carousel"><section class="plan-card"></section></div><section class="renewal-card"></section></div></main>`;
 
     expect(getComputedStyle(document.querySelector(".activation-code-screen .panel")!).width).toBe("100%");
-    expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("12px");
+    expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("0px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).margin).toBe("0px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).paddingLeft).toBe("0px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).flexBasis).toBe("100%");
+    expect(readCss("src/pro-plans-carousel-peek.css")).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex-basis:\s*calc\(100% - 36px\);/s);
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("202px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
@@ -122,12 +123,12 @@ describe("requested responsive layout refinement", () => {
     const style = mountStyles(readCss("src/feature-pages.css"));
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
-      <main class="activation-code-screen"><button class="gold-button"></button></main>
+      <main class="activation-code-screen"><section class="activation-card"><button class="gold-button"></button></section></main>
       <main class="pro-plans-screen"><button class="confirm-payment"></button></main>`;
 
     const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .gold-button")!);
     const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
-    expect(activationButton.height).toBe("34px");
+    expect(activationButton.height).toBe("44px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
     expect(paymentButton.height).toBe("34px");

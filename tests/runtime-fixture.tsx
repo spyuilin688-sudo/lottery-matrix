@@ -11,9 +11,7 @@ import {
   type FlowScreen,
 } from "../src/mobile";
 import { NotesPage } from "../src/FeaturePages";
-import AdminLogin from "../src/admin/AdminLogin";
 import "../src/styles.css";
-import "../src/admin/admin.css";
 import "./runtime-fixture.css";
 
 function CarouselFixture() {
@@ -169,10 +167,6 @@ function TextareaFixture() {
   );
 }
 
-function AdminLoginFixture() {
-  return <AdminLogin />;
-}
-
 const fixture = new URLSearchParams(window.location.search).get("fixture");
 const fixtureElement =
   fixture === "keyboard"
@@ -183,9 +177,7 @@ const fixtureElement =
         ? <NotesFixture />
         : fixture === "textarea"
           ? <TextareaFixture />
-          : fixture === "admin-login"
-            ? <AdminLoginFixture />
-            : <CarouselFixture />;
+          : <CarouselFixture />;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>{fixtureElement}</StrictMode>,
