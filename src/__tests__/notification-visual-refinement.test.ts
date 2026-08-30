@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 declare const process: { cwd(): string };
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
+const notificationCss = () => `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}\n${readCss("src/notification-visual-refinement.css")}`;
 
 function mountStyles(css: string) {
   const style = document.createElement("style");
@@ -22,7 +23,7 @@ afterEach(() => {
 
 describe("notification visual refinement", () => {
   it("uses lighter title weight and more compact bulk actions", () => {
-    mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    mountStyles(notificationCss());
     document.body.innerHTML = `
       <main class="notifications-screen-v2">
         <div class="notification-title"><h2><span>選號提醒</span></h2></div>
@@ -35,16 +36,18 @@ describe("notification visual refinement", () => {
     const title = getComputedStyle(document.querySelector(".notification-title h2")!);
     const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
     const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
+    const css = readCss("src/notification-visual-refinement.css");
 
     expect(title.fontWeight).toBe("600");
     expect(enable.height).toBe("calc(var(--layout-touch-target) - 8px)");
     expect(disable.height).toBe("calc(var(--layout-touch-target) - 8px)");
-    expect(readCss("src/feature-page-adjustments.css")).toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
-    expect(readCss("src/feature-page-adjustments.css")).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(css).toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
   });
 
   it("compacts and softens notification time choices", () => {
-    mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    mountStyles(notificationCss());
     document.body.innerHTML = `
       <main class="notifications-screen-v2">
         <div class="notification-inline-settings-content">
@@ -64,8 +67,9 @@ describe("notification visual refinement", () => {
     expect(getComputedStyle(selects[1]).height).toBe("21px");
     expect(getComputedStyle(document.querySelectorAll(".notification-grid-time-row")[1]).marginBlockStart).toBe("1px");
 
-    const css = readCss("src/feature-page-adjustments.css");
+    const css = readCss("src/notification-visual-refinement.css");
     expect(css).toMatch(/\.notification-time-select::before\s*\{/s);
     expect(css).toMatch(/select:has\(option:checked\[value=""\]\)\s*\{[^}]*color:\s*var\(--lottery-neutral-400\)/s);
+    expect(css).toMatch(/\.notification-inline-settings-content:has\(\.notification-bet-grid\)\s*\{[^}]*padding:\s*5px 4px 6px/s);
   });
 });
