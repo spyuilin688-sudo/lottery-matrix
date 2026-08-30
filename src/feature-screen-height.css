@@ -1,0 +1,3 @@
+.mobile-scroll-content:has(> .feature-screen) {
+  min-height: 100%;
+}
