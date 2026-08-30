@@ -321,7 +321,7 @@ def test_retry_after_final_explore_publication_does_not_overwrite_final_chunk() 
     }
 
 
-def test_pipeline_resumes_checkpointed_tiangong_and_materializes_chunks() -> None:
+def test_pipeline_resumes_checkpointed_tiangong_and_streams_chunk_summary() -> None:
     repository = InMemoryAnalysisRepository()
     starts: list[int] = []
 
@@ -345,7 +345,7 @@ def test_pipeline_resumes_checkpointed_tiangong_and_materializes_chunks() -> Non
         "tianyan": lambda _: {"items": []},
         "tiangong": tiangong,
         "status": lambda context: {
-            "ids": [item["id"] for item in context["artifacts"]["tiangong"]["items"]],
+            "count": context["artifacts"]["tiangong"]["itemCount"],
         },
     }
     pipeline = AnalysisPipeline(
@@ -362,13 +362,14 @@ def test_pipeline_resumes_checkpointed_tiangong_and_materializes_chunks() -> Non
     assert starts == [0, 1]
     manifest = repository.artifacts[("今彩539", "114000123", "v1", "tiangong")]["payload"]
     assert manifest["storage"] == "chunks"
+    assert manifest["itemCount"] == 2
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
-        "ids": ["road-0", "road-1"],
+        "count": 2,
     }
 
 
 def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
-    class FailOnceMaterializeRepository(InMemoryAnalysisRepository):
+    class FailOnceSummaryRepository(InMemoryAnalysisRepository):
         def __init__(self) -> None:
             super().__init__()
             self.failed = False
@@ -388,14 +389,24 @@ def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
             self, lottery: str, draw_period: str, analysis_version: str,
             kind: str, expected_total: int,
         ) -> dict:
-            if kind == "tiangong" and not self.failed:
-                self.failed = True
-                raise RuntimeError("temporary materialize failure")
+            if kind == "tiangong":
+                raise AssertionError("tiangong must not be fully materialized")
             return super().materialize_artifact(
                 lottery, draw_period, analysis_version, kind, expected_total,
             )
 
-    repository = FailOnceMaterializeRepository()
+        def summarize_artifact(
+            self, lottery: str, draw_period: str, analysis_version: str,
+            kind: str, expected_total: int,
+        ) -> int:
+            if kind == "tiangong" and not self.failed:
+                self.failed = True
+                raise RuntimeError("temporary summary failure")
+            return super().summarize_artifact(
+                lottery, draw_period, analysis_version, kind, expected_total,
+            )
+
+    repository = FailOnceSummaryRepository()
 
     def tiangong(context: dict) -> dict:
         start = context["tiangongBatch"]["start"]
@@ -418,7 +429,7 @@ def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
         "tianyan": lambda _: {"items": []},
         "tiangong": tiangong,
         "status": lambda context: {
-            "ids": [item["id"] for item in context["artifacts"]["tiangong"]["items"]],
+            "count": context["artifacts"]["tiangong"]["itemCount"],
         },
     }
     pipeline = AnalysisPipeline(
@@ -426,7 +437,7 @@ def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
     )
 
     first = pipeline.run(DRAW, history=[])
-    with pytest.raises(RuntimeError, match="temporary materialize failure"):
+    with pytest.raises(RuntimeError, match="temporary summary failure"):
         pipeline.run(DRAW, history=[])
     retried = pipeline.run(DRAW, history=[])
 
@@ -439,5 +450,5 @@ def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
         )
     ] == [(0, 0, 1), (1, 1, 2)]
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
-        "ids": ["road-0", "road-1"],
+        "count": 2,
     }

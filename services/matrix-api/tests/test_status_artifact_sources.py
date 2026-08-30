@@ -51,7 +51,11 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
     }
     context = {
         "draw": {"lottery": lottery, "period": period},
-        "artifacts": {"explore": explore, "tianyan": tianyan, "tiangong": {"items": []}},
+        "artifacts": {
+            "explore": explore,
+            "tianyan": tianyan,
+            "tiangong": {"items": [], "itemCount": 17},
+        },
     }
 
     artifact = create_artifact_builders()["status"](context)
@@ -62,3 +66,4 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
     assert sources["explore"]["items"][0]["explorePeriods"] == 13
     assert "extraValidationData" not in sources["explore"]["items"][0]
     assert "extraValidationData" not in sources["tianyan"]["items"][0]
+    assert artifact["artifactCounts"]["tiangong"] == 17

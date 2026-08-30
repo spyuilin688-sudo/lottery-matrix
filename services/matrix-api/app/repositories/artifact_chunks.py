@@ -1,6 +1,7 @@
 import base64
 import json
 import zlib
+from collections.abc import Iterable
 from typing import Any, Mapping, Sequence
 
 
@@ -118,3 +119,36 @@ def materialize_chunks(
         "items": items,
         "validationById": validation_by_id,
     }
+
+
+def summarize_chunks(
+    chunks: Iterable[Mapping[str, Any]],
+    expected_total: int,
+    deduplicate_by_id: bool = False,
+) -> int:
+    """Count chunk items while retaining only identifiers needed for deduplication."""
+    item_count = 0
+    item_ids: set[str] = set()
+    previous_cursor_end = 0
+    saw_chunk = False
+
+    for chunk in chunks:
+        saw_chunk = True
+        cursor_start = chunk["cursor_start"]
+        cursor_end = chunk["cursor_end"]
+        if cursor_start != previous_cursor_end or cursor_end < cursor_start:
+            raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
+
+        payload = decode_chunk_payload(chunk["payload"])
+        for item in payload["items"]:
+            identifier = item.get("id") if isinstance(item, Mapping) else None
+            if deduplicate_by_id and isinstance(identifier, str):
+                if identifier in item_ids:
+                    continue
+                item_ids.add(identifier)
+            item_count += 1
+        previous_cursor_end = cursor_end
+
+    if not saw_chunk or previous_cursor_end != expected_total:
+        raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
+    return item_count

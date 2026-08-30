@@ -1,7 +1,12 @@
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-from app.repositories.artifact_chunks import encode_chunk_payload, materialize_chunks
+from app.repositories.artifact_chunks import (
+    encode_chunk_payload,
+    materialize_chunks,
+    summarize_chunks,
+)
 
 
 ARTIFACT_KINDS = {"explore", "tianyan", "tiangong", "status"}
@@ -31,6 +36,7 @@ class AnalysisRepository(Protocol):
     def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
+    def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
@@ -188,6 +194,16 @@ class InMemoryAnalysisRepository:
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
         return materialize_chunks(
             lottery, draw_period,
+            self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
+            expected_total,
+            deduplicate_by_id=kind == "tiangong",
+        )
+
+    def summarize_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str,
+        kind: str, expected_total: int,
+    ) -> int:
+        return summarize_chunks(
             self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
             expected_total,
             deduplicate_by_id=kind == "tiangong",
@@ -463,8 +479,9 @@ class SupabaseAnalysisRepository:
             on_conflict="lottery,draw_period,analysis_version,item_id",
         ).execute()
 
-    def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
-        chunks: list[dict[str, Any]] = []
+    def _iter_artifact_chunks(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> Iterator[dict[str, Any]]:
         offset = 0
         while True:
             response = (
@@ -479,16 +496,32 @@ class SupabaseAnalysisRepository:
                 .execute()
             )
             page = [dict(chunk) for chunk in response.data]
-            chunks.extend(page)
+            yield from page
             if len(page) < ARTIFACT_CHUNK_PAGE_SIZE:
                 break
             offset += len(page)
-        return chunks
+
+    def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
+        return list(self._iter_artifact_chunks(
+            lottery, draw_period, analysis_version, kind,
+        ))
 
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
         return materialize_chunks(
             lottery, draw_period,
             self.read_artifact_chunks(lottery, draw_period, analysis_version, kind),
+            expected_total,
+            deduplicate_by_id=kind == "tiangong",
+        )
+
+    def summarize_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str,
+        kind: str, expected_total: int,
+    ) -> int:
+        return summarize_chunks(
+            self._iter_artifact_chunks(
+                lottery, draw_period, analysis_version, kind,
+            ),
             expected_total,
             deduplicate_by_id=kind == "tiangong",
         )

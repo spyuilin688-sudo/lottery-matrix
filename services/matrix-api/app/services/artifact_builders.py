@@ -174,7 +174,11 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
     return {
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
         "artifactKinds": ["explore", "tianyan", "tiangong"], **status,
-        "artifactCounts": {"explore": len(explore["items"]), "tianyan": len(tianyan["items"]), "tiangong": len(tiangong["items"])},
+        "artifactCounts": {
+            "explore": len(explore["items"]),
+            "tianyan": len(tianyan["items"]),
+            "tiangong": int(tiangong.get("itemCount", len(tiangong.get("items", [])))),
+        },
         "statusSources": {
             "explore": {
                 "lottery": explore["lottery"],
