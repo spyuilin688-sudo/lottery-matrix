@@ -18,6 +18,7 @@ export default mergeConfig(
         "shared/**/*.test.ts",
         "backend/**/*.test.ts",
         "apps/admin/backend/**/*.test.ts",
+        "apps/admin/src/**/*.test.ts",
         "apps/admin/src/**/*.test.tsx",
       ],
     },
