@@ -10,7 +10,7 @@ describe('system status client', () => {
 
   it('requests a real retry for one abnormal API item', async () => {
     const item = {
-      id: 'matrix-audit-api',
+      id: 'railway-worker-api',
       name: 'Matrix audit API',
       description: '檢查開獎資料',
       ok: true,
@@ -19,7 +19,7 @@ describe('system status client', () => {
     };
     const post = vi.fn(async () => ({ data: { item } }));
 
-    await expect(retrySystemStatus({ post }, 'matrix-audit-api')).resolves.toEqual(item);
-    expect(post).toHaveBeenCalledWith('/api/system-status/matrix-audit-api/retry');
+    await expect(retrySystemStatus({ post }, 'railway-worker-api')).resolves.toEqual(item);
+    expect(post).toHaveBeenCalledWith('/api/system-status/railway-worker-api/retry');
   });
 });

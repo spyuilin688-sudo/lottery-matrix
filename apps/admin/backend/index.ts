@@ -9,7 +9,6 @@ import {
   type PermissionKey,
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
-import { algorithmApi } from './algorithm-api';
 import { createConnectionStatus } from './connection-status';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig } from './worker-api';
@@ -161,9 +160,6 @@ const routes: Record<string, unknown> = {
       return fail(cause);
     }
   }],
-
-  'GET /api/algorithm-status': [requireAuth(), guard('view'), async () =>
-    json(await algorithmApi.getAlgorithmStatus())],
 
   'GET /api/system-status': [requireAuth(), moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],

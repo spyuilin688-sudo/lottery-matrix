@@ -39,7 +39,6 @@ export class ConnectionStatusError extends Error {
   }
 }
 
-const apiBase = 'https://api-v2.appdeploy.ai/app/app-snsxet';
 const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai/';
 const jobDefinitions = [
   ['matrix-539-refresh-v2', '今彩539'],
@@ -89,11 +88,6 @@ export function createConnectionStatus(dependencies: Dependencies) {
       };
     }
   };
-  const http = async (path: string) => {
-    const response = await fetcher(`${apiBase}${path}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
-  };
   const coreChecks: CoreCheckDefinition[] = [
     {
       id: 'admin-appdeploy',
@@ -102,17 +96,6 @@ export function createConnectionStatus(dependencies: Dependencies) {
       operation: async () => {
         const response = await fetcher(adminUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { status: response.status };
-      },
-    },
-    {
-      id: 'api-appdeploy',
-      name: 'API AppDeploy',
-      description: '顯示 Matrix API 的部署及服務狀態。',
-      retryable: true,
-      operation: async () => {
-        const response = await fetcher(apiBase);
-        if (response.status >= 500) throw new Error(`HTTP ${response.status}`);
         return { status: response.status };
       },
     },
@@ -132,34 +115,6 @@ export function createConnectionStatus(dependencies: Dependencies) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       },
-    },
-    {
-      id: 'health-api',
-      name: '健康檢查 API',
-      description: '確認 Matrix API 服務是否正常運作。',
-      retryable: true,
-      operation: () => http('/api/_healthcheck'),
-    },
-    {
-      id: 'matrix-coverage-api',
-      name: 'Matrix coverage API',
-      description: '檢查四個彩種的資料涵蓋範圍與筆數。',
-      retryable: true,
-      operation: () => http('/api/matrix/coverage'),
-    },
-    {
-      id: 'matrix-audit-api',
-      name: 'Matrix audit API',
-      description: '檢查開獎資料是否缺期、重複或異常。',
-      retryable: true,
-      operation: () => http('/api/matrix/audit'),
-    },
-    {
-      id: 'matrix-algorithm-cases-api',
-      name: 'Matrix algorithm cases API',
-      description: '取得演算法案例與計算結果。',
-      retryable: true,
-      operation: () => http('/api/matrix/algorithm/cases'),
     },
     {
       id: 'railway-worker-api',
