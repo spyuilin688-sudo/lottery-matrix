@@ -224,9 +224,18 @@ describe("production member shell", () => {
   it("keeps issue and formula typography aligned with the approved mobile layout", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 3px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*8px[^}]*font-weight:\s*700/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*4px 8px/s);
+  });
+
+  it("uses a clear expanded outline and restores separators before the second and third rows", () => {
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*border:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.82\)/s);
+    expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid rgba\(61,\s*82,\s*113,\s*\.68\)/s);
+    expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
+    expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(-n \+ 2\)/);
   });
 
   it("styles only the expanded summary consecutive value as a tag card", () => {
