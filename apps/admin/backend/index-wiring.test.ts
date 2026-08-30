@@ -214,6 +214,7 @@ describe('admin push notification route wiring', () => {
   it.each([
     [400, 'INVALID_REQUEST'],
     [409, 'NO_ACTIVE_SUBSCRIPTIONS'],
+    [500, 'PUSH_STARTUP_FAILED_WEB_PUSH_SUBJECT'],
   ])('returns the safe Edge HTTP %i business failure', async (statusCode, message) => {
     wiring.sendMemberTestPush.mockRejectedValueOnce(Object.assign(new Error(message), { statusCode }));
     const routeHandler = routes['POST /api/push-members/:id/test'][2] as (
