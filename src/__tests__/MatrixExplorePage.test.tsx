@@ -506,14 +506,14 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
   }));
 });
 
-test('探索日期只顯示本日最新且不提供昨日與前日', () => {
+test('探索日期提供本日、昨日與前日', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
 
   expect(screen.getByText('本日 (最新)')).toBeTruthy();
-  expect(screen.queryByText('昨日 (上1期)')).toBeNull();
-  expect(screen.queryByText('前日 (上2期)')).toBeNull();
+  expect(screen.getByText('昨日 (上1期)')).toBeTruthy();
+  expect(screen.getByText('前日 (上2期)')).toBeTruthy();
 });
 
 test('點擊重複號碼小卡會傳送號碼篩選，再點一次取消', async () => {

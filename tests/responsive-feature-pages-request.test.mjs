@@ -59,17 +59,17 @@ test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8
 });
 
 test('號碼對照單標題操作使用共用控制項尺寸、內容寬度區域與自適應文字', () => {
-  assert.match(source, /className="reference-title-actions title-card-compact-actions"/);
+  assert.match(source, /className="reference-title-actions title-card-compact-actions tool-title-actions"/);
   assert.match(source, /<ReloadIcon className="reference-refresh-icon" \/>刷新/);
   assert.match(source, /className="title-card-compact-action reference-settings-trigger"[^>]*aria-label=\{queryExpanded/);
-  assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{\s*gap:\s*8px;/s);
+  assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{[\s\S]*?gap:\s*6px;/s);
   const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
   assert.equal(actionBodies.length, 1);
   assert.match(actionBodies[0], /width:\s*auto;/);
-  const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.title-card-compact-action svg$/);
+  const iconBodies = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
   assert.equal(iconBodies.length, 1);
-  assert.match(iconBodies[0], /width:\s*10px;/);
-  assert.match(iconBodies[0], /height:\s*10px;/);
+  assert.match(iconBodies[0], /width:\s*8px;/);
+  assert.match(iconBodies[0], /height:\s*8px;/);
   assert.doesNotMatch(brandCss, /\.number-reference-screen \.reference-title-actions button:(?:first|last)-child/);
   assert.match(css, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
 });

@@ -37,11 +37,12 @@
 
 .notifications-screen-v2 .notification-bulk-disable {
   border: 1px solid rgba(216, 195, 141, .72);
-  background: linear-gradient(180deg, #161610, #090a08);
+  background: #160f08;
   color: #D8C38D;
+  box-shadow: none;
 }
 
-.notifications-screen-v2 .notification-bulk-actions button:hover {
+.notifications-screen-v2 .notification-bulk-actions button:not(.notification-bulk-disable):hover {
   filter: brightness(1.06);
 }
 
@@ -50,8 +51,13 @@
   outline-offset: 2px;
 }
 
-.notifications-screen-v2 .notification-bulk-actions button:active {
+.notifications-screen-v2 .notification-bulk-actions button:not(.notification-bulk-disable):active {
   filter: brightness(.92);
+}
+
+.notifications-screen-v2 .notification-bulk-disable:active {
+  background: #2b1b09;
+  filter: none;
 }
 
 .notifications-screen-v2 .notification-list {
@@ -106,6 +112,7 @@
 .notifications-screen-v2 .notification-icon img {
   display: block;
   object-fit: contain;
+  filter: brightness(.92) saturate(.86);
 }
 
 .notifications-screen-v2 .notification-title {
@@ -171,14 +178,14 @@
 
 .notifications-screen-v2 .notification-pro-badge {
   box-sizing: border-box;
-  padding: 0 2px;
-  border: 1px solid #f6c95f;
-  border-radius: 3px;
+  padding: 0 1.4px;
+  border: .7px solid #f6c95f;
+  border-radius: 2.1px;
   color: #f6c95f;
-  font-size: 6px;
+  font-size: 4.2px;
   font-weight: 600;
   font-style: normal;
-  line-height: 8px;
+  line-height: 5.6px;
   white-space: nowrap;
 }
 
@@ -191,7 +198,7 @@
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) .notification-icon img {
-  filter: brightness(1.06) contrast(1.04);
+  filter: brightness(.88) saturate(.76);
 }
 
 .notifications-screen-v2 .notification-actions {
@@ -236,6 +243,11 @@
   color: rgba(242, 242, 242, .38);
 }
 
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-settings-toggle:disabled {
+  border-color: rgba(211, 166, 66, .58);
+  color: rgba(224, 196, 137, .7);
+}
+
 .notifications-screen-v2 .notification-settings-toggle svg {
   width: clamp(9px, 2.7vw, 12px);
   height: clamp(9px, 2.7vw, 12px);
@@ -264,6 +276,15 @@
   width: 38px;
   height: 18px;
   border-radius: 9px;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-actions > .toggle:disabled {
+  opacity: .68;
+}
+
+.notifications-screen-v2 .notification-row[data-notification-key="collision"] .notification-actions > .toggle:disabled::before {
+  border-color: #68727e;
+  background: #172029;
 }
 
 .notifications-screen-v2 .toggle span {
@@ -482,9 +503,10 @@
   display: flex;
   max-height: none;
   margin: 12px 4px 5px;
-  padding: 4px 0;
+  padding: 2px 0;
   gap: 6px;
-  border: 0;
+  border-top: 1px solid rgba(201, 149, 43, .62);
+  border-bottom: 1px solid rgba(201, 149, 43, .62);
   border-radius: 0;
   background: transparent;
   box-shadow: none;

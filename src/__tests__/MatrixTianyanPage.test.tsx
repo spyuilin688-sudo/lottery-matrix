@@ -73,6 +73,7 @@ test('天衍使用正式 API 資料與核准的預設連準篩選', async () => 
   expect(screen.queryByText('03.09')).toBeNull();
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledWith({
     lottery: '今彩539',
+    exploreDateOffset: 0,
     selectedStreaks: ['準5進6', '準6進7', '準7進8'],
   });
 });

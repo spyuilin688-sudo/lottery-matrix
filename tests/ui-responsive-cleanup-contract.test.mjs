@@ -29,10 +29,10 @@ test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字�
   const actions = ruleBodies(responsive, /^\.number-reference-screen \.matrix-title-banner-actions$/);
   assert.equal(actions.length, 1);
   assert.match(actions[0], /width:\s*auto;/);
-  const icon = ruleBodies(responsive, /^\.number-reference-screen \.title-card-compact-action svg$/);
+  const icon = ruleBodies(responsive, /^\.reference-refresh-icon$/);
   assert.equal(icon.length, 1);
-  assert.match(icon[0], /width:\s*10px;/);
-  assert.match(icon[0], /height:\s*10px;/);
+  assert.match(icon[0], /width:\s*8px;/);
+  assert.match(icon[0], /height:\s*8px;/);
 });
 
 test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距', () => {
