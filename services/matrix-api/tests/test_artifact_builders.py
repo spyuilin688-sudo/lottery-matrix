@@ -1,7 +1,6 @@
 from app.services.artifact_builders import (
     build_explore_artifact,
     create_artifact_builders,
-    tiangong_work_units,
 )
 
 
@@ -67,33 +66,6 @@ def test_explore_batch_builder_needs_only_start_and_limit() -> None:
     assert result["_checkpoint"] == {"cursor": 12, "total": 130, "complete": False}
 
 
-def test_tiangong_batch_builder_runs_only_requested_work_unit() -> None:
-    calls = []
-
-    def runner(lottery: str, history: list[dict], options: dict) -> list[dict]:
-        calls.append((lottery, options))
-        return []
-
-    builders = create_artifact_builders(tiangong_runner=runner)
-    context = {
-        "draw": {"lottery": "今彩539", "period": "123"},
-        "history": [],
-        "tiangongBatch": {"start": 1, "limit": 1},
-    }
-
-    result = builders["tiangong"](context)
-    units = tiangong_work_units()
-
-    assert len(calls) == 1
-    assert calls[0] == ("今彩539", units[1])
-    assert result["artifact"] == {
-        "lottery": "今彩539", "drawPeriod": "123", "items": [], "validationById": {},
-    }
-    assert result["_checkpoint"] == {
-        "cursorStart": 1, "cursor": 2, "total": len(units), "complete": False,
-    }
-
-
 def test_explore_builder_stores_each_today_road_once() -> None:
     history = [
         {"period": str(15 - index), "numbers": ["01", "02", "03", "04", "05"]}
@@ -156,7 +128,7 @@ def test_one_shared_unit_can_store_add_sum_and_drag_results() -> None:
 
 
 def test_tianyan_builder_reads_final_results_precomputed_by_shared_explore() -> None:
-    builders = create_artifact_builders(tiangong_runner=lambda *_: [])
+    builders = create_artifact_builders()
     context = {
         "draw": {"lottery": "今彩539", "period": "123"},
         "history": [],
@@ -183,7 +155,7 @@ def test_tianyan_builder_reads_final_results_precomputed_by_shared_explore() -> 
 
 
 def test_concrete_status_builder_uses_completed_explore_artifact() -> None:
-    builders = create_artifact_builders(tiangong_runner=lambda *_: [])
+    builders = create_artifact_builders()
     context = {
         "draw": {"lottery": "今彩539", "period": "123"}, "history": [],
         "artifacts": {
@@ -194,7 +166,6 @@ def test_concrete_status_builder_uses_completed_explore_artifact() -> None:
         },
     }
     context["artifacts"]["tianyan"] = builders["tianyan"](context)
-    context["artifacts"]["tiangong"] = builders["tiangong"](context)
     status = builders["status"](context)
-    assert status["artifactKinds"] == ["explore", "tianyan", "tiangong"]
+    assert status["artifactKinds"] == ["explore", "tianyan"]
     assert status["summary"]["status"] == "DORMANT"

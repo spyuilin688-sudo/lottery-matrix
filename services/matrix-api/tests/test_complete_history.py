@@ -51,13 +51,13 @@ def test_worker_analyzes_every_persisted_draw() -> None:
 
     builders = {
         kind: builder(kind)
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianyan", "status")
     }
 
     result = run_worker("今彩539", repository, ExistingHistorySource(), builders)
 
     assert result["status"] == "complete"
-    assert history_lengths == [121, 121, 121, 121]
+    assert history_lengths == [121, 121, 121]
 
 
 def test_fantasy5_complete_history_reads_until_the_last_official_page() -> None:

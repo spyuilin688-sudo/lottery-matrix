@@ -54,7 +54,6 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
         "artifacts": {
             "explore": explore,
             "tianyan": tianyan,
-            "tiangong": {"items": [], "itemCount": 17},
         },
     }
 
@@ -66,4 +65,3 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
     assert sources["explore"]["items"][0]["explorePeriods"] == 13
     assert "extraValidationData" not in sources["explore"]["items"][0]
     assert "extraValidationData" not in sources["tianyan"]["items"][0]
-    assert artifact["artifactCounts"]["tiangong"] == 17
