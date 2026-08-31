@@ -87,6 +87,7 @@ const exploreValidationEnvelope = {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  window.localStorage.clear();
   window.sessionStorage.clear();
   resetReadCacheForTests();
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -133,7 +134,11 @@ test('Matrix 同星開始探索後收合，再展開時固定為浮動設定卡'
   document.body.append(mobilePage);
   Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
   vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 20, width: 195 } as DOMRect);
-  globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ groups: [] }), {
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => new Response(JSON.stringify(
+    String(input).includes('/latest/')
+      ? { period: '114001', numbers: ['01', '02', '03', '04', '05'] }
+      : { items: [] },
+  ), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   })) as typeof fetch;
@@ -188,18 +193,12 @@ test('Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零�
 test('Matrix 同星探索結果左欄期數在上、日期在下', async () => {
   globalThis.fetch = vi.fn().mockImplementation(async (input) => {
     const url = String(input);
-    const data = url.endsWith('/api/matrix/tongxing')
-      ? {
-          lottery: '今彩539',
-          numberOrder: '依號碼由小到大排序',
-          numbers: [],
-          futureOffset: 1,
-          groups: [{
-            lockedEntry: { period: '114001', drawDate: '2026/08/20', numbers: ['01', '02', '03', '04', '05'] },
-            predictedEntry: { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] },
-          }],
-        }
-      : { items: [] };
+    const data = url.includes('/latest/')
+      ? { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] }
+      : { items: [
+          { period: '114002', drawDate: '2026/08/21', numbers: ['06', '07', '08', '09', '10'] },
+          { period: '114001', drawDate: '2026/08/20', numbers: ['01', '02', '03', '04', '05'] },
+        ] };
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -271,6 +270,12 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
 
   globalThis.fetch = vi.fn().mockImplementation(async (input) => {
     const requestUrl = new URL(String(input));
+    if (requestUrl.pathname.includes('/latest/')) {
+      return new Response(JSON.stringify(uniqueRecords[0]), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     const limit = Number(requestUrl.searchParams.get('limit'));
     return new Response(JSON.stringify({ items: duplicateHeavyRecords.slice(0, limit) }), {
       status: 200,
