@@ -25,7 +25,7 @@ test("刷新與探索設定共用標題卡控制項尺寸，並保留內容寬�
 
   const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.reference-title-actions$/);
   assert.ok(titleBodies.some((body) => /width:\s*auto;/.test(body)));
-  assert.ok(titleBodies.some((body) => /gap:\s*8px;/.test(body)));
+  assert.ok(titleBodies.some((body) => /gap:\s*6px;/.test(body)));
   const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.title-card-compact-action svg$/);
   assert.equal(iconBodies.length, 1);
   assert.match(iconBodies[0], /width:\s*10px;/);
