@@ -45,7 +45,8 @@ def build_explore_batch(
         'drawPeriod': draw_period,
         'items': [],
         'validationById': {},
-        'tianyanSources': [],
+        'tianyanItems': [],
+        'tianyanValidationById': {},
     }
     for unit in units[cursor:stop]:
         raw = runner(unit, history)
