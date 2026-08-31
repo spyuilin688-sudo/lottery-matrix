@@ -2331,3 +2331,172 @@ opacity: .30; box-shadow: none;
 .referral-rule-content li::marker {
   color: #b98a31;
 }
+
+
+/* Matrix 探索正式結果：沿用探索結果預覽頁的驗證展開結構。 */
+.matrix-explore-main-screen .road-validation-process.explore-validation-card {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  border-top: 0;
+  border-radius: 10px;
+  background: rgba(3, 9, 20, .72);
+  box-shadow: inset 0 1px 0 rgba(102, 169, 255, .18);
+}
+
+.matrix-explore-main-screen .explore-validation-rule-set {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+  min-width: 0;
+}
+
+.matrix-explore-main-screen .explore-validation-summary-card {
+  min-height: 0;
+  padding: 16px 8px 6px;
+  border: 1px solid #e6b76a;
+  border-radius: 8px;
+  background: rgba(10, 14, 24, .92);
+}
+
+.matrix-explore-main-screen .explore-validation-summary-card > span {
+  display: block;
+  min-width: 0;
+  color: #f2f5f8;
+  font-size: clamp(11px, 3.08vw, 12px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.04em;
+  white-space: normal;
+}
+
+.matrix-explore-main-screen .explore-validation-groups {
+  display: grid;
+  row-gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.matrix-explore-main-screen .explore-validation-group {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) 110px;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  background: transparent;
+}
+
+.matrix-explore-main-screen .explore-validation-group:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.matrix-explore-main-screen .explore-validation-issues,
+.matrix-explore-main-screen .explore-validation-numbers-card,
+.matrix-explore-main-screen .explore-validation-formulas {
+  display: grid;
+  grid-auto-rows: minmax(28px, auto);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(91, 126, 169, .42);
+  border-radius: 6px;
+  background: rgba(8, 15, 27, .82);
+}
+
+.matrix-explore-main-screen .explore-validation-issues {
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.matrix-explore-main-screen .explore-validation-numbers-card {
+  margin-right: 4px;
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-issue,
+.matrix-explore-main-screen .explore-validation-group .validation-full-numbers,
+.matrix-explore-main-screen .explore-validation-group .validation-formula {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 28px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(91, 126, 169, .3);
+  background: transparent;
+}
+
+.matrix-explore-main-screen .explore-validation-group > * > :last-child {
+  border-bottom: 0;
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-issue {
+  font-size: clamp(8px, 2.56vw, 10px);
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-full-numbers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-full-numbers[data-count="6"] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-full-numbers[data-count="7"] {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-full-numbers i {
+  color: #edf2f8;
+  font-size: clamp(8px, 2.56vw, 10px);
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-formula {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  color: #cbd6e5;
+  font-size: clamp(8px, 2.2vw, 9px);
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+.matrix-explore-main-screen .explore-validation-group .validation-formula b {
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .explore-validation-prediction {
+  display: grid;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid rgba(91, 126, 169, .42);
+  border-radius: 8px;
+  background: #122b49;
+  place-items: center;
+  row-gap: 1px;
+}
+
+.matrix-explore-main-screen .explore-validation-prediction strong {
+  color: #d8c38d;
+  font-size: 10px;
+}
+
+.matrix-explore-main-screen .explore-validation-prediction b {
+  color: #f2f5f8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 359px) {
+  .matrix-explore-main-screen .explore-validation-group {
+    grid-template-columns: max-content minmax(0, 1fr) 92px;
+  }
+}
