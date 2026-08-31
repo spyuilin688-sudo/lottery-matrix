@@ -47,12 +47,12 @@ test("快捷設定使用指定的五個最新圖示", () => {
 test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s,
+    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s,
   );
-  assert.match(notificationCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(notificationCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*12px;/s);
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*12px;/s,
+    /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s,
   );
   assert.match(
     notificationCss,
@@ -68,10 +68,10 @@ test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   );
 });
 
-test("通知 Matrix Pro 標籤縮小約 15% 並與名稱保持 1.5px 間距", () => {
+test("通知 Matrix Pro 標籤縮小約 15% 並與名稱保持 4px 間距", () => {
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-title h2:has\(em\)\s*\{[^}]*gap:\s*1\.5px;/s,
+    /\.notifications-screen-v2 \.notification-title h2:has\(em\)\s*\{[^}]*gap:\s*4px;/s,
   );
   assert.match(
     notificationCss,
