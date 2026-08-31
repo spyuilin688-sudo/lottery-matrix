@@ -24,7 +24,7 @@ test('feature pages use one 16px global inline spacing source with the homepage 
   assert.match(explore, /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/);
   assert.match(explore, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
 
-  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*20px;/s);
   assert.doesNotMatch(adjustments, /\.profile-screen \.feature-body\s*\{\s*padding-inline:\s*16px;/s);
 
   assert.doesNotMatch(featurePages, /\.matrix-status-screen\s*\{\s*--layout-page-inline:\s*16px;\s*\}/);
