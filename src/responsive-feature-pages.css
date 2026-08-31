@@ -113,6 +113,14 @@
   translate: -3px -1px;
 }
 
+.draw-history-screen .matrix-title-banner-actions .history-title-actions {
+  align-items: stretch;
+}
+
+.draw-history-screen .history-title-actions :is(.history-reset-trigger, .history-filter-trigger) {
+  align-self: stretch;
+}
+
 .draw-history-screen .history-title-actions .title-card-compact-action {
   width: auto;
   min-width: 0;

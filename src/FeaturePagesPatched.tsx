@@ -4,6 +4,7 @@ import {
   QuickNavigationProvider,
   type ScreenId,
 } from "./FeaturePagesCore";
+import type { LotteryId } from "./Prototype";
 import { NotificationsPagePatched } from "./NotificationsPagePatched";
 
 export { QuickNavigationProvider };
@@ -20,6 +21,7 @@ export function FeaturePageRouter({
   screen,
   onNavigate,
   historyReturnScreen = "home",
+  statusLottery,
   onQuickOpen,
   onQuickConfigure,
   quickActive,
@@ -27,6 +29,7 @@ export function FeaturePageRouter({
   screen: ScreenId;
   onNavigate: Navigate;
   historyReturnScreen?: ScreenId;
+  statusLottery?: LotteryId;
 } & BottomNavCallbacks) {
   if (screen === "notifications") {
     return (
@@ -44,6 +47,7 @@ export function FeaturePageRouter({
       screen={screen}
       onNavigate={onNavigate}
       historyReturnScreen={historyReturnScreen}
+      statusLottery={statusLottery}
       onQuickOpen={onQuickOpen}
       onQuickConfigure={onQuickConfigure}
       quickActive={quickActive}

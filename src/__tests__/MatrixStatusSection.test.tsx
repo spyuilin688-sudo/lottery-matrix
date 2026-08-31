@@ -1,31 +1,31 @@
 // @vitest-environment jsdom
 
-import { render, screen, within } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
 import {
   MATRIX_STATUS_BY_LOTTERY,
   MatrixStatusSection,
   type MatrixStatusMap,
 } from '../Prototype';
 
-test('首頁狀態卡依指定位置顯示四個彩種與暫定狀態', () => {
+test('首頁狀態卡依指定位置顯示四個固定彩種與沉寂預設狀態', () => {
   render(<MatrixStatusSection />);
 
   const section = screen.getByTestId('matrix-status-section');
   const cards = within(section).getAllByRole('button');
   expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
-    '今彩539 啟動',
-    '天天樂 聚合',
-    '六合彩 共振',
-    '大樂透 臨界',
+    '今彩539 沉寂',
+    '天天樂 沉寂',
+    '六合彩 沉寂',
+    '大樂透 沉寂',
   ]);
 
   const artworks = Array.from(section.querySelectorAll<HTMLImageElement>('.matrix-status-artwork'));
   expect(artworks.map((image) => image.getAttribute('src'))).toEqual([
-    '/assets/lottery/status/啟動.png',
-    '/assets/lottery/status/聚合.png',
-    '/assets/lottery/status/共振.png',
-    '/assets/lottery/status/臨界.png',
+    '/assets/lottery/status/沉寂.png',
+    '/assets/lottery/status/沉寂.png',
+    '/assets/lottery/status/沉寂.png',
+    '/assets/lottery/status/沉寂.png',
   ]);
 
   const logos = Array.from(section.querySelectorAll<HTMLImageElement>('.matrix-status-lottery-logo'));
@@ -59,4 +59,13 @@ test('未觸發的彩種可切換為沉寂圖片', () => {
   expect(dormantCard.querySelector('.matrix-status-artwork')?.getAttribute('src')).toBe(
     '/assets/lottery/status/沉寂.png',
   );
+});
+
+test('點擊狀態卡會帶入該卡所屬彩種', () => {
+  const onOpen = vi.fn();
+  render(<MatrixStatusSection onOpen={onOpen} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '天天樂 沉寂' }));
+
+  expect(onOpen).toHaveBeenCalledWith('天天樂');
 });

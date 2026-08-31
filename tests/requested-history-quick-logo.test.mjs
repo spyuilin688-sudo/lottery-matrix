@@ -37,7 +37,7 @@ test('歷史篩選使用目前的原生下拉網格與正式開始探索操作',
 test('篩選設定按鈕由標題卡內容寬度控制器定位', () => {
   const actionBodies = ruleBodies(responsiveCss, /^\.draw-history-screen \.matrix-title-banner-actions$/);
   assert.equal(actionBodies.length, 1);
-  assert.match(actionBodies[0], /top:\s*100%;/);
+  assert.match(actionBodies[0], /top:\s*calc\(100% \+ var\(--title-action-top-offset\)\);/);
   assert.match(actionBodies[0], /bottom:\s*auto;/);
   assert.match(actionBodies[0], /width:\s*auto;/);
   const controlBodies = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-filter-trigger$/);
