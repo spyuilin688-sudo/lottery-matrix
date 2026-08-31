@@ -9,7 +9,7 @@ from app.repositories.artifact_chunks import (
 )
 
 
-ARTIFACT_KINDS = {"explore", "tianyan", "tiangong", "status"}
+ARTIFACT_KINDS = {"explore", "tianyan", "status"}
 JOB_NAME_BY_LOTTERY = {
     "今彩539": "matrix-539-refresh-v2",
     "天天樂": "matrix-fantasy5-refresh-v2",
