@@ -37,9 +37,7 @@
 
 .notifications-screen-v2 .notification-bulk-disable {
   border: 1px solid rgba(216, 195, 141, .72);
-  background: #160f08;
   color: #D8C38D;
-  box-shadow: none;
 }
 
 .notifications-screen-v2 .notification-bulk-actions button:not(.notification-bulk-disable):hover {
@@ -51,13 +49,8 @@
   outline-offset: 2px;
 }
 
-.notifications-screen-v2 .notification-bulk-actions button:not(.notification-bulk-disable):active {
+.notifications-screen-v2 .notification-bulk-actions button:active {
   filter: brightness(.92);
-}
-
-.notifications-screen-v2 .notification-bulk-disable:active {
-  background: #2b1b09;
-  filter: none;
 }
 
 .notifications-screen-v2 .notification-list {
@@ -178,6 +171,7 @@
 
 .notifications-screen-v2 .notification-pro-badge {
   box-sizing: border-box;
+  z-index: 1;
   padding: 0 1.4px;
   border: .7px solid #f6c95f;
   border-radius: 2.1px;
@@ -187,6 +181,7 @@
   font-style: normal;
   line-height: 5.6px;
   white-space: nowrap;
+  transform: translateY(3px);
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 span {
