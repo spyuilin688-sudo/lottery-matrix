@@ -30,26 +30,7 @@ test("confirmed feature pages use the latest integrated title artwork", () => {
   ];
 
   for (const [title, asset] of expectedArtwork) {
-    const escapedAsset = asset.replace(/[.*+?^${}()|[\]\\]/g, "\\  const expectedArtwork = [
-    ["Matrix 探索", "探索標題K.png"],
-    ["Matrix 天衍", "天衍標題K.png"],
-    ["Matrix 天工", "天工標題K.png"],
-    ["Matrix 指南", "指南標題K.png"],
-    ["Matrix 同星", "同星標題K.png"],
-    ["Matrix 牌單", "牌單標題K.png"],
-    ["Matrix 狀態", "狀態標題K.png"],
-    ["Matrix 筆記本", "筆記本標題K.png"],
-    ["號碼對照單", "對照單標題K.png"],
-    ["歷史開獎號碼", "歷史開獎標題K.png"],
-    ["連碰計算機", "連碰標題K.png"],
-    ["立柱計算機", "立柱標題K.png"],
-    ["Matrix Pro 會員方案與收費標準", "會員方案標題K.png"],
-    ["Matrix 自訂觸發狀態", "自訂觸發標題K.png"],
-  ];
-
-  for (const [title, file] of expectedArtwork) {
-    assert.match(featurePages, new RegExp(`"${title}": "/assets/lottery/functions/${file.replace(".", "\\.")}"`));
-  }");
+    const escapedAsset = asset.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     assert.match(featurePages, new RegExp(`"${title}": "${escapedAsset}"`));
   }
 });
@@ -72,7 +53,7 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工\.png" \}/);
   assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
   assert.match(featurePages, /headerAction=\{<MatrixPageSwitcher current=\{title === "Matrix 天衍" \? "tianyan" : "explore"\}/);
-  assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
   assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher\s*\{[^}]*(?:gap:\s*4px|width:\s*auto|height:\s*auto)/s);
   assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
@@ -104,7 +85,7 @@ test("number reference title card owns refresh and explore settings", () => {
   const start = featurePages.indexOf("export function NumberReferencePage");
   const end = featurePages.indexOf("export function CalculatorPage", start);
   const referencePage = featurePages.slice(start, end);
-  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions"/);
+  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions tool-title-actions"/);
   assert.match(referencePage, /刷新/);
   assert.match(referencePage, /探索設定/);
 });
