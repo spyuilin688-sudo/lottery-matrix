@@ -30,11 +30,21 @@ def evaluate_tianyan_candidate(value: dict) -> dict:
     predictions = sorted(set(_predictions_for(rule1, maximum) + _predictions_for(rule2, maximum)))
     prediction_numbers = [str(number).zfill(2) for number in predictions]
     groups = []
+    stopped_on_miss = False
     for group in value["groups"][:30]:
         rule1_hit = _group_hit(group, "rule1")
         rule2_hit = _group_hit(group, "rule2")
-        hit_type = "bothHit" if rule1_hit and rule2_hit else "rule1Only" if rule1_hit else "rule2Only" if rule2_hit else "bothMiss"
-        groups.append({**group, "rule1Hit": rule1_hit, "rule2Hit": rule2_hit, "hitType": hit_type, "success": rule1_hit or rule2_hit})
+        if not rule1_hit and not rule2_hit:
+            stopped_on_miss = True
+            break
+        hit_type = "bothHit" if rule1_hit and rule2_hit else "rule1Only" if rule1_hit else "rule2Only"
+        groups.append({
+            **group,
+            "rule1Hit": rule1_hit,
+            "rule2Hit": rule2_hit,
+            "hitType": hit_type,
+            "success": True,
+        })
 
     group_count = len(groups)
     minimum = ceil(group_count * 0.3)
@@ -49,7 +59,7 @@ def evaluate_tianyan_candidate(value: dict) -> dict:
     }
     if rule1["referencePosition"] == rule2["referencePosition"] and rule1["algorithmType"] == rule2["algorithmType"]:
         return {**result, "valid": False, "reason": "SAME_POSITION_AND_ALGORITHM"}
-    if any(not group["success"] for group in groups):
+    if stopped_on_miss and group_count < 5:
         return {**result, "valid": False, "reason": "UNCOVERED_GROUP"}
     if rule1_only < minimum or rule2_only < minimum:
         return {**result, "valid": False, "reason": "INSUFFICIENT_INDEPENDENT_CONTRIBUTION"}
