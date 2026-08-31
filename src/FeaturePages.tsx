@@ -1151,6 +1151,8 @@ export function MatrixExplorePage({
     | "準9進10"
     | "準11進12";
 
+  type ExploreDate = "本日 (最新)" | "昨日 (上1期)" | "前日 (上2期)";
+
   type ExploreResult = {
     id: string;
     position: number;
@@ -1189,6 +1191,7 @@ export function MatrixExplorePage({
   const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
+  const [exploreDate, setExploreDate] = useState<ExploreDate>("本日 (最新)");
   const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
   const [searched, setSearched] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
@@ -1285,6 +1288,7 @@ export function MatrixExplorePage({
 
   const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
   const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
+  const exploreDateOffset = exploreDate === "前日 (上2期)" ? 2 : exploreDate === "昨日 (上1期)" ? 1 : 0;
 
   const loadExplore = async (
     nextFilters = selectedFilters,
@@ -1295,7 +1299,11 @@ export function MatrixExplorePage({
     setExploreError(null);
     try {
       if (title === "Matrix 天衍") {
-        const response = await fetchTianyanList({ lottery, selectedStreaks: nextFilters });
+        const response = await fetchTianyanList({
+          lottery,
+          exploreDateOffset,
+          selectedStreaks: nextFilters,
+        });
         setTianyanResponse(response);
         setTianyanValidationById({});
         setExpandedRoad(null);
@@ -1307,7 +1315,7 @@ export function MatrixExplorePage({
         lottery,
         numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
         explorePeriods: selectedExplorePeriods,
-        exploreDateOffset: 0,
+        exploreDateOffset,
         exploreRange: exploreRange as "標準範圍" | "完整範圍",
         ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
         roadTypes: [roadType],
@@ -1498,8 +1506,17 @@ export function MatrixExplorePage({
               <span className="advanced-setting-title">
                 <SettingLabelIcon type="date" />探索日期
               </span>
-              <div className="segmented one">
-                <span className="segmented-static" data-selected="true">本日 (最新)</span>
+              <div className="segmented three">
+                {(["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"] as const).map((value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    data-selected={exploreDate === value}
+                    onClick={() => setExploreDate(value)}
+                  >
+                    {value}
+                  </button>
+                ))}
               </div>
             </label>
             <label>
