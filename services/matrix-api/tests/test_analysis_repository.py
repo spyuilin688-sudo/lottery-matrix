@@ -9,7 +9,7 @@ from postgrest import SyncPostgrestClient
 from app.repositories.analysis_repository import InMemoryAnalysisRepository, SupabaseAnalysisRepository
 
 
-KINDS = ["explore", "tianyan", "tiangong", "status"]
+KINDS = ["explore", "tianyan", "status"]
 
 
 class FakeResponse:
