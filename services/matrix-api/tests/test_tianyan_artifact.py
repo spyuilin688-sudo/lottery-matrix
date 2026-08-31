@@ -50,6 +50,43 @@ def _source_artifact() -> dict:
     }
 
 
+def _shared_candidate(
+    *,
+    position: int,
+    algorithm_type: str,
+    value: int,
+    current_base: int,
+    hits: list[bool],
+) -> dict:
+    return {
+        "row": {
+            "number": "07",
+            "lockedPosition": 1,
+            "predictionDistance": 1,
+            "numberOrder": "依號碼由小到大排序",
+            "exploreDateOffset": 0,
+            "lockedSourceIndex": 0,
+            "lockedSourcePeriod": "114000123",
+        },
+        "referenceOffset": -1,
+        "referencePosition": position,
+        "algorithmType": algorithm_type,
+        "currentBaseNumber": current_base,
+        "candidateValues": [value],
+        "groups": [
+            {
+                "group": f"g{index + 1}",
+                "sourcePeriod": str(100 - index),
+                "predictionPeriod": str(101 - index),
+                "predictionNumbers": ["01", "02", "03", "04", "05"],
+                "baseNumber": position,
+                "candidateValues": [value] if success else [],
+            }
+            for index, success in enumerate(hits)
+        ],
+    }
+
+
 def test_builds_composite_rows_deduplicates_pairs_and_detaches_validation() -> None:
     artifact = build_tianyan_artifact("今彩539", "114000123", _source_artifact())
     assert len(artifact["items"]) == 2
@@ -70,3 +107,35 @@ def test_only_combines_rules_from_the_same_locked_source_condition() -> None:
     source["items"][1].update({"lockedSourceIndex": 1, "lockedSourcePeriod": "114000122"})
     source["validationById"] = {item["id"]: source["validationById"][item["id"]] for item in source["items"]}
     assert build_tianyan_artifact("今彩539", "114000123", source)["items"] == []
+
+
+def test_shared_candidates_can_form_tianyan_without_explore_final_items() -> None:
+    first_hits = [True, True, True, False, False, False, True]
+    second_hits = [False, False, False, True, True, True, True]
+    source = {
+        "lottery": "今彩539",
+        "drawPeriod": "114000123",
+        "items": [],
+        "validationById": {},
+        "tianyanSources": [
+            _shared_candidate(
+                position=1, algorithm_type="加減", value=0,
+                current_base=3, hits=first_hits,
+            ),
+            _shared_candidate(
+                position=2, algorithm_type="加減", value=5,
+                current_base=10, hits=second_hits,
+            ),
+        ],
+    }
+
+    artifact = build_tianyan_artifact("今彩539", "114000123", source)
+
+    assert len(artifact["items"]) == 1
+    assert artifact["items"][0]["consecutive"] == "準7進8"
+    assert artifact["items"][0]["predictionNumbers"] == ["03", "15"]
+    validation = artifact["validationById"][artifact["items"][0]["id"]]
+    assert validation["minimumIndependentHits"] == 3
+    assert validation["rule1Only"] == 3
+    assert validation["rule2Only"] == 3
+    assert validation["bothHit"] == 1
