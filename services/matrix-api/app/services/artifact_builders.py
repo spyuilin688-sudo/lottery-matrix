@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.domain.explore_shared import run_matrix_shared_explore_group_with_history
+from app.domain.explore_shared_v8 import run_matrix_shared_explore_group_with_history
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tiangong import enumerate_equal_spacing_sequences
@@ -37,11 +37,18 @@ def _append_explore_result(
     response: dict[str, Any],
     history: list[dict[str, Any]],
 ) -> None:
-    tianyan_sources = response.get("tianyanSources", [])
-    if isinstance(tianyan_sources, list):
-        artifact.setdefault("tianyanSources", []).extend(
-            source for source in tianyan_sources if isinstance(source, dict)
+    tianyan_items = response.get("tianyanItems", [])
+    if isinstance(tianyan_items, list):
+        artifact.setdefault("tianyanItems", []).extend(
+            item for item in tianyan_items if isinstance(item, dict)
         )
+    tianyan_validations = response.get("tianyanValidationById", {})
+    if isinstance(tianyan_validations, dict):
+        target = artifact.setdefault("tianyanValidationById", {})
+        for identifier, validation in tianyan_validations.items():
+            if identifier in target and target[identifier] != validation:
+                raise ValueError("TIANYAN_RESULT_CONFLICT")
+            target[identifier] = validation
 
     for raw in response.get("results", []):
         search = raw.get("searchCondition", {})
@@ -70,7 +77,10 @@ def _append_explore_result(
             if isinstance(search.get(key), int) and not isinstance(search.get(key), bool):
                 item[key] = search[key]
         artifact["items"].append(item)
-        validation = {"itemId": identifier, "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else []}
+        validation = {
+            "itemId": identifier,
+            "ruleSets": raw.get("ruleSets", []) if isinstance(raw.get("ruleSets", []), list) else [],
+        }
         if isinstance(raw.get("sourceA"), dict):
             validation["sourceA"] = raw["sourceA"]
         artifact["validationById"][identifier] = validation
