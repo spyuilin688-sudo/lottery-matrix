@@ -5,6 +5,7 @@ import {
   type ScreenId,
 } from "./FeaturePagesCore";
 import { NotificationsPagePatched } from "./NotificationsPagePatched";
+import type { LotteryId } from "./Prototype";
 
 export { QuickNavigationProvider };
 export type { ScreenId };
@@ -20,6 +21,7 @@ export function FeaturePageRouter({
   screen,
   onNavigate,
   historyReturnScreen = "home",
+  statusLottery = "今彩539",
   onQuickOpen,
   onQuickConfigure,
   quickActive,
@@ -27,6 +29,7 @@ export function FeaturePageRouter({
   screen: ScreenId;
   onNavigate: Navigate;
   historyReturnScreen?: ScreenId;
+  statusLottery?: LotteryId;
 } & BottomNavCallbacks) {
   if (screen === "notifications") {
     return (
@@ -44,6 +47,7 @@ export function FeaturePageRouter({
       screen={screen}
       onNavigate={onNavigate}
       historyReturnScreen={historyReturnScreen}
+      statusLottery={statusLottery}
       onQuickOpen={onQuickOpen}
       onQuickConfigure={onQuickConfigure}
       quickActive={quickActive}
