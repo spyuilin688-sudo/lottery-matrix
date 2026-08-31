@@ -85,6 +85,14 @@ jobs:
         continue-on-error: true
         run: node --test tests/[s-z]*.test.mjs
 
+      - name: Diagnostic full tests serial
+        continue-on-error: true
+        run: node --test --test-concurrency=1 tests/*.test.mjs
+
+      - name: Diagnostic full tests concurrency 2
+        continue-on-error: true
+        run: node --test --test-concurrency=2 tests/*.test.mjs
+
       - name: Full tests
         run: node --test tests/*.test.mjs
 
