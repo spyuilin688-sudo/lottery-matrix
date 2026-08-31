@@ -78,7 +78,8 @@ describe("requested responsive layout refinement", () => {
         <section class="result-panel"><div class="road-results tiangong-results"><div class="tiangong-results-head"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div></div></section>
       </main>`;
 
-    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).width).toBe("2.34rem");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).width).toBe("var(--matrix-switcher-size)");
+    expect(readCss("src/matrix-explore-spacing.css")).toMatch(/--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
     expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).overflowY).toBe("auto");
     expect(getComputedStyle(document.querySelector(".matrix-tianyan-screen .select-box")!).height).toBe("24px");
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row")!).gridTemplateColumns).toBe("var(--tiangong-label-column) minmax(0, 1fr)");
@@ -157,7 +158,7 @@ describe("requested responsive layout refinement", () => {
     const paymentButton = getComputedStyle(document.querySelector(".confirm-payment")!);
     const paymentNote = getComputedStyle(document.querySelector(".payment-note")!);
 
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .feature-body")!).gap).toBe("8px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .feature-body")!).gap).toBe("6px");
     expect(checkout.display).toBe("grid");
     expect(checkout.rowGap).toBe("5px");
     expect(checkout.marginLeft).toBe("4px");
@@ -261,8 +262,8 @@ describe("requested responsive layout refinement", () => {
     expect(enable.width).toBe("100%");
     expect(disable.width).toBe("100%");
     expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
-    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient/s);
-    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
   });
 
   it("reduces the system notification explanation without changing the title", () => {
