@@ -3,6 +3,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
+import { resetReadCacheForTests } from '../read-cache';
 
 const matrixApi = vi.hoisted(() => ({
   fetchExploreList: vi.fn(),
@@ -87,6 +88,7 @@ const exploreValidationEnvelope = {
 beforeEach(() => {
   document.body.innerHTML = '';
   window.sessionStorage.clear();
+  resetReadCacheForTests();
   HTMLElement.prototype.scrollIntoView = vi.fn();
   matrixApi.fetchExploreList.mockReset().mockResolvedValue(exploreEnvelope);
   matrixApi.fetchExploreValidation.mockReset().mockResolvedValue(exploreValidationEnvelope);

@@ -1,7 +1,10 @@
 import type { NumberBallLottery } from './NumberBall';
 import { RAILWAY_API_BASE } from './runtime-api-config';
+import { clearReadCache, readThroughCache, stableCacheKey } from './read-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
+const LOTTERY_READ_CACHE_MS = 55_000;
+const latestPeriods = new Map<NumberBallLottery, string | undefined>();
 
 export type LotteryDrawRecord = {
   period?: string;
@@ -240,59 +243,79 @@ function assertNumberReferenceItem(value: unknown, index: number): asserts value
 }
 
 export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
-  const data = await requestJson<LatestLotteryResponse>(
-    `/api/matrix/latest/${encodeURIComponent(lottery)}`,
+  return readThroughCache(
+    stableCacheKey('lottery:latest', { lottery }),
+    LOTTERY_READ_CACHE_MS,
+    async () => {
+      const data = await requestJson<LatestLotteryResponse>(
+        `/api/matrix/latest/${encodeURIComponent(lottery)}`,
+      );
+      const item = isLatestLotteryEnvelope(data) ? data.item : data;
+      if (item === null || item === undefined) return null;
+      assertLotteryDrawRecord(item, 'item');
+      const record = normalizeRecord(lottery, item);
+      const previousPeriod = latestPeriods.get(lottery);
+      if (previousPeriod && previousPeriod !== record.period) clearReadCache(`lottery:history:${lottery}:`);
+      latestPeriods.set(lottery, record.period);
+      return record;
+    },
   );
-  const item = isLatestLotteryEnvelope(data) ? data.item : data;
-  if (item === null || item === undefined) return null;
-  assertLotteryDrawRecord(item, 'item');
-  return normalizeRecord(lottery, item);
 }
 
 export async function fetchLotteryHistory(
   lottery: NumberBallLottery,
   limit?: number,
 ) {
-  const query = typeof limit === 'number' ? `?limit=${limit}` : '';
-  const data = await requestJson<LotteryHistoryResponse>(
-    `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
+  return readThroughCache(
+    `lottery:history:${lottery}:${stableCacheKey('', { limit })}`,
+    LOTTERY_READ_CACHE_MS,
+    async () => {
+      const query = typeof limit === 'number' ? `?limit=${limit}` : '';
+      const data = await requestJson<LotteryHistoryResponse>(
+        `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
+      );
+      const items = Array.isArray(data) ? data : data.items ?? [];
+      assertArrayField(items, 'items');
+      items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
+      return items.map((item) => normalizeRecord(lottery, item));
+    },
   );
-  const items = Array.isArray(data) ? data : data.items ?? [];
-  assertArrayField(items, 'items');
-  items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
-  return items.map((item) => normalizeRecord(lottery, item));
 }
 
 export async function fetchTongXing(input: TongXingRequest) {
-  const data = await requestJson<TongXingResponse>('/api/matrix/tongxing', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+  return readThroughCache(stableCacheKey('lottery:tongxing', input), LOTTERY_READ_CACHE_MS, async () => {
+    const data = await requestJson<TongXingResponse>('/api/matrix/tongxing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    assertArrayField(data.groups, 'groups');
+    data.groups.forEach((group, index) => assertTongXingGroup(group, index));
+    return {
+      ...data,
+      groups: data.groups.map((group) => ({
+        lockedEntry: normalizeProjectedRecord(input.lottery, group.lockedEntry),
+        predictedEntry: normalizeProjectedRecord(input.lottery, group.predictedEntry),
+      })),
+    };
   });
-  assertArrayField(data.groups, 'groups');
-  data.groups.forEach((group, index) => assertTongXingGroup(group, index));
-  return {
-    ...data,
-    groups: data.groups.map((group) => ({
-      lockedEntry: normalizeProjectedRecord(input.lottery, group.lockedEntry),
-      predictedEntry: normalizeProjectedRecord(input.lottery, group.predictedEntry),
-    })),
-  };
 }
 
 export async function fetchNumberReference(input: NumberReferenceRequest) {
-  const data = await requestJson<NumberReferenceResponse>('/api/matrix/number-reference', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+  return readThroughCache(stableCacheKey('lottery:number-reference', input), LOTTERY_READ_CACHE_MS, async () => {
+    const data = await requestJson<NumberReferenceResponse>('/api/matrix/number-reference', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    assertArrayField(data.items, 'items');
+    data.items.forEach((item, index) => assertNumberReferenceItem(item, index));
+    return {
+      ...data,
+      items: data.items.map((item) => ({
+        ...normalizeProjectedRecord(input.lottery, item),
+        matchSlots: Array.isArray(item.matchSlots) ? item.matchSlots.map(Number) : [],
+      })),
+    };
   });
-  assertArrayField(data.items, 'items');
-  data.items.forEach((item, index) => assertNumberReferenceItem(item, index));
-  return {
-    ...data,
-    items: data.items.map((item) => ({
-      ...normalizeProjectedRecord(input.lottery, item),
-      matchSlots: Array.isArray(item.matchSlots) ? item.matchSlots.map(Number) : [],
-    })),
-  };
 }

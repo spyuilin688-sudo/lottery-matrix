@@ -38,6 +38,26 @@ describe('Matrix exploration Supabase RPC', () => {
     expect(rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: request });
   });
 
+  it('reuses an unchanged exploration list during the current page session', async () => {
+    const request = {
+      lottery: '今彩539' as const,
+      numberOrder: '依號碼由小到大排序' as const,
+      explorePeriods: 7 as const,
+      exploreDateOffset: 0 as const,
+      exploreRange: '完整範圍' as const,
+      ruleCount: 1 as const,
+      roadTypes: ['合值' as const],
+      selectedStreaks: ['準4進5'],
+      sameCode: false,
+    };
+    rpc.mockResolvedValue({ data: { items: [], draw_period: '115000207', analysis_version: 'v8' }, error: null });
+
+    await fetchExploreList(request);
+    await fetchExploreList(request);
+
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it('calls the validation RPC with the selected item', async () => {
     const meta = {
       lottery: '今彩539' as const,

@@ -1,6 +1,7 @@
 import type { NumberBallLottery } from './NumberBall';
 import { matrixApiFetch, MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
+import { readThroughCache, stableCacheKey } from './read-cache';
 import {
   buildMatrixResultCacheKey,
   readMatrixResultCache,
@@ -283,6 +284,7 @@ export type TiangongValidationResponse = {
 };
 
 const pendingRequests = new Map<string, Promise<MatrixAlgorithmResponse>>();
+const MATRIX_READ_CACHE_MS = 60_000;
 
 function matrixRpcError(error: { code?: string; message?: string } | null): never {
   const message = String(error?.message ?? 'API_ERROR');
@@ -329,8 +331,16 @@ async function matrixResultRpc<T>(name: string, request: unknown) {
   return normalizeMatrixRpcResponse(name, data) as T;
 }
 
+async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; analysisVersion?: string }>(
+  name: string,
+  request: unknown,
+): Promise<T> {
+  const key = stableCacheKey(`matrix-rpc:${name}`, request);
+  return readThroughCache(key, MATRIX_READ_CACHE_MS, () => matrixResultRpc<T>(name, request));
+}
+
 export function fetchExploreList(request: ExploreListRequest) {
-  return matrixResultRpc<ExploreListResponse>('matrix_explore_list', request);
+  return cachedMatrixResultRpc<ExploreListResponse>('matrix_explore_list', request);
 }
 
 export function fetchExploreValidation(
@@ -338,7 +348,7 @@ export function fetchExploreValidation(
   itemId: string,
   access: Pick<ExploreListRequest, 'explorePeriods' | 'exploreRange'>,
 ) {
-  return matrixResultRpc<ExploreValidationResponse>(
+  return cachedMatrixResultRpc<ExploreValidationResponse>(
     'matrix_explore_validation',
     { ...meta, itemId, ...access },
   );
@@ -349,28 +359,28 @@ export function fetchTianyanList(request: {
   drawPeriod?: string;
   selectedStreaks: string[];
 }) {
-  return matrixResultRpc<TianyanListResponse>('matrix_tianyan_list', request);
+  return cachedMatrixResultRpc<TianyanListResponse>('matrix_tianyan_list', request);
 }
 
 export function fetchTianyanValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixResultRpc<TianyanValidationResponse>(
+  return cachedMatrixResultRpc<TianyanValidationResponse>(
     'matrix_tianyan_validation',
     { ...meta, itemId },
   );
 }
 
 export function fetchTiangongList(request: TiangongListRequest) {
-  return matrixResultRpc<TiangongListResponse>('matrix_tiangong_list', request);
+  return cachedMatrixResultRpc<TiangongListResponse>('matrix_tiangong_list', request);
 }
 
 export function fetchTiangongValidation(
   meta: { lottery: NumberBallLottery; drawPeriod: string; analysisVersion: string },
   itemId: string,
 ) {
-  return matrixResultRpc<TiangongValidationResponse>(
+  return cachedMatrixResultRpc<TiangongValidationResponse>(
     'matrix_tiangong_validation',
     { ...meta, itemId },
   );

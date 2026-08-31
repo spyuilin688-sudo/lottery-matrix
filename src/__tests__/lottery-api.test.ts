@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
+import { resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  resetReadCacheForTests();
 });
 
 function mockJsonResponse(body: unknown) {
@@ -35,6 +37,20 @@ describe('lottery-api response validation', () => {
   it('歷史開獎 items 內缺少 numbers 時拒絕異常格式', async () => {
     mockJsonResponse({ items: [{ period: '5899', drawDate: '2026/08/14' }] });
     await expect(fetchLotteryHistory('今彩539', 10)).rejects.toThrow('Lottery API invalid response: items[0]');
+  });
+
+  it('相同彩種與範圍的歷史資料在一分鐘內共用讀取結果', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ items: [{ period: '115000207', numbers: ['01', '02', '03', '04', '05'] }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    await fetchLotteryHistory('今彩539', 1000);
+    await fetchLotteryHistory('今彩539', 1000);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it('同星回傳缺少 groups 時拒絕異常格式', async () => {
