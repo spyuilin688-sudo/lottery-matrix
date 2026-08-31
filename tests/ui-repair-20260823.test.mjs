@@ -10,6 +10,7 @@ const feature = readFileSync('src/feature-pages.css', 'utf8');
 const home = readLocalCss('src/homepage-repair.css');
 const tokens = readFileSync('src/design-tokens.css', 'utf8');
 const bottomNav = readFileSync('src/BottomNavigation.tsx', 'utf8');
+const doubleClickAction = readFileSync('src/useDoubleClickAction.ts', 'utf8');
 const adjustments = readFileSync('src/feature-page-adjustments.css', 'utf8');
 
 function block(css, selector) {
@@ -56,7 +57,8 @@ test('quick interaction keeps primary click and uses homepage-only double-click 
   assert.match(bottomNav, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;/);
   assert.match(bottomNav, /showQuickSettings && onQuickConfigure \? \(/);
   assert.match(bottomNav, /handleQuickSettingsClick/);
-  assert.match(bottomNav, /event\.detail === 0/);
+  assert.match(bottomNav, /useDoubleClickAction/);
+  assert.match(doubleClickAction, /event\.detail === 0/);
   assert.doesNotMatch(bottomNav, /QUICK_LONG_PRESS_MS|beginQuickPress|finishQuickPress|cancelQuickPress|onPointerDown|onPointerUp|onPointerCancel/);
   assert.doesNotMatch(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\]/);
   assert.doesNotMatch(adjustments, /data-dragging|will-change:\s*transform/);
