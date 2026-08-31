@@ -65,6 +65,13 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".next-draw-info--embedded")!).transform).toBe("none");
   });
 
+  it("keeps Number Reference title actions responsive with their requested group offset", () => {
+    const css = readCss("src/responsive-feature-pages.css");
+
+    expect(css).toMatch(/\.number-reference-screen\s*\{[^}]*--title-action-top-offset:\s*-2\.5px;[^}]*--title-action-right-offset:\s*3px;/s);
+    expect(css).toMatch(/\.draw-history-screen \.matrix-title-banner-actions,[\s\S]*?\.number-reference-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*calc\(100% \+ var\(--title-action-top-offset\)\);[^}]*right:\s*calc\(4% \+ var\(--title-action-right-offset\)\);[^}]*transform:\s*translateY\(-87\.5%\);/s);
+  });
+
   it("uses Matrix Explore density for Tianyan and Tiangong controls", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/matrix-explore-spacing.css")}`);
     style.dataset.layoutContract = "matrix";
