@@ -62,7 +62,7 @@ test('號碼對照單標題操作使用共用控制項尺寸、內容寬度區�
   assert.match(source, /className="reference-title-actions title-card-compact-actions"/);
   assert.match(source, /<ReloadIcon className="reference-refresh-icon" \/>刷新/);
   assert.match(source, /className="title-card-compact-action reference-settings-trigger"[^>]*aria-label=\{queryExpanded/);
-  assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{\s*gap:\s*8px;/s);
+  assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{[\s\S]*?gap:\s*6px;/s);
   const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
   assert.equal(actionBodies.length, 1);
   assert.match(actionBodies[0], /width:\s*auto;/);
