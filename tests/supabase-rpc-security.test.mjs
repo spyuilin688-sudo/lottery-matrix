@@ -54,3 +54,20 @@ test('Matrix v5 readers never fall back to completed v4 artifacts', async () => 
   assert.match(exploreValidation, /v_version\s*<>\s*v_draw\s*\|\|\s*':matrix-python-v5'/);
   assert.match(sql, /p_analysis_version\s*<>\s*p_draw_period\s*\|\|\s*':matrix-python-v5'/);
 });
+
+test('deployed functions repair invalid schema-qualified COALESCE calls', async () => {
+  const sql = await read('supabase/migrations/20260831235800_repair_qualified_coalesce.sql');
+
+  assert.match(sql, /n\.nspname in \('public', 'private'\)/);
+  assert.match(sql, /p\.prokind = 'f'/);
+  assert.match(
+    sql,
+    /position\(\s*'pg_catalog\.coalesce'\s+in pg_catalog\.lower\(pg_catalog\.pg_get_functiondef\(p\.oid\)\)\s*\) > 0/s,
+  );
+  assert.match(
+    sql,
+    /pg_catalog\.replace\(v_definition, 'pg_catalog\.coalesce', 'coalesce'\)/,
+  );
+  assert.match(sql, /execute v_definition/);
+  assert.match(sql, /BROKEN_QUALIFIED_COALESCE_REMAINS/);
+});
