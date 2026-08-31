@@ -126,6 +126,10 @@
   background-image: none;
 }
 
+.draw-history-screen .history-reset-trigger {
+  min-height: calc(10px + clamp(3.5px, 1vw, 4px) + clamp(3.5px, 1vw, 4px));
+}
+
 .tool-title-reset-trigger > svg,
 .reference-refresh-icon {
   width: 8px;
