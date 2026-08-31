@@ -22,6 +22,100 @@ afterEach(() => {
 });
 
 describe("notification visual refinement", () => {
+  it("gives notification groups more room while keeping the mobile content vertically balanced", () => {
+    mountStyles(notificationCss());
+    document.body.innerHTML = `
+      <main class="notifications-screen-v2" style="--layout-bottom-nav-clearance:72px">
+        <div class="feature-body">
+          <div class="notification-content">
+            <div class="notification-bulk-actions"></div>
+            <div class="notification-list">
+              <section class="notification-group"></section>
+              <section class="notification-system-group"></section>
+            </div>
+          </div>
+        </div>
+      </main>`;
+
+    const featureBody = getComputedStyle(document.querySelector(".feature-body")!);
+    const content = getComputedStyle(document.querySelector(".notification-content")!);
+    const list = getComputedStyle(document.querySelector(".notification-list")!);
+
+    expect(featureBody.paddingBlockStart).toBe("4px");
+    expect(featureBody.paddingBlockEnd).toBe("calc(var(--layout-bottom-nav-clearance) + 8px)");
+    expect(content.rowGap).toBe("16px");
+    expect(list.gap).toBe("12px");
+  });
+
+  it("keeps disabled Matrix 摘星 readable without making its controls active", () => {
+    mountStyles(notificationCss());
+    document.body.innerHTML = `
+      <main class="notifications-screen-v2">
+        <article class="notification-row" data-notification-key="collision">
+          <div class="notification-heading">
+            <div class="notification-icon"><img alt="" /></div>
+            <div class="notification-title"><h2><em>Matrix Pro</em><span>Matrix 摘星</span></h2></div>
+            <div class="notification-actions"><button class="notification-settings-toggle" disabled>設定選項</button><button class="toggle" disabled><span></span></button></div>
+          </div>
+        </article>
+      </main>`;
+
+    const title = getComputedStyle(document.querySelector("[data-notification-key=collision] h2 span")!);
+    const badge = getComputedStyle(document.querySelector("[data-notification-key=collision] h2 em")!);
+    const icon = getComputedStyle(document.querySelector("[data-notification-key=collision] .notification-icon img")!);
+    const disabledControl = document.querySelector("[data-notification-key=collision] .toggle")! as HTMLButtonElement;
+
+    expect(title.color).toBe("rgba(242, 242, 242, 0.82)");
+    expect(badge.opacity).toBe("0.72");
+    expect(icon.filter).toBe("brightness(1.06) contrast(1.04)");
+    expect(disabledControl.disabled).toBe(true);
+  });
+
+  it("tightens notification controls and softens internal separators", () => {
+    mountStyles(notificationCss());
+    document.body.innerHTML = `
+      <main class="notifications-screen-v2">
+        <section class="notification-group">
+          <article class="notification-row"></article>
+          <article class="notification-row"><div class="notification-inline-settings"><div class="notification-inline-settings-content"></div></div></article>
+        </section>
+        <article class="notification-row" data-notification-key="system">
+          <div class="notification-heading">
+            <div class="notification-title"><h2><span>系統通知</span></h2><p class="notification-push-status">手機通知已開啟</p></div>
+            <div class="notification-actions"><button class="notification-settings-toggle">設定選項</button><button class="toggle"><span></span></button></div>
+          </div>
+        </article>
+        <article class="notification-row" data-notification-key="result">
+          <div class="notification-heading"><div class="notification-actions"><button class="notification-settings-toggle">設定選項</button><button class="toggle"><span></span></button></div></div>
+        </article>
+      </main>`;
+
+    const groupDivider = getComputedStyle(document.querySelector(".notification-group .notification-row + .notification-row")!);
+    const inlineDivider = getComputedStyle(document.querySelector(".notification-inline-settings-content")!);
+    const normalActions = getComputedStyle(document.querySelector("[data-notification-key=result] .notification-actions")!);
+    const normalSetting = getComputedStyle(document.querySelector("[data-notification-key=result] .notification-settings-toggle")!);
+    const systemActions = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-actions")!);
+    const systemSetting = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-settings-toggle")!);
+    const systemTitle = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-title")!);
+
+    expect(groupDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
+    expect(inlineDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
+    expect(normalActions.gridTemplateColumns).toBe("56px 38px");
+    expect(normalActions.gap).toBe("8px");
+    expect(normalSetting.width).toBe("56px");
+    expect(systemActions.gridTemplateColumns).toBe("52px 38px");
+    expect(systemSetting.width).toBe("52px");
+    expect(systemTitle.gap).toBe("0px");
+  });
+
+  it("adds breathing room between the Matrix Pro label and its name", () => {
+    mountStyles(notificationCss());
+    document.body.innerHTML = `
+      <main class="notifications-screen-v2"><div class="notification-title"><h2><em>Matrix Pro</em><span>Matrix 狀態</span></h2></div></main>`;
+
+    expect(getComputedStyle(document.querySelector(".notification-title h2")!).gap).toBe("4px");
+  });
+
   it("uses lighter title weight and more compact bulk actions", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
