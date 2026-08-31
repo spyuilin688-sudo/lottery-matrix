@@ -85,7 +85,7 @@ def _builders(failing: bool = False) -> dict:
             return {"items": []}
         return selected
 
-    return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianyan", "status")}
 
 
 def test_manual_worker_records_running_then_success() -> None:
@@ -178,7 +178,6 @@ def test_running_analysis_checkpoint_finishes_invocation_as_success(monkeypatch)
     builders = {
         "explore": explore,
         "tianyan": lambda _: {"items": []},
-        "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
     result = run_worker("今彩539", repository, Source(), builders)
