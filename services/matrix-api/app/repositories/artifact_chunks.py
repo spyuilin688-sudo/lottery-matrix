@@ -51,6 +51,15 @@ def decode_chunk_payload(payload: Any) -> Any:
         not isinstance(decoded, Mapping)
         or not isinstance(decoded.get("items"), list)
         or not isinstance(decoded.get("validationById"), Mapping)
+        or (
+            "tianyanItems" in decoded
+            and not isinstance(decoded.get("tianyanItems"), list)
+        )
+        or (
+            "tianyanValidationById" in decoded
+            and not isinstance(decoded.get("tianyanValidationById"), Mapping)
+        )
+        or (("tianyanItems" in decoded) != ("tianyanValidationById" in decoded))
     ):
         raise ValueError(CHUNK_PAYLOAD_INVALID)
     return decoded
@@ -81,6 +90,10 @@ def materialize_chunks(
     items: list[Any] = []
     items_by_id: dict[str, Any] = {}
     validation_by_id: dict[str, Any] = {}
+    tianyan_items: list[Any] = []
+    tianyan_items_by_id: dict[str, Any] = {}
+    tianyan_validation_by_id: dict[str, Any] = {}
+    saw_tianyan_results = False
     previous_cursor_end = 0
 
     for chunk in ordered:
@@ -90,6 +103,32 @@ def materialize_chunks(
             raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
 
         payload = decode_chunk_payload(chunk["payload"])
+        if "tianyanItems" in payload or "tianyanValidationById" in payload:
+            chunk_tianyan_items = payload.get("tianyanItems")
+            chunk_tianyan_validations = payload.get("tianyanValidationById")
+            if not isinstance(chunk_tianyan_items, list) or not isinstance(chunk_tianyan_validations, Mapping):
+                raise ValueError(CHUNK_PAYLOAD_INVALID)
+            saw_tianyan_results = True
+            for item in chunk_tianyan_items:
+                identifier = item.get("id") if isinstance(item, Mapping) else None
+                if not isinstance(identifier, str):
+                    tianyan_items.append(item)
+                    continue
+                if identifier in tianyan_items_by_id:
+                    if deduplicate_by_id:
+                        continue
+                    if tianyan_items_by_id[identifier] != item:
+                        raise ValueError("ANALYSIS_CHUNK_CONFLICT")
+                    continue
+                tianyan_items_by_id[identifier] = item
+                tianyan_items.append(item)
+            for identifier, validation in chunk_tianyan_validations.items():
+                if identifier in tianyan_validation_by_id and tianyan_validation_by_id[identifier] != validation:
+                    if deduplicate_by_id:
+                        continue
+                    raise ValueError("ANALYSIS_CHUNK_CONFLICT")
+                tianyan_validation_by_id[identifier] = validation
+
         for item in payload["items"]:
             identifier = item.get("id") if isinstance(item, Mapping) else None
             if not isinstance(identifier, str):
@@ -113,12 +152,16 @@ def materialize_chunks(
     if previous_cursor_end != expected_total:
         raise ValueError("ANALYSIS_CHUNKS_INCOMPLETE")
 
-    return {
+    result = {
         "lottery": lottery,
         "drawPeriod": draw_period,
         "items": items,
         "validationById": validation_by_id,
     }
+    if saw_tianyan_results:
+        result["tianyanItems"] = tianyan_items
+        result["tianyanValidationById"] = tianyan_validation_by_id
+    return result
 
 
 def summarize_chunks(

@@ -1,6 +1,8 @@
 from typing import Any
 
-from .tianyan import evaluate_tianyan_candidate
+from .models import lottery_maximum
+from .tianyan import calculate_tianyan_prediction, evaluate_tianyan_candidate
+from .tianyan_shared import build_tianyan_unit_artifact
 
 
 def _stable_id(value: str) -> str:
@@ -19,7 +21,7 @@ def _stable_id(value: str) -> str:
     return f"tianyan-{encoded}"
 
 
-def _source_rules(artifact: dict[str, Any]) -> list[dict[str, Any]]:
+def _legacy_source_rules(artifact: dict[str, Any]) -> list[dict[str, Any]]:
     sources: list[dict[str, Any]] = []
     for row in (item for item in artifact["items"] if item.get("ruleCount") == 1):
         validation = artifact["validationById"].get(row["id"])
@@ -54,12 +56,97 @@ def _source_rules(artifact: dict[str, Any]) -> list[dict[str, Any]]:
     return sources
 
 
-def _same_search(left: dict[str, Any], right: dict[str, Any]) -> bool:
+def _shared_source_rules(artifact: dict[str, Any], lottery: str) -> list[dict[str, Any]]:
+    maximum = lottery_maximum(lottery)
+    sources: list[dict[str, Any]] = []
+    raw_sources = artifact.get("tianyanSources", [])
+    if not isinstance(raw_sources, list):
+        return sources
+    for bundle in raw_sources:
+        if not isinstance(bundle, dict) or not isinstance(bundle.get("row"), dict):
+            continue
+        row = dict(bundle["row"])
+        algorithm_type = str(bundle.get("algorithmType", ""))
+        if algorithm_type not in {"加減", "合值", "拖牌"}:
+            continue
+        try:
+            reference_offset = int(bundle.get("referenceOffset", 0))
+            reference_position = int(bundle.get("referencePosition", row.get("lockedPosition", 0)))
+            current_base = int(bundle.get("currentBaseNumber", 0))
+        except (TypeError, ValueError):
+            continue
+        raw_values = bundle.get("candidateValues", [])
+        raw_groups = bundle.get("groups", [])
+        if not isinstance(raw_values, list) or not isinstance(raw_groups, list):
+            continue
+        values: list[int] = []
+        for raw_value in raw_values:
+            try:
+                value = int(raw_value)
+            except (TypeError, ValueError):
+                continue
+            if value not in values:
+                values.append(value)
+        for value in values:
+            prediction = calculate_tianyan_prediction(
+                algorithm_type, current_base, value, maximum,
+            )
+            validation_rows: list[dict[str, Any]] = []
+            for group in raw_groups[:30]:
+                if not isinstance(group, dict):
+                    continue
+                group_values: set[int] = set()
+                for raw_group_value in group.get("candidateValues", []):
+                    try:
+                        group_values.add(int(raw_group_value))
+                    except (TypeError, ValueError):
+                        continue
+                validation_rows.append({
+                    "group": str(group.get("group", "")),
+                    "sourcePeriod": str(group.get("sourcePeriod", "")),
+                    "predictionPeriod": str(group.get("predictionPeriod", "")),
+                    "predictionNumbers": group.get("predictionNumbers", []),
+                    "baseNumber": int(group.get("baseNumber", 0)),
+                    "success": value in group_values,
+                })
+            identity = "|".join(map(str, [
+                row.get("number", ""), row.get("lockedPosition", ""),
+                row.get("predictionDistance", ""), row.get("numberOrder", ""),
+                row.get("lockedSourceIndex", ""), row.get("lockedSourcePeriod", ""),
+                reference_offset, reference_position, algorithm_type, value,
+            ]))
+            sources.append({
+                "row": row,
+                "rule": {
+                    "id": _stable_id(f"shared-rule|{identity}"),
+                    "referenceOffset": reference_offset,
+                    "referencePosition": reference_position,
+                    "algorithmType": algorithm_type,
+                    "value": value,
+                    "currentBaseNumber": current_base,
+                    "currentPredictionNumbers": [prediction],
+                },
+                "validationRows": validation_rows,
+            })
+    return sources
+
+
+def _source_rules(artifact: dict[str, Any], lottery: str) -> list[dict[str, Any]]:
+    if "tianyanSources" in artifact:
+        return _shared_source_rules(artifact, lottery)
+    return _legacy_source_rules(artifact)
+
+
+def _search_key(row: dict[str, Any]) -> tuple[Any, ...]:
     keys = (
         "number", "lockedPosition", "predictionDistance", "numberOrder", "exploreDateOffset",
         "lockedSourceIndex", "lockedSourcePeriod",
     )
-    return all(left.get(key) == right.get(key) for key in keys)
+    return tuple(row.get(key) for key in keys)
+
+
+def _same_search(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    return _search_key(left) == _search_key(right)
 
 
 def _historical_groups(left: dict[str, Any], right: dict[str, Any]) -> list[dict[str, Any]]:
@@ -96,43 +183,99 @@ def _rule_identity(rule: dict[str, Any]) -> str:
 
 
 def _streak(group_count: int) -> str | None:
-    if group_count >= 17:
-        return "準17進18+"
-    return f"準{group_count}進{group_count + 1}" if group_count in {5, 6, 7, 9, 11, 13, 15} else None
+    if 4 <= group_count <= 30:
+        return f"準{group_count}進{group_count + 1}"
+    return None
+
+
+def _candidate_signature(row: dict[str, Any], left: dict[str, Any], right: dict[str, Any], predictions: list[str]) -> str:
+    return "|".join(map(str, [
+        row["number"], row["lockedPosition"], row.get("lockedSourceIndex", ""),
+        row.get("lockedSourcePeriod", ""), row["predictionDistance"], row["numberOrder"],
+        *sorted([_rule_identity(left["rule"]), _rule_identity(right["rule"])]),
+        ",".join(predictions),
+    ]))
 
 
 def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dict[str, Any]) -> dict[str, Any]:
     if explore_artifact.get("lottery") != lottery or explore_artifact.get("drawPeriod") != draw_period:
         raise ValueError("INVALID_REQUEST")
-    sources = _source_rules(explore_artifact)
+    if "tianyanItems" in explore_artifact or "tianyanValidationById" in explore_artifact:
+        items = explore_artifact.get("tianyanItems")
+        validations = explore_artifact.get("tianyanValidationById")
+        if not isinstance(items, list) or not isinstance(validations, dict):
+            raise ValueError("INVALID_REQUEST")
+        return {
+            "lottery": lottery,
+            "drawPeriod": draw_period,
+            "items": list(items),
+            "validationById": dict(validations),
+        }
+
+    sources = _source_rules(explore_artifact, lottery)
+    partitions: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for source in sources:
+        partitions.setdefault(_search_key(source["row"]), []).append(source)
+
     items: list[dict[str, Any]] = []
     validations: dict[str, Any] = {}
     seen: set[str] = set()
-    for first, left in enumerate(sources):
-        for right in sources[first + 1:]:
-            if not _same_search(left["row"], right["row"]):
-                continue
-            result = evaluate_tianyan_candidate({
-                "lottery": lottery, "rules": [left["rule"], right["rule"]],
-                "groups": _historical_groups(left, right),
-            })
-            consecutive = _streak(result["groupCount"])
-            if not result["valid"] or consecutive is None:
-                continue
-            row = left["row"]
-            signature = "|".join(map(str, [
-                row["number"], row["lockedPosition"], row.get("lockedSourceIndex", ""),
-                row.get("lockedSourcePeriod", ""), row["predictionDistance"], row["numberOrder"],
-                *sorted([_rule_identity(left["rule"]), _rule_identity(right["rule"])]),
-                ",".join(result["predictionNumbers"]),
-            ]))
-            if signature in seen:
-                continue
-            seen.add(signature)
-            identifier = _stable_id(signature)
+    for partition in partitions.values():
+        candidates: list[dict[str, Any]] = []
+        for first, left in enumerate(partition):
+            for right in partition[first + 1:]:
+                if (
+                    left["rule"]["referencePosition"] == right["rule"]["referencePosition"]
+                    and left["rule"]["algorithmType"] == right["rule"]["algorithmType"]
+                ):
+                    continue
+                if not _same_search(left["row"], right["row"]):
+                    continue
+                result = evaluate_tianyan_candidate({
+                    "lottery": lottery, "rules": [left["rule"], right["rule"]],
+                    "groups": _historical_groups(left, right),
+                })
+                consecutive = _streak(result["groupCount"])
+                if not result["valid"] or consecutive is None:
+                    continue
+                row = left["row"]
+                signature = _candidate_signature(row, left, right, result["predictionNumbers"])
+                if signature in seen:
+                    continue
+                seen.add(signature)
+                candidates.append({
+                    "row": row,
+                    "left": left,
+                    "right": right,
+                    "result": result,
+                    "consecutive": consecutive,
+                    "signature": signature,
+                })
+
+        if not candidates:
+            continue
+        highest = max(candidate["result"]["groupCount"] for candidate in candidates)
+        highest_candidates = [
+            candidate for candidate in candidates
+            if candidate["result"]["groupCount"] == highest
+        ]
+        merged_predictions = sorted({
+            prediction
+            for candidate in highest_candidates
+            for prediction in candidate["result"]["predictionNumbers"]
+        })
+        if len(merged_predictions) > 2:
+            continue
+
+        for candidate in highest_candidates:
+            row = candidate["row"]
+            left = candidate["left"]
+            right = candidate["right"]
+            result = candidate["result"]
+            identifier = _stable_id(candidate["signature"])
             item = {
                 "id": identifier, "number": row["number"], "lockedPosition": row["lockedPosition"],
-                "predictionDistance": row["predictionDistance"], "consecutive": consecutive,
+                "predictionDistance": row["predictionDistance"], "consecutive": candidate["consecutive"],
                 "highestStreak": result["groupCount"], "predictionNumbers": result["predictionNumbers"],
                 "roadType": "複合", "hitCondition": "準5+（鎖定2碼）", "numberOrder": row["numberOrder"],
                 "explorePeriods": 13, "exploreDateOffset": row["exploreDateOffset"],

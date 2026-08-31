@@ -45,17 +45,22 @@ test('legacy completed status artifacts are backfilled without validation maps',
   assert.match(sql, /encoded\.payload->>'encoding' is not null/);
 });
 
-test('Matrix Explore RPCs accept only complete matrix-python-v7 artifacts', async () => {
-  const sql = await read('supabase/migrations/20260831213000_matrix_python_v7_explore_rpc.sql');
-  const exploreList = sql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
-  const exploreValidation = sql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
+test('Matrix Explore RPCs preserve complete-only security and cut over only to matrix-python-v8', async () => {
+  const baseSql = await read('supabase/migrations/20260831213000_matrix_python_v7_explore_rpc.sql');
+  const upgradeSql = await read('supabase/migrations/20260901000000_matrix_python_v8_explore_rpc.sql');
+  const exploreList = baseSql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
+  const exploreValidation = baseSql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
 
-  assert.equal((sql.match(/create or replace function/g) ?? []).length, 2);
+  assert.equal((baseSql.match(/create or replace function/g) ?? []).length, 2);
   assert.match(exploreList, /run\.status\s*=\s*'complete'/);
-  assert.match(exploreList, /run\.analysis_version\s*=\s*run\.draw_period\s*\|\|\s*':matrix-python-v7'/);
-  assert.match(exploreValidation, /v_version\s*<>\s*v_draw\s*\|\|\s*':matrix-python-v7'/);
   assert.match(exploreValidation, /run\.status\s*=\s*'complete'/);
-  assert.doesNotMatch(sql, /matrix-python-v[56]/);
+  assert.match(upgradeSql, /pg_catalog\.pg_get_functiondef\(v_function_oid\)/);
+  assert.match(upgradeSql, /p\.proname in \('matrix_explore_list', 'matrix_explore_validation'\)/);
+  assert.match(upgradeSql, /'matrix-python-v7',\s*'matrix-python-v8'/s);
+  assert.match(upgradeSql, /MATRIX_EXPLORE_RPC_COUNT_INVALID/);
+  assert.match(upgradeSql, /MATRIX_PYTHON_V7_RPC_REFERENCE_REMAINS/);
+  assert.match(upgradeSql, /MATRIX_PYTHON_V8_RPC_REFERENCE_MISSING/);
+  assert.doesNotMatch(upgradeSql, /matrix-python-v[56]/);
 });
 
 test('deployed functions repair invalid schema-qualified COALESCE calls', async () => {

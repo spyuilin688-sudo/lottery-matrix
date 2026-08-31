@@ -39,6 +39,45 @@ def test_rejects_uncovered_group_and_same_rule_identity() -> None:
     assert evaluate_tianyan_candidate(same)["reason"] == "SAME_POSITION_AND_ALGORITHM"
 
 
+def test_stops_at_first_both_miss_and_ignores_older_groups() -> None:
+    hits = (
+        [(True, False)] * 3
+        + [(False, True)] * 3
+        + [(True, True)]
+        + [(False, False)]
+        + [(True, False)] * 5
+    )
+
+    result = evaluate_tianyan_candidate(candidate(hits))
+
+    assert result["valid"] is True
+    assert result["groupCount"] == 7
+    assert len(result["groups"]) == 7
+    assert result["minimumIndependentHits"] == 3
+    assert result["rule1Only"] == 3
+    assert result["rule2Only"] == 3
+    assert result["bothHit"] == 1
+
+
+def test_four_successes_before_first_miss_remain_a_valid_streak() -> None:
+    hits = [
+        (True, False),
+        (False, True),
+        (True, False),
+        (False, True),
+        (False, False),
+        (True, False),
+    ]
+
+    result = evaluate_tianyan_candidate(candidate(hits))
+
+    assert result["valid"] is True
+    assert result["groupCount"] == 4
+    assert result["minimumIndependentHits"] == 2
+    assert result["rule1Only"] == 2
+    assert result["rule2Only"] == 2
+
+
 def test_retains_two_rules_when_prediction_is_the_same() -> None:
     value = candidate([(True, False), (False, True), (True, False), (False, True)])
     value["rules"][1].update({"algorithmType": "合值", "value": 13, "currentBaseNumber": 10})

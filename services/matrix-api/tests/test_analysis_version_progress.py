@@ -8,14 +8,14 @@ from app.repositories.analysis_repository import (
     SupabaseAnalysisRepository,
 )
 from app.services.analysis_pipeline import AnalysisPipeline
-from app.worker import run_scheduled_worker
+from app.worker import ANALYSIS_VERSION, run_scheduled_worker
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v7"
-LEGACY_VERSION = f"{PERIOD}:matrix-python-v6"
+CURRENT_VERSION = f"{PERIOD}:matrix-python-v8"
+LEGACY_VERSION = f"{PERIOD}:matrix-python-v7"
 
 
 class FakeResponse:
@@ -80,6 +80,10 @@ def _complete_run(
     for kind in ARTIFACT_KINDS:
         repository.save_artifact(LOTTERY, PERIOD, version, kind, {"kind": kind})
     repository.complete_run(LOTTERY, PERIOD, version, completed_at)
+
+
+def test_worker_uses_matrix_python_v8() -> None:
+    assert ANALYSIS_VERSION == "matrix-python-v8"
 
 
 def test_progress_lookup_can_be_scoped_to_one_analysis_version() -> None:

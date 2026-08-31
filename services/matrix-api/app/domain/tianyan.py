@@ -3,6 +3,9 @@ from math import ceil
 from .models import lottery_maximum, normalize_matrix_number
 
 
+TIANYAN_MINIMUM_STREAK = 4
+
+
 def calculate_tianyan_prediction(algorithm_type: str, base_number: int, value: int, maximum: int) -> int:
     if algorithm_type == "合值":
         return normalize_matrix_number(value - base_number, maximum)
@@ -33,8 +36,16 @@ def evaluate_tianyan_candidate(value: dict) -> dict:
     for group in value["groups"][:30]:
         rule1_hit = _group_hit(group, "rule1")
         rule2_hit = _group_hit(group, "rule2")
-        hit_type = "bothHit" if rule1_hit and rule2_hit else "rule1Only" if rule1_hit else "rule2Only" if rule2_hit else "bothMiss"
-        groups.append({**group, "rule1Hit": rule1_hit, "rule2Hit": rule2_hit, "hitType": hit_type, "success": rule1_hit or rule2_hit})
+        if not rule1_hit and not rule2_hit:
+            break
+        hit_type = "bothHit" if rule1_hit and rule2_hit else "rule1Only" if rule1_hit else "rule2Only"
+        groups.append({
+            **group,
+            "rule1Hit": rule1_hit,
+            "rule2Hit": rule2_hit,
+            "hitType": hit_type,
+            "success": True,
+        })
 
     group_count = len(groups)
     minimum = ceil(group_count * 0.3)
@@ -49,7 +60,7 @@ def evaluate_tianyan_candidate(value: dict) -> dict:
     }
     if rule1["referencePosition"] == rule2["referencePosition"] and rule1["algorithmType"] == rule2["algorithmType"]:
         return {**result, "valid": False, "reason": "SAME_POSITION_AND_ALGORITHM"}
-    if any(not group["success"] for group in groups):
+    if group_count < TIANYAN_MINIMUM_STREAK:
         return {**result, "valid": False, "reason": "UNCOVERED_GROUP"}
     if rule1_only < minimum or rule2_only < minimum:
         return {**result, "valid": False, "reason": "INSUFFICIENT_INDEPENDENT_CONTRIBUTION"}
