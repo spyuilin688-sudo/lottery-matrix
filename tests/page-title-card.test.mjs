@@ -13,9 +13,9 @@ const exploreSpacingStyles = readFileSync(new URL("../src/matrix-explore-spacing
 
 test("confirmed feature pages use the latest integrated title artwork", () => {
   const expectedArtwork = [
-    ["Matrix 探索", "/assets/matrix-explore/title-explore.png"],
-    ["Matrix 天衍", "/assets/matrix-explore/title-tianyan.png"],
-    ["Matrix 天工", "/assets/matrix-explore/title-tiangong.png"],
+    ["Matrix 探索", "/assets/lottery/functions/探索標題K.png"],
+    ["Matrix 天衍", "/assets/lottery/functions/天衍標題K.png"],
+    ["Matrix 天工", "/assets/lottery/functions/天工標題K.png"],
     ["Matrix 指南", "/assets/lottery/functions/指南標題K.png"],
     ["Matrix 同星", "/assets/lottery/functions/同星標題K.png"],
     ["Matrix 牌單", "/assets/lottery/functions/牌單標題K.png"],
