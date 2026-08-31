@@ -15,7 +15,7 @@ test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () =>
   assert.match(header, /探索設定/);
 });
 
-test("刷新與探索設定共用標題卡控制項尺寸，並保留內容寬度操作區", () => {
+test("刷新與探索設定共用標題卡控制項尺寸，刷新圖示縮減為 8px", () => {
   const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
   const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
@@ -26,11 +26,11 @@ test("刷新與探索設定共用標題卡控制項尺寸，並保留內容寬�
   const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.reference-title-actions$/);
   assert.ok(titleBodies.some((body) => /width:\s*auto;/.test(body)));
   assert.ok(titleBodies.some((body) => /gap:\s*6px;/.test(body)));
-  const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.title-card-compact-action svg$/);
+  const iconBodies = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
   assert.equal(iconBodies.length, 1);
-  assert.match(iconBodies[0], /width:\s*10px;/);
-  assert.match(iconBodies[0], /height:\s*10px;/);
-  assert.match(iconBodies[0], /flex:\s*0 0 10px;/);
+  assert.match(iconBodies[0], /width:\s*8px;/);
+  assert.match(iconBodies[0], /height:\s*8px;/);
+  assert.match(iconBodies[0], /flex:\s*0 0 8px;/);
 });
 
 
