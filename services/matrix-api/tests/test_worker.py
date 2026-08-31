@@ -7,7 +7,6 @@ from postgrest.exceptions import APIError
 
 from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
-from app.services.artifact_builders import tiangong_work_units
 from app.services.explore_batches import work_units
 from app.worker import run_scheduled_worker, run_worker
 
@@ -123,7 +122,7 @@ def _builders(calls: list[str], history_lengths: list[int] | None = None, failin
                 raise RuntimeError("builder failed")
             return {"kind": kind}
         return selected
-    return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianyan", "status")}
 
 
 def test_worker_backfills_and_analyzes_complete_history() -> None:
@@ -138,8 +137,8 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     assert result["analysisVersion"] == "000000220:matrix-python-v8"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
-    assert history_lengths == [120, 120, 120, 120]
+    assert calls == ["explore", "tianyan", "status"]
+    assert history_lengths == [120, 120, 120]
     assert len(repository.list_draws("今彩539", None)) == 120
 
 
@@ -153,7 +152,7 @@ def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None
     )
 
     assert result["status"] == "complete"
-    assert history_lengths == [120, 120, 120, 120]
+    assert history_lengths == [120, 120, 120]
 
 
 def test_completed_worker_run_does_not_read_all_history_again() -> None:
@@ -202,8 +201,8 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     assert result["status"] == "complete"
     assert repository.events == ["cleanup"]
     assert source.events == ["history-all", "latest"]
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
-    assert history_lengths == [79, 79, 79, 79]
+    assert calls == ["explore", "tianyan", "status"]
+    assert history_lengths == [79, 79, 79]
     assert repository.get_progress("今彩539", "000000220")["status"] == "complete"
 
 
@@ -268,7 +267,6 @@ def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
     builders = {
         "explore": explore,
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
-        "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
 
@@ -276,40 +274,6 @@ def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
 
     assert result["status"] == "complete"
     assert starts == [0, 10, 20]
-
-
-def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -> None:
-    captured: dict[str, int] = {}
-
-    class RecordingPipeline:
-        def __init__(self, _repository, _builders, _version, **options) -> None:
-            captured.update(options)
-
-        def run(self, _draw, _history) -> dict:
-            return {"status": "complete"}
-
-    monkeypatch.setattr(worker_module, "AnalysisPipeline", RecordingPipeline)
-    draw = {
-        "lottery": "今彩539", "period": "000000220",
-        "drawDate": "2026-08-30",
-        "numbers": ["01", "02", "03", "04", "05"],
-    }
-
-    result = worker_module._run_analysis(
-        InMemoryAnalysisRepository(), draw, [draw], _builders([]),
-    )
-
-    assert result["status"] == "complete"
-    assert captured["explore_batch_size"] == 10
-    assert captured["tiangong_batch_size"] == 3
-    explore_batches = (
-        len(work_units("今彩539", history_length=80, position_count=5))
-        + worker_module.EXPLORE_BATCH_SIZE - 1
-    ) // worker_module.EXPLORE_BATCH_SIZE
-    tiangong_batches = (
-        len(tiangong_work_units()) + worker_module.TIANGONG_BATCH_SIZE - 1
-    ) // worker_module.TIANGONG_BATCH_SIZE
-    assert explore_batches + tiangong_batches - 1 <= worker_module.MAX_CYCLES_PER_INVOCATION
 
 
 def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None:
@@ -328,7 +292,6 @@ def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None
     builders = {
         "explore": lambda _: {"items": []},
         "tianyan": tianyan,
-        "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
     monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
@@ -359,7 +322,6 @@ def test_worker_backs_off_before_retrying_transient_service_failure(monkeypatch)
     builders = {
         "explore": lambda _: {"items": []},
         "tianyan": tianyan,
-        "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
     monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
