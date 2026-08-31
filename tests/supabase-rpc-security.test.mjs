@@ -79,3 +79,15 @@ test('deployed functions repair invalid schema-qualified COALESCE calls', async 
   assert.match(sql, /execute v_definition/);
   assert.match(sql, /BROKEN_QUALIFIED_COALESCE_REMAINS/);
 });
+
+
+test('Matrix historical date offsets are limited to the restored three periods', async () => {
+  const sql = await read('supabase/migrations/20260901010000_restore_matrix_explore_date_offsets.sql');
+
+  assert.match(sql, /v_offset is null or v_offset not in \(0, 1, 2\)/);
+  assert.match(sql, /offset v_offset/);
+  assert.match(sql, /'exploreDateOffset', v_offset/);
+  assert.match(sql, /create or replace function public\.matrix_tianyan_list\(p_request jsonb\)/);
+  assert.match(sql, /v_offset integer := coalesce\(\(p_request->>'exploreDateOffset'\)::integer, 0\)/);
+  assert.match(sql, /v_offset not in \(0, 1, 2\)/);
+});
