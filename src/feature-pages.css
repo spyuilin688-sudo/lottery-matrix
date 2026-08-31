@@ -100,7 +100,7 @@
   top: 50%;
   right: auto;
   bottom: auto;
-  left: calc(83% + 6px);
+  left: calc(83% + 3px);
   width: 2.34rem;
   height: 2.34rem;
   transform: translateY(-50%);
