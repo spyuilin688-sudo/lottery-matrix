@@ -68,7 +68,7 @@ declare
   v_entitlements jsonb := private.matrix_result_entitlements();
 begin
   if v_lottery not in ('今彩539', '天天樂', '六合彩', '大樂透')
-    or jsonb_typeof(v_streaks) <> 'array'
+    or pg_catalog.jsonb_typeof(v_streaks) <> 'array'
     or v_offset not in (0, 1, 2) then
     raise exception using errcode = '22023', message = 'INVALID_REQUEST';
   end if;
@@ -87,14 +87,14 @@ begin
   end if;
   v_payload := private.matrix_artifact_payload('tianyan', v_lottery, v_draw, v_version);
   if v_payload is null then raise exception using errcode = 'P0001', message = 'ANALYSIS_NOT_READY'; end if;
-  select coalesce(jsonb_agg(item order by (item->>'highestStreak')::integer desc, item->>'id'), '[]'::jsonb)
+  select coalesce(pg_catalog.jsonb_agg(item order by (item->>'highestStreak')::integer desc, item->>'id'), '[]'::jsonb)
     into v_items
-  from jsonb_array_elements(coalesce(v_payload->'items', '[]'::jsonb)) as item
+  from pg_catalog.jsonb_array_elements(coalesce(v_payload->'items', '[]'::jsonb)) as item
   where v_streaks ? (item->>'consecutive');
-  return jsonb_build_object(
+  return pg_catalog.jsonb_build_object(
     'kind', 'tianyan', 'lottery', v_lottery, 'drawPeriod', v_draw,
     'analysisVersion', v_version, 'exploreDateOffset', v_offset, 'status', 'complete',
-    'items', v_items, 'total', jsonb_array_length(v_items)
+    'items', v_items, 'total', pg_catalog.jsonb_array_length(v_items)
   );
 end;
 $$;
