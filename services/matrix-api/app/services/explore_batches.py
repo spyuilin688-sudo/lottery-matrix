@@ -6,20 +6,23 @@ from typing import Any
 
 def work_units(lottery: str, history_length: int, position_count: int) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
-    for number_order in ('依號碼由小到大排序', '依實際開獎順序排序'):
-        for algorithm_type in ('加減', '合值', '拖牌'):
-            for source_index in range(min(13, max(0, history_length))):
-                for position in range(1, position_count + 1):
-                    units.append({
-                        'lottery': lottery,
-                        'numberOrder': number_order,
-                        'algorithmType': algorithm_type,
-                        'lockedSourceIndex': source_index,
-                        'lockedPosition': position,
-                        'exploreDateOffset': 0,
-                        'exploreRange': '完整範圍',
-                        'predictionDistance': source_index + 1,
-                    })
+    number_orders = (
+        ('依號碼由小到大排序',)
+        if lottery == '天天樂'
+        else ('依號碼由小到大排序', '依實際開獎順序排序')
+    )
+    for number_order in number_orders:
+        for source_index in range(min(13, max(0, history_length))):
+            for position in range(1, position_count + 1):
+                units.append({
+                    'lottery': lottery,
+                    'numberOrder': number_order,
+                    'lockedSourceIndex': source_index,
+                    'lockedPosition': position,
+                    'exploreDateOffset': 0,
+                    'exploreRange': '完整範圍',
+                    'predictionDistance': source_index + 1,
+                })
     return units
 
 
