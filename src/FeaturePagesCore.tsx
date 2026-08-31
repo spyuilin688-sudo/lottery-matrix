@@ -263,8 +263,8 @@ function PatchedDrawHistoryPage({
   };
 
   const historyTitleActions = (
-    <div className="history-title-actions title-card-compact-actions">
-      <button type="button" className="history-reset-trigger title-card-compact-action" onClick={resetHistory}><ReloadIcon aria-hidden="true" />重設</button>
+    <div className="history-title-actions title-card-compact-actions tool-title-actions">
+      <button type="button" className="history-reset-trigger title-card-compact-action tool-title-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" />重設</button>
       <button type="button" className="history-filter-trigger title-card-compact-action" aria-label={filterExpanded ? "收合篩選設定" : "展開篩選設定"} aria-expanded={filterExpanded} onClick={toggleHistoryFilters}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選設定
@@ -369,7 +369,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   };
 
   return (
-    <ToolFeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen sticky-title-card-screen" headerAction={<div className="tongxing-title-actions title-card-compact-actions"><button type="button" className="title-card-compact-action" aria-label={settingsExpanded ? "收合同星探索設定" : "展開同星探索設定"} aria-expanded={settingsExpanded} onClick={toggleSettingsPanel}><span>探索設定</span><ChevronDownIcon data-open={settingsExpanded} /></button></div>} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
+    <ToolFeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen sticky-title-card-screen" headerAction={<div className="tongxing-title-actions title-card-compact-actions tool-title-actions"><button type="button" className="title-card-compact-action" aria-label={settingsExpanded ? "收合同星探索設定" : "展開同星探索設定"} aria-expanded={settingsExpanded} onClick={toggleSettingsPanel}><span>探索設定</span><ChevronDownIcon data-open={settingsExpanded} /></button></div>} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
       <MobilePagePortal active={settingsFloating}>
         <section className="panel tongxing-query tongxing-panel-scope" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded} style={settingsFloating ? { top: `${settingsPanelTop}px`, "--select-tech-surface": "#030b13", "--select-tech-accent": "#f0bd36", "--select-tech-text": "#d4d0c8", "--select-tech-cut": "8px" } as React.CSSProperties : undefined}>
           <div className="query-selects"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
