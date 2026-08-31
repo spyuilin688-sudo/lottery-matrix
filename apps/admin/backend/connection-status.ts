@@ -1,5 +1,5 @@
 import type { SupabaseConfig } from './supabase';
-import type { WorkerStatus } from './worker-api';
+import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 
 type Row = Record<string, unknown>;
 type Dependencies = {
@@ -51,7 +51,12 @@ const jobStatuses = ['running', 'success', 'failed'] as const;
 const nullableString = (value: unknown): string | null =>
   typeof value === 'string' ? value : null;
 
-const safeJobDetail = (row: Row, jobName: string, lottery: string) => {
+const safeJobDetail = (
+  row: Row,
+  jobName: string,
+  lottery: string,
+  analysis: RailwayLatestAnalysis | null,
+) => {
   const status = typeof row.status === 'string'
     && jobStatuses.includes(row.status as typeof jobStatuses[number])
     ? row.status
@@ -65,12 +70,17 @@ const safeJobDetail = (row: Row, jobName: string, lottery: string) => {
     finished_at: nullableString(row.finished_at),
     updatedAt: nullableString(row.updated_at),
     error: row.error ? 'WORKER_FAILED' : null,
+    analysisStatus: analysis?.status ?? null,
+    analysisPhase: analysis?.phase ?? null,
+    analysisDrawPeriod: analysis?.drawPeriod ?? null,
+    analysisCompletedAt: analysis?.completedAt ?? null,
   };
 };
 
 export function createConnectionStatus(dependencies: Dependencies) {
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
+  let latestWorkerStatus: WorkerStatus | null = null;
   const check = async (
     id: string,
     name: string,
@@ -124,6 +134,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
       operation: async () => {
         const status = await dependencies.getWorkerStatus();
         if (!status.ok) throw new Error('Railway Worker API 暫時無法使用');
+        latestWorkerStatus = status;
         return status;
       },
     },
@@ -148,7 +159,23 @@ export function createConnectionStatus(dependencies: Dependencies) {
       }
       const jobs = jobDefinitions.map(([jobName, lottery]) => {
         const row = jobRows.find((item) => item.job_name === jobName);
-        const detail = row ? safeJobDetail(row, jobName, lottery) : null;
+        const analysis = latestWorkerStatus?.ok
+          ? latestWorkerStatus.jobs.items.find((item) => item.lottery === lottery)?.latestAnalysis ?? null
+          : null;
+        const detail = row ? safeJobDetail(row, jobName, lottery, analysis) : analysis ? {
+          jobName,
+          lottery,
+          status: 'unknown',
+          startedAt: null,
+          finishedAt: null,
+          finished_at: null,
+          updatedAt: null,
+          error: null,
+          analysisStatus: analysis.status,
+          analysisPhase: analysis.phase,
+          analysisDrawPeriod: analysis.drawPeriod,
+          analysisCompletedAt: analysis.completedAt,
+        } : null;
         const ok = detail?.status === 'success';
         return {
           id: `cron-${jobName}`,
