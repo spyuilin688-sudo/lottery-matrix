@@ -163,7 +163,7 @@ test('notification layout has one authoritative sizing and spacing source', () =
   );
   assert.match(
     prototypeCss,
-    /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body \{\s*padding-bottom: var\(--layout-bottom-nav-clearance\);\s*\}/,
+    /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body \{\s*padding-bottom: calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);\s*\}/,
   );
   assert.doesNotMatch(
     prototypeCss,

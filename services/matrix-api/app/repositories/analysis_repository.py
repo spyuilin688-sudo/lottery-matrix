@@ -19,6 +19,7 @@ JOB_NAME_BY_LOTTERY = {
 RETENTION = timedelta(days=3)
 DRAW_PAGE_SIZE = 1000
 ARTIFACT_CHUNK_PAGE_SIZE = 2
+EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
 
 
 class AnalysisRepository(Protocol):
@@ -29,6 +30,7 @@ class AnalysisRepository(Protocol):
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
@@ -37,6 +39,7 @@ class AnalysisRepository(Protocol):
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
+    def has_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> bool: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
@@ -142,6 +145,32 @@ class InMemoryAnalysisRepository:
             for draw in newest
         ]
 
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
+        matches = [
+            draw
+            for (name, _), draw in self.draws.items()
+            if name == lottery
+            and str(draw.get("drawDate") or "").replace("/", "-").replace(".", "-") >= since_date
+        ]
+        ordered = sorted(
+            matches,
+            key=lambda draw: (
+                str(draw.get("drawDate") or ""),
+                str(draw["period"]),
+            ),
+            reverse=True,
+        )
+        return [
+            {
+                "period": draw["period"],
+                "drawDate": draw.get("drawDate"),
+                "numbers": draw["numbers"],
+                "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),
+                "drawOrderNumbers": draw.get("drawOrderNumbers"),
+            }
+            for draw in ordered
+        ]
+
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
         key = (lottery, draw_period, analysis_version)
         if key not in self.runs:
@@ -208,6 +237,11 @@ class InMemoryAnalysisRepository:
             expected_total,
             deduplicate_by_id=kind == "tiangong",
         )
+
+    def has_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> bool:
+        return (lottery, draw_period, analysis_version, kind) in self.artifacts
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         record = self.artifacts.get((lottery, draw_period, analysis_version, kind))
@@ -433,6 +467,18 @@ class SupabaseAnalysisRepository:
 
         return [self._normalize_draw(draw) for draw in draws]
 
+    def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
+        response = (
+            self.client.table("lottery_draws")
+            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+            .eq("lottery", lottery)
+            .gte("draw_date", since_date)
+            .order("draw_date", desc=True, nullsfirst=False)
+            .order("period", desc=True)
+            .execute()
+        )
+        return [self._normalize_draw(dict(draw)) for draw in response.data]
+
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "phase": "explore", "cursor": 0, "total": 0, "status": "running", "started_at": started_at, "error": None}
         response = self.client.table("matrix_analysis_runs").upsert(record, on_conflict="lottery,draw_period,analysis_version", ignore_duplicates=True).execute()
@@ -474,17 +520,18 @@ class SupabaseAnalysisRepository:
         )
         if not records:
             return
-        self.client.table("matrix_explore_results").upsert(
-            records,
-            on_conflict="lottery,draw_period,analysis_version,item_id",
-        ).execute()
+        for start in range(0, len(records), EXPLORE_RESULT_UPSERT_BATCH_SIZE):
+            self.client.table("matrix_explore_results").upsert(
+                records[start:start + EXPLORE_RESULT_UPSERT_BATCH_SIZE],
+                on_conflict="lottery,draw_period,analysis_version,item_id",
+            ).execute()
 
     def _iter_artifact_chunks(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
     ) -> Iterator[dict[str, Any]]:
-        offset = 0
+        last_chunk_index: int | None = None
         while True:
-            response = (
+            query = (
                 self.client.table("matrix_analysis_artifact_chunks")
                 .select("chunk_index,cursor_start,cursor_end,payload")
                 .eq("lottery", lottery)
@@ -492,14 +539,19 @@ class SupabaseAnalysisRepository:
                 .eq("analysis_version", analysis_version)
                 .eq("kind", kind)
                 .order("chunk_index")
-                .range(offset, offset + ARTIFACT_CHUNK_PAGE_SIZE - 1)
-                .execute()
+                .limit(ARTIFACT_CHUNK_PAGE_SIZE)
             )
+            if last_chunk_index is not None:
+                query = query.gt("chunk_index", last_chunk_index)
+            response = query.execute()
             page = [dict(chunk) for chunk in response.data]
             yield from page
             if len(page) < ARTIFACT_CHUNK_PAGE_SIZE:
                 break
-            offset += len(page)
+            next_chunk_index = int(page[-1]["chunk_index"])
+            if last_chunk_index is not None and next_chunk_index <= last_chunk_index:
+                raise ValueError("ANALYSIS_CHUNK_PAGINATION_STALLED")
+            last_chunk_index = next_chunk_index
 
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
         return list(self._iter_artifact_chunks(
@@ -525,6 +577,21 @@ class SupabaseAnalysisRepository:
             expected_total,
             deduplicate_by_id=kind == "tiangong",
         )
+
+    def has_artifact(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> bool:
+        response = (
+            self.client.table("matrix_analysis_artifacts")
+            .select("kind")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .eq("kind", kind)
+            .range(0, 0)
+            .execute()
+        )
+        return bool(response.data)
 
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None:
         artifact = self.client.table("matrix_analysis_artifacts").select("payload").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).eq("kind", kind).limit(1).execute()

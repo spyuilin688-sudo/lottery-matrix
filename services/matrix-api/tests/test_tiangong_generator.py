@@ -5,6 +5,7 @@ from app.domain.tiangong_generator import (
     derive_tiangong_rules, enumerate_position_paths, enumerate_reference_positions,
     result_position, run_tiangong_candidates,
 )
+from app.services.artifact_builders import tiangong_work_units
 
 
 def _draw(period: int, numbers: list[int]) -> dict:
@@ -13,15 +14,6 @@ def _draw(period: int, numbers: list[int]) -> dict:
 
 def _fixed(position: int, length: int) -> dict:
     return {"startPosition": position, "direction": "固定", "positionsOldestToNewest": [position] * length}
-
-
-def _one_stage_history() -> list[dict]:
-    history = [_draw(114233 - index, [30, 31, 32, 33, 34]) for index in range(20)]
-    for position, numbers in [(19, [10, 21, 22, 23, 24]), (14, [20, 15, 22, 23, 24]),
-                              (12, [11, 21, 22, 23, 24]), (7, [20, 16, 22, 23, 24]),
-                              (5, [12, 21, 22, 23, 24])]:
-        history[position - 1] = _draw(114234 - position, numbers)
-    return history
 
 
 def _two_stage_history() -> list[dict]:
@@ -44,23 +36,6 @@ def test_generator_primitives_match_matrix_rules() -> None:
     assert enumerate_reference_positions(5, 5, 20) == [*range(6, 20), 5, 4, 3, 2, 1]
 
 
-def test_one_stage_search_validates_history_and_predicts_a() -> None:
-    options = {
-        "periodRanges": [50], "modes": ["one-stage"], "hitConditions": ["準2進3"],
-        "sourceSequences": [[5, 12, 19]], "referenceOffsets": [0],
-        "explorePaths": [_fixed(1, 3)], "firstStagePaths": [_fixed(2, 3)], "firstStageDistances": [5],
-    }
-    candidates = run_tiangong_candidates("今彩539", _one_stage_history(), options)
-    candidate = next(item for item in candidates if item["firstStage"]["algorithmType"] == "加減" and item["firstStage"]["value"] == 5)
-    result = evaluate_tiangong_candidate(candidate)
-    assert (result["valid"], result["interval"], result["predictionDistance"], result["predictedPosition"], result["predictionNumber"]) == (True, 7, 1, 2, "17")
-    assert [(row["group"], row["role"], row["resultPeriod"]) for row in candidate["validationRows"]] == [
-        ("C", "first-stage-evidence", "114220"), ("B", "first-stage-evidence", "114227"), ("A", "prediction", "114234")]
-    changed = _one_stage_history()
-    changed[6] = _draw(114227, [20, 18, 22, 23, 24])
-    assert run_tiangong_candidates("今彩539", changed, options) == []
-
-
 def test_two_stage_search_keeps_independent_distances() -> None:
     candidates = run_tiangong_candidates("今彩539", _two_stage_history(), {
         "periodRanges": [50], "modes": ["two-stage"], "hitConditions": ["準2進3"],
@@ -80,6 +55,121 @@ def test_two_stage_search_keeps_independent_distances() -> None:
 
 def test_generator_rejects_ready3_to_ready4() -> None:
     with pytest.raises(ValueError, match="INVALID_HIT_CONDITION"):
-        run_tiangong_candidates("今彩539", _one_stage_history(), {
-            "periodRanges": [50], "modes": ["one-stage"], "hitConditions": ["準3進4"],
+        run_tiangong_candidates("今彩539", _two_stage_history(), {
+            "periodRanges": [50], "modes": ["two-stage"], "hitConditions": ["準3進4"],
         })
+
+
+def test_tiangong_work_units_only_generate_two_stage_ready2() -> None:
+    units = tiangong_work_units()
+
+    assert len(units) == 533
+    assert {unit["modes"][0] for unit in units} == {"two-stage"}
+    assert {unit["hitConditions"][0] for unit in units} == {"準2進3"}
+
+
+def test_generator_rejects_removed_one_stage_mode() -> None:
+    with pytest.raises(ValueError, match="INVALID_TIANGONG_MODE"):
+        run_tiangong_candidates("今彩539", _two_stage_history(), {
+            "periodRanges": [50], "modes": ["one-stage"],
+            "hitConditions": ["準2進3"],
+        })
+
+
+def test_two_stage_ready2_excludes_a_road_that_also_passes_the_previous_group() -> None:
+    history = _two_stage_history()
+    history[25] = _draw(114208, [20, 2, 3, 4, 5])
+    history[16] = _draw(114217, [1, 30, 3, 4, 5])
+    history[11] = _draw(114222, [1, 2, 3, 4, 3])
+    options = {
+        "periodRanges": [50], "modes": ["two-stage"],
+        "hitConditions": ["準2進3"],
+        "sourceSequences": [[14, 18, 22]], "referenceOffsets": [0],
+        "explorePaths": [{
+            "startPosition": 2, "direction": "依序遞增",
+            "positionsOldestToNewest": [2, 3, 4],
+        }],
+        "firstStagePaths": [{
+            "startPosition": 3, "direction": "依序遞增",
+            "positionsOldestToNewest": [3, 4, 5],
+        }],
+        "secondStagePaths": [_fixed(5, 3)],
+        "firstStageDistances": [9], "secondStageDistances": [5],
+    }
+
+    assert run_tiangong_candidates("今彩539", history, options) == []
+
+
+def test_two_stage_ready2_keeps_a_road_when_the_previous_group_fails() -> None:
+    history = _two_stage_history()
+    history[25] = _draw(114208, [20, 2, 3, 4, 5])
+    history[16] = _draw(114217, [1, 30, 3, 4, 5])
+    history[11] = _draw(114222, [1, 2, 3, 4, 4])
+    options = {
+        "periodRanges": [50], "modes": ["two-stage"],
+        "hitConditions": ["準2進3"],
+        "sourceSequences": [[14, 18, 22]], "referenceOffsets": [0],
+        "explorePaths": [{
+            "startPosition": 2, "direction": "依序遞增",
+            "positionsOldestToNewest": [2, 3, 4],
+        }],
+        "firstStagePaths": [{
+            "startPosition": 3, "direction": "依序遞增",
+            "positionsOldestToNewest": [3, 4, 5],
+        }],
+        "secondStagePaths": [_fixed(5, 3)],
+        "firstStageDistances": [9], "secondStageDistances": [5],
+    }
+
+    candidates = run_tiangong_candidates("今彩539", history, options)
+
+    assert len(candidates) == 1
+    assert candidates[0]["mode"] == "two-stage"
+
+
+def test_two_stage_ready2_is_kept_when_the_previous_group_fails_first_stage() -> None:
+    history = _two_stage_history()
+    history[25] = _draw(114208, [20, 2, 3, 4, 5])
+    history[16] = _draw(114217, [1, 31, 3, 4, 5])
+    history[11] = _draw(114222, [1, 2, 3, 4, 3])
+    options = {
+        "periodRanges": [50], "modes": ["two-stage"],
+        "hitConditions": ["準2進3"],
+        "sourceSequences": [[14, 18, 22]], "referenceOffsets": [0],
+        "explorePaths": [{
+            "startPosition": 2, "direction": "依序遞增",
+            "positionsOldestToNewest": [2, 3, 4],
+        }],
+        "firstStagePaths": [{
+            "startPosition": 3, "direction": "依序遞增",
+            "positionsOldestToNewest": [3, 4, 5],
+        }],
+        "secondStagePaths": [_fixed(5, 3)],
+        "firstStageDistances": [9], "secondStageDistances": [5],
+    }
+
+    candidates = run_tiangong_candidates("今彩539", history, options)
+
+    assert len(candidates) == 1
+
+
+def test_two_stage_ready2_requires_history_for_the_previous_group_check() -> None:
+    options = {
+        "periodRanges": [50], "modes": ["two-stage"],
+        "hitConditions": ["準2進3"],
+        "sourceSequences": [[14, 18, 22]], "referenceOffsets": [0],
+        "explorePaths": [{
+            "startPosition": 2, "direction": "依序遞增",
+            "positionsOldestToNewest": [2, 3, 4],
+        }],
+        "firstStagePaths": [{
+            "startPosition": 3, "direction": "依序遞增",
+            "positionsOldestToNewest": [3, 4, 5],
+        }],
+        "secondStagePaths": [_fixed(5, 3)],
+        "firstStageDistances": [9], "secondStageDistances": [5],
+    }
+
+    assert run_tiangong_candidates(
+        "今彩539", _two_stage_history()[:25], options,
+    ) == []

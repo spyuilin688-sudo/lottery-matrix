@@ -250,6 +250,15 @@
   transform: none;
 }
 
+/* Mark Six history surfaces enlarge the ball canvas while preserving the existing digit geometry. */
+.matrix-explore-main-screen .matrix-explore-history-panel.history-panel[data-lottery="六合彩"] {
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
+}
+
+.draw-history-screen .draw-history-panel.history-panel[data-lottery="六合彩"] {
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
+}
+
 /* Both history surfaces keep the same shared Mark Six number center. */
 .matrix-explore-main-screen .matrix-explore-history-panel[data-lottery="六合彩"] .number-ball-component.history-lottery-ball {
   --number-ball-size: var(--matrix-history-ball-size);

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -10,7 +12,7 @@ from app.repositories.analysis_repository import InMemoryAnalysisRepository
 TAIPEI = ZoneInfo("Asia/Taipei")
 
 
-def test_latest_draw_returns_date_and_existing_schedule_time(monkeypatch) -> None:
+def test_latest_draw_includes_next_draw_at_for_the_home_countdown(monkeypatch) -> None:
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw({
         "lottery": "今彩539",
@@ -20,10 +22,12 @@ def test_latest_draw_returns_date_and_existing_schedule_time(monkeypatch) -> Non
         "sortedNumbers": ["03", "06", "17", "23", "33"],
         "drawOrderNumbers": ["33", "06", "03", "17", "23"],
     })
+    expected_next_draw = datetime(2026, 8, 31, 20, 33, tzinfo=TAIPEI)
     monkeypatch.setattr(
         api_server,
         "next_lottery_call_time",
-        lambda lottery: datetime(2026, 8, 31, 20, 33, tzinfo=TAIPEI),
+        lambda lottery: expected_next_draw,
+        raising=False,
     )
 
     status, payload = handle_api_request(

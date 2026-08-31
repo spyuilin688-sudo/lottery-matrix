@@ -1,7 +1,9 @@
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import httpx
 import pytest
+from postgrest.exceptions import APIError
 
 from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
@@ -52,6 +54,44 @@ class StaleScheduledSource(Source):
         return self._draw(220, count, "2026-08-27")
 
 
+class CalendarHistorySource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        return self._draw(220, count, "2026-08-30")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        rows = [
+            self._draw(
+                220 - offset,
+                count,
+                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+            )
+            for offset in range(self.history_count)
+        ]
+        return rows if limit is None else rows[:limit]
+
+
+class SourceAheadOfDatabase(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        return self._draw(205, 5, "2026-08-30")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        rows = [
+            self._draw(
+                205 - offset,
+                5,
+                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+            )
+            for offset in range(36)
+        ]
+        return rows if limit is None else rows[:limit]
+
+
 class TrackingRepository(InMemoryAnalysisRepository):
     def __init__(self) -> None:
         super().__init__()
@@ -60,6 +100,17 @@ class TrackingRepository(InMemoryAnalysisRepository):
     def cleanup_expired(self, now: datetime) -> int:
         self.events.append("cleanup")
         return super().cleanup_expired(now)
+
+
+class FullHistoryReadTrackingRepository(TrackingRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.full_history_reads = 0
+
+    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+        if limit is None:
+            self.full_history_reads += 1
+        return super().list_draws(lottery, limit)
 
 
 def _builders(calls: list[str], history_lengths: list[int] | None = None, failing: str | None = None) -> dict:
@@ -84,12 +135,60 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000220:matrix-python-v6"
+    assert result["analysisVersion"] == "000000220:matrix-python-v7"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
     assert history_lengths == [120, 120, 120, 120]
     assert len(repository.list_draws("今彩539", None)) == 120
+
+
+def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None:
+    repository = TrackingRepository()
+    source = CalendarHistorySource(history_count=120)
+    history_lengths: list[int] = []
+
+    result = run_worker(
+        "今彩539", repository, source, _builders([], history_lengths),
+    )
+
+    assert result["status"] == "complete"
+    assert history_lengths == [120, 120, 120, 120]
+
+
+def test_completed_worker_run_does_not_read_all_history_again() -> None:
+    repository = FullHistoryReadTrackingRepository()
+    source = CalendarHistorySource(history_count=120)
+    run_worker("今彩539", repository, source, _builders([]))
+    repository.full_history_reads = 0
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["skipped"] is True
+    assert repository.full_history_reads == 0
+
+
+def test_worker_refreshes_latest_draw_before_targeting_recent_gap_repair() -> None:
+    repository = TrackingRepository()
+    source = SourceAheadOfDatabase()
+    for offset in range(31):
+        period = 200 - offset
+        if period == 198:
+            continue
+        repository.upsert_draw(
+            source._draw(
+                period,
+                5,
+                (datetime(2026, 8, 25) - timedelta(days=offset)).date().isoformat(),
+            )
+            | {"lottery": "今彩539"}
+        )
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["status"] == "complete"
+    assert repository.list_draws("今彩539", None)[0]["period"] == "000000205"
+    assert ("今彩539", "000000198") in repository.draws
 
 
 def test_worker_has_no_fixed_minimum_history_count() -> None:
@@ -106,6 +205,23 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     assert calls == ["explore", "tianyan", "tiangong", "status"]
     assert history_lengths == [79, 79, 79, 79]
     assert repository.get_progress("今彩539", "000000220")["status"] == "complete"
+
+
+def test_worker_stops_every_algorithm_when_missing_history_cannot_be_repaired() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=120)
+    incomplete = [
+        source._draw(period, 5)
+        for period in range(220, 100, -1)
+        if period not in {208, 209}
+    ]
+    source.fetch_history = lambda _lottery, _limit: [dict(draw) for draw in incomplete]
+    calls: list[str] = []
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
+        run_worker("今彩539", repository, source, _builders(calls))
+
+    assert calls == []
 
 
 def test_worker_cleans_expired_artifacts_before_running() -> None:
@@ -175,6 +291,7 @@ def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -
     monkeypatch.setattr(worker_module, "AnalysisPipeline", RecordingPipeline)
     draw = {
         "lottery": "今彩539", "period": "000000220",
+        "drawDate": "2026-08-30",
         "numbers": ["01", "02", "03", "04", "05"],
     }
 
@@ -195,10 +312,11 @@ def test_worker_uses_tiangong_batch_size_that_fits_one_invocation(monkeypatch) -
     assert explore_batches + tiangong_batches - 1 <= worker_module.MAX_CYCLES_PER_INVOCATION
 
 
-def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
+def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None:
     repository = TrackingRepository()
     source = Source()
     attempts = 0
+    waits: list[float] = []
 
     def tianyan(_: dict) -> dict:
         nonlocal attempts
@@ -213,11 +331,123 @@ def test_worker_retries_failed_analysis_from_its_checkpoint() -> None:
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
 
     result = run_worker("今彩539", repository, source, builders)
 
     assert result["status"] == "complete"
     assert attempts == 2
+    assert waits == []
+
+
+def test_worker_backs_off_before_retrying_transient_service_failure(monkeypatch) -> None:
+    class TransientServiceError(RuntimeError):
+        code = "521"
+
+    repository = TrackingRepository()
+    source = Source()
+    attempts = 0
+    waits: list[float] = []
+
+    def tianyan(_: dict) -> dict:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise TransientServiceError("web server is down")
+        return {"items": []}
+
+    builders = {
+        "explore": lambda _: {"items": []},
+        "tianyan": tianyan,
+        "tiangong": lambda _: {"items": []},
+        "status": lambda _: {"items": []},
+    }
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
+
+    result = run_worker("今彩539", repository, source, builders)
+
+    assert result["status"] == "complete"
+    assert attempts == 3
+    assert waits == [15.0, 45.0]
+
+
+def _postgrest_error(code: object) -> APIError:
+    return APIError({
+        "message": "service failure",
+        "code": code,
+        "hint": None,
+        "details": None,
+    })
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (_postgrest_error(500), True),
+        (_postgrest_error("PGRST000"), True),
+        (_postgrest_error("PGRST003"), True),
+        (_postgrest_error("57014"), True),
+        (
+            httpx.HTTPStatusError(
+                "service unavailable",
+                request=httpx.Request("GET", "https://example.test"),
+                response=httpx.Response(
+                    503,
+                    request=httpx.Request("GET", "https://example.test"),
+                ),
+            ),
+            True,
+        ),
+        (
+            httpx.HTTPStatusError(
+                "unauthorized",
+                request=httpx.Request("GET", "https://example.test"),
+                response=httpx.Response(
+                    401,
+                    request=httpx.Request("GET", "https://example.test"),
+                ),
+            ),
+            False,
+        ),
+        (
+            httpx.ConnectError(
+                "connection refused",
+                request=httpx.Request("GET", "https://example.test"),
+            ),
+            True,
+        ),
+        (RuntimeError("deterministic failure"), False),
+    ],
+)
+def test_transient_service_error_classification(error: Exception, expected: bool) -> None:
+    assert worker_module._is_transient_service_error(error) is expected
+
+
+def test_worker_backs_off_while_retrying_transient_preparation_failure(monkeypatch) -> None:
+    class TransientServiceError(RuntimeError):
+        code = "521"
+
+    class RecoveringSource(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.attempts = 0
+
+        def fetch(self, lottery: str) -> dict:
+            self.attempts += 1
+            if self.attempts < 3:
+                raise TransientServiceError("web server is down")
+            return super().fetch(lottery)
+
+    repository = TrackingRepository()
+    source = RecoveringSource()
+    waits: list[float] = []
+    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
+
+    result = run_worker("今彩539", repository, source, _builders([]))
+
+    assert result["status"] == "complete"
+    assert source.attempts == 3
+    assert waits == [15.0, 45.0]
 
 
 def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis() -> None:
@@ -245,7 +475,7 @@ def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis()
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v6"
+    assert result["analysisVersion"] == "000000221:matrix-python-v7"
     assert source.events == []
 
 

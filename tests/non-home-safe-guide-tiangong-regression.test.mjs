@@ -44,3 +44,20 @@ test("Matrix Guide contains the requested chapters and exact notification set", 
   assert.match(featureSource, /title: "四狀態條件設定"/);
   assert.doesNotMatch(featureSource, /投注通知/);
 });
+
+test("Matrix Guide only documents the current Explore date and fixed Tiangong contract", () => {
+  const guide = featureSource.slice(featureSource.indexOf("const GUIDE_LOOP_GROUPS"));
+  const explore = guide.slice(guide.indexOf('title: "Matrix 探索"'), guide.indexOf('title: "Matrix 天衍"'));
+  const tiangongStart = guide.indexOf('title: "Matrix 天工"');
+  const tiangong = guide.slice(tiangongStart, guide.indexOf('title: "Matrix 狀態"', tiangongStart));
+  const tongxingStart = guide.indexOf('title: "Matrix 同星"');
+  const tongxing = guide.slice(tongxingStart, guide.indexOf('title: "號碼對照單"', tongxingStart));
+
+  assert.match(explore, /探索日期：只使用本日（最新）。/);
+  assert.doesNotMatch(explore, /昨日|前日/);
+  assert.match(tiangong, /固定以二段式與準2進3/);
+  assert.match(tiangong, /流程固定為二段式。/);
+  assert.match(tiangong, /命中條件固定為準2進3。/);
+  assert.doesNotMatch(tiangong, /一段式|準3進4|二段式可另外/);
+  assert.doesNotMatch(tongxing, /近10期開獎號碼/);
+});

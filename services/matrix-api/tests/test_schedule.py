@@ -77,3 +77,21 @@ def test_lotto649_stops_after_final_retry_until_nearest_draw_pre_calls() -> None
     assert call_due("大樂透", datetime(2026, 8, 26, 14, 38, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 26, 14, 43, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 28, 18, 53, tzinfo=TAIPEI)) is True
+
+
+def test_next_lottery_call_time_skips_non_draw_days_after_a_draw() -> None:
+    next_call = next_lottery_call_time(
+        "今彩539",
+        datetime(2026, 8, 29, 20, 33, tzinfo=TAIPEI),
+    )
+
+    assert next_call == datetime(2026, 8, 31, 20, 33, tzinfo=TAIPEI)
+
+
+def test_next_lottery_call_time_uses_the_next_lotto649_draw_day() -> None:
+    next_call = next_lottery_call_time(
+        "大樂透",
+        datetime(2026, 8, 24, 20, 54, tzinfo=TAIPEI),
+    )
+
+    assert next_call == datetime(2026, 8, 25, 20, 53, tzinfo=TAIPEI)

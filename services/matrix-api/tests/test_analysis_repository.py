@@ -29,6 +29,7 @@ class FakeQuery:
     def upsert(self, record: dict[str, Any] | list[dict[str, Any]], **kwargs: Any) -> "FakeQuery":
         self.client.last_record = record
         self.client.last_on_conflict = kwargs.get("on_conflict")
+        self.client.upsert_records.append(record)
         return self
 
     def eq(self, column: str, value: Any) -> "FakeQuery":
@@ -44,8 +45,23 @@ class FakeQuery:
         self.selected_range = (start, end)
         return self
 
+    def gt(self, column: str, value: Any) -> "FakeQuery":
+        self.client.last_gt_filters.append((column, value))
+        self.selected_gt = (column, value)
+        return self
+
+    def limit(self, count: int) -> "FakeQuery":
+        self.client.last_limits.append(count)
+        self.selected_limit = count
+        return self
+
     def execute(self) -> FakeResponse:
         rows = self.client.responses.get(self.table, [])
+        if hasattr(self, "selected_gt"):
+            column, value = self.selected_gt
+            rows = [row for row in rows if row[column] > value]
+        if hasattr(self, "selected_limit"):
+            rows = rows[:self.selected_limit]
         if hasattr(self, "selected_range"):
             start, end = self.selected_range
             rows = rows[start:end + 1]
@@ -61,6 +77,9 @@ class FakeSupabaseClient:
         self.last_filters: list[tuple[str, Any]] = []
         self.last_orders: list[tuple[str, bool]] = []
         self.last_ranges: list[tuple[int, int]] = []
+        self.last_gt_filters: list[tuple[str, Any]] = []
+        self.last_limits: list[int] = []
+        self.upsert_records: list[dict[str, Any] | list[dict[str, Any]]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
     def table(self, name: str) -> FakeQuery:
@@ -143,6 +162,24 @@ def test_supabase_empty_draw_history_does_not_issue_an_upsert() -> None:
     assert fake_client.last_table == ""
 
 
+def test_supabase_artifact_existence_check_reads_metadata_only() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["matrix_analysis_artifacts"] = [{"kind": "explore"}]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    exists = repository.has_artifact("今彩539", "114000123", "v1", "explore")
+
+    assert exists is True
+    assert fake_client.last_select == "kind"
+    assert fake_client.last_filters == [
+        ("lottery", "今彩539"),
+        ("draw_period", "114000123"),
+        ("analysis_version", "v1"),
+        ("kind", "explore"),
+    ]
+    assert fake_client.last_ranges == [(0, 0)]
+
+
 def test_list_draws_returns_newest_first_and_normalized_shape() -> None:
     repository = InMemoryAnalysisRepository()
     repository.upsert_draw({
@@ -187,6 +224,32 @@ def test_list_draws_puts_undated_rows_after_dated_rows() -> None:
     ] == ["114000123", "114000999"]
 
 
+def test_in_memory_recent_draw_check_does_not_materialize_all_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "115000209", "drawDate": "2026/08/28",
+        "numbers": ["02", "04", "09", "12", "36"],
+    })
+    repository.upsert_draw({
+        "lottery": "今彩539", "period": "115000100", "drawDate": "2026/04/01",
+        "numbers": ["01", "02", "03", "04", "05"],
+    })
+    monkeypatch.setattr(
+        repository,
+        "list_draws",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("recent check must not read all history")
+        ),
+    )
+
+    assert [
+        draw["period"]
+        for draw in repository.list_draws_since("今彩539", "2026-07-28")
+    ] == ["115000209"]
+
+
 def test_supabase_list_draws_puts_undated_rows_last() -> None:
     requests: list[httpx.Request] = []
 
@@ -206,6 +269,27 @@ def test_supabase_list_draws_puts_undated_rows_last() -> None:
     assert requests[0].url.params["order"] == (
         "draw_date.desc.nullslast,period.desc"
     )
+
+
+def test_supabase_recent_draw_check_filters_by_draw_date() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=[])
+
+    base_url = "https://example.supabase.co/rest/v1"
+    http_client = httpx.Client(
+        base_url=base_url,
+        transport=httpx.MockTransport(handler),
+    )
+    with SyncPostgrestClient(base_url, http_client=http_client) as client:
+        SupabaseAnalysisRepository(client).list_draws_since(
+            "今彩539", "2026-07-30",
+        )
+
+    assert len(requests) == 1
+    assert requests[0].url.params["draw_date"] == "gte.2026-07-30"
 
 
 def test_supabase_draw_normalization_converts_database_field_names() -> None:
@@ -286,7 +370,7 @@ def test_explore_results_are_idempotent_and_keep_item_with_validation() -> None:
     assert stored["prediction_numbers"] == ["27"]
 
 
-def test_supabase_explore_results_use_one_batch_upsert_and_skip_empty_payload() -> None:
+def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payload() -> None:
     fake_client = FakeSupabaseClient()
     repository = SupabaseAnalysisRepository(fake_client)
     item = {
@@ -324,6 +408,32 @@ def test_supabase_explore_results_use_one_batch_upsert_and_skip_empty_payload() 
         {"items": [], "validationById": {}},
     )
     assert empty_client.last_table == ""
+
+
+def test_supabase_explore_results_split_large_payloads_into_bounded_batches() -> None:
+    fake_client = FakeSupabaseClient()
+    repository = SupabaseAnalysisRepository(fake_client)
+    items = [{
+        "id": f"road-{index}", "number": "02", "lockedPosition": 1,
+        "predictionDistance": 2, "consecutive": "準5進6", "highestStreak": 5,
+        "predictionNumbers": ["17"], "algorithmType": "加減",
+        "numberOrder": "依號碼由小到大排序", "ruleCount": 1,
+        "lockedSourceIndex": 1, "lockedSourcePeriod": "115000204",
+    } for index in range(201)]
+    validations = {
+        item["id"]: {"itemId": item["id"], "ruleSets": []}
+        for item in items
+    }
+
+    repository.save_explore_results(
+        "今彩539", "115000205", "matrix-python-v7",
+        {"items": items, "validationById": validations},
+    )
+
+    assert [len(batch) for batch in fake_client.upsert_records] == [100, 100, 1]
+    assert [record["item_id"] for batch in fake_client.upsert_records for record in batch] == [
+        f"road-{index}" for index in range(201)
+    ]
 
 
 def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None:
@@ -383,7 +493,7 @@ def test_supabase_chunk_queries_use_composite_upsert_and_ordered_minimal_read() 
     assert fake_client.last_orders == [("chunk_index", False)]
 
 
-def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None:
+def test_supabase_chunk_reads_use_keyset_pagination_to_avoid_statement_timeout() -> None:
     fake_client = FakeSupabaseClient()
     fake_client.responses["matrix_analysis_artifact_chunks"] = [
         {"chunk_index": index, "cursor_start": index * 3,
@@ -396,7 +506,9 @@ def test_supabase_chunk_reads_are_paginated_to_avoid_statement_timeout() -> None
     )
 
     assert [chunk["chunk_index"] for chunk in chunks] == [0, 1, 2]
-    assert fake_client.last_ranges == [(0, 1), (2, 3)]
+    assert fake_client.last_ranges == []
+    assert fake_client.last_limits == [2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1)]
 
 
 def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read() -> None:
@@ -431,7 +543,9 @@ def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read()
     )
 
     assert count == 2
-    assert fake_client.last_ranges == [(0, 1), (2, 3)]
+    assert fake_client.last_ranges == []
+    assert fake_client.last_limits == [2, 2]
+    assert fake_client.last_gt_filters == [("chunk_index", 1)]
 
 
 def test_supabase_chunk_write_compacts_large_payload() -> None:

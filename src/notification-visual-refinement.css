@@ -1,0 +1,42 @@
+.notifications-screen-v2 .notification-title h2 {
+  font-weight: 600;
+}
+
+.notifications-screen-v2 .notification-bulk-disable {
+  border: 1px solid var(--lottery-gold-500);
+  background: var(--lottery-neutral-900);
+  color: var(--lottery-gold-500);
+}
+
+.notifications-screen-v2 .notification-inline-settings-content:has(.notification-bet-grid) {
+  padding: 5px 4px 6px;
+}
+
+.notifications-screen-v2 .notification-time-select {
+  height: 21px;
+  min-height: 21px;
+}
+
+.notifications-screen-v2 .notification-time-select::before {
+  background: linear-gradient(
+    90deg,
+    var(--lottery-gold-700),
+    var(--lottery-gold-500) 18%,
+    var(--lottery-gold-600) 50%,
+    var(--lottery-gold-500) 82%,
+    var(--lottery-gold-700)
+  );
+  filter: none;
+}
+
+.notifications-screen-v2 .notification-bet-grid .notification-grid-time-row + .notification-grid-time-row {
+  margin-block-start: 1px;
+}
+
+.notifications-screen-v2 .notification-time-select select {
+  color: #e2d9c8;
+}
+
+.notifications-screen-v2 .notification-time-select select:has(option:checked[value=""]) {
+  color: var(--lottery-neutral-400);
+}

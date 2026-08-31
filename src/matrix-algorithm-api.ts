@@ -284,9 +284,12 @@ export type TiangongValidationResponse = {
 
 const pendingRequests = new Map<string, Promise<MatrixAlgorithmResponse>>();
 
-function matrixRpcError(error: { message?: string } | null): never {
+function matrixRpcError(error: { code?: string; message?: string } | null): never {
   const message = String(error?.message ?? 'API_ERROR');
   if (message.includes('FORBIDDEN')) throw new MatrixApiError('FORBIDDEN', 403);
+  if (error?.code === '42501' && message.includes('permission denied for function')) {
+    throw new MatrixApiError('AUTH_REQUIRED', 401);
+  }
   if (message.includes('ANALYSIS_NOT_READY')) throw new MatrixApiError('ANALYSIS_NOT_READY', 404);
   if (message.includes('ANALYSIS_VERSION_MISMATCH')) {
     throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);

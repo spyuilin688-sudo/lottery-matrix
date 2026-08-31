@@ -97,6 +97,20 @@ describe("existing feature actions", () => {
     render(<NotesPage onNavigate={vi.fn()} />);
     expect(screen.getByRole("button", { name: "紀錄設定" })).toBeDisabled();
   });
+
+  it("keeps the activation-code input collapsed until the user opens it", () => {
+    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+
+    const toggle = screen.getByRole("button", { name: "啟動碼" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("textbox", { name: "啟動碼" })).toBeNull();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("textbox", { name: "啟動碼" })).toBeVisible();
+    expect(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" })).toBeEnabled();
+  });
 });
 
 describe("notebook tag ordering", () => {

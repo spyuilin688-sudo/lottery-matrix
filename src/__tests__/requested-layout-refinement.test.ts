@@ -119,20 +119,151 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
   });
 
-  it("uses compact dark-gold actions on activation and membership-plan pages", () => {
+  it("uses the branded explore action on the membership-plan payment button", () => {
     const style = mountStyles(readCss("src/feature-pages.css"));
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
       <main class="activation-code-screen"><section class="activation-card"><button class="gold-button"></button></section></main>
-      <main class="pro-plans-screen"><button class="confirm-payment"></button></main>`;
+      <main class="pro-plans-screen"><button class="primary-action branded-explore-action confirm-payment"><span>確定付款</span></button></main>`;
 
     const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .gold-button")!);
     const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
     expect(activationButton.height).toBe("44px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
-    expect(paymentButton.height).toBe("34px");
-    expect(paymentButton.backgroundColor).toBe("rgb(6, 13, 18)");
+    expect(paymentButton.height).toBe("42px");
+    expect(paymentButton.getPropertyValue("--payment-button-font-size")).toBe("clamp(15px,4.4vw,17px)");
+    expect(paymentButton.position).toBe("relative");
+    expect(paymentButton.overflow).toBe("hidden");
+    expect(paymentButton.color).toBe("rgb(246, 212, 114)");
     expect(paymentButton.borderTopWidth).toBe("1px");
+  });
+
+  it("separates membership plan hierarchy and removes tool icon frames", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "pro-plan-visual-hierarchy";
+    document.body.innerHTML = `
+      <main class="pro-plans-screen">
+        <article class="plan-card" data-current="true">
+          <span class="plan-name">季費方案</span>
+          <strong>$4,580</strong>
+          <span class="plan-tool-icon"><img alt="天衍" /></span>
+        </article>
+        <section class="panel renewal-card"></section>
+      </main>`;
+
+    const planCard = getComputedStyle(document.querySelector(".plan-card")!);
+    const planName = getComputedStyle(document.querySelector(".plan-name")!);
+    const planPrice = getComputedStyle(document.querySelector(".plan-card > strong")!);
+    const toolIcon = getComputedStyle(document.querySelector(".plan-tool-icon")!);
+    const renewalCard = getComputedStyle(document.querySelector(".renewal-card")!);
+
+    expect(planName.color).toBe("rgb(236, 231, 223)");
+    expect(planPrice.color).toBe("rgb(241, 195, 82)");
+    expect(toolIcon.borderTopWidth).toBe("0px");
+    expect(toolIcon.boxShadow).toBe("none");
+    expect(renewalCard.borderTopColor).toBe(planCard.borderTopColor);
+    expect(renewalCard.borderRadius).toBe(planCard.borderRadius);
+    expect(renewalCard.boxShadow).toBe(planCard.boxShadow);
+  });
+
+  it("compacts payment history without changing its two-column information order", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "payment-history-density";
+    document.body.innerHTML = `
+      <main class="payment-history-screen">
+        <section class="panel detail-card">
+          <h2>付款紀錄</h2>
+          <div class="payment-history-list">
+            <article class="payment-history-item">
+              <strong>月費方案</strong><span>NT$1,880</span>
+              <time>2026/8/30 上午6:51:44</time><b>已確認</b>
+            </article>
+          </div>
+        </section>
+      </main>`;
+
+    const card = getComputedStyle(document.querySelector(".payment-history-screen .detail-card")!);
+    const heading = getComputedStyle(document.querySelector(".payment-history-screen .detail-card h2")!);
+    const item = getComputedStyle(document.querySelector(".payment-history-item")!);
+    const name = getComputedStyle(document.querySelector(".payment-history-item strong")!);
+    const amount = getComputedStyle(document.querySelector(".payment-history-item > span")!);
+    const date = getComputedStyle(document.querySelector(".payment-history-item time")!);
+    const status = getComputedStyle(document.querySelector(".payment-history-item b")!);
+
+    expect(card.padding).toBe("10px");
+    expect(heading.marginBottom).toBe("6px");
+    expect(heading.fontSize).toBe("15px");
+    expect(item.gridTemplateColumns).toBe("minmax(0, 1fr) auto");
+    expect(item.padding).toBe("7px 9px");
+    expect(item.rowGap).toBe("2px");
+    expect(name.fontSize).toBe("13px");
+    expect(amount.fontSize).toBe("13px");
+    expect(date.fontSize).toBe("11px");
+    expect(status.fontSize).toBe("13px");
+  });
+
+  it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
+    const adjustmentCss = readCss("src/feature-page-adjustments.css");
+    const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${adjustmentCss}`);
+    style.dataset.layoutContract = "notification-bulk-actions";
+    document.body.innerHTML = `
+      <main class="notifications-screen notifications-screen-v2">
+        <div class="feature-body">
+          <div class="notification-content">
+            <div class="notification-bulk-actions">
+              <button class="notification-bulk-enable">全部開啟</button>
+              <button class="notification-bulk-disable">全部關閉</button>
+            </div>
+            <div class="notification-list"><section class="notification-group"></section></div>
+          </div>
+        </div>
+      </main>`;
+
+    const content = getComputedStyle(document.querySelector(".notification-content")!);
+    const actions = getComputedStyle(document.querySelector(".notification-bulk-actions")!);
+    const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
+    const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
+    expect(content.rowGap).toBe("12px");
+    expect(actions.display).toBe("grid");
+    expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+    expect(actions.columnGap).toBe("8px");
+    expect(enable.height).toBe("32px");
+    expect(disable.height).toBe("32px");
+    expect(enable.width).toBe("100%");
+    expect(disable.width).toBe("100%");
+    expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
+  });
+
+  it("tightens guide summary and bullet spacing without changing the existing type size", () => {
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    style.dataset.layoutContract = "guide-reading-rhythm";
+    document.body.innerHTML = `
+      <main class="matrix-guide-screen">
+        <nav class="guide-category-strip">
+          <button class="guide-category-card">01 未選中</button>
+          <button class="guide-category-card" data-selected="true">02 選中</button>
+        </nav>
+        <section class="guide-preview">
+          <p class="guide-summary">說明文字</p>
+          <section class="guide-detail-block"><ul><li>這是一段會折行的條列內容</li></ul></section>
+        </section>
+      </main>`;
+
+    const summary = getComputedStyle(document.querySelector(".guide-summary")!);
+    const list = getComputedStyle(document.querySelector(".guide-detail-block ul")!);
+    const item = getComputedStyle(document.querySelector(".guide-detail-block li")!);
+    const unselected = getComputedStyle(document.querySelector('.guide-category-card:not([data-selected="true"])')!);
+    const selected = getComputedStyle(document.querySelector('.guide-category-card[data-selected="true"]')!);
+    expect(summary.paddingBottom).toBe("10px");
+    expect(list.paddingLeft).toBe("0px");
+    expect(list.listStyleType).toBe("none");
+    expect(item.display).toBe("grid");
+    expect(item.gridTemplateColumns).toBe("4px minmax(0, 1fr)");
+    expect(item.columnGap).toBe("4px");
+    expect(item.fontSize).toBe("12px");
+    expect(unselected.borderTopColor).not.toBe(selected.borderTopColor);
   });
 });

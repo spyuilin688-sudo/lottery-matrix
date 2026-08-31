@@ -13,11 +13,18 @@ test("會員方案的天衍與天工圖示使用可裁切容器並填滿背景",
   );
   assert.match(
     featureStyles,
-    /\.plan-tool-icon\s*\{[^}]*width:\s*72px;[^}]*height:\s*72px;[^}]*overflow:\s*hidden;/s,
+    /\.plan-tool-icon\s*\{[^}]*width:\s*56px;[^}]*height:\s*56px;[^}]*overflow:\s*hidden;/s,
   );
   assert.match(
     featureStyles,
     /\.plan-tool-icon img\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*cover;/s,
+  );
+});
+
+test("會員方案圖示縮小後保留文字內容寬度", () => {
+  assert.match(
+    featureStyles,
+    /\.plan-card--with-tools \.plan-card-heading,[\s\S]*?> ul\s*\{\s*width:\s*calc\(100% - 72px\);\s*\}/s,
   );
 });
 

@@ -190,6 +190,10 @@ test("routes every reachable confirmation through the shared accessible dialog o
     featurePages.indexOf("function ProPlansPage"),
     featurePages.indexOf("function AboutMatrixPage"),
   );
+  const profileSource = featurePages.slice(
+    featurePages.indexOf("export function ProfilePage"),
+    featurePages.indexOf("function ProfileMenu"),
+  );
   const dialogContract = contract.slice(
     contract.indexOf("## Shared application dialog"),
     contract.indexOf("## Navigation, async and recovery"),
@@ -198,7 +202,8 @@ test("routes every reachable confirmation through the shared accessible dialog o
   assert.doesNotMatch(featurePages, /window\.(?:confirm|alert)\(/);
   assert.match(featurePages, /import \{ useAppDialog \} from "\.\/dialog\/AppDialog"/);
   assert.ok((notebookSource.match(/appDialog\.confirm\(/g) ?? []).length >= 11);
-  assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 2);
+  assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 1);
+  assert.equal(profileSource.match(/confirmDialog\(/g)?.length, 1);
   assert.match(notebookSource, /appDialog\.alert\(/);
   assert.match(featurePages, /if \(screen === "notebook"\) return <MatrixNotebookPage /);
   assert.match(dialogSource, /@radix-ui\/react-dialog/);
@@ -210,8 +215,10 @@ test("routes every reachable confirmation through the shared accessible dialog o
 
 test("keeps shared confirmation prompt typography compact on mobile", () => {
   const dialogStyles = readFileSync("src/dialog/app-dialog.css", "utf8");
-  const titleRule = dialogStyles.match(/\.app-dialog-title\s*\{[\s\S]*?\}/)?.[0] ?? "";
-
-  assert.match(titleRule, /font-size:\s*clamp\(18px,\s*5\.2vw,\s*22px\);/);
-  assert.doesNotMatch(titleRule, /font-size:\s*clamp\(23px,\s*7vw,\s*31px\);/);
+  assert.doesNotMatch(dialogStyles, /\.app-dialog-content\s*\{[^}]*330px/s);
+  assert.match(dialogStyles, /\.app-dialog-content\s*\{[^}]*width:[^;]*310px\);[^}]*max-height:\s*min\(78dvh,\s*480px\);[^}]*gap:\s*10px;[^}]*padding:\s*16px 14px 14px;[^}]*border-radius:\s*12px;/s);
+  assert.match(dialogStyles, /\.app-dialog-icon\s*\{[^}]*width:\s*50px;[^}]*font-size:\s*28px;/s);
+  assert.match(dialogStyles, /\.app-dialog-title\s*\{[^}]*font-size:\s*17px;/s);
+  assert.match(dialogStyles, /\.app-dialog-description\s*\{[^}]*font-size:\s*13px;[^}]*line-height:\s*1\.5;/s);
+  assert.match(dialogStyles, /\.app-dialog-button\s*\{[^}]*min-height:\s*var\(--layout-touch-target\);[^}]*padding:\s*8px 9px;[^}]*border-radius:\s*8px;/s);
 });

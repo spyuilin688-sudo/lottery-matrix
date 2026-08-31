@@ -40,12 +40,14 @@ test('切換彩種重新讀取狀態，且可進入自訂觸發條件', async ()
   expect(navigate).toHaveBeenCalledWith('status-settings');
 });
 
-test('標題卡右下角使用正式自訂觸發條件圖示，彩種切換沿用首頁樣式', () => {
-  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+test('自訂觸發條件入口移至狀態頁右下角並沿用首頁快捷設定樣式', () => {
+  const { container } = render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  const trigger = screen.getByRole('button', { name: '自訂觸發條件' });
 
-  expect(screen.getByRole('img', { name: '自訂觸發條件' })).toHaveAttribute(
-    'src',
-    '/assets/lottery/functions/自訂觸發條件.png',
-  );
+  expect(trigger).toHaveClass('bottom-navigation-quick-settings', 'matrix-status-settings-entry');
+  expect(trigger.querySelector('.bottom-navigation-quick-settings-visual')).toBeInTheDocument();
+  expect(trigger.querySelector('svg')).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: '自訂觸發條件' })).not.toBeInTheDocument();
+  expect(container.querySelector('.matrix-title-banner-actions')).not.toBeInTheDocument();
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
 });

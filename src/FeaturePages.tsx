@@ -1323,7 +1323,9 @@ export function MatrixExplorePage({
           ? "分析中，請稍後再試"
           : code === "FORBIDDEN"
             ? "目前會員權限無法使用此設定"
-            : "Matrix API 讀取失敗",
+            : code === "AUTH_REQUIRED"
+              ? "請先登入後再使用 Matrix 天衍"
+              : "Matrix API 讀取失敗",
       );
     } finally {
       setExploreLoading(false);
@@ -1705,9 +1707,6 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   type Road = "加減版路" | "合值版路";
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [period, setPeriod] = useState<"五十期" | "八十期">("五十期");
-  const [mode, setMode] = useState<"一段式" | "二段式">("一段式");
-  const [hit, setHit] = useState<"準2進3" | "準3進4">("準2進3");
-  const [advanced, setAdvanced] = useState(false);
   const [searchPositions, setSearchPositions] = useState<Direction[]>(["固定"]);
   const [firstPositions, setFirstPositions] = useState<Direction[]>(["固定"]);
   const [firstRoads, setFirstRoads] = useState<Road[]>(["加減版路"]);
@@ -1740,22 +1739,20 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       const next = await fetchTiangongList({
         lottery,
         periodRange: period === "五十期" ? 50 : 80,
-        mode: mode === "一段式" ? "one-stage" : "two-stage",
-        hitCondition: hit,
+        mode: "two-stage",
+        hitCondition: "準2進3",
         exploreDirections: searchPositions,
         firstStageDirections: firstPositions,
         firstRoadTypes: firstRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
-        ...(mode === "二段式" ? {
-          secondStageDirections: secondPositions,
-          secondRoadTypes: secondRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
-        } : {}),
+        secondStageDirections: secondPositions,
+        secondRoadTypes: secondRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
       });
       setResponse(next);
       setExpandedId(null);
       setValidationById({});
     } catch (cause) {
       const code = String((cause as { code?: unknown })?.code ?? "");
-      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : "Matrix API 讀取失敗");
+      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : code === "AUTH_REQUIRED" ? "請先登入後再使用 Matrix 天工" : "Matrix API 讀取失敗");
     } finally {
       setLoading(false);
     }
@@ -1780,16 +1777,6 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
           <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{(["五十期", "八十期"] as const).map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
           <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
-          <button type="button" className="advanced-row tiangong-advanced-row" aria-expanded={advanced} aria-controls="tiangong-advanced-settings" onClick={() => setAdvanced(!advanced)}>
-            <img src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" />
-            <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
-          </button>
-          {advanced ? (
-            <div id="tiangong-advanced-settings" className="advanced-panel tiangong-advanced-panel">
-              <label><span className="advanced-setting-title"><SettingLabelIcon type="road" />探索模式</span><div className="segmented two">{(["一段式", "二段式"] as const).map((value) => <button type="button" data-selected={mode === value} onClick={() => setMode(value)} key={value}>{value}</button>)}</div></label>
-              <label><span className="advanced-setting-title"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/命中條件.png" alt="" aria-hidden="true" />命中條件</span><div className="segmented two">{(["準2進3", "準3進4"] as const).map((value) => <button type="button" data-selected={hit === value} onClick={() => setHit(value)} key={value}>{value}</button>)}</div></label>
-            </div>
-          ) : null}
         </div>
       </section>
       <section className="panel explore-settings tiangong-settings tiangong-stage-settings">
@@ -1800,15 +1787,13 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
             <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></div>
           </div>
         </div>
-        {mode === "二段式" ? (
-          <div className="tiangong-stage-block" data-stage="second">
+        <div className="tiangong-stage-block" data-stage="second">
             <SectionTitle>第二段 探索設定</SectionTitle>
             <div className="setting-grid">
               <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{label}</button>)}</div></div>
               <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div>
             </div>
-          </div>
-        ) : null}
+        </div>
       </section>
       <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始探索</span></button>
       {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
@@ -2092,6 +2077,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const toggleMarkedCell = (issue: string, number: string) => {
     const key = `${issue}-${number}`;
+    setMarkedRows((rows) => {
+      const next = new Set(rows);
+      next.delete(issue);
+      return next;
+    });
     setMarkedCells((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
@@ -2477,7 +2467,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
         { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
-        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
+        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：只使用本日（最新）。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
       ],
     },
@@ -2491,10 +2481,10 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "Matrix 天工",
-      summary: "依探索期數、探索模式、命中條件、球位與版路類型進行自訂探索。",
+      summary: "固定以二段式與準2進3，依探索期數、球位與兩段版路類型進行探索。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：五十期或八十期。", "探索模式：一段式或二段式。", "命中條件：準2進3或準3進4。"] },
-        { title: "球位與版路", items: ["探索球位、第一段球位可選固定、依序遞增或依序遞減。", "第一段版路類型可選加減版路或合值版路。", "二段式可另外設定第二段球位與第二段版路類型。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：五十期或八十期。", "流程固定為二段式。", "命中條件固定為準2進3。"] },
+        { title: "球位與版路", items: ["探索球位、第一段球位與第二段球位可選固定、依序遞增或依序遞減。", "第一段與第二段的版路類型皆可選加減版路或合值版路。"] },
         { title: "查看結果", items: ["按下「開始探索」後顯示間距期數、預測位置、預測及版路類型。", "可展開版路查看驗證過程。"] },
       ],
     },
@@ -2513,7 +2503,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "輸入指定號碼後，查詢指定期數的開獎結果。",
       blocks: [
         { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
-        { title: "結果內容", items: ["同頁顯示近10期開獎號碼。", "結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
+        { title: "結果內容", items: ["結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
       ],
     },
     {
@@ -3562,13 +3552,41 @@ function lineNicknameFromSession(session: unknown) {
   return typeof name === "string" && name.trim() ? name.trim() : null;
 }
 
+const LINE_LOGIN_PENDING_KEY = "matrix-line-login-pending";
+
+function markLineLoginPending() {
+  try {
+    window.sessionStorage.setItem(LINE_LOGIN_PENDING_KEY, "1");
+  } catch {
+    // Login still works if session storage is unavailable.
+  }
+}
+
+function clearLineLoginPending() {
+  try {
+    window.sessionStorage.removeItem(LINE_LOGIN_PENDING_KEY);
+  } catch {
+    // Nothing to clear when session storage is unavailable.
+  }
+}
+
+function consumeLineLoginPending() {
+  try {
+    const pending = window.sessionStorage.getItem(LINE_LOGIN_PENDING_KEY) === "1";
+    if (pending) window.sessionStorage.removeItem(LINE_LOGIN_PENDING_KEY);
+    return pending;
+  } catch {
+    return false;
+  }
+}
+
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
+  const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
   const [authPending, setAuthPending] = useState(false);
-  const [authFailure, setAuthFailure] = useState<"login" | "logout" | null>(null);
   useEffect(() => {
     let active = true;
     let authRevision = 0;
@@ -3578,6 +3596,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
       setLineNickname(lineNicknameFromSession(session));
+      if (session && consumeLineLoginPending()) {
+        void alertDialog({ title: "登入成功", tone: "success" });
+      }
     };
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       authRevision += 1;
@@ -3594,7 +3615,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       active = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [alertDialog]);
   useEffect(() => {
     if (authState !== "authenticated") {
       setMemberProfile(null);
@@ -3615,12 +3636,34 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     if (authPending || authState === "loading") return;
     const action = authState === "authenticated" ? "logout" : "login";
     setAuthPending(true);
-    setAuthFailure(null);
     try {
-      if (action === "logout") await signOutFromMatrix();
-      else await signInWithLine();
+      if (action === "logout") {
+        const confirmed = await confirmDialog({
+          title: "確認登出？",
+          description: "登出後需重新登入才能繼續使用帳號功能。",
+          confirmLabel: "確認登出",
+          cancelLabel: "取消",
+          tone: "warning",
+          icon: "logout",
+        });
+        if (!confirmed) return;
+        await signOutFromMatrix();
+        await alertDialog({ title: "已登出", tone: "success" });
+      } else {
+        markLineLoginPending();
+        try {
+          await signInWithLine();
+        } catch (error) {
+          clearLineLoginPending();
+          throw error;
+        }
+      }
     } catch {
-      setAuthFailure(action);
+      await alertDialog({
+        title: action === "logout" ? "登出失敗" : "登入失敗",
+        description: "請稍後再試。",
+        tone: "danger",
+      });
     } finally {
       setAuthPending(false);
     }
@@ -3657,12 +3700,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           disabled={authPending}
           aria-busy={authPending}
         >{authState === "authenticated" ? "登出" : "LINE 登入"}</button> : null}
-        <p
-          className="profile-logout-error"
-          role={authFailure ? "alert" : undefined}
-          aria-hidden={authFailure ? undefined : true}
-          data-visible={Boolean(authFailure)}
-        >{authFailure === "login" ? "登入失敗，請稍後再試" : authFailure === "logout" ? "登出失敗，請稍後再試" : ""}</p>
       </section>
       <section className="panel subscription-status-card">
         <SectionTitle>目前訂閱狀態</SectionTitle>
@@ -3733,7 +3770,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
     void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistory([]));
   }, []);
   return (
-    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate}>
+    <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
       <DetailCard title="付款紀錄">
         {history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
           <div className="payment-history-list">
@@ -3841,7 +3878,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
         <p className="auto-renew-note">手動轉帳不會自動扣款；金流 API 上線後再提供自動續訂。</p>
       </section>
-      <button type="button" className="confirm-payment" onClick={handlePayment}>確定付款</button>
+      <button type="button" className="confirm-payment primary-action branded-explore-action" onClick={handlePayment}><span>確定付款</span></button>
       <p className="payment-note">點擊 確定付款 將跳轉付款頁面</p>
     </ProfileDetailShell>
   );
@@ -3946,6 +3983,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [activationCode, setActivationCode] = useState("");
   const [openRules, setOpenRules] = useState({ recognition: false, reward: false, supplement: false });
   const [activationInstructionsOpen, setActivationInstructionsOpen] = useState(false);
+  const [activationOpen, setActivationOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resultState, setResultState] = useState<"idle" | "success" | ActivationRedemptionErrorCode>("idle");
   const activationRequestRevision = useRef(0);
@@ -3990,9 +4028,11 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
     <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" hidePageTitle>
       <section className="panel referral-code-section" aria-label="推薦碼">
         <div className="referral-summary-card">
-          <h2>我的推薦碼</h2>
+          <div className="referral-summary-heading">
+            <h2>我的推薦碼</h2>
+            <p className="referral-success-count">推薦成功 <strong className="referral-success-value">{referralSuccessCount}</strong> 人</p>
+          </div>
           <p className="referral-code-label">推薦碼：<strong className="referral-code-value">{myReferralCode}</strong></p>
-          <p className="referral-success-count">推薦成功 <strong className="referral-success-value">{referralSuccessCount}</strong> 人</p>
           <div className="referral-primary-actions">
             <button type="button" className="gold-button" onClick={copyReferralCode}>複製推薦碼</button>
             <button type="button" className="gold-button" onClick={() => onNavigate("invite-friends")}>邀請好友</button>
@@ -4011,10 +4051,21 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
       </section>
       <section className="panel activation-code-section" aria-label="啟動碼">
         <div className="activation-card">
-          <h2>啟動碼</h2>
-          <div className="code-entry-block" data-result-state={resultState} aria-busy={submitting}>
-            <input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" />
-            <button type="button" className="gold-button" onClick={handleActivation} disabled={submitting}>確認</button>
+          <button
+            type="button"
+            className="activation-card-toggle"
+            aria-expanded={activationOpen}
+            aria-controls="activation-code-panel"
+            onClick={() => setActivationOpen((current) => !current)}
+          >
+            <span>啟動碼</span>
+            <ChevronRightIcon data-open={activationOpen} aria-hidden="true" />
+          </button>
+          <div id="activation-code-panel" className="activation-code-panel" hidden={!activationOpen}>
+            <div className="code-entry-block" data-result-state={resultState} aria-busy={submitting}>
+              <input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" />
+              <button type="button" className="gold-button" onClick={handleActivation} disabled={submitting}>確認</button>
+            </div>
           </div>
         </div>
         <CollapsibleRuleCard title="啟動碼使用說明" open={activationInstructionsOpen} onToggle={() => setActivationInstructionsOpen((current) => !current)}><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></CollapsibleRuleCard>
@@ -4128,7 +4179,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   }, [lottery]);
 
   return (
-    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen" headerAction={<button type="button" className="status-title-trigger" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}><img src="/assets/lottery/functions/自訂觸發條件.png" alt="自訂觸發條件" draggable={false} /></button>}>
+    <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
       <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
       {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
@@ -4159,6 +4210,11 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
           </section>
         );})}
       </div>
+      <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}>
+        <span className="bottom-navigation-quick-settings-visual">
+          <GearIcon aria-hidden="true" />
+        </span>
+      </button>
     </FeatureShell>
   );
 }

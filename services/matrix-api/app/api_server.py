@@ -246,10 +246,7 @@ def handle_api_request(
             items = _history(repository, lottery, 1)
             item = items[0] if items else None
             if item is not None:
-                item = {
-                    **item,
-                    "nextDrawAt": next_lottery_call_time(lottery).isoformat(),
-                }
+                item = {**item, "nextDrawAt": next_lottery_call_time(lottery).isoformat()}
             return 200, {"item": item}
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))

@@ -4,10 +4,10 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const css = readLocalCss("src/homepage-repair.css");
 
-test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 0.8px 卡片間距", () => {
+test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 1.5px 卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding:\s*1\.5px;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding-block:\s*1\.5px;[^}]*padding-inline:\s*0;/s,
   );
   assert.match(
     css,
@@ -15,7 +15,7 @@ test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 0.8px �
   );
   assert.match(
     css,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*gap:\s*0\.8px;[^}]*align-content:\s*start;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*grid-template-rows:\s*repeat\(2, auto\);[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s,
   );
   assert.match(
     css,

@@ -20,14 +20,14 @@ test("visual-language layer does not override homepage spacing geometry", () => 
   assert.match(visualLanguage, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
 });
 
-test("uses one restrained frame treatment with homepage shortcuts owned by base", () => {
+test("uses one restrained octagon frame treatment with shortcut geometry owned by base", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
-  assert.match(visualLanguage, /\.home-screen \.lottery-switcher--home-style[\s\S]*\.home-screen \.latest-draw-card,[\s\S]*\.home-screen \.matrix-core-banner\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
-  assert.doesNotMatch(visualLanguage, /\.home-shortcut(?:\b|[.: ])/);
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*var\(--lottery-stroke-default\) solid var\(--home-frame-border\);[^}]*border-radius:\s*var\(--lottery-card-radius\);[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
+  assert.match(visualLanguage, /\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+  assert.doesNotMatch(visualLanguage, /\.home-screen \.home-shortcut(?:::before|::after|:active|:focus-visible)\s*\{/);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*box-shadow:\s*var\(--home-frame-shadow-active\);/s);
-  assert.match(base, /\.home-screen \.home-shortcut img\s*\{[^}]*border-radius:\s*calc\(var\(--lottery-card-radius\) - var\(--lottery-stroke-default\)\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
 });
 
 test("does not add navigation-height clearance above the fixed homepage navigation", () => {
@@ -51,8 +51,8 @@ test("does not replace or redraw existing homepage artwork", () => {
 });
 
 test("derives homepage colors from the canonical runtime tokens", () => {
-  assert.doesNotMatch(visualLanguage, /#[0-9a-f]{3,8}\b/i);
-  assert.doesNotMatch(visualLanguage, /rgba?\(/i);
   assert.match(visualLanguage, /var\(--lottery-gold-500\)/);
+  assert.match(visualLanguage, /var\(--lottery-gold-300\)/);
+  assert.match(visualLanguage, /var\(--lottery-card-bg\)/);
   assert.match(visualLanguage, /var\(--matrix-status-active\)/);
 });

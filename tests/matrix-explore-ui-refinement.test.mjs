@@ -21,7 +21,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.doesNotMatch(root, /--layout-bottom-nav-clearance:/);
   assert.match(tokens, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(css, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\)/s);
-  assert.match(prototypeCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\)/s);
+  assert.match(prototypeCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\)/s);
 
   const left = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-panel label > \\.advanced-setting-title");
   assert.match(left, /gap:\s*\.5rem/);
@@ -49,7 +49,7 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /background:\s*transparent/);
 
   assert.match(css, /\.matrix-explore-main-screen \.segmented button\[data-selected="true"\]\s*\{[^}]*border-color:\s*#c89622;[^}]*background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\);[^}]*color:\s*#f2cf67;/s);
-  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 4px;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 6px;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");
   assert.match(badge, /position:\s*absolute/);
@@ -66,9 +66,8 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
 });
 
 test("Matrix Explore action details keep the approved compact presentation", () => {
-  assert.match(featureSource, /useState\("本日 \(最新\)"\)/);
-  assert.match(featureSource, /\["本日 \(最新\)", "昨日 \(上1期\)", "前日 \(上2期\)"\]/);
-  assert.doesNotMatch(featureSource, /\["本日（最新）", "昨日（上1期）", "前日（上2期）"\]/);
+  assert.match(featureSource, /className="segmented-static" data-selected="true">本日 \(最新\)<\/span>/);
+  assert.doesNotMatch(featureSource, /昨日 \(上1期\)|前日 \(上2期\)/);
 
   assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*white-space:\s*nowrap;/s);
 

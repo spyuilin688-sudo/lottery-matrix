@@ -25,18 +25,17 @@ test("Android viewport 不再額外上縮 device safe area", () => {
   assert.doesNotMatch(runtimeCss, /\.mobile-app-viewport\[data-platform="android"\]\[data-keyboard-visible="false"\]\s*\{[^}]*bottom\s*:\s*var\(--device-safe-area-bottom,\s*48px\)/s);
 });
 
-test("內容底部只保留導覽高度加瀏覽器安全區", () => {
+test("內容底部以導覽與瀏覽器安全區為基準並保留 8px 可見間距", () => {
   assert.match(tokenCss, /--bottom-navigation-height:\s*72px;/);
   assert.match(tokenCss, /--layout-bottom-nav-clearance:\s*calc\(var\(--bottom-navigation-height\) \+ env\(safe-area-inset-bottom,\s*0px\)\);/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*var\(--mobile-safe-area-height/);
   assert.doesNotMatch(tokenCss, /--layout-bottom-nav-clearance:[^;]*\+\s*12px/);
-  assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/);
+  assert.match(navigationCss, /\.bottom-nav-brand-screen:not\(\.notifications-screen\) > \.feature-body\s*\{\s*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);\s*\}/);
 });
 
-test("Matrix 指南與我的子頁使用正式底部安全距離，我的頁面另加 8px", () => {
+test("所有非首頁子頁共用正式底部安全距離加 8px", () => {
   assert.match(featureCss, /\.feature-body\s*\{[^}]*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(featureCss, /\.profile-screen \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
-  assert.match(featureCss, /\.profile-detail-screen \.feature-body,[^{]*\{\s*padding-bottom:\s*var\(--layout-bottom-nav-clearance\);\s*\}/s);
+  assert.match(featureCss, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
 });
 
 test("通知頁維持 20px 左右間距並保留正式底部安全距離", () => {
@@ -45,16 +44,16 @@ test("通知頁維持 20px 左右間距並保留正式底部安全距離", () =>
 });
 
 test("首頁由頂部安全區開始排列並保留固定底部導覽空間", () => {
-  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*safe start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*minmax\(min-content, 1fr\) auto;[^}]*align-content:\s*stretch;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);
 });
 
-test("狀態卡外框與 Matrix Core 使用單一 8px 間距來源", () => {
-  assert.match(homepageCss, /--home-gap-status-core:\s*8px;/);
+test("狀態卡與 Matrix Core 使用單一 10px 間距來源", () => {
+  assert.match(homepageCss, /--home-gap-status-core:\s*10px;/);
   assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;[^}]*min-height:\s*0;/s);
-  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*0\.8px;[^}]*align-content:\s*start;/s);
+  assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*16px;/s);
 });

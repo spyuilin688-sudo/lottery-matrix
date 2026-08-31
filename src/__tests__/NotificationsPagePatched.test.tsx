@@ -107,6 +107,51 @@ function pushFailure(stage: "service-worker-registration" | "browser-subscriptio
 }
 
 describe("NotificationsPagePatched", () => {
+  it("全部關閉只停用目前可用的通知項目並保留手機推播與 Matrix 摘星", async () => {
+    pushSubscription.getPushStatus.mockResolvedValue({ supported: true, permission: "granted", enabled: true });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText("手機通知已開啟")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
+
+    for (const key of ["bet", "result", "win", "status", "card", "expiry"]) {
+      const row = document.querySelector<HTMLElement>(`[data-notification-key="${key}"]`)!;
+      expect(within(row).getByRole("button", { name: `開啟${row.querySelector("h2 span")?.textContent}` })).toHaveAttribute("data-checked", "false");
+    }
+    expect(document.querySelector<HTMLButtonElement>('[data-notification-key="collision"] .toggle')).toHaveAttribute("data-checked", "false");
+    expect(within(document.querySelector<HTMLElement>('[data-notification-key="system"]')!).getByRole("button", { name: "關閉手機通知" })).toHaveAttribute("data-checked", "true");
+    expect(pushSubscription.disablePushNotifications).not.toHaveBeenCalled();
+  });
+
+  it("全部開啟只啟用目前可用的通知項目並保留手機推播與 Matrix 摘星", async () => {
+    memberApi.fetchNotificationSettings.mockResolvedValueOnce({
+      ...structuredClone(storedSettings),
+      settings: {
+        bet: false,
+        result: false,
+        win: false,
+        status: false,
+        card: false,
+        collision: false,
+        system: true,
+        expiry: false,
+      },
+    });
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+
+    const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]')!;
+    await waitFor(() => expect(within(betRow).getByRole("button", { name: "開啟選號提醒" })).toHaveAttribute("data-checked", "false"));
+    fireEvent.click(screen.getByRole("button", { name: "全部開啟" }));
+
+    for (const key of ["bet", "result", "win", "status", "card", "expiry"]) {
+      const row = document.querySelector<HTMLElement>(`[data-notification-key="${key}"]`)!;
+      expect(within(row).getByRole("button", { name: `關閉${row.querySelector("h2 span")?.textContent}` })).toHaveAttribute("data-checked", "true");
+    }
+    expect(document.querySelector<HTMLButtonElement>('[data-notification-key="collision"] .toggle')).toHaveAttribute("data-checked", "false");
+    expect(within(document.querySelector<HTMLElement>('[data-notification-key="system"]')!).getByRole("button", { name: "開啟手機通知" })).toHaveAttribute("data-checked", "false");
+    expect(pushSubscription.enablePushNotifications).not.toHaveBeenCalled();
+  });
+
   it("未登入時不允許要求權限或建立手機訂閱", async () => {
     memberApi.hasAuthenticatedMemberSession.mockResolvedValue(false);
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
@@ -442,7 +487,7 @@ describe("NotificationsPagePatched", () => {
 
     const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]');
     expect(betRow).not.toBeNull();
-    await waitFor(() => expect(within(betRow!).getByRole("button", { name: "" })).toHaveAttribute("data-checked", "false"));
+    await waitFor(() => expect(within(betRow!).getByRole("button", { name: "開啟選號提醒" })).toHaveAttribute("data-checked", "false"));
     expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(1);
     expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
   });

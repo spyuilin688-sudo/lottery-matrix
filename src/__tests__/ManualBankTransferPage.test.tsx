@@ -45,6 +45,7 @@ describe('Matrix Pro manual bank transfer', () => {
     render(<ProPlansPage onNavigate={onNavigate} />);
 
     expect(screen.queryByText('111023004501')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '確定付款' })).toHaveClass('primary-action', 'branded-explore-action');
     expect(screen.getByRole('checkbox', { name: '自動續訂' })).toBeDisabled();
     expect(screen.getByText(/手動轉帳不會自動扣款/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '確定付款' }));
@@ -98,6 +99,7 @@ describe('Matrix Pro manual bank transfer', () => {
     }]);
     render(<PaymentHistoryPage onNavigate={vi.fn()} />);
 
+    expect(document.querySelector('.payment-history-screen')).toBeInTheDocument();
     expect(await screen.findByText('季費方案')).toBeInTheDocument();
     expect(screen.getByText('NT$4,580')).toBeInTheDocument();
     expect(screen.getByText('已確認')).toBeInTheDocument();
