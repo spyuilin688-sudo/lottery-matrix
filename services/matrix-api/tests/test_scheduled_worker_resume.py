@@ -123,6 +123,57 @@ def test_completed_scheduled_analysis_does_not_read_all_history_again() -> None:
     assert repository.full_history_reads == 0
 
 
+def test_completed_analysis_backfills_missing_explore_query_results() -> None:
+    repository = _repository_with_history()
+    now = datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI)
+
+    def explore(_: dict) -> dict:
+        return {
+            "artifact": {
+                "items": [{
+                    "id": "explore-1",
+                    "number": "01",
+                    "lockedPosition": 1,
+                    "predictionDistance": 1,
+                    "consecutive": "準4進5",
+                    "highestStreak": 4,
+                    "predictionNumbers": ["02"],
+                    "algorithmType": "加減",
+                    "numberOrder": "依號碼由小到大排序",
+                    "ruleCount": 1,
+                    "lockedSourceIndex": 0,
+                    "lockedSourcePeriod": "000000221",
+                }],
+                "validationById": {"explore-1": {"itemId": "explore-1"}},
+            },
+            "_checkpoint": {"cursor": 1, "total": 1, "complete": True},
+        }
+
+    builders = {
+        "explore": explore,
+        "tianyan": lambda _: {"items": []},
+        "tiangong": lambda _: {"items": []},
+        "status": lambda _: {"items": []},
+    }
+    run_scheduled_worker(
+        "今彩539", now, repository, UnexpectedSource(), builders,
+    )
+    assert repository.explore_results
+
+    repository.explore_results.clear()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        repository,
+        UnexpectedSource(),
+        _builders([]),
+    )
+
+    assert result == {"lottery": "今彩539", "status": "not-due"}
+    assert repository.explore_results
+
+
 def test_scheduled_worker_repairs_history_before_resuming_any_algorithm() -> None:
     repository = _repository_with_history()
     repository.draws.pop(("今彩539", "000000208"))

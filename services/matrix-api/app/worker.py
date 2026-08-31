@@ -189,6 +189,12 @@ def _resume_stored_analysis(
     expected_version = f"{period}:{ANALYSIS_VERSION}"
     progress = repository.get_progress(lottery, period, expected_version)
     if progress is not None and progress.get("status") == "complete":
+        if not repository.has_explore_results(lottery, period, expected_version):
+            artifact = repository.read_artifact(lottery, period, expected_version, "explore")
+            if artifact is not None:
+                repository.save_explore_results(
+                    lottery, period, expected_version, artifact,
+                )
         return None
 
     repository.cleanup_expired(datetime.now(UTC))
