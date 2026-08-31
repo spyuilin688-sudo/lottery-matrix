@@ -502,11 +502,11 @@
 .matrix-guide-screen .guide-category-strip {
   display: flex;
   max-height: none;
-  margin: 12px 4px 5px;
+  margin: 8px 4px 5px;
   padding: 2px 0;
   gap: 6px;
-  border-top: 1px solid rgba(201, 149, 43, .62);
-  border-bottom: 1px solid rgba(201, 149, 43, .62);
+  border-top: 1px solid rgba(196, 145, 69, .42);
+  border-bottom: 1px solid rgba(196, 145, 69, .42);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -515,6 +515,7 @@
   scroll-padding-inline: 20px;
   scroll-snap-type: x proximity;
   overscroll-behavior-inline: contain;
+  scrollbar-color: transparent transparent;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
@@ -538,20 +539,21 @@
   grid-template-columns: auto auto;
   align-items: center;
   gap: 6.24px;
-  border: 1px solid rgba(66, 53, 33, .55);
-  border-radius: 12.48px;
+  border: 1px solid rgba(196, 145, 69, .42);
+  border-radius: 12px;
   background: #061019;
-  color: #bdb6aa;
+  color: #d4cdc2;
   white-space: nowrap;
   font-size: 18.72px;
   font-weight: 700;
   line-height: 1.25;
   text-align: left;
   scroll-snap-align: start;
+  box-shadow: none;
 }
 
 .matrix-guide-screen .guide-category-strip .guide-category-card > span {
-  color: #b58322;
+  color: #c49145;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 13.2px;
   font-variant-numeric: tabular-nums;
@@ -559,14 +561,25 @@
 }
 
 .matrix-guide-screen .guide-category-strip .guide-category-card[data-selected="true"] {
-  border-color: #c9952b;
-  background: linear-gradient(145deg, rgba(117, 78, 13, .3), rgba(6, 16, 25, .96));
-  color: #f0d58a;
+  border-color: #f4ce67;
+  background: rgba(196, 145, 69, .12);
+  color: #f4ce67;
+  box-shadow: none;
+}
+
+.matrix-guide-screen .guide-category-strip .guide-category-card[data-selected="true"] > span {
+  color: #f4ce67;
+}
+
+.matrix-guide-screen .guide-category-strip .guide-category-card:focus-visible {
+  outline: 2px solid #f4ce67;
+  outline-offset: 2px;
 }
 
 .matrix-guide-screen .guide-preview {
   margin-top: 0;
 }
+
 
 .matrix-status-screen .matrix-status-settings-entry {
   position: fixed;

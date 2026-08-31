@@ -22,9 +22,9 @@ test("Matrix 指南使用三組原生捲動內容並在頭尾等距校正", () =
 });
 
 test("Matrix 指南滑動卡片與說明維持指定間距、字級及原生觸控", () => {
-  assert.match(css, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin:\s*12px 4px 5px;[^}]*padding:\s*4px 0;[^}]*border:\s*0;[^}]*scroll-padding-inline:\s*20px;[^}]*scroll-snap-type:\s*x proximity;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s);
+  assert.match(css, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin:\s*8px 4px 5px;[^}]*padding:\s*4px 0;[^}]*border:\s*0;[^}]*scroll-padding-inline:\s*20px;[^}]*scroll-snap-type:\s*x proximity;[^}]*-webkit-overflow-scrolling:\s*touch;[^}]*touch-action:\s*pan-x pan-y;/s);
   assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\s*\{[^}]*flex:\s*0 0 auto;[^}]*width:\s*max-content;[^}]*min-height:\s*34\.32px;[^}]*padding:\s*6\.24px 12\.48px;[^}]*grid-template-columns:\s*auto auto;[^}]*gap:\s*6\.24px;[^}]*white-space:\s*nowrap;[^}]*font-size:\s*18\.72px;[^}]*font-weight:\s*700;/s);
-  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span\s*\{[^}]*color:\s*#b58322;[^}]*font-size:\s*13\.2px;[^}]*font-weight:\s*700;/s);
+  assert.match(css, /\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span\s*\{[^}]*color:\s*#c49145;[^}]*font-size:\s*13\.2px;[^}]*font-weight:\s*700;/s);
   assert.match(css, /\.matrix-guide-screen \.guide-preview\s*\{[^}]*margin-top:\s*0;/s);
 });
 

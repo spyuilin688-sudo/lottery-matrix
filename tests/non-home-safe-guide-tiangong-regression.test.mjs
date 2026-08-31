@@ -4,6 +4,7 @@ import test from "node:test";
 
 const featureSource = fs.readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const featureCss = fs.readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const guideAdjustmentsCss = fs.readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const responsiveCss = fs.readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
 test("all non-home feature pages reserve a visible 8px gap above bottom navigation", () => {
@@ -45,7 +46,7 @@ test("Matrix Guide contains the requested chapters and exact notification set", 
   assert.doesNotMatch(featureSource, /投注通知/);
 });
 
-test("Matrix Guide only documents the current Explore date and fixed Tiangong contract", () => {
+test("Matrix Guide documents the current Explore date controls and fixed Tiangong contract", () => {
   const guide = featureSource.slice(featureSource.indexOf("const GUIDE_LOOP_GROUPS"));
   const explore = guide.slice(guide.indexOf('title: "Matrix 探索"'), guide.indexOf('title: "Matrix 天衍"'));
   const tiangongStart = guide.indexOf('title: "Matrix 天工"');
@@ -53,11 +54,86 @@ test("Matrix Guide only documents the current Explore date and fixed Tiangong co
   const tongxingStart = guide.indexOf('title: "Matrix 同星"');
   const tongxing = guide.slice(tongxingStart, guide.indexOf('title: "號碼對照單"', tongxingStart));
 
-  assert.match(explore, /探索日期：只使用本日（最新）。/);
-  assert.doesNotMatch(explore, /昨日|前日/);
+  assert.match(explore, /探索日期：可選本日 \(最新\)、昨日 \(上1期\)、前日 \(上2期\)。/);
   assert.match(tiangong, /固定以二段式與準2進3/);
   assert.match(tiangong, /流程固定為二段式。/);
   assert.match(tiangong, /命中條件固定為準2進3。/);
   assert.doesNotMatch(tiangong, /一段式|準3進4|二段式可另外/);
   assert.doesNotMatch(tongxing, /近10期開獎號碼/);
+});
+
+test("Matrix Guide matches the current history filters and uses spaced halfwidth parentheses", () => {
+  const guideStart = featureSource.indexOf("const GUIDE_LOOP_GROUPS");
+  const guideEnd = featureSource.indexOf("  const [selected, setSelected]", guideStart);
+  const guide = featureSource.slice(guideStart, guideEnd);
+  const sectionsStart = guide.indexOf("  const sections: GuideSection[] = [");
+  const sectionsEnd = guide.indexOf("  ];", sectionsStart) + 4;
+  const sections = guide.slice(sectionsStart, sectionsEnd);
+  const historyStart = guide.indexOf('title: "歷史開獎紀錄"');
+  const history = guide.slice(historyStart, guide.indexOf('title: "Matrix 探索"', historyStart));
+
+  assert.match(history, /依彩種、號碼順序、日期或探索範圍查詢歷史開獎資料。/);
+  assert.match(history, /選擇彩種與號碼順序。/);
+  assert.match(history, /可依年、月、日設定日期條件，或選擇1000期、3000期、5000期、所有期數的探索範圍。/);
+  assert.match(history, /最後變更日期時，以日期條件為主；最後變更探索範圍時，以探索範圍為主。/);
+  assert.doesNotMatch(history, /期數查詢|或期數設定|期數，以期數條件/);
+  assert.doesNotMatch(sections, /[（）]/);
+  assert.doesNotMatch(sections, /(?<! )\(/);
+});
+
+test("Matrix Guide documents thirteen-period validation totals for every Matrix road", () => {
+  const guide = featureSource.slice(featureSource.indexOf("const GUIDE_LOOP_GROUPS"));
+  const explore = guide.slice(guide.indexOf('title: "Matrix 探索"'), guide.indexOf('title: "Matrix 天衍"'));
+  const tianyan = guide.slice(guide.indexOf('title: "Matrix 天衍"'), guide.indexOf('title: "Matrix 天工"'));
+  const tiangongStart = guide.indexOf('title: "Matrix 天工"');
+  const tiangong = guide.slice(tiangongStart, guide.indexOf('title: "Matrix 狀態"', tiangongStart));
+
+  assert.match(explore, /今彩539：依號碼由小到大排序65個；依實際開獎順序排序65個鎖定條件。/);
+  assert.match(explore, /天天樂：依號碼由小到大排序65個鎖定條件。/);
+  assert.match(explore, /加減版路驗證球位：74、79、84、89、94、99、104、109、114、119、124、129、134；每種排序合計6,760個。/);
+  assert.match(explore, /合值版路驗證球位：74、79、84、89、94、99、104、109、114、119、124、129、134；每種排序合計6,760個。/);
+  assert.match(explore, /拖牌版路驗證球位：每個鎖定條件使用自身換算；每種排序合計65個。/);
+  assert.match(explore, /六合彩、大樂透：依號碼由小到大排序91個；依實際開獎順序排序91個鎖定條件。/);
+  assert.match(explore, /加減版路驗證球位：104、111、118、125、132、139、146、153、160、167、174、181、188；每種排序合計13,286個。/);
+  assert.match(explore, /合值版路驗證球位：104、111、118、125、132、139、146、153、160、167、174、181、188；每種排序合計13,286個。/);
+  assert.match(explore, /拖牌版路驗證球位：每個鎖定條件使用自身換算；每種排序合計91個。/);
+  assert.match(explore, /四彩種近十三期合計147,407個比對球位。/);
+  assert.match(tianyan, /複合版路每組使用1個鎖定條件與2條規則。/);
+  assert.match(tianyan, /每條規則各驗證1個球位；同一球位時，兩條規則必須使用不同演算法。/);
+  assert.match(tiangong, /定位版路不使用鎖定條件；探索、第一段與第二段各使用1個球位路徑。/);
+  assert.match(tiangong, /第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生預測。/);
+});
+
+test("Matrix Guide keeps its content card compact without fixed empty height", () => {
+  assert.match(featureCss, /\.guide-preview\s*\{[^}]*min-height:\s*0;[^}]*margin-top:\s*0;[^}]*padding:\s*14px;/s);
+  assert.match(featureCss, /\.guide-preview \.guide-summary\s*\{[^}]*margin:\s*10px 0 0;[^}]*padding-bottom:\s*6px;/s);
+  assert.match(featureCss, /\.guide-detail-block\s*\{[^}]*padding:\s*8px 0;/s);
+  assert.match(featureCss, /\.guide-detail-block h3\s*\{[^}]*margin:\s*0 0 6px;/s);
+  assert.match(featureCss, /\.guide-detail-block ul\s*\{[^}]*gap:\s*5px;/s);
+  assert.match(
+    guideAdjustmentsCss,
+    /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*margin:\s*8px 4px 5px;/s,
+  );
+});
+
+test("Matrix Guide uses the same restrained gold system for its chapter controls and content", () => {
+  assert.match(
+    guideAdjustmentsCss,
+    /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\s*\{[^}]*border:\s*1px solid rgba\(196, 145, 69, \.42\);[^}]*border-radius:\s*12px;[^}]*color:\s*#d4cdc2;/s,
+  );
+  assert.match(
+    guideAdjustmentsCss,
+    /\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span\s*\{[^}]*color:\s*#c49145;/s,
+  );
+  assert.match(
+    guideAdjustmentsCss,
+    /\.matrix-guide-screen \.guide-category-strip \.guide-category-card\[data-selected="true"\]\s*\{[^}]*border-color:\s*#f4ce67;[^}]*background:\s*rgba\(196, 145, 69, \.12\);[^}]*color:\s*#f4ce67;[^}]*box-shadow:\s*none;/s,
+  );
+  assert.match(featureCss, /\.guide-preview h2\s*\{[^}]*color:\s*#f4ce67;/s);
+  assert.match(featureCss, /\.guide-preview header > span\s*\{[^}]*border:\s*1px solid rgba\(196, 145, 69, \.42\);[^}]*border-radius:\s*12px;[^}]*color:\s*#c49145;/s);
+  assert.match(featureCss, /\.guide-preview \.guide-summary\s*\{[^}]*border-bottom:\s*1px solid rgba\(196, 145, 69, \.42\);[^}]*color:\s*#d4cdc2;/s);
+  assert.match(featureCss, /\.guide-detail-block\s*\{[^}]*border-bottom:\s*1px solid rgba\(196, 145, 69, \.42\);/s);
+  assert.match(featureCss, /\.guide-detail-block h3\s*\{[^}]*color:\s*#c49145;/s);
+  assert.match(featureCss, /\.guide-detail-block li::before\s*\{[^}]*background:\s*#c49145;/s);
+  assert.match(featureCss, /\.guide-detail-block ul\s*\{[^}]*color:\s*#bbb4aa;/s);
 });
