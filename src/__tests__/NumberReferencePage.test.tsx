@@ -19,20 +19,19 @@ beforeEach(() => {
 });
 
 function mockReferenceHistory() {
-  globalThis.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    headers: { get: () => 'application/json' },
-    json: async () => ({
-      items: [{
-        period: '115078',
-        drawDate: '2026/08/11',
-        numbers: ['01', '02', '03', '04', '05'],
-        sortedNumbers: ['01', '02', '03', '04', '05'],
-        drawOrderNumbers: ['05', '04', '03', '02', '01'],
-        matchSlots: [],
-      }],
-    }),
-  }) as typeof fetch;
+  const draw = {
+    period: '115078',
+    drawDate: '2026/08/11',
+    numbers: ['01', '02', '03', '04', '05'],
+    sortedNumbers: ['01', '02', '03', '04', '05'],
+    drawOrderNumbers: ['05', '04', '03', '02', '01'],
+  };
+  globalThis.fetch = vi.fn().mockImplementation(async (input) => new Response(JSON.stringify(
+    String(input).includes('/latest/') ? draw : { items: [draw] },
+  ), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })) as typeof fetch;
 }
 
 test('從列表底部展開探索設定時直接顯示設定且不捲動畫面', () => {

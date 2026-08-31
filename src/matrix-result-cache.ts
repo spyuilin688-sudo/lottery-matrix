@@ -5,6 +5,8 @@ type MatrixResultCacheRequest = {
 
 const CACHE_PREFIX = 'matrix-result';
 const LOTTERY_QUERY_CACHE_PREFIX = 'lottery-query';
+const LOTTERY_HISTORY_CACHE_PREFIX = 'lottery-history';
+const LOTTERY_LATEST_CACHE_PREFIX = 'lottery-latest';
 const VERSION_PREFIX = 'matrix-result-period';
 
 function storageAvailable() {
@@ -35,6 +37,14 @@ function lotteryQueryCachePrefix(lottery: string) {
   return `${LOTTERY_QUERY_CACHE_PREFIX}:${encodeSegment(lottery)}:`;
 }
 
+function lotteryHistoryCachePrefix(lottery: string) {
+  return `${LOTTERY_HISTORY_CACHE_PREFIX}:${encodeSegment(lottery)}:`;
+}
+
+function lotteryLatestCacheKey(lottery: string) {
+  return `${LOTTERY_LATEST_CACHE_PREFIX}:${encodeSegment(lottery)}`;
+}
+
 function versionKey(lottery: string) {
   return `${VERSION_PREFIX}:${encodeSegment(lottery)}`;
 }
@@ -55,7 +65,11 @@ export function setMatrixCurrentPeriod(lottery: string, drawPeriod: string) {
   const previous = localStorage.getItem(key);
   if (previous === drawPeriod) return;
 
-  const prefixes = [lotteryCachePrefix(lottery), lotteryQueryCachePrefix(lottery)];
+  const prefixes = [
+    lotteryCachePrefix(lottery),
+    lotteryQueryCachePrefix(lottery),
+    lotteryHistoryCachePrefix(lottery),
+  ];
   const keysToRemove: string[] = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const itemKey = localStorage.key(index);
@@ -106,4 +120,63 @@ export function writeLotteryQueryCache<T>(lottery: string, drawPeriod: string, q
   if (!storageAvailable() || !drawPeriod) return;
   setMatrixCurrentPeriod(lottery, drawPeriod);
   localStorage.setItem(buildLotteryQueryCacheKey(lottery, drawPeriod, query), JSON.stringify(result));
+}
+
+type TimedLotteryCache<T> = { savedAt: number; value: T };
+
+export function readLotteryLatestCache<T>(lottery: string, maxAgeMs: number): T | null {
+  if (!storageAvailable()) return null;
+  const key = lotteryLatestCacheKey(lottery);
+  const stored = localStorage.getItem(key);
+  if (!stored) return null;
+  try {
+    const cached = JSON.parse(stored) as TimedLotteryCache<T>;
+    if (!Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt >= maxAgeMs) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return cached.value;
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
+export function writeLotteryLatestCache<T>(lottery: string, value: T) {
+  if (!storageAvailable()) return;
+  try {
+    localStorage.setItem(
+      lotteryLatestCacheKey(lottery),
+      JSON.stringify({ savedAt: Date.now(), value } satisfies TimedLotteryCache<T>),
+    );
+  } catch {
+    // A full browser cache must not block the latest result from being displayed.
+  }
+}
+
+function buildLotteryHistoryCacheKey(lottery: string, drawPeriod: string, limit?: number) {
+  return `${lotteryHistoryCachePrefix(lottery)}${encodeSegment(drawPeriod)}:${limit ?? 'all'}`;
+}
+
+export function readLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit?: number): T | null {
+  if (!storageAvailable() || getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
+  const key = buildLotteryHistoryCacheKey(lottery, drawPeriod, limit);
+  const stored = localStorage.getItem(key);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
+export function writeLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit: number | undefined, value: T) {
+  if (!storageAvailable() || !drawPeriod) return;
+  setMatrixCurrentPeriod(lottery, drawPeriod);
+  try {
+    localStorage.setItem(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), JSON.stringify(value));
+  } catch {
+    // A full browser cache must not block the history result from being displayed.
+  }
 }
