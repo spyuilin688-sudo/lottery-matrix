@@ -59,6 +59,25 @@ def test_stops_at_first_both_miss_and_ignores_older_groups() -> None:
     assert result["bothHit"] == 1
 
 
+def test_four_successes_before_first_miss_remain_a_valid_streak() -> None:
+    hits = [
+        (True, False),
+        (False, True),
+        (True, False),
+        (False, True),
+        (False, False),
+        (True, False),
+    ]
+
+    result = evaluate_tianyan_candidate(candidate(hits))
+
+    assert result["valid"] is True
+    assert result["groupCount"] == 4
+    assert result["minimumIndependentHits"] == 2
+    assert result["rule1Only"] == 2
+    assert result["rule2Only"] == 2
+
+
 def test_retains_two_rules_when_prediction_is_the_same() -> None:
     value = candidate([(True, False), (False, True), (True, False), (False, True)])
     value["rules"][1].update({"algorithmType": "合值", "value": 13, "currentBaseNumber": 10})
