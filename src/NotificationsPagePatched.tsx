@@ -441,7 +441,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         <div className="notification-content">
           <div className="notification-bulk-actions" role="group" aria-label="批次通知設定">
             <button type="button" className="notification-bulk-enable primary-action branded-explore-action" onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
-            <button type="button" className="notification-bulk-disable" onClick={() => setAvailableNotifications(false)}>全部關閉</button>
+            <button type="button" className="notification-bulk-disable branded-explore-action" onClick={() => setAvailableNotifications(false)}><span>全部關閉</span></button>
           </div>
           <div className="notification-list">
             <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>

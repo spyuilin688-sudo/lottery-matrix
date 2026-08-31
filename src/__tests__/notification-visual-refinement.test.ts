@@ -108,12 +108,16 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("keeps the Matrix Pro label above its icon", () => {
+  it("moves every Matrix Pro label down onto its icon without changing the stack flow", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
-      <main class="notifications-screen-v2"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></main>`;
+      <main class="notifications-screen-v2">${Array.from({ length: 4 }, () => '<div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div>').join("")}</main>`;
 
     expect(getComputedStyle(document.querySelector(".notification-icon-stack")!).gap).toBe("1px");
+    document.querySelectorAll<HTMLElement>(".notification-pro-badge").forEach((badge) => {
+      expect(getComputedStyle(badge).transform).toBe("translateY(3px)");
+      expect(getComputedStyle(badge).zIndex).toBe("1");
+    });
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {
@@ -138,7 +142,8 @@ describe("notification visual refinement", () => {
     expect(disable.height).toBe("32px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
+    expect(source).toMatch(/className="notification-bulk-disable branded-explore-action"/);
+    expect(css).not.toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*color:\s*#D8C38D/s);
   });
