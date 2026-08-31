@@ -4,27 +4,11 @@ from typing import Any
 from app.domain.explore_shared_v8 import run_matrix_shared_explore_group_with_history
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
-from app.domain.tiangong import enumerate_equal_spacing_sequences
-from app.domain.tiangong_artifact import build_tiangong_artifact
-from app.domain.tiangong_generator import run_tiangong_candidates
 from app.domain.tianyan_artifact import build_tianyan_artifact
 from app.services.explore_batches import build_explore_batch, work_units
 
 
 ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
-TiangongRunner = Callable[[str, list[dict[str, Any]], dict[str, Any]], list[dict[str, Any]]]
-
-
-def tiangong_work_units() -> list[dict[str, Any]]:
-    units: list[dict[str, Any]] = []
-    for sequence in enumerate_equal_spacing_sequences(80, "準2進3"):
-        units.append({
-            "periodRanges": [80],
-            "modes": ["two-stage"],
-            "hitConditions": ["準2進3"],
-            "sourceSequences": [sequence],
-        })
-    return units
 
 
 def _work_units(lottery: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -117,32 +101,6 @@ def build_explore_artifact(
     )["artifact"]
 
 
-def build_tiangong_artifact_chunk(
-    lottery: str,
-    draw_period: str,
-    history: list[dict[str, Any]],
-    start: int,
-    limit: int,
-    runner: TiangongRunner = run_tiangong_candidates,
-) -> dict[str, Any]:
-    units = tiangong_work_units()
-    cursor_start = min(max(0, start), len(units))
-    cursor = min(len(units), cursor_start + max(1, limit))
-    candidates: list[dict[str, Any]] = []
-    for options in units[cursor_start:cursor]:
-        candidates.extend(runner(lottery, history, options))
-    artifact = build_tiangong_artifact(
-        lottery, draw_period, history, lambda *_: candidates,
-    )
-    return {
-        "artifact": artifact,
-        "cursorStart": cursor_start,
-        "cursor": cursor,
-        "total": len(units),
-        "complete": cursor == len(units),
-    }
-
-
 _EXPLORE_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
     "predictionNumbers", "algorithmType", "numberOrder", "exploreDateOffset",
@@ -168,7 +126,7 @@ def _compact_status_items(
     return compact
 
 
-def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong: dict[str, Any]) -> dict[str, Any]:
+def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[str, Any]:
     roads = []
     for item in explore["items"]:
         if item["exploreDateOffset"] != 0 or item["numberOrder"] != "依號碼由小到大排序" or item.get("lockedSourceIndex", 99) >= 13:
@@ -191,11 +149,10 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
     status = evaluate_chapter15({"lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"], "roads": roads})
     return {
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
-        "artifactKinds": ["explore", "tianyan", "tiangong"], **status,
+        "artifactKinds": ["explore", "tianyan"], **status,
         "artifactCounts": {
             "explore": len(explore["items"]),
             "tianyan": len(tianyan["items"]),
-            "tiangong": int(tiangong.get("itemCount", len(tiangong.get("items", [])))),
         },
         "statusSources": {
             "explore": {
@@ -216,7 +173,6 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
 
 def create_artifact_builders(
     explore_runner: ExploreRunner = run_matrix_shared_explore_group_with_history,
-    tiangong_runner: TiangongRunner = run_tiangong_candidates,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
@@ -241,30 +197,8 @@ def create_artifact_builders(
         draw = context["draw"]
         return build_tianyan_artifact(draw["lottery"], draw["period"], context["artifacts"]["explore"])
 
-    def tiangong(context: dict[str, Any]) -> dict[str, Any]:
-        draw = context["draw"]
-        batch = context.get("tiangongBatch")
-        if isinstance(batch, dict):
-            result = build_tiangong_artifact_chunk(
-                draw["lottery"], draw["period"], context["history"],
-                int(batch.get("start", 0)), int(batch.get("limit", 1)), tiangong_runner,
-            )
-            return {
-                "artifact": result["artifact"],
-                "_checkpoint": {
-                    "cursorStart": result["cursorStart"],
-                    "cursor": result["cursor"],
-                    "total": result["total"],
-                    "complete": result["complete"],
-                },
-            }
-        return build_tiangong_artifact(
-            draw["lottery"], draw["period"], context["history"],
-            lambda lottery, history: tiangong_runner(lottery, history, {}),
-        )
-
     def status(context: dict[str, Any]) -> dict[str, Any]:
         artifacts = context["artifacts"]
-        return _status_artifact(artifacts["explore"], artifacts["tianyan"], artifacts["tiangong"])
+        return _status_artifact(artifacts["explore"], artifacts["tianyan"])
 
-    return {"explore": explore, "tianyan": tianyan, "tiangong": tiangong, "status": status}
+    return {"explore": explore, "tianyan": tianyan, "status": status}
