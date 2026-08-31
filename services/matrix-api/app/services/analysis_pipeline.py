@@ -7,10 +7,10 @@ from app.repositories.artifact_chunks import chunk_manifest
 
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
-PHASES = ("explore", "tianyan", "tiangong", "status")
+PHASES = ("explore", "tianyan", "status")
 PHASE_DEPENDENCIES = {
     "tianyan": ("explore",),
-    "status": ("explore", "tianyan", "tiangong"),
+    "status": ("explore", "tianyan"),
 }
 
 
@@ -23,7 +23,6 @@ class AnalysisPipeline:
         builders: Mapping[str, ArtifactBuilder],
         analysis_version: str,
         explore_batch_size: int = 10,
-        tiangong_batch_size: int = 1,
     ) -> None:
         if set(builders) != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_BUILDERS_INCOMPLETE")
@@ -31,7 +30,6 @@ class AnalysisPipeline:
         self.builders = builders
         self.analysis_version = analysis_version
         self.explore_batch_size = max(1, explore_batch_size)
-        self.tiangong_batch_size = max(1, tiangong_batch_size)
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
         self._validate_draw(draw)
@@ -47,7 +45,7 @@ class AnalysisPipeline:
             phase_total = len(PHASES)
             resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
             for phase_index, phase in enumerate(PHASES):
-                if phase in {"explore", "tiangong"}:
+                if phase == "explore":
                     if phase_index < resume_phase_index:
                         if self.repository.has_artifact(
                             lottery, period, self.analysis_version, phase,
@@ -55,7 +53,7 @@ class AnalysisPipeline:
                             continue
                     start = int(run.get("cursor", 0)) if run.get("phase") == phase else 0
                     batch_key = f"{phase}Batch"
-                    batch_size = self.explore_batch_size if phase == "explore" else self.tiangong_batch_size
+                    batch_size = self.explore_batch_size
                     context[batch_key] = {
                         "start": start,
                         "limit": batch_size,
@@ -88,22 +86,10 @@ class AnalysisPipeline:
                                 lottery, period, self.analysis_version,
                             )
                             return {**(result or {}), "skipped": False}
-                        if phase == "tiangong":
-                            item_count = self.repository.summarize_artifact(
-                                lottery, period, self.analysis_version, phase, total,
-                            )
-                            materialized = {
-                                "lottery": lottery,
-                                "drawPeriod": period,
-                                "items": [],
-                                "validationById": {},
-                                "itemCount": item_count,
-                            }
-                        else:
-                            materialized = self.repository.materialize_artifact(
-                                lottery, period, self.analysis_version, phase, total,
-                            )
-                            item_count = len(materialized["items"])
+                        materialized = self.repository.materialize_artifact(
+                            lottery, period, self.analysis_version, phase, total,
+                        )
+                        item_count = len(materialized["items"])
                         expected_chunks = (total + batch_size - 1) // batch_size
                         manifest = chunk_manifest(
                             expected_chunks, cursor, total, item_count,
