@@ -386,6 +386,7 @@ export function FeaturePageRouter({
   screen,
   onNavigate,
   historyReturnScreen = "home",
+  statusLottery = "今彩539",
   onQuickOpen,
   onQuickConfigure,
   quickActive,
@@ -393,8 +394,9 @@ export function FeaturePageRouter({
   screen: ScreenId;
   onNavigate: Navigate;
   historyReturnScreen?: ScreenId;
+  statusLottery?: LotteryId;
 } & BottomNavCallbacks) {
   if (screen === "history") return <PatchedDrawHistoryPage onNavigate={onNavigate} backTarget={historyReturnScreen} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive} />;
   if (screen === "tongxing") return <PatchedTongXingPage onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive} />;
-  return <OriginalFeaturePageRouter screen={screen} onNavigate={onNavigate} historyReturnScreen={historyReturnScreen} />;
+  return <OriginalFeaturePageRouter screen={screen} onNavigate={onNavigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} />;
 }
