@@ -2,12 +2,6 @@
   font-weight: 600;
 }
 
-.notifications-screen-v2 .notification-bulk-disable {
-  border: 1px solid var(--lottery-gold-500);
-  background: var(--lottery-neutral-900);
-  color: var(--lottery-gold-500);
-}
-
 .notifications-screen-v2 .notification-inline-settings-content:has(.notification-bet-grid) {
   padding: 5px 4px 6px;
 }

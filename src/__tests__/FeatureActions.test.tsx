@@ -91,7 +91,9 @@ describe("existing feature actions", () => {
 
     const referralCard = screen.getByRole("heading", { name: "輸入推薦碼" }).closest("section");
     expect(referralCard).not.toBeNull();
-    expect(within(referralCard!).getByRole("button", { name: "確認" })).toBeDisabled();
+    const referralConfirm = within(referralCard!).getByRole("button", { name: "確認" });
+    expect(referralConfirm).toBeDisabled();
+    expect(referralConfirm).toHaveClass("primary-action", "branded-explore-action");
     unmount();
 
     render(<NotesPage onNavigate={vi.fn()} />);
@@ -109,7 +111,9 @@ describe("existing feature actions", () => {
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("textbox", { name: "啟動碼" })).toBeVisible();
-    expect(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" })).toBeEnabled();
+    const activationConfirm = within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" });
+    expect(activationConfirm).toBeEnabled();
+    expect(activationConfirm).toHaveClass("primary-action", "branded-explore-action");
   });
 });
 
