@@ -70,7 +70,7 @@ jobs:
         run: npm run build
 
       - name: Full tests
-        run: node --test tests/*.test.mjs
+        run: node --test --test-concurrency=2 tests/*.test.mjs
 
   matrix-api:
     runs-on: ubuntu-latest
