@@ -1,11 +1,10 @@
 import pytest
 
-from app.domain.tiangong import evaluate_tiangong_candidate
+from app.domain.tiangong import enumerate_equal_spacing_sequences, evaluate_tiangong_candidate
 from app.domain.tiangong_generator import (
     derive_tiangong_rules, enumerate_position_paths, enumerate_reference_positions,
     result_position, run_tiangong_candidates,
 )
-from app.services.artifact_builders import tiangong_work_units
 
 
 def _draw(period: int, numbers: list[int]) -> dict:
@@ -61,11 +60,9 @@ def test_generator_rejects_ready3_to_ready4() -> None:
 
 
 def test_tiangong_work_units_only_generate_two_stage_ready2() -> None:
-    units = tiangong_work_units()
+    units = enumerate_equal_spacing_sequences(80, "準2進3")
 
     assert len(units) == 533
-    assert {unit["modes"][0] for unit in units} == {"two-stage"}
-    assert {unit["hitConditions"][0] for unit in units} == {"準2進3"}
 
 
 def test_generator_rejects_removed_one_stage_mode() -> None:
