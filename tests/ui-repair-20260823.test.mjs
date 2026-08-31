@@ -26,7 +26,7 @@ test('tool title actions use content-driven compact controls and the 87.5% borde
   assert.match(actions, /transform:\s*translateY\(-87\.5%\)\s*;/);
   assert.doesNotMatch(responsive, /(?:tongxing|reference)-title-actions[^{}]*\.title-card-compact-action\s*\{[^}]*(?:min-)?height\s*:/s);
   assert.match(responsive, /\.draw-history-screen \.history-reset-trigger\s*\{[^}]*gap:\s*1px;/s);
-  assert.match(responsive, /\.number-reference-screen \.reference-title-actions button:first-child\s*\{[^}]*gap:\s*1px;/s);
+  assert.match(responsive, /\.number-reference-screen \.reference-refresh-trigger\s*\{[^}]*gap:\s*1px;/s);
 });
 
 test('all three portal floating setting cards share explicit 16px inline offsets', () => {
