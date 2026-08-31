@@ -92,7 +92,7 @@ test("近10期期數、年份與日期使用指定響應式字級並保留期數
   assert.equal(row.gridTemplateColumns, "minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr)");
 });
 
-test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線", () => {
+test("六合彩使用 40px 列高、20–24px 彩球與目前逐色光學基線", () => {
   const { style } = historyFixture("六合彩", 6, true);
   const panel = style(".history-panel");
   const row = style(".history-row");
@@ -105,7 +105,7 @@ test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線"
 
   assert.equal(row.height, "40px");
   assert.equal(row.minHeight, "40px");
-  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(18px,5.64vw,22px)");
+  assert.equal(panel.getPropertyValue("--matrix-history-ball-size").trim(), "clamp(20px,6.15vw,24px)");
   assert.equal(numbers.justifyContent, "center");
   assert.equal(numbers.alignItems, "center");
   assert.equal(numbers.gap, "clamp(4px, 1.5vw, 7px)");
@@ -130,10 +130,10 @@ test("六合彩使用 40px 列高、18–22px 彩球與目前逐色光學基線"
   assert.equal(style(".history-special-label").position, "absolute");
 
   const expectedGeometry = [
-    { viewport: 320, ball: 18.048, gap: 4.8 },
-    { viewport: 360, ball: 20.304, gap: 5.4 },
-    { viewport: 375, ball: 21.15, gap: 5.625 },
-    { viewport: 390, ball: 21.996, gap: 5.85 },
+    { viewport: 320, ball: 20, gap: 4.8 },
+    { viewport: 360, ball: 22.14, gap: 5.4 },
+    { viewport: 375, ball: 23.0625, gap: 5.625 },
+    { viewport: 390, ball: 23.985, gap: 5.85 },
   ];
   for (const { viewport, ball, gap } of expectedGeometry) {
     const rowWidth = viewport - 32 - 2;

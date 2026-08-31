@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { NumberReferencePage } from '../FeaturePages';
 
@@ -17,6 +17,23 @@ beforeEach(() => {
     return 1;
   };
 });
+
+function mockReferenceHistory() {
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    headers: { get: () => 'application/json' },
+    json: async () => ({
+      items: [{
+        period: '115078',
+        drawDate: '2026/08/11',
+        numbers: ['01', '02', '03', '04', '05'],
+        sortedNumbers: ['01', '02', '03', '04', '05'],
+        drawOrderNumbers: ['05', '04', '03', '02', '01'],
+        matchSlots: [],
+      }],
+    }),
+  }) as typeof fetch;
+}
 
 test('從列表底部展開探索設定時直接顯示設定且不捲動畫面', () => {
   const scrollIntoView = vi.fn();
@@ -110,4 +127,36 @@ test('已存在 01 到 04 時仍可輸入 11 到 49', () => {
     fireEvent.change(first, { target: { value: '' } });
     fireEvent.change(second, { target: { value: '' } });
   }
+});
+
+test('整列標記後點擊同一期單格會清除整列並保留單格標記', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(issueButton);
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+
+  fireEvent.click(numberButton);
+
+  expect(issueButton.getAttribute('aria-pressed')).toBe('false');
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
+});
+
+test('單格標記後點擊同一期整列會清除單格並保留整列標記', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(numberButton);
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
+
+  fireEvent.click(issueButton);
+
+  expect(numberButton.getAttribute('aria-pressed')).toBe('false');
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
 });

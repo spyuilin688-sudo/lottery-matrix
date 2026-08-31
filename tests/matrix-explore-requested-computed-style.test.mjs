@@ -115,7 +115,7 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   assert.equal(style(".result-panel").paddingRight, "6px");
 });
 
-test("命中條件分隔線下移 4px 並與進階探索設定相距 4px", () => {
+test("命中條件徽章保留 6px 下內距並與進階探索設定相距 4px", () => {
   const { style } = exploreFixture();
   const selected = style('.hit-options button[data-selected="true"]');
   const unselected = style('.hit-options button[data-selected="false"]');
@@ -128,7 +128,7 @@ test("命中條件分隔線下移 4px 並與進階探索設定相距 4px", () =>
   assert.equal(unselected.minHeight, selected.minHeight);
   assert.equal(unselected.padding, selected.padding);
   assert.equal(unselected.boxSizing, selected.boxSizing);
-  assert.equal(style(".hit-options").paddingBottom, "4px");
+  assert.equal(style(".hit-options").paddingBottom, "6px");
   assert.equal(style(".hit-options").marginBottom, "4px");
 });
 

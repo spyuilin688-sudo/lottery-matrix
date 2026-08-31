@@ -277,20 +277,25 @@ def test_history_without_limit_returns_all_rows() -> None:
 
 def test_tongxing_matches_legacy_appdeploy_semantics() -> None:
     repository = _repository()
+    repository.upsert_draw(_draw("今彩539", "003114", "2026-08-25", ["01", "12", "13", "14", "15"]))
     body = json.dumps({
         "lottery": "今彩539",
         "numberOrder": "依號碼由小到大排序",
         "numbers": ["01"],
-        "futureOffset": 2,
+        "futureOffset": 1,
     }).encode()
 
     status, payload = handle_api_request("POST", "/api/matrix/tongxing", body, repository)
     assert status == 200
     assert payload["numbers"] == ["01"]
-    assert payload["futureOffset"] == 2
-    assert len(payload["groups"]) == 1
-    assert payload["groups"][0]["lockedEntry"]["period"] == "003115"
-    assert payload["groups"][0]["predictedEntry"]["period"] == "003117"
+    assert payload["futureOffset"] == 1
+    assert [
+        (group["lockedEntry"]["period"], group["predictedEntry"]["period"])
+        for group in payload["groups"]
+    ] == [
+        ("003114", "003115"),
+        ("003115", "003116"),
+    ]
 
 
 def test_number_reference_preserves_actual_order_and_match_slots() -> None:

@@ -9,7 +9,7 @@ const navigationCss = readFileSync(new URL("../src/prototype.css", import.meta.u
 test("首頁內容由安全區頂部開始排列且不再把剩餘高度堆到 Logo 上方", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.home-layout\s*\{[^}]*align-content:\s*safe start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
+    /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*minmax\(min-content, 1fr\) auto;[^}]*align-content:\s*stretch;[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
   );
   assert.doesNotMatch(
     homeCss,
@@ -17,10 +17,10 @@ test("首頁內容由安全區頂部開始排列且不再把剩餘高度堆到 L
   );
 });
 
-test("首頁狀態卡間距為 0.8px 且彩種圖示向左移動 6px", () => {
+test("首頁狀態卡間距為 1.5px 且彩種圖示維持核准位置", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*0\.8px;/s,
+    /\.home-screen \.matrix-status-card-grid\s*\{[^}]*gap:\s*1\.5px;/s,
   );
   assert.match(
     homeCss,
@@ -48,10 +48,10 @@ test("號碼對照單第二列與浮動設定共用 26px 控制高度", () => {
   assert.match(featureCss, /\.note-form input\s*\{[^}]*height:\s*42px;/s);
 });
 
-test("首頁快捷設定移至左側安全邊界 6px 並等比例縮小 10%", () => {
+test("首頁快捷設定避開左側安全區並維持核准縮放", () => {
   assert.match(
     navigationCss,
-    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(6px, env\(safe-area-inset-left, 0px\)\);[^}]*right:\s*auto;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*end start;/s,
+    /\.bottom-navigation-quick-settings\s*\{[^}]*left:\s*max\(10px, calc\(env\(safe-area-inset-left, 0px\) \+ 4px\)\);[^}]*right:\s*auto;[^}]*bottom:\s*calc\(var\(--bottom-nav-safe-area\) \+ 9px\);[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*place-items:\s*end start;/s,
   );
   assert.match(
     navigationCss,
