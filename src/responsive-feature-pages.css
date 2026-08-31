@@ -97,13 +97,14 @@
   width: auto;
   min-width: 0;
   height: auto;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
+  gap: 6px;
 }
 
-.draw-history-screen .history-title-actions { gap: 6px; }
-.tongxing-screen .tongxing-title-actions { gap: 5px; }
-.number-reference-screen .reference-title-actions { gap: 8px; }
+.tool-title-actions {
+  translate: -3px -1px;
+}
 
 .draw-history-screen .history-title-actions .title-card-compact-action {
   width: auto;
@@ -112,46 +113,17 @@
   padding-inline: 4px;
 }
 
-.draw-history-screen .history-reset-trigger {
+.tool-title-reset-trigger {
   gap: 1px;
   padding-inline: 4px 5px;
   background-image: none;
 }
 
-.draw-history-screen .history-reset-trigger > svg {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-}
-
-.draw-history-screen .history-filter-trigger {
-  padding-inline: 4px;
-  gap: 1px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #d3a642;
-  font-size: clamp(7.2px, 2.1vw, 9px);
-}
-
-.draw-history-screen .history-filter-trigger-icon {
+.tool-title-reset-trigger > svg,
+.reference-refresh-icon {
   width: 8px;
   height: 8px;
   flex: 0 0 8px;
-}
-
-.draw-history-screen .history-filter-trigger > svg:not(.history-filter-trigger-icon) { display: none; }
-
-.number-reference-screen .reference-refresh-trigger {
-  width: max-content;
-  min-width: 0;
-  padding-inline: 4px 5px;
-  gap: 1px;
-  white-space: nowrap;
-}
-
-.number-reference-screen .reference-settings-trigger {
-  transform: translate(-4px, -3px);
 }
 
 .draw-history-screen .feature-body,
