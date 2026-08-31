@@ -139,3 +139,60 @@ def test_shared_candidates_can_form_tianyan_without_explore_final_items() -> Non
     assert validation["rule1Only"] == 3
     assert validation["rule2Only"] == 3
     assert validation["bothHit"] == 1
+
+
+def test_tianyan_keeps_only_the_highest_streak_for_one_search_condition() -> None:
+    source = {
+        "lottery": "今彩539",
+        "drawPeriod": "114000123",
+        "items": [],
+        "validationById": {},
+        "tianyanSources": [
+            _shared_candidate(
+                position=1, algorithm_type="加減", value=0, current_base=3,
+                hits=[True, True, True, False, False, False, True],
+            ),
+            _shared_candidate(
+                position=2, algorithm_type="加減", value=5, current_base=10,
+                hits=[False, False, False, True, True, True, True],
+            ),
+            _shared_candidate(
+                position=3, algorithm_type="加減", value=4, current_base=20,
+                hits=[False, False, False, True, True, False, False],
+            ),
+        ],
+    }
+
+    artifact = build_tianyan_artifact("今彩539", "114000123", source)
+
+    assert len(artifact["items"]) == 1
+    assert artifact["items"][0]["consecutive"] == "準7進8"
+    assert artifact["items"][0]["predictionNumbers"] == ["03", "15"]
+
+
+def test_tianyan_rejects_highest_level_when_merged_predictions_exceed_two() -> None:
+    source = {
+        "lottery": "今彩539",
+        "drawPeriod": "114000123",
+        "items": [],
+        "validationById": {},
+        "tianyanSources": [
+            _shared_candidate(
+                position=1, algorithm_type="加減", value=0, current_base=3,
+                hits=[True, True, True, False, False, False, True],
+            ),
+            _shared_candidate(
+                position=2, algorithm_type="加減", value=5, current_base=10,
+                hits=[False, False, False, True, True, True, True],
+            ),
+            _shared_candidate(
+                position=3, algorithm_type="加減", value=7, current_base=20,
+                hits=[False, False, False, True, True, True, True],
+            ),
+        ],
+    }
+
+    artifact = build_tianyan_artifact("今彩539", "114000123", source)
+
+    assert artifact["items"] == []
+    assert artifact["validationById"] == {}
