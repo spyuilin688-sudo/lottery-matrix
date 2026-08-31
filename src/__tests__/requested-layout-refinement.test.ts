@@ -224,7 +224,7 @@ describe("requested responsive layout refinement", () => {
     const actions = getComputedStyle(document.querySelector(".notification-bulk-actions")!);
     const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
     const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
-    expect(content.rowGap).toBe("12px");
+    expect(content.rowGap).toBe("16px");
     expect(actions.display).toBe("grid");
     expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
     expect(actions.columnGap).toBe("8px");
