@@ -68,13 +68,21 @@ test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   );
 });
 
-test("通知 Matrix Pro 標籤縮小約 15% 並與名稱保持 4px 間距", () => {
+test("通知 Matrix Pro 標籤縮小並移至圖示上方", () => {
+  const notifications = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
+
+  assert.match(notifications, /className="notification-icon-stack"/);
+  assert.match(notifications, /className="notification-pro-badge">Matrix Pro<\/em>/);
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-title h2:has\(em\)\s*\{[^}]*gap:\s*4px;/s,
+    /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*1px;/s,
   );
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*12px;[^}]*padding:\s*0 3\.5px;[^}]*border-radius:\s*4px;[^}]*font-size:\s*7px;/s,
+    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 2px;[^}]*border:\s*1px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*6px;/s,
+  );
+  assert.match(
+    notificationCss,
+    /\.notifications-screen-v2 \.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient\(180deg, #161610, #090a08\);/s,
   );
 });
