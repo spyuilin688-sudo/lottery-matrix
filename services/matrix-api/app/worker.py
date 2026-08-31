@@ -26,7 +26,7 @@ TIANGONG_BATCH_SIZE = 3
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
 RETRY_BACKOFF_SECONDS = (15.0, 45.0)
-ANALYSIS_VERSION = "matrix-python-v7"
+ANALYSIS_VERSION = "matrix-python-v8"
 
 
 def _is_transient_service_error(error: Exception) -> bool:
