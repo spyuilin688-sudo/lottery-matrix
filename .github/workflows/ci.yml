@@ -69,6 +69,14 @@ jobs:
       - name: Production build for packaging tests
         run: npm run build
 
+      - name: Diagnostic v8 explore contract
+        continue-on-error: true
+        run: node --test tests/requested-history-and-explore-data.test.mjs
+
+      - name: Diagnostic UI repair contract
+        continue-on-error: true
+        run: node --test tests/ui-repair-20260823.test.mjs
+
       - name: Full tests
         run: node --test tests/*.test.mjs
 
