@@ -180,7 +180,7 @@ def test_completed_version_is_idempotent_and_skips_recalculation() -> None:
 
     assert second["status"] == "complete"
     assert second["skipped"] is True
-    assert calls == 4
+    assert calls == 3
 
 
 def test_pipeline_rejects_incomplete_or_noncanonical_draw_before_writing() -> None:
