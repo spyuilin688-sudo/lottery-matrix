@@ -1323,7 +1323,9 @@ export function MatrixExplorePage({
           ? "分析中，請稍後再試"
           : code === "FORBIDDEN"
             ? "目前會員權限無法使用此設定"
-            : "Matrix API 讀取失敗",
+            : code === "AUTH_REQUIRED"
+              ? "請先登入後再使用 Matrix 天衍"
+              : "Matrix API 讀取失敗",
       );
     } finally {
       setExploreLoading(false);
@@ -1750,7 +1752,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       setValidationById({});
     } catch (cause) {
       const code = String((cause as { code?: unknown })?.code ?? "");
-      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : "Matrix API 讀取失敗");
+      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : code === "AUTH_REQUIRED" ? "請先登入後再使用 Matrix 天工" : "Matrix API 讀取失敗");
     } finally {
       setLoading(false);
     }
