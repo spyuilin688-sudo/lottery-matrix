@@ -1121,6 +1121,9 @@ function SystemSettings() {
               <div className="statusMeta"><span>回應時間</span><b>{item.responseMs} ms</b></div>
               {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
               {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
+              {detail?.analysisDrawPeriod !== undefined && detail.analysisDrawPeriod !== null && <div className="statusMeta"><span>計算期別</span><b>{text(detail.analysisDrawPeriod)}</b></div>}
+              {detail?.analysisStatus !== undefined && detail.analysisStatus !== null && <div className="statusMeta"><span>計算狀態</span><b>{text(detail.analysisStatus)}</b></div>}
+              {detail?.analysisPhase !== undefined && detail.analysisPhase !== null && <div className="statusMeta"><span>目前階段</span><b>{text(detail.analysisPhase)}</b></div>}
               {item.error && <div className="statusErrorText">{item.error}</div>}
               {!item.ok && item.retryable && (
                 <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={checking || Boolean(retryingId)}>
