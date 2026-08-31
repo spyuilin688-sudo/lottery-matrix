@@ -89,3 +89,12 @@ test('天衍只有展開結果時才讀取驗證資料', async () => {
     'tianyan-api-1',
   );
 });
+
+test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
+  matrixApi.fetchTianyanList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天衍');
+});

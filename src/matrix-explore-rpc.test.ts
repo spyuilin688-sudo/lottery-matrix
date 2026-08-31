@@ -74,6 +74,25 @@ describe('Matrix exploration Supabase RPC', () => {
     })).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
   });
 
+  it('maps an anonymous function-permission error to login required', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: '42501', message: 'permission denied for function matrix_tiangong_list' },
+    });
+
+    await expect(fetchTiangongList({
+      lottery: '今彩539',
+      periodRange: 50,
+      mode: 'two-stage',
+      hitCondition: '準2進3',
+      exploreDirections: ['固定'],
+      firstStageDirections: ['固定'],
+      firstRoadTypes: ['加減'],
+      secondStageDirections: ['固定'],
+      secondRoadTypes: ['加減'],
+    })).rejects.toMatchObject({ code: 'AUTH_REQUIRED', status: 401 });
+  });
+
   it('reads Tianyan results and validation from Supabase artifacts', async () => {
     rpc.mockResolvedValue({ data: { kind: 'tianyan', items: [] }, error: null });
 

@@ -106,3 +106,11 @@ test('未完成分析時只顯示狀態，不回退固定資料', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe('分析中，請稍後再試');
   expect(screen.queryByText('08.37')).toBeNull();
 });
+
+test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
+  matrixApi.fetchTiangongList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天工');
+});
