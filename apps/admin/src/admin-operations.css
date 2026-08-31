@@ -33,7 +33,7 @@
 .operationDialog select { padding: 10px; }
 
 .managementToolbar span { color: #8f939b; font-size: 13px; }
-.compactButton { height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.compactButton { height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 3px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .formActions .primary { background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; border-color: #b48a35; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
@@ -68,13 +68,13 @@
 .userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
 /* Shared hierarchy and rhythm across every admin surface. */
-.content { padding: 20px; }
-.side nav { gap: 6px; }
-.nav { min-height: 42px; padding: 10px 12px; font-size: 13px; }
+.content { padding: 16px; }
+.side nav { gap: 4px; }
+.nav { min-height: 38px; padding: 8px 10px; font-size: 13px; }
 header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .actions button,
-.menu { min-width: 40px; min-height: 40px; }
-.cards { gap: 12px; }
+.menu { min-width: 34px; min-height: 34px; }
+.cards { gap: 8px; }
 .metric,
 .panel,
 .formCard,
@@ -82,16 +82,16 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .metric { min-height: 82px; padding: 12px; }
 .metric span { font-size: 12px; }
 .metric strong { font-size: 23px; }
-.panel { padding: 14px; }
-.formCard { padding: 18px; }
+.panel { padding: 12px; }
+.formCard { padding: 14px; }
 .panel h2,
 .formCard h3 { font-size: 17px; line-height: 1.4; }
-.toolbar { min-height: 42px; gap: 12px; }
+.toolbar { min-height: 36px; gap: 8px; }
 .toolbar .primary { height: 32px; min-height: 0; padding: 4px 10px; }
 .tableWrap tbody tr:last-child td { border-bottom: 0; }
 .tableWrap tbody tr:hover td { background: #14171c; }
-.formActions button { min-width: 84px; min-height: 38px; }
-.pagination button { min-width: 36px; min-height: 36px; }
+.formActions button { min-width: 80px; min-height: 34px; }
+.pagination button { min-width: 32px; min-height: 32px; }
 
 .modalBackdrop { overflow-y: auto; }
 .confirmationBackdrop { z-index: 60; }
