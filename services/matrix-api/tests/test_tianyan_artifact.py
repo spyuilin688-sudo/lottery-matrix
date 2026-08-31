@@ -196,3 +196,55 @@ def test_tianyan_rejects_highest_level_when_merged_predictions_exceed_two() -> N
 
     assert artifact["items"] == []
     assert artifact["validationById"] == {}
+
+
+def test_tianyan_displays_four_completed_groups_as_four_into_five() -> None:
+    source = {
+        "lottery": "今彩539",
+        "drawPeriod": "114000123",
+        "items": [],
+        "validationById": {},
+        "tianyanSources": [
+            _shared_candidate(
+                position=1, algorithm_type="加減", value=0, current_base=3,
+                hits=[True, False, True, False, False],
+            ),
+            _shared_candidate(
+                position=2, algorithm_type="加減", value=5, current_base=10,
+                hits=[False, True, False, True, False],
+            ),
+        ],
+    }
+
+    artifact = build_tianyan_artifact("今彩539", "114000123", source)
+
+    assert len(artifact["items"]) == 1
+    assert artifact["items"][0]["highestStreak"] == 4
+    assert artifact["items"][0]["consecutive"] == "準4進5"
+
+
+def test_tianyan_displays_thirty_completed_groups_as_thirty_into_thirty_one() -> None:
+    first_hits = [index % 2 == 0 for index in range(30)]
+    second_hits = [not hit for hit in first_hits]
+    source = {
+        "lottery": "今彩539",
+        "drawPeriod": "114000123",
+        "items": [],
+        "validationById": {},
+        "tianyanSources": [
+            _shared_candidate(
+                position=1, algorithm_type="加減", value=0, current_base=3,
+                hits=first_hits,
+            ),
+            _shared_candidate(
+                position=2, algorithm_type="加減", value=5, current_base=10,
+                hits=second_hits,
+            ),
+        ],
+    }
+
+    artifact = build_tianyan_artifact("今彩539", "114000123", source)
+
+    assert len(artifact["items"]) == 1
+    assert artifact["items"][0]["highestStreak"] == 30
+    assert artifact["items"][0]["consecutive"] == "準30進31"
