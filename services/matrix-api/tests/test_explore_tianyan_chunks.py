@@ -1,7 +1,7 @@
 from app.repositories.artifact_chunks import materialize_chunks
 
 
-def test_materialize_explore_chunks_merges_tianyan_sources() -> None:
+def test_materialize_explore_chunks_merges_final_tianyan_results_without_raw_sources() -> None:
     chunks = [
         {
             "chunk_index": 0,
@@ -10,7 +10,8 @@ def test_materialize_explore_chunks_merges_tianyan_sources() -> None:
             "payload": {
                 "items": [{"id": "a"}],
                 "validationById": {"a": {"ruleSets": []}},
-                "tianyanSources": [{"id": "source-a"}],
+                "tianyanItems": [{"id": "tianyan-a"}],
+                "tianyanValidationById": {"tianyan-a": {"rules": [{"id": "r1"}, {"id": "r2"}]}},
             },
         },
         {
@@ -20,7 +21,8 @@ def test_materialize_explore_chunks_merges_tianyan_sources() -> None:
             "payload": {
                 "items": [{"id": "b"}],
                 "validationById": {"b": {"ruleSets": []}},
-                "tianyanSources": [{"id": "source-b"}],
+                "tianyanItems": [{"id": "tianyan-b"}],
+                "tianyanValidationById": {"tianyan-b": {"rules": [{"id": "r3"}, {"id": "r4"}]}},
             },
         },
     ]
@@ -32,4 +34,9 @@ def test_materialize_explore_chunks_merges_tianyan_sources() -> None:
         "a": {"ruleSets": []},
         "b": {"ruleSets": []},
     }
-    assert result["tianyanSources"] == [{"id": "source-a"}, {"id": "source-b"}]
+    assert result["tianyanItems"] == [{"id": "tianyan-a"}, {"id": "tianyan-b"}]
+    assert result["tianyanValidationById"] == {
+        "tianyan-a": {"rules": [{"id": "r1"}, {"id": "r2"}]},
+        "tianyan-b": {"rules": [{"id": "r3"}, {"id": "r4"}]},
+    }
+    assert "tianyanSources" not in result
