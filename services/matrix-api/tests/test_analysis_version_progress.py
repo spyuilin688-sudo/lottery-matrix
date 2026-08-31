@@ -108,7 +108,7 @@ def test_supabase_progress_lookup_filters_by_analysis_version() -> None:
         "lottery": LOTTERY,
         "draw_period": PERIOD,
         "analysis_version": CURRENT_VERSION,
-        "phase": "tiangong",
+        "phase": "explore",
         "cursor": 100,
         "total": 5174,
         "status": "running",
@@ -155,7 +155,6 @@ def test_pipeline_returns_current_version_progress_when_legacy_run_is_newer() ->
         {
             "explore": explore,
             "tianyan": lambda _: {},
-            "tiangong": lambda _: {},
             "status": lambda _: {},
         },
         CURRENT_VERSION,
