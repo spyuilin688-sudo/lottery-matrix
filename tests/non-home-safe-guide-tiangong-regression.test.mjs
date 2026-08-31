@@ -90,13 +90,15 @@ test("Matrix Guide documents thirteen-period validation totals for every Matrix 
 
   assert.match(explore, /今彩539：依號碼由小到大排序65個；依實際開獎順序排序65個鎖定條件。/);
   assert.match(explore, /天天樂：依號碼由小到大排序65個鎖定條件。/);
-  assert.match(explore, /加減版路驗證球位：74、79、84、89、94、99、104、109、114、119、124、129、134；每種排序合計6,760個。/);
-  assert.match(explore, /合值版路驗證球位：74、79、84、89、94、99、104、109、114、119、124、129、134；每種排序合計6,760個。/);
-  assert.match(explore, /拖牌版路驗證球位：每個鎖定條件使用自身換算；每種排序合計65個。/);
+  assert.match(explore, /加減版路驗證球位：每種排序合計6,760個。/);
+  assert.match(explore, /合值版路驗證球位：每種排序合計6,760個。/);
+  assert.match(explore, /拖牌版路驗證球位：每種排序合計65個。/);
   assert.match(explore, /六合彩、大樂透：依號碼由小到大排序91個；依實際開獎順序排序91個鎖定條件。/);
-  assert.match(explore, /加減版路驗證球位：104、111、118、125、132、139、146、153、160、167、174、181、188；每種排序合計13,286個。/);
-  assert.match(explore, /合值版路驗證球位：104、111、118、125、132、139、146、153、160、167、174、181、188；每種排序合計13,286個。/);
-  assert.match(explore, /拖牌版路驗證球位：每個鎖定條件使用自身換算；每種排序合計91個。/);
+  assert.match(explore, /加減版路驗證球位：每種排序合計13,286個。/);
+  assert.match(explore, /合值版路驗證球位：每種排序合計13,286個。/);
+  assert.match(explore, /拖牌版路驗證球位：每種排序合計91個。/);
+  assert.doesNotMatch(explore, /74、79、84、89/);
+  assert.doesNotMatch(explore, /104、111、118、125/);
   assert.match(explore, /四彩種近十三期合計147,407個比對球位。/);
   assert.match(tianyan, /複合版路每組使用1個鎖定條件與2條規則。/);
   assert.match(tianyan, /每條規則各驗證1個球位；同一球位時，兩條規則必須使用不同演算法。/);
