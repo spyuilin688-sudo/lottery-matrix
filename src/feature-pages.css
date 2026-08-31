@@ -6,9 +6,7 @@
   --select-tech-cut: 8px;
   min-height: 100%;
   padding: 44px 0 0;
-  background:
-    radial-gradient(circle at 90% 12%, rgba(47, 85, 111, .14), transparent 34%),
-    linear-gradient(180deg, #02070c 0%, #030b11 100%);
+  background: #02070c;
   color: #f5f2ea;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
