@@ -113,39 +113,40 @@ const NEXT_DRAW_INFO: Record<LotteryId, NextDrawInfoData> = {
   大樂透: { nextDraw: "", remainingTime: "00:00:00" },
 };
 
+const MATRIX_STATUS_PRESENTATIONS: Record<
+  MatrixStatusData["statusEn"],
+  Pick<MatrixStatusData, "status" | "artwork" | "tone">
+> = {
+  ACTIVE: { status: "啟動", artwork: `${STATUS_ASSET_BASE}/啟動.png`, tone: "green" },
+  FOCUS: { status: "聚合", artwork: `${STATUS_ASSET_BASE}/聚合.png`, tone: "blue" },
+  RESONANCE: { status: "共振", artwork: `${STATUS_ASSET_BASE}/共振.png`, tone: "purple" },
+  CRITICAL: { status: "臨界", artwork: `${STATUS_ASSET_BASE}/臨界.png`, tone: "orange" },
+  DORMANT: { status: "沉寂", artwork: `${STATUS_ASSET_BASE}/沉寂.png`, tone: "dormant" },
+};
+
+function createDormantMatrixStatus(): MatrixStatusData {
+  return {
+    ...MATRIX_STATUS_PRESENTATIONS.DORMANT,
+    statusEn: "DORMANT",
+    count: 0,
+    description: "本期尚無符合條件的狀態。",
+  };
+}
+
+function toHomepageMatrixStatus(summary: MatrixStatusResponse["summary"]): MatrixStatusData {
+  return {
+    ...MATRIX_STATUS_PRESENTATIONS[summary.status],
+    statusEn: summary.status,
+    count: summary.count,
+    description: summary.message,
+  };
+}
+
 export const MATRIX_STATUS_BY_LOTTERY: MatrixStatusMap = {
-  今彩539: {
-    status: "啟動",
-    statusEn: "ACTIVE",
-    artwork: `${STATUS_ASSET_BASE}/啟動.png`,
-    count: 2,
-    description: "具備基本參考價值",
-    tone: "green",
-  },
-  天天樂: {
-    status: "聚合",
-    statusEn: "FOCUS",
-    artwork: `${STATUS_ASSET_BASE}/聚合.png`,
-    count: 1,
-    description: "具備明顯規律集中性",
-    tone: "blue",
-  },
-  "六合彩": {
-    status: "共振",
-    statusEn: "RESONANCE",
-    artwork: `${STATUS_ASSET_BASE}/共振.png`,
-    count: 3,
-    description: "具備強烈共振效應",
-    tone: "purple",
-  },
-  大樂透: {
-    status: "臨界",
-    statusEn: "CRITICAL",
-    artwork: `${STATUS_ASSET_BASE}/臨界.png`,
-    count: 4,
-    description: "極為罕見版路狀態",
-    tone: "orange",
-  },
+  今彩539: createDormantMatrixStatus(),
+  天天樂: createDormantMatrixStatus(),
+  "六合彩": createDormantMatrixStatus(),
+  大樂透: createDormantMatrixStatus(),
 };
 
 export type LotterySwitcherProps = {
@@ -281,13 +282,11 @@ export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className
 
 export type MatrixStatusSectionProps = {
   statuses?: MatrixStatusMap;
-  current?: Pick<MatrixStatusResponse['summary'], 'status' | 'count' | 'message'> | null;
-  onOpen?: () => void;
+  onOpen?: (lottery: LotteryId) => void;
 };
 
 export function MatrixStatusSection({
   statuses = MATRIX_STATUS_BY_LOTTERY,
-  current = null,
   onOpen,
 }: MatrixStatusSectionProps = {}) {
   return (
@@ -295,7 +294,6 @@ export function MatrixStatusSection({
       className="matrix-status-section home-status-box"
       aria-label="Matrix 狀態"
       data-testid="matrix-status-section"
-      data-current-status={current?.status}
     >
       <div className="matrix-status-card-grid" aria-label="四個彩種 Matrix 狀態">
         {LOTTERIES.map((lottery) => {
@@ -308,7 +306,7 @@ export function MatrixStatusSection({
               data-lottery={lottery.id}
               data-status={status.statusEn}
               key={lottery.id}
-              onClick={onOpen}
+              onClick={() => onOpen?.(lottery.id)}
             >
               <img
                 className="matrix-status-artwork"
@@ -391,7 +389,8 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   });
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
-  const [matrixStatus, setMatrixStatus] = useState<MatrixStatusResponse | null>(null);
+  const [matrixStatuses, setMatrixStatuses] = useState<MatrixStatusMap>(MATRIX_STATUS_BY_LOTTERY);
+  const [statusLottery, setStatusLottery] = useState<LotteryId>("今彩539");
   const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
     ? {
         nextDraw: formatNextDrawAt(latestDraw.nextDrawAt),
@@ -404,10 +403,27 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => {
     let active = true;
-    setMatrixStatus(null);
-    void fetchMatrixStatus(selected).then((result) => { if (active) setMatrixStatus(result); }).catch(() => undefined);
+    void Promise.all(
+      LOTTERIES.map(async ({ id: lottery }) => {
+        try {
+          const result = await fetchMatrixStatus(lottery);
+          return { lottery, status: toHomepageMatrixStatus(result.summary) };
+        } catch {
+          return null;
+        }
+      }),
+    ).then((results) => {
+      if (!active) return;
+      setMatrixStatuses((current) => {
+        const next = { ...current };
+        results.forEach((result) => {
+          if (result) next[result.lottery] = result.status;
+        });
+        return next;
+      });
+    });
     return () => { active = false; };
-  }, [selected]);
+  }, []);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
 
@@ -436,7 +452,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     : null;
 
   if (screen !== "home") {
-    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
+    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
   }
 
   return (
@@ -447,7 +463,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
           <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
-          <MatrixStatusSection current={matrixStatus?.summary ?? null} onOpen={() => navigate("status")} />
+          <MatrixStatusSection statuses={matrixStatuses} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
         </main>
         <div className="home-bottom-group">
           <MatrixCoreBanner onOpen={() => navigate("explore")} />
