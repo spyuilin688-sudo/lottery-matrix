@@ -38,10 +38,18 @@
 }
 
 .matrix-explore-main-screen .matrix-title-banner {
+  --matrix-analysis-title-card-ratio: 2162 / 510;
   box-sizing: border-box;
   width: calc(100% - (var(--layout-page-inline) * 2));
   max-width: none;
   min-width: 0;
+  aspect-ratio: var(--matrix-analysis-title-card-ratio);
+}
+
+.matrix-explore-main-screen .matrix-title-banner > img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
