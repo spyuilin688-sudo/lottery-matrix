@@ -1,3 +1,5 @@
+@import "./mobile-layout-polish.css";
+
 .notifications-screen-v2 .notification-title h2 {
   font-weight: 600;
 }
