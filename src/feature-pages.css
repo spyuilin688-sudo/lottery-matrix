@@ -46,7 +46,7 @@
 .feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - 32px); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
 .feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
 .feature-title-actions { display: flex; min-width: 0; align-items: center; }
-.matrix-page-switcher { display: flex; width: 2.34rem; height: 2.34rem; flex-direction: column; overflow-x: hidden; overflow-y: auto; align-items: stretch; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior-y: contain; touch-action: pan-y; }
+.matrix-page-switcher { display: flex; width: 2.34rem; height: 2.34rem; flex-direction: column; overflow-x: hidden; overflow-y: auto; align-items: stretch; scroll-snap-type: y mandatory; scrollbar-color: transparent transparent; scrollbar-width: none; overscroll-behavior-y: contain; touch-action: pan-y; }
 .matrix-page-switcher::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .matrix-page-switcher button { display: grid; width: 2.34rem; height: 2.34rem; min-height: 2.34rem; flex: 0 0 2.34rem; padding: 0; place-items: center; scroll-snap-align: center; scroll-snap-stop: always; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
 .matrix-page-switcher img { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -1443,18 +1443,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 
 
 
-.guide-preview { min-height: 0; margin-top: 0; padding: 14px; border-color: rgba(196, 145, 69, .42); border-radius: 12px; box-shadow: none; }
-.guide-preview header { display: flex; align-items: center; gap: 10px; }
-.guide-preview header > span { display: grid; width: 30px; height: 24px; place-items: center; border: 1px solid rgba(196, 145, 69, .42); border-radius: 12px; color: #c49145; font-size: 11px; }
-.guide-preview h2 { margin: 0; color: #f4ce67; font-size: 18px; }
-.guide-preview .guide-summary { margin: 10px 0 0; padding-bottom: 6px; border-bottom: 1px solid rgba(196, 145, 69, .42); color: #d4cdc2; font-size: 13px; line-height: 1.75; }
-.guide-detail-list { display: grid; margin-top: 2px; }
-.guide-detail-block { padding: 8px 0; border-bottom: 1px solid rgba(196, 145, 69, .42); }
-.guide-detail-block:last-child { padding-bottom: 2px; border-bottom: 0; }
-.guide-detail-block h3 { margin: 0 0 6px; color: #c49145; font-size: 14px; font-weight: 650; }
-.guide-detail-block ul { display: grid; margin: 0; padding-left: 0; gap: 5px; color: #bbb4aa; font-size: 12px; line-height: 1.72; list-style-type: none; }
-.guide-detail-block li { display: grid; grid-template-columns: 4px minmax(0, 1fr); align-items: start; column-gap: 4px; }
-.guide-detail-block li::before { width: 4px; height: 4px; margin-top: .65em; border-radius: 50%; background: #c49145; content: ""; }
 .weekly-summary { margin-bottom: 8px; padding: 9px 10px 10px; border-color: #168ad0; }
 .weekly-summary > header { display: flex; height: 28px; align-items: center; gap: 8px; border-bottom: 1px solid #1d2c37; }
 .weekly-summary h2 { margin: 0; color: #e6cc84; font-size: 14px; font-weight: 550; }

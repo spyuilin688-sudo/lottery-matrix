@@ -47,10 +47,10 @@ test("重設與刷新在設定按鈕左側保留 6px，且外框高度由同一�
   assert.match(refreshIcon[0], /height:\s*8px;/);
 });
 
-test("指南章節捲動列上下以 2px 間距保留分隔線", () => {
+test("指南章節捲動列上下以 1.5px 間距保留分隔線", () => {
   const bodies = ruleBodies(adjustmentsCss, /^\.matrix-guide-screen \.guide-category-strip$/);
   assert.equal(bodies.length, 1);
-  assert.match(bodies[0], /padding:\s*2px 0;/);
+  assert.match(bodies[0], /padding:\s*1\.5px 0;/);
   assert.match(bodies[0], /border-top:\s*1px solid/);
   assert.match(bodies[0], /border-bottom:\s*1px solid/);
 });
