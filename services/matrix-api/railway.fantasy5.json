@@ -4,8 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker --lottery 天天樂 --scheduled",
-    "cronSchedule": "3/5 * * * *",
+    "startCommand": "python -c \"print('Matrix worker paused')\"",
     "restartPolicyType": "NEVER"
   }
 }
