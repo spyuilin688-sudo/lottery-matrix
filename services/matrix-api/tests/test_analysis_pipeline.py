@@ -88,6 +88,23 @@ def checkpoint_builders(total: int) -> dict:
     }
 
 
+
+def test_pipeline_does_not_run_tiangong() -> None:
+    repository = InMemoryAnalysisRepository()
+    calls: list[str] = []
+    builders = {
+        kind: (
+            lambda context, selected=kind:
+            calls.append(selected) or {"kind": selected, "period": context["draw"]["period"]}
+        )
+        for kind in ("explore", "tianyan", "status")
+    }
+
+    result = AnalysisPipeline(repository, builders, analysis_version="no-tiangong").run(DRAW, history=[])
+
+    assert result["status"] == "complete"
+    assert calls == ["explore", "tianyan", "status"]
+
 def test_pipeline_requires_an_explicit_analysis_version() -> None:
     repository = InMemoryAnalysisRepository()
     builders = checkpoint_builders(total=1)
