@@ -53,21 +53,21 @@ describe("notification visual refinement", () => {
       <main class="notifications-screen-v2">
         <article class="notification-row" data-notification-key="collision">
           <div class="notification-heading">
-            <div class="notification-icon"><img alt="" /></div>
-            <div class="notification-title"><h2><em>Matrix Pro</em><span>Matrix 摘星</span></h2></div>
+            <div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"><img alt="" /></div></div>
+            <div class="notification-title"><h2><span>Matrix 摘星</span></h2></div>
             <div class="notification-actions"><button class="notification-settings-toggle" disabled>設定選項</button><button class="toggle" disabled><span></span></button></div>
           </div>
         </article>
       </main>`;
 
     const title = getComputedStyle(document.querySelector("[data-notification-key=collision] h2 span")!);
-    const badge = getComputedStyle(document.querySelector("[data-notification-key=collision] h2 em")!);
+    const badge = getComputedStyle(document.querySelector("[data-notification-key=collision] .notification-pro-badge")!);
     const icon = getComputedStyle(document.querySelector("[data-notification-key=collision] .notification-icon img")!);
     const disabledControl = document.querySelector("[data-notification-key=collision] .toggle")! as HTMLButtonElement;
 
     expect(title.color).toBe("rgba(242, 242, 242, 0.82)");
     expect(badge.opacity).toBe("0.72");
-    expect(icon.filter).toBe("brightness(1.06) contrast(1.04)");
+    expect(icon.filter).toBe("brightness(.88) saturate(.76)");
     expect(disabledControl.disabled).toBe(true);
   });
 
@@ -108,12 +108,12 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("adds breathing room between the Matrix Pro label and its name", () => {
+  it("keeps the Matrix Pro label above its icon", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
-      <main class="notifications-screen-v2"><div class="notification-title"><h2><em>Matrix Pro</em><span>Matrix 狀態</span></h2></div></main>`;
+      <main class="notifications-screen-v2"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></main>`;
 
-    expect(getComputedStyle(document.querySelector(".notification-title h2")!).gap).toBe("4px");
+    expect(getComputedStyle(document.querySelector(".notification-icon-stack")!).gap).toBe("1px");
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {
@@ -138,8 +138,8 @@ describe("notification visual refinement", () => {
     expect(disable.height).toBe("32px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient\(180deg,\s*#101C2C,\s*#0B1625\)/s);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid #344A66/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*color:\s*#D8C38D/s);
   });
 
