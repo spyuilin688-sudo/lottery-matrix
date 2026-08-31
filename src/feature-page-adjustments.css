@@ -36,9 +36,9 @@
 }
 
 .notifications-screen-v2 .notification-bulk-disable {
-  border: 1px solid var(--lottery-gold-500);
-  background: linear-gradient(180deg, rgba(192, 139, 30, .22), rgba(192, 139, 30, .12)), var(--lottery-neutral-900);
-  color: #f0d58a;
+  border: 1px solid #344A66;
+  background: linear-gradient(180deg, #101C2C, #0B1625);
+  color: #D8C38D;
 }
 
 .notifications-screen-v2 .notification-bulk-actions button:hover {
@@ -207,9 +207,6 @@
   gap: 8px;
 }
 
-.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-actions {
-  grid-template-columns: 52px 38px;
-}
 
 .notifications-screen-v2 .notification-settings-toggle {
   display: inline-flex;
@@ -233,9 +230,6 @@
   white-space: nowrap;
 }
 
-.notifications-screen-v2 .notification-row[data-notification-key="system"] .notification-settings-toggle {
-  width: 52px;
-}
 
 .notifications-screen-v2 .notification-settings-toggle:active {
   opacity: .86;

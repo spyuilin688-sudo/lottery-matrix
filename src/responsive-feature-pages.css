@@ -118,8 +118,7 @@
   background-image: none;
 }
 
-.draw-history-screen .history-reset-trigger > svg,
-.number-reference-screen .reference-title-actions button:first-child > svg {
+.draw-history-screen .history-reset-trigger > svg {
   width: 7px;
   height: 7px;
   flex: 0 0 7px;
@@ -143,12 +142,16 @@
 
 .draw-history-screen .history-filter-trigger > svg:not(.history-filter-trigger-icon) { display: none; }
 
-.number-reference-screen .reference-title-actions button:first-child {
+.number-reference-screen .reference-refresh-trigger {
   width: max-content;
   min-width: 0;
   padding-inline: 4px 5px;
   gap: 1px;
   white-space: nowrap;
+}
+
+.number-reference-screen .reference-settings-trigger {
+  transform: translate(-4px, -3px);
 }
 
 .draw-history-screen .feature-body,

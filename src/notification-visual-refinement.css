@@ -9,17 +9,25 @@
 .notifications-screen-v2 .notification-time-select {
   height: 21px;
   min-height: 21px;
+  border-radius: 12px;
 }
 
 .notifications-screen-v2 .notification-time-select::before {
-  background: linear-gradient(
-    90deg,
-    var(--lottery-gold-700),
-    var(--lottery-gold-500) 18%,
-    var(--lottery-gold-600) 50%,
-    var(--lottery-gold-500) 82%,
-    var(--lottery-gold-700)
-  );
+  border-radius: 12px;
+  background: #344A66;
+  clip-path: none;
+  filter: none;
+}
+
+.notifications-screen-v2 .notification-time-select::after {
+  border-radius: 11px;
+  background: #101C2C;
+  clip-path: none;
+}
+
+.notifications-screen-v2 .notification-time-select:focus-within::before,
+.notifications-screen-v2 .notification-time-select:has(select option:checked:not([value=""]))::before {
+  background: #D8C38D;
   filter: none;
 }
 
@@ -28,7 +36,7 @@
 }
 
 .notifications-screen-v2 .notification-time-select select {
-  color: #e2d9c8;
+  color: #D8C38D;
 }
 
 .notifications-screen-v2 .notification-time-select select:has(option:checked[value=""]) {

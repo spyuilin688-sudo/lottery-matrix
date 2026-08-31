@@ -29,10 +29,10 @@ test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字�
   const actions = ruleBodies(responsive, /^\.number-reference-screen \.matrix-title-banner-actions$/);
   assert.equal(actions.length, 1);
   assert.match(actions[0], /width:\s*auto;/);
-  const icon = ruleBodies(responsive, /^\.number-reference-screen \.reference-title-actions button:first-child > svg$/);
+  const icon = ruleBodies(responsive, /^\.number-reference-screen \.title-card-compact-action svg$/);
   assert.equal(icon.length, 1);
-  assert.match(icon[0], /width:\s*7px;/);
-  assert.match(icon[0], /height:\s*7px;/);
+  assert.match(icon[0], /width:\s*10px;/);
+  assert.match(icon[0], /height:\s*10px;/);
 });
 
 test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距', () => {
@@ -117,4 +117,9 @@ test('臨時底部安全區 override 已移除', () => {
   assert.doesNotMatch(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*80px/s);
   assert.doesNotMatch(main, /bottom-nav-responsive-clearance\.css/);
   assert.equal(fs.existsSync('src/bottom-nav-responsive-clearance.css'), false);
+});
+
+
+test('號碼對照單刷新圖示不覆寫共用尺寸', () => {
+  assert.doesNotMatch(responsive, /\.number-reference-screen \.reference-refresh-trigger > svg\s*\{/);
 });

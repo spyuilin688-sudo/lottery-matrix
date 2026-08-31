@@ -103,8 +103,8 @@ describe("notification visual refinement", () => {
     expect(normalActions.gridTemplateColumns).toBe("56px 38px");
     expect(normalActions.gap).toBe("8px");
     expect(normalSetting.width).toBe("56px");
-    expect(systemActions.gridTemplateColumns).toBe("52px 38px");
-    expect(systemSetting.width).toBe("52px");
+    expect(systemActions.gridTemplateColumns).toBe("56px 38px");
+    expect(systemSetting.width).toBe("56px");
     expect(systemTitle.gap).toBe("0px");
   });
 
@@ -138,8 +138,9 @@ describe("notification visual refinement", () => {
     expect(disable.height).toBe("32px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient/s);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient\(180deg,\s*#101C2C,\s*#0B1625\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid #344A66/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*color:\s*#D8C38D/s);
   });
 
   it("compacts and softens notification time choices", () => {
@@ -164,7 +165,9 @@ describe("notification visual refinement", () => {
     expect(getComputedStyle(document.querySelectorAll(".notification-grid-time-row")[1]).marginBlockStart).toBe("1px");
 
     const css = readCss("src/notification-visual-refinement.css");
-    expect(css).toMatch(/\.notification-time-select::before\s*\{/s);
+    expect(css).toMatch(/\.notification-time-select::before\s*\{[^}]*background:\s*#344A66/s);
+    expect(css).toMatch(/\.notification-time-select::after\s*\{[^}]*background:\s*#101C2C/s);
+    expect(css).toMatch(/\.notification-time-select:focus-within::before,[\s\S]*#D8C38D/s);
     expect(css).toMatch(/select:has\(option:checked\[value=""\]\)\s*\{[^}]*color:\s*var\(--lottery-neutral-400\)/s);
     expect(css).toMatch(/\.notification-inline-settings-content:has\(\.notification-bet-grid\)\s*\{[^}]*padding:\s*5px 4px 6px/s);
   });

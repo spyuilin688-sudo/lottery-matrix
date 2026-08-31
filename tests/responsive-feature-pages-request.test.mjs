@@ -58,18 +58,18 @@ test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8
   assert.doesNotMatch(tongxingCss, /\.tongxing-screen \.feature-body\s*\{/);
 });
 
-test('號碼對照單標題操作使用內容寬度區域、7px 刷新圖示與自適應文字', () => {
+test('號碼對照單標題操作使用共用控制項尺寸、內容寬度區域與自適應文字', () => {
   assert.match(source, /className="reference-title-actions title-card-compact-actions"/);
   assert.match(source, /<ReloadIcon className="reference-refresh-icon" \/>刷新/);
-  assert.match(source, /className="title-card-compact-action"[^>]*aria-label=\{queryExpanded/);
+  assert.match(source, /className="title-card-compact-action reference-settings-trigger"[^>]*aria-label=\{queryExpanded/);
   assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{\s*gap:\s*8px;/s);
   const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
   assert.equal(actionBodies.length, 1);
   assert.match(actionBodies[0], /width:\s*auto;/);
-  const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.reference-title-actions button:first-child > svg$/);
+  const iconBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.title-card-compact-action svg$/);
   assert.equal(iconBodies.length, 1);
-  assert.match(iconBodies[0], /width:\s*7px;/);
-  assert.match(iconBodies[0], /height:\s*7px;/);
+  assert.match(iconBodies[0], /width:\s*10px;/);
+  assert.match(iconBodies[0], /height:\s*10px;/);
   assert.doesNotMatch(brandCss, /\.number-reference-screen \.reference-title-actions button:(?:first|last)-child/);
   assert.match(css, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
 });
@@ -128,4 +128,9 @@ test('本次正式規則不新增整頁縮放、負位移或 important 補償', 
   assert.doesNotMatch(responsiveCss, /!important/);
   assert.doesNotMatch(responsiveCss, /margin(?:-inline|-left|-right|-top)?:\s*-/);
   assert.doesNotMatch(responsiveCss, /scale\(/);
+});
+
+
+test('號碼對照單刷新圖示不再有頁面專屬尺寸覆寫', () => {
+  assert.doesNotMatch(responsiveCss, /\.number-reference-screen \.reference-refresh-trigger > svg\s*\{/);
 });

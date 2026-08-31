@@ -397,6 +397,15 @@ describe("NotificationsPagePatched", () => {
     expect(within(screen.getByRole("region", { name: "系統通知" })).getAllByRole("article")).toHaveLength(1);
   });
 
+  it("在 Matrix Pro 通知名稱上方顯示相同標籤", () => {
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    const expiryRow = document.querySelector<HTMLElement>('[data-notification-key="expiry"]');
+
+    expect(expiryRow).not.toBeNull();
+    expect(within(expiryRow!).getByText("Matrix Pro", { selector: "em" })).toBeVisible();
+    expect(within(expiryRow!).getByText("Matrix Pro", { selector: "h2 > span" })).toBeVisible();
+  });
+
   it("設定選項位於右側開關左側", () => {
     render(<NotificationsPagePatched onNavigate={vi.fn()} />);
     const betRow = document.querySelector<HTMLElement>('[data-notification-key="bet"]');
