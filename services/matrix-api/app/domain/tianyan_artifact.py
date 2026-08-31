@@ -2,6 +2,7 @@ from typing import Any
 
 from .models import lottery_maximum
 from .tianyan import calculate_tianyan_prediction, evaluate_tianyan_candidate
+from .tianyan_shared import build_tianyan_unit_artifact
 
 
 def _stable_id(value: str) -> str:
@@ -199,6 +200,18 @@ def _candidate_signature(row: dict[str, Any], left: dict[str, Any], right: dict[
 def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dict[str, Any]) -> dict[str, Any]:
     if explore_artifact.get("lottery") != lottery or explore_artifact.get("drawPeriod") != draw_period:
         raise ValueError("INVALID_REQUEST")
+    if "tianyanItems" in explore_artifact or "tianyanValidationById" in explore_artifact:
+        items = explore_artifact.get("tianyanItems")
+        validations = explore_artifact.get("tianyanValidationById")
+        if not isinstance(items, list) or not isinstance(validations, dict):
+            raise ValueError("INVALID_REQUEST")
+        return {
+            "lottery": lottery,
+            "drawPeriod": draw_period,
+            "items": list(items),
+            "validationById": dict(validations),
+        }
+
     sources = _source_rules(explore_artifact, lottery)
     partitions: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for source in sources:
