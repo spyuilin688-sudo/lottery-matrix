@@ -139,7 +139,7 @@ describe("requested responsive layout refinement", () => {
     expect(activationButton.height).toBe("44px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
-    expect(paymentButton.height).toBe("42px");
+    expect(paymentButton.height).toBe("38px");
     expect(paymentButton.getPropertyValue("--payment-button-font-size")).toBe("clamp(15px,4.4vw,17px)");
     expect(paymentButton.position).toBe("relative");
     expect(paymentButton.overflow).toBe("hidden");
@@ -171,6 +171,7 @@ describe("requested responsive layout refinement", () => {
     expect(checkout.marginLeft).toBe("4px");
     expect(checkout.marginRight).toBe("4px");
     expect(renewalCard.width).toBe("100%");
+    expect(renewalCard.marginBottom).toBe("1px");
     expect(paymentButton.width).toBe("100%");
     expect(paymentNote.marginTop).toBe("0px");
   });
@@ -269,7 +270,7 @@ describe("requested responsive layout refinement", () => {
     expect(enable.width).toBe("100%");
     expect(disable.width).toBe("100%");
     expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
-    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
+    expect(adjustmentCss).not.toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*#160f08/s);
     expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid rgba\(216, 195, 141, \.72\)/s);
   });
 
