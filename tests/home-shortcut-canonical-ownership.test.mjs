@@ -18,5 +18,6 @@ test("五大功能的八角框與互動狀態只由 base.css 擁有", () => {
   assert.match(base, /\.home-screen \.home-shortcut::after\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:active\s*\{/);
   assert.match(base, /\.home-screen \.home-shortcut:focus-visible\s*\{/);
-  assert.doesNotMatch(visual, /\.home-shortcut(?:\b|[.: ])/);
+  assert.doesNotMatch(visual, /\.home-screen \.home-shortcut(?:::before|::after|:active|:focus-visible)\s*\{/);
+  assert.match(visual, /\.home-screen \.home-shortcut\s*\{[^}]*--home-octagon-frame:/s);
 });

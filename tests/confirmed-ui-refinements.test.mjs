@@ -9,13 +9,14 @@ const prototype = readFileSync("src/prototype.css", "utf8");
 const balls = readFileSync("src/number-ball.css", "utf8");
 const home = readFileSync("src/homepage/base.css", "utf8");
 const notification = readFileSync("src/feature-page-adjustments.css", "utf8");
+const switcher = readFileSync("src/homepage/lottery-switcher.css", "utf8");
 const tokens = readFileSync("src/design-tokens.css", "utf8");
 const source = readFileSync("src/FeaturePages.tsx", "utf8");
 
-test("Matrix 狀態的自訂觸發條件位於標題文字右側 4px 且垂直置中", () => {
-  assert.match(feature, /\.matrix-status-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*right:\s*auto;[^}]*left:\s*calc\(83% \+ 4px\);[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;[^}]*transform:\s*translateY\(-50%\);/s);
-  assert.match(feature, /\.matrix-status-screen \.status-title-trigger\s*\{[^}]*width:\s*1\.8rem;[^}]*height:\s*1\.8rem;/s);
-  assert.match(feature, /\.matrix-status-screen \.status-title-trigger img\s*\{[^}]*opacity:\s*\.8;/s);
+test("Matrix 狀態的自訂觸發條件固定於底部導覽右側", () => {
+  assert.doesNotMatch(feature, /status-title-trigger/);
+  assert.match(notification, /\.matrix-status-screen \.matrix-status-settings-entry\s*\{[^}]*position:\s*fixed;[^}]*right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(env\(safe-area-inset-bottom, 0px\) \+ 9px\);/s);
+  assert.match(source, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
 });
 
 test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => {
@@ -25,8 +26,8 @@ test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => 
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(feature, /\.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\);/s);
   assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*(?:margin-left|margin-right|margin-inline):\s*-/s);
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532\s*\/\s*214;[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-tabs button\s*\{[^}]*height:\s*100%;[^}]*min-height:\s*0;[^}]*padding:\s*0;/s);
+  assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532\s*\/\s*214;[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);
+  assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs > button\s*\{[^}]*padding:\s*0;/s);
 });
 
 test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新增按鍵", () => {
@@ -42,7 +43,8 @@ test("Matrix 指南移除標題下方重複卡片", () => {
 
 test("Matrix 探索、天衍、天工共用 2.34rem 垂直循環切換器", () => {
   assert.doesNotMatch(prototype, /\.matrix-explore-main-screen \.matrix-page-switcher\s*\{\s*display:\s*none/);
-  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 4px\);[^}]*transform:\s*translateY\(-50%\);/s);
+  assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*transform:\s*translateY\(-50%\);/s);
+  assert.doesNotMatch(explore, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex-direction:\s*column;[^}]*scroll-snap-type:\s*y mandatory;[^}]*touch-action:\s*pan-y;/s);
   assert.match(feature, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*scroll-snap-align:\s*center;/s);
   assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);

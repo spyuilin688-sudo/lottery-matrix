@@ -52,15 +52,17 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工\.png" \}/);
   assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
   assert.match(featurePages, /headerAction=\{<MatrixPageSwitcher current=\{title === "Matrix 天衍" \? "tianyan" : "explore"\}/);
-  assert.match(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 4px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher\s*\{[^}]*(?:gap:\s*4px|width:\s*auto|height:\s*auto)/s);
   assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
 });
 
-test("status and profile flows use the supplied title artwork and status trigger icon", () => {
+test("status and profile flows use supplied artwork while status settings stays in bottom navigation", () => {
   assert.match(featurePages, /headerArtwork="\/assets\/lottery\/functions\/我的標題K\.png"/);
   assert.match(featurePages, /headerArtwork = "\/assets\/lottery\/functions\/我的標題K2\.png"/);
-  assert.match(featurePages, /\/assets\/lottery\/functions\/自訂觸發條件\.png/);
+  assert.match(featurePages, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
+  assert.doesNotMatch(featurePages, /status-title-trigger/);
 });
 
 test("history title card owns the filter trigger while the panel owns the lottery dropdown", () => {

@@ -45,14 +45,17 @@ test('legacy completed status artifacts are backfilled without validation maps',
   assert.match(sql, /encoded\.payload->>'encoding' is not null/);
 });
 
-test('Matrix v5 readers never fall back to completed v4 artifacts', async () => {
-  const sql = await read('supabase/migrations/20260830083001_require_matrix_python_v5.sql');
-  const exploreList = sql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
-  const exploreValidation = sql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?end \$function\$;/)?.[0] ?? '';
+test('Matrix Explore RPCs accept only complete matrix-python-v7 artifacts', async () => {
+  const sql = await read('supabase/migrations/20260831213000_matrix_python_v7_explore_rpc.sql');
+  const exploreList = sql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
+  const exploreValidation = sql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
 
-  assert.match(exploreList, /r\.analysis_version\s*=\s*r\.draw_period\s*\|\|\s*':matrix-python-v5'/);
-  assert.match(exploreValidation, /v_version\s*<>\s*v_draw\s*\|\|\s*':matrix-python-v5'/);
-  assert.match(sql, /p_analysis_version\s*<>\s*p_draw_period\s*\|\|\s*':matrix-python-v5'/);
+  assert.equal((sql.match(/create or replace function/g) ?? []).length, 2);
+  assert.match(exploreList, /run\.status\s*=\s*'complete'/);
+  assert.match(exploreList, /run\.analysis_version\s*=\s*run\.draw_period\s*\|\|\s*':matrix-python-v7'/);
+  assert.match(exploreValidation, /v_version\s*<>\s*v_draw\s*\|\|\s*':matrix-python-v7'/);
+  assert.match(exploreValidation, /run\.status\s*=\s*'complete'/);
+  assert.doesNotMatch(sql, /matrix-python-v[56]/);
 });
 
 test('deployed functions repair invalid schema-qualified COALESCE calls', async () => {

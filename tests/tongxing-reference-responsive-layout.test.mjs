@@ -82,7 +82,7 @@ test('Matrix 同星與號碼對照單內容使用共享 16px 水平外距且不�
   assert.match(referenceBody, /display:\s*flex/);
   assert.match(referenceBody, /width:\s*100%/);
   assert.match(referenceBody, /margin-inline:\s*0/);
-  assert.match(referenceBody, /padding:\s*0 var\(--tool-page-inline\) var\(--layout-bottom-nav-clearance\)/);
+  assert.match(referenceBody, /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\)/);
   assert.match(referenceBody, /row-gap:\s*var\(--tool-section-gap\)/);
 
   const floatingPanel = block(responsive, '.reference-query-panel[data-floating="true"]');

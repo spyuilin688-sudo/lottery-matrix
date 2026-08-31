@@ -9,7 +9,7 @@ test('compact lower sections', () => {
   assert.ok(sharedHistoryRow);
   assert.match(sharedHistoryRow[1], /grid-template-columns:\s*minmax\(0, \.65fr\) minmax\(0, \.85fr\) minmax\(0, 3\.5fr\)/);
   assert.doesNotMatch(sharedHistoryRow[1], /(?:min-)?height\s*:/);
-  assert.match(layout, /\.result-summary > div\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
+  assert.match(layout, /\.result-summary > div,\s*\.matrix-explore-main-screen \.result-summary > button\s*\{[^}]*min-height:\s*clamp\(36px, 10vw, 40px\)/s);
   assert.match(layout, /\.road-results-head\s*\{[^}]*min-height:\s*32px/s);
   assert.match(layout, /\.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*\.375rem 0/s);
   assert.match(layout, /\.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(212, 165, 47, \.72\);[^}]*background:\s*transparent/s);
@@ -30,8 +30,6 @@ test('no hard overwrite hacks', () => {
     assert.match(remainingLayout, rule);
     remainingLayout = remainingLayout.replace(rule, '');
   }
-  const approvedTitleAnchor = /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{[^}]*transform:\s*translateY\(-50%\);[^}]*\}/s;
-  assert.match(remainingLayout, approvedTitleAnchor);
-  remainingLayout = remainingLayout.replace(approvedTitleAnchor, '');
+  assert.doesNotMatch(remainingLayout, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.doesNotMatch(remainingLayout, /!important|zoom\s*:|scale\s*\(|transform\s*:|margin(?:-[a-z]+)?\s*:\s*-/);
 });

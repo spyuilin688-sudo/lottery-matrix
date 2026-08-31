@@ -22,7 +22,7 @@ rounded:
 spacing:
   page-inline: "16px"
   section-gap: "8px"
-  bottom-navigation-height: "82px"
+  bottom-navigation-height: "72px"
 components:
   app-canvas:
     backgroundColor: "{colors.background}"

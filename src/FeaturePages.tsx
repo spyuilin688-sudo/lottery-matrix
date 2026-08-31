@@ -2077,6 +2077,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const toggleMarkedCell = (issue: string, number: string) => {
     const key = `${issue}-${number}`;
+    setMarkedRows((rows) => {
+      const next = new Set(rows);
+      next.delete(issue);
+      return next;
+    });
     setMarkedCells((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
@@ -2462,7 +2467,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
         { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
-        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：本日、昨日、前日。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
+        { title: "進階探索設定", items: ["號碼順序：依號碼由小到大排序或依實際開獎順序排序。", "探索日期：只使用本日（最新）。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
       ],
     },
@@ -2476,10 +2481,10 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     },
     {
       title: "Matrix 天工",
-      summary: "依探索期數、探索模式、命中條件、球位與版路類型進行自訂探索。",
+      summary: "固定以二段式與準2進3，依探索期數、球位與兩段版路類型進行探索。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：五十期或八十期。", "探索模式：一段式或二段式。", "命中條件：準2進3或準3進4。"] },
-        { title: "球位與版路", items: ["探索球位、第一段球位可選固定、依序遞增或依序遞減。", "第一段版路類型可選加減版路或合值版路。", "二段式可另外設定第二段球位與第二段版路類型。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：五十期或八十期。", "流程固定為二段式。", "命中條件固定為準2進3。"] },
+        { title: "球位與版路", items: ["探索球位、第一段球位與第二段球位可選固定、依序遞增或依序遞減。", "第一段與第二段的版路類型皆可選加減版路或合值版路。"] },
         { title: "查看結果", items: ["按下「開始探索」後顯示間距期數、預測位置、預測及版路類型。", "可展開版路查看驗證過程。"] },
       ],
     },
@@ -2498,7 +2503,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "輸入指定號碼後，查詢指定期數的開獎結果。",
       blocks: [
         { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
-        { title: "結果內容", items: ["同頁顯示近10期開獎號碼。", "結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
+        { title: "結果內容", items: ["結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
       ],
     },
     {

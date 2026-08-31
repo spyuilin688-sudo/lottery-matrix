@@ -21,7 +21,7 @@ test("首頁開獎資訊卡頂部固定左中右三區", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(104px, 30%\) minmax\(0, 1fr\)/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-issue strong\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-date\s*\{[^}]*font-size:\s*9px/s);
-  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*0\.5px/s);
+  assert.match(css, /\.home-screen \.latest-draw-card \.history-link\s*\{[^}]*font-size:\s*10px[^}]*gap:\s*2px/s);
 });
 
 test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
@@ -42,9 +42,9 @@ test("順球落球縮減尺寸並使用 2.5px 內側間距", () => {
   assert.match(css, /\.home-screen \.latest-draw-card \.draw-order button\[data-selected="true"\]\s*\{[^}]*border-color:\s*rgba\(244, 192, 82, \.82\);[^}]*color:\s*#ffd36c;[^}]*radial-gradient/s);
 });
 
-test("開獎資訊卡使用獨立 12px 左右外距", () => {
+test("開獎資訊卡使用獨立 16px 左右外距", () => {
   assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\([^\n]*var\(--home-content-width\)[^\n]*\);/s);
-  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
+  assert.match(css, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*margin-inline:\s*0;[^}]*padding:\s*9px 0 0;/s);
   assert.match(css, /\.home-screen \.latest-draw-card \.next-draw-info--embedded\s*\{[^}]*margin:\s*0;/s);
 });
 

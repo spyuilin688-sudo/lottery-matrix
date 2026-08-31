@@ -31,10 +31,10 @@ test("自訂觸發四狀態與上方彩種切換同步長寬高間距及切角",
   assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
 });
 
-test("Matrix 狀態標題圖示不再被最終覆寫壓暗", () => {
-  const finalRule = adjustments.match(/\.matrix-status-screen \.status-title-trigger img\s*\{([^}]*)\}/s)?.[1] ?? "";
-  assert.doesNotMatch(finalRule, /opacity|filter/);
-  assert.match(feature, /\.matrix-status-screen \.status-title-trigger img\s*\{[^}]*opacity:\s*\.8;/s);
+test("Matrix 狀態設定入口只由底部導覽位置承載", () => {
+  assert.doesNotMatch(feature, /status-title-trigger/);
+  assert.doesNotMatch(adjustments, /status-title-trigger/);
+  assert.match(pages, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
 });
 
 test("Matrix 同星底部在導覽清除距離外再保留 8px", () => {
@@ -46,7 +46,7 @@ test("號碼對照單輸入數字字型與 Matrix 同星一致", () => {
 });
 
 test("號碼對照單單碼與整列選取互相覆蓋，特別號也保留選取樣式", () => {
-  assert.match(pages, /const toggleMarkedCell[\s\S]*?setMarkedRows\(\(current\)[\s\S]*?next\.delete\(issue\)/);
+  assert.match(pages, /const toggleMarkedCell[\s\S]*?setMarkedRows\(\(rows\)[\s\S]*?next\.delete\(issue\)/);
   assert.match(referenceVisual, /button\[data-special="true"\]\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(referenceVisual, /data-row-marked="true"[^\{]*button\[data-special="true"\]\s*\{[^}]*background:\s*rgba\(225, 184, 39, \.16\)/s);
 });
