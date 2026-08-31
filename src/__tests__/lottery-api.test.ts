@@ -6,6 +6,7 @@ import { resetReadCacheForTests } from '../read-cache';
 afterEach(() => {
   vi.restoreAllMocks();
   resetReadCacheForTests();
+  localStorage.clear();
 });
 
 function mockJsonResponse(body: unknown) {
@@ -15,6 +16,13 @@ function mockJsonResponse(body: unknown) {
       headers: { 'content-type': 'application/json' },
     }),
   );
+}
+
+function jsonResponse(body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 describe('lottery-api response validation', () => {
@@ -51,6 +59,66 @@ describe('lottery-api response validation', () => {
     await fetchLotteryHistory('今彩539', 1000);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('同星在最新期號未變時跨重整使用已儲存結果', async () => {
+    const request = {
+      lottery: '今彩539' as const,
+      numberOrder: '依號碼由小到大排序' as const,
+      numbers: ['01', '02'],
+      futureOffset: 1,
+    };
+    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const result = {
+      ...request,
+      groups: [{
+        lockedEntry: latest,
+        predictedEntry: { period: '115000208', numbers: ['06', '07', '08', '09', '10'] },
+      }],
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(latest))
+      .mockResolvedValueOnce(jsonResponse(result));
+
+    await fetchLatestLotteryDraw(request.lottery);
+    await fetchTongXing(request);
+    resetReadCacheForTests();
+    fetchSpy.mockResolvedValueOnce(jsonResponse(latest));
+
+    await fetchLatestLotteryDraw(request.lottery);
+    await expect(fetchTongXing(request)).resolves.toMatchObject({
+      groups: [{ lockedEntry: { period: '115207' }, predictedEntry: { period: '115208' } }],
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('號碼對照單在最新期號變更後不使用舊結果', async () => {
+    const request = {
+      lottery: '今彩539' as const,
+      numberOrder: '依號碼由小到大排序' as const,
+      historyRange: 1000 as const,
+      numbers: ['01', '02'],
+    };
+    const firstLatest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const secondLatest = { period: '115000208', numbers: ['06', '07', '08', '09', '10'] };
+    const firstResult = { ...request, items: [{ ...firstLatest, matchSlots: [1] }] };
+    const secondResult = { ...request, items: [{ ...secondLatest, matchSlots: [2] }] };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(firstLatest))
+      .mockResolvedValueOnce(jsonResponse(firstResult));
+
+    await fetchLatestLotteryDraw(request.lottery);
+    await fetchNumberReference(request);
+    resetReadCacheForTests();
+    fetchSpy
+      .mockResolvedValueOnce(jsonResponse(secondLatest))
+      .mockResolvedValueOnce(jsonResponse(secondResult));
+
+    await fetchLatestLotteryDraw(request.lottery);
+    await expect(fetchNumberReference(request)).resolves.toMatchObject({
+      items: [{ period: '115208', matchSlots: [2] }],
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
   });
 
   it('同星回傳缺少 groups 時拒絕異常格式', async () => {

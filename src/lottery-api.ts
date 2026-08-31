@@ -1,6 +1,12 @@
 import type { NumberBallLottery } from './NumberBall';
 import { RAILWAY_API_BASE } from './runtime-api-config';
 import { clearReadCache, readThroughCache, stableCacheKey } from './read-cache';
+import {
+  getMatrixCurrentPeriod,
+  readLotteryQueryCache,
+  setMatrixCurrentPeriod,
+  writeLotteryQueryCache,
+} from './matrix-result-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
 const LOTTERY_READ_CACHE_MS = 55_000;
@@ -256,6 +262,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
       const record = normalizeRecord(lottery, item);
       const previousPeriod = latestPeriods.get(lottery);
       if (previousPeriod && previousPeriod !== record.period) clearReadCache(`lottery:history:${lottery}:`);
+      if (record.period) setMatrixCurrentPeriod(lottery, record.period);
       latestPeriods.set(lottery, record.period);
       return record;
     },
@@ -284,6 +291,11 @@ export async function fetchLotteryHistory(
 
 export async function fetchTongXing(input: TongXingRequest) {
   return readThroughCache(stableCacheKey('lottery:tongxing', input), LOTTERY_READ_CACHE_MS, async () => {
+    const drawPeriod = getMatrixCurrentPeriod(input.lottery) ?? undefined;
+    if (drawPeriod) {
+      const cached = readLotteryQueryCache<TongXingResponse>(input.lottery, drawPeriod, input);
+      if (cached) return cached;
+    }
     const data = await requestJson<TongXingResponse>('/api/matrix/tongxing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -291,18 +303,25 @@ export async function fetchTongXing(input: TongXingRequest) {
     });
     assertArrayField(data.groups, 'groups');
     data.groups.forEach((group, index) => assertTongXingGroup(group, index));
-    return {
+    const result = {
       ...data,
       groups: data.groups.map((group) => ({
         lockedEntry: normalizeProjectedRecord(input.lottery, group.lockedEntry),
         predictedEntry: normalizeProjectedRecord(input.lottery, group.predictedEntry),
       })),
     };
+    if (drawPeriod) writeLotteryQueryCache(input.lottery, drawPeriod, input, result);
+    return result;
   });
 }
 
 export async function fetchNumberReference(input: NumberReferenceRequest) {
   return readThroughCache(stableCacheKey('lottery:number-reference', input), LOTTERY_READ_CACHE_MS, async () => {
+    const drawPeriod = getMatrixCurrentPeriod(input.lottery) ?? undefined;
+    if (drawPeriod) {
+      const cached = readLotteryQueryCache<NumberReferenceResponse>(input.lottery, drawPeriod, input);
+      if (cached) return cached;
+    }
     const data = await requestJson<NumberReferenceResponse>('/api/matrix/number-reference', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -310,12 +329,14 @@ export async function fetchNumberReference(input: NumberReferenceRequest) {
     });
     assertArrayField(data.items, 'items');
     data.items.forEach((item, index) => assertNumberReferenceItem(item, index));
-    return {
+    const result = {
       ...data,
       items: data.items.map((item) => ({
         ...normalizeProjectedRecord(input.lottery, item),
         matchSlots: Array.isArray(item.matchSlots) ? item.matchSlots.map(Number) : [],
       })),
     };
+    if (drawPeriod) writeLotteryQueryCache(input.lottery, drawPeriod, input, result);
+    return result;
   });
 }

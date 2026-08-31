@@ -294,7 +294,7 @@ describe("requested responsive layout refinement", () => {
     const item = getComputedStyle(document.querySelector(".guide-detail-block li")!);
     const unselected = getComputedStyle(document.querySelector('.guide-category-card:not([data-selected="true"])')!);
     const selected = getComputedStyle(document.querySelector('.guide-category-card[data-selected="true"]')!);
-    expect(summary.paddingBottom).toBe("10px");
+    expect(summary.paddingBottom).toBe("6px");
     expect(list.paddingLeft).toBe("0px");
     expect(list.listStyleType).toBe("none");
     expect(item.display).toBe("grid");

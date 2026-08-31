@@ -4,7 +4,8 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "python -c \"print('Matrix worker paused')\"",
-    "restartPolicyType": "NEVER"
+    "startCommand": "uv run python -u -m app.worker --lottery 今彩539 --scheduled",
+    "restartPolicyType": "NEVER",
+    "cronSchedule": "3/5 * * * *"
   }
 }
