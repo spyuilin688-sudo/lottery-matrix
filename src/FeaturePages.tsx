@@ -1011,20 +1011,39 @@ function ExploreValidationProcess({
   if (!validation || validation.ruleSets.length === 0) {
     return <p className="empty-result">無驗證資料</p>;
   }
+
+  type ValidationDisplayRow = {
+    key: string;
+    period: string;
+    numbers: Array<string | number>;
+    formula?: string;
+  };
+
   const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
   const relation = item.referenceOffset === undefined || item.referenceOffset === 0
     ? "同期"
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
-  const numberCell = (numbers: Array<string | number>) => {
-    const formatted = values(numbers);
-    return (
-      <span className="validation-full-numbers" data-count={formatted.length}>
-        {formatted.map((value, index) => <i key={`${value}-${index}`}>{value}</i>)}
-      </span>
-    );
-  };
+
+  const validationGroup = (key: string, rows: ValidationDisplayRow[]) => (
+    <div className="validation-period-block explore-validation-group" key={key}>
+      <div className="explore-validation-issues">
+        {rows.map((row) => <span className="validation-issue" key={`${row.key}-period`}>{row.period}</span>)}
+      </div>
+      <div className="explore-validation-numbers-card">
+        {rows.map((row) => (
+          <span className="validation-full-numbers explore-validation-numbers" data-count={values(row.numbers).length} key={`${row.key}-numbers`}>
+            {values(row.numbers).map((value, index) => <i key={`${value}-${index}`}>{value}</i>)}
+          </span>
+        ))}
+      </div>
+      <div className="explore-validation-formulas">
+        {rows.map((row) => <span className="validation-formula" key={`${row.key}-formula`}>{row.formula ? <b>{row.formula}</b> : null}</span>)}
+      </div>
+    </div>
+  );
+
   return (
-    <section className="road-validation-process" aria-label="驗證過程">
+    <section className="road-validation-process explore-validation-card" aria-label="驗證過程">
       {validation.ruleSets.map((ruleSet, ruleSetIndex) => {
         const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
           if (!matchedRules) return ruleSet.rules.map((rule) => rule.display).join("、");
@@ -1040,58 +1059,74 @@ function ExploreValidationProcess({
           });
           return [...new Set(displays)].join("、");
         };
-        const periodRow = (
-          key: string,
-          period: string,
-          numbers: Array<string | number>,
-          formula = "",
-        ) => (
-          <div className="validation-period-row" key={key}>
-            <span className="validation-issue">{period}</span>
-            {numberCell(numbers)}
-            <span className="validation-formula">{formula ? <b>{formula}</b> : null}</span>
-          </div>
-        );
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         return (
-          <div className="validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
-            <header className="validation-summary-card">
+          <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
+            <header className="validation-summary-card explore-validation-summary-card">
               <span>
                 開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆｜
                 <i className="validation-summary-lookback">{relation}</i>｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
                 <i className="validation-summary-formula">{ruleDisplays()}</i>｜下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
               </span>
             </header>
-            <div className="validation-period-head" aria-hidden="true">
-              <span>期數</span><span>開獎號碼</span><span>驗證公式</span>
+            <div className="explore-validation-groups">
+              {ruleSet.historicalValidation.map((row) => {
+                const source: ValidationDisplayRow = {
+                  key: `source-${row.group}`,
+                  period: row.sourcePeriod,
+                  numbers: row.sourceNumbers,
+                };
+                const reference: ValidationDisplayRow = {
+                  key: `reference-${row.group}`,
+                  period: row.referencePeriod,
+                  numbers: row.referenceNumbers,
+                  formula: ruleDisplays(row.matchedRules),
+                };
+                const prediction: ValidationDisplayRow = {
+                  key: `prediction-${row.group}`,
+                  period: row.predictionPeriod,
+                  numbers: row.predictionNumbers,
+                };
+                return validationGroup(
+                  `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
+                  referenceFirst ? [reference, source, prediction] : [source, reference, prediction],
+                );
+              })}
+              {validation.sourceA ? validationGroup(
+                `current-${ruleSetIndex}`,
+                referenceFirst
+                  ? [
+                      {
+                        key: "current-reference",
+                        period: validation.sourceA.referencePeriod,
+                        numbers: validation.sourceA.referenceNumbers ?? [],
+                        formula: ruleDisplays(),
+                      },
+                      {
+                        key: "current-source",
+                        period: validation.sourceA.sourcePeriod,
+                        numbers: validation.sourceA.sourceNumbers,
+                      },
+                    ]
+                  : [
+                      {
+                        key: "current-source",
+                        period: validation.sourceA.sourcePeriod,
+                        numbers: validation.sourceA.sourceNumbers,
+                      },
+                      {
+                        key: "current-reference",
+                        period: validation.sourceA.referencePeriod,
+                        numbers: validation.sourceA.referenceNumbers ?? [],
+                        formula: ruleDisplays(),
+                      },
+                    ],
+              ) : null}
             </div>
-            {ruleSet.historicalValidation.map((row) => {
-              const source = periodRow(`source-${row.group}`, row.sourcePeriod, row.sourceNumbers);
-              const reference = periodRow(
-                `reference-${row.group}`,
-                row.referencePeriod,
-                row.referenceNumbers,
-                ruleDisplays(row.matchedRules),
-              );
-              return (
-                <div className="validation-period-block" key={`${ruleSetIndex}-${row.group}-${row.predictionPeriod}`}>
-                  {referenceFirst ? reference : source}
-                  {referenceFirst ? source : reference}
-                  {periodRow(`prediction-${row.group}`, row.predictionPeriod, row.predictionNumbers)}
-                </div>
-              );
-            })}
-            {validation.sourceA ? (
-              <div className="validation-period-block validation-current-block">
-                {referenceFirst
-                  ? periodRow("current-reference", validation.sourceA.referencePeriod, validation.sourceA.referenceNumbers ?? [], ruleDisplays())
-                  : periodRow("current-source", validation.sourceA.sourcePeriod, validation.sourceA.sourceNumbers)}
-                {referenceFirst
-                  ? periodRow("current-source", validation.sourceA.sourcePeriod, validation.sourceA.sourceNumbers)
-                  : periodRow("current-reference", validation.sourceA.referencePeriod, validation.sourceA.referenceNumbers ?? [], ruleDisplays())}
-                {periodRow("current-prediction", "本期預測", ruleSet.predictionNumbers)}
-              </div>
-            ) : null}
+            <footer className="explore-validation-prediction">
+              <strong>本期預測</strong>
+              <b className="numeric-text">{values(ruleSet.predictionNumbers).join("、")}</b>
+            </footer>
           </div>
         );
       })}
