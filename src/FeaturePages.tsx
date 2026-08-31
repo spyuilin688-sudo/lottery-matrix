@@ -2137,8 +2137,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       className="number-reference-screen"
       headerAction={(
         <div className="reference-title-actions title-card-compact-actions">
-          <button type="button" className="title-card-compact-action" onClick={resetReference}><ReloadIcon className="reference-refresh-icon" />刷新</button>
-          <button type="button" className="title-card-compact-action" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
+          <button type="button" className="title-card-compact-action reference-refresh-trigger" onClick={resetReference}><ReloadIcon className="reference-refresh-icon" />刷新</button>
+          <button type="button" className="title-card-compact-action reference-settings-trigger" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
             <span>探索設定</span>
             <ChevronDownIcon data-open={queryExpanded} />
           </button>
