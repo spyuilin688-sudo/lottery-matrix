@@ -36,6 +36,7 @@ class AnalysisRepository(Protocol):
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
     def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
     def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
+    def has_explore_results(self, lottery: str, draw_period: str, analysis_version: str) -> bool: ...
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
@@ -211,6 +212,11 @@ class InMemoryAnalysisRepository:
             record["expiresAt"] = expires_at
             key = (lottery, draw_period, analysis_version, record["item_id"])
             self.explore_results[key] = record
+
+    def has_explore_results(
+        self, lottery: str, draw_period: str, analysis_version: str,
+    ) -> bool:
+        return any(key[:3] == (lottery, draw_period, analysis_version) for key in self.explore_results)
 
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]:
         chunks = [
@@ -525,6 +531,20 @@ class SupabaseAnalysisRepository:
                 records[start:start + EXPLORE_RESULT_UPSERT_BATCH_SIZE],
                 on_conflict="lottery,draw_period,analysis_version,item_id",
             ).execute()
+
+    def has_explore_results(
+        self, lottery: str, draw_period: str, analysis_version: str,
+    ) -> bool:
+        response = (
+            self.client.table("matrix_explore_results")
+            .select("item_id")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .range(0, 0)
+            .execute()
+        )
+        return bool(response.data)
 
     def _iter_artifact_chunks(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
