@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.domain.explore import run_matrix_explore_group_with_history
+from app.domain.explore_shared import run_matrix_shared_explore_group_with_history
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tiangong import enumerate_equal_spacing_sequences
@@ -37,15 +37,24 @@ def _append_explore_result(
     response: dict[str, Any],
     history: list[dict[str, Any]],
 ) -> None:
+    tianyan_sources = response.get("tianyanSources", [])
+    if isinstance(tianyan_sources, list):
+        artifact.setdefault("tianyanSources", []).extend(
+            source for source in tianyan_sources if isinstance(source, dict)
+        )
+
     for raw in response.get("results", []):
         search = raw.get("searchCondition", {})
         rule_count = int(raw.get("ruleCount", search.get("ruleCount", 0)))
         if rule_count not in {1, 2}:
             continue
+        algorithm_type = str(raw.get("algorithmType", search.get("algorithmType", "")))
+        if algorithm_type not in {"加減", "合值", "拖牌"}:
+            continue
         source_index = unit["lockedSourceIndex"]
         identifier = "|".join(map(str, [
             unit["numberOrder"], source_index, unit["lockedPosition"],
-            unit["algorithmType"], rule_count, raw.get("id", ""),
+            algorithm_type, rule_count, raw.get("id", ""),
         ]))
         item = {
             "id": identifier, "number": str(raw.get("number", "")),
@@ -53,7 +62,7 @@ def _append_explore_result(
             "predictionDistance": int(raw.get("predictionDistance", 0)),
             "consecutive": str(raw.get("consecutive", "")), "highestStreak": int(raw.get("highestStreak", 0)),
             "predictionNumbers": [str(value) for value in raw.get("predictionNumbers", [])],
-            "algorithmType": unit["algorithmType"], "numberOrder": unit["numberOrder"],
+            "algorithmType": algorithm_type, "numberOrder": unit["numberOrder"],
             "exploreDateOffset": 0, "ruleCount": rule_count, "lockedSourceIndex": source_index,
             "lockedSourcePeriod": str(raw.get("lockedSourcePeriod", history[source_index].get("period", ""))),
         }
@@ -73,7 +82,7 @@ def build_explore_artifact_chunk(
     history: list[dict[str, Any]],
     start: int,
     limit: int,
-    runner: ExploreRunner = run_matrix_explore_group_with_history,
+    runner: ExploreRunner = run_matrix_shared_explore_group_with_history,
 ) -> dict[str, Any]:
     return build_explore_batch(
         lottery=lottery,
@@ -91,7 +100,7 @@ def build_explore_artifact(
     lottery: str,
     draw_period: str,
     history: list[dict[str, Any]],
-    runner: ExploreRunner = run_matrix_explore_group_with_history,
+    runner: ExploreRunner = run_matrix_shared_explore_group_with_history,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
         lottery, draw_period, history, 0, len(_work_units(lottery, history)), runner,
@@ -196,7 +205,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any], tiangong:
 
 
 def create_artifact_builders(
-    explore_runner: ExploreRunner = run_matrix_explore_group_with_history,
+    explore_runner: ExploreRunner = run_matrix_shared_explore_group_with_history,
     tiangong_runner: TiangongRunner = run_tiangong_candidates,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     def explore(context: dict[str, Any]) -> dict[str, Any]:
