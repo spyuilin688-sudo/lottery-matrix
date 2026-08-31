@@ -13,6 +13,24 @@ const exploreSpacingStyles = readFileSync(new URL("../src/matrix-explore-spacing
 
 test("confirmed feature pages use the latest integrated title artwork", () => {
   const expectedArtwork = [
+    ["Matrix 探索", "/assets/matrix-explore/title-explore.png"],
+    ["Matrix 天衍", "/assets/matrix-explore/title-tianyan.png"],
+    ["Matrix 天工", "/assets/matrix-explore/title-tiangong.png"],
+    ["Matrix 指南", "/assets/lottery/functions/指南標題K.png"],
+    ["Matrix 同星", "/assets/lottery/functions/同星標題K.png"],
+    ["Matrix 牌單", "/assets/lottery/functions/牌單標題K.png"],
+    ["Matrix 狀態", "/assets/lottery/functions/狀態標題K.png"],
+    ["Matrix 筆記本", "/assets/lottery/functions/筆記本標題K.png"],
+    ["號碼對照單", "/assets/lottery/functions/對照單標題K.png"],
+    ["歷史開獎號碼", "/assets/lottery/functions/歷史開獎標題K.png"],
+    ["連碰計算機", "/assets/lottery/functions/連碰標題K.png"],
+    ["立柱計算機", "/assets/lottery/functions/立柱標題K.png"],
+    ["Matrix Pro 會員方案與收費標準", "/assets/lottery/functions/會員方案標題K.png"],
+    ["Matrix 自訂觸發狀態", "/assets/lottery/functions/自訂觸發標題K.png"],
+  ];
+
+  for (const [title, asset] of expectedArtwork) {
+    const escapedAsset = asset.replace(/[.*+?^${}()|[\]\\]/g, "\\  const expectedArtwork = [
     ["Matrix 探索", "探索標題K.png"],
     ["Matrix 天衍", "天衍標題K.png"],
     ["Matrix 天工", "天工標題K.png"],
@@ -31,6 +49,8 @@ test("confirmed feature pages use the latest integrated title artwork", () => {
 
   for (const [title, file] of expectedArtwork) {
     assert.match(featurePages, new RegExp(`"${title}": "/assets/lottery/functions/${file.replace(".", "\\.")}"`));
+  }");
+    assert.match(featurePages, new RegExp(`"${title}": "${escapedAsset}"`));
   }
 });
 
