@@ -4,6 +4,7 @@ type MatrixResultCacheRequest = {
 };
 
 const CACHE_PREFIX = 'matrix-result';
+const LOTTERY_QUERY_CACHE_PREFIX = 'lottery-query';
 const VERSION_PREFIX = 'matrix-result-period';
 
 function storageAvailable() {
@@ -30,6 +31,10 @@ function lotteryCachePrefix(lottery: string) {
   return `${CACHE_PREFIX}:${encodeSegment(lottery)}:`;
 }
 
+function lotteryQueryCachePrefix(lottery: string) {
+  return `${LOTTERY_QUERY_CACHE_PREFIX}:${encodeSegment(lottery)}:`;
+}
+
 function versionKey(lottery: string) {
   return `${VERSION_PREFIX}:${encodeSegment(lottery)}`;
 }
@@ -50,11 +55,11 @@ export function setMatrixCurrentPeriod(lottery: string, drawPeriod: string) {
   const previous = localStorage.getItem(key);
   if (previous === drawPeriod) return;
 
-  const prefix = lotteryCachePrefix(lottery);
+  const prefixes = [lotteryCachePrefix(lottery), lotteryQueryCachePrefix(lottery)];
   const keysToRemove: string[] = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const itemKey = localStorage.key(index);
-    if (itemKey?.startsWith(prefix)) keysToRemove.push(itemKey);
+    if (itemKey && prefixes.some((prefix) => itemKey.startsWith(prefix))) keysToRemove.push(itemKey);
   }
   keysToRemove.forEach((itemKey) => localStorage.removeItem(itemKey));
   localStorage.setItem(key, drawPeriod);
@@ -78,4 +83,27 @@ export function writeMatrixResultCache<T>(request: MatrixResultCacheRequest, res
   if (!storageAvailable()) return;
   setMatrixCurrentPeriod(request.lottery, request.drawPeriod);
   localStorage.setItem(buildMatrixResultCacheKey(request), JSON.stringify(result));
+}
+
+function buildLotteryQueryCacheKey(lottery: string, drawPeriod: string, query: unknown) {
+  return `${lotteryQueryCachePrefix(lottery)}${encodeSegment(drawPeriod)}:${JSON.stringify(stableValue(query))}`;
+}
+
+export function readLotteryQueryCache<T>(lottery: string, drawPeriod: string, query: unknown): T | null {
+  if (!storageAvailable() || getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
+  const cacheKey = buildLotteryQueryCacheKey(lottery, drawPeriod, query);
+  const stored = localStorage.getItem(cacheKey);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    localStorage.removeItem(cacheKey);
+    return null;
+  }
+}
+
+export function writeLotteryQueryCache<T>(lottery: string, drawPeriod: string, query: unknown, result: T) {
+  if (!storageAvailable() || !drawPeriod) return;
+  setMatrixCurrentPeriod(lottery, drawPeriod);
+  localStorage.setItem(buildLotteryQueryCacheKey(lottery, drawPeriod, query), JSON.stringify(result));
 }
