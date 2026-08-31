@@ -22,7 +22,6 @@ from app.settings import load_settings
 
 
 EXPLORE_BATCH_SIZE = 10
-TIANGONG_BATCH_SIZE = 3
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
 RETRY_BACKOFF_SECONDS = (15.0, 45.0)
@@ -71,7 +70,6 @@ def _run_analysis(
         builders or create_artifact_builders(),
         version,
         explore_batch_size=EXPLORE_BATCH_SIZE,
-        tiangong_batch_size=TIANGONG_BATCH_SIZE,
     )
     failures = 0
     result: dict[str, Any] = {}
