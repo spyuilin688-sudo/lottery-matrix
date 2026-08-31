@@ -31,18 +31,21 @@ test('狀態頁使用 API 結果取代固定組數與版路範例', async () => 
   expect(statusApi.fetchMatrixStatus).toHaveBeenCalledWith('今彩539');
 });
 
-test('切換彩種重新讀取狀態，且可進入自訂觸發條件', async () => {
+test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩下才可進入', async () => {
   const navigate = vi.fn();
   render(<MatrixStatusPage onNavigate={navigate} />);
   fireEvent.click(screen.getByRole('radio', { name: '六合彩' }));
   await waitFor(() => expect(statusApi.fetchMatrixStatus).toHaveBeenCalledWith('六合彩'));
-  fireEvent.click(screen.getByRole('button', { name: '自訂觸發條件' }));
+  const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
+  fireEvent.click(trigger, { detail: 1 });
+  expect(navigate).not.toHaveBeenCalled();
+  fireEvent.click(trigger, { detail: 1 });
   expect(navigate).toHaveBeenCalledWith('status-settings');
 });
 
 test('自訂觸發條件入口移至狀態頁右下角並沿用首頁快捷設定樣式', () => {
   const { container } = render(<MatrixStatusPage onNavigate={vi.fn()} />);
-  const trigger = screen.getByRole('button', { name: '自訂觸發條件' });
+  const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
 
   expect(trigger).toHaveClass('bottom-navigation-quick-settings', 'matrix-status-settings-entry');
   expect(trigger.querySelector('.bottom-navigation-quick-settings-visual')).toBeInTheDocument();
