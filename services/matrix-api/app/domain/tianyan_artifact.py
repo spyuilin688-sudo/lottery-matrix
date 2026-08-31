@@ -182,9 +182,18 @@ def _rule_identity(rule: dict[str, Any]) -> str:
 
 
 def _streak(group_count: int) -> str | None:
-    if group_count >= 17:
-        return "準17進18+"
-    return f"準{group_count}進{group_count + 1}" if group_count in {5, 6, 7, 9, 11, 13, 15} else None
+    if 4 <= group_count <= 30:
+        return f"準{group_count}進{group_count + 1}"
+    return None
+
+
+def _candidate_signature(row: dict[str, Any], left: dict[str, Any], right: dict[str, Any], predictions: list[str]) -> str:
+    return "|".join(map(str, [
+        row["number"], row["lockedPosition"], row.get("lockedSourceIndex", ""),
+        row.get("lockedSourcePeriod", ""), row["predictionDistance"], row["numberOrder"],
+        *sorted([_rule_identity(left["rule"]), _rule_identity(right["rule"])]),
+        ",".join(predictions),
+    ]))
 
 
 def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dict[str, Any]) -> dict[str, Any]:
@@ -199,6 +208,7 @@ def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dic
     validations: dict[str, Any] = {}
     seen: set[str] = set()
     for partition in partitions.values():
+        candidates: list[dict[str, Any]] = []
         for first, left in enumerate(partition):
             for right in partition[first + 1:]:
                 if (
@@ -216,33 +226,57 @@ def build_tianyan_artifact(lottery: str, draw_period: str, explore_artifact: dic
                 if not result["valid"] or consecutive is None:
                     continue
                 row = left["row"]
-                signature = "|".join(map(str, [
-                    row["number"], row["lockedPosition"], row.get("lockedSourceIndex", ""),
-                    row.get("lockedSourcePeriod", ""), row["predictionDistance"], row["numberOrder"],
-                    *sorted([_rule_identity(left["rule"]), _rule_identity(right["rule"])]),
-                    ",".join(result["predictionNumbers"]),
-                ]))
+                signature = _candidate_signature(row, left, right, result["predictionNumbers"])
                 if signature in seen:
                     continue
                 seen.add(signature)
-                identifier = _stable_id(signature)
-                item = {
-                    "id": identifier, "number": row["number"], "lockedPosition": row["lockedPosition"],
-                    "predictionDistance": row["predictionDistance"], "consecutive": consecutive,
-                    "highestStreak": result["groupCount"], "predictionNumbers": result["predictionNumbers"],
-                    "roadType": "複合", "hitCondition": "準5+（鎖定2碼）", "numberOrder": row["numberOrder"],
-                    "explorePeriods": 13, "exploreDateOffset": row["exploreDateOffset"],
-                    "ruleIds": [left["rule"]["id"], right["rule"]["id"]],
-                }
-                for optional in ("lockedSourceIndex", "lockedSourcePeriod"):
-                    if optional in row:
-                        item[optional] = row[optional]
-                items.append(item)
-                validations[identifier] = {
-                    "itemId": identifier, "rules": result["rules"], "groupCount": result["groupCount"],
-                    "minimumIndependentHits": result["minimumIndependentHits"], "rule1Only": result["rule1Only"],
-                    "rule2Only": result["rule2Only"], "bothHit": result["bothHit"],
-                    "historicalValidation": result["groups"],
-                }
+                candidates.append({
+                    "row": row,
+                    "left": left,
+                    "right": right,
+                    "result": result,
+                    "consecutive": consecutive,
+                    "signature": signature,
+                })
+
+        if not candidates:
+            continue
+        highest = max(candidate["result"]["groupCount"] for candidate in candidates)
+        highest_candidates = [
+            candidate for candidate in candidates
+            if candidate["result"]["groupCount"] == highest
+        ]
+        merged_predictions = sorted({
+            prediction
+            for candidate in highest_candidates
+            for prediction in candidate["result"]["predictionNumbers"]
+        })
+        if len(merged_predictions) > 2:
+            continue
+
+        for candidate in highest_candidates:
+            row = candidate["row"]
+            left = candidate["left"]
+            right = candidate["right"]
+            result = candidate["result"]
+            identifier = _stable_id(candidate["signature"])
+            item = {
+                "id": identifier, "number": row["number"], "lockedPosition": row["lockedPosition"],
+                "predictionDistance": row["predictionDistance"], "consecutive": candidate["consecutive"],
+                "highestStreak": result["groupCount"], "predictionNumbers": result["predictionNumbers"],
+                "roadType": "複合", "hitCondition": "準5+（鎖定2碼）", "numberOrder": row["numberOrder"],
+                "explorePeriods": 13, "exploreDateOffset": row["exploreDateOffset"],
+                "ruleIds": [left["rule"]["id"], right["rule"]["id"]],
+            }
+            for optional in ("lockedSourceIndex", "lockedSourcePeriod"):
+                if optional in row:
+                    item[optional] = row[optional]
+            items.append(item)
+            validations[identifier] = {
+                "itemId": identifier, "rules": result["rules"], "groupCount": result["groupCount"],
+                "minimumIndependentHits": result["minimumIndependentHits"], "rule1Only": result["rule1Only"],
+                "rule2Only": result["rule2Only"], "bothHit": result["bothHit"],
+                "historicalValidation": result["groups"],
+            }
     items.sort(key=lambda item: (-item["highestStreak"], item["id"]))
     return {"lottery": lottery, "drawPeriod": draw_period, "items": items, "validationById": validations}
