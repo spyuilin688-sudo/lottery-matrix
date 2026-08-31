@@ -83,7 +83,6 @@ def checkpoint_builders(total: int) -> dict:
     return {
         "explore": explore,
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
-        "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
 
@@ -113,18 +112,18 @@ def test_pipeline_requires_an_explicit_analysis_version() -> None:
         AnalysisPipeline(repository, builders)
 
 
-def test_pipeline_publishes_only_after_all_four_artifacts_finish() -> None:
+def test_pipeline_publishes_only_after_required_artifacts_finish() -> None:
     repository = InMemoryAnalysisRepository()
     calls: list[str] = []
     builders = {
         kind: (lambda context, selected=kind: calls.append(selected) or {"kind": selected, "period": context["draw"]["period"]})
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianyan", "status")
     }
 
     result = AnalysisPipeline(repository, builders, analysis_version="matrix-python-v1").run(DRAW, history=[])
 
     assert result["status"] == "complete"
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianyan", "status"]
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
         "kind": "status",
         "period": "114000123",
@@ -136,7 +135,6 @@ def test_later_builders_can_consume_earlier_artifacts() -> None:
     builders = {
         "explore": lambda _: {"items": ["road"]},
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
-        "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
     AnalysisPipeline(repository, builders, analysis_version="test-version").run(DRAW, history=[])
@@ -152,7 +150,6 @@ def test_pipeline_failure_marks_run_failed_and_keeps_partial_output_private() ->
     builders = {
         "explore": lambda _: {"items": []},
         "tianyan": fail,
-        "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
 
@@ -176,7 +173,7 @@ def test_completed_version_is_idempotent_and_skips_recalculation() -> None:
         calls += 1
         return {"items": []}
 
-    builders = {kind: build for kind in ("explore", "tianyan", "tiangong", "status")}
+    builders = {kind: build for kind in ("explore", "tianyan", "status")}
     pipeline = AnalysisPipeline(repository, builders, analysis_version="v1")
     pipeline.run(DRAW, history=[])
     second = pipeline.run(DRAW, history=[])
@@ -188,7 +185,7 @@ def test_completed_version_is_idempotent_and_skips_recalculation() -> None:
 
 def test_pipeline_rejects_incomplete_or_noncanonical_draw_before_writing() -> None:
     repository = InMemoryAnalysisRepository()
-    builders = {kind: (lambda _: {}) for kind in ("explore", "tianyan", "tiangong", "status")}
+    builders = {kind: (lambda _: {}) for kind in ("explore", "tianyan", "status")}
     invalid = {**DRAW, "numbers": ["1", "02", "03", "04", "05"]}
 
     with pytest.raises(ValueError, match="DRAW_NUMBERS_INVALID"):
@@ -217,7 +214,6 @@ def test_pipeline_resumes_checkpointed_explore_batch() -> None:
     builders = {
         "explore": explore,
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
-        "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
     pipeline = AnalysisPipeline(
@@ -338,174 +334,3 @@ def test_retry_after_final_explore_publication_does_not_overwrite_final_chunk() 
     }
 
 
-def test_pipeline_resumes_checkpointed_tiangong_and_streams_chunk_summary() -> None:
-    repository = InMemoryAnalysisRepository()
-    starts: list[int] = []
-
-    def tiangong(context: dict) -> dict:
-        start = context["tiangongBatch"]["start"]
-        starts.append(start)
-        stop = min(2, start + context["tiangongBatch"]["limit"])
-        identifier = f"road-{start}"
-        return {
-            "artifact": {
-                "items": [{"id": identifier}],
-                "validationById": {identifier: {"itemId": identifier}},
-            },
-            "_checkpoint": {
-                "cursorStart": start, "cursor": stop, "total": 2, "complete": stop == 2,
-            },
-        }
-
-    builders = {
-        "explore": lambda _: {"items": [], "validationById": {}},
-        "tianyan": lambda _: {"items": []},
-        "tiangong": tiangong,
-        "status": lambda context: {
-            "count": context["artifacts"]["tiangong"]["itemCount"],
-        },
-    }
-    pipeline = AnalysisPipeline(
-        repository, builders, analysis_version="v1", tiangong_batch_size=1,
-    )
-
-    first = pipeline.run(DRAW, history=[])
-    second = pipeline.run(DRAW, history=[])
-
-    assert first["status"] == "running"
-    assert first["phase"] == "tiangong"
-    assert first["cursor"] == 1
-    assert second["status"] == "complete"
-    assert starts == [0, 1]
-    manifest = repository.artifacts[("今彩539", "114000123", "v1", "tiangong")]["payload"]
-    assert manifest["storage"] == "chunks"
-    assert manifest["itemCount"] == 2
-    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
-        "count": 2,
-    }
-
-
-def test_nonterminal_tiangong_resume_does_not_hydrate_completed_artifacts() -> None:
-    repository = RepositorySpy()
-
-    def tiangong(context: dict) -> dict:
-        start = context["tiangongBatch"]["start"]
-        stop = min(3, start + context["tiangongBatch"]["limit"])
-        identifier = f"road-{start}"
-        return {
-            "artifact": {
-                "items": [{"id": identifier}],
-                "validationById": {identifier: {"itemId": identifier}},
-            },
-            "_checkpoint": {
-                "cursorStart": start, "cursor": stop, "total": 3,
-                "complete": stop == 3,
-            },
-        }
-
-    builders = {
-        "explore": lambda _: {"items": [], "validationById": {}},
-        "tianyan": lambda _: {"items": []},
-        "tiangong": tiangong,
-        "status": lambda _: {"items": []},
-    }
-    pipeline = AnalysisPipeline(
-        repository, builders, analysis_version="v1", tiangong_batch_size=1,
-    )
-
-    first = pipeline.run(DRAW, history=[])
-    repository.calls.clear()
-    second = pipeline.run(DRAW, history=[])
-
-    assert first["phase"] == "tiangong"
-    assert first["cursor"] == 1
-    assert second["phase"] == "tiangong"
-    assert second["cursor"] == 2
-    assert not any(call.startswith("read_artifact:") for call in repository.calls)
-    assert not any(call.startswith("materialize_artifact:") for call in repository.calls)
-
-
-def test_terminal_checkpoint_retry_does_not_write_a_zero_width_chunk() -> None:
-    class FailOnceSummaryRepository(InMemoryAnalysisRepository):
-        def __init__(self) -> None:
-            super().__init__()
-            self.failed = False
-
-        def save_artifact_chunk(
-            self, lottery: str, draw_period: str, analysis_version: str, kind: str,
-            chunk_index: int, cursor_start: int, cursor_end: int, payload: object,
-        ) -> None:
-            if cursor_end <= cursor_start:
-                raise RuntimeError("zero-width chunk")
-            super().save_artifact_chunk(
-                lottery, draw_period, analysis_version, kind,
-                chunk_index, cursor_start, cursor_end, payload,
-            )
-
-        def materialize_artifact(
-            self, lottery: str, draw_period: str, analysis_version: str,
-            kind: str, expected_total: int,
-        ) -> dict:
-            if kind == "tiangong":
-                raise AssertionError("tiangong must not be fully materialized")
-            return super().materialize_artifact(
-                lottery, draw_period, analysis_version, kind, expected_total,
-            )
-
-        def summarize_artifact(
-            self, lottery: str, draw_period: str, analysis_version: str,
-            kind: str, expected_total: int,
-        ) -> int:
-            if kind == "tiangong" and not self.failed:
-                self.failed = True
-                raise RuntimeError("temporary summary failure")
-            return super().summarize_artifact(
-                lottery, draw_period, analysis_version, kind, expected_total,
-            )
-
-    repository = FailOnceSummaryRepository()
-
-    def tiangong(context: dict) -> dict:
-        start = context["tiangongBatch"]["start"]
-        stop = min(2, start + context["tiangongBatch"]["limit"])
-        identifier = f"road-{start}"
-        return {
-            "artifact": {
-                "items": [] if start == stop else [{"id": identifier}],
-                "validationById": {} if start == stop else {
-                    identifier: {"itemId": identifier},
-                },
-            },
-            "_checkpoint": {
-                "cursorStart": start, "cursor": stop, "total": 2, "complete": stop == 2,
-            },
-        }
-
-    builders = {
-        "explore": lambda _: {"items": [], "validationById": {}},
-        "tianyan": lambda _: {"items": []},
-        "tiangong": tiangong,
-        "status": lambda context: {
-            "count": context["artifacts"]["tiangong"]["itemCount"],
-        },
-    }
-    pipeline = AnalysisPipeline(
-        repository, builders, analysis_version="v1", tiangong_batch_size=1,
-    )
-
-    first = pipeline.run(DRAW, history=[])
-    with pytest.raises(RuntimeError, match="temporary summary failure"):
-        pipeline.run(DRAW, history=[])
-    retried = pipeline.run(DRAW, history=[])
-
-    assert first["status"] == "running"
-    assert retried["status"] == "complete"
-    assert [
-        (chunk["chunk_index"], chunk["cursor_start"], chunk["cursor_end"])
-        for chunk in repository.read_artifact_chunks(
-            "今彩539", "114000123", "v1", "tiangong",
-        )
-    ] == [(0, 0, 1), (1, 1, 2)]
-    assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
-        "count": 2,
-    }
