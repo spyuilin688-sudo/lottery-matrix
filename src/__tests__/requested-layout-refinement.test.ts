@@ -328,13 +328,13 @@ describe("requested responsive layout refinement", () => {
     expect(rail.marginLeft).toBe("4px");
     expect(rail.marginRight).toBe("4px");
     expect(rail.scrollPaddingInline).toBe("20px");
-    expect(card.minHeight).toBe("34.32px");
-    expect(card.padding).toBe("6.24px 12.48px");
-    expect(card.fontSize).toBe("18.72px");
-    expect(cardNumber.fontSize).toBe("13.2px");
-    expect(previewNumber.width).toBe("30px");
-    expect(previewNumber.height).toBe("24px");
-    expect(previewNumber.fontSize).toBe("11px");
+    expect(card.minHeight).toBe("30.888px");
+    expect(card.padding).toBe("5.616px 11.232px");
+    expect(card.fontSize).toBe("16.848px");
+    expect(cardNumber.fontSize).toBe("11.88px");
+    expect(previewNumber.width).toBe("18px");
+    expect(previewNumber.height).toBe("18px");
+    expect(previewNumber.fontSize).toBe("10px");
   });
 
   it("uses one compact information-card rhythm for profile category detail pages", () => {
