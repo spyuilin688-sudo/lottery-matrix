@@ -139,6 +139,34 @@ describe("requested responsive layout refinement", () => {
     expect(paymentButton.borderTopWidth).toBe("1px");
   });
 
+  it("keeps the membership checkout in responsive flow with the requested spacing", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "membership-checkout-spacing";
+    document.body.innerHTML = `
+      <main class="pro-plans-screen"><div class="feature-body">
+        <div class="plan-carousel"></div>
+        <div class="pro-plans-checkout">
+          <section class="panel renewal-card"></section>
+          <button class="primary-action branded-explore-action confirm-payment"><span>確定付款</span></button>
+          <p class="payment-note">點擊 確定付款 將跳轉付款頁面</p>
+        </div>
+      </div></main>`;
+
+    const checkout = getComputedStyle(document.querySelector(".pro-plans-checkout")!);
+    const renewalCard = getComputedStyle(document.querySelector(".renewal-card")!);
+    const paymentButton = getComputedStyle(document.querySelector(".confirm-payment")!);
+    const paymentNote = getComputedStyle(document.querySelector(".payment-note")!);
+
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .feature-body")!).gap).toBe("8px");
+    expect(checkout.display).toBe("grid");
+    expect(checkout.rowGap).toBe("5px");
+    expect(checkout.marginLeft).toBe("4px");
+    expect(checkout.marginRight).toBe("4px");
+    expect(renewalCard.width).toBe("100%");
+    expect(paymentButton.width).toBe("100%");
+    expect(paymentNote.marginTop).toBe("0px");
+  });
+
   it("separates membership plan hierarchy and removes tool icon frames", () => {
     const style = mountStyles(readCss("src/feature-pages.css"));
     style.dataset.layoutContract = "pro-plan-visual-hierarchy";
@@ -233,8 +261,16 @@ describe("requested responsive layout refinement", () => {
     expect(enable.width).toBe("100%");
     expect(disable.width).toBe("100%");
     expect(adjustmentCss).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-500\)/s);
-    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient/s);
     expect(adjustmentCss).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
+  });
+
+  it("reduces the system notification explanation without changing the title", () => {
+    const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    style.dataset.layoutContract = "notification-system-description";
+    document.body.innerHTML = `<main class="notifications-screen-v2"><p class="notification-push-status">維護、更新</p></main>`;
+
+    expect(getComputedStyle(document.querySelector(".notification-push-status")!).fontSize).toBe("10px");
   });
 
   it("tightens guide summary and bullet spacing without changing the existing type size", () => {
@@ -265,5 +301,51 @@ describe("requested responsive layout refinement", () => {
     expect(item.columnGap).toBe("4px");
     expect(item.fontSize).toBe("12px");
     expect(unselected.borderTopColor).not.toBe(selected.borderTopColor);
+  });
+
+  it("keeps the Matrix guide rail responsive while applying the requested spacing and scale", () => {
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}`);
+    style.dataset.layoutContract = "guide-rail-scale";
+    document.body.innerHTML = `
+      <main class="matrix-guide-screen">
+        <nav class="guide-category-strip"><button class="guide-category-card"><span>01</span>分類</button></nav>
+        <section class="guide-preview"><header><span>01</span><h2>分類</h2></header></section>
+      </main>`;
+
+    const rail = getComputedStyle(document.querySelector(".guide-category-strip")!);
+    const card = getComputedStyle(document.querySelector(".guide-category-card")!);
+    const cardNumber = getComputedStyle(document.querySelector(".guide-category-card > span")!);
+    const previewNumber = getComputedStyle(document.querySelector(".guide-preview header > span")!);
+
+    expect(rail.marginLeft).toBe("4px");
+    expect(rail.marginRight).toBe("4px");
+    expect(rail.scrollPaddingInline).toBe("20px");
+    expect(card.minHeight).toBe("34.32px");
+    expect(card.padding).toBe("6.24px 12.48px");
+    expect(card.fontSize).toBe("18.72px");
+    expect(cardNumber.fontSize).toBe("13.2px");
+    expect(previewNumber.width).toBe("30px");
+    expect(previewNumber.height).toBe("24px");
+    expect(previewNumber.fontSize).toBe("11px");
+  });
+
+  it("uses one compact information-card rhythm for profile category detail pages", () => {
+    const style = mountStyles(readCss("src/feature-pages.css"));
+    style.dataset.layoutContract = "profile-category-details";
+    document.body.innerHTML = `
+      <main class="profile-detail-screen profile-info-screen"><div class="feature-body">
+        <section class="panel detail-card"><h2>標題</h2><div><p>內容</p><ul><li>項目</li></ul></div></section>
+      </div></main>`;
+
+    const card = getComputedStyle(document.querySelector(".detail-card")!);
+    const title = getComputedStyle(document.querySelector(".detail-card h2")!);
+    const paragraph = getComputedStyle(document.querySelector(".detail-card p")!);
+    const list = getComputedStyle(document.querySelector(".detail-card ul")!);
+
+    expect(card.padding).toBe("12px");
+    expect(title.fontSize).toBe("15px");
+    expect(title.marginBottom).toBe("8px");
+    expect(paragraph.lineHeight).toBe("1.65");
+    expect(list.gap).toBe("6px");
   });
 });

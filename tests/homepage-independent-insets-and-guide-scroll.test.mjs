@@ -31,8 +31,8 @@ test("Matrix 指南不在原生慣性滑動期間改寫 scrollLeft", () => {
   assert.match(guideSource, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
 });
 
-test("Matrix 指南卡片放大 20%、數字色固定且舊外框規則已移除", () => {
+test("Matrix 指南卡片放大 30%、數字色固定且舊外框規則已移除", () => {
   assert.match(guideCss, /\.matrix-guide-screen \.guide-category-strip\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
-  assert.match(guideCss, /\.guide-category-card\s*\{[^}]*min-height:\s*26\.4px;[^}]*padding:\s*4\.8px 9\.6px;[^}]*gap:\s*4\.8px;[^}]*border-radius:\s*9\.6px;[^}]*font-size:\s*14\.4px;/s);
+  assert.match(guideCss, /\.guide-category-card\s*\{[^}]*min-height:\s*34\.32px;[^}]*padding:\s*6\.24px 12\.48px;[^}]*gap:\s*6\.24px;[^}]*border-radius:\s*12\.48px;[^}]*font-size:\s*18\.72px;/s);
   assert.match(guideCss, /\.guide-category-card > span\s*\{[^}]*color:\s*#b58322;[^}]*font-size:\s*13\.2px;/s);
 });

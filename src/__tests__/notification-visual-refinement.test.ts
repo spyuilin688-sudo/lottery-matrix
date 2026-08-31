@@ -36,7 +36,7 @@ describe("notification visual refinement", () => {
     const title = getComputedStyle(document.querySelector(".notification-title h2")!);
     const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
     const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
-    const css = readCss("src/notification-visual-refinement.css");
+    const css = readCss("src/feature-page-adjustments.css");
     const source = readCss("src/NotificationsPagePatched.tsx");
 
     expect(title.fontWeight).toBe("600");
@@ -44,7 +44,7 @@ describe("notification visual refinement", () => {
     expect(disable.height).toBe("32px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
-    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*var\(--lottery-neutral-900\)/s);
+    expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient/s);
     expect(css).toMatch(/\.notification-bulk-disable\s*\{[^}]*border:\s*1px solid var\(--lottery-gold-500\)/s);
   });
 

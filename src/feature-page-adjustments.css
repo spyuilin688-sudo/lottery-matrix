@@ -35,8 +35,8 @@
 
 .notifications-screen-v2 .notification-bulk-disable {
   border: 1px solid var(--lottery-gold-500);
-  background: var(--lottery-neutral-900);
-  color: var(--lottery-gold-500);
+  background: linear-gradient(180deg, rgba(192, 139, 30, .22), rgba(192, 139, 30, .12)), var(--lottery-neutral-900);
+  color: #f0d58a;
 }
 
 .notifications-screen-v2 .notification-bulk-actions button:hover {
@@ -156,7 +156,7 @@
   flex-wrap: wrap;
   gap: 2px 4px;
   color: var(--lottery-text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 14px;
   overflow-wrap: anywhere;
 }
@@ -477,8 +477,7 @@
 .matrix-guide-screen .guide-category-strip {
   display: flex;
   max-height: none;
-  margin-top: 12px;
-  margin-bottom: 5px;
+  margin: 12px 4px 5px;
   padding: 4px 0;
   gap: 6px;
   border: 0;
@@ -487,7 +486,7 @@
   box-shadow: none;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-padding-inline: 0;
+  scroll-padding-inline: 20px;
   scroll-snap-type: x proximity;
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
@@ -508,17 +507,17 @@
   box-sizing: border-box;
   flex: 0 0 auto;
   width: max-content;
-  min-height: 26.4px;
-  padding: 4.8px 9.6px;
+  min-height: 34.32px;
+  padding: 6.24px 12.48px;
   grid-template-columns: auto auto;
   align-items: center;
-  gap: 4.8px;
+  gap: 6.24px;
   border: 1px solid rgba(66, 53, 33, .55);
-  border-radius: 9.6px;
+  border-radius: 12.48px;
   background: #061019;
   color: #bdb6aa;
   white-space: nowrap;
-  font-size: 14.4px;
+  font-size: 18.72px;
   font-weight: 700;
   line-height: 1.25;
   text-align: left;

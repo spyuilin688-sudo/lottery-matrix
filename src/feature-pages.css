@@ -1038,7 +1038,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
 .auto-renew-note { margin: 0; padding-top: 2px; color: #9f988e; font-size: 11px; line-height: 1.55; }
 .confirm-payment:not(.branded-explore-action) { width: 100%; min-height: 48px; border: 1px solid #d1a030; border-radius: 10px; background: linear-gradient(180deg, #d9a529, #a96d08); color: #130d03; font-size: 16px; font-weight: 750; }
-.payment-note { margin: -4px 0 0; color: #9f988e; font-size: 11px; text-align: center; }
+.payment-note { margin: 0; color: #9f988e; font-size: 11px; text-align: center; }
 .about-matrix-card { padding: 18px 16px; }
 .about-matrix-card p { margin: 0 0 14px; color: #c9c2b8; font-size: 13px; line-height: 1.85; }
 .about-matrix-card .about-welcome { color: #f0d382; font-size: 17px; font-weight: 650; }
@@ -1447,7 +1447,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 
 .guide-preview { min-height: 132px; margin-top: 12px; padding: 17px; }
 .guide-preview header { display: flex; align-items: center; gap: 10px; }
-.guide-preview header > span { display: grid; width: 33px; height: 26.4px; place-items: center; border: 1px solid #a97b23; border-radius: 8px; color: #e9bc4b; font-size: 11px; }
+.guide-preview header > span { display: grid; width: 30px; height: 24px; place-items: center; border: 1px solid #a97b23; border-radius: 8px; color: #e9bc4b; font-size: 11px; }
 .guide-preview h2 { margin: 0; color: #edcf7a; font-size: 18px; }
 .guide-preview .guide-summary { margin: 15px 0 0; padding-bottom: 10px; border-bottom: 1px solid #342a1d; color: #d4cdc2; font-size: 13px; line-height: 1.75; }
 .guide-detail-list { display: grid; margin-top: 2px; }
@@ -1761,6 +1761,19 @@ opacity: .30; box-shadow: none;
   display: grid;
   gap: 6px;
 }
+.profile-info-screen .detail-card {
+  padding: 12px;
+}
+.profile-info-screen .detail-card h2 {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.profile-info-screen .detail-card p {
+  line-height: 1.65;
+}
+.profile-info-screen .detail-card ul {
+  gap: 6px;
+}
 .profile-screen .panel {
   border-color: rgba(177, 129, 43, .72);
   border-radius: 10px;
@@ -1913,6 +1926,11 @@ opacity: .30; box-shadow: none;
 }
 .pro-plans-screen .feature-body {
   gap: 8px;
+}
+.pro-plans-checkout {
+  display: grid;
+  margin: 0 4px;
+  row-gap: 5px;
 }
 .pro-plans-screen .plan-carousel {
   margin: 0;

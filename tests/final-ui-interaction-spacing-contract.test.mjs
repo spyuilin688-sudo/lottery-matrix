@@ -53,5 +53,5 @@ test("指南複製卡片可透過事件委派選取且修正延遲較溫和", ()
 test("指南章節編號等寬且說明標號縮短", () => {
   assert.match(adjustmentCss, /\.guide-category-card > span\s*\{[^}]*font-family:\s*ui-monospace,/s);
   assert.match(adjustmentCss, /font-variant-numeric:\s*tabular-nums;/);
-  assert.match(featureCss, /\.guide-preview header > span\s*\{[^}]*width:\s*33px;[^}]*height:\s*26\.4px;/s);
+  assert.match(featureCss, /\.guide-preview header > span\s*\{[^}]*width:\s*30px;[^}]*height:\s*24px;[^}]*font-size:\s*11px;/s);
 });
