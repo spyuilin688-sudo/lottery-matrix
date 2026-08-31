@@ -23,10 +23,17 @@ describe('admin compact density', () => {
   });
 
   it('reduces system service card spacing without fixed description height', () => {
-    expect(statusCss).toMatch(/\.statusCards \{[^}]*gap: 10px;/);
-    expect(statusCss).toMatch(/\.statusCard \{[^}]*padding: 12px;/);
-    expect(statusCss).toMatch(/\.statusCard p \{[^}]*margin: 8px 0;/);
+    expect(statusCss).toMatch(/\.statusCards \{[^}]*gap: 8px;/);
+    expect(statusCss).toMatch(/\.statusCard \{[^}]*padding: 10px;/);
+    expect(statusCss).toMatch(/\.statusCard p \{[^}]*margin: 6px 0;/);
     expect(statusCss).not.toMatch(/\.statusCard p \{[^}]*min-height:/);
-    expect(statusCss).toMatch(/\.statusMeta \{[^}]*padding: 6px 0;/);
+    expect(statusCss).toMatch(/\.statusMeta \{[^}]*padding: 5px 0;/);
+  });
+
+  it('uses compact shared action controls and reduced administration spacing', () => {
+    expect(operationsCss).toMatch(/\.compactButton \{ height: 30px;/);
+    expect(operationsCss).toMatch(/\.pagination button \{ min-width: 32px; min-height: 32px; \}/);
+    expect(adminCss).toMatch(/\.content\{padding:16px;/);
+    expect(adminCss).toMatch(/\.actions\{display:flex;gap:6px;/);
   });
 });
