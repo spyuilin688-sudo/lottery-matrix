@@ -5,6 +5,7 @@ import { resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
   resetReadCacheForTests();
   localStorage.clear();
 });
@@ -43,213 +44,106 @@ describe('lottery-api response validation', () => {
   });
 
   it('歷史開獎 items 內缺少 numbers 時拒絕異常格式', async () => {
-    mockJsonResponse({ items: [{ period: '5899', drawDate: '2026/08/14' }] });
+    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(latest))
+      .mockResolvedValueOnce(jsonResponse({ items: [{ period: '5899', drawDate: '2026/08/14' }] }));
     await expect(fetchLotteryHistory('今彩539', 10)).rejects.toThrow('Lottery API invalid response: items[0]');
   });
 
-  it('相同彩種與範圍的歷史資料在一分鐘內共用讀取結果', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ items: [{ period: '115000207', numbers: ['01', '02', '03', '04', '05'] }] }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    );
+  it('相同彩種與範圍的歷史資料在十五分鐘內共用讀取結果', async () => {
+    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(latest))
+      .mockResolvedValueOnce(jsonResponse({ items: [latest] }));
 
     await fetchLotteryHistory('今彩539', 1000);
     await fetchLotteryHistory('今彩539', 1000);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('最新期號在十五分鐘內跨重新初始化使用已儲存資料', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-31T14:00:00Z'));
+    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(latest));
+
+    await fetchLatestLotteryDraw('今彩539');
+    resetReadCacheForTests();
+    await fetchLatestLotteryDraw('今彩539');
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('同星在最新期號未變時跨重整使用已儲存結果', async () => {
+  it('歷史資料在同一期號內跨重新初始化使用已儲存資料', async () => {
+    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const history = { items: [latest] };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(latest))
+      .mockResolvedValueOnce(jsonResponse(history));
+
+    await fetchLatestLotteryDraw('今彩539');
+    await fetchLotteryHistory('今彩539', 1000);
+    resetReadCacheForTests();
+    await fetchLotteryHistory('今彩539', 1000);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('同星使用已保存的歷史資料在前端篩選', async () => {
     const request = {
       lottery: '今彩539' as const,
       numberOrder: '依號碼由小到大排序' as const,
       numbers: ['01', '02'],
       futureOffset: 1,
     };
-    const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
-    const result = {
-      ...request,
-      groups: [{
-        lockedEntry: latest,
-        predictedEntry: { period: '115000208', numbers: ['06', '07', '08', '09', '10'] },
-      }],
+    const history = {
+      items: [
+        { period: '115000208', numbers: ['06', '07', '08', '09', '10'] },
+        { period: '115000207', numbers: ['01', '02', '03', '04', '05'] },
+      ],
     };
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(jsonResponse(latest))
-      .mockResolvedValueOnce(jsonResponse(result));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/latest/')) return jsonResponse(history.items[1]);
+      if (url.includes('/history/')) return jsonResponse(history);
+      return jsonResponse({ ...request, groups: [] });
+    });
 
-    await fetchLatestLotteryDraw(request.lottery);
-    await fetchTongXing(request);
-    resetReadCacheForTests();
-    fetchSpy.mockResolvedValueOnce(jsonResponse(latest));
-
-    await fetchLatestLotteryDraw(request.lottery);
     await expect(fetchTongXing(request)).resolves.toMatchObject({
       groups: [{ lockedEntry: { period: '115207' }, predictedEntry: { period: '115208' } }],
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(fetchSpy.mock.calls.map(([url]) => String(url))).not.toContain(`${LOTTERY_API_BASE}/api/matrix/tongxing`);
   });
 
-  it('號碼對照單在最新期號變更後不使用舊結果', async () => {
+  it('號碼對照單使用已保存的歷史資料在前端篩選', async () => {
     const request = {
       lottery: '今彩539' as const,
       numberOrder: '依號碼由小到大排序' as const,
       historyRange: 1000 as const,
-      numbers: ['01', '02'],
+      numbers: ['01', '10'],
     };
-    const firstLatest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
-    const secondLatest = { period: '115000208', numbers: ['06', '07', '08', '09', '10'] };
-    const firstResult = { ...request, items: [{ ...firstLatest, matchSlots: [1] }] };
-    const secondResult = { ...request, items: [{ ...secondLatest, matchSlots: [2] }] };
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(jsonResponse(firstLatest))
-      .mockResolvedValueOnce(jsonResponse(firstResult));
+    const history = {
+      items: [
+        { period: '115000208', numbers: ['06', '07', '08', '09', '10'] },
+        { period: '115000207', numbers: ['01', '02', '03', '04', '05'] },
+      ],
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/latest/')) return jsonResponse(history.items[0]);
+      if (url.includes('/history/')) return jsonResponse(history);
+      return jsonResponse({ ...request, items: [] });
+    });
 
-    await fetchLatestLotteryDraw(request.lottery);
-    await fetchNumberReference(request);
-    resetReadCacheForTests();
-    fetchSpy
-      .mockResolvedValueOnce(jsonResponse(secondLatest))
-      .mockResolvedValueOnce(jsonResponse(secondResult));
-
-    await fetchLatestLotteryDraw(request.lottery);
     await expect(fetchNumberReference(request)).resolves.toMatchObject({
-      items: [{ period: '115208', matchSlots: [2] }],
+      items: [
+        { period: '115207', matchSlots: [1, 0, 0, 0, 0] },
+        { period: '115208', matchSlots: [0, 0, 0, 0, 2] },
+      ],
     });
-    expect(fetchSpy).toHaveBeenCalledTimes(4);
-  });
-
-  it('同星回傳缺少 groups 時拒絕異常格式', async () => {
-    mockJsonResponse({
-      lottery: '今彩539',
-      numberOrder: '依號碼由小到大排序',
-      numbers: ['01', '02'],
-      futureOffset: 1,
-    });
-
-    await expect(
-      fetchTongXing({
-        lottery: '今彩539',
-        numberOrder: '依號碼由小到大排序',
-        numbers: ['01', '02'],
-        futureOffset: 1,
-      }),
-    ).rejects.toThrow('Lottery API invalid response: groups');
-  });
-
-  it('同星 groups 內缺少鎖定期或預測期時拒絕異常格式', async () => {
-    mockJsonResponse({
-      lottery: '今彩539',
-      numberOrder: '依號碼由小到大排序',
-      numbers: ['01', '02'],
-      futureOffset: 1,
-      groups: [{ lockedEntry: { period: '1', numbers: ['01', '02', '03', '04', '05'] } }],
-    });
-
-    await expect(
-      fetchTongXing({
-        lottery: '今彩539',
-        numberOrder: '依號碼由小到大排序',
-        numbers: ['01', '02'],
-        futureOffset: 1,
-      }),
-    ).rejects.toThrow('Lottery API invalid response: groups[0]');
-  });
-
-  it('同星送出所選彩種、順序、正規化號碼與未來期距並正規化回傳群組', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({
-        lottery: '大樂透',
-        numberOrder: '依實際開獎順序排序',
-        numbers: ['01', '09'],
-        futureOffset: 3,
-        groups: [{
-          lockedEntry: {
-            issue: '114000123',
-            date: '2026-8-3',
-            numbers: ['9', '02', '50'],
-          },
-          predictedEntry: {
-            period: '114000124',
-            drawDate: '2026年8月5日',
-            numbers: [3, '7', '00'],
-            drawOrderNumbers: ['7', '3'],
-          },
-        }],
-      }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      }),
-    );
-    const request = {
-      lottery: '大樂透' as const,
-      numberOrder: '依實際開獎順序排序' as const,
-      numbers: ['01', '09'],
-      futureOffset: 3,
-    };
-
-    const result = await fetchTongXing(request);
-
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchSpy.mock.calls[0];
-    expect(url).toBe(`${LOTTERY_API_BASE}/api/matrix/tongxing`);
-    expect(init?.method).toBe('POST');
-    expect(new Headers(init?.headers).get('content-type')).toBe('application/json');
-    expect(JSON.parse(String(init?.body))).toEqual(request);
-    expect(result.groups[0].lockedEntry).toMatchObject({
-      period: '114123',
-      issue: '114123',
-      drawDate: '2026/08/03',
-      date: '2026/08/03',
-      numbers: ['09', '02'],
-    });
-    expect(result.groups[0].predictedEntry).toMatchObject({
-      period: '114124',
-      issue: '114124',
-      drawDate: '2026/08/05',
-      date: '2026/08/05',
-      numbers: ['03', '07'],
-      drawOrderNumbers: ['07', '03'],
-    });
-  });
-
-  it('號碼對照單回傳缺少 items 時拒絕異常格式', async () => {
-    mockJsonResponse({
-      lottery: '今彩539',
-      numberOrder: '依號碼由小到大排序',
-      historyRange: 1000,
-      numbers: ['01', '02'],
-    });
-
-    await expect(
-      fetchNumberReference({
-        lottery: '今彩539',
-        numberOrder: '依號碼由小到大排序',
-        historyRange: 1000,
-        numbers: ['01', '02'],
-      }),
-    ).rejects.toThrow('Lottery API invalid response: items');
-  });
-
-  it('號碼對照單 items 內缺少開獎號碼時拒絕異常格式', async () => {
-    mockJsonResponse({
-      lottery: '今彩539',
-      numberOrder: '依號碼由小到大排序',
-      historyRange: 1000,
-      numbers: ['01', '02'],
-      items: [{ period: '1', matchSlots: [] }],
-    });
-
-    await expect(
-      fetchNumberReference({
-        lottery: '今彩539',
-        numberOrder: '依號碼由小到大排序',
-        historyRange: 1000,
-        numbers: ['01', '02'],
-      }),
-    ).rejects.toThrow('Lottery API invalid response: items[0]');
+    expect(fetchSpy.mock.calls.map(([url]) => String(url))).not.toContain(`${LOTTERY_API_BASE}/api/matrix/number-reference`);
   });
 
   it('六合彩最新開獎的獨立特別號會併入第七顆', async () => {
@@ -268,20 +162,16 @@ describe('lottery-api response validation', () => {
   });
 
   it('號碼對照單的獨立特別號會保留在全部號碼順序欄位', async () => {
-    mockJsonResponse({
-      lottery: '大樂透',
-      numberOrder: '依實際開獎順序排序',
-      historyRange: 1000,
-      numbers: [],
-      items: [{
-        period: '115078',
-        drawDate: '2026/08/11',
-        numbers: ['21', '18', '07', '44', '13', '38'],
-        sortedNumbers: ['07', '13', '18', '21', '38', '44'],
-        drawOrderNumbers: ['21', '18', '07', '44', '13', '38'],
-        specialNumber: '03',
-        matchSlots: [],
-      }],
+    const draw = {
+      period: '115078',
+      drawDate: '2026/08/11',
+      numbers: ['21', '18', '07', '44', '13', '38'],
+      sortedNumbers: ['07', '13', '18', '21', '38', '44'],
+      drawOrderNumbers: ['21', '18', '07', '44', '13', '38'],
+      specialNumber: '03',
+    };
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      return jsonResponse(String(input).includes('/latest/') ? draw : { items: [draw] });
     });
 
     const result = await fetchNumberReference({
