@@ -1,4 +1,4 @@
-name: Matrix scheduled analysis
+name: Matrix scheduled analysis v8 verification
 
 on:
   workflow_dispatch:
