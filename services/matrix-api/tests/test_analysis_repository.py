@@ -447,7 +447,7 @@ def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None
         "storage": "chunks", "schemaVersion": 1, "chunkCount": 2,
         "cursor": 20, "total": 20, "itemCount": 2,
     })
-    for kind in ("tianyan", "tiangong", "status"):
+    for kind in ("tianyan", "status"):
         repository.save_artifact("今彩539", "115000205", "v1", kind, {"kind": kind})
     repository.complete_run("今彩539", "115000205", "v1", "2026-08-24T10:01:00+00:00")
 
@@ -502,7 +502,7 @@ def test_supabase_chunk_reads_use_keyset_pagination_to_avoid_statement_timeout()
     ]
 
     chunks = SupabaseAnalysisRepository(fake_client).read_artifact_chunks(
-        "今彩539", "115000210", "v6", "tiangong",
+        "今彩539", "115000210", "v6", "explore",
     )
 
     assert [chunk["chunk_index"] for chunk in chunks] == [0, 1, 2]
@@ -539,7 +539,7 @@ def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read()
     ]
 
     count = StreamingOnlyRepository(fake_client).summarize_artifact(
-        "今彩539", "115000210", "v6", "tiangong", 3,
+        "今彩539", "115000210", "v6", "explore", 3,
     )
 
     assert count == 2
