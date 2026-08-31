@@ -482,9 +482,10 @@
   display: flex;
   max-height: none;
   margin: 12px 4px 5px;
-  padding: 4px 0;
+  padding: 2px 0;
   gap: 6px;
-  border: 0;
+  border-top: 1px solid rgba(201, 149, 43, .62);
+  border-bottom: 1px solid rgba(201, 149, 43, .62);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
