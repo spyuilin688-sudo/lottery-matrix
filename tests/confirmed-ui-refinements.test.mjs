@@ -90,7 +90,7 @@ test("首頁開獎資訊卡維持獨立 12px 外距且高度約縮 10%", () => {
 
 test("我的與通知內容採較緊密比例，通知右側動作固定欄對齊", () => {
   assert.match(feature, /\.profile-card\s*\{[^}]*grid-template-columns:\s*56px minmax\(0, 1fr\) auto;[^}]*gap:\s*8px;/s);
-  assert.match(notification, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*12px;/s);
+  assert.match(notification, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s);
 });
 
 test("歷史標題卡的既有定位仍是頁面共同比照來源", () => {

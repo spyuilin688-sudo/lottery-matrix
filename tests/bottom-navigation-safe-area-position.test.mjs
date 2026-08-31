@@ -39,7 +39,7 @@ test("所有非首頁子頁共用正式底部安全距離加 8px", () => {
 });
 
 test("通知頁維持 20px 左右間距並保留正式底部安全距離", () => {
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });
 

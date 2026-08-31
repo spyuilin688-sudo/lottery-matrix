@@ -113,15 +113,15 @@ function readPngAlphaBounds(path) {
 }
 
 test('notification page follows the current compact responsive layout specification', () => {
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding:\s*0 20px calc\(var\(--layout-bottom-nav-clearance\) \+ 12px\);/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*8px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*12px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*column-gap:\s*6px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px;/s);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*border:/);
   assert.doesNotMatch(featureCss, /\.notification-icon \{[^}]*box-shadow:/);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*64px 38px;[^}]*gap:\s*12px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*64px;[^}]*height:\s*20px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*56px;[^}]*height:\s*20px;/s);
   assert.match(featureCss, /\.notification-row h2 \{[^}]*color: #F2F2F2;[^}]*font-size: 17px;[^}]*font-weight: 700;[^}]*line-height: 23px;[^}]*letter-spacing: 0;/);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-title h2 em\s*\{[^}]*height:\s*12px;[^}]*padding:\s*0 3\.5px;[^}]*border-radius:\s*4px;[^}]*font-size:\s*7px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-group,[\s\S]*?border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius:\s*12px;[^}]*background:\s*#020c12;/s);
