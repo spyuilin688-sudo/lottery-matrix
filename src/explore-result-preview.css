@@ -106,7 +106,7 @@
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .result-title .result-count .explore-result-count-number {
-  color: #58d3e6;
+  color: #a7d8ea;
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .road-results .explore-result-row > .explore-result-column-number {
@@ -289,18 +289,24 @@
 }
 
 .explore-validation-summary-card {
+  box-sizing: border-box;
   position: relative;
   margin: 0;
+  padding-top: 16px;
+  border: 1px solid #e6b76a;
+  border-radius: 8px;
+  background: rgba(10, 14, 24, .92);
+  overflow: hidden;
 }
 
 .explore-result-preview-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   z-index: 1;
-  top: -7px;
-  right: 10px;
+  top: 2px;
+  right: 2px;
   display: inline-flex;
   width: max-content;
-  max-width: calc(100% - 20px);
+  max-width: calc(100% - 4px);
   height: auto;
   padding: 1px 4px;
   border: 1px solid rgba(223, 176, 68, .68);
@@ -317,8 +323,8 @@
   min-height: 0;
   margin: 0;
   padding: 6px 8px;
-  border: 1px solid rgba(223, 176, 68, .42);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   color: #f2f5f8;
   background: rgba(10, 14, 24, .92);
   font-size: var(--explore-validation-summary-font-size);
@@ -368,6 +374,7 @@
 
 .explore-validation-issues {
   margin-right: 6px;
+  border-radius: 3px;
   background: rgba(8, 15, 27, .82);
 }
 
@@ -484,13 +491,19 @@
   display: grid;
   place-items: center;
   min-width: 0;
-  border: 1px solid #b49be5;
+  border: 1px solid #e6b76a;
   border-radius: 3px;
-  color: #b49be5;
-  background: rgba(180, 155, 229, .14);
+  color: #e6b76a;
+  background: rgba(230, 183, 106, .14);
   font-style: normal;
   text-align: center;
   white-space: nowrap;
+}
+
+.explore-validation-group[data-wide-numbers="false"] .explore-validation-numbers {
+  justify-content: center;
+  gap: clamp(4px, 1.5vw, 6px);
+  padding-inline: 6px;
 }
 
 .explore-validation-formulas {
