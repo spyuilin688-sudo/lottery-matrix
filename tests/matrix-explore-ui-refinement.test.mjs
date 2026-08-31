@@ -65,9 +65,19 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.doesNotMatch(css, /zoom\s*:/);
 });
 
-test("Matrix Explore action details keep the approved compact presentation", () => {
-  assert.match(featureSource, /className="segmented-static" data-selected="true">本日 \(最新\)<\/span>/);
-  assert.doesNotMatch(featureSource, /昨日 \(上1期\)|前日 \(上2期\)/);
+test("Matrix Explore restores the three original date selections and keeps them responsive", () => {
+  assert.match(featureSource, /type ExploreDate = "本日 \(最新\)" \| "昨日 \(上1期\)" \| "前日 \(上2期\)";/);
+  assert.match(featureSource, /\["本日 \(最新\)", "昨日 \(上1期\)", "前日 \(上2期\)"\] as const\)\.map/);
+  assert.match(featureSource, /exploreDateOffset = exploreDate === "前日 \(上2期\)" \? 2 : exploreDate === "昨日 \(上1期\)" \? 1 : 0/);
+  assert.match(featureSource, /fetchTianyanList\(\{\s*lottery,\s*exploreDateOffset,\s*selectedStreaks: nextFilters,\s*\}\)/s);
+  assert.match(featureSource, /exploreDateOffset,/);
+
+  const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher");
+  assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
+  assert.match(switcher, /opacity:\s*\.96/);
+  const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher button");
+  assert.match(switcherButton, /border:\s*1px solid var\(--select-tech-border\)/);
+  assert.match(switcherButton, /clip-path:\s*polygon/);
 
   assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*white-space:\s*nowrap;/s);
 

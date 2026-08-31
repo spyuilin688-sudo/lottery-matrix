@@ -45,12 +45,38 @@
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
-  width: 2.34rem;
-  height: 2.34rem;
+  --matrix-switcher-size: calc(2.34rem * .85);
+  --matrix-switcher-cut: clamp(3px, 1vw, 5px);
+  width: var(--matrix-switcher-size);
+  height: var(--matrix-switcher-size);
+  opacity: .96;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {
-  opacity: 1;
+  box-sizing: border-box;
+  width: var(--matrix-switcher-size);
+  height: var(--matrix-switcher-size);
+  min-height: var(--matrix-switcher-size);
+  padding: 1px;
+  flex: 0 0 var(--matrix-switcher-size);
+  border: 1px solid var(--select-tech-border);
+  border-radius: 0;
+  background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98));
+  clip-path: polygon(
+    var(--matrix-switcher-cut) 0,
+    calc(100% - var(--matrix-switcher-cut)) 0,
+    100% var(--matrix-switcher-cut),
+    100% calc(100% - var(--matrix-switcher-cut)),
+    calc(100% - var(--matrix-switcher-cut)) 100%,
+    var(--matrix-switcher-cut) 100%,
+    0 calc(100% - var(--matrix-switcher-cut)),
+    0 var(--matrix-switcher-cut)
+  );
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher img {
+  clip-path: inherit;
 }
 
 .matrix-explore-main-screen .explore-settings,

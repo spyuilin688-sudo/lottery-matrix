@@ -94,7 +94,7 @@ export type ExploreApiRow = {
   algorithmType: '加減' | '合值' | '拖牌';
   numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
-  exploreDateOffset: 0;
+  exploreDateOffset: 0 | 1 | 2;
   ruleCount: 1 | 2;
   referenceOffset?: number;
   referencePosition?: number;
@@ -104,7 +104,7 @@ export type ExploreListRequest = {
   lottery: NumberBallLottery;
   numberOrder: MatrixNumberOrder;
   explorePeriods: 2 | 7 | 13;
-  exploreDateOffset: 0;
+  exploreDateOffset: 0 | 1 | 2;
   exploreRange: '標準範圍' | '完整範圍';
   ruleCount: 1 | 2;
   roadTypes: Array<'加減' | '合值' | '拖牌'>;
@@ -357,6 +357,7 @@ export function fetchExploreValidation(
 export function fetchTianyanList(request: {
   lottery: NumberBallLottery;
   drawPeriod?: string;
+  exploreDateOffset?: 0 | 1 | 2;
   selectedStreaks: string[];
 }) {
   return cachedMatrixResultRpc<TianyanListResponse>('matrix_tianyan_list', request);

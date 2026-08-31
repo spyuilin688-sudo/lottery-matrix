@@ -1923,7 +1923,7 @@ opacity: .30; box-shadow: none;
   color: #b98a31;
 }
 .pro-plans-screen .feature-body {
-  gap: 8px;
+  gap: 6px;
 }
 .pro-plans-checkout {
   display: grid;
@@ -1932,7 +1932,7 @@ opacity: .30; box-shadow: none;
 }
 .pro-plans-screen .plan-carousel {
   margin: 0;
-  padding: 0 0 4px;
+  padding: 0;
 }
 .pro-plans-screen .plan-card {
   flex-basis: 100%;

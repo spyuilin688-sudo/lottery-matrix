@@ -33,6 +33,12 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
   assert.match(featureCss, /\.reference-query-panel \.reference-search input,\s*\.reference-query-panel \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s);
 });
 
+test("管理訂閱卡上方與下方維持指定間距", () => {
+  assert.match(featureCss, /\.pro-plans-screen \.feature-body\s*\{[^}]*gap:\s*6px;/s);
+  assert.match(featureCss, /\.pro-plans-screen \.plan-carousel\s*\{[^}]*padding:\s*0;/s);
+  assert.match(featureCss, /\.pro-plans-checkout\s*\{[^}]*row-gap:\s*5px;/s);
+});
+
 test("所有非首頁頁面在底部導覽淨空之外保留 8px", () => {
   assert.match(featureCss, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
 });
