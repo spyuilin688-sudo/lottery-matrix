@@ -6,8 +6,6 @@
   --number-font-size: 23px;
   --number-x: 0px;
   --number-y: 0px;
-  --number-optical-x: 0px;
-  --number-optical-y: 0px;
   --underline-width: 20px;
   --underline-height: 1px;
   --underline-y: 1px;
@@ -53,74 +51,16 @@
 .number-ball-component[data-lottery="六合彩"][data-tone="red"] {
   --number-ball-asset-x: -0.292%;
   --number-ball-asset-y: 0.563%;
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
 }
 
 .number-ball-component[data-lottery="六合彩"][data-tone="green"] {
   --number-ball-asset-x: -0.104%;
   --number-ball-asset-y: 1.813%;
-  --number-optical-y: -.5px;
 }
 
 .number-ball-component[data-lottery="六合彩"][data-tone="blue"] {
   --number-ball-asset-x: 2.375%;
   --number-ball-asset-y: -0.771%;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="15"] {
-  --number-optical-x: -.75px;
-  --number-optical-y: -.5px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="03"] {
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="10"] {
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="14"] {
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="green"][data-number="16"] {
-  --number-optical-x: -.75px;
-  --number-optical-y: -.75px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="red"][data-number="01"] {
-  --number-optical-x: 0px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="red"][data-number="02"] {
-  --number-optical-x: 0px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="green"][data-number="17"] {
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="36"] {
-  --number-optical-x: -.25px;
-  --number-optical-y: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="green"][data-number="38"] {
-  --number-optical-x: -.25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="blue"][data-number="41"] {
-  --number-optical-x: .25px;
-}
-
-.number-ball-component[data-lottery="六合彩"][data-tone="red"][data-number="46"] {
-  --number-optical-y: -.5px;
 }
 
 .number-ball-component[data-lottery="大樂透"] {
@@ -158,7 +98,7 @@
   min-width: 0;
   font-weight: 900;
   font-feature-settings: "tnum" 1;
-  transform: translate(-50%, -50%) translate(var(--number-optical-x), var(--number-optical-y));
+  transform: translate(-50%, -50%);
 }
 
 .number-ball-value::after {
