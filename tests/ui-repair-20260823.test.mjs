@@ -57,7 +57,7 @@ test('quick interaction keeps primary click and uses homepage-only double-click 
   assert.match(bottomNav, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;/);
   assert.match(bottomNav, /showQuickSettings && onQuickConfigure \? \(/);
   assert.match(bottomNav, /handleQuickSettingsClick/);
-  assert.match(bottomNav, /useDoubleClickAction/);
+  assert.match(bottomNav, /useDoubleClickAction<HTMLButtonElement>/);
   assert.match(doubleClickAction, /event\.detail === 0/);
   assert.doesNotMatch(bottomNav, /QUICK_LONG_PRESS_MS|beginQuickPress|finishQuickPress|cancelQuickPress|onPointerDown|onPointerUp|onPointerCancel/);
   assert.doesNotMatch(adjustments, /bottom-navigation-item\[data-quick-gesture="true"\]/);
