@@ -1,5 +1,5 @@
-import { useEffect, useRef, type MouseEvent } from "react";
 import { GearIcon } from "@radix-ui/react-icons";
+import { useDoubleClickAction } from "./useDoubleClickAction";
 
 export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
 export type BottomNavigationTarget = "home" | "notifications" | "profile";
@@ -27,7 +27,7 @@ const NAVIGATION_ARTWORK: Record<BottomNavigationLabel, string> = {
   "我的": "/assets/lottery/functions/matrixWW4.png",
 };
 
-const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;
+export const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;
 
 export function BottomNavigation({
   active = "首頁",
@@ -37,34 +37,10 @@ export function BottomNavigation({
   onQuickConfigure,
   showQuickSettings = false,
 }: BottomNavigationProps) {
-  const quickSettingsClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearQuickSettingsClickTimer = () => {
-    if (quickSettingsClickTimer.current !== null) {
-      clearTimeout(quickSettingsClickTimer.current);
-      quickSettingsClickTimer.current = null;
-    }
-  };
-
-  useEffect(() => clearQuickSettingsClickTimer, []);
-
-  const handleQuickSettingsClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (event.detail === 0) {
-      clearQuickSettingsClickTimer();
-      onQuickConfigure?.();
-      return;
-    }
-
-    if (quickSettingsClickTimer.current !== null) {
-      clearQuickSettingsClickTimer();
-      onQuickConfigure?.();
-      return;
-    }
-
-    quickSettingsClickTimer.current = setTimeout(() => {
-      quickSettingsClickTimer.current = null;
-    }, QUICK_SETTINGS_DOUBLE_TAP_MS);
-  };
+  const handleQuickSettingsClick = useDoubleClickAction<HTMLButtonElement>(
+    onQuickConfigure,
+    QUICK_SETTINGS_DOUBLE_TAP_MS,
+  );
 
   const displayedActive = quickActive ? "快捷" : active;
   return (

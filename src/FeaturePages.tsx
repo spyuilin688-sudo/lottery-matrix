@@ -19,7 +19,7 @@ import {
   TrashIcon,
 } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId, type DrawOrder } from "./Prototype";
-import { BottomNavigation } from "./BottomNavigation";
+import { BottomNavigation, QUICK_SETTINGS_DOUBLE_TAP_MS } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import {
   fetchLotteryHistory,
@@ -86,6 +86,7 @@ import { getSupabaseClient } from "./lib/supabase";
 import { downloadMatrixTicket } from "./matrix-ticket-download";
 import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
+import { useDoubleClickAction } from "./useDoubleClickAction";
 
 export type ScreenId =
   | "home"
@@ -4154,6 +4155,10 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   const [open, setOpen] = useState<MatrixStatusResponse['summary']['status'] | "">("");
   const [result, setResult] = useState<MatrixStatusResponse | null>(null);
   const [requestError, setRequestError] = useState("");
+  const handleStatusSettingsClick = useDoubleClickAction<HTMLButtonElement>(
+    () => onNavigate("status-settings"),
+    QUICK_SETTINGS_DOUBLE_TAP_MS,
+  );
   const statuses = [
     ["臨界", "CRITICAL", "極為罕見版路狀態", "orange"],
     ["共振", "RESONANCE", "具備強烈共振效應", "purple"],
@@ -4210,7 +4215,7 @@ export function MatrixStatusPage({ onNavigate }: { onNavigate: Navigate }) {
           </section>
         );})}
       </div>
-      <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件" onClick={() => onNavigate("status-settings")}>
+      <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
         <span className="bottom-navigation-quick-settings-visual">
           <GearIcon aria-hidden="true" />
         </span>
