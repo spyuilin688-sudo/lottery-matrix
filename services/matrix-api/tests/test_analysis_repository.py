@@ -542,7 +542,7 @@ def test_supabase_chunk_summary_processes_pages_without_accumulating_full_read()
         "今彩539", "115000210", "v6", "explore", 3,
     )
 
-    assert count == 2
+    assert count == 3
     assert fake_client.last_ranges == []
     assert fake_client.last_limits == [2, 2]
     assert fake_client.last_gt_filters == [("chunk_index", 1)]
