@@ -84,7 +84,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(screen.getByRole("main", { name: "探索結果區" })).color)
       .toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(screen.getByRole("heading", { name: "探索結果區" })).color)
-      .toBe("rgb(216, 195, 141)");
+      .toBe("rgba(244, 206, 103, 0.84)");
     expect(getComputedStyle(document.querySelector(".road-results article")!).color)
       .toBe("rgb(170, 181, 196)");
     const positionTag = document.querySelector(".road-results .tag");
@@ -125,7 +125,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(main).color).toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(panel!).backgroundImage)
       .toBe("linear-gradient(145deg, rgba(8, 16, 22, 0.96), rgba(2, 8, 13, 0.98))");
-    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(108, 74, 32)");
+    expect(getComputedStyle(panel!).borderTopColor).toBe("rgb(117, 83, 41)");
     expect(getComputedStyle(validation!).borderTopWidth).toBe("0px");
     expect(getComputedStyle(validation!).backgroundColor).toBe("rgba(3, 9, 20, 0.72)");
     expect(getComputedStyle(validation!).boxShadow).toBe("inset 0 1px 0 rgba(102, 169, 255, .18)");
@@ -312,7 +312,7 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*6px 0/s);
     expect(css).toMatch(/\.repeat-stats-heading button\s*\{[^}]*color:\s*#aaa7a2/s);
-    expect(css).toMatch(/\.repeat-stats-heading button\[data-selected="true"\]\s*\{[^}]*color:\s*#d8a93e/s);
+    expect(css).toMatch(/\.repeat-stats-heading button\[data-selected="true"\]\s*\{[^}]*color:\s*#f4ce67/s);
     expect(css).toMatch(/\.matrix-explore-consecutive-filter-options\s*\{[^}]*padding:\s*3px 0[^}]*border-top:[^}]*border-bottom:/s);
   });
 
@@ -378,8 +378,8 @@ describe("production member shell", () => {
     const tableHead = document.querySelector(".road-results-head");
     const tableHeadLabel = document.querySelector(".road-results-head > span");
 
-    expect(getComputedStyle(filterButton).borderTopColor).toBe("rgba(212, 165, 47, 0.72)");
-    expect(getComputedStyle(filterButton).color).toBe("rgb(216, 169, 62)");
+    expect(getComputedStyle(filterButton).borderTopColor).toBe("rgba(117, 83, 41, 0.62)");
+    expect(getComputedStyle(filterButton).color).toBe("rgb(170, 167, 162)");
     expect(resultCount).not.toBeNull();
     expect(resultNumber).not.toBeNull();
     expect(getComputedStyle(resultCount!).color).toBe("rgb(167, 216, 234)");
@@ -477,7 +477,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-button\s*\{[^}]*width:\s*max-content[^}]*height:\s*21\.2px[^}]*font-size:\s*11px/s);
     expect(css).toMatch(/\.explore-consecutive-filter-button::before\s*\{[^}]*width:\s*max\(100%,\s*44px\)[^}]*height:\s*44px/s);
     expect(css).toMatch(/\.explore-result-preview-screen\.matrix-explore-main-screen \.result-title\s*\{[^}]*margin-bottom:\s*6px/s);
-    expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*0 0 6px[^}]*padding:\s*4px 0[^}]*border-top:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-bottom:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*animation:\s*explore-filter-options-expand \.18s ease-out/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*0 0 6px[^}]*padding:\s*4px 0[^}]*border-top:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.68\)[^}]*border-bottom:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.68\)[^}]*animation:\s*explore-filter-options-expand \.18s ease-out/s);
     expect(css).toMatch(/@keyframes explore-filter-options-expand[\s\S]*?from\s*\{[^}]*opacity:\s*0[^}]*transform:\s*translateY\(-2px\) scaleY\(\.96\)[\s\S]*?to\s*\{[^}]*opacity:\s*1[^}]*transform:\s*translateY\(0\) scaleY\(1\)/);
     expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*\.explore-consecutive-filter-options\s*\{[^}]*animation:\s*none/s);
     expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*6px 0 0/s);
@@ -495,8 +495,9 @@ describe("production member shell", () => {
   it("matches the explore settings option style inside the isolated consecutive filter", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*21px[^}]*min-height:\s*21px[^}]*border:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
-    expect(css).toMatch(/\.explore-consecutive-filter-option\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*#d4a52f[^}]*color:\s*#f1c75a[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.1\)/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*21px[^}]*min-height:\s*21px[^}]*border:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.62\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-option\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*#f4ce67[^}]*color:\s*#f4ce67[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.1\)/s);
+    expect(css).toMatch(/\.explore-result-preview-screen \.road-results article \+ article\s*\{[^}]*border-top:\s*0;/s);
   });
 
   it("keeps validation number states square and gives the prediction the transparent gold-orange reference surface", () => {

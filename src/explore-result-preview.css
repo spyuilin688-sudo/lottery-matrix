@@ -33,7 +33,7 @@
   margin: 0;
   align-items: center;
   gap: 9px;
-  color: #d8c38d;
+  color: rgba(244, 206, 103, .84);
   font-size: 16px;
   font-weight: 500;
   letter-spacing: .5px;
@@ -43,8 +43,8 @@
   width: 4px;
   height: 20px;
   border-radius: 4px;
-  background: #d8c38d;
-  box-shadow: none;
+  background: rgba(244, 206, 103, .84);
+  box-shadow: 0 0 8px rgba(244, 206, 103, .24);
 }
 
 .explore-result-preview-screen .road-results article {
@@ -58,7 +58,7 @@
 }
 
 .explore-result-preview-screen .road-results .tag {
-  border: 1px solid #a87712;
+  border: 1px solid rgba(117, 83, 41, .62);
   color: #d8c38d;
   text-align: center;
   word-spacing: 2px;
@@ -81,14 +81,14 @@
 
 .explore-result-preview-screen.matrix-explore-main-screen .result-panel {
   margin-top: 0;
-  border: 1px solid #6c4a20;
+  border: 1px solid #755329;
   background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98));
-  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
+  box-shadow: none;
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .road-results-head {
   padding: 8px 0 0;
-  color: #d8c38d;
+  color: rgba(244, 206, 103, .84);
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .road-results-head > span {
@@ -102,7 +102,7 @@
 }
 
 .explore-result-preview-screen .road-results strong {
-  color: #d8c38d;
+  color: #f4ce67;
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .result-title .result-count .explore-result-count-number {
@@ -142,9 +142,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 1px solid rgba(212, 165, 47, .72);
+  border: 1px solid rgba(117, 83, 41, .62);
   border-radius: 8px;
-  color: #d8a93e;
+  color: #aaa7a2;
   background: #071018;
   font: inherit;
   font-size: 11px;
@@ -179,8 +179,8 @@
   margin: 0 0 6px;
   padding: 4px 0;
   gap: 3px;
-  border-top: 1px solid rgba(120, 100, 70, .65);
-  border-bottom: 1px solid rgba(120, 100, 70, .65);
+  border-top: 1px solid rgba(117, 83, 41, .68);
+  border-bottom: 1px solid rgba(117, 83, 41, .68);
   transform-origin: top center;
   animation: explore-filter-options-expand .18s ease-out;
 }
@@ -192,7 +192,7 @@
   min-height: 21px;
   padding: 2px 3px;
   flex: 1 1 0;
-  border: 1px solid rgba(120, 100, 70, .65);
+  border: 1px solid rgba(117, 83, 41, .62);
   border-radius: 10px;
   color: #b9b5ae;
   background: rgba(3, 11, 17, .35);
@@ -204,8 +204,8 @@
 }
 
 .explore-consecutive-filter-option[aria-pressed="true"] {
-  border-color: #d4a52f;
-  color: #f1c75a;
+  border-color: #f4ce67;
+  color: #f4ce67;
   background: rgba(212, 165, 47, .1);
   box-shadow: 0 0 3px rgba(212, 165, 47, .16);
 }
@@ -268,7 +268,7 @@
 }
 
 .explore-result-preview-screen .road-results article + article {
-  border-top: 1px solid #393731;
+  border-top: 0;
 }
 
 .explore-validation-card {

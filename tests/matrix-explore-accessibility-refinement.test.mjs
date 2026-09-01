@@ -15,8 +15,8 @@ test("探索結果欄位按響應式比例分配，連準次數與版路類型�
 });
 
 test("探索結果分隔線使用降低亮度的透明色", () => {
-  assert.match(css, /\.road-results-head\s*\{[^}]*border-bottom:\s*1px solid rgba\(117, 83, 41, \.45\)/s);
-  assert.match(css, /\.road-result-row\s*\{[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.42\)/s);
+  assert.match(css, /\.road-results-head\s*\{[^}]*border-bottom:\s*1px solid rgba\(117, 83, 41, \.48\)/s);
+  assert.match(css, /\.road-result-row\s*\{[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.28\)/s);
 });
 
 test("重複統計保留指定層級，免責文字恢復原響應式規則", () => {

@@ -33,20 +33,29 @@ function exploreFixture() {
         <section class="panel repeat-stats-panel">
           <header class="repeat-stats-heading">
             <h2 class="section-title"><span></span>重複號碼統計</h2>
-            <button>同碼</button>
+            <button data-selected="false">同碼</button>
             <span>點選進行版路篩選</span>
           </header>
-          <div class="result-summary"><div><b>01</b><small>2次</small></div></div>
-          <button class="consecutive-filter-button">連準篩選</button>
+          <div class="result-summary">
+            <button data-selected="true"><b>01</b><small>2次</small></button>
+            <button data-selected="false"><b>02</b><small>1次</small></button>
+          </div>
         </section>
         <p class="explore-result-disclaimer">探索結果依歷史資料與所選條件產生</p>
         <section class="panel result-panel">
           <header class="result-title">
             <h2 class="section-title"><span></span>探索結果區</h2>
+            <button class="consecutive-filter-button">連準篩選</button>
             <span class="result-count">探索到 <span class="numeric-text">123</span> 組符合條件版路</span>
           </header>
+          <div class="explore-consecutive-filter-options matrix-explore-consecutive-filter-options">
+            <button class="explore-consecutive-filter-option" aria-pressed="true">準5進6</button>
+            <button class="explore-consecutive-filter-option" aria-pressed="false">準6進7</button>
+          </div>
           <div class="road-results-head"><span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>版路類型</span></div>
-          <div class="road-result-row"><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div>
+          <div class="road-results">
+            <article><div class="road-result-row"><span class="tag">順球2</span><strong>08</strong><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div></article>
+          </div>
           <section class="road-validation-process">
             <header class="validation-summary-card">
               <span>開 <i class="validation-summary-primary">25</i> 第 <i class="validation-summary-position">4</i> 顆｜上 <i class="validation-summary-lookback">2</i> 期｜第 <i class="validation-summary-position">3</i> 顆｜<i class="validation-summary-formula">+14.24</i>｜下 <i class="validation-summary-future">2</i> 期開</span>
@@ -176,6 +185,38 @@ test("重複統計卡片與控制項使用指定比例", () => {
   assert.equal(style(".result-summary b").fontWeight, "800");
 });
 
+test("重複號碼統計與探索結果區使用六層金色與分隔線層級", () => {
+  const { style } = exploreFixture();
+  const selectedSummary = style('.result-summary > button[data-selected="true"]');
+  const normalSummary = style('.result-summary > button[data-selected="false"]');
+  const selectedFilter = style('.explore-consecutive-filter-option[aria-pressed="true"]');
+  const normalFilter = style('.explore-consecutive-filter-option[aria-pressed="false"]');
+
+  assert.equal(style(".repeat-stats-panel").borderTopColor, "rgb(117, 83, 41)");
+  assert.equal(style(".result-panel").borderTopColor, "rgb(117, 83, 41)");
+  assert.equal(style(".repeat-stats-panel").boxShadow, "none");
+  assert.equal(style(".result-panel").boxShadow, "none");
+  assert.equal(style(".repeat-stats-heading .section-title").color, "rgba(244, 206, 103, 0.84)");
+  assert.equal(style(".result-title .section-title").color, "rgba(244, 206, 103, 0.84)");
+  assert.equal(style(".road-results-head").color, "rgba(244, 206, 103, 0.84)");
+  assert.equal(style(".result-summary b").color, "rgb(244, 206, 103)");
+  assert.equal(style(".road-result-row > strong").color, "rgb(244, 206, 103)");
+  assert.equal(selectedSummary.borderTopColor, "rgb(244, 206, 103)");
+  assert.equal(selectedFilter.borderTopColor, "rgb(244, 206, 103)");
+  assert.equal(normalSummary.borderTopColor, "rgba(117, 83, 41, 0.62)");
+  assert.equal(normalFilter.borderTopColor, "rgba(117, 83, 41, 0.62)");
+  assert.equal(style(".road-results .tag").borderTopColor, "rgba(117, 83, 41, 0.62)");
+  assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopColor, "rgba(117, 83, 41, 0.68)");
+  assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomColor, "rgba(117, 83, 41, 0.68)");
+  assert.equal(style(".road-results-head").borderBottomColor, "rgba(117, 83, 41, 0.48)");
+  assert.equal(style(".road-result-row").borderBottomColor, "rgba(90, 87, 80, 0.28)");
+  assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopWidth, "1px");
+  assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomWidth, "1px");
+  assert.equal(style(".road-results-head").borderBottomWidth, "1px");
+  assert.equal(style(".road-result-row").borderBottomWidth, "1px");
+  assert.equal(style(".road-results article").borderTopWidth, "0px");
+});
+
 test("結果標語與右上角組數維持單列清楚層級", () => {
   const { style } = exploreFixture();
   const disclaimer = style(".explore-result-disclaimer");
@@ -185,17 +226,19 @@ test("結果標語與右上角組數維持單列清楚層級", () => {
   assert.match(exploreCss, /\.matrix-explore-main-screen \.explore-result-disclaimer\s*\{[^}]*font-size:\s*clamp\(7px, 2vw, 8px\);/s);
   assert.equal(disclaimer.fontWeight, "700");
   assert.equal(disclaimer.whiteSpace, "nowrap");
+  assert.equal(disclaimer.paddingLeft, "6px");
+  assert.equal(disclaimer.paddingRight, "6px");
   assert.equal(count.fontSize, "10px");
   assert.equal(count.paddingRight, "8px");
   assert.equal(number.fontSize, "12px");
   assert.equal(number.color, "rgb(53, 191, 240)");
 });
 
-test("六個結果標題與版路結果之間使用與外框相同的分隔線", () => {
+test("六個結果標題與版路結果之間使用 48% 表頭分隔線", () => {
   const { style } = exploreFixture();
   const head = style(".road-results-head");
   assert.equal(head.borderBottomWidth, "1px");
-  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.45)");
+  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.48)");
 });
 
 test("展開驗證內容使用 4px 左右內距，左側期數為預設字型 12px 字重 800", () => {

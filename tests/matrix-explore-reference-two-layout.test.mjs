@@ -28,11 +28,11 @@ test("Matrix Explore lower result sections match reference image two", () => {
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.42\);/s,
+    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.28\);/s,
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.consecutive-filter-button,\s*\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(212, 165, 47, \.72\);[^}]*background:\s*transparent;[^}]*color:\s*#d8a93e;/s,
+    /\.matrix-explore-main-screen \.consecutive-filter-button,\s*\.matrix-explore-main-screen \.repeat-stats-heading button\s*\{[^}]*border:\s*1px solid rgba\(117, 83, 41, \.62\);[^}]*background:\s*transparent;[^}]*color:\s*#aaa7a2;/s,
   );
   assert.match(
     layout,
