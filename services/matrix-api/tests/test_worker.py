@@ -39,6 +39,34 @@ class Source:
         return rows if limit is None else rows[:limit]
 
 
+class AlgorithmHistorySource(Source):
+    def __init__(self, *, complete: bool = True) -> None:
+        super().__init__()
+        self.complete = complete
+
+    def fetch_algorithm_history(self, lottery: str) -> list[dict]:
+        self.events.append("algorithm-history")
+        count = 5 if lottery in {"今彩539", "天天樂"} else 7
+        rows = [
+            {
+                **self._draw(period, count),
+                "sortedNumbers": self._draw(period, count)["numbers"],
+                "drawOrderNumbers": list(reversed(self._draw(period, count)["numbers"])),
+            }
+            for period in range(220, 100, -1)
+        ]
+        if not self.complete:
+            rows[40]["drawOrderNumbers"] = None
+        if lottery == "今彩539":
+            anchor = self._draw(96000001, count, "2007-01-01")
+            rows.append({
+                **anchor,
+                "sortedNumbers": anchor["numbers"],
+                "drawOrderNumbers": list(reversed(anchor["numbers"])),
+            })
+        return rows
+
+
 class ScheduledSource(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
@@ -153,6 +181,35 @@ def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None
 
     assert result["status"] == "complete"
     assert history_lengths == [120, 120, 120, 120]
+
+
+def test_production_worker_repairs_actual_draw_order_before_algorithms(monkeypatch) -> None:
+    repository = TrackingRepository()
+    source = AlgorithmHistorySource()
+    calls: list[str] = []
+    monkeypatch.setattr(worker_module, "create_artifact_builders", lambda: _builders(calls))
+
+    result = run_worker("今彩539", repository, source)
+
+    assert result["status"] == "complete"
+    assert source.events == ["history-all", "latest", "algorithm-history"]
+    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert all(
+        len(draw["drawOrderNumbers"]) == 5
+        for draw in repository.list_draws("今彩539", None)
+    )
+
+
+def test_production_worker_stops_before_algorithms_if_draw_order_is_incomplete(monkeypatch) -> None:
+    repository = TrackingRepository()
+    source = AlgorithmHistorySource(complete=False)
+    calls: list[str] = []
+    monkeypatch.setattr(worker_module, "create_artifact_builders", lambda: _builders(calls))
+
+    with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
+        run_worker("今彩539", repository, source)
+
+    assert calls == []
 
 
 def test_completed_worker_run_does_not_read_all_history_again() -> None:

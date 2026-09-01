@@ -28,6 +28,17 @@ RETRY_BACKOFF_SECONDS = (15.0, 45.0)
 ANALYSIS_VERSION = "matrix-python-v10"
 
 
+def _draw_from_history(
+    lottery: str,
+    period: str,
+    history: list[dict[str, Any]],
+) -> dict[str, Any]:
+    for stored in history:
+        if str(stored.get("period")) == period:
+            return {"lottery": lottery, **stored}
+    raise ValueError("DRAW_HISTORY_INCOMPLETE")
+
+
 def _is_transient_service_error(error: Exception) -> bool:
     code = str(getattr(error, "code", "") or "").upper()
     if code == "57014" or code in {"PGRST000", "PGRST001", "PGRST002", "PGRST003"}:
@@ -131,6 +142,7 @@ def _run_worker_untracked(
     preparation_error: Exception | None = None
     for attempt in range(MAX_FAILURES_PER_INVOCATION):
         try:
+            history: list[dict[str, Any]] | None = None
             repository.cleanup_expired(datetime.now(UTC))
             refresh = DrawRefreshService(repository, source)
             if not repository.list_draws(lottery, 1):
@@ -143,7 +155,11 @@ def _run_worker_untracked(
             )
             if progress is not None and progress.get("status") == "complete":
                 return {**progress, "skipped": True}
-            history = repository.list_draws(lottery, None)
+            if builders is None:
+                history = refresh.ensure_algorithm_history(lottery)
+            else:
+                history = repository.list_draws(lottery, None)
+            draw = _draw_from_history(lottery, period, history)
             break
         except Exception as error:
             if isinstance(error, ValueError):
@@ -182,7 +198,6 @@ def _resume_stored_analysis(
     latest_draw: dict[str, Any],
     builders: Mapping[str, ArtifactBuilder] | None,
 ) -> dict[str, Any] | None:
-    DrawRefreshService(repository, source).ensure_history(lottery)
     period = str(latest_draw["period"])
     expected_version = f"{period}:{ANALYSIS_VERSION}"
     progress = repository.get_progress(lottery, period, expected_version)
@@ -195,9 +210,16 @@ def _resume_stored_analysis(
                 )
         return None
 
+    refresh = DrawRefreshService(repository, source)
+    history: list[dict[str, Any]] | None = None
+    if builders is None:
+        history = refresh.ensure_algorithm_history(lottery)
+    else:
+        refresh.ensure_history(lottery)
     repository.cleanup_expired(datetime.now(UTC))
-    history = repository.list_draws(lottery, None)
-    draw = {"lottery": lottery, **latest_draw}
+    if history is None:
+        history = repository.list_draws(lottery, None)
+    draw = _draw_from_history(lottery, period, history)
     return _run_analysis(repository, draw, history, builders)
 
 
@@ -243,8 +265,12 @@ def run_scheduled_worker(
                 "status": "not-acquired",
             }
 
-        refresh.ensure_history(lottery)
-        history = repository.list_draws(lottery, None)
+        if builders is None:
+            history = refresh.ensure_algorithm_history(lottery)
+        else:
+            refresh.ensure_history(lottery)
+            history = repository.list_draws(lottery, None)
+        draw = _draw_from_history(lottery, str(draw["period"]), history)
         return _run_analysis(repository, draw, history, builders)
 
     return _run_tracked_job(lottery, repository, execute)

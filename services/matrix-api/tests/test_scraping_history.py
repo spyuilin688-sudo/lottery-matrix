@@ -172,3 +172,127 @@ def test_marksix_limited_history_stops_when_limit_is_satisfied() -> None:
         "https://www.nfd.com.tw/house/year/2026.htm",
         "https://www.nfd.com.tw/house/year/2025.htm",
     ]
+
+
+def test_marksix_limited_history_uses_latest_real_drop_order() -> None:
+    requested_urls: list[str] = []
+    html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球</th><th>大小</th></tr>
+      <tr><td>第 026095 期</td><td>2026-08-29</td><td>30 04 11 26 08 07</td><td>04 07 08 11 26 30 42</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        return httpx.Response(200, text=html)
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
+
+    history = [source.fetch("六合彩")]
+
+    assert history[0]["period"] == "026095"
+    assert history[0]["drawOrderNumbers"] == ["30", "04", "11", "26", "08", "07", "42"]
+    assert requested_urls == ["https://sc888.net/index.php?s=/LotterySix/index"]
+
+
+def test_marksix_full_history_pairs_normal_and_original_order_pages() -> None:
+    requested_urls: list[str] = []
+    normal_html = """
+    <table>
+      <tr><td>1976</td><td>12/31</td><td>2</td><td>08</td><td>09</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
+    </table>
+    """
+    order_html = """
+    <table>
+      <tr><td>1976</td><td>2</td><td>13</td><td>08</td><td>11</td><td>09</td><td>12</td><td>10</td><td>14</td></tr>
+    </table>
+    """
+    recent_html = """
+    <table>
+      <tr><th>期數</th><th>日期</th><th>落球</th><th>大小</th></tr>
+      <tr><td>第 076002 期</td><td>1976-12-31</td><td>13 08 11 09 12 10</td><td>08 09 10 11 12 13 14</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        requested_urls.append(url)
+        if "LotterySix" in url:
+            return httpx.Response(200, text=recent_html)
+        if "/F1976.htm" in url:
+            return httpx.Response(200, text=order_html)
+        return httpx.Response(200, text=normal_html)
+
+    source = LatestDrawSource(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        now=lambda: datetime(1976, 12, 31),
+    )
+
+    fetch_algorithm_history = getattr(source, "fetch_algorithm_history", None)
+
+    assert callable(fetch_algorithm_history)
+    history = fetch_algorithm_history("六合彩")
+
+    assert history == [{
+        "period": "076002",
+        "drawDate": "1976-12-31",
+        "numbers": ["08", "09", "10", "11", "12", "13", "14"],
+        "sortedNumbers": ["08", "09", "10", "11", "12", "13", "14"],
+        "drawOrderNumbers": ["13", "08", "11", "09", "12", "10", "14"],
+    }]
+    assert requested_urls == [
+        "https://www.nfd.com.tw/house/year/1976.htm",
+        "https://www.nfd.com.tw/house/year/F1976.htm",
+        "https://sc888.net/index.php?s=/LotterySix/index",
+    ]
+
+
+def test_daily539_full_history_merges_older_nfd_draw_order_rows() -> None:
+    requested_urls: list[str] = []
+    taiwan_payload = {
+        "content": {
+            "daily539Res": [{
+                "period": "100000001",
+                "lotteryDate": "2011-01-01",
+                "drawNumberSize": [1, 2, 3, 4, 5],
+                "drawNumberAppear": [5, 4, 3, 2, 1],
+            }],
+        },
+    }
+    empty_payload = {"content": {"daily539Res": []}}
+    nfd_html = """
+    <table>
+      <tr><td>2010</td><td>12/31</td><td>261</td><td>39</td><td>28</td><td>17</td><td>06</td><td>02</td><td>1045</td></tr>
+    </table>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        requested_urls.append(url)
+        if request.url.host == "api.taiwanlottery.com":
+            payload = taiwan_payload if request.url.params.get("month") == "2011-01" else empty_payload
+            return httpx.Response(200, json=payload)
+        return httpx.Response(200, text=nfd_html)
+
+    source = LatestDrawSource(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        now=lambda: datetime(2011, 1, 2),
+    )
+
+    fetch_algorithm_history = getattr(source, "fetch_algorithm_history", None)
+
+    assert callable(fetch_algorithm_history)
+    history = fetch_algorithm_history("今彩539")
+
+    assert [draw["period"] for draw in history] == ["100000001", "099000261"]
+    assert history[1]["drawOrderNumbers"] == ["39", "28", "17", "06", "02"]
+    assert requested_urls == [
+        "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result?period&month=2011-01&pageSize=31",
+        "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result?period&month=2010-12&pageSize=31",
+        "https://www.nfd.com.tw/lottery/39-year/39-f2011.htm",
+        "https://www.nfd.com.tw/lottery/39-year/39-f2010.htm",
+        "https://www.nfd.com.tw/lottery/39-year/39-f2009.htm",
+        "https://www.nfd.com.tw/lottery/39-year/39-f2008.htm",
+        "https://www.nfd.com.tw/lottery/39-year/39-f2007.htm",
+    ]

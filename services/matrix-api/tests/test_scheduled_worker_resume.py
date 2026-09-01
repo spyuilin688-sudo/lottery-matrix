@@ -1,6 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.worker import run_scheduled_worker
 
@@ -30,6 +31,35 @@ class RepairSource:
             for period in range(221, 141, -1)
         ]
         return history if limit is None else history[:limit]
+
+
+class DrawOrderRepairSource:
+    def __init__(self) -> None:
+        self.algorithm_requests: list[str] = []
+
+    def fetch(self, lottery: str) -> dict:
+        raise AssertionError("latest draw is already stored")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        raise AssertionError("recent history is already complete")
+
+    def fetch_algorithm_history(self, lottery: str) -> list[dict]:
+        self.algorithm_requests.append(lottery)
+        rows = [
+            {
+                **_stored_draw(
+                    period,
+                    "2026-08-28" if period == 221 else "2026-08-27",
+                ),
+                "drawOrderNumbers": ["05", "04", "03", "02", "01"],
+            }
+            for period in range(221, 141, -1)
+        ]
+        rows.append({
+            **_stored_draw(96000001, "2007-01-01"),
+            "drawOrderNumbers": ["05", "04", "03", "02", "01"],
+        })
+        return rows
 
 
 class FullHistoryReadTrackingRepository(InMemoryAnalysisRepository):
@@ -100,6 +130,28 @@ def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() 
 
     assert result["status"] == "complete"
     assert result["analysisVersion"] == "000000221:matrix-python-v10"
+    assert calls == ["explore", "tianyan", "tiangong", "status"]
+
+
+def test_production_resume_repairs_actual_order_before_algorithms(monkeypatch) -> None:
+    repository = _repository_with_history()
+    source = DrawOrderRepairSource()
+    calls: list[str] = []
+    monkeypatch.setattr(
+        worker_module,
+        "create_artifact_builders",
+        lambda: _builders(calls),
+    )
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        repository,
+        source,
+    )
+
+    assert result["status"] == "complete"
+    assert source.algorithm_requests == ["今彩539"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
 
 

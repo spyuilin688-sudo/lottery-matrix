@@ -17,8 +17,12 @@ CALIFORNIA_FANTASY5_HISTORY_URL = (
 )
 SC888_FANTASY5_URL = "https://sc888.net/index.php?s=/LotteryFan/index"
 SC888_FANTASY5_DOWNLOAD_URL = "https://sc888.net/index.php?s=/LotteryFan/getDownloadXls"
+SC888_MARKSIX_URL = "https://sc888.net/index.php?s=/LotterySix/index"
 NFD_MARKSIX_URL = "https://www.nfd.com.tw/house/year/{year}.htm"
+NFD_MARKSIX_DRAW_ORDER_URL = "https://www.nfd.com.tw/house/year/F{year}.htm"
 NFD_MARKSIX_FIRST_YEAR = 1976
+NFD_DAILY539_DRAW_ORDER_URL = "https://www.nfd.com.tw/lottery/39-year/39-f{year}.htm"
+NFD_DAILY539_FIRST_YEAR = 2007
 MAX_TAIWAN_HISTORY_MONTHS = 360
 FORMAL_PAGE_REFERERS = {
     "今彩539": "https://www.taiwanlottery.com/lotto/result/daily_cash",
@@ -28,7 +32,7 @@ HEADERS = {
     "user-agent": "Mozilla/5.0 (compatible; Matrix Lottery Data Fetcher)",
     "accept-language": "zh-TW,zh;q=0.9,en;q=0.5",
 }
-DATE_PATTERN = re.compile(r"(?:20\d{2}|1\d{2})[年/\-.](?:1[0-2]|0?[1-9])[月/\-.](?:3[01]|[12]\d|0?[1-9])日?")
+DATE_PATTERN = re.compile(r"(?:20\d{2}|19\d{2})[年/\-.](?:1[0-2]|0?[1-9])[月/\-.](?:3[01]|[12]\d|0?[1-9])日?")
 EXPLICIT_PERIOD_PATTERN = re.compile(r"第\s*(\d{4,12})\s*期")
 STANDALONE_PERIOD_PATTERN = re.compile(r"^(\d{5,12})$")
 
@@ -59,6 +63,8 @@ def _materialize_draw(
     values: list[Any],
     count: int,
     draw_order: list[Any] | None = None,
+    *,
+    allow_missing_date: bool = False,
 ) -> MatrixDraw:
     numbers = _ordered_numbers(values, count)
     order: list[str] | None = None
@@ -70,7 +76,10 @@ def _materialize_draw(
         order = [_two_digit(value, maximum) for value in order_values]
         if len(order) != count or _ordered_numbers(order, count) != numbers:
             raise ValueError("DRAW_ORDER_MISMATCH")
-    if not str(period).strip() or not str(draw_date).strip():
+    if (
+        not str(period).strip()
+        or (not allow_missing_date and not str(draw_date).strip())
+    ):
         raise ValueError("DRAW_REQUIRED_FIELDS_MISSING")
     return {
         "period": str(period).strip(),
@@ -227,19 +236,149 @@ def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
     return draws[0]
 
 
-def parse_nfd_marksix_history(html: str) -> list[MatrixDraw]:
+def _exact_numbers(value: str, count: int, maximum: int) -> list[str]:
+    values = re.findall(r"(?<!\d)(?:0[1-9]|[1-9]|[1-4]\d)(?!\d)", value)
+    if len(values) != count:
+        return []
+    try:
+        numbers = [_two_digit(value, maximum) for value in values]
+    except ValueError:
+        return []
+    return numbers if len(set(numbers)) == count else []
+
+
+def _labelled_numbers(
+    value: str,
+    start: str,
+    stop: str,
+    count: int,
+    maximum: int,
+) -> list[str]:
+    match = re.search(rf"(?:{start})\s*(.*?)(?=(?:{stop})|$)", value)
+    return _exact_numbers(match.group(1), count, maximum) if match else []
+
+
+def parse_sc888_marksix_history(html: str) -> list[MatrixDraw]:
+    rows = parse_table_rows(html)
+    drop_index = -1
+    size_index = -1
+    for cells in rows:
+        for index, cell in enumerate(cells):
+            if re.search(r"落球(?:順序|序)?$", cell):
+                drop_index = index
+            if re.search(r"(?:大小|一般)(?:順序)?$", cell):
+                size_index = index
+        if drop_index >= 0 and size_index >= 0:
+            break
+
     draws: list[MatrixDraw] = []
-    for cells in parse_table_rows(html):
-        if len(cells) < 10 or not re.fullmatch(r"20\d{2}|19\d{2}", cells[0]) or not re.fullmatch(r"\d{1,3}", cells[2]):
+    for cells in rows:
+        period = _period(cells)
+        draw_date = _date(cells)
+        if not period or not draw_date:
             continue
-        date_match = re.fullmatch(r"(\d{1,2})/(\d{1,2})", cells[1])
-        if not date_match:
+        drop = (
+            _exact_numbers(cells[drop_index], 6, 49)
+            if 0 <= drop_index < len(cells)
+            else []
+        )
+        size = (
+            _exact_numbers(cells[size_index], 7, 49)
+            if 0 <= size_index < len(cells)
+            else []
+        )
+        row_text = " ".join(cells)
+        if not drop:
+            drop = _labelled_numbers(
+                row_text, r"落球(?:順序|序)?", r"大小(?:順序)?", 6, 49,
+            )
+        if not size:
+            size = _labelled_numbers(
+                row_text, r"大小(?:順序)?", r"台號|特三|奇偶", 7, 49,
+            )
+        if not drop or not size:
+            continue
+        try:
+            draws.append(_materialize_draw(period, draw_date, size, 7, drop))
+        except ValueError:
+            continue
+    return _newest_unique(draws)
+
+
+def parse_nfd_marksix_draw_order_history(html: str) -> dict[str, list[str]]:
+    by_period: dict[str, list[str]] = {}
+    for cells in parse_table_rows(html):
+        if not cells or not re.fullmatch(r"20\d{2}|19\d{2}", cells[0]):
+            continue
+        if len(cells) >= 10 and re.fullmatch(r"\d{1,2}/\d{1,2}", cells[1]):
+            sequence_index = 2
+            number_start = 3
+        elif len(cells) >= 9:
+            sequence_index = 1
+            number_start = 2
+        else:
+            continue
+        if not re.fullmatch(r"\d{1,3}", cells[sequence_index]):
+            continue
+        numbers = _exact_numbers(" ".join(cells[number_start:number_start + 7]), 7, 49)
+        if not numbers:
             continue
         year = cells[0]
-        period = "0" + year[-2:] + str(int(cells[2])).zfill(3)
-        draw_date = f"{year}/{int(date_match.group(1)):02d}/{int(date_match.group(2)):02d}"
+        period = "0" + year[-2:] + str(int(cells[sequence_index])).zfill(3)
+        by_period[period] = numbers
+    return by_period
+
+
+def parse_nfd_marksix_history(
+    html: str,
+    draw_order_html: str | None = None,
+    *,
+    allow_missing_dates: bool = False,
+) -> list[MatrixDraw]:
+    draw_orders = (
+        parse_nfd_marksix_draw_order_history(draw_order_html)
+        if draw_order_html is not None
+        else {}
+    )
+    draws: list[MatrixDraw] = []
+    for cells in parse_table_rows(html):
+        if not cells or not re.fullmatch(r"20\d{2}|19\d{2}", cells[0]):
+            continue
+        date_match = (
+            re.fullmatch(r"(\d{1,2})/(\d{1,2})", cells[1])
+            if len(cells) >= 10
+            else None
+        )
+        if date_match and re.fullmatch(r"\d{1,3}", cells[2]):
+            sequence_index = 2
+            number_start = 3
+            draw_date = (
+                f"{cells[0]}/{int(date_match.group(1)):02d}/"
+                f"{int(date_match.group(2)):02d}"
+            )
+        elif (
+            allow_missing_dates
+            and len(cells) >= 9
+            and re.fullmatch(r"\d{1,3}", cells[1])
+        ):
+            sequence_index = 1
+            number_start = 2
+            draw_date = ""
+        else:
+            continue
+        year = cells[0]
+        period = "0" + year[-2:] + str(int(cells[sequence_index])).zfill(3)
         try:
-            draws.append(_materialize_draw(period, draw_date, cells[3:10], 7))
+            draws.append(
+                _materialize_draw(
+                    period,
+                    draw_date,
+                    cells[number_start:number_start + 7],
+                    7,
+                    draw_orders.get(period),
+                    allow_missing_date=allow_missing_dates,
+                )
+            )
         except ValueError:
             continue
     return _newest_unique(draws)
@@ -250,6 +389,33 @@ def parse_nfd_marksix_html(html: str) -> MatrixDraw:
     if not draws:
         raise ValueError("NFD_DRAW_INCOMPLETE")
     return draws[0]
+
+
+def parse_nfd_daily539_draw_order_history(html: str) -> list[MatrixDraw]:
+    draws: list[MatrixDraw] = []
+    for cells in parse_table_rows(html):
+        if (
+            len(cells) < 8
+            or not re.fullmatch(r"20\d{2}", cells[0])
+            or not re.fullmatch(r"\d{1,3}", cells[2])
+        ):
+            continue
+        date_match = re.fullmatch(r"(\d{1,2})/(\d{1,2})", cells[1])
+        if not date_match:
+            continue
+        year = int(cells[0])
+        draw_order = _exact_numbers(" ".join(cells[3:8]), 5, 39)
+        if not draw_order:
+            continue
+        period = f"{year - 1911:03d}{int(cells[2]):06d}"
+        draw_date = f"{year}/{int(date_match.group(1)):02d}/{int(date_match.group(2)):02d}"
+        try:
+            draws.append(
+                _materialize_draw(period, draw_date, draw_order, 5, draw_order)
+            )
+        except ValueError:
+            continue
+    return _newest_unique(draws)
 
 
 def _response_text(response: httpx.Response) -> str:
@@ -284,11 +450,105 @@ class LatestDrawSource:
                 raise ValueError("FANTASY5_DRAW_INCOMPLETE")
             return history[0]
         if lottery == "六合彩":
-            url = NFD_MARKSIX_URL.format(year=self.now().year)
-            response = self.client.get(url, headers=HEADERS, timeout=20.0, follow_redirects=True)
-            response.raise_for_status()
-            return parse_nfd_marksix_html(_response_text(response))
+            try:
+                response = self.client.get(
+                    SC888_MARKSIX_URL,
+                    headers={**HEADERS, "referer": "https://sc888.net/"},
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                draws = parse_sc888_marksix_history(_response_text(response))
+                if draws:
+                    return draws[0]
+                raise ValueError("SC888_MARKSIX_DRAW_INCOMPLETE")
+            except (httpx.HTTPError, ValueError):
+                year = self.now().year
+                normal_response = self.client.get(
+                    NFD_MARKSIX_URL.format(year=year),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                normal_response.raise_for_status()
+                order_response = self.client.get(
+                    NFD_MARKSIX_DRAW_ORDER_URL.format(year=year),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                order_response.raise_for_status()
+                draws = parse_nfd_marksix_history(
+                    _response_text(normal_response),
+                    _response_text(order_response),
+                )
+                if not draws:
+                    raise ValueError("NFD_DRAW_INCOMPLETE")
+                return draws[0]
         raise ValueError("UNKNOWN_LOTTERY")
+
+    def fetch_algorithm_history(self, lottery: str) -> list[MatrixDraw]:
+        if lottery == "今彩539":
+            official = self._fetch_taiwan_history(lottery, None)
+            official_years = [
+                int(str(draw.get("drawDate", ""))[:4])
+                for draw in official
+                if re.match(r"\d{4}", str(draw.get("drawDate", "")))
+            ]
+            oldest_official_year = min(official_years) if official_years else self.now().year
+            historical: list[MatrixDraw] = []
+            for year in range(oldest_official_year, NFD_DAILY539_FIRST_YEAR - 1, -1):
+                response = self.client.get(
+                    NFD_DAILY539_DRAW_ORDER_URL.format(year=year),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                historical.extend(
+                    parse_nfd_daily539_draw_order_history(_response_text(response))
+                )
+            return _newest_unique([*historical, *official])
+
+        if lottery == "六合彩":
+            draws: list[MatrixDraw] = []
+            current_year = self.now().year
+            for year in range(current_year, NFD_MARKSIX_FIRST_YEAR - 1, -1):
+                normal_response = self.client.get(
+                    NFD_MARKSIX_URL.format(year=year),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                normal_response.raise_for_status()
+                order_response = self.client.get(
+                    NFD_MARKSIX_DRAW_ORDER_URL.format(year=year),
+                    headers=HEADERS,
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                order_response.raise_for_status()
+                draws.extend(
+                    parse_nfd_marksix_history(
+                        _response_text(normal_response),
+                        _response_text(order_response),
+                        allow_missing_dates=True,
+                    )
+                )
+            try:
+                response = self.client.get(
+                    SC888_MARKSIX_URL,
+                    headers={**HEADERS, "referer": "https://sc888.net/"},
+                    timeout=20.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                draws.extend(parse_sc888_marksix_history(_response_text(response)))
+            except (httpx.HTTPError, ValueError):
+                pass
+            return _newest_unique(draws)
+
+        return self.fetch_history(lottery, None)
 
     def fetch_history(self, lottery: str, limit: int | None) -> list[MatrixDraw]:
         if limit is not None and limit <= 0:

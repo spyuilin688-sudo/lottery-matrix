@@ -1,3 +1,5 @@
+import pytest
+
 from app.domain.tiangong_artifact import build_tiangong_artifact
 
 
@@ -84,3 +86,44 @@ def test_returns_an_empty_artifact_when_history_cannot_complete_d_exclusion() ->
 
     assert artifact["items"] == []
     assert artifact["validationById"] == {}
+
+
+def test_rejects_sorted_numbers_as_a_substitute_for_actual_draw_order() -> None:
+    history = _history()
+    history[20] = {
+        **history[20],
+        "drawOrderNumbers": None,
+        "numbers": ["01", "02", "03", "04", "05"],
+    }
+
+    with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
+        build_tiangong_artifact("今彩539", "114000123", history)
+
+
+def test_fantasy5_uses_sorted_numbers_without_requesting_draw_order() -> None:
+    received: list[dict] = []
+    history = [
+        {
+            "period": f"{240 - index:06d}",
+            "drawDate": "2026-08-24",
+            "numbers": ["01", "02", "03", "04", "05"],
+            "drawOrderNumbers": None,
+        }
+        for index in range(119)
+    ]
+
+    def calculator(payload: dict) -> dict:
+        received.append(payload)
+        return {
+            "algorithm": "matrix-tiangong",
+            "algorithm_version": "v2",
+            "results": [],
+            "evidence": {},
+        }
+
+    artifact = build_tiangong_artifact(
+        "天天樂", "026240", history, calculator,
+    )
+
+    assert received[0]["draws"][0]["numbers"] == [1, 2, 3, 4, 5]
+    assert artifact["algorithmVersion"] == "v2"

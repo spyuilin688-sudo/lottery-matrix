@@ -1,6 +1,9 @@
 -- Store independently finalized Explore v2 standard/full rows and cut RPCs to v10.
 begin;
 
+alter table public.matrix_analysis_artifacts
+  drop constraint if exists matrix_analysis_artifacts_no_tiangong;
+
 alter table public.matrix_explore_results
   add column if not exists explore_range text;
 

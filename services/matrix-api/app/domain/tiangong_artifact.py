@@ -14,9 +14,18 @@ def _next_period(period: str) -> str:
 def build_tiangong_artifact(lottery: str, draw_period: str, history: list[dict[str, Any]], calculator: Calculator = calculate_tiangong) -> dict[str, Any]:
     draws = []
     for draw in reversed(history):
-        numbers = draw.get("drawOrderNumbers") if isinstance(draw.get("drawOrderNumbers"), list) else draw.get("numbers")
+        numbers = (
+            draw.get("numbers")
+            if lottery == "天天樂"
+            else draw.get("drawOrderNumbers")
+        )
         if not isinstance(numbers, list):
-            raise ValueError("INVALID_MATRIX_DRAW")
+            error = (
+                "INVALID_MATRIX_DRAW"
+                if lottery == "天天樂"
+                else "DRAW_ORDER_HISTORY_INCOMPLETE"
+            )
+            raise ValueError(error)
         draws.append({"period": str(draw["period"]), "numbers": [int(number) for number in numbers], "drawDate": draw.get("drawDate")})
     if not draws:
         raise ValueError("TIANGONG_HISTORY_REQUIRED")

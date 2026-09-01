@@ -18,6 +18,16 @@ def _draw(period: int) -> dict:
     }
 
 
+def _seven_ball_draw(period: str, draw_date: str) -> dict:
+    return {
+        "period": period,
+        "drawDate": draw_date,
+        "numbers": ["01", "02", "03", "04", "05", "06", "49"],
+        "sortedNumbers": ["01", "02", "03", "04", "05", "06", "49"],
+        "drawOrderNumbers": ["06", "05", "04", "03", "02", "01", "49"],
+    }
+
+
 class HistorySource:
     def __init__(self, history: list[dict]) -> None:
         self.history = history
@@ -30,6 +40,27 @@ class HistorySource:
         self.history_requests.append((lottery, limit))
         rows = self.history if limit is None else self.history[:limit]
         return [dict(draw) for draw in rows]
+
+
+class AlgorithmHistorySource(HistorySource):
+    def __init__(self, history: list[dict], algorithm_history: list[dict]) -> None:
+        super().__init__(history)
+        self.algorithm_history = algorithm_history
+        self.algorithm_history_requests: list[str] = []
+
+    def fetch_algorithm_history(self, lottery: str) -> list[dict]:
+        self.algorithm_history_requests.append(lottery)
+        return [dict(draw) for draw in self.algorithm_history]
+
+
+class BatchTrackingRepository(InMemoryAnalysisRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.batch_sizes: list[int] = []
+
+    def upsert_draws(self, draws: list[dict]) -> list[dict]:
+        self.batch_sizes.append(len(draws))
+        return super().upsert_draws(draws)
 
 
 def test_history_gap_check_understands_eight_digit_taiwan_period_years() -> None:
@@ -70,6 +101,15 @@ def test_history_gap_check_understands_fantasy_year_series_format() -> None:
     ]
 
     assert missing_history_periods("天天樂", history) == []
+
+
+def test_history_gap_check_includes_old_rows_without_dates() -> None:
+    history = [
+        {**_seven_ball_draw("076003", ""), "drawDate": None},
+        {**_seven_ball_draw("076001", ""), "drawDate": None},
+    ]
+
+    assert missing_history_periods("六合彩", history) == ["076002"]
 
 
 def test_history_gap_check_keeps_global_periods_continuous_across_digit_widths() -> None:
@@ -155,6 +195,28 @@ def test_ensure_history_repairs_internal_missing_periods_before_returning() -> N
     ]
 
 
+def test_ordinary_history_repair_never_erases_existing_actual_order() -> None:
+    repository = InMemoryAnalysisRepository()
+    complete = [_draw(period) for period in range(210, 199, -1)]
+    for draw in complete:
+        if draw["period"] != "000000208":
+            repository.upsert_draw({**draw, "lottery": "今彩539"})
+    source_rows = [
+        {**draw, "drawOrderNumbers": None}
+        for draw in complete
+    ]
+
+    DrawRefreshService(repository, HistorySource(source_rows)).ensure_history("今彩539")
+
+    stored = {
+        draw["period"]: draw
+        for draw in repository.list_draws("今彩539", None)
+    }
+    assert stored["000000210"]["drawOrderNumbers"] == [
+        "05", "04", "03", "02", "01",
+    ]
+
+
 def test_ensure_history_retargets_repair_after_learning_source_is_ahead() -> None:
     repository = InMemoryAnalysisRepository()
     for period in range(200, 169, -1):
@@ -205,3 +267,160 @@ def test_ensure_history_rejects_an_empty_complete_source() -> None:
 
     assert source.history_requests == [("今彩539", None)]
     assert repository.list_draws("今彩539", None) == []
+
+
+def test_algorithm_history_backfills_missing_actual_draw_order() -> None:
+    repository = InMemoryAnalysisRepository()
+    stored = [_draw(period) for period in range(96000121, 96000000, -1)]
+    stored[40]["drawOrderNumbers"] = None
+    for draw in stored:
+        repository.upsert_draw({**draw, "lottery": "今彩539"})
+    algorithm_history = [
+        _draw(period)
+        for period in range(96000121, 96000000, -1)
+    ]
+    algorithm_history[40]["drawDate"] = ""
+    source = AlgorithmHistorySource(stored, algorithm_history)
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("今彩539")
+
+    assert source.algorithm_history_requests == ["今彩539"]
+    assert all(len(draw["drawOrderNumbers"]) == 5 for draw in history)
+
+
+def test_algorithm_history_upserts_in_bounded_batches() -> None:
+    repository = BatchTrackingRepository()
+    stored = [_draw(period) for period in range(96001001, 96000000, -1)]
+    stored[40]["drawOrderNumbers"] = None
+    for draw in stored:
+        repository.upsert_draw({**draw, "lottery": "今彩539"})
+    source = AlgorithmHistorySource(
+        stored,
+        [_draw(period) for period in range(96001001, 96000000, -1)],
+    )
+
+    DrawRefreshService(repository, source).ensure_algorithm_history("今彩539")
+
+    assert repository.batch_sizes == [500, 500, 1]
+
+
+def test_algorithm_history_restores_truncated_marksix_from_official_boundary() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        **_seven_ball_draw("076002", "1976-01-03"),
+        "lottery": "六合彩",
+    })
+    source_rows = [
+        _seven_ball_draw("076002", "1976-01-03"),
+        _seven_ball_draw("076001", ""),
+    ]
+    source = AlgorithmHistorySource(source_rows, source_rows)
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+
+    assert source.algorithm_history_requests == ["六合彩"]
+    assert [draw["period"] for draw in history] == ["076002", "076001"]
+    assert not history[1]["drawDate"]
+
+
+def test_algorithm_history_rejects_an_internal_gap_after_full_backfill() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        **_seven_ball_draw("076003", "1976-01-05"),
+        "lottery": "六合彩",
+    })
+    source_rows = [
+        _seven_ball_draw("076003", "1976-01-05"),
+        _seven_ball_draw("076001", ""),
+    ]
+    source = AlgorithmHistorySource(source_rows, source_rows)
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
+        DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+
+
+def test_algorithm_history_orders_undated_marksix_across_century_rollover() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        **_seven_ball_draw("001001", "2001-01-02"),
+        "lottery": "六合彩",
+    })
+    source_rows = [_seven_ball_draw("001001", "2001-01-02")]
+    source_rows.extend(
+        _seven_ball_draw(f"0{year % 100:02d}001", "")
+        for year in range(2000, 1975, -1)
+    )
+    source = AlgorithmHistorySource(source_rows, source_rows)
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+
+    periods = [draw["period"] for draw in history]
+    assert periods[:4] == ["001001", "000001", "099001", "098001"]
+    assert periods[-1] == "076001"
+
+
+def test_algorithm_history_rejects_a_whole_missing_middle_year() -> None:
+    repository = InMemoryAnalysisRepository()
+    source_rows = [
+        _seven_ball_draw("078001", "1978-01-03"),
+        _seven_ball_draw("076001", ""),
+    ]
+    for draw in source_rows:
+        repository.upsert_draw({**draw, "lottery": "六合彩"})
+    source = AlgorithmHistorySource(source_rows, source_rows)
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
+        DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+
+    assert source.algorithm_history_requests == ["六合彩"]
+
+
+def test_algorithm_history_fails_closed_when_actual_draw_order_remains_missing() -> None:
+    repository = InMemoryAnalysisRepository()
+    stored = [_draw(period) for period in range(220, 99, -1)]
+    stored[40]["drawOrderNumbers"] = None
+    for draw in stored:
+        repository.upsert_draw({**draw, "lottery": "今彩539"})
+    source = AlgorithmHistorySource(stored, stored)
+
+    with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
+        DrawRefreshService(repository, source).ensure_algorithm_history("今彩539")
+
+
+def test_seven_ball_history_repairs_special_number_outside_last_position() -> None:
+    repository = InMemoryAnalysisRepository()
+    stored = {
+        "lottery": "大樂透",
+        "period": "093000001",
+        "drawDate": "2004-01-05",
+        "numbers": ["01", "02", "03", "04", "05", "06", "49"],
+        "sortedNumbers": ["01", "02", "03", "04", "05", "06", "49"],
+        "drawOrderNumbers": ["49", "01", "02", "03", "04", "05", "06"],
+    }
+    repaired = {
+        **stored,
+        "drawOrderNumbers": ["06", "05", "04", "03", "02", "01", "49"],
+    }
+    repository.upsert_draw(stored)
+    source = AlgorithmHistorySource([stored], [repaired])
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("大樂透")
+
+    assert source.algorithm_history_requests == ["大樂透"]
+    assert history[0]["drawOrderNumbers"][-1] == "49"
+
+
+def test_algorithm_history_keeps_fantasy5_sorted_only_without_order_backfill() -> None:
+    repository = InMemoryAnalysisRepository()
+    stored = [
+        {**_draw(period), "drawOrderNumbers": None}
+        for period in range(220, 99, -1)
+    ]
+    for draw in stored:
+        repository.upsert_draw({**draw, "lottery": "天天樂"})
+    source = AlgorithmHistorySource(stored, [])
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("天天樂")
+
+    assert source.algorithm_history_requests == []
+    assert len(history) == 121

@@ -146,6 +146,15 @@ def test_v10_adds_exact_range_storage_and_never_derives_standard_from_offset() -
         assert "matrix-python-v10" in definition
 
 
+def test_v10_removes_the_legacy_tiangong_artifact_blocker() -> None:
+    v10_sql = " ".join(V10_SQL_PATH.read_text(encoding="utf-8").split())
+
+    assert (
+        "alter table public.matrix_analysis_artifacts "
+        "drop constraint if exists matrix_analysis_artifacts_no_tiangong"
+    ) in v10_sql
+
+
 def test_v10_rpcs_require_complete_v10_runs_and_preserve_security_contract() -> None:
     v10_sql = V10_SQL_PATH.read_text(encoding="utf-8")
     compact_sql = " ".join(v10_sql.split())
