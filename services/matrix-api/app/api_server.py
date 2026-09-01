@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
