@@ -108,14 +108,14 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("moves every Matrix Pro label down onto its icon without changing the stack flow", () => {
+  it("moves every Matrix Pro label a cumulative 6px down onto its icon without changing the stack flow", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
       <main class="notifications-screen-v2">${Array.from({ length: 4 }, () => '<div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div>').join("")}</main>`;
 
     expect(getComputedStyle(document.querySelector(".notification-icon-stack")!).gap).toBe("1px");
     document.querySelectorAll<HTMLElement>(".notification-pro-badge").forEach((badge) => {
-      expect(getComputedStyle(badge).transform).toBe("translateY(3px)");
+      expect(getComputedStyle(badge).transform).toBe("translateY(6px)");
       expect(getComputedStyle(badge).zIndex).toBe("1");
     });
   });

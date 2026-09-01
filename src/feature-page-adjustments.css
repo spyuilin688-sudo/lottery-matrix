@@ -181,7 +181,7 @@
   font-style: normal;
   line-height: 5.6px;
   white-space: nowrap;
-  transform: translateY(3px);
+  transform: translateY(6px);
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 span {
