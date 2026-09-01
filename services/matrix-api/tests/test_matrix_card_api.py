@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 from app.api_server import handle_api_request, handle_matrix_card_request
+from app.card_renderer import render_matrix_card
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
 
@@ -44,3 +45,20 @@ def test_card_svg_is_the_fixed_reference_size_and_uses_requested_order() -> None
     assert 'width="2276" height="3438"' in svg
     assert "539 落球" in svg
     assert ">39</text>" in svg
+
+
+def test_card_prints_month_markers_sunday_dash_and_future_calendar_rows() -> None:
+    svg = render_matrix_card(
+        "今彩539",
+        "draw",
+        [
+            {"drawDate": "2026-08-31", "numbers": []},
+            {"drawDate": "2026-08-30", "numbers": []},
+        ],
+    )
+
+    assert ">8</text>" in svg
+    assert ">—</text>" in svg
+    assert ">01</text>" in svg
+    assert ">二</text>" in svg
+    assert 'font-family="Noto Sans TC"' in svg
