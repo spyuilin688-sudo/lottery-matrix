@@ -43,7 +43,7 @@ test("Matrix 指南移除標題下方重複卡片", () => {
 
 test("Matrix 探索、天衍、天工共用 2.34rem 垂直循環切換器", () => {
   assert.doesNotMatch(prototype, /\.matrix-explore-main-screen \.matrix-page-switcher\s*\{\s*display:\s*none/);
-  assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 6px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*transform:\s*translateY\(-50%\);/s);
+  assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*transform:\s*translateY\(-50%\);/s);
   assert.doesNotMatch(explore, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
   assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex-direction:\s*column;[^}]*scroll-snap-type:\s*y mandatory;[^}]*touch-action:\s*pan-y;/s);
   assert.match(feature, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*scroll-snap-align:\s*center;/s);
