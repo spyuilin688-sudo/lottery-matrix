@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { getDashboard, listAdminTable } from './admin-data';
 
 describe('listAdminTable', () => {
-  it('maps only real member columns and preserves nulls', async () => {
+  it('maps the stored LINE display name without exposing the LINE identifier', async () => {
     const api = { request: vi.fn(async () => [{
       id: 'm1',
       auth_user_id: 'u1',
       line_user_id: null,
+      line_display_name: '小明',
       registered_at: '2026-08-01T00:00:00Z',
       current_plan_id: 'p1',
       plan_started_at: '2026-08-01T00:00:00Z',
@@ -26,7 +27,7 @@ describe('listAdminTable', () => {
       items: [{
         id: 'm1',
         authUserId: 'u1',
-        lineUserId: null,
+        lineDisplayName: '小明',
         registeredAt: '2026-08-01T00:00:00Z',
         currentPlanId: 'p1',
         planStartedAt: '2026-08-01T00:00:00Z',
@@ -41,6 +42,29 @@ describe('listAdminTable', () => {
         averageOnlineMinutes: 30,
       }],
     });
+  });
+
+  it('maps the transfer applicant LINE display name', async () => {
+    const api = { request: vi.fn(async () => [{
+      id: 'transfer-1',
+      member_id: 'member-1',
+      plan_id: 'plan-1',
+      amount: 1880,
+      transferred_at: '2026-09-01T00:00:00Z',
+      account_last_five: '12345',
+      submitted_at: '2026-09-01T00:00:00Z',
+      status: 'pending',
+      plan: { name: '月費方案' },
+      member: { line_display_name: '小明' },
+    }] ) };
+
+    await expect(listAdminTable('transferRequests', api)).resolves.toEqual({
+      items: [expect.objectContaining({
+        id: 'transfer-1',
+        lineDisplayName: '小明',
+      })],
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
   });
 
   it('excludes super administrators from login records but includes their audit records', async () => {

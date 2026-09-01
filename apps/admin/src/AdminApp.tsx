@@ -82,7 +82,7 @@ const tableMap: Record<string, string> = {
 const labels: Record<string, string[]> = {
   users: [
     "authUserId",
-    "lineUserId",
+    "lineDisplayName",
     "registeredAt",
     "currentPlanId",
     "planStartedAt",
@@ -136,7 +136,7 @@ const labels: Record<string, string[]> = {
 };
 const zh: Record<string, string> = {
   authUserId: "驗證用戶ID",
-  lineUserId: "LINE用戶ID",
+  lineDisplayName: "LINE名稱",
   registeredAt: "註冊時間",
   lastOnlineAt: "最後上線時間",
   averageOnlineMinutes: "平均在線時間",
@@ -714,7 +714,7 @@ function UserManager({
   const [page, setPage] = useState(1);
   const filtered = filterRows(rows, keyword, status);
   const paged = paginateRows(filtered, page);
-  const fields = ["lineUserId", "registeredAt", "lastOnlineAt", "averageOnlineMinutes", "status", "authUserId"];
+  const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "averageOnlineMinutes", "status", "authUserId"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])
@@ -805,10 +805,10 @@ function SubscriptionManager({
       </div>
       <div className="managementList tableWrap">
         <table>
-          <thead><tr><th>LINE用戶ID</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
+          <thead><tr><th>LINE名稱</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
           <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              <td>{text(row.lineUserId)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
+              <td>{text(row.lineDisplayName)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
               <td>{canEdit && <button className="compactButton" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
               <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
@@ -833,7 +833,7 @@ function SubscriptionManager({
         <h2>轉帳申請</h2>
         {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
           <div className="transferRow" key={row.id}>
-            <div><b>{text(row.authUserId)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
+            <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
             <span>{text(row.status)}</span>
             {canEdit && row.status === "pending" && <div className="rowActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="danger" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>
@@ -856,7 +856,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 function UserInfoDialog({ row, onClose }: { row: Row; onClose: () => void }) {
   const statusText = ["disabled", "停用", "inactive"].includes(String(row.status)) ? "停用" : "啟用";
   const values: Array<[string, string]> = [
-    ["LINE用戶ID", text(row.lineUserId)],
+    ["LINE名稱", text(row.lineDisplayName)],
     ["註冊時間", formatAdminDateTime(row.registeredAt)],
     ["最後上線時間", formatAdminDateTime(row.lastOnlineAt)],
     ["平均在線時間", `${Number(row.averageOnlineMinutes || 0)} 分鐘`],

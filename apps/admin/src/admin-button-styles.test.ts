@@ -54,6 +54,12 @@ describe('admin interface styles', () => {
     expect(appSource).not.toContain('全體會員群發');
   });
 
+  it('labels member and transfer rows with LINE names rather than LINE identifiers', () => {
+    expect(appSource).toContain('"LINE名稱"');
+    expect(appSource).toContain('lineDisplayName');
+    expect(appSource).not.toContain('"LINE用戶ID"');
+  });
+
   it('stacks notification controls and records without horizontal overflow on phones', () => {
     expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationComposer\{grid-template-columns:1fr\}/);
     expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationLogTable table\{[^}]*min-width:0/);

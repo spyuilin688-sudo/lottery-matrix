@@ -181,7 +181,7 @@ describe('admin Railway route wiring', () => {
     expect(wiring.requirePermission).not.toHaveBeenCalled();
   });
 
-  it('allows an editor to refresh exactly the selected crawler and records a safe audit row', async () => {
+  it('allows a super administrator to refresh exactly the selected crawler without an audit row', async () => {
     wiring.requirePermission.mockClear();
     wiring.workerRefreshLottery.mockClear();
     wiring.insertRows.mockClear();
@@ -212,18 +212,7 @@ describe('admin Railway route wiring', () => {
     });
     expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'edit');
     expect(wiring.workerRefreshLottery).toHaveBeenCalledWith('今彩539');
-    expect(wiring.insertRows).toHaveBeenCalledWith('audit_logs', [expect.objectContaining({
-      admin_id: 'admin-1',
-      operation_type: '手動更新',
-      target_table: 'lottery_draws',
-      target_id: '115000211',
-      content: '更新今彩539最新開獎資料',
-      after_data: {
-        lottery: '今彩539',
-        period: '115000211',
-        drawDate: '2026-09-01',
-      },
-    })]);
+    expect(wiring.insertRows).not.toHaveBeenCalled();
   });
 
   it('rejects a non-crawler status item without calling the Railway refresh API', async () => {

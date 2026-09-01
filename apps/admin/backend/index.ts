@@ -216,21 +216,23 @@ const routes: Record<string, unknown> = {
     try {
       const admin = await getAdmin(ctx);
       const refresh = await workerApi.refreshLottery(lottery);
-      try {
-        const actor = actorOf(admin);
-        await supabase.insertRows('audit_logs', [{
-          admin_id: actor.id,
-          admin: actor.name || actor.account,
-          operation_type: '手動更新',
-          target_table: 'lottery_draws',
-          target_id: refresh.period,
-          content: `更新${refresh.lottery}最新開獎資料`,
-          before_data: null,
-          after_data: refresh,
-          ...requestMetadata(ctx),
-        }]);
-      } catch {
-        // A completed crawler refresh must not look failed only because audit storage is down.
+      if (shouldRecordAdminActivity(admin)) {
+        try {
+          const actor = actorOf(admin);
+          await supabase.insertRows('audit_logs', [{
+            admin_id: actor.id,
+            admin: actor.name || actor.account,
+            operation_type: '手動更新',
+            target_table: 'lottery_draws',
+            target_id: refresh.period,
+            content: `更新${refresh.lottery}最新開獎資料`,
+            before_data: null,
+            after_data: refresh,
+            ...requestMetadata(ctx),
+          }]);
+        } catch {
+          // A completed crawler refresh must not look failed only because audit storage is down.
+        }
       }
       return json({ refresh });
     } catch (cause) {

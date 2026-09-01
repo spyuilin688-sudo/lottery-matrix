@@ -45,11 +45,11 @@ export class AdminDataError extends Error {
 
 const definitions: Record<string, TableDefinition> = {
   users: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       authUserId: row.auth_user_id,
-      lineUserId: row.line_user_id,
+      lineDisplayName: row.line_display_name,
       registeredAt: row.registered_at,
       currentPlanId: row.current_plan_id,
       planStartedAt: row.plan_started_at,
@@ -67,13 +67,13 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_user_id,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
         id: String(row.id),
         authUserId: row.auth_user_id,
-        lineUserId: row.line_user_id,
+        lineDisplayName: row.line_display_name,
         registeredAt: row.registered_at,
         currentPlanId: row.current_plan_id,
         planName: plan?.name ?? null,
@@ -176,11 +176,11 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   transferRequests: {
-    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(auth_user_id)&order=submitted_at.desc&limit=200',
+    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(line_display_name)&order=submitted_at.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
-      authUserId: (row.member as Row | null)?.auth_user_id ?? null,
+      lineDisplayName: (row.member as Row | null)?.line_display_name ?? null,
       planId: row.plan_id,
       planName: (row.plan as Row | null)?.name ?? null,
       amount: row.amount,
@@ -292,6 +292,7 @@ export function createAdminData(transport: WriteTransport) {
     ip?: string | null;
     device?: string | null;
   }) {
+    if (entry.actor.role === '超級管理員') return;
     await transport.insertRows('audit_logs', [{
       admin_id: entry.actor.id,
       admin: entry.actor.name || entry.actor.account,
