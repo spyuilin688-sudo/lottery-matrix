@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from html import escape
 from typing import Any
 
@@ -53,14 +53,19 @@ def _numbers(draw: dict[str, Any], order: str, special: bool) -> list[str]:
     return values
 
 
-def _calendar(draw_date: Any) -> tuple[str, str, str]:
+def _date_value(draw_date: Any) -> date | None:
     text = str(draw_date or "").strip().replace("/", "-").replace(".", "-")
     try:
         year, month, day = (int(part) for part in text[:10].split("-"))
-        value = date(year, month, day)
-        return str(value.month), f"{value.day:02d}", WEEKDAYS[value.weekday()]
+        return date(year, month, day)
     except (TypeError, ValueError):
+        return None
+
+
+def _calendar(value: date | None) -> tuple[str, str, str]:
+    if value is None:
         return "", "", ""
+    return str(value.month), f"{value.day:02d}", WEEKDAYS[value.weekday()]
 
 
 def _text(
@@ -75,7 +80,7 @@ def _text(
 ) -> str:
     return (
         f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" '
-        f'font-family="Noto Sans TC, Microsoft JhengHei, Arial, sans-serif" '
+        f'font-family="Noto Sans TC" '
         f'font-size="{size}" font-weight="{weight}" fill="{fill}">{escape(value)}</text>'
     )
 
@@ -99,6 +104,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         '<rect x="8" y="8" width="2260" height="3422" fill="none" stroke="#111" stroke-width="6"/>',
     ]
     cursor = 0
+    visible_date: date | None = None
     for column, capacity in enumerate(capacities):
         x = margin + column * column_width
         row_height = body_height / capacity
@@ -120,17 +126,24 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         for row in range(capacity):
             y = header + row * row_height
             output.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x + column_width:.1f}" y2="{y:.1f}" stroke="#777" stroke-width="1"/>')
-            if cursor >= len(entries):
-                continue
-            draw = entries[cursor]
-            cursor += 1
-            month, day, weekday = _calendar(draw.get("drawDate") or draw.get("date"))
             baseline = y + row_height * 0.73
-            if day == "01":
+            values: list[str] = []
+            is_first_entry = cursor == 0
+            if cursor < len(entries):
+                draw = entries[cursor]
+                cursor += 1
+                visible_date = _date_value(draw.get("drawDate") or draw.get("date"))
+                values = _numbers(draw, order, bool(layout["special"]))
+            elif visible_date is not None:
+                visible_date += timedelta(days=1)
+
+            month, day, weekday = _calendar(visible_date)
+            if day and (is_first_entry or day == "01"):
                 output.append(_text(x + 27, baseline, month, 35, fill="#0b35ea", weight=700))
-            output.append(_text(x + 80, baseline, day, 31))
-            output.append(_text(x + 136, baseline, weekday, 31, fill="#d81e25" if weekday == "日" else "#333"))
-            values = _numbers(draw, order, bool(layout["special"]))
+            if day:
+                output.append(_text(x + 80, baseline, day, 31))
+                display_weekday = "—" if weekday == "日" else weekday
+                output.append(_text(x + 136, baseline, display_weekday, 31, fill="#d81e25" if weekday == "日" else "#333"))
             cell_width = number_width / layout["balls"]
             for index, value in enumerate(values[: layout["balls"]]):
                 fill = "#0047ff" if layout["special"] and index == layout["balls"] - 1 else "#111"
