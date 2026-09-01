@@ -1,40 +1,86 @@
-from copy import deepcopy
-
 from app.domain.tiangong_artifact import build_tiangong_artifact
 
 
-def _candidate(**overrides: object) -> dict:
-    value = {
-        "lottery": "今彩539", "periodRange": 80, "sourceSequence": [1, 3, 5],
-        "mode": "two-stage", "hitCondition": "準2進3", "exploreDirection": "固定",
-        "baseNumber": 10,
-        "firstStage": {"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 5, "nextN": 1},
-        "secondStage": {"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 5, "nextN": 1},
-        "validationRows": [],
+def _history() -> list[dict]:
+    return [{
+        "period": f"{240 - index:09d}",
+        "drawDate": "2026-08-24",
+        "drawOrderNumbers": ["01", "02", "03", "04", "05"],
+    } for index in range(119)]
+
+
+def _result(identifier: str, *, spacing: int, route: str = "加減＋合值") -> dict:
+    return {
+        "item_id": identifier,
+        "eligible_windows": [50, 80],
+        "source_spacing": spacing,
+        "route_label": route,
+        "source_pattern_label": "固定",
+        "stage1_pattern_label": "依序遞增",
+        "stage2_pattern_label": "依序遞減",
+        "stage1_operation": {"type": "add_sub"},
+        "stage2_operation": {"type": "sum"},
+        "prediction": {"position": 3, "number": "12"},
     }
-    value.update(overrides)
-    return value
 
 
-def test_deduplicates_exact_results_but_retains_different_road_identities() -> None:
-    exact = _candidate()
-    artifact = build_tiangong_artifact("今彩539", "114000123", [], lambda *_: [
-        exact, deepcopy(exact),
-        _candidate(firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "合值", "value": 25, "nextN": 1}),
-    ])
-    assert len(artifact["items"]) == 2
-    assert {item["predictionNumber"] for item in artifact["items"]} == {"20"}
-    assert {item["roadType"] for item in artifact["items"]} == {"加減版路", "合值＋加減"}
+def _evidence() -> dict:
+    return {
+        "rows": [{
+            "group": "C",
+            "role": "validation",
+            "source": {"period": "114000100", "position": 2, "number": "08"},
+            "stage1": {"period": "114000109", "position": 3, "calculated_number": "12", "actual_number": "12", "matched": True},
+            "stage2": {"period": "114000114", "position": 4, "calculated_number": "16", "actual_number": "16", "matched": True},
+        }],
+        "d_exclusion": {"status": "breaks_at_stage2"},
+    }
 
 
-def test_sorts_rows_and_keeps_validation_detached() -> None:
-    evidence = [{"role": "prediction", "group": "A"}]
-    artifact = build_tiangong_artifact("今彩539", "114000123", [], lambda *_: [
-        _candidate(sourceSequence=[1, 5, 9]),
-        _candidate(sourceSequence=[1, 2, 3], firstStage={"startPosition": 1, "direction": "固定", "algorithmType": "加減", "value": 6, "nextN": 2}),
-        _candidate(sourceSequence=[1, 2, 3], validationRows=evidence),
-    ])
-    assert [(item["interval"], item["predictionDistance"]) for item in artifact["items"]] == [(1, 2), (1, 3), (4, 2)]
-    first = artifact["items"][0]
-    assert "validationRows" not in first
-    assert artifact["validationById"][first["id"]]["validationRows"] == evidence
+def test_maps_attachment_response_and_uses_draw_order_history() -> None:
+    received: list[dict] = []
+
+    def calculator(payload: dict) -> dict:
+        received.append(payload)
+        return {
+            "algorithm": "matrix-tiangong",
+            "algorithm_version": "v2",
+            "results": [_result("item-1", spacing=4)],
+            "evidence": {"item-1": _evidence()},
+        }
+
+    artifact = build_tiangong_artifact("今彩539", "114000123", _history(), calculator)
+
+    assert received[0]["draws"][0] == {
+        "period": "000000122", "numbers": [1, 2, 3, 4, 5], "drawDate": "2026-08-24",
+    }
+    assert received[0]["draws"][-1]["period"] == "000000240"
+    assert received[0]["target_period"] == "000000241"
+    assert artifact["algorithmVersion"] == "v2"
+    assert artifact["items"] == [{
+        "id": "item-1", "eligiblePeriodRange": 50, "interval": 4,
+        "predictedPosition": 3, "predictionNumber": "12", "roadType": "加減＋合值",
+        "exploreDirection": "固定", "firstStageDirection": "依序遞增", "firstRoadType": "加減",
+        "secondStageDirection": "依序遞減", "secondRoadType": "合值",
+    }]
+    assert artifact["validationById"]["item-1"] == {"itemId": "item-1", "evidence": _evidence()}
+
+
+def test_preserves_attachment_result_order_and_keeps_evidence_detached() -> None:
+    artifact = build_tiangong_artifact("今彩539", "114000123", _history(), lambda _: {
+        "algorithm": "matrix-tiangong",
+        "algorithm_version": "v2",
+        "results": [_result("item-b", spacing=9), _result("item-a", spacing=1)],
+        "evidence": {"item-b": _evidence(), "item-a": _evidence()},
+    })
+
+    assert [item["id"] for item in artifact["items"]] == ["item-b", "item-a"]
+    assert "evidence" not in artifact["items"][0]
+    assert artifact["validationById"]["item-a"]["evidence"]["d_exclusion"]["status"] == "breaks_at_stage2"
+
+
+def test_returns_an_empty_artifact_when_history_cannot_complete_d_exclusion() -> None:
+    artifact = build_tiangong_artifact("今彩539", "114000123", _history()[:80])
+
+    assert artifact["items"] == []
+    assert artifact["validationById"] == {}

@@ -103,8 +103,6 @@ describe('Matrix exploration Supabase RPC', () => {
     await expect(fetchTiangongList({
       lottery: '今彩539',
       periodRange: 50,
-      mode: 'two-stage',
-      hitCondition: '準2進3',
       exploreDirections: ['固定'],
       firstStageDirections: ['固定'],
       firstRoadTypes: ['加減'],
@@ -133,8 +131,6 @@ describe('Matrix exploration Supabase RPC', () => {
     const request = {
       lottery: '今彩539' as const,
       periodRange: 50 as const,
-      mode: 'one-stage' as const,
-      hitCondition: '準2進3' as const,
       exploreDirections: ['固定' as const],
       firstStageDirections: ['固定' as const],
       firstRoadTypes: ['加減' as const],

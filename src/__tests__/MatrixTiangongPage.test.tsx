@@ -15,10 +15,10 @@ const envelope = {
   kind: 'tiangong', lottery: '今彩539', drawPeriod: '114000123',
   analysisVersion: '114000123:v1', status: 'complete', total: 1,
   items: [{
-    id: 'tg-api-1', sourceSequence: [1, 3, 5], eligiblePeriodRange: 50,
-    interval: 2, predictionDistance: 1, predictedPosition: 3, predictionNumber: '12', roadType: '加減＋合值',
-    ruleIdentity: 'rule', mode: 'one-stage', hitCondition: '準2進3',
+    id: 'tg-api-1', eligiblePeriodRange: 50, interval: 2,
+    predictedPosition: 3, predictionNumber: '12', roadType: '加減＋合值',
     exploreDirection: '固定', firstStageDirection: '固定', firstRoadType: '加減',
+    secondStageDirection: '固定', secondRoadType: '合值',
   }],
 } as const;
 
@@ -27,11 +27,20 @@ beforeEach(() => {
   matrixApi.fetchTiangongList.mockReset().mockResolvedValue(envelope);
   matrixApi.fetchTiangongValidation.mockReset().mockResolvedValue({
     ...envelope, itemId: 'tg-api-1',
-    validation: { itemId: 'tg-api-1', ruleIdentity: 'rule', validationRows: [
-      { role: 'first-stage-evidence', group: 'C', sourcePeriod: '114000100', resultPeriod: '114000109' },
-      { role: 'second-stage-validation', group: 'C', sourcePeriod: '114000100', resultPeriod: '114000114' },
-      { role: 'prediction', group: 'A', sourcePeriod: '114000108', resultPeriod: '114000122' },
-    ] },
+    validation: { itemId: 'tg-api-1', evidence: {
+      rows: [{
+        group: 'C', role: 'validation',
+        source: { period: '114000100', position: 2, number: '08' },
+        stage1: { period: '114000109', position: 3, calculated_number: '12', actual_number: '12', matched: true },
+        stage2: { period: '114000114', position: 4, calculated_number: '16', actual_number: '16', matched: true },
+      }],
+      d_exclusion: {
+        status: 'breaks_at_stage2',
+        source: { period: '114000091', position: 1, number: '05' },
+        stage1: { period: '114000096', position: 2, calculated_number: '10', actual_number: '10', matched: true },
+        stage2: { period: '114000101', position: 3, calculated_number: '14', actual_number: '15', matched: false },
+      },
+    } },
   });
 });
 
@@ -62,7 +71,7 @@ test('天工固定顯示二段式設定，且不再提供模式與命中條件�
   expect(document.querySelector('.tiangong-settings fieldset')).toBeNull();
 });
 
-test('固定以二段式與準2進3提交完整正式條件', async () => {
+test('依附件演算法支援的篩選條件提交請求', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '八十期' }));
   fireEvent.click(screen.getAllByRole('button', { name: '由左至右' })[0]);
@@ -74,7 +83,7 @@ test('固定以二段式與準2進3提交完整正式條件', async () => {
 
   expect(await screen.findByText('12')).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
-    lottery: '今彩539', periodRange: 80, mode: 'two-stage', hitCondition: '準2進3',
+    lottery: '今彩539', periodRange: 80,
     exploreDirections: ['固定', '依序遞增'],
     firstStageDirections: ['固定'], firstRoadTypes: ['加減'],
     secondStageDirections: ['固定'], secondRoadTypes: ['加減'],
@@ -94,9 +103,11 @@ test('API 結果取代固定範例，展開時才讀取驗證', async () => {
     expect.objectContaining({ drawPeriod: '114000123', analysisVersion: '114000123:v1' }),
     'tg-api-1',
   );
-  expect(await screen.findByText('第一段成立')).toBeTruthy();
-  expect(screen.getByText('第二段驗證')).toBeTruthy();
-  expect(screen.getByText('最終預測')).toBeTruthy();
+  expect(await screen.findByText(/來源 114000100 第2位：08/)).toBeTruthy();
+  expect(screen.getByText(/第一段 114000109 第3位：12／12/)).toBeTruthy();
+  expect(screen.getByText(/第二段 114000114 第4位：16／16/)).toBeTruthy();
+  expect(screen.getByText(/D 來源 114000091 第1位：05/)).toBeTruthy();
+  expect(screen.getByText(/第二段 114000101 第3位：14／15/)).toBeTruthy();
 });
 
 test('未完成分析時只顯示狀態，不回退固定資料', async () => {

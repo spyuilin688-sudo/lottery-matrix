@@ -162,28 +162,21 @@ export type TianyanValidationResponse = {
 
 export type TiangongApiRow = {
   id: string;
-  sourceSequence: number[];
   eligiblePeriodRange: 50 | 80;
   interval: number;
-  predictionDistance: number;
   predictedPosition: number;
   predictionNumber: string;
   roadType: string;
-  ruleIdentity: string;
-  mode: 'one-stage' | 'two-stage';
-  hitCondition: '準2進3' | '準3進4';
   exploreDirection: '固定' | '依序遞增' | '依序遞減';
   firstStageDirection: '固定' | '依序遞增' | '依序遞減';
   firstRoadType: '加減' | '合值';
-  secondStageDirection?: '固定' | '依序遞增' | '依序遞減';
-  secondRoadType?: '加減' | '合值';
+  secondStageDirection: '固定' | '依序遞增' | '依序遞減';
+  secondRoadType: '加減' | '合值';
 };
 
 export type TiangongListRequest = {
   lottery: NumberBallLottery;
   periodRange: 50 | 80;
-  mode: 'one-stage' | 'two-stage';
-  hitCondition: '準2進3' | '準3進4';
   exploreDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
   firstStageDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
   firstRoadTypes: Array<'加減' | '合值'>;
@@ -196,16 +189,9 @@ export type TiangongListResponse = {
   analysisVersion: string; status: 'complete'; items: TiangongApiRow[]; total: number;
 };
 
-export type TiangongValidation = {
-  itemId: string;
-  ruleIdentity: string;
-  validationRows: Array<Record<string, unknown> & {
-    role: 'first-stage-evidence' | 'second-stage-validation' | 'prediction';
-    group: 'A' | 'B' | 'C' | 'D';
-    sourcePeriod: string;
-    resultPeriod: string;
-  }>;
-};
+export type TiangongEvidenceStage = { period: string; position: number; calculated_number: string | null; actual_number: string | null; matched: boolean | null };
+export type TiangongEvidenceSource = { period: string; position: number; number: string };
+export type TiangongValidation = { itemId: string; evidence: { rows: Array<{ group: 'A' | 'B' | 'C'; role: 'validation' | 'prediction'; source: TiangongEvidenceSource; stage1: TiangongEvidenceStage; stage2: TiangongEvidenceStage }>; d_exclusion: { status: string; source?: TiangongEvidenceSource; stage1?: TiangongEvidenceStage; stage2?: TiangongEvidenceStage | null; [key: string]: unknown } } };
 
 export type TiangongValidationResponse = {
   kind: 'tiangong'; lottery: NumberBallLottery; drawPeriod: string;

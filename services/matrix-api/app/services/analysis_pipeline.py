@@ -7,9 +7,10 @@ from app.repositories.artifact_chunks import chunk_manifest
 
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
-PHASES = ("explore", "tianyan", "status")
+PHASES = ("explore", "tianyan", "tiangong", "status")
 PHASE_DEPENDENCIES = {
     "tianyan": ("explore",),
+    "tiangong": (),
     "status": ("explore", "tianyan"),
 }
 

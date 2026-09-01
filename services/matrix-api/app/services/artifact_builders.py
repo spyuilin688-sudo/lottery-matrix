@@ -5,6 +5,7 @@ from app.domain.explore_shared_v8 import run_matrix_shared_explore_group_with_hi
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tianyan_artifact import build_tianyan_artifact
+from app.domain.tiangong_artifact import build_tiangong_artifact
 from app.services.explore_batches import build_explore_batch, work_units
 
 
@@ -197,8 +198,12 @@ def create_artifact_builders(
         draw = context["draw"]
         return build_tianyan_artifact(draw["lottery"], draw["period"], context["artifacts"]["explore"])
 
+    def tiangong(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        return build_tiangong_artifact(draw["lottery"], draw["period"], context["history"])
+
     def status(context: dict[str, Any]) -> dict[str, Any]:
         artifacts = context["artifacts"]
         return _status_artifact(artifacts["explore"], artifacts["tianyan"])
 
-    return {"explore": explore, "tianyan": tianyan, "status": status}
+    return {"explore": explore, "tianyan": tianyan, "tiangong": tiangong, "status": status}

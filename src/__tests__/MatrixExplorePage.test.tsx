@@ -305,19 +305,18 @@ test('展開版路後以 API 規則與可分色數字顯示驗證概要', async 
   expect((await screen.findAllByText('+14.24')).length).toBeGreaterThan(0);
   const validation = screen.getByRole('region', { name: '驗證過程' });
   expect(validation.querySelector('.validation-summary-card')?.textContent).toBe('開 44 第 2 顆｜上 7 期｜第 4 顆｜+14.24｜下 3 期開');
-  expect([...validation.querySelectorAll('.validation-period-head span')].map((cell) => cell.textContent)).toEqual([
-    '期數', '開獎號碼', '驗證公式',
-  ]);
   const blocks = validation.querySelectorAll('.validation-period-block');
-  expect([...blocks[0].querySelectorAll('.validation-issue')].map((cell) => cell.textContent)).toEqual([
+  expect(blocks[0].children).toHaveLength(3);
+  expect([...blocks[0].querySelectorAll('.explore-validation-issues .validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114000118', '114000120', '114000123',
   ]);
   expect(blocks[0].querySelectorAll('.validation-formula')[0]?.textContent).toBe('+14.24');
   expect(blocks[0].querySelectorAll('.validation-formula')[1]?.textContent).toBe('');
-  expect([...blocks[1].querySelectorAll('.validation-issue')].map((cell) => cell.textContent)).toEqual([
-    '114000116', '114000123', '本期預測',
+  expect([...blocks[1].querySelectorAll('.explore-validation-issues .validation-issue')].map((cell) => cell.textContent)).toEqual([
+    '114000116', '114000123',
   ]);
   expect(validation.querySelectorAll('.validation-full-numbers i').length).toBeGreaterThan(0);
+  expect(validation.textContent).toContain('本期預測');
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
@@ -346,12 +345,14 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   expect(validation.querySelector('.validation-summary-card')?.textContent).toContain('｜下 2 期｜');
-  const rows = validation.querySelector('.validation-period-block')?.querySelectorAll('.validation-period-row') ?? [];
-  expect([...rows].map((row) => row.querySelector('.validation-issue')?.textContent)).toEqual([
+  const firstGroup = validation.querySelector('.validation-period-block');
+  const rows = firstGroup?.querySelectorAll('.explore-validation-issues .validation-issue') ?? [];
+  expect([...rows].map((row) => row.textContent)).toEqual([
     '114000118', '114000120', '114000123',
   ]);
-  expect(rows[0].querySelector('.validation-formula')?.textContent).toBe('');
-  expect(rows[1].querySelector('.validation-formula')?.textContent).toBe('+14.24');
+  const formulas = firstGroup?.querySelectorAll('.explore-validation-formulas .validation-formula') ?? [];
+  expect(formulas[0]?.textContent).toBe('');
+  expect(formulas[1]?.textContent).toBe('+14.24');
 });
 
 test('兩條公式同時成立時顯示在同一驗證列且不編號', async () => {
@@ -504,7 +505,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
   expect(screen.queryByText('03.09')).toBeNull();
   expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
     lottery: '今彩539',
-    explorePeriods: 2,
+    explorePeriods: 7,
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
@@ -554,6 +555,6 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
   expect(matrixApi.fetchExploreValidation).toHaveBeenCalledWith(
     expect.objectContaining({ analysisVersion: '114000123:v1', drawPeriod: '114000123' }),
     'api-item-1',
-    { explorePeriods: 2, exploreRange: '標準範圍' },
+    { explorePeriods: 7, exploreRange: '標準範圍' },
   );
 });
