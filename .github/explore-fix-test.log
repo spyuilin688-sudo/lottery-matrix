@@ -1,0 +1,267 @@
+.....                                                                    [100%]
+5 passed, 7 deselected in 0.04s
+.....................................F...F.............................. [ 14%]
+................................................................FF...... [ 29%]
+........................................................................ [ 43%]
+........................................................................ [ 58%]
+.......................................................FF............... [ 72%]
+........................................................................ [ 87%]
+..................F....................F......................           [100%]
+=================================== FAILURES ===================================
+______________________ test_worker_uses_matrix_python_v10 ______________________
+
+    def test_worker_uses_matrix_python_v10() -> None:
+>       assert ANALYSIS_VERSION == "matrix-python-v10"
+E       AssertionError: assert 'matrix-python-v11' == 'matrix-python-v10'
+E         
+E         - matrix-python-v10
+E         ?                 ^
+E         + matrix-python-v11
+E         ?                 ^
+
+tests/test_analysis_version_progress.py:86: AssertionError
+____ test_scheduled_worker_does_not_resume_when_current_version_is_complete ____
+
+    def test_scheduled_worker_does_not_resume_when_current_version_is_complete() -> None:
+        repository = InMemoryAnalysisRepository()
+        for offset in range(80):
+            repository.upsert_draw(
+                _draw(221 - offset, "2026-08-28" if offset == 0 else "2026-08-27")
+            )
+        _complete_run(
+            repository,
+            CURRENT_VERSION,
+            "2026-08-29T09:00:00+00:00",
+            "2026-08-29T09:01:00+00:00",
+        )
+        repository.begin_run(
+            LOTTERY,
+            PERIOD,
+            LEGACY_VERSION,
+            "2099-01-01T00:00:00+00:00",
+        )
+    
+>       result = run_scheduled_worker(
+            LOTTERY,
+            datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+            repository,
+            UnexpectedSource(),
+        )
+
+tests/test_analysis_version_progress.py:191: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/worker.py:191: in run_scheduled_worker
+    resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/worker.py:162: in _resume_stored_analysis
+    history = refresh.ensure_algorithm_history(lottery)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/services/draw_refresh.py:181: in ensure_algorithm_history
+    self._fetch_and_store_algorithm_history(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <app.services.draw_refresh.DrawRefreshService object at 0x7fc0c4c4a240>
+lottery = '今彩539'
+existing_history = [{'period': '000000221', 'drawDate': '2026-08-28', 'numbers': ['01', '02', '03', '04', '05'], 'sortedNumbers': ['01', ...': '2026-08-27', 'numbers': ['01', '02', '03', '04', '05'], 'sortedNumbers': ['01', '02', '03', '04', '05'], ...}, ...]
+
+    def _fetch_and_store_algorithm_history(
+        self,
+        lottery: str,
+        existing_history: list[dict[str, Any]],
+    ) -> None:
+        fetch_algorithm_history = getattr(
+            self.source,
+            "fetch_algorithm_history",
+            None,
+        )
+        if not callable(fetch_algorithm_history):
+>           raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
+E           ValueError: DRAW_ORDER_HISTORY_INCOMPLETE
+
+app/services/draw_refresh.py:252: ValueError
+__ test_standard_and_full_share_cells_but_decide_final_results_independently ___
+
+    def test_standard_and_full_share_cells_but_decide_final_results_independently() -> None:
+        result = run_explore_v2_batch("今彩539", _full_only_one_code_history(), 0, 1)
+    
+        full = _matching_items(
+            result,
+            explore_range="完整範圍",
+            algorithm_type="加減",
+            rule_count=1,
+            reference_offset=-8,
+            reference_position=2,
+        )
+        standard = _matching_items(
+            result,
+            explore_range="標準範圍",
+            algorithm_type="加減",
+            rule_count=1,
+            reference_offset=-8,
+            reference_position=2,
+        )
+    
+>       assert len(full) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_explore_v2_runner.py:113: AssertionError
+_____________ test_two_rules_predicting_one_number_emit_one_number _____________
+
+    def test_two_rules_predicting_one_number_emit_one_number() -> None:
+        result = run_explore_v2_batch("今彩539", _same_prediction_two_code_history(), 0, 1)
+    
+        items = _matching_items(
+            result,
+            explore_range="標準範圍",
+            algorithm_type="合值",
+            rule_count=2,
+            reference_offset=0,
+            reference_position=2,
+        )
+    
+>       item = next(value for value in items if value["predictionNumbers"] == ["05"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tests/test_explore_v2_runner.py:131: StopIteration
+_ test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored __
+
+    def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored() -> None:
+        repository = _repository_with_history()
+        calls: list[str] = []
+    
+        result = run_scheduled_worker(
+            "今彩539",
+            datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+            repository,
+            UnexpectedSource(),
+            _builders(calls),
+        )
+    
+        assert result["status"] == "complete"
+>       assert result["analysisVersion"] == "000000221:matrix-python-v10"
+E       AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+E         
+E         - 000000221:matrix-python-v10
+E         ?                           ^
+E         + 000000221:matrix-python-v11
+E         ?                           ^
+
+tests/test_scheduled_worker_resume.py:115: AssertionError
+__ test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows ___
+
+    def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() -> None:
+        repository = _repository_with_history()
+        calls: list[str] = []
+    
+        result = run_scheduled_worker(
+            "今彩539",
+            datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+            repository,
+            UnexpectedSource(),
+            _builders(calls),
+        )
+    
+        assert result["status"] == "complete"
+>       assert result["analysisVersion"] == "000000221:matrix-python-v10"
+E       AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+E         
+E         - 000000221:matrix-python-v10
+E         ?                           ^
+E         + 000000221:matrix-python-v11
+E         ?                           ^
+
+tests/test_scheduled_worker_resume.py:132: AssertionError
+_____________ test_worker_backfills_and_analyzes_complete_history ______________
+
+    def test_worker_backfills_and_analyzes_complete_history() -> None:
+        repository = TrackingRepository()
+        source = Source(history_count=120)
+        calls: list[str] = []
+        history_lengths: list[int] = []
+    
+        result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
+    
+        assert result["status"] == "complete"
+>       assert result["analysisVersion"] == "000000220:matrix-python-v10"
+E       AssertionError: assert '000000220:matrix-python-v11' == '000000220:matrix-python-v10'
+E         
+E         - 000000220:matrix-python-v10
+E         ?                           ^
+E         + 000000220:matrix-python-v11
+E         ?                           ^
+
+tests/test_worker.py:194: AssertionError
+__ test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis __
+
+    def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis() -> None:
+        repository = InMemoryAnalysisRepository()
+        repository.upsert_draw({
+            "lottery": "今彩539",
+            "period": "000000221",
+            "drawDate": "2026-08-28",
+            "numbers": ["01", "02", "03", "04", "05"],
+        })
+        repository.upsert_draw({
+            "lottery": "今彩539",
+            "period": "999999999",
+            "drawDate": None,
+            "numbers": ["06", "07", "08", "09", "10"],
+        })
+        source = ScheduledSource()
+    
+        result = run_scheduled_worker(
+            "今彩539",
+            datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+            repository,
+            source,
+            _builders([]),
+        )
+    
+        assert result["status"] == "complete"
+>       assert result["analysisVersion"] == "000000221:matrix-python-v10"
+E       AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+E         
+E         - 000000221:matrix-python-v10
+E         ?                           ^
+E         + 000000221:matrix-python-v11
+E         ?                           ^
+
+tests/test_worker.py:502: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_analysis_version_progress.py::test_worker_uses_matrix_python_v10 - AssertionError: assert 'matrix-python-v11' == 'matrix-python-v10'
+  
+  - matrix-python-v10
+  ?                 ^
+  + matrix-python-v11
+  ?                 ^
+FAILED tests/test_analysis_version_progress.py::test_scheduled_worker_does_not_resume_when_current_version_is_complete - ValueError: DRAW_ORDER_HISTORY_INCOMPLETE
+FAILED tests/test_explore_v2_runner.py::test_standard_and_full_share_cells_but_decide_final_results_independently - assert 0 == 1
+ +  where 0 = len([])
+FAILED tests/test_explore_v2_runner.py::test_two_rules_predicting_one_number_emit_one_number - StopIteration
+FAILED tests/test_scheduled_worker_resume.py::test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored - AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+  
+  - 000000221:matrix-python-v10
+  ?                           ^
+  + 000000221:matrix-python-v11
+  ?                           ^
+FAILED tests/test_scheduled_worker_resume.py::test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows - AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+  
+  - 000000221:matrix-python-v10
+  ?                           ^
+  + 000000221:matrix-python-v11
+  ?                           ^
+FAILED tests/test_worker.py::test_worker_backfills_and_analyzes_complete_history - AssertionError: assert '000000220:matrix-python-v11' == '000000220:matrix-python-v10'
+  
+  - 000000220:matrix-python-v10
+  ?                           ^
+  + 000000220:matrix-python-v11
+  ?                           ^
+FAILED tests/test_worker.py::test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis - AssertionError: assert '000000221:matrix-python-v11' == '000000221:matrix-python-v10'
+  
+  - 000000221:matrix-python-v10
+  ?                           ^
+  + 000000221:matrix-python-v11
+  ?                           ^
+8 failed, 486 passed in 7.20s
