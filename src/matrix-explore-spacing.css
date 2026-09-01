@@ -9,7 +9,7 @@
   --validation-issue-font-weight: 800;
   box-sizing: border-box;
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .matrix-explore-history-scope {
@@ -27,7 +27,7 @@
   padding: 0 var(--layout-page-inline) var(--layout-bottom-nav-clearance);
   flex-direction: column;
   row-gap: 8px;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .matrix-explore-main-screen .feature-brand-header,

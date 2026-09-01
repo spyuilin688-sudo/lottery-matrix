@@ -501,6 +501,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
   expect(await screen.findByText('22.26')).toBeTruthy();
+  expect(screen.getByRole('button', { name: '同碼' }).getAttribute('aria-pressed')).toBe('false');
   expect(screen.getByText('44')).toBeTruthy();
   expect(screen.queryByText('03.09')).toBeNull();
   expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
@@ -509,6 +510,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
+    sameCode: false,
   }));
 });
 

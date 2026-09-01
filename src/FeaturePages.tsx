@@ -1259,7 +1259,7 @@ export function MatrixExplorePage({
   const [searched, setSearched] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
-  const [sameCode, setSameCode] = useState(true);
+  const [sameCode, setSameCode] = useState(false);
   const [selectedPredictionNumber, setSelectedPredictionNumber] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(

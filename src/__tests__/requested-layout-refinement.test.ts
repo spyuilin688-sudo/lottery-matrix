@@ -94,6 +94,21 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-results-head")!).gridTemplateColumns).toBe("minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.25fr)");
   });
 
+  it("keeps Matrix Explore on the single outer mobile scroll surface", () => {
+    const matrixCss = readCss("src/matrix-explore-spacing.css");
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${matrixCss}`);
+    style.dataset.layoutContract = "matrix-scroll";
+    document.body.innerHTML = `
+      <main class="feature-screen matrix-explore-screen matrix-explore-main-screen matrix-explore-layout">
+        <div class="feature-body"><section class="result-panel"></section></div>
+      </main>`;
+
+    expect(getComputedStyle(document.querySelector(".matrix-explore-main-screen")!).overflowY).toBe("visible");
+    expect(getComputedStyle(document.querySelector(".matrix-explore-main-screen .feature-body")!).overflowY).toBe("visible");
+    expect(matrixCss).toMatch(/\.matrix-explore-main-screen\s*\{[^}]*overflow-x:\s*clip;/s);
+    expect(matrixCss).toMatch(/\.matrix-explore-main-screen \.feature-body\s*\{[^}]*overflow-x:\s*clip;/s);
+  });
+
   it("uses eight-pixel profile rhythm and six-pixel card top padding", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}`);
     style.dataset.layoutContract = "profile";
