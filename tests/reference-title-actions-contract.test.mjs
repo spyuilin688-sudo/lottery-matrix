@@ -6,7 +6,7 @@ const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url),
 const css = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
 test("號碼對照單標題操作保持左側刷新，並以相對位移調整探索設定", () => {
-  const actions = source.match(/<div className="reference-title-actions title-card-compact-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
+  const actions = source.match(/<div className="reference-title-actions title-card-compact-actions(?: tool-title-actions)?">([\s\S]*?)<\/div>/)?.[1] ?? "";
 
   assert.match(actions, /reference-refresh-trigger[\s\S]*刷新/);
   assert.match(actions, /reference-settings-trigger[\s\S]*探索設定/);

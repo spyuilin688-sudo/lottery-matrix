@@ -69,9 +69,19 @@
   min-height: var(--matrix-switcher-size);
   padding: 1px;
   flex: 0 0 var(--matrix-switcher-size);
-  border: 0;
+  border: 1px solid var(--select-tech-border);
   border-radius: 0;
   background: transparent;
+  clip-path: polygon(
+    var(--matrix-switcher-cut) 0,
+    calc(100% - var(--matrix-switcher-cut)) 0,
+    100% var(--matrix-switcher-cut),
+    100% calc(100% - var(--matrix-switcher-cut)),
+    calc(100% - var(--matrix-switcher-cut)) 100%,
+    var(--matrix-switcher-cut) 100%,
+    0 calc(100% - var(--matrix-switcher-cut)),
+    0 var(--matrix-switcher-cut)
+  );
   overflow: hidden;
 }
 

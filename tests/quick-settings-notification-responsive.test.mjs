@@ -79,10 +79,10 @@ test("通知 Matrix Pro 標籤縮小並移至圖示上方", () => {
   );
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 2px;[^}]*border:\s*1px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*6px;/s,
+    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*4\.2px;/s,
   );
-  assert.match(
+  assert.doesNotMatch(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-bulk-disable\s*\{[^}]*background:\s*linear-gradient\(180deg, #161610, #090a08\);/s,
+    /\.notifications-screen-v2 \.notification-bulk-disable\s*\{[^}]*background\s*:/s,
   );
 });
