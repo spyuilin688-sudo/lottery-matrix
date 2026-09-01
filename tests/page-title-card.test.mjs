@@ -48,9 +48,9 @@ test("Matrix explore title owns Tianyan and Tiangong controls", () => {
   const start = featurePages.indexOf("function MatrixPageSwitcher");
   const end = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", start);
   const switcher = featurePages.slice(start, end);
-  assert.match(featurePages, /\{ screen: "explore", label: "Matrix 探索", image: "[^"]*Matrix探索\.png" \}/);
-  assert.match(featurePages, /\{ screen: "tianyan", label: "Matrix 天衍", image: "[^"]*Matrix天衍\.png" \}/);
-  assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工\.png" \}/);
+  assert.match(featurePages, /\{ screen: "explore", label: "Matrix 探索", image: "[^"]*Matrix探索-icon\.png" \}/);
+  assert.match(featurePages, /\{ screen: "tianyan", label: "Matrix 天衍", image: "[^"]*Matrix天衍-icon\.png" \}/);
+  assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工-icon\.png" \}/);
   assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
   assert.match(featurePages, /headerAction=\{<MatrixPageSwitcher current=\{title === "Matrix 天衍" \? "tianyan" : "explore"\}/);
   assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
