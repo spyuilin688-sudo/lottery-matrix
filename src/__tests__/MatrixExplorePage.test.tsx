@@ -510,6 +510,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
+    selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
     sameCode: false,
   }));
 });
