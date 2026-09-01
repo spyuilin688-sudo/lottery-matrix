@@ -2502,7 +2502,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
           <img className="matrix-ticket-image" src={cardUrl} alt={lottery + (order === "draw" ? "落球" : "順球") + "牌單，第 " + cardPeriod + " 期"} />
         ) : null}
       </section>
-      <button type="button" className="primary-action" onClick={handleTicketDownload} disabled={!cardUrl || downloadPending} aria-busy={downloadPending}><DownloadIcon />下載牌單</button>
+      <button type="button" className="primary-action branded-explore-action matrix-card-download-action" onClick={handleTicketDownload} disabled={!cardUrl || downloadPending} aria-busy={downloadPending}><DownloadIcon />下載牌單</button>
       {downloadFailed ? <p role="alert">下載失敗，請稍後再試</p> : null}
     </FeatureShell>
   );

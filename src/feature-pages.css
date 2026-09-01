@@ -862,7 +862,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 12px 0;
 }
 .matrix-card-order button {
-  min-height: 40px;
+  height: 34px;
+  min-height: 34px;
+  padding-block: 0;
   border: 1px solid #6e4c21;
   border-radius: 8px;
   background: #07111a;
@@ -880,13 +882,17 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   place-items: center;
 }
 .matrix-ticket--preview::before { inset: 6px; }
-.matrix-ticket-image {
+.matrix-ticket--preview .matrix-ticket-image {
   display: block;
   width: 100%;
   max-width: 760px;
   height: auto;
   border: 1px solid rgba(221, 174, 73, .45);
   background: #fff;
+}
+.matrix-card-download-action {
+  height: 44px;
+  min-height: 44px;
 }
 .matrix-core-entry-list { display: grid; gap: 12px; }
 .matrix-core-entry {
