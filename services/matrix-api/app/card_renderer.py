@@ -8,6 +8,14 @@ from typing import Any
 CARD_WIDTH = 2276
 CARD_HEIGHT = 3438
 WEEKDAYS = ("一", "二", "三", "四", "五", "六", "日")
+SPECIAL_BLUE = "#0047ff"
+
+_CARD_DRAW_WEEKDAYS = {
+    "今彩539": frozenset(range(6)),
+    "天天樂": frozenset(range(7)),
+    "六合彩": frozenset({1, 3, 5}),
+    "大樂透": frozenset({1, 4}),
+}
 
 
 _LAYOUTS = {
@@ -68,6 +76,15 @@ def _calendar(value: date | None) -> tuple[str, str, str]:
     return str(value.month), f"{value.day:02d}", WEEKDAYS[value.weekday()]
 
 
+def _next_card_draw_date(lottery: str, current: date) -> date:
+    draw_weekdays = _CARD_DRAW_WEEKDAYS[lottery]
+    for offset in range(1, 8):
+        candidate = current + timedelta(days=offset)
+        if candidate.weekday() in draw_weekdays:
+            return candidate
+    raise RuntimeError("NEXT_CARD_DRAW_DATE_NOT_FOUND")
+
+
 def _text(
     x: float,
     y: float,
@@ -125,10 +142,11 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         ])
         for divider in range(1, layout["balls"]):
             cell_x = x + meta_width + number_width * divider / layout["balls"]
+            stroke = SPECIAL_BLUE if layout["special"] and divider == layout["balls"] - 1 else "#777"
             output.append(
                 f'<line x1="{cell_x:.1f}" y1="{header:.1f}" '
                 f'x2="{cell_x:.1f}" y2="{CARD_HEIGHT - footer:.1f}" '
-                'stroke="#777" stroke-width="1"/>'
+                f'stroke="{stroke}" stroke-width="1"/>'
             )
         for row in range(capacity):
             y = header + row * row_height
@@ -142,7 +160,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                 visible_date = _date_value(draw.get("drawDate") or draw.get("date"))
                 values = _numbers(draw, order, bool(layout["special"]))
             elif visible_date is not None:
-                visible_date += timedelta(days=1)
+                visible_date = _next_card_draw_date(lottery, visible_date)
 
             month, day, weekday = _calendar(visible_date)
             if day and (is_first_entry or day == "01"):
@@ -153,8 +171,15 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                 output.append(_text(x + 136, baseline, display_weekday, 31, fill="#d81e25" if weekday == "日" else "#333"))
             cell_width = number_width / layout["balls"]
             for index, value in enumerate(values[: layout["balls"]]):
-                fill = "#0047ff" if layout["special"] and index == layout["balls"] - 1 else "#111"
+                fill = SPECIAL_BLUE if layout["special"] and index == layout["balls"] - 1 else "#111"
                 output.append(_text(x + meta_width + cell_width * (index + 0.5), baseline, value, 39, fill=fill, weight=700))
+            if layout["special"]:
+                special_start = x + meta_width + number_width * (layout["balls"] - 1) / layout["balls"]
+                output.append(
+                    f'<line x1="{special_start:.1f}" y1="{y:.1f}" '
+                    f'x2="{x + column_width:.1f}" y2="{y:.1f}" '
+                    f'stroke="{SPECIAL_BLUE}" stroke-width="1"/>'
+                )
         output.append(f'<line x1="{x:.1f}" y1="{CARD_HEIGHT - footer:.1f}" x2="{x + column_width:.1f}" y2="{CARD_HEIGHT - footer:.1f}" stroke="#111" stroke-width="2"/>')
     output.extend([
         f'<rect x="8" y="{CARD_HEIGHT - footer:.1f}" width="2260" height="62" fill="{layout["accent"]}" stroke="#111" stroke-width="3"/>',
