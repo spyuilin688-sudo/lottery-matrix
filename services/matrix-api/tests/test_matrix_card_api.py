@@ -1,3 +1,4 @@
+import re
 from urllib.parse import quote
 
 from app.api_server import handle_api_request, handle_matrix_card_request
@@ -73,4 +74,37 @@ def test_card_uses_reference_grid_edges_and_number_cell_dividers() -> None:
             f'<line x1="{divider:.1f}" y1="104.0" '
             f'x2="{divider:.1f}" y2="3368.0" '
             'stroke="#777" stroke-width="1"/>'
+        ) in svg
+
+
+def test_future_rows_follow_each_lottery_draw_calendar() -> None:
+    cases = (
+        ("今彩539", "2026-08-29", "31", "一", 199.7),
+        ("天天樂", "2026-08-29", "30", "—", 199.7),
+        ("六合彩", "2026-08-29", "01", "二", 198.1),
+        ("大樂透", "2026-08-28", "01", "二", 198.1),
+    )
+
+    for lottery, draw_date, expected_day, expected_weekday, baseline in cases:
+        svg = render_matrix_card(lottery, "draw", [{"drawDate": draw_date, "numbers": []}])
+        assert re.search(
+            rf'<text x="88.0" y="{baseline:.1f}"[^>]*>{expected_day}</text>',
+            svg,
+        )
+        assert re.search(
+            rf'<text x="144.0" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
+            svg,
+        )
+
+
+def test_special_number_column_uses_blue_grid_lines() -> None:
+    for lottery in ("六合彩", "大樂透"):
+        svg = render_matrix_card(lottery, "draw", [])
+        assert (
+            '<line x1="680.3" y1="104.0" x2="680.3" y2="3368.0" '
+            'stroke="#0047ff" stroke-width="1"/>'
+        ) in svg
+        assert (
+            '<line x1="680.3" y1="104.0" x2="761.3" y2="104.0" '
+            'stroke="#0047ff" stroke-width="1"/>'
         ) in svg
