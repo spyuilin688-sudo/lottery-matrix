@@ -133,6 +133,9 @@
 ## Artifact、RPC 與分析版本
 
 - 探索 artifact 保持現有 list 與 validation 對外欄位。
+- 標準與完整各自完成最終有效性判定；持久層以 `explore_range` 區分兩種 final result，item id 必須包含範圍，避免兩種驗證資料互相覆蓋。
+- `matrix_explore_list` 與 `matrix_explore_validation` 依請求的 `exploreRange` 直接讀取對應 final result，不得再使用 `reference_offset >= -7` 從完整結果推導標準結果。
+- `explore_range` 為內部持久層欄位，不改變既有前端結果與驗證回傳欄位。
 - Matrix 狀態繼續使用同一探索 artifact。
 - Worker analysis version 與 `matrix_explore_list`、`matrix_explore_validation` 查詢版本必須同步。
 - 新版本必須重新計算，不能沿用舊演算法已完成的 progress 或 artifact。
