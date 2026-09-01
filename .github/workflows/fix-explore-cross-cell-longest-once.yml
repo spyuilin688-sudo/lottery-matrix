@@ -48,13 +48,30 @@ jobs:
         run: python .github/scripts/one_off_fix_explore_cross_cell.py apply-fix
 
       - name: Verify GREEN and full Matrix API suite
+        id: verify
+        continue-on-error: true
         working-directory: services/matrix-api
         shell: bash
         run: |
-          uv run pytest -q tests/test_explore_v2_runner.py -k cross_reference
-          uv run pytest -q
-          uv run python -m compileall -q app
-          git diff --check
+          set -o pipefail
+          {
+            uv run pytest -q tests/test_explore_v2_runner.py -k cross_reference
+            uv run pytest -q
+            uv run python -m compileall -q app
+            git diff --check
+          } 2>&1 | tee "$GITHUB_WORKSPACE/explore-fix-test.log"
+
+      - name: Store failure log
+        if: steps.verify.outcome == 'failure'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mv explore-fix-test.log .github/explore-fix-test.log
+          git add .github/explore-fix-test.log
+          git commit -m "chore: capture Explore fix test failure"
+          git push origin "HEAD:${{ github.ref_name }}"
+          exit 1
 
       - name: Remove one-off automation
         run: |
