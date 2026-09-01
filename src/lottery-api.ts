@@ -38,6 +38,42 @@ export type LotteryHistoryResponse = {
   items?: LotteryDrawRecord[];
 } | LotteryDrawRecord[];
 
+export type MatrixCardOrder = 'draw' | 'sorted';
+
+export type MatrixCardManifest = {
+  lottery: NumberBallLottery;
+  period: string | null;
+  cards: Record<MatrixCardOrder, { url: string }>;
+};
+
+export function matrixCardUrl(path: string) {
+  if (!LOTTERY_API_BASE) {
+    throw new Error('Railway Lottery API is not configured');
+  }
+  return new URL(path, LOTTERY_API_BASE).toString();
+}
+
+export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promise<MatrixCardManifest> {
+  const payload = await requestJson<Partial<MatrixCardManifest>>(
+    `/api/matrix/cards/${encodeURIComponent(lottery)}`,
+  );
+  if (
+    payload.lottery !== lottery
+    || !payload.cards?.draw?.url
+    || !payload.cards?.sorted?.url
+  ) {
+    throw new Error('Lottery API returned invalid matrix card metadata');
+  }
+  return {
+    lottery,
+    period: typeof payload.period === 'string' ? payload.period : null,
+    cards: {
+      draw: { url: payload.cards.draw.url },
+      sorted: { url: payload.cards.sorted.url },
+    },
+  };
+}
+
 export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 
 export type TongXingRequest = {

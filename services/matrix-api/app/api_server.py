@@ -5,8 +5,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
+from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_call_time
 from app.settings import load_settings
@@ -17,6 +18,7 @@ NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 HISTORY_RANGES = {1000, 3000, 5000}
 PAGE_SIZE = 1000
 SERVICE_NAME = "matrix-railway-api"
+CARD_PREFIX = "/api/matrix/cards/"
 
 
 def _service_version() -> str:
@@ -58,6 +60,42 @@ def _parse_number_order(value: Any) -> str:
     if order not in NUMBER_ORDERS:
         raise ValueError("未知號碼順序")
     return order
+
+
+def _card_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, Any]:
+    encoded_lottery = quote(lottery, safe="")
+    latest = _history(repository, lottery, 1)
+    item = latest[0] if latest else None
+    return {
+        "lottery": lottery,
+        "period": None if item is None else item["period"],
+        "cards": {
+            "draw": {"url": f"{CARD_PREFIX}{encoded_lottery}/draw.svg"},
+            "sorted": {"url": f"{CARD_PREFIX}{encoded_lottery}/sorted.svg"},
+        },
+    }
+
+
+def handle_matrix_card_request(
+    target: str,
+    repository: AnalysisRepository,
+) -> tuple[int, str] | None:
+    path = urlsplit(target).path
+    if not path.startswith(CARD_PREFIX) or not path.endswith(".svg"):
+        return None
+    route = path[len(CARD_PREFIX):-4]
+    try:
+        encoded_lottery, order = route.rsplit("/", 1)
+    except ValueError as error:
+        raise ValueError("牌單路徑格式錯誤") from error
+    lottery = _parse_lottery(unquote(encoded_lottery))
+    if order not in {"draw", "sorted"}:
+        raise ValueError("未知牌單順序")
+    row_count = sum(card_layout(lottery)["column_rows"])
+    draws = _history(repository, lottery, row_count)
+    if not draws:
+        raise ValueError("牌單尚未建立")
+    return 200, render_matrix_card(lottery, order, draws)
 
 
 def _parse_numbers(value: Any, maximum: int = 3) -> list[str]:
@@ -239,6 +277,10 @@ def handle_api_request(
                 return 200, {"items": repository.list_job_statuses()}
             except Exception:
                 return 503, {"error": "STATUS_UNAVAILABLE"}
+        if method == "GET" and path.startswith(CARD_PREFIX):
+            card_lottery = path[len(CARD_PREFIX):]
+            if "/" not in card_lottery:
+                return 200, _card_manifest(_parse_lottery(unquote(card_lottery)), repository)
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
@@ -298,12 +340,36 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
     def _is_protected_status_path(self) -> bool:
         return urlsplit(self.path).path == "/jobs/status"
 
+    def _is_matrix_card_path(self) -> bool:
+        return urlsplit(self.path).path.startswith(CARD_PREFIX)
+
+    def _send_svg(self, status: int, svg: str) -> None:
+        encoded = svg.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET,OPTIONS")
+        self.end_headers()
+        self.wfile.write(encoded)
+
     def do_OPTIONS(self) -> None:
         protected = self._is_protected_status_path()
         self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
         protected = self._is_protected_status_path()
+        if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
+            try:
+                card_response = handle_matrix_card_request(self.path, self.repository)
+            except ValueError as error:
+                self._send(400, {"error": str(error)}, no_store=True)
+                return
+            if card_response is not None:
+                status, svg = card_response
+                self._send_svg(status, svg)
+                return
         status, payload = handle_api_request(
             "GET",
             self.path,
@@ -311,7 +377,12 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
         )
-        self._send(status, payload, allow_cors=not protected, no_store=protected)
+        self._send(
+            status,
+            payload,
+            allow_cors=not protected,
+            no_store=protected or self._is_matrix_card_path(),
+        )
 
     def do_POST(self) -> None:
         try:

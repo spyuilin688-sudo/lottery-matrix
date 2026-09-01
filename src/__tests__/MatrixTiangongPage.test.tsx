@@ -84,6 +84,7 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
   expect(await screen.findByText('12')).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
     lottery: '今彩539', periodRange: 80,
+    mode: 'two-stage', hitCondition: '準2進3',
     exploreDirections: ['固定', '依序遞增'],
     firstStageDirections: ['固定'], firstRoadTypes: ['加減'],
     secondStageDirections: ['固定'], secondRoadTypes: ['加減'],

@@ -855,6 +855,39 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .ticket-status { display: grid; width: 100%; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .ticket-status span { padding: 8px; border: 1px solid #6e4c21; border-radius: 7px; color: #c8b994; font-size: 11px; text-align: center; }
 .matrix-ticket + .primary-action { margin-top: 12px; }
+.matrix-card-order {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.matrix-card-order button {
+  min-height: 40px;
+  border: 1px solid #6e4c21;
+  border-radius: 8px;
+  background: #07111a;
+  color: #c8b994;
+}
+.matrix-card-order button.is-selected {
+  border-color: #d7a93f;
+  background: #241908;
+  color: #f3dfac;
+}
+.matrix-ticket--preview {
+  display: grid;
+  min-height: 0;
+  padding: 10px;
+  place-items: center;
+}
+.matrix-ticket--preview::before { inset: 6px; }
+.matrix-ticket-image {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  border: 1px solid rgba(221, 174, 73, .45);
+  background: #fff;
+}
 .matrix-core-entry-list { display: grid; gap: 12px; }
 .matrix-core-entry {
   display: grid;

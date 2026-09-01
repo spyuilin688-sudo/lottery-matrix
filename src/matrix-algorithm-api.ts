@@ -177,6 +177,8 @@ export type TiangongApiRow = {
 export type TiangongListRequest = {
   lottery: NumberBallLottery;
   periodRange: 50 | 80;
+  mode: 'two-stage';
+  hitCondition: '準2進3';
   exploreDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
   firstStageDirections: Array<'固定' | '依序遞增' | '依序遞減'>;
   firstRoadTypes: Array<'加減' | '合值'>;

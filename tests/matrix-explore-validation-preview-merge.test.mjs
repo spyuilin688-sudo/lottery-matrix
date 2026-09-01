@@ -18,6 +18,6 @@ test("Matrix Explore renders API validation with the merged three-column preview
   assert.match(component[0], /className="explore-validation-formulas"/);
   assert.match(component[0], /className="explore-validation-prediction"/);
 
-  assert.match(css, /\.matrix-explore-main-screen \.explore-validation-group\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\) 110px/s);
-  assert.match(css, /\.matrix-explore-main-screen \.explore-validation-summary-card\s*\{[\s\S]*?border:\s*1px solid #e6b76a/s);
+  assert.match(css, /\.matrix-explore-main-screen(?::not\(\.explore-result-preview-screen\))? \.explore-validation-group\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\) 110px/s);
+  assert.match(css, /\.matrix-explore-main-screen(?::not\(\.explore-result-preview-screen\))? \.explore-validation-summary-card\s*\{[\s\S]*?border:\s*1px solid #e6b76a/s);
 });
