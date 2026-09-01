@@ -2154,11 +2154,6 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const toggleMarkedCell = (issue: string, number: string) => {
     const key = `${issue}-${number}`;
-    setMarkedRows((rows) => {
-      const next = new Set(rows);
-      next.delete(issue);
-      return next;
-    });
     setMarkedCells((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);

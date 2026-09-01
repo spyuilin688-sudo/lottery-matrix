@@ -128,7 +128,7 @@ test('已存在 01 到 04 時仍可輸入 11 到 49', () => {
   }
 });
 
-test('整列標記後點擊同一期單格會清除整列並保留單格標記', async () => {
+test('整列標記後點擊同一期單格會保留整列並標記單格', async () => {
   mockReferenceHistory();
   render(<NumberReferencePage onNavigate={vi.fn()} />);
   const issueButton = await screen.findByRole('button', { name: '115078' });
@@ -140,7 +140,7 @@ test('整列標記後點擊同一期單格會清除整列並保留單格標記',
 
   fireEvent.click(numberButton);
 
-  expect(issueButton.getAttribute('aria-pressed')).toBe('false');
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
   expect(numberButton.getAttribute('aria-pressed')).toBe('true');
 });
 
