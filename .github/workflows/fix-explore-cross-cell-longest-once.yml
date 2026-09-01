@@ -75,17 +75,23 @@ jobs:
           fi
           exit 1
 
-      - name: Remove one-off automation
+      - name: Stage verified production and test changes
         run: |
           rm -f .github/explore-fix-test.log
-          rm .github/scripts/one_off_fix_explore_cross_cell.py
-          rm .github/workflows/fix-explore-cross-cell-longest-once.yml
+          git add \
+            .github/workflows/matrix-analysis.yml \
+            .github/explore-fix-test.log \
+            services/matrix-api/app/domain/explore_v2.py \
+            services/matrix-api/app/worker.py \
+            services/matrix-api/tests/test_analysis_version_progress.py \
+            services/matrix-api/tests/test_explore_v2_runner.py \
+            services/matrix-api/tests/test_scheduled_worker_resume.py \
+            services/matrix-api/tests/test_worker.py
 
       - name: Commit verified fix to branch
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
           git commit -m "fix: reject cross-cell over-two longest rules"
           git push origin "HEAD:${{ github.ref_name }}"
