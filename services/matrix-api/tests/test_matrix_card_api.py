@@ -65,6 +65,39 @@ def test_card_prints_month_markers_sunday_dash_and_future_calendar_rows() -> Non
     assert 'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"' in svg
 
 
+def test_card_uses_the_measured_reference_text_metrics() -> None:
+    svg = render_matrix_card(
+        "今彩539",
+        "sorted",
+        [{
+            "drawDate": "2026-12-09",
+            "numbers": ["07", "08", "15", "30", "39"],
+            "sortedNumbers": ["07", "08", "15", "30", "39"],
+        }],
+    )
+
+    assert (
+        '<text x="384.0" y="86.0" text-anchor="middle" '
+        'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif" '
+        'font-size="72" font-weight="700" '
+        'textLength="232" lengthAdjust="spacingAndGlyphs" fill="#000">539 順球</text>'
+    ) in svg
+    assert (
+        '<text x="51.0" y="144.0" text-anchor="middle" '
+        'font-family="Arial" font-size="45" font-weight="400" '
+        'fill="#0000ff">12</text>'
+    ) in svg
+    assert (
+        '<text x="110.0" y="140.0" text-anchor="middle" '
+        'font-family="Arial" font-size="39" font-weight="400" fill="#000">09</text>'
+    ) in svg
+    assert (
+        '<text x="229.0" y="145.0" text-anchor="middle" '
+        'font-family="Arial" font-size="48" font-weight="700" '
+        'textLength="57" lengthAdjust="spacingAndGlyphs" fill="#000">07</text>'
+    ) in svg
+
+
 def test_card_uses_measured_reference_grid_edges_and_fixed_row_pitch() -> None:
     svg = render_matrix_card("今彩539", "draw", [])
 
@@ -83,6 +116,28 @@ def test_card_uses_measured_reference_grid_edges_and_fixed_row_pitch() -> None:
         ) in svg
 
 
+def test_each_lottery_uses_its_own_measured_reference_grid_edges() -> None:
+    daily = render_matrix_card("天天樂", "draw", [])
+    assert (
+        '<line x1="189.0" y1="99.0" x2="189.0" y2="3339.0" '
+        'stroke="#000" stroke-width="2"/>'
+    ) in daily
+    assert (
+        '<line x1="1619.0" y1="99.0" x2="1619.0" y2="3339.0" '
+        'stroke="#000" stroke-width="2"/>'
+    ) in daily
+    assert (
+        '<line x1="1947.0" y1="99.0" x2="1947.0" y2="3339.0" '
+        'stroke="#000" stroke-width="2"/>'
+    ) in daily
+
+    lotto = render_matrix_card("大樂透", "draw", [])
+    assert (
+        '<line x1="883.0" y1="99.0" x2="883.0" y2="3339.0" '
+        'stroke="#000" stroke-width="2"/>'
+    ) in lotto
+
+
 def test_card_uses_the_reference_accent_colours() -> None:
     expected = {
         "今彩539": "#ffff00",
@@ -97,20 +152,20 @@ def test_card_uses_the_reference_accent_colours() -> None:
 
 def test_future_rows_follow_each_lottery_draw_calendar() -> None:
     cases = (
-        ("今彩539", "2026-08-29", "31", "一", 195.0),
-        ("天天樂", "2026-08-29", "30", "—", 195.0),
-        ("六合彩", "2026-08-29", "01", "二", 195.0),
-        ("大樂透", "2026-08-28", "01", "二", 195.0),
+        ("今彩539", "2026-08-29", "31", "一", 164.0, 194.0),
+        ("天天樂", "2026-08-29", "30", "—", 163.0, 194.0),
+        ("六合彩", "2026-08-29", "01", "二", 164.0, 194.0),
+        ("大樂透", "2026-08-28", "01", "二", 164.0, 194.0),
     )
 
-    for lottery, draw_date, expected_day, expected_weekday, baseline in cases:
+    for lottery, draw_date, expected_day, expected_weekday, weekday_x, baseline in cases:
         svg = render_matrix_card(lottery, "draw", [{"drawDate": draw_date, "numbers": []}])
         assert re.search(
             rf'<text x="110.0" y="{baseline:.1f}"[^>]*>{expected_day}</text>',
             svg,
         )
         assert re.search(
-            rf'<text x="164.0" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
+            rf'<text x="{weekday_x:.1f}" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
             svg,
         )
 
