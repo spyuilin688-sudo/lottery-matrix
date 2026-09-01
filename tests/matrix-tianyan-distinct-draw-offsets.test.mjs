@@ -24,8 +24,5 @@ test("天衍日期偏移先按開獎期去重，再選本日／昨日／前日",
     migration,
     /from latest_versions\s+order by\s+\(draw_date is not null\) desc,\s+draw_date desc nulls last,\s+draw_period desc,\s+completed_at desc nulls last\s+offset v_offset/s,
   );
-  assert.doesNotMatch(
-    migration,
-    /from public\.matrix_analysis_runs as run[\s\S]*?order by[\s\S]*?offset v_offset[\s\S]*?limit 1;/,
-  );
+  assert.equal((migration.match(/offset v_offset/g) ?? []).length, 1);
 });
