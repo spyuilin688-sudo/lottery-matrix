@@ -62,7 +62,11 @@ class AlgorithmHistorySource(Source):
             rows.append({
                 **anchor,
                 "sortedNumbers": anchor["numbers"],
-                "drawOrderNumbers": list(reversed(anchor["numbers"])),
+                "drawOrderNumbers": (
+                    list(reversed(anchor["numbers"]))
+                    if self.complete
+                    else None
+                ),
             })
         return rows
 

@@ -1,15 +1,18 @@
 from datetime import date, timedelta
 from typing import Any, Protocol
 
+from app.domain.history_boundaries import (
+    SORTED_HISTORY_START_PERIODS,
+    draw_order_history,
+    has_complete_draw_order,
+    incomplete_history_years,
+    period_sort_key,
+)
 from app.repositories.analysis_repository import AnalysisRepository
 
 
 DRAW_UPSERT_BATCH_SIZE = 500
-ALGORITHM_HISTORY_START_PERIODS = {
-    "今彩539": "096000001",
-    "六合彩": "076001",
-    "大樂透": "093000001",
-}
+ALGORITHM_HISTORY_START_PERIODS = SORTED_HISTORY_START_PERIODS
 ALGORITHM_HISTORY_START_YEARS = {
     "今彩539": 96,
     "六合彩": 1976,
@@ -56,29 +59,11 @@ def missing_algorithm_history_years(
     lottery: str,
     history: list[dict[str, Any]],
 ) -> list[int]:
-    start_year = ALGORITHM_HISTORY_START_YEARS[lottery]
-    sequences_by_year: dict[int, set[int]] = {}
-    for draw in history:
-        period = str(draw.get("period") or "").strip()
-        if not period.isdigit():
-            raise ValueError("DRAW_HISTORY_INCOMPLETE")
-        if lottery in {"今彩539", "大樂透"} and len(period) in {8, 9}:
-            year = int(period[:-6])
-            sequence = int(period[-6:])
-        elif lottery == "六合彩" and len(period) == 6:
-            short_year = int(period[1:3])
-            year = 1900 + short_year if short_year >= 76 else 2000 + short_year
-            sequence = int(period[3:])
-        else:
-            raise ValueError("DRAW_HISTORY_INCOMPLETE")
-        sequences_by_year.setdefault(year, set()).add(sequence)
-
-    latest_year = max(sequences_by_year, default=start_year)
-    return [
-        year
-        for year in range(start_year, latest_year + 1)
-        if 1 not in sequences_by_year.get(year, set())
-    ]
+    return incomplete_history_years(
+        lottery,
+        history,
+        first_year=ALGORITHM_HISTORY_START_YEARS[lottery],
+    )
 
 
 def require_complete_history(
@@ -169,51 +154,46 @@ class DrawRefreshService:
         history = self.repository.list_draws(lottery, None)
         if lottery == "天天樂":
             return history
-        history = self._sort_algorithm_history(lottery, history)
-
-        count = 5 if lottery == "今彩539" else 7
-        start_period = ALGORITHM_HISTORY_START_PERIODS[lottery]
-        needs_backfill = (
-            any(not self._has_complete_draw_order(draw, count) for draw in history)
-            or not any(str(draw.get("period")) == start_period for draw in history)
-            or bool(missing_history_periods(lottery, history))
-            or bool(missing_algorithm_history_years(lottery, history))
-        )
-        if needs_backfill:
-            fetch_algorithm_history = getattr(
-                self.source, "fetch_algorithm_history", None,
-            )
-            if not callable(fetch_algorithm_history):
-                raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
-            existing_by_period = {
-                str(draw.get("period")): draw
-                for draw in history
-            }
-            draws = [
-                self._prepare_history_draw(
-                    lottery,
-                    raw,
-                    existing_by_period.get(str(raw.get("period"))),
-                    allow_missing_date=True,
-                )
-                for raw in fetch_algorithm_history(lottery)
-            ]
-            if not draws:
-                raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
-            self._upsert_draws(draws)
+        try:
+            history = self._sort_algorithm_history(lottery, history)
+        except ValueError as error:
+            if error.args != ("DRAW_HISTORY_CONFLICT",):
+                raise
+            self._fetch_and_store_algorithm_history(lottery, history)
             history = self._sort_algorithm_history(
                 lottery,
                 self.repository.list_draws(lottery, None),
             )
 
-        if any(not self._has_complete_draw_order(draw, count) for draw in history):
-            raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
+        start_period = ALGORITHM_HISTORY_START_PERIODS[lottery]
+        try:
+            draw_order_history(lottery, history, require_boundary=True)
+            order_history_incomplete = False
+        except ValueError:
+            order_history_incomplete = True
+        needs_backfill = (
+            order_history_incomplete
+            or not any(str(draw.get("period")) == start_period for draw in history)
+            or bool(missing_history_periods(lottery, history))
+            or bool(missing_algorithm_history_years(lottery, history))
+        )
+        if needs_backfill:
+            self._fetch_and_store_algorithm_history(
+                lottery,
+                self.repository.list_draws(lottery, None),
+            )
+            history = self._sort_algorithm_history(
+                lottery,
+                self.repository.list_draws(lottery, None),
+            )
+
         if (
             not any(str(draw.get("period")) == start_period for draw in history)
             or missing_history_periods(lottery, history)
             or missing_algorithm_history_years(lottery, history)
         ):
             raise ValueError("DRAW_HISTORY_INCOMPLETE")
+        draw_order_history(lottery, history, require_boundary=True)
         return history
 
     @staticmethod
@@ -221,19 +201,90 @@ class DrawRefreshService:
         lottery: str,
         history: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        def period_key(draw: dict[str, Any]) -> int:
-            period = str(draw.get("period") or "")
-            if lottery == "六合彩" and len(period) == 6 and period.isdigit():
-                short_year = int(period[1:3])
-                full_year = (
-                    1900 + short_year
-                    if short_year >= 76
-                    else 2000 + short_year
-                )
-                return full_year * 1000 + int(period[3:])
-            return int(period) if period.isdigit() else -1
+        by_period: dict[int, dict[str, Any]] = {}
+        for raw in history:
+            raw_period = str(raw.get("period") or "").strip()
+            if lottery in {"今彩539", "大樂透"} and len(raw_period) == 8:
+                canonical_period = raw_period.zfill(9)
+            else:
+                canonical_period = raw_period
+            key = period_sort_key(lottery, canonical_period)
+            if key < 0:
+                raise ValueError("DRAW_HISTORY_INCOMPLETE")
+            draw = {**raw, "period": canonical_period}
+            existing = by_period.get(key)
+            if existing is not None:
+                if DrawRefreshService._history_payload(existing) != (
+                    DrawRefreshService._history_payload(draw)
+                ):
+                    raise ValueError("DRAW_HISTORY_CONFLICT")
+            else:
+                by_period[key] = draw
+        return [by_period[key] for key in sorted(by_period, reverse=True)]
 
-        return sorted(history, key=period_key, reverse=True)
+    @staticmethod
+    def _history_payload(draw: dict[str, Any]) -> tuple[Any, ...]:
+        normalized_date = (
+            str(draw.get("drawDate") or "")
+            .strip()
+            .replace("/", "-")
+            .replace(".", "-")[:10]
+        )
+        order = draw.get("drawOrderNumbers")
+        return (
+            normalized_date,
+            tuple(draw.get("numbers") or ()),
+            tuple(draw.get("sortedNumbers") or draw.get("numbers") or ()),
+            None if order is None else tuple(order),
+        )
+
+    def _fetch_and_store_algorithm_history(
+        self,
+        lottery: str,
+        existing_history: list[dict[str, Any]],
+    ) -> None:
+        fetch_algorithm_history = getattr(
+            self.source,
+            "fetch_algorithm_history",
+            None,
+        )
+        if not callable(fetch_algorithm_history):
+            raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
+        existing_by_period = {
+            str(draw.get("period")): draw
+            for draw in existing_history
+        }
+        alias_periods_by_key: dict[int, list[str]] = {}
+        if lottery in {"今彩539", "大樂透"}:
+            for draw in existing_history:
+                period = str(draw.get("period") or "").strip()
+                alias_periods_by_key.setdefault(
+                    period_sort_key(lottery, period),
+                    [],
+                ).append(period)
+
+        draws: list[dict[str, Any]] = []
+        for raw in fetch_algorithm_history(lottery):
+            prepared = self._prepare_history_draw(
+                lottery,
+                raw,
+                existing_by_period.get(str(raw.get("period"))),
+                allow_missing_date=True,
+            )
+            draws.append(prepared)
+            prepared_period = str(prepared["period"])
+            for alias_period in alias_periods_by_key.get(
+                period_sort_key(lottery, prepared_period),
+                [],
+            ):
+                if (
+                    alias_period != prepared_period
+                    and {len(alias_period), len(prepared_period)} == {8, 9}
+                ):
+                    draws.append({**prepared, "period": alias_period})
+        if not draws:
+            raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
+        self._upsert_draws(draws)
 
     def _recent_history(
         self, lottery: str, latest: list[dict[str, Any]],
@@ -298,22 +349,7 @@ class DrawRefreshService:
 
     @staticmethod
     def _has_complete_draw_order(draw: dict[str, Any], count: int) -> bool:
-        numbers = draw.get("numbers")
-        order = draw.get("drawOrderNumbers")
-        return (
-            isinstance(numbers, list)
-            and isinstance(order, list)
-            and len(order) == count
-            and len(set(order)) == count
-            and sorted(order) == sorted(numbers)
-            and (
-                count != 7
-                or (
-                    order[-1] == numbers[-1]
-                    and sorted(order[:6]) == sorted(numbers[:6])
-                )
-            )
-        )
+        return has_complete_draw_order(draw, count)
 
     @classmethod
     def _prepare_draw(

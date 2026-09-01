@@ -22,7 +22,17 @@ NFD_MARKSIX_URL = "https://www.nfd.com.tw/house/year/{year}.htm"
 NFD_MARKSIX_DRAW_ORDER_URL = "https://www.nfd.com.tw/house/year/F{year}.htm"
 NFD_MARKSIX_FIRST_YEAR = 1976
 NFD_DAILY539_DRAW_ORDER_URL = "https://www.nfd.com.tw/lottery/39-year/39-f{year}.htm"
-NFD_DAILY539_FIRST_YEAR = 2007
+BIGA_LOTTO649_HISTORY_URL = (
+    "https://rk.biga.com.tw/ARCHIVE/DRAWDATA/PAGINATION/ZP/"
+    "biglottoresultlist?page={page}"
+)
+BIGA_LOTTO649_MAX_PAGES = 80
+BIGA_LOTTO649_LEGACY_PERIODS = frozenset(
+    f"{roc_year:03d}{sequence:06d}"
+    for roc_year in range(93, 96)
+    for sequence in range(1, 105)
+)
+LOTTO649_OFFICIAL_API_FIRST_MONTH = "2007-01"
 MAX_TAIWAN_HISTORY_MONTHS = 360
 FORMAL_PAGE_REFERERS = {
     "今彩539": "https://www.taiwanlottery.com/lotto/result/daily_cash",
@@ -117,7 +127,9 @@ def parse_taiwan_lottery_history(payload: Any, key: str, count: int) -> list[Mat
         if not isinstance(size, list) or not isinstance(appear, list):
             continue
         try:
-            parsed.append(_materialize_draw(str(item.get("period", "")), str(item.get("lotteryDate", "")), size, count, appear))
+            raw_period = str(item.get("period", "")).strip()
+            period = raw_period.zfill(9) if len(raw_period) == 8 else raw_period
+            parsed.append(_materialize_draw(period, str(item.get("lotteryDate", "")), size, count, appear))
         except ValueError:
             continue
     return _newest_unique(parsed)
@@ -418,6 +430,44 @@ def parse_nfd_daily539_draw_order_history(html: str) -> list[MatrixDraw]:
     return _newest_unique(draws)
 
 
+def _biga_taiwan_period(value: str) -> str:
+    match = re.fullmatch(r"(\d{3})(\d{3})", value.strip())
+    return f"{match.group(1)}{int(match.group(2)):06d}" if match else ""
+
+
+def parse_biga_lotto649_history(html: str) -> list[MatrixDraw]:
+    draws: list[MatrixDraw] = []
+    for cells in parse_table_rows(html):
+        if len(cells) < 19:
+            continue
+        period = _biga_taiwan_period(cells[2])
+        draw_date = _date([cells[0]])
+        draw_order = _exact_numbers(" ".join(cells[6:12]), 6, 49)
+        special = _exact_numbers(cells[12], 1, 49)
+        sorted_numbers = _exact_numbers(" ".join(cells[13:19]), 6, 49)
+        if (
+            not period
+            or not draw_date
+            or not draw_order
+            or not special
+            or not sorted_numbers
+        ):
+            continue
+        try:
+            draws.append(
+                _materialize_draw(
+                    period,
+                    draw_date,
+                    [*sorted_numbers, *special],
+                    7,
+                    [*draw_order, *special],
+                )
+            )
+        except ValueError:
+            continue
+    return _newest_unique(draws)
+
+
 def _response_text(response: httpx.Response) -> str:
     content_type = response.headers.get("content-type", "")
     charset_match = re.search(r"charset\s*=\s*([^;\s]+)", content_type, re.IGNORECASE)
@@ -489,26 +539,10 @@ class LatestDrawSource:
 
     def fetch_algorithm_history(self, lottery: str) -> list[MatrixDraw]:
         if lottery == "今彩539":
-            official = self._fetch_taiwan_history(lottery, None)
-            official_years = [
-                int(str(draw.get("drawDate", ""))[:4])
-                for draw in official
-                if re.match(r"\d{4}", str(draw.get("drawDate", "")))
-            ]
-            oldest_official_year = min(official_years) if official_years else self.now().year
-            historical: list[MatrixDraw] = []
-            for year in range(oldest_official_year, NFD_DAILY539_FIRST_YEAR - 1, -1):
-                response = self.client.get(
-                    NFD_DAILY539_DRAW_ORDER_URL.format(year=year),
-                    headers=HEADERS,
-                    timeout=20.0,
-                    follow_redirects=True,
-                )
-                response.raise_for_status()
-                historical.extend(
-                    parse_nfd_daily539_draw_order_history(_response_text(response))
-                )
-            return _newest_unique([*historical, *official])
+            # Taiwan Lottery supplies authoritative size and actual-order rows
+            # continuously back to 2007.  Do not merge NFD aliases here: a few
+            # legacy NFD rows conflict with the official order or even number.
+            return self._fetch_taiwan_history(lottery, None)
 
         if lottery == "六合彩":
             draws: list[MatrixDraw] = []
@@ -547,6 +581,26 @@ class LatestDrawSource:
             except (httpx.HTTPError, ValueError):
                 pass
             return _newest_unique(draws)
+
+        if lottery == "大樂透":
+            official = self._fetch_taiwan_history(lottery, None)
+            legacy_by_period: dict[str, MatrixDraw] = {}
+            for page in range(1, BIGA_LOTTO649_MAX_PAGES + 1):
+                response = self.client.get(
+                    BIGA_LOTTO649_HISTORY_URL.format(page=page),
+                    headers={**HEADERS, "referer": "https://rk.biga.com.tw/"},
+                    timeout=30.0,
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                for draw in parse_biga_lotto649_history(_response_text(response)):
+                    if draw["period"] in BIGA_LOTTO649_LEGACY_PERIODS:
+                        legacy_by_period[draw["period"]] = draw
+                if legacy_by_period.keys() >= BIGA_LOTTO649_LEGACY_PERIODS:
+                    break
+            if legacy_by_period.keys() < BIGA_LOTTO649_LEGACY_PERIODS:
+                raise ValueError("BIGA_LOTTO649_LEGACY_HISTORY_INCOMPLETE")
+            return _newest_unique([*official, *legacy_by_period.values()])
 
         return self.fetch_history(lottery, None)
 
@@ -654,6 +708,8 @@ class LatestDrawSource:
 
         for month_offset in range(month_ceiling):
             month = _month_label(self.now(), month_offset)
+            if month < LOTTO649_OFFICIAL_API_FIRST_MONTH:
+                return _newest_unique(draws, limit)
             response = self.client.get(
                 f"{url}?period&month={month}&pageSize=31",
                 headers={**HEADERS, "accept": "application/json,text/plain,*/*", "referer": FORMAL_PAGE_REFERERS[lottery]},

@@ -1,5 +1,6 @@
 import pytest
 
+from app.domain.history_boundaries import COMPLETED_YEAR_LAST_SEQUENCES
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.services.draw_refresh import (
     DrawRefreshService,
@@ -340,23 +341,115 @@ def test_algorithm_history_rejects_an_internal_gap_after_full_backfill() -> None
 
 
 def test_algorithm_history_orders_undated_marksix_across_century_rollover() -> None:
-    repository = InMemoryAnalysisRepository()
-    repository.upsert_draw({
-        **_seven_ball_draw("001001", "2001-01-02"),
-        "lottery": "六合彩",
-    })
     source_rows = [_seven_ball_draw("001001", "2001-01-02")]
     source_rows.extend(
         _seven_ball_draw(f"0{year % 100:02d}001", "")
         for year in range(2000, 1975, -1)
     )
-    source = AlgorithmHistorySource(source_rows, source_rows)
 
-    history = DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+    history = DrawRefreshService._sort_algorithm_history("六合彩", source_rows)
 
     periods = [draw["period"] for draw in history]
     assert periods[:4] == ["001001", "000001", "099001", "098001"]
     assert periods[-1] == "076001"
+
+
+def test_algorithm_history_deduplicates_legacy_taiwan_period_widths() -> None:
+    legacy = {**_draw(1), "period": "96000001"}
+    canonical = {**_draw(1), "period": "096000001"}
+
+    history = DrawRefreshService._sort_algorithm_history(
+        "今彩539",
+        [legacy, canonical],
+    )
+
+    assert [draw["period"] for draw in history] == ["096000001"]
+
+
+def test_algorithm_history_rejects_taiwan_width_alias_conflicts() -> None:
+    official = {**_draw(1), "period": "96000001"}
+    fallback = {
+        **_draw(1),
+        "period": "096000001",
+        "numbers": ["06", "07", "08", "09", "10"],
+        "sortedNumbers": ["06", "07", "08", "09", "10"],
+        "drawOrderNumbers": ["10", "09", "08", "07", "06"],
+    }
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_CONFLICT"):
+        DrawRefreshService._sort_algorithm_history(
+            "今彩539",
+            [fallback, official],
+        )
+
+
+def test_algorithm_history_repairs_width_alias_conflict_from_official_source() -> None:
+    official = {
+        **_draw(1),
+        "period": "96000001",
+        "drawDate": "2007-01-01",
+    }
+    fallback = {
+        **official,
+        "period": "096000001",
+        "numbers": ["06", "07", "08", "09", "10"],
+        "sortedNumbers": ["06", "07", "08", "09", "10"],
+        "drawOrderNumbers": ["10", "09", "08", "07", "06"],
+    }
+    repaired = {**official, "period": "096000001"}
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({**official, "lottery": "今彩539"})
+    repository.upsert_draw({**fallback, "lottery": "今彩539"})
+    source = AlgorithmHistorySource([official, fallback], [repaired])
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history(
+        "今彩539",
+    )
+
+    assert source.algorithm_history_requests == ["今彩539"]
+    assert history == [repaired]
+
+
+def test_lotto_history_repairs_old_api_alias_from_verified_biga_source() -> None:
+    placeholder = {
+        "period": "93000001",
+        "drawDate": "2004-01-05",
+        "numbers": ["01", "01", "03", "03", "06", "09", "02"],
+        "sortedNumbers": ["01", "01", "03", "03", "06", "09", "02"],
+        "drawOrderNumbers": ["03", "01", "06", "09", "03", "01", "02"],
+    }
+    canonical_placeholder = {**placeholder, "period": "093000001"}
+    repaired = _seven_ball_draw("093000001", "2004-01-05")
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({**placeholder, "lottery": "大樂透"})
+    repository.upsert_draw({**canonical_placeholder, "lottery": "大樂透"})
+    source = AlgorithmHistorySource(
+        [placeholder, canonical_placeholder],
+        [repaired],
+    )
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history(
+        "大樂透",
+    )
+
+    assert source.algorithm_history_requests == ["大樂透"]
+    assert history == [repaired]
+
+
+def test_algorithm_history_rejects_non_alias_period_conflicts() -> None:
+    first = {**_draw(1), "period": "096000001"}
+    conflicting = {
+        **first,
+        "numbers": ["06", "07", "08", "09", "10"],
+        "sortedNumbers": ["06", "07", "08", "09", "10"],
+        "drawOrderNumbers": ["10", "09", "08", "07", "06"],
+    }
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_CONFLICT"):
+        DrawRefreshService._sort_algorithm_history(
+            "今彩539",
+            [first, conflicting],
+        )
 
 
 def test_algorithm_history_rejects_a_whole_missing_middle_year() -> None:
@@ -377,7 +470,7 @@ def test_algorithm_history_rejects_a_whole_missing_middle_year() -> None:
 
 def test_algorithm_history_fails_closed_when_actual_draw_order_remains_missing() -> None:
     repository = InMemoryAnalysisRepository()
-    stored = [_draw(period) for period in range(220, 99, -1)]
+    stored = [_draw(period) for period in range(96000121, 96000000, -1)]
     stored[40]["drawOrderNumbers"] = None
     for draw in stored:
         repository.upsert_draw({**draw, "lottery": "今彩539"})
@@ -385,6 +478,31 @@ def test_algorithm_history_fails_closed_when_actual_draw_order_remains_missing()
 
     with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
         DrawRefreshService(repository, source).ensure_algorithm_history("今彩539")
+
+
+def test_marksix_algorithm_history_allows_missing_order_before_1991_boundary() -> None:
+    repository = InMemoryAnalysisRepository()
+    stored = []
+    for year in range(1991, 1975, -1):
+        final_sequence = (
+            1
+            if year == 1991
+            else COMPLETED_YEAR_LAST_SEQUENCES["六合彩"][year]
+        )
+        for sequence in range(final_sequence, 0, -1):
+            period = f"0{year % 100:02d}{sequence:03d}"
+            draw = _seven_ball_draw(period, f"{year}-01-01")
+            if year < 1991:
+                draw["drawOrderNumbers"] = None
+            stored.append(draw)
+            repository.upsert_draw({**draw, "lottery": "六合彩"})
+    source = AlgorithmHistorySource(stored, [])
+
+    history = DrawRefreshService(repository, source).ensure_algorithm_history("六合彩")
+
+    assert source.algorithm_history_requests == []
+    assert history[0]["period"] == "091001"
+    assert history[-1]["period"] == "076001"
 
 
 def test_seven_ball_history_repairs_special_number_outside_last_position() -> None:

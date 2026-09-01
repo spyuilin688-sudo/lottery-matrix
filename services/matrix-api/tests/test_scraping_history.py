@@ -248,7 +248,7 @@ def test_marksix_full_history_pairs_normal_and_original_order_pages() -> None:
     ]
 
 
-def test_daily539_full_history_merges_older_nfd_draw_order_rows() -> None:
+def test_daily539_full_history_uses_authoritative_taiwan_order_rows() -> None:
     requested_urls: list[str] = []
     taiwan_payload = {
         "content": {
@@ -260,20 +260,27 @@ def test_daily539_full_history_merges_older_nfd_draw_order_rows() -> None:
             }],
         },
     }
+    legacy_payload = {
+        "content": {
+            "daily539Res": [{
+                "period": "99000261",
+                "lotteryDate": "2010-12-31",
+                "drawNumberSize": [2, 6, 17, 28, 39],
+                "drawNumberAppear": [39, 28, 17, 6, 2],
+            }],
+        },
+    }
     empty_payload = {"content": {"daily539Res": []}}
-    nfd_html = """
-    <table>
-      <tr><td>2010</td><td>12/31</td><td>261</td><td>39</td><td>28</td><td>17</td><td>06</td><td>02</td><td>1045</td></tr>
-    </table>
-    """
-
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         requested_urls.append(url)
         if request.url.host == "api.taiwanlottery.com":
-            payload = taiwan_payload if request.url.params.get("month") == "2011-01" else empty_payload
+            payload = {
+                "2011-01": taiwan_payload,
+                "2010-12": legacy_payload,
+            }.get(request.url.params.get("month"), empty_payload)
             return httpx.Response(200, json=payload)
-        return httpx.Response(200, text=nfd_html)
+        raise AssertionError("unexpected non-official Daily539 source")
 
     source = LatestDrawSource(
         httpx.Client(transport=httpx.MockTransport(handler)),
@@ -285,14 +292,87 @@ def test_daily539_full_history_merges_older_nfd_draw_order_rows() -> None:
     assert callable(fetch_algorithm_history)
     history = fetch_algorithm_history("今彩539")
 
-    assert [draw["period"] for draw in history] == ["100000001", "099000261"]
+    assert [draw["period"] for draw in history] == [
+        "100000001", "099000261",
+    ]
     assert history[1]["drawOrderNumbers"] == ["39", "28", "17", "06", "02"]
     assert requested_urls == [
         "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result?period&month=2011-01&pageSize=31",
         "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result?period&month=2010-12&pageSize=31",
-        "https://www.nfd.com.tw/lottery/39-year/39-f2011.htm",
-        "https://www.nfd.com.tw/lottery/39-year/39-f2010.htm",
-        "https://www.nfd.com.tw/lottery/39-year/39-f2009.htm",
-        "https://www.nfd.com.tw/lottery/39-year/39-f2008.htm",
-        "https://www.nfd.com.tw/lottery/39-year/39-f2007.htm",
+        "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result?period&month=2010-11&pageSize=31",
+    ]
+
+
+def test_lotto649_algorithm_history_repairs_pre_2007_api_placeholders_from_biga() -> None:
+    requested_urls: list[str] = []
+    placeholder = {
+        "content": {
+            "lotto649Res": [{
+                "period": "095000104",
+                "lotteryDate": "2006-12-28",
+                "drawNumberSize": [1, 2, 3, 4, 7, 8, 3],
+                "drawNumberAppear": [7, 4, 8, 3, 1, 2, 3],
+            }],
+        },
+    }
+    legacy_rows: list[str] = []
+    for roc_year in range(93, 96):
+        for sequence in range(1, 105):
+            period = f"{roc_year:03d}{sequence:03d}"
+            if period == "093001":
+                drop, special, sorted_values = (
+                    ["33", "12", "06", "09", "39", "13"],
+                    "21",
+                    ["06", "09", "12", "13", "33", "39"],
+                )
+            elif period == "095104":
+                drop, special, sorted_values = (
+                    ["07", "04", "08", "31", "01", "25"],
+                    "33",
+                    ["01", "04", "07", "08", "25", "31"],
+                )
+            else:
+                drop, special, sorted_values = (
+                    ["06", "05", "04", "03", "02", "01"],
+                    "49",
+                    ["01", "02", "03", "04", "05", "06"],
+                )
+            cells = [
+                f"{roc_year + 1911}/01/01", "星期一", period, "200401",
+                "1", "癸未", *drop, special, *sorted_values,
+            ]
+            legacy_rows.append(
+                "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
+            )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        if request.url.host == "api.taiwanlottery.com":
+            if request.url.params.get("month") == "2006-12":
+                return httpx.Response(200, json=placeholder)
+            return httpx.Response(200, json={"content": {"lotto649Res": []}})
+        page = int(request.url.params.get("page", "1"))
+        start = (page - 1) * 100
+        return httpx.Response(
+            200,
+            text="<table>" + "".join(legacy_rows[start:start + 100]) + "</table>",
+        )
+
+    source = LatestDrawSource(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        now=lambda: datetime(2007, 1, 2),
+    )
+
+    history = source.fetch_algorithm_history("大樂透")
+
+    assert len(history) == 312
+    assert history[0]["period"] == "095000104"
+    assert history[-1]["period"] == "093000001"
+    assert history[0]["drawOrderNumbers"] == ["07", "04", "08", "31", "01", "25", "33"]
+    assert history[0]["numbers"] == ["01", "04", "07", "08", "25", "31", "33"]
+    assert requested_urls[-4:] == [
+        "https://rk.biga.com.tw/ARCHIVE/DRAWDATA/PAGINATION/ZP/biglottoresultlist?page=1",
+        "https://rk.biga.com.tw/ARCHIVE/DRAWDATA/PAGINATION/ZP/biglottoresultlist?page=2",
+        "https://rk.biga.com.tw/ARCHIVE/DRAWDATA/PAGINATION/ZP/biglottoresultlist?page=3",
+        "https://rk.biga.com.tw/ARCHIVE/DRAWDATA/PAGINATION/ZP/biglottoresultlist?page=4",
     ]

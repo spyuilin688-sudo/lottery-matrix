@@ -3,6 +3,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
+from .history_boundaries import draw_order_history
 from .models import lottery_maximum, lottery_position_count, normalize_matrix_number
 from .tianyan_shared import build_tianyan_unit_artifact
 
@@ -660,7 +661,18 @@ class ExploreV2Session:
     ) -> "ExploreV2Session":
         history = tuple(newest_first)
         orders = (SORTED_ORDER,) if lottery == "天天樂" else (SORTED_ORDER, DRAW_ORDER)
-        contexts = tuple(ExploreV2Context.build(lottery, order, history) for order in orders)
+        contexts = tuple(
+            ExploreV2Context.build(
+                lottery,
+                order,
+                (
+                    draw_order_history(lottery, history)
+                    if order == DRAW_ORDER
+                    else history
+                ),
+            )
+            for order in orders
+        )
         indexed_units = tuple(
             (context, unit)
             for context in contexts

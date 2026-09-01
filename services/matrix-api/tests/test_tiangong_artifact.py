@@ -7,6 +7,7 @@ def _history() -> list[dict]:
     return [{
         "period": f"{240 - index:09d}",
         "drawDate": "2026-08-24",
+        "numbers": ["01", "02", "03", "04", "05"],
         "drawOrderNumbers": ["01", "02", "03", "04", "05"],
     } for index in range(119)]
 
@@ -98,6 +99,39 @@ def test_rejects_sorted_numbers_as_a_substitute_for_actual_draw_order() -> None:
 
     with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
         build_tiangong_artifact("今彩539", "114000123", history)
+
+
+def test_marksix_tiangong_ignores_unverified_pre_1991_order_rows() -> None:
+    received: list[dict] = []
+    history = [
+        {
+            "period": f"091{sequence:03d}",
+            "drawDate": "1991-01-01",
+            "numbers": ["01", "02", "03", "04", "05", "06", "49"],
+            "drawOrderNumbers": ["06", "05", "04", "03", "02", "01", "49"],
+        }
+        for sequence in range(119, 0, -1)
+    ]
+    history.append({
+        "period": "090001",
+        "drawDate": "1990-01-01",
+        "numbers": ["01", "02", "03", "04", "05", "06", "49"],
+        "drawOrderNumbers": None,
+    })
+
+    def calculator(payload: dict) -> dict:
+        received.append(payload)
+        return {
+            "algorithm": "matrix-tiangong",
+            "algorithm_version": "v2",
+            "results": [],
+            "evidence": {},
+        }
+
+    build_tiangong_artifact("六合彩", "091119", history, calculator)
+
+    assert len(received[0]["draws"]) == 119
+    assert received[0]["draws"][0]["period"] == "091001"
 
 
 def test_fantasy5_uses_sorted_numbers_without_requesting_draw_order() -> None:

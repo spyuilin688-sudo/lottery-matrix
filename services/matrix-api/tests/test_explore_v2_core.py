@@ -4,6 +4,7 @@ from app.domain.explore_v2 import (
     DRAW_ORDER,
     SORTED_ORDER,
     ExploreV2Context,
+    ExploreV2Session,
     LockKey,
     LockOccurrence,
     RoadType,
@@ -76,6 +77,22 @@ def test_draw_order_context_fails_closed_when_any_history_order_is_missing() -> 
 
     with pytest.raises(ValueError, match="實際開獎順序（落球）資料不完整"):
         ExploreV2Context.build("今彩539", DRAW_ORDER, history)
+
+
+def test_session_keeps_full_sorted_history_but_bounds_marksix_draw_order() -> None:
+    history = _complete_history("六合彩", 4)
+    periods = ["091002", "091001", "090002", "076001"]
+    for draw, period in zip(history, periods, strict=True):
+        draw["period"] = period
+        draw["drawOrderNumbers"] = ["6", "5", "4", "3", "2", "1", "7"]
+    history[2]["drawOrderNumbers"] = None
+    history[3]["drawOrderNumbers"] = None
+
+    session = ExploreV2Session.build("六合彩", history)
+
+    sorted_context, draw_context = session.contexts
+    assert sorted_context.indexed_cell_count == 4 * 7
+    assert draw_context.indexed_cell_count == 2 * 7
 
 
 def test_special_number_stays_last_in_sorted_seven_position_lottery() -> None:

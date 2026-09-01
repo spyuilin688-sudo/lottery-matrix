@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from .history_boundaries import draw_order_history
 from .tiangong_algorithm import calculate_tiangong, required_history_length
 
 
@@ -13,7 +14,12 @@ def _next_period(period: str) -> str:
 
 def build_tiangong_artifact(lottery: str, draw_period: str, history: list[dict[str, Any]], calculator: Calculator = calculate_tiangong) -> dict[str, Any]:
     draws = []
-    for draw in reversed(history):
+    selected_history = (
+        history
+        if lottery == "天天樂"
+        else draw_order_history(lottery, history)
+    )
+    for draw in reversed(selected_history):
         numbers = (
             draw.get("numbers")
             if lottery == "天天樂"

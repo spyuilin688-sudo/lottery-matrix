@@ -37,6 +37,23 @@ def test_taiwan_payload_preserves_special_number_and_draw_order() -> None:
     }
 
 
+def test_taiwan_payload_canonicalizes_pre_roc_100_periods() -> None:
+    payload = {
+        "content": {
+            "lotto649Res": [{
+                "period": "96000104",
+                "lotteryDate": "2007-12-28",
+                "drawNumberSize": [3, 8, 14, 21, 32, 45, 49],
+                "drawNumberAppear": [21, 3, 45, 14, 8, 32],
+            }],
+        },
+    }
+
+    draw = parse_taiwan_lottery_payload(payload, "lotto649Res", 7)
+
+    assert draw["period"] == "096000104"
+
+
 def test_sc888_parser_returns_newest_complete_fantasy5_row() -> None:
     html = """
     <table>
@@ -194,6 +211,28 @@ def test_nfd_daily539_draw_order_accepts_spaces_around_date_separator() -> None:
         "numbers": ["03", "04", "05", "23", "27"],
         "sortedNumbers": ["03", "04", "05", "23", "27"],
         "drawOrderNumbers": ["05", "23", "27", "04", "03"],
+    }]
+
+
+def test_biga_lotto649_history_normalizes_roc_period_and_keeps_special_last() -> None:
+    html = """
+    <table>
+      <tr><td>2004/01/05</td><td>星期一</td><td>093001</td><td>200401</td>
+          <td>1</td><td>癸未</td><td>33</td><td>12</td><td>06</td><td>09</td>
+          <td>39</td><td>13</td><td>21</td><td>06</td><td>09</td><td>12</td>
+          <td>13</td><td>33</td><td>39</td></tr>
+    </table>
+    """
+
+    parser = getattr(source_module, "parse_biga_lotto649_history", None)
+
+    assert callable(parser)
+    assert parser(html) == [{
+        "period": "093000001",
+        "drawDate": "2004/01/05",
+        "numbers": ["06", "09", "12", "13", "33", "39", "21"],
+        "sortedNumbers": ["06", "09", "12", "13", "33", "39", "21"],
+        "drawOrderNumbers": ["33", "12", "06", "09", "39", "13", "21"],
     }]
 
 
