@@ -688,6 +688,16 @@ class ExploreV2Session:
         return self.lottery == lottery and self.history == tuple(newest_first)
 
 
+@dataclass(frozen=True, slots=True)
+class PendingExploreV2Result:
+    reference_cell: VerificationCell
+    road: RoadType
+    rule_count: int
+    decision: StreakDecision
+    groups: tuple[RoadGroup, ...]
+    explore_range: str
+
+
 EXPLORE_RANGES = ("標準範圍", "完整範圍")
 
 
@@ -919,9 +929,7 @@ def _append_final_results(
 
 
 def _evaluate_groups(
-    artifact: dict[str, Any],
-    context: ExploreV2Context,
-    unit: SourceUnit,
+    pending_results: list[PendingExploreV2Result],
     reference_cell: VerificationCell,
     road: RoadType,
     groups: tuple[RoadGroup, ...],
@@ -934,18 +942,58 @@ def _evaluate_groups(
         decision = evaluator(candidate_sets)
         if not decision.valid:
             continue
-        _append_final_results(
-            artifact,
-            context,
-            unit,
-            reference_cell,
-            road,
-            rule_count,
-            decision,
-            groups,
-            explore_range,
+        pending_results.append(
+            PendingExploreV2Result(
+                reference_cell=reference_cell,
+                road=road,
+                rule_count=rule_count,
+                decision=decision,
+                groups=groups,
+                explore_range=explore_range,
+            )
         )
 
+
+def _append_aggregated_results(
+    artifact: dict[str, Any],
+    context: ExploreV2Context,
+    unit: SourceUnit,
+    pending_results: Iterable[PendingExploreV2Result],
+) -> None:
+    grouped: dict[
+        tuple[str, RoadType, int, int],
+        list[PendingExploreV2Result],
+    ] = {}
+    for pending in pending_results:
+        key = (
+            pending.explore_range,
+            pending.road,
+            pending.rule_count,
+            pending.decision.highest_streak,
+        )
+        grouped.setdefault(key, []).append(pending)
+
+    for same_longest_results in grouped.values():
+        distinct_rules = {
+            rule
+            for pending in same_longest_results
+            for rule_set in pending.decision.rule_sets
+            for rule in rule_set
+        }
+        if len(distinct_rules) > 2:
+            continue
+        for pending in same_longest_results:
+            _append_final_results(
+                artifact,
+                context,
+                unit,
+                pending.reference_cell,
+                pending.road,
+                pending.rule_count,
+                pending.decision,
+                pending.groups,
+                pending.explore_range,
+            )
 
 def _range_bundles(
     context: ExploreV2Context,
@@ -1175,6 +1223,7 @@ def _run_explore_v2_unit(
         source_cells = context.range_cells(unit.occurrence, unit.prediction_distance)
         bundles = _range_bundles(context, unit)
         for explore_range in EXPLORE_RANGES:
+            pending_results: list[PendingExploreV2Result] = []
             for source_cell in source_cells:
                 if (
                     explore_range == "標準範圍"
@@ -1184,33 +1233,41 @@ def _run_explore_v2_unit(
                 for road in range_roads:
                     groups = _groups_for_cell(bundles, source_cell, road)
                     _evaluate_groups(
-                        artifact,
-                        context,
-                        unit,
+                        pending_results,
                         source_cell,
                         road,
                         groups,
                         explore_range,
                         metrics,
                     )
+            _append_aggregated_results(
+                artifact,
+                context,
+                unit,
+                pending_results,
+            )
 
     if RoadType.DRAG in road_types:
         source_cell = context.drag_cell(unit.occurrence)
         groups = _drag_groups(context, unit)
         for explore_range in EXPLORE_RANGES:
+            pending_results = []
             _evaluate_groups(
-                artifact,
-                context,
-                unit,
+                pending_results,
                 source_cell,
                 RoadType.DRAG,
                 groups,
                 explore_range,
                 metrics,
             )
+            _append_aggregated_results(
+                artifact,
+                context,
+                unit,
+                pending_results,
+            )
     if include_tianyan:
         _append_tianyan_results(artifact, context, unit)
-
 
 def _context_metrics(
     contexts: tuple[ExploreV2Context, ...],
