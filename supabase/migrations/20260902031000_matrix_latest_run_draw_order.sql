@@ -182,9 +182,6 @@ begin
     'items', v_items,
     'total', pg_catalog.jsonb_array_length(v_items)
   );
-exception
-  when invalid_text_representation or numeric_value_out_of_range then
-    raise exception using errcode = '22023', message = 'INVALID_REQUEST';
 end;
 $$;
 
@@ -271,7 +268,7 @@ begin
     'total', pg_catalog.jsonb_array_length(v_items)
   );
 exception
-  when invalid_text_representation or numeric_value_out_of_range then
+  when invalid_text_representation then
     raise exception using errcode = '22023', message = 'INVALID_REQUEST';
 end;
 $$;
