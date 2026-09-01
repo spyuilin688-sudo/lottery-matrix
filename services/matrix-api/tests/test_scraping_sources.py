@@ -178,6 +178,25 @@ def test_nfd_daily539_draw_order_materializes_roc_period() -> None:
     }]
 
 
+def test_nfd_daily539_draw_order_accepts_spaces_around_date_separator() -> None:
+    html = """
+    <table>
+      <tr><td>2010</td><td>01/ 01</td><td>01</td><td>05</td><td>23</td><td>27</td><td>04</td><td>03</td><td>785</td></tr>
+    </table>
+    """
+
+    parser = getattr(source_module, "parse_nfd_daily539_draw_order_history", None)
+
+    assert callable(parser)
+    assert parser(html) == [{
+        "period": "099000001",
+        "drawDate": "2010/01/01",
+        "numbers": ["03", "04", "05", "23", "27"],
+        "sortedNumbers": ["03", "04", "05", "23", "27"],
+        "drawOrderNumbers": ["05", "23", "27", "04", "03"],
+    }]
+
+
 def test_latest_draw_source_uses_existing_taiwan_539_endpoint() -> None:
     requested_urls: list[str] = []
 

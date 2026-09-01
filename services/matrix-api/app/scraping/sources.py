@@ -400,7 +400,7 @@ def parse_nfd_daily539_draw_order_history(html: str) -> list[MatrixDraw]:
             or not re.fullmatch(r"\d{1,3}", cells[2])
         ):
             continue
-        date_match = re.fullmatch(r"(\d{1,2})/(\d{1,2})", cells[1])
+        date_match = re.fullmatch(r"\s*(\d{1,2})\s*/\s*(\d{1,2})\s*", cells[1])
         if not date_match:
             continue
         year = int(cells[0])
