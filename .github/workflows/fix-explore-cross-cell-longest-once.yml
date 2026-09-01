@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          uv run pytest -q tests/test_explore_v2_runner.py -k cross_reference
+          uv run pytest -q tests/test_explore_v2_runner.py -k 'cross_reference or standard_and_full_decide_final_results_independently'
           status=$?
           set -e
           test "$status" -ne 0
@@ -55,7 +55,7 @@ jobs:
         run: |
           set -o pipefail
           {
-            uv run pytest -q tests/test_explore_v2_runner.py -k cross_reference
+            uv run pytest -q tests/test_explore_v2_runner.py -k 'cross_reference or standard_and_full_decide_final_results_independently or two_rules_predicting_one_number'
             uv run pytest -q
             uv run python -m compileall -q app
             git diff --check
@@ -69,12 +69,15 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mv explore-fix-test.log .github/explore-fix-test.log
           git add .github/explore-fix-test.log
-          git commit -m "chore: capture Explore fix test failure"
-          git push origin "HEAD:${{ github.ref_name }}"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: capture Explore fix test failure"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
           exit 1
 
       - name: Remove one-off automation
         run: |
+          rm -f .github/explore-fix-test.log
           rm .github/scripts/one_off_fix_explore_cross_cell.py
           rm .github/workflows/fix-explore-cross-cell-longest-once.yml
 
