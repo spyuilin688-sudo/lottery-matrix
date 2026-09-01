@@ -69,4 +69,64 @@ describe('Matrix Explore Supabase RPC mapping', () => {
     expect(result.itemId).toBe('item-1');
     expect(result.validation).toEqual({ itemId: 'item-1', ruleSets: [] });
   });
+
+  it('preserves list metadata returned in the RPC camelCase contract', async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        kind: 'explore',
+        lottery: '今彩539',
+        drawPeriod: '115000212',
+        analysisVersion: '115000212:matrix-python-v11',
+        status: 'complete',
+        total: 0,
+        items: [],
+        duplicateStats: [],
+      },
+      error: null,
+    });
+
+    const result = await fetchExploreList({
+      lottery: '今彩539',
+      numberOrder: '依號碼由小到大排序',
+      explorePeriods: 2,
+      exploreDateOffset: 0,
+      exploreRange: '標準範圍',
+      ruleCount: 1,
+      roadTypes: ['加減'],
+      selectedStreaks: ['準4進5'],
+      sameCode: false,
+    });
+
+    expect(result.drawPeriod).toBe('115000212');
+    expect(result.analysisVersion).toBe('115000212:matrix-python-v11');
+  });
+
+  it('preserves validation metadata returned in the RPC camelCase contract', async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        kind: 'explore',
+        lottery: '今彩539',
+        drawPeriod: '115000212',
+        analysisVersion: '115000212:matrix-python-v11',
+        status: 'complete',
+        itemId: 'item-v11',
+        validation: { itemId: 'item-v11', ruleSets: [] },
+      },
+      error: null,
+    });
+
+    const result = await fetchExploreValidation(
+      {
+        lottery: '今彩539',
+        drawPeriod: '115000212',
+        analysisVersion: '115000212:matrix-python-v11',
+      },
+      'item-v11',
+      { explorePeriods: 2, exploreRange: '標準範圍' },
+    );
+
+    expect(result.drawPeriod).toBe('115000212');
+    expect(result.analysisVersion).toBe('115000212:matrix-python-v11');
+    expect(result.itemId).toBe('item-v11');
+  });
 });
