@@ -90,47 +90,82 @@ def _matching_items(
     ]
 
 
-def test_standard_and_full_share_cells_but_decide_final_results_independently() -> None:
-    result = run_explore_v2_batch("今彩539", _full_only_one_code_history(), 0, 1)
+def test_standard_and_full_decide_final_results_independently(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(
+            position=1,
+            rule_sets=((7,),),
+            explore_range="標準範圍",
+        ),
+        _cross_reference_pending(
+            position=2,
+            rule_sets=((17,),),
+            explore_range="標準範圍",
+        ),
+        _cross_reference_pending(
+            position=3,
+            rule_sets=((26,),),
+            explore_range="完整範圍",
+        ),
+    ]
 
-    full = _matching_items(
-        result,
-        explore_range="完整範圍",
-        algorithm_type="加減",
-        rule_count=1,
-        reference_offset=-8,
-        reference_position=2,
-    )
-    standard = _matching_items(
-        result,
-        explore_range="標準範圍",
-        algorithm_type="加減",
-        rule_count=1,
-        reference_offset=-8,
-        reference_position=2,
-    )
+    emitted = _flush_cross_reference_results(monkeypatch, pending)
 
-    assert len(full) == 1
-    assert standard == []
-    assert result["metrics"]["rangeCellBuilds"] == result["metrics"]["uniqueRangeKeys"]
-    assert result["metrics"]["candidateBuilds"] == result["metrics"]["uniqueCandidateKeys"]
+    assert len(emitted) == 3
+    assert sorted(args[-1] for args in emitted) == [
+        "完整範圍",
+        "標準範圍",
+        "標準範圍",
+    ]
 
 
 def test_two_rules_predicting_one_number_emit_one_number() -> None:
-    result = run_explore_v2_batch("今彩539", _same_prediction_two_code_history(), 0, 1)
+    context = explore_v2.ExploreV2Context.build(
+        "今彩539",
+        explore_v2.SORTED_ORDER,
+        _base_history(20),
+    )
+    unit = context.source_units()[0]
+    reference_cell = explore_v2.VerificationCell(
+        occurrence_index=0,
+        period="P000",
+        relative_offset=0,
+        position=2,
+        number=20,
+        scope_class=explore_v2.ScopeClass.STANDARD_AND_FULL,
+    )
+    decision = explore_v2.StreakDecision(
+        valid=True,
+        highest_streak=5,
+        rules=(25, 64),
+        matched_group_indexes=tuple(range(5)),
+        rule_sets=((25, 64),),
+    )
+    artifact: dict[str, object] = {"items": [], "validationById": {}}
 
-    items = _matching_items(
-        result,
-        explore_range="標準範圍",
-        algorithm_type="合值",
-        rule_count=2,
-        reference_offset=0,
-        reference_position=2,
+    explore_v2._append_final_results(  # type: ignore[attr-defined]
+        artifact,
+        context,
+        unit,
+        reference_cell,
+        RoadType.SUM,
+        2,
+        decision,
+        (),
+        "標準範圍",
     )
 
-    item = next(value for value in items if value["predictionNumbers"] == ["05"])
-    validation = result["artifact"]["validationById"][item["id"]]
-    assert item["ruleCount"] == 2
+    items = artifact["items"]
+    assert isinstance(items, list)
+    assert len(items) == 1
+    item = items[0]
+    assert isinstance(item, dict)
+    assert item["predictionNumbers"] == ["05"]
+    validation_by_id = artifact["validationById"]
+    assert isinstance(validation_by_id, dict)
+    validation = validation_by_id[item["id"]]
     assert validation["ruleSets"][0]["rules"] == [
         {"value": 25, "display": "25", "algorithmType": "合值"},
         {"value": 64, "display": "64", "algorithmType": "合值"},
@@ -201,3 +236,123 @@ def test_v2_runner_preserves_tianyan_builder_on_shared_candidates(monkeypatch: o
     assert result["artifact"]["tianyanValidationById"] == {
         "tianyan-from-v2": {"rules": []}
     }
+
+
+
+def _cross_reference_pending(
+    *,
+    position: int,
+    rule_sets: tuple[tuple[int, ...], ...],
+    highest_streak: int = 4,
+    rule_count: int = 1,
+    explore_range: str = "完整範圍",
+) -> explore_v2.PendingExploreV2Result:
+    rules = tuple(sorted({rule for rule_set in rule_sets for rule in rule_set}))
+    return explore_v2.PendingExploreV2Result(
+        reference_cell=explore_v2.VerificationCell(
+            occurrence_index=position,
+            period=f"P{position:03d}",
+            relative_offset=-position,
+            position=position,
+            number=10 + position,
+            scope_class=explore_v2.ScopeClass.STANDARD_AND_FULL,
+        ),
+        road=RoadType.ADD,
+        rule_count=rule_count,
+        decision=explore_v2.StreakDecision(
+            valid=True,
+            highest_streak=highest_streak,
+            rules=rules,
+            matched_group_indexes=tuple(range(highest_streak)),
+            rule_sets=rule_sets,
+        ),
+        groups=(),
+        explore_range=explore_range,
+    )
+
+
+def _flush_cross_reference_results(
+    monkeypatch: object,
+    pending: list[explore_v2.PendingExploreV2Result],
+) -> list[tuple[object, ...]]:
+    emitted: list[tuple[object, ...]] = []
+
+    def record(*args: object, **_kwargs: object) -> None:
+        emitted.append(args)
+
+    monkeypatch.setattr(explore_v2, "_append_final_results", record)  # type: ignore[attr-defined]
+    explore_v2._append_aggregated_results(  # type: ignore[attr-defined]
+        {"items": [], "validationById": {}},
+        object(),
+        object(),
+        pending,
+    )
+    return emitted
+
+
+def test_cross_reference_three_distinct_one_code_rules_are_rejected(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(position=1, rule_sets=((7,),)),
+        _cross_reference_pending(position=2, rule_sets=((17,),)),
+        _cross_reference_pending(position=3, rule_sets=((26,),)),
+    ]
+
+    assert _flush_cross_reference_results(monkeypatch, pending) == []
+
+
+def test_cross_reference_exactly_two_distinct_rules_are_preserved(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(position=1, rule_sets=((7,),)),
+        _cross_reference_pending(position=2, rule_sets=((17,),)),
+    ]
+
+    assert len(_flush_cross_reference_results(monkeypatch, pending)) == 2
+
+
+def test_cross_reference_duplicate_rules_count_once(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(position=1, rule_sets=((7,),)),
+        _cross_reference_pending(position=2, rule_sets=((7,),)),
+        _cross_reference_pending(position=3, rule_sets=((17,),)),
+    ]
+
+    assert len(_flush_cross_reference_results(monkeypatch, pending)) == 3
+
+
+def test_cross_reference_different_streaks_are_not_combined(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(position=1, rule_sets=((7,),), highest_streak=4),
+        _cross_reference_pending(position=2, rule_sets=((17,),), highest_streak=4),
+        _cross_reference_pending(position=3, rule_sets=((26,),), highest_streak=5),
+    ]
+
+    assert len(_flush_cross_reference_results(monkeypatch, pending)) == 3
+
+
+def test_cross_reference_two_code_union_over_two_rules_is_rejected(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(
+            position=1,
+            rule_sets=((10, 20),),
+            highest_streak=5,
+            rule_count=2,
+        ),
+        _cross_reference_pending(
+            position=2,
+            rule_sets=((10, 30),),
+            highest_streak=5,
+            rule_count=2,
+        ),
+    ]
+
+    assert _flush_cross_reference_results(monkeypatch, pending) == []
