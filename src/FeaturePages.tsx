@@ -27,8 +27,12 @@ import { QUICK_SETTINGS_DOUBLE_TAP_MS } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import {
   fetchLotteryHistory,
+  fetchMatrixCardManifest,
   fetchNumberReference,
   fetchTongXing,
+  matrixCardUrl,
+  type MatrixCardManifest,
+  type MatrixCardOrder,
   type LotteryDrawRecord,
   type MatrixNumberOrder,
   type NumberReferenceItem,
@@ -87,7 +91,6 @@ import {
 import { readManualTransferPlan, saveManualTransferPlan } from "./manual-transfer-selection";
 import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
 import { getSupabaseClient } from "./lib/supabase";
-import { downloadMatrixTicket } from "./matrix-ticket-download";
 import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
 import { useDoubleClickAction } from "./useDoubleClickAction";
@@ -2415,22 +2418,54 @@ export function CalculatorPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const [order, setOrder] = useState<MatrixCardOrder>("draw");
+  const [manifest, setManifest] = useState<MatrixCardManifest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [downloadPending, setDownloadPending] = useState(false);
   const [downloadFailed, setDownloadFailed] = useState(false);
-  const ticketRef = useRef<HTMLElement | null>(null);
-  const downloadPendingRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadFailed(false);
+    setManifest(null);
+    void fetchMatrixCardManifest(lottery)
+      .then((nextManifest) => {
+        if (active) setManifest(nextManifest);
+      })
+      .catch(() => {
+        if (active) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [lottery]);
+
+  const cardUrl = manifest ? matrixCardUrl(manifest.cards[order].url) : null;
 
   const handleTicketDownload = async () => {
-    if (downloadPendingRef.current || !ticketRef.current) return;
-    downloadPendingRef.current = true;
+    if (!cardUrl || downloadPending) return;
     setDownloadPending(true);
     setDownloadFailed(false);
     try {
-      await downloadMatrixTicket(ticketRef.current, "matrix-ticket.png");
+      const response = await fetch(cardUrl);
+      if (!response.ok) throw new Error("MATRIX_CARD_DOWNLOAD_FAILED");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${lottery}-${order === "draw" ? "落球" : "順球"}牌單.svg`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
     } catch {
       setDownloadFailed(true);
     } finally {
-      downloadPendingRef.current = false;
       setDownloadPending(false);
     }
   };
@@ -2438,18 +2473,41 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
-      <section className="matrix-ticket" ref={ticketRef}>
-        <img src={PRIMARY_BRAND_LOGO} alt="樂彩 Matrix" />
-        <span>{lottery}</span>
-        <h2>最新一期牌單</h2>
+      <div className="matrix-card-order" role="tablist" aria-label="牌單順序">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={order === "draw"}
+          className={order === "draw" ? "is-selected" : undefined}
+          onClick={() => setOrder("draw")}
+        >落球</button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={order === "sorted"}
+          className={order === "sorted" ? "is-selected" : undefined}
+          onClick={() => setOrder("sorted")}
+        >順球</button>
+      </div>
+      <section className="matrix-ticket matrix-ticket--preview" aria-busy={loading}>
+        {loading ? <p>牌單載入中…</p> : null}
+        {loadFailed ? <p role="alert">牌單暫時無法載入，請稍後再試</p> : null}
+        {!loading && !loadFailed && !manifest?.period ? <p>尚無可用牌單</p> : null}
+        {!loading && !loadFailed && cardUrl ? (
+          <img
+            className="matrix-ticket-image"
+            src={cardUrl}
+            alt={`${lottery}${order === "draw" ? "落球" : "順球"}牌單，第 ${manifest.period} 期`}
+          />
+        ) : null}
       </section>
       <button
         type="button"
         className="primary-action"
         onClick={handleTicketDownload}
-        disabled={downloadPending}
+        disabled={!cardUrl || downloadPending}
         aria-busy={downloadPending}
-      ><DownloadIcon />下載 PNG</button>
+      ><DownloadIcon />下載牌單</button>
       {downloadFailed ? <p role="alert">下載失敗，請稍後再試</p> : null}
     </FeatureShell>
   );
