@@ -1,0 +1,92 @@
+name: Matrix v11 previous-period backfill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: matrix-v11-previous-period-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - id: daily539
+            lottery: 今彩539
+          - id: fantasy5
+            lottery: 天天樂
+          - id: marksix
+            lottery: 六合彩
+          - id: lotto649
+            lottery: 大樂透
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      LOTTERY: ${{ matrix.lottery }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install production dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Recalculate previous two draw periods with v11
+        shell: bash
+        run: |
+          uv run python - <<'PY'
+          import os
+
+          import httpx
+
+          from app.repositories.analysis_repository import create_supabase_repository
+          from app.scraping.sources import LatestDrawSource
+          from app.services.draw_refresh import DrawRefreshService
+          from app.settings import load_settings
+          from app.worker import ANALYSIS_VERSION, _run_analysis
+
+          lottery = os.environ["LOTTERY"]
+          settings = load_settings()
+          repository = create_supabase_repository(
+              settings.supabase_url,
+              settings.supabase_secret_key,
+          )
+
+          with httpx.Client() as client:
+              refresh = DrawRefreshService(repository, LatestDrawSource(client))
+              history = refresh.ensure_algorithm_history(lottery)
+
+          if len(history) < 3:
+              raise RuntimeError(f"BACKFILL_HISTORY_INCOMPLETE:{lottery}:{len(history)}")
+
+          for offset in (1, 2):
+              target_history = history[offset:]
+              draw = {"lottery": lottery, **target_history[0]}
+              expected_version = f'{draw["period"]}:{ANALYSIS_VERSION}'
+              result = _run_analysis(repository, draw, target_history, None)
+              if result.get("status") != "complete":
+                  raise RuntimeError(
+                      f"BACKFILL_NOT_COMPLETE:{lottery}:{draw['period']}:"
+                      f"{result.get('status')}"
+                  )
+              print(f"{lottery} {draw['period']} {expected_version} complete")
+          PY
