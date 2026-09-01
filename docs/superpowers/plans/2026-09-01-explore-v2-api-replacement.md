@@ -211,7 +211,7 @@ def test_one_code_rejects_no_b_c_intersection_and_eight_or_more() -> None:
 
 ```python
 def test_second_rule_may_first_appear_at_f() -> None:
-    groups = [{10}, {10}, {10}, {10}, {10, 24}, {10}]
+    groups = [{10, 24}, {10}, {10}, {10}, {10, 24}, {10}]
     decision = evaluate_two_code(groups)
     assert decision.rules == (10, 24)
     assert decision.highest_streak == 6

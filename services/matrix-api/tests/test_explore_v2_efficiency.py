@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.domain.explore_v2 import SORTED_ORDER, ExploreV2Context, LockKey
 
 
@@ -37,3 +39,16 @@ def test_index_size_is_linear_in_history_cells_not_rule_combinations() -> None:
 
     assert context.indexed_cell_count == 160 * 5
     assert sum(len(occurrences) for occurrences in context.occurrence_index.values()) == 160 * 5
+
+
+def test_production_has_no_old_runner_or_fixed_explore_history_limit() -> None:
+    service_root = Path(__file__).resolve().parents[1]
+    artifact_builder = (service_root / "app/services/artifact_builders.py").read_text()
+    engine = (service_root / "app/domain/explore_v2.py").read_text()
+
+    assert "explore_shared_v8" not in artifact_builder
+    assert "run_explore_v2_batch" in artifact_builder
+    assert "TIANYAN_HISTORY_LIMIT" not in engine
+    assert "itertools.combinations" not in engine
+    assert not (service_root / "app/domain/explore_shared_v8.py").exists()
+    assert not (service_root / "app/domain/explore_shared.py").exists()

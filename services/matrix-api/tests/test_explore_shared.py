@@ -1,4 +1,4 @@
-from app.domain.explore_shared import prepare_shared_explore_unit
+from app.domain.explore_v2 import RoadType, SORTED_ORDER, ExploreV2Context
 
 
 def draw(period: str, numbers: list[int]) -> dict:
@@ -22,44 +22,30 @@ def history() -> list[dict]:
     return newest_first
 
 
-def unit() -> dict:
-    return {
-        "lottery": "今彩539",
-        "numberOrder": "依號碼由小到大排序",
-        "lockedSourceIndex": 0,
-        "lockedPosition": 1,
-        "exploreDateOffset": 0,
-        "exploreRange": "完整範圍",
-        "predictionDistance": 1,
-    }
-
-
 def test_shared_coordinate_builds_add_and_sum_together() -> None:
-    prepared = prepare_shared_explore_unit(unit(), history())
+    context = ExploreV2Context.build("今彩539", SORTED_ORDER, history())
+    unit = context.source_units()[0]
+    occurrence = context.historical_occurrences(unit)[0]
     non_drag = next(
-        coordinate
-        for coordinate in prepared["coordinates"]
-        if coordinate["algorithmTypes"] == ["加減", "合值"]
-        and coordinate["referenceOffset"] == 0
-        and coordinate["referencePosition"] == 2
+        candidate
+        for candidate in context.range_candidate_cells(occurrence, unit.prediction_distance)
+        if candidate.cell.relative_offset == 0 and candidate.cell.position == 2
     )
-    keys = set(non_drag["groups"][0]["candidateMap"])
-    assert any(key.startswith("加減:") for key in keys)
-    assert any(key.startswith("合值:") for key in keys)
+
+    assert non_drag.targets_for(RoadType.ADD)
+    assert non_drag.targets_for(RoadType.SUM)
+    assert len(context.candidate_build_counts) == 1
 
 
 def test_locked_coordinate_is_drag_only() -> None:
-    prepared = prepare_shared_explore_unit(unit(), history())
-    drag = next(
-        coordinate
-        for coordinate in prepared["coordinates"]
-        if coordinate["algorithmTypes"] == ["拖牌"]
-    )
-    assert drag["referenceOffset"] == 0
-    assert drag["referencePosition"] == 1
-    assert drag["groups"]
-    assert all(
-        key.startswith("拖牌:")
-        for group in drag["groups"]
-        for key in group["candidateMap"]
-    )
+    context = ExploreV2Context.build("今彩539", SORTED_ORDER, history())
+    unit = context.source_units()[0]
+    occurrence = context.historical_occurrences(unit)[0]
+
+    cell = context.drag_cell(occurrence)
+    targets = context.drag_candidate_targets(occurrence, unit.prediction_distance)
+
+    assert cell.relative_offset == 0
+    assert cell.position == unit.occurrence.position
+    assert targets
+    assert context.range_build_counts == {}

@@ -71,6 +71,21 @@ Additional calls occur 2 hours, 1 hour, and 30 minutes before the base call time
 
 Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; AppDeploy no longer exposes Matrix Explore HTTP routes.
 
+## Matrix Explore v2 core
+
+`app.domain.explore_v2` is the production Explore/Status shared core for the
+`matrix-python-v10` analysis version. It builds one complete-history occurrence
+index per lottery/order, one thirteen-source batch, cached full-range cells, and
+independently finalized standard/full results. Drag reads only the locked cell;
+add and sum share the same cached range cells. Intermediate and invalid
+candidates are never persisted as Explore results.
+
+The authoritative behavior is documented in
+`docs/specs/Matrix_探索功能_三版路演算法_API_完整修正版_v2_20260901.md`.
+Specification tests are implemented, but complete real-history, draw-by-draw
+verification is still pending. Do not describe this version as production-data
+verified until that separate validation is complete.
+
 ## Local verification
 
 ```bash

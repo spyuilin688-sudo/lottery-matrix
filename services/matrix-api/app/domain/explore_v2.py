@@ -203,44 +203,64 @@ def _two_code_pair_scores(groups: tuple[frozenset[int], ...]) -> dict[tuple[int,
     bounded_groups = groups[:12]
 
     for first in first_candidates:
-        active_seconds: set[int] = set()
-        has_uncovered_group = False
-        processed = 0
+        if first in groups[0] and first in groups[1]:
+            formation_index = 1
+        else:
+            formation_index = next(
+                (
+                    index
+                    for index, group in enumerate(bounded_groups[2:], start=2)
+                    if first in group
+                ),
+                -1,
+            )
+        if formation_index < 0:
+            continue
+
+        missed_groups = [
+            group
+            for group in bounded_groups[: formation_index + 1]
+            if first not in group
+        ]
+        if missed_groups:
+            active_seconds = set(missed_groups[0])
+            for group in missed_groups[1:]:
+                active_seconds.intersection_update(group)
+            active_seconds.discard(first)
+        else:
+            active_seconds = {
+                candidate
+                for group in bounded_groups[: formation_index + 1]
+                for candidate in group
+                if candidate != first
+            }
+
+        if not active_seconds:
+            for group in bounded_groups[formation_index + 1 :]:
+                available = set(group.difference({first}))
+                if available:
+                    active_seconds = available
+                    break
+                if first not in group:
+                    break
+        if not active_seconds:
+            continue
 
         for group_index, group in enumerate(bounded_groups):
             if first in group:
-                if not has_uncovered_group:
-                    active_seconds.update(group.difference({first}))
-                processed = group_index + 1
                 continue
 
-            available = group.difference({first})
-            if not has_uncovered_group:
-                _remember_pair_score(
-                    scores,
-                    first,
-                    active_seconds.difference(available),
-                    group_index,
-                )
-                active_seconds = set(available)
-                has_uncovered_group = True
-            else:
-                _remember_pair_score(
-                    scores,
-                    first,
-                    active_seconds.difference(available),
-                    group_index,
-                )
-                active_seconds.intersection_update(available)
+            _remember_pair_score(
+                scores,
+                first,
+                active_seconds.difference(group),
+                group_index,
+            )
+            active_seconds.intersection_update(group)
 
             if not active_seconds:
-                processed = group_index
                 break
-            processed = group_index + 1
-        else:
-            processed = len(bounded_groups)
-
-        _remember_pair_score(scores, first, active_seconds, processed)
+        _remember_pair_score(scores, first, active_seconds, len(bounded_groups))
 
     return scores
 
@@ -385,6 +405,14 @@ class ExploreV2Context:
             raise ValueError("未知號碼順序")
 
         draws = tuple(draw for draw in newest_first if draw.get("lottery", lottery) == lottery)
+        if number_order == DRAW_ORDER and any(
+            not _complete_int_tuple(
+                draw.get("drawOrderNumbers"),
+                lottery_position_count(lottery),
+            )
+            for draw in draws
+        ):
+            raise ValueError("實際開獎順序（落球）資料不完整，不得以順球資料代替")
         numbers_by_draw = tuple(ordered_numbers(draw, lottery, number_order) for draw in draws)
         mutable_index: dict[LockKey, list[LockOccurrence]] = {}
         indexed_cell_count = 0
@@ -615,6 +643,37 @@ class ExploreV2Context:
             self._drag_candidate_build_counts.get(cache_key, 0) + 1
         )
         return result
+
+
+@dataclass(frozen=True, slots=True)
+class ExploreV2Session:
+    lottery: str
+    history: tuple[Mapping[str, object], ...]
+    contexts: tuple[ExploreV2Context, ...]
+    indexed_units: tuple[tuple[ExploreV2Context, SourceUnit], ...]
+
+    @classmethod
+    def build(
+        cls,
+        lottery: str,
+        newest_first: Iterable[Mapping[str, object]],
+    ) -> "ExploreV2Session":
+        history = tuple(newest_first)
+        orders = (SORTED_ORDER,) if lottery == "天天樂" else (SORTED_ORDER, DRAW_ORDER)
+        contexts = tuple(ExploreV2Context.build(lottery, order, history) for order in orders)
+        indexed_units = tuple(
+            (context, unit)
+            for context in contexts
+            for unit in context.source_units()
+        )
+        return cls(lottery, history, contexts, indexed_units)
+
+    def matches(
+        self,
+        lottery: str,
+        newest_first: Iterable[Mapping[str, object]],
+    ) -> bool:
+        return self.lottery == lottery and self.history == tuple(newest_first)
 
 
 EXPLORE_RANGES = ("標準範圍", "完整範圍")
@@ -1177,15 +1236,15 @@ def run_explore_v2_batch(
     limit: int,
     *,
     road_types: Iterable[RoadType] = (RoadType.ADD, RoadType.SUM, RoadType.DRAG),
+    session: ExploreV2Session | None = None,
 ) -> dict[str, Any]:
     history = tuple(newest_first)
-    orders = (SORTED_ORDER,) if lottery == "天天樂" else (SORTED_ORDER, DRAW_ORDER)
-    contexts = tuple(ExploreV2Context.build(lottery, order, history) for order in orders)
-    indexed_units = tuple(
-        (context, unit)
-        for context in contexts
-        for unit in context.source_units()
-    )
+    if session is None:
+        session = ExploreV2Session.build(lottery, history)
+    elif not session.matches(lottery, history):
+        raise ValueError("EXPLORE_V2_SESSION_MISMATCH")
+    contexts = session.contexts
+    indexed_units = session.indexed_units
     cursor_start = min(max(0, int(start)), len(indexed_units))
     cursor = min(len(indexed_units), cursor_start + max(1, int(limit)))
     selected_roads = frozenset(

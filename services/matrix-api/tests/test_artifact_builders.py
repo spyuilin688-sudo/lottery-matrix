@@ -1,3 +1,4 @@
+from app.domain.explore_v2 import ExploreV2Session
 from app.services.artifact_builders import (
     build_explore_artifact,
     create_artifact_builders,
@@ -51,6 +52,39 @@ def test_artifact_builder_calls_one_v2_batch_runner_per_checkpoint() -> None:
         "total": 130,
         "complete": False,
     }
+
+
+def test_artifact_builder_reuses_one_v2_session_across_checkpoints(monkeypatch) -> None:
+    history = [
+        {
+            "period": "123",
+            "numbers": ["01", "02", "03", "04", "05"],
+            "sortedNumbers": ["01", "02", "03", "04", "05"],
+            "drawOrderNumbers": ["01", "02", "03", "04", "05"],
+        }
+    ]
+    original_build = ExploreV2Session.build
+    build_count = 0
+
+    def build_once(cls, lottery: str, newest_first: list[dict]) -> ExploreV2Session:
+        nonlocal build_count
+        build_count += 1
+        if build_count > 1:
+            raise AssertionError("v2 session rebuilt between checkpoints")
+        return original_build(lottery, newest_first)
+
+    monkeypatch.setattr(ExploreV2Session, "build", classmethod(build_once))
+    builders = create_artifact_builders()
+    for start in (0, 1):
+        builders["explore"](
+            {
+                "draw": {"lottery": "今彩539", "period": "123"},
+                "history": list(history),
+                "exploreBatch": {"start": start, "limit": 1},
+            }
+        )
+
+    assert build_count == 1
 
 
 def test_explore_builder_creates_canonical_detached_rows() -> None:

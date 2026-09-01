@@ -70,6 +70,14 @@ def test_missing_draw_order_is_not_replaced_by_sorted_numbers() -> None:
     assert ordered_numbers(draw, "今彩539", DRAW_ORDER) == ()
 
 
+def test_draw_order_context_fails_closed_when_any_history_order_is_missing() -> None:
+    history = _complete_history("今彩539", 30)
+    history[20]["drawOrderNumbers"] = None
+
+    with pytest.raises(ValueError, match="實際開獎順序（落球）資料不完整"):
+        ExploreV2Context.build("今彩539", DRAW_ORDER, history)
+
+
 def test_special_number_stays_last_in_sorted_seven_position_lottery() -> None:
     draw = {
         "period": "114200",

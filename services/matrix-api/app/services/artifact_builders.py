@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.domain.explore_v2 import run_explore_v2_batch
+from app.domain.explore_v2 import ExploreV2Session, run_explore_v2_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tianyan_artifact import build_tianyan_artifact
@@ -82,6 +82,7 @@ def build_explore_artifact_chunk(
     limit: int,
     runner: ExploreRunner | None = None,
     batch_runner: ExploreBatchRunner = run_explore_v2_batch,
+    session: ExploreV2Session | None = None,
 ) -> dict[str, Any]:
     if runner is None:
         result = batch_runner(
@@ -89,6 +90,7 @@ def build_explore_artifact_chunk(
             newest_first=history,
             start=start,
             limit=limit,
+            session=session,
         )
         if isinstance(result.get("artifact"), dict):
             result["artifact"]["drawPeriod"] = draw_period
@@ -111,6 +113,7 @@ def build_explore_artifact(
     history: list[dict[str, Any]],
     runner: ExploreRunner | None = None,
     batch_runner: ExploreBatchRunner = run_explore_v2_batch,
+    session: ExploreV2Session | None = None,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
         lottery,
@@ -120,6 +123,7 @@ def build_explore_artifact(
         len(_work_units(lottery, history)),
         runner,
         batch_runner,
+        session,
     )["artifact"]
 
 
@@ -213,8 +217,22 @@ def create_artifact_builders(
     explore_runner: ExploreRunner | None = None,
     explore_batch_runner: ExploreBatchRunner = run_explore_v2_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
+    v2_sessions: dict[str, ExploreV2Session] = {}
+
+    def v2_session(lottery: str, history: list[dict[str, Any]]) -> ExploreV2Session:
+        cached = v2_sessions.get(lottery)
+        if cached is None or not cached.matches(lottery, history):
+            cached = ExploreV2Session.build(lottery, history)
+            v2_sessions[lottery] = cached
+        return cached
+
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
+        session = (
+            v2_session(draw["lottery"], context["history"])
+            if explore_runner is None and explore_batch_runner is run_explore_v2_batch
+            else None
+        )
         batch = context.get("exploreBatch")
         if isinstance(batch, dict):
             result = build_explore_artifact_chunk(
@@ -222,6 +240,7 @@ def create_artifact_builders(
                 int(batch.get("start", 0)), int(batch.get("limit", 10)),
                 explore_runner,
                 explore_batch_runner,
+                session,
             )
             return {
                 "artifact": result["artifact"],
@@ -238,6 +257,7 @@ def create_artifact_builders(
             context["history"],
             explore_runner,
             explore_batch_runner,
+            session,
         )
 
     def tianyan(context: dict[str, Any]) -> dict[str, Any]:

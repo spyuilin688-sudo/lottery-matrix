@@ -73,11 +73,19 @@ def test_two_code_keeps_b_and_c_pool_until_d_forms_first_common_value() -> None:
 
 
 def test_second_rule_may_first_appear_at_f() -> None:
-    decision = evaluate_two_code([{10}, {10}, {10}, {10}, {10, 24}, {10}])
+    decision = evaluate_two_code([{10, 24}, {10}, {10}, {10}, {10, 24}, {10}])
 
     assert decision.valid
     assert decision.rules == (10, 24)
     assert decision.highest_streak == 6
+
+
+def test_two_fixed_rules_do_not_expand_a_new_pair_later() -> None:
+    decision = evaluate_two_code([{10, 24}, {10}, {10, 24}, {10, 30}, {10}])
+
+    assert decision.valid
+    assert decision.rules == (10, 24)
+    assert decision.highest_streak == 5
 
 
 def test_two_code_rejects_when_second_rule_never_forms() -> None:
