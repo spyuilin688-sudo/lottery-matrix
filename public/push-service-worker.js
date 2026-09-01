@@ -1,6 +1,15 @@
 const STATIC_CACHE_PREFIX = "matrix-pwa-shell-";
 const STATIC_CACHE_NAME = `${STATIC_CACHE_PREFIX}v1`;
-const APP_SHELL_PATHS = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"];
+const APP_SHELL_PATHS = [
+  "/",
+  "/index.html",
+  "/manifest.webmanifest",
+  "/icons/favicon-32x32.png",
+  "/icons/apple-touch-icon.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/icons/maskable-icon-512x512.png",
+];
 const STATIC_DESTINATIONS = new Set(["font", "image", "manifest", "script", "style"]);
 const SENSITIVE_PATH_SEGMENT = /(?:^|\/)(?:auth|login|logout|sign-in|signin|sign-up|signup|member|membership|subscription|subscribe|account|profile)(?:\/|$)/;
 
@@ -212,7 +221,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/favicon.svg",
+      icon: "/icons/icon-192x192.png",
       data: { url: safePwaPath(payload.url) },
     }),
   );

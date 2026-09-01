@@ -55,7 +55,7 @@ test("service worker source exposes push and notification click listeners", () =
   assert.match(source, /showNotification/);
   assert.match(source, /addEventListener\(["']notificationclick["']/);
   assert.match(source, /clients\.openWindow/);
-  assert.match(source, /icon:\s*["']\/favicon\.svg["']/);
+  assert.match(source, /icon:\s*["']\/icons\/icon-192x192\.png["']/);
 });
 
 test("push event displays a valid payload and preserves its same-origin path", async () => {
@@ -69,7 +69,7 @@ test("push event displays a valid payload and preserves its same-origin path", a
     title: "Result",
     options: {
       body: "Draw complete",
-      icon: "/favicon.svg",
+      icon: "/icons/icon-192x192.png",
       data: { url: "/results?draw=1#latest" },
     },
   }]);
@@ -84,7 +84,7 @@ test("push event uses safe empty defaults when data is absent", async () => {
     title: "",
     options: {
       body: "",
-      icon: "/favicon.svg",
+      icon: "/icons/icon-192x192.png",
       data: { url: "/" },
     },
   }]);

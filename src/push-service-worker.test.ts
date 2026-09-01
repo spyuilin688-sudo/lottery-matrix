@@ -140,12 +140,15 @@ describe('combined Push and PWA service worker', () => {
     await worker.dispatchLifecycle('install');
 
     expect(worker.entries.get(requestKey('/'))).toBeDefined();
+    expect(worker.entries.get(requestKey('/icons/icon-192x192.png'))).toBeDefined();
+    expect(worker.entries.get(requestKey('/icons/icon-512x512.png'))).toBeDefined();
+    expect(worker.entries.get(requestKey('/icons/maskable-icon-512x512.png'))).toBeDefined();
     expect(worker.skipWaiting).toHaveBeenCalledTimes(1);
 
     await worker.dispatchPush({ title: 'Matrix', body: '已完成', url: '/explore' });
     expect(worker.showNotification).toHaveBeenCalledWith('Matrix', {
       body: '已完成',
-      icon: '/favicon.svg',
+      icon: '/icons/icon-192x192.png',
       data: { url: '/explore' },
     });
 
