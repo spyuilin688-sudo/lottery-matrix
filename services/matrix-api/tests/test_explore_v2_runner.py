@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 
+import app.domain.explore_v2 as explore_v2
 from app.domain.explore_v2 import RoadType, run_explore_v2_batch
 
 
@@ -176,3 +177,27 @@ def test_checkpoint_shape_uses_global_thirteen_source_batch() -> None:
     assert result["cursor"] == 12
     assert result["total"] == 130
     assert result["complete"] is False
+
+
+def test_v2_runner_preserves_tianyan_builder_on_shared_candidates(monkeypatch: object) -> None:
+    prepared_calls: list[dict[str, object]] = []
+
+    def fake_tianyan(prepared: dict[str, object]) -> dict[str, object]:
+        prepared_calls.append(prepared)
+        return {
+            "items": [{"id": "tianyan-from-v2"}],
+            "validationById": {"tianyan-from-v2": {"rules": []}},
+        }
+
+    monkeypatch.setattr(explore_v2, "build_tianyan_unit_artifact", fake_tianyan)  # type: ignore[attr-defined]
+
+    result = run_explore_v2_batch("今彩539", _full_only_one_code_history(), 0, 1)
+
+    assert len(prepared_calls) == 1
+    coordinates = prepared_calls[0]["coordinates"]
+    assert any(coordinate["algorithmTypes"] == ["加減", "合值"] for coordinate in coordinates)
+    assert any(coordinate["algorithmTypes"] == ["拖牌"] for coordinate in coordinates)
+    assert result["artifact"]["tianyanItems"] == [{"id": "tianyan-from-v2"}]
+    assert result["artifact"]["tianyanValidationById"] == {
+        "tianyan-from-v2": {"rules": []}
+    }

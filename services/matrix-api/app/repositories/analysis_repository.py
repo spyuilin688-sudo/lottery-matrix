@@ -694,6 +694,12 @@ def _explore_result_records(
         if not isinstance(item, dict) or not str(item.get("id", "")):
             continue
         item_id = str(item["id"])
+        explore_range = str(item.get("exploreRange", "完整範圍"))
+        if explore_range not in {"標準範圍", "完整範圍"}:
+            continue
+        public_item = {
+            key: value for key, value in item.items() if key != "exploreRange"
+        }
         validation = validations.get(item_id, {})
         records.append({
             "lottery": lottery,
@@ -709,11 +715,12 @@ def _explore_result_records(
             "algorithm_type": str(item.get("algorithmType", "")),
             "number_order": str(item.get("numberOrder", "")),
             "rule_count": int(item.get("ruleCount", 0)),
+            "explore_range": explore_range,
             "locked_source_index": int(item.get("lockedSourceIndex", 0)),
             "locked_source_period": str(item.get("lockedSourcePeriod", "")),
             "reference_offset": item.get("referenceOffset"),
             "reference_position": item.get("referencePosition"),
-            "item": item,
+            "item": public_item,
             "validation": validation if isinstance(validation, dict) else {},
             "expires_at": expires_at,
         })

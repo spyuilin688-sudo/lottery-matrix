@@ -4,6 +4,7 @@ from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
 from .models import lottery_maximum, lottery_position_count, normalize_matrix_number
+from .tianyan_shared import build_tianyan_unit_artifact
 
 
 SORTED_ORDER = "依號碼由小到大排序"
@@ -878,6 +879,7 @@ def _evaluate_groups(
 def _range_bundles(
     context: ExploreV2Context,
     unit: SourceUnit,
+    limit: int = 12,
 ) -> tuple[
     tuple[LockOccurrence, int, dict[tuple[int, int], CellCandidates]],
     ...,
@@ -898,7 +900,7 @@ def _range_bundles(
                 },
             )
         )
-        if len(bundles) >= 12:
+        if len(bundles) >= limit:
             break
     return tuple(bundles)
 
@@ -931,6 +933,7 @@ def _groups_for_cell(
 def _drag_groups(
     context: ExploreV2Context,
     unit: SourceUnit,
+    limit: int = 12,
 ) -> tuple[RoadGroup, ...]:
     groups: list[RoadGroup] = []
     for occurrence in context.historical_occurrences(unit):
@@ -948,9 +951,144 @@ def _drag_groups(
                 ),
             )
         )
-        if len(groups) >= 12:
+        if len(groups) >= limit:
             break
     return tuple(groups)
+
+
+def _group_name(index: int) -> str:
+    code = 66 + index
+    return chr(code) if code <= 90 else f"B{index + 1}"
+
+
+def _typed_candidate_map(candidate: CellCandidates) -> dict[str, list[int]]:
+    return {
+        **{
+            f"{RoadType.ADD.value}:{value}": list(targets)
+            for value, targets in candidate.add_targets
+        },
+        **{
+            f"{RoadType.SUM.value}:{value}": list(targets)
+            for value, targets in candidate.sum_targets
+        },
+    }
+
+
+def _tianyan_range_coordinate(
+    context: ExploreV2Context,
+    unit: SourceUnit,
+    source_cell: VerificationCell,
+    bundles: tuple[
+        tuple[LockOccurrence, int, dict[tuple[int, int], CellCandidates]],
+        ...,
+    ],
+) -> dict[str, Any]:
+    coordinate = (source_cell.relative_offset, source_cell.position)
+    groups: list[dict[str, Any]] = []
+    for occurrence, result_index, by_coordinate in bundles:
+        candidate = by_coordinate.get(coordinate)
+        if candidate is None:
+            break
+        reference_index = occurrence.draw_index - candidate.cell.relative_offset
+        groups.append(
+            {
+                "group": _group_name(len(groups)),
+                "source": dict(context.draw_at(occurrence.draw_index)),
+                "reference": dict(context.draw_at(reference_index)),
+                "prediction": dict(context.draw_at(result_index)),
+                "baseNumber": candidate.cell.number,
+                "lockedBaseNumber": occurrence.number,
+                "candidateMap": _typed_candidate_map(candidate),
+            }
+        )
+    reference_index = unit.locked_source_index - source_cell.relative_offset
+    return {
+        "referenceOffset": source_cell.relative_offset,
+        "referencePosition": source_cell.position,
+        "algorithmTypes": [RoadType.ADD.value, RoadType.SUM.value],
+        "aReference": dict(context.draw_at(reference_index)),
+        "aBaseNumber": source_cell.number,
+        "groups": groups,
+    }
+
+
+def _tianyan_drag_coordinate(
+    context: ExploreV2Context,
+    unit: SourceUnit,
+) -> dict[str, Any]:
+    groups = _drag_groups(context, unit, limit=30)
+    return {
+        "referenceOffset": 0,
+        "referencePosition": unit.occurrence.position,
+        "algorithmTypes": [RoadType.DRAG.value],
+        "aReference": dict(context.draw_at(unit.locked_source_index)),
+        "aBaseNumber": unit.occurrence.number,
+        "groups": [
+            {
+                "group": _group_name(index),
+                "source": dict(context.draw_at(group.occurrence.draw_index)),
+                "reference": dict(context.draw_at(group.occurrence.draw_index)),
+                "prediction": dict(context.draw_at(group.result_draw_index)),
+                "baseNumber": group.reference_cell.number,
+                "lockedBaseNumber": group.occurrence.number,
+                "candidateMap": {
+                    f"{RoadType.DRAG.value}:{value}": list(targets)
+                    for value, targets in group.candidate_targets
+                },
+            }
+            for index, group in enumerate(groups)
+        ],
+    }
+
+
+def _append_tianyan_results(
+    artifact: dict[str, Any],
+    context: ExploreV2Context,
+    unit: SourceUnit,
+) -> None:
+    source_cells = context.range_cells(unit.occurrence, unit.prediction_distance)
+    bundles = _range_bundles(context, unit, limit=30)
+    prepared = {
+        "lottery": context.lottery,
+        "numberOrder": context.number_order,
+        "lockedPosition": unit.occurrence.position,
+        "lockedNumber": unit.occurrence.number,
+        "lockedSourceIndex": unit.locked_source_index,
+        "lockedSourcePeriod": unit.locked_source_period,
+        "predictionDistance": unit.prediction_distance,
+        "exploreDateOffset": 0,
+        "source": dict(context.draw_at(unit.locked_source_index)),
+        "coordinates": [
+            *(
+                _tianyan_range_coordinate(context, unit, source_cell, bundles)
+                for source_cell in source_cells
+            ),
+            _tianyan_drag_coordinate(context, unit),
+        ],
+    }
+    tianyan = build_tianyan_unit_artifact(prepared)
+    for item in tianyan.get("items", []):
+        identifier = str(item.get("id", "")) if isinstance(item, dict) else ""
+        if not identifier:
+            continue
+        existing = next(
+            (
+                current
+                for current in artifact["tianyanItems"]
+                if isinstance(current, dict) and current.get("id") == identifier
+            ),
+            None,
+        )
+        if existing is not None:
+            if existing != item:
+                raise ValueError("TIANYAN_RESULT_CONFLICT")
+            continue
+        artifact["tianyanItems"].append(item)
+    for identifier, validation in tianyan.get("validationById", {}).items():
+        existing = artifact["tianyanValidationById"].get(identifier)
+        if existing is not None and existing != validation:
+            raise ValueError("TIANYAN_RESULT_CONFLICT")
+        artifact["tianyanValidationById"][identifier] = validation
 
 
 def _run_explore_v2_unit(
@@ -959,6 +1097,7 @@ def _run_explore_v2_unit(
     unit: SourceUnit,
     road_types: frozenset[RoadType],
     metrics: dict[str, int],
+    include_tianyan: bool,
 ) -> None:
     range_roads = tuple(road for road in (RoadType.ADD, RoadType.SUM) if road in road_types)
     if range_roads:
@@ -998,6 +1137,8 @@ def _run_explore_v2_unit(
                 explore_range,
                 metrics,
             )
+    if include_tianyan:
+        _append_tianyan_results(artifact, context, unit)
 
 
 def _context_metrics(
@@ -1051,6 +1192,7 @@ def run_explore_v2_batch(
         road if isinstance(road, RoadType) else RoadType(str(road))
         for road in road_types
     )
+    all_roads = frozenset((RoadType.ADD, RoadType.SUM, RoadType.DRAG))
     artifact: dict[str, Any] = {
         "lottery": lottery,
         "drawPeriod": str(history[0].get("period", "")) if history else "",
@@ -1067,6 +1209,7 @@ def run_explore_v2_batch(
             unit,
             selected_roads,
             working_metrics,
+            include_tianyan=selected_roads == all_roads,
         )
 
     artifact["items"].sort(

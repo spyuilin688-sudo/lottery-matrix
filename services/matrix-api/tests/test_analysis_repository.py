@@ -6,7 +6,11 @@ import httpx
 import pytest
 from postgrest import SyncPostgrestClient
 
-from app.repositories.analysis_repository import InMemoryAnalysisRepository, SupabaseAnalysisRepository
+from app.repositories.analysis_repository import (
+    InMemoryAnalysisRepository,
+    SupabaseAnalysisRepository,
+    _explore_result_records,
+)
 
 
 KINDS = ["explore", "tianyan", "tiangong", "status"]
@@ -370,6 +374,36 @@ def test_explore_results_are_idempotent_and_keep_item_with_validation() -> None:
     assert stored["prediction_numbers"] == ["27"]
 
 
+def test_explore_result_record_stores_scope_outside_public_item() -> None:
+    item = {
+        "id": "standard-road",
+        "number": "02",
+        "lockedPosition": 1,
+        "predictionDistance": 2,
+        "consecutive": "準5進6",
+        "highestStreak": 5,
+        "predictionNumbers": ["27"],
+        "algorithmType": "加減",
+        "numberOrder": "依號碼由小到大排序",
+        "ruleCount": 1,
+        "lockedSourceIndex": 1,
+        "lockedSourcePeriod": "115000204",
+        "exploreRange": "標準範圍",
+    }
+
+    record = _explore_result_records(
+        "今彩539",
+        "115000205",
+        "115000205:matrix-python-v10",
+        {"items": [item], "validationById": {"standard-road": {"ruleSets": []}}},
+        "2026-09-04T00:00:00+00:00",
+    )[0]
+
+    assert record["explore_range"] == "標準範圍"
+    assert "exploreRange" not in record["item"]
+    assert record["item"]["id"] == "standard-road"
+
+
 def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payload() -> None:
     fake_client = FakeSupabaseClient()
     repository = SupabaseAnalysisRepository(fake_client)
@@ -397,6 +431,7 @@ def test_supabase_explore_results_use_bounded_batch_upsert_and_skip_empty_payloa
         "consecutive": "準5進6", "highest_streak": 5,
         "prediction_numbers": ["17", "27"], "algorithm_type": "拖牌",
         "number_order": "依號碼由小到大排序", "rule_count": 2,
+        "explore_range": "完整範圍",
         "locked_source_index": 1, "locked_source_period": "115000204",
         "reference_offset": 0, "reference_position": 1,
         "item": item, "validation": validation, "expires_at": "ignored",

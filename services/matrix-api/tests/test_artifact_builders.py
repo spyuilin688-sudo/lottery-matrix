@@ -12,6 +12,47 @@ def _empty_shared_response() -> dict:
     }
 
 
+def test_artifact_builder_calls_one_v2_batch_runner_per_checkpoint() -> None:
+    calls: list[dict] = []
+
+    def batch_runner(**kwargs: object) -> dict:
+        calls.append(dict(kwargs))
+        return {
+            "artifact": {
+                "lottery": "今彩539",
+                "drawPeriod": "123",
+                "items": [],
+                "validationById": {},
+                "tianyanItems": [],
+                "tianyanValidationById": {},
+            },
+            "cursorStart": 10,
+            "cursor": 12,
+            "total": 130,
+            "complete": False,
+            "metrics": {},
+        }
+
+    builders = create_artifact_builders(explore_batch_runner=batch_runner)
+    result = builders["explore"](
+        {
+            "draw": {"lottery": "今彩539", "period": "123"},
+            "history": [{"period": "123"}],
+            "exploreBatch": {"start": 10, "limit": 2},
+        }
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["start"] == 10
+    assert calls[0]["limit"] == 2
+    assert result["_checkpoint"] == {
+        "cursorStart": 10,
+        "cursor": 12,
+        "total": 130,
+        "complete": False,
+    }
+
+
 def test_explore_builder_creates_canonical_detached_rows() -> None:
     history = [{"period": "123", "numbers": ["01", "02", "03", "04", "05"]}]
     calls = []
@@ -63,7 +104,12 @@ def test_explore_batch_builder_needs_only_start_and_limit() -> None:
     assert result["artifact"]["tianyanItems"] == []
     assert result["artifact"]["tianyanValidationById"] == {}
     assert "tianyanSources" not in result["artifact"]
-    assert result["_checkpoint"] == {"cursor": 12, "total": 130, "complete": False}
+    assert result["_checkpoint"] == {
+        "cursorStart": 10,
+        "cursor": 12,
+        "total": 130,
+        "complete": False,
+    }
 
 
 def test_explore_builder_stores_each_today_road_once() -> None:
