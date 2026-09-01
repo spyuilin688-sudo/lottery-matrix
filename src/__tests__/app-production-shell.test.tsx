@@ -289,7 +289,7 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
-    expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+110px/);
+    expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(82px,\s*26vw,\s*110px\),\s*110px\)/);
     expect(css).toMatch(/column-gap:\s*0/);
     expect(css).toMatch(/row-gap:\s*4px/);
     expect(css).not.toContain("!important");

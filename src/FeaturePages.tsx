@@ -9,6 +9,8 @@ import {
   ClockIcon,
   Cross2Icon,
   DownloadIcon,
+  DoubleArrowLeftIcon,
+  DoubleArrowRightIcon,
   GearIcon,
   LockClosedIcon,
   MagnifyingGlassIcon,
@@ -1019,6 +1021,7 @@ function ExploreValidationProcess({
     number: string;
     position: number;
     predictionPeriod: number;
+    consecutive: string;
     algorithmType: string;
     referenceOffset?: number;
     referencePosition?: number;
@@ -1037,7 +1040,9 @@ function ExploreValidationProcess({
     key: string;
     period: string;
     numbers: Array<string | number>;
-    formula?: string;
+    sourceNumber?: string;
+    stepNumber?: number;
+    hitNumbers?: Array<string | number>;
   };
 
   const values = (numbers: Array<string | number>) => numbers.map((value) => String(value).padStart(2, "0"));
@@ -1045,20 +1050,40 @@ function ExploreValidationProcess({
     ? "同期"
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
-  const validationGroup = (key: string, rows: ValidationDisplayRow[]) => (
-    <div className="validation-period-block explore-validation-group" key={key}>
-      <div className="explore-validation-issues">
-        {rows.map((row) => <span className="validation-issue" key={`${row.key}-period`}>{row.period}</span>)}
+  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const validationGroup = (
+    key: string,
+    rows: ValidationDisplayRow[],
+    formulas: string[],
+  ) => (
+    <div
+      className="explore-validation-group"
+      data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
+      key={key}
+    >
+      <div className="explore-validation-issues explore-validation-numeric-text">
+        {rows.map((row) => <span className="explore-validation-issue" key={`${row.key}-period`}>{row.period}</span>)}
       </div>
       <div className="explore-validation-numbers-card">
         {rows.map((row) => (
-          <span className="validation-full-numbers explore-validation-numbers" data-count={values(row.numbers).length} key={`${row.key}-numbers`}>
-            {values(row.numbers).map((value, index) => <i key={`${value}-${index}`}>{value}</i>)}
-          </span>
+          <div className="explore-validation-draw-row explore-validation-number-row" key={`${row.key}-numbers`}>
+            <span className="explore-validation-numbers explore-validation-numeric-text">
+              {values(row.numbers).map((value, index) => {
+                const state = value === displayNumber(row.sourceNumber ?? "")
+                  ? "source"
+                  : value === displayNumber(row.stepNumber ?? "")
+                    ? "step"
+                    : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit))
+                      ? "hit"
+                      : "";
+                return <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"} key={`${value}-${index}`}>{value}</i>;
+              })}
+            </span>
+          </div>
         ))}
       </div>
-      <div className="explore-validation-formulas">
-        {rows.map((row) => <span className="validation-formula" key={`${row.key}-formula`}>{row.formula ? <b>{row.formula}</b> : null}</span>)}
+      <div className="explore-validation-formulas explore-validation-numeric-text">
+        {rows.map((row, index) => <span className="explore-validation-formula-row" key={`${row.key}-formula`}>{formulas[index] ?? ""}</span>)}
       </div>
     </div>
   );
@@ -1090,12 +1115,13 @@ function ExploreValidationProcess({
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
-            <header className="validation-summary-card explore-validation-summary-card">
-              <span>
+            <header className="explore-validation-summary-card">
+              <p className="explore-validation-summary">
                 開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆｜
                 <i className="validation-summary-lookback">{relation}</i>｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
                 <i className="validation-summary-formula">{ruleDisplays()}</i>｜下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
-              </span>
+              </p>
+              <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
             <div className="explore-validation-groups">
               {ruleSet.historicalValidation.map((row) => {
@@ -1103,21 +1129,27 @@ function ExploreValidationProcess({
                   key: `source-${row.group}`,
                   period: row.sourcePeriod,
                   numbers: row.sourceNumbers,
+                  sourceNumber: item.number,
                 };
                 const reference: ValidationDisplayRow = {
                   key: `reference-${row.group}`,
                   period: row.referencePeriod,
                   numbers: row.referenceNumbers,
-                  formula: ruleDisplays(row.matchedRules),
+                  stepNumber: row.baseNumber,
                 };
                 const prediction: ValidationDisplayRow = {
                   key: `prediction-${row.group}`,
                   period: row.predictionPeriod,
                   numbers: row.predictionNumbers,
+                  hitNumbers: row.hitNumbers,
                 };
+                const resultNumbers = values(row.hitNumbers).join("、");
+                const calculation = `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${ruleDisplays(row.matchedRules)} = ${resultNumbers}`;
+                const rows = referenceFirst ? [reference, source, prediction] : [source, reference, prediction];
                 return validationGroup(
                   `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
-                  referenceFirst ? [reference, source, prediction] : [source, reference, prediction],
+                  rows,
+                  rows.map((_, index) => index === 0 ? calculation : index === rows.length - 1 ? `［ ${resultNumbers} ］` : ""),
                 );
               })}
               {validation.sourceA ? validationGroup(
@@ -1128,12 +1160,13 @@ function ExploreValidationProcess({
                         key: "current-reference",
                         period: validation.sourceA.referencePeriod,
                         numbers: validation.sourceA.referenceNumbers ?? [],
-                        formula: ruleDisplays(),
+                        stepNumber: validation.sourceA.baseNumber,
                       },
                       {
                         key: "current-source",
                         period: validation.sourceA.sourcePeriod,
                         numbers: validation.sourceA.sourceNumbers,
+                        sourceNumber: item.number,
                       },
                     ]
                   : [
@@ -1141,19 +1174,28 @@ function ExploreValidationProcess({
                         key: "current-source",
                         period: validation.sourceA.sourcePeriod,
                         numbers: validation.sourceA.sourceNumbers,
+                        sourceNumber: item.number,
                       },
                       {
                         key: "current-reference",
                         period: validation.sourceA.referencePeriod,
                         numbers: validation.sourceA.referenceNumbers ?? [],
-                        formula: ruleDisplays(),
+                        stepNumber: validation.sourceA.baseNumber,
                       },
                     ],
+                [
+                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA.baseNumber)} ${ruleDisplays()} = ${values(ruleSet.predictionNumbers).join("、")}`,
+                  "",
+                ],
               ) : null}
             </div>
             <footer className="explore-validation-prediction">
-              <strong>本期預測</strong>
-              <b className="numeric-text">{values(ruleSet.predictionNumbers).join("、")}</b>
+              <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
+              <span className="explore-validation-prediction-content">
+                <strong>本期預測</strong>
+                <b className="explore-validation-numeric-text">{values(ruleSet.predictionNumbers).join("、")}</b>
+              </span>
+              <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
             </footer>
           </div>
         );

@@ -288,6 +288,17 @@
   overflow: visible;
 }
 
+.road-validation-process.explore-validation-card {
+  overflow: visible;
+}
+
+.explore-validation-rule-set {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
 .explore-validation-summary-card {
   box-sizing: border-box;
   position: relative;
@@ -299,7 +310,7 @@
   overflow: hidden;
 }
 
-.explore-result-preview-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
+.explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   z-index: 1;
   top: 2px;
@@ -319,6 +330,10 @@
   white-space: nowrap;
 }
 
+.road-results .explore-validation-summary-card > .explore-validation-consecutive-tag {
+  color: #e4c980;
+}
+
 .explore-validation-summary {
   min-height: 0;
   margin: 0;
@@ -331,7 +346,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -.04em;
-  white-space: pre;
+  white-space: normal;
 }
 
 .explore-validation-groups {
@@ -344,7 +359,7 @@
 
 .explore-validation-group {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) 110px;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(82px, 26vw, 110px), 110px);
   column-gap: 0;
   min-height: 0;
   margin: 0;
@@ -521,7 +536,8 @@
   min-height: var(--explore-validation-row-min-height);
   padding: 3px 6px;
   background: transparent;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
@@ -601,9 +617,13 @@
   justify-self: end;
 }
 
-.explore-result-preview-screen .road-results .explore-validation-prediction strong {
+.explore-validation-prediction strong {
   color: #e4c980;
   font-size: 12px;
+}
+
+.road-results .explore-validation-prediction strong {
+  color: #e4c980;
 }
 
 .explore-validation-prediction b {

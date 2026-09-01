@@ -295,7 +295,7 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
 });
 
 
-test('展開版路後以 API 規則與可分色數字顯示驗證概要', async () => {
+test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
@@ -304,19 +304,25 @@ test('展開版路後以 API 規則與可分色數字顯示驗證概要', async 
 
   expect((await screen.findAllByText('+14.24')).length).toBeGreaterThan(0);
   const validation = screen.getByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.validation-summary-card')?.textContent).toBe('開 44 第 2 顆｜上 7 期｜第 4 顆｜+14.24｜下 3 期開');
-  const blocks = validation.querySelectorAll('.validation-period-block');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆｜上 7 期｜第 4 顆｜+14.24｜下 3 期開');
+  expect(validation.querySelector('.explore-validation-consecutive-tag')?.textContent).toBe('準5進6');
+  const blocks = validation.querySelectorAll('.explore-validation-group');
   expect(blocks[0].children).toHaveLength(3);
-  expect([...blocks[0].querySelectorAll('.explore-validation-issues .validation-issue')].map((cell) => cell.textContent)).toEqual([
+  expect([...blocks[0].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114000118', '114000120', '114000123',
   ]);
-  expect(blocks[0].querySelectorAll('.validation-formula')[0]?.textContent).toBe('+14.24');
-  expect(blocks[0].querySelectorAll('.validation-formula')[1]?.textContent).toBe('');
-  expect([...blocks[1].querySelectorAll('.explore-validation-issues .validation-issue')].map((cell) => cell.textContent)).toEqual([
+  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆 14 +14.24 = 22');
+  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[2]?.textContent).toBe('［ 22 ］');
+  expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114000116', '114000123',
   ]);
-  expect(validation.querySelectorAll('.validation-full-numbers i').length).toBeGreaterThan(0);
+  expect(validation.querySelector('.explore-validation-number--step')?.textContent).toBe('14');
+  expect(validation.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
+  expect(validation.querySelector('.explore-validation-number--source')?.textContent).toBe('44');
+  expect(validation.querySelectorAll('.explore-validation-number').length).toBeGreaterThan(0);
   expect(validation.textContent).toContain('本期預測');
+  expect(validation.querySelector('.explore-validation-prediction-arrow--left')).not.toBeNull();
+  expect(validation.querySelector('.explore-validation-prediction-arrow--right')).not.toBeNull();
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
@@ -344,15 +350,14 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.validation-summary-card')?.textContent).toContain('｜下 2 期｜');
-  const firstGroup = validation.querySelector('.validation-period-block');
-  const rows = firstGroup?.querySelectorAll('.explore-validation-issues .validation-issue') ?? [];
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toContain('｜下 2 期｜');
+  const firstGroup = validation.querySelector('.explore-validation-group');
+  const rows = firstGroup?.querySelectorAll('.explore-validation-issues .explore-validation-issue') ?? [];
   expect([...rows].map((row) => row.textContent)).toEqual([
     '114000118', '114000120', '114000123',
   ]);
-  const formulas = firstGroup?.querySelectorAll('.explore-validation-formulas .validation-formula') ?? [];
-  expect(formulas[0]?.textContent).toBe('');
-  expect(formulas[1]?.textContent).toBe('+14.24');
+  const formulas = firstGroup?.querySelectorAll('.explore-validation-formula-row') ?? [];
+  expect(formulas[0]?.textContent).toContain('+14.24');
 });
 
 test('兩條公式同時成立時顯示在同一驗證列且不編號', async () => {
@@ -382,8 +387,8 @@ test('兩條公式同時成立時顯示在同一驗證列且不編號', async ()
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const firstFormula = validation.querySelector('.validation-period-block .validation-formula')?.textContent ?? '';
-  expect(firstFormula).toBe('+14、+24');
+  const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
+  expect(firstFormula).toContain('+14、+24');
   expect(firstFormula).not.toMatch(/第一|第二/);
 });
 
@@ -411,8 +416,8 @@ test('數值相同但類型不同的規則只顯示實際成立公式', async ()
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const firstFormula = validation.querySelector('.validation-period-block .validation-formula')?.textContent ?? '';
-  expect(firstFormula).toBe('+14');
+  const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
+  expect(firstFormula).toContain('+14');
   expect(firstFormula).not.toContain('拖牌14');
 });
 
@@ -440,8 +445,8 @@ test('舊版數值公式遇到不同類型同值時不猜測成立公式', async
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const firstFormula = validation.querySelector('.validation-period-block .validation-formula')?.textContent ?? '';
-  expect(firstFormula).toBe('共同值14');
+  const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
+  expect(firstFormula).toContain('共同值14');
   expect(firstFormula).not.toMatch(/\+14|拖牌14/);
 });
 
@@ -466,8 +471,8 @@ test('舊版數值公式只有一條同值規則時顯示該公式', async () =>
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const firstFormula = validation.querySelector('.validation-period-block .validation-formula')?.textContent ?? '';
-  expect(firstFormula).toBe('+14');
+  const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
+  expect(firstFormula).toContain('+14');
 });
 
 test('合值版路的 API 驗證概要顯示合值規則', async () => {
