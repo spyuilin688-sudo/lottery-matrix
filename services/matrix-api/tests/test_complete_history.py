@@ -1,17 +1,21 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.scraping.sources import LatestDrawSource
-from app.worker import run_worker
+from app.worker import run_scheduled_worker
+
+
+TAIPEI = ZoneInfo("Asia/Taipei")
 
 
 def _draw(period: int) -> dict:
     return {
         "lottery": "今彩539",
         "period": str(period).zfill(9),
-        "drawDate": f"2026-08-{((period - 1) % 28) + 1:02d}",
+        "drawDate": "2026-08-28" if period == 121 else "2026-08-27",
         "numbers": ["01", "02", "03", "04", "05"],
     }
 
@@ -36,7 +40,7 @@ class ExistingHistorySource:
         raise AssertionError("existing complete history must not be replaced by a fixed-size download")
 
 
-def test_worker_analyzes_every_persisted_draw() -> None:
+def test_scheduled_worker_analyzes_every_persisted_draw() -> None:
     repository = InMemoryAnalysisRepository()
     for period in range(1, 122):
         repository.upsert_draw(_draw(period))
@@ -54,7 +58,13 @@ def test_worker_analyzes_every_persisted_draw() -> None:
         for kind in ("explore", "tianyan", "tiangong", "status")
     }
 
-    result = run_worker("今彩539", repository, ExistingHistorySource(), builders)
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+        repository,
+        ExistingHistorySource(),
+        builders,
+    )
 
     assert result["status"] == "complete"
     assert history_lengths == [121, 121, 121, 121]

@@ -70,6 +70,77 @@ describe('Railway worker status adapter', () => {
     expect((healthInit as RequestInit).signal).toBe((jobsInit as RequestInit).signal);
   });
 
+  it('requests one protected latest-draw refresh without exposing the token to the client', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      lottery: '今彩539',
+      period: '115000211',
+      drawDate: '2026-09-01',
+    }));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example/',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+
+    await expect(api.refreshLottery('今彩539')).resolves.toEqual({
+      lottery: '今彩539',
+      period: '115000211',
+      drawDate: '2026-09-01',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, init] = fetcher.mock.calls[0];
+    expect(String(url)).toBe('https://railway.example/jobs/refresh');
+    expect(init).toMatchObject({
+      method: 'POST',
+      redirect: 'error',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Matrix-Admin-Token': 'server-token',
+      },
+      body: JSON.stringify({ lottery: '今彩539' }),
+    });
+  });
+
+  it('keeps a manual refresh alive beyond the status-check deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveResponse: ((response: Response) => void) | undefined;
+      const fetcher = vi.fn(() => new Promise<Response>((resolve) => {
+        resolveResponse = resolve;
+      }));
+      const api = createWorkerApi(
+        async () => ({
+          baseUrl: 'https://railway.example',
+          statusToken: 'server-token',
+        }),
+        fetcher as typeof fetch,
+      );
+      const pending = api.refreshLottery('今彩539');
+      let outcome = 'pending';
+      void pending.then(
+        () => { outcome = 'success'; },
+        () => { outcome = 'error'; },
+      );
+
+      await vi.advanceTimersByTimeAsync(30_001);
+
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(outcome).toBe('pending');
+      resolveResponse?.(jsonResponse({
+        lottery: '今彩539',
+        period: '115000211',
+        drawDate: '2026-09-01',
+      }));
+      await expect(pending).resolves.toMatchObject({ period: '115000211' });
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it.each([
     null,
     { baseUrl: '', statusToken: 'server-token' },

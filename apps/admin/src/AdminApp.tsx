@@ -25,7 +25,13 @@ import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
 import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
-import { loadSystemStatus, retrySystemStatus, type SystemStatusItem } from "./system-status";
+import {
+  canRefreshCrawler,
+  loadSystemStatus,
+  refreshCrawlerSystemStatus,
+  retrySystemStatus,
+  type SystemStatusItem,
+} from "./system-status";
 import { NotificationManagement } from "./NotificationManagement";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
@@ -513,7 +519,9 @@ function AdminApp() {
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} />}{" "}
-          {active === "系統設定" && <SystemSettings />}{" "}
+          {active === "系統設定" && (
+            <SystemSettings canEdit={can("edit")} requestConfirmation={requestConfirmation} />
+          )}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "用戶管理" && (
             <UserManager
@@ -1063,22 +1071,34 @@ function Revenue({ d }: { d: Dashboard }) {
     </>
   );
 }
-function SystemSettings() {
+function SystemSettings({
+  canEdit,
+  requestConfirmation,
+}: {
+  canEdit: boolean;
+  requestConfirmation: (request: Omit<ConfirmationRequest, "resolve">) => Promise<boolean>;
+}) {
   const [items, setItems] = useState<SystemStatusItem[]>([]);
   const [checkedAt, setCheckedAt] = useState("");
   const [checking, setChecking] = useState(false);
   const [retryingId, setRetryingId] = useState("");
+  const [refreshingId, setRefreshingId] = useState("");
   const [statusError, setStatusError] = useState("");
+  const [statusNotice, setStatusNotice] = useState("");
   const requestInFlight = useRef(false);
+  const loadCurrentStatus = async () => {
+    const result = await loadSystemStatus(api);
+    setItems(result.items);
+    setCheckedAt(result.checkedAt);
+  };
   const refresh = async () => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     setChecking(true);
     setStatusError("");
+    setStatusNotice("");
     try {
-      const result = await loadSystemStatus(api);
-      setItems(result.items);
-      setCheckedAt(result.checkedAt);
+      await loadCurrentStatus();
     } catch (cause) {
       setStatusError(cause instanceof Error ? cause.message : "連線狀態檢查失敗");
     } finally {
@@ -1091,6 +1111,7 @@ function SystemSettings() {
     requestInFlight.current = true;
     setRetryingId(id);
     setStatusError("");
+    setStatusNotice("");
     try {
       const next = await retrySystemStatus(api, id);
       setItems((current) => current.map((item) => item.id === id ? next : item));
@@ -1102,14 +1123,50 @@ function SystemSettings() {
       setRetryingId("");
     }
   };
+  const refreshCrawler = async (item: SystemStatusItem) => {
+    const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
+    const lottery = typeof detail?.lottery === "string"
+      ? detail.lottery
+      : item.name.replace("資料更新排程", "");
+    await runConfirmed(
+      () => requestConfirmation({
+        title: "確認更新開獎資料",
+        message: `將重新抓取${lottery}最新開獎資料。`,
+        confirmLabel: "更新資料",
+      }),
+      async () => {
+        if (requestInFlight.current) return;
+        requestInFlight.current = true;
+        setRefreshingId(item.id);
+        setStatusError("");
+        setStatusNotice("");
+        try {
+          const updated = await refreshCrawlerSystemStatus(api, item.id);
+          setStatusNotice(`${updated.lottery}第 ${updated.period} 期開獎資料已更新。`);
+          try {
+            await loadCurrentStatus();
+          } catch {
+            setStatusNotice(`${updated.lottery}第 ${updated.period} 期開獎資料已更新；排程狀態將於下次重新檢查時更新。`);
+          }
+        } catch (cause) {
+          setStatusError(cause instanceof Error ? cause.message : "開獎資料更新失敗");
+        } finally {
+          requestInFlight.current = false;
+          setRefreshingId("");
+        }
+      },
+    );
+  };
   useEffect(() => { void refresh(); }, []);
+  const requestActive = checking || Boolean(retryingId) || Boolean(refreshingId);
   return (
     <>
       <div className="systemStatusHeader">
         <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
-        <button className="compactButton" onClick={refresh} disabled={checking || Boolean(retryingId)}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
+        <button className="compactButton" onClick={refresh} disabled={requestActive}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
       </div>
       {statusError && <div className="error">{statusError}</div>}
+      {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
       <div className="statusCards">
         {items.map((item) => {
           const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
@@ -1126,8 +1183,13 @@ function SystemSettings() {
               {detail?.analysisPhase !== undefined && detail.analysisPhase !== null && <div className="statusMeta"><span>目前階段</span><b>{text(detail.analysisPhase)}</b></div>}
               {item.error && <div className="statusErrorText">{item.error}</div>}
               {!item.ok && item.retryable && (
-                <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={checking || Boolean(retryingId)}>
+                <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={requestActive}>
                   <RefreshCw size={14} />{retryingId === item.id ? "呼叫中" : "重新呼叫"}
+                </button>
+              )}
+              {canRefreshCrawler(item, canEdit) && (
+                <button className="compactButton statusRetryButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={requestActive} aria-busy={refreshingId === item.id}>
+                  <RefreshCw size={14} />{refreshingId === item.id ? "更新中" : "更新開獎資料"}
                 </button>
               )}
             </article>

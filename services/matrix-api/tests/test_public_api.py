@@ -211,6 +211,106 @@ def test_jobs_status_returns_only_stable_unavailable_error(monkeypatch) -> None:
     assert "fake-database-secret" not in str(payload)
 
 
+def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    repository = OperationalRepository()
+    calls: list[str] = []
+
+    def refresh(lottery: str, _repository: InMemoryAnalysisRepository) -> dict:
+        calls.append(lottery)
+        return _draw(
+            lottery,
+            "115000211",
+            "2026-09-01",
+            ["01", "02", "03", "04", "05"],
+        )
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/refresh",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        repository,
+        request_monitor_token="expected-token",
+        refresh_lottery=refresh,
+    )
+
+    assert (status, payload) == (200, {
+        "lottery": "今彩539",
+        "period": "115000211",
+        "drawDate": "2026-09-01",
+    })
+    assert calls == ["今彩539"]
+
+
+def test_jobs_refresh_does_not_invoke_the_crawler_without_a_valid_admin_token(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/refresh",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="wrong-token",
+        refresh_lottery=lambda lottery, _: calls.append(lottery) or {},
+    )
+
+    assert (status, payload) == (403, {"error": "FORBIDDEN"})
+    assert calls == []
+
+
+def test_jobs_refresh_hides_upstream_failure_details(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+
+    def refresh(_lottery: str, _repository: InMemoryAnalysisRepository) -> dict:
+        raise RuntimeError("source api key fake-secret")
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/refresh",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        refresh_lottery=refresh,
+    )
+
+    assert (status, payload) == (503, {"error": "REFRESH_UNAVAILABLE"})
+    assert "fake-secret" not in str(payload)
+
+
+def test_refresh_latest_draw_upserts_one_formal_latest_draw(monkeypatch) -> None:
+    repository = InMemoryAnalysisRepository()
+    source = type("Source", (), {
+        "fetch": lambda self, _lottery: _draw(
+            "今彩539",
+            "115000211",
+            "2026-09-01",
+            ["01", "02", "03", "04", "05"],
+        ),
+    })()
+    client_options: list[dict] = []
+
+    class Client:
+        def __init__(self, **options: object) -> None:
+            client_options.append(options)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(api_server, "httpx", type("Httpx", (), {"Client": Client}), raising=False)
+    monkeypatch.setattr(api_server, "LatestDrawSource", lambda _: source, raising=False)
+    monkeypatch.setattr(api_server, "create_railway_ssl_context", lambda: "ssl-context", raising=False)
+
+    draw = api_server.refresh_latest_draw("今彩539", repository)
+
+    assert draw["period"] == "115000211"
+    assert repository.list_draws("今彩539", 1)[0]["period"] == "115000211"
+    assert client_options == [{"verify": "ssl-context"}]
+
+
 class ExplodingHistoryRepository(InMemoryAnalysisRepository):
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
         raise RuntimeError("fake-public-database-secret")

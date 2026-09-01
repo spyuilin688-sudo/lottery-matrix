@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
-from app.worker import run_scheduled_worker, run_worker
+from app.worker import run_scheduled_worker
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -88,10 +88,24 @@ def _builders(failing: bool = False) -> dict:
     return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
 
 
-def test_manual_worker_records_running_then_success() -> None:
+def _run_due_worker(
+    repository: InMemoryAnalysisRepository,
+    source: Source,
+    builders: dict | None = None,
+) -> dict:
+    return run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        builders,
+    )
+
+
+def test_due_scheduled_worker_records_running_then_success() -> None:
     repository = JobTrackingRepository()
 
-    result = run_worker("今彩539", repository, Source(), _builders())
+    result = _run_due_worker(repository, Source(), _builders())
 
     assert result["status"] == "complete"
     assert [(event["action"], event.get("status")) for event in repository.job_events] == [
@@ -103,11 +117,11 @@ def test_manual_worker_records_running_then_success() -> None:
     assert repository.job_events[1]["error"] is None
 
 
-def test_manual_worker_records_failed_and_preserves_original_error() -> None:
+def test_due_scheduled_worker_records_failed_and_preserves_original_error() -> None:
     repository = JobTrackingRepository()
 
     with pytest.raises(RuntimeError, match="builder failed"):
-        run_worker("今彩539", repository, Source(), _builders(failing=True))
+        _run_due_worker(repository, Source(), _builders(failing=True))
 
     assert [(event["action"], event.get("status")) for event in repository.job_events] == [
         ("start", None),
@@ -117,17 +131,17 @@ def test_manual_worker_records_failed_and_preserves_original_error() -> None:
 
 
 @pytest.mark.parametrize("fail_on", ["start", "finish"])
-def test_manual_worker_ignores_telemetry_failures(fail_on: str) -> None:
+def test_due_scheduled_worker_ignores_telemetry_failures(fail_on: str) -> None:
     repository = TelemetryFailingRepository(fail_on)
 
-    assert run_worker("今彩539", repository, Source(), _builders())["status"] == "complete"
+    assert _run_due_worker(repository, Source(), _builders())["status"] == "complete"
 
 
-def test_manual_worker_preserves_builder_error_when_failure_status_write_fails() -> None:
+def test_due_scheduled_worker_preserves_builder_error_when_failure_status_write_fails() -> None:
     repository = TelemetryFailingRepository("finish")
 
     with pytest.raises(RuntimeError, match="builder failed"):
-        run_worker("今彩539", repository, Source(), _builders(failing=True))
+        _run_due_worker(repository, Source(), _builders(failing=True))
 
 
 def test_due_scheduled_worker_records_one_execution() -> None:
@@ -181,7 +195,7 @@ def test_running_analysis_checkpoint_finishes_invocation_as_success(monkeypatch)
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
     }
-    result = run_worker("今彩539", repository, Source(), builders)
+    result = _run_due_worker(repository, Source(), builders)
     assert result["status"] == "running"
     assert repository.job_events[-1]["status"] == "success"
 

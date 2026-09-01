@@ -11,7 +11,9 @@
 .statusMeta span { color: #888d96; font-size: 12px; }
 .statusMeta b { color: #c4c6cc; font-size: 12px; text-align: right; overflow-wrap: anywhere; }
 .statusErrorText { margin-top: 8px; padding: 8px; border-radius: 7px; background: #281616; color: #efb3b3; font-size: 12px; overflow-wrap: anywhere; }
+.systemStatusNotice { margin: 10px 0; padding: 10px 12px; border: 1px solid #2d5d3b; border-radius: 8px; background: #15311e; color: #8ed7a3; font-size: 13px; }
 .statusRetryButton { margin-top: 10px; gap: 5px; }
+.statusManualRefreshButton { min-inline-size: 116px; justify-content: center; }
 
 @media (max-width: 760px) {
   .systemStatusHeader { align-items: flex-end; }

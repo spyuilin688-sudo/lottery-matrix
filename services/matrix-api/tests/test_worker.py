@@ -9,10 +9,34 @@ from postgrest.exceptions import APIError
 from app import worker as worker_module
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 from app.services.explore_batches import work_units
-from app.worker import run_scheduled_worker, run_worker
+from app.worker import run_scheduled_worker
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
+
+
+def run_due_worker(
+    lottery: str,
+    repository: InMemoryAnalysisRepository,
+    source: object,
+    builders: dict | None = None,
+    *,
+    draw_date: str = "2026-08-24",
+) -> dict:
+    call_times = {
+        "今彩539": (20, 33),
+        "天天樂": (9, 33),
+        "六合彩": (21, 33),
+        "大樂透": (20, 53),
+    }
+    hour, minute = call_times[lottery]
+    return run_scheduled_worker(
+        lottery,
+        datetime.fromisoformat(draw_date).replace(hour=hour, minute=minute, tzinfo=TAIPEI),
+        repository,
+        source,
+        builders,
+    )
 
 
 class Source:
@@ -90,7 +114,7 @@ class CalendarHistorySource(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
         count = 5 if lottery in {"今彩539", "天天樂"} else 7
-        return self._draw(220, count, "2026-08-30")
+        return self._draw(220, count, "2026-08-29")
 
     def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
         self.events.append("history-all" if limit is None else f"history-{limit}")
@@ -99,7 +123,7 @@ class CalendarHistorySource(Source):
             self._draw(
                 220 - offset,
                 count,
-                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+                (datetime(2026, 8, 29) - timedelta(days=offset)).date().isoformat(),
             )
             for offset in range(self.history_count)
         ]
@@ -109,7 +133,7 @@ class CalendarHistorySource(Source):
 class SourceAheadOfDatabase(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
-        return self._draw(205, 5, "2026-08-30")
+        return self._draw(205, 5, "2026-08-29")
 
     def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
         self.events.append("history-all" if limit is None else f"history-{limit}")
@@ -117,7 +141,7 @@ class SourceAheadOfDatabase(Source):
             self._draw(
                 205 - offset,
                 5,
-                (datetime(2026, 8, 30) - timedelta(days=offset)).date().isoformat(),
+                (datetime(2026, 8, 29) - timedelta(days=offset)).date().isoformat(),
             )
             for offset in range(36)
         ]
@@ -164,7 +188,7 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     calls: list[str] = []
     history_lengths: list[int] = []
 
-    result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
+    result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
     assert result["analysisVersion"] == "000000220:matrix-python-v10"
@@ -180,8 +204,8 @@ def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None
     source = CalendarHistorySource(history_count=120)
     history_lengths: list[int] = []
 
-    result = run_worker(
-        "今彩539", repository, source, _builders([], history_lengths),
+    result = run_due_worker(
+        "今彩539", repository, source, _builders([], history_lengths), draw_date="2026-08-29",
     )
 
     assert result["status"] == "complete"
@@ -194,7 +218,7 @@ def test_production_worker_repairs_actual_draw_order_before_algorithms(monkeypat
     calls: list[str] = []
     monkeypatch.setattr(worker_module, "create_artifact_builders", lambda: _builders(calls))
 
-    result = run_worker("今彩539", repository, source)
+    result = run_due_worker("今彩539", repository, source)
 
     assert result["status"] == "complete"
     assert source.events == ["history-all", "latest", "algorithm-history"]
@@ -212,20 +236,20 @@ def test_production_worker_stops_before_algorithms_if_draw_order_is_incomplete(m
     monkeypatch.setattr(worker_module, "create_artifact_builders", lambda: _builders(calls))
 
     with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
-        run_worker("今彩539", repository, source)
+        run_due_worker("今彩539", repository, source)
 
     assert calls == []
 
 
-def test_completed_worker_run_does_not_read_all_history_again() -> None:
+def test_completed_scheduled_run_does_not_read_all_history_again() -> None:
     repository = FullHistoryReadTrackingRepository()
     source = CalendarHistorySource(history_count=120)
-    run_worker("今彩539", repository, source, _builders([]))
+    run_due_worker("今彩539", repository, source, _builders([]), draw_date="2026-08-29")
     repository.full_history_reads = 0
 
-    result = run_worker("今彩539", repository, source, _builders([]))
+    result = run_due_worker("今彩539", repository, source, _builders([]), draw_date="2026-08-29")
 
-    assert result["skipped"] is True
+    assert result["status"] == "already-acquired"
     assert repository.full_history_reads == 0
 
 
@@ -245,7 +269,7 @@ def test_worker_refreshes_latest_draw_before_targeting_recent_gap_repair() -> No
             | {"lottery": "今彩539"}
         )
 
-    result = run_worker("今彩539", repository, source, _builders([]))
+    result = run_due_worker("今彩539", repository, source, _builders([]), draw_date="2026-08-29")
 
     assert result["status"] == "complete"
     assert repository.list_draws("今彩539", None)[0]["period"] == "000000205"
@@ -258,7 +282,7 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     calls: list[str] = []
     history_lengths: list[int] = []
 
-    result = run_worker("今彩539", repository, source, _builders(calls, history_lengths))
+    result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
     assert repository.events == ["cleanup"]
@@ -280,7 +304,7 @@ def test_worker_stops_every_algorithm_when_missing_history_cannot_be_repaired() 
     calls: list[str] = []
 
     with pytest.raises(ValueError, match="DRAW_HISTORY_INCOMPLETE"):
-        run_worker("今彩539", repository, source, _builders(calls))
+        run_due_worker("今彩539", repository, source, _builders(calls))
 
     assert calls == []
 
@@ -293,18 +317,18 @@ def test_worker_cleans_expired_artifacts_before_running() -> None:
     old_key = ("今彩539", "old", "old-version", "explore")
     repository.artifacts[old_key]["expiresAt"] = datetime.now(UTC) - timedelta(days=1)
 
-    run_worker("今彩539", repository, source, _builders([]))
+    run_due_worker("今彩539", repository, source, _builders([]))
 
     assert old_key not in repository.artifacts
 
 
 def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None:
     repository = InMemoryAnalysisRepository()
-    run_worker("今彩539", repository, Source(), _builders([]))
+    run_due_worker("今彩539", repository, Source(), _builders([]))
     with pytest.raises(RuntimeError, match="builder failed"):
-        run_worker("大樂透", repository, Source(), _builders([], failing="tianyan"))
+        run_due_worker("六合彩", repository, Source(), _builders([], failing="tianyan"))
     assert repository.read_completed_artifact("今彩539", "000000220", "status") == {"kind": "status"}
-    assert repository.get_progress("大樂透", "000000220")["status"] == "failed"
+    assert repository.get_progress("六合彩", "000000220")["status"] == "failed"
 
 
 def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
@@ -333,7 +357,7 @@ def test_worker_finishes_all_checkpoint_batches_in_one_invocation() -> None:
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
     }
 
-    result = run_worker("今彩539", repository, source, builders)
+    result = run_due_worker("今彩539", repository, source, builders)
 
     assert result["status"] == "complete"
     assert starts == [0, 10, 20]
@@ -360,7 +384,7 @@ def test_worker_retries_failed_analysis_from_its_checkpoint(monkeypatch) -> None
     }
     monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
 
-    result = run_worker("今彩539", repository, source, builders)
+    result = run_due_worker("今彩539", repository, source, builders)
 
     assert result["status"] == "complete"
     assert attempts == 2
@@ -391,7 +415,7 @@ def test_worker_backs_off_before_retrying_transient_service_failure(monkeypatch)
     }
     monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
 
-    result = run_worker("今彩539", repository, source, builders)
+    result = run_due_worker("今彩539", repository, source, builders)
 
     assert result["status"] == "complete"
     assert attempts == 3
@@ -448,33 +472,6 @@ def _postgrest_error(code: object) -> APIError:
 )
 def test_transient_service_error_classification(error: Exception, expected: bool) -> None:
     assert worker_module._is_transient_service_error(error) is expected
-
-
-def test_worker_backs_off_while_retrying_transient_preparation_failure(monkeypatch) -> None:
-    class TransientServiceError(RuntimeError):
-        code = "521"
-
-    class RecoveringSource(Source):
-        def __init__(self) -> None:
-            super().__init__()
-            self.attempts = 0
-
-        def fetch(self, lottery: str) -> dict:
-            self.attempts += 1
-            if self.attempts < 3:
-                raise TransientServiceError("web server is down")
-            return super().fetch(lottery)
-
-    repository = TrackingRepository()
-    source = RecoveringSource()
-    waits: list[float] = []
-    monkeypatch.setattr(worker_module, "sleep", waits.append, raising=False)
-
-    result = run_worker("今彩539", repository, source, _builders([]))
-
-    assert result["status"] == "complete"
-    assert source.attempts == 3
-    assert waits == [15.0, 45.0]
 
 
 def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis() -> None:
@@ -581,46 +578,12 @@ def test_cli_defaults_to_the_scheduled_worker(monkeypatch) -> None:
             or {"lottery": lottery, "status": "not-due"}
         ),
     )
-    monkeypatch.setattr(
-        worker_module,
-        "run_worker",
-        lambda *_: (_ for _ in ()).throw(AssertionError("legacy worker must not run")),
-    )
-
     assert worker_module.main(["--lottery", "今彩539"]) == 0
     assert calls == [("今彩539", None, repository, source)]
 
 
-def test_cli_only_runs_immediate_worker_when_explicitly_requested(monkeypatch) -> None:
-    settings = SimpleNamespace(supabase_url="https://example.test", supabase_secret_key="secret")
-    repository = object()
-    source = object()
-    calls: list[tuple[str, object, object]] = []
+def test_cli_rejects_the_removed_immediate_mode() -> None:
+    with pytest.raises(SystemExit) as raised:
+        worker_module.main(["--lottery", "今彩539", "--immediate"])
 
-    class Client:
-        def __enter__(self):
-            return object()
-
-        def __exit__(self, *_: object) -> bool:
-            return False
-
-    monkeypatch.setattr(worker_module, "load_settings", lambda: settings)
-    monkeypatch.setattr(worker_module, "create_supabase_repository", lambda *_: repository)
-    monkeypatch.setattr(worker_module.httpx, "Client", lambda: Client())
-    monkeypatch.setattr(worker_module, "LatestDrawSource", lambda _: source)
-    monkeypatch.setattr(
-        worker_module,
-        "run_scheduled_worker",
-        lambda *_: (_ for _ in ()).throw(AssertionError("scheduled worker must not run")),
-    )
-    monkeypatch.setattr(
-        worker_module,
-        "run_worker",
-        lambda lottery, actual_repository, actual_source: (
-            calls.append((lottery, actual_repository, actual_source))
-            or {"lottery": lottery, "status": "complete"}
-        ),
-    )
-
-    assert worker_module.main(["--lottery", "今彩539", "--immediate"]) == 0
-    assert calls == [("今彩539", repository, source)]
+    assert raised.value.code == 2

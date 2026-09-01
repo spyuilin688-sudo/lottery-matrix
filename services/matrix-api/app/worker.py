@@ -133,60 +133,6 @@ def _run_tracked_job(
     return result
 
 
-def _run_worker_untracked(
-    lottery: str,
-    repository: AnalysisRepository,
-    source: DrawSource,
-    builders: Mapping[str, ArtifactBuilder] | None = None,
-) -> dict[str, Any]:
-    preparation_error: Exception | None = None
-    for attempt in range(MAX_FAILURES_PER_INVOCATION):
-        try:
-            history: list[dict[str, Any]] | None = None
-            repository.cleanup_expired(datetime.now(UTC))
-            refresh = DrawRefreshService(repository, source)
-            if not repository.list_draws(lottery, 1):
-                refresh.ensure_history(lottery)
-            draw = refresh.refresh(lottery)
-            refresh.ensure_history(lottery)
-            period = str(draw["period"])
-            progress = repository.get_progress(
-                lottery, period, f"{period}:{ANALYSIS_VERSION}",
-            )
-            if progress is not None and progress.get("status") == "complete":
-                return {**progress, "skipped": True}
-            if builders is None:
-                history = refresh.ensure_algorithm_history(lottery)
-            else:
-                history = repository.list_draws(lottery, None)
-            draw = _draw_from_history(lottery, period, history)
-            break
-        except Exception as error:
-            if isinstance(error, ValueError):
-                raise
-            preparation_error = error
-            if attempt + 1 < MAX_FAILURES_PER_INVOCATION:
-                _wait_before_retry(error, attempt + 1)
-    else:
-        assert preparation_error is not None
-        raise preparation_error
-
-    return _run_analysis(repository, draw, history, builders)
-
-
-def run_worker(
-    lottery: str,
-    repository: AnalysisRepository,
-    source: DrawSource,
-    builders: Mapping[str, ArtifactBuilder] | None = None,
-) -> dict[str, Any]:
-    return _run_tracked_job(
-        lottery,
-        repository,
-        lambda: _run_worker_untracked(lottery, repository, source, builders),
-    )
-
-
 def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
@@ -281,14 +227,7 @@ def main(argv: list[str] | None = None) -> int:
     lotteries = ["今彩539", "天天樂", "六合彩", "大樂透"]
     parser.add_argument("--lottery", choices=lotteries)
     parser.add_argument("--scheduled", action="store_true")
-    parser.add_argument(
-        "--immediate",
-        action="store_true",
-        help="bypass the draw schedule for a supervised recovery run",
-    )
     args = parser.parse_args(argv)
-    if args.scheduled and args.immediate:
-        parser.error("--scheduled and --immediate cannot be used together")
     lottery = args.lottery or environ.get("MATRIX_LOTTERY", "").strip()
     if lottery not in lotteries:
         parser.error("set --lottery or MATRIX_LOTTERY to one supported lottery")
@@ -296,11 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
     with httpx.Client() as client:
         source = LatestDrawSource(client)
-        result = (
-            run_worker(lottery, repository, source)
-            if args.immediate
-            else run_scheduled_worker(lottery, None, repository, source)
-        )
+        result = run_scheduled_worker(lottery, None, repository, source)
     draw_period = result.get("drawPeriod", "-")
     print(f'{result["lottery"]} {draw_period} {result["status"]}')
     return 0

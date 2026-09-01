@@ -4,13 +4,19 @@ import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlsplit
+
+import httpx
 
 from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_call_time
+from app.scraping.sources import LatestDrawSource
+from app.services.draw_refresh import DrawRefreshService
 from app.settings import load_settings
+from app.worker_all import create_railway_ssl_context
 
 
 LOTTERIES = {"今彩539", "天天樂", "六合彩", "大樂透"}
@@ -254,12 +260,21 @@ def _status_token_authorized(candidate_value: str | None) -> bool:
     return bool(expected) and bool(candidate) and matched
 
 
+def refresh_latest_draw(
+    lottery: str,
+    repository: AnalysisRepository,
+) -> dict[str, Any]:
+    with httpx.Client(verify=create_railway_ssl_context()) as client:
+        return DrawRefreshService(repository, LatestDrawSource(client)).refresh(lottery)
+
+
 def handle_api_request(
     method: str,
     target: str,
     body: bytes | None,
     repository: AnalysisRepository,
     request_monitor_token: str | None = None,
+    refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -277,6 +292,19 @@ def handle_api_request(
                 return 200, {"items": repository.list_job_statuses()}
             except Exception:
                 return 503, {"error": "STATUS_UNAVAILABLE"}
+        if method == "POST" and path == "/jobs/refresh":
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            lottery = _parse_lottery(_decode_body(body).get("lottery"))
+            try:
+                draw = (refresh_lottery or refresh_latest_draw)(lottery, repository)
+                return 200, {
+                    "lottery": lottery,
+                    "period": str(draw["period"]),
+                    "drawDate": draw.get("drawDate"),
+                }
+            except Exception:
+                return 503, {"error": "REFRESH_UNAVAILABLE"}
         if method == "GET" and path.startswith(CARD_PREFIX):
             card_lottery = path[len(CARD_PREFIX):]
             if "/" not in card_lottery:
@@ -337,8 +365,8 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def _is_protected_status_path(self) -> bool:
-        return urlsplit(self.path).path == "/jobs/status"
+    def _is_protected_job_path(self) -> bool:
+        return urlsplit(self.path).path in {"/jobs/status", "/jobs/refresh"}
 
     def _is_matrix_card_path(self) -> bool:
         return urlsplit(self.path).path.startswith(CARD_PREFIX)
@@ -355,11 +383,11 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def do_OPTIONS(self) -> None:
-        protected = self._is_protected_status_path()
+        protected = self._is_protected_job_path()
         self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
-        protected = self._is_protected_status_path()
+        protected = self._is_protected_job_path()
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
             try:
                 card_response = handle_matrix_card_request(self.path, self.repository)
@@ -390,8 +418,14 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         except ValueError:
             length = 0
         body = self.rfile.read(length) if length > 0 else b""
-        status, payload = handle_api_request("POST", self.path, body, self.repository)
-        protected = self._is_protected_status_path()
+        status, payload = handle_api_request(
+            "POST",
+            self.path,
+            body,
+            self.repository,
+            request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+        )
+        protected = self._is_protected_job_path()
         self._send(status, payload, allow_cors=not protected, no_store=protected)
 
     def log_request(self, code: int | str = "-", size: int | str = "-") -> None:

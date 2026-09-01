@@ -1,5 +1,6 @@
 export type WorkerConfig = { baseUrl: string; statusToken: string };
 export type WorkerConfigLoader = () => Promise<WorkerConfig | null>;
+export type CrawlerLottery = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 export type SecretReader = {
   listSecretNames(): Promise<string[]>;
   readSecret(name: string): Promise<unknown>;
@@ -33,7 +34,7 @@ export type RailwayLatestAnalysis = {
   error: 'ANALYSIS_FAILED' | null;
 };
 export type RailwayJobItem = {
-  lottery: '今彩539' | '天天樂' | '六合彩' | '大樂透';
+  lottery: CrawlerLottery;
   jobName: string;
   job: RailwayJob | null;
   latestDraw: RailwayLatestDraw | null;
@@ -43,14 +44,19 @@ export type RailwayJobs = { items: RailwayJobItem[] };
 export type WorkerStatus =
   | { ok: true; health: RailwayHealth; jobs: RailwayJobs }
   | { ok: false; health: null; jobs: null };
+export type WorkerRefresh = {
+  lottery: CrawlerLottery;
+  period: string;
+  drawDate: string | null;
+};
 
-const jobNameByLottery = {
+const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
   天天樂: 'matrix-fantasy5-refresh-v2',
   六合彩: 'matrix-marksix-refresh-v2',
   大樂透: 'matrix-649-refresh-v2',
 } as const;
-type Lottery = keyof typeof jobNameByLottery;
+type Lottery = CrawlerLottery;
 const lotteries = Object.keys(jobNameByLottery) as Lottery[];
 const jobStatuses = ['running', 'success', 'failed'] as const;
 const analysisStatuses = ['running', 'complete', 'failed'] as const;
@@ -61,6 +67,8 @@ const analysisPhases = [
   'status',
   'complete',
 ] as const;
+const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
+const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 90_000;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -171,11 +179,28 @@ function parseJobs(value: unknown): RailwayJobs | null {
   return { items: lotteries.map((lottery) => byLottery.get(lottery)!) };
 }
 
+function parseRefresh(
+  value: unknown,
+  lottery: CrawlerLottery,
+): WorkerRefresh | null {
+  if (!isRecord(value) || value.lottery !== lottery) return null;
+  if (!isString(value.period) || !isNullableString(value.drawDate)) return null;
+  return { lottery, period: value.period, drawDate: value.drawDate };
+}
+
 const unavailable = (): WorkerStatus => ({
   ok: false,
   health: null,
   jobs: null,
 });
+
+class WorkerRefreshError extends Error {
+  statusCode = 503;
+
+  constructor() {
+    super('無法更新開獎資料，請稍後再試');
+  }
+}
 
 export async function getWorkerConfig(
   reader: SecretReader,
@@ -203,7 +228,8 @@ export async function getWorkerConfig(
 export function createWorkerApi(
   loadConfig: WorkerConfigLoader,
   fetcher: typeof fetch = fetch,
-  timeoutMs = 5_000,
+  timeoutMs = DEFAULT_STATUS_TIMEOUT_MS,
+  refreshTimeoutMs = DEFAULT_MANUAL_REFRESH_TIMEOUT_MS,
 ) {
   return {
     async getStatus(): Promise<WorkerStatus> {
@@ -252,6 +278,50 @@ export function createWorkerApi(
       } catch {
         controller.abort();
         return unavailable();
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    },
+    async refreshLottery(lottery: CrawlerLottery): Promise<WorkerRefresh> {
+      const controller = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new WorkerRefreshError());
+        }, refreshTimeoutMs);
+      });
+      const work = (async (): Promise<WorkerRefresh> => {
+        const config = await loadConfig();
+        const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
+        const statusToken = config?.statusToken.trim() ?? '';
+        if (!baseUrl || !statusToken || controller.signal.aborted) {
+          throw new WorkerRefreshError();
+        }
+        const response = await fetcher(`${baseUrl}/jobs/refresh`, {
+          method: 'POST',
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Matrix-Admin-Token': statusToken,
+          },
+          body: JSON.stringify({ lottery }),
+        });
+        if (!response.ok) {
+          controller.abort();
+          throw new WorkerRefreshError();
+        }
+        const refresh = parseRefresh(await response.json(), lottery);
+        if (!refresh) throw new WorkerRefreshError();
+        return refresh;
+      })();
+      try {
+        return await Promise.race([work, timeout]);
+      } catch {
+        controller.abort();
+        throw new WorkerRefreshError();
       } finally {
         if (timer !== undefined) clearTimeout(timer);
       }

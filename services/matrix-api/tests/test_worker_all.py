@@ -132,13 +132,6 @@ def test_batch_worker_invokes_the_scheduled_entrypoint(monkeypatch) -> None:
         ),
         raising=False,
     )
-    monkeypatch.setattr(
-        worker_all,
-        "run_worker",
-        lambda *_: (_ for _ in ()).throw(AssertionError("legacy worker must not run")),
-        raising=False,
-    )
-
     assert worker_all.main() == 0
     assert calls == [(lottery, None, repository, source) for lottery in LOTTERIES]
 

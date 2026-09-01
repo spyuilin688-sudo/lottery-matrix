@@ -1,9 +1,11 @@
+import json
 from contextlib import contextmanager
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from threading import Thread
 from typing import Iterator
 
+import app.api_server as api_server
 from app.api_server import RailwayApiHandler
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
@@ -50,9 +52,10 @@ def request(
     method: str,
     path: str,
     headers: dict[str, str] | None = None,
+    body: bytes | None = None,
 ):
     connection = HTTPConnection(*address, timeout=2)
-    connection.request(method, path, headers=headers or {})
+    connection.request(method, path, body=body, headers=headers or {})
     response = connection.getresponse()
     body = response.read()
     connection.close()
@@ -101,6 +104,52 @@ def test_non_get_protected_status_response_has_no_store_and_no_cors(monkeypatch)
         assert response.status == 404
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
+
+
+def test_manual_refresh_is_protected_and_not_cors_accessible(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    with running_server(HttpOperationalRepository()) as address:
+        response, _ = request(address, "POST", "/jobs/refresh")
+        assert response.status == 403
+        assert response.getheader("Cache-Control") == "no-store"
+        assert response.getheader("Access-Control-Allow-Origin") is None
+
+
+def test_manual_refresh_returns_only_the_latest_draw(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    repository = HttpOperationalRepository()
+    calls: list[tuple[str, InMemoryAnalysisRepository]] = []
+
+    def refresh(lottery: str, requested_repository: InMemoryAnalysisRepository) -> dict:
+        calls.append((lottery, requested_repository))
+        return {
+            "lottery": lottery,
+            "period": "115000211",
+            "drawDate": "2026-09-01",
+            "numbers": ["01", "02", "03", "04", "05"],
+        }
+
+    monkeypatch.setattr(api_server, "refresh_latest_draw", refresh)
+    with running_server(repository) as address:
+        response, body = request(
+            address,
+            "POST",
+            "/jobs/refresh",
+            {
+                "Content-Type": "application/json",
+                "X-Matrix-Admin-Token": "expected-token",
+            },
+            json.dumps({"lottery": "今彩539"}).encode("utf-8"),
+        )
+        assert response.status == 200
+        assert response.getheader("Cache-Control") == "no-store"
+        assert response.getheader("Access-Control-Allow-Origin") is None
+        assert json.loads(body) == {
+            "lottery": "今彩539",
+            "period": "115000211",
+            "drawDate": "2026-09-01",
+        }
+    assert calls == [("今彩539", repository)]
 
 
 def test_public_health_keeps_cors(monkeypatch) -> None:

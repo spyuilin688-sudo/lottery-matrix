@@ -3,11 +3,27 @@ import { describe, expect, it, vi } from 'vitest';
 const wiring = vi.hoisted(() => {
   const workerStatus = { ok: false, health: null, jobs: null } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
+  const workerRefreshLottery = vi.fn(async (lottery: string) => ({
+    lottery,
+    period: '115000211',
+    drawDate: '2026-09-01',
+  }));
   const getWorkerConfig = vi.fn(async () => ({
     baseUrl: 'https://railway.example',
     statusToken: 'server-token',
   }));
-  const createWorkerApi = vi.fn(() => ({ getStatus: workerGetStatus }));
+  const createWorkerApi = vi.fn(() => ({
+    getStatus: workerGetStatus,
+    refreshLottery: workerRefreshLottery,
+  }));
+  const insertRows = vi.fn(async () => []);
+  const createSupabaseTransport = vi.fn(() => ({
+    selectRows: vi.fn(async () => []),
+    insertRows,
+    updateRows: vi.fn(async () => []),
+    deleteRows: vi.fn(async () => []),
+    supabaseRequest: vi.fn(async () => []),
+  }));
   const connectionGet = vi.fn(async () => ({ checkedAt: 'test', items: [] }));
   const connectionRetry = vi.fn(async () => ({ id: 'test' }));
   const createConnectionStatus = vi.fn(() => ({
@@ -34,8 +50,11 @@ const wiring = vi.hoisted(() => {
   }));
   return {
     workerGetStatus,
+    workerRefreshLottery,
     getWorkerConfig,
     createWorkerApi,
+    insertRows,
+    createSupabaseTransport,
     createConnectionStatus,
     admin,
     requireAdmin,
@@ -71,6 +90,14 @@ vi.mock('@appdeploy/sdk', () => sdk);
 vi.mock('./worker-api', () => ({
   createWorkerApi: wiring.createWorkerApi,
   getWorkerConfig: wiring.getWorkerConfig,
+}));
+
+vi.mock('./supabase', () => ({
+  createSupabaseTransport: wiring.createSupabaseTransport,
+  getSupabaseConfig: vi.fn(async () => ({
+    url: 'https://supabase.example',
+    serviceRoleKey: 'service-role-key',
+  })),
 }));
 
 vi.mock('./connection-status', () => ({
@@ -152,6 +179,64 @@ describe('admin Railway route wiring', () => {
       'view',
     );
     expect(wiring.requirePermission).not.toHaveBeenCalled();
+  });
+
+  it('allows an editor to refresh exactly the selected crawler and records a safe audit row', async () => {
+    wiring.requirePermission.mockClear();
+    wiring.workerRefreshLottery.mockClear();
+    wiring.insertRows.mockClear();
+    const context = {
+      params: { id: 'cron-matrix-539-refresh-v2' },
+      event: {
+        headers: { 'user-agent': 'test-agent' },
+        requestContext: { http: { sourceIp: '127.0.0.1' } },
+      },
+      user: { email: 'admin@example.com' },
+    };
+    const guard = routes['POST /api/system-status/:id/refresh'][1] as (
+      input: typeof context,
+    ) => Promise<unknown>;
+    const routeHandler = routes['POST /api/system-status/:id/refresh'][2] as (
+      input: typeof context,
+    ) => Promise<unknown>;
+
+    await guard(context);
+    await expect(routeHandler(context)).resolves.toMatchObject({
+      body: {
+        refresh: {
+          lottery: '今彩539',
+          period: '115000211',
+          drawDate: '2026-09-01',
+        },
+      },
+    });
+    expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'edit');
+    expect(wiring.workerRefreshLottery).toHaveBeenCalledWith('今彩539');
+    expect(wiring.insertRows).toHaveBeenCalledWith('audit_logs', [expect.objectContaining({
+      admin_id: 'admin-1',
+      operation_type: '手動更新',
+      target_table: 'lottery_draws',
+      target_id: '115000211',
+      content: '更新今彩539最新開獎資料',
+      after_data: {
+        lottery: '今彩539',
+        period: '115000211',
+        drawDate: '2026-09-01',
+      },
+    })]);
+  });
+
+  it('rejects a non-crawler status item without calling the Railway refresh API', async () => {
+    wiring.workerRefreshLottery.mockClear();
+    const routeHandler = routes['POST /api/system-status/:id/refresh'][2] as (
+      input: { params: { id: string }; user: { email: string } },
+    ) => Promise<unknown>;
+
+    await expect(routeHandler({
+      params: { id: 'railway-worker-api' },
+      user: { email: 'admin@example.com' },
+    })).resolves.toEqual({ error: '此項目不支援資料更新', status: 400 });
+    expect(wiring.workerRefreshLottery).not.toHaveBeenCalled();
   });
 });
 

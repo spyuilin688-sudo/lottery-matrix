@@ -27,6 +27,7 @@ Endpoints:
 ```text
 GET  /health
 GET  /jobs/status
+POST /jobs/refresh
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
 POST /api/matrix/tongxing
@@ -35,10 +36,15 @@ POST /api/matrix/number-reference
 
 The PWA reads this service through `VITE_RAILWAY_API_BASE`.
 
-`GET /health` is public. `GET /jobs/status` is for the AppDeploy backend only
-and requires the `X-Matrix-Admin-Token` request header. Railway and AppDeploy
-must store the same server-only secret under `MATRIX_ADMIN_STATUS_TOKEN`. Never
-expose that value through a `VITE_` variable or other browser configuration.
+`GET /health` is public. `GET /jobs/status` and `POST /jobs/refresh` are for
+the AppDeploy backend only and require the `X-Matrix-Admin-Token` request
+header. Railway and AppDeploy must store the same server-only secret under
+`MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
+or other browser configuration.
+
+`POST /jobs/refresh` accepts `{"lottery":"今彩539"}` (or another supported
+lottery), then fetches and upserts only its latest draw. It does not backfill
+history, run Matrix analysis, or update scheduled-job status records.
 
 ### Scheduled workers
 
@@ -54,8 +60,7 @@ railway.lotto649.json
 Each worker is triggered on the five-minute Railway cron grid. `app.schedule` decides whether the current minute is one of the configured call times. `app.worker` checks Supabase before fetching; once the current draw has been acquired, later calls for that draw stop doing network work.
 
 Automated entrypoints must use `--scheduled`. The CLI defaults to scheduled mode as a
-second safeguard; `--immediate` is reserved for supervised recovery runs that
-intentionally bypass the draw schedule.
+second safeguard for deployment configuration.
 
 Call times in Asia/Taipei:
 
