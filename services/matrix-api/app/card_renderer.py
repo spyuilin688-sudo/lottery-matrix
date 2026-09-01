@@ -13,7 +13,8 @@ BLACK = "#000"
 MONTH_BLUE = "#0000ff"
 WEEKDAY_GREY = "#d3d3d3"
 SUNDAY_RED = "#ff0000"
-FONT_FAMILY = "Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"
+NUMBER_FONT_FAMILY = "Arial"
+CJK_FONT_FAMILY = "Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"
 
 HEADER_TOP = 19
 HEADER_BOTTOM = 99
@@ -35,19 +36,19 @@ _CARD_DRAW_WEEKDAYS = {
 _LAYOUTS = {
     "今彩539": {
         "title": "539", "accent": "#ffff00", "column_rows": (59, 59, 59, 50),
-        "balls": 5, "special": False,
+        "balls": 5, "special": False, "title_width": 232,
     },
     "天天樂": {
         "title": "天天樂", "accent": "#ccff99", "column_rows": (59, 59, 59, 50),
-        "balls": 5, "special": False,
+        "balls": 5, "special": False, "title_width": 306,
     },
     "六合彩": {
         "title": "六合彩", "accent": "#ffc0cb", "column_rows": (60, 60, 51),
-        "balls": 7, "special": True,
+        "balls": 7, "special": True, "title_width": 306,
     },
     "大樂透": {
         "title": "大樂透", "accent": "#87cefa", "column_rows": (60, 60, 51),
-        "balls": 7, "special": True,
+        "balls": 7, "special": True, "title_width": 306,
     },
 }
 
@@ -55,7 +56,7 @@ _LAYOUTS = {
 # The reference cards are a fixed 2276×3438 print layout. These are the
 # measured centre lines of each table cell, rather than proportional columns:
 # proportional geometry visibly moves the grid at this resolution.
-_PANELS = {
+_PANELS_BY_COLUMN_COUNT = {
     4: (
         {"left": 19, "month": 83, "day_week": 137, "numbers": 191,
          "dividers": (267, 345, 421, 499), "right": 577},
@@ -73,6 +74,22 @@ _PANELS = {
          "dividers": (1019, 1101, 1183, 1265, 1345, 1427), "right": 1509},
         {"left": 1513, "month": 1577, "day_week": 1631, "numbers": 1683,
          "dividers": (1765, 1847, 1929, 2011, 2091, 2173), "right": 2257},
+    ),
+}
+
+_PANELS = {
+    "今彩539": _PANELS_BY_COLUMN_COUNT[4],
+    "天天樂": (
+        {**_PANELS_BY_COLUMN_COUNT[4][0], "numbers": 189},
+        _PANELS_BY_COLUMN_COUNT[4][1],
+        {**_PANELS_BY_COLUMN_COUNT[4][2], "dividers": (1387, 1463, 1541, 1619)},
+        {**_PANELS_BY_COLUMN_COUNT[4][3], "dividers": (1947, 2023, 2101, 2177)},
+    ),
+    "六合彩": _PANELS_BY_COLUMN_COUNT[3],
+    "大樂透": (
+        _PANELS_BY_COLUMN_COUNT[3][0],
+        {**_PANELS_BY_COLUMN_COUNT[3][1], "day_week": 883},
+        _PANELS_BY_COLUMN_COUNT[3][2],
     ),
 }
 
@@ -156,11 +173,18 @@ def _text(
     fill: str = BLACK,
     weight: int = 400,
     anchor: str = "middle",
+    text_length: int | None = None,
+    font_family: str = NUMBER_FONT_FAMILY,
 ) -> str:
+    text_length_attributes = (
+        f' textLength="{text_length}" lengthAdjust="spacingAndGlyphs"'
+        if text_length is not None else ""
+    )
     return (
         f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" '
-        f'font-family="{FONT_FAMILY}" '
-        f'font-size="{size}" font-weight="{weight}" fill="{fill}">{escape(value)}</text>'
+        f'font-family="{font_family}" '
+        f'font-size="{size}" font-weight="{weight}"{text_length_attributes} '
+        f'fill="{fill}">{escape(value)}</text>'
     )
 
 
@@ -255,7 +279,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         raise ValueError("未知牌單順序")
 
     capacities = tuple(layout["column_rows"])
-    panels = _PANELS[len(capacities)]
+    panels = _PANELS[lottery]
     special = bool(layout["special"])
     rows_by_panel = _build_rows(lottery, capacities, draws, order, special)
     output = [
@@ -310,9 +334,20 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         _append_footer_top_border(output, panel, index, len(panels), special=special)
 
         output.extend([
-            _text((panel["left"] + panel["month"]) / 2, 74, "月", 40),
-            _text((panel["month"] + panel["numbers"]) / 2, 74, "日", 40),
-            _text((panel["numbers"] + panel["right"]) / 2, 86, f'{layout["title"]} {mode}', 72, weight=700),
+            _text(
+                (panel["left"] + panel["month"]) / 2, 74, "月", 40,
+                font_family=CJK_FONT_FAMILY,
+            ),
+            _text(
+                (panel["month"] + panel["numbers"]) / 2, 74, "日", 40,
+                font_family=CJK_FONT_FAMILY,
+            ),
+            _text(
+                (panel["numbers"] + panel["right"]) / 2, 86,
+                f'{layout["title"]} {mode}', 72, weight=700,
+                text_length=int(layout["title_width"]),
+                font_family=CJK_FONT_FAMILY,
+            ),
         ])
 
         edges = (panel["numbers"], *panel["dividers"], panel["right"])
@@ -323,28 +358,32 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
             if value["show_month"]:
                 output.append(_text(
                     (panel["left"] + panel["month"]) / 2, top + 45,
-                    value["month"], 42, fill=MONTH_BLUE,
+                    value["month"], 45, fill=MONTH_BLUE,
                 ))
             output.extend([
-                _text((panel["month"] + panel["day_week"]) / 2, top + 42, value["day"], 42),
+                _text((panel["month"] + panel["day_week"]) / 2, top + 41, value["day"], 39),
                 _text(
-                    (panel["day_week"] + panel["numbers"]) / 2, top + 42,
+                    (panel["day_week"] + panel["numbers"]) / 2, top + 41,
                     "—" if value["weekday"] == "日" else value["weekday"],
-                    42, fill=SUNDAY_RED if value["weekday"] == "日" else BLACK,
+                    39, fill=SUNDAY_RED if value["weekday"] == "日" else BLACK,
+                    font_family=CJK_FONT_FAMILY,
                 ),
             ])
             for index, number in enumerate(value["values"][: layout["balls"]]):
                 output.append(_text(
-                    (edges[index] + edges[index + 1]) / 2, top + 47, number, 52,
+                    (edges[index] + edges[index + 1]) / 2, top + 46, number, 48,
                     fill=MONTH_BLUE if special and index == layout["balls"] - 1 else BLACK,
-                    weight=700,
+                    weight=700, text_length=57,
                 ))
 
     output.extend([
         _rect(16, 16, 6, 3406, fill=BLACK),
         _rect(2254, 16, 6, 3406, fill=BLACK),
         _rect(16, 3416, 2244, 6, fill=BLACK),
-        _text(CARD_WIDTH / 2, 3407, "樂彩 Matrix 牌單", 48, weight=700),
+        _text(
+            CARD_WIDTH / 2, 3407, "樂彩 Matrix 牌單", 48, weight=700,
+            font_family=CJK_FONT_FAMILY,
+        ),
         "</svg>",
     ])
     return "".join(output)
