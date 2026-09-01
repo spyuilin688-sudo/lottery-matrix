@@ -60,6 +60,22 @@ afterEach(() => {
 });
 
 describe("existing feature actions", () => {
+  it("does not start the Matrix ticket download after cancelling confirmation", async () => {
+    const fetchCard = vi.fn();
+    vi.stubGlobal("fetch", fetchCard);
+    render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
+
+    const button = await screen.findByRole("button", { name: "下載牌單" });
+    fireEvent.click(button);
+
+    expect(fetchCard).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("確認下載牌單？");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
+    expect(fetchCard).not.toHaveBeenCalled();
+  });
+
   it("downloads the current Matrix ticket once, exposes pending failure, and permits retry", async () => {
     let rejectDownload!: (reason: Error) => void;
     const fetchCard = vi.fn()
@@ -72,7 +88,7 @@ describe("existing feature actions", () => {
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function click(this: HTMLAnchorElement) {
       clickedAnchors.push(this);
     });
-    render(<MatrixCardPage onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
 
     const ticket = document.querySelector<HTMLElement>(".matrix-ticket");
     const button = await screen.findByRole("button", { name: "下載牌單" });
@@ -82,9 +98,11 @@ describe("existing feature actions", () => {
 
     fireEvent.click(button);
 
-    expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/draw.svg");
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
+
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/draw.svg"));
     expect(fetchCard).toHaveBeenCalledTimes(1);
-    expect(button).toBeDisabled();
+    await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
     fireEvent.click(button);
     expect(fetchCard).toHaveBeenCalledTimes(1);
@@ -98,6 +116,8 @@ describe("existing feature actions", () => {
     expect(button).toHaveAttribute("aria-busy", "false");
 
     fireEvent.click(button);
+
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
 
     await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(button).toBeEnabled());

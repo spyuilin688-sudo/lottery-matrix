@@ -3,7 +3,7 @@
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
 import { readFileSync } from "node:fs";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 declare const process: { cwd(): string };
@@ -20,6 +20,7 @@ vi.mock("../lottery-api", async (importOriginal) => ({
 }));
 
 import { MatrixCardPage } from "../FeaturePages";
+import { AppDialogProvider } from "../dialog/AppDialog";
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
 
@@ -31,7 +32,7 @@ function mountStyles() {
 }
 
 async function renderMatrixCardPage() {
-  render(<MatrixCardPage onNavigate={vi.fn()} />);
+  render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
   await screen.findByRole("img", { name: "今彩539落球牌單，第 115000001 期" });
 }
 
@@ -71,8 +72,11 @@ describe("Matrix 牌單 layout", () => {
     const body = document.querySelector(".feature-body");
     const drawOrder = screen.getByRole("tab", { name: "落球" });
     const sortedOrder = screen.getByRole("tab", { name: "順球" });
+    const orderTabs = document.querySelector<HTMLElement>(".matrix-card-order");
 
     expect(body).not.toBeNull();
+    expect(orderTabs).not.toBeNull();
+    expect(within(orderTabs!).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["順球", "落球"]);
     expect(getComputedStyle(document.documentElement).getPropertyValue("--layout-page-inline")).toBe("16px");
     expect(getComputedStyle(body!).paddingInline).toBe("var(--layout-page-inline)");
     expect(getComputedStyle(drawOrder).height).toBe("34px");
