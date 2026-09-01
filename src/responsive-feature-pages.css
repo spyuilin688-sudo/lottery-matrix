@@ -135,7 +135,15 @@
   background-image: none;
 }
 
-.draw-history-screen .history-reset-trigger,
+.draw-history-screen .history-filter-trigger {
+  font-size: clamp(7.2px, 2.1vw, 9px);
+  gap: 1px;
+}
+
+.draw-history-screen .history-reset-trigger {
+  gap: 1px;
+}
+
 .number-reference-screen .reference-refresh-trigger {
   gap: 1px;
 }
