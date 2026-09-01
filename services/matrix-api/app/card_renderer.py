@@ -93,7 +93,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
     capacities = tuple(layout["column_rows"])
     max_rows = sum(capacities)
     entries = list(reversed(draws[:max_rows]))
-    margin = 14
+    margin = 8
     header = 104
     footer = 70
     column_width = (CARD_WIDTH - margin * 2) / len(capacities)
@@ -123,6 +123,13 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
             f'<line x1="{x + 108:.1f}" y1="{header:.1f}" x2="{x + 108:.1f}" y2="{CARD_HEIGHT - footer:.1f}" stroke="#777" stroke-width="1"/>',
             f'<line x1="{x + meta_width:.1f}" y1="{header:.1f}" x2="{x + meta_width:.1f}" y2="{CARD_HEIGHT - footer:.1f}" stroke="#111" stroke-width="2"/>',
         ])
+        for divider in range(1, layout["balls"]):
+            cell_x = x + meta_width + number_width * divider / layout["balls"]
+            output.append(
+                f'<line x1="{cell_x:.1f}" y1="{header:.1f}" '
+                f'x2="{cell_x:.1f}" y2="{CARD_HEIGHT - footer:.1f}" '
+                'stroke="#777" stroke-width="1"/>'
+            )
         for row in range(capacity):
             y = header + row * row_height
             output.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x + column_width:.1f}" y2="{y:.1f}" stroke="#777" stroke-width="1"/>')
