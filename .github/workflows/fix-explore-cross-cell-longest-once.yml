@@ -79,7 +79,6 @@ jobs:
         run: |
           rm -f .github/explore-fix-test.log
           git add \
-            .github/workflows/matrix-analysis.yml \
             .github/explore-fix-test.log \
             services/matrix-api/app/domain/explore_v2.py \
             services/matrix-api/app/worker.py \
