@@ -100,7 +100,7 @@
   top: 50%;
   right: auto;
   bottom: auto;
-  left: calc(83% + 6px);
+  left: calc(83% + 3px);
   width: 2.34rem;
   height: 2.34rem;
   transform: translateY(-50%);
@@ -2500,32 +2500,3 @@ opacity: .30; box-shadow: none;
     grid-template-columns: max-content minmax(0, 1fr) 92px;
   }
 }
-
-
-/* Compatibility base rules retained for the standalone Guide layout contract. */
-.guide-preview {
-  min-height: 0;
-  margin-top: 0;
-  padding: 14px;
-}
-
-.guide-preview header > span {
-  width: 30px;
-  height: 24px;
-  border: 1px solid rgba(196, 145, 69, .42);
-  border-radius: 12px;
-  color: #c49145;
-  font-size: 11px;
-}
-
-.guide-preview h2 { color: #f4ce67; }
-.guide-preview .guide-summary {
-  margin: 10px 0 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(196, 145, 69, .42);
-  color: #d4cdc2;
-}
-.guide-detail-block { padding: 8px 0; border-bottom: 1px solid rgba(196, 145, 69, .42); }
-.guide-detail-block h3 { margin: 0 0 6px; color: #c49145; }
-.guide-detail-block ul { gap: 5px; color: #bbb4aa; }
-.guide-detail-block li::before { background: #c49145; }
