@@ -62,3 +62,15 @@ def test_card_prints_month_markers_sunday_dash_and_future_calendar_rows() -> Non
     assert ">01</text>" in svg
     assert ">二</text>" in svg
     assert 'font-family="Noto Sans TC"' in svg
+
+
+def test_card_uses_reference_grid_edges_and_number_cell_dividers() -> None:
+    svg = render_matrix_card("今彩539", "draw", [])
+
+    assert '<rect x="8.0" y="8" width="565.0"' in svg
+    for divider in (258.6, 337.2, 415.8, 494.4):
+        assert (
+            f'<line x1="{divider:.1f}" y1="104.0" '
+            f'x2="{divider:.1f}" y2="3368.0" '
+            'stroke="#777" stroke-width="1"/>'
+        ) in svg
