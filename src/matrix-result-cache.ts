@@ -9,8 +9,71 @@ const LOTTERY_HISTORY_CACHE_PREFIX = 'lottery-history';
 const LOTTERY_LATEST_CACHE_PREFIX = 'lottery-latest';
 const VERSION_PREFIX = 'matrix-result-period';
 
+function storage(): Storage | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
 function storageAvailable() {
-  return typeof localStorage !== 'undefined';
+  return storage() !== null;
+}
+
+function readStorageItem(key: string) {
+  const target = storage();
+  if (!target) return null;
+  try {
+    return target.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorageItem(key: string, value: string) {
+  const target = storage();
+  if (!target) return false;
+  try {
+    target.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeStorageItem(key: string) {
+  const target = storage();
+  if (!target) return;
+  try {
+    target.removeItem(key);
+  } catch {
+    // A damaged or unavailable cache must behave as a cache miss.
+  }
+}
+
+function storageKeys() {
+  const target = storage();
+  if (!target) return [];
+  try {
+    const keys: string[] = [];
+    for (let index = 0; index < target.length; index += 1) {
+      const itemKey = target.key(index);
+      if (itemKey) keys.push(itemKey);
+    }
+    return keys;
+  } catch {
+    return [];
+  }
+}
+
+function writeJsonStorage(key: string, value: unknown) {
+  try {
+    return writeStorageItem(key, JSON.stringify(value));
+  } catch {
+    return false;
+  }
 }
 
 function stableValue(value: unknown): unknown {
@@ -56,13 +119,13 @@ export function buildMatrixResultCacheKey<T extends MatrixResultCacheRequest>(re
 
 export function getMatrixCurrentPeriod(lottery: string) {
   if (!storageAvailable()) return null;
-  return localStorage.getItem(versionKey(lottery));
+  return readStorageItem(versionKey(lottery));
 }
 
 export function setMatrixCurrentPeriod(lottery: string, drawPeriod: string) {
   if (!storageAvailable() || !drawPeriod) return;
   const key = versionKey(lottery);
-  const previous = localStorage.getItem(key);
+  const previous = readStorageItem(key);
   if (previous === drawPeriod) return;
 
   const prefixes = [
@@ -70,25 +133,22 @@ export function setMatrixCurrentPeriod(lottery: string, drawPeriod: string) {
     lotteryQueryCachePrefix(lottery),
     lotteryHistoryCachePrefix(lottery),
   ];
-  const keysToRemove: string[] = [];
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const itemKey = localStorage.key(index);
-    if (itemKey && prefixes.some((prefix) => itemKey.startsWith(prefix))) keysToRemove.push(itemKey);
-  }
-  keysToRemove.forEach((itemKey) => localStorage.removeItem(itemKey));
-  localStorage.setItem(key, drawPeriod);
+  storageKeys()
+    .filter((itemKey) => prefixes.some((prefix) => itemKey.startsWith(prefix)))
+    .forEach(removeStorageItem);
+  writeStorageItem(key, drawPeriod);
 }
 
 export function readMatrixResultCache<T>(request: MatrixResultCacheRequest): T | null {
   if (!storageAvailable()) return null;
   if (getMatrixCurrentPeriod(request.lottery) !== request.drawPeriod) return null;
   const cacheKey = buildMatrixResultCacheKey(request);
-  const stored = localStorage.getItem(cacheKey);
+  const stored = readStorageItem(cacheKey);
   if (!stored) return null;
   try {
     return JSON.parse(stored) as T;
   } catch {
-    localStorage.removeItem(cacheKey);
+    removeStorageItem(cacheKey);
     return null;
   }
 }
@@ -96,7 +156,7 @@ export function readMatrixResultCache<T>(request: MatrixResultCacheRequest): T |
 export function writeMatrixResultCache<T>(request: MatrixResultCacheRequest, result: T) {
   if (!storageAvailable()) return;
   setMatrixCurrentPeriod(request.lottery, request.drawPeriod);
-  localStorage.setItem(buildMatrixResultCacheKey(request), JSON.stringify(result));
+  writeJsonStorage(buildMatrixResultCacheKey(request), result);
 }
 
 function buildLotteryQueryCacheKey(lottery: string, drawPeriod: string, query: unknown) {
@@ -106,12 +166,12 @@ function buildLotteryQueryCacheKey(lottery: string, drawPeriod: string, query: u
 export function readLotteryQueryCache<T>(lottery: string, drawPeriod: string, query: unknown): T | null {
   if (!storageAvailable() || getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
   const cacheKey = buildLotteryQueryCacheKey(lottery, drawPeriod, query);
-  const stored = localStorage.getItem(cacheKey);
+  const stored = readStorageItem(cacheKey);
   if (!stored) return null;
   try {
     return JSON.parse(stored) as T;
   } catch {
-    localStorage.removeItem(cacheKey);
+    removeStorageItem(cacheKey);
     return null;
   }
 }
@@ -119,7 +179,7 @@ export function readLotteryQueryCache<T>(lottery: string, drawPeriod: string, qu
 export function writeLotteryQueryCache<T>(lottery: string, drawPeriod: string, query: unknown, result: T) {
   if (!storageAvailable() || !drawPeriod) return;
   setMatrixCurrentPeriod(lottery, drawPeriod);
-  localStorage.setItem(buildLotteryQueryCacheKey(lottery, drawPeriod, query), JSON.stringify(result));
+  writeJsonStorage(buildLotteryQueryCacheKey(lottery, drawPeriod, query), result);
 }
 
 type TimedLotteryCache<T> = { savedAt: number; value: T };
@@ -127,31 +187,27 @@ type TimedLotteryCache<T> = { savedAt: number; value: T };
 export function readLotteryLatestCache<T>(lottery: string, maxAgeMs: number): T | null {
   if (!storageAvailable()) return null;
   const key = lotteryLatestCacheKey(lottery);
-  const stored = localStorage.getItem(key);
+  const stored = readStorageItem(key);
   if (!stored) return null;
   try {
     const cached = JSON.parse(stored) as TimedLotteryCache<T>;
     if (!Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt >= maxAgeMs) {
-      localStorage.removeItem(key);
+      removeStorageItem(key);
       return null;
     }
     return cached.value;
   } catch {
-    localStorage.removeItem(key);
+    removeStorageItem(key);
     return null;
   }
 }
 
 export function writeLotteryLatestCache<T>(lottery: string, value: T) {
   if (!storageAvailable()) return;
-  try {
-    localStorage.setItem(
-      lotteryLatestCacheKey(lottery),
-      JSON.stringify({ savedAt: Date.now(), value } satisfies TimedLotteryCache<T>),
-    );
-  } catch {
-    // A full browser cache must not block the latest result from being displayed.
-  }
+  writeJsonStorage(
+    lotteryLatestCacheKey(lottery),
+    { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>,
+  );
 }
 
 function buildLotteryHistoryCacheKey(lottery: string, drawPeriod: string, limit?: number) {
@@ -161,12 +217,12 @@ function buildLotteryHistoryCacheKey(lottery: string, drawPeriod: string, limit?
 export function readLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit?: number): T | null {
   if (!storageAvailable() || getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
   const key = buildLotteryHistoryCacheKey(lottery, drawPeriod, limit);
-  const stored = localStorage.getItem(key);
+  const stored = readStorageItem(key);
   if (!stored) return null;
   try {
     return JSON.parse(stored) as T;
   } catch {
-    localStorage.removeItem(key);
+    removeStorageItem(key);
     return null;
   }
 }
@@ -174,9 +230,5 @@ export function readLotteryHistoryCache<T>(lottery: string, drawPeriod: string, 
 export function writeLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit: number | undefined, value: T) {
   if (!storageAvailable() || !drawPeriod) return;
   setMatrixCurrentPeriod(lottery, drawPeriod);
-  try {
-    localStorage.setItem(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), JSON.stringify(value));
-  } catch {
-    // A full browser cache must not block the history result from being displayed.
-  }
+  writeJsonStorage(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), value);
 }

@@ -51,7 +51,7 @@ describe('lottery-api response validation', () => {
     await expect(fetchLotteryHistory('今彩539', 10)).rejects.toThrow('Lottery API invalid response: items[0]');
   });
 
-  it('相同彩種與範圍的歷史資料在十五分鐘內共用讀取結果', async () => {
+  it('相同彩種與範圍的歷史資料在五分鐘內共用讀取結果', async () => {
     const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(jsonResponse(latest))
@@ -63,7 +63,7 @@ describe('lottery-api response validation', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('最新期號在十五分鐘內跨重新初始化使用已儲存資料', async () => {
+  it('最新期號在五分鐘內跨重新初始化使用已儲存資料', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-31T14:00:00Z'));
     const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
@@ -74,6 +74,27 @@ describe('lottery-api response validation', () => {
     await fetchLatestLotteryDraw('今彩539');
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('最新期號超過五分鐘後不再重用 localStorage 資料', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-31T14:00:00Z'));
+    const first = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const second = { period: '115000208', numbers: ['06', '07', '08', '09', '10'] };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(first))
+      .mockResolvedValueOnce(jsonResponse(second));
+
+    await fetchLatestLotteryDraw('今彩539');
+    resetReadCacheForTests();
+    vi.advanceTimersByTime(5 * 60 * 1_000 - 1);
+    await fetchLatestLotteryDraw('今彩539');
+
+    resetReadCacheForTests();
+    vi.advanceTimersByTime(1);
+    await expect(fetchLatestLotteryDraw('今彩539')).resolves.toMatchObject({ period: '115208' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it('歷史資料在同一期號內跨重新初始化使用已儲存資料', async () => {

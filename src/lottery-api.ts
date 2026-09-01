@@ -11,7 +11,7 @@ import {
 } from './matrix-result-cache';
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
-const LOTTERY_READ_CACHE_MS = 15 * 60 * 1_000;
+const LOTTERY_READ_CACHE_MS = 5 * 60 * 1_000;
 const latestPeriods = new Map<NumberBallLottery, string | undefined>();
 
 export type LotteryDrawRecord = {

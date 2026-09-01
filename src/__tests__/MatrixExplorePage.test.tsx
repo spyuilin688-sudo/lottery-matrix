@@ -558,3 +558,45 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
     { explorePeriods: 7, exploreRange: '標準範圍' },
   );
 });
+
+test('Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還原，且不重新讀取資料', async () => {
+  const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
+  let hidden = false;
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+  const addEventListener = vi.spyOn(document, 'addEventListener');
+  const removeEventListener = vi.spyOn(document, 'removeEventListener');
+
+  try {
+    const { unmount } = render(<MatrixExplorePage onNavigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+    const validation = await screen.findByRole('region', { name: '驗證過程' });
+    const visibilityRegistration = addEventListener.mock.calls.find(([type]) => type === 'visibilitychange');
+    expect(visibilityRegistration).toBeDefined();
+    expect(validation.getAttribute('data-content-protected')).toBe('false');
+
+    const copy = new Event('copy', { bubbles: true, cancelable: true });
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
+    fireEvent(validation, copy);
+    fireEvent(validation, drag);
+    expect(copy.defaultPrevented).toBe(true);
+    expect(drag.defaultPrevented).toBe(true);
+
+    hidden = true;
+    fireEvent(document, new Event('visibilitychange'));
+    expect(validation.getAttribute('data-content-protected')).toBe('true');
+
+    hidden = false;
+    fireEvent(document, new Event('visibilitychange'));
+    expect(validation.getAttribute('data-content-protected')).toBe('false');
+    expect(validation.textContent).toContain('本期預測');
+    expect(matrixApi.fetchExploreValidation).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(removeEventListener).toHaveBeenCalledWith('visibilitychange', visibilityRegistration?.[1]);
+  } finally {
+    if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
+    else delete (document as { hidden?: boolean }).hidden;
+  }
+});

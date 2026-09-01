@@ -1,0 +1,15 @@
+{
+  "name": "樂彩 Matrix",
+  "short_name": "樂彩 Matrix",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#02070c",
+  "background_color": "#02070c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}
