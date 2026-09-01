@@ -1,4 +1,4 @@
-name: Matrix latest-period analysis v10
+name: Matrix latest-period analysis v11
 
 on:
   workflow_dispatch:
