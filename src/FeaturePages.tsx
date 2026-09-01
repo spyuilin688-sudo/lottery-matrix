@@ -4352,11 +4352,13 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
           </section>
         );})}
       </div>
-      <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
-        <span className="bottom-navigation-quick-settings-visual">
-          <GearIcon aria-hidden="true" />
-        </span>
-      </button>
+      <MobilePagePortal active>
+        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
+          <span className="bottom-navigation-quick-settings-visual">
+            <GearIcon aria-hidden="true" />
+          </span>
+        </button>
+      </MobilePagePortal>
     </FeatureShell>
   );
 }

@@ -43,14 +43,23 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
   expect(navigate).toHaveBeenCalledWith('status-settings');
 });
 
-test('自訂觸發條件入口移至狀態頁右下角並沿用首頁快捷設定樣式', () => {
-  const { container } = render(<MatrixStatusPage onNavigate={vi.fn()} />);
+test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層', async () => {
+  const mobilePage = document.createElement('section');
+  mobilePage.className = 'mobile-page';
+  document.body.appendChild(mobilePage);
+
+  const { container, unmount } = render(<MatrixStatusPage onNavigate={vi.fn()} />);
   const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
 
   expect(trigger).toHaveClass('bottom-navigation-quick-settings', 'matrix-status-settings-entry');
   expect(trigger.querySelector('.bottom-navigation-quick-settings-visual')).toBeInTheDocument();
   expect(trigger.querySelector('svg')).toBeInTheDocument();
+  await waitFor(() => expect(mobilePage).toContainElement(trigger));
+  expect(trigger.parentElement).toBe(mobilePage);
   expect(screen.queryByRole('img', { name: '自訂觸發條件' })).not.toBeInTheDocument();
   expect(container.querySelector('.matrix-title-banner-actions')).not.toBeInTheDocument();
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
+
+  unmount();
+  mobilePage.remove();
 });
