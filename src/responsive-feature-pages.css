@@ -86,6 +86,7 @@
 .draw-history-screen .matrix-title-banner-actions,
 .tongxing-screen .matrix-title-banner-actions,
 .number-reference-screen .matrix-title-banner-actions {
+  top: 100%;
   top: calc(100% + var(--title-action-top-offset));
   right: calc(4% + var(--title-action-right-offset));
   bottom: auto;
@@ -132,6 +133,15 @@
   gap: 1px;
   padding-inline: 4px 5px;
   background-image: none;
+}
+
+.draw-history-screen .history-reset-trigger,
+.number-reference-screen .reference-refresh-trigger {
+  gap: 1px;
+}
+
+.number-reference-screen .reference-settings-trigger {
+  transform: translate(-4px, -3px);
 }
 
 .tool-title-reset-trigger > svg,
