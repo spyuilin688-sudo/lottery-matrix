@@ -21,6 +21,24 @@ class RoadType(StrEnum):
     DRAG = "拖牌"
 
 
+INVALID_MORE_THAN_TWO_LONGEST = (
+    "相同最長連準出現超過2條可延續共同值，整條版路無效，不得輸出兩兩組合"
+)
+INVALID_ONE_CODE_MAXIMUM = "鎖定1碼連準達8次（包含8）以上，整條版路無效，不得截短"
+INVALID_TWO_CODE_MAXIMUM = "鎖定2碼連準達12次（包含12）以上，整條版路無效，不得截短"
+INVALID_SINGLE_USE_ENDPOINT = "鎖定2碼單次值只能位於連準中間，不得只在頭或尾"
+
+
+@dataclass(frozen=True, slots=True)
+class StreakDecision:
+    valid: bool
+    highest_streak: int
+    rules: tuple[int, ...] = ()
+    reason: str | None = None
+    matched_group_indexes: tuple[int, ...] = ()
+    rule_sets: tuple[tuple[int, ...], ...] = ()
+
+
 @dataclass(frozen=True, slots=True)
 class LockKey:
     lottery: str
@@ -69,6 +87,195 @@ def apply_candidate(road: RoadType, base: int, value: int, maximum: int) -> int:
     if road is RoadType.SUM:
         return normalize_matrix_number(value - base, maximum)
     return normalize_matrix_number(base + value, maximum)
+
+
+def _candidate_groups(groups: Iterable[Iterable[int]]) -> tuple[frozenset[int], ...]:
+    return tuple(frozenset(int(value) for value in group) for group in groups)
+
+
+def evaluate_one_code(groups: Iterable[Iterable[int]]) -> StreakDecision:
+    normalized = _candidate_groups(groups)
+    if len(normalized) < 2:
+        return StreakDecision(False, 0, reason="準4+至少需要B、C兩個驗證組")
+
+    common = normalized[0].intersection(normalized[1])
+    if not common:
+        return StreakDecision(False, 0, reason="B、C無共同值，準4+停止")
+
+    scores: dict[int, int] = {}
+    for rule in common:
+        streak = 0
+        for group in normalized[:8]:
+            if rule not in group:
+                break
+            streak += 1
+        scores[rule] = streak
+
+    highest = max(scores.values())
+    longest_rules = tuple(sorted(rule for rule, streak in scores.items() if streak == highest))
+    matched = tuple(range(highest))
+    if highest >= 8:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            INVALID_ONE_CODE_MAXIMUM,
+            matched,
+        )
+    if len(longest_rules) > 2:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            INVALID_MORE_THAN_TWO_LONGEST,
+            matched,
+        )
+    if highest not in {4, 5, 6, 7}:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            f"準{highest}進{highest + 1}不得進入探索與狀態結果",
+            matched,
+        )
+
+    rule_sets = tuple((rule,) for rule in longest_rules)
+    return StreakDecision(
+        True,
+        highest,
+        longest_rules,
+        matched_group_indexes=matched,
+        rule_sets=rule_sets,
+    )
+
+
+def _remember_pair_score(
+    scores: dict[tuple[int, int], int],
+    first: int,
+    seconds: Iterable[int],
+    streak: int,
+) -> None:
+    for second in seconds:
+        if first == second:
+            continue
+        pair = tuple(sorted((first, second)))
+        scores[pair] = max(streak, scores.get(pair, 0))
+
+
+def _two_code_pair_scores(groups: tuple[frozenset[int], ...]) -> dict[tuple[int, int], int]:
+    """Extend compact first-rule states; never materialize a global pair product."""
+
+    scores: dict[tuple[int, int], int] = {}
+    first_candidates = groups[0].union(groups[1])
+    bounded_groups = groups[:12]
+
+    for first in first_candidates:
+        active_seconds: set[int] = set()
+        has_uncovered_group = False
+        processed = 0
+
+        for group_index, group in enumerate(bounded_groups):
+            if first in group:
+                if not has_uncovered_group:
+                    active_seconds.update(group.difference({first}))
+                processed = group_index + 1
+                continue
+
+            available = group.difference({first})
+            if not has_uncovered_group:
+                _remember_pair_score(
+                    scores,
+                    first,
+                    active_seconds.difference(available),
+                    group_index,
+                )
+                active_seconds = set(available)
+                has_uncovered_group = True
+            else:
+                _remember_pair_score(
+                    scores,
+                    first,
+                    active_seconds.difference(available),
+                    group_index,
+                )
+                active_seconds.intersection_update(available)
+
+            if not active_seconds:
+                processed = group_index
+                break
+            processed = group_index + 1
+        else:
+            processed = len(bounded_groups)
+
+        _remember_pair_score(scores, first, active_seconds, processed)
+
+    return scores
+
+
+def evaluate_two_code(groups: Iterable[Iterable[int]]) -> StreakDecision:
+    normalized = _candidate_groups(groups)
+    if len(normalized) < 2:
+        return StreakDecision(False, 0, reason="準5+至少需要B、C兩個驗證組")
+
+    scores = _two_code_pair_scores(normalized)
+    if not scores:
+        return StreakDecision(False, 0, reason="第二條不同規則未形成或所有候選路徑已斷")
+
+    highest = max(scores.values())
+    longest_pairs = tuple(sorted(pair for pair, streak in scores.items() if streak == highest))
+    longest_rules = tuple(sorted({rule for pair in longest_pairs for rule in pair}))
+    matched = tuple(range(highest))
+
+    if highest >= 12:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            INVALID_TWO_CODE_MAXIMUM,
+            matched,
+            longest_pairs,
+        )
+    if len(longest_rules) > 2:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            INVALID_MORE_THAN_TWO_LONGEST,
+            matched,
+            longest_pairs,
+        )
+    if highest not in {5, 6, 7, 9, 11}:
+        return StreakDecision(
+            False,
+            highest,
+            longest_rules,
+            f"準{highest}進{highest + 1}不得進入探索與狀態結果",
+            matched,
+            longest_pairs,
+        )
+
+    pair = longest_pairs[0]
+    for rule in pair:
+        appearances = tuple(
+            index for index, group in enumerate(normalized[:highest]) if rule in group
+        )
+        if len(appearances) == 1 and appearances[0] in {0, highest - 1}:
+            return StreakDecision(
+                False,
+                highest,
+                pair,
+                INVALID_SINGLE_USE_ENDPOINT,
+                matched,
+                (pair,),
+            )
+
+    return StreakDecision(
+        True,
+        highest,
+        pair,
+        matched_group_indexes=matched,
+        rule_sets=(pair,),
+    )
 
 
 def _complete_int_tuple(values: object, count: int) -> tuple[int, ...]:

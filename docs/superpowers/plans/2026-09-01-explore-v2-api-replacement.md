@@ -211,10 +211,10 @@ def test_one_code_rejects_no_b_c_intersection_and_eight_or_more() -> None:
 
 ```python
 def test_second_rule_may_first_appear_at_f() -> None:
-    groups = [{10}, {10}, {10}, {10}, {10, 24}]
+    groups = [{10}, {10}, {10}, {10}, {10, 24}, {10}]
     decision = evaluate_two_code(groups)
     assert decision.rules == (10, 24)
-    assert decision.highest_streak == 5
+    assert decision.highest_streak == 6
 
 def test_two_hits_in_one_group_count_as_one_streak() -> None:
     decision = evaluate_two_code([{10}, {24}, {10, 24}, {10}, {24}])
@@ -516,4 +516,3 @@ Expected: no old production Explore runner, no fixed Explore history limit, v8/v
 git add services/matrix-api services/matrix-api/README.md
 git commit -m "test: verify complete explore v2 replacement"
 ```
-
