@@ -49,11 +49,18 @@ begin
 
   select run.analysis_version, run.draw_period into v_version, v_draw
   from public.matrix_analysis_runs as run
+  left join public.lottery_draws as draw
+    on draw.lottery = run.lottery
+   and draw.period = run.draw_period
   where run.lottery = v_lottery
     and run.status = 'complete'
     and run.analysis_version = run.draw_period || ':matrix-python-v11'
     and (v_period is null or run.draw_period = v_period)
-  order by run.completed_at desc nulls last
+  order by
+    (draw.draw_date is not null) desc,
+    draw.draw_date desc nulls last,
+    run.draw_period desc,
+    run.completed_at desc nulls last
   offset v_offset
   limit 1;
 
