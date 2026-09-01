@@ -18,7 +18,7 @@ test('Matrix workflow triggers its one-shot recovery only when this workflow cha
   assert.match(workflow, /^      max-parallel: 1$/m);
 });
 
-test('Matrix workflow runs every lottery for a push without scheduling the worker', () => {
+test('Matrix workflow runs every lottery for a push in scheduled mode', () => {
   assert.match(
     workflow,
     /if \[\[ "\$EVENT_NAME" == "push" \|\| "\$EVENT_NAME" == "workflow_dispatch" \|\| "\$EVENT_SCHEDULE" == "\*\/15 \* \* \* \*" \]\]; then\n            should_run=true/,
@@ -33,8 +33,8 @@ test('Matrix workflow runs every lottery for a push without scheduling the worke
     assert.match(workflow, new RegExp(`- id: ${id}\\n\\s+lottery: ${lottery}`));
   }
 
-  assert.match(workflow, /uv run python -m app\.worker --lottery "\$LOTTERY"/);
-  assert.doesNotMatch(workflow, /app\.worker[^\n]*--scheduled/);
+  assert.match(workflow, /uv run python -m app\.worker --lottery "\$LOTTERY" --scheduled/);
+  assert.doesNotMatch(workflow, /app\.worker[^\n]*--immediate/);
 });
 
 test('Matrix workflow cancels and drains older runs before bounded analysis starts', () => {

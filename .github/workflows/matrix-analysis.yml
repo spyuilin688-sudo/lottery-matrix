@@ -160,4 +160,4 @@ jobs:
               exit 0
             fi
           fi
-          uv run python -m app.worker --lottery "$LOTTERY"
+          uv run python -m app.worker --lottery "$LOTTERY" --scheduled

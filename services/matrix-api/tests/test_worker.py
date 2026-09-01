@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -553,3 +554,73 @@ def test_scheduled_worker_does_nothing_outside_call_schedule() -> None:
 
     assert result["status"] == "not-due"
     assert source.events == []
+
+
+def test_cli_defaults_to_the_scheduled_worker(monkeypatch) -> None:
+    settings = SimpleNamespace(supabase_url="https://example.test", supabase_secret_key="secret")
+    repository = object()
+    source = object()
+    calls: list[tuple[str, None, object, object]] = []
+
+    class Client:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(worker_module, "load_settings", lambda: settings)
+    monkeypatch.setattr(worker_module, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(worker_module.httpx, "Client", lambda: Client())
+    monkeypatch.setattr(worker_module, "LatestDrawSource", lambda _: source)
+    monkeypatch.setattr(
+        worker_module,
+        "run_scheduled_worker",
+        lambda lottery, now, actual_repository, actual_source: (
+            calls.append((lottery, now, actual_repository, actual_source))
+            or {"lottery": lottery, "status": "not-due"}
+        ),
+    )
+    monkeypatch.setattr(
+        worker_module,
+        "run_worker",
+        lambda *_: (_ for _ in ()).throw(AssertionError("legacy worker must not run")),
+    )
+
+    assert worker_module.main(["--lottery", "今彩539"]) == 0
+    assert calls == [("今彩539", None, repository, source)]
+
+
+def test_cli_only_runs_immediate_worker_when_explicitly_requested(monkeypatch) -> None:
+    settings = SimpleNamespace(supabase_url="https://example.test", supabase_secret_key="secret")
+    repository = object()
+    source = object()
+    calls: list[tuple[str, object, object]] = []
+
+    class Client:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(worker_module, "load_settings", lambda: settings)
+    monkeypatch.setattr(worker_module, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(worker_module.httpx, "Client", lambda: Client())
+    monkeypatch.setattr(worker_module, "LatestDrawSource", lambda _: source)
+    monkeypatch.setattr(
+        worker_module,
+        "run_scheduled_worker",
+        lambda *_: (_ for _ in ()).throw(AssertionError("scheduled worker must not run")),
+    )
+    monkeypatch.setattr(
+        worker_module,
+        "run_worker",
+        lambda lottery, actual_repository, actual_source: (
+            calls.append((lottery, actual_repository, actual_source))
+            or {"lottery": lottery, "status": "complete"}
+        ),
+    )
+
+    assert worker_module.main(["--lottery", "今彩539", "--immediate"]) == 0
+    assert calls == [("今彩539", repository, source)]

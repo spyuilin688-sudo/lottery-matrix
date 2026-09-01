@@ -281,7 +281,14 @@ def main(argv: list[str] | None = None) -> int:
     lotteries = ["今彩539", "天天樂", "六合彩", "大樂透"]
     parser.add_argument("--lottery", choices=lotteries)
     parser.add_argument("--scheduled", action="store_true")
+    parser.add_argument(
+        "--immediate",
+        action="store_true",
+        help="bypass the draw schedule for a supervised recovery run",
+    )
     args = parser.parse_args(argv)
+    if args.scheduled and args.immediate:
+        parser.error("--scheduled and --immediate cannot be used together")
     lottery = args.lottery or environ.get("MATRIX_LOTTERY", "").strip()
     if lottery not in lotteries:
         parser.error("set --lottery or MATRIX_LOTTERY to one supported lottery")
@@ -290,9 +297,9 @@ def main(argv: list[str] | None = None) -> int:
     with httpx.Client() as client:
         source = LatestDrawSource(client)
         result = (
-            run_scheduled_worker(lottery, None, repository, source)
-            if args.scheduled
-            else run_worker(lottery, repository, source)
+            run_worker(lottery, repository, source)
+            if args.immediate
+            else run_scheduled_worker(lottery, None, repository, source)
         )
     draw_period = result.get("drawPeriod", "-")
     print(f'{result["lottery"]} {draw_period} {result["status"]}')

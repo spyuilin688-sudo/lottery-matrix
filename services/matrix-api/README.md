@@ -53,6 +53,10 @@ railway.lotto649.json
 
 Each worker is triggered on the five-minute Railway cron grid. `app.schedule` decides whether the current minute is one of the configured call times. `app.worker` checks Supabase before fetching; once the current draw has been acquired, later calls for that draw stop doing network work.
 
+Automated entrypoints must use `--scheduled`. The CLI defaults to scheduled mode as a
+second safeguard; `--immediate` is reserved for supervised recovery runs that
+intentionally bypass the draw schedule.
+
 Call times in Asia/Taipei:
 
 ```text

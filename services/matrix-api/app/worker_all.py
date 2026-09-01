@@ -7,7 +7,7 @@ import httpx
 from app.repositories.analysis_repository import create_supabase_repository
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
-from app.worker import run_worker
+from app.worker import run_scheduled_worker
 
 
 LOTTERIES = ("今彩539", "天天樂", "六合彩", "大樂透")
@@ -41,7 +41,7 @@ def main() -> int:
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         source = LatestDrawSource(client)
         result = run_all_workers(
-            lambda lottery: run_worker(lottery, repository, source),
+            lambda lottery: run_scheduled_worker(lottery, None, repository, source),
         )
     for lottery in result["completed"]:
         print(f"{lottery} complete")
