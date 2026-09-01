@@ -25,6 +25,12 @@ V7_SQL_PATH = (
     / "migrations"
     / "20260831213000_matrix_python_v7_explore_rpc.sql"
 )
+V10_SQL_PATH = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20260901100000_matrix_explore_v2_ranges.sql"
+)
 
 
 def _function_definition(sql: str, function_name: str) -> str:
@@ -113,6 +119,48 @@ def test_v7_explore_rpcs_preserve_security_and_explicit_execute_grants() -> None
 
     for function_name in ("matrix_explore_list", "matrix_explore_validation"):
         definition = _function_definition(v7_sql, function_name)
+        assert "security definer" in definition
+        assert "set search_path = ''" in definition
+        assert (
+            f"revoke all on function public.{function_name}(jsonb) from public"
+            in compact_sql
+        )
+        assert (
+            f"grant execute on function public.{function_name}(jsonb) "
+            "to anon, authenticated"
+            in compact_sql
+        )
+
+
+def test_v10_adds_exact_range_storage_and_never_derives_standard_from_offset() -> None:
+    v10_sql = V10_SQL_PATH.read_text(encoding="utf-8")
+
+    assert "add column if not exists explore_range text" in v10_sql
+    assert "explore_range in ('標準範圍', '完整範圍')" in v10_sql
+    assert "alter column explore_range drop default" in v10_sql
+    assert "matrix_explore_results_v2_list_idx" in v10_sql
+    assert "coalesce(result.reference_offset, 0) >= -7" not in v10_sql
+    for function_name in ("matrix_explore_list", "matrix_explore_validation"):
+        definition = _function_definition(v10_sql, function_name)
+        assert "result.explore_range = v_range" in definition
+        assert "matrix-python-v10" in definition
+
+
+def test_v10_rpcs_require_complete_v10_runs_and_preserve_security_contract() -> None:
+    v10_sql = V10_SQL_PATH.read_text(encoding="utf-8")
+    compact_sql = " ".join(v10_sql.split())
+    list_definition = _function_definition(v10_sql, "matrix_explore_list")
+    validation_definition = _function_definition(v10_sql, "matrix_explore_validation")
+
+    assert v10_sql.count("create or replace function") == 2
+    assert "run.status = 'complete'" in list_definition
+    assert "run.analysis_version = run.draw_period || ':matrix-python-v10'" in list_definition
+    assert "v_version <> v_draw || ':matrix-python-v10'" in validation_definition
+    assert "run.status = 'complete'" in validation_definition
+    assert "v_offset not in (0, 1, 2)" in list_definition
+    assert "offset v_offset" in list_definition
+    for function_name in ("matrix_explore_list", "matrix_explore_validation"):
+        definition = _function_definition(v10_sql, function_name)
         assert "security definer" in definition
         assert "set search_path = ''" in definition
         assert (

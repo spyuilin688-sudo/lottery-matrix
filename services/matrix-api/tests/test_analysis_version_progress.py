@@ -14,8 +14,8 @@ from app.worker import ANALYSIS_VERSION, run_scheduled_worker
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v9"
-LEGACY_VERSION = f"{PERIOD}:matrix-python-v8"
+CURRENT_VERSION = f"{PERIOD}:matrix-python-v10"
+LEGACY_VERSION = f"{PERIOD}:matrix-python-v9"
 
 
 class FakeResponse:
@@ -82,8 +82,8 @@ def _complete_run(
     repository.complete_run(LOTTERY, PERIOD, version, completed_at)
 
 
-def test_worker_uses_matrix_python_v9() -> None:
-    assert ANALYSIS_VERSION == "matrix-python-v9"
+def test_worker_uses_matrix_python_v10() -> None:
+    assert ANALYSIS_VERSION == "matrix-python-v10"
 
 
 def test_progress_lookup_can_be_scoped_to_one_analysis_version() -> None:

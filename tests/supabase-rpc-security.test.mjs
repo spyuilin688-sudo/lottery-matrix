@@ -45,22 +45,22 @@ test('legacy completed status artifacts are backfilled without validation maps',
   assert.match(sql, /encoded\.payload->>'encoding' is not null/);
 });
 
-test('Matrix Explore RPCs preserve complete-only security and cut over only to matrix-python-v8', async () => {
-  const baseSql = await read('supabase/migrations/20260831213000_matrix_python_v7_explore_rpc.sql');
-  const upgradeSql = await read('supabase/migrations/20260901000000_matrix_python_v8_explore_rpc.sql');
-  const exploreList = baseSql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
-  const exploreValidation = baseSql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
+test('Matrix Explore RPCs preserve security and cut over atomically to scoped v10 rows', async () => {
+  const upgradeSql = await read('supabase/migrations/20260901100000_matrix_explore_v2_ranges.sql');
+  const exploreList = upgradeSql.match(/create or replace function public\.matrix_explore_list\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
+  const exploreValidation = upgradeSql.match(/create or replace function public\.matrix_explore_validation\(p_request jsonb\)[\s\S]*?\n\$\$;/)?.[0] ?? '';
 
-  assert.equal((baseSql.match(/create or replace function/g) ?? []).length, 2);
+  assert.equal((upgradeSql.match(/create or replace function/g) ?? []).length, 2);
   assert.match(exploreList, /run\.status\s*=\s*'complete'/);
   assert.match(exploreValidation, /run\.status\s*=\s*'complete'/);
-  assert.match(upgradeSql, /pg_catalog\.pg_get_functiondef\(v_function_oid\)/);
-  assert.match(upgradeSql, /p\.proname in \('matrix_explore_list', 'matrix_explore_validation'\)/);
-  assert.match(upgradeSql, /'matrix-python-v7',\s*'matrix-python-v8'/s);
-  assert.match(upgradeSql, /MATRIX_EXPLORE_RPC_COUNT_INVALID/);
-  assert.match(upgradeSql, /MATRIX_PYTHON_V7_RPC_REFERENCE_REMAINS/);
-  assert.match(upgradeSql, /MATRIX_PYTHON_V8_RPC_REFERENCE_MISSING/);
-  assert.doesNotMatch(upgradeSql, /matrix-python-v[56]/);
+  assert.match(exploreList, /result\.explore_range\s*=\s*v_range/);
+  assert.match(exploreValidation, /result\.explore_range\s*=\s*v_range/);
+  assert.match(upgradeSql, /matrix-python-v10/);
+  assert.doesNotMatch(upgradeSql, /coalesce\(result\.reference_offset, 0\) >= -7/);
+  assert.match(exploreList, /security definer[\s\S]*set search_path = ''/);
+  assert.match(exploreValidation, /security definer[\s\S]*set search_path = ''/);
+  assert.match(upgradeSql, /revoke all on function public\.matrix_explore_list\(jsonb\) from public/);
+  assert.match(upgradeSql, /grant execute on function public\.matrix_explore_validation\(jsonb\) to anon, authenticated/);
 });
 
 test('deployed functions repair invalid schema-qualified COALESCE calls', async () => {
