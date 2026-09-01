@@ -6,17 +6,13 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("全部關閉維持次要批次按鈕，僅在按下時加深金棕底色", () => {
+test("全部關閉維持共用探索按鈕的次要邊框層級", () => {
   const base = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable$/);
   assert.equal(base.length, 1);
   assert.match(base[0], /border:\s*1px solid rgba\(216, 195, 141, \.72\);/);
-  assert.match(base[0], /background:\s*#160f08;/);
-  assert.match(base[0], /box-shadow:\s*none;/);
-
-  const active = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable:active$/);
-  assert.equal(active.length, 1);
-  assert.match(active[0], /background:\s*#2b1b09;/);
-  assert.match(active[0], /filter:\s*none;/);
+  assert.match(base[0], /color:\s*#D8C38D;/);
+  assert.doesNotMatch(base[0], /background\s*:/);
+  assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable:active$/).length, 0);
 });
 
 test("Matrix 摘星停用列的設定與關閉開關提高一級亮度", () => {
