@@ -148,10 +148,6 @@
   gap: 1px;
 }
 
-.number-reference-screen .reference-settings-trigger {
-  transform: translate(-4px, -3px);
-}
-
 .tool-title-reset-trigger > svg,
 .reference-refresh-icon {
   width: 8px;

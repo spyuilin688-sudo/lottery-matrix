@@ -33,4 +33,9 @@ test("Matrix header switcher uses frame-free artwork inside the shared cut-corne
     spacingCss,
     /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before[\s\S]*?background: linear-gradient\(90deg, #a87618, #f0c44d/s,
   );
+  assert.match(
+    spacingCss,
+    /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher img\s*\{[^}]*width:\s*var\(--matrix-switcher-artwork-size\);[^}]*height:\s*var\(--matrix-switcher-artwork-size\);[^}]*max-width:\s*none;[^}]*object-fit:\s*cover;[^}]*object-position:\s*center;/s,
+  );
+  assert.match(spacingCss, /--matrix-switcher-artwork-size:\s*160%;/);
 });
