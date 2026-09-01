@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 62153)
-Total output lines: 4467
-
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
@@ -2431,21 +2428,14 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     setLoadFailed(false);
     setManifest(null);
     void fetchMatrixCardManifest(lottery)
-      .then((nextManifest) => {
-        if (active) setManifest(nextManifest);
-      })
-      .catch(() => {
-        if (active) setLoadFailed(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .then((nextManifest) => { if (active) setManifest(nextManifest); })
+      .catch(() => { if (active) setLoadFailed(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [lottery]);
 
   const cardUrl = manifest ? matrixCardUrl(manifest.cards[order].url) : null;
+  const cardPeriod = manifest?.period ?? null;
 
   const handleTicketDownload = async () => {
     if (!cardUrl || downloadPending) return;
@@ -2458,7 +2448,7 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${lottery}-${order === "draw" ? "落球" : "順球"}牌單.svg`;
+      anchor.download = [lottery, order === "draw" ? "落球" : "順球"].join("-") + "牌單.svg";
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
@@ -2474,40 +2464,18 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     <FeatureShell title="Matrix 牌單" onNavigate={onNavigate}>
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <div className="matrix-card-order" role="tablist" aria-label="牌單順序">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={order === "draw"}
-          className={order === "draw" ? "is-selected" : undefined}
-          onClick={() => setOrder("draw")}
-        >落球</button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={order === "sorted"}
-          className={order === "sorted" ? "is-selected" : undefined}
-          onClick={() => setOrder("sorted")}
-        >順球</button>
+        <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")}>落球</button>
+        <button type="button" role="tab" aria-selected={order === "sorted"} className={order === "sorted" ? "is-selected" : undefined} onClick={() => setOrder("sorted")}>順球</button>
       </div>
       <section className="matrix-ticket matrix-ticket--preview" aria-busy={loading}>
         {loading ? <p>牌單載入中…</p> : null}
         {loadFailed ? <p role="alert">牌單暫時無法載入，請稍後再試</p> : null}
-        {!loading && !loadFailed && !manifest?.period ? <p>尚無可用牌單</p> : null}
-        {!loading && !loadFailed && cardUrl ? (
-          <img
-            className="matrix-ticket-image"
-            src={cardUrl}
-            alt={`${lottery}${order === "draw" ? "落球" : "順球"}牌單，第 ${manifest.period} 期`}
-          />
+        {!loading && !loadFailed && !cardPeriod ? <p>尚無可用牌單</p> : null}
+        {!loading && !loadFailed && cardUrl && cardPeriod ? (
+          <img className="matrix-ticket-image" src={cardUrl} alt={lottery + (order === "draw" ? "落球" : "順球") + "牌單，第 " + cardPeriod + " 期"} />
         ) : null}
       </section>
-      <button
-        type="button"
-        className="primary-action"
-        onClick={handleTicketDownload}
-        disabled={!cardUrl || downloadPending}
-        aria-busy={downloadPending}
-      ><DownloadIcon />下載牌單</button>
+      <button type="button" className="primary-action" onClick={handleTicketDownload} disabled={!cardUrl || downloadPending} aria-busy={downloadPending}><DownloadIcon />下載牌單</button>
       {downloadFailed ? <p role="alert">下載失敗，請稍後再試</p> : null}
     </FeatureShell>
   );
@@ -2678,7 +2646,204 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "常見問題",
       summary: "依目前功能整理操作時常見的查詢方式。",
       blocks: [
-        { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探…2153 tokens truncated…tNotebookMode] = useState<"筆記" | "紀錄">("筆記");
+        { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
+        { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
+        { title: "設定常用功能", items: ["在首頁連續點擊底部左下角設定按鈕兩下後，選擇要指定的功能。"] },
+        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」。"] },
+      ],
+    },
+    {
+      title: "關於 樂彩 Matrix",
+      summary: "樂彩 Matrix 提供開獎資料查詢與分析服務，協助查閱公開資訊、整理歷史數據與使用各項分析工具。",
+      blocks: [
+        { title: "服務內容", items: ["支援今彩539、天天樂、六合彩及大樂透。", "提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。"] },
+        { title: "品牌資訊", items: ["品牌名稱：樂彩 Matrix。", "Copyright © 2026 樂彩 Matrix. All Rights Reserved."] },
+      ],
+    },
+  ];
+  const [selected, setSelected] = useState(0);
+  const stripRef = useRef<HTMLElement | null>(null);
+  const current = sections[selected];
+
+  const selectGuideCategory = (event: ReactMouseEvent<HTMLElement>) => {
+    const card = (event.target as Element).closest<HTMLElement>("[data-guide-index]");
+    if (!card || !event.currentTarget.contains(card)) return;
+    const index = Number(card.dataset.guideIndex);
+    if (Number.isInteger(index) && index >= 0 && index < sections.length) setSelected(index);
+  };
+
+  const selectCanonicalGuideCategory = (event: ReactMouseEvent<HTMLButtonElement>, index: number) => {
+    event.stopPropagation();
+    setSelected(index);
+  };
+
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+
+    let span = 0;
+    let initialized = false;
+    let correctionTimer: number | null = null;
+
+    const measure = () => {
+      const leadingStart = strip.querySelector<HTMLElement>('[data-guide-group="leading"] .guide-category-card');
+      const canonicalStart = strip.querySelector<HTMLElement>('[data-guide-group="canonical"] .guide-category-card');
+      if (!leadingStart || !canonicalStart) return;
+
+      const nextSpan = canonicalStart.offsetLeft - leadingStart.offsetLeft;
+      if (nextSpan <= 0) return;
+
+      if (!initialized) {
+        strip.scrollLeft = nextSpan;
+        initialized = true;
+      } else if (span > 0 && nextSpan !== span) {
+        const logicalOffset = strip.scrollLeft - span;
+        strip.scrollLeft = nextSpan + logicalOffset;
+      }
+      span = nextSpan;
+    };
+
+    const normalizeLoop = () => {
+      correctionTimer = null;
+      if (span <= 0) return;
+      if (strip.scrollLeft < span * 0.5) strip.scrollLeft += span;
+      else if (strip.scrollLeft > span * 1.5) strip.scrollLeft -= span;
+    };
+
+    const handleScroll = () => {
+      if (correctionTimer !== null) window.clearTimeout(correctionTimer);
+      correctionTimer = window.setTimeout(normalizeLoop, GUIDE_LOOP_IDLE_MS);
+    };
+
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(strip);
+    strip.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      strip.removeEventListener("scroll", handleScroll);
+      resizeObserver.disconnect();
+      if (correctionTimer !== null) window.clearTimeout(correctionTimer);
+    };
+  }, []);
+
+  return (
+    <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
+      <nav
+        ref={stripRef}
+        className="guide-category-strip"
+        aria-label="Matrix 指南分類"
+        onClick={selectGuideCategory}
+      >
+        {GUIDE_LOOP_GROUPS.map((group) => {
+          const isClone = group !== "canonical";
+          return (
+            <div className="guide-category-loop-group" data-guide-group={group} aria-hidden={isClone} key={group}>
+              {sections.map((section, index) => isClone ? (
+                <span className="guide-category-card" data-guide-index={index} data-selected={selected === index} key={`${group}-${section.title}`}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                </span>
+              ) : (
+                <button
+                  className="guide-category-card"
+                  type="button"
+                  data-guide-index={index}
+                  data-selected={selected === index}
+                  onClick={(event) => selectCanonicalGuideCategory(event, index)}
+                  aria-pressed={selected === index}
+                  key={`${group}-${section.title}`}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </nav>
+      <section className="panel guide-preview">
+        <header><span>{String(selected + 1).padStart(2, "0")}</span><h2>{current.title}</h2></header>
+        <p className="guide-summary">{current.summary}</p>
+        <div className="guide-detail-list">
+          {current.blocks.map((block) => (
+            <section className="guide-detail-block" key={block.title}>
+              <h3>{block.title}</h3>
+              <ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>
+            </section>
+          ))}
+        </div>
+      </section>
+    </FeatureShell>
+  );
+}
+
+type NotebookView = "list" | "note" | "record" | "settings";
+type RecordMode = "單號" | "連碰" | "立柱";
+type RecordStatus = "等待開獎" | "已結算" | "已鎖定";
+type CostMode = "依照碰數" | "固定成本";
+type NotebookNote = { id: string; title: string; content: string; updatedAt: string };
+type TagSetting = { name: string; costMode: CostMode; defaultBets: number; costPerBet: number; fixedCost: number; prizePerBet: number };
+type LotteryRecordSettings = { tags: TagSetting[] };
+type RecordSnapshot = {
+  lottery: LotteryId;
+  plays: Array<{ name: string; bets: number; costPerBet: number; cost: number; playPrize: number }>;
+  quantity: number;
+  createdDate: string;
+  createdTime: string;
+};
+const formatNotebookAmount = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Number.isFinite(value) ? value : 0);
+type PlayDraft = { quantity: string };
+type NotebookRecord = {
+  id: string;
+  lottery: LotteryId;
+  date: string;
+  mode: RecordMode;
+  numbers: string[];
+  columns: string[][];
+  tags: string[];
+  quantity: number;
+  bets: number;
+  cost: number;
+  estimatedPrize: number;
+  actualPrize: number;
+  status: RecordStatus;
+  unlocked: boolean;
+  snapshot: RecordSnapshot;
+};
+
+const DEFAULT_RECORD_SETTINGS = (): Record<LotteryId, LotteryRecordSettings> => Object.fromEntries(
+  LOTTERIES.map((lottery) => {
+    const isThirtyNine = lottery === "今彩539" || lottery === "天天樂";
+    const singlePrize = isThirtyNine ? 21200 : 28500;
+    const singleBets = isThirtyNine ? 38 : 48;
+    const singleFixedCost = isThirtyNine ? 3040 : 3840;
+    const twoStarPrize = isThirtyNine ? 5300 : 5700;
+    const fourStarPrize = isThirtyNine ? 800000 : 750000;
+    return [lottery, {
+      tags: [
+        { name: "單號", costMode: "依照碰數" as CostMode, defaultBets: singleBets, costPerBet: 80, fixedCost: singleFixedCost, prizePerBet: singlePrize },
+        { name: "二星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: twoStarPrize },
+        { name: "三星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: 57000 },
+        { name: "四星", costMode: "固定成本" as CostMode, defaultBets: 1, costPerBet: 80, fixedCost: 80, prizePerBet: fourStarPrize },
+      ],
+    }];
+  }),
+) as Record<LotteryId, LotteryRecordSettings>;
+
+function parseRecordNumbers(value: string, max: number) {
+  return value.split(/[^0-9]+/).filter(Boolean).map((number) => number.padStart(2, "0")).filter((number) => Number(number) >= 1 && Number(number) <= max);
+}
+
+function combinations(total: number, choose: number) {
+  if (choose < 0 || choose > total) return 0;
+  let result = 1;
+  for (let index = 1; index <= choose; index += 1) result = (result * (total - choose + index)) / index;
+  return Math.round(result);
+}
+
+export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
+  const appDialog = useAppDialog();
+  const [view, setView] = useState<NotebookView>("list");
+  const [notebookMode, setNotebookMode] = useState<"筆記" | "紀錄">("筆記");
   const [notes, setNotes] = useState<NotebookNote[]>(() => {
     if (typeof window === "undefined") return [];
     try { return JSON.parse(window.localStorage.getItem("matrix-notebook-entries") || "[]") as NotebookNote[]; } catch { return []; }
