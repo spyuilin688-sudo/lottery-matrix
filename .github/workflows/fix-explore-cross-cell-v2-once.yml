@@ -1,0 +1,255 @@
+name: Fix Explore cross-cell longest values v2 once
+
+on:
+  push:
+    branches:
+      - fix/explore-v10-cross-cell-longest-20260902
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/explore-v10-cross-cell-longest-20260902
+          fetch-depth: 0
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Apply cross-cell grouping and analysis-version fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          explore_path = Path("app/domain/explore_v2.py")
+          source = explore_path.read_text()
+          if "PendingFinalResult = tuple[" in source:
+              raise SystemExit("Explore cross-cell fix already present")
+
+          evaluate_start = source.index("def _evaluate_groups(")
+          range_start = source.index("def _range_bundles(", evaluate_start)
+          evaluate_replacement = '''PendingFinalResult = tuple[
+              VerificationCell,
+              RoadType,
+              int,
+              StreakDecision,
+              tuple[RoadGroup, ...],
+              str,
+          ]
+
+
+          def _evaluate_groups(
+              reference_cell: VerificationCell,
+              road: RoadType,
+              groups: tuple[RoadGroup, ...],
+              explore_range: str,
+              metrics: dict[str, int],
+          ) -> tuple[PendingFinalResult, ...]:
+              candidate_sets = tuple(group.candidates for group in groups)
+              pending_results: list[PendingFinalResult] = []
+              for rule_count, evaluator in ((1, evaluate_one_code), (2, evaluate_two_code)):
+                  metrics["scopeDecisions"] += 1
+                  decision = evaluator(candidate_sets)
+                  if not decision.valid:
+                      continue
+                  pending_results.append(
+                      (
+                          reference_cell,
+                          road,
+                          rule_count,
+                          decision,
+                          groups,
+                          explore_range,
+                      )
+                  )
+              return tuple(pending_results)
+
+
+          def _append_grouped_final_results(
+              artifact: dict[str, Any],
+              context: ExploreV2Context,
+              unit: SourceUnit,
+              pending_results: Iterable[PendingFinalResult],
+          ) -> None:
+              grouped: dict[
+                  tuple[str, RoadType, int, int],
+                  list[PendingFinalResult],
+              ] = {}
+              for result in pending_results:
+                  (
+                      _reference_cell,
+                      road,
+                      rule_count,
+                      decision,
+                      _groups,
+                      explore_range,
+                  ) = result
+                  key = (
+                      explore_range,
+                      road,
+                      rule_count,
+                      decision.highest_streak,
+                  )
+                  grouped.setdefault(key, []).append(result)
+
+              for results in grouped.values():
+                  distinct_longest_values = {
+                      rule
+                      for (
+                          _reference_cell,
+                          _road,
+                          _rule_count,
+                          decision,
+                          _groups,
+                          _explore_range,
+                      ) in results
+                      for rule in decision.rules
+                  }
+                  if len(distinct_longest_values) > 2:
+                      continue
+
+                  for (
+                      reference_cell,
+                      road,
+                      rule_count,
+                      decision,
+                      groups,
+                      explore_range,
+                  ) in results:
+                      _append_final_results(
+                          artifact,
+                          context,
+                          unit,
+                          reference_cell,
+                          road,
+                          rule_count,
+                          decision,
+                          groups,
+                          explore_range,
+                      )
+
+
+          '''
+          source = source[:evaluate_start] + evaluate_replacement + source[range_start:]
+
+          run_start = source.index("def _run_explore_v2_unit(")
+          metrics_start = source.index("def _context_metrics(", run_start)
+          run_replacement = '''def _run_explore_v2_unit(
+              artifact: dict[str, Any],
+              context: ExploreV2Context,
+              unit: SourceUnit,
+              road_types: frozenset[RoadType],
+              metrics: dict[str, int],
+              include_tianyan: bool,
+          ) -> None:
+              pending_results: list[PendingFinalResult] = []
+              range_roads = tuple(
+                  road for road in (RoadType.ADD, RoadType.SUM) if road in road_types
+              )
+              if range_roads:
+                  source_cells = context.range_cells(unit.occurrence, unit.prediction_distance)
+                  bundles = _range_bundles(context, unit)
+                  for explore_range in EXPLORE_RANGES:
+                      for source_cell in source_cells:
+                          if (
+                              explore_range == "標準範圍"
+                              and source_cell.scope_class is ScopeClass.FULL_ONLY
+                          ):
+                              continue
+                          for road in range_roads:
+                              groups = _groups_for_cell(bundles, source_cell, road)
+                              pending_results.extend(
+                                  _evaluate_groups(
+                                      source_cell,
+                                      road,
+                                      groups,
+                                      explore_range,
+                                      metrics,
+                                  )
+                              )
+
+              if RoadType.DRAG in road_types:
+                  source_cell = context.drag_cell(unit.occurrence)
+                  groups = _drag_groups(context, unit)
+                  for explore_range in EXPLORE_RANGES:
+                      pending_results.extend(
+                          _evaluate_groups(
+                              source_cell,
+                              RoadType.DRAG,
+                              groups,
+                              explore_range,
+                              metrics,
+                          )
+                      )
+
+              _append_grouped_final_results(
+                  artifact,
+                  context,
+                  unit,
+                  pending_results,
+              )
+              if include_tianyan:
+                  _append_tianyan_results(artifact, context, unit)
+
+
+          '''
+          source = source[:run_start] + run_replacement + source[metrics_start:]
+          explore_path.write_text(source)
+
+          worker_path = Path("app/worker.py")
+          worker_source = worker_path.read_text()
+          old_version = 'ANALYSIS_VERSION = "matrix-python-v10"'
+          new_version = 'ANALYSIS_VERSION = "matrix-python-v11"'
+          if worker_source.count(old_version) != 1:
+              raise SystemExit("Unexpected Matrix analysis version declaration")
+          worker_path.write_text(worker_source.replace(old_version, new_version))
+
+          worker_test_path = Path("tests/test_worker.py")
+          worker_test_source = worker_test_path.read_text()
+          old_expected = '000000220:matrix-python-v10'
+          new_expected = '000000220:matrix-python-v11'
+          if worker_test_source.count(old_expected) != 1:
+              raise SystemExit("Unexpected worker version expectation")
+          worker_test_path.write_text(
+              worker_test_source.replace(old_expected, new_expected)
+          )
+          PY
+
+      - name: Run targeted regression
+        run: uv run pytest -q tests/test_explore_v2_cross_cell.py
+
+      - name: Run complete Matrix API suite
+        run: uv run pytest -q
+
+      - name: Verify diff and commit
+        working-directory: .
+        run: |
+          git diff --check
+          rm -f .github/workflows/fix-explore-cross-cell-v2-once.yml
+          git add \
+            services/matrix-api/app/domain/explore_v2.py \
+            services/matrix-api/app/worker.py \
+            services/matrix-api/tests/test_worker.py \
+            .github/workflows/fix-explore-cross-cell-v2-once.yml
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(matrix-api): reject cross-cell over-two longest values"
+          git push origin HEAD:fix/explore-v10-cross-cell-longest-20260902
