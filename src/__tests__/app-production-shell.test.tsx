@@ -289,7 +289,7 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
     expect(css).toMatch(/font-size:\s*8px/);
-    expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(82px,\s*26vw,\s*110px\),\s*110px\)/);
+    expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(92px,\s*30vw,\s*120px\),\s*120px\)/);
     expect(css).toMatch(/column-gap:\s*0/);
     expect(css).toMatch(/row-gap:\s*4px/);
     expect(css).not.toContain("!important");
@@ -300,7 +300,18 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*9px[^}]*font-weight:\s*700[^}]*letter-spacing:\s*-\.06em/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
-    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*6px 8px/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*6px 4px[^}]*white-space:\s*nowrap/s);
+    expect(css).toMatch(/\.explore-validation-formulas\s*\{[^}]*font-size:\s*clamp\(5px,\s*1\.7vw,\s*8\.5px\)/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*white-space:\s*nowrap/s);
+  });
+
+  it("keeps formal result rows compact and colors same-code only when selected", () => {
+    const css = readFileSync(`${process.cwd()}/src/matrix-explore-spacing.css`, "utf8");
+
+    expect(css).toMatch(/\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*4px 0/s);
+    expect(css).toMatch(/\.repeat-stats-heading button\s*\{[^}]*color:\s*#aaa7a2/s);
+    expect(css).toMatch(/\.repeat-stats-heading button\[data-selected="true"\]\s*\{[^}]*color:\s*#d8a93e/s);
+    expect(css).toMatch(/\.matrix-explore-consecutive-filter-options\s*\{[^}]*padding:\s*3px 0[^}]*border-top:[^}]*border-bottom:/s);
   });
 
   it("keeps the expanded wrapper borderless and strengthens validation outlines and row dividers", () => {
@@ -389,8 +400,8 @@ describe("production member shell", () => {
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
     expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
-    expect(getComputedStyle(summaryTag!).top).toBe("2px");
-    expect(getComputedStyle(summaryTag!).right).toBe("2px");
+    expect(getComputedStyle(summaryTag!).top).toBe("1px");
+    expect(getComputedStyle(summaryTag!).right).toBe("1px");
 
     productionStyle.remove();
   });

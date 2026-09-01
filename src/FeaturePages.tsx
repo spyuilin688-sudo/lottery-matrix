@@ -1014,6 +1014,7 @@ function useExploreValidationProtection() {
 
 function ExploreValidationProcess({
   item,
+  lottery,
   validation,
   loading,
 }: {
@@ -1026,6 +1027,7 @@ function ExploreValidationProcess({
     referenceOffset?: number;
     referencePosition?: number;
   };
+  lottery: LotteryId;
   validation?: ExploreValidation;
   loading: boolean;
 }) {
@@ -1051,6 +1053,9 @@ function ExploreValidationProcess({
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const displayPeriod = (period: string) => lottery === "今彩539"
+    ? period.replace(/^(\d{3})000(\d{3})$/, "$1$2")
+    : period;
   const validationGroup = (
     key: string,
     rows: ValidationDisplayRow[],
@@ -1062,7 +1067,7 @@ function ExploreValidationProcess({
       key={key}
     >
       <div className="explore-validation-issues explore-validation-numeric-text">
-        {rows.map((row) => <span className="explore-validation-issue" key={`${row.key}-period`}>{row.period}</span>)}
+        {rows.map((row) => <span className="explore-validation-issue" key={`${row.key}-period`}>{displayPeriod(row.period)}</span>)}
       </div>
       <div className="explore-validation-numbers-card">
         {rows.map((row) => (
@@ -1118,7 +1123,7 @@ function ExploreValidationProcess({
             <header className="explore-validation-summary-card">
               <p className="explore-validation-summary">
                 開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆｜
-                <i className="validation-summary-lookback">{relation}</i>｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
+                {relation === "同期" ? "同期" : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
                 <i className="validation-summary-formula">{ruleDisplays()}</i>｜下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
               </p>
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
@@ -1279,10 +1284,10 @@ export function MatrixExplorePage({
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFilters: Record<string, ConsecutiveOption[]> = {
-    "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
+    "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
       ? ["準5進6", "準6進7", "準7進8"]
-      : ["準9進10", "準11進12"],
+      : ["準7進8", "準9進10", "準11進12"],
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const initialExploreDefaults = useMemo(
@@ -1334,22 +1339,6 @@ export function MatrixExplorePage({
       });
     return () => { active = false; };
   }, [title]);
-
-  useEffect(() => {
-    if (!filterOpen) return;
-
-    const scrollContainer = document.querySelector<HTMLElement>(".mobile-scroll");
-    if (!scrollContainer) return;
-
-    const previousOverflowY = scrollContainer.style.overflowY;
-    const previousScrollTop = scrollContainer.scrollTop;
-    scrollContainer.style.overflowY = "hidden";
-
-    return () => {
-      scrollContainer.style.overflowY = previousOverflowY;
-      scrollContainer.scrollTop = previousScrollTop;
-    };
-  }, [filterOpen]);
 
   const visibleResults = useMemo(() => {
     if (title === "Matrix 探索") {
@@ -1701,13 +1690,39 @@ export function MatrixExplorePage({
           <section className="panel result-panel">
             <header className="result-title">
               <SectionTitle>探索結果區</SectionTitle>
-              <button type="button" className="consecutive-filter-button" onClick={() => setFilterOpen(true)}>
-                連準篩選
+              <button
+                type="button"
+                className="consecutive-filter-button"
+                aria-expanded={filterOpen}
+                aria-controls="matrix-explore-consecutive-filter-options"
+                onClick={() => setFilterOpen((current) => !current)}
+              >
+                <span>連準篩選</span><ChevronDownIcon data-open={filterOpen} aria-hidden="true" />
               </button>
               <strong className="result-count">
                 <span>探索到&nbsp;</span><span className="numeric-text">{resultCount}</span><span>&nbsp;組符合條件版路</span>
               </strong>
             </header>
+            {filterOpen ? (
+              <div
+                id="matrix-explore-consecutive-filter-options"
+                className="explore-consecutive-filter-options matrix-explore-consecutive-filter-options"
+                role="group"
+                aria-label={`${hit}連準篩選`}
+              >
+                {filterOptions[hit].map((option) => (
+                  <button
+                    type="button"
+                    className="explore-consecutive-filter-option"
+                    aria-pressed={selectedFilters.includes(option)}
+                    onClick={() => toggleFilter(option)}
+                    key={option}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="road-results">
               {exploreLoading ? <p className="explore-request-state" role="status">分析結果載入中</p> : null}
               {exploreError ? <p className="explore-request-state" role="alert">{exploreError}</p> : null}
@@ -1721,7 +1736,13 @@ export function MatrixExplorePage({
               </div>
               {visibleResults.map((item) => (
                 <article key={item.id}>
-                  <div className="road-result-row">
+                  <button
+                    type="button"
+                    className="road-result-row"
+                    aria-expanded={expandedRoad === item.id}
+                    aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
+                    onClick={() => toggleRoad(item.id)}
+                  >
                     <span className="tag"><span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span><span className="numeric-text">{item.position}</span></span>
                     <span className="result-number numeric-text">{item.number}</span>
                     <span className="result-period"><span>下</span><span className="numeric-text">{item.predictionPeriod}</span><span>期</span></span>
@@ -1729,21 +1750,16 @@ export function MatrixExplorePage({
                       <span>準</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[0]}</span><span>進</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[1]}</span>
                     </span>
                     <strong className="numeric-text">{item.prediction}</strong>
-                    <button
-                      type="button"
-                      className="road-type-toggle"
-                      aria-expanded={expandedRoad === item.id}
-                      aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
-                      onClick={() => toggleRoad(item.id)}
-                    >
+                    <span className="road-type-toggle">
                       <span>{item.algorithmType.endsWith("版路") ? item.algorithmType : `${item.algorithmType}版路`}</span>
                       <ChevronDownIcon data-open={expandedRoad === item.id} />
-                    </button>
-                  </div>
+                    </span>
+                  </button>
                   {expandedRoad === item.id ? (
                     title === "Matrix 探索" && exploreResponse
                       ? <ExploreValidationProcess
                           item={item}
+                          lottery={lottery}
                           validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}
                           loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}
                         />
@@ -1759,40 +1775,6 @@ export function MatrixExplorePage({
               {visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
             </div>
           </section>
-          {filterOpen && document.querySelector<HTMLElement>(".mobile-page")
-            ? createPortal(
-                <div className="filter-sheet-backdrop" role="presentation" onClick={() => setFilterOpen(false)}>
-                  <section
-                    className="filter-sheet"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="consecutive-filter-title"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <header>
-                      <h2 id="consecutive-filter-title">連準篩選</h2>
-                      <button type="button" onClick={() => setFilterOpen(false)} aria-label="關閉">
-                        <Cross2Icon />
-                      </button>
-                    </header>
-                    <div className="filter-options">
-                      {filterOptions[hit].map((option) => (
-                        <label key={option}>
-                          <input
-                            type="checkbox"
-                            checked={selectedFilters.includes(option)}
-                            onChange={() => toggleFilter(option)}
-                          />
-                          <span aria-hidden="true" />
-                          <strong>{option}</strong>
-                        </label>
-                      ))}
-                    </div>
-                  </section>
-                </div>,
-                document.querySelector<HTMLElement>(".mobile-page")!,
-              )
-            : null}
         </>
       ) : null}
     </FeatureShell>

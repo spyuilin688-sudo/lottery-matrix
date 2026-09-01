@@ -895,9 +895,17 @@
 }
 
 .matrix-explore-main-screen .road-result-row {
-  min-height: 46px;
-  padding: .375rem 0;
+  min-height: 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(90, 87, 80, .42);
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
   font-size: .6875rem;
 }
 
@@ -957,11 +965,41 @@
   min-height: 24px;
   height: 24px;
   padding: .125rem .5rem;
-  border: 1px solid rgba(212, 165, 47, .72);
+  border: 1px solid rgba(120, 100, 70, .65);
   border-radius: .5rem;
   background: transparent;
-  color: #d8a93e;
+  color: #aaa7a2;
   font-size: 11px;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button,
+.matrix-explore-main-screen .repeat-stats-heading button[data-selected="true"] {
+  border-color: rgba(212, 165, 47, .72);
+  color: #d8a93e;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button svg {
+  width: 8px;
+  height: 8px;
+  transition: transform .2s;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button svg[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.matrix-explore-main-screen .matrix-explore-consecutive-filter-options {
+  margin: 0;
+  padding: 3px 0;
+  gap: 3px;
+  border-top: 1px solid rgba(120, 100, 70, .65);
+  border-bottom: 1px solid rgba(120, 100, 70, .65);
 }
 
 @media (max-width: 359.98px) {

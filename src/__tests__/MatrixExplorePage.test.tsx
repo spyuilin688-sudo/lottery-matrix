@@ -309,12 +309,12 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   const blocks = validation.querySelectorAll('.explore-validation-group');
   expect(blocks[0].children).toHaveLength(3);
   expect([...blocks[0].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
-    '114000118', '114000120', '114000123',
+    '114118', '114120', '114123',
   ]);
   expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆 14 +14.24 = 22');
   expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[2]?.textContent).toBe('［ 22 ］');
   expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
-    '114000116', '114000123',
+    '114116', '114123',
   ]);
   expect(validation.querySelector('.explore-validation-number--step')?.textContent).toBe('14');
   expect(validation.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
@@ -354,7 +354,7 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
   const firstGroup = validation.querySelector('.explore-validation-group');
   const rows = firstGroup?.querySelectorAll('.explore-validation-issues .explore-validation-issue') ?? [];
   expect([...rows].map((row) => row.textContent)).toEqual([
-    '114000118', '114000120', '114000123',
+    '114118', '114120', '114123',
   ]);
   const formulas = firstGroup?.querySelectorAll('.explore-validation-formula-row') ?? [];
   expect(formulas[0]?.textContent).toContain('+14.24');
@@ -515,9 +515,40 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
-    selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
+    selectedStreaks: ['準5進6', '準6進7', '準7進8'],
     sameCode: false,
   }));
+});
+
+test('探索頁使用單列收合連準篩選並套用兩種命中條件預設值', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  const disclosure = screen.getByRole('button', { name: '連準篩選' });
+  expect(disclosure.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(disclosure);
+
+  const filter = screen.getByRole('group', { name: '準4+（鎖定1碼）連準篩選' });
+  const options = [...filter.querySelectorAll('button')];
+  expect(options.map((button) => button.textContent)).toEqual(['準4進5', '準5進6', '準6進7', '準7進8']);
+  expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);
+  expect(screen.queryByRole('dialog', { name: '連準篩選' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
+    selectedStreaks: ['準7進8', '準9進10', '準11進12'],
+  }));
+});
+
+test('探索結果整列皆可展開驗證過程', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  const resultRow = await screen.findByRole('button', { name: '展開版路 api-item-1' });
+  expect(resultRow.classList.contains('road-result-row')).toBe(true);
+  fireEvent.click(resultRow);
+  expect(await screen.findByRole('region', { name: '驗證過程' })).toBeTruthy();
 });
 
 test('探索日期提供本日、昨日與前日', () => {

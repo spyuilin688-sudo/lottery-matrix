@@ -14,7 +14,7 @@ const CONSECUTIVE_FILTERS = {
   "準5+": {
     label: "準5+（鎖定2碼）",
     options: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
-    selected: ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+    selected: ["準7進8", "準9進10", "準11進12"],
   },
 } as const satisfies Record<HitCondition, { label: string; options: readonly string[]; selected: readonly string[] }>;
 
