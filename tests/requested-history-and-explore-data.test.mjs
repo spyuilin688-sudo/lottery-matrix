@@ -42,5 +42,14 @@ test("探索只使用 Python v11 scoped final rows 與固定來源距離，舊 T
   assert.match(exploreV11RpcMigration, /create or replace function public\.matrix_explore_validation\(p_request jsonb\)/);
   assert.match(exploreV11RpcMigration, /run\.analysis_version = run\.draw_period \|\| ':matrix-python-v11'/);
   assert.match(exploreV11RpcMigration, /v_version <> v_draw \|\| ':matrix-python-v11'/);
+  assert.match(exploreV11RpcMigration, /left join public\.lottery_draws as draw/);
+  assert.match(
+    exploreV11RpcMigration,
+    /order by\s+\(draw\.draw_date is not null\) desc,\s+draw\.draw_date desc nulls last,\s+run\.draw_period desc,\s+run\.completed_at desc nulls last/s,
+  );
+  assert.doesNotMatch(
+    exploreV11RpcMigration,
+    /order by run\.completed_at desc nulls last\s+offset v_offset/,
+  );
   assert.doesNotMatch(exploreV11RpcMigration, /matrix-python-v10/);
 });
