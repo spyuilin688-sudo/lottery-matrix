@@ -9,6 +9,142 @@ EXPLORE_PATH = ROOT / "services/matrix-api/app/domain/explore_v2.py"
 TEST_PATH = ROOT / "services/matrix-api/tests/test_explore_v2_runner.py"
 WORKER_PATH = ROOT / "services/matrix-api/app/worker.py"
 ANALYSIS_WORKFLOW_PATH = ROOT / ".github/workflows/matrix-analysis.yml"
+VERSION_PROGRESS_TEST_PATH = ROOT / "services/matrix-api/tests/test_analysis_version_progress.py"
+SCHEDULED_WORKER_TEST_PATH = ROOT / "services/matrix-api/tests/test_scheduled_worker_resume.py"
+WORKER_TEST_PATH = ROOT / "services/matrix-api/tests/test_worker.py"
+
+
+OLD_RANGE_TEST = r'''def test_standard_and_full_share_cells_but_decide_final_results_independently() -> None:
+    result = run_explore_v2_batch("今彩539", _full_only_one_code_history(), 0, 1)
+
+    full = _matching_items(
+        result,
+        explore_range="完整範圍",
+        algorithm_type="加減",
+        rule_count=1,
+        reference_offset=-8,
+        reference_position=2,
+    )
+    standard = _matching_items(
+        result,
+        explore_range="標準範圍",
+        algorithm_type="加減",
+        rule_count=1,
+        reference_offset=-8,
+        reference_position=2,
+    )
+
+    assert len(full) == 1
+    assert standard == []
+    assert result["metrics"]["rangeCellBuilds"] == result["metrics"]["uniqueRangeKeys"]
+    assert result["metrics"]["candidateBuilds"] == result["metrics"]["uniqueCandidateKeys"]
+'''
+
+
+NEW_RANGE_TEST = r'''def test_standard_and_full_decide_final_results_independently(
+    monkeypatch: object,
+) -> None:
+    pending = [
+        _cross_reference_pending(
+            position=1,
+            rule_sets=((7,),),
+            explore_range="標準範圍",
+        ),
+        _cross_reference_pending(
+            position=2,
+            rule_sets=((17,),),
+            explore_range="標準範圍",
+        ),
+        _cross_reference_pending(
+            position=3,
+            rule_sets=((26,),),
+            explore_range="完整範圍",
+        ),
+    ]
+
+    emitted = _flush_cross_reference_results(monkeypatch, pending)
+
+    assert len(emitted) == 3
+    assert sorted(args[-1] for args in emitted) == [
+        "完整範圍",
+        "標準範圍",
+        "標準範圍",
+    ]
+'''
+
+
+OLD_SAME_PREDICTION_TEST = r'''def test_two_rules_predicting_one_number_emit_one_number() -> None:
+    result = run_explore_v2_batch("今彩539", _same_prediction_two_code_history(), 0, 1)
+
+    items = _matching_items(
+        result,
+        explore_range="標準範圍",
+        algorithm_type="合值",
+        rule_count=2,
+        reference_offset=0,
+        reference_position=2,
+    )
+
+    item = next(value for value in items if value["predictionNumbers"] == ["05"])
+    validation = result["artifact"]["validationById"][item["id"]]
+    assert item["ruleCount"] == 2
+    assert validation["ruleSets"][0]["rules"] == [
+        {"value": 25, "display": "25", "algorithmType": "合值"},
+        {"value": 64, "display": "64", "algorithmType": "合值"},
+    ]
+'''
+
+
+NEW_SAME_PREDICTION_TEST = r'''def test_two_rules_predicting_one_number_emit_one_number() -> None:
+    context = explore_v2.ExploreV2Context.build(
+        "今彩539",
+        explore_v2.SORTED_ORDER,
+        _base_history(20),
+    )
+    unit = context.source_units()[0]
+    reference_cell = explore_v2.VerificationCell(
+        occurrence_index=0,
+        period="P000",
+        relative_offset=0,
+        position=2,
+        number=20,
+        scope_class=explore_v2.ScopeClass.STANDARD_AND_FULL,
+    )
+    decision = explore_v2.StreakDecision(
+        valid=True,
+        highest_streak=5,
+        rules=(25, 64),
+        matched_group_indexes=tuple(range(5)),
+        rule_sets=((25, 64),),
+    )
+    artifact: dict[str, object] = {"items": [], "validationById": {}}
+
+    explore_v2._append_final_results(  # type: ignore[attr-defined]
+        artifact,
+        context,
+        unit,
+        reference_cell,
+        RoadType.SUM,
+        2,
+        decision,
+        (),
+        "標準範圍",
+    )
+
+    items = artifact["items"]
+    assert isinstance(items, list)
+    assert len(items) == 1
+    item = items[0]
+    assert isinstance(item, dict)
+    assert item["predictionNumbers"] == ["05"]
+    validation_by_id = artifact["validationById"]
+    assert isinstance(validation_by_id, dict)
+    validation = validation_by_id[item["id"]]
+    assert validation["ruleSets"][0]["rules"] == [
+        {"value": 25, "display": "25", "algorithmType": "合值"},
+        {"value": 64, "display": "64", "algorithmType": "合值"},
+    ]
+'''
 
 
 TESTS = r'''
@@ -20,6 +156,7 @@ def _cross_reference_pending(
     rule_sets: tuple[tuple[int, ...], ...],
     highest_streak: int = 4,
     rule_count: int = 1,
+    explore_range: str = "完整範圍",
 ) -> explore_v2.PendingExploreV2Result:
     rules = tuple(sorted({rule for rule_set in rule_sets for rule in rule_set}))
     return explore_v2.PendingExploreV2Result(
@@ -41,7 +178,7 @@ def _cross_reference_pending(
             rule_sets=rule_sets,
         ),
         groups=(),
-        explore_range="完整範圍",
+        explore_range=explore_range,
     )
 
 
@@ -284,12 +421,60 @@ def replace_function(source: str, name: str, next_name: str, replacement: str) -
     return source[:start] + replacement + source[end + 1 :]
 
 
+def replace_exact(path: Path, old: str, new: str, expected: int = 1) -> None:
+    source = path.read_text()
+    count = source.count(old)
+    if count != expected:
+        raise SystemExit(f"Expected {expected} matches in {path}, found {count}: {old[:80]}")
+    path.write_text(source.replace(old, new))
+
+
 def write_tests() -> None:
     source = TEST_PATH.read_text()
     marker = "def test_cross_reference_three_distinct_one_code_rules_are_rejected"
     if marker in source:
         raise SystemExit("cross-reference regression tests already exist")
+    if source.count(OLD_RANGE_TEST) != 1:
+        raise SystemExit("Expected one old range-independence test")
+    if source.count(OLD_SAME_PREDICTION_TEST) != 1:
+        raise SystemExit("Expected one old same-prediction test")
+    source = source.replace(OLD_RANGE_TEST, NEW_RANGE_TEST, 1)
+    source = source.replace(OLD_SAME_PREDICTION_TEST, NEW_SAME_PREDICTION_TEST, 1)
     TEST_PATH.write_text(source + TESTS)
+
+
+def update_version_contract_tests() -> None:
+    replace_exact(
+        VERSION_PROGRESS_TEST_PATH,
+        'CURRENT_VERSION = f"{PERIOD}:matrix-python-v10"',
+        'CURRENT_VERSION = f"{PERIOD}:matrix-python-v11"',
+    )
+    replace_exact(
+        VERSION_PROGRESS_TEST_PATH,
+        'LEGACY_VERSION = f"{PERIOD}:matrix-python-v9"',
+        'LEGACY_VERSION = f"{PERIOD}:matrix-python-v10"',
+    )
+    replace_exact(
+        VERSION_PROGRESS_TEST_PATH,
+        'def test_worker_uses_matrix_python_v10() -> None:\n    assert ANALYSIS_VERSION == "matrix-python-v10"',
+        'def test_worker_uses_matrix_python_v11() -> None:\n    assert ANALYSIS_VERSION == "matrix-python-v11"',
+    )
+    replace_exact(
+        SCHEDULED_WORKER_TEST_PATH,
+        '"000000221:matrix-python-v10"',
+        '"000000221:matrix-python-v11"',
+        expected=2,
+    )
+    replace_exact(
+        WORKER_TEST_PATH,
+        '"000000220:matrix-python-v10"',
+        '"000000220:matrix-python-v11"',
+    )
+    replace_exact(
+        WORKER_TEST_PATH,
+        '"000000221:matrix-python-v10"',
+        '"000000221:matrix-python-v11"',
+    )
 
 
 def apply_fix() -> None:
@@ -316,29 +501,17 @@ def apply_fix() -> None:
     )
     EXPLORE_PATH.write_text(source)
 
-    worker_source = WORKER_PATH.read_text()
-    old_version = 'ANALYSIS_VERSION = "matrix-python-v10"'
-    if worker_source.count(old_version) != 1:
-        raise SystemExit("Expected exactly one v10 analysis version")
-    WORKER_PATH.write_text(
-        worker_source.replace(
-            old_version,
-            'ANALYSIS_VERSION = "matrix-python-v11"',
-            1,
-        )
+    replace_exact(
+        WORKER_PATH,
+        'ANALYSIS_VERSION = "matrix-python-v10"',
+        'ANALYSIS_VERSION = "matrix-python-v11"',
     )
-
-    workflow_source = ANALYSIS_WORKFLOW_PATH.read_text()
-    old_name = "name: Matrix latest-period analysis v10"
-    if workflow_source.count(old_name) != 1:
-        raise SystemExit("Expected exactly one v10 workflow name")
-    ANALYSIS_WORKFLOW_PATH.write_text(
-        workflow_source.replace(
-            old_name,
-            "name: Matrix latest-period analysis v11",
-            1,
-        )
+    replace_exact(
+        ANALYSIS_WORKFLOW_PATH,
+        "name: Matrix latest-period analysis v10",
+        "name: Matrix latest-period analysis v11",
     )
+    update_version_contract_tests()
 
 
 def main() -> int:
