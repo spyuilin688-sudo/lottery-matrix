@@ -210,6 +210,52 @@ def test_latest_draw_source_uses_existing_taiwan_539_endpoint() -> None:
     ]
 
 
+def test_latest_taiwan_draw_walks_back_when_current_month_has_no_results() -> None:
+    requested_months: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        month = request.url.params.get("month", "")
+        requested_months.append(month)
+        rows = []
+        if month == "2026-08":
+            rows = [{
+                "period": "115000211",
+                "lotteryDate": "2026-08-31",
+                "drawNumberSize": [2, 8, 17, 23, 39],
+                "drawNumberAppear": [23, 2, 39, 17, 8],
+            }]
+        return httpx.Response(200, json={"content": {"daily539Res": rows}})
+
+    source = LatestDrawSource(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        now=lambda: datetime(2026, 9, 1),
+    )
+
+    draw = source.fetch("今彩539")
+
+    assert draw["period"] == "115000211"
+    assert draw["drawOrderNumbers"] == ["23", "02", "39", "17", "08"]
+    assert requested_months == ["2026-09", "2026-08"]
+
+
+def test_latest_taiwan_draw_stops_after_two_empty_months() -> None:
+    requested_months: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_months.append(request.url.params.get("month", ""))
+        return httpx.Response(200, json={"content": {"daily539Res": []}})
+
+    source = LatestDrawSource(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        now=lambda: datetime(2026, 9, 1),
+    )
+
+    with pytest.raises(ValueError, match="TAIWAN_LOTTERY_DRAW_INCOMPLETE"):
+        source.fetch("今彩539")
+
+    assert requested_months == ["2026-09", "2026-08"]
+
+
 def test_fantasy5_limited_history_uses_california_official_api() -> None:
     requested_urls: list[str] = []
 

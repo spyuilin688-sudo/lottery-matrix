@@ -1,4 +1,4 @@
-name: Matrix scheduled analysis v10 verification
+name: Matrix latest-period analysis v10
 
 on:
   workflow_dispatch:

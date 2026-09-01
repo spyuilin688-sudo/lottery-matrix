@@ -634,7 +634,7 @@ class LatestDrawSource:
         raise ValueError("UNKNOWN_LOTTERY")
 
     def _fetch_taiwan(self, lottery: str) -> MatrixDraw:
-        history = self._fetch_taiwan_history(lottery, 1, max_months=1)
+        history = self._fetch_taiwan_history(lottery, 1, max_months=2)
         if not history:
             raise ValueError("TAIWAN_LOTTERY_DRAW_INCOMPLETE")
         return history[0]
