@@ -25,6 +25,41 @@ test('標題下第一列切彩種、第二列切狀態，並顯示固定探索�
   expect(screen.getByText('準5+（鎖定2碼）')).toBeTruthy();
 });
 
+test('沒有自訂設定時依目前狀態呈現第15章預設觸發條件', async () => {
+  render(<MatrixCustomStatusPage onNavigate={vi.fn()} />);
+
+  expect(await screen.findByText('目前使用第15章預設觸發條件')).toBeTruthy();
+  const activeDefaults = screen.getAllByRole('table', { name: /啟動預設觸發條件/ });
+  const activeText = activeDefaults.map((table) => table.textContent).join('');
+  expect(activeText).toContain('準5進6～準6進7');
+  expect(activeText).toContain('加減＋合值');
+  expect(activeText).toContain('順球');
+  expect(activeText).toContain('2～4組');
+
+  fireEvent.click(screen.getByRole('tab', { name: /臨界/ }));
+  const criticalDefaults = await screen.findAllByRole('table', { name: /臨界預設觸發條件/ });
+  const criticalText = criticalDefaults.map((table) => table.textContent).join('');
+  expect(criticalText).toContain('準7進8');
+  expect(criticalText).toContain('加減＋拖牌');
+  expect(criticalText).toContain('2組以上');
+  expect(criticalText).toContain('準11進12');
+});
+
+test('有自訂設定時顯示自訂組合而不重複顯示第15章預設', async () => {
+  statusApi.listCustomStatusSettings.mockResolvedValueOnce({
+    items: [{ config: {
+      lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13, exploreRange: '完整範圍',
+      oneCodeGroups: [{ id: 'custom-one', rows: [{ consecutive: '準6進7', roadType: '合值', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 3 }] }],
+      twoCodeGroups: [],
+    }, evaluation: {} }],
+  });
+  render(<MatrixCustomStatusPage onNavigate={vi.fn()} />);
+
+  expect(await screen.findByRole('button', { name: '組合 1 新增條件' })).toBeTruthy();
+  expect(screen.queryByText('目前使用第15章預設觸發條件')).toBeNull();
+  expect(screen.queryByRole('table', { name: /啟動預設觸發條件/ })).toBeNull();
+});
+
 test('可新增組合與列條件，儲存會提交目前彩種與狀態', async () => {
   render(<MatrixCustomStatusPage onNavigate={vi.fn()} />);
   await screen.findByText('準4+（鎖定1碼）');

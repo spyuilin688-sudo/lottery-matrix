@@ -1456,12 +1456,24 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 
 /* Matrix custom status settings. Tab geometry is owned by homepage/lottery-switcher.css. */
 .matrix-custom-status-screen .custom-status-fixed-rule { margin: 0 0 12px; color: #aaa49a; text-align: center; font-size: 10px; }
+.matrix-custom-status-screen .custom-status-default-mode { margin: 0 0 8px; color: var(--lottery-gold-500); text-align: center; font-size: 10px; }
 .matrix-custom-status-screen .custom-status-hit-section { margin-bottom: 12px; border: 1px solid #7d4686; border-radius: 11px; overflow: hidden; background: rgba(4,11,16,.96); }
 .matrix-custom-status-screen .custom-status-hit-header { display: grid; width: 100%; min-height: 54px; padding: 10px; grid-template-columns: 1fr auto 18px; align-items: center; border: 0; color: #bd62d4; background: transparent; text-align: left; }
 .matrix-custom-status-screen .custom-status-hit-header strong { font-size: 12px; }
 .matrix-custom-status-screen .custom-status-hit-header span { color: #aaa49a; font-size: 10px; }
 .matrix-custom-status-screen .custom-status-hit-header svg[data-open="true"] { transform: rotate(180deg); }
 .matrix-custom-status-screen .custom-status-groups { display: grid; padding: 0 9px 9px; gap: 9px; }
+.matrix-custom-status-screen .custom-status-default-table { width: 100%; min-width: 0; table-layout: fixed; border: 1px solid rgba(205,162,73,.55); border-spacing: 0; border-radius: 8px; color: #d8d3ca; background: #030a0f; font-size: clamp(8px, 2.35vw, 10px); line-height: 1.35; overflow: hidden; }
+.matrix-custom-status-screen .custom-status-default-table th,
+.matrix-custom-status-screen .custom-status-default-table td { padding: 5px 2px; border-right: 1px solid rgba(56,67,75,.72); border-bottom: 1px solid rgba(56,67,75,.72); text-align: center; vertical-align: middle; overflow-wrap: break-word; }
+.matrix-custom-status-screen .custom-status-default-table th { color: #d7aa4d; font-weight: 700; white-space: nowrap; }
+.matrix-custom-status-screen .custom-status-default-table th:nth-child(1) { width: 31%; }
+.matrix-custom-status-screen .custom-status-default-table th:nth-child(2) { width: 31%; }
+.matrix-custom-status-screen .custom-status-default-table th:nth-child(3) { width: 17%; }
+.matrix-custom-status-screen .custom-status-default-table th:nth-child(4) { width: 21%; }
+.matrix-custom-status-screen .custom-status-default-table th:last-child,
+.matrix-custom-status-screen .custom-status-default-table td:last-child { border-right: 0; white-space: nowrap; }
+.matrix-custom-status-screen .custom-status-default-table tbody tr:last-child td { border-bottom: 0; }
 .matrix-custom-status-screen .custom-status-group { padding: 8px; border: 1px solid rgba(205,162,73,.55); border-radius: 8px; background: #030a0f; }
 .matrix-custom-status-screen .custom-status-group > header { display: flex; margin-bottom: 7px; align-items: center; justify-content: space-between; color: #d7aa4d; }
 .matrix-custom-status-screen .custom-status-group button { border: 1px solid rgba(205,162,73,.55); border-radius: 6px; color: #d7aa4d; background: transparent; }

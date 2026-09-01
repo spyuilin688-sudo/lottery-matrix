@@ -126,7 +126,7 @@ test("Matrix Explore statistics and results use compact target density", () => {
 
   assert.match(css, /\.matrix-explore-main-screen \.road-results-head,[\s\S]*?\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 1\.08fr\) minmax\(0, 1\.23fr\) minmax\(0, 1\.6fr\) minmax\(0, 1\.35fr\) minmax\(0, 1\.6fr\);/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results-head\s*\{[^}]*min-height:\s*32px;[^}]*border-bottom:\s*1px solid rgba\(117, 83, 41, \.45\)/s);
-  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*padding:\s*\.375rem 0/s);
+  assert.match(css, /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-results \.tag\s*\{[^}]*padding:\s*\.125rem \.25rem;[^}]*font-size:\s*\.5625rem/s);
   assert.match(css, /\.matrix-explore-main-screen \.road-result-row > strong\s*\{[^}]*font-size:\s*\.875rem/s);
 });

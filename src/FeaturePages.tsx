@@ -4368,6 +4368,65 @@ const CUSTOM_STATUS_OPTIONS: Array<[CustomMatrixStatusCode, string, string]> = [
 const ONE_CODE_STREAKS = ["準4進5", "準5進6", "準6進7", "準7進8"];
 const TWO_CODE_STREAKS = ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"];
 
+type Chapter15DefaultRule = {
+  consecutive: string;
+  roadType: string;
+  numberOrder: "順球";
+  quantity: string;
+};
+
+const CHAPTER_15_DEFAULT_RULES: Record<CustomMatrixStatusCode, { one: Chapter15DefaultRule[]; two: Chapter15DefaultRule[] }> = {
+  ACTIVE: {
+    one: [
+      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "2～4組" },
+    ],
+    two: [
+      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "3～5組" },
+    ],
+  },
+  FOCUS: {
+    one: [
+      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "5～6組" },
+      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
+      { consecutive: "準5進6～準6進7", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
+      { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "1組" },
+    ],
+    two: [
+      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "6～7組" },
+      { consecutive: "準11進12＋準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組以上＋1組" },
+      { consecutive: "準7進8～準11進12＋準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "3組以上＋6～7組" },
+    ],
+  },
+  RESONANCE: {
+    one: [
+      { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組" },
+      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "7組以上" },
+      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
+      { consecutive: "準5進6～準6進7", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
+      { consecutive: "拖牌準7進8＋加減準5進6～準6進7", roadType: "拖牌＋加減", numberOrder: "順球", quantity: "各1組以上" },
+      { consecutive: "拖牌準7進8＋合值準5進6～準6進7", roadType: "拖牌＋合值", numberOrder: "順球", quantity: "各1組以上" },
+    ],
+    two: [
+      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "8組以上" },
+      { consecutive: "準11進12＋準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組以上＋2組以上" },
+      { consecutive: "準7進8～準11進12＋準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "6組以上＋8組以上" },
+      { consecutive: "拖牌準7進8～準9進10＋加減準5進6～準6進7", roadType: "拖牌＋加減", numberOrder: "順球", quantity: "1組以上＋6組以上" },
+      { consecutive: "拖牌準7進8～準9進10＋合值準5進6～準6進7", roadType: "拖牌＋合值", numberOrder: "順球", quantity: "1組以上＋6組以上" },
+    ],
+  },
+  CRITICAL: {
+    one: [
+      { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "2組以上" },
+      { consecutive: "準7進8", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
+      { consecutive: "準7進8", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
+      { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "2組以上" },
+    ],
+    two: [
+      { consecutive: "準11進12", roadType: "加減＋合值", numberOrder: "順球", quantity: "2組以上" },
+    ],
+  },
+};
+
 function defaultCustomRow(hitType: "one" | "two"): CustomConditionRow {
   return {
     consecutive: hitType === "one" ? "準4進5" : "準5進6",
@@ -4384,14 +4443,30 @@ function duplicateCustomRows(groups: CustomConditionGroup[]) {
   });
 }
 
+function Chapter15DefaultTable({ statusLabel, hitLabel, rules }: {
+  statusLabel: string;
+  hitLabel: string;
+  rules: Chapter15DefaultRule[];
+}) {
+  return <table className="custom-status-default-table" aria-label={`${statusLabel}預設觸發條件（${hitLabel}）`}>
+    <thead><tr><th>連準次數</th><th>版路類型</th><th>號碼順序</th><th>數量</th></tr></thead>
+    <tbody>{rules.map((rule, index) => <tr key={`${rule.consecutive}-${rule.roadType}-${rule.quantity}-${index}`}>
+      <td>{rule.consecutive}</td><td>{rule.roadType}</td><td>{rule.numberOrder}</td><td>{rule.quantity}</td>
+    </tr>)}</tbody>
+  </table>;
+}
+
 function CustomConditionSection({
-  title, hitType, groups, setGroups, compositeEnabled,
+  title, hitType, groups, setGroups, compositeEnabled, usingDefaults, defaultRules, statusLabel,
 }: {
   title: string;
   hitType: "one" | "two";
   groups: CustomConditionGroup[];
   setGroups: React.Dispatch<React.SetStateAction<CustomConditionGroup[]>>;
   compositeEnabled: boolean;
+  usingDefaults: boolean;
+  defaultRules: Chapter15DefaultRule[];
+  statusLabel: string;
 }) {
   const [expanded, setExpanded] = useState(true);
   const streaks = hitType === "one" ? ONE_CODE_STREAKS : TWO_CODE_STREAKS;
@@ -4405,9 +4480,10 @@ function CustomConditionSection({
     : group));
   return <section className="custom-status-hit-section">
     <button type="button" className="custom-status-hit-header" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
-      <strong>{title}</strong><span>觸發條件組合（{groups.length} 組）</span><ChevronDownIcon data-open={expanded} />
+      <strong>{title}</strong><span>{usingDefaults ? `預設觸發條件（${defaultRules.length} 則）` : `觸發條件組合（${groups.length} 組）`}</span><ChevronDownIcon data-open={expanded} />
     </button>
     {expanded ? <div className="custom-status-groups">
+      {usingDefaults ? <Chapter15DefaultTable statusLabel={statusLabel} hitLabel={title} rules={defaultRules} /> : null}
       {groups.map((group, groupIndex) => <article className="custom-status-group" key={group.id}>
         <header><strong>組合 {groupIndex + 1}</strong><button type="button" aria-label={`刪除組合 ${groupIndex + 1}`} onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}><TrashIcon /></button></header>
         {group.rows.map((condition, rowIndex) => <div className="custom-status-condition-row" key={`${group.id}-${rowIndex}`}>
@@ -4433,6 +4509,7 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
   const [compositeEnabled, setCompositeEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
   const selectedSlotRef = useRef({ lottery, status });
   selectedSlotRef.current = { lottery, status };
 
@@ -4442,8 +4519,9 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
       if (!active) return;
       setConfigs(response.items.map((item) => item.config));
       setCompositeEnabled(Boolean(response.entitlements?.canUseCompositeCustomRoad));
+      setLoadFailed(false);
       setLoaded(true);
-    }).catch(() => { if (active) { setMessage("自訂設定讀取失敗"); setLoaded(true); } });
+    }).catch(() => { if (active) { setLoadFailed(true); setMessage("自訂設定讀取失敗"); setLoaded(true); } });
     return () => { active = false; };
   }, []);
 
@@ -4488,13 +4566,19 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     }
   };
 
+  const selectedConfig = configs.find((config) => config.lottery === lottery && config.status === status);
+  const usingDefaults = !loadFailed && !selectedConfig && oneCodeGroups.length === 0 && twoCodeGroups.length === 0;
+  const statusLabel = CUSTOM_STATUS_OPTIONS.find(([code]) => code === status)?.[1] ?? status;
+  const defaultRules = CHAPTER_15_DEFAULT_RULES[status];
+
   return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <p className="custom-status-fixed-rule">探索期數均為十三期，探索範圍均為完整範圍。</p>
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : <>
-      <CustomConditionSection title="準4+（鎖定1碼）" hitType="one" groups={oneCodeGroups} setGroups={setOneCodeGroups} compositeEnabled={compositeEnabled} />
-      <CustomConditionSection title="準5+（鎖定2碼）" hitType="two" groups={twoCodeGroups} setGroups={setTwoCodeGroups} compositeEnabled={compositeEnabled} />
+      {usingDefaults ? <p className="custom-status-default-mode">目前使用第15章預設觸發條件</p> : null}
+      <CustomConditionSection title="準4+（鎖定1碼）" hitType="one" groups={oneCodeGroups} setGroups={setOneCodeGroups} compositeEnabled={compositeEnabled} usingDefaults={usingDefaults} defaultRules={defaultRules.one} statusLabel={statusLabel} />
+      <CustomConditionSection title="準5+（鎖定2碼）" hitType="two" groups={twoCodeGroups} setGroups={setTwoCodeGroups} compositeEnabled={compositeEnabled} usingDefaults={usingDefaults} defaultRules={defaultRules.two} statusLabel={statusLabel} />
       {message ? <p role="alert" className="custom-status-message">{message}</p> : null}
       <div className="custom-status-actions"><button type="button" aria-label="重置設定" onClick={() => void reset()}><ReloadIcon />重置設定</button><button type="button" aria-label="儲存設定" onClick={() => void save()}><ReaderIcon />儲存設定</button></div>
     </>}

@@ -188,8 +188,8 @@
 .explore-consecutive-filter-option {
   box-sizing: border-box;
   min-width: 0;
-  height: 25px;
-  min-height: 25px;
+  height: 21px;
+  min-height: 21px;
   padding: 2px 3px;
   flex: 1 1 0;
   border: 1px solid rgba(120, 100, 70, .65);
@@ -230,7 +230,7 @@
 
 .explore-result-preview-screen .road-results .road-result-row.explore-result-row {
   min-height: 0;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .explore-result-preview-screen .road-results .explore-result-road-toggle {
@@ -313,8 +313,8 @@
 .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   z-index: 1;
-  top: 1px;
-  right: 1px;
+  top: 2px;
+  right: 2px;
   display: inline-flex;
   width: max-content;
   max-width: calc(100% - 4px);
@@ -337,15 +337,15 @@
 .explore-validation-summary {
   min-height: 0;
   margin: 0;
-  padding: 6px 4px;
+  padding: 3px 4px;
   border: 0;
   border-radius: 0;
   color: #f2f5f8;
   background: rgba(10, 14, 24, .92);
-  font-size: clamp(6px, 2vw, 9px);
+  font-size: clamp(10px, 2.8vw, 12px);
   font-weight: 600;
   line-height: 1.25;
-  letter-spacing: -.08em;
+  letter-spacing: -.04em;
   white-space: nowrap;
 }
 

@@ -28,7 +28,7 @@ test("Matrix Explore lower result sections match reference image two", () => {
   );
   assert.match(
     layout,
-    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*46px;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.42\);/s,
+    /\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0;[^}]*padding:\s*6px 0;[^}]*border-bottom:\s*1px solid rgba\(90, 87, 80, \.42\);/s,
   );
   assert.match(
     layout,

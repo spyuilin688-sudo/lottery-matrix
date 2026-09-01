@@ -288,6 +288,8 @@ describe("production member shell", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
+    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{[^}]*top:\s*2px[^}]*right:\s*2px/s);
+    expect(css).toMatch(/\.explore-result-preview-screen \.road-results \.road-result-row\.explore-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*6px 0/s);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(92px,\s*30vw,\s*120px\),\s*120px\)/);
     expect(css).toMatch(/column-gap:\s*0/);
@@ -300,7 +302,7 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*9px[^}]*font-weight:\s*700[^}]*letter-spacing:\s*-\.06em/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px 6px/s);
-    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*6px 4px[^}]*white-space:\s*nowrap/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*clamp\(10px,\s*2\.8vw,\s*12px\)[^}]*white-space:\s*nowrap/s);
     expect(css).toMatch(/\.explore-validation-formulas\s*\{[^}]*font-size:\s*clamp\(5px,\s*1\.7vw,\s*8\.5px\)/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*white-space:\s*nowrap/s);
   });
@@ -308,7 +310,7 @@ describe("production member shell", () => {
   it("keeps formal result rows compact and colors same-code only when selected", () => {
     const css = readFileSync(`${process.cwd()}/src/matrix-explore-spacing.css`, "utf8");
 
-    expect(css).toMatch(/\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*4px 0/s);
+    expect(css).toMatch(/\.matrix-explore-main-screen \.road-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*6px 0/s);
     expect(css).toMatch(/\.repeat-stats-heading button\s*\{[^}]*color:\s*#aaa7a2/s);
     expect(css).toMatch(/\.repeat-stats-heading button\[data-selected="true"\]\s*\{[^}]*color:\s*#d8a93e/s);
     expect(css).toMatch(/\.matrix-explore-consecutive-filter-options\s*\{[^}]*padding:\s*3px 0[^}]*border-top:[^}]*border-bottom:/s);
@@ -348,7 +350,7 @@ describe("production member shell", () => {
     previewStyle.remove();
   });
 
-  it("keeps unexpanded result rows auto-sized with eight-pixel vertical padding after shared styles load", () => {
+  it("keeps unexpanded result rows auto-sized with six-pixel vertical padding after shared styles load", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     const productionStyle = mountPreviewProductionStyles();
 
@@ -357,8 +359,8 @@ describe("production member shell", () => {
     const resultRow = document.querySelector(".explore-result-row");
     expect(resultRow).not.toBeNull();
     expect(getComputedStyle(resultRow!).minHeight).toBe("0px");
-    expect(getComputedStyle(resultRow!).paddingTop).toBe("8px");
-    expect(getComputedStyle(resultRow!).paddingBottom).toBe("8px");
+    expect(getComputedStyle(resultRow!).paddingTop).toBe("6px");
+    expect(getComputedStyle(resultRow!).paddingBottom).toBe("6px");
 
     productionStyle.remove();
   });
@@ -400,8 +402,8 @@ describe("production member shell", () => {
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
     expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
-    expect(getComputedStyle(summaryTag!).top).toBe("1px");
-    expect(getComputedStyle(summaryTag!).right).toBe("1px");
+    expect(getComputedStyle(summaryTag!).top).toBe("2px");
+    expect(getComputedStyle(summaryTag!).right).toBe("2px");
 
     productionStyle.remove();
   });
@@ -493,7 +495,7 @@ describe("production member shell", () => {
   it("matches the explore settings option style inside the isolated consecutive filter", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*25px[^}]*min-height:\s*25px[^}]*border:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
+    expect(css).toMatch(/\.explore-consecutive-filter-option\s*\{[^}]*height:\s*21px[^}]*min-height:\s*21px[^}]*border:\s*1px solid rgba\(120,\s*100,\s*70,\s*\.65\)[^}]*border-radius:\s*10px[^}]*color:\s*#b9b5ae[^}]*background:\s*rgba\(3,\s*11,\s*17,\s*\.35\)/s);
     expect(css).toMatch(/\.explore-consecutive-filter-option\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*#d4a52f[^}]*color:\s*#f1c75a[^}]*background:\s*rgba\(212,\s*165,\s*47,\s*\.1\)/s);
   });
 
