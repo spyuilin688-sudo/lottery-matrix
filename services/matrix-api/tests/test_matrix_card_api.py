@@ -62,49 +62,67 @@ def test_card_prints_month_markers_sunday_dash_and_future_calendar_rows() -> Non
     assert ">—</text>" in svg
     assert ">01</text>" in svg
     assert ">二</text>" in svg
-    assert 'font-family="Noto Sans TC"' in svg
+    assert 'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"' in svg
 
 
-def test_card_uses_reference_grid_edges_and_number_cell_dividers() -> None:
+def test_card_uses_measured_reference_grid_edges_and_fixed_row_pitch() -> None:
     svg = render_matrix_card("今彩539", "draw", [])
 
-    assert '<rect x="8.0" y="8" width="565.0"' in svg
-    for divider in (258.6, 337.2, 415.8, 494.4):
+    assert '<rect x="16.0" y="16.0" width="562.0" height="6.0" fill="#000"/>' in svg
+    assert '<rect x="16.0" y="3338.0" width="562.0" height="2.0" fill="#000"/>' in svg
+    assert '<rect x="16.0" y="3416.0" width="2244.0" height="6.0" fill="#000"/>' in svg
+    assert '<rect x="137.0" y="99.0" width="54.0" height="3240.0" fill="#d3d3d3"/>' in svg
+    assert '<line x1="83.0" y1="153.0" x2="577.0" y2="153.0" stroke="#000" stroke-width="2"/>' in svg
+    assert '<line x1="83.0" y1="207.0" x2="577.0" y2="207.0" stroke="#000" stroke-width="2"/>' in svg
+    assert '<line x1="19.0" y1="3339.0" x2="577.0" y2="3339.0" stroke="#000" stroke-width="2"/>' in svg
+    for divider in (267, 345, 421, 499):
         assert (
-            f'<line x1="{divider:.1f}" y1="104.0" '
-            f'x2="{divider:.1f}" y2="3368.0" '
-            'stroke="#777" stroke-width="1"/>'
+            f'<line x1="{divider:.1f}" y1="99.0" '
+            f'x2="{divider:.1f}" y2="3339.0" '
+            'stroke="#000" stroke-width="2"/>'
         ) in svg
+
+
+def test_card_uses_the_reference_accent_colours() -> None:
+    expected = {
+        "今彩539": "#ffff00",
+        "天天樂": "#ccff99",
+        "六合彩": "#ffc0cb",
+        "大樂透": "#87cefa",
+    }
+
+    for lottery, colour in expected.items():
+        assert f'fill="{colour}"' in render_matrix_card(lottery, "draw", [])
 
 
 def test_future_rows_follow_each_lottery_draw_calendar() -> None:
     cases = (
-        ("今彩539", "2026-08-29", "31", "一", 199.7),
-        ("天天樂", "2026-08-29", "30", "—", 199.7),
-        ("六合彩", "2026-08-29", "01", "二", 198.1),
-        ("大樂透", "2026-08-28", "01", "二", 198.1),
+        ("今彩539", "2026-08-29", "31", "一", 195.0),
+        ("天天樂", "2026-08-29", "30", "—", 195.0),
+        ("六合彩", "2026-08-29", "01", "二", 195.0),
+        ("大樂透", "2026-08-28", "01", "二", 195.0),
     )
 
     for lottery, draw_date, expected_day, expected_weekday, baseline in cases:
         svg = render_matrix_card(lottery, "draw", [{"drawDate": draw_date, "numbers": []}])
         assert re.search(
-            rf'<text x="88.0" y="{baseline:.1f}"[^>]*>{expected_day}</text>',
+            rf'<text x="110.0" y="{baseline:.1f}"[^>]*>{expected_day}</text>',
             svg,
         )
         assert re.search(
-            rf'<text x="144.0" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
+            rf'<text x="164.0" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
             svg,
         )
 
 
-def test_special_number_column_uses_blue_grid_lines() -> None:
+def test_special_number_column_uses_black_divider_and_blue_horizontal_rules() -> None:
     for lottery in ("六合彩", "大樂透"):
         svg = render_matrix_card(lottery, "draw", [])
         assert (
-            '<line x1="680.3" y1="104.0" x2="680.3" y2="3368.0" '
-            'stroke="#0047ff" stroke-width="1"/>'
+            '<line x1="681.0" y1="99.0" x2="681.0" y2="3339.0" '
+            'stroke="#000" stroke-width="2"/>'
         ) in svg
         assert (
-            '<line x1="680.3" y1="104.0" x2="761.3" y2="104.0" '
-            'stroke="#0047ff" stroke-width="1"/>'
+            '<line x1="681.0" y1="153.0" x2="763.0" y2="153.0" '
+            'stroke="#0000ff" stroke-width="2"/>'
         ) in svg
