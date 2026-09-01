@@ -223,9 +223,9 @@ function normalizeMatrixRpcResponse(name: string, data: unknown): unknown {
       ...raw,
       kind: 'explore',
       status: 'complete',
-      drawPeriod: raw.draw_period,
-      analysisVersion: raw.analysis_version,
-      duplicateStats: raw.duplicate_stats ?? [],
+      drawPeriod: raw.drawPeriod ?? raw.draw_period,
+      analysisVersion: raw.analysisVersion ?? raw.analysis_version,
+      duplicateStats: raw.duplicateStats ?? raw.duplicate_stats ?? [],
     };
   }
   if (name === 'matrix_explore_validation') {
@@ -233,9 +233,9 @@ function normalizeMatrixRpcResponse(name: string, data: unknown): unknown {
       ...raw,
       kind: 'explore',
       status: 'complete',
-      drawPeriod: raw.draw_period,
-      analysisVersion: raw.analysis_version,
-      itemId: raw.item_id,
+      drawPeriod: raw.drawPeriod ?? raw.draw_period,
+      analysisVersion: raw.analysisVersion ?? raw.analysis_version,
+      itemId: raw.itemId ?? raw.item_id,
     };
   }
   return data;
