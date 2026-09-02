@@ -1,4 +1,5 @@
 import inspect
+from pathlib import Path
 
 from app import worker
 from app.domain.explore_engine import run_explore_batch
@@ -17,3 +18,9 @@ def test_artifact_builder_defaults_to_canonical_v12_batch_runner() -> None:
 
 def test_worker_writes_new_results_under_matrix_python_v12() -> None:
     assert worker.ANALYSIS_VERSION == "matrix-python-v12"
+
+
+def test_legacy_explore_v2_runtime_is_removed() -> None:
+    service_root = Path(__file__).resolve().parents[1]
+
+    assert not (service_root / "app/domain/explore_v2.py").exists()

@@ -2,6 +2,7 @@ from app.domain.explore_engine import (
     EngineMetrics,
     INVALID_MORE_THAN_TWO_LONGEST,
     INVALID_ONE_CODE_MAXIMUM,
+    INVALID_ONE_CODE_NOT_EXACT,
     INVALID_SINGLE_USE_ENDPOINT,
     INVALID_TWO_CODE_MAXIMUM,
     RoadType,
@@ -23,23 +24,14 @@ def test_add_and_drag_allow_zero_rule_value() -> None:
     assert apply_candidate(RoadType.DRAG, 12, 0, 39) == 12
 
 
-def test_one_code_allows_up_to_two_highest_rules_without_pair_split() -> None:
+def test_one_code_requires_exactly_one_highest_rule() -> None:
     decision = evaluate_one_code(_repeat({10, 20}, 4))
-
-    assert decision.valid is True
-    assert decision.highest_streak == 4
-    assert decision.rules == (10, 20)
-    assert decision.reason is None
-    assert decision.top_rule_sets == ((10, 20),)
-
-
-def test_one_code_more_than_two_highest_rules_invalidates_cell() -> None:
-    decision = evaluate_one_code(_repeat({10, 20, 30}, 4))
 
     assert decision.valid is False
     assert decision.highest_streak == 4
-    assert decision.rules == (10, 20, 30)
-    assert decision.reason == INVALID_MORE_THAN_TWO_LONGEST
+    assert decision.rules == (10, 20)
+    assert decision.reason == INVALID_ONE_CODE_NOT_EXACT
+    assert decision.top_rule_sets == ()
 
 
 def test_one_code_eight_or_more_invalidates_without_truncation() -> None:

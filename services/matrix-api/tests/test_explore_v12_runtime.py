@@ -118,7 +118,7 @@ def test_all_road_batch_reuses_shared_candidates_for_tianyan(monkeypatch) -> Non
     }
 
 
-def test_one_code_two_tied_rules_emit_two_prediction_numbers() -> None:
+def test_one_code_two_tied_rules_emit_no_result() -> None:
     history = _constant_history(20)
     context = ExploreContext(
         "今彩539",
@@ -161,6 +161,4 @@ def test_one_code_two_tied_rules_emit_two_prediction_numbers() -> None:
 
     items = artifact["items"]
     assert isinstance(items, list)
-    assert len(items) == 1
-    assert items[0]["ruleCount"] == 1
-    assert len(items[0]["predictionNumbers"]) == 2
+    assert items == []
