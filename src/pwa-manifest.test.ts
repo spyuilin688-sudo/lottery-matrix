@@ -26,7 +26,7 @@ describe('PWA manifest', () => {
     expect(manifest.name).toBe('樂彩 Matrix');
     expect(manifest.short_name).toBe('樂彩 Matrix');
     expect(manifest.start_url).toBe('/');
-    expect(manifest.display).toBe('standalone');
+    expect(manifest.display).toBe('fullscreen');
     expect(manifest.theme_color).toBe('#02070c');
     expect(manifest.background_color).toBe('#02070c');
     const expectedIcons = [

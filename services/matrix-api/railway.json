@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "uv run python -u -m app.worker --lottery 今彩539 --scheduled",
+    "startCommand": "uv run python -u -m app.worker_all",
     "restartPolicyType": "NEVER",
     "cronSchedule": "3/5 * * * *"
   }

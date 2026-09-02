@@ -2,7 +2,7 @@
   "name": "樂彩 Matrix",
   "short_name": "樂彩 Matrix",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "theme_color": "#02070c",
   "background_color": "#02070c",
   "icons": [
