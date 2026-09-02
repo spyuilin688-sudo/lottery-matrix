@@ -39,6 +39,15 @@ class AnalysisRepository(Protocol):
     ) -> None: ...
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
+    def get_card_publication(self, lottery: str) -> dict[str, Any] | None: ...
+    def upsert_card_publication(
+        self,
+        lottery: str,
+        period: str,
+        draw_path: str,
+        sorted_path: str,
+        published_at: str,
+    ) -> dict[str, Any]: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
@@ -67,6 +76,7 @@ class InMemoryAnalysisRepository:
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
         self.explore_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.job_statuses: dict[str, dict[str, Any]] = {}
+        self.card_publications: dict[str, dict[str, Any]] = {}
 
     def health_check(self) -> None:
         return None
@@ -151,6 +161,38 @@ class InMemoryAnalysisRepository:
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [self.upsert_draw(draw) for draw in draws]
+
+    def get_card_publication(self, lottery: str) -> dict[str, Any] | None:
+        publication = self.card_publications.get(lottery)
+        return None if publication is None else dict(publication)
+
+    def upsert_card_publication(
+        self,
+        lottery: str,
+        period: str,
+        draw_path: str,
+        sorted_path: str,
+        published_at: str,
+    ) -> dict[str, Any]:
+        existing = self.card_publications.get(lottery)
+        if existing is not None:
+            current_period = str(existing["period"])
+            next_period = str(period)
+            if (
+                current_period.isdigit()
+                and next_period.isdigit()
+                and int(next_period) < int(current_period)
+            ):
+                return dict(existing)
+        publication = {
+            "lottery": lottery,
+            "period": period,
+            "drawPath": draw_path,
+            "sortedPath": sorted_path,
+            "publishedAt": published_at,
+        }
+        self.card_publications[lottery] = publication
+        return dict(publication)
 
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:
         matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
@@ -340,6 +382,16 @@ class SupabaseAnalysisRepository:
         return dict(data[0] if isinstance(data, list) else data)
 
     @staticmethod
+    def _normalize_card_publication(row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "lottery": row["lottery"],
+            "period": row["period"],
+            "drawPath": row["draw_path"],
+            "sortedPath": row["sorted_path"],
+            "publishedAt": row["published_at"],
+        }
+
+    @staticmethod
     def _normalize_run(run: dict[str, Any]) -> dict[str, Any]:
         return {
             "lottery": run["lottery"],
@@ -496,6 +548,35 @@ class SupabaseAnalysisRepository:
             records, on_conflict="lottery,period",
         ).execute()
         return [dict(record) for record in response.data]
+
+    def get_card_publication(self, lottery: str) -> dict[str, Any] | None:
+        response = (
+            self.client.table("matrix_card_publications")
+            .select("lottery,period,draw_path,sorted_path,published_at")
+            .eq("lottery", lottery)
+            .limit(1)
+            .execute()
+        )
+        if not response.data:
+            return None
+        return self._normalize_card_publication(dict(response.data[0]))
+
+    def upsert_card_publication(
+        self,
+        lottery: str,
+        period: str,
+        draw_path: str,
+        sorted_path: str,
+        published_at: str,
+    ) -> dict[str, Any]:
+        response = self.client.rpc("publish_matrix_card", {
+            "p_lottery": lottery,
+            "p_period": period,
+            "p_draw_path": draw_path,
+            "p_sorted_path": sorted_path,
+            "p_published_at": published_at,
+        }).execute()
+        return self._normalize_card_publication(self._one(response))
 
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:
         if limit is not None and limit <= 0:

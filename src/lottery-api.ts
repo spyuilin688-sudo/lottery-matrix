@@ -43,7 +43,7 @@ export type MatrixCardOrder = 'draw' | 'sorted';
 export type MatrixCardManifest = {
   lottery: NumberBallLottery;
   period: string | null;
-  cards: Record<MatrixCardOrder, { url: string }>;
+  cards: Record<MatrixCardOrder, { url: string } | null>;
 };
 
 export function matrixCardUrl(path: string) {
@@ -59,8 +59,10 @@ export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promi
   );
   if (
     payload.lottery !== lottery
-    || !payload.cards?.draw?.url
-    || !payload.cards?.sorted?.url
+    || (typeof payload.period === 'string' && (
+      !payload.cards?.draw?.url
+      || !payload.cards?.sorted?.url
+    ))
   ) {
     throw new Error('Lottery API returned invalid matrix card metadata');
   }
@@ -68,8 +70,8 @@ export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promi
     lottery,
     period: typeof payload.period === 'string' ? payload.period : null,
     cards: {
-      draw: { url: payload.cards.draw.url },
-      sorted: { url: payload.cards.sorted.url },
+      draw: payload.cards?.draw?.url ? { url: payload.cards.draw.url } : null,
+      sorted: payload.cards?.sorted?.url ? { url: payload.cards.sorted.url } : null,
     },
   };
 }

@@ -169,6 +169,21 @@ class FullHistoryReadTrackingRepository(TrackingRepository):
         return super().list_draws(lottery, limit)
 
 
+class RecordingCardPublisher:
+    def __init__(self, events: list[str] | None = None, *, fail: bool = False) -> None:
+        self.calls: list[tuple[str, str]] = []
+        self.events = events
+        self.fail = fail
+
+    def publish(self, lottery: str, period: str) -> dict:
+        self.calls.append((lottery, period))
+        if self.events is not None:
+            self.events.append("publish")
+        if self.fail:
+            raise RuntimeError("card publication failed")
+        return {"lottery": lottery, "period": period}
+
+
 def _builders(calls: list[str], history_lengths: list[int] | None = None, failing: str | None = None) -> dict:
     def build(kind: str):
         def selected(context: dict) -> dict:
@@ -197,6 +212,63 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     assert calls == ["explore", "tianyan", "tiangong", "status"]
     assert history_lengths == [120, 120, 120, 120]
     assert len(repository.list_draws("今彩539", None)) == 120
+
+
+def test_worker_publishes_the_acquired_draw_before_analysis() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=120)
+    events: list[str] = []
+    publisher = RecordingCardPublisher(events)
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 24, 20, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders(events),
+        card_publisher=publisher,
+    )
+
+    assert result["status"] == "complete"
+    assert publisher.calls == [("今彩539", "000000220")]
+    assert events == ["publish", "explore", "tianyan", "tiangong", "status"]
+
+
+def test_worker_repairs_static_publication_outside_a_due_window() -> None:
+    repository = TrackingRepository()
+    source = Source(history_count=120)
+    run_due_worker("今彩539", repository, source, _builders([]))
+    latest_period = repository.list_draws("今彩539", 1)[0]["period"]
+    publisher = RecordingCardPublisher()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 24, 20, 32, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        card_publisher=publisher,
+    )
+
+    assert result["status"] == "complete"
+    assert publisher.calls == [("今彩539", latest_period)]
+
+
+def test_worker_does_not_analyze_when_static_publication_fails() -> None:
+    repository = TrackingRepository()
+    events: list[str] = []
+
+    with pytest.raises(RuntimeError, match="card publication failed"):
+        run_scheduled_worker(
+            "今彩539",
+            datetime(2026, 8, 24, 20, 33, tzinfo=TAIPEI),
+            repository,
+            Source(history_count=120),
+            _builders(events),
+            card_publisher=RecordingCardPublisher(fail=True),
+        )
+
+    assert events == []
 
 
 def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None:
@@ -239,6 +311,28 @@ def test_production_worker_stops_before_algorithms_if_draw_order_is_incomplete(m
         run_due_worker("今彩539", repository, source)
 
     assert calls == []
+
+
+def test_production_worker_publishes_before_algorithm_history_repair_fails(monkeypatch) -> None:
+    repository = TrackingRepository()
+    source = AlgorithmHistorySource(complete=False)
+    publisher = RecordingCardPublisher()
+    monkeypatch.setattr(
+        worker_module,
+        "create_artifact_builders",
+        lambda: _builders([]),
+    )
+
+    with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
+        run_scheduled_worker(
+            "今彩539",
+            datetime(2026, 8, 24, 20, 33, tzinfo=TAIPEI),
+            repository,
+            source,
+            card_publisher=publisher,
+        )
+
+    assert publisher.calls == [("今彩539", "000000220")]
 
 
 def test_completed_scheduled_run_does_not_read_all_history_again() -> None:
@@ -575,7 +669,8 @@ def test_cli_defaults_to_the_scheduled_worker(monkeypatch) -> None:
     settings = SimpleNamespace(supabase_url="https://example.test", supabase_secret_key="secret")
     repository = object()
     source = object()
-    calls: list[tuple[str, None, object, object]] = []
+    publisher = object()
+    calls: list[tuple[str, None, object, object, object]] = []
 
     class Client:
         def __enter__(self):
@@ -586,18 +681,19 @@ def test_cli_defaults_to_the_scheduled_worker(monkeypatch) -> None:
 
     monkeypatch.setattr(worker_module, "load_settings", lambda: settings)
     monkeypatch.setattr(worker_module, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(worker_module, "create_card_publisher", lambda _: publisher)
     monkeypatch.setattr(worker_module.httpx, "Client", lambda: Client())
     monkeypatch.setattr(worker_module, "LatestDrawSource", lambda _: source)
     monkeypatch.setattr(
         worker_module,
         "run_scheduled_worker",
-        lambda lottery, now, actual_repository, actual_source: (
-            calls.append((lottery, now, actual_repository, actual_source))
+        lambda lottery, now, actual_repository, actual_source, *, card_publisher: (
+            calls.append((lottery, now, actual_repository, actual_source, card_publisher))
             or {"lottery": lottery, "status": "not-due"}
         ),
     )
     assert worker_module.main(["--lottery", "今彩539"]) == 0
-    assert calls == [("今彩539", None, repository, source)]
+    assert calls == [("今彩539", None, repository, source, publisher)]
 
 
 def test_cli_rejects_the_removed_immediate_mode() -> None:

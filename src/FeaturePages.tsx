@@ -2612,7 +2612,8 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { active = false; };
   }, [lottery]);
 
-  const cardUrl = manifest ? matrixCardUrl(manifest.cards[order].url) : null;
+  const cardPath = manifest?.cards[order]?.url;
+  const cardUrl = cardPath ? matrixCardUrl(cardPath) : null;
   const cardPeriod = manifest?.period ?? null;
 
   const handleTicketDownload = async () => {

@@ -30,6 +30,8 @@ GET  /jobs/status
 POST /jobs/refresh
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
+GET  /api/matrix/cards/{lottery}
+GET  /api/matrix/cards/{lottery}/{draw|sorted}.svg
 POST /api/matrix/tongxing
 POST /api/matrix/number-reference
 ```
@@ -43,8 +45,9 @@ header. Railway and AppDeploy must store the same server-only secret under
 or other browser configuration.
 
 `POST /jobs/refresh` accepts `{"lottery":"今彩539"}` (or another supported
-lottery), then fetches and upserts only its latest draw. It does not backfill
-history, run Matrix analysis, or update scheduled-job status records.
+lottery), then fetches and upserts only its latest draw and publishes that
+period's static Matrix card pair. It does not backfill history, run Matrix
+analysis, or update scheduled-job status records.
 
 ### Scheduled workers
 
@@ -73,6 +76,29 @@ Call times in Asia/Taipei:
 ```
 
 Additional calls occur 2 hours, 1 hour, and 30 minutes before the base call time. If the new draw has not been acquired, retries are 5 minutes × 10, 30 minutes × 4, 1 hour × 3, 3 hours × 2, then 6 hours × 1. Any successful acquisition stops later calls for that draw.
+
+## Static Matrix cards
+
+The scheduled workers render the selected lottery's `draw` and `sorted` SVGs
+once after a new draw is stored. Both files are uploaded to the public
+`matrix-cards` Supabase Storage bucket under immutable paths:
+
+```text
+{lottery-slug}/{period}/draw.svg
+{lottery-slug}/{period}/sorted.svg
+```
+
+The `matrix_card_publications` row advances only after both uploads succeed.
+If an upload fails, the prior complete pair remains current and the next worker
+invocation retries. The first worker invocation after deployment also publishes
+the latest stored period when its pointer is missing, so no separate backfill
+command is required.
+
+The PWA calls the manifest endpoint once, then its preview and download traffic
+goes directly to the Supabase public CDN. Legacy Railway SVG routes redirect to
+the published asset and never render from draw history. No additional Railway
+secret is required; Storage writes use the existing server-only
+`SUPABASE_SECRET_KEY`.
 
 ## Supabase data boundary
 

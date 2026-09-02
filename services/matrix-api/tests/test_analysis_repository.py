@@ -83,11 +83,18 @@ class FakeSupabaseClient:
         self.last_ranges: list[tuple[int, int]] = []
         self.last_gt_filters: list[tuple[str, Any]] = []
         self.last_limits: list[int] = []
+        self.last_rpc = ""
+        self.last_rpc_params: dict[str, Any] | None = None
         self.upsert_records: list[dict[str, Any] | list[dict[str, Any]]] = []
         self.responses: dict[str, list[dict[str, Any]]] = {}
 
     def table(self, name: str) -> FakeQuery:
         self.last_table = name
+        return FakeQuery(self, name)
+
+    def rpc(self, name: str, params: dict[str, Any]) -> FakeQuery:
+        self.last_rpc = name
+        self.last_rpc_params = params
         return FakeQuery(self, name)
 
 
@@ -97,6 +104,99 @@ def test_draw_upsert_is_idempotent_by_lottery_and_period() -> None:
     repository.upsert_draw({"lottery": "今彩539", "period": "114000123", "numbers": ["06", "07", "08", "09", "10"]})
     assert len(repository.draws) == 1
     assert repository.draws[("今彩539", "114000123")]["numbers"] == ["06", "07", "08", "09", "10"]
+
+
+def test_card_publication_upsert_replaces_only_the_current_lottery_pointer() -> None:
+    repository = InMemoryAnalysisRepository()
+
+    repository.upsert_card_publication(
+        "今彩539",
+        "115000001",
+        "daily539/115000001/draw.svg",
+        "daily539/115000001/sorted.svg",
+        "2026-09-02T00:00:00+00:00",
+    )
+    stored = repository.upsert_card_publication(
+        "今彩539",
+        "115000002",
+        "daily539/115000002/draw.svg",
+        "daily539/115000002/sorted.svg",
+        "2026-09-02T01:00:00+00:00",
+    )
+
+    assert stored == {
+        "lottery": "今彩539",
+        "period": "115000002",
+        "drawPath": "daily539/115000002/draw.svg",
+        "sortedPath": "daily539/115000002/sorted.svg",
+        "publishedAt": "2026-09-02T01:00:00+00:00",
+    }
+    assert repository.get_card_publication("今彩539") == stored
+    assert repository.get_card_publication("天天樂") is None
+
+
+def test_card_publication_never_moves_back_to_an_older_period() -> None:
+    repository = InMemoryAnalysisRepository()
+    current = repository.upsert_card_publication(
+        "今彩539",
+        "115000002",
+        "daily539/115000002/draw.svg",
+        "daily539/115000002/sorted.svg",
+        "2026-09-02T01:00:00+00:00",
+    )
+
+    stale = repository.upsert_card_publication(
+        "今彩539",
+        "115000001",
+        "daily539/115000001/draw.svg",
+        "daily539/115000001/sorted.svg",
+        "2026-09-02T02:00:00+00:00",
+    )
+
+    assert stale == current
+    assert repository.get_card_publication("今彩539") == current
+
+
+def test_supabase_card_publication_uses_one_lottery_pointer() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["publish_matrix_card"] = [{
+        "lottery": "今彩539",
+        "period": "115000002",
+        "draw_path": "daily539/115000002/draw.svg",
+        "sorted_path": "daily539/115000002/sorted.svg",
+        "published_at": "2026-09-02T01:00:00+00:00",
+    }]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    stored = repository.upsert_card_publication(
+        "今彩539",
+        "115000002",
+        "daily539/115000002/draw.svg",
+        "daily539/115000002/sorted.svg",
+        "2026-09-02T01:00:00+00:00",
+    )
+
+    assert stored["period"] == "115000002"
+    assert fake_client.last_rpc == "publish_matrix_card"
+    assert fake_client.last_rpc_params == {
+        "p_lottery": "今彩539",
+        "p_period": "115000002",
+        "p_draw_path": "daily539/115000002/draw.svg",
+        "p_sorted_path": "daily539/115000002/sorted.svg",
+        "p_published_at": "2026-09-02T01:00:00+00:00",
+    }
+
+    fake_client.responses["matrix_card_publications"] = [
+        fake_client.responses["publish_matrix_card"][0],
+    ]
+    publication = repository.get_card_publication("今彩539")
+
+    assert publication == stored
+    assert fake_client.last_select == (
+        "lottery,period,draw_path,sorted_path,published_at"
+    )
+    assert fake_client.last_filters[-1] == ("lottery", "今彩539")
+    assert fake_client.last_limits[-1] == 1
 
 
 def test_draw_history_bulk_upsert_preserves_single_draw_idempotency() -> None:

@@ -225,6 +225,7 @@ def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(
             ["01", "02", "03", "04", "05"],
         )
 
+    published: list[tuple[str, str]] = []
     status, payload = handle_api_request(
         "POST",
         "/jobs/refresh",
@@ -232,6 +233,7 @@ def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(
         repository,
         request_monitor_token="expected-token",
         refresh_lottery=refresh,
+        publish_cards=lambda lottery, period: published.append((lottery, period)),
     )
 
     assert (status, payload) == (200, {
@@ -240,6 +242,31 @@ def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(
         "drawDate": "2026-09-01",
     })
     assert calls == ["今彩539"]
+    assert published == [("今彩539", "115000211")]
+
+
+def test_jobs_refresh_returns_unavailable_when_static_publication_fails(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/refresh",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        refresh_lottery=lambda lottery, _: _draw(
+            lottery,
+            "115000211",
+            "2026-09-01",
+            ["01", "02", "03", "04", "05"],
+        ),
+        publish_cards=lambda _lottery, _period: (_ for _ in ()).throw(
+            RuntimeError("storage secret")
+        ),
+    )
+
+    assert (status, payload) == (503, {"error": "REFRESH_UNAVAILABLE"})
+    assert "storage secret" not in str(payload)
 
 
 def test_jobs_refresh_does_not_invoke_the_crawler_without_a_valid_admin_token(monkeypatch) -> None:

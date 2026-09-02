@@ -109,7 +109,8 @@ def test_batch_worker_invokes_the_scheduled_entrypoint(monkeypatch) -> None:
     settings = SimpleNamespace(supabase_url="https://example.test", supabase_secret_key="secret")
     repository = object()
     source = object()
-    calls: list[tuple[str, None, object, object]] = []
+    publisher = object()
+    calls: list[tuple[str, None, object, object, object]] = []
 
     class Client:
         def __enter__(self):
@@ -120,20 +121,24 @@ def test_batch_worker_invokes_the_scheduled_entrypoint(monkeypatch) -> None:
 
     monkeypatch.setattr(worker_all, "load_settings", lambda: settings)
     monkeypatch.setattr(worker_all, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(worker_all, "create_card_publisher", lambda _: publisher)
     monkeypatch.setattr(worker_all, "create_railway_ssl_context", lambda: object())
     monkeypatch.setattr(worker_all.httpx, "Client", lambda **_: Client())
     monkeypatch.setattr(worker_all, "LatestDrawSource", lambda _: source)
     monkeypatch.setattr(
         worker_all,
         "run_scheduled_worker",
-        lambda lottery, now, actual_repository, actual_source: (
-            calls.append((lottery, now, actual_repository, actual_source))
+        lambda lottery, now, actual_repository, actual_source, *, card_publisher: (
+            calls.append((lottery, now, actual_repository, actual_source, card_publisher))
             or {"lottery": lottery, "status": "not-due"}
         ),
         raising=False,
     )
     assert worker_all.main() == 0
-    assert calls == [(lottery, None, repository, source) for lottery in LOTTERIES]
+    assert calls == [
+        (lottery, None, repository, source, publisher)
+        for lottery in LOTTERIES
+    ]
 
 
 def test_railway_ssl_context_relaxes_only_python_strict_chain_checks() -> None:

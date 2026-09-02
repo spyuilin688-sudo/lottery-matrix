@@ -10,7 +10,7 @@ declare const process: { cwd(): string };
 
 const matrixCards = vi.hoisted(() => ({
   fetchMatrixCardManifest: vi.fn(),
-  matrixCardUrl: vi.fn((path: string) => `https://matrix.example.test${path}`),
+  matrixCardUrl: vi.fn((path: string) => new URL(path, "https://matrix.example.test").toString()),
 }));
 
 vi.mock("../lottery-api", async (importOriginal) => ({
@@ -42,11 +42,11 @@ beforeEach(() => {
     lottery: "今彩539",
     period: "115000001",
     cards: {
-      draw: { url: "/api/matrix/cards/今彩539/draw.svg" },
-      sorted: { url: "/api/matrix/cards/今彩539/sorted.svg" },
+      draw: { url: "https://project.supabase.co/storage/v1/object/public/matrix-cards/daily539/115000001/draw.svg" },
+      sorted: { url: "https://project.supabase.co/storage/v1/object/public/matrix-cards/daily539/115000001/sorted.svg" },
     },
   });
-  matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => `https://matrix.example.test${path}`);
+  matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => new URL(path, "https://matrix.example.test").toString());
 });
 
 afterEach(() => {
@@ -95,5 +95,19 @@ describe("Matrix 牌單 layout", () => {
     expect(download).toHaveClass("primary-action", "branded-explore-action");
     expect(getComputedStyle(download).height).toBe("44px");
     expect(getComputedStyle(download).fontSize).toBe("20px");
+  });
+
+  it("shows an unavailable state and disables download before the first publication", async () => {
+    matrixCards.fetchMatrixCardManifest.mockResolvedValueOnce({
+      lottery: "今彩539",
+      period: null,
+      cards: { draw: null, sorted: null },
+    });
+
+    render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
+
+    expect(await screen.findByText("尚無可用牌單")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /順球牌單/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "下載牌單" })).toBeDisabled();
   });
 });

@@ -6,6 +6,7 @@ import httpx
 
 from app.repositories.analysis_repository import create_supabase_repository
 from app.scraping.sources import LatestDrawSource
+from app.services.card_publication import create_card_publisher
 from app.settings import load_settings
 from app.worker import run_scheduled_worker
 
@@ -38,10 +39,17 @@ def main() -> int:
         settings.supabase_url,
         settings.supabase_secret_key,
     )
+    card_publisher = create_card_publisher(repository)
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         source = LatestDrawSource(client)
         result = run_all_workers(
-            lambda lottery: run_scheduled_worker(lottery, None, repository, source),
+            lambda lottery: run_scheduled_worker(
+                lottery,
+                None,
+                repository,
+                source,
+                card_publisher=card_publisher,
+            ),
         )
     for lottery in result["completed"]:
         print(f"{lottery} complete")

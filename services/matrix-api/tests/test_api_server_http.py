@@ -35,6 +35,7 @@ def running_server(repository: InMemoryAnalysisRepository) -> Iterator[tuple[str
         pass
 
     TestHandler.repository = repository
+    TestHandler.matrix_card_public_base_url = "https://project.supabase.co"
     server = ThreadingHTTPServer(("127.0.0.1", 0), TestHandler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -158,6 +159,33 @@ def test_public_health_keeps_cors(monkeypatch) -> None:
         response, _ = request(address, "GET", "/health")
         assert response.status == 200
         assert response.getheader("Access-Control-Allow-Origin") == "*"
+
+
+def test_legacy_matrix_card_route_redirects_to_the_published_static_asset() -> None:
+    repository = HttpOperationalRepository()
+    repository.upsert_card_publication(
+        "今彩539",
+        "003117",
+        "daily539/003117/draw.svg",
+        "daily539/003117/sorted.svg",
+        "2026-09-02T00:00:00+00:00",
+    )
+
+    with running_server(repository) as address:
+        response, body = request(
+            address,
+            "GET",
+            "/api/matrix/cards/%E4%BB%8A%E5%BD%A9539/draw.svg",
+        )
+
+    assert response.status == 302
+    assert response.getheader("Location") == (
+        "https://project.supabase.co/storage/v1/object/public/"
+        "matrix-cards/daily539/003117/draw.svg"
+    )
+    assert response.getheader("Cache-Control") == "no-store"
+    assert response.getheader("Access-Control-Allow-Origin") == "*"
+    assert body == b""
 
 
 def test_query_token_is_not_written_to_access_log(monkeypatch, capsys) -> None:

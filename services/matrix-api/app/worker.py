@@ -10,6 +10,7 @@ import httpx
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
 from app.schedule import due_call_cycle
 from app.scraping.sources import LatestDrawSource
+from app.services.card_publication import MatrixCardPublisher, create_card_publisher
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
 from app.services.artifact_builders import create_artifact_builders
 from app.services.draw_refresh import (
@@ -183,12 +184,16 @@ def run_scheduled_worker(
     repository: AnalysisRepository,
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
+    *,
+    card_publisher: MatrixCardPublisher | None = None,
 ) -> dict[str, Any]:
     latest = repository.list_draws(lottery, 1)
     cycle = due_call_cycle(lottery, now)
 
     if cycle is None:
         if latest:
+            if card_publisher is not None:
+                card_publisher.publish(lottery, str(latest[0]["period"]))
             resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
             if resumed is not None:
                 return resumed
@@ -196,6 +201,8 @@ def run_scheduled_worker(
 
     cycle_date = cycle.date().isoformat()
     if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
+        if card_publisher is not None:
+            card_publisher.publish(lottery, str(latest[0]["period"]))
         resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
         if resumed is not None:
             return resumed
@@ -244,6 +251,8 @@ def run_scheduled_worker(
             "status": acquisition["status"],
         }
 
+    if card_publisher is not None:
+        card_publisher.publish(lottery, str(acquisition["drawPeriod"]))
     if builders is None:
         history = refresh.ensure_algorithm_history(lottery)
     else:
@@ -263,9 +272,16 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("set --lottery or MATRIX_LOTTERY to one supported lottery")
     settings = load_settings()
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
+    card_publisher = create_card_publisher(repository)
     with httpx.Client() as client:
         source = LatestDrawSource(client)
-        result = run_scheduled_worker(lottery, None, repository, source)
+        result = run_scheduled_worker(
+            lottery,
+            None,
+            repository,
+            source,
+            card_publisher=card_publisher,
+        )
     draw_period = result.get("drawPeriod", "-")
     print(f'{result["lottery"]} {draw_period} {result["status"]}')
     return 0

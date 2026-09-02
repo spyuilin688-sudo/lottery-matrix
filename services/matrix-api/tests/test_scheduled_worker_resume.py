@@ -116,6 +116,29 @@ def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored(
     assert calls == ["explore", "tianyan", "tiangong", "status"]
 
 
+def test_scheduled_worker_publishes_an_already_stored_current_draw() -> None:
+    repository = _repository_with_history()
+    published: list[tuple[str, str]] = []
+    publisher = type("Publisher", (), {
+        "publish": lambda self, lottery, period: (
+            published.append((lottery, period))
+            or {"lottery": lottery, "period": period}
+        ),
+    })()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+        repository,
+        UnexpectedSource(),
+        _builders([]),
+        card_publisher=publisher,
+    )
+
+    assert result["status"] == "complete"
+    assert published == [("今彩539", "000000221")]
+
+
 def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() -> None:
     repository = _repository_with_history()
     calls: list[str] = []

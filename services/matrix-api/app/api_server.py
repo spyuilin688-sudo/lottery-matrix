@@ -6,14 +6,18 @@ from os import environ
 from secrets import compare_digest
 from collections.abc import Callable
 from typing import Any
-from urllib.parse import parse_qs, quote, unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import httpx
 
-from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_call_time
 from app.scraping.sources import LatestDrawSource
+from app.services.card_publication import (
+    MatrixCardPublisher,
+    create_card_publisher,
+    public_matrix_card_url,
+)
 from app.services.draw_refresh import DrawRefreshService
 from app.settings import load_settings
 from app.worker_all import create_railway_ssl_context
@@ -68,16 +72,34 @@ def _parse_number_order(value: Any) -> str:
     return order
 
 
-def _card_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, Any]:
-    encoded_lottery = quote(lottery, safe="")
-    latest = _history(repository, lottery, 1)
-    item = latest[0] if latest else None
+def _card_manifest(
+    lottery: str,
+    repository: AnalysisRepository,
+    supabase_url: str,
+) -> dict[str, Any]:
+    publication = repository.get_card_publication(lottery)
+    if publication is None:
+        return {
+            "lottery": lottery,
+            "period": None,
+            "cards": {"draw": None, "sorted": None},
+        }
     return {
         "lottery": lottery,
-        "period": None if item is None else item["period"],
+        "period": publication["period"],
         "cards": {
-            "draw": {"url": f"{CARD_PREFIX}{encoded_lottery}/draw.svg"},
-            "sorted": {"url": f"{CARD_PREFIX}{encoded_lottery}/sorted.svg"},
+            "draw": {
+                "url": public_matrix_card_url(
+                    supabase_url,
+                    publication["drawPath"],
+                ),
+            },
+            "sorted": {
+                "url": public_matrix_card_url(
+                    supabase_url,
+                    publication["sortedPath"],
+                ),
+            },
         },
     }
 
@@ -85,6 +107,7 @@ def _card_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, An
 def handle_matrix_card_request(
     target: str,
     repository: AnalysisRepository,
+    supabase_url: str,
 ) -> tuple[int, str] | None:
     path = urlsplit(target).path
     if not path.startswith(CARD_PREFIX) or not path.endswith(".svg"):
@@ -97,11 +120,11 @@ def handle_matrix_card_request(
     lottery = _parse_lottery(unquote(encoded_lottery))
     if order not in {"draw", "sorted"}:
         raise ValueError("未知牌單順序")
-    row_count = sum(card_layout(lottery)["column_rows"])
-    draws = _history(repository, lottery, row_count)
-    if not draws:
+    publication = repository.get_card_publication(lottery)
+    if publication is None:
         raise ValueError("牌單尚未建立")
-    return 200, render_matrix_card(lottery, order, draws)
+    path_key = "drawPath" if order == "draw" else "sortedPath"
+    return 302, public_matrix_card_url(supabase_url, publication[path_key])
 
 
 def _parse_numbers(value: Any, maximum: int = 3) -> list[str]:
@@ -275,6 +298,8 @@ def handle_api_request(
     repository: AnalysisRepository,
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
+    publish_cards: Callable[[str, str], Any] | None = None,
+    matrix_card_public_base_url: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -298,6 +323,8 @@ def handle_api_request(
             lottery = _parse_lottery(_decode_body(body).get("lottery"))
             try:
                 draw = (refresh_lottery or refresh_latest_draw)(lottery, repository)
+                if publish_cards is not None:
+                    publish_cards(lottery, str(draw["period"]))
                 return 200, {
                     "lottery": lottery,
                     "period": str(draw["period"]),
@@ -308,7 +335,16 @@ def handle_api_request(
         if method == "GET" and path.startswith(CARD_PREFIX):
             card_lottery = path[len(CARD_PREFIX):]
             if "/" not in card_lottery:
-                return 200, _card_manifest(_parse_lottery(unquote(card_lottery)), repository)
+                supabase_url = (
+                    matrix_card_public_base_url
+                    if matrix_card_public_base_url is not None
+                    else load_settings().supabase_url
+                )
+                return 200, _card_manifest(
+                    _parse_lottery(unquote(card_lottery)),
+                    repository,
+                    supabase_url,
+                )
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
@@ -343,6 +379,8 @@ def handle_api_request(
 
 class RailwayApiHandler(BaseHTTPRequestHandler):
     repository: AnalysisRepository
+    card_publisher: MatrixCardPublisher | None = None
+    matrix_card_public_base_url = ""
 
     def _send(
         self,
@@ -371,10 +409,23 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
     def _is_matrix_card_path(self) -> bool:
         return urlsplit(self.path).path.startswith(CARD_PREFIX)
 
-    def _send_svg(self, status: int, svg: str) -> None:
-        encoded = svg.encode("utf-8")
+    def _send_redirect(self, location: str) -> None:
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET,OPTIONS")
+        self.end_headers()
+
+    def _send_card_error(self, status: int, message: str) -> None:
+        encoded = json.dumps(
+            {"error": message},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -390,13 +441,17 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         protected = self._is_protected_job_path()
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
             try:
-                card_response = handle_matrix_card_request(self.path, self.repository)
+                card_response = handle_matrix_card_request(
+                    self.path,
+                    self.repository,
+                    self.matrix_card_public_base_url,
+                )
             except ValueError as error:
-                self._send(400, {"error": str(error)}, no_store=True)
+                self._send_card_error(400, str(error))
                 return
             if card_response is not None:
-                status, svg = card_response
-                self._send_svg(status, svg)
+                _, location = card_response
+                self._send_redirect(location)
                 return
         status, payload = handle_api_request(
             "GET",
@@ -404,6 +459,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             None,
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+            matrix_card_public_base_url=self.matrix_card_public_base_url,
         )
         self._send(
             status,
@@ -424,6 +480,9 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             body,
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+            publish_cards=(
+                None if self.card_publisher is None else self.card_publisher.publish
+            ),
         )
         protected = self._is_protected_job_path()
         self._send(status, payload, allow_cors=not protected, no_store=protected)
@@ -449,7 +508,12 @@ def create_repository() -> AnalysisRepository:
 def main() -> None:
     host = "0.0.0.0"
     port = int(environ.get("PORT", "8000"))
+    settings = load_settings()
     RailwayApiHandler.repository = create_repository()
+    RailwayApiHandler.card_publisher = create_card_publisher(
+        RailwayApiHandler.repository,
+    )
+    RailwayApiHandler.matrix_card_public_base_url = settings.supabase_url
     server = ThreadingHTTPServer((host, port), RailwayApiHandler)
     print(f"Railway Matrix API listening on {host}:{port}")
     server.serve_forever()

@@ -6,16 +6,20 @@ from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
 
+class PublicationOnlyRepository(InMemoryAnalysisRepository):
+    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+        raise AssertionError("card reads must not load draw history")
+
+
 def _repository() -> InMemoryAnalysisRepository:
-    repository = InMemoryAnalysisRepository()
-    repository.upsert_draw({
-        "lottery": "今彩539",
-        "period": "003117",
-        "drawDate": "2026-08-28",
-        "numbers": ["01", "07", "11", "20", "39"],
-        "sortedNumbers": ["01", "07", "11", "20", "39"],
-        "drawOrderNumbers": ["39", "20", "11", "07", "01"],
-    })
+    repository = PublicationOnlyRepository()
+    repository.upsert_card_publication(
+        "今彩539",
+        "003117",
+        "daily539/003117/draw.svg",
+        "daily539/003117/sorted.svg",
+        "2026-09-02T00:00:00+00:00",
+    )
     return repository
 
 
@@ -23,6 +27,7 @@ def test_card_manifest_points_to_the_latest_period_and_both_svg_orders() -> None
     lottery = quote("今彩539")
     status, payload = handle_api_request(
         "GET", f"/api/matrix/cards/{lottery}", None, _repository(),
+        matrix_card_public_base_url="https://project.supabase.co",
     )
 
     assert status == 200
@@ -30,22 +35,56 @@ def test_card_manifest_points_to_the_latest_period_and_both_svg_orders() -> None
         "lottery": "今彩539",
         "period": "003117",
         "cards": {
-            "draw": {"url": f"/api/matrix/cards/{lottery}/draw.svg"},
-            "sorted": {"url": f"/api/matrix/cards/{lottery}/sorted.svg"},
+            "draw": {"url": (
+                "https://project.supabase.co/storage/v1/object/public/"
+                "matrix-cards/daily539/003117/draw.svg"
+            )},
+            "sorted": {"url": (
+                "https://project.supabase.co/storage/v1/object/public/"
+                "matrix-cards/daily539/003117/sorted.svg"
+            )},
         },
     }
 
 
-def test_card_svg_is_the_fixed_reference_size_and_uses_requested_order() -> None:
+def test_legacy_card_svg_route_redirects_without_reading_draw_history() -> None:
+    repository = PublicationOnlyRepository()
+    repository.upsert_card_publication(
+        "今彩539",
+        "003117",
+        "daily539/003117/draw.svg",
+        "daily539/003117/sorted.svg",
+        "2026-09-02T00:00:00+00:00",
+    )
     lottery = quote("今彩539")
-    status, svg = handle_matrix_card_request(
-        f"/api/matrix/cards/{lottery}/draw.svg", _repository(),
+    status, location = handle_matrix_card_request(
+        f"/api/matrix/cards/{lottery}/draw.svg",
+        repository,
+        "https://project.supabase.co",
+    )
+
+    assert status == 302
+    assert location == (
+        "https://project.supabase.co/storage/v1/object/public/"
+        "matrix-cards/daily539/003117/draw.svg"
+    )
+
+
+def test_unpublished_card_manifest_has_no_asset_urls() -> None:
+    status, payload = handle_api_request(
+        "GET",
+        f"/api/matrix/cards/{quote('天天樂')}",
+        None,
+        InMemoryAnalysisRepository(),
+        matrix_card_public_base_url="https://project.supabase.co",
     )
 
     assert status == 200
-    assert 'width="2276" height="3438"' in svg
-    assert "539 落球" in svg
-    assert ">39</text>" in svg
+    assert payload == {
+        "lottery": "天天樂",
+        "period": None,
+        "cards": {"draw": None, "sorted": None},
+    }
 
 
 def test_card_preserves_an_actual_539_sunday_draw_from_history() -> None:

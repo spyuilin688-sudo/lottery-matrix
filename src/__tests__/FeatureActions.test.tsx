@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const matrixCards = vi.hoisted(() => ({
   fetchMatrixCardManifest: vi.fn(),
-  matrixCardUrl: vi.fn((path: string) => `https://matrix.example.test${path}`),
+  matrixCardUrl: vi.fn((path: string) => new URL(path, "https://matrix.example.test").toString()),
 }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 
@@ -48,11 +48,11 @@ beforeEach(() => {
     lottery: "今彩539",
     period: "115000001",
     cards: {
-      draw: { url: "/api/matrix/cards/今彩539/draw.svg" },
-      sorted: { url: "/api/matrix/cards/今彩539/sorted.svg" },
+      draw: { url: "https://project.supabase.co/storage/v1/object/public/matrix-cards/daily539/115000001/draw.svg" },
+      sorted: { url: "https://project.supabase.co/storage/v1/object/public/matrix-cards/daily539/115000001/sorted.svg" },
     },
   });
-  matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => `https://matrix.example.test${path}`);
+  matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => new URL(path, "https://matrix.example.test").toString());
   activation.redeem.mockReset().mockResolvedValue({
     member_id: "member-1",
     duration_type: "30_days",
@@ -113,7 +113,9 @@ describe("existing feature actions", () => {
 
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
 
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/sorted.svg"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith(
+      "https://project.supabase.co/storage/v1/object/public/matrix-cards/daily539/115000001/sorted.svg",
+    ));
     expect(fetchCard).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
