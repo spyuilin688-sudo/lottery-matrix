@@ -4,6 +4,7 @@ import { KeyboardProvider } from "./mobile/Keyboard";
 import Prototype from "./Prototype";
 import { AppDialogProvider } from "./dialog/AppDialog";
 import { ExploreResultPreviewPage } from "./ExploreResultPreviewPage";
+import { PwaLifecycleProvider } from "./pwa-lifecycle";
 
 export default function App() {
   const isExploreResultPreviewPath =
@@ -12,18 +13,20 @@ export default function App() {
 
   return (
     <AppDialogProvider>
-      <div className="app-mobile-canvas" data-testid="app-mobile-canvas">
-        {isExploreResultPreviewPath ? <ExploreResultPreviewPage /> : (
-          <>
-            <MemberSessionBridge />
-            <MobileDeviceProvider>
-              <KeyboardProvider>
-                <Prototype />
-              </KeyboardProvider>
-            </MobileDeviceProvider>
-          </>
-        )}
-      </div>
+      <PwaLifecycleProvider>
+        <div className="app-mobile-canvas" data-testid="app-mobile-canvas">
+          {isExploreResultPreviewPath ? <ExploreResultPreviewPage /> : (
+            <>
+              <MemberSessionBridge />
+              <MobileDeviceProvider>
+                <KeyboardProvider>
+                  <Prototype />
+                </KeyboardProvider>
+              </MobileDeviceProvider>
+            </>
+          )}
+        </div>
+      </PwaLifecycleProvider>
     </AppDialogProvider>
   );
 }

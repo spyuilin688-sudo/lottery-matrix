@@ -1,5 +1,5 @@
 const STATIC_CACHE_PREFIX = "matrix-pwa-shell-";
-const STATIC_CACHE_NAME = `${STATIC_CACHE_PREFIX}v1`;
+const STATIC_CACHE_NAME = "matrix-pwa-shell-__BUILD_ID__";
 const APP_SHELL_PATHS = [
   "/",
   "/index.html",

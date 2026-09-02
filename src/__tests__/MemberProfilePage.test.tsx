@@ -10,6 +10,7 @@ declare const process: { cwd(): string };
 const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({ signInWithLine: vi.fn(), signOutFromMatrix: vi.fn() }));
 const appDialog = vi.hoisted(() => ({ confirm: vi.fn(), alert: vi.fn() }));
+const pwaLifecycle = vi.hoisted(() => ({ usePwaLifecycle: vi.fn() }));
 const supabase = vi.hoisted(() => {
   const unsubscribe = vi.fn();
   const auth = {
@@ -29,6 +30,7 @@ vi.mock("../auth/line-auth", () => ({
 }));
 vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
 vi.mock("../dialog/AppDialog", () => ({ useAppDialog: () => appDialog }));
+vi.mock("../pwa-lifecycle", () => ({ usePwaLifecycle: pwaLifecycle.usePwaLifecycle }));
 
 import { ProfilePage } from "../FeaturePages";
 
@@ -54,6 +56,11 @@ beforeEach(() => {
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
   appDialog.confirm.mockReset().mockResolvedValue(true);
   appDialog.alert.mockReset().mockResolvedValue(undefined);
+  pwaLifecycle.usePwaLifecycle.mockReset().mockReturnValue({
+    isInstalled: false,
+    showInstallAction: false,
+    requestInstall: vi.fn().mockResolvedValue("unavailable"),
+  });
   supabase.unsubscribe.mockReset();
   supabase.getClient.mockClear();
   supabase.auth.onAuthStateChange.mockClear();
@@ -74,6 +81,27 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it("在系統相關區顯示安裝入口，iOS 點擊後使用共用加入主畫面指引", async () => {
+    const requestInstall = vi.fn().mockResolvedValue("ios-instructions");
+    pwaLifecycle.usePwaLifecycle.mockReturnValue({
+      isInstalled: false,
+      showInstallAction: true,
+      requestInstall,
+    });
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const install = screen.getByRole("button", { name: "安裝 樂彩 Matrix" });
+    expect(install.closest("section")).toHaveTextContent("系統相關");
+
+    fireEvent.click(install);
+
+    await waitFor(() => expect(requestInstall).toHaveBeenCalledTimes(1));
+    expect(appDialog.alert).toHaveBeenCalledWith({
+      title: "加入主畫面",
+      description: "請點選瀏覽器的分享按鈕，再選擇「加入主畫面」。",
+    });
+  });
+
   it("我的頁面使用正式標題卡", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 

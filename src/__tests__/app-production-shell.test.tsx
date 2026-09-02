@@ -8,15 +8,24 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 declare const process: { cwd(): string };
 
 const bridge = vi.hoisted(() => ({ render: vi.fn(() => null) }));
+const pwaLifecycle = vi.hoisted(() => ({ render: vi.fn() }));
 
 vi.mock("../auth/MemberSessionBridge", () => ({ MemberSessionBridge: bridge.render }));
 vi.mock("../Prototype", () => ({ default: () => <div>member-root</div> }));
+vi.mock("../pwa-lifecycle", () => ({
+  PwaLifecycleProvider: ({ children }: { children: React.ReactNode }) => {
+    pwaLifecycle.render();
+    return children;
+  },
+}));
 
 import App from "../App";
 import { ExploreResultPreviewPage } from "../ExploreResultPreviewPage";
 
 afterEach(() => {
   cleanup();
+  pwaLifecycle.render.mockClear();
+  bridge.render.mockClear();
   document.querySelectorAll("style[data-preview-production-test]").forEach((style) => style.remove());
 });
 
@@ -34,6 +43,14 @@ function mountPreviewProductionStyles() {
 }
 
 describe("production member shell", () => {
+  it("mounts the PWA lifecycle around the production application", () => {
+    window.history.replaceState({}, "", "/");
+
+    render(<App />);
+
+    expect(pwaLifecycle.render).toHaveBeenCalledTimes(1);
+  });
+
   it("renders the isolated exploration result page only on its direct path", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
 

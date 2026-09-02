@@ -38,6 +38,7 @@
 | Date | Native HTML `input[type="date"]` | `premium-ui.json` and this contract | OS-owned Gregorian date popup; ISO date-only form value | Locale, keyboard, narrow-viewport and open-calendar checks |
 | Form | The React screen that owns each product form | This contract and the owning component test | Sign-in, settings and data-entry forms with app-owned validation | Component tests for validation, busy, recovery and first-error focus |
 | Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Scrolling remains enabled while native and app-owned scrollbar visuals stay hidden | Computed overflow plus Firefox and WebKit hidden-scrollbar source checks |
+| PWA install/update | `PwaLifecycleProvider` | This contract and `src/pwa-lifecycle.tsx` | Browser-native install prompt; iOS add-to-home-screen instructions; app-owned update confirmation | Lifecycle component tests plus production build fingerprint test |
 
 ## Form behavior
 
@@ -57,6 +58,8 @@ Every reachable product overflow surface keeps its existing overflow and touch b
 | Open invite page | `邀請好友` in the referral summary | Immediate local screen-state update through `Prototype.navigate` | Existing `invite-friends` route | Invite page becomes the active routed view | Existing route remains navigable back; no fake network action | Route-focus restoration is absent and unverified. | Quality remediation Task 7 |
 | Submit referral code | `確認` next to referral code | Disabled because no mutation API is specified | No transition | No success is claimed | Disabled until a separately approved referral API and recovery contract exist | Control remains unavailable and is not presented as actionable | Quality remediation Task 7 |
 | Member logout and LINE revoke | `登出` on the profile card | Button disabled with `aria-busy`; duplicate click ignored | Supabase signed-out state only after verified LINE revoke succeeds | Current member session clears | Inline alert `登出失敗，請稍後再試`; failed or missing-token logout remains signed in and may be retried | Focus stays on the logout action or its recovery message | LINE login API design and completion plan |
+| Install PWA | `安裝 樂彩 Matrix` under `我的` → `系統相關` | Browser owns the native install prompt; iOS uses the shared app dialog for instructions | Stay on `我的`; the entry disappears after installation | Browser completes installation, or iOS displays the add-to-home-screen steps | Unsupported or consumed prompts make the entry unavailable without claiming installation | Focus remains on the install action or moves into the shared instruction dialog | Current request (2026-09-02) |
+| Apply PWA update | Existing Service Worker controller changes after a fingerprinted build | Shared confirmation dialog offers `立即更新` or `稍後` | Confirm reloads the current route; cancel stays on the current route | Reload runs the newest application assets | First Service Worker activation does not show an update; registration failures do not interrupt the current session | Dialog follows the shared focus and dismissal contract | Current request (2026-09-02) |
 
 ## Authentication and sensitive-value handling
 
@@ -73,6 +76,12 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 ## Navigation, async and recovery
 
 Bottom navigation, feature back actions and existing routes remain the navigation owners. Async actions prevent duplicates, expose busy state, preserve user-entered data on recoverable failure and ignore stale completions after unmount where their existing request owner supports cancellation or revision tracking. No direct action may use an empty handler, empty link, dummy request or success copy without a completed operation.
+
+## PWA install and update lifecycle
+
+`PwaLifecycleProvider` is mounted inside `AppDialogProvider` and owns the browser PWA lifecycle. It captures `beforeinstallprompt`, detects standalone mode and `appinstalled`, registers the existing combined Push/PWA Service Worker, and listens for an existing controller change. The install entry appears only when a browser install prompt is available or the current device requires iOS add-to-home-screen instructions; it is hidden after installation.
+
+The production build stamps `push-service-worker.js` with a fingerprint derived from the built application files. A controller change is therefore tied to a changed production build. Only clients that already had a Service Worker controller receive the update confirmation; initial installation is not reported as an update.
 
 ## Verification
 

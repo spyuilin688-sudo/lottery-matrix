@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -93,6 +93,7 @@ import { getSupabaseClient } from "./lib/supabase";
 import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
 import { useDoubleClickAction } from "./useDoubleClickAction";
+import { usePwaLifecycle } from "./pwa-lifecycle";
 import "./explore-validation-protection.css";
 
 export type ScreenId =
@@ -3721,6 +3722,7 @@ function consumeLineLoginPending() {
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
+  const { showInstallAction, requestInstall } = usePwaLifecycle();
   const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
@@ -3807,6 +3809,15 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       setAuthPending(false);
     }
   };
+  const handleInstallAction = async () => {
+    const result = await requestInstall();
+    if (result === "ios-instructions") {
+      await alertDialog({
+        title: "加入主畫面",
+        description: "請點選瀏覽器的分享按鈕，再選擇「加入主畫面」。",
+      });
+    }
+  };
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
     { title: "客服與支援", items: [["聯絡客服", "merchant-info"], ["問題回報", "problem-report"], ["商務合作", "business-cooperation"]] },
@@ -3851,12 +3862,20 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           <span>會員方案／收費標準</span><ChevronRightIcon />
         </button>
       </section>
-      {menuGroups.map((group) => <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title} />)}
+      {menuGroups.map((group) => (
+        <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title}>
+          {group.title === "系統相關" && showInstallAction ? (
+            <button type="button" onClick={() => void handleInstallAction()}>
+              <span>安裝 樂彩 Matrix</span><ChevronRightIcon />
+            </button>
+          ) : null}
+        </ProfileMenu>
+      ))}
     </FeatureShell>
   );
 }
 
-function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array<[string, ScreenId]>; onNavigate: Navigate }) {
+function ProfileMenu({ title, items, onNavigate, children }: { title: string; items: Array<[string, ScreenId]>; onNavigate: Navigate; children?: ReactNode }) {
   return (
     <section className="panel profile-menu">
       {title ? <SectionTitle>{title}</SectionTitle> : null}
@@ -3866,6 +3885,7 @@ function ProfileMenu({ title, items, onNavigate }: { title: string; items: Array
             <span>{label}</span><ChevronRightIcon />
           </button>
         ))}
+        {children}
       </div>
     </section>
   );

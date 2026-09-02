@@ -14,8 +14,8 @@
     "predev": "npm run check:runtime",
     "dev": "vite",
     "prebuild": "npm run check:runtime",
-    "build": "tsc && vite build && node scripts/prepare-sites-build.mjs",
-    "build:pages": "npm run check:runtime && tsc && vite build",
+    "build": "tsc && vite build && node scripts/pwa-build-version.mjs dist && node scripts/prepare-sites-build.mjs",
+    "build:pages": "npm run check:runtime && tsc && vite build && node scripts/pwa-build-version.mjs dist",
     "build:verified": "bash scripts/build-verified.sh",
     "validate:artifact": "bash scripts/validate-artifact.sh"
   },
