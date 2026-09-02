@@ -80,7 +80,7 @@ const safeErrorFor = (
   definition: ApiStatusDefinition,
   workerStatus?: WorkerStatus,
 ) => {
-  if (definition.location === 'Railway' && workerStatus && !workerStatus.ok) {
+  if (definition.location === 'Railway' && workerStatus?.ok === false) {
     if (workerStatus.reason === 'APPDEPLOY_CONFIG_MISSING') {
       return 'AppDeploy 尚未完成 Railway 管理 API 設定';
     }
