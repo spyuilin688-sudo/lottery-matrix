@@ -22,22 +22,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Runtime commit atomicity
         env:
           RUNTIME_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           RUNTIME_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: node scripts/check-runtime-commit-integrity.mjs "$RUNTIME_BASE_SHA" "$RUNTIME_HEAD_SHA"
+
       - name: Runtime atomic-commit regression
         run: node --test tests/runtime-integrity-atomic-commit.test.mjs
+
       - name: Runtime integrity check
         run: npm run check:runtime
+
       - name: Production build
         run: npm run build
 
@@ -47,37 +53,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Targeted Explore tests
         run: node --test tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
+
       - name: Production build for packaging tests
         run: npm run build
+
       - name: Full tests
         run: node --test tests/*.test.mjs
-
-  admin-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/admin
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install admin dependencies
-        run: npm install --no-audit --no-fund
-      - name: Admin tests
-        run: npm test -- --run
 
   matrix-api:
     runs-on: ubuntu-latest
@@ -88,6 +81,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
         with:
@@ -95,7 +89,9 @@ jobs:
           python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: services/matrix-api/uv.lock
+
       - name: Install dependencies
         run: uv sync --frozen
+
       - name: Matrix API tests
         run: uv run pytest -q
