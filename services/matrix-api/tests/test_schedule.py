@@ -60,6 +60,39 @@ def test_539_retry_window_keeps_delayed_cron_runs_due() -> None:
     assert call_due("今彩539", base.replace(hour=22, minute=49)) is True
 
 
+def test_each_other_lottery_retry_window_keeps_delayed_cron_runs_due() -> None:
+    assert call_due(
+        "天天樂", datetime(2026, 8, 28, 12, 49, tzinfo=TAIPEI)
+    ) is True
+    assert call_due(
+        "大樂透", datetime(2026, 8, 28, 22, 49, tzinfo=TAIPEI)
+    ) is True
+    assert call_due(
+        "六合彩", datetime(2026, 8, 28, 23, 49, tzinfo=TAIPEI)
+    ) is True
+
+
+def test_each_other_lottery_retry_window_stops_after_its_own_deadline() -> None:
+    assert call_due(
+        "天天樂", datetime(2026, 8, 28, 15, 18, tzinfo=TAIPEI)
+    ) is True
+    assert call_due(
+        "天天樂", datetime(2026, 8, 28, 15, 19, tzinfo=TAIPEI)
+    ) is False
+    assert call_due(
+        "大樂透", datetime(2026, 8, 29, 2, 38, tzinfo=TAIPEI)
+    ) is True
+    assert call_due(
+        "大樂透", datetime(2026, 8, 29, 2, 39, tzinfo=TAIPEI)
+    ) is False
+    assert call_due(
+        "六合彩", datetime(2026, 8, 29, 3, 18, tzinfo=TAIPEI)
+    ) is True
+    assert call_due(
+        "六合彩", datetime(2026, 8, 29, 3, 19, tzinfo=TAIPEI)
+    ) is False
+
+
 def test_no_calls_after_final_six_hour_retry() -> None:
     base = lottery_call_time("今彩539", datetime(2026, 8, 28, tzinfo=TAIPEI))
     final_retry = base.replace(day=29, hour=2, minute=18)

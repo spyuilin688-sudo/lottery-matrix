@@ -89,14 +89,8 @@ def due_call_cycle(lottery: str, now: datetime | None = None) -> datetime | None
         ]
         if taipei_now in pre_calls:
             return base
-        if lottery == "今彩539":
-            final_retry = base + timedelta(minutes=RETRY_OFFSETS_MINUTES[-1])
-            if base <= taipei_now <= final_retry:
-                return base
-        elif taipei_now in [
-            base + timedelta(minutes=offset)
-            for offset in RETRY_OFFSETS_MINUTES
-        ]:
+        final_retry = base + timedelta(minutes=RETRY_OFFSETS_MINUTES[-1])
+        if base <= taipei_now <= final_retry:
             return base
     return None
 
