@@ -37,7 +37,6 @@ type TableDefinition = {
 
 export class AdminDataError extends Error {
   statusCode: number;
-
   constructor(message: string, statusCode = 400) {
     super(message);
     this.name = 'AdminDataError';
@@ -207,7 +206,7 @@ export function createAdminData(transport: WriteTransport) {
     if (!before) throw new AdminDataError('Not found', 404);
     const [updated] = await transport.updateRows<Row>('admin_accounts', query, { name: normalizedName });
     if (!updated) throw new AdminDataError('更新管理員名稱失敗', 500);
-    await writeAudit({ actor, operationType: '修改', targetTable: 'admin_accounts', targetId: actor.id, content: '修改本人管理員名稱', beforeData: before, afterData: updated });
+    await writeAudit({ actor, operationType: '修改', targetTable: 'admin_accounts', targetId: actor.id, content: '修改本人管理員名稱', beforeData: safeAdminAuditRow(before), afterData: safeAdminAuditRow(updated) });
     return definitions.admins.map(updated);
   }
   async function updateMemberStatus(id: string, status: string, actor: AdminActor) {
@@ -244,7 +243,7 @@ export function createAdminData(transport: WriteTransport) {
     await protectLastEnabledSuper(before);
     const [deleted] = await transport.deleteRows<Row>('admin_accounts', `id=eq.${encodeURIComponent(id)}`);
     if (!deleted) throw new AdminDataError('Not found', 404);
-    await writeAudit({ actor, operationType: '刪除', targetTable: 'admin_accounts', targetId: id, content: '刪除管理員帳號', beforeData: before });
+    await writeAudit({ actor, operationType: '刪除', targetTable: 'admin_accounts', targetId: id, content: '刪除管理員帳號', beforeData: safeAdminAuditRow(before) });
   }
   async function deleteActivationCode(id: string, actor: AdminActor) {
     return transport.supabaseRequest<{ deleted: boolean }>('rpc/admin_delete_activation_code', { method: 'POST', body: JSON.stringify({ p_code_id: id, p_actor_id: actor.id, p_actor_name: actor.name || actor.account }) });
