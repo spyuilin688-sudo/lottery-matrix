@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDownIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
+import { ExploreValidationSummary } from "./ExploreValidationSummary";
 import "./explore-result-preview.css";
 
 type HitCondition = "準4+" | "準5+";
@@ -32,7 +33,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
   return (
     <section className="explore-validation-card" aria-label={`${result.number} 驗證過程`}>
       <div className="explore-validation-summary-card">
-        <p className="explore-validation-summary">{result.summary}</p>
+        <ExploreValidationSummary>{result.summary}</ExploreValidationSummary>
         <strong className="explore-validation-consecutive-tag">{result.consecutive}</strong>
       </div>
 
@@ -79,7 +80,12 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
                           {row.numbers.map((value, index) => (
                             <PreviewNumber value={value} row={row} key={`${value}-${index}`} />
                           ))}
-                          {row.special ? <><b>＋</b><em>{row.special}</em></> : null}
+                          {row.special ? (
+                            <span className="explore-validation-special-number">
+                              <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                              <em>{row.special}</em>
+                            </span>
+                          ) : null}
                         </span>
                       ) : null}
                     </div>

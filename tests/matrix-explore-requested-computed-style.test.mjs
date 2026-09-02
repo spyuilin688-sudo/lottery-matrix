@@ -239,6 +239,7 @@ test("六個結果標題與版路結果之間使用 48% 表頭分隔線", () => 
   const head = style(".road-results-head");
   assert.equal(head.borderBottomWidth, "1px");
   assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.48)");
+  assert.equal(head.marginBottom, "4px");
 });
 
 test("展開驗證內容使用 4px 左右內距，左側期數為預設字型 12px 字重 800", () => {

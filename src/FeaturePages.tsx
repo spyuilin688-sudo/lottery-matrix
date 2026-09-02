@@ -38,6 +38,7 @@ import {
   type TongXingPair,
 } from "./lottery-api";
 import { BrandLogo, PRIMARY_BRAND_LOGO } from "./BrandLogo";
+import { ExploreValidationSummary } from "./ExploreValidationSummary";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
@@ -1082,14 +1083,15 @@ function ExploreValidationProcess({
                     : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit))
                       ? "hit"
                       : "";
-                return (
-                  <Fragment key={`${value}-${index}`}>
-                    {index === 6 && (lottery === "六合彩" || lottery === "大樂透")
-                      ? <i className="explore-validation-special-separator" aria-hidden="true">+</i>
-                      : null}
-                    <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
-                  </Fragment>
+                const number = (
+                  <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
                 );
+                return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
+                  <span className="explore-validation-special-number" key={`${value}-${index}`}>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                    {number}
+                  </span>
+                ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
               })}
             </span>
           </div>
@@ -1131,11 +1133,11 @@ function ExploreValidationProcess({
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
             <header className="explore-validation-summary-card">
-              <p className="explore-validation-summary">
+              <ExploreValidationSummary>
                 開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆{" ｜ "}
                 {relation === "同期" ? "同期" : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}{" ｜ "}第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆{" ｜ "}
                 <i className="validation-summary-formula">{ruleDisplays()}</i>{" ｜ "}下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
-              </p>
+              </ExploreValidationSummary>
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
             <div className="explore-validation-groups">
@@ -1167,13 +1169,9 @@ function ExploreValidationProcess({
                     period: "",
                     numbers: [],
                   }));
-                  const compactPrediction: ValidationDisplayRow = {
-                    ...prediction,
-                    hitNumbers: undefined,
-                  };
                   return validationGroup(
                     `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
-                    [source, ...formulaOnlyRows, compactPrediction],
+                    [source, ...formulaOnlyRows, prediction],
                     [
                       ...formulaDisplays.map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
                       `［ ${resultNumbers} ］`,

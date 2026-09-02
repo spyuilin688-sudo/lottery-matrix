@@ -176,12 +176,13 @@ describe("production member shell", () => {
     expect(getComputedStyle(hit!).backgroundColor).toBe("rgba(231, 132, 165, 0.14)");
 
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
-    const neutralNumber = document.querySelector(".explore-validation-numbers b");
+    const specialSeparator = document.querySelector(".explore-validation-special-separator");
     const special = document.querySelector(".explore-validation-numbers em");
-    expect(getComputedStyle(neutralNumber!).color).toBe("rgb(186, 197, 210)");
+    expect(getComputedStyle(specialSeparator!).color).toBe("rgb(212, 166, 59)");
     expect(getComputedStyle(special!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(special!).color).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(special!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
+    expect(special?.closest(".explore-validation-special-number")?.textContent).toMatch(/^\+\d{2}$/);
 
     productionStyle.remove();
   });
@@ -307,7 +308,7 @@ describe("production member shell", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
-    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{[^}]*top:\s*2px[^}]*right:\s*2px/s);
+    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{[^}]*position:\s*static[^}]*margin:\s*2px 2px 0 0/s);
     expect(css).toMatch(/\.explore-result-preview-screen \.road-results \.road-result-row\.explore-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*6px 0/s);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(92px,\s*30vw,\s*120px\),\s*120px\)/);
@@ -321,9 +322,9 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*9px[^}]*font-weight:\s*700[^}]*letter-spacing:\s*-\.06em/s);
     expect(css).toMatch(/--explore-validation-row-min-height:\s*clamp\(27px,\s*7\.18vw,\s*28px\)/);
-    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*3px/s);
-    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*clamp\(13px,\s*3\.6vw,\s*15px\)[^}]*white-space:\s*normal/s);
-    expect(css).toMatch(/\.explore-validation-formulas\s*\{[^}]*font-size:\s*clamp\(8px,\s*2\.2vw,\s*10\.5px\)/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*2px/s);
+    expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*font-size:\s*var\(--explore-summary-fit-font-size,\s*var\(--explore-validation-summary-font-size\)\)[^}]*white-space:\s*nowrap/s);
+    expect(css).toMatch(/\.explore-validation-formulas\s*\{[^}]*font-size:\s*clamp\(10px,\s*3\.05vw,\s*12px\)/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*white-space:\s*nowrap/s);
   });
 
@@ -339,7 +340,7 @@ describe("production member shell", () => {
   it("uses the outer border color for expanded top and bottom dividers", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
-    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*--explore-validation-border-color:\s*#e6b76a[^}]*padding:\s*6px 0[^}]*border-top-width:\s*1px[^}]*border-top-color:\s*var\(--explore-validation-border-color\)[^}]*border-bottom-width:\s*1px[^}]*border-bottom-color:\s*var\(--explore-validation-border-color\)/s);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*--explore-validation-border-color:\s*#755329[^}]*padding:\s*8px 0[^}]*border-top-width:\s*1px[^}]*border-top-color:\s*var\(--explore-validation-border-color\)[^}]*border-bottom-width:\s*1px[^}]*border-bottom-color:\s*var\(--explore-validation-border-color\)/s);
     expect(css).toMatch(/\.explore-validation-issues,\s*\.explore-validation-numbers-card,\s*\.explore-validation-formulas\s*\{[^}]*border:\s*1px solid rgba\(91,\s*126,\s*169,\s*\.42\)/s);
     expect(css).toMatch(/\.explore-validation-number-row:nth-child\(n \+ 2\),\s*\.explore-validation-issue:nth-child\(n \+ 2\),\s*\.explore-validation-formula-row:nth-child\(n \+ 2\)\s*\{[^}]*border-top:\s*1px solid rgba\(91,\s*126,\s*169,\s*\.34\)/s);
     expect(css).not.toMatch(/\.explore-validation-number-row:nth-child\(n \+ 3\)/);
@@ -405,6 +406,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(resultCount!).color).toBe("rgb(167, 216, 234)");
     expect(getComputedStyle(resultNumber!).color).toBe("rgb(242, 245, 248)");
     expect(getComputedStyle(tableHead!).paddingTop).toBe("8px");
+    expect(getComputedStyle(tableHead!).marginBottom).toBe("4px");
     expect(getComputedStyle(tableHeadLabel!).fontSize).toBe("12px");
     expect(getComputedStyle(tableHeadLabel!).fontWeight).toBe("800");
     expect(previewCss).toMatch(/\.explore-result-preview-screen\.matrix-explore-main-screen \.road-results-head > span\s*\{[^}]*font-size:\s*12px;[^}]*font-size:\s*clamp\(11px,\s*3\.08vw,\s*12px\)/s);
@@ -422,8 +424,9 @@ describe("production member shell", () => {
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     expect(summaryTag).not.toBeNull();
     expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
-    expect(getComputedStyle(summaryTag!).top).toBe("2px");
-    expect(getComputedStyle(summaryTag!).right).toBe("2px");
+    expect(getComputedStyle(summaryTag!).position).toBe("static");
+    expect(getComputedStyle(summaryTag!).marginTop).toBe("2px");
+    expect(getComputedStyle(summaryTag!).marginRight).toBe("2px");
 
     productionStyle.remove();
   });
@@ -447,8 +450,12 @@ describe("production member shell", () => {
       expect(row).not.toBeNull();
       expect(getComputedStyle(row!).height).toBe("auto");
       expect(getComputedStyle(row!).minHeight).toBe("var(--explore-validation-row-min-height)");
-      expect(getComputedStyle(row!).paddingTop).toBe("3px");
-      expect(getComputedStyle(row!).paddingBottom).toBe("3px");
+      const rowStyle = getComputedStyle(row!);
+      const isFormula = selector === ".explore-validation-formula-row";
+      expect(rowStyle.paddingTop).toBe(isFormula ? "2px" : "3px");
+      expect(rowStyle.paddingRight).toBe(isFormula ? "2px" : "4px");
+      expect(rowStyle.paddingBottom).toBe(isFormula ? "2px" : "3px");
+      expect(rowStyle.paddingLeft).toBe(isFormula ? "2px" : "4px");
     }
 
     const numberRow = document.querySelector(".explore-validation-draw-row");
@@ -500,7 +507,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-consecutive-filter-options\s*\{[^}]*margin:\s*0 0 6px[^}]*padding:\s*4px 0[^}]*border-top:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.68\)[^}]*border-bottom:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.68\)[^}]*animation:\s*explore-filter-options-expand \.18s ease-out/s);
     expect(css).toMatch(/@keyframes explore-filter-options-expand[\s\S]*?from\s*\{[^}]*opacity:\s*0[^}]*transform:\s*translateY\(-2px\) scaleY\(\.96\)[\s\S]*?to\s*\{[^}]*opacity:\s*1[^}]*transform:\s*translateY\(0\) scaleY\(1\)/);
     expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*\.explore-consecutive-filter-options\s*\{[^}]*animation:\s*none/s);
-    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*0[^}]*padding:\s*6px 0/s);
+    expect(css).toMatch(/\.explore-validation-card\s*\{[^}]*margin:\s*0[^}]*padding:\s*8px 0/s);
     expect(css).toMatch(/\.explore-validation-groups\s*\{[^}]*row-gap:\s*4px/s);
     expect(css).toMatch(/\.explore-validation-group\s*\{[^}]*column-gap:\s*0/s);
     expect(css).toMatch(/\.explore-validation-issues\s*\{[^}]*margin-right:\s*6px/s);
@@ -508,7 +515,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-draw-row\s*\{[^}]*padding:\s*1\.5px 0/s);
     expect(css).toMatch(/\.explore-validation-numbers\s*\{[^}]*padding:\s*1px 3px/s);
     expect(css).toMatch(/\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*padding-inline:\s*3px/s);
-    expect(css).toMatch(/--explore-validation-summary-font-size:\s*clamp\(13px,\s*3\.6vw,\s*15px\)/);
+    expect(css).toMatch(/--explore-validation-summary-font-size:\s*13px/);
     expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*margin-bottom:\s*0/s);
   });
 
@@ -529,6 +536,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*18px/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*21px/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
+    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*0/s);
   });
 
   it("keeps the five-number validation row compact without changing the wide 6+1 layout", () => {

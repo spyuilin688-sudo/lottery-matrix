@@ -325,7 +325,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect(validation.querySelector('.explore-validation-prediction-arrow--right')).not.toBeNull();
 });
 
-test('同期驗證會合併鎖定與驗證列且只保留鎖定條件顏色', async () => {
+test('同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色', async () => {
   matrixApi.fetchExploreList.mockResolvedValue({
     ...exploreEnvelope,
     items: [{ ...exploreEnvelope.items[0], referenceOffset: 0 }],
@@ -360,7 +360,7 @@ test('同期驗證會合併鎖定與驗證列且只保留鎖定條件顏色', as
   expect(firstGroup!.querySelectorAll('.explore-validation-number-row')).toHaveLength(2);
   expect(firstGroup!.querySelectorAll('.explore-validation-number--source')).toHaveLength(1);
   expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
-  expect(firstGroup!.querySelector('.explore-validation-number--hit')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
 });
 
 test('拖牌有兩個驗證值時新增左中空白的第二公式列', async () => {
@@ -405,7 +405,7 @@ test('拖牌有兩個驗證值時新增左中空白的第二公式列', async ()
   expect(formulas[0].textContent).not.toContain('拖牌24');
   expect(formulas[1].textContent).toContain('拖牌24');
   expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
-  expect(firstGroup!.querySelector('.explore-validation-number--hit')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
 });
 
 test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前顯示加號', async (lottery) => {
@@ -440,6 +440,7 @@ test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   expect(validation.querySelectorAll('.explore-validation-special-separator').length).toBeGreaterThan(0);
   expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
+  expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^\+\d{2}$/);
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
