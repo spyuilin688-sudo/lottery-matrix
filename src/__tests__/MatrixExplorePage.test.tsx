@@ -551,6 +551,38 @@ test('探索結果整列皆可展開驗證過程', async () => {
   expect(await screen.findByRole('region', { name: '驗證過程' })).toBeTruthy();
 });
 
+test('切換已展開結果時將新列重新定位至畫面上方', async () => {
+  const scrollIntoView = vi.fn();
+  HTMLElement.prototype.scrollIntoView = scrollIntoView;
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    total: 2,
+    items: [
+      exploreEnvelope.items[0],
+      {
+        ...exploreEnvelope.items[0],
+        id: 'api-item-2',
+        number: '43',
+        predictionNumbers: ['20', '25'],
+      },
+    ],
+  });
+
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  const firstRow = await screen.findByRole('button', { name: '展開版路 api-item-1' });
+  const secondRow = screen.getByRole('button', { name: '展開版路 api-item-2' });
+  fireEvent.click(firstRow);
+  expect(scrollIntoView).not.toHaveBeenCalled();
+
+  fireEvent.click(secondRow);
+
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+  expect(scrollIntoView.mock.instances[0]).toBe(secondRow);
+  expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+});
+
 test('探索日期提供本日、昨日與前日', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
 
