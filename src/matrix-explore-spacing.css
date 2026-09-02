@@ -69,7 +69,7 @@
   min-height: var(--matrix-switcher-size);
   padding: 1px;
   flex: 0 0 var(--matrix-switcher-size);
-  border: 1px solid var(--select-tech-border);
+  border: 0;
   border-radius: 0;
   background: transparent;
   clip-path: polygon(
@@ -87,31 +87,7 @@
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::before,
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::after {
-  position: absolute;
-  pointer-events: none;
-  clip-path: polygon(
-    var(--matrix-switcher-cut) 0,
-    calc(100% - var(--matrix-switcher-cut)) 0,
-    100% var(--matrix-switcher-cut),
-    100% calc(100% - var(--matrix-switcher-cut)),
-    calc(100% - var(--matrix-switcher-cut)) 100%,
-    var(--matrix-switcher-cut) 100%,
-    0 calc(100% - var(--matrix-switcher-cut)),
-    0 var(--matrix-switcher-cut)
-  );
-  content: "";
-}
-
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::before {
-  z-index: 0;
-  inset: 0;
-  background: linear-gradient(90deg, #a87618, #f0c44d 16%, #b98723 50%, #f0c44d 84%, #a87618);
-}
-
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::after {
-  z-index: 1;
-  inset: 1px;
-  background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98));
+  display: none;
 }
 
 .matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher img {

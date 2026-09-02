@@ -76,8 +76,9 @@ test("Matrix Explore restores the three original date selections and keeps them 
   assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
   assert.match(switcher, /opacity:\s*\.96/);
   const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher button");
-  assert.match(switcherButton, /border:\s*1px solid var\(--select-tech-border\)/);
+  assert.match(switcherButton, /border:\s*0/);
   assert.match(switcherButton, /clip-path:\s*polygon/);
+  assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
 
   assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*white-space:\s*nowrap;/s);
 

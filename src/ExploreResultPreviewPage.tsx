@@ -27,8 +27,8 @@ function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
 
 function formatFormula(formula: string) {
   const formatted = formula
-    .replace(/顆\s+(?=\d)/g, "顆")
-    .replace(/(?<=\d)\+/g, " +");
+    .replace(/顆\s*(?=\d)/g, "顆 ")
+    .replace(/(?<=\d)\s*\+/g, " +");
   const result = formatted.match(/^［\s*(.+?)\s*］$/);
   return result
     ? <>［{" "}<strong className="explore-validation-result-number">{result[1]}</strong>{" "}］</>

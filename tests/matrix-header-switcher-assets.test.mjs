@@ -16,7 +16,7 @@ function pngDimensions(path) {
   return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
 }
 
-test("Matrix header switcher keeps frame-free artwork at its original scale inside the shared cut-corner frame", () => {
+test("Matrix header switcher keeps frame-free artwork at its original scale without an outer frame", () => {
   for (const { original, cleaned } of frameFreeAssets) {
     const assetDir = "public/assets/lottery/functions";
     assert.equal(source.includes(`/assets/lottery/functions/${cleaned}`), true);
@@ -31,7 +31,7 @@ test("Matrix header switcher keeps frame-free artwork at its original scale insi
 
   assert.match(
     spacingCss,
-    /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before[\s\S]*?background: linear-gradient\(90deg, #a87618, #f0c44d/s,
+    /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s,
   );
   assert.match(
     spacingCss,

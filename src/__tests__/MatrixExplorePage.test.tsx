@@ -313,7 +313,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect([...blocks[0].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114118', '114120', '114123',
   ]);
-  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆14 +14.24 = 22');
+  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆 14 +14.24 = 22');
   expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[2]?.textContent).toBe('［ 22 ］');
   expect(blocks[0].querySelector('.explore-validation-result-number')?.textContent).toBe('22');
   expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
@@ -410,8 +410,8 @@ test('拖牌多個驗證值時只保留一列空白公式列且每組最多三�
   const formulas = [...firstGroup!.querySelectorAll('.explore-validation-formula-row')];
   expect(issues.map((cell) => cell.textContent)).toEqual(['114120', '', '114123']);
   expect(numberRows[1].textContent).toBe('');
-  expect(formulas[0].textContent).toBe('第4顆14 +14 = 22');
-  expect(formulas[1].textContent).toBe('第4顆14 +24 = 22');
+  expect(formulas[0].textContent).toBe('第4顆 14 +14 = 22');
+  expect(formulas[1].textContent).toBe('第4顆 14 +24 = 22');
   expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('+34');
   expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
   expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
@@ -643,7 +643,7 @@ test('合值版路的 API 驗證概要顯示合值規則', async () => {
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值 14.24 ｜ 下 3 期開');
   expect(validation.querySelector('.validation-summary-formula-label')?.textContent).toBe('合值');
-  expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆14 合值14.24 = 22');
+  expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆 14 合值14.24 = 22');
 });
 
 test('探索結果使用 API 資料而不是固定範例', async () => {

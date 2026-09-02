@@ -11,9 +11,11 @@ const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css"
 const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const adjustmentsCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("Matrix 三頁切換器左移 3px，並使用完整切角金框", () => {
+test("Matrix 三頁切換器維持位置並隱藏外框", () => {
   assert.match(featureCss, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 3px\);/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before\s*\{[^}]*background:\s*linear-gradient\([^}]*#f0c44d/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*border:\s*0;/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
+  assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before\s*\{[^}]*background:\s*linear-gradient\([^}]*#f0c44d/s);
   assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher img\s*\{\s*clip-path:\s*inherit;/s);
 });
 

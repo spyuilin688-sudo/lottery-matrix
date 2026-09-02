@@ -300,12 +300,12 @@ describe("production member shell", () => {
     }
   });
 
-  it("inserts one half-width space before formula plus signs", () => {
+  it("inserts the requested half-width spaces in validation formulas", () => {
     window.history.replaceState({}, "", "/explore-result-preview");
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
-    expect(screen.getAllByText("第2顆09 +21 = 30").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
   });
 
   it("keeps the scoped tag selector and lets the period column fit its content", () => {

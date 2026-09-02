@@ -1072,6 +1072,8 @@ function ExploreValidationProcess({
   ) => (
     <div
       className="explore-validation-group"
+      data-lottery={lottery}
+      data-road-type={item.algorithmType}
       data-row-count={rows.length}
       data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
       key={key}
@@ -1147,7 +1149,7 @@ function ExploreValidationProcess({
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
         const currentCalculations = validation.sourceA ? formulaDisplayValues().map((display) => (
-          `第${item.referencePosition ?? item.position}顆${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
+          `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
         )) : [];
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
@@ -1183,7 +1185,7 @@ function ExploreValidationProcess({
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
                 const calculations = formulaDisplayValues(row.matchedRules).map((display) => (
-                  `第${item.referencePosition ?? item.position}顆${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
+                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
                 ));
                 if (compactValidation) {
                   const formulaDisplays = formulaDisplayValues(row.matchedRules);
@@ -1196,7 +1198,7 @@ function ExploreValidationProcess({
                     `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
                     [source, ...formulaOnlyRows, prediction],
                     [
-                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
                       resultFormula(resultNumbers),
                     ],
                   );

@@ -17,8 +17,12 @@ test("Matrix Explore renders API validation with the merged three-column preview
   assert.match(component[0], /className="explore-validation-numbers-card"/);
   assert.match(component[0], /className="explore-validation-formulas explore-validation-numeric-text"/);
   assert.match(component[0], /className="explore-validation-prediction"/);
+  assert.match(component[0], /data-lottery=\{lottery\}/);
+  assert.match(component[0], /data-road-type=\{item\.algorithmType\}/);
 
   assert.match(css, /\.explore-validation-group\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(92px, 30vw, 120px\), 120px\)/s);
+  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(88px, 27vw, 108px\), 108px\)/s);
+  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(100px, 32vw, 128px\), 128px\)/s);
   assert.match(css, /\.explore-validation-summary-card\s*\{[\s\S]*?border:\s*1px solid #e6b76a/s);
 });
 
@@ -29,8 +33,12 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.match(css, /\.explore-validation-number\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0;[^}]*letter-spacing:\s*-\.06em/s);
   assert.match(css, /\.explore-validation-numbers em\s*\{[^}]*font-size:\s*13px;[^}]*letter-spacing:\s*-\.06em/s);
+  assert.match(css, /\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers\s*\{[^}]*grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\) max-content;/s);
   assert.match(css, /\.explore-validation-group\[data-row-count="3"\] \.explore-validation-formula-row:nth-child\(2\)\s*\{[^}]*color:\s*#e4c980/s);
-  assert.match(css, /\.explore-validation-result-number\s*\{[^}]*font-size:\s*\.92em;[^}]*font-weight:\s*700;[^}]*line-height:\s*1/s);
+  assert.match(css, /\.explore-validation-group\[data-road-type="拖牌"\] \.explore-validation-formula-row:nth-child\(2\)\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*font-size:\s*inherit;[^}]*color:\s*#e4c980/s);
+  assert.match(css, /\.explore-validation-result-number\s*\{[^}]*font-size:\s*\.85em;[^}]*font-weight:\s*700;[^}]*line-height:\s*1/s);
   assert.match(component[0], /<>［\{" "\}<strong className="explore-validation-result-number">\{resultNumbers\}<\/strong>\{" "\}］<\/>/);
+  assert.match(component[0], /`第\$\{item\.referencePosition \?\? item\.position\}顆 \$\{displayNumber\(validation\.sourceA!\.baseNumber\)\} \$\{display\} = /);
+  assert.match(component[0], /`第\$\{item\.referencePosition \?\? item\.position\}顆 \$\{displayNumber\(row\.baseNumber\)\} \$\{display\} = /);
   assert.doesNotMatch(css, /!important/);
 });

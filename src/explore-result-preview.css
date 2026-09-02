@@ -379,6 +379,14 @@
   overflow: visible;
 }
 
+.explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
+  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(88px, 27vw, 108px), 108px);
+}
+
+.explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
+  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(100px, 32vw, 128px), 128px);
+}
+
 .explore-validation-group + .explore-validation-group {
   margin-top: 0;
 }
@@ -574,6 +582,7 @@
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) max-content;
   grid-auto-columns: clamp(16px, 4.36vw, 17px);
   gap: 0;
   padding-inline: 3px;
@@ -638,12 +647,22 @@
   color: #e4c980;
 }
 
+.explore-validation-group[data-road-type="拖牌"] .explore-validation-formula-row:nth-child(2) {
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  font-size: inherit;
+  color: #e4c980;
+  line-height: inherit;
+  text-align: center;
+}
+
 .explore-validation-formula-row:last-child {
   color: #bac5d2;
 }
 
 .explore-validation-result-number {
-  font-size: .92em;
+  font-size: .85em;
   font-weight: 700;
   line-height: 1;
 }
