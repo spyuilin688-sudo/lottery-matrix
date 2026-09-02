@@ -15,7 +15,9 @@ const source = readFileSync("src/FeaturePages.tsx", "utf8");
 
 test("Matrix 狀態的自訂觸發條件固定於底部導覽右側", () => {
   assert.doesNotMatch(feature, /status-title-trigger/);
-  assert.match(notification, /\.matrix-status-screen \.matrix-status-settings-entry\s*\{[^}]*position:\s*fixed;[^}]*right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(env\(safe-area-inset-bottom, 0px\) \+ 9px\);/s);
+  assert.match(prototype, /\.bottom-navigation\s*\{[^}]*z-index:\s*20;/s);
+  assert.match(notification, /\.matrix-status-settings-entry\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*21;[^}]*right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);[^}]*bottom:\s*calc\(env\(safe-area-inset-bottom, 0px\) \+ 9px\);/s);
+  assert.doesNotMatch(notification, /\.matrix-status-screen \.matrix-status-settings-entry/);
   assert.match(source, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
 });
 

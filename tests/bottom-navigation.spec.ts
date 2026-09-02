@@ -59,3 +59,37 @@ test("選取狀態會跟隨首頁、通知與我的頁面", async ({ page }) => 
   await notificationNavigation.getByRole("button", { name: "我的" }).click();
   await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" })).toHaveAttribute("aria-current", "page");
 });
+
+test("Matrix 狀態右下角設定入口優先於我的點擊區並可進入自訂觸發條件", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("matrix-status-section").getByRole("button").first().click();
+
+  const mobilePage = page.locator(".mobile-page");
+  const navigation = page.getByTestId("bottom-navigation");
+  const settings = page.getByRole("button", { name: "自訂觸發條件，連續點擊兩下開啟" });
+
+  await expect(settings).toBeVisible();
+  await expect(settings).toHaveCSS("position", "fixed");
+  await expect(settings).toHaveCSS("right", "10px");
+  await expect(settings).toHaveCSS("bottom", "9px");
+
+  const mobilePageBox = await mobilePage.boundingBox();
+  const settingsBox = await settings.boundingBox();
+  if (!mobilePageBox || !settingsBox) throw new Error("Matrix 狀態設定入口沒有可量測的範圍");
+
+  expect(settingsBox.x + settingsBox.width).toBeCloseTo(mobilePageBox.x + mobilePageBox.width - 10, 0);
+  expect(settingsBox.y + settingsBox.height).toBeCloseTo(mobilePageBox.y + mobilePageBox.height - 9, 0);
+  expect(await settings.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return hit === element || element.contains(hit);
+  })).toBe(true);
+  expect(Number(await settings.evaluate((element) => getComputedStyle(element).zIndex)))
+    .toBeGreaterThan(Number(await navigation.evaluate((element) => getComputedStyle(element).zIndex)));
+
+  await settings.click();
+  await settings.click();
+  await expect(page.getByRole("heading", { name: "Matrix 自訂觸發狀態" })).toBeVisible();
+  await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" }))
+    .not.toHaveAttribute("aria-current", "page");
+});

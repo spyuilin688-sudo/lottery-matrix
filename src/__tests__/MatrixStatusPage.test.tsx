@@ -2,8 +2,14 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+// @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
+import { readFileSync } from 'node:fs';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixStatusPage } from '../FeaturePages';
+
+declare const process: { cwd(): string };
+
+const featurePageAdjustmentsCss = readFileSync(`${process.cwd()}/src/feature-page-adjustments.css`, 'utf8');
 
 const statusApi = vi.hoisted(() => ({
   fetchMatrixStatus: vi.fn(), listCustomStatusSettings: vi.fn(), saveCustomStatusSetting: vi.fn(), resetCustomStatusSetting: vi.fn(),
@@ -44,6 +50,7 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
 });
 
 test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層', async () => {
+  const statusRule = featurePageAdjustmentsCss.match(/(?:\.matrix-status-screen\s+)?\.matrix-status-settings-entry\s*\{[^}]*\}/s)?.[0] ?? '';
   const mobilePage = document.createElement('section');
   mobilePage.className = 'mobile-page';
   document.body.appendChild(mobilePage);
@@ -56,6 +63,10 @@ test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層'
   expect(trigger.querySelector('svg')).toBeInTheDocument();
   await waitFor(() => expect(mobilePage).toContainElement(trigger));
   expect(trigger.parentElement).toBe(mobilePage);
+  expect(statusRule).toMatch(/^\.matrix-status-settings-entry\s*\{/);
+  expect(statusRule).toMatch(/position:\s*fixed;/);
+  expect(statusRule).toMatch(/z-index:\s*21;/);
+  expect(statusRule).toMatch(/right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);/);
   expect(screen.queryByRole('img', { name: '自訂觸發條件' })).not.toBeInTheDocument();
   expect(container.querySelector('.matrix-title-banner-actions')).not.toBeInTheDocument();
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');

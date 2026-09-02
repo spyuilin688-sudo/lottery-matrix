@@ -662,7 +662,7 @@
 }
 
 
-.matrix-status-screen .matrix-status-settings-entry {
+.matrix-status-settings-entry {
   position: fixed;
   z-index: 21;
   right: max(10px, calc(env(safe-area-inset-right, 0px) + 4px));
@@ -671,7 +671,7 @@
   place-items: end end;
 }
 
-.matrix-status-screen .matrix-status-settings-entry .bottom-navigation-quick-settings-visual {
+.matrix-status-settings-entry .bottom-navigation-quick-settings-visual {
   justify-self: end;
 }
 

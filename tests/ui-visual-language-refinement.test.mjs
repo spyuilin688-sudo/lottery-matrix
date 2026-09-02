@@ -94,8 +94,9 @@ test("guide categories scroll horizontally and status settings stays in bottom n
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "overflow-x"), "auto");
   assert.equal(finalDeclaration(featureCss, ".matrix-guide-screen .guide-category-strip", "scroll-snap-type"), "x proximity");
   assert.doesNotMatch(canonicalFeatureCss, /status-title-trigger/);
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .matrix-status-settings-entry", "position"), "fixed");
-  assert.equal(finalDeclaration(featureCss, ".matrix-status-screen .matrix-status-settings-entry", "right"), "max(10px, calc(env(safe-area-inset-right, 0px) + 4px))");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "position"), "fixed");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "right"), "max(10px, calc(env(safe-area-inset-right, 0px) + 4px))");
+  assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "z-index"), "21");
 });
 
 test("profile expiry column no longer draws the unwanted vertical rule", () => {
