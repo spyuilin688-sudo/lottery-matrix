@@ -788,6 +788,10 @@
   color: rgba(244, 206, 103, .84);
 }
 
+.matrix-explore-main-screen .road-results-head {
+  margin-bottom: 4px;
+}
+
 .matrix-explore-main-screen .repeat-stats-heading .section-title > span,
 .matrix-explore-main-screen .result-title .section-title > span {
   background: rgba(244, 206, 103, .84);
