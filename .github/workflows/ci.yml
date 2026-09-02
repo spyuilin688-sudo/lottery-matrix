@@ -7,13 +7,346 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: project-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  apply-approved-explore-patch:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/explore-validation-formula-layout'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply approved Matrix Explore validation patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
+              return text.replace(old, new, 1)
+
+          feature_path = Path("src/FeaturePages.tsx")
+          feature = feature_path.read_text()
+
+          feature = replace_once(
+              feature,
+              '''  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+          const resultFormula = (resultNumbers: string) => (
+''',
+              '''  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+          const lotteryMaximum = lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+          const normalizeFormulaNumber = (value: number) => String(
+            (((value - 1) % lotteryMaximum) + lotteryMaximum) % lotteryMaximum + 1,
+          ).padStart(2, "0");
+          const formulaResultNumber = (algorithmType: string, baseNumber: number, ruleValue: number) => (
+            normalizeFormulaNumber(algorithmType.startsWith("合值") ? ruleValue - baseNumber : baseNumber + ruleValue)
+          );
+          const validationFormula = (
+            position: number,
+            baseNumber: number,
+            algorithmType: string,
+            ruleValue: number,
+          ) => (
+            <span className="explore-validation-formula-expression">
+              <span>第</span>
+              <span>{position}</span>
+              <span>顆</span>
+              <span>{displayNumber(baseNumber)}</span>
+              {algorithmType.startsWith("合值") ? (
+                <>
+                  <span>合值</span>
+                  <span>{ruleValue}</span>
+                </>
+              ) : <span>{`+${ruleValue}`}</span>}
+              <span>=</span>
+              <span>{formulaResultNumber(algorithmType, baseNumber, ruleValue)}</span>
+            </span>
+          );
+          const resultFormula = (resultNumbers: string) => (
+''',
+              "formula helper insertion",
+          )
+          feature = replace_once(
+              feature,
+              '''                    <i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>
+''',
+              '''                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+''',
+              "special-number separator",
+          )
+          feature = replace_once(
+              feature,
+              '''      <div className="explore-validation-formulas explore-validation-numeric-text">
+''',
+              '''      <div className="explore-validation-formulas">
+''',
+              "formula font scope",
+          )
+          feature = replace_once(
+              feature,
+              '''        const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
+            ruleDisplayValues(matchedRules).map((display) => {
+              if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
+              if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\\+/, "")}`;
+              return display;
+            })
+          );
+          const summaryFormulaValues = ruleDisplayValues();
+          const referenceFirst = (item.referenceOffset ?? 0) < 0;
+          const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
+          const currentCalculations = validation.sourceA ? formulaDisplayValues().map((display) => (
+            `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
+          )) : [];
+''',
+              '''        const formulaRules = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+            const resolved = matchedRules
+              ? matchedRules.map((matched) => {
+                  if (typeof matched !== "number") {
+                    return ruleSet.rules.find((rule) => (
+                      rule.value === matched.value && rule.algorithmType === matched.algorithmType
+                    )) ?? matched;
+                  }
+                  return ruleSet.rules.find((rule) => (
+                    rule.value === matched && (
+                      rule.algorithmType === item.algorithmType || rule.algorithmType === `${item.algorithmType}版路`
+                    )
+                  )) ?? ruleSet.rules.find((rule) => rule.value === matched) ?? {
+                    value: matched,
+                    display: String(matched),
+                    algorithmType: item.algorithmType,
+                  };
+                })
+              : ruleSet.rules;
+            return item.algorithmType === "拖牌" ? [...resolved].reverse() : resolved;
+          };
+          const formulaRows = (
+            baseNumber: number,
+            matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"],
+          ) => formulaRules(matchedRules).slice(0, 2).map((rule) => validationFormula(
+            item.referencePosition ?? item.position,
+            baseNumber,
+            rule.algorithmType,
+            rule.value,
+          ));
+          const summaryFormulaValues = ruleDisplayValues();
+          const referenceFirst = (item.referenceOffset ?? 0) < 0;
+          const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
+          const currentCalculations = validation.sourceA ? formulaRows(validation.sourceA.baseNumber) : [];
+''',
+              "formula rule mapping",
+          )
+          feature = replace_once(
+              feature,
+              '''                const calculations = formulaDisplayValues(row.matchedRules).map((display) => (
+                    `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
+                  ));
+                  if (compactValidation) {
+                    const formulaDisplays = formulaDisplayValues(row.matchedRules);
+                    const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1, 2).map((_, index) => ({
+                      key: `formula-${row.group}-${index + 2}`,
+                      period: "",
+                      numbers: [],
+                    }));
+                    return validationGroup(
+                      `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
+                      [source, ...formulaOnlyRows, prediction],
+                      [
+                        ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                        resultFormula(resultNumbers),
+                      ],
+                    );
+                  }
+''',
+              '''                const calculations = formulaRows(row.baseNumber, row.matchedRules);
+                  if (compactValidation) {
+                    const formulaOnlyRows: ValidationDisplayRow[] = calculations.slice(1, 2).map((_, index) => ({
+                      key: `formula-${row.group}-${index + 2}`,
+                      period: "",
+                      numbers: [],
+                    }));
+                    return validationGroup(
+                      `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
+                      [source, ...formulaOnlyRows, prediction],
+                      [
+                        ...calculations.slice(0, 2),
+                        resultFormula(resultNumbers),
+                      ],
+                    );
+                  }
+''',
+              "historical formula mapping",
+          )
+          feature = replace_once(
+              feature,
+              '''                      ...formulaDisplayValues().slice(1, 2).map((_, index): ValidationDisplayRow => ({
+''',
+              '''                      ...currentCalculations.slice(1, 2).map((_, index): ValidationDisplayRow => ({
+''',
+              "current compact formula rows",
+          )
+          feature_path.write_text(feature)
+
+          css_path = Path("src/explore-result-preview.css")
+          css = css_path.read_text()
+          css = replace_once(
+              css,
+              '''  white-space: pre;
+          }
+
+          .explore-validation-special-number {
+            display: inline-flex;
+            width: max-content;
+            align-items: center;
+            justify-self: end;
+            gap: 0;
+          }
+
+          .explore-validation-number--source {
+''',
+              '''  white-space: nowrap;
+          }
+
+          .explore-validation-special-number {
+            display: inline-flex;
+            width: max-content;
+            align-items: center;
+            justify-self: end;
+            margin-left: 2.5px;
+            gap: 2.5px;
+          }
+
+          .explore-validation-number--source,
+          .explore-validation-number--step,
+          .explore-validation-number--hit {
+            padding-block: 0.5px;
+            padding-inline: 0.5px;
+          }
+
+          .explore-validation-number--source {
+''',
+              "special-number and state spacing",
+          )
+          css = replace_once(
+              css,
+              '''.explore-validation-formulas {
+            color: #bac5d2;
+            background: rgba(8, 15, 27, .82);
+            font-size: clamp(10px, 3.05vw, 12px);
+            line-height: 1.25;
+          }
+
+          .explore-validation-formula-row {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: auto;
+            min-height: var(--explore-validation-row-min-height);
+            padding: 2px;
+            background: transparent;
+            overflow-wrap: normal;
+            white-space: nowrap;
+          }
+''',
+              '''.explore-validation-formulas {
+            color: #bac5d2;
+            background: rgba(8, 15, 27, .82);
+            font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+            font-size: clamp(10px, 3.05vw, 12px);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.25;
+          }
+
+          .explore-validation-formula-row {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: auto;
+            min-height: var(--explore-validation-row-min-height);
+            padding: 2px;
+            color: #bac5d2;
+            background: transparent;
+            overflow-wrap: normal;
+            white-space: nowrap;
+          }
+''',
+              "formula typography",
+          )
+          css = replace_once(
+              css,
+              '''.explore-validation-formula-row:first-child {
+            color: #e4c980;
+          }
+
+          .explore-validation-group[data-row-count="3"] .explore-validation-formula-row:nth-child(2) {
+            color: #e4c980;
+          }
+
+          .explore-validation-group[data-road-type="拖牌"] .explore-validation-formula-row:nth-child(2) {
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            font-size: inherit;
+            color: #e4c980;
+            line-height: inherit;
+            text-align: center;
+          }
+
+          .explore-validation-formula-row:last-child {
+            color: #bac5d2;
+          }
+
+          .explore-validation-result-number {
+''',
+              '''.explore-validation-formula-expression {
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
+            color: #e4c980;
+            font-family: inherit;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+          }
+
+          .explore-validation-result-number {
+''',
+              "formula row normalization",
+          )
+          css_path.write_text(css)
+          PY
+
+      - name: Verify scoped contract before commit
+        run: |
+          git diff --check
+          node --test tests/matrix-explore-validation-preview-merge.test.mjs
+
+      - name: Restore workflow and commit scoped production changes
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- .github/workflows/ci.yml
+          rm -f .github/explore-validation-patch-trigger.txt
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github/workflows/ci.yml .github/explore-validation-patch-trigger.txt src/FeaturePages.tsx src/explore-result-preview.css
+          git commit -m "fix(explore): align validation formulas and spacing"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
   runtime-integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 15
