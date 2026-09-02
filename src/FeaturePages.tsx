@@ -1320,6 +1320,15 @@ export function MatrixExplorePage({
   const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
   const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const roadResultRowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingRoadScrollRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const itemId = pendingRoadScrollRef.current;
+    if (!itemId || expandedRoad !== itemId) return;
+    pendingRoadScrollRef.current = null;
+    roadResultRowRefs.current.get(itemId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [expandedRoad]);
 
   useEffect(() => {
     if (title !== "Matrix 探索") return;
@@ -1480,9 +1489,11 @@ export function MatrixExplorePage({
 
   const toggleRoad = (itemId: string) => {
     if (expandedRoad === itemId) {
+      pendingRoadScrollRef.current = null;
       setExpandedRoad(null);
       return;
     }
+    pendingRoadScrollRef.current = expandedRoad === null ? null : itemId;
     setExpandedRoad(itemId);
     if (title === "Matrix 天衍" && tianyanResponse) {
       const cacheKey = `${tianyanResponse.analysisVersion}:${itemId}`;
@@ -1740,6 +1751,10 @@ export function MatrixExplorePage({
                   <button
                     type="button"
                     className="road-result-row"
+                    ref={(node) => {
+                      if (node) roadResultRowRefs.current.set(item.id, node);
+                      else roadResultRowRefs.current.delete(item.id);
+                    }}
                     aria-expanded={expandedRoad === item.id}
                     aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
                     onClick={() => toggleRoad(item.id)}
