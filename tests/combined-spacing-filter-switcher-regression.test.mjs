@@ -19,9 +19,9 @@ test("homepage owns the approved 10px, 14px, and responsive navigation rhythm fr
   const lotteryScreen = css.match(/\.home-screen \.lottery-screen \{([\s\S]*?)\n\}/)?.[1] ?? "";
   const bottomGroup = css.match(/\.home-screen \.home-bottom-group \{([\s\S]*?)\n\}/)?.[1] ?? "";
 
-  assert.match(homeLayout, /--home-gap-status-core:\s*10px/);
-  assert.match(homeLayout, /--home-gap-core-features:\s*14px/);
-  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*2\.2dvh,\s*20px\)/);
+  assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(10px,\s*1\.35dvh,\s*13px\)/);
+  assert.match(homeLayout, /--home-gap-core-features:\s*clamp\(14px,\s*1\.75dvh,\s*17px\)/);
+  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*11px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);
   assert.doesNotMatch(bottomGroup, /padding-bottom:\s*8px|--home-gap-core-features\s*:/);

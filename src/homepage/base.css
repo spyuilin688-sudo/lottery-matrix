@@ -20,9 +20,9 @@
   --home-feature-inline: 10px;
   --home-feature-gap: 4px;
   --home-feature-card-aspect: 386 / 496;
-  --home-gap-status-core: 10px;
-  --home-gap-core-features: 14px;
-  --home-gap-features-nav: 8px;
+  --home-gap-status-core: clamp(10px, 1.35dvh, 13px);
+  --home-gap-core-features: clamp(14px, 1.75dvh, 17px);
+  --home-gap-features-nav: clamp(8px, 1.15dvh, 11px);
   box-sizing: border-box;
   display: grid;
   width: min(100%, 390px);
@@ -40,8 +40,8 @@
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
   --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: 6px;
-  --home-gap-draw-status: 8px;
+  --home-gap-switcher-draw: clamp(6px, 0.9dvh, 8px);
+  --home-gap-draw-status: clamp(8px, 1.15dvh, 11px);
   box-sizing: border-box;
   display: flex;
   width: 100%;

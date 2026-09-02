@@ -51,7 +51,7 @@ test("首頁由頂部安全區開始排列並保留固定底部導覽空間", ()
 });
 
 test("狀態卡與 Matrix Core 使用單一 10px 間距來源", () => {
-  assert.match(homepageCss, /--home-gap-status-core:\s*10px;/);
+  assert.match(homepageCss, /--home-gap-status-core:\s*clamp\(10px,\s*1\.35dvh,\s*13px\);/);
   assert.match(homepageCss, /\.home-screen \.matrix-status-section\s*\{[^}]*flex:\s*0 0 auto;[^}]*min-height:\s*0;/s);
   assert.match(homepageCss, /\.home-screen \.matrix-status-card-grid\s*\{[^}]*height:\s*auto;[^}]*gap:\s*1\.5px;[^}]*align-content:\s*start;/s);
   assert.match(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
