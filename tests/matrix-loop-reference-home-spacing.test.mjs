@@ -16,11 +16,11 @@ test("Matrix 三圖示放大 30%、隱藏捲動條並以頭尾複本循環", () 
   assert.match(feature, /\.matrix-page-switcher::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
 });
 
-test("號碼對照單由最後點擊覆蓋同一範圍且分隔線清楚", () => {
+test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () => {
   const rowHandler = pages.slice(pages.indexOf("const toggleMarkedRow"), pages.indexOf("const toggleMarkedCell"));
   const cellHandler = pages.slice(pages.indexOf("const toggleMarkedCell"), pages.indexOf("const startReferenceSearch"));
   assert.match(rowHandler, /setMarkedCells/);
-  assert.match(cellHandler, /setMarkedRows\(\(rows\)[\s\S]*?next\.delete\(issue\)/);
+  assert.doesNotMatch(cellHandler, /setMarkedRows/);
   assert.match(reference, /data-row-marked="true"[^}]*button\[data-cell-marked="true"\]\s*\{[^}]*background:\s*rgba\(224, 124, 24, \.68\)/s);
   assert.match(reference, /border-left:\s*1px solid rgba\(161, 112, 40, \.78\)/);
 });
