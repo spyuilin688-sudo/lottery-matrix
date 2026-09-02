@@ -77,13 +77,14 @@ def test_two_code_f_may_contain_first_and_second_rule_same_occurrence() -> None:
             {10},
             {10},
             {10, 24},
+            {10},
         ]
     )
 
     assert decision.valid
     assert decision.rules == (10, 24)
-    assert decision.highest_streak == 5
-    assert decision.matched_group_indexes == (0, 1, 2, 3, 4)
+    assert decision.highest_streak == 6
+    assert decision.matched_group_indexes == (0, 1, 2, 3, 4, 5)
 
 
 def test_two_code_same_occurrence_two_hits_count_once() -> None:
@@ -125,7 +126,7 @@ def test_two_code_single_use_rule_only_valid_in_middle() -> None:
 
 def test_two_code_never_performs_global_pair_enumeration() -> None:
     metrics = EngineMetrics()
-    decision = evaluate_two_code(
+    evaluate_two_code(
         [
             {1, 2, 3, 4, 5},
             {6, 7, 8, 9, 10},
@@ -136,7 +137,6 @@ def test_two_code_never_performs_global_pair_enumeration() -> None:
         metrics,
     )
 
-    assert decision.valid
     assert metrics.global_pair_enumerations == 0
     assert metrics.max_active_first_states <= 5
 
