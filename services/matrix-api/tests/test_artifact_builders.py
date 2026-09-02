@@ -1,4 +1,4 @@
-from app.domain.explore_v2 import ExploreV2Session
+from app.domain.explore_engine import ExploreEngineSession
 from app.services.artifact_builders import (
     build_explore_artifact,
     create_artifact_builders,
@@ -13,7 +13,7 @@ def _empty_shared_response() -> dict:
     }
 
 
-def test_artifact_builder_calls_one_v2_batch_runner_per_checkpoint() -> None:
+def test_artifact_builder_calls_one_batch_runner_per_checkpoint() -> None:
     calls: list[dict] = []
 
     def batch_runner(**kwargs: object) -> dict:
@@ -54,26 +54,27 @@ def test_artifact_builder_calls_one_v2_batch_runner_per_checkpoint() -> None:
     }
 
 
-def test_artifact_builder_reuses_one_v2_session_across_checkpoints(monkeypatch) -> None:
+def test_artifact_builder_reuses_one_engine_session_across_checkpoints(monkeypatch) -> None:
     history = [
         {
-            "period": "123",
+            "period": str(123 - index),
             "numbers": ["01", "02", "03", "04", "05"],
             "sortedNumbers": ["01", "02", "03", "04", "05"],
-            "drawOrderNumbers": ["01", "02", "03", "04", "05"],
+            "drawOrderNumbers": ["05", "04", "03", "02", "01"],
         }
+        for index in range(13)
     ]
-    original_build = ExploreV2Session.build
+    original_build = ExploreEngineSession.build
     build_count = 0
 
-    def build_once(cls, lottery: str, newest_first: list[dict]) -> ExploreV2Session:
+    def build_once(cls, lottery: str, newest_first: list[dict]) -> ExploreEngineSession:
         nonlocal build_count
         build_count += 1
         if build_count > 1:
-            raise AssertionError("v2 session rebuilt between checkpoints")
+            raise AssertionError("canonical engine session rebuilt between checkpoints")
         return original_build(lottery, newest_first)
 
-    monkeypatch.setattr(ExploreV2Session, "build", classmethod(build_once))
+    monkeypatch.setattr(ExploreEngineSession, "build", classmethod(build_once))
     builders = create_artifact_builders()
     for start in (0, 1):
         builders["explore"](
