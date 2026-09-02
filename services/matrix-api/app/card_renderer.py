@@ -12,7 +12,7 @@ WEEKDAYS = ("一", "二", "三", "四", "五", "六", "日")
 BLACK = "#000"
 MONTH_BLUE = "#0000ff"
 WEEKDAY_GREY = "#d3d3d3"
-SUNDAY_RED = "#ff0000"
+MONDAY_RED = "#ff0000"
 NUMBER_FONT_FAMILY = "Arial"
 CJK_FONT_FAMILY = "Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"
 
@@ -28,6 +28,14 @@ _CARD_DRAW_WEEKDAYS = {
     "天天樂": frozenset(range(7)),
     "六合彩": frozenset({1, 3, 5}),
     "大樂透": frozenset({1, 4}),
+}
+
+_CARD_DRAW_DATE_EXCEPTIONS = {
+    "今彩539": frozenset({
+        date(2026, 2, 15),
+        date(2026, 2, 22),
+        date(2026, 3, 1),
+    }),
 }
 
 
@@ -132,9 +140,10 @@ def _calendar(value: date | None) -> tuple[str, str, str]:
 
 def _next_card_draw_date(lottery: str, current: date) -> date:
     draw_weekdays = _CARD_DRAW_WEEKDAYS[lottery]
+    draw_date_exceptions = _CARD_DRAW_DATE_EXCEPTIONS.get(lottery, frozenset())
     for offset in range(1, 8):
         candidate = current + timedelta(days=offset)
-        if candidate.weekday() in draw_weekdays:
+        if candidate.weekday() in draw_weekdays or candidate in draw_date_exceptions:
             return candidate
     raise RuntimeError("NEXT_CARD_DRAW_DATE_NOT_FOUND")
 
@@ -249,6 +258,7 @@ def _build_rows(
     entries = list(reversed(draws[:sum(capacities)]))
     cursor = 0
     visible_date: date | None = None
+    previous_visible_date: date | None = None
     columns: list[list[dict[str, Any]]] = []
 
     for column, capacity in enumerate(capacities):
@@ -263,16 +273,27 @@ def _build_rows(
                     values = _numbers(draw, order, special)
                 elif visible_date is not None:
                     visible_date = _next_card_draw_date(lottery, visible_date)
+            elif visible_date is not None:
+                visible_date = _next_card_draw_date(lottery, visible_date)
 
-            month, day, weekday = _calendar(visible_date if row < capacity else None)
+            month, day, weekday = _calendar(visible_date)
+            month_boundary = bool(visible_date) and (
+                previous_visible_date is None
+                or (visible_date.year, visible_date.month) != (
+                    previous_visible_date.year,
+                    previous_visible_date.month,
+                )
+            )
             rows.append({
                 "month": month,
                 "day": day,
                 "weekday": weekday,
                 "values": values,
-                "month_boundary": bool(day) and (row == 0 or day == "01"),
-                "show_month": bool(day) and ((column == 0 and row == 0) or day == "01"),
+                "month_boundary": month_boundary,
+                "show_month": month_boundary,
             })
+            if visible_date is not None:
+                previous_visible_date = visible_date
         columns.append(rows)
     return columns
 
@@ -371,14 +392,14 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
             if value["show_month"]:
                 output.append(_text(
                     (panel["left"] + panel["month"]) / 2, top + 45,
-                    value["month"], 45, fill=MONTH_BLUE,
+                    value["month"], 45, fill=MONTH_BLUE, weight=700,
                 ))
             output.extend([
                 _text((panel["month"] + panel["day_week"]) / 2, top + 41, value["day"], 39),
                 _text(
                     (panel["day_week"] + panel["numbers"]) / 2, top + 41,
-                    "—" if value["weekday"] == "日" else value["weekday"],
-                    39, fill=SUNDAY_RED if value["weekday"] == "日" else BLACK,
+                    "—" if value["weekday"] == "一" else value["weekday"],
+                    39, fill=MONDAY_RED if value["weekday"] == "一" else BLACK,
                     font_family=CJK_FONT_FAMILY,
                 ),
             ])

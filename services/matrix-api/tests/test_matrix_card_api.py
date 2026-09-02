@@ -1,8 +1,14 @@
 import re
+from datetime import date
 from urllib.parse import quote
 
 from app.api_server import handle_api_request, handle_matrix_card_request
-from app.card_renderer import card_layout, render_matrix_card
+from app.card_renderer import (
+    _build_rows,
+    _next_card_draw_date,
+    card_layout,
+    render_matrix_card,
+)
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
 
@@ -59,11 +65,123 @@ def test_card_preserves_an_actual_539_sunday_draw_from_history() -> None:
     )
 
     assert ">8</text>" in svg
-    assert ">—</text>" in svg
+    assert ">日</text>" in svg
     assert ">39</text>" in svg
     assert ">01</text>" in svg
     assert ">二</text>" in svg
     assert 'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"' in svg
+
+
+def test_actual_539_sunday_is_black_and_monday_is_a_red_dash() -> None:
+    svg = render_matrix_card(
+        "今彩539",
+        "draw",
+        [
+            {"drawDate": "2026-02-16", "numbers": []},
+            {"drawDate": "2026-02-15", "numbers": []},
+        ],
+    )
+
+    assert re.search(
+        r'<text x="164\.0" y="140\.0"[^>]*fill="#000">日</text>',
+        svg,
+    )
+    assert re.search(
+        r'<text x="164\.0" y="194\.9"[^>]*fill="#ff0000">—</text>',
+        svg,
+    )
+
+
+def test_539_future_calendar_includes_only_the_confirmed_2026_sunday_draws() -> None:
+    confirmed_draws = (
+        (date(2026, 2, 14), date(2026, 2, 15)),
+        (date(2026, 2, 21), date(2026, 2, 22)),
+        (date(2026, 2, 28), date(2026, 3, 1)),
+    )
+
+    for current, expected in confirmed_draws:
+        assert _next_card_draw_date("今彩539", current) == expected
+
+    assert _next_card_draw_date("今彩539", date(2026, 3, 7)) == date(2026, 3, 9)
+
+
+def test_month_boundary_uses_the_first_visible_draw_of_each_month() -> None:
+    rows = _build_rows(
+        "今彩539",
+        (59,),
+        59,
+        [
+            {"drawDate": "2026-02-02", "numbers": []},
+            {"drawDate": "2026-01-31", "numbers": []},
+        ],
+        "draw",
+        False,
+    )[0]
+
+    assert (rows[0]["month"], rows[0]["day"], rows[0]["show_month"]) == (
+        "1", "31", True,
+    )
+    assert (rows[1]["month"], rows[1]["day"], rows[1]["show_month"]) == (
+        "2", "02", True,
+    )
+    assert rows[1]["month_boundary"] is True
+
+
+def test_panel_continuation_does_not_create_a_false_month_boundary() -> None:
+    columns = _build_rows(
+        "天天樂",
+        (2, 2),
+        2,
+        [
+            {"drawDate": "2026-01-04", "numbers": []},
+            {"drawDate": "2026-01-03", "numbers": []},
+            {"drawDate": "2026-01-02", "numbers": []},
+            {"drawDate": "2026-01-01", "numbers": []},
+        ],
+        "draw",
+        False,
+    )
+
+    assert columns[1][0]["month_boundary"] is False
+    assert columns[1][0]["show_month"] is False
+
+
+def test_unused_tail_rows_keep_calendar_cells_and_leave_numbers_blank() -> None:
+    cases = (
+        ("今彩539", (59, 59, 59, 50), 59, False),
+        ("天天樂", (59, 59, 59, 50), 59, False),
+        ("六合彩", (60, 60, 51), 60, True),
+        ("大樂透", (60, 60, 51), 60, True),
+    )
+
+    for lottery, capacities, physical_rows, special in cases:
+        columns = _build_rows(
+            lottery,
+            capacities,
+            physical_rows,
+            [{"drawDate": "2026-09-02", "numbers": [1, 2, 3, 4, 5]}],
+            "draw",
+            special,
+        )
+        tail = columns[-1][capacities[-1]:]
+
+        assert len(tail) == 9
+        assert all(row["day"] and row["weekday"] for row in tail)
+        assert all(row["values"] == [] for row in tail)
+
+
+def test_month_values_are_blue_and_bold() -> None:
+    svg = render_matrix_card(
+        "今彩539",
+        "draw",
+        [{"drawDate": "2026-02-02", "numbers": []}],
+    )
+
+    assert re.search(
+        r'<text x="51\.0" y="144\.0"[^>]*font-size="45" '
+        r'font-weight="700"[^>]*fill="#0000ff">2</text>',
+        svg,
+    )
 
 
 def test_card_uses_the_measured_reference_text_metrics() -> None:
@@ -84,7 +202,7 @@ def test_card_uses_the_measured_reference_text_metrics() -> None:
     ) in svg
     assert (
         '<text x="51.0" y="144.0" text-anchor="middle" '
-        'font-family="Arial" font-size="45" font-weight="400" '
+        'font-family="Arial" font-size="45" font-weight="700" '
         'fill="#0000ff">12</text>'
     ) in svg
     assert (
@@ -183,22 +301,26 @@ def test_card_uses_the_reference_accent_colours() -> None:
 
 def test_future_rows_follow_each_lottery_draw_calendar() -> None:
     cases = (
-        ("今彩539", "2026-08-29", "31", "一", 164.0, 194.9),
-        ("天天樂", "2026-08-29", "30", "—", 163.0, 194.9),
+        ("今彩539", "2026-08-29", "31", "—", 164.0, 194.9, "#ff0000"),
+        ("天天樂", "2026-08-29", "30", "日", 163.0, 194.9, "#000"),
         ("六合彩", "2026-08-29", "01", "二", 164.0, 194.0),
         ("大樂透", "2026-08-28", "01", "二", 164.0, 194.0),
     )
 
-    for lottery, draw_date, expected_day, expected_weekday, weekday_x, baseline in cases:
+    for case in cases:
+        lottery, draw_date, expected_day, expected_weekday, weekday_x, baseline, *fill = case
         svg = render_matrix_card(lottery, "draw", [{"drawDate": draw_date, "numbers": []}])
         assert re.search(
             rf'<text x="110.0" y="{baseline:.1f}"[^>]*>{expected_day}</text>',
             svg,
         )
-        assert re.search(
-            rf'<text x="{weekday_x:.1f}" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>',
-            svg,
+        weekday_pattern = (
+            rf'<text x="{weekday_x:.1f}" y="{baseline:.1f}"[^>]*'
+            rf'fill="{fill[0]}">{expected_weekday}</text>'
+            if fill else
+            rf'<text x="{weekday_x:.1f}" y="{baseline:.1f}"[^>]*>{expected_weekday}</text>'
         )
+        assert re.search(weekday_pattern, svg)
 
 
 def test_special_number_column_uses_black_divider_and_blue_horizontal_rules() -> None:
