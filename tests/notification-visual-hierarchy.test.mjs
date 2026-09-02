@@ -59,7 +59,7 @@ test("Matrix 系列上內距為 3px，標籤與上框的視覺間距為 1px", ()
   assert.equal(badge.length, 1);
 
   const generalTop = Number(generalHeading[0].match(/padding:\s*(\d+)px/)?.[1]);
-  const matrixTop = Number(matrixHeading[0].match(/padding-block-start:\s*(-?\d+)px/)?.[1]);
+  const matrixTop = Number(matrixHeading[0].match(/padding-top:\s*(-?\d+)px/)?.[1]);
   const badgeOffset = Number(badge[0].match(/transform:\s*translateY\((-?\d+)px\)/)?.[1]);
 
   assert.equal(generalTop, 4);
