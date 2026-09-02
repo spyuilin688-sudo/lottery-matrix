@@ -80,20 +80,17 @@ Additional calls occur 2 hours, 1 hour, and 30 minutes before the base call time
 
 Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; AppDeploy no longer exposes Matrix Explore HTTP routes.
 
-## Matrix Explore v2 core
+## Matrix Explore canonical v12 core
 
-`app.domain.explore_v2` is the production Explore/Status shared core for the
-`matrix-python-v11` analysis version. It builds one complete-history occurrence
-index per lottery/order, one thirteen-source batch, cached full-range cells, and
-independently finalized standard/full results. Drag reads only the locked cell;
-add and sum share the same cached range cells. Intermediate and invalid
-candidates are never persisted as Explore results.
+`app.domain.explore_engine` is the only production Explore/Status core for the
+`matrix-python-v12` analysis version. It builds a complete-history occurrence
+index per lottery/order and reuses cached range cells across the thirteen source
+periods. Drag reads only the locked cell; add and sum reuse their range cells.
+Only fully finalized and valid results are persisted.
 
 The authoritative behavior is documented in
-`docs/specs/Matrix_探索功能_三版路演算法_API_完整修正版_v2_20260901.md`.
-Version 11 finalizes every reference cell for the same locked condition before
-persisting results. When the true longest streak has more than two distinct
-continuation values across those cells, the whole group is rejected. Each
+`docs/specs/Matrix_Explore_Canonical_v12_20260902.md`. Every reference cell for
+the same locked condition is finalized before a result is emitted. Each
 persisted Explore row includes its validation payload for the
 `matrix_explore_validation` RPC and the expandable road details in the PWA.
 

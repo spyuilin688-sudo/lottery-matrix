@@ -389,6 +389,7 @@ def test_explore_result_record_stores_scope_outside_public_item() -> None:
         "lockedSourceIndex": 1,
         "lockedSourcePeriod": "115000204",
         "exploreRange": "標準範圍",
+        "scopeClass": "STANDARD_AND_FULL",
     }
 
     record = _explore_result_records(
@@ -401,6 +402,7 @@ def test_explore_result_record_stores_scope_outside_public_item() -> None:
 
     assert record["explore_range"] == "標準範圍"
     assert "exploreRange" not in record["item"]
+    assert record["item"]["scopeClass"] == "STANDARD_AND_FULL"
     assert record["item"]["id"] == "standard-road"
 
 

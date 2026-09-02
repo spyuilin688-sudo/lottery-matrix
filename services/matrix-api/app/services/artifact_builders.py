@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.domain.explore_v2 import ExploreV2Session, run_explore_v2_batch
+from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tianyan_artifact import build_tianyan_artifact
@@ -81,8 +81,8 @@ def build_explore_artifact_chunk(
     start: int,
     limit: int,
     runner: ExploreRunner | None = None,
-    batch_runner: ExploreBatchRunner = run_explore_v2_batch,
-    session: ExploreV2Session | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
 ) -> dict[str, Any]:
     if runner is None:
         result = batch_runner(
@@ -112,8 +112,8 @@ def build_explore_artifact(
     draw_period: str,
     history: list[dict[str, Any]],
     runner: ExploreRunner | None = None,
-    batch_runner: ExploreBatchRunner = run_explore_v2_batch,
-    session: ExploreV2Session | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
         lottery,
@@ -138,6 +138,13 @@ _TIANYAN_STATUS_FIELDS = (
 )
 
 
+def _applies_to_full_range(item: dict[str, Any]) -> bool:
+    scope_class = item.get("scopeClass")
+    if scope_class in {"FULL_ONLY", "STANDARD_AND_FULL"}:
+        return True
+    return item.get("exploreRange", "完整範圍") == "完整範圍"
+
+
 def _compact_status_items(
     items: list[dict[str, Any]],
     fields: tuple[str, ...],
@@ -149,7 +156,7 @@ def _compact_status_items(
         {key: item[key] for key in fields if key in item}
         for item in items
         if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
-        and (not full_range_only or item.get("exploreRange", "完整範圍") == "完整範圍")
+        and (not full_range_only or _applies_to_full_range(item))
     ]
     if derive_full_range:
         for item in compact:
@@ -164,7 +171,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
             item["exploreDateOffset"] != 0
             or item["numberOrder"] != "依號碼由小到大排序"
             or item.get("lockedSourceIndex", 99) >= 13
-            or item.get("exploreRange", "完整範圍") != "完整範圍"
+            or not _applies_to_full_range(item)
         ):
             continue
         results = [str(number).zfill(2) for number in item["predictionNumbers"]]
@@ -187,10 +194,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
         "artifactKinds": ["explore", "tianyan"], **status,
         "artifactCounts": {
-            "explore": sum(
-                item.get("exploreRange", "完整範圍") == "完整範圍"
-                for item in explore["items"]
-            ),
+            "explore": sum(_applies_to_full_range(item) for item in explore["items"]),
             "tianyan": len(tianyan["items"]),
         },
         "statusSources": {
@@ -215,22 +219,22 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
 
 def create_artifact_builders(
     explore_runner: ExploreRunner | None = None,
-    explore_batch_runner: ExploreBatchRunner = run_explore_v2_batch,
+    explore_batch_runner: ExploreBatchRunner = run_explore_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
-    v2_sessions: dict[str, ExploreV2Session] = {}
+    engine_sessions: dict[str, ExploreEngineSession] = {}
 
-    def v2_session(lottery: str, history: list[dict[str, Any]]) -> ExploreV2Session:
-        cached = v2_sessions.get(lottery)
+    def engine_session(lottery: str, history: list[dict[str, Any]]) -> ExploreEngineSession:
+        cached = engine_sessions.get(lottery)
         if cached is None or not cached.matches(lottery, history):
-            cached = ExploreV2Session.build(lottery, history)
-            v2_sessions[lottery] = cached
+            cached = ExploreEngineSession.build(lottery, history)
+            engine_sessions[lottery] = cached
         return cached
 
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
         session = (
-            v2_session(draw["lottery"], context["history"])
-            if explore_runner is None and explore_batch_runner is run_explore_v2_batch
+            engine_session(draw["lottery"], context["history"])
+            if explore_runner is None and explore_batch_runner is run_explore_batch
             else None
         )
         batch = context.get("exploreBatch")

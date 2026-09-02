@@ -76,7 +76,7 @@ describe('Matrix Explore Supabase RPC mapping', () => {
         kind: 'explore',
         lottery: '今彩539',
         drawPeriod: '115000212',
-        analysisVersion: '115000212:matrix-python-v11',
+        analysisVersion: '115000212:matrix-python-v12',
         status: 'complete',
         total: 0,
         items: [],
@@ -98,7 +98,7 @@ describe('Matrix Explore Supabase RPC mapping', () => {
     });
 
     expect(result.drawPeriod).toBe('115000212');
-    expect(result.analysisVersion).toBe('115000212:matrix-python-v11');
+    expect(result.analysisVersion).toBe('115000212:matrix-python-v12');
   });
 
   it('preserves validation metadata returned in the RPC camelCase contract', async () => {
@@ -107,10 +107,10 @@ describe('Matrix Explore Supabase RPC mapping', () => {
         kind: 'explore',
         lottery: '今彩539',
         drawPeriod: '115000212',
-        analysisVersion: '115000212:matrix-python-v11',
+        analysisVersion: '115000212:matrix-python-v12',
         status: 'complete',
-        itemId: 'item-v11',
-        validation: { itemId: 'item-v11', ruleSets: [] },
+        itemId: 'item-v12',
+        validation: { itemId: 'item-v12', ruleSets: [] },
       },
       error: null,
     });
@@ -119,14 +119,14 @@ describe('Matrix Explore Supabase RPC mapping', () => {
       {
         lottery: '今彩539',
         drawPeriod: '115000212',
-        analysisVersion: '115000212:matrix-python-v11',
+        analysisVersion: '115000212:matrix-python-v12',
       },
-      'item-v11',
+      'item-v12',
       { explorePeriods: 2, exploreRange: '標準範圍' },
     );
 
     expect(result.drawPeriod).toBe('115000212');
-    expect(result.analysisVersion).toBe('115000212:matrix-python-v11');
-    expect(result.itemId).toBe('item-v11');
+    expect(result.analysisVersion).toBe('115000212:matrix-python-v12');
+    expect(result.itemId).toBe('item-v12');
   });
 });

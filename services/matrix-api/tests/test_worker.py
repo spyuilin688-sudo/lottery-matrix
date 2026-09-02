@@ -191,7 +191,7 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000220:matrix-python-v11"
+    assert result["analysisVersion"] == "000000220:matrix-python-v12"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianyan", "tiangong", "status"]
@@ -499,7 +499,7 @@ def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis()
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v11"
+    assert result["analysisVersion"] == "000000221:matrix-python-v12"
     assert source.events == []
 
 
