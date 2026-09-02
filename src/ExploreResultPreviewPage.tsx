@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronDownIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
 import { ExploreValidationSummary } from "./ExploreValidationSummary";
@@ -26,14 +26,26 @@ function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
 }
 
 function formatFormula(formula: string) {
-  return formula.replace(/(?<=\d)\+/g, " +");
+  const formatted = formula
+    .replace(/顆\s+(?=\d)/g, "顆")
+    .replace(/(?<=\d)\+/g, " +");
+  const result = formatted.match(/^［\s*(.+?)\s*］$/);
+  return result
+    ? <>［ <strong className="explore-validation-result-number">{result[1]}</strong> ］</>
+    : formatted;
 }
 
 function ExploreValidationCard({ result }: { result: PreviewResult }) {
   return (
     <section className="explore-validation-card" aria-label={`${result.number} 驗證過程`}>
       <div className="explore-validation-summary-card">
-        <ExploreValidationSummary>{result.summary}</ExploreValidationSummary>
+        <ExploreValidationSummary>
+          {result.summary.split(/([｜|]|同期)/).map((part, index) => part === "｜" || part === "|"
+            ? <i className="explore-validation-summary-separator" aria-hidden="true" key={`separator-${index}`}>{part}</i>
+            : part === "同期"
+              ? <i className="explore-validation-summary-position" key={`relation-${index}`}>{part}</i>
+              : <Fragment key={`summary-${index}`}>{part}</Fragment>)}
+        </ExploreValidationSummary>
         <strong className="explore-validation-consecutive-tag">{result.consecutive}</strong>
       </div>
 
@@ -57,6 +69,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
             <div
               className="explore-validation-group"
               data-complete={complete ? "true" : "false"}
+              data-row-count={rowCount}
               data-road-type={result.algorithmType}
               data-wide-numbers={rows.some((row) => row.numbers.length >= 6 || Boolean(row.special)) ? "true" : "false"}
               key={`${result.id}-${groupIndex}`}
@@ -82,7 +95,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
                           ))}
                           {row.special ? (
                             <span className="explore-validation-special-number">
-                              <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                              <i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>
                               <em>{row.special}</em>
                             </span>
                           ) : null}

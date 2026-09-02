@@ -166,6 +166,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgba(91, 126, 169, 0.34)");
     expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
+    expect(document.querySelector(".explore-validation-result-number")).not.toBeNull();
     expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
     expect(source).toHaveTextContent("26");
@@ -185,7 +186,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(special!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(special!).color).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(special!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
-    expect(special?.closest(".explore-validation-special-number")?.textContent).toMatch(/^\+\d{2}$/);
+    expect(special?.closest(".explore-validation-special-number")?.textContent).toMatch(/^ \+\d{2}$/);
 
     productionStyle.remove();
   });
@@ -304,7 +305,7 @@ describe("production member shell", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
-    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("第2顆09 +21 = 30").length).toBeGreaterThan(0);
   });
 
   it("keeps the scoped tag selector and lets the period column fit its content", () => {

@@ -1061,13 +1061,18 @@ function ExploreValidationProcess({
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const resultFormula = (resultNumbers: string) => (
+    <>［ <strong className="explore-validation-result-number">{resultNumbers}</strong> ］</>
+  );
+  const summarySeparator = () => <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>;
   const validationGroup = (
     key: string,
     rows: ValidationDisplayRow[],
-    formulas: string[],
+    formulas: ReactNode[],
   ) => (
     <div
       className="explore-validation-group"
+      data-row-count={rows.length}
       data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
       key={key}
     >
@@ -1091,7 +1096,7 @@ function ExploreValidationProcess({
                 );
                 return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
                   <span className="explore-validation-special-number" key={`${value}-${index}`}>
-                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                    <i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>
                     {number}
                   </span>
                 ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
@@ -1131,18 +1136,28 @@ function ExploreValidationProcess({
           return [...new Set(displays)];
         };
         const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => ruleDisplayValues(matchedRules).join("、");
+        const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
+          ruleDisplayValues(matchedRules).map((display) => {
+            if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
+            if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\+/, "")}`;
+            return display;
+          })
+        );
+        const summaryFormulaValues = ruleDisplayValues();
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
-        const currentCalculations = validation.sourceA ? ruleDisplayValues().map((display) => (
-          `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
+        const currentCalculations = validation.sourceA ? formulaDisplayValues().map((display) => (
+          `第${item.referencePosition ?? item.position}顆${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
         )) : [];
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
             <header className="explore-validation-summary-card">
               <ExploreValidationSummary>
-                開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆{" ｜ "}
-                {relation === "同期" ? "同期" : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}{" ｜ "}第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆{" ｜ "}
-                <i className="validation-summary-formula">{ruleDisplays()}</i>{" ｜ "}下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
+                開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆{" "}{summarySeparator()}{" "}
+                {relation === "同期" ? <i className="validation-summary-position">同期</i> : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}{" "}{summarySeparator()}{" "}第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆{" "}{summarySeparator()}{" "}
+                {item.algorithmType === "合值" ? (
+                  <><span className="validation-summary-formula-label">合值</span>{" "}<i className="validation-summary-formula">{summaryFormulaValues.map((display) => display.replace(/^合值\s*/, "").replace(/^\+/, "")).join("、")}</i></>
+                ) : <i className="validation-summary-formula">{ruleDisplays()}</i>}{" "}{summarySeparator()}{" "}下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
               </ExploreValidationSummary>
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
@@ -1167,11 +1182,11 @@ function ExploreValidationProcess({
                   hitNumbers: row.hitNumbers,
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
-                const calculations = ruleDisplayValues(row.matchedRules).map((display) => (
-                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
+                const calculations = formulaDisplayValues(row.matchedRules).map((display) => (
+                  `第${item.referencePosition ?? item.position}顆${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
                 ));
                 if (compactValidation) {
-                  const formulaDisplays = ruleDisplayValues(row.matchedRules);
+                  const formulaDisplays = formulaDisplayValues(row.matchedRules);
                   const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1, 2).map((_, index) => ({
                     key: `formula-${row.group}-${index + 2}`,
                     period: "",
@@ -1181,8 +1196,8 @@ function ExploreValidationProcess({
                     `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
                     [source, ...formulaOnlyRows, prediction],
                     [
-                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
-                      `［ ${resultNumbers} ］`,
+                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                      resultFormula(resultNumbers),
                     ],
                   );
                 }
@@ -1194,7 +1209,7 @@ function ExploreValidationProcess({
                     ? calculations[0] ?? ""
                     : displayRow.key.startsWith("source-")
                       ? calculations[1] ?? ""
-                      : `［ ${resultNumbers} ］`),
+                      : resultFormula(resultNumbers)),
                 );
               })}
               {validation.sourceA ? validationGroup(
@@ -1207,7 +1222,7 @@ function ExploreValidationProcess({
                         numbers: validation.sourceA.sourceNumbers,
                         sourceNumber: item.number,
                       },
-                      ...ruleDisplayValues().slice(1, 2).map((_, index): ValidationDisplayRow => ({
+                      ...formulaDisplayValues().slice(1, 2).map((_, index): ValidationDisplayRow => ({
                         key: `current-formula-${index + 2}`,
                         period: "",
                         numbers: [],

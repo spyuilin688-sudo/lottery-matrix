@@ -305,14 +305,17 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect((await screen.findAllByText('+14.24')).length).toBeGreaterThan(0);
   const validation = screen.getByRole('region', { name: '驗證過程' });
   expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ +14.24 ｜ 下 3 期開');
+  expect(validation.querySelectorAll('.explore-validation-summary-separator')).toHaveLength(4);
   expect(validation.querySelector('.explore-validation-consecutive-tag')?.textContent).toBe('準5進6');
   const blocks = validation.querySelectorAll('.explore-validation-group');
   expect(blocks[0].children).toHaveLength(3);
+  expect(blocks[0].getAttribute('data-row-count')).toBe('3');
   expect([...blocks[0].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114118', '114120', '114123',
   ]);
-  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆 14 +14.24 = 22');
+  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆14 +14.24 = 22');
   expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[2]?.textContent).toBe('［ 22 ］');
+  expect(blocks[0].querySelector('.explore-validation-result-number')?.textContent).toBe('22');
   expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114116', '114123',
   ]);
@@ -354,6 +357,8 @@ test('同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色', as
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
+  expect(validation.querySelector('.explore-validation-summary .validation-summary-position')?.textContent).toBe('2');
+  expect([...validation.querySelectorAll('.explore-validation-summary .validation-summary-position')].some((node) => node.textContent === '同期')).toBe(true);
   const firstGroup = validation.querySelector('.explore-validation-group');
   expect([...firstGroup!.querySelectorAll('.explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114120', '114123',
@@ -405,10 +410,9 @@ test('拖牌多個驗證值時只保留一列空白公式列且每組最多三�
   const formulas = [...firstGroup!.querySelectorAll('.explore-validation-formula-row')];
   expect(issues.map((cell) => cell.textContent)).toEqual(['114120', '', '114123']);
   expect(numberRows[1].textContent).toBe('');
-  expect(formulas[0].textContent).toContain('拖牌14');
-  expect(formulas[0].textContent).not.toContain('拖牌24');
-  expect(formulas[1].textContent).toContain('拖牌24');
-  expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('拖牌34');
+  expect(formulas[0].textContent).toBe('第4顆14 +14 = 22');
+  expect(formulas[1].textContent).toBe('第4顆14 +24 = 22');
+  expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('+34');
   expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
   expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
   expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
@@ -445,8 +449,8 @@ test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   expect(validation.querySelectorAll('.explore-validation-special-separator').length).toBeGreaterThan(0);
-  expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
-  expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^\+\d{2}$/);
+  expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe(' +');
+  expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^ \+\d{2}$/);
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
@@ -636,7 +640,10 @@ test('合值版路的 API 驗證概要顯示合值規則', async () => {
   expect(await screen.findByText('22.26')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
-  expect((await screen.findAllByText('合值14.24')).length).toBeGreaterThan(0);
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值 14.24 ｜ 下 3 期開');
+  expect(validation.querySelector('.validation-summary-formula-label')?.textContent).toBe('合值');
+  expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆14 合值14.24 = 22');
 });
 
 test('探索結果使用 API 資料而不是固定範例', async () => {
