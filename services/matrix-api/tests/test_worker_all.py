@@ -46,7 +46,7 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
     assert result["failed"] == {"天天樂": "source failed"}
 
 
-def test_railway_config_runs_scheduled_worker_on_daily_five_minute_grid() -> None:
+def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_grid() -> None:
     root = Path(__file__).parents[1]
     configs = [
         json.loads((root / name).read_text(encoding="utf-8"))
@@ -59,7 +59,7 @@ def test_railway_config_runs_scheduled_worker_on_daily_five_minute_grid() -> Non
     ]
 
     assert [config["deploy"]["startCommand"] for config in configs] == [
-        "uv run python -u -m app.worker --lottery 今彩539 --scheduled",
+        "uv run python -u -m app.worker_all",
         "uv run python -u -m app.worker --lottery 天天樂 --scheduled",
         "uv run python -u -m app.worker --lottery 六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
