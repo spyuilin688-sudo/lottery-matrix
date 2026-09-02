@@ -67,18 +67,26 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
     assert "extraValidationData" not in sources["tianyan"]["items"][0]
 
 
-def test_status_uses_only_full_range_explore_results() -> None:
+def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
     lottery = "今彩539"
     period = "115000210"
-    standard = {**_explore("standard-id", 0), "exploreRange": "標準範圍"}
-    full = {**_explore("full-id", 0), "exploreRange": "完整範圍"}
+    shared = {
+        **_explore("shared-id", 0),
+        "exploreRange": "標準範圍",
+        "scopeClass": "STANDARD_AND_FULL",
+    }
+    full = {
+        **_explore("full-id", 0),
+        "exploreRange": "完整範圍",
+        "scopeClass": "FULL_ONLY",
+    }
     context = {
         "draw": {"lottery": lottery, "period": period},
         "artifacts": {
             "explore": {
                 "lottery": lottery,
                 "drawPeriod": period,
-                "items": [standard, full],
+                "items": [shared, full],
             },
             "tianyan": {"lottery": lottery, "drawPeriod": period, "items": []},
         },
@@ -87,6 +95,7 @@ def test_status_uses_only_full_range_explore_results() -> None:
     artifact = create_artifact_builders()["status"](context)
 
     assert {item["id"] for item in artifact["statusSources"]["explore"]["items"]} == {
-        "full-id"
+        "shared-id",
+        "full-id",
     }
-    assert artifact["artifactCounts"]["explore"] == 1
+    assert artifact["artifactCounts"]["explore"] == 2

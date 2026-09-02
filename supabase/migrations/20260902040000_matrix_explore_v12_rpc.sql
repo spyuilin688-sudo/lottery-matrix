@@ -75,7 +75,10 @@ begin
     where result.lottery = v_lottery
       and result.draw_period = v_draw
       and result.analysis_version = v_version
-      and result.explore_range = v_range
+      and (
+        result.explore_range = '標準範圍'
+        or v_range = '完整範圍'
+      )
       and result.number_order = v_order
       and result.locked_source_index < v_periods
       and result.rule_count = v_rule
@@ -131,7 +134,10 @@ begin
     where result.lottery = v_lottery
       and result.draw_period = v_draw
       and result.analysis_version = v_version
-      and result.explore_range = v_range
+      and (
+        result.explore_range = '標準範圍'
+        or v_range = '完整範圍'
+      )
       and result.number_order = v_order
       and result.locked_source_index < v_periods
       and result.rule_count = v_rule
@@ -236,7 +242,10 @@ begin
     and result.analysis_version = v_version
     and result.item_id = v_item_id
     and result.locked_source_index < v_periods
-    and result.explore_range = v_range
+    and (
+      result.explore_range = '標準範圍'
+      or v_range = '完整範圍'
+    )
   limit 1;
 
   if v_validation is null then

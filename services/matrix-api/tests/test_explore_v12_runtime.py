@@ -5,6 +5,7 @@ from app.domain.explore_engine import (
     EngineMetrics,
     ExploreContext,
     RoadType,
+    ScopeClass,
     StreakDecision,
     run_explore_batch,
 )
@@ -47,6 +48,47 @@ def _known_full_only_one_code_history() -> list[dict[str, object]]:
         _set_numbers(history[source_index + 8], [1, 20, 25, 30, 35])
         _set_numbers(history[source_index - 1], list(result_numbers[group_index]))
     return history
+
+
+def test_shared_cell_emits_one_canonical_result_with_shared_scope(monkeypatch) -> None:
+    context = ExploreContext(
+        "今彩539",
+        "依號碼由小到大排序",
+        _constant_history(),
+        EngineMetrics(),
+    )
+    unit = context.source_units[0]
+    cell = next(
+        candidate
+        for candidate in context.range_cells(unit.occurrence, unit.prediction_distance)
+        if candidate.scope_class is ScopeClass.STANDARD_AND_FULL
+    )
+    artifact = {"items": [], "validationById": {}}
+
+    monkeypatch.setattr(
+        explore_runtime,
+        "evaluate_one_code",
+        lambda _groups: StreakDecision(True, 4, (1,), matched_group_indexes=()),
+    )
+    monkeypatch.setattr(
+        explore_runtime,
+        "evaluate_two_code",
+        lambda _groups, _metrics: StreakDecision(False, 0, ()),
+    )
+
+    explore_runtime._evaluate_cell(
+        artifact,
+        context,
+        unit,
+        cell,
+        RoadType.ADD,
+        (),
+        ScopeClass.STANDARD_AND_FULL,
+    )
+
+    assert len(artifact["items"]) == 1
+    assert artifact["items"][0]["scopeClass"] == "STANDARD_AND_FULL"
+    assert artifact["items"][0]["exploreRange"] == "標準範圍"
 
 
 def test_batch_emits_known_full_only_one_code_result() -> None:

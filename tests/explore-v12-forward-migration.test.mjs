@@ -12,6 +12,7 @@ test("v12 RPC cutover accepts only canonical analysis rows", () => {
   assert.match(migration, /create or replace function public\.matrix_explore_validation\(p_request jsonb\)/);
   assert.match(migration, /run\.analysis_version = run\.draw_period \|\| ':matrix-python-v12'/);
   assert.match(migration, /v_version <> v_draw \|\| ':matrix-python-v12'/);
+  assert.match(migration, /result\.explore_range = '標準範圍'\s+or v_range = '完整範圍'/s);
   assert.doesNotMatch(migration, /matrix-python-v1[01]/);
 });
 

@@ -138,6 +138,13 @@ _TIANYAN_STATUS_FIELDS = (
 )
 
 
+def _applies_to_full_range(item: dict[str, Any]) -> bool:
+    scope_class = item.get("scopeClass")
+    if scope_class in {"FULL_ONLY", "STANDARD_AND_FULL"}:
+        return True
+    return item.get("exploreRange", "完整範圍") == "完整範圍"
+
+
 def _compact_status_items(
     items: list[dict[str, Any]],
     fields: tuple[str, ...],
@@ -149,7 +156,7 @@ def _compact_status_items(
         {key: item[key] for key in fields if key in item}
         for item in items
         if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
-        and (not full_range_only or item.get("exploreRange", "完整範圍") == "完整範圍")
+        and (not full_range_only or _applies_to_full_range(item))
     ]
     if derive_full_range:
         for item in compact:
@@ -164,7 +171,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
             item["exploreDateOffset"] != 0
             or item["numberOrder"] != "依號碼由小到大排序"
             or item.get("lockedSourceIndex", 99) >= 13
-            or item.get("exploreRange", "完整範圍") != "完整範圍"
+            or not _applies_to_full_range(item)
         ):
             continue
         results = [str(number).zfill(2) for number in item["predictionNumbers"]]
@@ -187,10 +194,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
         "lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"],
         "artifactKinds": ["explore", "tianyan"], **status,
         "artifactCounts": {
-            "explore": sum(
-                item.get("exploreRange", "完整範圍") == "完整範圍"
-                for item in explore["items"]
-            ),
+            "explore": sum(_applies_to_full_range(item) for item in explore["items"]),
             "tianyan": len(tianyan["items"]),
         },
         "statusSources": {

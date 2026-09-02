@@ -224,13 +224,13 @@ def _result_identifier(
     rule_count: int,
     decision: StreakDecision,
     predictions: tuple[int, ...],
-    explore_range: str,
+    scope_class: ScopeClass,
 ) -> str:
     identity = "|".join(
         map(
             str,
             (
-                explore_range,
+                scope_class.value,
                 context.number_order,
                 unit.occurrence.period,
                 unit.locked_source_index,
@@ -259,7 +259,7 @@ def _append_result(
     rule_count: int,
     decision: StreakDecision,
     groups: tuple[RoadGroup, ...],
-    explore_range: str,
+    scope_class: ScopeClass,
 ) -> None:
     predictions = tuple(
         sorted(
@@ -287,7 +287,7 @@ def _append_result(
         rule_count,
         decision,
         predictions,
-        explore_range,
+        scope_class,
     )
     item: dict[str, object] = {
         "id": identifier,
@@ -302,7 +302,12 @@ def _append_result(
         "algorithmType": road.value,
         "numberOrder": context.number_order,
         "exploreDateOffset": 0,
-        "exploreRange": explore_range,
+        "exploreRange": (
+            STANDARD_RANGE
+            if scope_class is ScopeClass.STANDARD_AND_FULL
+            else FULL_RANGE
+        ),
+        "scopeClass": scope_class.value,
         "ruleCount": rule_count,
         "lockedSourceIndex": unit.locked_source_index,
         "lockedSourcePeriod": unit.occurrence.period,
@@ -344,7 +349,7 @@ def _evaluate_cell(
     cell: VerificationCell,
     road: RoadType,
     groups: tuple[RoadGroup, ...],
-    applicable_ranges: tuple[str, ...],
+    scope_class: ScopeClass,
 ) -> None:
     candidate_series = tuple(group.candidates for group in groups)
     for rule_count in (1, 2):
@@ -356,18 +361,17 @@ def _evaluate_cell(
         )
         if not decision.valid:
             continue
-        for explore_range in applicable_ranges:
-            _append_result(
-                artifact,
-                context,
-                unit,
-                cell,
-                road,
-                rule_count,
-                decision,
-                groups,
-                explore_range,
-            )
+        _append_result(
+            artifact,
+            context,
+            unit,
+            cell,
+            road,
+            rule_count,
+            decision,
+            groups,
+            scope_class,
+        )
 
 
 def _group_name(index: int) -> str:
@@ -532,11 +536,6 @@ def _run_unit(
         )
         bundles = _range_bundles(context, unit)
         for cell in source_cells:
-            applicable_ranges = (
-                (STANDARD_RANGE, FULL_RANGE)
-                if cell.scope_class is ScopeClass.STANDARD_AND_FULL
-                else (FULL_RANGE,)
-            )
             for road in range_roads:
                 _evaluate_cell(
                     artifact,
@@ -545,7 +544,7 @@ def _run_unit(
                     cell,
                     road,
                     _groups_for_cell(bundles, cell, road),
-                    applicable_ranges,
+                    cell.scope_class,
                 )
 
     if RoadType.DRAG in road_types:
@@ -557,7 +556,7 @@ def _run_unit(
             cell,
             RoadType.DRAG,
             _drag_groups(context, unit),
-            (STANDARD_RANGE, FULL_RANGE),
+            ScopeClass.STANDARD_AND_FULL,
         )
 
     if include_tianyan:
@@ -661,7 +660,7 @@ def run_explore_batch(
             int(item["predictionDistance"]),
             int(item["lockedPosition"]),
             str(item["algorithmType"]),
-            str(item["exploreRange"]),
+            str(item["scopeClass"]),
             int(item.get("referenceOffset", 0)),
             int(item.get("referencePosition", 0)),
             str(item["id"]),
