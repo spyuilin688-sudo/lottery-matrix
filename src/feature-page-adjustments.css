@@ -90,6 +90,10 @@
   column-gap: 6px;
 }
 
+.notifications-screen-v2 .notification-heading:has(.notification-pro-badge) {
+  padding-top: 3px;
+}
+
 .notifications-screen-v2 .notification-icon,
 .notifications-screen-v2 .notification-icon img {
   width: 36px;
@@ -181,7 +185,7 @@
   font-style: normal;
   line-height: 5.6px;
   white-space: nowrap;
-  transform: translateY(6px);
+  transform: translateY(-2px);
 }
 
 .notifications-screen-v2 .notification-row:has(.toggle:disabled) h2 span {

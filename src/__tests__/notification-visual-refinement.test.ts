@@ -108,16 +108,33 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("moves every Matrix Pro label a cumulative 6px down onto its icon without changing the stack flow", () => {
+  it("keeps general notification spacing while placing Matrix labels 1px below the top border", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
-      <main class="notifications-screen-v2">${Array.from({ length: 4 }, () => '<div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div>').join("")}</main>`;
+      <main class="notifications-screen-v2">
+        <article class="notification-row" data-notification-key="bet">
+          <div class="notification-heading">
+            <div class="notification-icon-stack"><div class="notification-icon"></div></div>
+          </div>
+        </article>
+        <article class="notification-row" data-notification-key="status">
+          <div class="notification-heading">
+            <div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div>
+          </div>
+        </article>
+      </main>`;
 
-    expect(getComputedStyle(document.querySelector(".notification-icon-stack")!).gap).toBe("1px");
-    document.querySelectorAll<HTMLElement>(".notification-pro-badge").forEach((badge) => {
-      expect(getComputedStyle(badge).transform).toBe("translateY(6px)");
-      expect(getComputedStyle(badge).zIndex).toBe("1");
-    });
+    const generalHeading = getComputedStyle(document.querySelector('[data-notification-key="bet"] .notification-heading')!);
+    const matrixHeading = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-heading')!);
+    const matrixStack = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-icon-stack')!);
+    const matrixBadge = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-pro-badge')!);
+
+    expect(generalHeading.paddingTop).toBe("4px");
+    expect(matrixHeading.paddingTop).toBe("3px");
+    expect(matrixStack.gap).toBe("1px");
+    expect(matrixBadge.transform).toBe("translateY(-2px)");
+    expect(parseFloat(matrixHeading.paddingTop) - 2).toBe(1);
+    expect(matrixBadge.zIndex).toBe("1");
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {

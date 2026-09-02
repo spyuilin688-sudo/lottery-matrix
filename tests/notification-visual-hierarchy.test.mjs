@@ -48,3 +48,22 @@ test("Matrix Pro 標籤以既有比例縮減 30%", () => {
   assert.match(badge[0], /font-size:\s*4\.2px;/);
   assert.match(badge[0], /line-height:\s*5\.6px;/);
 });
+
+test("Matrix 系列上內距為 3px，標籤與上框的視覺間距為 1px", () => {
+  const generalHeading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading$/);
+  const matrixHeading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)$/);
+  const badge = ruleBodies(css, /^\.notifications-screen-v2 \.notification-pro-badge$/);
+
+  assert.equal(generalHeading.length, 1);
+  assert.equal(matrixHeading.length, 1);
+  assert.equal(badge.length, 1);
+
+  const generalTop = Number(generalHeading[0].match(/padding:\s*(\d+)px/)?.[1]);
+  const matrixTop = Number(matrixHeading[0].match(/padding-top:\s*(-?\d+)px/)?.[1]);
+  const badgeOffset = Number(badge[0].match(/transform:\s*translateY\((-?\d+)px\)/)?.[1]);
+
+  assert.equal(generalTop, 4);
+  assert.equal(matrixTop, 3);
+  assert.equal(badgeOffset, -2);
+  assert.equal(matrixTop + badgeOffset, 1);
+});
