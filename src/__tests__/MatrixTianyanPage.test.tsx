@@ -91,6 +91,30 @@ test('天衍只有展開結果時才讀取驗證資料', async () => {
   );
 });
 
+test('今彩539天衍驗證左欄期數移除中間三個零', async () => {
+  matrixApi.fetchTianyanValidation.mockResolvedValue({
+    ...envelope,
+    itemId: 'tianyan-api-1',
+    validation: {
+      itemId: 'tianyan-api-1', rules: [], groupCount: 1,
+      minimumIndependentHits: 3, rule1Only: 3, rule2Only: 3, bothHit: 1,
+      historicalValidation: [{
+        id: 'validation-1',
+        sourcePeriod: '114000120',
+        predictionPeriod: '114000123',
+        hitType: '規則一命中',
+      }],
+    },
+  });
+
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  expect((await screen.findByRole('region', { name: '天衍驗證過程' }))
+    .querySelector('.validation-issue')?.textContent).toBe('114120');
+});
+
 test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
   matrixApi.fetchTianyanList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);

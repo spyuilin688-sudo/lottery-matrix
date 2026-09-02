@@ -1014,6 +1014,12 @@ function useExploreValidationProtection() {
   return contentProtected;
 }
 
+function displayValidationPeriod(lottery: LotteryId, period: string) {
+  return lottery === "今彩539"
+    ? period.replace(/^(\d{3})000(\d{3})$/, "$1$2")
+    : period;
+}
+
 function ExploreValidationProcess({
   item,
   lottery,
@@ -1055,9 +1061,6 @@ function ExploreValidationProcess({
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
-  const displayPeriod = (period: string) => lottery === "今彩539"
-    ? period.replace(/^(\d{3})000(\d{3})$/, "$1$2")
-    : period;
   const validationGroup = (
     key: string,
     rows: ValidationDisplayRow[],
@@ -1069,7 +1072,7 @@ function ExploreValidationProcess({
       key={key}
     >
       <div className="explore-validation-issues explore-validation-numeric-text">
-        {rows.map((row) => <span className="explore-validation-issue" key={`${row.key}-period`}>{displayPeriod(row.period)}</span>)}
+        {rows.map((row) => <span className="explore-validation-issue" key={`${row.key}-period`}>{displayValidationPeriod(lottery, row.period)}</span>)}
       </div>
       <div className="explore-validation-numbers-card">
         {rows.map((row) => (
@@ -1262,9 +1265,11 @@ function ExploreValidationProcess({
 }
 
 function TianyanValidationProcess({
+  lottery,
   validation,
   loading,
 }: {
+  lottery: LotteryId;
   validation?: TianyanValidation;
   loading: boolean;
 }) {
@@ -1286,7 +1291,7 @@ function TianyanValidationProcess({
       {validation.historicalValidation.map((row) => (
         <div className="validation-period-block" key={`${row.id}-${row.predictionPeriod}`}>
           <div className="validation-period-row">
-            <span className="validation-issue">{row.sourcePeriod}</span>
+            <span className="validation-issue">{displayValidationPeriod(lottery, row.sourcePeriod)}</span>
             <span>{row.predictionPeriod}</span>
             <span className="validation-formula"><strong>{row.hitType}</strong></span>
           </div>
@@ -1846,6 +1851,7 @@ export function MatrixExplorePage({
                         />
                       : title === "Matrix 天衍" && tianyanResponse
                         ? <TianyanValidationProcess
+                            lottery={lottery}
                             validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
                             loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
                           />
