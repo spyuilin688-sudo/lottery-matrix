@@ -98,6 +98,7 @@ import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
 import { useDoubleClickAction } from "./useDoubleClickAction";
 import { usePwaLifecycle } from "./pwa-lifecycle";
+import { downloadMatrixCardPng } from "./matrix-ticket-download";
 import "./explore-validation-protection.css";
 
 export type ScreenId =
@@ -2615,7 +2616,8 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     return () => { active = false; };
   }, [lottery]);
 
-  const cardUrl = manifest ? matrixCardUrl(manifest.cards[order].url) : null;
+  const cardPath = manifest?.cards[order]?.url;
+  const cardUrl = cardPath ? matrixCardUrl(cardPath) : null;
   const cardPeriod = manifest?.period ?? null;
 
   const handleTicketDownload = async () => {
@@ -2623,17 +2625,10 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
     setDownloadPending(true);
     setDownloadFailed(false);
     try {
-      const response = await fetch(cardUrl);
-      if (!response.ok) throw new Error("MATRIX_CARD_DOWNLOAD_FAILED");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = [lottery, order === "draw" ? "落球" : "順球"].join("-") + "牌單.svg";
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
+      await downloadMatrixCardPng(
+        cardUrl,
+        [lottery, order === "draw" ? "落球" : "順球"].join("-") + "牌單.png",
+      );
     } catch {
       setDownloadFailed(true);
     } finally {
