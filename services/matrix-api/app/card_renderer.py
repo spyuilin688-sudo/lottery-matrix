@@ -22,8 +22,6 @@ FOOTER_TOP = 3339
 FOOTER_BOTTOM = 3419
 OUTER_LEFT = 19
 OUTER_RIGHT = 2257
-ROW_HEIGHT = 54
-PHYSICAL_ROWS = 60
 
 _CARD_DRAW_WEEKDAYS = {
     "今彩539": frozenset(range(6)),
@@ -36,19 +34,19 @@ _CARD_DRAW_WEEKDAYS = {
 _LAYOUTS = {
     "今彩539": {
         "title": "539", "accent": "#ffff00", "column_rows": (59, 59, 59, 50),
-        "balls": 5, "special": False, "title_width": 232,
+        "physical_rows": 59, "balls": 5, "special": False,
     },
     "天天樂": {
         "title": "天天樂", "accent": "#ccff99", "column_rows": (59, 59, 59, 50),
-        "balls": 5, "special": False, "title_width": 306,
+        "physical_rows": 59, "balls": 5, "special": False,
     },
     "六合彩": {
         "title": "六合彩", "accent": "#ffc0cb", "column_rows": (60, 60, 51),
-        "balls": 7, "special": True, "title_width": 306,
+        "physical_rows": 60, "balls": 7, "special": True,
     },
     "大樂透": {
         "title": "大樂透", "accent": "#87cefa", "column_rows": (60, 60, 51),
-        "balls": 7, "special": True, "title_width": 306,
+        "physical_rows": 60, "balls": 7, "special": True,
     },
 }
 
@@ -173,6 +171,7 @@ def _text(
     fill: str = BLACK,
     weight: int = 400,
     anchor: str = "middle",
+    dominant_baseline: str | None = None,
     text_length: int | None = None,
     font_family: str = NUMBER_FONT_FAMILY,
 ) -> str:
@@ -180,8 +179,13 @@ def _text(
         f' textLength="{text_length}" lengthAdjust="spacingAndGlyphs"'
         if text_length is not None else ""
     )
+    dominant_baseline_attribute = (
+        f'dominant-baseline="{dominant_baseline}" '
+        if dominant_baseline is not None else ""
+    )
     return (
         f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" '
+        f'{dominant_baseline_attribute}'
         f'font-family="{font_family}" '
         f'font-size="{size}" font-weight="{weight}"{text_length_attributes} '
         f'fill="{fill}">{escape(value)}</text>'
@@ -191,7 +195,7 @@ def _text(
 def _append_horizontal_rule(
     output: list[str],
     panel: dict[str, Any],
-    y: int,
+    y: float,
     *,
     special: bool,
     include_month: bool,
@@ -237,6 +241,7 @@ def _append_footer_top_border(
 def _build_rows(
     lottery: str,
     capacities: tuple[int, ...],
+    physical_rows: int,
     draws: list[dict[str, Any]],
     order: str,
     special: bool,
@@ -248,7 +253,7 @@ def _build_rows(
 
     for column, capacity in enumerate(capacities):
         rows: list[dict[str, Any]] = []
-        for row in range(PHYSICAL_ROWS):
+        for row in range(physical_rows):
             values: list[str] = []
             if row < capacity:
                 if cursor < len(entries):
@@ -279,9 +284,13 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         raise ValueError("未知牌單順序")
 
     capacities = tuple(layout["column_rows"])
+    physical_rows = int(layout["physical_rows"])
+    row_height = (FOOTER_TOP - HEADER_BOTTOM) / physical_rows
     panels = _PANELS[lottery]
     special = bool(layout["special"])
-    rows_by_panel = _build_rows(lottery, capacities, draws, order, special)
+    rows_by_panel = _build_rows(
+        lottery, capacities, physical_rows, draws, order, special,
+    )
     output = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{CARD_WIDTH}" height="{CARD_HEIGHT}" viewBox="0 0 {CARD_WIDTH} {CARD_HEIGHT}">',
         '<rect width="2276" height="3438" fill="#ffffff"/>',
@@ -316,8 +325,8 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
             _line(panel["numbers"], HEADER_TOP, panel["numbers"], HEADER_BOTTOM),
         ])
 
-        for row in range(1, PHYSICAL_ROWS):
-            y = HEADER_BOTTOM + ROW_HEIGHT * row
+        for row in range(1, physical_rows):
+            y = HEADER_BOTTOM + row_height * row
             _append_horizontal_rule(output, panel, y, special=special, include_month=False)
             if rows[row]["month_boundary"]:
                 output.append(_line(panel["left"], y, panel["month"], y))
@@ -328,8 +337,11 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         for row, value in enumerate(rows):
             if not value["month_boundary"]:
                 continue
-            top = HEADER_BOTTOM + ROW_HEIGHT * row
-            output.append(_line(panel["month"], top, panel["month"], top + ROW_HEIGHT, stroke=MONTH_BLUE))
+            top = HEADER_BOTTOM + row_height * row
+            output.append(_line(
+                panel["month"], top, panel["month"], top + row_height,
+                stroke=MONTH_BLUE,
+            ))
 
         _append_footer_top_border(output, panel, index, len(panels), special=special)
 
@@ -343,9 +355,10 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                 font_family=CJK_FONT_FAMILY,
             ),
             _text(
-                (panel["numbers"] + panel["right"]) / 2, 86,
-                f'{layout["title"]} {mode}', 72, weight=700,
-                text_length=int(layout["title_width"]),
+                (panel["numbers"] + panel["right"]) / 2,
+                (HEADER_TOP + HEADER_BOTTOM) / 2,
+                f'{layout["title"]} {mode}', 56, weight=700,
+                dominant_baseline="middle",
                 font_family=CJK_FONT_FAMILY,
             ),
         ])
@@ -354,7 +367,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         for row, value in enumerate(rows):
             if not value["day"]:
                 continue
-            top = HEADER_BOTTOM + ROW_HEIGHT * row
+            top = HEADER_BOTTOM + row_height * row
             if value["show_month"]:
                 output.append(_text(
                     (panel["left"] + panel["month"]) / 2, top + 45,
@@ -381,7 +394,9 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
         _rect(2254, 16, 6, 3406, fill=BLACK),
         _rect(16, 3416, 2244, 6, fill=BLACK),
         _text(
-            CARD_WIDTH / 2, 3407, "樂彩 Matrix 牌單", 48, weight=700,
+            CARD_WIDTH / 2, (FOOTER_TOP + FOOTER_BOTTOM) / 2,
+            "快速探索版路，發現更多可能 | 樂彩 Matrix 網址：https://matrixlottery.idv.tw",
+            36, weight=700, dominant_baseline="middle",
             font_family=CJK_FONT_FAMILY,
         ),
         "</svg>",

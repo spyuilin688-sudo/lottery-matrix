@@ -2,7 +2,7 @@ import re
 from urllib.parse import quote
 
 from app.api_server import handle_api_request, handle_matrix_card_request
-from app.card_renderer import render_matrix_card
+from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import InMemoryAnalysisRepository
 
 
@@ -48,18 +48,19 @@ def test_card_svg_is_the_fixed_reference_size_and_uses_requested_order() -> None
     assert ">39</text>" in svg
 
 
-def test_card_prints_month_markers_sunday_dash_and_future_calendar_rows() -> None:
+def test_card_preserves_an_actual_539_sunday_draw_from_history() -> None:
     svg = render_matrix_card(
         "今彩539",
         "draw",
         [
             {"drawDate": "2026-08-31", "numbers": []},
-            {"drawDate": "2026-08-30", "numbers": []},
+            {"drawDate": "2026-08-30", "numbers": ["39", "38", "37", "36", "35"]},
         ],
     )
 
     assert ">8</text>" in svg
     assert ">—</text>" in svg
+    assert ">39</text>" in svg
     assert ">01</text>" in svg
     assert ">二</text>" in svg
     assert 'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"' in svg
@@ -77,10 +78,9 @@ def test_card_uses_the_measured_reference_text_metrics() -> None:
     )
 
     assert (
-        '<text x="384.0" y="86.0" text-anchor="middle" '
+        '<text x="384.0" y="59.0" text-anchor="middle" dominant-baseline="middle" '
         'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif" '
-        'font-size="72" font-weight="700" '
-        'textLength="232" lengthAdjust="spacingAndGlyphs" fill="#000">539 順球</text>'
+        'font-size="56" font-weight="700" fill="#000">539 順球</text>'
     ) in svg
     assert (
         '<text x="51.0" y="144.0" text-anchor="middle" '
@@ -98,15 +98,30 @@ def test_card_uses_the_measured_reference_text_metrics() -> None:
     ) in svg
 
 
-def test_card_uses_measured_reference_grid_edges_and_fixed_row_pitch() -> None:
+def test_539_and_daily_card_render_exactly_59_physical_rows() -> None:
+    for lottery in ("今彩539", "天天樂"):
+        layout = card_layout(lottery)
+        svg = render_matrix_card(lottery, "draw", [])
+
+        assert layout["physical_rows"] == 59
+        assert layout["column_rows"] == (59, 59, 59, 50)
+        assert layout["physical_rows"] - layout["column_rows"][-1] == 9
+        assert len(re.findall(
+            r'<line x1="83\.0" y1="[\d.]+" x2="577\.0" y2="[\d.]+" '
+            r'stroke="#000" stroke-width="2"/>',
+            svg,
+        )) == 58
+
+
+def test_card_uses_measured_reference_grid_edges_and_lottery_row_pitch() -> None:
     svg = render_matrix_card("今彩539", "draw", [])
 
     assert '<rect x="16.0" y="16.0" width="562.0" height="6.0" fill="#000"/>' in svg
     assert '<rect x="16.0" y="3338.0" width="562.0" height="2.0" fill="#000"/>' in svg
     assert '<rect x="16.0" y="3416.0" width="2244.0" height="6.0" fill="#000"/>' in svg
     assert '<rect x="137.0" y="99.0" width="54.0" height="3240.0" fill="#d3d3d3"/>' in svg
-    assert '<line x1="83.0" y1="153.0" x2="577.0" y2="153.0" stroke="#000" stroke-width="2"/>' in svg
-    assert '<line x1="83.0" y1="207.0" x2="577.0" y2="207.0" stroke="#000" stroke-width="2"/>' in svg
+    assert '<line x1="83.0" y1="153.9" x2="577.0" y2="153.9" stroke="#000" stroke-width="2"/>' in svg
+    assert '<line x1="83.0" y1="208.8" x2="577.0" y2="208.8" stroke="#000" stroke-width="2"/>' in svg
     assert '<line x1="19.0" y1="3339.0" x2="577.0" y2="3339.0" stroke="#000" stroke-width="2"/>' in svg
     for divider in (267, 345, 421, 499):
         assert (
@@ -114,6 +129,22 @@ def test_card_uses_measured_reference_grid_edges_and_fixed_row_pitch() -> None:
             f'x2="{divider:.1f}" y2="3339.0" '
             'stroke="#000" stroke-width="2"/>'
         ) in svg
+
+    for lottery in ("六合彩", "大樂透"):
+        lotto = render_matrix_card(lottery, "draw", [])
+        assert card_layout(lottery)["physical_rows"] == 60
+        assert '<line x1="83.0" y1="153.0" x2="681.0" y2="153.0" stroke="#000" stroke-width="2"/>' in lotto
+
+
+def test_card_footer_uses_the_requested_copy_and_is_vertically_centred() -> None:
+    svg = render_matrix_card("今彩539", "draw", [])
+
+    assert (
+        '<text x="1138.0" y="3379.0" text-anchor="middle" dominant-baseline="middle" '
+        'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif" '
+        'font-size="36" font-weight="700" fill="#000">'
+        '快速探索版路，發現更多可能 | 樂彩 Matrix 網址：https://matrixlottery.idv.tw</text>'
+    ) in svg
 
 
 def test_each_lottery_uses_its_own_measured_reference_grid_edges() -> None:
@@ -152,8 +183,8 @@ def test_card_uses_the_reference_accent_colours() -> None:
 
 def test_future_rows_follow_each_lottery_draw_calendar() -> None:
     cases = (
-        ("今彩539", "2026-08-29", "31", "一", 164.0, 194.0),
-        ("天天樂", "2026-08-29", "30", "—", 163.0, 194.0),
+        ("今彩539", "2026-08-29", "31", "一", 164.0, 194.9),
+        ("天天樂", "2026-08-29", "30", "—", 163.0, 194.9),
         ("六合彩", "2026-08-29", "01", "二", 164.0, 194.0),
         ("大樂透", "2026-08-28", "01", "二", 164.0, 194.0),
     )

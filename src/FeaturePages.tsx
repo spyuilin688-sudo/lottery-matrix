@@ -2591,7 +2591,7 @@ export function CalculatorPage({ onNavigate }: { onNavigate: Navigate }) {
 export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [order, setOrder] = useState<MatrixCardOrder>("draw");
+  const [order, setOrder] = useState<MatrixCardOrder>("sorted");
   const [manifest, setManifest] = useState<MatrixCardManifest | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);

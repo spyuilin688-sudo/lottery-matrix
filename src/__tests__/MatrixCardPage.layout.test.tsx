@@ -33,7 +33,7 @@ function mountStyles() {
 
 async function renderMatrixCardPage() {
   render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
-  await screen.findByRole("img", { name: "今彩539落球牌單，第 115000001 期" });
+  await screen.findByRole("img", { name: "今彩539順球牌單，第 115000001 期" });
 }
 
 beforeEach(() => {
@@ -59,7 +59,7 @@ describe("Matrix 牌單 layout", () => {
   it("renders the full portrait ticket instead of the generic ticket thumbnail", async () => {
     await renderMatrixCardPage();
 
-    const ticketImage = screen.getByRole("img", { name: "今彩539落球牌單，第 115000001 期" });
+    const ticketImage = screen.getByRole("img", { name: "今彩539順球牌單，第 115000001 期" });
     const imageStyles = getComputedStyle(ticketImage);
 
     expect(imageStyles.width).toBe("100%");
@@ -77,6 +77,8 @@ describe("Matrix 牌單 layout", () => {
     expect(body).not.toBeNull();
     expect(orderTabs).not.toBeNull();
     expect(within(orderTabs!).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["順球", "落球"]);
+    expect(sortedOrder).toHaveAttribute("aria-selected", "true");
+    expect(drawOrder).toHaveAttribute("aria-selected", "false");
     expect(getComputedStyle(document.documentElement).getPropertyValue("--layout-page-inline")).toBe("16px");
     expect(getComputedStyle(body!).paddingInline).toBe("var(--layout-page-inline)");
     expect(getComputedStyle(drawOrder).height).toBe("34px");
