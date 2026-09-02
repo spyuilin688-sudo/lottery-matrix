@@ -22,6 +22,14 @@ describe('admin compact density', () => {
     expect(operationsCss).toMatch(/\.managementToolbar select \{ height: 32px; \}/);
   });
 
+  it('compacts transfer requests without shrinking text actions into square buttons', () => {
+    expect(operationsCss).toMatch(/\.transferPanel \{[^}]*margin-top: 10px;/);
+    expect(operationsCss).toMatch(/\.panel\.transferPanel \{[^}]*padding: 10px;/);
+    expect(operationsCss).toMatch(/\.transferRow \{[^}]*gap: 8px;[^}]*padding: 8px 0;/);
+    expect(operationsCss).toMatch(/\.transferActions button \{[^}]*width: auto;[^}]*min-width: 52px;[^}]*white-space: nowrap;/);
+    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.transferRow \.transferActions \{[^}]*display: flex;[^}]*flex-wrap: nowrap;/);
+  });
+
   it('reduces system service card spacing without fixed description height', () => {
     expect(statusCss).toMatch(/\.statusCards \{[^}]*gap: 8px;/);
     expect(statusCss).toMatch(/\.statusCard \{[^}]*padding: 10px;/);

@@ -85,14 +85,16 @@ const moduleGuard = (module: ModuleKey, action: ModuleAction) => async (ctx: Con
   }
 };
 
-const superGuard = async (ctx: Context) => {
+const requireSuperRole = (message: string) => async (ctx: Context) => {
   try {
     const admin = await getAdmin(ctx);
-    if (admin.role !== '超級管理員') return error('僅超級管理員可管理管理員帳號', 403);
+    if (admin.role !== '超級管理員') return error(message, 403);
   } catch (cause) {
     return fail(cause);
   }
 };
+const superGuard = requireSuperRole('僅超級管理員可管理管理員帳號');
+const revenueResetGuard = requireSuperRole('僅超級管理員可重設收入');
 
 function adminInput(body: Record<string, unknown>) {
   const permissions = (body.permissions ?? {}) as PermissionInput;
@@ -152,6 +154,15 @@ const routes: Record<string, unknown> = {
   'GET /api/dashboard': [requireAuth(), guard('view'), async () => {
     try {
       return json(await getDashboard(supabase));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'POST /api/revenue/reset': [requireAuth(), revenueResetGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.resetRevenue(actorOf(admin)));
     } catch (cause) {
       return fail(cause);
     }

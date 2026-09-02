@@ -116,8 +116,9 @@ describe('listAdminTable', () => {
 describe('getDashboard', () => {
   it('derives plan counts and confirmed revenue only from real Supabase columns', async () => {
     const api = {
-      request: vi.fn(async (path: string) => path.includes('/members?')
-        ? [
+      request: vi.fn(async (path: string) => {
+        if (path.includes('/admin_revenue_settings?')) return [];
+        return path.includes('/members?') ? [
           { plan_expires_at: '2026-08-25T00:00:00Z', current_plan: { duration_days: 30 } },
           { plan_expires_at: '2026-10-01T00:00:00Z', current_plan: { duration_days: 90 } },
           { plan_expires_at: null, current_plan: { duration_days: 365 } },
@@ -125,7 +126,8 @@ describe('getDashboard', () => {
         : [
           { amount: 100, paid_at: '2026-08-21T01:00:00Z', status: 'confirmed' },
           { amount: 50, paid_at: '2026-08-01T01:00:00Z', status: 'confirmed' },
-        ]),
+        ];
+      }),
     };
 
     await expect(getDashboard(api, new Date('2026-08-21T12:00:00Z'))).resolves.toEqual({
@@ -140,5 +142,58 @@ describe('getDashboard', () => {
       yearRevenue: 150,
       cumulativeRevenue: 150,
     });
+  });
+
+  it('keeps payment records while counting revenue only after the latest reset', async () => {
+    const api = {
+      request: vi.fn(async (path: string) => {
+        if (path.includes('/admin_revenue_settings?')) {
+          return [{ reset_at: '2026-08-21T02:00:00Z' }];
+        }
+        if (path.includes('/members?')) return [];
+        return [
+          { amount: 100, paid_at: '2026-08-21T01:00:00Z', status: 'confirmed' },
+          { amount: 80, paid_at: '2026-08-21T03:00:00Z', status: 'confirmed' },
+        ];
+      }),
+    };
+
+    await expect(getDashboard(api, new Date('2026-08-21T12:00:00Z'))).resolves.toMatchObject({
+      todayRevenue: 80,
+      monthRevenue: 80,
+      quarterRevenue: 80,
+      yearRevenue: 80,
+      cumulativeRevenue: 80,
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringMatching(
+      /\/rest\/v1\/payments\?.*paid_at=gte\.2026-08-21T02%3A00%3A00\.000Z/,
+    ));
+  });
+
+  it('loads every confirmed-payment page before calculating revenue', async () => {
+    const api = {
+      request: vi.fn(async (path: string) => {
+        if (path.includes('/admin_revenue_settings?')) return [];
+        if (path.includes('/members?')) return [];
+        if (path.includes('offset=0')) {
+          return Array.from({ length: 1000 }, (_, index) => ({
+            id: `payment-${index}`,
+            amount: 1,
+            paid_at: '2026-08-21T01:00:00Z',
+            status: 'confirmed',
+          }));
+        }
+        if (path.includes('offset=1000')) {
+          return [{ id: 'payment-1000', amount: 5, paid_at: '2026-08-21T02:00:00Z', status: 'confirmed' }];
+        }
+        return [];
+      }),
+    };
+
+    await expect(getDashboard(api, new Date('2026-08-21T12:00:00Z'))).resolves.toMatchObject({
+      todayRevenue: 1005,
+      cumulativeRevenue: 1005,
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('offset=1000'));
   });
 });

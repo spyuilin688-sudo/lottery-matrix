@@ -204,13 +204,38 @@ export async function listAdminTable(table: string, api: Requester) {
   return { items: rows.map(definition.map) };
 }
 
+const dashboardPaymentPageSize = 1000;
+
+async function listDashboardPayments(api: Requester, resetFilter: string) {
+  const rows: Row[] = [];
+  for (let offset = 0; ; offset += dashboardPaymentPageSize) {
+    const page = await api.request<Row[]>(
+      `/rest/v1/payments?select=id,amount,paid_at,status&status=eq.confirmed${resetFilter}&order=paid_at.asc,id.asc&limit=${dashboardPaymentPageSize}&offset=${offset}`,
+    );
+    rows.push(...page);
+    if (page.length < dashboardPaymentPageSize) return rows;
+  }
+}
+
 export async function getDashboard(api: Requester, currentDate = new Date()) {
+  const settings = await api.request<Row[]>('/rest/v1/admin_revenue_settings?select=reset_at&id=eq.1&limit=1');
+  const storedResetAt = typeof settings[0]?.reset_at === 'string'
+    ? new Date(settings[0].reset_at)
+    : null;
+  const resetTime = storedResetAt && Number.isFinite(storedResetAt.getTime())
+    ? storedResetAt.getTime()
+    : null;
+  const resetFilter = resetTime === null
+    ? ''
+    : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
   const [members, paymentRows] = await Promise.all([
     api.request<Row[]>('/rest/v1/members?select=plan_expires_at,current_plan:plans!members_current_plan_id_fkey(duration_days)&limit=10000'),
-    api.request<Row[]>('/rest/v1/payments?select=amount,paid_at,status&status=eq.confirmed&limit=10000'),
+    listDashboardPayments(api, resetFilter),
   ]);
   const payments = paymentRows
-    .filter((row) => row.status === 'confirmed' && typeof row.paid_at === 'string')
+    .filter((row) => row.status === 'confirmed'
+      && typeof row.paid_at === 'string'
+      && (resetTime === null || new Date(row.paid_at).getTime() >= resetTime))
     .map((row) => ({
       amount: Number(row.amount ?? 0),
       paidAt: String(row.paid_at),
@@ -427,6 +452,22 @@ export function createAdminData(transport: WriteTransport) {
       }),
     });
   }
+
+  async function resetRevenue(actor: AdminActor) {
+    if (actor.role !== '超級管理員') {
+      throw new AdminDataError('僅超級管理員可重設收入', 403);
+    }
+    const [saved] = await transport.supabaseRequest<Row[]>('rpc/admin_reset_revenue_baseline', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    const savedResetAt = typeof saved?.reset_at === 'string' ? new Date(saved.reset_at) : null;
+    if (!savedResetAt || !Number.isFinite(savedResetAt.getTime())) {
+      throw new AdminDataError('收入重設失敗', 500);
+    }
+    return { resetAt: savedResetAt.toISOString() };
+  }
+
   async function deleteAdminAccount(id: string, actor: AdminActor) {
     if (id === actor.id) throw new AdminDataError('不得刪除自己的管理員帳號');
     const [before] = await transport.selectRows<Row>('admin_accounts', `select=*&id=eq.${encodeURIComponent(id)}`);
@@ -484,6 +525,7 @@ export function createAdminData(transport: WriteTransport) {
     updateMemberStatus,
     updateSubscription,
     reviewTransferRequest,
+    resetRevenue,
     deleteAdminAccount,
     deleteActivationCode,
     generateActivationCodeBatch,

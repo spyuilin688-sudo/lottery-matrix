@@ -58,6 +58,16 @@ describe('admin interface styles', () => {
     expect(appSource).toContain('"LINE名稱"');
     expect(appSource).toContain('lineDisplayName');
     expect(appSource).not.toContain('"LINE用戶ID"');
+    expect(appSource).toContain('className="transferActions"');
+    expect(appSource).toContain('className="transferReject"');
+  });
+
+  it('shows the confirmed revenue reset only to super administrators', () => {
+    expect(appSource).toContain('<Revenue d={dash} isSuper={Boolean(isSuper)}');
+    expect(appSource).toContain('title: "確認重設收入"');
+    expect(appSource).toContain('message: "五項收入將歸零，付款紀錄仍會保留。"');
+    expect(appSource).toContain('await api.post("/api/revenue/reset")');
+    expect(appSource).toMatch(/function Revenue\([\s\S]*?isSuper && \([\s\S]*?重設收入/);
   });
 
   it('stacks notification controls and records without horizontal overflow on phones', () => {

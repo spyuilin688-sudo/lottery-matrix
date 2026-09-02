@@ -43,7 +43,7 @@ Steps:
 Expected: 搜尋與狀態控制高度為 32px，搜尋卡高度依內容自動適配且沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE名稱、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗顯示 LINE名稱且「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
 
 ## Test 4 - 審核轉帳、管理員權限與啟動碼刪除
-Viewport: desktop
+Viewport: desktop and mobile
 Covers: GET /api/data/transferRequests, members.line_display_name, PUT /api/transfer-requests/:id, DELETE /api/activation-codes/:id, payments linkage, activation_codes, admin_login_records, audit_logs, role module permissions, last-super and self-delete protection
 Description: 驗證營運管理員可審核轉帳與刪除啟動碼，查看人員只能查看，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
 
@@ -54,7 +54,7 @@ Steps:
 4. 以超級管理員登入並完成一次管理員操作，再檢查「登入紀錄」與「審計日誌」
 5. 以營運管理員進入「啟動碼管理」，建立一批啟動碼後刪除其中一筆並完成二次確認
 
-Expected: 轉帳申請顯示申請人的 LINE名稱；取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；超級管理員本次登入與操作不新增紀錄，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
+Expected: 轉帳申請卡片使用緊湊間距，手機寬度下「確認」與「拒絕」維持同列且文字不直排；申請顯示 LINE名稱；取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；超級管理員本次登入與操作不新增紀錄，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
 
 ## Test 5 - 概覽卡片、手機選單與 Railway 重新呼叫
 Viewport: mobile
@@ -69,3 +69,17 @@ Steps:
 5. 點擊 Railway Worker 卡片的「重新呼叫」，再點擊頁面上方的「重新檢查」
 
 Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；系統服務卡片高度依內容自動適配且資訊不碰撞；Railway Worker 異常時顯示錯誤內容與「重新呼叫」，按下後只重新呼叫 Railway Worker 並更新該卡片；正常項目與排程卡片沒有多餘按鈕；每張卡片顯示項目說明、最後檢查時間及回應時間。
+
+## Test 6 - 超級管理員重設收入
+Viewport: desktop and mobile
+Covers: GET /api/dashboard, POST /api/revenue/reset, admin_revenue_settings, server-side super-admin authorization, shared confirmation dialog
+Description: 驗證只有超級管理員看得到並能使用收入重設，付款紀錄保留且五項收入從最新基準時間重新累積。
+
+Steps:
+1. 以查看人員或營運管理員進入「收入報表」，確認沒有「重設收入」按鈕，並直接呼叫重設 API
+2. 以超級管理員進入「收入報表」並點擊「重設收入」
+3. 在確認視窗先選擇取消，確認五項數值與基準時間均未改變
+4. 再次點擊並選擇「確認重設」
+5. 重新整理收入報表並查核原有 payments 資料
+
+Expected: 非超級管理員看不到按鈕且 API 回傳 403；確認視窗明示五項收入歸零但付款紀錄保留；取消不執行；確認後五項收入先歸零，原 payments 列數與內容不變，後續已確認付款只從 reset_at 起重新累積。

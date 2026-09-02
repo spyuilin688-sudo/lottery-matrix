@@ -17,12 +17,13 @@ const wiring = vi.hoisted(() => {
     refreshLottery: workerRefreshLottery,
   }));
   const insertRows = vi.fn(async () => []);
+  const supabaseRequest = vi.fn(async () => []);
   const createSupabaseTransport = vi.fn(() => ({
     selectRows: vi.fn(async () => []),
     insertRows,
     updateRows: vi.fn(async () => []),
     deleteRows: vi.fn(async () => []),
-    supabaseRequest: vi.fn(async () => []),
+    supabaseRequest,
   }));
   const connectionGet = vi.fn(async () => ({ checkedAt: 'test', items: [] }));
   const connectionRetry = vi.fn(async () => ({ id: 'test' }));
@@ -54,6 +55,7 @@ const wiring = vi.hoisted(() => {
     getWorkerConfig,
     createWorkerApi,
     insertRows,
+    supabaseRequest,
     createSupabaseTransport,
     createConnectionStatus,
     admin,
@@ -311,5 +313,38 @@ describe('admin push notification route wiring', () => {
     await expect(logHandler(context)).resolves.toMatchObject({
       body: { items: [{ id: 'log-1' }] },
     });
+  });
+});
+
+describe('admin revenue reset route wiring', () => {
+  it('registers an authenticated super-administrator-only reset route', async () => {
+    expect(routes).toHaveProperty('POST /api/revenue/reset');
+    expect(routes['POST /api/revenue/reset']).toHaveLength(3);
+    expect((routes['POST /api/revenue/reset'][0] as { auth?: boolean }).auth).toBe(true);
+
+    const guard = routes['POST /api/revenue/reset'][1] as (
+      input: { params: Record<string, string>; user: { email: string } },
+    ) => Promise<unknown>;
+    wiring.requireAdmin.mockResolvedValueOnce({ ...wiring.admin, role: '營運管理員' });
+    await expect(guard({ params: {}, user: { email: 'operator@example.com' } })).resolves.toEqual({
+      error: '僅超級管理員可重設收入',
+      status: 403,
+    });
+  });
+
+  it('stores a new reset baseline and returns it after server confirmation', async () => {
+    wiring.supabaseRequest.mockResolvedValueOnce([{ id: 1, reset_at: '2026-09-02T06:45:00.000Z' }]);
+    const routeHandler = routes['POST /api/revenue/reset'][2] as (
+      input: { params: Record<string, string>; user: { email: string } },
+    ) => Promise<unknown>;
+
+    await expect(routeHandler({ params: {}, user: { email: 'admin@example.com' } })).resolves.toMatchObject({
+      body: { resetAt: expect.any(String) },
+      status: 200,
+    });
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith(
+      'rpc/admin_reset_revenue_baseline',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

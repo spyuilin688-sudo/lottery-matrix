@@ -327,4 +327,33 @@ describe('authorized Supabase writes', () => {
     await data.reviewTransferRequest('transfer-1', 'rejected', actor, new Date('2026-08-21T00:00:00Z'));
     expect(rpc).toHaveBeenCalledWith('rpc/admin_review_transfer_request', expect.objectContaining({ body: expect.stringContaining('"p_decision":"rejected"') }));
   });
+
+  it('resets the revenue baseline without deleting payment records', async () => {
+    const rpc = vi.fn(async () => [{ id: 1, reset_at: '2026-09-02T06:45:00.000Z' }]);
+    const deleteRows = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows, supabaseRequest: rpc,
+    });
+
+    await expect(data.resetRevenue(
+      { ...actor, role: '超級管理員' },
+    )).resolves.toEqual({ resetAt: '2026-09-02T06:45:00.000Z' });
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_reset_revenue_baseline', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    expect(deleteRows).not.toHaveBeenCalled();
+  });
+
+  it('rejects a revenue reset from a non-super administrator before writing', async () => {
+    const rpc = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn(), supabaseRequest: rpc,
+    });
+
+    await expect(data.resetRevenue(
+      { ...actor, role: '營運管理員' },
+    )).rejects.toMatchObject({ statusCode: 403, message: '僅超級管理員可重設收入' });
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

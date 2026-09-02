@@ -52,10 +52,14 @@
 .operationDialog p { color: #989ca5; }
 .operationDialog label { display: block; color: #989ca5; font-size: 12px; }
 .operationDialog label input, .operationDialog label select { margin-top: 6px; }
-.transferPanel { margin-top: 12px; }
-.transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid #24272d; }
+.transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #24272d; }
 .transferRow > div:first-child { display: grid; gap: 4px; }
 .transferRow span { color: #888d96; font-size: 12px; }
+.transferActions { display: flex; gap: 6px; }
+.transferActions button { width: auto; min-width: 52px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid #30333a; border-radius: 8px; background: #15181d; color: #c9cbd1; white-space: nowrap; cursor: pointer; }
+.transferActions button:hover:not(:disabled),
+.transferActions button:focus-visible { border-color: #6a603f; background: #211e17; color: #f0d98f; }
+.transferActions .transferReject { color: #d98585; }
 .permissionBox span { font-size: 13px; color: #c4c6cc; }
 .managementList table { min-width: 980px; }
 .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; }
@@ -83,6 +87,14 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .metric span { font-size: 12px; }
 .metric strong { font-size: 23px; }
 .panel { padding: 12px; }
+.transferPanel { margin-top: 10px; }
+.panel.transferPanel { padding: 10px; }
+.transferPanel h2 { margin-bottom: 6px; }
+.revenueActions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.revenueResetButton { min-width: 88px; border-color: #6f3737; background: #241616; color: #efabab; }
+.revenueResetButton:hover:not(:disabled),
+.revenueResetButton:focus-visible { border-color: #a84a4a; background: #321b1b; color: #ffd2d2; }
+.revenueResetButton:disabled { cursor: not-allowed; opacity: .55; }
 .formCard { padding: 14px; }
 .panel h2,
 .formCard h3 { font-size: 17px; line-height: 1.4; }
@@ -122,7 +134,7 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
   .transferRow { grid-template-columns: 1fr auto; }
-  .transferRow .rowActions { grid-column: 1 / -1; }
+  .transferRow .transferActions { grid-column: 1 / -1; display: flex; flex-wrap: nowrap; justify-self: start; }
   .managementCard > .compactButton { width: 100%; margin-top: 10px; }
   .pagination { justify-content: center; }
   .userInfoRows > div { grid-template-columns: 105px minmax(0, 1fr); }

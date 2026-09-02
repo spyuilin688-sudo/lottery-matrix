@@ -441,6 +441,28 @@ function AdminApp() {
       },
     );
   };
+  const resetRevenue = async () => {
+    await runConfirmed(
+      () => requestConfirmation({
+        title: "確認重設收入",
+        message: "五項收入將歸零，付款紀錄仍會保留。",
+        confirmLabel: "確認重設",
+        tone: "danger",
+      }),
+      async () => {
+        setBusy(true);
+        setError("");
+        try {
+          await api.post("/api/revenue/reset");
+          await load("收入報表");
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "收入重設失敗");
+        } finally {
+          setBusy(false);
+        }
+      },
+    );
+  };
   const roleChange = (role: string) => setAdminForm(defaultAdmin(role));
   if (!signed)
     return (
@@ -518,7 +540,7 @@ function AdminApp() {
           {error && <div className="error">{error}</div>}
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
-          {active === "收入報表" && dash && <Revenue d={dash} />}{" "}
+          {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
           {active === "系統設定" && (
             <SystemSettings canEdit={can("edit")} requestConfirmation={requestConfirmation} />
           )}{" "}
@@ -835,7 +857,7 @@ function SubscriptionManager({
           <div className="transferRow" key={row.id}>
             <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
             <span>{text(row.status)}</span>
-            {canEdit && row.status === "pending" && <div className="rowActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="danger" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
+            {canEdit && row.status === "pending" && <div className="transferActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>
         ))}
       </div>
@@ -1050,9 +1072,31 @@ function Overview({ d }: { d: Dashboard }) {
     </>
   );
 }
-function Revenue({ d }: { d: Dashboard }) {
+function Revenue({
+  d,
+  isSuper,
+  onReset,
+  busy,
+}: {
+  d: Dashboard;
+  isSuper: boolean;
+  onReset: () => Promise<void>;
+  busy: boolean;
+}) {
   return (
     <>
+      {isSuper && (
+        <div className="revenueActions">
+          <button
+            className="compactButton revenueResetButton"
+            onClick={onReset}
+            disabled={busy}
+            aria-busy={busy}
+          >
+            {busy ? "重設中…" : "重設收入"}
+          </button>
+        </div>
+      )}
       <Cards
         items={[
           ["今日收入", money(d.todayRevenue)],
