@@ -127,8 +127,16 @@ def _run_tracked_job(
             )
         )
         raise
+    job_status = "waiting_source" if result.get("status") == "not-acquired" else "success"
     _best_effort_telemetry(
-        lambda: repository.finish_job(job_name, "success", datetime.now(UTC).isoformat())
+        lambda: repository.finish_job(
+            job_name,
+            job_status,
+            datetime.now(UTC).isoformat(),
+            source_period=result.get("sourcePeriod"),
+            database_period=result.get("databasePeriod"),
+            written_period=result.get("writtenPeriod"),
+        )
     )
     return result
 
@@ -197,29 +205,51 @@ def run_scheduled_worker(
             "status": "already-acquired",
         }
 
-    def execute() -> dict[str, Any]:
+    database_period = str(latest[0]["period"]) if latest else None
+    refresh = DrawRefreshService(repository, source)
+
+    def acquire() -> dict[str, Any]:
         repository.cleanup_expired(datetime.now(UTC))
-        refresh = DrawRefreshService(repository, source)
         if not repository.list_draws(lottery, 1):
             refresh.ensure_history(lottery)
-        draw = refresh.refresh(lottery)
+        draw = refresh.fetch(lottery)
+        source_period = str(draw["period"])
 
         if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
             return {
                 "lottery": lottery,
                 "drawPeriod": draw["period"],
                 "status": "not-acquired",
+                "sourcePeriod": source_period,
+                "databasePeriod": database_period,
+                "writtenPeriod": None,
             }
 
-        if builders is None:
-            history = refresh.ensure_algorithm_history(lottery)
-        else:
-            refresh.ensure_history(lottery)
-            history = repository.list_draws(lottery, None)
-        draw = _draw_from_history(lottery, str(draw["period"]), history)
-        return _run_analysis(repository, draw, history, builders)
+        refresh.store(draw)
+        refresh.ensure_history(lottery)
+        return {
+            "lottery": lottery,
+            "drawPeriod": draw["period"],
+            "status": "acquired",
+            "sourcePeriod": source_period,
+            "databasePeriod": database_period,
+            "writtenPeriod": source_period,
+        }
 
-    return _run_tracked_job(lottery, repository, execute)
+    acquisition = _run_tracked_job(lottery, repository, acquire)
+    if acquisition["status"] != "acquired":
+        return {
+            "lottery": lottery,
+            "drawPeriod": acquisition["drawPeriod"],
+            "status": acquisition["status"],
+        }
+
+    if builders is None:
+        history = refresh.ensure_algorithm_history(lottery)
+    else:
+        history = repository.list_draws(lottery, None)
+    draw = _draw_from_history(lottery, str(acquisition["drawPeriod"]), history)
+    return _run_analysis(repository, draw, history, builders)
 
 
 def main(argv: list[str] | None = None) -> int:

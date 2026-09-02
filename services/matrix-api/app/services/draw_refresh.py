@@ -108,7 +108,13 @@ class DrawRefreshService:
         self.source = source
 
     def refresh(self, lottery: str) -> dict[str, Any]:
-        draw = self._prepare_draw(lottery, self.source.fetch(lottery))
+        draw = self.fetch(lottery)
+        return self.store(draw)
+
+    def fetch(self, lottery: str) -> dict[str, Any]:
+        return self._prepare_draw(lottery, self.source.fetch(lottery))
+
+    def store(self, draw: dict[str, Any]) -> dict[str, Any]:
         self.repository.upsert_draw(draw)
         return draw
 

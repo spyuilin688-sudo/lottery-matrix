@@ -26,7 +26,17 @@ class AnalysisRepository(Protocol):
     def health_check(self) -> None: ...
     def list_job_statuses(self) -> list[dict[str, Any]]: ...
     def start_job(self, job_name: str, lottery: str, started_at: str) -> None: ...
-    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None: ...
+    def finish_job(
+        self,
+        job_name: str,
+        status: str,
+        finished_at: str,
+        error: str | None = None,
+        *,
+        source_period: str | None = None,
+        database_period: str | None = None,
+        written_period: str | None = None,
+    ) -> None: ...
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
@@ -69,14 +79,30 @@ class InMemoryAnalysisRepository:
             "startedAt": started_at,
             "finishedAt": None,
             "error": None,
+            "sourcePeriod": None,
+            "databasePeriod": None,
+            "writtenPeriod": None,
             "updatedAt": started_at,
         }
 
-    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
+    def finish_job(
+        self,
+        job_name: str,
+        status: str,
+        finished_at: str,
+        error: str | None = None,
+        *,
+        source_period: str | None = None,
+        database_period: str | None = None,
+        written_period: str | None = None,
+    ) -> None:
         self.job_statuses[job_name].update({
             "status": status,
             "finishedAt": finished_at,
             "error": error,
+            "sourcePeriod": source_period,
+            "databasePeriod": database_period,
+            "writtenPeriod": written_period,
             "updatedAt": finished_at,
         })
 
@@ -98,6 +124,9 @@ class InMemoryAnalysisRepository:
                     "startedAt": job["startedAt"],
                     "finishedAt": job.get("finishedAt"),
                     "error": "WORKER_FAILED" if job.get("error") else None,
+                    "sourcePeriod": job.get("sourcePeriod"),
+                    "databasePeriod": job.get("databasePeriod"),
+                    "writtenPeriod": job.get("writtenPeriod"),
                     "updatedAt": job["updatedAt"],
                 },
                 "latestDraw": None if latest_draw is None else {
@@ -355,6 +384,9 @@ class SupabaseAnalysisRepository:
             "startedAt": row["started_at"],
             "finishedAt": row.get("finished_at"),
             "error": "WORKER_FAILED" if row.get("error") else None,
+            "sourcePeriod": row.get("source_period"),
+            "databasePeriod": row.get("database_period"),
+            "writtenPeriod": row.get("written_period"),
             "updatedAt": row["updated_at"],
         }
 
@@ -387,20 +419,37 @@ class SupabaseAnalysisRepository:
             "started_at": started_at,
             "finished_at": None,
             "error": None,
+            "source_period": None,
+            "database_period": None,
+            "written_period": None,
             "updated_at": started_at,
         }, on_conflict="job_name").execute()
 
-    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
+    def finish_job(
+        self,
+        job_name: str,
+        status: str,
+        finished_at: str,
+        error: str | None = None,
+        *,
+        source_period: str | None = None,
+        database_period: str | None = None,
+        written_period: str | None = None,
+    ) -> None:
         self.client.table("system_job_status").update({
             "status": status,
             "finished_at": finished_at,
             "error": error,
+            "source_period": source_period,
+            "database_period": database_period,
+            "written_period": written_period,
             "updated_at": finished_at,
         }).eq("job_name", job_name).execute()
 
     def list_job_statuses(self) -> list[dict[str, Any]]:
         job_response = self.client.table("system_job_status").select(
-            "job_name,lottery,status,started_at,finished_at,error,updated_at"
+            "job_name,lottery,status,started_at,finished_at,error,"
+            "source_period,database_period,written_period,updated_at"
         ).execute()
         jobs = {str(row["job_name"]): dict(row) for row in job_response.data}
         items: list[dict[str, Any]] = []

@@ -12,8 +12,10 @@ JOB_NAME = "matrix-539-refresh-v2"
 
 
 class Source:
-    def __init__(self, draw_date: str = "2026-08-28") -> None:
+    def __init__(self, draw_date: str = "2026-08-28", period: str = "000000221") -> None:
         self.draw_date = draw_date
+        self.period = period
+        self.history_calls = 0
 
     @staticmethod
     def _numbers() -> list[str]:
@@ -21,12 +23,13 @@ class Source:
 
     def fetch(self, lottery: str) -> dict:
         return {
-            "period": "000000221",
+            "period": self.period,
             "drawDate": self.draw_date,
             "numbers": self._numbers(),
         }
 
     def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.history_calls += 1
         rows = [
             {
                 "period": str(period).zfill(9),
@@ -51,13 +54,21 @@ class JobTrackingRepository(InMemoryAnalysisRepository):
             "startedAt": started_at,
         })
 
-    def finish_job(self, job_name: str, status: str, finished_at: str, error: str | None = None) -> None:
+    def finish_job(
+        self,
+        job_name: str,
+        status: str,
+        finished_at: str,
+        error: str | None = None,
+        **periods: str | None,
+    ) -> None:
         self.job_events.append({
             "action": "finish",
             "jobName": job_name,
             "status": status,
             "finishedAt": finished_at,
             "error": error,
+            **periods,
         })
 
 
@@ -117,7 +128,7 @@ def test_due_scheduled_worker_records_running_then_success() -> None:
     assert repository.job_events[1]["error"] is None
 
 
-def test_due_scheduled_worker_records_failed_and_preserves_original_error() -> None:
+def test_analysis_failure_preserves_successful_draw_acquisition_status() -> None:
     repository = JobTrackingRepository()
 
     with pytest.raises(RuntimeError, match="builder failed"):
@@ -125,9 +136,9 @@ def test_due_scheduled_worker_records_failed_and_preserves_original_error() -> N
 
     assert [(event["action"], event.get("status")) for event in repository.job_events] == [
         ("start", None),
-        ("finish", "failed"),
+        ("finish", "success"),
     ]
-    assert repository.job_events[1]["error"] == "builder failed"
+    assert repository.job_events[1]["error"] is None
 
 
 @pytest.mark.parametrize("fail_on", ["start", "finish"])
@@ -160,17 +171,55 @@ def test_due_scheduled_worker_records_one_execution() -> None:
     assert repository.job_events[1]["status"] == "success"
 
 
-def test_not_acquired_finishes_invocation_as_success() -> None:
+def test_stale_source_finishes_invocation_as_waiting_source_with_periods() -> None:
     repository = JobTrackingRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539",
+        "period": "000000220",
+        "drawDate": "2026-08-27",
+        "numbers": ["06", "07", "08", "09", "10"],
+    })
     result = run_scheduled_worker(
         "今彩539",
         datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI),
         repository,
-        Source(draw_date="2026-08-27"),
+        Source(draw_date="2026-08-27", period="000000220"),
         _builders(),
     )
     assert result["status"] == "not-acquired"
-    assert repository.job_events[-1]["status"] == "success"
+    assert repository.list_draws("今彩539", 1)[0]["numbers"] == [
+        "06", "07", "08", "09", "10",
+    ]
+    assert repository.job_events[-1] == {
+        "action": "finish",
+        "jobName": JOB_NAME,
+        "status": "waiting_source",
+        "finishedAt": repository.job_events[-1]["finishedAt"],
+        "error": None,
+        "source_period": "000000220",
+        "database_period": "000000220",
+        "written_period": None,
+    }
+
+
+def test_successful_acquisition_repairs_recent_internal_period_gap() -> None:
+    repository = JobTrackingRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539",
+        "period": "000000219",
+        "drawDate": "2026-08-27",
+        "numbers": ["01", "02", "03", "04", "05"],
+    })
+    source = Source()
+
+    result = _run_due_worker(repository, source, _builders())
+
+    assert result["status"] == "complete"
+    assert source.history_calls >= 1
+    assert any(
+        draw["period"] == "000000220"
+        for draw in repository.list_draws("今彩539", None)
+    )
 
 
 def test_running_analysis_checkpoint_finishes_invocation_as_success(monkeypatch) -> None:

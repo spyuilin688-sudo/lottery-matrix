@@ -58,7 +58,14 @@ def test_in_memory_job_status_keeps_latest_transition() -> None:
     repository = InMemoryAnalysisRepository()
 
     repository.start_job("matrix-539-refresh-v2", "今彩539", "2026-08-29T01:00:00+00:00")
-    repository.finish_job("matrix-539-refresh-v2", "success", "2026-08-29T01:01:00+00:00")
+    repository.finish_job(
+        "matrix-539-refresh-v2",
+        "success",
+        "2026-08-29T01:01:00+00:00",
+        source_period="003118",
+        database_period="003117",
+        written_period="003118",
+    )
 
     row = repository.list_job_statuses()[0]
     assert row["job"] == {
@@ -68,6 +75,9 @@ def test_in_memory_job_status_keeps_latest_transition() -> None:
         "startedAt": "2026-08-29T01:00:00+00:00",
         "finishedAt": "2026-08-29T01:01:00+00:00",
         "error": None,
+        "sourcePeriod": "003118",
+        "databasePeriod": "003117",
+        "writtenPeriod": "003118",
         "updatedAt": "2026-08-29T01:01:00+00:00",
     }
 
@@ -147,6 +157,9 @@ def test_supabase_job_status_projection_hides_raw_rows_and_errors() -> None:
                 "started_at": "2026-08-29T01:00:00+00:00",
                 "finished_at": "2026-08-29T01:01:00+00:00",
                 "error": "password=raw-worker-secret",
+                "source_period": "003118",
+                "database_period": "003117",
+                "written_period": None,
                 "updated_at": "2026-08-29T01:01:00+00:00",
                 "extra": "raw-job-row-secret",
             }])
@@ -188,6 +201,9 @@ def test_supabase_job_status_projection_hides_raw_rows_and_errors() -> None:
             "startedAt": "2026-08-29T01:00:00+00:00",
             "finishedAt": "2026-08-29T01:01:00+00:00",
             "error": "WORKER_FAILED",
+            "sourcePeriod": "003118",
+            "databasePeriod": "003117",
+            "writtenPeriod": None,
             "updatedAt": "2026-08-29T01:01:00+00:00",
         },
         "latestDraw": {
@@ -223,6 +239,9 @@ def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
         "failed",
         "2026-08-29T01:01:00+00:00",
         "builder failed",
+        source_period="003118",
+        database_period="003117",
+        written_period=None,
     )
 
     assert client.executions == [
@@ -236,6 +255,9 @@ def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
                 "started_at": "2026-08-29T01:00:00+00:00",
                 "finished_at": None,
                 "error": None,
+                "source_period": None,
+                "database_period": None,
+                "written_period": None,
                 "updated_at": "2026-08-29T01:00:00+00:00",
             },
             "onConflict": "job_name",
@@ -248,6 +270,9 @@ def test_supabase_job_status_start_and_finish_use_primary_key() -> None:
                 "status": "failed",
                 "finished_at": "2026-08-29T01:01:00+00:00",
                 "error": "builder failed",
+                "source_period": "003118",
+                "database_period": "003117",
+                "written_period": None,
                 "updated_at": "2026-08-29T01:01:00+00:00",
             },
             "onConflict": None,
