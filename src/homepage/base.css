@@ -22,7 +22,7 @@
   --home-feature-card-aspect: 386 / 496;
   --home-gap-status-core: 10px;
   --home-gap-core-features: 14px;
-  --home-gap-features-nav: 8px;
+  --home-gap-features-nav: clamp(8px, 2.2dvh, 20px);
   box-sizing: border-box;
   display: grid;
   width: min(100%, 390px);

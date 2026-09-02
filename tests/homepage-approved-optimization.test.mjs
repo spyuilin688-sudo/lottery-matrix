@@ -8,7 +8,7 @@ const tokens = readFileSync(new URL("../src/design-tokens.css", import.meta.url)
 
 test("approved homepage uses independent component insets and canonical rhythm", () => {
   assert.match(css, /\.home-screen \.lottery-screen\s*\{[^}]*--layout-page-inline:\s*16px;[^}]*--home-gap-logo-switcher:\s*8px;[^}]*--home-gap-switcher-draw:\s*6px;[^}]*--home-gap-draw-status:\s*8px;/s);
-  assert.match(css, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*10px;[^}]*--home-gap-core-features:\s*14px;[^}]*--home-gap-features-nav:\s*8px;/s);
+  assert.match(css, /\.home-screen \.home-layout\s*\{[^}]*--home-gap-status-core:\s*10px;[^}]*--home-gap-core-features:\s*14px;[^}]*--home-gap-features-nav:\s*clamp\(8px,\s*2\.2dvh,\s*20px\);/s);
   assert.match(css, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
   assert.match(css, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
 });

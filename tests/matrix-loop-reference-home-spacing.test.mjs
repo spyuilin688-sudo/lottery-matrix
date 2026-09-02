@@ -25,9 +25,9 @@ test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () =>
   assert.match(reference, /border-left:\s*1px solid rgba\(161, 112, 40, \.78\)/);
 });
 
-test("首頁使用指定 10px 功能內距與 8px 導覽淨空、16px 資訊容器外距及 6px 區段間距", () => {
+test("首頁使用指定 10px 功能內距與響應式導覽淨空、16px 資訊容器外距及 6px 區段間距", () => {
   assert.match(home, /--home-feature-inline:\s*10px/);
-  assert.match(home, /--home-gap-features-nav:\s*8px/);
+  assert.match(home, /--home-gap-features-nav:\s*clamp\(8px,\s*2\.2dvh,\s*20px\)/);
   assert.match(home, /--home-gap-switcher-draw:\s*6px/);
   assert.match(home, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\)/);
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
