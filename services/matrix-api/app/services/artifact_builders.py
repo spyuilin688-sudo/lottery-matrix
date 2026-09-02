@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from app.domain.explore_v2 import ExploreV2Session, run_explore_v2_batch
+from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
 from app.domain.tianyan_artifact import build_tianyan_artifact
@@ -81,8 +81,8 @@ def build_explore_artifact_chunk(
     start: int,
     limit: int,
     runner: ExploreRunner | None = None,
-    batch_runner: ExploreBatchRunner = run_explore_v2_batch,
-    session: ExploreV2Session | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
 ) -> dict[str, Any]:
     if runner is None:
         result = batch_runner(
@@ -112,8 +112,8 @@ def build_explore_artifact(
     draw_period: str,
     history: list[dict[str, Any]],
     runner: ExploreRunner | None = None,
-    batch_runner: ExploreBatchRunner = run_explore_v2_batch,
-    session: ExploreV2Session | None = None,
+    batch_runner: ExploreBatchRunner = run_explore_batch,
+    session: ExploreEngineSession | None = None,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
         lottery,
@@ -215,22 +215,22 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
 
 def create_artifact_builders(
     explore_runner: ExploreRunner | None = None,
-    explore_batch_runner: ExploreBatchRunner = run_explore_v2_batch,
+    explore_batch_runner: ExploreBatchRunner = run_explore_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
-    v2_sessions: dict[str, ExploreV2Session] = {}
+    engine_sessions: dict[str, ExploreEngineSession] = {}
 
-    def v2_session(lottery: str, history: list[dict[str, Any]]) -> ExploreV2Session:
-        cached = v2_sessions.get(lottery)
+    def engine_session(lottery: str, history: list[dict[str, Any]]) -> ExploreEngineSession:
+        cached = engine_sessions.get(lottery)
         if cached is None or not cached.matches(lottery, history):
-            cached = ExploreV2Session.build(lottery, history)
-            v2_sessions[lottery] = cached
+            cached = ExploreEngineSession.build(lottery, history)
+            engine_sessions[lottery] = cached
         return cached
 
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
         session = (
-            v2_session(draw["lottery"], context["history"])
-            if explore_runner is None and explore_batch_runner is run_explore_v2_batch
+            engine_session(draw["lottery"], context["history"])
+            if explore_runner is None and explore_batch_runner is run_explore_batch
             else None
         )
         batch = context.get("exploreBatch")
