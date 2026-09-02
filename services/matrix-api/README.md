@@ -42,6 +42,10 @@ header. Railway and AppDeploy must store the same server-only secret under
 `MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
 or other browser configuration.
 
+The health payload reports `adminApi.status` as `ok` or `misconfigured` without
+exposing the secret. AppDeploy is an administrator-backend consumer only; it is
+not a deployment target for the public PWA.
+
 `POST /jobs/refresh` accepts `{"lottery":"今彩539"}` (or another supported
 lottery), then fetches and upserts only its latest draw. It does not backfill
 history, run Matrix analysis, or update scheduled-job status records.
@@ -58,6 +62,8 @@ railway.lotto649.json
 ```
 
 Each worker is triggered on the five-minute Railway cron grid. `app.schedule` decides whether the current minute is one of the configured call times. `app.worker` checks Supabase before fetching; once the current draw has been acquired, later calls for that draw stop doing network work.
+
+天天樂只儲存並計算依號碼由小到大排列的順球資料；不要求、補抓或以其他資料偽造落球順序。
 
 Automated entrypoints must use `--scheduled`. The CLI defaults to scheduled mode as a
 second safeguard for deployment configuration.

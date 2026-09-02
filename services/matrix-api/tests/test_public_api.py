@@ -63,6 +63,7 @@ class OfflineOperationalRepository(OperationalRepository):
 
 def test_health_checks_database_and_reports_service_metadata(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = OperationalRepository()
 
     status, payload = handle_api_request("GET", "/health", None, repository)
@@ -74,11 +75,30 @@ def test_health_checks_database_and_reports_service_metadata(monkeypatch) -> Non
         "service": "matrix-railway-api",
         "version": "test-version",
         "database": {"status": "ok"},
+        "adminApi": {"status": "ok"},
+    }
+
+
+def test_health_reports_missing_admin_api_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
+    monkeypatch.delenv("MATRIX_ADMIN_STATUS_TOKEN", raising=False)
+    repository = OperationalRepository()
+
+    status, payload = handle_api_request("GET", "/health", None, repository)
+
+    assert status == 200
+    assert payload == {
+        "status": "ok",
+        "service": "matrix-railway-api",
+        "version": "test-version",
+        "database": {"status": "ok"},
+        "adminApi": {"status": "misconfigured"},
     }
 
 
 def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_SERVICE_VERSION", "test-version")
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     repository = OfflineOperationalRepository()
 
     status, payload = handle_api_request("GET", "/health", None, repository)
@@ -90,6 +110,7 @@ def test_health_returns_503_when_database_probe_fails(monkeypatch) -> None:
         "service": "matrix-railway-api",
         "version": "test-version",
         "database": {"status": "error"},
+        "adminApi": {"status": "ok"},
     }
 
 

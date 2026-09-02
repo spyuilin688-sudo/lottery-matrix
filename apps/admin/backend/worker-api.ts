@@ -11,6 +11,7 @@ export type RailwayHealth = {
   service: string;
   version: string;
   database: { status: 'ok' };
+  adminApi: { status: 'ok' | 'misconfigured' | 'unknown' };
 };
 export type RailwayJob = {
   jobName: string;
@@ -43,7 +44,16 @@ export type RailwayJobItem = {
 export type RailwayJobs = { items: RailwayJobItem[] };
 export type WorkerStatus =
   | { ok: true; health: RailwayHealth; jobs: RailwayJobs }
-  | { ok: false; health: null; jobs: null };
+  | {
+    ok: false;
+    reason:
+      | 'APPDEPLOY_CONFIG_MISSING'
+      | 'RAILWAY_ADMIN_CONFIG_MISSING'
+      | 'RAILWAY_AUTH_FAILED'
+      | 'RAILWAY_UNAVAILABLE';
+    health: null;
+    jobs: null;
+  };
 export type WorkerRefresh = {
   lottery: CrawlerLottery;
   period: string;
@@ -84,11 +94,16 @@ function parseHealth(value: unknown): RailwayHealth | null {
   if (!isRecord(value) || value.status !== 'ok') return null;
   if (!isString(value.service) || !isString(value.version)) return null;
   if (!isRecord(value.database) || value.database.status !== 'ok') return null;
+  const adminApi = isRecord(value.adminApi)
+    && includes(['ok', 'misconfigured'] as const, value.adminApi.status)
+    ? value.adminApi.status
+    : 'unknown';
   return {
     status: 'ok',
     service: value.service,
     version: value.version,
     database: { status: 'ok' },
+    adminApi: { status: adminApi },
   };
 }
 
@@ -188,8 +203,11 @@ function parseRefresh(
   return { lottery, period: value.period, drawDate: value.drawDate };
 }
 
-const unavailable = (): WorkerStatus => ({
+const unavailable = (
+  reason: Extract<WorkerStatus, { ok: false }>['reason'] = 'RAILWAY_UNAVAILABLE',
+): WorkerStatus => ({
   ok: false,
+  reason,
   health: null,
   jobs: null,
 });
@@ -246,30 +264,31 @@ export function createWorkerApi(
         const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
         const statusToken = config?.statusToken.trim() ?? '';
         if (!baseUrl || !statusToken || controller.signal.aborted) {
-          return unavailable();
+          return unavailable('APPDEPLOY_CONFIG_MISSING');
         }
-        const [healthResponse, jobsResponse] = await Promise.all([
-          fetcher(`${baseUrl}/health`, {
-            signal: controller.signal,
-            redirect: 'error',
-            cache: 'no-store',
-          }),
-          fetcher(`${baseUrl}/jobs/status`, {
-            signal: controller.signal,
-            redirect: 'error',
-            cache: 'no-store',
-            headers: { 'X-Matrix-Admin-Token': statusToken },
-          }),
-        ]);
-        if (!healthResponse.ok || !jobsResponse.ok) {
-          controller.abort();
-          return unavailable();
-        }
-        const [healthValue, jobsValue] = await Promise.all([
-          healthResponse.json(),
-          jobsResponse.json(),
-        ]);
+        const healthResponse = await fetcher(`${baseUrl}/health`, {
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+        });
+        if (!healthResponse.ok) return unavailable();
+        const healthValue = await healthResponse.json();
         const health = parseHealth(healthValue);
+        if (!health) return unavailable();
+        if (health.adminApi.status === 'misconfigured') {
+          return unavailable('RAILWAY_ADMIN_CONFIG_MISSING');
+        }
+        const jobsResponse = await fetcher(`${baseUrl}/jobs/status`, {
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+          headers: { 'X-Matrix-Admin-Token': statusToken },
+        });
+        if (jobsResponse.status === 403) {
+          return unavailable('RAILWAY_AUTH_FAILED');
+        }
+        if (!jobsResponse.ok) return unavailable();
+        const jobsValue = await jobsResponse.json();
         const jobs = parseJobs(jobsValue);
         return health && jobs ? { ok: true, health, jobs } : unavailable();
       })();

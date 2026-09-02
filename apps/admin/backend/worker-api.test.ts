@@ -6,6 +6,7 @@ const health = {
   service: 'matrix-railway-api',
   version: 'test-sha',
   database: { status: 'ok' },
+  adminApi: { status: 'ok' },
 };
 const lotteryJobs = [
   ['今彩539', 'matrix-539-refresh-v2'],
@@ -40,9 +41,37 @@ const jobs = {
 };
 const jsonResponse = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), { status });
-const unavailable = { ok: false, health: null, jobs: null };
+const unavailable = {
+  ok: false,
+  reason: 'RAILWAY_UNAVAILABLE',
+  health: null,
+  jobs: null,
+};
 
 describe('Railway worker status adapter', () => {
+  it('reports a Railway-side missing admin token without calling protected jobs', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      ...health,
+      adminApi: { status: 'misconfigured' },
+    }));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+
+    await expect(api.getStatus()).resolves.toEqual({
+      ok: false,
+      reason: 'RAILWAY_ADMIN_CONFIG_MISSING',
+      health: null,
+      jobs: null,
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(String(fetcher.mock.calls[0][0])).toBe('https://railway.example/health');
+  });
+
   it('normalizes the URL and sends the token only to jobs with one signal', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request, _init?: RequestInit) =>
       String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse(jobs));
@@ -68,6 +97,37 @@ describe('Railway worker status adapter', () => {
     });
     expect((healthInit as RequestInit).headers).toBeUndefined();
     expect((healthInit as RequestInit).signal).toBe((jobsInit as RequestInit).signal);
+  });
+
+  it('keeps rolling compatibility with a Railway health payload from before adminApi', async () => {
+    const { adminApi: _ignored, ...legacyHealth } = health;
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health') ? jsonResponse(legacyHealth) : jsonResponse(jobs));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }),
+      fetcher,
+    );
+
+    const result = await api.getStatus();
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected Railway status');
+    expect(result.health.adminApi.status).toBe('unknown');
+  });
+
+  it('distinguishes a rejected shared token from an unavailable service', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse({}, 403));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: 'wrong-token' }),
+      fetcher,
+    );
+
+    await expect(api.getStatus()).resolves.toEqual({
+      ok: false,
+      reason: 'RAILWAY_AUTH_FAILED',
+      health: null,
+      jobs: null,
+    });
   });
 
   it('accepts the worker waiting_source status used while upstream data is stale', async () => {
@@ -164,7 +224,10 @@ describe('Railway worker status adapter', () => {
   ])('performs no fetch when config is unusable', async (config) => {
     const fetcher = vi.fn();
     const api = createWorkerApi(async () => config, fetcher as typeof fetch);
-    await expect(api.getStatus()).resolves.toEqual(unavailable);
+    await expect(api.getStatus()).resolves.toEqual({
+      ...unavailable,
+      reason: 'APPDEPLOY_CONFIG_MISSING',
+    });
     expect(fetcher).not.toHaveBeenCalled();
   });
 
@@ -319,7 +382,7 @@ describe('Railway worker status adapter', () => {
       const pending = api.getStatus();
       await vi.advanceTimersByTimeAsync(5_000);
       await expect(pending).resolves.toEqual(unavailable);
-      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(fetcher).toHaveBeenCalledTimes(1);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
@@ -344,7 +407,7 @@ describe('Railway worker status adapter', () => {
       const pending = api.getStatus();
       await vi.advanceTimersByTimeAsync(5_000);
       await expect(pending).resolves.toEqual(unavailable);
-      expect(fetcher).toHaveBeenCalledTimes(2);
+      expect(fetcher).toHaveBeenCalledTimes(1);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();

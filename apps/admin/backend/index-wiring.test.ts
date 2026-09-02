@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 const wiring = vi.hoisted(() => {
-  const workerStatus = { ok: false, health: null, jobs: null } as const;
+  const workerStatus = {
+    ok: false,
+    health: null,
+    jobs: null,
+    reason: 'RAILWAY_UNAVAILABLE',
+  } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
   const workerRefreshLottery = vi.fn(async (lottery: string) => ({
     lottery,
@@ -147,6 +152,7 @@ describe('admin Railway route wiring', () => {
       ok: false,
       health: null,
       jobs: null,
+      reason: 'RAILWAY_UNAVAILABLE',
     });
     expect(wiring.workerGetStatus).toHaveBeenCalledTimes(1);
   });

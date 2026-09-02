@@ -76,7 +76,21 @@ const descriptionFor = (definition: ApiStatusDefinition) => {
   return '以不修改資料的請求確認此端點目前可回應。';
 };
 
-const safeErrorFor = (definition: ApiStatusDefinition) => {
+const safeErrorFor = (
+  definition: ApiStatusDefinition,
+  workerStatus?: WorkerStatus,
+) => {
+  if (definition.location === 'Railway' && workerStatus && !workerStatus.ok) {
+    if (workerStatus.reason === 'APPDEPLOY_CONFIG_MISSING') {
+      return 'AppDeploy 尚未完成 Railway 管理 API 設定';
+    }
+    if (workerStatus.reason === 'RAILWAY_ADMIN_CONFIG_MISSING') {
+      return 'Railway 管理 API 尚未完成設定';
+    }
+    if (workerStatus.reason === 'RAILWAY_AUTH_FAILED') {
+      return 'Railway 管理 API 驗證失敗';
+    }
+  }
   if (definition.location === 'Railway') return 'Railway Worker API 暫時無法使用';
   if (definition.checkMode === 'openapi') return 'Supabase API 登錄檢查失敗';
   return `${definition.location} API 暫時無法使用`;
@@ -176,12 +190,15 @@ export function createConnectionStatus(dependencies: Dependencies) {
         detail,
       };
     } catch {
+      const workerStatus = definition.location === 'Railway'
+        ? await shared.worker().catch(() => undefined)
+        : undefined;
       return {
         ...base,
         ok: false,
         checkedAt: now().toISOString(),
         responseMs: Math.max(0, now().getTime() - started),
-        error: safeErrorFor(definition),
+        error: safeErrorFor(definition, workerStatus),
       };
     }
   };

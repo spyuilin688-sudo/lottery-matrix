@@ -36,11 +36,17 @@ def _service_version() -> str:
 
 
 def _health_payload(status: str) -> dict[str, Any]:
+    admin_api_status = (
+        "ok"
+        if environ.get("MATRIX_ADMIN_STATUS_TOKEN", "").strip()
+        else "misconfigured"
+    )
     return {
         "status": status,
         "service": SERVICE_NAME,
         "version": _service_version(),
         "database": {"status": status},
+        "adminApi": {"status": admin_api_status},
     }
 
 

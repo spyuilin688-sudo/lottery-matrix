@@ -10,6 +10,7 @@ const healthyWorkerStatus: WorkerStatus = {
     service: 'matrix-railway-api',
     version: 'test-sha',
     database: { status: 'ok' },
+    adminApi: { status: 'ok' },
   },
   jobs: { items: [] },
 };
@@ -114,14 +115,19 @@ describe('connection status', () => {
       supabase: { selectRows: vi.fn(async () => []) },
       loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
       fetcher: vi.fn(async () => response({ ok: true })),
-      getWorkerStatus: async () => ({ ok: false, health: null, jobs: null }),
+      getWorkerStatus: async () => ({
+        ok: false,
+        reason: 'RAILWAY_ADMIN_CONFIG_MISSING',
+        health: null,
+        jobs: null,
+      }),
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: false,
       retryable: true,
-      error: 'Railway Worker API 暫時無法使用',
+      error: 'Railway 管理 API 尚未完成設定',
     });
     expect(result.items.find((item) => item.id === 'railway-health')).not.toHaveProperty('detail');
   });
