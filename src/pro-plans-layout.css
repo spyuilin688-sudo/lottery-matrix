@@ -1,0 +1,89 @@
+/* Canonical layout owner for Matrix Pro 會員方案與收費標準. */
+.pro-plans-screen {
+  --pro-plans-inline: 18px;
+}
+
+/* Keep the page fluid; cards own their requested inset instead of pulling the page wider. */
+.pro-plans-screen > .feature-body {
+  padding-inline: 0;
+}
+
+.pro-plans-screen .plan-carousel {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 18px;
+  gap: 12px;
+}
+
+/* Centering a W - 36px card leaves an 18px outer inset and a small preview on both sides. */
+.pro-plans-screen .plan-card {
+  flex: 0 0 calc(100% - (var(--pro-plans-inline) * 2));
+  min-width: 0;
+  min-height: 190px;
+  height: auto;
+  padding: 12px;
+  border-color: #755329;
+}
+
+.pro-plans-screen .plan-card[data-current="true"] {
+  border-color: #d6a42b;
+}
+
+.pro-plans-screen .plan-card-heading {
+  min-height: 20px;
+}
+
+.pro-plans-screen .plan-tool-icons {
+  top: 12px;
+  right: 12px;
+}
+
+.pro-plans-screen .plan-card > strong {
+  margin: 4px 0 6px;
+}
+
+.pro-plans-screen .plan-card h2 {
+  margin-bottom: 5px;
+}
+
+.pro-plans-screen .plan-card ul {
+  gap: 3px;
+}
+
+.pro-plans-screen .pro-plans-checkout {
+  margin-inline: var(--pro-plans-inline);
+  row-gap: 0;
+}
+
+.pro-plans-screen .renewal-card {
+  margin: 0 0 8px;
+  padding: 8px;
+  border-color: #755329;
+  box-shadow: none;
+}
+
+.pro-plans-screen .renewal-card dl > div {
+  min-height: 29px;
+}
+
+.pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong, .auto-renew-note) {
+  font-weight: 700;
+}
+
+.pro-plans-screen .auto-renew-setting label {
+  gap: 4px;
+}
+
+.pro-plans-screen .auto-renew-setting input {
+  width: 14px;
+  height: 14px;
+}
+
+.pro-plans-screen .confirm-payment.branded-explore-action {
+  margin: 0 0 6px;
+}
+
+.pro-plans-screen .payment-note {
+  font-size: 11px;
+}

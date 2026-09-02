@@ -6,23 +6,29 @@ import { join } from "node:path";
 const root = process.cwd();
 const routerPath = join(root, "src", "FeaturePagesPatched.tsx");
 const overridePath = join(root, "src", "pro-plans-carousel-peek.css");
+const layoutPath = join(root, "src", "pro-plans-layout.css");
 const mobileLayoutPath = join(root, "src", "mobile-layout-polish.css");
 
-test("會員方案卡露出下一張並顯示跟隨方案的分頁指示", () => {
-  assert.equal(existsSync(overridePath), true, "缺少會員方案 Carousel 視覺覆寫檔");
+test("會員方案卡由正式版面 owner 保留左右預覽並顯示跟隨方案的分頁指示", () => {
+  assert.equal(existsSync(overridePath), true, "缺少會員方案 Carousel 指示點樣式");
+  assert.equal(existsSync(layoutPath), true, "缺少會員方案正式版面 owner");
 
   const router = readFileSync(routerPath, "utf8");
-  const css = readFileSync(overridePath, "utf8");
+  const dotsCss = readFileSync(overridePath, "utf8");
+  const layoutCss = readFileSync(layoutPath, "utf8");
   const mobileLayoutCss = readFileSync(mobileLayoutPath, "utf8");
 
+  assert.match(router, /import\s+["']\.\/pro-plans-layout\.css["'];/);
   assert.match(router, /import\s+["']\.\/pro-plans-carousel-peek\.css["'];/);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen\s+\.plan-card\s*\{[\s\S]*?flex-basis:\s*calc\(100%\s*-\s*34px\)/);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen\s+\.plan-card\s*\{[\s\S]*?transform:\s*none/);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen\s+\.plan-carousel\s*\{[\s\S]*?padding:\s*0\s+17px\s+18px/);
+  assert.match(layoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-inline:\s*18px;/s);
+  assert.match(layoutCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+calc\(100%\s*-\s*\(var\(--pro-plans-inline\)\s*\*\s*2\)\)/s);
+  assert.match(layoutCss, /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0\s+0\s+18px;/s);
+  assert.doesNotMatch(layoutCss, /margin-inline:\s*-[\d.]+px|width:\s*calc\(100%\s*\+|transform:\s*translateX/);
+  assert.doesNotMatch(mobileLayoutCss, /\.pro-plans-screen/);
 
   for (const index of [0, 1, 2]) {
     assert.match(
-      css,
+      dotsCss,
       new RegExp(`\\.pro-plans-screen\\s+\\.plan-carousel:has\\(\\.plan-card\\[data-current=["']true["']\\]\\[data-plan-index=["']${index}["']\\]\\)`),
       `缺少第 ${index + 1} 個方案的分頁指示狀態`,
     );

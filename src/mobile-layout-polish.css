@@ -26,93 +26,9 @@
   min-height: calc(10px + clamp(3.5px, 1vw, 4px) + clamp(3.5px, 1vw, 4px));
 }
 
-/* Pro plans and manual transfer: explicit page gutters and tighter cards/spacing. */
+/* Manual transfer keeps the formal feature-page gutter and compact spacing. */
 .manual-transfer-screen > .feature-body {
   padding-inline: 16px;
-}
-
-.pro-plans-screen > .feature-body {
-  padding-inline: 16px;
-}
-
-.pro-plans-screen .feature-body {
-  gap: 4px;
-}
-
-.pro-plans-screen .plan-carousel {
-  box-sizing: border-box;
-  width: calc(100% + 32px);
-  margin-inline: -16px;
-  padding: 0 17px 18px;
-  gap: 12px;
-  scroll-padding-inline: 17px;
-}
-
-.pro-plans-screen .plan-card {
-  flex-basis: calc(100% - 34px);
-  min-height: 190px;
-  height: auto;
-  padding: 12px;
-  transform: none;
-  border-color: #755329;
-}
-
-.pro-plans-screen .plan-card[data-current="true"] {
-  border-color: #d6a42b;
-}
-
-.pro-plans-screen .plan-card-heading {
-  min-height: 20px;
-}
-
-.pro-plans-screen .plan-tool-icons {
-  top: 12px;
-  right: 12px;
-}
-
-.pro-plans-screen .plan-card > strong {
-  margin: 4px 0 6px;
-}
-
-.pro-plans-screen .plan-card h2 {
-  margin-bottom: 5px;
-}
-
-.pro-plans-screen .plan-card ul {
-  gap: 3px;
-}
-
-.pro-plans-screen .pro-plans-checkout {
-  margin-inline: 0;
-  row-gap: 0;
-}
-
-.pro-plans-screen .renewal-card {
-  margin: 0 0 8px;
-  padding: 8px;
-  border-color: #755329;
-  box-shadow: none;
-}
-
-.pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong, .auto-renew-note) {
-  font-weight: 700;
-}
-
-.pro-plans-screen .auto-renew-setting label {
-  gap: 4px;
-}
-
-.pro-plans-screen .auto-renew-setting input {
-  width: 14px;
-  height: 14px;
-}
-
-.pro-plans-screen .confirm-payment.branded-explore-action {
-  margin: 0 0 6px;
-}
-
-.pro-plans-screen .payment-note {
-  font-size: 11px;
 }
 
 .manual-transfer-screen .feature-body {
