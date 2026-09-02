@@ -49,21 +49,38 @@ test("Matrix Pro 標籤以既有比例縮減 30%", () => {
   assert.match(badge[0], /line-height:\s*5\.6px;/);
 });
 
-test("Matrix 系列上內距為 3px，標籤與上框的視覺間距為 1px", () => {
-  const generalHeading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading$/);
+test("通知批次按鈕列使用 18px 外距且不靠負 margin 或超寬補償", () => {
+  const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
+  const featureBody = ruleBodies(css, /^\.notifications-screen-v2 \.feature-body$/);
+  const bulk = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-actions$/);
+  const list = ruleBodies(css, /^\.notifications-screen-v2 \.notification-list$/);
+
+  assert.equal(screen.length, 1);
+  assert.equal(featureBody.length, 1);
+  assert.equal(bulk.length, 1);
+  assert.equal(list.length, 1);
+
+  assert.match(screen[0], /--notification-bulk-inline:\s*18px;/);
+  assert.match(screen[0], /--notification-list-inline:\s*20px;/);
+  assert.match(featureBody[0], /padding-inline:\s*var\(--notification-bulk-inline\);/);
+  assert.match(bulk[0], /width:\s*100%;/);
+  assert.match(bulk[0], /margin-inline:\s*0;/);
+  assert.doesNotMatch(bulk[0], /width:\s*calc\([^)]*\+[^)]*\)/);
+  assert.doesNotMatch(bulk[0], /margin-inline:\s*-/);
+  assert.match(list[0], /margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/);
+});
+
+test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
+  const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
   const matrixHeading = ruleBodies(css, /^\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)$/);
   const badge = ruleBodies(css, /^\.notifications-screen-v2 \.notification-pro-badge$/);
 
-  assert.equal(generalHeading.length, 1);
-  assert.equal(matrixHeading.length, 1);
+  assert.equal(screen.length, 1);
+  assert.equal(matrixHeading.length, 0);
   assert.equal(badge.length, 1);
 
-  const generalTop = Number(generalHeading[0].match(/padding:\s*(\d+)px/)?.[1]);
-  const matrixTop = Number(matrixHeading[0].match(/padding-top:\s*(-?\d+)px/)?.[1]);
-  const badgeOffset = Number(badge[0].match(/transform:\s*translateY\((-?\d+)px\)/)?.[1]);
-
-  assert.equal(generalTop, 4);
-  assert.equal(matrixTop, 3);
-  assert.equal(badgeOffset, -2);
-  assert.equal(matrixTop + badgeOffset, 1);
+  assert.match(screen[0], /--notification-pro-badge-overlap:\s*3px;/);
+  assert.match(badge[0], /translate:\s*0 var\(--notification-pro-badge-overlap\);/);
+  assert.doesNotMatch(badge[0], /transform\s*:/);
+  assert.doesNotMatch(badge[0], /(?:top|bottom|inset-block|margin-block-end)\s*:/);
 });
