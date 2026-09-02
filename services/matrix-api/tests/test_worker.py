@@ -519,6 +519,24 @@ def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> No
     assert source.events == ["history-all", "latest"]
 
 
+def test_scheduled_worker_catches_up_after_midnight_then_stops_after_store() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = ScheduledSource()
+    now = datetime(2026, 8, 29, 2, 17, tzinfo=TAIPEI)
+
+    first = run_scheduled_worker(
+        "今彩539", now, repository, source, _builders([]),
+    )
+    second = run_scheduled_worker(
+        "今彩539", now, repository, source, _builders([]),
+    )
+
+    assert first["status"] == "complete"
+    assert second["status"] == "already-acquired"
+    assert second["drawPeriod"] == "000000221"
+    assert source.events == ["history-all", "latest"]
+
+
 def test_scheduled_worker_does_not_analyze_stale_draw() -> None:
     repository = InMemoryAnalysisRepository()
     source = StaleScheduledSource()
@@ -543,7 +561,7 @@ def test_scheduled_worker_does_nothing_outside_call_schedule() -> None:
 
     result = run_scheduled_worker(
         "今彩539",
-        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        datetime(2026, 8, 28, 20, 32, tzinfo=TAIPEI),
         repository,
         source,
         _builders([]),

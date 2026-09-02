@@ -216,7 +216,7 @@ def test_completed_analysis_backfills_missing_explore_query_results() -> None:
 
     result = run_scheduled_worker(
         "今彩539",
-        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        datetime(2026, 8, 28, 20, 32, tzinfo=TAIPEI),
         repository,
         UnexpectedSource(),
         _builders([]),

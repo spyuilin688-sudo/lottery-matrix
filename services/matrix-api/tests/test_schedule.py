@@ -51,12 +51,13 @@ def test_pre_draw_calls_are_two_hours_one_hour_and_half_hour_before_call_time() 
     assert call_due("今彩539", base.replace(hour=20, minute=3)) is True
 
 
-def test_retry_calls_begin_at_call_time_and_follow_offsets() -> None:
+def test_539_retry_window_keeps_delayed_cron_runs_due() -> None:
     base = lottery_call_time("今彩539", datetime(2026, 8, 28, tzinfo=TAIPEI))
     assert call_due("今彩539", base) is True
     assert call_due("今彩539", base.replace(hour=20, minute=38)) is True
     assert call_due("今彩539", base.replace(hour=20, minute=43)) is True
-    assert call_due("今彩539", base.replace(hour=20, minute=34)) is False
+    assert call_due("今彩539", base.replace(hour=20, minute=34)) is True
+    assert call_due("今彩539", base.replace(hour=22, minute=49)) is True
 
 
 def test_no_calls_after_final_six_hour_retry() -> None:

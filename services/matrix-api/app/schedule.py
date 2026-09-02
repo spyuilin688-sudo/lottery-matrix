@@ -83,11 +83,20 @@ def due_call_cycle(lottery: str, now: datetime | None = None) -> datetime | None
         raise ValueError("schedule time must include a timezone")
     taipei_now = current.astimezone(TAIPEI).replace(second=0, microsecond=0)
     for base in _candidate_call_times(lottery, taipei_now):
-        scheduled = [
-            *(base + timedelta(minutes=offset) for offset in PRE_CALL_OFFSETS_MINUTES),
-            *(base + timedelta(minutes=offset) for offset in RETRY_OFFSETS_MINUTES),
+        pre_calls = [
+            base + timedelta(minutes=offset)
+            for offset in PRE_CALL_OFFSETS_MINUTES
         ]
-        if taipei_now in scheduled:
+        if taipei_now in pre_calls:
+            return base
+        if lottery == "今彩539":
+            final_retry = base + timedelta(minutes=RETRY_OFFSETS_MINUTES[-1])
+            if base <= taipei_now <= final_retry:
+                return base
+        elif taipei_now in [
+            base + timedelta(minutes=offset)
+            for offset in RETRY_OFFSETS_MINUTES
+        ]:
             return base
     return None
 

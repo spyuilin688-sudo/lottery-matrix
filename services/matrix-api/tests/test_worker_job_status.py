@@ -273,7 +273,7 @@ def test_out_of_schedule_call_does_not_overwrite_job_status() -> None:
 
     result = run_scheduled_worker(
         "今彩539",
-        datetime(2026, 8, 28, 20, 34, tzinfo=TAIPEI),
+        datetime(2026, 8, 28, 20, 32, tzinfo=TAIPEI),
         repository,
         Source(),
         _builders(),
