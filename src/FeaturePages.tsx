@@ -1062,7 +1062,7 @@ function ExploreValidationProcess({
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
   const resultFormula = (resultNumbers: string) => (
-    <>［ <strong className="explore-validation-result-number">{resultNumbers}</strong> ］</>
+    <>［{" "}<strong className="explore-validation-result-number">{resultNumbers}</strong>{" "}］</>
   );
   const summarySeparator = () => <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>;
   const validationGroup = (

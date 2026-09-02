@@ -4,9 +4,9 @@ import test from "node:test";
 
 const source = readFileSync("src/FeaturePages.tsx", "utf8");
 const css = readFileSync("src/explore-result-preview.css", "utf8");
+const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nfunction TianyanValidationProcess/);
 
 test("Matrix Explore renders API validation with the merged three-column preview layout", () => {
-  const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nfunction TianyanValidationProcess/);
   assert.ok(component, "ExploreValidationProcess must exist");
 
   assert.match(component[0], /className="road-validation-process explore-validation-card"/);
@@ -27,8 +27,10 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.match(css, /\.explore-validation-summary\s*\{[^}]*padding:\s*5px 2px 5px 4px/s);
   assert.match(css, /\.explore-validation-summary-separator\s*\{[^}]*color:\s*var\(--explore-validation-summary-border-color\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*font-size:\s*13px/s);
-  assert.match(css, /\.explore-validation-numbers em\s*\{[^}]*font-size:\s*13px/s);
+  assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0;[^}]*letter-spacing:\s*-\.06em/s);
+  assert.match(css, /\.explore-validation-numbers em\s*\{[^}]*font-size:\s*13px;[^}]*letter-spacing:\s*-\.06em/s);
   assert.match(css, /\.explore-validation-group\[data-row-count="3"\] \.explore-validation-formula-row:nth-child\(2\)\s*\{[^}]*color:\s*#e4c980/s);
-  assert.match(css, /\.explore-validation-result-number\s*\{[^}]*font-weight:\s*700/s);
+  assert.match(css, /\.explore-validation-result-number\s*\{[^}]*font-size:\s*\.92em;[^}]*font-weight:\s*700;[^}]*line-height:\s*1/s);
+  assert.match(component[0], /<>［\{" "\}<strong className="explore-validation-result-number">\{resultNumbers\}<\/strong>\{" "\}］<\/>/);
   assert.doesNotMatch(css, /!important/);
 });

@@ -469,12 +469,13 @@
   height: clamp(17px, 4.87vw, 19px);
   min-width: clamp(17px, 4.87vw, 19px);
   aspect-ratio: 1;
-  padding: 0 1px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 3px;
   color: inherit;
   font-size: 13px;
   font-style: normal;
+  letter-spacing: -.06em;
   line-height: 1;
   white-space: nowrap;
   word-break: keep-all;
@@ -541,6 +542,7 @@
   background: rgba(230, 183, 106, .14);
   font-size: 13px;
   font-style: normal;
+  letter-spacing: -.06em;
   text-align: center;
   white-space: nowrap;
 }
@@ -641,7 +643,9 @@
 }
 
 .explore-validation-result-number {
+  font-size: .92em;
   font-weight: 700;
+  line-height: 1;
 }
 
 .explore-validation-prediction {

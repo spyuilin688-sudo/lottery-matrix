@@ -31,7 +31,7 @@ function formatFormula(formula: string) {
     .replace(/(?<=\d)\+/g, " +");
   const result = formatted.match(/^［\s*(.+?)\s*］$/);
   return result
-    ? <>［ <strong className="explore-validation-result-number">{result[1]}</strong> ］</>
+    ? <>［{" "}<strong className="explore-validation-result-number">{result[1]}</strong>{" "}］</>
     : formatted;
 }
 
