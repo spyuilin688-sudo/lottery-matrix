@@ -1077,11 +1077,11 @@ function ExploreValidationProcess({
             <span className="explore-validation-numbers explore-validation-numeric-text">
               {values(row.numbers).map((value, index) => {
                 const state = value === displayNumber(row.sourceNumber ?? "")
-                  ? "source"
+                  ? "hit"
                   : value === displayNumber(row.stepNumber ?? "")
-                    ? "step"
+                    ? "source"
                     : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit))
-                      ? "hit"
+                      ? "step"
                       : "";
                 const number = (
                   <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
@@ -1130,6 +1130,9 @@ function ExploreValidationProcess({
         const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => ruleDisplayValues(matchedRules).join("、");
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
+        const currentCalculations = validation.sourceA ? ruleDisplayValues().map((display) => (
+          `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
+        )) : [];
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
             <header className="explore-validation-summary-card">
@@ -1161,10 +1164,12 @@ function ExploreValidationProcess({
                   hitNumbers: row.hitNumbers,
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
-                const calculation = `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${ruleDisplays(row.matchedRules)} = ${resultNumbers}`;
+                const calculations = ruleDisplayValues(row.matchedRules).map((display) => (
+                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
+                ));
                 if (compactValidation) {
                   const formulaDisplays = ruleDisplayValues(row.matchedRules);
-                  const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1).map((_, index) => ({
+                  const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1, 2).map((_, index) => ({
                     key: `formula-${row.group}-${index + 2}`,
                     period: "",
                     numbers: [],
@@ -1173,7 +1178,7 @@ function ExploreValidationProcess({
                     `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
                     [source, ...formulaOnlyRows, prediction],
                     [
-                      ...formulaDisplays.map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
                       `［ ${resultNumbers} ］`,
                     ],
                   );
@@ -1182,7 +1187,11 @@ function ExploreValidationProcess({
                 return validationGroup(
                   `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
                   rows,
-                  rows.map((_, index) => index === 0 ? calculation : index === rows.length - 1 ? `［ ${resultNumbers} ］` : ""),
+                  rows.map((displayRow) => displayRow.key.startsWith("reference-")
+                    ? calculations[0] ?? ""
+                    : displayRow.key.startsWith("source-")
+                      ? calculations[1] ?? ""
+                      : `［ ${resultNumbers} ］`),
                 );
               })}
               {validation.sourceA ? validationGroup(
@@ -1195,7 +1204,7 @@ function ExploreValidationProcess({
                         numbers: validation.sourceA.sourceNumbers,
                         sourceNumber: item.number,
                       },
-                      ...ruleDisplayValues().slice(1).map((_, index): ValidationDisplayRow => ({
+                      ...ruleDisplayValues().slice(1, 2).map((_, index): ValidationDisplayRow => ({
                         key: `current-formula-${index + 2}`,
                         period: "",
                         numbers: [],
@@ -1231,11 +1240,10 @@ function ExploreValidationProcess({
                       },
                     ],
                 compactValidation
-                  ? ruleDisplayValues().map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`)
-                  : [
-                      `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA.baseNumber)} ${ruleDisplays()} = ${values(ruleSet.predictionNumbers).join("、")}`,
-                      "",
-                    ],
+                  ? currentCalculations.slice(0, 2)
+                  : referenceFirst
+                    ? [currentCalculations[0] ?? "", currentCalculations[1] ?? ""]
+                    : [currentCalculations[1] ?? "", currentCalculations[0] ?? ""],
               ) : null}
             </div>
             <footer className="explore-validation-prediction">

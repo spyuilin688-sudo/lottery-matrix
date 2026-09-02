@@ -20,7 +20,7 @@ const CONSECUTIVE_FILTERS = {
 } as const satisfies Record<HitCondition, { label: string; options: readonly string[]; selected: readonly string[] }>;
 
 function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
-  const state = value === row.source ? "source" : value === row.step ? "step" : value === row.hit ? "hit" : "";
+  const state = value === row.source ? "hit" : value === row.step ? "source" : value === row.hit ? "step" : "";
 
   return <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>;
 }
