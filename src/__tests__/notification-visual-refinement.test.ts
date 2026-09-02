@@ -129,11 +129,11 @@ describe("notification visual refinement", () => {
     const matrixStack = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-icon-stack')!);
     const matrixBadge = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-pro-badge')!);
 
-    expect(generalHeading.paddingBlockStart).toBe("4px");
-    expect(matrixHeading.paddingBlockStart).toBe("3px");
+    expect(generalHeading.paddingTop).toBe("4px");
+    expect(matrixHeading.paddingTop).toBe("3px");
     expect(matrixStack.gap).toBe("1px");
     expect(matrixBadge.transform).toBe("translateY(-2px)");
-    expect(parseFloat(matrixHeading.paddingBlockStart) - 2).toBe(1);
+    expect(parseFloat(matrixHeading.paddingTop) - 2).toBe(1);
     expect(matrixBadge.zIndex).toBe("1");
   });
 
