@@ -110,6 +110,24 @@ class StaleScheduledSource(Source):
         return self._draw(220, count, "2026-08-27")
 
 
+class Fantasy5ScheduledSource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        return self._draw(221, 5, "2026-08-27")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        rows = [
+            self._draw(
+                221 - offset,
+                5,
+                (datetime(2026, 8, 27) - timedelta(days=offset)).date().isoformat(),
+            )
+            for offset in range(self.history_count)
+        ]
+        return rows if limit is None else rows[:limit]
+
+
 class CalendarHistorySource(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
@@ -517,6 +535,47 @@ def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> No
 
     assert result["status"] == "complete"
     assert source.events == ["history-all", "latest"]
+
+
+def test_fantasy5_accepts_previous_california_date_for_taipei_cycle() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = Fantasy5ScheduledSource()
+
+    result = run_scheduled_worker(
+        "天天樂",
+        datetime(2026, 8, 28, 9, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "complete"
+    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-08-27"
+    assert source.events == ["history-all", "latest"]
+
+
+def test_fantasy5_stops_fetching_after_previous_california_date_is_stored() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = Fantasy5ScheduledSource()
+    run_scheduled_worker(
+        "天天樂",
+        datetime(2026, 8, 28, 9, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+    source.events.clear()
+
+    result = run_scheduled_worker(
+        "天天樂",
+        datetime(2026, 8, 28, 10, 3, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "already-acquired"
+    assert source.events == []
 
 
 def test_scheduled_worker_catches_up_after_midnight_then_stops_after_store() -> None:

@@ -1,6 +1,6 @@
 import argparse
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from os import environ
 from time import sleep
 from typing import Any
@@ -145,6 +145,13 @@ def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
 
+def _expected_source_draw_date(lottery: str, cycle: datetime) -> str:
+    source_date = cycle.date()
+    if lottery == "天天樂":
+        source_date -= timedelta(days=1)
+    return source_date.isoformat()
+
+
 def _resume_stored_analysis(
     lottery: str,
     repository: AnalysisRepository,
@@ -194,8 +201,8 @@ def run_scheduled_worker(
                 return resumed
         return {"lottery": lottery, "status": "not-due"}
 
-    cycle_date = cycle.date().isoformat()
-    if latest and _normalized_draw_date(latest[0].get("drawDate")) == cycle_date:
+    expected_draw_date = _expected_source_draw_date(lottery, cycle)
+    if latest and _normalized_draw_date(latest[0].get("drawDate")) == expected_draw_date:
         resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
         if resumed is not None:
             return resumed
@@ -215,7 +222,7 @@ def run_scheduled_worker(
         draw = refresh.fetch(lottery)
         source_period = str(draw["period"])
 
-        if _normalized_draw_date(draw.get("drawDate")) != cycle_date:
+        if _normalized_draw_date(draw.get("drawDate")) != expected_draw_date:
             return {
                 "lottery": lottery,
                 "drawPeriod": draw["period"],
