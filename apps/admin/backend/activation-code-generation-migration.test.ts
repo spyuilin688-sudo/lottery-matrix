@@ -16,7 +16,7 @@ describe('activation-code generation migration', () => {
 
   it('creates one non-overloaded service-role-only RPC that accepts quantity', () => {
     expect(sql).toMatch(/drop function if exists public\.generate_activation_code_batch\(text\)/i);
-    expect(sql).toMatch(/generate_activation_code_batch\(p_duration_type text, p_quantity integer default 10\)/i);
+    expect(sql).toMatch(/generate_activation_code_batch\(\s*p_duration_type text,\s*p_quantity integer default 10\s*\)/i);
     expect(sql).toMatch(/revoke execute on function public\.generate_activation_code_batch\(text, integer\) from public, anon, authenticated/i);
     expect(sql).toMatch(/grant execute on function public\.generate_activation_code_batch\(text, integer\) to service_role/i);
   });
