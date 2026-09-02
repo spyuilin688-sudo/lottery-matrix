@@ -272,23 +272,34 @@
 }
 
 .explore-validation-card {
-  --explore-validation-summary-font-size: clamp(11px, 3.08vw, 12px);
+  --explore-validation-border-color: #e6b76a;
+  --explore-validation-summary-font-size: clamp(13px, 3.6vw, 15px);
   --explore-validation-row-min-height: clamp(27px, 7.18vw, 28px);
   position: relative;
   display: flex;
   flex-direction: column;
   row-gap: 2px;
-  margin: 6px 0 0;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
+  margin: 0;
+  padding: 6px 0;
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: var(--explore-validation-border-color);
+  border-right: 0;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--explore-validation-border-color);
+  border-left: 0;
+  border-radius: 0;
   color: #f2f5f8;
   background: rgba(3, 9, 20, .72);
-  box-shadow: inset 0 1px 0 rgba(102, 169, 255, .18);
+  box-shadow: none;
   overflow: visible;
 }
 
 .road-validation-process.explore-validation-card {
+  padding: 6px 0;
+  border-top-color: var(--explore-validation-border-color);
+  border-bottom-color: var(--explore-validation-border-color);
   overflow: visible;
 }
 
@@ -338,15 +349,16 @@
   min-height: 0;
   margin: 0;
   padding: 3px 4px;
+  padding-right: 52px;
   border: 0;
   border-radius: 0;
   color: #f2f5f8;
   background: rgba(10, 14, 24, .92);
-  font-size: clamp(10px, 2.8vw, 12px);
+  font-size: clamp(13px, 3.6vw, 15px);
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -.04em;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .explore-validation-groups {
@@ -472,6 +484,17 @@
   overflow-wrap: normal;
 }
 
+.explore-validation-special-separator {
+  display: inline-grid;
+  place-items: center;
+  min-width: 0;
+  color: #d4a63b;
+  font-size: clamp(10px, 2.7vw, 11px);
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .explore-validation-number--source {
   border-color: #58d3e6;
   color: #58d3e6;
@@ -524,7 +547,7 @@
 .explore-validation-formulas {
   color: #bac5d2;
   background: rgba(8, 15, 27, .82);
-  font-size: clamp(5px, 1.7vw, 8.5px);
+  font-size: clamp(8px, 2.2vw, 10.5px);
   line-height: 1.35;
 }
 
@@ -534,7 +557,7 @@
   align-items: center;
   height: auto;
   min-height: var(--explore-validation-row-min-height);
-  padding: 3px 6px;
+  padding: 3px;
   background: transparent;
   overflow-wrap: normal;
   white-space: nowrap;
@@ -561,7 +584,7 @@
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-formulas {
-  font-size: clamp(5px, 1.65vw, 8px);
+  font-size: clamp(8px, 2.1vw, 10px);
 }
 
 .explore-validation-summary .validation-summary-primary {
@@ -599,7 +622,7 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr) 14px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   align-items: center;
   column-gap: 8px;
   min-height: 0;
@@ -635,7 +658,7 @@
 
 .explore-validation-prediction strong {
   color: #e4c980;
-  font-size: 12px;
+  font-size: 18px;
 }
 
 .road-results .explore-validation-prediction strong {
@@ -644,7 +667,7 @@
 
 .explore-validation-prediction b {
   color: #e6b76a;
-  font-size: 15px;
+  font-size: 21px;
   letter-spacing: .06em;
 }
 
@@ -654,7 +677,7 @@
   }
 
   .explore-validation-formula-row {
-    padding-inline: 6px;
+    padding-inline: 3px;
   }
 
   .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
