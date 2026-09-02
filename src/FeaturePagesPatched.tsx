@@ -1,3 +1,4 @@
+import "./pro-plans-layout.css";
 import "./pro-plans-carousel-peek.css";
 import {
   FeaturePageRouter as CoreFeaturePageRouter,
