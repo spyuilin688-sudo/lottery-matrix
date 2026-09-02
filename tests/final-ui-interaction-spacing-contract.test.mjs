@@ -36,7 +36,7 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
 
 test("管理訂閱卡上方與下方維持指定間距", () => {
   assert.match(mobileLayoutCss, /\.pro-plans-screen \.feature-body\s*\{[^}]*gap:\s*4px;/s);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen \.plan-carousel\s*\{[^}]*padding:\s*0 18px 18px;/s);
+  assert.match(mobileLayoutCss, /\.pro-plans-screen \.plan-carousel\s*\{[^}]*padding:\s*0 17px 18px;/s);
   assert.match(mobileLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*row-gap:\s*0;/s);
 });
 
