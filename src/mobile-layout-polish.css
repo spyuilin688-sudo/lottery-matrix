@@ -26,10 +26,13 @@
   min-height: calc(10px + clamp(3.5px, 1vw, 4px) + clamp(3.5px, 1vw, 4px));
 }
 
-/* Pro plans and manual transfer: explicit 16px page gutters and tighter cards/spacing. */
-.pro-plans-screen > .feature-body,
+/* Pro plans and manual transfer: explicit page gutters and tighter cards/spacing. */
 .manual-transfer-screen > .feature-body {
   padding-inline: 16px;
+}
+
+.pro-plans-screen > .feature-body {
+  padding-inline: 18px;
 }
 
 .pro-plans-screen .feature-body {
@@ -37,13 +40,25 @@
 }
 
 .pro-plans-screen .plan-carousel {
-  gap: 8px;
-  padding-bottom: 14px;
+  box-sizing: border-box;
+  width: calc(100% + 36px);
+  margin-inline: -18px;
+  padding: 0 18px 18px;
+  gap: 12px;
+  scroll-padding-inline: 18px;
 }
 
 .pro-plans-screen .plan-card {
+  flex-basis: calc(100% - 36px);
   min-height: 190px;
-  padding: 10px;
+  height: auto;
+  padding: 12px;
+  transform: none;
+  border-color: #755329;
+}
+
+.pro-plans-screen .plan-card[data-current="true"] {
+  border-color: #d6a42b;
 }
 
 .pro-plans-screen .plan-card-heading {
@@ -51,8 +66,8 @@
 }
 
 .pro-plans-screen .plan-tool-icons {
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
 }
 
 .pro-plans-screen .plan-card > strong {
@@ -69,11 +84,22 @@
 
 .pro-plans-screen .pro-plans-checkout {
   margin-inline: 0;
-  row-gap: 4px;
+  row-gap: 0;
 }
 
 .pro-plans-screen .renewal-card {
+  margin: 0 0 8px;
   padding: 8px;
+  border-color: #755329;
+  box-shadow: none;
+}
+
+.pro-plans-screen .confirm-payment.branded-explore-action {
+  margin: 0 0 6px;
+}
+
+.pro-plans-screen .payment-note {
+  font-size: 11px;
 }
 
 .manual-transfer-screen .feature-body {

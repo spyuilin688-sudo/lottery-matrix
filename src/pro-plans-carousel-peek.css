@@ -1,12 +1,5 @@
 .pro-plans-screen .plan-carousel {
-  padding: 0 0 18px;
-  gap: 12px;
   background-repeat: no-repeat;
-}
-
-.pro-plans-screen .plan-card {
-  flex-basis: calc(100% - 36px);
-  transform: translateX(-6px);
 }
 
 .pro-plans-screen .plan-carousel:has(.plan-card[data-current="true"][data-plan-index="0"]) {

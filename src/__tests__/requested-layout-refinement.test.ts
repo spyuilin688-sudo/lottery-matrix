@@ -126,7 +126,8 @@ describe("requested responsive layout refinement", () => {
   });
 
   it("aligns activation and membership-plan cards with their title cards", () => {
-    const style = mountStyles(readCss("src/feature-pages.css"));
+    const mobileCss = readCss("src/mobile-layout-polish.css");
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${mobileCss}`);
     style.dataset.layoutContract = "profile-details";
     document.body.innerHTML = `
       <main class="activation-code-screen"><div class="feature-body"><section class="panel referral-summary-card"></section></div></main>
@@ -134,16 +135,16 @@ describe("requested responsive layout refinement", () => {
 
     expect(getComputedStyle(document.querySelector(".activation-code-screen .panel")!).width).toBe("100%");
     expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("0px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).margin).toBe("0px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-carousel")!).paddingLeft).toBe("0px");
-    expect(readCss("src/pro-plans-carousel-peek.css")).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex-basis:\s*calc\(100% - 36px\);/s);
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("202px");
+    expect(mobileCss).toMatch(/\.pro-plans-screen > \.feature-body\s*\{[^}]*padding-inline:\s*18px;/s);
+    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*margin-inline:\s*-18px;[^}]*padding:\s*0 18px 18px;/s);
+    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex-basis:\s*calc\(100% - 36px\);/s);
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("190px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
   });
 
   it("uses the branded explore action on the membership-plan payment button", () => {
-    const style = mountStyles(readCss("src/feature-pages.css"));
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
       <main class="activation-code-screen"><section class="activation-card"><button class="gold-button"></button></section></main>
@@ -180,19 +181,21 @@ describe("requested responsive layout refinement", () => {
     const paymentButton = getComputedStyle(document.querySelector(".confirm-payment")!);
     const paymentNote = getComputedStyle(document.querySelector(".payment-note")!);
 
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .feature-body")!).gap).toBe("6px");
+    expect(readCss("src/mobile-layout-polish.css")).toMatch(/\.pro-plans-screen \.feature-body\s*\{[^}]*gap:\s*4px;/s);
     expect(checkout.display).toBe("grid");
-    expect(checkout.rowGap).toBe("5px");
-    expect(checkout.marginLeft).toBe("4px");
-    expect(checkout.marginRight).toBe("4px");
+    expect(readCss("src/mobile-layout-polish.css")).toMatch(/\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*row-gap:\s*0;/s);
+    expect(checkout.marginLeft).toBe("0");
+    expect(checkout.marginRight).toBe("0");
     expect(renewalCard.width).toBe("100%");
-    expect(renewalCard.marginBottom).toBe("1px");
+    expect(readCss("src/mobile-layout-polish.css")).toMatch(/\.pro-plans-screen \.renewal-card\s*\{[^}]*margin:\s*0 0 8px;/s);
     expect(paymentButton.width).toBe("100%");
+    expect(readCss("src/mobile-layout-polish.css")).toMatch(/\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin:\s*0 0 6px;/s);
     expect(paymentNote.marginTop).toBe("0px");
+    expect(readCss("src/mobile-layout-polish.css")).toMatch(/\.pro-plans-screen \.payment-note\s*\{[^}]*font-size:\s*11px;/s);
   });
 
   it("separates membership plan hierarchy and removes tool icon frames", () => {
-    const style = mountStyles(readCss("src/feature-pages.css"));
+    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
     style.dataset.layoutContract = "pro-plan-visual-hierarchy";
     document.body.innerHTML = `
       <main class="pro-plans-screen">
@@ -214,9 +217,10 @@ describe("requested responsive layout refinement", () => {
     expect(planPrice.color).toBe("rgb(241, 195, 82)");
     expect(toolIcon.borderTopWidth).toBe("0px");
     expect(toolIcon.boxShadow).toBe("none");
-    expect(renewalCard.borderTopColor).toBe(planCard.borderTopColor);
+    expect(planCard.borderTopColor).toBe("rgb(214, 164, 43)");
+    expect(renewalCard.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(renewalCard.borderRadius).toBe(planCard.borderRadius);
-    expect(renewalCard.boxShadow).toBe(planCard.boxShadow);
+    expect(renewalCard.boxShadow).toBe("none");
   });
 
   it("compacts payment history without changing its two-column information order", () => {
