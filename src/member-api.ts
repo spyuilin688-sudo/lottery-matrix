@@ -17,6 +17,13 @@ export type MemberProfileResponse = {
   isLifetime: boolean;
 };
 
+export type MemberReferralSummary = {
+  referralCode: string;
+  referralSuccessCount: number;
+  hasInvitationCode: boolean;
+  canSubmitReferralCode: boolean;
+};
+
 export type ManualTransferPlanCode = 'month' | 'quarter' | 'year';
 export type TransferRequestStatus = 'pending' | 'confirmed' | 'rejected';
 
@@ -67,6 +74,16 @@ export function bootstrapMember() {
 
 export function fetchMemberProfile() {
   return memberRpc<MemberProfileResponse>('member_profile');
+}
+
+export function fetchMemberReferralSummary() {
+  return memberRpc<MemberReferralSummary>('member_referral_summary');
+}
+
+export function submitMemberReferralCode(referralCode: string) {
+  return memberRpc<MemberReferralSummary>('member_referral_submit', {
+    p_referral_code: referralCode.trim(),
+  });
 }
 
 export async function fetchNotificationSettings() {

@@ -81,6 +81,17 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it("moves the combined support entry below legal information and removes its duplicate entries", () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+
+    const menuTitles = Array.from(document.querySelectorAll<HTMLElement>(".profile-menu > .section-title"))
+      .map((title) => title.textContent?.trim());
+    expect(menuTitles).toEqual(["會員相關", "推廣相關", "系統相關", "法律資訊", "客服與支援"]);
+    expect(screen.getByRole("button", { name: "聯絡客服/問題回報/商務合作" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "問題回報" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "商務合作" })).not.toBeInTheDocument();
+  });
+
   it("在系統相關區顯示安裝入口，iOS 點擊後使用共用加入主畫面指引", async () => {
     const requestInstall = vi.fn().mockResolvedValue("ios-instructions");
     pwaLifecycle.usePwaLifecycle.mockReturnValue({

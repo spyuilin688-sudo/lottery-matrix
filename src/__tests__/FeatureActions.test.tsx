@@ -9,6 +9,7 @@ const matrixCards = vi.hoisted(() => ({
   matrixCardUrl: vi.fn((path: string) => `https://matrix.example.test${path}`),
 }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
+const memberReferral = vi.hoisted(() => ({ fetchSummary: vi.fn(), submit: vi.fn() }));
 
 vi.mock("../lottery-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lottery-api")>()),
@@ -19,6 +20,12 @@ vi.mock("../lottery-api", async (importOriginal) => ({
 vi.mock("../activation/redeemActivationCode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../activation/redeemActivationCode")>()),
   redeemActivationCode: activation.redeem,
+}));
+
+vi.mock("../member-api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../member-api")>()),
+  fetchMemberReferralSummary: memberReferral.fetchSummary,
+  submitMemberReferralCode: memberReferral.submit,
 }));
 
 import { FeaturePageRouter, MatrixCardPage, MatrixNotebookPage, NotesPage } from "../FeaturePages";
@@ -59,6 +66,18 @@ beforeEach(() => {
     is_lifetime: false,
     plan_expires_at: "2026-10-02T00:00:00Z",
     redeemed_at: "2026-09-02T00:00:00Z",
+  });
+  memberReferral.fetchSummary.mockReset().mockResolvedValue({
+    referralCode: "MATRIX-7H4K9P",
+    referralSuccessCount: 3,
+    hasInvitationCode: false,
+    canSubmitReferralCode: true,
+  });
+  memberReferral.submit.mockReset().mockResolvedValue({
+    referralCode: "MATRIX-7H4K9P",
+    referralSuccessCount: 3,
+    hasInvitationCode: true,
+    canSubmitReferralCode: false,
   });
   Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
     configurable: true,
@@ -141,9 +160,12 @@ describe("existing feature actions", () => {
     expect(clickedAnchors[0].download).toBe("今彩539-順球牌單.svg");
   });
 
-  it("routes the existing invite action and disables actions without approved mutations", () => {
+  it("loads referral details and lets an eligible member submit one referral code", async () => {
     const onNavigate = vi.fn();
-    const { unmount } = render(<FeaturePageRouter screen="activation-code" onNavigate={onNavigate} />);
+    render(<FeaturePageRouter screen="activation-code" onNavigate={onNavigate} />);
+
+    expect(await screen.findByText("MATRIX-7H4K9P")).toBeInTheDocument();
+    expect(document.querySelector(".referral-success-count")).toHaveTextContent("推薦成功 3 人");
 
     fireEvent.click(screen.getByRole("button", { name: "邀請好友" }));
     expect(onNavigate).toHaveBeenCalledTimes(1);
@@ -152,12 +174,38 @@ describe("existing feature actions", () => {
     const referralCard = screen.getByRole("heading", { name: "輸入推薦碼" }).closest("section");
     expect(referralCard).not.toBeNull();
     const referralConfirm = within(referralCard!).getByRole("button", { name: "確認" });
+    const referralInput = within(referralCard!).getByRole("textbox", { name: "推薦碼" });
     expect(referralConfirm).toBeDisabled();
     expect(referralConfirm).toHaveClass("primary-action", "branded-explore-action");
-    unmount();
+
+    fireEvent.change(referralInput, { target: { value: "FRIEND-8A2K" } });
+    expect(referralConfirm).toBeEnabled();
+    fireEvent.click(referralConfirm);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("推薦碼已儲存");
+    expect(referralInput).toHaveValue("");
+    expect(referralConfirm).toBeDisabled();
 
     render(<NotesPage onNavigate={vi.fn()} />);
     expect(screen.getByRole("button", { name: "紀錄設定" })).toBeDisabled();
+  });
+
+  it("places the three support contacts together on the contact page", () => {
+    render(<FeaturePageRouter screen="merchant-info" onNavigate={vi.fn()} />);
+
+    const contactCards = Array.from(document.querySelectorAll(".contact-support-screen .detail-card"));
+    expect(contactCards.map((card) => card.querySelector("h2")?.textContent)).toEqual([
+      "聯絡客服",
+      "問題回報",
+      "商務合作",
+    ]);
+    expect(screen.getAllByRole("link", { name: "Matrix1150801@gmail.com" })).toHaveLength(3);
+  });
+
+  it("does not display a dated message on the update-history page", () => {
+    render(<FeaturePageRouter screen="update-history" onNavigate={vi.fn()} />);
+
+    expect(screen.queryByText("調整「我的」頁面分類與排列順序。", { exact: true })).not.toBeInTheDocument();
   });
 
   it("keeps the activation-code input collapsed until the user opens it", () => {
@@ -174,6 +222,22 @@ describe("existing feature actions", () => {
     const activationConfirm = within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" });
     expect(activationConfirm).toBeEnabled();
     expect(activationConfirm).toHaveClass("primary-action", "branded-explore-action");
+  });
+
+  it("keeps activation-code redemption available after referral-code eligibility ends", async () => {
+    memberReferral.fetchSummary.mockResolvedValueOnce({
+      referralCode: "MATRIX-7H4K9P",
+      referralSuccessCount: 3,
+      hasInvitationCode: true,
+      canSubmitReferralCode: false,
+    });
+    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "推薦碼" })).toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
+
+    expect(screen.getByRole("textbox", { name: "啟動碼" })).toBeEnabled();
+    expect(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" })).toBeEnabled();
   });
 
   it("shows a safe activation success and clears the redeemed code", async () => {

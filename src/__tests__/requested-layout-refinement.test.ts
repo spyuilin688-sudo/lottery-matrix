@@ -135,9 +135,9 @@ describe("requested responsive layout refinement", () => {
 
     expect(getComputedStyle(document.querySelector(".activation-code-screen .panel")!).width).toBe("100%");
     expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("0px");
-    expect(mobileCss).toMatch(/\.pro-plans-screen > \.feature-body\s*\{[^}]*padding-inline:\s*18px;/s);
-    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*margin-inline:\s*-18px;[^}]*padding:\s*0 18px 18px;/s);
-    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex-basis:\s*calc\(100% - 36px\);/s);
+    expect(mobileCss).toMatch(/\.pro-plans-screen > \.feature-body\s*\{[^}]*padding-inline:\s*16px;/s);
+    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*margin-inline:\s*-16px;[^}]*padding:\s*0 17px 18px;/s);
+    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex-basis:\s*calc\(100% - 34px\);/s);
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("190px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
@@ -147,12 +147,12 @@ describe("requested responsive layout refinement", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
-      <main class="activation-code-screen"><section class="activation-card"><button class="gold-button"></button></section></main>
+      <main class="activation-code-screen"><section class="activation-card"><button class="primary-action branded-explore-action"><span>確認</span></button></section></main>
       <main class="pro-plans-screen"><button class="primary-action branded-explore-action confirm-payment"><span>確定付款</span></button></main>`;
 
-    const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .gold-button")!);
+    const activationButton = getComputedStyle(document.querySelector(".activation-code-screen .activation-card .primary-action")!);
     const paymentButton = getComputedStyle(document.querySelector(".pro-plans-screen .confirm-payment")!);
-    expect(activationButton.height).toBe("44px");
+    expect(activationButton.height).toBe("40px");
     expect(activationButton.backgroundColor).toBe("rgb(6, 13, 18)");
     expect(activationButton.borderTopWidth).toBe("1px");
     expect(paymentButton.height).toBe("38px");

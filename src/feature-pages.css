@@ -1800,6 +1800,10 @@ opacity: .30; box-shadow: none;
   display: grid;
   gap: 6px;
 }
+.contact-support-screen .feature-body {
+  padding-inline: 16px;
+  gap: 8px;
+}
 .profile-info-screen .detail-card {
   padding: 12px;
 }
@@ -2181,10 +2185,10 @@ opacity: .30; box-shadow: none;
   font-size: 13px;
   font-weight: 700;
 }
-.referral-input-card .gold-button,
-.activation-card .gold-button {
-  height: 44px;
-  min-height: 44px;
+.activation-code-screen .referral-input-card .primary-action,
+.activation-code-screen .activation-card .primary-action {
+  height: 40px;
+  min-height: 40px;
 }
 .pro-plans-screen .confirm-payment:not(.branded-explore-action) {
   box-sizing: border-box;
@@ -2330,8 +2334,8 @@ opacity: .30; box-shadow: none;
 .referral-rule-toggle {
   display: grid;
   width: 100%;
-  min-height: 56px;
-  padding: 0 16px;
+  min-height: 0;
+  padding: 4px 16px;
   grid-template-columns: minmax(0, 1fr) 20px;
   align-items: center;
   border: 0;

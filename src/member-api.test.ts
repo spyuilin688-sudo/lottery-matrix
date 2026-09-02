@@ -5,6 +5,7 @@ vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => supabase }));
 
 import {
   bootstrapMember,
+  fetchMemberReferralSummary,
   fetchMemberPaymentHistory,
   fetchMemberProfile,
   fetchNotificationSettings,
@@ -14,6 +15,7 @@ import {
   disablePushSubscription,
   savePushSubscription,
   saveNotificationSettings,
+  submitMemberReferralCode,
   submitTransferRequest,
 } from './member-api';
 
@@ -43,6 +45,30 @@ describe('member Supabase RPC', () => {
     expect(supabase.rpc.mock.calls).toEqual([
       ['member_bootstrap'],
       ['member_profile'],
+    ]);
+  });
+
+  it('loads the current member referral summary and submits a referral through member-only RPCs', async () => {
+    const expectedSummary = {
+      referralCode: 'MATRIX-7H4K9P',
+      referralSuccessCount: 3,
+      hasInvitationCode: false,
+      canSubmitReferralCode: true,
+    };
+    supabase.rpc
+      .mockResolvedValueOnce({ data: expectedSummary, error: null })
+      .mockResolvedValueOnce({ data: { ...expectedSummary, hasInvitationCode: true, canSubmitReferralCode: false }, error: null });
+
+    await expect(fetchMemberReferralSummary()).resolves.toEqual(expectedSummary);
+    await expect(submitMemberReferralCode('MATRIX-7H4K9P')).resolves.toEqual({
+      ...expectedSummary,
+      hasInvitationCode: true,
+      canSubmitReferralCode: false,
+    });
+
+    expect(supabase.rpc.mock.calls).toEqual([
+      ['member_referral_summary'],
+      ['member_referral_submit', { p_referral_code: 'MATRIX-7H4K9P' }],
     ]);
   });
 

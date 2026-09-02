@@ -25,7 +25,12 @@ function mountPlans() {
           <article class="plan-card" data-current="true"></article>
         </div>
         <div class="pro-plans-checkout">
-          <section class="panel renewal-card"><h2>管理訂閱／續訂方案</h2><dl><div></div></dl></section>
+          <section class="panel renewal-card">
+            <h2>管理訂閱／續訂方案</h2>
+            <dl><div><dt>已選方案：</dt><dd>月費方案</dd></div></dl>
+            <div class="auto-renew-setting"><label><input type="checkbox" /><span>自動續訂</span></label><strong>目前狀態：關閉</strong></div>
+            <p class="auto-renew-note">手動轉帳不會自動扣款。</p>
+          </section>
           <button class="confirm-payment primary-action branded-explore-action">確定付款</button>
           <p class="payment-note">點擊確定付款將跳轉付款頁面</p>
         </div>
@@ -46,8 +51,11 @@ describe("Matrix Pro plan layout refinement", () => {
     const currentPlan = getComputedStyle(document.querySelector('.plan-card[data-current="true"]')!);
     const renewal = getComputedStyle(document.querySelector(".renewal-card")!);
 
-    expect(mobileCss).toMatch(/\.pro-plans-screen > \.feature-body\s*\{[^}]*padding-inline:\s*18px;/s);
-    expect(mobileCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*margin-inline:\s*-18px;[^}]*padding:\s*0 18px 18px;/s);
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen > .feature-body")!).paddingInline).toBe("16px");
+    expect(getComputedStyle(document.querySelector(".plan-carousel")!).marginInline).toBe("-16px");
+    expect(getComputedStyle(document.querySelector(".plan-carousel")!).paddingLeft).toBe("17px");
+    expect(getComputedStyle(document.querySelector(".plan-carousel")!).scrollPaddingInline).toBe("17px");
+    expect(idlePlan.flexBasis).toBe("calc(100% - 34px)");
     expect(idlePlan.minHeight).toBe("190px");
     expect(idlePlan.height).toBe("auto");
     expect(idlePlan.padding).toBe("12px");
@@ -56,6 +64,14 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(renewal.padding).toBe("8px");
     expect(renewal.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(getComputedStyle(document.querySelector(".renewal-card dl > div")!).minHeight).toBe("29px");
+    expect(getComputedStyle(document.querySelector(".renewal-card h2")!).fontWeight).toBe("700");
+    expect(getComputedStyle(document.querySelector(".renewal-card dt")!).fontWeight).toBe("700");
+    expect(getComputedStyle(document.querySelector(".renewal-card dd")!).fontWeight).toBe("700");
+    expect(getComputedStyle(document.querySelector(".auto-renew-setting label")!).fontWeight).toBe("700");
+    expect(getComputedStyle(document.querySelector(".auto-renew-note")!).fontWeight).toBe("700");
+    expect(getComputedStyle(document.querySelector(".auto-renew-setting label")!).gap).toBe("4px");
+    expect(getComputedStyle(document.querySelector(".auto-renew-setting input")!).width).toBe("14px");
+    expect(getComputedStyle(document.querySelector(".auto-renew-setting input")!).height).toBe("14px");
   });
 
   it("uses independent checkout spacing and readable payment help", () => {

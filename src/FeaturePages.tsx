@@ -81,10 +81,13 @@ import {
   bootstrapMember,
   fetchMemberPaymentHistory,
   fetchMemberProfile,
+  fetchMemberReferralSummary,
   fetchPendingTransferRequest,
+  submitMemberReferralCode,
   submitTransferRequest,
   type MemberPaymentHistoryItem,
   type MemberProfileResponse,
+  type MemberReferralSummary,
   type MemberTransferRequest,
   type ManualTransferPlanCode,
 } from "./member-api";
@@ -3950,10 +3953,10 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   };
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
-    { title: "客服與支援", items: [["聯絡客服", "merchant-info"], ["問題回報", "problem-report"], ["商務合作", "business-cooperation"]] },
     { title: "推廣相關", items: [["我的推薦碼/啟動碼", "activation-code"], ["優惠活動", "promotions"]] },
     { title: "系統相關", items: [["版本資訊", "version-info"], ["更新紀錄", "update-history"]] },
     { title: "法律資訊", items: [["關於 樂彩 Matrix", "about-matrix"], ["服務內容與使用說明", "service-info"], ["會員服務條例", "member-terms"], ["隱私權政策", "privacy-policy"], ["退款規範", "refund-policy"], ["聲明與免責事項", "disclaimer"]] },
+    { title: "客服與支援", items: [["聯絡客服/問題回報/商務合作", "merchant-info"]] },
   ];
 
   return (
@@ -4278,6 +4281,34 @@ const activationErrorText: Record<ActivationRedemptionErrorCode, string> = {
   ACTIVATION_CODE_REDEMPTION_FAILED: "啟動失敗，請稍後再試",
 };
 
+type ReferralSubmissionErrorCode =
+  | "INVALID_REFERRAL_CODE"
+  | "REFERRAL_CODE_NOT_FOUND"
+  | "SELF_REFERRAL_NOT_ALLOWED"
+  | "REFERRAL_CODE_ALREADY_SUBMITTED"
+  | "REFERRAL_CODE_AFTER_PAYMENT"
+  | "LINE_IDENTITY_REQUIRED"
+  | "REFERRAL_CODE_SUBMISSION_FAILED";
+
+const referralErrorText: Record<ReferralSubmissionErrorCode, string> = {
+  INVALID_REFERRAL_CODE: "請輸入推薦碼",
+  REFERRAL_CODE_NOT_FOUND: "找不到此推薦碼",
+  SELF_REFERRAL_NOT_ALLOWED: "不能輸入自己的推薦碼",
+  REFERRAL_CODE_ALREADY_SUBMITTED: "此帳號已輸入過推薦碼",
+  REFERRAL_CODE_AFTER_PAYMENT: "完成訂閱後無法再輸入推薦碼",
+  LINE_IDENTITY_REQUIRED: "請先以 LINE 登入後再輸入推薦碼",
+  REFERRAL_CODE_SUBMISSION_FAILED: "推薦碼儲存失敗，請稍後再試",
+};
+
+function referralErrorCode(error: unknown): ReferralSubmissionErrorCode {
+  const message = typeof error === "object" && error !== null && "message" in error
+    ? String(error.message)
+    : "";
+  return (Object.keys(referralErrorText) as ReferralSubmissionErrorCode[])
+    .find((code) => message.includes(code))
+    ?? "REFERRAL_CODE_SUBMISSION_FAILED";
+}
+
 function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -4286,9 +4317,14 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [activationOpen, setActivationOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resultState, setResultState] = useState<"idle" | "success" | ActivationRedemptionErrorCode>("idle");
+  const [referralSummary, setReferralSummary] = useState<MemberReferralSummary | null>(null);
+  const [referralLoading, setReferralLoading] = useState(true);
+  const [referralSubmitting, setReferralSubmitting] = useState(false);
+  const [referralResultState, setReferralResultState] = useState<"idle" | "success" | ReferralSubmissionErrorCode>("idle");
   const activationRequestRevision = useRef(0);
-  const referralSuccessCount = 0;
-  const myReferralCode = "—";
+  const referralRequestRevision = useRef(0);
+  const referralSuccessCount = referralSummary?.referralSuccessCount ?? 0;
+  const myReferralCode = referralSummary?.referralCode ?? "—";
 
   function toggleRule(rule: keyof typeof openRules) {
     setOpenRules((current) => ({ ...current, [rule]: !current[rule] }));
@@ -4301,6 +4337,46 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   useEffect(() => () => {
     activationRequestRevision.current += 1;
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setReferralLoading(true);
+    void fetchMemberReferralSummary().then((summary) => {
+      if (!active) return;
+      setReferralSummary(summary);
+      setReferralLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      setReferralSummary(null);
+      setReferralLoading(false);
+    });
+    return () => {
+      active = false;
+      referralRequestRevision.current += 1;
+    };
+  }, []);
+
+  async function handleReferralSubmit() {
+    if (referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()) return;
+
+    const requestRevision = referralRequestRevision.current + 1;
+    referralRequestRevision.current = requestRevision;
+    setReferralSubmitting(true);
+    setReferralResultState("idle");
+
+    try {
+      const summary = await submitMemberReferralCode(referralCode);
+      if (referralRequestRevision.current !== requestRevision) return;
+      setReferralSummary(summary);
+      setReferralCode("");
+      setReferralResultState("success");
+    } catch (error) {
+      if (referralRequestRevision.current !== requestRevision) return;
+      setReferralResultState(referralErrorCode(error));
+    } finally {
+      if (referralRequestRevision.current === requestRevision) setReferralSubmitting(false);
+    }
+  }
 
   async function handleActivation() {
     if (submitting) return;
@@ -4334,16 +4410,22 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
           <p className="referral-code-label">推薦碼：<strong className="referral-code-value">{myReferralCode}</strong></p>
           <div className="referral-primary-actions">
-            <button type="button" className="gold-button" onClick={copyReferralCode}>複製推薦碼</button>
+            <button type="button" className="gold-button" onClick={copyReferralCode} disabled={myReferralCode === "—"}>複製推薦碼</button>
             <button type="button" className="gold-button" onClick={() => onNavigate("invite-friends")}>邀請好友</button>
           </div>
         </div>
         <div className="referral-input-card">
           <h2>輸入推薦碼</h2>
           <div className="code-entry-block">
-            <input id="referral-code" value={referralCode} onChange={(event) => setReferralCode(event.target.value)} aria-label="推薦碼" />
-            <button type="button" className="primary-action branded-explore-action" disabled><span>確認</span></button>
+            <input id="referral-code" value={referralCode} onChange={(event) => {
+              setReferralCode(event.target.value);
+              setReferralResultState("idle");
+            }} aria-label="推薦碼" disabled={referralLoading || !referralSummary?.canSubmitReferralCode} />
+            <button type="button" className="primary-action branded-explore-action" onClick={() => void handleReferralSubmit()} disabled={referralLoading || referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()}><span>確認</span></button>
           </div>
+          {referralResultState === "success" && <p className="activation-result success" role="status">推薦碼已儲存</p>}
+          {referralResultState !== "idle" && referralResultState !== "success" && <p className="activation-result error" role="alert">{referralErrorText[referralResultState]}</p>}
+          {!referralLoading && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
         </div>
         <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", "輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"]} /></CollapsibleRuleCard>
         <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>
@@ -4397,26 +4479,12 @@ function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
   return <ProfileDetailShell title="退款規範" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></DetailCard><DetailCard title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></DetailCard><DetailCard title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></DetailCard><DetailCard title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></DetailCard><DetailCard title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></DetailCard><DetailCard title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></DetailCard><DetailCard title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></DetailCard><DetailCard title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></DetailCard></ProfileDetailShell>;
 }
 
-function MerchantInfoPage({ onNavigate }: { onNavigate: Navigate }) {
+function ContactSupportPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
-    <ProfileDetailShell title="聯絡客服" onNavigate={onNavigate} className="profile-info-screen">
-      <DetailCard title="電子郵件"><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
-    </ProfileDetailShell>
-  );
-}
-
-function ProblemReportPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="問題回報" onNavigate={onNavigate} className="profile-info-screen">
-      <DetailCard title="回報方式"><p>請透過電子郵件回報使用時遇到的問題。</p><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
-    </ProfileDetailShell>
-  );
-}
-
-function BusinessCooperationPage({ onNavigate }: { onNavigate: Navigate }) {
-  return (
-    <ProfileDetailShell title="商務合作" onNavigate={onNavigate} className="profile-info-screen">
-      <DetailCard title="聯絡方式"><p>商務合作請透過電子郵件聯絡。</p><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
+    <ProfileDetailShell title="聯絡客服/問題回報/商務合作" onNavigate={onNavigate} className="profile-info-screen contact-support-screen">
+      <DetailCard title="聯絡客服"><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
+      <DetailCard title="問題回報"><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
+      <DetailCard title="商務合作"><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></DetailCard>
     </ProfileDetailShell>
   );
 }
@@ -4426,7 +4494,7 @@ function VersionInfoPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function UpdateHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="更新紀錄" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="2026/08/04"><p>調整「我的」頁面分類與排列順序。</p></DetailCard></ProfileDetailShell>;
+  return <ProfileDetailShell title="更新紀錄" onNavigate={onNavigate} className="profile-info-screen" />;
 }
 
 function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -4786,9 +4854,7 @@ export function FeaturePageRouter({
   if (screen === "activation-code") return <ActivationCodePage onNavigate={onNavigate} />;
   if (screen === "service-info") return <ServiceInfoPage onNavigate={onNavigate} />;
   if (screen === "refund-policy") return <RefundPolicyPage onNavigate={onNavigate} />;
-  if (screen === "merchant-info") return <MerchantInfoPage onNavigate={onNavigate} />;
-  if (screen === "problem-report") return <ProblemReportPage onNavigate={onNavigate} />;
-  if (screen === "business-cooperation") return <BusinessCooperationPage onNavigate={onNavigate} />;
+  if (screen === "merchant-info" || screen === "problem-report" || screen === "business-cooperation") return <ContactSupportPage onNavigate={onNavigate} />;
   if (screen === "invite-friends") return <InviteFriendsPage onNavigate={onNavigate} />;
   if (screen === "promotions") return <PromotionsPage onNavigate={onNavigate} />;
   if (screen === "version-info") return <VersionInfoPage onNavigate={onNavigate} />;

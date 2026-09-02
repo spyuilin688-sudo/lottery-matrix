@@ -32,7 +32,7 @@
 }
 
 .pro-plans-screen > .feature-body {
-  padding-inline: 18px;
+  padding-inline: 16px;
 }
 
 .pro-plans-screen .feature-body {
@@ -41,15 +41,15 @@
 
 .pro-plans-screen .plan-carousel {
   box-sizing: border-box;
-  width: calc(100% + 36px);
-  margin-inline: -18px;
-  padding: 0 18px 18px;
+  width: calc(100% + 32px);
+  margin-inline: -16px;
+  padding: 0 17px 18px;
   gap: 12px;
-  scroll-padding-inline: 18px;
+  scroll-padding-inline: 17px;
 }
 
 .pro-plans-screen .plan-card {
-  flex-basis: calc(100% - 36px);
+  flex-basis: calc(100% - 34px);
   min-height: 190px;
   height: auto;
   padding: 12px;
@@ -92,6 +92,19 @@
   padding: 8px;
   border-color: #755329;
   box-shadow: none;
+}
+
+.pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong, .auto-renew-note) {
+  font-weight: 700;
+}
+
+.pro-plans-screen .auto-renew-setting label {
+  gap: 4px;
+}
+
+.pro-plans-screen .auto-renew-setting input {
+  width: 14px;
+  height: 14px;
 }
 
 .pro-plans-screen .confirm-payment.branded-explore-action {
