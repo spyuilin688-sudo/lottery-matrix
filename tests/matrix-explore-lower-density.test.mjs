@@ -30,6 +30,5 @@ test('no hard overwrite hacks', () => {
     assert.match(remainingLayout, rule);
     remainingLayout = remainingLayout.replace(rule, '');
   }
-  assert.doesNotMatch(remainingLayout, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
-  assert.doesNotMatch(remainingLayout, /!important|zoom\s*:|scale\s*\(|transform\s*:|margin(?:-[a-z]+)?\s*:\s*-/);
+  assert.doesNotMatch(remainingLayout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
 });

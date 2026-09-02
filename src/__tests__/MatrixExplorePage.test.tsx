@@ -304,7 +304,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
 
   expect((await screen.findAllByText('+14.24')).length).toBeGreaterThan(0);
   const validation = screen.getByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆｜上 7 期｜第 4 顆｜+14.24｜下 3 期開');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ +14.24 ｜ 下 3 期開');
   expect(validation.querySelector('.explore-validation-consecutive-tag')?.textContent).toBe('準5進6');
   const blocks = validation.querySelectorAll('.explore-validation-group');
   expect(blocks[0].children).toHaveLength(3);
@@ -323,6 +323,123 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect(validation.textContent).toContain('本期預測');
   expect(validation.querySelector('.explore-validation-prediction-arrow--left')).not.toBeNull();
   expect(validation.querySelector('.explore-validation-prediction-arrow--right')).not.toBeNull();
+});
+
+test('同期驗證會合併鎖定與驗證列且只保留鎖定條件顏色', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{ ...exploreEnvelope.items[0], referenceOffset: 0 }],
+  });
+  matrixApi.fetchExploreValidation.mockResolvedValue({
+    ...exploreValidationEnvelope,
+    validation: {
+      ...exploreValidationEnvelope.validation,
+      ruleSets: [{
+        ...exploreValidationEnvelope.validation.ruleSets[0],
+        historicalValidation: [{
+          ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          sourcePeriod: '114000120',
+          sourceNumbers: ['03', '10', '14', '22', '44'],
+          referencePeriod: '114000120',
+          referenceNumbers: ['03', '10', '14', '22', '44'],
+          baseNumber: 44,
+        }],
+      }],
+    },
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  const firstGroup = validation.querySelector('.explore-validation-group');
+  expect([...firstGroup!.querySelectorAll('.explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
+    '114120', '114123',
+  ]);
+  expect(firstGroup!.querySelectorAll('.explore-validation-number-row')).toHaveLength(2);
+  expect(firstGroup!.querySelectorAll('.explore-validation-number--source')).toHaveLength(1);
+  expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--hit')).toBeNull();
+});
+
+test('拖牌有兩個驗證值時新增左中空白的第二公式列', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{ ...exploreEnvelope.items[0], algorithmType: '拖牌' }],
+  });
+  matrixApi.fetchExploreValidation.mockResolvedValue({
+    ...exploreValidationEnvelope,
+    validation: {
+      ...exploreValidationEnvelope.validation,
+      ruleSets: [{
+        ...exploreValidationEnvelope.validation.ruleSets[0],
+        rules: [
+          { value: 14, display: '拖牌14', algorithmType: '拖牌' },
+          { value: 24, display: '拖牌24', algorithmType: '拖牌' },
+        ],
+        historicalValidation: [{
+          ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          matchedRules: [
+            { algorithmType: '拖牌', value: 14, display: '拖牌14' },
+            { algorithmType: '拖牌', value: 24, display: '拖牌24' },
+          ],
+        }],
+      }],
+    },
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '拖牌版路推薦' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  const firstGroup = validation.querySelector('.explore-validation-group');
+  const issues = [...firstGroup!.querySelectorAll('.explore-validation-issue')];
+  const numberRows = [...firstGroup!.querySelectorAll('.explore-validation-number-row')];
+  const formulas = [...firstGroup!.querySelectorAll('.explore-validation-formula-row')];
+  expect(issues.map((cell) => cell.textContent)).toEqual(['114120', '', '114123']);
+  expect(numberRows[1].textContent).toBe('');
+  expect(formulas[0].textContent).toContain('拖牌14');
+  expect(formulas[0].textContent).not.toContain('拖牌24');
+  expect(formulas[1].textContent).toContain('拖牌24');
+  expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--hit')).toBeNull();
+});
+
+test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前顯示加號', async (lottery) => {
+  const sevenNumbers = ['01', '08', '14', '22', '31', '36', '44'];
+  matrixApi.fetchExploreValidation.mockResolvedValue({
+    ...exploreValidationEnvelope,
+    lottery,
+    validation: {
+      ...exploreValidationEnvelope.validation,
+      sourceA: {
+        ...exploreValidationEnvelope.validation.sourceA,
+        sourceNumbers: sevenNumbers,
+        referenceNumbers: sevenNumbers,
+      },
+      ruleSets: [{
+        ...exploreValidationEnvelope.validation.ruleSets[0],
+        historicalValidation: [{
+          ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          sourceNumbers: sevenNumbers,
+          referenceNumbers: sevenNumbers,
+          predictionNumbers: sevenNumbers,
+        }],
+      }],
+    },
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: lottery } });
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  expect(validation.querySelectorAll('.explore-validation-special-separator').length).toBeGreaterThan(0);
+  expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
@@ -350,7 +467,7 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.explore-validation-summary')?.textContent).toContain('｜下 2 期｜');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toContain(' ｜ 下 2 期 ｜ ');
   const firstGroup = validation.querySelector('.explore-validation-group');
   const rows = firstGroup?.querySelectorAll('.explore-validation-issues .explore-validation-issue') ?? [];
   expect([...rows].map((row) => row.textContent)).toEqual([
@@ -539,6 +656,91 @@ test('探索頁使用單列收合連準篩選並套用兩種命中條件預設�
   expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
     selectedStreaks: ['準7進8', '準9進10', '準11進12'],
   }));
+});
+
+test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  fireEvent.click(await screen.findByRole('button', { name: '同碼' }));
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({ sameCode: true }),
+  ));
+
+  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 22，1次' }));
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({ predictionNumber: '22' }),
+  ));
+
+  fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
+  fireEvent.click(screen.getByRole('button', { name: '準5進6' }));
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({ selectedStreaks: ['準6進7', '準7進8'] }),
+  ));
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      sameCode: false,
+      selectedStreaks: ['準5進6', '準6進7', '準7進8'],
+    }),
+  ));
+  expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.not.objectContaining({ predictionNumber: expect.anything() }),
+  );
+  expect(screen.getByRole('button', { name: '同碼' }).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: '篩選預測號碼 22，1次' }).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: '準5進6' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+test('再次開始探索會恢復準5+預設連準', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
+  fireEvent.click(screen.getByRole('button', { name: '準7進8' }));
+
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({ selectedStreaks: ['準9進10', '準11進12'] }),
+  ));
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      sameCode: false,
+      selectedStreaks: ['準7進8', '準9進10', '準11進12'],
+    }),
+  ));
+  expect(screen.getByRole('button', { name: '準7進8' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+test('探索結果每頁最多顯示30筆並可切換下一頁', async () => {
+  const items = Array.from({ length: 31 }, (_, index) => ({
+    ...exploreEnvelope.items[0],
+    id: `api-item-${index + 1}`,
+    number: String((index % 39) + 1).padStart(2, '0'),
+  }));
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    total: 31,
+    items,
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  await screen.findByRole('button', { name: '展開版路 api-item-1' });
+  expect(screen.getAllByRole('button', { name: /展開版路 api-item-/ })).toHaveLength(30);
+  expect(screen.queryByRole('button', { name: '展開版路 api-item-31' })).toBeNull();
+  expect(screen.getByText('31')).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: '探索結果下一頁' }));
+
+  expect(screen.getByRole('button', { name: '展開版路 api-item-31' })).toBeTruthy();
+  expect(screen.getAllByRole('button', { name: /展開版路 api-item-/ })).toHaveLength(1);
+  expect(screen.getByText('2 / 2')).toBeTruthy();
 });
 
 test('探索結果整列皆可展開驗證過程', async () => {

@@ -29,12 +29,12 @@ test("homepage owns the approved 10px, 14px, and 8px rhythm from one responsive 
   assert.match(css, /\.history-link\s*\{[\s\S]*?gap:\s*2px/);
 });
 
-test("single-number override clears the selected row for the same issue", async () => {
+test("single-number marking remains independent from the selected row", async () => {
   const source = await read("src/FeaturePages.tsx");
   const body = source.match(/const toggleMarkedCell = \(issue: string, number: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
   assert.ok(body, "toggleMarkedCell should exist");
-  assert.match(body, /setMarkedRows\(\(rows\)[\s\S]*?next\.delete\(issue\)/);
   assert.match(body, /setMarkedCells/);
+  assert.doesNotMatch(body, /setMarkedRows/);
 });
 
 test("Matrix switcher exposes all three pages in one vertical scroll-snap control", async () => {

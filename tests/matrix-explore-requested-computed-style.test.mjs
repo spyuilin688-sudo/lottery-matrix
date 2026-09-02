@@ -199,7 +199,7 @@ test("重複號碼統計與探索結果區使用六層金色與分隔線層級",
   assert.equal(style(".repeat-stats-heading .section-title").color, "rgba(244, 206, 103, 0.84)");
   assert.equal(style(".result-title .section-title").color, "rgba(244, 206, 103, 0.84)");
   assert.equal(style(".road-results-head").color, "rgba(244, 206, 103, 0.84)");
-  assert.equal(style(".result-summary b").color, "rgb(244, 206, 103)");
+  assert.equal(style(".result-summary b").color, "rgb(242, 245, 248)");
   assert.equal(style(".road-result-row > strong").color, "rgb(244, 206, 103)");
   assert.equal(selectedSummary.borderTopColor, "rgb(244, 206, 103)");
   assert.equal(selectedFilter.borderTopColor, "rgb(244, 206, 103)");

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -1082,7 +1082,14 @@ function ExploreValidationProcess({
                     : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit))
                       ? "hit"
                       : "";
-                return <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"} key={`${value}-${index}`}>{value}</i>;
+                return (
+                  <Fragment key={`${value}-${index}`}>
+                    {index === 6 && (lottery === "六合彩" || lottery === "大樂透")
+                      ? <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                      : null}
+                    <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
+                  </Fragment>
+                );
               })}
             </span>
           </div>
@@ -1104,8 +1111,8 @@ function ExploreValidationProcess({
       onDragStart={(event) => event.preventDefault()}
     >
       {validation.ruleSets.map((ruleSet, ruleSetIndex) => {
-        const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
-          if (!matchedRules) return ruleSet.rules.map((rule) => rule.display).join("、");
+        const ruleDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+          if (!matchedRules) return ruleSet.rules.map((rule) => rule.display);
           const displays = matchedRules.map((matched) => {
             if (typeof matched !== "number") {
               return ruleSet.rules.find((rule) => (
@@ -1116,16 +1123,18 @@ function ExploreValidationProcess({
             if (valueMatches.length === 1) return valueMatches[0].display;
             return `共同值${matched}`;
           });
-          return [...new Set(displays)].join("、");
+          return [...new Set(displays)];
         };
+        const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => ruleDisplayValues(matchedRules).join("、");
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
+        const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
             <header className="explore-validation-summary-card">
               <p className="explore-validation-summary">
-                開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆｜
-                {relation === "同期" ? "同期" : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}｜第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆｜
-                <i className="validation-summary-formula">{ruleDisplays()}</i>｜下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
+                開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆{" ｜ "}
+                {relation === "同期" ? "同期" : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}{" ｜ "}第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆{" ｜ "}
+                <i className="validation-summary-formula">{ruleDisplays()}</i>{" ｜ "}下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
               </p>
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
             </header>
@@ -1151,6 +1160,26 @@ function ExploreValidationProcess({
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
                 const calculation = `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${ruleDisplays(row.matchedRules)} = ${resultNumbers}`;
+                if (compactValidation) {
+                  const formulaDisplays = ruleDisplayValues(row.matchedRules);
+                  const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1).map((_, index) => ({
+                    key: `formula-${row.group}-${index + 2}`,
+                    period: "",
+                    numbers: [],
+                  }));
+                  const compactPrediction: ValidationDisplayRow = {
+                    ...prediction,
+                    hitNumbers: undefined,
+                  };
+                  return validationGroup(
+                    `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
+                    [source, ...formulaOnlyRows, compactPrediction],
+                    [
+                      ...formulaDisplays.map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                      `［ ${resultNumbers} ］`,
+                    ],
+                  );
+                }
                 const rows = referenceFirst ? [reference, source, prediction] : [source, reference, prediction];
                 return validationGroup(
                   `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
@@ -1160,7 +1189,21 @@ function ExploreValidationProcess({
               })}
               {validation.sourceA ? validationGroup(
                 `current-${ruleSetIndex}`,
-                referenceFirst
+                compactValidation
+                  ? [
+                      {
+                        key: "current-source",
+                        period: validation.sourceA.sourcePeriod,
+                        numbers: validation.sourceA.sourceNumbers,
+                        sourceNumber: item.number,
+                      },
+                      ...ruleDisplayValues().slice(1).map((_, index): ValidationDisplayRow => ({
+                        key: `current-formula-${index + 2}`,
+                        period: "",
+                        numbers: [],
+                      })),
+                    ]
+                  : referenceFirst
                   ? [
                       {
                         key: "current-reference",
@@ -1189,10 +1232,12 @@ function ExploreValidationProcess({
                         stepNumber: validation.sourceA.baseNumber,
                       },
                     ],
-                [
-                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA.baseNumber)} ${ruleDisplays()} = ${values(ruleSet.predictionNumbers).join("、")}`,
-                  "",
-                ],
+                compactValidation
+                  ? ruleDisplayValues().map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`)
+                  : [
+                      `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA.baseNumber)} ${ruleDisplays()} = ${values(ruleSet.predictionNumbers).join("、")}`,
+                      "",
+                    ],
               ) : null}
             </div>
             <footer className="explore-validation-prediction">
@@ -1310,6 +1355,7 @@ export function MatrixExplorePage({
   const [sameCode, setSameCode] = useState(false);
   const [selectedPredictionNumber, setSelectedPredictionNumber] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [resultPage, setResultPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
     defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
   );
@@ -1390,6 +1436,12 @@ export function MatrixExplorePage({
       .map(([number, count]) => ({ number, count }));
   }, [exploreResponse, title, visibleResults]);
 
+  const resultsPerPage = 30;
+  const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
+  const paginatedResults = visibleResults.slice(
+    (resultPage - 1) * resultsPerPage,
+    resultPage * resultsPerPage,
+  );
   const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
   const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
   const exploreDateOffset = exploreDate === "前日 (上2期)" ? 2 : exploreDate === "昨日 (上1期)" ? 1 : 0;
@@ -1458,10 +1510,14 @@ export function MatrixExplorePage({
   };
 
   const startExplore = () => {
+    const nextFilters = defaultFilters[hit];
     setSearched(true);
     setHistoryExpanded(false);
+    setSameCode(false);
+    setSelectedFilters(nextFilters);
     setSelectedPredictionNumber(null);
-    void loadExplore(selectedFilters, sameCode, null);
+    setResultPage(1);
+    void loadExplore(nextFilters, false, null);
   };
 
   const toggleFilter = (value: ConsecutiveOption) => {
@@ -1470,12 +1526,14 @@ export function MatrixExplorePage({
       : [...selectedFilters, value];
     setSelectedFilters(next);
     setExpandedRoad(null);
+    setResultPage(1);
     if (searched) void loadExplore(next, sameCode);
   };
 
   const toggleSameCode = () => {
     const next = !sameCode;
     setSameCode(next);
+    setResultPage(1);
     if (searched) void loadExplore(selectedFilters, next, selectedPredictionNumber);
   };
 
@@ -1484,6 +1542,7 @@ export function MatrixExplorePage({
     const next = selectedPredictionNumber === number ? null : number;
     setSelectedPredictionNumber(next);
     setExpandedRoad(null);
+    setResultPage(1);
     void loadExplore(selectedFilters, sameCode, next);
   };
 
@@ -1746,7 +1805,7 @@ export function MatrixExplorePage({
                 <span>預測</span>
                 <span>版路類型</span>
               </div>
-              {visibleResults.map((item) => (
+              {paginatedResults.map((item) => (
                 <article key={item.id}>
                   <button
                     type="button"
@@ -1789,6 +1848,33 @@ export function MatrixExplorePage({
                 </article>
               ))}
               {visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+              {visibleResults.length > 0 && resultPageCount > 1 ? (
+                <nav className="history-pagination explore-results-pagination" aria-label="探索結果分頁">
+                  <button
+                    type="button"
+                    aria-label="探索結果上一頁"
+                    disabled={resultPage === 1}
+                    onClick={() => {
+                      setExpandedRoad(null);
+                      setResultPage((current) => Math.max(1, current - 1));
+                    }}
+                  >
+                    <ChevronLeftIcon aria-hidden="true" />
+                  </button>
+                  <span>{resultPage} / {resultPageCount}</span>
+                  <button
+                    type="button"
+                    aria-label="探索結果下一頁"
+                    disabled={resultPage === resultPageCount}
+                    onClick={() => {
+                      setExpandedRoad(null);
+                      setResultPage((current) => Math.min(resultPageCount, current + 1));
+                    }}
+                  >
+                    <ChevronRightIcon aria-hidden="true" />
+                  </button>
+                </nav>
+              ) : null}
             </div>
           </section>
         </>
