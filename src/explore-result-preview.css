@@ -272,15 +272,15 @@
 }
 
 .explore-validation-card {
-  --explore-validation-border-color: #e6b76a;
-  --explore-validation-summary-font-size: clamp(13px, 3.6vw, 15px);
+  --explore-validation-border-color: #755329;
+  --explore-validation-summary-font-size: 13px;
   --explore-validation-row-min-height: clamp(27px, 7.18vw, 28px);
   position: relative;
   display: flex;
   flex-direction: column;
   row-gap: 2px;
   margin: 0;
-  padding: 6px 0;
+  padding: 8px 0;
   border-top-width: 1px;
   border-top-style: solid;
   border-top-color: var(--explore-validation-border-color);
@@ -296,13 +296,6 @@
   overflow: visible;
 }
 
-.road-validation-process.explore-validation-card {
-  padding: 6px 0;
-  border-top-color: var(--explore-validation-border-color);
-  border-bottom-color: var(--explore-validation-border-color);
-  overflow: visible;
-}
-
 .explore-validation-rule-set {
   display: flex;
   min-width: 0;
@@ -312,9 +305,12 @@
 
 .explore-validation-summary-card {
   box-sizing: border-box;
-  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: start;
+  column-gap: 2px;
   margin: 0;
-  padding-top: 0;
+  padding: 0;
   border: 1px solid #e6b76a;
   border-radius: 8px;
   background: rgba(10, 14, 24, .92);
@@ -322,14 +318,12 @@
 }
 
 .explore-validation-summary-card > .explore-validation-consecutive-tag {
-  position: absolute;
-  z-index: 1;
-  top: 2px;
-  right: 2px;
+  position: static;
   display: inline-flex;
   width: max-content;
   max-width: calc(100% - 4px);
   height: auto;
+  margin: 2px 2px 0 0;
   padding: 1px 4px;
   border: 1px solid rgba(223, 176, 68, .68);
   border-radius: 5px;
@@ -346,19 +340,20 @@
 }
 
 .explore-validation-summary {
+  min-width: 0;
   min-height: 0;
   margin: 0;
-  padding: 3px 4px;
-  padding-right: 52px;
+  padding: 3px 2px 3px 4px;
   border: 0;
   border-radius: 0;
   color: #f2f5f8;
   background: rgba(10, 14, 24, .92);
-  font-size: clamp(13px, 3.6vw, 15px);
+  font-size: var(--explore-summary-fit-font-size, var(--explore-validation-summary-font-size));
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -.04em;
-  white-space: normal;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .explore-validation-groups {
@@ -495,6 +490,14 @@
   line-height: 1;
 }
 
+.explore-validation-special-number {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  justify-self: end;
+  gap: 0;
+}
+
 .explore-validation-number--source {
   border-color: #58d3e6;
   color: #58d3e6;
@@ -547,8 +550,8 @@
 .explore-validation-formulas {
   color: #bac5d2;
   background: rgba(8, 15, 27, .82);
-  font-size: clamp(8px, 2.2vw, 10.5px);
-  line-height: 1.35;
+  font-size: clamp(10px, 3.05vw, 12px);
+  line-height: 1.25;
 }
 
 .explore-validation-formula-row {
@@ -557,7 +560,7 @@
   align-items: center;
   height: auto;
   min-height: var(--explore-validation-row-min-height);
-  padding: 3px;
+  padding: 2px;
   background: transparent;
   overflow-wrap: normal;
   white-space: nowrap;
@@ -584,7 +587,7 @@
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-formulas {
-  font-size: clamp(8px, 2.1vw, 10px);
+  font-size: clamp(9.5px, 2.9vw, 11.5px);
 }
 
 .explore-validation-summary .validation-summary-primary {
@@ -674,10 +677,6 @@
 @media (max-width: 350px) {
   .explore-validation-groups {
     padding-inline: 0;
-  }
-
-  .explore-validation-formula-row {
-    padding-inline: 3px;
   }
 
   .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
