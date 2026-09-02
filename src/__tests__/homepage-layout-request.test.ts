@@ -47,13 +47,16 @@ afterEach(() => {
 });
 
 describe("homepage requested spacing and selection", () => {
-  it("assigns surplus vertical space to the responsive logo region", () => {
+  it("keeps surplus height above the logo without changing its visual gap", () => {
     mountHomepage();
 
     expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("minmax(min-content, 1fr) auto");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
     expect(getComputedStyle(document.querySelector(".brand-header")!).flexGrow).toBe("1");
-    expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("100%");
+    expect(getComputedStyle(document.querySelector(".brand-header")!).alignItems).toBe("flex-end");
+    expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
+    expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").trim()).toBe("8px");
   });
 
   it("uses the requested independent homepage spacing values", () => {

@@ -22,7 +22,7 @@
   --home-feature-card-aspect: 386 / 496;
   --home-gap-status-core: 10px;
   --home-gap-core-features: 14px;
-  --home-gap-features-nav: clamp(8px, 2.2dvh, 20px);
+  --home-gap-features-nav: 8px;
   box-sizing: border-box;
   display: grid;
   width: min(100%, 390px);
@@ -123,7 +123,7 @@
   box-sizing: border-box;
   width: 100%;
   padding-top: 8px;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   overflow: visible;
 }
@@ -147,7 +147,9 @@
 
 .home-screen .home-logo-image {
   width: 87.584%;
-  height: 100%;
+  height: auto;
+  max-height: 100%;
+  object-position: center bottom;
 }
 
 .lottery-switcher--home-style {
