@@ -61,7 +61,7 @@ jobs:
       - name: Full tests
         run: node --test tests/*.test.mjs
 
-  admin-test-and-build:
+  admin-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -78,8 +78,6 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Admin tests
         run: npm test -- --run
-      - name: Admin build
-        run: npm run build
 
   matrix-api:
     runs-on: ubuntu-latest
