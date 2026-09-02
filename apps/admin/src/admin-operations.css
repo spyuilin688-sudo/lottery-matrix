@@ -33,7 +33,7 @@
 .operationDialog select { padding: 10px; }
 
 .managementToolbar span { color: #8f939b; font-size: 13px; }
-.compactButton { height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 3px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.compactButton { height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .formActions .primary { background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; border-color: #b48a35; }
 .mobileManagement { display: none; }
 .managementCard { border: 1px solid #292c32; background: #111419; border-radius: 12px; padding: 14px; }
@@ -72,13 +72,13 @@
 .userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
 /* Shared hierarchy and rhythm across every admin surface. */
-.content { padding: 16px; }
-.side nav { gap: 4px; }
-.nav { min-height: 38px; padding: 8px 10px; font-size: 13px; }
+.content { padding: 20px; }
+.side nav { gap: 6px; }
+.nav { min-height: 42px; padding: 10px 12px; font-size: 13px; }
 header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .actions button,
-.menu { min-width: 34px; min-height: 34px; }
-.cards { gap: 8px; }
+.menu { min-width: 40px; min-height: 40px; }
+.cards { gap: 12px; }
 .metric,
 .panel,
 .formCard,
@@ -86,7 +86,7 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .metric { min-height: 82px; padding: 12px; }
 .metric span { font-size: 12px; }
 .metric strong { font-size: 23px; }
-.panel { padding: 12px; }
+.panel { padding: 14px; }
 .transferPanel { margin-top: 10px; }
 .panel.transferPanel { padding: 10px; }
 .transferPanel h2 { margin-bottom: 6px; }
@@ -95,15 +95,15 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .revenueResetButton:hover:not(:disabled),
 .revenueResetButton:focus-visible { border-color: #a84a4a; background: #321b1b; color: #ffd2d2; }
 .revenueResetButton:disabled { cursor: not-allowed; opacity: .55; }
-.formCard { padding: 14px; }
+.formCard { padding: 18px; }
 .panel h2,
 .formCard h3 { font-size: 17px; line-height: 1.4; }
-.toolbar { min-height: 36px; gap: 8px; }
+.toolbar { min-height: 42px; gap: 12px; }
 .toolbar .primary { height: 32px; min-height: 0; padding: 4px 10px; }
 .tableWrap tbody tr:last-child td { border-bottom: 0; }
 .tableWrap tbody tr:hover td { background: #14171c; }
-.formActions button { min-width: 80px; min-height: 34px; }
-.pagination button { min-width: 32px; min-height: 32px; }
+.formActions button { min-width: 84px; min-height: 38px; }
+.pagination button { min-width: 36px; min-height: 36px; }
 
 .modalBackdrop { overflow-y: auto; }
 .confirmationBackdrop { z-index: 60; }
@@ -143,4 +143,39 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .confirmationDialog,
   .operationDialog,
   .nameDialog { padding: 16px; }
+}
+
+.activationCodeFormCard {
+  width: 100%;
+  max-width: 520px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.activationCodeFormCard h3 { margin: 0 0 8px; font-size: 14px; }
+.activationCodeFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.activationCodeFormGrid label { min-width: 0; color: #989ca5; font-size: 12px; }
+.activationCodeFormGrid select {
+  width: 100%;
+  height: 32px;
+  min-height: 0;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border: 1px solid #343840;
+  border-radius: 8px;
+  background: #0b0d11;
+  color: #eee;
+}
+.activationCodeFormActions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.activationCodeFormCard .formActions button { width: auto; min-width: 0; min-height: 0; height: 30px; padding: 3px 10px; font-size: 12px; }
+.activationCodeAddButton,
+.activationCodeCreateButton { height: 30px; min-height: 0; }
+
+@media(max-width:520px) {
+  .activationCodeFormCard { max-width: none; width: 100%; padding: 10px; }
+  .activationCodeFormGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .activationCodeFormCard .formActions { display: flex; justify-content: flex-end; }
 }
