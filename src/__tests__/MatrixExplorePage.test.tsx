@@ -316,9 +316,10 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114116', '114123',
   ]);
-  expect(validation.querySelector('.explore-validation-number--step')?.textContent).toBe('14');
-  expect(validation.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
-  expect(validation.querySelector('.explore-validation-number--source')?.textContent).toBe('44');
+  const validationRows = validation.querySelectorAll('.explore-validation-group')[0].querySelectorAll('.explore-validation-number-row');
+  expect(validationRows[0].querySelector('.explore-validation-number--source')?.textContent).toBe('14');
+  expect(validationRows[2].querySelector('.explore-validation-number--step')?.textContent).toBe('22');
+  expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
   expect(validation.querySelectorAll('.explore-validation-number').length).toBeGreaterThan(0);
   expect(validation.textContent).toContain('本期預測');
   expect(validation.querySelector('.explore-validation-prediction-arrow--left')).not.toBeNull();
@@ -358,12 +359,13 @@ test('同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色', as
     '114120', '114123',
   ]);
   expect(firstGroup!.querySelectorAll('.explore-validation-number-row')).toHaveLength(2);
-  expect(firstGroup!.querySelectorAll('.explore-validation-number--source')).toHaveLength(1);
-  expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
-  expect(firstGroup!.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
+  expect(firstGroup!.querySelectorAll('.explore-validation-number--hit')).toHaveLength(1);
+  expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
+  expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
 });
 
-test('拖牌有兩個驗證值時新增左中空白的第二公式列', async () => {
+test('拖牌多個驗證值時只保留一列空白公式列且每組最多三列', async () => {
   matrixApi.fetchExploreList.mockResolvedValue({
     ...exploreEnvelope,
     items: [{ ...exploreEnvelope.items[0], algorithmType: '拖牌' }],
@@ -377,12 +379,14 @@ test('拖牌有兩個驗證值時新增左中空白的第二公式列', async ()
         rules: [
           { value: 14, display: '拖牌14', algorithmType: '拖牌' },
           { value: 24, display: '拖牌24', algorithmType: '拖牌' },
+          { value: 34, display: '拖牌34', algorithmType: '拖牌' },
         ],
         historicalValidation: [{
           ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
           matchedRules: [
             { algorithmType: '拖牌', value: 14, display: '拖牌14' },
             { algorithmType: '拖牌', value: 24, display: '拖牌24' },
+            { algorithmType: '拖牌', value: 34, display: '拖牌34' },
           ],
         }],
       }],
@@ -404,8 +408,10 @@ test('拖牌有兩個驗證值時新增左中空白的第二公式列', async ()
   expect(formulas[0].textContent).toContain('拖牌14');
   expect(formulas[0].textContent).not.toContain('拖牌24');
   expect(formulas[1].textContent).toContain('拖牌24');
-  expect(firstGroup!.querySelector('.explore-validation-number--step')).toBeNull();
-  expect(firstGroup!.querySelector('.explore-validation-number--hit')?.textContent).toBe('22');
+  expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('拖牌34');
+  expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
+  expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
+  expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
 });
 
 test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前顯示加號', async (lottery) => {
@@ -475,10 +481,18 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
     '114118', '114120', '114123',
   ]);
   const formulas = firstGroup?.querySelectorAll('.explore-validation-formula-row') ?? [];
-  expect(formulas[0]?.textContent).toContain('+14.24');
+  expect(formulas[0]?.textContent).toBe('');
+  expect(formulas[1]?.textContent).toContain('+14.24');
+  const currentFormulas = validation.querySelectorAll('.explore-validation-group')[1].querySelectorAll('.explore-validation-formula-row');
+  expect(currentFormulas[0]?.textContent).toBe('');
+  expect(currentFormulas[1]?.textContent).toContain('+14.24');
 });
 
-test('兩條公式同時成立時顯示在同一驗證列且不編號', async () => {
+test('兩條公式同時成立時分別放在驗證號碼列與鎖定條件列', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{ ...exploreEnvelope.items[0], referenceOffset: 2 }],
+  });
   matrixApi.fetchExploreValidation.mockResolvedValue({
     ...exploreValidationEnvelope,
     validation: {
@@ -491,6 +505,8 @@ test('兩條公式同時成立時顯示在同一驗證列且不編號', async ()
         ],
         historicalValidation: [{
           ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          sourcePeriod: '114000118',
+          referencePeriod: '114000120',
           matchedRules: [
             { algorithmType: '加減', value: 14, display: '+14' },
             { algorithmType: '加減', value: 24, display: '+24' },
@@ -505,9 +521,14 @@ test('兩條公式同時成立時顯示在同一驗證列且不編號', async ()
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
-  expect(firstFormula).toContain('+14、+24');
-  expect(firstFormula).not.toMatch(/第一|第二/);
+  const firstGroup = validation.querySelector('.explore-validation-group');
+  const issues = [...firstGroup!.querySelectorAll('.explore-validation-issue')].map((cell) => cell.textContent);
+  const formulas = [...firstGroup!.querySelectorAll('.explore-validation-formula-row')].map((cell) => cell.textContent);
+  expect(issues).toEqual(['114118', '114120', '114123']);
+  expect(formulas[0]).toContain('+24');
+  expect(formulas[1]).toContain('+14');
+  expect(formulas[2]).toBe('［ 22 ］');
+  expect(formulas.join('')).not.toMatch(/第一|第二/);
 });
 
 test('數值相同但類型不同的規則只顯示實際成立公式', async () => {

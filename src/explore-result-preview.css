@@ -320,10 +320,11 @@
 .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: static;
   display: inline-flex;
+  align-self: center;
   width: max-content;
   max-width: calc(100% - 4px);
   height: auto;
-  margin: 2px 2px 0 0;
+  margin: 0 2px 0 0;
   padding: 1px 4px;
   border: 1px solid rgba(223, 176, 68, .68);
   border-radius: 5px;
@@ -558,6 +559,7 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: center;
   height: auto;
   min-height: var(--explore-validation-row-min-height);
   padding: 2px;
@@ -661,7 +663,7 @@
 
 .explore-validation-prediction strong {
   color: #e4c980;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .road-results .explore-validation-prediction strong {
@@ -670,7 +672,8 @@
 
 .explore-validation-prediction b {
   color: #e6b76a;
-  font-size: 21px;
+  font-size: 18px;
+  font-weight: 700;
   letter-spacing: .06em;
 }
 

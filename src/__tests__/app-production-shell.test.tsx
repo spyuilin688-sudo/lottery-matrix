@@ -168,11 +168,14 @@ describe("production member shell", () => {
     expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
+    expect(source).toHaveTextContent("26");
     expect(getComputedStyle(source!).borderTopWidth).toBe("1px");
     expect(getComputedStyle(source!).backgroundColor).toBe("rgba(88, 211, 230, 0.14)");
     expect(getComputedStyle(step!).borderTopColor).toBe("rgb(230, 183, 106)");
+    expect(step).toHaveTextContent("11");
     expect(getComputedStyle(step!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(hit!).borderTopColor).toBe("rgb(231, 132, 165)");
+    expect(hit).toHaveTextContent("04");
     expect(getComputedStyle(hit!).backgroundColor).toBe("rgba(231, 132, 165, 0.14)");
 
     fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
@@ -308,7 +311,7 @@ describe("production member shell", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
     expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{/);
-    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{[^}]*position:\s*static[^}]*margin:\s*2px 2px 0 0/s);
+    expect(css).toMatch(/\.explore-validation-summary-card\s*>\s*\.explore-validation-consecutive-tag\s*\{[^}]*position:\s*static[^}]*align-self:\s*center[^}]*margin:\s*0 2px 0 0/s);
     expect(css).toMatch(/\.explore-result-preview-screen \.road-results \.road-result-row\.explore-result-row\s*\{[^}]*min-height:\s*0[^}]*padding:\s*6px 0/s);
     expect(css).toMatch(/font-size:\s*8px/);
     expect(css).toMatch(/grid-template-columns:\s*max-content\s+minmax\(0,\s*1fr\)\s+minmax\(clamp\(92px,\s*30vw,\s*120px\),\s*120px\)/);
@@ -322,7 +325,7 @@ describe("production member shell", () => {
 
     expect(css).toMatch(/\.explore-validation-issue\s*\{[^}]*padding:\s*3px 4px[^}]*font-size:\s*9px[^}]*font-weight:\s*700[^}]*letter-spacing:\s*-\.06em/s);
     expect(css).toMatch(/--explore-validation-row-min-height:\s*clamp\(27px,\s*7\.18vw,\s*28px\)/);
-    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*padding:\s*2px/s);
+    expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*justify-content:\s*center[^}]*padding:\s*2px/s);
     expect(css).toMatch(/\.explore-validation-summary\s*\{[^}]*font-size:\s*var\(--explore-summary-fit-font-size,\s*var\(--explore-validation-summary-font-size\)\)[^}]*white-space:\s*nowrap/s);
     expect(css).toMatch(/\.explore-validation-formulas\s*\{[^}]*font-size:\s*clamp\(10px,\s*3\.05vw,\s*12px\)/s);
     expect(css).toMatch(/\.explore-validation-formula-row\s*\{[^}]*white-space:\s*nowrap/s);
@@ -425,7 +428,8 @@ describe("production member shell", () => {
     expect(summaryTag).not.toBeNull();
     expect(getComputedStyle(summaryTag!).backgroundColor).toBe("rgba(10, 14, 24, 0.98)");
     expect(getComputedStyle(summaryTag!).position).toBe("static");
-    expect(getComputedStyle(summaryTag!).marginTop).toBe("2px");
+    expect(getComputedStyle(summaryTag!).alignSelf).toBe("center");
+    expect(getComputedStyle(summaryTag!).marginTop).toBe("0px");
     expect(getComputedStyle(summaryTag!).marginRight).toBe("2px");
 
     productionStyle.remove();
@@ -533,8 +537,8 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-number\s*\{[^}]*width:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*height:\s*clamp\(17px,\s*4\.87vw,\s*19px\)[^}]*aspect-ratio:\s*1/s);
     expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #e6b76a[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(230,\s*183,\s*106,\s*\.14\)/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*color:\s*#e6b76a/s);
-    expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*18px/s);
-    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*21px/s);
+    expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*16px/s);
+    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*700/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
     expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*0/s);
   });
