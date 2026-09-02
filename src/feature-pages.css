@@ -1042,7 +1042,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .code-entry-block { display: grid; gap: 9px; }
 .code-entry-block label { color: #c9c2b8; font-size: 13px; }
 .code-result { margin: 0; color: #d8ad49; font-size: 12px; text-align: center; }
-.activation-result { color: #e5c36e !important; }
+.activation-result { margin: 0; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; }
+.activation-result.success { border: 1px solid rgba(95, 166, 113, .55); background: rgba(39, 98, 55, .22); color: #9bddab; }
+.activation-result.error { border: 1px solid rgba(177, 81, 81, .55); background: rgba(103, 37, 37, .22); color: #efb3b3; }
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid #76521d; border-radius: 9px; background: rgba(183, 133, 32, .08); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
 .plan-carousel { display: flex; margin: 0 -14px; padding: 0 14px 4px; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }

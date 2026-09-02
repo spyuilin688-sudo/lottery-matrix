@@ -1,3 +1,4 @@
+import { apiStatusInventory, type ApiStatusDefinition } from './api-status-inventory';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 
@@ -9,17 +10,8 @@ type Dependencies = {
   fetcher?: typeof fetch;
   now?: () => Date;
 };
-type CoreCheckDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  retryable?: boolean;
-  operation: () => Promise<unknown>;
-};
 
-export type ConnectionStatusItem = {
-  id: string;
-  name: string;
+export type ConnectionStatusItem = ApiStatusDefinition & {
   description: string;
   ok: boolean;
   checkedAt: string;
@@ -39,14 +31,15 @@ export class ConnectionStatusError extends Error {
   }
 }
 
-const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai/';
+const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai';
 const jobDefinitions = [
   ['matrix-539-refresh-v2', '今彩539'],
   ['matrix-fantasy5-refresh-v2', '天天樂'],
   ['matrix-marksix-refresh-v2', '六合彩'],
   ['matrix-649-refresh-v2', '大樂透'],
 ] as const;
-const jobStatuses = ['running', 'success', 'failed'] as const;
+const jobStatuses = ['running', 'waiting_source', 'success', 'failed'] as const;
+const retryableIds = new Set(['railway-health', 'railway-jobs-status']);
 
 const nullableString = (value: unknown): string | null =>
   typeof value === 'string' ? value : null;
@@ -77,77 +70,130 @@ const safeJobDetail = (
   };
 };
 
+const descriptionFor = (definition: ApiStatusDefinition) => {
+  if (definition.checkMode === 'openapi') return '確認此 Supabase RPC 已登錄且可供應用程式呼叫。';
+  if (definition.checkMode === 'service') return '由所屬服務的健康檢查確認此端點可用。';
+  return '以不修改資料的請求確認此端點目前可回應。';
+};
+
+const safeErrorFor = (definition: ApiStatusDefinition) => {
+  if (definition.location === 'Railway') return 'Railway Worker API 暫時無法使用';
+  if (definition.checkMode === 'openapi') return 'Supabase API 登錄檢查失敗';
+  return `${definition.location} API 暫時無法使用`;
+};
+
+const memoizePromise = <T>(operation: () => Promise<T>) => {
+  let pending: Promise<T> | undefined;
+  return () => pending ??= operation();
+};
+
 export function createConnectionStatus(dependencies: Dependencies) {
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
-  let latestWorkerStatus: WorkerStatus | null = null;
-  const check = async (
-    id: string,
-    name: string,
-    description: string,
-    operation: () => Promise<unknown>,
+
+  const createSharedChecks = () => {
+    const config = memoizePromise(dependencies.loadConfig);
+    const worker = memoizePromise(dependencies.getWorkerStatus);
+    const openApiPaths = memoizePromise(async () => {
+      const current = await config();
+      const response = await fetcher(`${current.url}/rest/v1/`, {
+        cache: 'no-store',
+        redirect: 'error',
+        headers: { apikey: current.serviceRoleKey },
+      });
+      if (!response.ok) throw new Error('OPENAPI_UNAVAILABLE');
+      const document = await response.json() as { paths?: unknown };
+      if (!document.paths || typeof document.paths !== 'object' || Array.isArray(document.paths)) {
+        throw new Error('OPENAPI_INVALID');
+      }
+      return new Set(Object.keys(document.paths));
+    });
+    return { config, worker, openApiPaths };
+  };
+
+  const runDefinition = async (
+    definition: ApiStatusDefinition,
+    shared: ReturnType<typeof createSharedChecks>,
   ): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
+    const base = {
+      ...definition,
+      description: descriptionFor(definition),
+      checkedAt: now().toISOString(),
+      responseMs: 0,
+      ...(retryableIds.has(definition.id) ? { retryable: true } : {}),
+    };
     try {
-      const detail = await operation();
-      return { id, name, description, ok: true, checkedAt: now().toISOString(), responseMs: Math.max(0, now().getTime() - started), detail };
-    } catch (cause) {
+      let detail: unknown;
+      if (definition.id === 'admin-api') {
+        const response = await fetcher(`${adminUrl}${definition.endpoint}`, {
+          cache: 'no-store',
+          redirect: 'error',
+        });
+        if (!response.ok) throw new Error('ADMIN_API_UNAVAILABLE');
+        detail = { status: response.status };
+      } else if (definition.id === 'supabase-database') {
+        await dependencies.supabase.selectRows('plans', 'select=id&limit=1');
+        detail = { reachable: true };
+      } else if (definition.id === 'supabase-auth') {
+        const current = await shared.config();
+        const response = await fetcher(`${current.url}${definition.endpoint}`, {
+          cache: 'no-store',
+          redirect: 'error',
+          headers: { apikey: current.serviceRoleKey },
+        });
+        if (!response.ok) throw new Error('AUTH_UNAVAILABLE');
+        detail = { status: response.status };
+      } else if (definition.id === 'matrix-status-function') {
+        const current = await shared.config();
+        const response = await fetcher(`${current.url}${definition.endpoint}`, {
+          method: 'OPTIONS',
+          cache: 'no-store',
+          redirect: 'error',
+          headers: { apikey: current.serviceRoleKey },
+        });
+        if (!response.ok) throw new Error('FUNCTION_UNAVAILABLE');
+        detail = { status: response.status };
+      } else if (definition.checkMode === 'openapi') {
+        const paths = await shared.openApiPaths();
+        const registered = paths.has(definition.endpoint.replace('/rest/v1', ''));
+        if (!registered) throw new Error('RPC_NOT_REGISTERED');
+        detail = { registered: true };
+      } else if (definition.location === 'Railway') {
+        const status = await shared.worker();
+        if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
+        if (definition.id === 'railway-health') detail = status.health;
+        else if (definition.id === 'railway-jobs-status') detail = status.jobs;
+        else detail = { inheritedFrom: ['/health', '/jobs/status'] };
+      } else {
+        throw new Error('UNSUPPORTED_STATUS_CHECK');
+      }
       return {
-        id, name, description, ok: false, checkedAt: now().toISOString(), responseMs: Math.max(0, now().getTime() - started),
-        error: cause instanceof Error ? cause.message : String(cause),
+        ...base,
+        ok: true,
+        checkedAt: now().toISOString(),
+        responseMs: Math.max(0, now().getTime() - started),
+        detail,
+      };
+    } catch {
+      return {
+        ...base,
+        ok: false,
+        checkedAt: now().toISOString(),
+        responseMs: Math.max(0, now().getTime() - started),
+        error: safeErrorFor(definition),
       };
     }
   };
-  const coreChecks: CoreCheckDefinition[] = [
-    {
-      id: 'admin-appdeploy',
-      name: '後臺 AppDeploy',
-      description: '顯示後臺系統的部署及服務狀態。',
-      operation: async () => {
-        const response = await fetcher(adminUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { status: response.status };
-      },
-    },
-    {
-      id: 'supabase-database',
-      name: 'Supabase Database',
-      description: '儲存會員、訂閱、付款及管理員資料。',
-      operation: () => dependencies.supabase.selectRows('plans', 'select=id&limit=1'),
-    },
-    {
-      id: 'supabase-auth',
-      name: 'Supabase Auth',
-      description: '處理會員登入、登出及帳號驗證。',
-      operation: async () => {
-        const config = await dependencies.loadConfig();
-        const response = await fetcher(`${config.url}/auth/v1/settings`, { headers: { apikey: config.serviceRoleKey } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-      },
-    },
-    {
-      id: 'railway-worker-api',
-      name: 'Railway Worker API',
-      description: '顯示 Railway 自動計算服務與工作狀態。',
-      retryable: true,
-      operation: async () => {
-        const status = await dependencies.getWorkerStatus();
-        if (!status.ok) throw new Error('Railway Worker API 暫時無法使用');
-        latestWorkerStatus = status;
-        return status;
-      },
-    },
-  ];
-  const runCoreCheck = async (definition: typeof coreChecks[number]) => ({
-    ...await check(definition.id, definition.name, definition.description, definition.operation),
-    ...(definition.retryable ? { retryable: true } : {}),
-  });
 
   return {
     async get() {
       const checkedAt = now().toISOString();
-      const core = await Promise.all(coreChecks.map(runCoreCheck));
+      const shared = createSharedChecks();
+      const apiItems = await Promise.all(apiStatusInventory.map(
+        (definition) => runDefinition(definition, shared),
+      ));
+      const latestWorkerStatus = await shared.worker().catch(() => null);
       let jobRows: Row[] = [];
       try {
         jobRows = await dependencies.supabase.selectRows<Row>(
@@ -181,6 +227,10 @@ export function createConnectionStatus(dependencies: Dependencies) {
           id: `cron-${jobName}`,
           name: `${lottery}資料更新排程`,
           description: '顯示各彩種自動更新資料的執行狀態。',
+          group: '排程',
+          location: 'Supabase',
+          endpoint: '/rest/v1/system_job_status',
+          checkMode: 'live',
           ok,
           checkedAt,
           responseMs: 0,
@@ -190,12 +240,14 @@ export function createConnectionStatus(dependencies: Dependencies) {
           }),
         } satisfies ConnectionStatusItem;
       });
-      return { checkedAt, items: [...core, ...jobs] };
+      return { checkedAt, items: [...apiItems, ...jobs] };
     },
     async retry(id: string) {
-      const definition = coreChecks.find((item) => item.id === id && item.retryable);
+      const definition = apiStatusInventory.find(
+        (item) => item.id === id && retryableIds.has(item.id),
+      );
       if (!definition) throw new ConnectionStatusError('此項目不支援重新呼叫');
-      return runCoreCheck(definition);
+      return runDefinition(definition, createSharedChecks());
     },
   };
 }

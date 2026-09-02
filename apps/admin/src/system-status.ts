@@ -2,6 +2,10 @@ export type SystemStatusItem = {
   id: string;
   name: string;
   description: string;
+  group: string;
+  location: 'AppDeploy' | 'Supabase' | 'Railway';
+  endpoint: string;
+  checkMode: 'live' | 'openapi' | 'service';
   ok: boolean;
   checkedAt: string;
   responseMs: number;
@@ -11,6 +15,10 @@ export type SystemStatusItem = {
 };
 
 export type SystemStatusResult = { checkedAt: string; items: SystemStatusItem[] };
+export type SystemStatusGroup = {
+  location: SystemStatusItem['location'];
+  items: SystemStatusItem[];
+};
 export type CrawlerRefreshResult = {
   lottery: string;
   period: string;
@@ -23,6 +31,20 @@ const crawlerStatusIds = new Set([
   'cron-matrix-marksix-refresh-v2',
   'cron-matrix-649-refresh-v2',
 ]);
+const statusLocationOrder: SystemStatusItem['location'][] = [
+  'AppDeploy',
+  'Supabase',
+  'Railway',
+];
+
+export function groupSystemStatusItems(items: SystemStatusItem[]): SystemStatusGroup[] {
+  return statusLocationOrder
+    .map((location) => ({
+      location,
+      items: items.filter((item) => item.location === location),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 export async function loadSystemStatus(api: { get(url: string): Promise<{ data: SystemStatusResult }> }) {
   const response = await api.get('/api/system-status');

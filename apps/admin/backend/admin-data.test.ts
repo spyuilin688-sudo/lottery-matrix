@@ -67,14 +67,14 @@ describe('listAdminTable', () => {
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
   });
 
-  it('excludes super administrators from login records but includes their audit records', async () => {
+  it('excludes super administrators from login and audit records', async () => {
     const request = vi.fn(async () => []);
 
     await listAdminTable('loginRecords', { request });
     await listAdminTable('auditLogs', { request });
 
     expect(request.mock.calls[0][0]).toContain('admin_account.role=neq.');
-    expect(request.mock.calls[1][0]).not.toContain('admin_account.role=neq.');
+    expect(request.mock.calls[1][0]).toContain('admin_account.role=neq.');
   });
 
   it('maps administrator permission columns into the existing permission object', async () => {

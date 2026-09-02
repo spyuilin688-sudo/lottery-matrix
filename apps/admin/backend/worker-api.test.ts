@@ -70,6 +70,22 @@ describe('Railway worker status adapter', () => {
     expect((healthInit as RequestInit).signal).toBe((jobsInit as RequestInit).signal);
   });
 
+  it('accepts the worker waiting_source status used while upstream data is stale', async () => {
+    const waitingJobs = structuredClone(jobs);
+    waitingJobs.items[0].job.status = 'waiting_source' as 'success';
+    const fetcher = vi.fn(async (input: string | URL | Request) =>
+      String(input).endsWith('/health') ? jsonResponse(health) : jsonResponse(waitingJobs));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }),
+      fetcher,
+    );
+
+    const result = await api.getStatus();
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected Railway status');
+    expect(result.jobs.items[0].job?.status).toBe('waiting_source');
+  });
+
   it('requests one protected latest-draw refresh without exposing the token to the client', async () => {
     const fetcher = vi.fn(async () => jsonResponse({
       lottery: '今彩539',

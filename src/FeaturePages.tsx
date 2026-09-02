@@ -4154,6 +4154,15 @@ function CollapsibleRuleCard({ title, open, onToggle, children }: { title: strin
   return <section className="referral-rule-card"><button type="button" className="referral-rule-toggle" aria-expanded={open} aria-controls={contentId} onClick={onToggle}><span>{title}</span><ChevronRightIcon aria-hidden="true" /></button>{open ? <div className="referral-rule-content" id={contentId}>{children}</div> : null}</section>;
 }
 
+const activationErrorText: Record<ActivationRedemptionErrorCode, string> = {
+  INVALID_ACTIVATION_CODE_FORMAT: "啟動碼格式不正確",
+  ACTIVATION_CODE_NOT_FOUND: "找不到此啟動碼",
+  ACTIVATION_CODE_ALREADY_USED: "啟動碼已使用",
+  ACTIVATION_CODE_EXPIRED: "啟動碼已過期",
+  MEMBER_ALREADY_LIFETIME: "永久會員不需要延長訂閱天數",
+  ACTIVATION_CODE_REDEMPTION_FAILED: "啟動失敗，請稍後再試",
+};
+
 function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -4239,9 +4248,16 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           </button>
           <div id="activation-code-panel" className="activation-code-panel" hidden={!activationOpen}>
             <div className="code-entry-block" data-result-state={resultState} aria-busy={submitting}>
-              <input id="activation-code" value={activationCode} onChange={(event) => setActivationCode(event.target.value)} aria-label="啟動碼" />
+              <input id="activation-code" value={activationCode} onChange={(event) => {
+                setActivationCode(event.target.value);
+                setResultState("idle");
+              }} aria-label="啟動碼" />
               <button type="button" className="primary-action branded-explore-action" onClick={handleActivation} disabled={submitting}><span>確認</span></button>
             </div>
+            {resultState === "success" && <p className="activation-result success" role="status">啟動成功</p>}
+            {resultState !== "idle" && resultState !== "success" && (
+              <p className="activation-result error" role="alert">{activationErrorText[resultState]}</p>
+            )}
           </div>
         </div>
         <CollapsibleRuleCard title="啟動碼使用說明" open={activationInstructionsOpen} onToggle={() => setActivationInstructionsOpen((current) => !current)}><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></CollapsibleRuleCard>

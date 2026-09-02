@@ -8,7 +8,7 @@ vi.mock("../../lib/supabase", () => ({
   getSupabaseClient: supabase.getClient,
 }));
 
-import { redeemActivationCode } from "../redeemActivationCode";
+import { mapActivationError, redeemActivationCode } from "../redeemActivationCode";
 
 const redemption = {
   member_id: "member-1",
@@ -50,6 +50,15 @@ describe("redeemActivationCode", () => {
     await expect(redeemActivationCode("A7K9-P2XM-4Q8R-N6TY")).rejects.toMatchObject({
       code: "ACTIVATION_CODE_REDEMPTION_FAILED",
     });
+  });
+
+  it.each([
+    "ACTIVATION_CODE_NOT_FOUND",
+    "ACTIVATION_CODE_ALREADY_USED",
+    "ACTIVATION_CODE_EXPIRED",
+    "MEMBER_ALREADY_LIFETIME",
+  ] as const)("preserves the safe RPC error %s", (code) => {
+    expect(mapActivationError({ message: `RPC failed: ${code}` })).toBe(code);
   });
 
   it("maps a rejected RPC promise to the same stable redemption error code", async () => {

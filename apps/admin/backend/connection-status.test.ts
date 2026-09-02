@@ -15,8 +15,10 @@ const healthyWorkerStatus: WorkerStatus = {
 };
 
 describe('connection status', () => {
-  it('returns only the current AppDeploy admin, Supabase, Railway and job statuses', async () => {
-    const fetcher = vi.fn(async () => response({ ok: true }));
+  it('returns every current API with its location and endpoint plus the four jobs', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+      ? response({ paths: { '/rpc/redeem_activation_code': { post: {} } } })
+      : response({ ok: true }));
     const supabase = {
       selectRows: vi.fn(async (table: string) => table === 'system_job_status' ? [{
         job_name: 'matrix-539-refresh-v2', lottery: '今彩539', status: 'success',
@@ -32,9 +34,20 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'supabase-database')?.description).toBe('儲存會員、訂閱、付款及管理員資料。');
-    expect(result.items.find((item) => item.id === 'supabase-auth')?.description).toBe('處理會員登入、登出及帳號驗證。');
-    expect(result.items).toHaveLength(8);
+    expect(result.items.find((item) => item.id === 'supabase-database')).toMatchObject({
+      location: 'Supabase',
+      endpoint: '/rest/v1/plans?select=id&limit=1',
+      group: '系統',
+      checkMode: 'live',
+    });
+    expect(result.items.find((item) => item.id === 'supabase-rpc-redeem_activation_code')).toMatchObject({
+      ok: true,
+      location: 'Supabase',
+      endpoint: '/rest/v1/rpc/redeem_activation_code',
+      checkMode: 'openapi',
+    });
+    expect(result.items).toHaveLength(38);
+    expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
       'health-api',
@@ -42,7 +55,10 @@ describe('connection status', () => {
       'matrix-audit-api',
       'matrix-algorithm-cases-api',
     ]));
-    expect(fetcher).toHaveBeenCalledWith('https://matrix-sanqwn.v2.appdeploy.ai/');
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://matrix-sanqwn.v2.appdeploy.ai/api/_healthcheck',
+      expect.objectContaining({ cache: 'no-store' }),
+    );
     expect(fetcher.mock.calls.map(([input]) => String(input))).not.toEqual(
       expect.arrayContaining([expect.stringContaining('app-snsxet')]),
     );
@@ -85,11 +101,11 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(8);
-    expect(result.items.find((item) => item.id === 'railway-worker-api')).toMatchObject({
+    expect(result.items).toHaveLength(38);
+    expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
-      detail: healthyWorkerStatus,
+      detail: healthyWorkerStatus.health,
     });
   });
 
@@ -102,12 +118,12 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'railway-worker-api')).toMatchObject({
+    expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: false,
       retryable: true,
       error: 'Railway Worker API 暫時無法使用',
     });
-    expect(result.items.find((item) => item.id === 'railway-worker-api')).not.toHaveProperty('detail');
+    expect(result.items.find((item) => item.id === 'railway-health')).not.toHaveProperty('detail');
   });
 
   it('retries only the Railway status adapter', async () => {
@@ -119,13 +135,28 @@ describe('connection status', () => {
       fetcher,
       getWorkerStatus,
     });
-    await expect(status.retry('railway-worker-api')).resolves.toMatchObject({
-      id: 'railway-worker-api',
+    await expect(status.retry('railway-health')).resolves.toMatchObject({
+      id: 'railway-health',
       ok: true,
       retryable: true,
     });
     expect(getWorkerStatus).toHaveBeenCalledTimes(1);
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('uses only non-mutating status probes and never exposes configured secrets', async () => {
+    const fetcher = vi.fn(async () => response({ paths: {} }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'raw-service-secret' }),
+      fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+
+    const result = await status.get();
+    expect(fetcher.mock.calls.some(([input, init]) =>
+      String(input).includes('/redeem_activation_code') && init?.method === 'POST')).toBe(false);
+    expect(JSON.stringify(result)).not.toMatch(/raw-service-secret|serviceRoleKey|workerToken/);
   });
 
   it('projects existing cron rows without raw errors', async () => {

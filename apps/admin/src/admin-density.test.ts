@@ -30,12 +30,13 @@ describe('admin compact density', () => {
     expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.transferRow \.transferActions \{[^}]*display: flex;[^}]*flex-wrap: nowrap;/);
   });
 
-  it('reduces system service card spacing without fixed description height', () => {
-    expect(statusCss).toMatch(/\.statusCards \{[^}]*gap: 8px;/);
-    expect(statusCss).toMatch(/\.statusCard \{[^}]*padding: 10px;/);
-    expect(statusCss).toMatch(/\.statusCard p \{[^}]*margin: 6px 0;/);
-    expect(statusCss).not.toMatch(/\.statusCard p \{[^}]*min-height:/);
-    expect(statusCss).toMatch(/\.statusMeta \{[^}]*padding: 5px 0;/);
+  it('uses grouped compact system status rows without fixed row geometry', () => {
+    expect(statusCss).toMatch(/\.statusGroups \{[^}]*gap: 12px;/);
+    expect(statusCss).toMatch(/\.statusRows \{[^}]*gap: 1px;/);
+    expect(statusCss).toMatch(/\.statusRow \{[^}]*padding: 10px 12px;/);
+    expect(statusCss).toMatch(/\.statusEndpoint \{[^}]*overflow-wrap: anywhere;/);
+    expect(statusCss).not.toMatch(/\.statusRow \{[^}]*(?:height|min-height|width):/);
+    expect(statusCss).not.toMatch(/\.statusManualRefreshButton \{[^}]*min-inline-size:/);
   });
 
   it('uses compact shared action controls and reduced administration spacing', () => {

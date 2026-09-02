@@ -8,11 +8,17 @@ const matrixCards = vi.hoisted(() => ({
   fetchMatrixCardManifest: vi.fn(),
   matrixCardUrl: vi.fn((path: string) => `https://matrix.example.test${path}`),
 }));
+const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 
 vi.mock("../lottery-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lottery-api")>()),
   fetchMatrixCardManifest: matrixCards.fetchMatrixCardManifest,
   matrixCardUrl: matrixCards.matrixCardUrl,
+}));
+
+vi.mock("../activation/redeemActivationCode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../activation/redeemActivationCode")>()),
+  redeemActivationCode: activation.redeem,
 }));
 
 import { FeaturePageRouter, MatrixCardPage, MatrixNotebookPage, NotesPage } from "../FeaturePages";
@@ -47,6 +53,13 @@ beforeEach(() => {
     },
   });
   matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => `https://matrix.example.test${path}`);
+  activation.redeem.mockReset().mockResolvedValue({
+    member_id: "member-1",
+    duration_type: "30_days",
+    is_lifetime: false,
+    plan_expires_at: "2026-10-02T00:00:00Z",
+    redeemed_at: "2026-09-02T00:00:00Z",
+  });
   Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
     configurable: true,
     value: vi.fn(),
@@ -161,6 +174,36 @@ describe("existing feature actions", () => {
     const activationConfirm = within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" });
     expect(activationConfirm).toBeEnabled();
     expect(activationConfirm).toHaveClass("primary-action", "branded-explore-action");
+  });
+
+  it("shows a safe activation success and clears the redeemed code", async () => {
+    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
+    const input = screen.getByRole("textbox", { name: "啟動碼" });
+    fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });
+    fireEvent.click(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("啟動成功");
+    expect(input).toHaveValue("");
+  });
+
+  it("shows an already-used message without exposing or clearing the failed code", async () => {
+    activation.redeem.mockRejectedValueOnce(Object.assign(new Error("hidden database detail"), {
+      code: "ACTIVATION_CODE_ALREADY_USED",
+    }));
+    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
+    const input = screen.getByRole("textbox", { name: "啟動碼" });
+    fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });
+    fireEvent.click(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("啟動碼已使用");
+    expect(alert).not.toHaveTextContent("hidden database detail");
+    expect(input).toHaveValue("A7K9-P2XM-4Q8R-N6TY");
+
+    fireEvent.change(input, { target: { value: "B7K9-P2XM-4Q8R-N6TY" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

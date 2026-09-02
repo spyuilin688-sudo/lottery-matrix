@@ -27,6 +27,7 @@ import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, sa
 import { runConfirmed } from "./admin-confirmation";
 import {
   canRefreshCrawler,
+  groupSystemStatusItems,
   loadSystemStatus,
   refreshCrawlerSystemStatus,
   retrySystemStatus,
@@ -1203,42 +1204,66 @@ function SystemSettings({
   };
   useEffect(() => { void refresh(); }, []);
   const requestActive = checking || Boolean(retryingId) || Boolean(refreshingId);
+  const statusGroups = groupSystemStatusItems(items);
   return (
     <>
       <div className="systemStatusHeader">
         <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
         <button className="compactButton" onClick={refresh} disabled={requestActive}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
       </div>
-      {statusError && <div className="error">{statusError}</div>}
+      {statusError && <div className="error" role="alert">{statusError}</div>}
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
-      <div className="statusCards">
-        {items.map((item) => {
-          const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
-          return (
-            <article className="statusCard" key={item.id}>
-              <div className="statusCardTitle"><b>{item.name}</b><span className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</span></div>
-              <p>{item.description}</p>
-              <div className="statusMeta"><span>最後檢查時間</span><b>{formatAdminDateTime(item.checkedAt)}</b></div>
-              <div className="statusMeta"><span>回應時間</span><b>{item.responseMs} ms</b></div>
-              {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
-              {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
-              {detail?.analysisDrawPeriod !== undefined && detail.analysisDrawPeriod !== null && <div className="statusMeta"><span>計算期別</span><b>{text(detail.analysisDrawPeriod)}</b></div>}
-              {detail?.analysisStatus !== undefined && detail.analysisStatus !== null && <div className="statusMeta"><span>計算狀態</span><b>{text(detail.analysisStatus)}</b></div>}
-              {detail?.analysisPhase !== undefined && detail.analysisPhase !== null && <div className="statusMeta"><span>目前階段</span><b>{text(detail.analysisPhase)}</b></div>}
-              {item.error && <div className="statusErrorText">{item.error}</div>}
-              {!item.ok && item.retryable && (
-                <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={requestActive}>
-                  <RefreshCw size={14} />{retryingId === item.id ? "呼叫中" : "重新呼叫"}
-                </button>
-              )}
-              {canRefreshCrawler(item, canEdit) && (
-                <button className="compactButton statusRetryButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={requestActive} aria-busy={refreshingId === item.id}>
-                  <RefreshCw size={14} />{refreshingId === item.id ? "更新中" : "更新開獎資料"}
-                </button>
-              )}
-            </article>
-          );
-        })}
+      <div className="statusGroups">
+        {statusGroups.map((statusGroup) => (
+          <section className="statusGroup" key={statusGroup.location} aria-labelledby={`status-${statusGroup.location}`}>
+            <div className="statusGroupHeader">
+              <h3 id={`status-${statusGroup.location}`}>{statusGroup.location}</h3>
+              <span>{statusGroup.items.length} 個項目</span>
+            </div>
+            <div className="statusRows">
+              {statusGroup.items.map((item) => {
+                const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
+                const isCron = item.id.startsWith("cron-");
+                return (
+                  <article className="statusRow" key={item.id}>
+                    <div className="statusRowMain">
+                      <div className="statusRowTitle">
+                        <div><b>{item.name}</b><span>{item.group}</span></div>
+                        <span className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</span>
+                      </div>
+                      <code className="statusEndpoint">{item.endpoint}</code>
+                      <p>{item.description}</p>
+                      <div className="statusRowMeta">
+                        <span>檢查：{formatAdminDateTime(item.checkedAt)}</span>
+                        <span>回應：{item.responseMs} ms</span>
+                      </div>
+                      {isCron && detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
+                      {isCron && detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
+                      {isCron && detail?.analysisDrawPeriod !== undefined && detail.analysisDrawPeriod !== null && <div className="statusMeta"><span>計算期別</span><b>{text(detail.analysisDrawPeriod)}</b></div>}
+                      {isCron && detail?.analysisStatus !== undefined && detail.analysisStatus !== null && <div className="statusMeta"><span>計算狀態</span><b>{text(detail.analysisStatus)}</b></div>}
+                      {isCron && detail?.analysisPhase !== undefined && detail.analysisPhase !== null && <div className="statusMeta"><span>目前階段</span><b>{text(detail.analysisPhase)}</b></div>}
+                      {item.error && <div className="statusErrorText">{item.error}</div>}
+                    </div>
+                    {((!item.ok && item.retryable) || canRefreshCrawler(item, canEdit)) && (
+                      <div className="statusRowActions">
+                        {!item.ok && item.retryable && (
+                          <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={requestActive} aria-busy={retryingId === item.id}>
+                            <RefreshCw size={14} />{retryingId === item.id ? "呼叫中" : "重新呼叫"}
+                          </button>
+                        )}
+                        {canRefreshCrawler(item, canEdit) && (
+                          <button className="compactButton statusRetryButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={requestActive} aria-busy={refreshingId === item.id}>
+                            <RefreshCw size={14} />{refreshingId === item.id ? "更新中" : "更新開獎資料"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </>
   );

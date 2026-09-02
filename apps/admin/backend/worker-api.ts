@@ -15,7 +15,7 @@ export type RailwayHealth = {
 export type RailwayJob = {
   jobName: string;
   lottery: string;
-  status: 'running' | 'success' | 'failed';
+  status: 'running' | 'waiting_source' | 'success' | 'failed';
   startedAt: string;
   finishedAt: string | null;
   error: 'WORKER_FAILED' | null;
@@ -58,7 +58,7 @@ const jobNameByLottery: Record<CrawlerLottery, string> = {
 } as const;
 type Lottery = CrawlerLottery;
 const lotteries = Object.keys(jobNameByLottery) as Lottery[];
-const jobStatuses = ['running', 'success', 'failed'] as const;
+const jobStatuses = ['running', 'waiting_source', 'success', 'failed'] as const;
 const analysisStatuses = ['running', 'complete', 'failed'] as const;
 const analysisPhases = [
   'explore',
