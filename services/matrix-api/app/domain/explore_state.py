@@ -41,7 +41,6 @@ LOTTERY_SPECS = {
 }
 
 INVALID_ONE_CODE_MAXIMUM = "鎖定1碼連準達8次以上，整條cell無效，不得截短"
-INVALID_ONE_CODE_NOT_EXACT = "鎖定1碼的最高連準規則必須恰好1條"
 INVALID_TWO_CODE_MAXIMUM = "鎖定2碼候選pair連準達12次以上，該pair無效，不得截短"
 INVALID_MORE_THAN_TWO_LONGEST = "同一cell完整延續後，相同最高連準包含超過2個不同規則，整條cell無效"
 INVALID_SINGLE_USE_ENDPOINT = "鎖定2碼單次規則只能位於連準中間，不得只在頭或尾"
@@ -132,14 +131,21 @@ def evaluate_one_code(groups: Iterable[Iterable[int]]) -> StreakDecision:
             f"準{highest}進{highest + 1}不屬準4+有效層級",
             matched,
         )
-    if len(top_rules) != 1:
-        return StreakDecision(False, highest, top_rules, INVALID_ONE_CODE_NOT_EXACT, matched)
+    if len(top_rules) > 2:
+        return StreakDecision(
+            False,
+            highest,
+            top_rules,
+            INVALID_MORE_THAN_TWO_LONGEST,
+            matched,
+            (top_rules,),
+        )
     return StreakDecision(
         True,
         highest,
         top_rules,
         matched_group_indexes=matched,
-        top_rule_sets=((top_rules[0],),),
+        top_rule_sets=(top_rules,),
     )
 
 
