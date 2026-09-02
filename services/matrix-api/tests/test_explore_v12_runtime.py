@@ -1,5 +1,13 @@
 import app.domain.explore_engine as explore_engine
-from app.domain.explore_engine import RoadType, run_explore_batch
+import app.domain.explore_runtime as explore_runtime
+from app.domain.explore_context import RoadGroup
+from app.domain.explore_engine import (
+    EngineMetrics,
+    ExploreContext,
+    RoadType,
+    StreakDecision,
+    run_explore_batch,
+)
 
 
 def _constant_history(count: int = 116) -> list[dict[str, object]]:
@@ -108,3 +116,51 @@ def test_all_road_batch_reuses_shared_candidates_for_tianyan(monkeypatch) -> Non
     assert result["artifact"]["tianyanValidationById"] == {
         "tianyan-v12": {"rules": []}
     }
+
+
+def test_one_code_two_tied_rules_emit_two_prediction_numbers() -> None:
+    history = _constant_history(20)
+    context = ExploreContext(
+        "今彩539",
+        "依號碼由小到大排序",
+        history,
+        EngineMetrics(),
+    )
+    unit = context.source_units[0]
+    cell = context.range_cells(unit.occurrence, unit.prediction_distance)[0]
+    rules = (1, 2)
+    decision = StreakDecision(
+        True,
+        4,
+        rules,
+        matched_group_indexes=(0, 1, 2, 3),
+        top_rule_sets=(rules,),
+    )
+    groups = tuple(
+        RoadGroup(
+            occurrence=unit.occurrence,
+            reference_cell=cell,
+            result_draw_index=0,
+            candidate_targets=((1, (2,)), (2, (3,))),
+        )
+        for _ in range(4)
+    )
+    artifact: dict[str, object] = {"items": [], "validationById": {}}
+
+    explore_runtime._append_result(
+        artifact,
+        context,
+        unit,
+        cell,
+        RoadType.ADD,
+        1,
+        decision,
+        groups,
+        "完整範圍",
+    )
+
+    items = artifact["items"]
+    assert isinstance(items, list)
+    assert len(items) == 1
+    assert items[0]["ruleCount"] == 1
+    assert len(items[0]["predictionNumbers"]) == 2
