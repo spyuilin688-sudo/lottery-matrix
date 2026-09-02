@@ -343,6 +343,8 @@ describe("requested responsive layout refinement", () => {
 
     expect(rail.marginLeft).toBe("4px");
     expect(rail.marginRight).toBe("4px");
+    expect(rail.paddingTop).toBe("3px");
+    expect(rail.paddingBottom).toBe("3px");
     expect(rail.scrollPaddingInline).toBe("20px");
     expect(card.minHeight).toBe("30.888px");
     expect(card.padding).toBe("5.616px 11.232px");

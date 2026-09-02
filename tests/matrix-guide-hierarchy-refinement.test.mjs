@@ -18,14 +18,14 @@ test("Matrix 指南說明自訂觸發條件按鈕的位置與開啟方式", () =
   );
 });
 
-test("Matrix 指南章節卡縮小並與上下分隔線保留 1.5px", () => {
+test("Matrix 指南章節卡縮小並與上下分隔線保留 3px", () => {
   const strip = ruleBodies(adjustments, /^\.matrix-guide-screen \.guide-category-strip$/);
   const card = ruleBodies(adjustments, /^\.matrix-guide-screen \.guide-category-strip \.guide-category-card$/);
   const number = ruleBodies(adjustments, /^\.matrix-guide-screen \.guide-category-strip \.guide-category-card > span$/);
 
   assert.equal(strip.length, 1);
   assert.match(strip[0], /margin:\s*8px 4px 6px;/);
-  assert.match(strip[0], /padding:\s*1\.5px 0;/);
+  assert.match(strip[0], /padding:\s*3px 0;/);
   assert.doesNotMatch(strip[0], /scrollbar-(?:color|width)/);
   assert.doesNotMatch(adjustments, /\.matrix-guide-screen \.guide-category-strip::\-webkit-scrollbar/);
 
