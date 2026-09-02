@@ -75,11 +75,15 @@ test("通知 Matrix Pro 標籤縮小並移至圖示上方", () => {
   assert.match(notifications, /className="notification-pro-badge">Matrix Pro<\/em>/);
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*1px;/s,
+    /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{[^}]*padding-top:\s*3px;/s,
   );
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*4\.2px;/s,
+    /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*0;/s,
+  );
+  assert.match(
+    notificationCss,
+    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*4\.2px;[^}]*transform:\s*translateY\(-2px\);/s,
   );
   assert.doesNotMatch(
     notificationCss,

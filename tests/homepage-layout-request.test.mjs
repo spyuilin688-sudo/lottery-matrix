@@ -36,7 +36,7 @@ function renderHomepageStyles() {
   return dom.window;
 }
 
-test("homepage assigns surplus height to the logo and keeps the requested section rhythm", () => {
+test("homepage keeps surplus height above the logo and preserves the requested section rhythm", () => {
   const window = renderHomepageStyles();
   const style = (selector) => window.getComputedStyle(window.document.querySelector(selector));
   const layout = style(".home-layout");
@@ -46,7 +46,9 @@ test("homepage assigns surplus height to the logo and keeps the requested sectio
   assert.equal(layout.gridTemplateRows, "minmax(min-content, 1fr) auto");
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(style(".brand-header").flexGrow, "1");
-  assert.equal(style(".home-logo-image").height, "100%");
+  assert.equal(style(".brand-header").alignItems, "flex-end");
+  assert.equal(style(".home-logo-image").height, "auto");
+  assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "10px");
   assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "4px");
   assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(10px,1.35dvh,13px)");

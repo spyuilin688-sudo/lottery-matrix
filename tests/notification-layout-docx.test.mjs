@@ -123,8 +123,9 @@ test('notification page follows the current compact responsive layout specificat
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-settings-toggle\s*\{[^}]*width:\s*56px;[^}]*height:\s*20px;/s);
   assert.match(featureCss, /\.notification-row h2 \{[^}]*color: #F2F2F2;[^}]*font-size: 17px;[^}]*font-weight: 700;[^}]*line-height: 23px;[^}]*letter-spacing: 0;/);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*1px;/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*border-radius:\s*2\.1px;[^}]*font-size:\s*4\.2px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{[^}]*padding-top:\s*3px;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*0;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*border-radius:\s*2\.1px;[^}]*font-size:\s*4\.2px;[^}]*transform:\s*translateY\(-2px\);/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-group,[\s\S]*?border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius:\s*12px;[^}]*background:\s*#020c12;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-row\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
   assert.match(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*gap:\s*4px;/);
