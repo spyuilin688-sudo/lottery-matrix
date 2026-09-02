@@ -14,7 +14,7 @@ import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credent
 import { createConnectionStatus } from './connection-status';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
-import { createWorkerApi, getWorkerConfig } from './worker-api';
+import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-api';
 
 type Context = {
   body?: unknown;
@@ -84,6 +84,12 @@ function adminInput(body: Record<string, unknown>) {
   };
 }
 const legacyDurations: Record<string, string> = { '7': '7_days', '15': '15_days', '30': '30_days', '90': '90_days', '365': '365_days' };
+const crawlerLotteryByStatusId: Record<string, CrawlerLottery> = {
+  'cron-matrix-539-refresh-v2': '今彩539',
+  'cron-matrix-fantasy5-refresh-v2': '天天樂',
+  'cron-matrix-marksix-refresh-v2': '六合彩',
+  'cron-matrix-649-refresh-v2': '大樂透',
+};
 
 const routes: Record<string, unknown> = {
   'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
@@ -160,6 +166,33 @@ const routes: Record<string, unknown> = {
   'POST /api/system-status/:id/retry': [sessionGuard, moduleGuard('systemSettings', 'view'), async (ctx: Context) => {
     try { return json({ item: await connectionStatus.retry(ctx.params.id) }); }
     catch (cause) { return fail(cause); }
+  }],
+  'POST /api/system-status/:id/refresh': [sessionGuard, guard('edit'), async (ctx: Context) => {
+    const lottery = crawlerLotteryByStatusId[ctx.params.id];
+    if (!lottery) return error('此項目不支援資料更新', 400);
+    try {
+      const admin = await getAdmin(ctx);
+      const refresh = await workerApi.refreshLottery(lottery);
+      if (shouldRecordAdminActivity(admin)) {
+        try {
+          const actor = actorOf(admin);
+          await supabase.insertRows('audit_logs', [{
+            admin_id: actor.id,
+            admin: actor.name || actor.account,
+            operation_type: '手動更新',
+            target_table: 'lottery_draws',
+            target_id: refresh.period,
+            content: `更新${refresh.lottery}最新開獎資料`,
+            before_data: null,
+            after_data: refresh,
+            ...requestMetadata(ctx),
+          }]);
+        } catch {
+          // A completed crawler refresh must not look failed only because audit storage is down.
+        }
+      }
+      return json({ refresh });
+    } catch (cause) { return fail(cause); }
   }],
   'GET /api/data/:table': [sessionGuard, guard('view'), async (ctx: Context) => {
     try {
