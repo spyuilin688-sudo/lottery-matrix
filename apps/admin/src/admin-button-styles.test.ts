@@ -22,7 +22,7 @@ describe('admin interface styles', () => {
   it('shrinks management controls and every list action to the approved sizes', () => {
     expect(rule(operationsCss, '.managementToolbar input')).toMatch(/height\s*:\s*32px/);
     expect(rule(operationsCss, '.managementToolbar select')).toMatch(/height\s*:\s*32px/);
-    expect(rule(operationsCss, '.compactButton')).toMatch(/height\s*:\s*32px/);
+    expect(rule(operationsCss, '.compactButton')).toMatch(/height\s*:\s*30px/);
     expect(rule(adminCss, '.rowActions button')).toMatch(/width\s*:\s*32px/);
   });
 
