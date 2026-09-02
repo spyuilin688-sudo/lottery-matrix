@@ -105,7 +105,7 @@ describe("existing feature actions", () => {
 
     const ticket = document.querySelector<HTMLElement>(".matrix-ticket");
     const button = await screen.findByRole("button", { name: "下載牌單" });
-    await screen.findByRole("img", { name: "今彩539落球牌單，第 115000001 期" });
+    await screen.findByRole("img", { name: "今彩539順球牌單，第 115000001 期" });
     expect(ticket).not.toBeNull();
     expect(button).toBeEnabled();
 
@@ -113,7 +113,7 @@ describe("existing feature actions", () => {
 
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
 
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/draw.svg"));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/sorted.svg"));
     expect(fetchCard).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
@@ -138,7 +138,7 @@ describe("existing feature actions", () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:matrix-ticket");
     expect(clickedAnchors).toHaveLength(1);
-    expect(clickedAnchors[0].download).toBe("今彩539-落球牌單.svg");
+    expect(clickedAnchors[0].download).toBe("今彩539-順球牌單.svg");
   });
 
   it("routes the existing invite action and disables actions without approved mutations", () => {
