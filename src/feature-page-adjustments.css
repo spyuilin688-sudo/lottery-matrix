@@ -91,7 +91,7 @@
 }
 
 .notifications-screen-v2 .notification-heading:has(.notification-pro-badge) {
-  padding-block-start: 3px;
+  padding-top: 3px;
 }
 
 .notifications-screen-v2 .notification-icon,
