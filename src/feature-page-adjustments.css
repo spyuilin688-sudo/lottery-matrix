@@ -16,7 +16,8 @@
 
 .notifications-screen-v2 .notification-bulk-actions {
   display: grid;
-  width: 100%;
+  width: calc(100% + 4px);
+  margin-inline: -2px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 8px;
 }
@@ -170,7 +171,7 @@
   display: grid;
   min-width: 0;
   justify-items: center;
-  gap: 1px;
+  gap: 0;
 }
 
 .notifications-screen-v2 .notification-pro-badge {

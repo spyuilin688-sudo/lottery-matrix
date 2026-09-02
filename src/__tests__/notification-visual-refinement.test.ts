@@ -131,7 +131,7 @@ describe("notification visual refinement", () => {
 
     expect(generalHeading.paddingTop).toBe("4px");
     expect(matrixHeading.paddingTop).toBe("3px");
-    expect(matrixStack.gap).toBe("1px");
+    expect(matrixStack.gap).toBe("0px");
     expect(matrixBadge.transform).toBe("translateY(-2px)");
     expect(parseFloat(matrixHeading.paddingTop) - 2).toBe(1);
     expect(matrixBadge.zIndex).toBe("1");

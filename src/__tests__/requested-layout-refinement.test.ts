@@ -284,6 +284,8 @@ describe("requested responsive layout refinement", () => {
     expect(actions.display).toBe("grid");
     expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
     expect(actions.columnGap).toBe("8px");
+    expect(actions.width).toBe("calc(100% + 4px)");
+    expect(actions.marginInline).toBe("-2px");
     expect(enable.height).toBe("32px");
     expect(disable.height).toBe("32px");
     expect(enable.width).toBe("100%");
