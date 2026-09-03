@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync("src/FeaturePages.tsx", "utf8");
+const previewSource = readFileSync("src/ExploreResultPreviewPage.tsx", "utf8");
 const css = readFileSync("src/explore-result-preview.css", "utf8");
 const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nfunction TianyanValidationProcess/);
 
@@ -55,4 +56,13 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.doesNotMatch(css, /\.explore-validation-group\[data-row-count="3"\] \.explore-validation-formula-row:nth-child\(2\)/);
   assert.doesNotMatch(css, /\.explore-validation-group\[data-road-type="拖牌"\] \.explore-validation-formula-row:nth-child\(2\)/);
   assert.doesNotMatch(css, /!important/);
+});
+
+test("Explore result preview uses the same segmented formula expression spacing", () => {
+  assert.match(previewSource, /className="explore-validation-formula-expression"/);
+  assert.match(previewSource, /<span>第<\/span>/);
+  assert.match(previewSource, /<span>顆<\/span>/);
+  assert.match(previewSource, /<span>=<\/span>/);
+  assert.doesNotMatch(previewSource, /<span className="explore-validation-formula-row"[^>]*>\{formatFormula\(formula\)\}<\/span>/);
+  assert.match(css, /\.explore-validation-formula-expression\s*\{[^}]*gap:\s*2px/s);
 });
