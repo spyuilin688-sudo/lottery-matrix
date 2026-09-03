@@ -1,4 +1,4 @@
-// Permanent regression coverage for audit issues #8 and #11; this file is part of final Project CI verification.
+// Permanent regression coverage for audit issues #8 and #11.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
