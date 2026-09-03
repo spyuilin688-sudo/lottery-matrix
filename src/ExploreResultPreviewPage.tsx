@@ -37,9 +37,11 @@ function formatFormula(formula: string) {
   const [, position, baseNumber, operation, resultNumber] = expression;
   return (
     <span className="explore-validation-formula-expression">
-      <span>第</span>
-      <span>{position}</span>
-      <span>顆</span>
+      <span className="explore-validation-formula-position">
+        <span>第</span>
+        <span>{position}</span>
+        <span>顆</span>
+      </span>
       <span>{baseNumber}</span>
       <span>{operation.replace(/\s+/g, "")}</span>
       <span>=</span>

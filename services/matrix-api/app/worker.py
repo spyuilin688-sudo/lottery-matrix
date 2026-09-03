@@ -94,6 +94,8 @@ def _run_analysis(
                 raise
             _wait_before_retry(error, failures)
             continue
+        if result.get("leaseAcquired") is False:
+            return result
         if result.get("status") != "running":
             return result
     return result

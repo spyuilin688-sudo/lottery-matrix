@@ -7,7 +7,7 @@ const downloadHelper = readFileSync(new URL('../src/matrix-ticket-download.ts', 
 
 function matrixCardPageSource() {
   const start = featurePages.indexOf('export function MatrixCardPage');
-  const end = featurePages.indexOf('export function MatrixCorePage', start);
+  const end = featurePages.indexOf('const GUIDE_LOOP_GROUPS', start);
   assert.notEqual(start, -1, 'MatrixCardPage source must exist');
   assert.notEqual(end, -1, 'MatrixCardPage source boundary must exist');
   return featurePages.slice(start, end);

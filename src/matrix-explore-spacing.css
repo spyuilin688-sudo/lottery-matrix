@@ -1148,3 +1148,13 @@
     --tiangong-label-column: 104.8px;
   }
 }
+
+/* Matrix Explore result table alignment and same-code grouping. */
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results-head {
+  align-items: end;
+  padding-bottom: 5px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"] {
+  border-top: 1px solid rgba(230, 183, 106, .72);
+}

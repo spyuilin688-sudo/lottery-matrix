@@ -753,3 +753,26 @@
     padding-inline: 3px;
   }
 }
+
+/* Matrix Explore result refinements: keep Tianyan isolated from Explore-only spacing. */
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-card {
+  padding-block: 12px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-formula-position {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen)
+  .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"])[data-wide-numbers="false"]
+  .explore-validation-numbers {
+  gap: calc(clamp(4px, 1.5vw, 6px) + 1px);
+  padding-inline: 4px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-result-number {
+  font-size: calc(.8em - 2px);
+  margin-inline: 2px;
+}
