@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const previewPage = readFileSync(new URL("../src/ExploreResultPreviewPage.tsx", import.meta.url), "utf8");
 const previewCss = readFileSync(new URL("../src/explore-result-preview.css", import.meta.url), "utf8");
 const spacingCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const migrationUrl = new URL("../supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql", import.meta.url);
@@ -44,7 +45,9 @@ test("探索展開內容上下分隔線到摘要與本期預測皆為 12px", () 
 });
 
 test("探索右欄公式的第、球位、顆使用 1px 間距", () => {
-  assert.match(featurePages, /explore-validation-formula-position[\s\S]*?<span>第<\/span>[\s\S]*?<span>\{position\}<\/span>[\s\S]*?<span>顆<\/span>/);
+  const positionStructure = /explore-validation-formula-position[\s\S]*?<span>第<\/span>[\s\S]*?<span>\{position\}<\/span>[\s\S]*?<span>顆<\/span>/;
+  assert.match(featurePages, positionStructure);
+  assert.match(previewPage, positionStructure);
   assert.match(previewCss, /\.explore-validation-formula-position[\s\S]*?gap:\s*1px;/);
 });
 
