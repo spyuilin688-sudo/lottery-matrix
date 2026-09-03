@@ -1,9 +1,10 @@
 /* Canonical layout owner for Matrix Pro 會員方案與收費標準. */
 .pro-plans-screen {
-  --pro-plans-inline: 18px;
+  --pro-plans-plan-inline: 15px;
+  --pro-plans-checkout-inline: 16px;
 }
 
-/* Keep the page fluid; cards own their requested inset instead of pulling the page wider. */
+/* Keep the page fluid; each section owns only its requested horizontal inset. */
 .pro-plans-screen > .feature-body {
   padding-inline: 0;
 }
@@ -16,9 +17,9 @@
   gap: 12px;
 }
 
-/* Centering a W - 36px card leaves an 18px outer inset and a small preview on both sides. */
+/* Plan cards use their own 15px outer inset without coupling checkout spacing. */
 .pro-plans-screen .plan-card {
-  flex: 0 0 calc(100% - (var(--pro-plans-inline) * 2));
+  flex: 0 0 calc(100% - (var(--pro-plans-plan-inline) * 2));
   min-width: 0;
   min-height: 190px;
   height: auto;
@@ -52,7 +53,7 @@
 }
 
 .pro-plans-screen .pro-plans-checkout {
-  margin-inline: var(--pro-plans-inline);
+  margin-inline: var(--pro-plans-checkout-inline);
   row-gap: 0;
 }
 
