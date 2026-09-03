@@ -49,6 +49,11 @@ jobs:
                   raise SystemExit(f"{label}: expected exactly one match, found {count}")
               return text.replace(old, new, 1)
 
+          def replace_first(text: str, old: str, new: str, label: str) -> str:
+              if old not in text:
+                  raise SystemExit(f"{label}: expected at least one match")
+              return text.replace(old, new, 1)
+
           feature_path = Path("src/FeaturePages.tsx")
           feature = feature_path.read_text()
 
@@ -154,7 +159,7 @@ jobs:
 
           test_path = Path("src/__tests__/MatrixExplorePage.test.tsx")
           unit = test_path.read_text()
-          unit = replace_once(unit,
+          unit = replace_first(unit,
               "selectedStreaks: ['準5進6', '準6進7', '準7進8'],",
               "selectedStreaks: ['準6進7', '準7進8'],",
               "update initial default API expectation")
@@ -162,7 +167,7 @@ jobs:
               "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);",
               "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true', 'true']);",
               "update 準4 pressed defaults")
-          unit = replace_once(unit,
+          unit = replace_first(unit,
               "selectedStreaks: ['準7進8', '準9進10', '準11進12'],",
               "selectedStreaks: ['準9進10', '準11進12'],",
               "update 準5 default API expectation")
@@ -175,7 +180,7 @@ jobs:
               expect.objectContaining({ selectedStreaks: ['準7進8'] }),
             ));
           ''', "update 準4 temporary filter interaction")
-          unit = replace_once(unit,
+          unit = replace_first(unit,
               "selectedStreaks: ['準5進6', '準6進7', '準7進8'],",
               "selectedStreaks: ['準6進7', '準7進8'],",
               "update 準4 restored defaults")
@@ -194,7 +199,7 @@ jobs:
               expect.objectContaining({ selectedStreaks: ['準11進12'] }),
             ));
           ''', "update 準5 temporary filter interaction")
-          unit = replace_once(unit,
+          unit = replace_first(unit,
               "selectedStreaks: ['準7進8', '準9進10', '準11進12'],",
               "selectedStreaks: ['準9進10', '準11進12'],",
               "update 準5 restored defaults")
