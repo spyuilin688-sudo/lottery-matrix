@@ -42,6 +42,9 @@ jobs:
       - name: Build production Pages bundle
         run: npm run build:pages
 
+      - name: Normalize generated file endings
+        run: python -c "from pathlib import Path; files=[Path('src/explore-result-preview.css'),Path('src/matrix-explore-spacing.css'),Path('supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql')]; [p.write_text(p.read_text().rstrip()+'\\n') for p in files]"
+
       - name: Check diff whitespace
         run: git diff --check
 
