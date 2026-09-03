@@ -1,0 +1,60 @@
+name: Audit Remediation TDD
+
+on:
+  push:
+    branches:
+      - fix/remaining-audit-issues-20260904
+    paths:
+      - .github/workflows/audit-remediation-tdd.yml
+
+permissions:
+  contents: read
+
+jobs:
+  notification-load-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run notification load failure contract
+        run: npx vitest run src/__tests__/NotificationsLoadFailure.test.tsx --reporter=verbose
+
+  data-page-failure-states:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run data page failure state contracts
+        run: npx vitest run src/__tests__/DataPageFailureStates.test.tsx --reporter=verbose
+
+  invite-friends-referral:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run invite friends referral contracts
+        run: npx vitest run src/__tests__/InviteFriendsReferral.test.tsx --reporter=verbose
+
+  docs-and-dead-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run docs and dead code contracts
+        run: npx vitest run src/__tests__/AuditRemediationContracts.test.mjs --reporter=verbose
