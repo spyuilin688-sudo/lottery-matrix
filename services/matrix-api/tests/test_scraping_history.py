@@ -62,56 +62,84 @@ def test_taiwan_limited_history_stops_when_limit_is_satisfied() -> None:
     assert requested_months == ["2026-01", "2025-12"]
 
 
-def test_sc888_full_history_uses_download_source() -> None:
+def test_fantasy5_full_history_uses_california_official_source() -> None:
     requested_urls: list[str] = []
-    page_html = """
-    <table>
-      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
-      <tr><td>第 080124 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
-    </table>
-    """
-    download_html = """
-    <table>
-      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
-      <tr><td>第 080122 期</td><td>2026-08-22</td><td>02 03 04 05 06</td><td>02 03 04 05 06</td></tr>
-      <tr><td>第 080123 期</td><td>2026-08-23</td><td>25 03 17 09 38</td><td>03 09 17 25 38</td></tr>
-      <tr><td>第 080124 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
-    </table>
-    """
+    rows = [
+        {
+            "DrawNumber": 11978,
+            "DrawDate": "2026-08-23T07:00:00",
+            "WinningNumbers": {
+                str(index): {"Number": number}
+                for index, number in enumerate(("8", "10", "22", "23", "36"))
+            },
+        },
+        {
+            "DrawNumber": 11977,
+            "DrawDate": "2026-08-22T07:00:00",
+            "WinningNumbers": {
+                str(index): {"Number": number}
+                for index, number in enumerate(("3", "9", "17", "25", "38"))
+            },
+        },
+        {
+            "DrawNumber": 11976,
+            "DrawDate": "2026-08-21T07:00:00",
+            "WinningNumbers": {
+                str(index): {"Number": number}
+                for index, number in enumerate(("2", "3", "4", "5", "6"))
+            },
+        },
+    ]
 
     def handler(request: httpx.Request) -> httpx.Response:
-        url = str(request.url)
-        requested_urls.append(url)
-        body = download_html if "getDownloadXls" in url else page_html
-        return httpx.Response(200, text=body, headers={"content-type": "application/vnd.ms-excel; charset=utf-8"})
+        requested_urls.append(str(request.url))
+        assert request.url.host == "www.calottery.com"
+        return httpx.Response(200, json={"PreviousDraws": rows})
 
     source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
 
     history = source.fetch_history("天天樂", None)
 
-    assert [draw["period"] for draw in history] == ["080124", "080123", "080122"]
-    assert requested_urls[0] == (
-        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/50"
-    )
-    assert len(requested_urls) == 2
-    assert "getDownloadXls" in requested_urls[1]
+    assert [draw["period"] for draw in history] == ["11978", "11977", "11976"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/50",
+    ]
 
 
-def test_sc888_limited_history_can_use_current_page() -> None:
-    html = """
-    <table>
-      <tr><th>期數</th><th>日期</th><th>落球順序</th><th>大小順序</th></tr>
-      <tr><td>第 080123 期</td><td>2026-08-23</td><td>25 03 17 09 38</td><td>03 09 17 25 38</td></tr>
-      <tr><td>第 080124 期</td><td>2026-08-24</td><td>11 39 06 20 28</td><td>06 11 20 28 39</td></tr>
-    </table>
-    """
-    source = LatestDrawSource(
-        httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200, text=html)))
-    )
+def test_fantasy5_limited_history_uses_california_official_source() -> None:
+    requested_urls: list[str] = []
+    rows = [
+        {
+            "DrawNumber": 11978,
+            "DrawDate": "2026-08-23T07:00:00",
+            "WinningNumbers": {
+                str(index): {"Number": number}
+                for index, number in enumerate(("8", "10", "22", "23", "36"))
+            },
+        },
+        {
+            "DrawNumber": 11977,
+            "DrawDate": "2026-08-22T07:00:00",
+            "WinningNumbers": {
+                str(index): {"Number": number}
+                for index, number in enumerate(("3", "9", "17", "25", "38"))
+            },
+        },
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        assert request.url.host == "www.calottery.com"
+        return httpx.Response(200, json={"PreviousDraws": rows})
+
+    source = LatestDrawSource(httpx.Client(transport=httpx.MockTransport(handler)))
 
     history = source.fetch_history("天天樂", 2)
 
-    assert [draw["period"] for draw in history] == ["080124", "080123"]
+    assert [draw["period"] for draw in history] == ["11978", "11977"]
+    assert requested_urls == [
+        "https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/10/1/2",
+    ]
 
 
 def test_marksix_full_history_walks_to_nfd_first_year() -> None:
@@ -271,6 +299,7 @@ def test_daily539_full_history_uses_authoritative_taiwan_order_rows() -> None:
         },
     }
     empty_payload = {"content": {"daily539Res": []}}
+
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         requested_urls.append(url)
