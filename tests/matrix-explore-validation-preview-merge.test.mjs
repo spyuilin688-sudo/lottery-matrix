@@ -63,6 +63,6 @@ test("Explore result preview uses the same segmented formula expression spacing"
   assert.match(previewSource, /<span>第<\/span>/);
   assert.match(previewSource, /<span>顆<\/span>/);
   assert.match(previewSource, /<span>=<\/span>/);
-  assert.doesNotMatch(previewSource, /<span className="explore-validation-formula-row"[^>]*>\{formatFormula\(formula\)\}<\/span>/);
+  assert.match(previewSource, /operation\.replace\(\/\\s\+\/g, ""\)/);
   assert.match(css, /\.explore-validation-formula-expression\s*\{[^}]*gap:\s*2px/s);
 });
