@@ -66,3 +66,13 @@ test("Explore result preview uses the same segmented formula expression spacing"
   assert.match(previewSource, /operation\.replace\(\/\\s\+\/g, ""\)/);
   assert.match(css, /\.explore-validation-formula-expression\s*\{[^}]*gap:\s*2px/s);
 });
+
+test("Explore validation source highlight keeps the same font weight as step and hit states", () => {
+  const sourceRule = css.match(/\.explore-validation-number--source\s*\{([^}]*)\}/s);
+  const stepRule = css.match(/\.explore-validation-number--step\s*\{([^}]*)\}/s);
+  const hitRule = css.match(/\.explore-validation-number--hit\s*\{([^}]*)\}/s);
+  assert.ok(sourceRule && stepRule && hitRule);
+  assert.doesNotMatch(sourceRule[1], /font-weight\s*:/);
+  assert.doesNotMatch(stepRule[1], /font-weight\s*:/);
+  assert.doesNotMatch(hitRule[1], /font-weight\s*:/);
+});
