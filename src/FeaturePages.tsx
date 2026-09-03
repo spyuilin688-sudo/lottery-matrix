@@ -1174,7 +1174,6 @@ function ExploreValidationProcess({
           resultNumbers,
         ));
         const summaryFormulaValues = ruleDisplayValues();
-        const summaryFormulaValues = ruleDisplayValues();
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
         const currentCalculations = validation.sourceA
