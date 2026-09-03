@@ -1,8 +1,12 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 
-from app.repositories.analysis_repository import InMemoryAnalysisRepository
+from app.repositories.analysis_repository import (
+    InMemoryAnalysisRepository,
+    SupabaseAnalysisRepository,
+)
 from app.services.analysis_pipeline import AnalysisPipeline
 
 
@@ -121,3 +125,77 @@ def test_pipeline_does_not_publish_after_lease_is_lost() -> None:
     assert repository.artifacts == {}
     assert repository.artifact_chunks == {}
     assert repository.explore_results == {}
+
+
+class FakeResponse:
+    def __init__(self, data: Any) -> None:
+        self.data = data
+
+
+class FakeRpcCall:
+    def __init__(self, response: Any) -> None:
+        self.response = response
+
+    def execute(self) -> FakeResponse:
+        return FakeResponse(self.response)
+
+
+class FakeRpcClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.responses: dict[str, Any] = {
+            "matrix_analysis_acquire_run": [{
+                "lottery": "今彩539",
+                "draw_period": "114000123",
+                "analysis_version": "v1",
+                "phase": "explore",
+                "cursor": 0,
+                "total": 0,
+                "status": "running",
+                "started_at": "2026-09-04T01:00:00+00:00",
+                "completed_at": None,
+                "error": None,
+                "lease_owner": "worker-a",
+                "lease_expires_at": "2026-09-04T01:05:00+00:00",
+                "lease_acquired": True,
+            }],
+            "matrix_analysis_renew_lease": True,
+        }
+
+    def rpc(self, name: str, params: dict[str, Any]) -> FakeRpcCall:
+        self.calls.append((name, params))
+        return FakeRpcCall(self.responses[name])
+
+
+def test_supabase_run_lease_uses_atomic_acquire_and_renew_rpcs() -> None:
+    client = FakeRpcClient()
+    repository = SupabaseAnalysisRepository(client)
+
+    run = repository.begin_run(
+        "今彩539", "114000123", "v1", "2026-09-04T01:00:00+00:00",
+        owner_id="worker-a", lease_seconds=300,
+    )
+    renewed = repository.renew_run_lease(
+        "今彩539", "114000123", "v1", "worker-a", lease_seconds=300,
+    )
+
+    assert run["leaseAcquired"] is True
+    assert run["leaseOwner"] == "worker-a"
+    assert renewed is True
+    assert client.calls == [
+        ("matrix_analysis_acquire_run", {
+            "p_lottery": "今彩539",
+            "p_draw_period": "114000123",
+            "p_analysis_version": "v1",
+            "p_owner_id": "worker-a",
+            "p_started_at": "2026-09-04T01:00:00+00:00",
+            "p_lease_seconds": 300,
+        }),
+        ("matrix_analysis_renew_lease", {
+            "p_lottery": "今彩539",
+            "p_draw_period": "114000123",
+            "p_analysis_version": "v1",
+            "p_owner_id": "worker-a",
+            "p_lease_seconds": 300,
+        }),
+    ]
