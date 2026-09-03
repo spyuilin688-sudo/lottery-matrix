@@ -30,59 +30,45 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          def once(text: str, old: str, new: str, label: str) -> str:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
-              return text.replace(old, new, 1)
-
           preview_path = Path("src/ExploreResultPreviewPage.tsx")
           preview = preview_path.read_text()
-          preview = once(
-              preview,
-              '''      <span>第</span>
-              <span>{position}</span>
-              <span>顆</span>
-              <span>{baseNumber}</span>''',
-              '''      <span className="explore-validation-formula-position">
-                <span>第</span>
-                <span>{position}</span>
-                <span>顆</span>
-              </span>
-              <span>{baseNumber}</span>''',
-              "preview formula position group",
+          expression_start = preview.index('<span className="explore-validation-formula-expression">')
+          first = preview.index('<span>第</span>', expression_start)
+          base = preview.index('<span>{baseNumber}</span>', first)
+          line_start = preview.rfind('\n', 0, first) + 1
+          indent = preview[line_start:first]
+          group = (
+              '<span className="explore-validation-formula-position">\n'
+              f'{indent}  <span>第</span>\n'
+              f'{indent}  <span>{{position}}</span>\n'
+              f'{indent}  <span>顆</span>\n'
+              f'{indent}</span>\n'
+              f'{indent}'
           )
+          preview = preview[:first] + group + preview[base:]
           preview_path.write_text(preview)
 
           test_path = Path("src/__tests__/app-production-shell.test.tsx")
           test_source = test_path.read_text()
-          test_source = once(
-              test_source,
-              '''  it("inserts the requested half-width spaces in validation formulas", () => {
-                window.history.replaceState({}, "", "/explore-result-preview");
-                render(<App />);
-                fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+          start = test_source.index('  it("inserts the requested half-width spaces in validation formulas", () => {')
+          end = test_source.index('\n\n  it("keeps the scoped tag selector and lets the period column fit its content", () => {', start)
+          replacement = '''  it("keeps validation formula content while spacing 第、球位、顆 independently", () => {
+            window.history.replaceState({}, "", "/explore-result-preview");
+            render(<App />);
+            fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
-                expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
-              });''',
-              '''  it("keeps validation formula content while spacing 第、球位、顆 independently", () => {
-                window.history.replaceState({}, "", "/explore-result-preview");
-                render(<App />);
-                fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+            const formula = Array.from(document.querySelectorAll<HTMLElement>(".explore-validation-formula-expression"))
+              .find((element) => element.textContent === "第2顆09+21=30");
+            expect(formula).toBeDefined();
 
-                const formula = Array.from(document.querySelectorAll<HTMLElement>(".explore-validation-formula-expression"))
-                  .find((element) => element.textContent === "第2顆09+21=30");
-                expect(formula).toBeDefined();
+            const position = formula?.querySelector<HTMLElement>(".explore-validation-formula-position");
+            expect(position?.textContent).toBe("第2顆");
+            expect(position?.children).toHaveLength(3);
 
-                const position = formula?.querySelector<HTMLElement>(".explore-validation-formula-position");
-                expect(position?.textContent).toBe("第2顆");
-                expect(position?.children).toHaveLength(3);
-
-                const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
-                expect(css).toMatch(/\.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
-              });''',
-              "stale formula test",
-          )
+            const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+            expect(css).toMatch(/\.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
+          });'''
+          test_source = test_source[:start] + replacement + test_source[end:]
           test_path.write_text(test_source)
           PY
 
