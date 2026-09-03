@@ -1072,7 +1072,11 @@ function ExploreValidationProcess({
     resultNumbers: string,
   ) => (
     <span className="explore-validation-formula-expression">
-      <span>{`第${position}顆`}</span>{" "}
+      <span className="explore-validation-formula-position">
+        <span>第</span>
+        <span>{position}</span>
+        <span>顆</span>
+      </span>{" "}
       <span>{displayNumber(baseNumber)}</span>{" "}
       <span>{formula}</span>{" "}
       <span>=</span>{" "}
@@ -1503,11 +1507,19 @@ export function MatrixExplorePage({
       ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
-  const defaultFilters: Record<string, ConsecutiveOption[]> = {
-    "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": title === "Matrix 天衍"
-      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
-      : ["準7進8", "準9進10", "準11進12"],
+  const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
+    if (title === "Matrix 天衍") {
+      return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
+    }
+    const isTrailer = roadValue === "拖牌版路";
+    if (hitValue === "準4+（鎖定1碼）") {
+      return isTrailer
+        ? ["準5進6", "準6進7", "準7進8"]
+        : ["準6進7", "準7進8"];
+    }
+    return isTrailer
+      ? ["準6進7", "準7進8", "準9進10", "準11進12"]
+      : ["準9進10", "準11進12"];
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const initialExploreDefaults = useMemo(
@@ -1531,7 +1543,10 @@ export function MatrixExplorePage({
   const [filterOpen, setFilterOpen] = useState(false);
   const [resultPage, setResultPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
-    defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
+    defaultFiltersFor(
+      title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）",
+      roadTypes[0],
+    ),
   );
   const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
   const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
@@ -1674,8 +1689,16 @@ export function MatrixExplorePage({
 
   const changeHit = (value: string) => {
     setHit(value);
-    setSelectedFilters(defaultFilters[value]);
+    setSelectedFilters(defaultFiltersFor(value, road));
     setExpandedRoad(null);
+    setResultPage(1);
+  };
+
+  const changeRoad = (value: string) => {
+    setRoad(value);
+    setSelectedFilters(defaultFiltersFor(hit, value));
+    setExpandedRoad(null);
+    setResultPage(1);
   };
 
   const changeLottery = (value: LotteryId) => {
@@ -1684,7 +1707,7 @@ export function MatrixExplorePage({
   };
 
   const startExplore = () => {
-    const nextFilters = defaultFilters[hit];
+    const nextFilters = defaultFiltersFor(hit, road);
     setSearched(true);
     setHistoryExpanded(false);
     setSameCode(false);
@@ -1801,7 +1824,7 @@ export function MatrixExplorePage({
           <label><span><SettingLabelIcon type="road" />版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
-                <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
+                <button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>
                   {v}
                   {title === "Matrix 探索" && v === "拖牌版路" ? <em>推薦</em> : null}
                 </button>
@@ -1981,8 +2004,11 @@ export function MatrixExplorePage({
                 <span>預測</span>
                 <span>版路類型</span>
               </div>
-              {paginatedResults.map((item) => (
-                <article key={item.id}>
+              {paginatedResults.map((item, index) => (
+                <article
+                  data-number-group-start={sameCode && index > 0 && paginatedResults[index - 1]?.prediction !== item.prediction ? "true" : undefined}
+                  key={item.id}
+                >
                   <button
                     type="button"
                     className="road-result-row"
