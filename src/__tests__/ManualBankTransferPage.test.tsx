@@ -31,7 +31,7 @@ describe('Matrix Pro manual bank transfer', () => {
     memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
     memberApi.fetchMemberPaymentHistory.mockResolvedValue([]);
     memberApi.submitTransferRequest.mockResolvedValue({
-      id: 'transfer-1', planName: '月費方案', amount: 1880,
+      id: 'transfer-1', planName: '月費方案', amount: 2880,
       accountLastFive: '12345', submittedAt: '2026-08-30T08:00:00Z', status: 'pending',
     });
     Object.defineProperty(navigator, 'clipboard', {
@@ -58,6 +58,7 @@ describe('Matrix Pro manual bank transfer', () => {
     render(<ManualTransferPage onNavigate={vi.fn()} />);
 
     expect(await screen.findByText('連線銀行')).toBeInTheDocument();
+    expect(screen.getByText('NT$2,880')).toBeInTheDocument();
     expect(screen.getByText('824')).toBeInTheDocument();
     expect(screen.getByText('111023004501')).toBeInTheDocument();
     expect(screen.getByText('黎小姐')).toBeInTheDocument();
@@ -74,7 +75,7 @@ describe('Matrix Pro manual bank transfer', () => {
 
   it('blocks another submission while one request is pending', async () => {
     memberApi.fetchPendingTransferRequest.mockResolvedValue({
-      id: 'pending-1', planName: '月費方案', amount: 1880,
+      id: 'pending-1', planName: '月費方案', amount: 2880,
       accountLastFive: '54321', submittedAt: '2026-08-30T08:00:00Z', status: 'pending',
     });
     render(<ManualTransferPage onNavigate={vi.fn()} />);
