@@ -300,22 +300,20 @@ describe("production member shell", () => {
     }
   });
 
-  it("keeps validation formula content while spacing 第、球位、顆 independently", () => {
-  window.history.replaceState({}, "", "/explore-result-preview");
-  render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+  it("calculates validation formula results while spacing the position token independently", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
-  const formula = Array.from(document.querySelectorAll<HTMLElement>(".explore-validation-formula-expression"))
-    .find((element) => element.textContent === "第2顆09+21=30");
-  expect(formula).toBeDefined();
-
-  const position = formula?.querySelector<HTMLElement>(".explore-validation-formula-position");
-  expect(position?.textContent).toBe("第2顆");
-  expect(position?.children).toHaveLength(3);
-
-  const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
-  expect(css).toMatch(/\.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
-});
+    const formula = Array.from(document.querySelectorAll<HTMLElement>(".explore-validation-formula-expression"))
+      .find((element) => element.textContent === "第2顆09+21=30");
+    expect(formula).toBeDefined();
+    const position = formula?.querySelector<HTMLElement>(".explore-validation-formula-position");
+    expect(Array.from(position?.children ?? []).map((part) => part.textContent)).toEqual(["第", "2", "顆"]);
+    expect(Array.from(formula?.children ?? []).map((part) => part.textContent)).toEqual(["第2顆", "09", "+21", "=", "30"]);
+    const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+    expect(css).toMatch(/\.matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
+  });
 
   it("keeps the scoped tag selector and lets the period column fit its content", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");

@@ -61,7 +61,7 @@ const exploreValidationEnvelope = {
       predictionCompleted: false,
     },
     ruleSets: [{
-      rules: [{ value: 14.24, display: '+14.24', algorithmType: '加減' }],
+      rules: [{ value: 8, display: '+8', algorithmType: '加減' }],
       predictionNumbers: [22, 26],
       historicalValidation: [{
         group: 'B',
@@ -76,8 +76,8 @@ const exploreValidationEnvelope = {
         baseNumber: 14,
         predictionPeriod: '114000123',
         predictionNumbers: ['22', '26'],
-        candidateRules: [14.24],
-        matchedRules: [{ algorithmType: '加減', value: 14.24, display: '+14.24' }],
+        candidateRules: [8],
+        matchedRules: [{ algorithmType: '加減', value: 8, display: '+8' }],
         hitNumbers: ['22'],
         success: true,
       }],
@@ -300,9 +300,9 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect(await screen.findByText('22.26')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
-  expect((await screen.findAllByText('+14.24')).length).toBeGreaterThan(0);
+  expect((await screen.findAllByText('+8')).length).toBeGreaterThan(0);
   const validation = screen.getByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ +14.24 ｜ 下 3 期開');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ +8 ｜ 下 3 期開');
   expect(validation.querySelectorAll('.explore-validation-summary-separator')).toHaveLength(4);
   expect(validation.querySelector('.explore-validation-consecutive-tag')?.textContent).toBe('準5進6');
   const blocks = validation.querySelectorAll('.explore-validation-group');
@@ -311,7 +311,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect([...blocks[0].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
     '114118', '114120', '114123',
   ]);
-  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆 14 +14.24 = 22');
+  expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[0]?.textContent).toBe('第4顆14+8=22');
   expect(blocks[0].querySelectorAll('.explore-validation-formula-row')[2]?.textContent).toBe('［ 22 ］');
   expect(blocks[0].querySelector('.explore-validation-result-number')?.textContent).toBe('22');
   expect([...blocks[1].querySelectorAll('.explore-validation-issues .explore-validation-issue')].map((cell) => cell.textContent)).toEqual([
@@ -386,11 +386,13 @@ test('拖牌多個驗證值時只保留一列空白公式列且每組最多三�
         ],
         historicalValidation: [{
           ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          candidateRules: [14, 24, 34],
           matchedRules: [
             { algorithmType: '拖牌', value: 14, display: '拖牌14' },
             { algorithmType: '拖牌', value: 24, display: '拖牌24' },
             { algorithmType: '拖牌', value: 34, display: '拖牌34' },
           ],
+          hitNumbers: ['09', '28', '38'],
         }],
       }],
     },
@@ -408,11 +410,10 @@ test('拖牌多個驗證值時只保留一列空白公式列且每組最多三�
   const formulas = [...firstGroup!.querySelectorAll('.explore-validation-formula-row')];
   expect(issues.map((cell) => cell.textContent)).toEqual(['114120', '', '114123']);
   expect(numberRows[1].textContent).toBe('');
-  expect(formulas[0].textContent).toBe('第4顆 14 +14 = 22');
-  expect(formulas[1].textContent).toBe('第4顆 14 +24 = 22');
-  expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('+34');
+  expect(formulas[0].textContent).toBe('第4顆14+34=09');
+  expect(formulas[1].textContent).toBe('第4顆14+24=38');
+  expect(formulas.map((formula) => formula.textContent).join('')).not.toContain('+14');
   expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
-  expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
   expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
 });
 
@@ -447,8 +448,8 @@ test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   expect(validation.querySelectorAll('.explore-validation-special-separator').length).toBeGreaterThan(0);
-  expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe(' +');
-  expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^ \+\d{2}$/);
+  expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
+  expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^\+\d{2}$/);
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {
@@ -484,10 +485,10 @@ test('驗證期在鎖定條件之後時排列在第二列', async () => {
   ]);
   const formulas = firstGroup?.querySelectorAll('.explore-validation-formula-row') ?? [];
   expect(formulas[0]?.textContent).toBe('');
-  expect(formulas[1]?.textContent).toContain('+14.24');
+  expect(formulas[1]?.textContent).toContain('+8');
   const currentFormulas = validation.querySelectorAll('.explore-validation-group')[1].querySelectorAll('.explore-validation-formula-row');
   expect(currentFormulas[0]?.textContent).toBe('');
-  expect(currentFormulas[1]?.textContent).toContain('+14.24');
+  expect(currentFormulas[1]?.textContent).toContain('+8');
 });
 
 test('兩條公式同時成立時分別放在驗證號碼列與鎖定條件列', async () => {
@@ -562,7 +563,7 @@ test('數值相同但類型不同的規則只顯示實際成立公式', async ()
   expect(firstFormula).not.toContain('拖牌14');
 });
 
-test('舊版數值公式遇到不同類型同值時不猜測成立公式', async () => {
+test('舊版數值公式遇到不同類型同值時依目前版路類型解析', async () => {
   matrixApi.fetchExploreValidation.mockResolvedValue({
     ...exploreValidationEnvelope,
     validation: {
@@ -587,8 +588,8 @@ test('舊版數值公式遇到不同類型同值時不猜測成立公式', async
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
   const firstFormula = validation.querySelector('.explore-validation-group .explore-validation-formula-row')?.textContent ?? '';
-  expect(firstFormula).toContain('共同值14');
-  expect(firstFormula).not.toMatch(/\+14|拖牌14/);
+  expect(firstFormula).toContain('+14');
+  expect(firstFormula).not.toMatch(/共同值14|拖牌14/);
 });
 
 test('舊版數值公式只有一條同值規則時顯示該公式', async () => {
@@ -627,7 +628,13 @@ test('合值版路的 API 驗證概要顯示合值規則', async () => {
       ...exploreValidationEnvelope.validation,
       ruleSets: [{
         ...exploreValidationEnvelope.validation.ruleSets[0],
-        rules: [{ value: 14.24, display: '合值14.24', algorithmType: '合值' }],
+        rules: [{ value: 36, display: '合值36', algorithmType: '合值' }],
+        historicalValidation: [{
+          ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          candidateRules: [36],
+          matchedRules: [{ algorithmType: '合值', value: 36, display: '合值36' }],
+          hitNumbers: ['22'],
+        }],
       }],
     },
   });
@@ -639,9 +646,9 @@ test('合值版路的 API 驗證概要顯示合值規則', async () => {
   fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值 14.24 ｜ 下 3 期開');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值 36 ｜ 下 3 期開');
   expect(validation.querySelector('.validation-summary-formula-label')?.textContent).toBe('合值');
-  expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆 14 合值14.24 = 22');
+  expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆14合值36=22');
 });
 
 test('探索結果使用 API 資料而不是固定範例', async () => {
