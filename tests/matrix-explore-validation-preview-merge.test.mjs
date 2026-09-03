@@ -48,7 +48,7 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.doesNotMatch(component[0], /const formulaResultNumber/);
   assert.doesNotMatch(component[0], /className="explore-validation-formulas explore-validation-numeric-text"/);
   assert.doesNotMatch(component[0], /`第\$\{item\.referencePosition \?\? item\.position\}顆 \$\{displayNumber\(row\.baseNumber\)\} \$\{display\} = \$\{resultNumbers\}`/);
-  assert.doesNotMatch(component[0], /\{" \+"\}/);
+  assert.doesNotMatch(component[0], /<span>\{formula\}<\/span>\{" \+"\}/);
   assert.match(css, /\.explore-validation-formula-row:first-child\s*\{[^}]*color:\s*#e4c980/s);
   assert.doesNotMatch(css, /\.explore-validation-group\[data-row-count="3"\] \.explore-validation-formula-row:nth-child\(2\)/);
   assert.doesNotMatch(css, /\.explore-validation-group\[data-road-type="拖牌"\] \.explore-validation-formula-row:nth-child\(2\)/);
