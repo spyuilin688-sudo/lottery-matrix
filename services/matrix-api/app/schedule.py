@@ -65,6 +65,18 @@ def next_lottery_call_time(lottery: str, now: datetime | None = None) -> datetim
     raise RuntimeError("NEXT_LOTTERY_CALL_NOT_FOUND")
 
 
+def previous_lottery_call_time(lottery: str, before: datetime) -> datetime:
+    if before.tzinfo is None:
+        raise ValueError("schedule time must include a timezone")
+    taipei_before = before.astimezone(TAIPEI)
+    for offset in range(1, 9):
+        day = taipei_before - timedelta(days=offset)
+        if day.weekday() not in DRAW_WEEKDAYS.get(lottery, frozenset(range(7))):
+            continue
+        return lottery_call_time(lottery, day)
+    raise RuntimeError("PREVIOUS_LOTTERY_CALL_NOT_FOUND")
+
+
 def _candidate_call_times(lottery: str, now: datetime) -> list[datetime]:
     taipei_now = now.astimezone(TAIPEI)
     return [
