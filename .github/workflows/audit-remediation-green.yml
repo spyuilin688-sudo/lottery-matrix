@@ -6,6 +6,8 @@ on:
       - fix/remaining-audit-issues-20260904
     paths:
       - .github/workflows/audit-remediation-green.yml
+      - scripts/audit_remediation_frontend.py
+      - scripts/run_audit_remediation_frontend.py
 
 permissions:
   contents: write
