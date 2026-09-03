@@ -108,35 +108,27 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("keeps general notification spacing while placing Matrix labels 1px below the top border", () => {
-    mountStyles(notificationCss());
+  it("uses shared notification spacing and token-controlled Matrix badge overlap", () => {
+    const css = notificationCss();
+    mountStyles(css);
     document.body.innerHTML = `
       <main class="notifications-screen-v2">
-        <article class="notification-row" data-notification-key="bet">
-          <div class="notification-heading">
-            <div class="notification-icon-stack"><div class="notification-icon"></div></div>
-          </div>
-        </article>
-        <article class="notification-row" data-notification-key="status">
-          <div class="notification-heading">
-            <div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div>
-          </div>
-        </article>
+        <article class="notification-row" data-notification-key="bet"><div class="notification-heading"><div class="notification-icon-stack"><div class="notification-icon"></div></div></div></article>
+        <article class="notification-row" data-notification-key="status"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
       </main>`;
-
     const generalHeading = getComputedStyle(document.querySelector('[data-notification-key="bet"] .notification-heading')!);
     const matrixHeading = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-heading')!);
     const matrixStack = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-icon-stack')!);
     const matrixBadge = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-pro-badge')!);
-
     expect(generalHeading.paddingTop).toBe("4px");
-    expect(matrixHeading.paddingTop).toBe("3px");
+    expect(matrixHeading.paddingTop).toBe("4px");
     expect(matrixStack.gap).toBe("0px");
-    expect(matrixBadge.transform).toBe("translateY(-2px)");
-    expect(parseFloat(matrixHeading.paddingTop) - 2).toBe(1);
+    expect(css).toMatch(/--notification-pro-badge-overlap:\s*3px/);
+    expect(css).toMatch(/\.notification-pro-badge\s*\{[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\)/s);
     expect(matrixBadge.zIndex).toBe("1");
   });
 
+  it("uses lighter title weight and more compact bulk actions", () => {
   it("uses lighter title weight and more compact bulk actions", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `

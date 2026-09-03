@@ -133,7 +133,7 @@ describe("production member shell", () => {
     const source = document.querySelector(".explore-validation-number--source");
     const step = document.querySelector(".explore-validation-number--step");
     const hit = document.querySelector(".explore-validation-number--hit");
-    const primaryFormula = document.querySelector(".explore-validation-formula-row:first-child");
+    const primaryFormula = document.querySelector(".explore-validation-formula-expression");
     const secondaryFormula = document.querySelector(".explore-validation-formula-row:last-child");
     const predictionTitle = document.querySelector(".explore-validation-prediction strong");
 
@@ -541,7 +541,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*16px/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*700/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
-    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*0/s);
+    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*2\.5px/s);
   });
 
   it("keeps the five-number validation row compact without changing the wide 6+1 layout", () => {
