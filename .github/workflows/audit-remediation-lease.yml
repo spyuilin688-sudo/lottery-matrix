@@ -1,0 +1,34 @@
+name: Audit remediation lease
+
+on:
+  push:
+    branches:
+      - fix/remaining-audit-issues-20260904
+    paths:
+      - .github/workflows/audit-remediation-lease.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lease-red:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/remaining-audit-issues-20260904
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install matrix API dependencies
+        working-directory: services/matrix-api
+        run: pip install -e ".[test]"
+      - name: Run lease repository/pipeline contract
+        working-directory: services/matrix-api
+        run: pytest -q tests/test_analysis_run_lease.py
+      - name: Run migration lease contract
+        run: node --test tests/matrix-analysis-run-lease-migration.test.mjs
