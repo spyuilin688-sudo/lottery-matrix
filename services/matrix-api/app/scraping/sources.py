@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -246,6 +246,37 @@ def parse_sc888_fantasy5_html(html: str) -> MatrixDraw:
     if not draws:
         raise ValueError("SC888_DRAW_INCOMPLETE")
     return draws[0]
+
+
+def _normalize_sc888_fantasy5_history(
+    draws: list[MatrixDraw],
+) -> list[MatrixDraw]:
+    normalized: list[MatrixDraw] = []
+    for draw in draws:
+        date_match = DATE_PATTERN.search(str(draw.get("drawDate", "")))
+        if date_match is None:
+            continue
+        date_parts = [int(value) for value in re.findall(r"\d+", date_match.group(0))]
+        if len(date_parts) != 3:
+            continue
+        try:
+            california_date = (
+                datetime(date_parts[0], date_parts[1], date_parts[2]).date()
+                - timedelta(days=1)
+            ).isoformat()
+        except ValueError:
+            continue
+        numbers = list(draw.get("sortedNumbers") or draw.get("numbers") or [])
+        if len(numbers) != 5:
+            continue
+        normalized.append({
+            "period": str(draw["period"]),
+            "drawDate": california_date,
+            "numbers": numbers,
+            "sortedNumbers": numbers,
+            "drawOrderNumbers": None,
+        })
+    return _newest_unique(normalized)
 
 
 def _exact_numbers(value: str, count: int, maximum: int) -> list[str]:
@@ -537,6 +568,48 @@ class LatestDrawSource:
                 return draws[0]
         raise ValueError("UNKNOWN_LOTTERY")
 
+    def _fetch_sc888_fantasy5_history(
+        self,
+        limit: int | None,
+    ) -> list[MatrixDraw]:
+        urls = (
+            [SC888_FANTASY5_URL, SC888_FANTASY5_DOWNLOAD_URL]
+            if limit is not None
+            else [SC888_FANTASY5_DOWNLOAD_URL, SC888_FANTASY5_URL]
+        )
+        last_error: Exception | None = None
+        for url in urls:
+            try:
+                response = self.client.get(
+                    url,
+                    headers={
+                        **HEADERS,
+                        "accept": (
+                            "text/html,application/xhtml+xml,"
+                            "application/vnd.ms-excel;q=0.9,*/*;q=0.8"
+                        ),
+                        "referer": "https://sc888.net/",
+                    },
+                    timeout=(
+                        30.0
+                        if url == SC888_FANTASY5_DOWNLOAD_URL
+                        else 20.0
+                    ),
+                    follow_redirects=True,
+                )
+                response.raise_for_status()
+                draws = _normalize_sc888_fantasy5_history(
+                    parse_sc888_fantasy5_history(_response_text(response))
+                )
+                if draws:
+                    return _newest_unique(draws, limit)
+                last_error = ValueError("SC888_HISTORY_INCOMPLETE")
+            except (httpx.HTTPError, ValueError) as error:
+                last_error = error
+        if last_error is not None:
+            raise last_error
+        raise ValueError("SC888_HISTORY_INCOMPLETE")
+
     def fetch_algorithm_history(self, lottery: str) -> list[MatrixDraw]:
         if lottery == "今彩539":
             # Taiwan Lottery supplies authoritative size and actual-order rows
@@ -614,25 +687,32 @@ class LatestDrawSource:
             official_draws: list[MatrixDraw] = []
             previous_count = 0
             page = 1
-            while True:
-                response = self.client.get(
-                    CALIFORNIA_FANTASY5_HISTORY_URL.format(page=page, size=page_size),
-                    headers=HEADERS,
-                    timeout=20.0,
-                    follow_redirects=True,
-                )
-                response.raise_for_status()
-                page_draws = parse_california_fantasy5_history(response.json())
-                if not page_draws:
-                    break
-                official_draws.extend(page_draws)
-                draws = _newest_unique(official_draws)
-                if limit is not None and len(draws) >= limit:
-                    return _newest_unique(draws, limit)
-                if len(draws) == previous_count or len(page_draws) < page_size:
-                    break
-                previous_count = len(draws)
-                page += 1
+            try:
+                while True:
+                    response = self.client.get(
+                        CALIFORNIA_FANTASY5_HISTORY_URL.format(
+                            page=page, size=page_size,
+                        ),
+                        headers=HEADERS,
+                        timeout=20.0,
+                        follow_redirects=True,
+                    )
+                    response.raise_for_status()
+                    page_draws = parse_california_fantasy5_history(response.json())
+                    if not page_draws:
+                        break
+                    official_draws.extend(page_draws)
+                    draws = _newest_unique(official_draws)
+                    if limit is not None and len(draws) >= limit:
+                        return _newest_unique(draws, limit)
+                    if len(draws) == previous_count or len(page_draws) < page_size:
+                        break
+                    previous_count = len(draws)
+                    page += 1
+            except httpx.HTTPStatusError as error:
+                if error.response.status_code != 403:
+                    raise
+                return self._fetch_sc888_fantasy5_history(limit)
 
             draws = _newest_unique(official_draws)
             if not draws or (limit is not None and len(draws) < limit):
