@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
-from app.schedule import due_call_cycle
+from app.schedule import due_call_cycle, previous_lottery_call_time
 from app.scraping.sources import LatestDrawSource
 from app.services.analysis_pipeline import AnalysisPipeline, ArtifactBuilder
 from app.services.artifact_builders import create_artifact_builders
@@ -201,8 +201,22 @@ def run_scheduled_worker(
                 return resumed
         return {"lottery": lottery, "status": "not-due"}
 
-    expected_draw_date = _expected_source_draw_date(lottery, cycle)
-    if latest and _normalized_draw_date(latest[0].get("drawDate")) == expected_draw_date:
+    current = now or datetime.now(cycle.tzinfo)
+    is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
+    target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
+    expected_draw_date = _expected_source_draw_date(lottery, target_cycle)
+    latest_draw_date = _normalized_draw_date(latest[0].get("drawDate")) if latest else ""
+
+    if latest and (
+        latest_draw_date == expected_draw_date
+        or (is_pre_draw_recovery and latest_draw_date > expected_draw_date)
+    ):
+        if is_pre_draw_recovery:
+            return {
+                "lottery": lottery,
+                "drawPeriod": latest[0]["period"],
+                "status": "already-acquired",
+            }
         resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
         if resumed is not None:
             return resumed
