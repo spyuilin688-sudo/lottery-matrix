@@ -1,3 +1,25 @@
 @import "./homepage/base.css";
 @import "./homepage/lottery-switcher.css";
 @import "./homepage/visual-language.css";
+
+/* Wide/desktop-site viewports should keep homepage content in normal top flow.
+   The existing phone/PWA layout remains unchanged below this breakpoint. */
+@media (min-width: 768px) {
+  .home-screen .home-layout {
+    height: auto;
+    grid-template-rows: auto auto;
+    align-content: start;
+  }
+
+  .home-screen .lottery-screen {
+    height: auto;
+  }
+
+  .home-screen .lottery-screen > .brand-header {
+    flex: 0 0 auto;
+  }
+
+  .home-screen .home-bottom-group {
+    align-self: start;
+  }
+}
