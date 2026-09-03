@@ -196,7 +196,7 @@ def test_card_uses_the_measured_reference_text_metrics() -> None:
     )
 
     assert (
-        '<text x="384.0" y="59.0" text-anchor="middle" dominant-baseline="middle" '
+        '<text x="384.0" y="59.0" text-anchor="middle" dominant-baseline="central" '
         'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif" '
         'font-size="56" font-weight="700" fill="#000">539 順球</text>'
     ) in svg

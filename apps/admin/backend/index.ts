@@ -27,14 +27,23 @@ type Context = {
   admin?: CredentialAdmin;
 };
 
-type PermissionInput = { view?: boolean; add?: boolean; edit?: boolean; delete?: boolean };
+type PermissionInput = {
+  view?: boolean;
+  add?: boolean;
+  edit?: boolean;
+  delete?: boolean;
+};
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const adminData = createAdminData(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
-const connectionStatus = createConnectionStatus({ supabase, loadConfig: () => getSupabaseConfig(secrets), getWorkerStatus: () => workerApi.getStatus() });
+const connectionStatus = createConnectionStatus({
+  supabase,
+  loadConfig: () => getSupabaseConfig(secrets),
+  getWorkerStatus: () => workerApi.getStatus(),
+});
 const now = () => new Date().toISOString();
 const fail = (cause: unknown) => {
   const value = cause as { message?: string; statusCode?: number };
@@ -45,45 +54,80 @@ const requestMetadata = (ctx: Context) => ({
   device: String(ctx.event?.headers?.['user-agent'] || ''),
 });
 const actorOf = (admin: { id?: string; account?: string; name?: string; role?: string }) => ({
-  id: String(admin.id), account: String(admin.account || ''), name: String(admin.name || admin.account || '管理員'), role: String(admin.role || ''),
+  id: String(admin.id),
+  account: String(admin.account || ''),
+  name: String(admin.name || admin.account || '管理員'),
+  role: String(admin.role || ''),
 });
-const bodyOf = (ctx: Context) => (ctx.body && typeof ctx.body === 'object' ? ctx.body : {}) as Record<string, unknown>;
+const bodyOf = (ctx: Context) =>
+  (ctx.body && typeof ctx.body === 'object' ? ctx.body : {}) as Record<string, unknown>;
 
 async function getAdmin(ctx: Context) {
   if (!ctx.admin) throw new AdminAccessError('管理員登入已失效', 401);
   return ctx.admin;
 }
+
 const sessionGuard = async (ctx: Context) => {
   try { ctx.admin = await credentialAuth.getAdminFromHeaders(ctx.event?.headers); }
   catch (cause) { return fail(cause); }
 };
+
 async function authorize(ctx: Context, permission: PermissionKey) {
   const admin = await getAdmin(ctx);
   requirePermission(admin, permission);
   return admin;
 }
+
 const guard = (permission: PermissionKey) => async (ctx: Context) => {
-  try { await authorize(ctx, permission); }
-  catch (cause) { return fail(cause); }
+  try {
+    await authorize(ctx, permission);
+  } catch (cause) {
+    return fail(cause);
+  }
 };
+
 const moduleGuard = (module: ModuleKey, action: ModuleAction) => async (ctx: Context) => {
-  try { requireModulePermission(await getAdmin(ctx), module, action); }
-  catch (cause) { return fail(cause); }
+  try {
+    const admin = await getAdmin(ctx);
+    requireModulePermission(admin, module, action);
+  } catch (cause) {
+    return fail(cause);
+  }
 };
+
 const requireSuperRole = (message: string) => async (ctx: Context) => {
-  try { if ((await getAdmin(ctx)).role !== '超級管理員') return error(message, 403); }
-  catch (cause) { return fail(cause); }
+  try {
+    const admin = await getAdmin(ctx);
+    if (admin.role !== '超級管理員') return error(message, 403);
+  } catch (cause) {
+    return fail(cause);
+  }
 };
 const superGuard = requireSuperRole('僅超級管理員可管理管理員帳號');
 const revenueResetGuard = requireSuperRole('僅超級管理員可重設收入');
+
 function adminInput(body: Record<string, unknown>) {
   const permissions = (body.permissions ?? {}) as PermissionInput;
   return {
-    account: String(body.account ?? ''), name: String(body.name ?? ''), role: String(body.role ?? '查看人員'), status: String(body.status ?? '啟用'),
-    can_view: Boolean(permissions.view), can_add: Boolean(permissions.add), can_edit: Boolean(permissions.edit), can_delete: Boolean(permissions.delete),
+    account: String(body.account ?? ''),
+    name: String(body.name ?? ''),
+    role: String(body.role ?? '查看人員'),
+    status: String(body.status ?? '啟用'),
+    can_view: Boolean(permissions.view),
+    can_add: Boolean(permissions.add),
+    can_edit: Boolean(permissions.edit),
+    can_delete: Boolean(permissions.delete),
   };
 }
-const legacyDurations: Record<string, string> = { '7': '7_days', '15': '15_days', '30': '30_days', '90': '90_days', '365': '365_days' };
+
+const legacyDurations: Record<string, string> = {
+  '7': '7_days',
+  '15': '15_days',
+  '30': '30_days',
+  '60': '60_days',
+  '90': '90_days',
+  '365': '365_days',
+};
 const crawlerLotteryByStatusId: Record<string, CrawlerLottery> = {
   'cron-matrix-539-refresh-v2': '今彩539',
   'cron-matrix-fantasy5-refresh-v2': '天天樂',
@@ -134,39 +178,75 @@ const routes: Record<string, unknown> = {
   }],
 
   'GET /api/dashboard': [sessionGuard, guard('view'), async () => {
-    try { return json(await getDashboard(supabase)); }
-    catch (cause) { return fail(cause); }
+    try {
+      return json(await getDashboard(supabase));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'POST /api/revenue/reset': [sessionGuard, revenueResetGuard, async (ctx: Context) => {
-    try { return json(await adminData.resetRevenue(actorOf(await getAdmin(ctx)))); }
-    catch (cause) { return fail(cause); }
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.resetRevenue(actorOf(admin)));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'GET /api/push-members': [sessionGuard, guard('view'), async () => {
-    try { return json({ items: await pushNotifications.listMemberPushStatus() }); }
-    catch (cause) { return fail(cause); }
+    try {
+      return json({ items: await pushNotifications.listMemberPushStatus() });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'POST /api/push-members/:id/test': [sessionGuard, guard('edit'), async (ctx: Context) => {
     try {
       const userId = requireMemberUuid(ctx.params.id);
       const admin = await getAdmin(ctx);
-      return json(await pushNotifications.sendMemberTestPush(userId, String(admin.account ?? '')));
-    } catch (cause) { return fail(cause); }
+      return json(await pushNotifications.sendMemberTestPush(
+        userId,
+        String(admin.account ?? ''),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'GET /api/push-delivery-logs': [sessionGuard, guard('view'), async () => {
-    try { return json({ items: await pushNotifications.listPushDeliveryLogs() }); }
-    catch (cause) { return fail(cause); }
+    try {
+      return json({ items: await pushNotifications.listPushDeliveryLogs() });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'PUT /api/me/name': [sessionGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
-      return json({ admin: await adminData.updateOwnAdminName(String(bodyOf(ctx).name ?? ''), actorOf(admin)) });
-    } catch (cause) { return fail(cause); }
+      const updated = await adminData.updateOwnAdminName(
+        String(bodyOf(ctx).name ?? ''),
+        actorOf(admin),
+      );
+      return json({ admin: updated });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
-  'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () => json(await connectionStatus.get())],
+
+  'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () =>
+    json(await connectionStatus.get())],
+
   'POST /api/system-status/:id/retry': [sessionGuard, moduleGuard('systemSettings', 'view'), async (ctx: Context) => {
-    try { return json({ item: await connectionStatus.retry(ctx.params.id) }); }
-    catch (cause) { return fail(cause); }
+    try {
+      return json({ item: await connectionStatus.retry(ctx.params.id) });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'POST /api/system-status/:id/refresh': [sessionGuard, guard('edit'), async (ctx: Context) => {
     const lottery = crawlerLotteryByStatusId[ctx.params.id];
     if (!lottery) return error('此項目不支援資料更新', 400);
@@ -192,32 +272,62 @@ const routes: Record<string, unknown> = {
         }
       }
       return json({ refresh });
-    } catch (cause) { return fail(cause); }
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'GET /api/data/:table': [sessionGuard, guard('view'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
-      const modulesByTable: Partial<Record<string, ModuleKey>> = { users: 'users', subscriptions: 'subscriptions', plans: 'subscriptions', transferRequests: 'subscriptions', activationCodes: 'activationCodes', admins: 'admins' };
+      const modulesByTable: Partial<Record<string, ModuleKey>> = {
+        users: 'users',
+        subscriptions: 'subscriptions',
+        plans: 'subscriptions',
+        transferRequests: 'subscriptions',
+        activationCodes: 'activationCodes',
+        admins: 'admins',
+      };
       const module = modulesByTable[ctx.params.table];
       if (module) requireModulePermission(admin, module, 'view');
       return json(await listAdminTable(ctx.params.table, supabase));
-    } catch (cause) { return fail(cause); }
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
-  'POST /api/data/:table': [sessionGuard, guard('add'), async () => error('此資料模組僅供檢視', 405)],
-  'PUT /api/data/:table/:id': [sessionGuard, guard('edit'), async () => error('此資料模組僅供檢視', 405)],
-  'DELETE /api/data/:table/:id': [sessionGuard, guard('delete'), async () => error('此資料模組僅供檢視', 405)],
+
+  'POST /api/data/:table': [sessionGuard, guard('add'), async () =>
+    error('此資料模組僅供檢視', 405)],
+  'PUT /api/data/:table/:id': [sessionGuard, guard('edit'), async () =>
+    error('此資料模組僅供檢視', 405)],
+  'DELETE /api/data/:table/:id': [sessionGuard, guard('delete'), async () =>
+    error('此資料模組僅供檢視', 405)],
+
   'POST /api/admins': [sessionGuard, superGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       const body = bodyOf(ctx);
       const credentials = await credentialAuth.passwordFields(String(body.password ?? ''), true);
-      return json(await adminData.createAdminAccount({ ...adminInput(body), ...credentials }, actorOf(admin)), 201);
-    } catch (cause) { return fail(cause); }
+      const created = await adminData.createAdminAccount({ ...adminInput(body), ...credentials }, actorOf(admin));
+      return json(created, 201);
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'PUT /api/members/:id/status': [sessionGuard, moduleGuard('users', 'edit'), async (ctx: Context) => {
-    try { return json(await adminData.updateMemberStatus(ctx.params.id, String(bodyOf(ctx).status ?? ''), actorOf(await getAdmin(ctx)))); }
-    catch (cause) { return fail(cause); }
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.updateMemberStatus(
+        ctx.params.id,
+        String(bodyOf(ctx).status ?? ''),
+        actorOf(admin),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'PUT /api/subscriptions/:id': [sessionGuard, moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
@@ -227,34 +337,66 @@ const routes: Record<string, unknown> = {
         planId: body.planId === undefined ? undefined : String(body.planId),
         expiresAt: body.expiresAt === undefined ? undefined : String(body.expiresAt),
       }, actorOf(admin)));
-    } catch (cause) { return fail(cause); }
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'PUT /api/transfer-requests/:id': [sessionGuard, moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
-    try { return json(await adminData.reviewTransferRequest(ctx.params.id, String(bodyOf(ctx).decision ?? ''), actorOf(await getAdmin(ctx)))); }
-    catch (cause) { return fail(cause); }
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.reviewTransferRequest(
+        ctx.params.id,
+        String(bodyOf(ctx).decision ?? ''),
+        actorOf(admin),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'PUT /api/admins/:id': [sessionGuard, superGuard, async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       const body = bodyOf(ctx);
       const credentials = await credentialAuth.passwordFields(String(body.password ?? ''), false);
-      return json(await adminData.updateAdminAccount(ctx.params.id, { ...adminInput(body), ...credentials }, actorOf(admin)));
-    } catch (cause) { return fail(cause); }
+      const updated = await adminData.updateAdminAccount(ctx.params.id, { ...adminInput(body), ...credentials }, actorOf(admin));
+      return json(updated);
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'DELETE /api/admins/:id': [sessionGuard, superGuard, async (ctx: Context) => {
-    try { await adminData.deleteAdminAccount(ctx.params.id, actorOf(await getAdmin(ctx))); return json({ deleted: true }); }
-    catch (cause) { return fail(cause); }
+    try {
+      const admin = await getAdmin(ctx);
+      await adminData.deleteAdminAccount(ctx.params.id, actorOf(admin));
+      return json({ deleted: true });
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'POST /api/activation-codes/batch': [sessionGuard, moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
     try {
       const body = bodyOf(ctx);
       const rawDuration = String(body.durationType ?? body.durationDays ?? '30_days');
-      return json(await adminData.generateActivationCodeBatch(legacyDurations[rawDuration] ?? rawDuration, actorOf(await getAdmin(ctx))));
-    } catch (cause) { return fail(cause); }
+      const durationType = legacyDurations[rawDuration] ?? rawDuration;
+      const quantity = Number(body.quantity ?? 10);
+      const admin = await getAdmin(ctx);
+      return json(await adminData.generateActivationCodeBatch(durationType, quantity, actorOf(admin)));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
+
   'DELETE /api/activation-codes/:id': [sessionGuard, moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
-    try { return json(await adminData.deleteActivationCode(ctx.params.id, actorOf(await getAdmin(ctx)))); }
-    catch (cause) { return fail(cause); }
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminData.deleteActivationCode(ctx.params.id, actorOf(admin)));
+    } catch (cause) {
+      return fail(cause);
+    }
   }],
 };
 

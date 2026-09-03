@@ -256,3 +256,70 @@ export async function downloadMatrixTicket(ticket: HTMLElement, filename = "matr
     if (downloadUrl) URL.revokeObjectURL(downloadUrl);
   }
 }
+
+
+function parseSvgLength(value: string | null) {
+  if (!value) return null;
+  const match = value.trim().match(/^(?:\+)?([0-9]+(?:\.[0-9]+)?)(?:px)?$/i);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function readSvgDimensions(svgText: string) {
+  const parsed = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const root = parsed.documentElement;
+  if (!root || root.localName === "parsererror" || root.localName !== "svg") {
+    throw new Error("MATRIX_TICKET_INVALID_SVG");
+  }
+
+  const viewBox = (root.getAttribute("viewBox") ?? "")
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  const width = parseSvgLength(root.getAttribute("width")) ?? (
+    viewBox.length === 4 && Number.isFinite(viewBox[2]) && viewBox[2] > 0 ? viewBox[2] : null
+  );
+  const height = parseSvgLength(root.getAttribute("height")) ?? (
+    viewBox.length === 4 && Number.isFinite(viewBox[3]) && viewBox[3] > 0 ? viewBox[3] : null
+  );
+
+  if (!width || !height) throw new Error("MATRIX_TICKET_INVALID_SIZE");
+  return { width, height };
+}
+
+export async function downloadMatrixCardPng(cardUrl: string, filename: string) {
+  const response = await fetch(cardUrl, { credentials: "same-origin" });
+  if (!response.ok) throw new Error("MATRIX_CARD_DOWNLOAD_FAILED");
+
+  const svgText = await response.text();
+  const { width, height } = readSvgDimensions(svgText);
+  const svgImage = await loadSvgImage(svgText);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(width);
+  canvas.height = Math.ceil(height);
+  if (canvas.width <= 0 || canvas.height <= 0) {
+    throw new Error("MATRIX_TICKET_INVALID_CANVAS_SIZE");
+  }
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("MATRIX_TICKET_CANVAS_CONTEXT_FAILED");
+  context.drawImage(svgImage, 0, 0, width, height);
+
+  const png = await canvasToPng(canvas);
+  await validatePng(png);
+
+  let downloadUrl: string | null = null;
+  let anchor: HTMLAnchorElement | null = null;
+  try {
+    downloadUrl = URL.createObjectURL(png);
+    anchor = document.createElement("a");
+    anchor.href = downloadUrl;
+    anchor.download = filename;
+    document.body.append(anchor);
+    anchor.click();
+  } finally {
+    anchor?.remove();
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+  }
+}

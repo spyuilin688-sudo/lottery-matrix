@@ -379,7 +379,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                 (panel["numbers"] + panel["right"]) / 2,
                 (HEADER_TOP + HEADER_BOTTOM) / 2,
                 f'{layout["title"]} {mode}', 56, weight=700,
-                dominant_baseline="middle",
+                dominant_baseline="central",
                 font_family=CJK_FONT_FAMILY,
             ),
         ])

@@ -5,7 +5,7 @@ import test from "node:test";
 const homeCss = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
 const homeVisualCss = readFileSync(new URL("../src/homepage/visual-language.css", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-const mobileLayoutCss = readFileSync(new URL("../src/mobile-layout-polish.css", import.meta.url), "utf8");
+const proPlansLayoutCss = readFileSync(new URL("../src/pro-plans-layout.css", import.meta.url), "utf8");
 const adjustmentCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const guideSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
@@ -34,10 +34,15 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
   assert.match(featureCss, /\.reference-query-panel \.reference-search input,\s*\.reference-query-panel \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s);
 });
 
-test("管理訂閱卡上方與下方維持指定間距", () => {
-  assert.match(mobileLayoutCss, /\.pro-plans-screen \.feature-body\s*\{[^}]*gap:\s*4px;/s);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen \.plan-carousel\s*\{[^}]*padding:\s*0 18px 18px;/s);
-  assert.match(mobileLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*row-gap:\s*0;/s);
+test("會員方案與管理訂閱使用指定外距、卡片尺寸與付款節奏", () => {
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-inline:\s*18px;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\s*\{[^}]*min-height:\s*190px;[^}]*height:\s*auto;[^}]*padding:\s*12px;[^}]*border-color:\s*#755329;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\[data-current="true"\]\s*\{[^}]*border-color:\s*#d6a42b;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-inline\);[^}]*row-gap:\s*0;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card\s*\{[^}]*margin:\s*0 0 8px;[^}]*padding:\s*8px;[^}]*border-color:\s*#755329;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card dl > div\s*\{[^}]*min-height:\s*29px;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin:\s*0 0 6px;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.payment-note\s*\{[^}]*font-size:\s*11px;/s);
 });
 
 test("所有非首頁頁面在底部導覽淨空之外保留 8px", () => {

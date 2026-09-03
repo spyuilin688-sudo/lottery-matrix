@@ -1,17 +1,20 @@
 // @vitest-environment jsdom
 
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 declare const process: { cwd(): string };
 
-const css = [
-  "src/feature-pages.css",
-  "src/pro-plans-carousel-peek.css",
-  "src/mobile-layout-polish.css",
-].map((path) => readFileSync(`${process.cwd()}/${path}`, "utf8")).join("\n");
+const ownerPath = `${process.cwd()}/src/pro-plans-layout.css`;
+const ownerExists = existsSync(ownerPath);
+const ownerCss = ownerExists ? readFileSync(ownerPath, "utf8") : "";
 const mobileCss = readFileSync(`${process.cwd()}/src/mobile-layout-polish.css`, "utf8");
+const css = [
+  readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8"),
+  ownerCss,
+  readFileSync(`${process.cwd()}/src/pro-plans-carousel-peek.css`, "utf8"),
+].join("\n");
 
 function mountPlans() {
   const style = document.createElement("style");
@@ -44,18 +47,25 @@ afterEach(() => {
 });
 
 describe("Matrix Pro plan layout refinement", () => {
-  it("uses the approved card gutters, sizing, and visual hierarchy", () => {
+  it("uses one reachable page-scoped owner without legacy pull-out overrides", () => {
+    expect(ownerExists).toBe(true);
+    expect(ownerCss).toMatch(/\.pro-plans-screen\s*\{[^}]*--pro-plans-inline:\s*18px;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen\s*>\s*\.feature-body\s*\{[^}]*padding-inline:\s*0;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0 0 18px;[^}]*gap:\s*12px;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex:\s*0 0 calc\(100% - \(var\(--pro-plans-inline\) \* 2\)\);/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-inline\);[^}]*row-gap:\s*0;/s);
+    expect(ownerCss).not.toMatch(/margin-inline:\s*-[\d.]+px/);
+    expect(ownerCss).not.toMatch(/width:\s*calc\(100%\s*\+/);
+    expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
+  });
+
+  it("uses the approved card sizing and visual hierarchy", () => {
     mountPlans();
 
     const idlePlan = getComputedStyle(document.querySelector('.plan-card[data-current="false"]')!);
     const currentPlan = getComputedStyle(document.querySelector('.plan-card[data-current="true"]')!);
     const renewal = getComputedStyle(document.querySelector(".renewal-card")!);
 
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen > .feature-body")!).paddingInline).toBe("16px");
-    expect(getComputedStyle(document.querySelector(".plan-carousel")!).marginInline).toBe("-16px");
-    expect(getComputedStyle(document.querySelector(".plan-carousel")!).paddingLeft).toBe("17px");
-    expect(getComputedStyle(document.querySelector(".plan-carousel")!).scrollPaddingInline).toBe("17px");
-    expect(idlePlan.flexBasis).toBe("calc(100% - 34px)");
     expect(idlePlan.minHeight).toBe("190px");
     expect(idlePlan.height).toBe("auto");
     expect(idlePlan.padding).toBe("12px");
@@ -74,7 +84,7 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".auto-renew-setting input")!).height).toBe("14px");
   });
 
-  it("uses independent checkout spacing and readable payment help", () => {
+  it("uses the approved checkout spacing and readable payment help", () => {
     mountPlans();
 
     const checkout = getComputedStyle(document.querySelector(".pro-plans-checkout")!);

@@ -1,0 +1,70 @@
+/* Canonical compact layout for the referral / activation-code page. */
+.activation-code-screen {
+  --activation-section-padding-block: 12px;
+  --activation-section-gap: 8px;
+}
+
+/* Preserve the integrated artwork aspect ratio while reducing header height responsively. */
+.activation-code-screen > .feature-brand-header.integrated-title-header .matrix-title-banner {
+  width: calc(100% - clamp(64px, 21vw, 82px));
+}
+
+/* Keep the existing 16px page sides and 12px gap between the two main panels. */
+.activation-code-screen > .feature-body {
+  gap: 12px;
+}
+
+.activation-code-screen .referral-code-section,
+.activation-code-screen .activation-code-section {
+  padding: var(--activation-section-padding-block) 16px;
+  gap: var(--activation-section-gap);
+}
+
+.activation-code-screen .referral-summary-card,
+.activation-code-screen .referral-input-card,
+.activation-code-screen .activation-card {
+  gap: 8px;
+}
+
+.activation-code-screen .referral-code-value {
+  font-size: 14px;
+}
+
+.activation-code-screen .referral-primary-actions {
+  margin-top: 0;
+}
+
+.activation-code-screen .referral-primary-actions button {
+  height: 30px;
+  min-height: 30px;
+}
+
+.activation-code-screen .referral-input-card .code-entry-block,
+.activation-code-screen .activation-card .code-entry-block {
+  gap: 8px;
+}
+
+.activation-code-screen .referral-input-card input,
+.activation-code-screen .activation-card input {
+  height: 36px;
+  min-height: 36px;
+  padding-block: 4px;
+}
+
+.activation-code-screen .referral-input-card .primary-action,
+.activation-code-screen .activation-card .primary-action {
+  height: 34px;
+  min-height: 34px;
+}
+
+.activation-code-screen .referral-rule-card {
+  border: 0;
+}
+
+.activation-code-screen .referral-rule-toggle {
+  padding-block: 4px;
+}
+
+.activation-code-screen .activation-card-toggle {
+  min-height: 32px;
+}
