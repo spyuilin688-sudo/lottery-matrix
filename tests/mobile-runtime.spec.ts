@@ -396,6 +396,13 @@ test("keyboard and its attached footer dismiss on the same transition", async ({
 
   await input.click();
   await expect(keyboard).toHaveAttribute("data-visible", "true");
+  await expect.poll(() => footer.evaluate((element) => {
+    const keyboardElement = document.querySelector<HTMLElement>('[data-testid="keyboard-dock"]')!;
+    return Math.abs(
+      Number.parseFloat(getComputedStyle(element).bottom) -
+      Number.parseFloat(getComputedStyle(keyboardElement).height),
+    );
+  })).toBeLessThan(1);
   await drag(page, footer, 0, 120, 5, 0.08);
   await expect(keyboard).toHaveAttribute("data-visible", "false");
 
