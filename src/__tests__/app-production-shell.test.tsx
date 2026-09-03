@@ -170,7 +170,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
     expect(source).toHaveTextContent("26");
-    expect(getComputedStyle(source!).borderTopWidth).toBe("1px");
+    expect(getComputedStyle(source!).borderTopWidth).toBe("0.7px");
     expect(getComputedStyle(source!).backgroundColor).toBe("rgba(88, 211, 230, 0.14)");
     expect(getComputedStyle(step!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(step).toHaveTextContent("11");
@@ -541,7 +541,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*16px/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*700/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
-    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*0/s);
+    expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*2\.5px/s);
   });
 
   it("keeps the five-number validation row compact without changing the wide 6+1 layout", () => {

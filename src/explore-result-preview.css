@@ -599,6 +599,10 @@
   white-space: nowrap;
 }
 
+.explore-validation-formula-row:first-child {
+  color: #e4c980;
+}
+
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-numbers {
   grid-template-columns: repeat(6, minmax(0, 1fr)) max-content;
   grid-auto-columns: clamp(16px, 4.36vw, 17px);

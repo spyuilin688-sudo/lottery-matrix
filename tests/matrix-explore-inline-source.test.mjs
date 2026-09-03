@@ -26,16 +26,16 @@ test("Matrix Explore stylesheet follows the feature-pages import graph", () => {
   assert.match(prototypeSource, /import "\.\/feature-pages\.css";/);
 });
 
-test("Matrix Explore panels use scoped full-width auto-height flow", () => {
+test("Matrix Explore panels use scoped responsive-width auto-height flow", () => {
   for (const selector of [
     /^\.matrix-explore-main-screen \.explore-settings$/,
     /^\.matrix-explore-main-screen \.hit-advanced-panel$/,
     /^\.matrix-explore-main-screen \.repeat-stats-panel$/,
     /^\.matrix-explore-main-screen \.result-panel$/,
-    /^\.matrix-explore-main-screen \.history-panel$/,
   ]) {
-    assertRule(selector, [/width:\s*100%;/, /height:\s*auto;/]);
+    assertRule(selector, [/width:\s*var\(--matrix-explore-result-panel-width, 100%\);/, /height:\s*auto;/]);
   }
+  assertRule(/^\.matrix-explore-main-screen \.history-panel$/, [/width:\s*100%;/, /height:\s*auto;/]);
   assert.doesNotMatch(css, /width:\s*366px;/);
 });
 

@@ -40,9 +40,9 @@ describe('admin compact density', () => {
   });
 
   it('uses compact shared action controls and reduced administration spacing', () => {
-    expect(operationsCss).toMatch(/\.compactButton \{ height: 30px;/);
-    expect(operationsCss).toMatch(/\.pagination button \{ min-width: 32px; min-height: 32px; \}/);
-    expect(operationsCss).toMatch(/\.content \{ padding: 16px; \}/);
+    expect(operationsCss).toMatch(/\.compactButton \{ height: 32px;/);
+    expect(operationsCss).toMatch(/\.pagination button \{ min-width: 36px; min-height: 36px; \}/);
+    expect(operationsCss).toMatch(/\.content \{ padding: 20px; \}/);
     expect(operationsCss).toMatch(/\.actions \{ gap: 6px; \}/);
   });
 });

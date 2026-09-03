@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync('src/FeaturePages.tsx', 'utf8');
 const api = readFileSync('src/matrix-algorithm-api.ts', 'utf8');
-const migration = readFileSync('supabase/migrations/20260903073500_matrix_tianyan_result_road_types.sql', 'utf8');
+const migration = readFileSync('supabase/migrations/20260903084602_matrix_tianyan_result_road_types.sql', 'utf8');
 
 test('Tianyan result UI matches the approved differences', () => {
   assert.match(source, /title === "Matrix 探索" \? \([\s\S]*?<HistoryList/);

@@ -40,7 +40,8 @@ body,
   min-width: 0;
   max-width: 100%;
   overflow: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   user-select: none;
 }
 
@@ -293,6 +294,10 @@ button {
   overflow: hidden;
 }
 
+.mobile-app-viewport[data-platform="android"][data-keyboard-visible="false"] {
+  bottom: var(--device-safe-area-bottom);
+}
+
 .flow-stack {
   --flow-header-height: 0px;
   --flow-header-content-height: 0px;
@@ -326,6 +331,7 @@ button {
   left: 0;
   height: var(--flow-footer-height);
   background: transparent;
+  touch-action: none;
   transition: bottom 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

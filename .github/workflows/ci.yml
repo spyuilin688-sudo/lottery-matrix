@@ -63,6 +63,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Full Vitest suite
+        run: npm run test:unit
+
       - name: Targeted Explore tests
         run: node --test tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
 
@@ -71,6 +74,54 @@ jobs:
 
       - name: Full tests
         run: node --test tests/*.test.mjs
+
+  runtime-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and system dependencies
+        run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
+
+      - name: Playwright runtime tests
+        run: npm run test:runtime
+
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/admin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Admin tests
+        run: npm test
+
+      - name: Admin build
+        run: APPDEPLOY_CI_EXTERNALS=true npm run build
 
   matrix-api:
     runs-on: ubuntu-latest

@@ -8,6 +8,7 @@ const matrixCards = vi.hoisted(() => ({
   fetchMatrixCardManifest: vi.fn(),
   matrixCardUrl: vi.fn((path: string) => `https://matrix.example.test${path}`),
 }));
+const matrixTicket = vi.hoisted(() => ({ download: vi.fn() }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 const memberReferral = vi.hoisted(() => ({ fetchSummary: vi.fn(), submit: vi.fn() }));
 
@@ -15,6 +16,10 @@ vi.mock("../lottery-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lottery-api")>()),
   fetchMatrixCardManifest: matrixCards.fetchMatrixCardManifest,
   matrixCardUrl: matrixCards.matrixCardUrl,
+}));
+
+vi.mock("../matrix-ticket-download", () => ({
+  downloadMatrixCardPng: matrixTicket.download,
 }));
 
 vi.mock("../activation/redeemActivationCode", async (importOriginal) => ({
@@ -60,6 +65,7 @@ beforeEach(() => {
     },
   });
   matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => `https://matrix.example.test${path}`);
+  matrixTicket.download.mockReset().mockResolvedValue(undefined);
   activation.redeem.mockReset().mockResolvedValue({
     member_id: "member-1",
     duration_type: "30_days",
@@ -93,71 +99,49 @@ afterEach(() => {
 
 describe("existing feature actions", () => {
   it("does not start the Matrix ticket download after cancelling confirmation", async () => {
-    const fetchCard = vi.fn();
-    vi.stubGlobal("fetch", fetchCard);
     render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
-
     const button = await screen.findByRole("button", { name: "下載牌單" });
     fireEvent.click(button);
-
-    expect(fetchCard).not.toHaveBeenCalled();
+    expect(matrixTicket.download).not.toHaveBeenCalled();
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("確認下載牌單？");
-
     fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
-    expect(fetchCard).not.toHaveBeenCalled();
+    expect(matrixTicket.download).not.toHaveBeenCalled();
   });
 
   it("downloads the current Matrix ticket once, exposes pending failure, and permits retry", async () => {
     let rejectDownload!: (reason: Error) => void;
-    const fetchCard = vi.fn()
+    matrixTicket.download
       .mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { rejectDownload = reject; }))
-      .mockResolvedValueOnce({ ok: true, blob: async () => new Blob(["<svg />"], { type: "image/svg+xml" }) });
-    vi.stubGlobal("fetch", fetchCard);
-    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:matrix-ticket");
-    const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
-    const clickedAnchors: HTMLAnchorElement[] = [];
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function click(this: HTMLAnchorElement) {
-      clickedAnchors.push(this);
-    });
+      .mockResolvedValueOnce(undefined);
     render(<AppDialogProvider><MatrixCardPage onNavigate={vi.fn()} /></AppDialogProvider>);
 
-    const ticket = document.querySelector<HTMLElement>(".matrix-ticket");
     const button = await screen.findByRole("button", { name: "下載牌單" });
     await screen.findByRole("img", { name: "今彩539順球牌單，第 115000001 期" });
-    expect(ticket).not.toBeNull();
     expect(button).toBeEnabled();
-
     fireEvent.click(button);
-
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
 
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("https://matrix.example.test/api/matrix/cards/今彩539/sorted.svg"));
-    expect(fetchCard).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(matrixTicket.download).toHaveBeenCalledWith(
+      "https://matrix.example.test/api/matrix/cards/今彩539/sorted.svg",
+      "今彩539-順球牌單.png",
+    ));
+    expect(matrixTicket.download).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(button).toBeDisabled());
     expect(button).toHaveAttribute("aria-busy", "true");
     fireEvent.click(button);
-    expect(fetchCard).toHaveBeenCalledTimes(1);
+    expect(matrixTicket.download).toHaveBeenCalledTimes(1);
 
-    await act(async () => {
-      rejectDownload(new Error("private renderer detail"));
-    });
-
+    await act(async () => { rejectDownload(new Error("private renderer detail")); });
     expect(screen.getByRole("alert")).toHaveTextContent("下載失敗，請稍後再試");
     expect(button).toBeEnabled();
     expect(button).toHaveAttribute("aria-busy", "false");
 
     fireEvent.click(button);
-
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
-
-    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(matrixTicket.download).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(button).toBeEnabled());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:matrix-ticket");
-    expect(clickedAnchors).toHaveLength(1);
-    expect(clickedAnchors[0].download).toBe("今彩539-順球牌單.svg");
   });
 
   it("loads referral details and lets an eligible member submit one referral code", async () => {

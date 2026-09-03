@@ -44,12 +44,14 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.doesNotMatch(css, /\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number,\s*\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-numbers em\s*\{[^}]*font-size:/s);
   assert.match(component[0], /<>［\{" "\}<strong className="explore-validation-result-number">\{resultNumbers\}<\/strong>\{" "\}］<\/>/);
   assert.match(component[0], /className="explore-validation-formula-expression"/);
-  assert.match(component[0], /const formulaResultNumber = \(algorithmType: string, baseNumber: number, ruleValue: number\)/);
-  assert.match(component[0], /item\.algorithmType === "拖牌" \? \[\.\.\.resolved\]\.reverse\(\) : resolved/);
+  assert.match(component[0], /const formulaRows = \(\s*baseNumber: number,\s*resultNumbers: string,/s);
+  assert.match(component[0], /validationFormula\(\s*item\.referencePosition \?\? item\.position,\s*baseNumber,\s*display,\s*resultNumbers,/s);
+  assert.match(component[0], /display\.replace\(\/\^\\\+\/, ""\)/);
+  assert.doesNotMatch(component[0], /const formulaResultNumber/);
   assert.doesNotMatch(component[0], /className="explore-validation-formulas explore-validation-numeric-text"/);
   assert.doesNotMatch(component[0], /`第\$\{item\.referencePosition \?\? item\.position\}顆 \$\{displayNumber\(row\.baseNumber\)\} \$\{display\} = \$\{resultNumbers\}`/);
-  assert.doesNotMatch(component[0], /\{" \+"\}/);
-  assert.doesNotMatch(css, /\.explore-validation-formula-row:first-child\s*\{/);
+  assert.doesNotMatch(component[0], /<span>\{formula\}<\/span>\{" \+"\}/);
+  assert.match(css, /\.explore-validation-formula-row:first-child\s*\{[^}]*color:\s*#e4c980/s);
   assert.doesNotMatch(css, /\.explore-validation-group\[data-row-count="3"\] \.explore-validation-formula-row:nth-child\(2\)/);
   assert.doesNotMatch(css, /\.explore-validation-group\[data-road-type="拖牌"\] \.explore-validation-formula-row:nth-child\(2\)/);
   assert.doesNotMatch(css, /!important/);

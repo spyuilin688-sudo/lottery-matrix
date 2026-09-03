@@ -33,11 +33,12 @@ async function touchDrag(
   deltaX: number,
   deltaY: number,
   steps = 6,
+  startRatioY = 0.5,
 ) {
   const box = await locator.boundingBox();
   if (!box) throw new Error("Touch target has no bounding box");
   const startX = box.x + box.width / 2;
-  const startY = box.y + box.height / 2;
+  const startY = box.y + box.height * startRatioY;
   const client = await page.context().newCDPSession(page);
 
   try {
@@ -67,11 +68,18 @@ async function touchDrag(
   }
 }
 
-async function drag(page: Page, locator: Locator, deltaX: number, deltaY: number, steps = 8) {
+async function drag(
+  page: Page,
+  locator: Locator,
+  deltaX: number,
+  deltaY: number,
+  steps = 8,
+  startRatioY = 0.5,
+) {
   const box = await locator.boundingBox();
   if (!box) throw new Error("Drag target has no bounding box");
   const startX = box.x + box.width / 2;
-  const startY = box.y + box.height / 2;
+  const startY = box.y + box.height * startRatioY;
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
@@ -95,13 +103,27 @@ for (const width of MOBILE_WIDTHS) {
     const firstAssetFetchStarted = deferred();
     const releaseFirstAssetFetch = deferred();
     let ticketAssetFetches = 0;
+    const cardSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="320" height="180" fill="#061019"/></svg>';
 
-    await page.route("**/assets/lottery/functions/matrixya.png", async (route) => {
+    await page.route("**/api/matrix/cards/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          lottery: "今彩539",
+          period: "115000001",
+          cards: {
+            draw: { url: "/test-assets/matrix-card-draw.svg" },
+            sorted: { url: "/test-assets/matrix-card-sorted.svg" },
+          },
+        }),
+      });
+    });
+    await page.route("**/test-assets/matrix-card-*.svg", async (route) => {
       if (route.request().resourceType() !== "fetch") {
-        await route.continue();
+        await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
         return;
       }
-
       ticketAssetFetches += 1;
       if (ticketAssetFetches === 1) {
         firstAssetFetchStarted.resolve();
@@ -109,16 +131,15 @@ for (const width of MOBILE_WIDTHS) {
         await route.fulfill({ status: 503, contentType: "text/plain", body: "unavailable" });
         return;
       }
-
-      await route.continue();
+      await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
     });
 
     await page.goto("/");
     await page.getByRole("button", { name: "Matrix 牌單", exact: true }).click();
-
-    const button = page.getByRole("button", { name: "下載 PNG", exact: true });
+    const button = page.getByRole("button", { name: "下載牌單", exact: true });
     await expect(button).toBeVisible();
     await button.click();
+    await page.getByRole("dialog").getByRole("button", { name: "確認", exact: true }).click();
     await firstAssetFetchStarted.promise;
     try {
       await expect(button).toBeDisabled();
@@ -131,11 +152,10 @@ for (const width of MOBILE_WIDTHS) {
     await expect(button).toBeEnabled();
     await expect(button).toHaveAttribute("aria-busy", "false");
 
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      button.click(),
-    ]);
-    expect(download.suggestedFilename()).toBe("matrix-ticket.png");
+    await button.click();
+    await page.getByRole("dialog").getByRole("button", { name: "確認", exact: true }).click();
+    const download = await page.waitForEvent("download");
+    expect(download.suggestedFilename()).toBe("今彩539-順球牌單.png");
     const downloadPath = await download.path();
     expect(downloadPath).not.toBeNull();
     const bytes = await readFile(downloadPath!);
@@ -173,11 +193,11 @@ for (const width of MOBILE_WIDTHS) {
     await expectNoHorizontalDocumentOverflow(page);
   });
 
-  test(`product textareas and standards scrollbars retain geometry at ${width}px`, async ({ page }) => {
+  test(`product textareas and hidden native scrollbars retain geometry at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.evaluate(() => window.localStorage.setItem("matrix-quick-target", "notebook"));
     await page.goto("/");
-    await page.getByTestId("bottom-navigation").getByRole("button", { name: /^快捷/ }).click();
+    await page.getByTestId("bottom-navigation").getByRole("button", { name: "快捷", exact: true }).click();
     await page.getByRole("button", { name: "新增筆記", exact: true }).click();
 
     const notebook = page.getByLabel("筆記內容", { exact: true });
@@ -213,10 +233,10 @@ for (const width of MOBILE_WIDTHS) {
       return values;
     });
     expect(scrollbars).toEqual({
-      rootColor: "rgb(229, 179, 77) rgb(4, 10, 17)",
-      rootWidth: "thin",
-      inheritedColor: "rgb(229, 179, 77) rgb(4, 10, 17)",
-      inheritedWidth: "thin",
+      rootColor: "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+      rootWidth: "none",
+      inheritedColor: "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+      inheritedWidth: "none",
     });
     await expectNoHorizontalDocumentOverflow(page);
 
@@ -244,7 +264,8 @@ for (const width of MOBILE_WIDTHS) {
       return {
         horizontalOverflow: horizontal.overflowX,
         horizontalTouch: horizontal.touchAction,
-        horizontalOverscroll: horizontal.overscrollBehavior,
+        horizontalOverscrollX: horizontal.overscrollBehaviorX,
+        horizontalOverscrollY: horizontal.overscrollBehaviorY,
         verticalOverflow: scroll.overflowY,
         verticalTouch: scroll.touchAction,
         verticalOverscroll: scroll.overscrollBehavior,
@@ -253,7 +274,8 @@ for (const width of MOBILE_WIDTHS) {
     expect(behavior).toEqual({
       horizontalOverflow: "auto",
       horizontalTouch: "pan-y",
-      horizontalOverscroll: "contain",
+      horizontalOverscrollX: "contain",
+      horizontalOverscrollY: "auto",
       verticalOverflow: "auto",
       verticalTouch: "pan-y",
       verticalOverscroll: "contain",
@@ -313,15 +335,15 @@ test("vertical intent over a carousel is handed to MobileScroll in both directio
   const carousel = page.locator(".fixture-carousel");
   const parent = page.getByTestId("mobile-scroll");
 
-  await drag(page, card, 4, -150);
-  expect(await parent.evaluate((element) => element.scrollTop)).toBeGreaterThan(60);
+  await touchDrag(page, card, 4, -150);
+  await expect.poll(() => parent.evaluate((element) => element.scrollTop)).toBeGreaterThan(60);
   expect(await carousel.evaluate((element) => element.scrollLeft)).toBe(0);
 
   await parent.evaluate((element) => {
     element.scrollTop = 80;
   });
-  await drag(page, card, -3, 110);
-  expect(await parent.evaluate((element) => element.scrollTop)).toBeLessThan(80);
+  await touchDrag(page, card, -3, 110);
+  await expect.poll(() => parent.evaluate((element) => element.scrollTop)).toBeLessThan(80);
 });
 
 test("tap activates a card but a completed drag does not", async ({ page }) => {
@@ -374,7 +396,14 @@ test("keyboard and its attached footer dismiss on the same transition", async ({
 
   await input.click();
   await expect(keyboard).toHaveAttribute("data-visible", "true");
-  await drag(page, footer, 0, 120, 5);
+  await expect.poll(() => footer.evaluate((element) => {
+    const keyboardElement = document.querySelector<HTMLElement>('[data-testid="keyboard-dock"]')!;
+    return Math.abs(
+      Number.parseFloat(getComputedStyle(element).bottom) -
+      Number.parseFloat(getComputedStyle(keyboardElement).height),
+    );
+  })).toBeLessThan(1);
+  await drag(page, footer, 0, 120, 5, 0.08);
   await expect(keyboard).toHaveAttribute("data-visible", "false");
 
   await page.waitForTimeout(100);
