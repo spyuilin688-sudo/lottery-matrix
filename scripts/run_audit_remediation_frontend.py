@@ -11,8 +11,8 @@ if start < 0 or end_start < 0:
     raise SystemExit("unable to locate MatrixCorePage remediation block")
 end = end_start + len(end_marker)
 replacement = '''matrix_core_start = text.index("export function MatrixCorePage(")
-matrix_explore_start = text.index("export function MatrixExplorePage", matrix_core_start)
-text = text[:matrix_core_start] + text[matrix_explore_start:]
+matrix_core_end = text.index("const GUIDE_LOOP_GROUPS", matrix_core_start)
+text = text[:matrix_core_start] + text[matrix_core_end:]
 '''
 patched_source = source[:start] + replacement + source[end:]
 temporary_script = Path("/tmp/audit_remediation_frontend_runtime.py")
