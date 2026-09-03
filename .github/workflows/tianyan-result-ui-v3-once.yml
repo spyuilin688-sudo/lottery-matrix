@@ -12,7 +12,7 @@ permissions:
 jobs:
   apply-tianyan-result-ui:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,6 +28,9 @@ jobs:
 
       - name: Apply scoped Tianyan patch
         run: python scripts/tmp_apply_tianyan_result_ui.py
+
+      - name: Update superseded Tianyan history test
+        run: python scripts/tmp_patch_tianyan_legacy_test.py
 
       - name: Update mobile runtime lock
         run: npm run update:runtime-lock
@@ -56,11 +59,14 @@ jobs:
             .github/workflows/tianyan-result-ui-once.yml \
             .github/workflows/tianyan-result-ui-v2-once.yml \
             .github/workflows/tianyan-result-ui-v3-once.yml \
-            scripts/tmp_apply_tianyan_result_ui.py
+            .github/workflows/tianyan-result-ui-v4-once.yml \
+            scripts/tmp_apply_tianyan_result_ui.py \
+            scripts/tmp_patch_tianyan_legacy_test.py
           git add -- \
             src/FeaturePages.tsx \
             src/matrix-algorithm-api.ts \
             src/__tests__/MatrixTianyanPage.test.tsx \
+            src/__tests__/MatrixExplorePage.test.tsx \
             tests/matrix-tianyan-result-ui-contract.test.mjs \
             supabase/migrations/20260903073500_matrix_tianyan_result_road_types.sql \
             mobile-runtime.lock.json
