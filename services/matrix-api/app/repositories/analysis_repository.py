@@ -20,6 +20,7 @@ RETENTION = timedelta(days=3)
 DRAW_PAGE_SIZE = 1000
 ARTIFACT_CHUNK_PAGE_SIZE = 2
 EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
+ANALYSIS_RUN_LEASE_SECONDS = 300
 
 
 class AnalysisRepository(Protocol):
@@ -41,8 +42,9 @@ class AnalysisRepository(Protocol):
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]: ...
-    def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]: ...
-    def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None: ...
+    def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str, *, owner_id: str | None = None, lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS) -> dict[str, Any]: ...
+    def renew_run_lease(self, lottery: str, draw_period: str, analysis_version: str, owner_id: str, lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS) -> bool: ...
+    def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int, *, owner_id: str | None = None) -> None: ...
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
     def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
     def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
@@ -52,8 +54,8 @@ class AnalysisRepository(Protocol):
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
     def has_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> bool: ...
     def read_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> Any | None: ...
-    def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None: ...
-    def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None: ...
+    def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str, *, owner_id: str | None = None) -> None: ...
+    def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str, *, owner_id: str | None = None) -> None: ...
     def get_progress(self, lottery: str, draw_period: str, analysis_version: str | None = None) -> dict[str, Any] | None: ...
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None: ...
     def cleanup_expired(self, now: datetime) -> int: ...
@@ -201,17 +203,123 @@ class InMemoryAnalysisRepository:
             for draw in ordered
         ]
 
-    def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
+    @staticmethod
+    def _lease_datetime(value: str) -> datetime:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        return parsed.astimezone(UTC)
+
+    def _require_run_owner(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        owner_id: str | None,
+    ) -> None:
+        if owner_id is None:
+            return
+        run = self.runs[(lottery, draw_period, analysis_version)]
+        expires_at = run.get("leaseExpiresAt")
+        if (
+            run.get("leaseOwner") != owner_id
+            or not expires_at
+            or self._lease_datetime(str(expires_at)) <= datetime.now(UTC)
+        ):
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+
+    def begin_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        started_at: str,
+        *,
+        owner_id: str | None = None,
+        lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS,
+    ) -> dict[str, Any]:
         key = (lottery, draw_period, analysis_version)
+        if owner_id is None:
+            if key not in self.runs:
+                self.runs[key] = {
+                    "lottery": lottery, "drawPeriod": draw_period, "analysisVersion": analysis_version,
+                    "phase": "explore", "cursor": 0, "total": 0, "status": "running",
+                    "startedAt": started_at, "completedAt": None, "error": None,
+                }
+            return dict(self.runs[key])
+        if not owner_id.strip():
+            raise ValueError("ANALYSIS_RUN_OWNER_REQUIRED")
+        if not 30 <= lease_seconds <= 3600:
+            raise ValueError("ANALYSIS_RUN_LEASE_SECONDS_INVALID")
+
+        now = self._lease_datetime(started_at)
+        lease_expires_at = (now + timedelta(seconds=lease_seconds)).isoformat()
         if key not in self.runs:
             self.runs[key] = {
                 "lottery": lottery, "drawPeriod": draw_period, "analysisVersion": analysis_version,
                 "phase": "explore", "cursor": 0, "total": 0, "status": "running",
                 "startedAt": started_at, "completedAt": None, "error": None,
+                "leaseOwner": owner_id, "leaseExpiresAt": lease_expires_at,
             }
-        return dict(self.runs[key])
+            return {**self.runs[key], "leaseAcquired": True}
 
-    def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
+        run = self.runs[key]
+        if run.get("status") == "complete":
+            return {**run, "leaseAcquired": False}
+        current_expiry_raw = run.get("leaseExpiresAt")
+        current_expiry = (
+            self._lease_datetime(str(current_expiry_raw))
+            if current_expiry_raw else None
+        )
+        can_acquire = (
+            run.get("status") == "failed"
+            or not run.get("leaseOwner")
+            or run.get("leaseOwner") == owner_id
+            or current_expiry is None
+            or current_expiry <= now
+        )
+        if can_acquire:
+            run.update({
+                "status": "running",
+                "completedAt": None,
+                "error": None,
+                "leaseOwner": owner_id,
+                "leaseExpiresAt": lease_expires_at,
+            })
+        return {**run, "leaseAcquired": can_acquire}
+
+    def renew_run_lease(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        owner_id: str,
+        lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS,
+    ) -> bool:
+        if not 30 <= lease_seconds <= 3600:
+            raise ValueError("ANALYSIS_RUN_LEASE_SECONDS_INVALID")
+        run = self.runs.get((lottery, draw_period, analysis_version))
+        if run is None or run.get("status") != "running" or run.get("leaseOwner") != owner_id:
+            return False
+        expires_at = run.get("leaseExpiresAt")
+        now = datetime.now(UTC)
+        if not expires_at or self._lease_datetime(str(expires_at)) <= now:
+            return False
+        run["leaseExpiresAt"] = (now + timedelta(seconds=lease_seconds)).isoformat()
+        return True
+
+    def update_progress(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        phase: str,
+        cursor: int,
+        total: int,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
+        self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
         self.runs[(lottery, draw_period, analysis_version)].update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completedAt": None, "error": None})
 
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
@@ -287,14 +395,38 @@ class InMemoryAnalysisRepository:
             return self.materialize_artifact(lottery, draw_period, analysis_version, kind, payload["total"])
         return payload
 
-    def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
+    def complete_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        completed_at: str,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
         available = {key[3] for key in self.artifacts if key[:3] == (lottery, draw_period, analysis_version)}
         if available != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_ARTIFACTS_INCOMPLETE")
-        self.runs[(lottery, draw_period, analysis_version)].update({"phase": "complete", "status": "complete", "completedAt": completed_at, "error": None})
+        self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
+        update = {"phase": "complete", "status": "complete", "completedAt": completed_at, "error": None}
+        if owner_id is not None:
+            update.update({"leaseOwner": None, "leaseExpiresAt": None})
+        self.runs[(lottery, draw_period, analysis_version)].update(update)
 
-    def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None:
-        self.runs[(lottery, draw_period, analysis_version)].update({"status": "failed", "error": error[:1000]})
+    def fail_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        error: str,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
+        self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
+        update = {"status": "failed", "error": error[:1000]}
+        if owner_id is not None:
+            update.update({"leaseOwner": None, "leaseExpiresAt": None})
+        self.runs[(lottery, draw_period, analysis_version)].update(update)
 
     def get_progress(
         self,
@@ -341,7 +473,7 @@ class SupabaseAnalysisRepository:
 
     @staticmethod
     def _normalize_run(run: dict[str, Any]) -> dict[str, Any]:
-        return {
+        normalized = {
             "lottery": run["lottery"],
             "drawPeriod": run["draw_period"],
             "analysisVersion": run["analysis_version"],
@@ -353,6 +485,13 @@ class SupabaseAnalysisRepository:
             "completedAt": run.get("completed_at"),
             "error": run.get("error"),
         }
+        if "lease_owner" in run:
+            normalized["leaseOwner"] = run.get("lease_owner")
+        if "lease_expires_at" in run:
+            normalized["leaseExpiresAt"] = run.get("lease_expires_at")
+        if "lease_acquired" in run:
+            normalized["leaseAcquired"] = bool(run.get("lease_acquired"))
+        return normalized
 
     @staticmethod
     def _normalize_draw(draw: dict[str, Any]) -> dict[str, Any]:
@@ -534,7 +673,26 @@ class SupabaseAnalysisRepository:
         )
         return [self._normalize_draw(dict(draw)) for draw in response.data]
 
-    def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str) -> dict[str, Any]:
+    def begin_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        started_at: str,
+        *,
+        owner_id: str | None = None,
+        lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS,
+    ) -> dict[str, Any]:
+        if owner_id is not None:
+            response = self.client.rpc("matrix_analysis_acquire_run", {
+                "p_lottery": lottery,
+                "p_draw_period": draw_period,
+                "p_analysis_version": analysis_version,
+                "p_owner_id": owner_id,
+                "p_started_at": started_at,
+                "p_lease_seconds": lease_seconds,
+            }).execute()
+            return self._normalize_run(self._one(response))
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "phase": "explore", "cursor": 0, "total": 0, "status": "running", "started_at": started_at, "error": None}
         response = self.client.table("matrix_analysis_runs").upsert(record, on_conflict="lottery,draw_period,analysis_version", ignore_duplicates=True).execute()
         if response.data:
@@ -542,8 +700,43 @@ class SupabaseAnalysisRepository:
         existing = self.client.table("matrix_analysis_runs").select("*").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).single().execute()
         return self._normalize_run(self._one(existing))
 
-    def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
-        self.client.table("matrix_analysis_runs").update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completed_at": None, "error": None}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
+    def renew_run_lease(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        owner_id: str,
+        lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS,
+    ) -> bool:
+        response = self.client.rpc("matrix_analysis_renew_lease", {
+            "p_lottery": lottery,
+            "p_draw_period": draw_period,
+            "p_analysis_version": analysis_version,
+            "p_owner_id": owner_id,
+            "p_lease_seconds": lease_seconds,
+        }).execute()
+        data = response.data
+        if isinstance(data, list):
+            return bool(data[0]) if data else False
+        return bool(data)
+
+    def update_progress(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        phase: str,
+        cursor: int,
+        total: int,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
+        query = self.client.table("matrix_analysis_runs").update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completed_at": None, "error": None}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version)
+        if owner_id is not None:
+            query = query.eq("lease_owner", owner_id).gt("lease_expires_at", datetime.now(UTC).isoformat())
+        response = query.execute()
+        if owner_id is not None and not response.data:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
     def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
         if kind not in ARTIFACT_KINDS:
@@ -671,14 +864,46 @@ class SupabaseAnalysisRepository:
             return self.materialize_artifact(lottery, draw_period, analysis_version, kind, payload["total"])
         return payload
 
-    def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
+    def complete_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        completed_at: str,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
         response = self.client.table("matrix_analysis_artifacts").select("kind").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
         if {row["kind"] for row in response.data} != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_ARTIFACTS_INCOMPLETE")
-        self.client.table("matrix_analysis_runs").update({"phase": "complete", "status": "complete", "completed_at": completed_at, "error": None}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
+        update = {"phase": "complete", "status": "complete", "completed_at": completed_at, "error": None}
+        if owner_id is not None:
+            update.update({"lease_owner": None, "lease_expires_at": None})
+        query = self.client.table("matrix_analysis_runs").update(update).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version)
+        if owner_id is not None:
+            query = query.eq("lease_owner", owner_id).gt("lease_expires_at", datetime.now(UTC).isoformat())
+        update_response = query.execute()
+        if owner_id is not None and not update_response.data:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
-    def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str) -> None:
-        self.client.table("matrix_analysis_runs").update({"status": "failed", "error": error[:1000]}).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
+    def fail_run(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        error: str,
+        *,
+        owner_id: str | None = None,
+    ) -> None:
+        update = {"status": "failed", "error": error[:1000]}
+        if owner_id is not None:
+            update.update({"lease_owner": None, "lease_expires_at": None})
+        query = self.client.table("matrix_analysis_runs").update(update).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version)
+        if owner_id is not None:
+            query = query.eq("lease_owner", owner_id).gt("lease_expires_at", datetime.now(UTC).isoformat())
+        response = query.execute()
+        if owner_id is not None and not response.data:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
     def get_progress(
         self,

@@ -234,7 +234,7 @@ const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
   "連碰計算機": "/assets/lottery/functions/連碰標題K.png",
   "立柱計算機": "/assets/lottery/functions/立柱標題K.png",
-  "Matrix Pro 會員方案與收費標準": "/assets/lottery/functions/會員方案標題K.png",
+  "Matrix Pro 訂閱方案與收費標準": "/assets/lottery/functions/訂閱方案標題K.png",
   "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
 };
 
@@ -1065,18 +1065,34 @@ function ExploreValidationProcess({
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const lotteryMaximum = lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+  const normalizeFormulaNumber = (value: number) => String(
+    (((value - 1) % lotteryMaximum) + lotteryMaximum) % lotteryMaximum + 1,
+  ).padStart(2, "0");
+  const formulaResultNumber = (algorithmType: string, baseNumber: number, ruleValue: number) => (
+    normalizeFormulaNumber(algorithmType.startsWith("合值") ? ruleValue - baseNumber : baseNumber + ruleValue)
+  );
   const validationFormula = (
     position: number,
     baseNumber: number,
-    formula: string,
-    resultNumbers: string,
+    algorithmType: string,
+    ruleValue: number,
   ) => (
     <span className="explore-validation-formula-expression">
-      <span>{`第${position}顆`}</span>{" "}
-      <span>{displayNumber(baseNumber)}</span>{" "}
-      <span>{formula}</span>{" "}
-      <span>=</span>{" "}
-      <span>{resultNumbers}</span>
+      <span className="explore-validation-formula-position">
+        <span>第</span>
+        <span>{position}</span>
+        <span>顆</span>
+      </span>
+      <span>{displayNumber(baseNumber)}</span>
+      {algorithmType.startsWith("合值") ? (
+        <>
+          <span>合值</span>
+          <span>{ruleValue}</span>
+        </>
+      ) : <span>{`+${ruleValue}`}</span>}
+      <span>=</span>
+      <span>{formulaResultNumber(algorithmType, baseNumber, ruleValue)}</span>
     </span>
   );
   const resultFormula = (resultNumbers: string) => (
@@ -1116,7 +1132,7 @@ function ExploreValidationProcess({
                 );
                 return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
                   <span className="explore-validation-special-number" key={`${value}-${index}`}>
-                    <i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
                     {number}
                   </span>
                 ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
@@ -1156,28 +1172,41 @@ function ExploreValidationProcess({
           return [...new Set(displays)];
         };
         const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => ruleDisplayValues(matchedRules).join("、");
-        const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
-          ruleDisplayValues(matchedRules).map((display) => {
-            if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
-            if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\+/, "")}`;
-            return display;
-          })
-        );
+        const formulaRules = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+          const resolved = matchedRules
+            ? matchedRules.map((matched) => {
+                if (typeof matched !== "number") {
+                  return ruleSet.rules.find((rule) => (
+                    rule.value === matched.value && rule.algorithmType === matched.algorithmType
+                  )) ?? matched;
+                }
+                return ruleSet.rules.find((rule) => (
+                  rule.value === matched && (
+                    rule.algorithmType === item.algorithmType || rule.algorithmType === `${item.algorithmType}版路`
+                  )
+                )) ?? ruleSet.rules.find((rule) => rule.value === matched) ?? {
+                  value: matched,
+                  display: String(matched),
+                  algorithmType: item.algorithmType,
+                };
+              })
+            : ruleSet.rules;
+          return item.algorithmType === "拖牌" ? [...resolved].reverse() : resolved;
+        };
         const formulaRows = (
           baseNumber: number,
-          resultNumbers: string,
           matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"],
-        ) => formulaDisplayValues(matchedRules).slice(0, 2).map((display) => validationFormula(
+        ) => formulaRules(matchedRules).slice(0, 2).map((rule) => validationFormula(
           item.referencePosition ?? item.position,
           baseNumber,
-          display,
-          resultNumbers,
+          rule.algorithmType,
+          rule.value,
         ));
         const summaryFormulaValues = ruleDisplayValues();
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
         const currentCalculations = validation.sourceA
-          ? formulaRows(validation.sourceA.baseNumber, values(ruleSet.predictionNumbers).join("、"))
+          ? formulaRows(validation.sourceA.baseNumber)
           : [];
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
@@ -1212,7 +1241,7 @@ function ExploreValidationProcess({
                   hitNumbers: row.hitNumbers,
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
-                const calculations = formulaRows(row.baseNumber, resultNumbers, row.matchedRules);
+                const calculations = formulaRows(row.baseNumber, row.matchedRules);
                 if (compactValidation) {
                   const formulaOnlyRows: ValidationDisplayRow[] = calculations.slice(1, 2).map((_, index) => ({
                     key: `formula-${row.group}-${index + 2}`,
@@ -1503,11 +1532,19 @@ export function MatrixExplorePage({
       ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
-  const defaultFilters: Record<string, ConsecutiveOption[]> = {
-    "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
-    "準5+（鎖定2碼）": title === "Matrix 天衍"
-      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
-      : ["準7進8", "準9進10", "準11進12"],
+  const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
+    if (title === "Matrix 天衍") {
+      return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
+    }
+    const isTrailer = roadValue === "拖牌版路";
+    if (hitValue === "準4+（鎖定1碼）") {
+      return isTrailer
+        ? ["準5進6", "準6進7", "準7進8"]
+        : ["準6進7", "準7進8"];
+    }
+    return isTrailer
+      ? ["準6進7", "準7進8", "準9進10", "準11進12"]
+      : ["準9進10", "準11進12"];
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const initialExploreDefaults = useMemo(
@@ -1531,7 +1568,10 @@ export function MatrixExplorePage({
   const [filterOpen, setFilterOpen] = useState(false);
   const [resultPage, setResultPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
-    defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
+    defaultFiltersFor(
+      title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）",
+      roadTypes[0],
+    ),
   );
   const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
   const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
@@ -1674,8 +1714,16 @@ export function MatrixExplorePage({
 
   const changeHit = (value: string) => {
     setHit(value);
-    setSelectedFilters(defaultFilters[value]);
+    setSelectedFilters(defaultFiltersFor(value, road));
     setExpandedRoad(null);
+    setResultPage(1);
+  };
+
+  const changeRoad = (value: string) => {
+    setRoad(value);
+    setSelectedFilters(defaultFiltersFor(hit, value));
+    setExpandedRoad(null);
+    setResultPage(1);
   };
 
   const changeLottery = (value: LotteryId) => {
@@ -1684,7 +1732,7 @@ export function MatrixExplorePage({
   };
 
   const startExplore = () => {
-    const nextFilters = defaultFilters[hit];
+    const nextFilters = defaultFiltersFor(hit, road);
     setSearched(true);
     setHistoryExpanded(false);
     setSameCode(false);
@@ -1801,7 +1849,7 @@ export function MatrixExplorePage({
           <label><span><SettingLabelIcon type="road" />版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
-                <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
+                <button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>
                   {v}
                   {title === "Matrix 探索" && v === "拖牌版路" ? <em>推薦</em> : null}
                 </button>
@@ -1981,8 +2029,11 @@ export function MatrixExplorePage({
                 <span>預測</span>
                 <span>版路類型</span>
               </div>
-              {paginatedResults.map((item) => (
-                <article key={item.id}>
+              {paginatedResults.map((item, index) => (
+                <article
+                  data-number-group-start={sameCode && index > 0 && paginatedResults[index - 1]?.prediction !== item.prediction ? "true" : undefined}
+                  key={item.id}
+                >
                   <button
                     type="button"
                     className="road-result-row"
@@ -2429,6 +2480,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const [referenceItems, setReferenceItems] = useState<NumberReferenceItem[] | null>(null);
+  const [referenceLoadState, setReferenceLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
   const fallbackHistory = useMemo(() => [...history].reverse(), [history]);
   const displayedHistory = referenceItems ?? fallbackHistory;
@@ -2473,6 +2525,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     setAppliedLottery(lottery);
     setAppliedRange(range);
     setAppliedOrder(order);
+    setReferenceLoadState("loading");
     try {
       const response = await fetchNumberReference({
         lottery,
@@ -2481,8 +2534,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         numbers: unique,
       });
       setReferenceItems(response.items);
+      setReferenceLoadState(response.items.length > 0 ? "success" : "empty");
     } catch {
       setReferenceItems([]);
+      setReferenceLoadState("error");
     }
     setQueryExpanded(false);
     setQueryFloating(false);
@@ -2580,7 +2635,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </section>
         </div>
       </MobilePagePortal>
-      <section className="panel reference-table-panel">
+      {referenceLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => void startReferenceSearch()}>重新載入</button></div> : null}
+      {referenceLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
+      <section className="panel reference-table-panel" hidden={referenceLoadState === "error" || referenceLoadState === "loading"}>
         <header><h2>{appliedLottery}（{appliedOrder}）</h2></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
@@ -2807,31 +2864,6 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
   );
 }
 
-export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
-  const entries: Array<{ title: string; roadType: string; screen: ScreenId }> = [
-    { title: "Matrix 探索", roadType: "加減版路｜合值版路｜拖牌版路", screen: "explore" },
-    { title: "Matrix 天衍", roadType: "複合版路", screen: "tianyan" },
-    { title: "Matrix 天工", roadType: "自訂版路", screen: "tiangong" },
-  ];
-
-  return (
-    <FeatureShell title="Matrix Core" onNavigate={onNavigate} className="matrix-core-screen">
-      <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
-        {entries.map((entry) => (
-          <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src={PRIMARY_BRAND_LOGO} alt="" aria-hidden="true" />
-            <span>
-              <strong>{entry.title}</strong>
-              <small>版路類型：{entry.roadType}</small>
-            </span>
-            <ChevronRightIcon aria-hidden="true" />
-          </button>
-        ))}
-      </section>
-    </FeatureShell>
-  );
-}
-
 const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
 const GUIDE_LOOP_IDLE_MS = 200;
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
@@ -2956,7 +2988,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "Matrix Pro",
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
-        { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 會員方案與收費標準」查看。"] },
+        { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 訂閱方案與收費標準」查看。"] },
         { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
       ],
     },
@@ -2975,7 +3007,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["在首頁連續點擊底部左下角設定按鈕兩下後，選擇要指定的功能。"] },
-        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 方案與收費標準」。"] },
+        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 訂閱方案與收費標準」。"] },
       ],
     },
     {
@@ -4131,7 +4163,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           <div><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
         </div>
         <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
-          <span>會員方案／收費標準</span><ChevronRightIcon />
+          <span>訂閱方案／收費標準</span><ChevronRightIcon />
         </button>
       </section>
       {menuGroups.map((group) => (
@@ -4184,7 +4216,7 @@ function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigate }) {
     <ProfileDetailShell title="管理訂閱" onNavigate={onNavigate}>
       <DetailCard title="目前方案"><p>Matrix Pro 年方案</p></DetailCard>
       <DetailCard title="訂閱到期日"><p>2027/07/23</p></DetailCard>
-      <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>會員方案／收費標準</button>
+      <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>
     </ProfileDetailShell>
   );
 }
@@ -4197,13 +4229,19 @@ const transferStatusLabels = {
 
 export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
   const [history, setHistory] = useState<MemberPaymentHistoryItem[] | null>(null);
+  const [historyError, setHistoryError] = useState(false);
+  const loadPaymentHistory = () => {
+    setHistory(null);
+    setHistoryError(false);
+    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistoryError(true));
+  };
   useEffect(() => {
-    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistory([]));
+    loadPaymentHistory();
   }, []);
   return (
     <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
       <DetailCard title="付款紀錄">
-        {history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
+        {historyError ? <div role="alert"><span>付款紀錄載入失敗</span><button type="button" aria-label="重新載入付款紀錄" onClick={loadPaymentHistory}>重新載入</button></div> : history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
           <div className="payment-history-list">
             {history.map((item) => (
               <article className="payment-history-item" key={item.id}>
@@ -4223,9 +4261,9 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const plans = [
-    { code: "month", name: "月費方案", price: "$1,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "quarter", name: "季費方案", price: "$4,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
-    { code: "year", name: "年費方案", price: "$16,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
+    { code: "year", name: "年費方案", price: "$17,800", days: 365, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }, { src: "/assets/matrix-explore/tiangong.jpg", alt: "天工" }], features: ["Matrix 天衍 - 使用權限", "Matrix 天工 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
   ] as const;
   const carouselPlans = [plans[2], ...plans, plans[0]] as const;
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -4276,7 +4314,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     onNavigate("manual-transfer");
   };
   return (
-    <ProfileDetailShell title="Matrix Pro 會員方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/會員方案標題K.png">
+    <ProfileDetailShell title="Matrix Pro 訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/訂閱方案標題K.png">
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;
@@ -4318,9 +4356,9 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 const manualTransferPlans: Record<ManualTransferPlanCode, { name: string; amount: number }> = {
-  month: { name: "月費方案", amount: 1880 },
-  quarter: { name: "季費方案", amount: 4580 },
-  year: { name: "年費方案", amount: 16800 },
+  month: { name: "月費方案", amount: 2880 },
+  quarter: { name: "季費方案", amount: 5580 },
+  year: { name: "年費方案", amount: 17800 },
 };
 
 export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -4403,7 +4441,7 @@ export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function AboutMatrixPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、直覺且易於使用的開獎資料查詢與分析服務，協助使用者快速查閱公開資訊、整理歷史數據，並透過多項分析功能，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，整合各項分析工具，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、且容易使用的分析工具，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
+  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、直覺且易於使用的開獎資料查詢與分析服務，協助使用者快速查閱公開資訊、整理歷史數據，並透過多項分析功能，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，整合各項分析工具，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、且容易使用的分析工具，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
 }
 
 function CollapsibleRuleCard({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
@@ -4540,7 +4578,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   }
 
   return (
-    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" hidePageTitle>
+    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" hidePageTitle headerArtwork="/assets/lottery/functions/推薦啟動標題K.png">
       <section className="panel referral-code-section" aria-label="推薦碼">
         <div className="referral-summary-card">
           <div className="referral-summary-heading">
@@ -4603,7 +4641,33 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function InviteFriendsPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="邀請好友" onNavigate={onNavigate}><DetailCard title="邀請好友"><p>推薦碼/邀請碼尚未提供。</p></DetailCard></ProfileDetailShell>;
+  const [summary, setSummary] = useState<MemberReferralSummary | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const requestRevision = useRef(0);
+  const loadReferralSummary = async () => {
+    const revision = requestRevision.current + 1;
+    requestRevision.current = revision;
+    setLoadState("loading");
+    try {
+      const nextSummary = await fetchMemberReferralSummary();
+      if (revision !== requestRevision.current) return;
+      setSummary(nextSummary);
+      setLoadState("ready");
+    } catch {
+      if (revision !== requestRevision.current) return;
+      setSummary(null);
+      setLoadState("error");
+    }
+  };
+  useEffect(() => {
+    void loadReferralSummary();
+    return () => { requestRevision.current += 1; };
+  }, []);
+  const copyReferralCode = async () => {
+    if (!summary?.referralCode) return;
+    await navigator.clipboard?.writeText(summary.referralCode);
+  };
+  return <ProfileDetailShell title="邀請好友" onNavigate={onNavigate}><DetailCard title="邀請好友">{loadState === "loading" ? <p role="status">推薦資料載入中</p> : loadState === "error" ? <div role="alert"><span>推薦資料載入失敗</span><button type="button" aria-label="重新載入推薦資料" onClick={() => void loadReferralSummary()}>重新載入</button></div> : summary ? <div className="referral-share-card"><strong>{summary.referralCode}</strong><p>{`推薦成功 ${summary.referralSuccessCount} 人`}</p><button type="button" aria-label="複製推薦碼" onClick={() => void copyReferralCode()}>複製推薦碼</button></div> : null}</DetailCard></ProfileDetailShell>;
 }
 
 function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -4611,11 +4675,11 @@ function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="一、服務名稱"><p>樂彩 Matrix</p></DetailCard><DetailCard title="二、服務形式"><p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p></DetailCard><DetailCard title="三、主要功能"><DetailList items={["Matrix Core", "　Matrix 探索", "　Matrix 天衍", "　Matrix 天工", "Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"]} /></DetailCard><DetailCard title="四、支援彩種"><DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} /></DetailCard><DetailCard title="五、使用方式"><p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p><p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p></DetailCard><DetailCard title="六、探索結果說明"><p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p></DetailCard><DetailCard title="七、Matrix Pro 說明"><p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 方案與收費標準」及帳號顯示為準。</p></DetailCard></ProfileDetailShell>;
+  return <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、服務名稱"><p>樂彩 Matrix</p></DetailCard><DetailCard title="二、服務形式"><p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p></DetailCard><DetailCard title="三、主要功能"><DetailList items={["Matrix Core", "　Matrix 探索", "　Matrix 天衍", "　Matrix 天工", "Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"]} /></DetailCard><DetailCard title="四、支援彩種"><DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} /></DetailCard><DetailCard title="五、使用方式"><p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p><p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p></DetailCard><DetailCard title="六、探索結果說明"><p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p></DetailCard><DetailCard title="七、Matrix Pro 說明"><p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 訂閱方案與收費標準」及帳號顯示為準。</p></DetailCard></ProfileDetailShell>;
 }
 
 function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="退款規範" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></DetailCard><DetailCard title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></DetailCard><DetailCard title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></DetailCard><DetailCard title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></DetailCard><DetailCard title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></DetailCard><DetailCard title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></DetailCard><DetailCard title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></DetailCard><DetailCard title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></DetailCard></ProfileDetailShell>;
+  return <ProfileDetailShell title="退款規範" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、適用範圍"><p>本退款規範適用於樂彩 Matrix 提供的 Matrix Pro 付費方案。</p><p>Matrix Pro 提供單次訂閱及自動續訂方式，實際付款方式，依使用者訂閱時的選擇為準。</p></DetailCard><DetailCard title="二、自動續訂"><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前訂閱方案到期時，依原訂閱方案及續訂當時顯示的價格自動扣款，並延長相對應的 Matrix Pro 訂閱期間。</p><p>使用者可於下一次扣款前，先行關閉自動續訂。關閉自動續訂後，已付款的訂閱期間仍可使用至到期日，期滿後不再自動扣款或續訂。</p><p>關閉自動續訂僅停止下一期扣款，不等同取消目前訂閱或申請退款。</p><p>自動續訂扣款成功後，視為一筆新的 Matrix Pro 訂閱交易；如需申請退款，依本退款規範辦理。</p></DetailCard><DetailCard title="三、七日解除權與數位服務"><p>Matrix Pro 為付款後，提供使用權限的數位服務。</p><p>若付款流程已事先告知，並取得使用者同意立即提供數位內容或線上服務，且服務已開始提供，依法得排除七日解除權，不適用七日無條件解除。</p></DetailCard><DetailCard title="四、可申請退款情形"><DetailList items={["重複付款。", "付款成功但 Matrix Pro 權限未開通。", "因 樂彩 Matrix 系統異常，致已購買的主要服務無法使用。", "其他依法應辦理退款的情形。"]} /></DetailCard><DetailCard title="五、不予退款情形"><DetailList items={["使用者已事先同意立即提供數位服務，且 Matrix Pro 權限已開通並開始使用，依法得排除七日解除權的情形。", "非屬本規範或法律規定應退款的情形。", "關閉自動續訂僅停止下一期扣款，不溯及已完成的當期訂閱交易。"]} /></DetailCard><DetailCard title="六、退款申請方式"><p>請寄送電子郵件至 <a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a>，並提供會員帳號、付款日期、付款金額、訂單或交易資料及退款原因。</p></DetailCard><DetailCard title="七、退款處理"><p>收到申請後，將依付款紀錄、權限開通狀態及服務使用情形進行核對。</p><p>符合退款條件者，退款方式及實際入帳時間，將依原付款方式與金流服務商作業時間辦理。</p></DetailCard><DetailCard title="八、其他"><p>本規範如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留退款申請資料核對、交易狀態確認及退款資格認定之權利；退款處理仍依中華民國相關法令及本退款規範辦理。</p></DetailCard></ProfileDetailShell>;
 }
 
 function ContactSupportPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -4641,7 +4705,7 @@ function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
     ["一、服務範圍", <p>樂彩 Matrix 提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
     ["二、會員登入", <p>使用者透過 LINE 登入後使用會員功能。</p>],
     ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
-    ["四、訂閱方案", <><DetailList items={["月方案：30 天，NT$1,880", "季方案：90 天，NT$4,580", "年方案：365 天，NT$16,800"]} /><p>以上價格，均為新臺幣含稅價格。</p></>],
+    ["四、訂閱方案", <><DetailList items={["月方案：30 天，NT$2,880", "季方案：90 天，NT$5,580", "年方案：365 天，NT$17,800"]} /><p>以上價格，均為新臺幣含稅價格。</p></>],
     ["五、啟動碼", <><p>啟動碼用於增加 Matrix Pro 訂閱天數。</p><p>每組啟動碼只能成功使用一次。</p><p>啟動碼有效期限與訂閱期間分開計算。</p></>],
     ["六、服務內容", <p>不同會員狀態，可使用的功能及權限，依目前帳號顯示及系統判定為準。</p>],
     ["七、探索結果", <p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p>],
@@ -4649,15 +4713,15 @@ function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
     ["九、個人資料", <p>會員資料的使用方式依「隱私權政策」頁面內容辦理。</p>],
     ["十、其他", <p>樂彩 Matrix 保留服務內容、功能權益、訂閱方案、活動內容、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。</p>],
   ];
-  return <ProfileDetailShell title="會員服務條例" onNavigate={onNavigate} className="profile-info-screen">{sections.map(([title, content]) => <DetailCard title={title} key={title}>{content}</DetailCard>)}</ProfileDetailShell>;
+  return <ProfileDetailShell title="會員服務條例" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png">{sections.map(([title, content]) => <DetailCard title={title} key={title}>{content}</DetailCard>)}</ProfileDetailShell>;
 }
 
 function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="隱私權政策" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="一、蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", "Matrix Pro 訂閱狀態", "訂閱到期日", "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></DetailCard><DetailCard title="二、使用目的"><DetailList items={["會員登入與帳號識別", "顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理", "提供使用者已選擇的功能", "推薦活動資格與獎勵管理", "系統通知與服務通知"]} /></DetailCard><DetailCard title="三、第三方服務"><p>目前已確認使用 LINE 登入。</p></DetailCard><DetailCard title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></DetailCard><DetailCard title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></DetailCard><DetailCard title="六、隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></DetailCard></ProfileDetailShell>;
+  return <ProfileDetailShell title="隱私權政策" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", "Matrix Pro 訂閱狀態", "訂閱到期日", "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></DetailCard><DetailCard title="二、使用目的"><DetailList items={["會員登入與帳號識別", "顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理", "提供使用者已選擇的功能", "推薦活動資格與獎勵管理", "系統通知與服務通知"]} /></DetailCard><DetailCard title="三、第三方服務"><p>目前已確認使用 LINE 登入。</p></DetailCard><DetailCard title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></DetailCard><DetailCard title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></DetailCard><DetailCard title="六、隱私權政策調整"><p>樂彩 Matrix 保留修改本隱私權政策之權利，更新後將公布於本頁面，並自公告日起生效。</p></DetailCard></ProfileDetailShell>;
 }
 
 function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
+  return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
 }
 
 export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: { onNavigate: Navigate; initialLottery?: LotteryId }) {
