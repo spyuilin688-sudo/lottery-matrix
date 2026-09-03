@@ -1,0 +1,48 @@
+start=6f7190d0f1f022886545557a4b2aa539c788d7a1
+origin/main=3cf728a48f87661332bb1ecf4c6e37a645912f12
+PR #287 fetch=0
+PR #287 merge=0
+Automatic merge went well; stopped before committing as requested
+
+PR #287 commit=0
+PR #277 fetch=0
+PR #277 merge=1
+Auto-merging src/FeaturePages.tsx
+Auto-merging src/__tests__/app-production-shell.test.tsx
+CONFLICT (content): Merge conflict in src/__tests__/app-production-shell.test.tsx
+Automatic merge failed; fix conflicts and then commit the result.
+
+PR #277 conflicts=['src/__tests__/app-production-shell.test.tsx']
+PR #277 commit=0
+PR #284 fetch=0
+PR #284 merge=1
+Auto-merging src/FeaturePages.tsx
+Auto-merging src/__tests__/app-production-shell.test.tsx
+CONFLICT (content): Merge conflict in src/__tests__/app-production-shell.test.tsx
+Auto-merging src/explore-result-preview.css
+Automatic merge failed; fix conflicts and then commit the result.
+
+PR #284 conflicts=['src/__tests__/app-production-shell.test.tsx']
+PR #284 commit=0
+ExploreValidationProcess=1
+TianyanValidationProcess=1
+displayNumber=1
+validationFormula=1
+formulaDisplayValues=1
+currentOldRhs=1
+historicalOldRhs=1
+specialOldSeparator=1
+pr277ReferenceState=1
+pr277HistoryError=1
+pr277Referral=2
+pr287Month=1
+pr287Quarter=1
+pr287Year=1
+pr284Defaults=1
+pr284GroupStart=1
+validation_pattern=1
+current_pattern=1
+formula_start=5587
+formula_end=6495
+temp_workflow=True
+MERGE_AND_ANCHOR_PHASE_OK
