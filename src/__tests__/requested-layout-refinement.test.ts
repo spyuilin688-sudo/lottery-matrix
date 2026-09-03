@@ -146,7 +146,6 @@ describe("requested responsive layout refinement", () => {
   });
 
   it("uses the branded explore action on the membership-plan payment button", () => {
-  it("uses the branded explore action on the membership-plan payment button", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
@@ -194,7 +193,6 @@ describe("requested responsive layout refinement", () => {
     expect(paymentNote.fontSize).toBe("11px");
   });
 
-  it("separates membership plan hierarchy and removes tool icon frames", () => {
   it("separates membership plan hierarchy and removes tool icon frames", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
     style.dataset.layoutContract = "pro-plan-visual-hierarchy";

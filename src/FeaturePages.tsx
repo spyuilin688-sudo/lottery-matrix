@@ -1080,7 +1080,6 @@ function ExploreValidationProcess({
     </span>
   );
   const resultFormula = (resultNumbers: string) => (
-  const resultFormula = (resultNumbers: string) => (
     <>［{" "}<strong className="explore-validation-result-number">{resultNumbers}</strong>{" "}］</>
   );
   const summarySeparator = () => <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>;

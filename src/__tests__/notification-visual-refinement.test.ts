@@ -129,7 +129,6 @@ describe("notification visual refinement", () => {
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {
-  it("uses lighter title weight and more compact bulk actions", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
       <main class="notifications-screen-v2">

@@ -167,7 +167,6 @@ for (const width of MOBILE_WIDTHS) {
   });
 
   test(`invite and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
-  test(`invite and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.goto("/");
     await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的", exact: true }).click();

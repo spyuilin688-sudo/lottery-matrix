@@ -145,7 +145,6 @@ describe("existing feature actions", () => {
   });
 
   it("loads referral details and lets an eligible member submit one referral code", async () => {
-  it("loads referral details and lets an eligible member submit one referral code", async () => {
     const onNavigate = vi.fn();
     render(<FeaturePageRouter screen="activation-code" onNavigate={onNavigate} />);
 
