@@ -217,9 +217,21 @@ def run_scheduled_worker(
 
     def acquire() -> dict[str, Any]:
         repository.cleanup_expired(datetime.now(UTC))
-        if not repository.list_draws(lottery, 1):
-            refresh.ensure_history(lottery)
-        draw = refresh.fetch(lottery)
+        try:
+            if not repository.list_draws(lottery, 1):
+                refresh.ensure_history(lottery)
+            draw = refresh.fetch(lottery)
+        except httpx.HTTPError as error:
+            if lottery == "天天樂" and _is_transient_service_error(error):
+                return {
+                    "lottery": lottery,
+                    "drawPeriod": database_period or "",
+                    "status": "not-acquired",
+                    "sourcePeriod": None,
+                    "databasePeriod": database_period,
+                    "writtenPeriod": None,
+                }
+            raise
         source_period = str(draw["period"])
 
         if _normalized_draw_date(draw.get("drawDate")) != expected_draw_date:
