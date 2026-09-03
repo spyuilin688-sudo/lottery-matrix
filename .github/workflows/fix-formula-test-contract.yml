@@ -1,0 +1,59 @@
+name: Fix formula unit contract
+
+on:
+  push:
+    branches:
+      - fix/remaining-audit-issues-20260904
+    paths:
+      - .github/workflows/fix-formula-test-contract.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/remaining-audit-issues-20260904
+          fetch-depth: 0
+      - name: Update stale formula assertion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/__tests__/app-production-shell.test.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = '''  it("inserts the requested half-width spaces in validation formulas", () => {
+              window.history.replaceState({}, "", "/explore-result-preview");
+              render(<App />);
+              fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+              expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
+            });
+          '''
+          new = '''  it("keeps the requested formula spacing through the segmented expression contract", () => {
+              window.history.replaceState({}, "", "/explore-result-preview");
+              render(<App />);
+              fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+              const formula = document.querySelector<HTMLElement>(".explore-validation-formula-expression");
+              expect(formula).not.toBeNull();
+              expect(formula?.textContent).toBe("第2顆09+21=30");
+              expect(Array.from(formula?.children ?? []).map((part) => part.textContent)).toEqual(["第", "2", "顆", "09", "+21", "=", "30"]);
+              const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+              expect(css).toMatch(/\\.explore-validation-formula-expression\\s*\\{[^}]*gap:\\s*2px/s);
+            });
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one stale formula test block, got {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Commit test update and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-formula-test-contract.yml
+          git add src/__tests__/app-production-shell.test.tsx
+          git commit -m "test: align formula assertion with segmented spacing"
+          git push origin HEAD:fix/remaining-audit-issues-20260904
