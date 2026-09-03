@@ -18,17 +18,21 @@ jobs:
         with:
           ref: fix/remaining-audit-issues-20260904
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
         with:
+          version: "0.11.28"
           python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install matrix API dependencies
         working-directory: services/matrix-api
-        run: pip install -e ".[test]"
+        run: uv sync --frozen
       - name: Run lease repository/pipeline contract
         working-directory: services/matrix-api
-        run: pytest -q tests/test_analysis_run_lease.py
+        run: uv run pytest -q tests/test_analysis_run_lease.py
       - name: Run migration lease contract
         run: node --test tests/matrix-analysis-run-lease-migration.test.mjs
