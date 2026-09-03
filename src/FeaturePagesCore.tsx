@@ -116,12 +116,17 @@ function getHistoryRecordKey(record: LotteryDrawRecord) {
   return `${issue}|${date}|${numbers}`;
 }
 
+type DataLoadState = "loading" | "success" | "empty" | "error";
+
 function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
+  const [loadState, setLoadState] = useState<DataLoadState>("loading");
+  const [reloadRevision, setReloadRevision] = useState(0);
   const requestLimit = typeof limit === "number" ? Math.max(limit * 3, limit <= 10 ? 50 : 30) : undefined;
   useEffect(() => {
     let active = true;
     setData([]);
+    setLoadState("loading");
     const refresh = () => {
       fetchLotteryHistory(lottery, requestLimit).then((records) => {
         if (!active) return;
@@ -132,14 +137,16 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
           seen.add(key);
           return true;
         });
-        setData(typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords);
-      }).catch(() => { if (active) setData([]); });
+        const nextData = typeof limit === "number" ? uniqueRecords.slice(0, limit) : uniqueRecords;
+        setData(nextData);
+        setLoadState(nextData.length > 0 ? "success" : "empty");
+      }).catch(() => { if (active) setLoadState("error"); });
     };
     refresh();
     const timer = window.setInterval(refresh, 60_000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [lottery, limit, requestLimit]);
-  return data;
+  }, [lottery, limit, requestLimit, reloadRevision]);
+  return { data, loadState, reload: () => setReloadRevision((current) => current + 1) };
 }
 
 function getHistoryLimit(range: string) {
@@ -205,8 +212,8 @@ function PatchedDrawHistoryPage({
   const [appliedFilters, setAppliedFilters] = useState({ issue: "", date: "" });
   const [appliedHistorySettings, setAppliedHistorySettings] = useState({ lottery, range, numberOrder });
   const [page, setPage] = useState(1);
-  const selectedLotteryLatest = useLotteryHistory(lottery, 1);
-  const history = useLotteryHistory(appliedHistorySettings.lottery, getHistoryLimit(appliedHistorySettings.range));
+  const { data: selectedLotteryLatest } = useLotteryHistory(lottery, 1);
+  const { data: history, loadState: historyLoadState, reload: reloadHistory } = useLotteryHistory(appliedHistorySettings.lottery, getHistoryLimit(appliedHistorySettings.range));
   const historyOrder = getHistoryOrder(appliedHistorySettings.numberOrder);
   const filteredHistory = useMemo(() => filterHistoryRecords(history, appliedFilters), [history, appliedFilters]);
   const paginatedHistory = useMemo(() => paginateHistory(filteredHistory, page), [filteredHistory, page]);
@@ -293,7 +300,10 @@ function PatchedDrawHistoryPage({
         </section>
       </MobilePagePortal>
       <div className="matrix-explore-main-screen draw-history-history-scope">
-        <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`}>
+        {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎號碼載入失敗</span><button type="button" aria-label="重新載入歷史開獎號碼" onClick={reloadHistory}>重新載入</button></div> : null}
+        {historyLoadState === "loading" ? <p role="status">歷史開獎號碼載入中</p> : null}
+        {historyLoadState === "empty" ? <p>目前沒有歷史開獎號碼。</p> : null}
+        <div className="draw-history-week-list" data-lottery={appliedHistorySettings.lottery} aria-label={`${appliedHistorySettings.lottery}歷史開獎號碼`} hidden={historyLoadState !== "success"}>
           {historyWeekGroups.map((weekRecords) => {
             const firstIssue = weekRecords[0]?.period ?? weekRecords[0]?.issue ?? "";
             return (
@@ -325,6 +335,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
+  const [resultLoadState, setResultLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const [settingsExpanded, setSettingsExpanded] = useState(true);
   const [settingsFloating, setSettingsFloating] = useState(false);
   const [settingsPanelTop, setSettingsPanelTop] = useState(0);
@@ -343,10 +354,15 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     setAppliedLottery(lottery);
     setAppliedOrder(order);
     setResultGroups([]);
+    setResultLoadState("loading");
     try {
       const response = await fetchTongXing({ lottery, numberOrder: order as MatrixNumberOrder, numbers: normalizedValues, futureOffset: periodOffset });
       setResultGroups(response.groups);
-    } catch { setResultGroups([]); }
+      setResultLoadState(response.groups.length > 0 ? "success" : "empty");
+    } catch {
+      setResultGroups([]);
+      setResultLoadState("error");
+    }
     setSearched(true);
     requestAnimationFrame(() => requestAnimationFrame(() => resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })));
   };
@@ -377,7 +393,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
           <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
         </section>
       </MobilePagePortal>
-      {searched ? <><div className="ornament-title"><span />探索結果<span /></div><section ref={resultsEndRef} className="panel tongxing-results"><div className="tongxing-table" data-columns={resultColumns.length} aria-label={`${appliedLottery}同星探索結果`}><div className="tongxing-table-row tongxing-table-head"><span>期數</span>{resultColumns.map((column) => <span key={column}>{column}</span>)}</div>{resultGroups.map(({ lockedEntry, predictedEntry }) => <article className="tongxing-result-group" key={getDrawIssue(lockedEntry)}>{renderResultRow(lockedEntry, "locked")}{renderResultRow(predictedEntry, "predicted")}</article>)}</div></section></> : null}
+      {searched ? <><div className="ornament-title"><span />探索結果<span /></div>{resultLoadState === "error" ? <section ref={resultsEndRef} className="panel tongxing-results" role="alert"><span>Matrix 同星資料載入失敗</span><button type="button" aria-label="重新載入 Matrix 同星資料" onClick={() => void handleSearch()}>重新載入</button></section> : <section ref={resultsEndRef} className="panel tongxing-results">{resultLoadState === "loading" ? <p role="status">Matrix 同星資料載入中</p> : resultLoadState === "empty" ? <p>目前沒有符合條件的同星結果。</p> : <div className="tongxing-table" data-columns={resultColumns.length} aria-label={`${appliedLottery}同星探索結果`}><div className="tongxing-table-row tongxing-table-head"><span>期數</span>{resultColumns.map((column) => <span key={column}>{column}</span>)}</div>{resultGroups.map(({ lockedEntry, predictedEntry }) => <article className="tongxing-result-group" key={getDrawIssue(lockedEntry)}>{renderResultRow(lockedEntry, "locked")}{renderResultRow(predictedEntry, "predicted")}</article>)}</div>}</section>}</> : null}
     </ToolFeatureShell>
   );
 }

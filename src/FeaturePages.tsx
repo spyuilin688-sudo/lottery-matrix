@@ -2429,6 +2429,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const [referenceItems, setReferenceItems] = useState<NumberReferenceItem[] | null>(null);
+  const [referenceLoadState, setReferenceLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
   const fallbackHistory = useMemo(() => [...history].reverse(), [history]);
   const displayedHistory = referenceItems ?? fallbackHistory;
@@ -2473,6 +2474,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     setAppliedLottery(lottery);
     setAppliedRange(range);
     setAppliedOrder(order);
+    setReferenceLoadState("loading");
     try {
       const response = await fetchNumberReference({
         lottery,
@@ -2481,8 +2483,10 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         numbers: unique,
       });
       setReferenceItems(response.items);
+      setReferenceLoadState(response.items.length > 0 ? "success" : "empty");
     } catch {
       setReferenceItems([]);
+      setReferenceLoadState("error");
     }
     setQueryExpanded(false);
     setQueryFloating(false);
@@ -2580,7 +2584,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         </section>
         </div>
       </MobilePagePortal>
-      <section className="panel reference-table-panel">
+      {referenceLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => void startReferenceSearch()}>重新載入</button></div> : null}
+      {referenceLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
+      <section className="panel reference-table-panel" hidden={referenceLoadState === "error" || referenceLoadState === "loading"}>
         <header><h2>{appliedLottery}（{appliedOrder}）</h2></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
@@ -2803,31 +2809,6 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
       </section>
       <button type="button" className="primary-action branded-explore-action matrix-card-download-action" onClick={() => void requestTicketDownload()} disabled={!cardUrl || downloadPending} aria-busy={downloadPending}><DownloadIcon />下載牌單</button>
       {downloadFailed ? <p role="alert">下載失敗，請稍後再試</p> : null}
-    </FeatureShell>
-  );
-}
-
-export function MatrixCorePage({ onNavigate }: { onNavigate: Navigate }) {
-  const entries: Array<{ title: string; roadType: string; screen: ScreenId }> = [
-    { title: "Matrix 探索", roadType: "加減版路｜合值版路｜拖牌版路", screen: "explore" },
-    { title: "Matrix 天衍", roadType: "複合版路", screen: "tianyan" },
-    { title: "Matrix 天工", roadType: "自訂版路", screen: "tiangong" },
-  ];
-
-  return (
-    <FeatureShell title="Matrix Core" onNavigate={onNavigate} className="matrix-core-screen">
-      <section className="matrix-core-entry-list" aria-label="Matrix Core 核心入口">
-        {entries.map((entry) => (
-          <button type="button" className="panel matrix-core-entry" key={entry.title} onClick={() => onNavigate(entry.screen)}>
-            <img src={PRIMARY_BRAND_LOGO} alt="" aria-hidden="true" />
-            <span>
-              <strong>{entry.title}</strong>
-              <small>版路類型：{entry.roadType}</small>
-            </span>
-            <ChevronRightIcon aria-hidden="true" />
-          </button>
-        ))}
-      </section>
     </FeatureShell>
   );
 }
@@ -4197,13 +4178,19 @@ const transferStatusLabels = {
 
 export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
   const [history, setHistory] = useState<MemberPaymentHistoryItem[] | null>(null);
+  const [historyError, setHistoryError] = useState(false);
+  const loadPaymentHistory = () => {
+    setHistory(null);
+    setHistoryError(false);
+    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistoryError(true));
+  };
   useEffect(() => {
-    void fetchMemberPaymentHistory().then(setHistory).catch(() => setHistory([]));
+    loadPaymentHistory();
   }, []);
   return (
     <ProfileDetailShell title="付款紀錄" onNavigate={onNavigate} className="payment-history-screen">
       <DetailCard title="付款紀錄">
-        {history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
+        {historyError ? <div role="alert"><span>付款紀錄載入失敗</span><button type="button" aria-label="重新載入付款紀錄" onClick={loadPaymentHistory}>重新載入</button></div> : history === null ? <p role="status">付款紀錄載入中</p> : history.length === 0 ? <p>目前沒有付款紀錄。</p> : (
           <div className="payment-history-list">
             {history.map((item) => (
               <article className="payment-history-item" key={item.id}>
@@ -4603,7 +4590,33 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function InviteFriendsPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="邀請好友" onNavigate={onNavigate}><DetailCard title="邀請好友"><p>推薦碼/邀請碼尚未提供。</p></DetailCard></ProfileDetailShell>;
+  const [summary, setSummary] = useState<MemberReferralSummary | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const requestRevision = useRef(0);
+  const loadReferralSummary = async () => {
+    const revision = requestRevision.current + 1;
+    requestRevision.current = revision;
+    setLoadState("loading");
+    try {
+      const nextSummary = await fetchMemberReferralSummary();
+      if (revision !== requestRevision.current) return;
+      setSummary(nextSummary);
+      setLoadState("ready");
+    } catch {
+      if (revision !== requestRevision.current) return;
+      setSummary(null);
+      setLoadState("error");
+    }
+  };
+  useEffect(() => {
+    void loadReferralSummary();
+    return () => { requestRevision.current += 1; };
+  }, []);
+  const copyReferralCode = async () => {
+    if (!summary?.referralCode) return;
+    await navigator.clipboard?.writeText(summary.referralCode);
+  };
+  return <ProfileDetailShell title="邀請好友" onNavigate={onNavigate}><DetailCard title="邀請好友">{loadState === "loading" ? <p role="status">推薦資料載入中</p> : loadState === "error" ? <div role="alert"><span>推薦資料載入失敗</span><button type="button" aria-label="重新載入推薦資料" onClick={() => void loadReferralSummary()}>重新載入</button></div> : summary ? <div className="referral-share-card"><strong>{summary.referralCode}</strong><p>{`推薦成功 ${summary.referralSuccessCount} 人`}</p><button type="button" aria-label="複製推薦碼" onClick={() => void copyReferralCode()}>複製推薦碼</button></div> : null}</DetailCard></ProfileDetailShell>;
 }
 
 function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
