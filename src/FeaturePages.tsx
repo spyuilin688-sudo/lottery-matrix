@@ -1340,30 +1340,147 @@ function TianyanValidationProcess({
   validation?: TianyanValidation;
   loading: boolean;
 }) {
+  const contentProtected = useExploreValidationProtection();
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
-  return (
-    <section className="road-validation-process" aria-label="天衍驗證過程">
-      <header className="validation-summary-card">
-        <span>獨立貢獻：規則一 {validation.rule1Only}／規則二 {validation.rule2Only}／同時命中 {validation.bothHit}</span>
-        <small>最低各 {validation.minimumIndependentHits} 組</small>
-      </header>
-      {validation.rules.map((rule, index) => (
-        <div className="validation-rule-set" key={rule.id}>
-          <header className="validation-summary-card">
-            <span>規則{index + 1}：第{rule.referencePosition}顆／{rule.algorithmType}／{rule.value}</span>
-          </header>
-        </div>
-      ))}
-      {validation.historicalValidation.map((row) => (
-        <div className="validation-period-block" key={`${row.id}-${row.predictionPeriod}`}>
-          <div className="validation-period-row">
-            <span className="validation-issue">{displayValidationPeriod(lottery, row.sourcePeriod)}</span>
-            <span>{row.predictionPeriod}</span>
-            <span className="validation-formula"><strong>{row.hitType}</strong></span>
+
+  type TianyanDisplayRow = {
+    key: string;
+    period: string;
+    numbers: Array<string | number>;
+    sourceNumber?: number;
+    hitNumbers?: number[];
+  };
+  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const values = (numbers: Array<string | number>) => numbers.map(displayNumber);
+  const validationFormula = (
+    position: number,
+    baseNumber: number,
+    algorithmType: string,
+    ruleValue: number,
+    calculationResult: number,
+  ) => (
+    <span className="explore-validation-formula-expression">
+      <span>第</span>
+      <span>{position}</span>
+      <span>顆</span>
+      <span>{displayNumber(baseNumber)}</span>
+      {algorithmType.startsWith("合值") ? (
+        <><span>合值</span><span>{ruleValue}</span></>
+      ) : <span>{`+${ruleValue}`}</span>}
+      <span>=</span>
+      <span>{displayNumber(calculationResult)}</span>
+    </span>
+  );
+  const resultFormula = (resultNumbers: Array<string | number>) => (
+    <>［{" "}<strong className="explore-validation-result-number">{values(resultNumbers).join("、")}</strong>{" "}］</>
+  );
+  const validationGroup = (key: string, rows: TianyanDisplayRow[], formulas: ReactNode[]) => (
+    <div
+      className="explore-validation-group"
+      data-lottery={lottery}
+      data-road-type="複合版路"
+      data-row-count={rows.length}
+      data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
+      key={key}
+    >
+      <div className="explore-validation-issues explore-validation-numeric-text">
+        {rows.map((row) => (
+          <span className="explore-validation-issue" key={`${row.key}-period`}>
+            {displayValidationPeriod(lottery, row.period)}
+          </span>
+        ))}
+      </div>
+      <div className="explore-validation-numbers-card">
+        {rows.map((row) => (
+          <div className="explore-validation-draw-row explore-validation-number-row" key={`${row.key}-numbers`}>
+            <span className="explore-validation-numbers explore-validation-numeric-text">
+              {values(row.numbers).map((value, index) => {
+                const state = row.sourceNumber !== undefined && value === displayNumber(row.sourceNumber)
+                  ? "hit"
+                  : (row.hitNumbers ?? []).some((hit) => value === displayNumber(hit)) ? "step" : "";
+                const number = (
+                  <i className={state ? `explore-validation-number explore-validation-number--${state}` : "explore-validation-number"}>{value}</i>
+                );
+                return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
+                  <span className="explore-validation-special-number" key={`${value}-${index}`}>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                    {number}
+                  </span>
+                ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
+              })}
+            </span>
           </div>
+        ))}
+      </div>
+      <div className="explore-validation-formulas">
+        {rows.map((row, index) => (
+          <span className="explore-validation-formula-row" key={`${row.key}-formula`}>{formulas[index] ?? ""}</span>
+        ))}
+      </div>
+    </div>
+  );
+  const currentFormulas = validation.rules.slice(0, 2).map((rule) => validationFormula(
+    rule.validationPosition,
+    rule.currentBaseNumber,
+    rule.algorithmType,
+    rule.ruleValue,
+    rule.currentPredictionNumber,
+  ));
+
+  return (
+    <section
+      className="road-validation-process explore-validation-card"
+      aria-label="天衍驗證過程"
+      data-content-protected={contentProtected ? "true" : "false"}
+      onCopy={(event) => event.preventDefault()}
+      onCut={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+    >
+      <div className="validation-rule-set explore-validation-rule-set">
+        <header className="explore-validation-summary-card">
+          <ExploreValidationSummary>
+            {validation.rules.slice(0, 2).map((rule, index) => (
+              <Fragment key={rule.id}>
+                {index > 0 ? <i className="explore-validation-summary-separator" aria-hidden="true">｜</i> : null}
+                規則{index === 0 ? "一" : "二"}：第 <i className="validation-summary-position">{rule.validationPosition}</i> 顆 {rule.algorithmType} <i className="validation-summary-formula">{rule.ruleValue}</i>
+              </Fragment>
+            ))}
+          </ExploreValidationSummary>
+          <strong className="explore-validation-consecutive-tag">準{validation.groupCount}進{validation.groupCount + 1}</strong>
+        </header>
+        <div className="explore-validation-groups">
+          {validation.historicalValidation.map((row) => validationGroup(
+            `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
+            [
+              { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
+              { key: `formula-${row.group}-2`, period: "", numbers: [] },
+              { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
+            ],
+            [
+              validationFormula(row.rule1.validationPosition, row.rule1.baseNumber, row.rule1.algorithmType, row.rule1.ruleValue, row.rule1.calculationResult),
+              validationFormula(row.rule2.validationPosition, row.rule2.baseNumber, row.rule2.algorithmType, row.rule2.ruleValue, row.rule2.calculationResult),
+              resultFormula(row.hitNumbers),
+            ],
+          ))}
+          {validation.sourceA && currentFormulas.length === 2 ? validationGroup(
+            `${validation.itemId}-current`,
+            [
+              { key: "current-source", period: validation.sourceA.sourcePeriod, numbers: validation.sourceA.sourceNumbers, sourceNumber: validation.sourceA.lockedNumber },
+              { key: "current-formula-2", period: "", numbers: [] },
+            ],
+            currentFormulas,
+          ) : null}
         </div>
-      ))}
+        <footer className="explore-validation-prediction">
+          <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
+          <span className="explore-validation-prediction-content">
+            <strong>本期預測</strong>
+            <b className="explore-validation-numeric-text">{values(validation.mergedSearchPredictionNumbers).join("、")}</b>
+          </span>
+          <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
+        </footer>
+      </div>
     </section>
   );
 }
@@ -1383,7 +1500,11 @@ export function MatrixExplorePage({
     | "準6進7"
     | "準7進8"
     | "準9進10"
-    | "準11進12";
+    | "準11進12"
+    | "準14進15"
+    | "準15進16"
+    | "準16進17"
+    | "準17進18";
 
   type ExploreDate = "本日 (最新)" | "昨日 (上1期)" | "前日 (上2期)";
 
@@ -1404,13 +1525,13 @@ export function MatrixExplorePage({
   const filterOptions: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
-      ? ["準5進6", "準6進7", "準7進8"]
+      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFilters: Record<string, ConsecutiveOption[]> = {
     "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
-      ? ["準5進6", "準6進7", "準7進8"]
+      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準7進8", "準9進10", "準11進12"],
   };
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
@@ -1498,8 +1619,8 @@ export function MatrixExplorePage({
       consecutive: item.consecutive as ConsecutiveOption,
       prediction: item.predictionNumbers.join("."),
       sameCode: true,
-      algorithmType: "複合版路",
-      numberOrder: "依號碼由小到大排序",
+      algorithmType: item.roadTypeLabel,
+      numberOrder: item.numberOrder,
     }));
   }, [exploreResponse, tianyanResponse, title]);
 
@@ -1788,16 +1909,18 @@ export function MatrixExplorePage({
         <MagnifyingGlassIcon /><span>開始探索</span>
       </button>
 
-      <HistoryList
-        lottery={lottery}
-        numberOrder={numberOrder}
-        onOpenHistory={() => onNavigate("history")}
-        collapsible
-        collapseControl="title"
-        showOrderText={false}
-        expanded={historyExpanded}
-        onExpandedChange={setHistoryExpanded}
-      />
+      {title === "Matrix 探索" ? (
+        <HistoryList
+          lottery={lottery}
+          numberOrder={numberOrder}
+          onOpenHistory={() => onNavigate("history")}
+          collapsible
+          collapseControl="title"
+          showOrderText={false}
+          expanded={historyExpanded}
+          onExpandedChange={setHistoryExpanded}
+        />
+      ) : null}
 
       {searched ? (
         <>
@@ -1904,7 +2027,7 @@ export function MatrixExplorePage({
                     </span>
                     <strong className="numeric-text">{item.prediction}</strong>
                     <span className="road-type-toggle">
-                      <span>{item.algorithmType.endsWith("版路") ? item.algorithmType : `${item.algorithmType}版路`}</span>
+                      <span>{title === "Matrix 天衍" ? item.algorithmType : item.algorithmType.endsWith("版路") ? item.algorithmType : `${item.algorithmType}版路`}</span>
                       <ChevronDownIcon data-open={expandedRoad === item.id} />
                     </span>
                   </button>

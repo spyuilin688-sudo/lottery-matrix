@@ -104,6 +104,14 @@ export type ExploreValidationResponse = {
   validation: ExploreValidation;
 };
 
+export type TianyanRoadTypeLabel =
+  | '加減版路'
+  | '合值版路'
+  | '拖牌版路'
+  | '加減合值'
+  | '加減拖牌'
+  | '合值拖牌';
+
 export type TianyanApiRow = {
   id: string;
   number: string;
@@ -113,7 +121,9 @@ export type TianyanApiRow = {
   highestStreak: number;
   predictionNumbers: string[];
   roadType: '複合';
+  roadTypeLabel: TianyanRoadTypeLabel;
   hitCondition: '準5+（鎖定2碼）';
+  numberOrder: MatrixNumberOrder;
   ruleIds: [string, string];
 };
 
@@ -127,25 +137,58 @@ export type TianyanListResponse = {
   total: number;
 };
 
+export type TianyanRuleValidation = {
+  validationPeriodOffset: number;
+  validationPeriod: string;
+  validationPosition: number;
+  baseNumber: number;
+  algorithmType: '加減' | '合值' | '拖牌';
+  candidateValues: number[];
+  ruleValue: number;
+  calculationResult: number;
+  hit: boolean;
+};
+
 export type TianyanValidation = {
   itemId: string;
+  sourceA?: {
+    sourcePeriod: string;
+    sourceNumbers: Array<string | number>;
+    lockedPosition: number;
+    lockedNumber: number;
+    predictionDistance: number;
+  };
   rules: Array<{
     id: string;
+    validationPeriodOffset: number;
+    validationPeriod: string;
+    validationPosition: number;
     referenceOffset: number;
     referencePosition: number;
-    algorithmType: string;
+    algorithmType: '加減' | '合值' | '拖牌';
     value: number;
+    ruleValue: number;
+    currentBaseNumber: number;
+    currentPredictionNumber: number;
   }>;
   groupCount: number;
   minimumIndependentHits: number;
   rule1Only: number;
   rule2Only: number;
   bothHit: number;
+  mergedSearchPredictionNumbers: string[];
   historicalValidation: Array<{
-    id: string;
+    group: string;
     sourcePeriod: string;
+    sourceNumbers: Array<string | number>;
+    lockedPosition: number;
+    lockedNumber: number;
     predictionPeriod: string;
-    hitType: 'rule1Only' | 'rule2Only' | 'bothHit' | 'bothMiss';
+    predictionNumbers: Array<string | number>;
+    rule1: TianyanRuleValidation;
+    rule2: TianyanRuleValidation;
+    hitType: 'rule1Only' | 'rule2Only' | 'bothHit';
+    hitNumbers: number[];
     success: boolean;
   }>;
 };
