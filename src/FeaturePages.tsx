@@ -1019,7 +1019,7 @@ function useExploreValidationProtection() {
 }
 
 function displayValidationPeriod(lottery: LotteryId, period: string) {
-  return lottery === "今彩539"
+  return lottery === "今彩539" || lottery === "大樂透"
     ? period.replace(/^(\d{3})000(\d{3})$/, "$1$2")
     : period;
 }

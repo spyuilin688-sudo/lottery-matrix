@@ -19,9 +19,10 @@ test("Matrix Explore renders API validation with the merged three-column preview
   assert.match(component[0], /className="explore-validation-prediction"/);
   assert.match(component[0], /data-lottery=\{lottery\}/);
   assert.match(component[0], /data-road-type=\{item\.algorithmType\}/);
+  assert.match(source, /function displayValidationPeriod\(lottery: LotteryId, period: string\)\s*\{\s*return lottery === "今彩539" \|\| lottery === "大樂透"\s*\? period\.replace\(\/\^\(\\d\{3\}\)000\(\\d\{3\}\)\$\/, "\$1\$2"\)/s);
 
   assert.match(css, /\.explore-validation-group\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(92px, 30vw, 120px\), 120px\)/s);
-  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--explore-validation-number-font-size:\s*12px;[^}]*grid-template-columns:\s*max-content max-content minmax\(0, 1fr\)/s);
+  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--explore-validation-number-font-size:\s*12px;[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(92px, calc\(27vw \+ 4px\), 112px\), 112px\)/s);
   assert.match(css, /\.explore-validation-group:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(100px, 32vw, 128px\), 128px\)/s);
   assert.match(css, /\.explore-validation-summary-card\s*\{[\s\S]*?border:\s*1px solid #e6b76a/s);
 });
@@ -32,7 +33,7 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.match(css, /\.explore-validation-summary-separator\s*\{[^}]*color:\s*var\(--explore-validation-summary-border-color\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*font-size:\s*var\(--explore-validation-number-font-size, 13px\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0 1px;[^}]*letter-spacing:\s*normal/s);
-  assert.match(css, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*width:\s*max-content;[^}]*min-width:\s*0;[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*1px;[^}]*justify-self:\s*center/s);
+  assert.match(css, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*width:\s*max-content;[^}]*min-width:\s*0;[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*0\.7px;[^}]*border-width:\s*0\.7px;[^}]*justify-self:\s*center/s);
   assert.match(css, /\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--source,\s*\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--step,\s*\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*width:\s*max-content;[^}]*min-width:\s*0;[^}]*justify-self:\s*center/s);
   assert.match(css, /\.explore-validation-numbers em\s*\{[^}]*font-size:\s*var\(--explore-validation-number-font-size, 13px\);[^}]*letter-spacing:\s*-\.06em/s);
   assert.match(css, /\.explore-validation-special-number\s*\{[^}]*margin-left:\s*2\.5px;[^}]*gap:\s*2\.5px/s);

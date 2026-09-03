@@ -6,6 +6,8 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const ballCss = readFileSync("src/number-ball.css", "utf8");
+const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
+const tokens = readFileSync("src/design-tokens.css", "utf8");
 
 function ruleBlock(source, selectorPattern) {
   const bodies = ruleBodies(source, new RegExp(`^(?:${selectorPattern})$`, "s"));
@@ -106,6 +108,13 @@ test("Matrix Explore history table uses compact target proportions", () => {
 test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*10px 6px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s);
+  assert.match(tokens, /--layout-page-inline:\s*16px;/);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*calc\(100% \+ 4px\);[^}]*align-self:\s*center;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-brand-header,\s*\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
+  assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[^}]*width:\s*var\(--matrix-explore-result-panel-width, 100%\);/s);
+  assert.match(css, /--road-validation-inline-padding:\s*4px;/);
+  assert.match(featureSource, /className="road-validation-process" aria-label="天工驗證過程"/);
+  assert.doesNotMatch(css, /margin(?:-[a-z]+)?\s*:\s*-/);
 
   const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");
   assert.match(statsHeading, /display:\s*flex/);
