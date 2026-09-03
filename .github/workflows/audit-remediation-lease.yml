@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/audit-remediation-lease.yml
       - scripts/audit_remediation_lease.py
+      - scripts/run_audit_remediation_lease.py
 
 permissions:
   contents: write
@@ -29,10 +30,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate lease patch script
-        run: python -m py_compile scripts/audit_remediation_lease.py
+      - name: Validate lease patch scripts
+        run: |
+          python -m py_compile scripts/audit_remediation_lease.py
+          python -m py_compile scripts/run_audit_remediation_lease.py
       - name: Apply lease implementation
-        run: python scripts/audit_remediation_lease.py
+        run: python scripts/run_audit_remediation_lease.py
       - name: Install matrix API dependencies
         working-directory: services/matrix-api
         run: uv sync --frozen
