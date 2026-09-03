@@ -1,207 +1,32 @@
-exception=RuntimeError: command failed (1): npm run test:unit -- src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-
-> lottery-switch-component@0.1.0 test:unit
-> vitest run src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-
-
-[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/lottery-matrix/lottery-matrix[39m
-
- [31m❯[39m src/__tests__/MatrixExplorePage.test.tsx [2m([22m[2m33 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 3212[2mms[22m[39m
-   [32m✓[39m Matrix 天衍移除近10期但保留 Matrix 探索頁布局[32m 262[2mms[22m[39m
-   [32m✓[39m Matrix 同星移除近10期卡片並可收合探索設定[32m 57[2mms[22m[39m
-   [32m✓[39m Matrix 同星開始探索後收合，再展開時固定為浮動設定卡[32m 104[2mms[22m[39m
-   [32m✓[39m Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選[32m 48[2mms[22m[39m
-   [32m✓[39m Matrix 同星探索結果左欄期數在上、日期在下[32m 37[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼剛進頁面時保持展開[32m 158[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼可用收合按鍵切換顯示狀態[32m 61[2mms[22m[39m
-   [32m✓[39m 開始探索後自動收合近10期開獎號碼[32m 67[2mms[22m[39m
-   [32m✓[39m 切換彩種時自動展開近10期開獎號碼[32m 62[2mms[22m[39m
-   [32m✓[39m 近10期會預留 API 重複資料的去重空間並顯示完整 10 期[32m 44[2mms[22m[39m
-   [32m✓[39m 展開版路後套用獨立結果區並完整顯示 API 驗證過程[32m 143[2mms[22m[39m
-   [32m✓[39m 同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色[32m 140[2mms[22m[39m
-[31m   [31m×[31m 拖牌多個驗證值時只保留一列空白公式列且每組最多三列[39m[32m 131[2mms[22m[39m
-   [32m✓[39m 六合彩驗證號碼會在特別號前顯示加號[32m 115[2mms[22m[39m
-   [32m✓[39m 大樂透驗證號碼會在特別號前顯示加號[32m 107[2mms[22m[39m
-   [32m✓[39m 驗證期在鎖定條件之後時排列在第二列[32m 100[2mms[22m[39m
-   [32m✓[39m 兩條公式同時成立時分別放在驗證號碼列與鎖定條件列[32m 90[2mms[22m[39m
-   [32m✓[39m 數值相同但類型不同的規則只顯示實際成立公式[32m 102[2mms[22m[39m
-   [32m✓[39m 舊版數值公式遇到不同類型同值時依目前版路類型解析[32m 84[2mms[22m[39m
-   [32m✓[39m 舊版數值公式只有一條同值規則時顯示該公式[32m 80[2mms[22m[39m
-   [32m✓[39m 合值版路的 API 驗證概要顯示合值規則[32m 77[2mms[22m[39m
-   [32m✓[39m 探索結果使用 API 資料而不是固定範例[32m 64[2mms[22m[39m
-   [32m✓[39m 探索頁使用單列收合連準篩選並套用兩種命中條件預設值[32m 93[2mms[22m[39m
-   [32m✓[39m 拖牌版路依命中條件使用例外預設連準[32m 83[2mms[22m[39m
-   [32m✓[39m 再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準[32m 164[2mms[22m[39m
-   [32m✓[39m 再次開始探索會恢復準5+預設連準[32m 122[2mms[22m[39m
-   [32m✓[39m 探索結果每頁最多顯示30筆並可切換下一頁[32m 162[2mms[22m[39m
-   [32m✓[39m 探索結果整列皆可展開驗證過程[32m 83[2mms[22m[39m
-   [32m✓[39m 切換已展開結果時將新列重新定位至畫面上方[32m 97[2mms[22m[39m
-   [32m✓[39m 探索日期提供本日、昨日與前日[32m 26[2mms[22m[39m
-   [32m✓[39m 點擊重複號碼小卡會傳送號碼篩選，再點一次取消[32m 85[2mms[22m[39m
-   [32m✓[39m 只有展開結果時才讀取該筆驗證資料[32m 72[2mms[22m[39m
-   [32m✓[39m Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還原，且不重新讀取資料[32m 89[2mms[22m[39m
-[90mstderr[2m | src/__tests__/app-production-shell.test.tsx[2m > [22m[2mproduction member shell[2m > [22m[2mmatches the reference navy surfaces and restrained gold and blue borders
-[22m[39m[csstree-match] BREAK after 15000 iterations
-
- [32m✓[39m src/__tests__/app-production-shell.test.tsx [2m([22m[2m37 tests[22m[2m)[22m[33m 3048[2mms[22m[39m
-     [33m[2m✓[22m[39m matches the reference navy surfaces and restrained gold and blue borders [33m 892[2mms[22m[39m
- [32m✓[39m src/__tests__/ManualBankTransferPage.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 468[2mms[22m[39m
-     [33m[2m✓[22m[39m only opens bank details after plan payment confirmation [33m 307[2mms[22m[39m
- [32m✓[39m src/__tests__/NotificationsLoadFailure.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 669[2mms[22m[39m
-     [33m[2m✓[22m[39m GET 失敗時鎖定一般通知設定，重新載入成功後才允許編輯與儲存 [33m 667[2mms[22m[39m
- [32m✓[39m src/__tests__/DataPageFailureStates.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 321[2mms[22m[39m
- [32m✓[39m src/__tests__/InviteFriendsReferral.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 187[2mms[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/MatrixExplorePage.test.tsx[2m > [22m拖牌多個驗證值時只保留一列空白公式列且每組最多三列
-[31m[1mAssertionError[22m: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"][39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- ArrayContaining [[39m
-[32m-   "09",[39m
-[32m-   "28",[39m
-[32m-   "38",[39m
-[31m+ [[39m
-[31m+   "03",[39m
-[31m+   "10",[39m
-[31m+   "14",[39m
-[31m+   "22",[39m
-[31m+   "31",[39m
-[31m+   "22",[39m
-[31m+   "26",[39m
-[2m  ][22m
-
-[36m [2m❯[22m src/__tests__/MatrixExplorePage.test.tsx:[2m417:107[22m[39m
-    [90m415|[39m   expect(formulas.map((formula) => formula.textContent).join('')).not.…
-    [90m416|[39m   expect(firstGroup!.querySelector('.explore-validation-number--source…
-    [90m417|[39m   expect([...firstGroup!.querySelectorAll('.explore-validation-number'…
-    [90m   |[39m                                                                                                           [31m^[39m
-    [90m418|[39m   expect(validation.querySelectorAll('.explore-validation-group')[1].q…
-    [90m419|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m81 passed[39m[22m[90m (82)[39m
-[2m   Start at [22m 22:04:31
-[2m   Duration [22m 16.08s[2m (transform 948ms, setup 952ms, import 2.32s, tests 7.90s, environment 4.09s)[22m
-
-
-::error file=/home/runner/work/lottery-matrix/lottery-matrix/src/__tests__/MatrixExplorePage.test.tsx,title=src/__tests__/MatrixExplorePage.test.tsx > 拖牌多個驗證值時只保留一列空白公式列且每組最多三列,line=417,column=107::AssertionError: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"]%0A%0A- Expected%0A+ Received%0A%0A- ArrayContaining [%0A-   "09",%0A-   "28",%0A-   "38",%0A+ [%0A+   "03",%0A+   "10",%0A+   "14",%0A+   "22",%0A+   "31",%0A+   "22",%0A+   "26",%0A  ]%0A%0A ❯ src/__tests__/MatrixExplorePage.test.tsx:417:107%0A%0A
+exception=RuntimeError: command failed (2): git diff --check
+src/__tests__/MatrixExplorePage.test.tsx:417: trailing whitespace.
++  
 
 
 Traceback (most recent call last):
   File "scripts/integration-runner-v2.py", line 509, in <module>
     main()
-  File "scripts/integration-runner-v2.py", line 493, in main
-    run([
+  File "scripts/integration-runner-v2.py", line 482, in main
+    run(['git', 'diff', '--check'])
   File "scripts/integration-runner-v2.py", line 26, in run
     raise RuntimeError(f'command failed ({result.returncode}): {" ".join(args)}\n{output[-12000:]}')
-RuntimeError: command failed (1): npm run test:unit -- src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-
-> lottery-switch-component@0.1.0 test:unit
-> vitest run src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-
-
-[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/lottery-matrix/lottery-matrix[39m
-
- [31m❯[39m src/__tests__/MatrixExplorePage.test.tsx [2m([22m[2m33 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 3212[2mms[22m[39m
-   [32m✓[39m Matrix 天衍移除近10期但保留 Matrix 探索頁布局[32m 262[2mms[22m[39m
-   [32m✓[39m Matrix 同星移除近10期卡片並可收合探索設定[32m 57[2mms[22m[39m
-   [32m✓[39m Matrix 同星開始探索後收合，再展開時固定為浮動設定卡[32m 104[2mms[22m[39m
-   [32m✓[39m Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選[32m 48[2mms[22m[39m
-   [32m✓[39m Matrix 同星探索結果左欄期數在上、日期在下[32m 37[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼剛進頁面時保持展開[32m 158[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼可用收合按鍵切換顯示狀態[32m 61[2mms[22m[39m
-   [32m✓[39m 開始探索後自動收合近10期開獎號碼[32m 67[2mms[22m[39m
-   [32m✓[39m 切換彩種時自動展開近10期開獎號碼[32m 62[2mms[22m[39m
-   [32m✓[39m 近10期會預留 API 重複資料的去重空間並顯示完整 10 期[32m 44[2mms[22m[39m
-   [32m✓[39m 展開版路後套用獨立結果區並完整顯示 API 驗證過程[32m 143[2mms[22m[39m
-   [32m✓[39m 同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色[32m 140[2mms[22m[39m
-[31m   [31m×[31m 拖牌多個驗證值時只保留一列空白公式列且每組最多三列[39m[32m 131[2mms[22m[39m
-   [32m✓[39m 六合彩驗證號碼會在特別號前顯示加號[32m 115[2mms[22m[39m
-   [32m✓[39m 大樂透驗證號碼會在特別號前顯示加號[32m 107[2mms[22m[39m
-   [32m✓[39m 驗證期在鎖定條件之後時排列在第二列[32m 100[2mms[22m[39m
-   [32m✓[39m 兩條公式同時成立時分別放在驗證號碼列與鎖定條件列[32m 90[2mms[22m[39m
-   [32m✓[39m 數值相同但類型不同的規則只顯示實際成立公式[32m 102[2mms[22m[39m
-   [32m✓[39m 舊版數值公式遇到不同類型同值時依目前版路類型解析[32m 84[2mms[22m[39m
-   [32m✓[39m 舊版數值公式只有一條同值規則時顯示該公式[32m 80[2mms[22m[39m
-   [32m✓[39m 合值版路的 API 驗證概要顯示合值規則[32m 77[2mms[22m[39m
-   [32m✓[39m 探索結果使用 API 資料而不是固定範例[32m 64[2mms[22m[39m
-   [32m✓[39m 探索頁使用單列收合連準篩選並套用兩種命中條件預設值[32m 93[2mms[22m[39m
-   [32m✓[39m 拖牌版路依命中條件使用例外預設連準[32m 83[2mms[22m[39m
-   [32m✓[39m 再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準[32m 164[2mms[22m[39m
-   [32m✓[39m 再次開始探索會恢復準5+預設連準[32m 122[2mms[22m[39m
-   [32m✓[39m 探索結果每頁最多顯示30筆並可切換下一頁[32m 162[2mms[22m[39m
-   [32m✓[39m 探索結果整列皆可展開驗證過程[32m 83[2mms[22m[39m
-   [32m✓[39m 切換已展開結果時將新列重新定位至畫面上方[32m 97[2mms[22m[39m
-   [32m✓[39m 探索日期提供本日、昨日與前日[32m 26[2mms[22m[39m
-   [32m✓[39m 點擊重複號碼小卡會傳送號碼篩選，再點一次取消[32m 85[2mms[22m[39m
-   [32m✓[39m 只有展開結果時才讀取該筆驗證資料[32m 72[2mms[22m[39m
-   [32m✓[39m Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還原，且不重新讀取資料[32m 89[2mms[22m[39m
-[90mstderr[2m | src/__tests__/app-production-shell.test.tsx[2m > [22m[2mproduction member shell[2m > [22m[2mmatches the reference navy surfaces and restrained gold and blue borders
-[22m[39m[csstree-match] BREAK after 15000 iterations
-
- [32m✓[39m src/__tests__/app-production-shell.test.tsx [2m([22m[2m37 tests[22m[2m)[22m[33m 3048[2mms[22m[39m
-     [33m[2m✓[22m[39m matches the reference navy surfaces and restrained gold and blue borders [33m 892[2mms[22m[39m
- [32m✓[39m src/__tests__/ManualBankTransferPage.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 468[2mms[22m[39m
-     [33m[2m✓[22m[39m only opens bank details after plan payment confirmation [33m 307[2mms[22m[39m
- [32m✓[39m src/__tests__/NotificationsLoadFailure.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 669[2mms[22m[39m
-     [33m[2m✓[22m[39m GET 失敗時鎖定一般通知設定，重新載入成功後才允許編輯與儲存 [33m 667[2mms[22m[39m
- [32m✓[39m src/__tests__/DataPageFailureStates.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 321[2mms[22m[39m
- [32m✓[39m src/__tests__/InviteFriendsReferral.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 187[2mms[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/MatrixExplorePage.test.tsx[2m > [22m拖牌多個驗證值時只保留一列空白公式列且每組最多三列
-[31m[1mAssertionError[22m: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"][39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- ArrayContaining [[39m
-[32m-   "09",[39m
-[32m-   "28",[39m
-[32m-   "38",[39m
-[31m+ [[39m
-[31m+   "03",[39m
-[31m+   "10",[39m
-[31m+   "14",[39m
-[31m+   "22",[39m
-[31m+   "31",[39m
-[31m+   "22",[39m
-[31m+   "26",[39m
-[2m  ][22m
-
-[36m [2m❯[22m src/__tests__/MatrixExplorePage.test.tsx:[2m417:107[22m[39m
-    [90m415|[39m   expect(formulas.map((formula) => formula.textContent).join('')).not.…
-    [90m416|[39m   expect(firstGroup!.querySelector('.explore-validation-number--source…
-    [90m417|[39m   expect([...firstGroup!.querySelectorAll('.explore-validation-number'…
-    [90m   |[39m                                                                                                           [31m^[39m
-    [90m418|[39m   expect(validation.querySelectorAll('.explore-validation-group')[1].q…
-    [90m419|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m81 passed[39m[22m[90m (82)[39m
-[2m   Start at [22m 22:04:31
-[2m   Duration [22m 16.08s[2m (transform 948ms, setup 952ms, import 2.32s, tests 7.90s, environment 4.09s)[22m
-
-
-::error file=/home/runner/work/lottery-matrix/lottery-matrix/src/__tests__/MatrixExplorePage.test.tsx,title=src/__tests__/MatrixExplorePage.test.tsx > 拖牌多個驗證值時只保留一列空白公式列且每組最多三列,line=417,column=107::AssertionError: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"]%0A%0A- Expected%0A+ Received%0A%0A- ArrayContaining [%0A-   "09",%0A-   "28",%0A-   "38",%0A+ [%0A+   "03",%0A+   "10",%0A+   "14",%0A+   "22",%0A+   "31",%0A+   "22",%0A+   "26",%0A  ]%0A%0A ❯ src/__tests__/MatrixExplorePage.test.tsx:417:107%0A%0A
+RuntimeError: command failed (2): git diff --check
+src/__tests__/MatrixExplorePage.test.tsx:417: trailing whitespace.
++  
 
 
 
 --- command log ---
++ git fetch origin fix/subscription-pricing-title-assets-20260904-v6:refs/remotes/origin/fix/subscription-pricing-title-assets-20260904-v6
+exit=0
+
++ git merge --no-ff --no-commit origin/fix/subscription-pricing-title-assets-20260904-v6
+exit=0
+Automatic merge went well; stopped before committing as requested
+
 + git commit -m Integrate PR #287 subscription pricing/title assets
 exit=0
-[我的 f7332e2a] Integrate PR #287 subscription pricing/title assets
+[我的 0751d915] Integrate PR #287 subscription pricing/title assets
 
 + git fetch origin fix/remaining-audit-issues-20260904:refs/remotes/origin/fix/remaining-audit-issues-20260904
 exit=0
@@ -225,7 +50,7 @@ exit=0
 
 + git commit -m Integrate PR #277 audit remediation
 exit=0
-[我的 9268c924] Integrate PR #277 audit remediation
+[我的 1e4f04c2] Integrate PR #277 audit remediation
 
 + git fetch origin fix/explore-result-refinement-20260904:refs/remotes/origin/fix/explore-result-refinement-20260904
 exit=0
@@ -250,7 +75,7 @@ exit=0
 
 + git commit -m Integrate PR #284 Explore refinements
 exit=0
-[我的 0e0fd68b] Integrate PR #284 Explore refinements
+[我的 9d1b96a1] Integrate PR #284 Explore refinements
 
 + git rm -- .github/workflows/restore-explore-formula-core-once.yml
 exit=0
@@ -261,260 +86,15 @@ exit=0
 rm 'integration-diagnostic.txt'
 
 + git diff --check
-exit=0
-
-+ node --test tests/matrix-explore-formula-core-regression-20260904.test.mjs tests/matrix-explore-result-refinement-20260904.test.mjs tests/matrix-explore-validation-preview-merge.test.mjs tests/subscription-copy-assets.test.mjs tests/audit-remediation-contract.test.mjs tests/matrix-analysis-run-lease-migration.test.mjs tests/profile-layout.test.mjs
-exit=0
-TAP version 13
-# Subtest: 推薦碼 UX contract 反映現行 member_referral_submit
-ok 1 - 推薦碼 UX contract 反映現行 member_referral_submit
-  ---
-  duration_ms: 0.910721
-  type: 'test'
-  ...
-# Subtest: matrix-core 保留相容路由但不保留不可達 MatrixCorePage
-ok 2 - matrix-core 保留相容路由但不保留不可達 MatrixCorePage
-  ---
-  duration_ms: 2.290603
-  type: 'test'
-  ...
-# Subtest: matrix analysis run lease is atomic and service-role only
-ok 3 - matrix analysis run lease is atomic and service-role only
-  ---
-  duration_ms: 1.146007
-  type: 'test'
-  ...
-# Subtest: Matrix Explore restores PR \#259 formula computation and exact rule resolution
-ok 4 - Matrix Explore restores PR \#259 formula computation and exact rule resolution
-  ---
-  duration_ms: 0.675369
-  type: 'test'
-  ...
-# Subtest: Matrix Explore formula RHS comes from the formula calculation, not hit or prediction numbers
-ok 5 - Matrix Explore formula RHS comes from the formula calculation, not hit or prediction numbers
-  ---
-  duration_ms: 0.24704
-  type: 'test'
-  ...
-# Subtest: Matrix Explore keeps the approved post-\#259 UI refinements while restoring the core
-ok 6 - Matrix Explore keeps the approved post-\#259 UI refinements while restoring the core
-  ---
-  duration_ms: 1.0007
-  type: 'test'
-  ...
-# Subtest: Matrix 探索依命中條件與版路類型套用正確預設連準
-ok 7 - Matrix 探索依命中條件與版路類型套用正確預設連準
-  ---
-  duration_ms: 0.965217
-  type: 'test'
-  ...
-# Subtest: Matrix 天衍既有預設與樣式不受本次探索調整影響
-ok 8 - Matrix 天衍既有預設與樣式不受本次探索調整影響
-  ---
-  duration_ms: 0.280763
-  type: 'test'
-  ...
-# Subtest: 切換版路會同步切換對應的預設連準
-ok 9 - 切換版路會同步切換對應的預設連準
-  ---
-  duration_ms: 0.215188
-  type: 'test'
-  ...
-# Subtest: 同碼模式在不同預測號碼群組交界建立明確分隔線
-ok 10 - 同碼模式在不同預測號碼群組交界建立明確分隔線
-  ---
-  duration_ms: 0.49292
-  type: 'test'
-  ...
-# Subtest: 點擊重複號碼小卡後使用與同碼相同的群組排序
-ok 11 - 點擊重複號碼小卡後使用與同碼相同的群組排序
-  ---
-  duration_ms: 0.275869
-  type: 'test'
-  ...
-# Subtest: 探索結果表頭文字到底部分隔線保留 5px
-ok 12 - 探索結果表頭文字到底部分隔線保留 5px
-  ---
-  duration_ms: 0.1605
-  type: 'test'
-  ...
-# Subtest: 探索展開內容上下分隔線到摘要與本期預測皆為 12px
-ok 13 - 探索展開內容上下分隔線到摘要與本期預測皆為 12px
-  ---
-  duration_ms: 0.124849
-  type: 'test'
-  ...
-# Subtest: 探索右欄公式的第、球位、顆使用 1px 間距
-ok 14 - 探索右欄公式的第、球位、顆使用 1px 間距
-  ---
-  duration_ms: 0.246955
-  type: 'test'
-  ...
-# Subtest: 今彩539與天天樂中欄五碼間距增加 1px 且不改欄寬列高
-ok 15 - 今彩539與天天樂中欄五碼間距增加 1px 且不改欄寬列高
-  ---
-  duration_ms: 0.41403
-  type: 'test'
-  ...
-# Subtest: 探索右欄第三列結果數字縮小 2px 並增加左右各 2px 間距
-ok 16 - 探索右欄第三列結果數字縮小 2px 並增加左右各 2px 間距
-  ---
-  duration_ms: 0.515822
-  type: 'test'
-  ...
-# Subtest: Matrix Explore renders API validation with the merged three-column preview layout
-ok 17 - Matrix Explore renders API validation with the merged three-column preview layout
-  ---
-  duration_ms: 0.942804
-  type: 'test'
-  ...
-# Subtest: Matrix Explore keeps the requested validation spacing and typography scoped
-ok 18 - Matrix Explore keeps the requested validation spacing and typography scoped
-  ---
-  duration_ms: 1.463308
-  type: 'test'
-  ...
-# Subtest: Explore result preview uses the same segmented formula expression spacing
-ok 19 - Explore result preview uses the same segmented formula expression spacing
-  ---
-  duration_ms: 0.176448
-  type: 'test'
-  ...
-# Subtest: integration restored the canonical Explore formula core
-ok 20 - integration restored the canonical Explore formula core
-  ---
-  duration_ms: 0.859441
-  type: 'test'
-  ...
-# Subtest: subscription pricing and naming use the current approved copy
-ok 21 - subscription pricing and naming use the current approved copy
-  ---
-  duration_ms: 2.015309
-  type: 'test'
-  ...
-# Subtest: profile detail pages use the uploaded title artwork
-ok 22 - profile detail pages use the uploaded title artwork
-  ---
-  duration_ms: 0.491873
-  type: 'test'
-  ...
-# Subtest: database plan prices are migrated to the current approved amounts
-ok 23 - database plan prices are migrated to the current approved amounts
-  ---
-  duration_ms: 0.14474
-  type: 'test'
-  ...
-1..23
-# tests 23
-# suites 0
-# pass 23
-# fail 0
-# cancelled 0
-# skipped 0
-# todo 0
-# duration_ms 323.121855
-
-+ npm run test:unit -- src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-exit=1
-
-> lottery-switch-component@0.1.0 test:unit
-> vitest run src/__tests__/app-production-shell.test.tsx src/__tests__/MatrixExplorePage.test.tsx src/__tests__/ManualBankTransferPage.test.tsx src/__tests__/NotificationsLoadFailure.test.tsx src/__tests__/DataPageFailureStates.test.tsx src/__tests__/InviteFriendsReferral.test.tsx
-
-
-[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/lottery-matrix/lottery-matrix[39m
-
- [31m❯[39m src/__tests__/MatrixExplorePage.test.tsx [2m([22m[2m33 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 3212[2mms[22m[39m
-   [32m✓[39m Matrix 天衍移除近10期但保留 Matrix 探索頁布局[32m 262[2mms[22m[39m
-   [32m✓[39m Matrix 同星移除近10期卡片並可收合探索設定[32m 57[2mms[22m[39m
-   [32m✓[39m Matrix 同星開始探索後收合，再展開時固定為浮動設定卡[32m 104[2mms[22m[39m
-   [32m✓[39m Matrix 同星三個輸入框限定 01 到 49、可暫存 0、失焦補零、不重複且點擊全選[32m 48[2mms[22m[39m
-   [32m✓[39m Matrix 同星探索結果左欄期數在上、日期在下[32m 37[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼剛進頁面時保持展開[32m 158[2mms[22m[39m
-   [32m✓[39m 近10期開獎號碼可用收合按鍵切換顯示狀態[32m 61[2mms[22m[39m
-   [32m✓[39m 開始探索後自動收合近10期開獎號碼[32m 67[2mms[22m[39m
-   [32m✓[39m 切換彩種時自動展開近10期開獎號碼[32m 62[2mms[22m[39m
-   [32m✓[39m 近10期會預留 API 重複資料的去重空間並顯示完整 10 期[32m 44[2mms[22m[39m
-   [32m✓[39m 展開版路後套用獨立結果區並完整顯示 API 驗證過程[32m 143[2mms[22m[39m
-   [32m✓[39m 同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色[32m 140[2mms[22m[39m
-[31m   [31m×[31m 拖牌多個驗證值時只保留一列空白公式列且每組最多三列[39m[32m 131[2mms[22m[39m
-   [32m✓[39m 六合彩驗證號碼會在特別號前顯示加號[32m 115[2mms[22m[39m
-   [32m✓[39m 大樂透驗證號碼會在特別號前顯示加號[32m 107[2mms[22m[39m
-   [32m✓[39m 驗證期在鎖定條件之後時排列在第二列[32m 100[2mms[22m[39m
-   [32m✓[39m 兩條公式同時成立時分別放在驗證號碼列與鎖定條件列[32m 90[2mms[22m[39m
-   [32m✓[39m 數值相同但類型不同的規則只顯示實際成立公式[32m 102[2mms[22m[39m
-   [32m✓[39m 舊版數值公式遇到不同類型同值時依目前版路類型解析[32m 84[2mms[22m[39m
-   [32m✓[39m 舊版數值公式只有一條同值規則時顯示該公式[32m 80[2mms[22m[39m
-   [32m✓[39m 合值版路的 API 驗證概要顯示合值規則[32m 77[2mms[22m[39m
-   [32m✓[39m 探索結果使用 API 資料而不是固定範例[32m 64[2mms[22m[39m
-   [32m✓[39m 探索頁使用單列收合連準篩選並套用兩種命中條件預設值[32m 93[2mms[22m[39m
-   [32m✓[39m 拖牌版路依命中條件使用例外預設連準[32m 83[2mms[22m[39m
-   [32m✓[39m 再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準[32m 164[2mms[22m[39m
-   [32m✓[39m 再次開始探索會恢復準5+預設連準[32m 122[2mms[22m[39m
-   [32m✓[39m 探索結果每頁最多顯示30筆並可切換下一頁[32m 162[2mms[22m[39m
-   [32m✓[39m 探索結果整列皆可展開驗證過程[32m 83[2mms[22m[39m
-   [32m✓[39m 切換已展開結果時將新列重新定位至畫面上方[32m 97[2mms[22m[39m
-   [32m✓[39m 探索日期提供本日、昨日與前日[32m 26[2mms[22m[39m
-   [32m✓[39m 點擊重複號碼小卡會傳送號碼篩選，再點一次取消[32m 85[2mms[22m[39m
-   [32m✓[39m 只有展開結果時才讀取該筆驗證資料[32m 72[2mms[22m[39m
-   [32m✓[39m Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還原，且不重新讀取資料[32m 89[2mms[22m[39m
-[90mstderr[2m | src/__tests__/app-production-shell.test.tsx[2m > [22m[2mproduction member shell[2m > [22m[2mmatches the reference navy surfaces and restrained gold and blue borders
-[22m[39m[csstree-match] BREAK after 15000 iterations
-
- [32m✓[39m src/__tests__/app-production-shell.test.tsx [2m([22m[2m37 tests[22m[2m)[22m[33m 3048[2mms[22m[39m
-     [33m[2m✓[22m[39m matches the reference navy surfaces and restrained gold and blue borders [33m 892[2mms[22m[39m
- [32m✓[39m src/__tests__/ManualBankTransferPage.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 468[2mms[22m[39m
-     [33m[2m✓[22m[39m only opens bank details after plan payment confirmation [33m 307[2mms[22m[39m
- [32m✓[39m src/__tests__/NotificationsLoadFailure.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 669[2mms[22m[39m
-     [33m[2m✓[22m[39m GET 失敗時鎖定一般通知設定，重新載入成功後才允許編輯與儲存 [33m 667[2mms[22m[39m
- [32m✓[39m src/__tests__/DataPageFailureStates.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 321[2mms[22m[39m
- [32m✓[39m src/__tests__/InviteFriendsReferral.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 187[2mms[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
-
-[41m[1m FAIL [22m[49m src/__tests__/MatrixExplorePage.test.tsx[2m > [22m拖牌多個驗證值時只保留一列空白公式列且每組最多三列
-[31m[1mAssertionError[22m: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"][39m
-
-[32m- Expected[39m
-[31m+ Received[39m
-
-[32m- ArrayContaining [[39m
-[32m-   "09",[39m
-[32m-   "28",[39m
-[32m-   "38",[39m
-[31m+ [[39m
-[31m+   "03",[39m
-[31m+   "10",[39m
-[31m+   "14",[39m
-[31m+   "22",[39m
-[31m+   "31",[39m
-[31m+   "22",[39m
-[31m+   "26",[39m
-[2m  ][22m
-
-[36m [2m❯[22m src/__tests__/MatrixExplorePage.test.tsx:[2m417:107[22m[39m
-    [90m415|[39m   expect(formulas.map((formula) => formula.textContent).join('')).not.…
-    [90m416|[39m   expect(firstGroup!.querySelector('.explore-validation-number--source…
-    [90m417|[39m   expect([...firstGroup!.querySelectorAll('.explore-validation-number'…
-    [90m   |[39m                                                                                                           [31m^[39m
-    [90m418|[39m   expect(validation.querySelectorAll('.explore-validation-group')[1].q…
-    [90m419|[39m })[33m;[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m81 passed[39m[22m[90m (82)[39m
-[2m   Start at [22m 22:04:31
-[2m   Duration [22m 16.08s[2m (transform 948ms, setup 952ms, import 2.32s, tests 7.90s, environment 4.09s)[22m
-
-
-::error file=/home/runner/work/lottery-matrix/lottery-matrix/src/__tests__/MatrixExplorePage.test.tsx,title=src/__tests__/MatrixExplorePage.test.tsx > 拖牌多個驗證值時只保留一列空白公式列且每組最多三列,line=417,column=107::AssertionError: expected [ '03', '10', '14', '22', '31', …(2) ] to deeply equal ArrayContaining ["09", "28", "38"]%0A%0A- Expected%0A+ Received%0A%0A- ArrayContaining [%0A-   "09",%0A-   "28",%0A-   "38",%0A+ [%0A+   "03",%0A+   "10",%0A+   "14",%0A+   "22",%0A+   "31",%0A+   "22",%0A+   "26",%0A  ]%0A%0A ❯ src/__tests__/MatrixExplorePage.test.tsx:417:107%0A%0A
+exit=2
+src/__tests__/MatrixExplorePage.test.tsx:417: trailing whitespace.
++  
 
 + git merge --abort
 exit=128
 fatal: There is no merge to abort (MERGE_HEAD missing).
 
-+ git reset --hard dfcc028e99a302e6c68817c26794539fee935a71
++ git reset --hard 32e3bea452cd1959611473becf5199d650ecd5f4
 exit=0
-HEAD is now at dfcc028e test: target trailer hit numbers without stale step class
+HEAD is now at 32e3bea4 test: remove unrelated trailer number-row assertion
 
