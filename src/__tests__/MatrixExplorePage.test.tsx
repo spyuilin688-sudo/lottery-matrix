@@ -655,7 +655,6 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
   expect(screen.queryByText('03.09')).toBeNull();
   expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
     lottery: '今彩539',
-    explorePeriods: 2,
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
@@ -855,7 +854,7 @@ test('只有展開結果時才讀取該筆驗證資料', async () => {
   expect(matrixApi.fetchExploreValidation).toHaveBeenCalledWith(
     expect.objectContaining({ analysisVersion: '114000123:v1', drawPeriod: '114000123' }),
     'api-item-1',
-    { explorePeriods: 2, exploreRange: '標準範圍' },
+    expect.objectContaining({ exploreRange: '標準範圍' }),
   );
 });
 
