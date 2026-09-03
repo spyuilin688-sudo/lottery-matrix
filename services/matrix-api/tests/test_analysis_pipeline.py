@@ -35,10 +35,13 @@ class RepositorySpy(InMemoryAnalysisRepository):
 
     def update_progress(
         self, lottery: str, draw_period: str, analysis_version: str,
-        phase: str, cursor: int, total: int,
+        phase: str, cursor: int, total: int, *, owner_id: str | None = None,
     ) -> None:
         self.calls.append(f"update_progress:{phase}:{cursor}")
-        super().update_progress(lottery, draw_period, analysis_version, phase, cursor, total)
+        super().update_progress(
+            lottery, draw_period, analysis_version, phase, cursor, total,
+            owner_id=owner_id,
+        )
 
     def get_progress(
         self,
