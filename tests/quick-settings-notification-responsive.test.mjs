@@ -47,7 +47,7 @@ test("快捷設定使用指定的五個最新圖示", () => {
 test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*20px;[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s,
+    /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s,
   );
   assert.match(notificationCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*gap:\s*12px;/s);
   assert.match(
@@ -68,14 +68,14 @@ test("通知卡與操作列使用確認後的響應式間距與尺寸", () => {
   );
 });
 
-test("通知 Matrix Pro 標籤縮小並移至圖示上方", () => {
+test("通知 Matrix Pro 標籤縮小並往下 3px 重疊圖示", () => {
   const notifications = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 
   assert.match(notifications, /className="notification-icon-stack"/);
   assert.match(notifications, /className="notification-pro-badge">Matrix Pro<\/em>/);
-  assert.match(
+  assert.doesNotMatch(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{[^}]*padding-top:\s*3px;/s,
+    /\.notifications-screen-v2 \.notification-heading:has\(\.notification-pro-badge\)\s*\{/s,
   );
   assert.match(
     notificationCss,
@@ -83,7 +83,11 @@ test("通知 Matrix Pro 標籤縮小並移至圖示上方", () => {
   );
   assert.match(
     notificationCss,
-    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*4\.2px;[^}]*transform:\s*translateY\(-2px\);/s,
+    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*color:\s*#f6c95f;[^}]*font-size:\s*4\.2px;[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\);/s,
+  );
+  assert.doesNotMatch(
+    notificationCss,
+    /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*transform\s*:/s,
   );
   assert.doesNotMatch(
     notificationCss,
