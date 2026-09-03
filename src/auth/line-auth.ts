@@ -34,27 +34,21 @@ export async function signOutFromMatrix(
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
   cleanupPush: () => Promise<void> = cleanupBrowserPushSubscription,
 ) {
-  try {
-    const { data, error: sessionError } = await client.auth.getSession();
-    const session = sessionError ? null : data.session;
-    const accessToken = session?.access_token ?? null;
-    if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
-      const sessionProviderToken = session?.provider_token;
-      const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
-        ? sessionProviderToken
-        : readLineProviderToken();
-      if (providerAccessToken) {
-        try {
-          await revoke(providerAccessToken);
-          clearLineProviderToken();
-          markLineProviderTokenRevokedFor(accessToken);
-        } catch {
-          // LINE revocation is best-effort; local logout must remain available.
-        }
-      }
-    }
-  } catch {
-    // A stale or unreadable session must not prevent local logout.
+  const { data, error: sessionError } = await client.auth.getSession();
+  if (sessionError) throw sessionError;
+
+  const session = data.session;
+  const accessToken = session?.access_token ?? null;
+  if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
+    const sessionProviderToken = session?.provider_token;
+    const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
+      ? sessionProviderToken
+      : readLineProviderToken();
+    if (!providerAccessToken) throw new Error('LINE_PROVIDER_TOKEN_REQUIRED');
+
+    await revoke(providerAccessToken);
+    clearLineProviderToken();
+    markLineProviderTokenRevokedFor(accessToken);
   }
 
   try {
