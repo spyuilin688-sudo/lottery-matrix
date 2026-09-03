@@ -157,24 +157,30 @@ describe('LINE auth helper', () => {
     expect(revoke).not.toHaveBeenCalledWith('stale-remembered-provider-token');
   });
 
-  it('still signs out locally when LINE revoke fails', async () => {
+  it('keeps the Supabase session signed in when LINE revoke fails', async () => {
     const { client, signOut } = createClient();
     const revoke = vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED'));
+    const cleanupPush = vi.fn();
 
-    await signOutFromMatrix(client as never, revoke);
+    await expect(signOutFromMatrix(client as never, revoke, cleanupPush))
+      .rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
 
-    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(cleanupPush).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
   });
 
-  it('still signs out locally when the current session cannot be verified', async () => {
+  it('keeps the Supabase session signed in when the current session cannot be verified', async () => {
     const sessionError = new Error('SUPABASE_SESSION_READ_FAILED');
     const { client, signOut } = createClient({ sessionError });
     const revoke = vi.fn();
+    const cleanupPush = vi.fn();
 
-    await signOutFromMatrix(client as never, revoke);
+    await expect(signOutFromMatrix(client as never, revoke, cleanupPush))
+      .rejects.toBe(sessionError);
 
     expect(revoke).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(cleanupPush).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('uses the provider token captured from the immediately preceding OAuth event', async () => {
@@ -187,14 +193,17 @@ describe('LINE auth helper', () => {
     expect(revoke).toHaveBeenCalledWith('remembered-provider-token');
   });
 
-  it('signs out a restored session when no LINE provider token is available', async () => {
+  it('keeps a restored session signed in when no LINE provider token is available', async () => {
     const { client, signOut } = createClient({ session: { access_token: 'supabase-access-token' } });
     const revoke = vi.fn();
+    const cleanupPush = vi.fn();
 
-    await signOutFromMatrix(client as never, revoke);
+    await expect(signOutFromMatrix(client as never, revoke, cleanupPush))
+      .rejects.toThrow('LINE_PROVIDER_TOKEN_REQUIRED');
 
     expect(revoke).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(cleanupPush).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('cleans up the current browser push subscription before local sign-out', async () => {
@@ -235,19 +244,20 @@ describe('LINE auth helper', () => {
     expect(isLineProviderTokenRevokedFor('supabase-access-token')).toBe(false);
   });
 
-  it('clears the in-memory provider token after local logout even when revoke fails', async () => {
+  it('keeps the in-memory provider token available for retry when revoke fails', async () => {
     rememberLineProviderToken('remembered-provider-token');
-    const { client } = createClient({ session: { access_token: 'supabase-access-token' } });
+    const { client, signOut } = createClient({ session: { access_token: 'supabase-access-token' } });
 
-    await signOutFromMatrix(
+    await expect(signOutFromMatrix(
       client as never,
       vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED')),
-    );
+    )).rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
 
-    expect(readLineProviderToken()).toBeNull();
+    expect(readLineProviderToken()).toBe('remembered-provider-token');
+    expect(signOut).not.toHaveBeenCalled();
   });
 
-  it('does not block local logout while a revoke attempt fails', async () => {
+  it('stops logout while a revoke attempt fails', async () => {
     const order: string[] = [];
     rememberLineProviderToken('remembered-provider-token');
     const signOut = vi.fn().mockImplementation(async () => {
@@ -263,12 +273,13 @@ describe('LINE auth helper', () => {
       throw new Error('LINE_PROVIDER_REQUEST_FAILED');
     });
 
-    await signOutFromMatrix(client as never, revoke);
+    await expect(signOutFromMatrix(client as never, revoke))
+      .rejects.toThrow('LINE_PROVIDER_REQUEST_FAILED');
 
-    expect(order).toEqual(['revoke:failed', 'signOut']);
+    expect(order).toEqual(['revoke:failed']);
     expect(revoke).toHaveBeenCalledTimes(1);
-    expect(signOut).toHaveBeenCalledTimes(1);
-    expect(readLineProviderToken()).toBeNull();
+    expect(signOut).not.toHaveBeenCalled();
+    expect(readLineProviderToken()).toBe('remembered-provider-token');
     expect(isLineProviderTokenRevokedFor('same-access-token')).toBe(false);
   });
 
