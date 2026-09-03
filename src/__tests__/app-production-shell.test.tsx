@@ -300,13 +300,22 @@ describe("production member shell", () => {
     }
   });
 
-  it("inserts the requested half-width spaces in validation formulas", () => {
-    window.history.replaceState({}, "", "/explore-result-preview");
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+  it("keeps validation formula content while spacing 第、球位、顆 independently", () => {
+  window.history.replaceState({}, "", "/explore-result-preview");
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
 
-    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
-  });
+  const formula = Array.from(document.querySelectorAll<HTMLElement>(".explore-validation-formula-expression"))
+    .find((element) => element.textContent === "第2顆09+21=30");
+  expect(formula).toBeDefined();
+
+  const position = formula?.querySelector<HTMLElement>(".explore-validation-formula-position");
+  expect(position?.textContent).toBe("第2顆");
+  expect(position?.children).toHaveLength(3);
+
+  const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
+  expect(css).toMatch(/\.explore-validation-formula-position\s*\{[^}]*gap:\s*1px/s);
+});
 
   it("keeps the scoped tag selector and lets the period column fit its content", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
