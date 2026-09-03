@@ -331,6 +331,7 @@ button {
   left: 0;
   height: var(--flow-footer-height);
   background: transparent;
+  touch-action: none;
   transition: bottom 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
