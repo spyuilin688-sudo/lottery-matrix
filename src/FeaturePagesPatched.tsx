@@ -1,5 +1,6 @@
 import "./pro-plans-layout.css";
 import "./pro-plans-carousel-peek.css";
+import "./activation-code-layout.css";
 import {
   FeaturePageRouter as CoreFeaturePageRouter,
   QuickNavigationProvider,
