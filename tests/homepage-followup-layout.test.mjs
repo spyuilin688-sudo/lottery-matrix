@@ -14,7 +14,7 @@ function block(source, selector) {
 }
 
 test("首頁使用指定內距、100% 功能圖片與 14px Matrix Core 外距", () => {
-  assert.match(block(base, ".home-screen .home-layout"), /--home-feature-inline:\s*10px;/);
+  assert.match(base, /\.home-screen \.home-layout\s*\{[^}]*--home-feature-inline:\s*10px;/s);
   assert.match(block(base, ".home-screen .home-shortcut img"), /width:\s*100%;/);
   assert.match(block(base, ".home-screen .home-shortcut img"), /height:\s*100%;/);
   assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-inline:\s*0;/s);
