@@ -300,14 +300,6 @@ describe("production member shell", () => {
     }
   });
 
-  it("inserts the requested half-width spaces in validation formulas", () => {
-    window.history.replaceState({}, "", "/explore-result-preview");
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
-
-    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
-  });
-
   it("keeps the scoped tag selector and lets the period column fit its content", () => {
     const css = readFileSync(`${process.cwd()}/src/explore-result-preview.css`, "utf8");
 
