@@ -36,6 +36,8 @@ for (const width of [320, 360, 390, 430]) {
 
       if (pageCase.label === "號碼對照單") {
         const settingsTrigger = page.locator(".reference-settings-trigger");
+        await expect(settingsTrigger).toHaveAccessibleName("收合探索設定");
+        await settingsTrigger.click();
         await expect(settingsTrigger).toHaveAccessibleName("展開探索設定");
         await settingsTrigger.click();
         const queryPanel = page.getByRole("dialog", { name: "探索設定" });

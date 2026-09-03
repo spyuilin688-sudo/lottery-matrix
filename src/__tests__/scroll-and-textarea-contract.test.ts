@@ -221,10 +221,11 @@ describe("textarea and scrollbar ownership", () => {
     expect(scrollbar.style.height).toBe("0px");
   });
 
-  it("keeps reachable scrolling behavior without hidden native scrollbars", () => {
+  it("keeps both carousel and page scrolling reachable with globally hidden native scrollbars", () => {
     const mobileCarousel = ruleBodies(stylesCss, /^\.mobile-carousel$/).join("\n");
     expect(mobileCarousel).toMatch(/\boverflow-x:\s*auto;/);
-    expect(mobileCarousel).toMatch(/\boverscroll-behavior:\s*contain;/);
+    expect(mobileCarousel).toMatch(/\boverscroll-behavior-x:\s*contain;/);
+    expect(mobileCarousel).toMatch(/\boverscroll-behavior-y:\s*auto;/);
     expect(mobileCarousel).toMatch(/\btouch-action:\s*pan-y;/);
     expect(mobileCarousel).not.toMatch(/\bscrollbar-width:\s*none;/);
     expect(ruleBodies(stylesCss, /^\.mobile-carousel::-webkit-scrollbar$/)).toHaveLength(0);

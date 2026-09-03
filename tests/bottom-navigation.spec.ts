@@ -88,7 +88,7 @@ test("Matrix 狀態右下角設定入口優先於我的點擊區並可進入自�
     .toBeGreaterThan(Number(await navigation.evaluate((element) => getComputedStyle(element).zIndex)));
 
   await settings.dblclick();
-  await expect(page.getByRole("heading", { name: "Matrix 自訂觸發狀態" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Matrix 自訂觸發狀態" })).toBeVisible();
   await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" }))
     .not.toHaveAttribute("aria-current", "page");
 });
