@@ -51,6 +51,10 @@ test('home logo receives the remaining height above the bottom anchored sections
   assertBlock(css, '.home-screen .lottery-screen > .brand-header', /flex:\s*1 1 0%;/);
 });
 
+test('wide viewport homepage keeps content in normal top flow instead of stretching it downward', () => {
+  assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?align-content:\s*start;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen > \.brand-header\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
+});
+
 test('embedded next draw info uses two independent inset octagon containers', () => {
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assertBlock(css, '.home-screen .latest-draw-card .next-draw-info--embedded', /padding:\s*0;/);
