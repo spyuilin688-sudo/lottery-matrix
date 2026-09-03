@@ -47,13 +47,7 @@ def test_next_lottery_draw_time_is_three_minutes_before_first_crawl() -> None:
 
 
 def test_latest_api_returns_draw_time_instead_of_first_crawl_time(monkeypatch) -> None:
-    first_crawl_at = datetime(2026, 9, 5, 20, 33, tzinfo=TAIPEI)
     actual_draw_at = datetime(2026, 9, 5, 20, 30, tzinfo=TAIPEI)
-    monkeypatch.setattr(
-        api_server,
-        "next_lottery_call_time",
-        lambda lottery: first_crawl_at,
-    )
     monkeypatch.setattr(
         api_server,
         "next_lottery_draw_time",
