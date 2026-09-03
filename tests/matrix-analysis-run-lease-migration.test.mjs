@@ -11,7 +11,7 @@ test("matrix analysis run lease is atomic and service-role only", () => {
   assert.match(sql, /create or replace function public\.matrix_analysis_acquire_run/i);
   assert.match(sql, /for update/i);
   assert.match(sql, /create or replace function public\.matrix_analysis_renew_lease/i);
-  assert.match(sql, /auth\.role\(\)\s*<>\s*'service_role'/i);
+  assert.match(sql, /coalesce\(auth\.role\(\),\s*''\)\s*<>\s*'service_role'/i);
   assert.match(sql, /revoke execute on function public\.matrix_analysis_acquire_run/i);
   assert.match(sql, /grant execute on function public\.matrix_analysis_acquire_run[\s\S]*to service_role/i);
   assert.match(sql, /grant execute on function public\.matrix_analysis_renew_lease[\s\S]*to service_role/i);
