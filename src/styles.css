@@ -40,7 +40,8 @@ body,
   min-width: 0;
   max-width: 100%;
   overflow: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   user-select: none;
 }
 

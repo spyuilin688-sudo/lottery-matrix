@@ -33,11 +33,12 @@ async function touchDrag(
   deltaX: number,
   deltaY: number,
   steps = 6,
+  startRatioY = 0.5,
 ) {
   const box = await locator.boundingBox();
   if (!box) throw new Error("Touch target has no bounding box");
   const startX = box.x + box.width / 2;
-  const startY = box.y + box.height / 2;
+  const startY = box.y + box.height * startRatioY;
   const client = await page.context().newCDPSession(page);
 
   try {
@@ -185,7 +186,7 @@ for (const width of MOBILE_WIDTHS) {
     await expectNoHorizontalDocumentOverflow(page);
   });
 
-  test(`product textareas and standards scrollbars retain geometry at ${width}px`, async ({ page }) => {
+  test(`product textareas and hidden native scrollbars retain geometry at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.evaluate(() => window.localStorage.setItem("matrix-quick-target", "notebook"));
     await page.goto("/");
@@ -225,10 +226,10 @@ for (const width of MOBILE_WIDTHS) {
       return values;
     });
     expect(scrollbars).toEqual({
-      rootColor: "rgb(229, 179, 77) rgb(4, 10, 17)",
-      rootWidth: "thin",
-      inheritedColor: "rgb(229, 179, 77) rgb(4, 10, 17)",
-      inheritedWidth: "thin",
+      rootColor: "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+      rootWidth: "none",
+      inheritedColor: "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)",
+      inheritedWidth: "none",
     });
     await expectNoHorizontalDocumentOverflow(page);
 
@@ -256,7 +257,8 @@ for (const width of MOBILE_WIDTHS) {
       return {
         horizontalOverflow: horizontal.overflowX,
         horizontalTouch: horizontal.touchAction,
-        horizontalOverscroll: horizontal.overscrollBehavior,
+        horizontalOverscrollX: horizontal.overscrollBehaviorX,
+        horizontalOverscrollY: horizontal.overscrollBehaviorY,
         verticalOverflow: scroll.overflowY,
         verticalTouch: scroll.touchAction,
         verticalOverscroll: scroll.overscrollBehavior,
@@ -265,7 +267,8 @@ for (const width of MOBILE_WIDTHS) {
     expect(behavior).toEqual({
       horizontalOverflow: "auto",
       horizontalTouch: "pan-y",
-      horizontalOverscroll: "contain",
+      horizontalOverscrollX: "contain",
+      horizontalOverscrollY: "auto",
       verticalOverflow: "auto",
       verticalTouch: "pan-y",
       verticalOverscroll: "contain",
@@ -326,14 +329,14 @@ test("vertical intent over a carousel is handed to MobileScroll in both directio
   const parent = page.getByTestId("mobile-scroll");
 
   await touchDrag(page, card, 4, -150);
-  expect(await parent.evaluate((element) => element.scrollTop)).toBeGreaterThan(60);
+  await expect.poll(() => parent.evaluate((element) => element.scrollTop)).toBeGreaterThan(60);
   expect(await carousel.evaluate((element) => element.scrollLeft)).toBe(0);
 
   await parent.evaluate((element) => {
     element.scrollTop = 80;
   });
-  await drag(page, card, -3, 110);
-  expect(await parent.evaluate((element) => element.scrollTop)).toBeLessThan(80);
+  await touchDrag(page, card, -3, 110);
+  await expect.poll(() => parent.evaluate((element) => element.scrollTop)).toBeLessThan(80);
 });
 
 test("tap activates a card but a completed drag does not", async ({ page }) => {
@@ -386,7 +389,7 @@ test("keyboard and its attached footer dismiss on the same transition", async ({
 
   await input.click();
   await expect(keyboard).toHaveAttribute("data-visible", "true");
-  await drag(page, footer, 0, 120, 5);
+  await touchDrag(page, footer, 0, 120, 5, 0.08);
   await expect(keyboard).toHaveAttribute("data-visible", "false");
 
   await page.waitForTimeout(100);

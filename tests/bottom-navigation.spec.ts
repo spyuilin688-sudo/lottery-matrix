@@ -25,7 +25,7 @@ test("底部導覽全寬固定於內容畫布底部，保留四個可操作入�
   await expect(buttons).toHaveCount(4);
 
   for (const label of labels) {
-    const button = navigation.getByRole("button", { name: new RegExp(`^${label}`) });
+    const button = navigation.getByRole("button", { name: label, exact: true });
     const box = await button.boundingBox();
     if (!box) throw new Error(`${label}沒有可量測的點擊範圍`);
     expect(box.width).toBeGreaterThanOrEqual(48);
@@ -87,8 +87,7 @@ test("Matrix 狀態右下角設定入口優先於我的點擊區並可進入自�
   expect(Number(await settings.evaluate((element) => getComputedStyle(element).zIndex)))
     .toBeGreaterThan(Number(await navigation.evaluate((element) => getComputedStyle(element).zIndex)));
 
-  await settings.click();
-  await settings.click();
+  await settings.dblclick();
   await expect(page.getByRole("heading", { name: "Matrix 自訂觸發狀態" })).toBeVisible();
   await expect(page.getByTestId("bottom-navigation").getByRole("button", { name: "我的" }))
     .not.toHaveAttribute("aria-current", "page");

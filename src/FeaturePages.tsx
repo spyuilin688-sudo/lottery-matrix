@@ -1159,7 +1159,7 @@ function ExploreValidationProcess({
         const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
           ruleDisplayValues(matchedRules).map((display) => {
             if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
-            if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\\+/, "")}`;
+            if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\+/, "")}`;
             return display;
           })
         );

@@ -35,7 +35,9 @@ for (const width of [320, 360, 390, 430]) {
       expect(await featureBody.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
       if (pageCase.label === "號碼對照單") {
-        await page.getByRole("button", { name: "展開探索設定" }).click();
+        const settingsTrigger = page.locator(".reference-settings-trigger");
+        await expect(settingsTrigger).toHaveAccessibleName("展開探索設定");
+        await settingsTrigger.click();
         const queryPanel = page.getByRole("dialog", { name: "探索設定" });
         await expect(queryPanel).toBeVisible();
         const queryBox = await queryPanel.boundingBox();

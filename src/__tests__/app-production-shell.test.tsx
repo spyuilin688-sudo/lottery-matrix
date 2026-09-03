@@ -133,7 +133,7 @@ describe("production member shell", () => {
     const source = document.querySelector(".explore-validation-number--source");
     const step = document.querySelector(".explore-validation-number--step");
     const hit = document.querySelector(".explore-validation-number--hit");
-    const primaryFormula = document.querySelector(".explore-validation-formula-expression");
+    const primaryFormula = document.querySelector(".explore-validation-formula-row:first-child");
     const secondaryFormula = document.querySelector(".explore-validation-formula-row:last-child");
     const predictionTitle = document.querySelector(".explore-validation-prediction strong");
 
