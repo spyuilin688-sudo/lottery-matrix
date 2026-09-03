@@ -57,8 +57,12 @@
   min-height: 34px;
 }
 
+.activation-code-screen .referral-rule-card {
+  border: 0;
+}
+
 .activation-code-screen .referral-rule-toggle {
-  padding-block: 2px;
+  padding-block: 4px;
 }
 
 .activation-code-screen .activation-card-toggle {
