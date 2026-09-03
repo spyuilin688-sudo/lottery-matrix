@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const featurePagesSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const pricingMigrationSource = readFileSync(new URL("../supabase/migrations/20260904032000_update_subscription_plan_prices.sql", import.meta.url), "utf8");
 
 const countOccurrences = (source, value) => source.split(value).length - 1;
 
@@ -35,4 +36,11 @@ test("profile detail pages use the uploaded title artwork", () => {
     countOccurrences(featurePagesSource, 'headerArtwork="/assets/lottery/functions/法律資訊標題K.png"'),
     6,
   );
+});
+
+test("database plan prices are migrated to the current approved amounts", () => {
+  assert.match(pricingMigrationSource, /\('月費方案', 2880, 30\)/);
+  assert.match(pricingMigrationSource, /\('季費方案', 5580, 90\)/);
+  assert.match(pricingMigrationSource, /\('年費方案', 17800, 365\)/);
+  assert.match(pricingMigrationSource, /on conflict \(name\) do update/i);
 });
