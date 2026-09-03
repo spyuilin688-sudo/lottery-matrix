@@ -622,6 +622,10 @@
   height: clamp(16px, 4.36vw, 17px);
 }
 
+.explore-validation-group[data-wide-numbers="true"] .explore-validation-special-number > .explore-validation-number {
+  flex-basis: auto;
+}
+
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number--source,
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number--step,
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number--hit {
