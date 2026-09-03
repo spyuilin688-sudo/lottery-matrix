@@ -293,6 +293,10 @@ button {
   overflow: hidden;
 }
 
+.mobile-app-viewport[data-platform="android"][data-keyboard-visible="false"] {
+  bottom: var(--device-safe-area-bottom);
+}
+
 .flow-stack {
   --flow-header-height: 0px;
   --flow-header-content-height: 0px;

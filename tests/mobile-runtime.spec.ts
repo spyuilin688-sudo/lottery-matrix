@@ -95,13 +95,27 @@ for (const width of MOBILE_WIDTHS) {
     const firstAssetFetchStarted = deferred();
     const releaseFirstAssetFetch = deferred();
     let ticketAssetFetches = 0;
+    const cardSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="320" height="180" fill="#061019"/></svg>';
 
-    await page.route("**/assets/lottery/functions/matrixya.png", async (route) => {
+    await page.route("**/api/matrix/cards/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          lottery: "今彩539",
+          period: "115000001",
+          cards: {
+            draw: { url: "/test-assets/matrix-card-draw.svg" },
+            sorted: { url: "/test-assets/matrix-card-sorted.svg" },
+          },
+        }),
+      });
+    });
+    await page.route("**/test-assets/matrix-card-*.svg", async (route) => {
       if (route.request().resourceType() !== "fetch") {
-        await route.continue();
+        await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
         return;
       }
-
       ticketAssetFetches += 1;
       if (ticketAssetFetches === 1) {
         firstAssetFetchStarted.resolve();
@@ -109,16 +123,15 @@ for (const width of MOBILE_WIDTHS) {
         await route.fulfill({ status: 503, contentType: "text/plain", body: "unavailable" });
         return;
       }
-
-      await route.continue();
+      await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
     });
 
     await page.goto("/");
     await page.getByRole("button", { name: "Matrix 牌單", exact: true }).click();
-
-    const button = page.getByRole("button", { name: "下載 PNG", exact: true });
+    const button = page.getByRole("button", { name: "下載牌單", exact: true });
     await expect(button).toBeVisible();
     await button.click();
+    await page.getByRole("dialog").getByRole("button", { name: "確認", exact: true }).click();
     await firstAssetFetchStarted.promise;
     try {
       await expect(button).toBeDisabled();
@@ -131,11 +144,10 @@ for (const width of MOBILE_WIDTHS) {
     await expect(button).toBeEnabled();
     await expect(button).toHaveAttribute("aria-busy", "false");
 
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      button.click(),
-    ]);
-    expect(download.suggestedFilename()).toBe("matrix-ticket.png");
+    await button.click();
+    await page.getByRole("dialog").getByRole("button", { name: "確認", exact: true }).click();
+    const download = await page.waitForEvent("download");
+    expect(download.suggestedFilename()).toBe("今彩539-順球牌單.png");
     const downloadPath = await download.path();
     expect(downloadPath).not.toBeNull();
     const bytes = await readFile(downloadPath!);
@@ -154,6 +166,7 @@ for (const width of MOBILE_WIDTHS) {
     await expectNoHorizontalDocumentOverflow(page);
   });
 
+  test(`invite and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
   test(`invite and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.goto("/");
@@ -177,7 +190,7 @@ for (const width of MOBILE_WIDTHS) {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.evaluate(() => window.localStorage.setItem("matrix-quick-target", "notebook"));
     await page.goto("/");
-    await page.getByTestId("bottom-navigation").getByRole("button", { name: /^快捷/ }).click();
+    await page.getByTestId("bottom-navigation").getByRole("button", { name: "快捷", exact: true }).click();
     await page.getByRole("button", { name: "新增筆記", exact: true }).click();
 
     const notebook = page.getByLabel("筆記內容", { exact: true });
@@ -313,7 +326,7 @@ test("vertical intent over a carousel is handed to MobileScroll in both directio
   const carousel = page.locator(".fixture-carousel");
   const parent = page.getByTestId("mobile-scroll");
 
-  await drag(page, card, 4, -150);
+  await touchDrag(page, card, 4, -150);
   expect(await parent.evaluate((element) => element.scrollTop)).toBeGreaterThan(60);
   expect(await carousel.evaluate((element) => element.scrollLeft)).toBe(0);
 

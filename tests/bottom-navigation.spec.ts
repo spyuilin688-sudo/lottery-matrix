@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByTestId("device-screen")).toHaveAttribute("data-device", "pixel-10");
+  await expect(page.getByTestId("app-mobile-canvas")).toBeVisible();
   await expect(page.getByTestId("bottom-navigation")).toBeVisible();
 });
 
