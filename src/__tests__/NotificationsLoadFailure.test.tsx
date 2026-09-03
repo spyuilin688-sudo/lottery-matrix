@@ -4,17 +4,19 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { NotificationsPagePatched } from '../NotificationsPagePatched';
 import type { MemberNotificationSettings } from '../member-api';
 
-const fetchNotificationSettings = vi.fn();
-const saveNotificationSettings = vi.fn();
-const hasAuthenticatedMemberSession = vi.fn();
+const memberApi = vi.hoisted(() => ({
+  fetchNotificationSettings: vi.fn(),
+  saveNotificationSettings: vi.fn(),
+  hasAuthenticatedMemberSession: vi.fn(),
+}));
 
 vi.mock('../member-api', async () => {
   const actual = await vi.importActual<typeof import('../member-api')>('../member-api');
   return {
     ...actual,
-    fetchNotificationSettings,
-    saveNotificationSettings,
-    hasAuthenticatedMemberSession,
+    fetchNotificationSettings: memberApi.fetchNotificationSettings,
+    saveNotificationSettings: memberApi.saveNotificationSettings,
+    hasAuthenticatedMemberSession: memberApi.hasAuthenticatedMemberSession,
   };
 });
 
@@ -53,32 +55,32 @@ const storedSettings: MemberNotificationSettings = {
   betTimes: {
     今彩539: ['', ''],
     天天樂: ['', ''],
-    六合彩: ['', ''],
+    ลอตเตอรี่: ['', ''],
     大樂透: ['', ''],
-  },
+  } as MemberNotificationSettings['betTimes'],
   statusOptions: {
     今彩539: ['啟動'],
     天天樂: ['啟動'],
-    六合彩: ['啟動'],
+    ลอตเตอรี่: ['啟動'],
     大樂透: ['啟動'],
-  },
+  } as MemberNotificationSettings['statusOptions'],
   collisionOptions: {
     今彩539: ['獨碰二星'],
     天天樂: ['獨碰二星'],
-    六合彩: ['獨碰二星'],
+    ลอตเตอรี่: ['獨碰二星'],
     大樂透: ['獨碰二星'],
-  },
+  } as MemberNotificationSettings['collisionOptions'],
 };
 
 describe('notification settings load failure recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    hasAuthenticatedMemberSession.mockResolvedValue(false);
-    saveNotificationSettings.mockResolvedValue(storedSettings);
+    memberApi.hasAuthenticatedMemberSession.mockResolvedValue(false);
+    memberApi.saveNotificationSettings.mockResolvedValue(storedSettings);
   });
 
   test('GET 失敗時鎖定一般通知設定，重新載入成功後才允許編輯與儲存', async () => {
-    fetchNotificationSettings
+    memberApi.fetchNotificationSettings
       .mockRejectedValueOnce(new Error('network down'))
       .mockResolvedValueOnce(storedSettings);
 
@@ -89,16 +91,16 @@ describe('notification settings load failure recovery', () => {
     expect(screen.getByRole('button', { name: '全部關閉' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '關閉選號提醒' })).toBeDisabled();
     expect(screen.getAllByRole('button', { name: /設定選項/ })[0]).toBeDisabled();
-    expect(saveNotificationSettings).not.toHaveBeenCalled();
+    expect(memberApi.saveNotificationSettings).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: '重新載入通知設定' }));
 
-    await waitFor(() => expect(fetchNotificationSettings).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: '全部開啟' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '關閉選號提醒' })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: '關閉選號提醒' }));
-    await waitFor(() => expect(saveNotificationSettings).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(1));
   });
 });
