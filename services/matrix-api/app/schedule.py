@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
+FIRST_CRAWL_DELAY = timedelta(minutes=3)
 
 CALL_TIMES: dict[str, tuple[int, int]] = {
     "今彩539": (20, 33),
@@ -63,6 +64,24 @@ def next_lottery_call_time(lottery: str, now: datetime | None = None) -> datetim
         if scheduled > taipei_now:
             return scheduled
     raise RuntimeError("NEXT_LOTTERY_CALL_NOT_FOUND")
+
+
+def next_lottery_draw_time(
+    lottery: str,
+    now: datetime | None = None,
+) -> datetime:
+    current = now or datetime.now(TAIPEI)
+    if current.tzinfo is None:
+        raise ValueError("schedule time must include a timezone")
+    taipei_now = current.astimezone(TAIPEI)
+    for offset in range(8):
+        day = taipei_now + timedelta(days=offset)
+        if day.weekday() not in DRAW_WEEKDAYS.get(lottery, frozenset(range(7))):
+            continue
+        scheduled = lottery_call_time(lottery, day) - FIRST_CRAWL_DELAY
+        if scheduled > taipei_now:
+            return scheduled
+    raise RuntimeError("NEXT_LOTTERY_DRAW_NOT_FOUND")
 
 
 def previous_lottery_call_time(lottery: str, before: datetime) -> datetime:

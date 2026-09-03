@@ -12,7 +12,7 @@ import httpx
 
 from app.card_renderer import card_layout, render_matrix_card
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
-from app.schedule import next_lottery_call_time
+from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
 from app.services.draw_refresh import DrawRefreshService
 from app.settings import load_settings
@@ -322,7 +322,7 @@ def handle_api_request(
             items = _history(repository, lottery, 1)
             item = items[0] if items else None
             if item is not None:
-                item = {**item, "nextDrawAt": next_lottery_call_time(lottery).isoformat()}
+                item = {**item, "nextDrawAt": next_lottery_draw_time(lottery).isoformat()}
             return 200, {"item": item}
         if method == "GET" and path.startswith(history_prefix):
             lottery = _parse_lottery(unquote(path[len(history_prefix):]))
