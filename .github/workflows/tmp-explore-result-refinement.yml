@@ -36,28 +36,22 @@ jobs:
             echo "Expected the new regression test to fail before implementation."
             exit 1
           fi
-          echo "RED confirmed: regression test fails before implementation."
+          echo "RED confirmed."
 
-      - name: Apply approved Matrix Explore refinement
+      - name: Patch Explore feature logic
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          def replace_once(text: str, old: str, new: str, label: str) -> str:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected exactly one match, found {count}")
+          def once(text, old, new, label):
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected 1, got {n}")
               return text.replace(old, new, 1)
 
-          def replace_first(text: str, old: str, new: str, label: str) -> str:
-              if old not in text:
-                  raise SystemExit(f"{label}: expected at least one match")
-              return text.replace(old, new, 1)
-
-          feature_path = Path("src/FeaturePages.tsx")
-          feature = feature_path.read_text()
-
-          feature = replace_once(feature, '''  const defaultFilters: Record<string, ConsecutiveOption[]> = {
+          path = Path("src/FeaturePages.tsx")
+          text = path.read_text()
+          text = once(text, '''  const defaultFilters: Record<string, ConsecutiveOption[]> = {
             "準4+（鎖定1碼）": ["準5進6", "準6進7", "準7進8"],
             "準5+（鎖定2碼）": title === "Matrix 天衍"
               ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
@@ -77,9 +71,8 @@ jobs:
               ? ["準6進7", "準7進8", "準9進10", "準11進12"]
               : ["準9進10", "準11進12"];
           };
-          ''', "replace defaultFilters")
-
-          feature = replace_once(feature, '''  const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
+          ''', "default filters")
+          text = once(text, '''  const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
             defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],
           );
           ''', '''  const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
@@ -88,9 +81,8 @@ jobs:
               roadTypes[0],
             ),
           );
-          ''', "replace selectedFilters initializer")
-
-          feature = replace_once(feature, '''  const changeHit = (value: string) => {
+          ''', "selected filter init")
+          text = once(text, '''  const changeHit = (value: string) => {
             setHit(value);
             setSelectedFilters(defaultFilters[value]);
             setExpandedRoad(null);
@@ -112,19 +104,17 @@ jobs:
           };
 
           const changeLottery = (value: LotteryId) => {
-          ''', "replace hit/road change handlers")
-
-          feature = replace_once(feature, '''  const startExplore = () => {
+          ''', "change handlers")
+          text = once(text, '''  const startExplore = () => {
             const nextFilters = defaultFilters[hit];
           ''', '''  const startExplore = () => {
             const nextFilters = defaultFiltersFor(hit, road);
-          ''', "replace startExplore defaults")
-
-          feature = replace_once(feature, '''                <button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>
-          ''', '''                <button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>
-          ''', "wire changeRoad")
-
-          feature = replace_once(feature, '''  ) => (
+          ''', "start defaults")
+          text = once(text,
+              '<button type="button" key={v} data-selected={road === v} onClick={() => setRoad(v)}>',
+              '<button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>',
+              "road click")
+          text = once(text, '''  ) => (
             <span className="explore-validation-formula-expression">
               <span>{`第${position}顆`}</span>{" "}
               <span>{displayNumber(baseNumber)}</span>{" "}
@@ -144,76 +134,69 @@ jobs:
               <span>{resultNumbers}</span>
             </span>
           );
-          ''', "split explore formula position")
-
-          feature = replace_once(feature, '''              {paginatedResults.map((item) => (
+          ''', "formula position")
+          text = once(text, '''              {paginatedResults.map((item) => (
                 <article key={item.id}>
           ''', '''              {paginatedResults.map((item, index) => (
                 <article
                   data-number-group-start={sameCode && index > 0 && paginatedResults[index - 1]?.prediction !== item.prediction ? "true" : undefined}
                   key={item.id}
                 >
-          ''', "add same-code group boundary")
+          ''', "group boundary")
+          path.write_text(text)
+          PY
 
-          feature_path.write_text(feature)
+      - name: Patch Explore unit tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
 
-          test_path = Path("src/__tests__/MatrixExplorePage.test.tsx")
-          unit = test_path.read_text()
-          unit = replace_first(unit,
-              "selectedStreaks: ['準5進6', '準6進7', '準7進8'],",
-              "selectedStreaks: ['準6進7', '準7進8'],",
-              "update initial default API expectation")
-          unit = replace_once(unit,
-              "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);",
-              "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true', 'true']);",
-              "update 準4 pressed defaults")
-          unit = replace_first(unit,
-              "selectedStreaks: ['準7進8', '準9進10', '準11進12'],",
-              "selectedStreaks: ['準9進10', '準11進12'],",
-              "update 準5 default API expectation")
-          unit = replace_once(unit, '''  fireEvent.click(screen.getByRole('button', { name: '準5進6' }));
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-              expect.objectContaining({ selectedStreaks: ['準6進7', '準7進8'] }),
-            ));
+          def first(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"{label}: no match")
+              return text.replace(old, new, 1)
+
+          def once(text, old, new, label):
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected 1, got {n}")
+              return text.replace(old, new, 1)
+
+          path = Path("src/__tests__/MatrixExplorePage.test.tsx")
+          text = path.read_text()
+          text = first(text, "selectedStreaks: ['準5進6', '準6進7', '準7進8'],", "selectedStreaks: ['準6進7', '準7進8'],", "initial 準4")
+          text = once(text, "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);", "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true', 'true']);", "pressed defaults")
+          text = first(text, "selectedStreaks: ['準7進8', '準9進10', '準11進12'],", "selectedStreaks: ['準9進10', '準11進12'],", "initial 準5")
+          text = once(text, '''  fireEvent.click(screen.getByRole('button', { name: '準5進6' }));
+          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+            expect.objectContaining({ selectedStreaks: ['準6進7', '準7進8'] }),
+          ));
           ''', '''  fireEvent.click(screen.getByRole('button', { name: '準6進7' }));
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-              expect.objectContaining({ selectedStreaks: ['準7進8'] }),
-            ));
-          ''', "update 準4 temporary filter interaction")
-          unit = replace_first(unit,
-              "selectedStreaks: ['準5進6', '準6進7', '準7進8'],",
-              "selectedStreaks: ['準6進7', '準7進8'],",
-              "update 準4 restored defaults")
-          unit = replace_once(unit,
-              "expect(screen.getByRole('button', { name: '準5進6' }).getAttribute('aria-pressed')).toBe('true');",
-              "expect(screen.getByRole('button', { name: '準6進7' }).getAttribute('aria-pressed')).toBe('true');",
-              "update 準4 restored aria expectation")
-          unit = replace_once(unit, '''  fireEvent.click(screen.getByRole('button', { name: '準7進8' }));
+          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+            expect.objectContaining({ selectedStreaks: ['準7進8'] }),
+          ));
+          ''', "temporary 準4")
+          text = first(text, "selectedStreaks: ['準5進6', '準6進7', '準7進8'],", "selectedStreaks: ['準6進7', '準7進8'],", "restored 準4")
+          text = once(text, "expect(screen.getByRole('button', { name: '準5進6' }).getAttribute('aria-pressed')).toBe('true');", "expect(screen.getByRole('button', { name: '準6進7' }).getAttribute('aria-pressed')).toBe('true');", "restored 準4 aria")
+          text = once(text, '''  fireEvent.click(screen.getByRole('button', { name: '準7進8' }));
 
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-              expect.objectContaining({ selectedStreaks: ['準9進10', '準11進12'] }),
-            ));
+          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+            expect.objectContaining({ selectedStreaks: ['準9進10', '準11進12'] }),
+          ));
           ''', '''  fireEvent.click(screen.getByRole('button', { name: '準9進10' }));
 
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-              expect.objectContaining({ selectedStreaks: ['準11進12'] }),
-            ));
-          ''', "update 準5 temporary filter interaction")
-          unit = replace_first(unit,
-              "selectedStreaks: ['準7進8', '準9進10', '準11進12'],",
-              "selectedStreaks: ['準9進10', '準11進12'],",
-              "update 準5 restored defaults")
-          unit = replace_once(unit,
-              "expect(screen.getByRole('button', { name: '準7進8' }).getAttribute('aria-pressed')).toBe('true');",
-              "expect(screen.getByRole('button', { name: '準9進10' }).getAttribute('aria-pressed')).toBe('true');",
-              "update 準5 restored aria expectation")
+          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
+            expect.objectContaining({ selectedStreaks: ['準11進12'] }),
+          ));
+          ''', "temporary 準5")
+          text = first(text, "selectedStreaks: ['準7進8', '準9進10', '準11進12'],", "selectedStreaks: ['準9進10', '準11進12'],", "restored 準5")
+          text = once(text, "expect(screen.getByRole('button', { name: '準7進8' }).getAttribute('aria-pressed')).toBe('true');", "expect(screen.getByRole('button', { name: '準9進10' }).getAttribute('aria-pressed')).toBe('true');", "restored 準5 aria")
 
           anchor = "test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準', async () => {"
-          trailer_test = '''test('拖牌版路依命中條件使用例外預設連準', async () => {
+          trailer = '''test('拖牌版路依命中條件使用例外預設連準', async () => {
             render(<MatrixExplorePage onNavigate={vi.fn()} />);
             fireEvent.click(screen.getByRole('button', { name: '拖牌版路推薦' }));
             fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-
             await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
               roadTypes: ['拖牌'],
               selectedStreaks: ['準5進6', '準6進7', '準7進8'],
@@ -221,7 +204,6 @@ jobs:
 
             fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
             fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-
             await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
               roadTypes: ['拖牌'],
               selectedStreaks: ['準6進7', '準7進8', '準9進10', '準11進12'],
@@ -229,12 +211,19 @@ jobs:
           });
 
           '''
-          unit = replace_once(unit, anchor, trailer_test + anchor, "insert trailer defaults behavior test")
-          test_path.write_text(unit)
+          text = once(text, anchor, trailer + anchor, "trailer test")
+          path.write_text(text)
+          PY
 
+      - name: Patch Explore result CSS
+        run: |
+          python - <<'PY'
+          from pathlib import Path
           preview_path = Path("src/explore-result-preview.css")
           preview = preview_path.read_text()
-          preview_append = '''
+          if "Matrix Explore result refinements: keep Tianyan isolated" in preview:
+              raise SystemExit("preview block already exists")
+          preview += '''
 
           /* Matrix Explore result refinements: keep Tianyan isolated from Explore-only spacing. */
           .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-card {
@@ -259,13 +248,13 @@ jobs:
             margin-inline: 2px;
           }
           '''
-          if "Matrix Explore result refinements: keep Tianyan isolated" in preview:
-              raise SystemExit("preview refinement block already exists")
-          preview_path.write_text(preview.rstrip() + preview_append + "\n")
+          preview_path.write_text(preview)
 
           spacing_path = Path("src/matrix-explore-spacing.css")
           spacing = spacing_path.read_text()
-          spacing_append = '''
+          if "Matrix Explore result table alignment and same-code grouping" in spacing:
+              raise SystemExit("spacing block already exists")
+          spacing += '''
 
           /* Matrix Explore result table alignment and same-code grouping. */
           .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results-head {
@@ -277,33 +266,35 @@ jobs:
             border-top: 1px solid rgba(230, 183, 106, .72);
           }
           '''
-          if "Matrix Explore result table alignment and same-code grouping" in spacing:
-              raise SystemExit("spacing refinement block already exists")
-          spacing_path.write_text(spacing.rstrip() + spacing_append + "\n")
+          spacing_path.write_text(spacing)
+          PY
 
-          old_migration = Path("supabase/migrations/20260902040000_matrix_explore_v12_rpc.sql").read_text()
-          function_start = old_migration.index("create or replace function public.matrix_explore_list")
-          function_end = old_migration.index("create or replace function public.matrix_explore_validation")
-          list_function = old_migration[function_start:function_end].rstrip()
-          old_order = "case when v_same then filtered.prediction_numbers::text else '' end,"
-          new_order = "case when v_same or v_prediction_number is not null then filtered.prediction_numbers::text else '' end,"
-          if list_function.count(old_order) != 1:
-              raise SystemExit("matrix_explore_list ordering source did not match exactly once")
-          list_function = list_function.replace(old_order, new_order, 1)
-          migration = f'''-- Keep prediction-number card filtering grouped in the same order as 同碼 mode.
+      - name: Add prediction-number grouping migration
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source = Path("supabase/migrations/20260902040000_matrix_explore_v12_rpc.sql").read_text()
+          start = source.index("create or replace function public.matrix_explore_list")
+          end = source.index("create or replace function public.matrix_explore_validation")
+          function = source[start:end].rstrip()
+          old = "case when v_same then filtered.prediction_numbers::text else '' end,"
+          new = "case when v_same or v_prediction_number is not null then filtered.prediction_numbers::text else '' end,"
+          if function.count(old) != 1:
+              raise SystemExit(f"RPC order match count: {function.count(old)}")
+          function = function.replace(old, new, 1)
+          output = Path("supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql")
+          if output.exists():
+              raise SystemExit("migration already exists")
+          output.write_text(f'''-- Keep prediction-number card filtering grouped in the same order as 同碼 mode.
           begin;
 
-          {list_function}
+          {function}
 
           revoke all on function public.matrix_explore_list(jsonb) from public;
           grant execute on function public.matrix_explore_list(jsonb) to anon, authenticated;
 
           commit;
-          '''
-          migration_path = Path("supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql")
-          if migration_path.exists():
-              raise SystemExit("new migration already exists")
-          migration_path.write_text(migration)
+          ''')
           PY
 
       - name: GREEN regression proof
@@ -329,7 +320,7 @@ jobs:
           rm .github/workflows/tmp-explore-result-refinement.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/FeaturePages.tsx src/__tests__/MatrixExplorePage.test.tsx src/explore-result-preview.css src/matrix-explore-spacing.css tests/matrix-explore-result-refinement-20260904.test.mjs supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql .github/workflows/tmp-explore-result-refinement.yml
+          git add -A
           git diff --cached --check
           git commit -m "fix(explore): refine result filters and validation spacing"
           git push origin HEAD:fix/explore-result-refinement-20260904
