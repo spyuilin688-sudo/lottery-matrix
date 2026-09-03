@@ -18,7 +18,7 @@ test("首頁使用指定內距、100% 功能圖片與 14px Matrix Core 外距", 
   assert.match(block(base, ".home-screen .home-shortcut img"), /width:\s*100%;/);
   assert.match(block(base, ".home-screen .home-shortcut img"), /height:\s*100%;/);
   assert.match(base, /\.home-screen \.matrix-status-section\s*\{[^}]*padding-inline:\s*0;/s);
-  assert.match(block(base, ".home-screen .home-bottom-group"), /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
+  assert.match(base, /\.home-screen \.home-bottom-group\s*\{[^}]*--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/s);
 });
 
 test("首頁彩種選取框為 0.7px 等厚八角框並取消額外高亮陰影", () => {
