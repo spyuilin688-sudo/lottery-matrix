@@ -26,19 +26,19 @@ jobs:
 
           path = Path("src/__tests__/MatrixExplorePage.test.tsx")
           text = path.read_text(encoding="utf-8")
-          old_list = """  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
-    lottery: '今彩539',
-    explorePeriods: 2,
-    exploreDateOffset: 0,
-"""
-          new_list = """  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({
-    lottery: '今彩539',
-    exploreDateOffset: 0,
-"""
-          old_validation = """    { explorePeriods: 2, exploreRange: '標準範圍' },
-"""
-          new_validation = """    expect.objectContaining({ exploreRange: '標準範圍' }),
-"""
+          old_list = (
+              "  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({\n"
+              "    lottery: '今彩539',\n"
+              "    explorePeriods: 2,\n"
+              "    exploreDateOffset: 0,\n"
+          )
+          new_list = (
+              "  expect(matrixApi.fetchExploreList).toHaveBeenCalledWith(expect.objectContaining({\n"
+              "    lottery: '今彩539',\n"
+              "    exploreDateOffset: 0,\n"
+          )
+          old_validation = "    { explorePeriods: 2, exploreRange: '標準範圍' },\n"
+          new_validation = "    expect.objectContaining({ exploreRange: '標準範圍' }),\n"
           if text.count(old_list) != 1:
               raise SystemExit("list assertion guard failed")
           if text.count(old_validation) != 1:
