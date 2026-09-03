@@ -514,8 +514,10 @@
 .explore-validation-number--source,
 .explore-validation-number--step,
 .explore-validation-number--hit {
+  height: auto;
+  aspect-ratio: auto;
   padding-block: 0.5px;
-  padding-inline: 0.5px;
+  padding-inline: 1px;
 }
 
 .explore-validation-number--source {
@@ -611,6 +613,13 @@
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number {
   height: clamp(16px, 4.36vw, 17px);
+}
+
+.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--source,
+.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--step,
+.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--hit {
+  height: auto;
+  aspect-ratio: auto;
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-formulas {

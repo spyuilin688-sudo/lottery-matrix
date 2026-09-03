@@ -1,103 +1,97 @@
 name: Project CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: explore-state-box-${{ github.ref }}
+  group: project-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  patch:
-    if: github.head_ref == 'fix/explore-validation-state-box-inset'
+  runtime-integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout target feature branch
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Apply scoped validation state-box correction
-        id: patch
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import os
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-          path = Path('src/explore-result-preview.css')
-          css = path.read_text()
+      - name: Install dependencies
+        run: npm ci
 
-          old_state = '''.explore-validation-number--source,
-.explore-validation-number--step,
-.explore-validation-number--hit {
-  padding-block: 0.5px;
-  padding-inline: 0.5px;
-}
-'''
-          new_state = '''.explore-validation-number--source,
-.explore-validation-number--step,
-.explore-validation-number--hit {
-  height: auto;
-  aspect-ratio: auto;
-  padding-block: 0.5px;
-  padding-inline: 1px;
-}
-'''
-          wide_anchor = '''.explore-validation-group[data-wide-numbers="true"] .explore-validation-number {
-  height: clamp(16px, 4.36vw, 17px);
-}
-'''
-          wide_override = '''
-.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--source,
-.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--step,
-.explore-validation-group[data-wide-numbers="true"] .explore-validation-number--hit {
-  height: auto;
-  aspect-ratio: auto;
-}
-'''
+      - name: Runtime commit atomicity
+        env:
+          RUNTIME_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          RUNTIME_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/check-runtime-commit-integrity.mjs "$RUNTIME_BASE_SHA" "$RUNTIME_HEAD_SHA"
 
-          changed = False
-          if old_state in css:
-              if css.count(old_state) != 1:
-                  raise SystemExit('state block is not unique')
-              css = css.replace(old_state, new_state, 1)
-              changed = True
-          elif new_state not in css:
-              raise SystemExit('state block is neither old nor expected new form')
+      - name: Runtime atomic-commit regression
+        run: node --test tests/runtime-integrity-atomic-commit.test.mjs
 
-          if wide_override not in css:
-              if css.count(wide_anchor) != 1:
-                  raise SystemExit('wide-number anchor is not unique')
-              css = css.replace(wide_anchor, wide_anchor + wide_override, 1)
-              changed = True
+      - name: Runtime integrity check
+        run: npm run check:runtime
 
-          path.write_text(css)
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'changed={str(changed).lower()}\n')
-          PY
+      - name: Production build
+        run: npm run build
 
-      - name: Verify targeted regression and production build
-        run: |
-          git diff --check
-          node --test tests/matrix-explore-validation-preview-merge.test.mjs
-          npm ci
-          npm run build
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Commit verified CSS-only change
-        if: steps.patch.outputs.changed == 'true'
-        shell: bash
-        run: |
-          changed="$(git diff --name-only)"
-          test "$changed" = "src/explore-result-preview.css"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/explore-result-preview.css
-          git commit -m "fix(explore): compact validation state boxes"
-          git push origin HEAD:${{ github.head_ref }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Targeted Explore tests
+        run: node --test tests/matrix-explore-fluid-layout.test.mjs tests/matrix-explore-option-layout.test.mjs tests/recent-history-layout.test.mjs
+
+      - name: Production build for packaging tests
+        run: npm run build
+
+      - name: Full tests
+        run: node --test tests/*.test.mjs
+
+  matrix-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/matrix-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Matrix API tests
+        run: uv run pytest -q
