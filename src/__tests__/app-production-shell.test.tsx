@@ -170,7 +170,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(predictionTitle!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(source!).borderTopColor).toBe("rgb(88, 211, 230)");
     expect(source).toHaveTextContent("26");
-    expect(getComputedStyle(source!).borderTopWidth).toBe("1px");
+    expect(getComputedStyle(source!).borderTopWidth).toBe("0.7px");
     expect(getComputedStyle(source!).backgroundColor).toBe("rgba(88, 211, 230, 0.14)");
     expect(getComputedStyle(step!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(step).toHaveTextContent("11");
