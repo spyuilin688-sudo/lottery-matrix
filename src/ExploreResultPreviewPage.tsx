@@ -26,13 +26,26 @@ function PreviewNumber({ value, row }: { value: string; row: PreviewDrawRow }) {
 }
 
 function formatFormula(formula: string) {
-  const formatted = formula
-    .replace(/顆\s*(?=\d)/g, "顆 ")
-    .replace(/(?<=\d)\s*\+/g, " +");
-  const result = formatted.match(/^［\s*(.+?)\s*］$/);
-  return result
-    ? <>［{" "}<strong className="explore-validation-result-number">{result[1]}</strong>{" "}］</>
-    : formatted;
+  const result = formula.match(/^［\s*(.+?)\s*］$/);
+  if (result) {
+    return <>［{" "}<strong className="explore-validation-result-number">{result[1]}</strong>{" "}］</>;
+  }
+
+  const expression = formula.match(/^第\s*(\d+)\s*顆\s*(\d+)\s*(.+?)\s*=\s*(\d+)$/);
+  if (!expression) return formula;
+
+  const [, position, baseNumber, operation, resultNumber] = expression;
+  return (
+    <span className="explore-validation-formula-expression">
+      <span>第</span>
+      <span>{position}</span>
+      <span>顆</span>
+      <span>{baseNumber}</span>
+      <span>{operation.replace(/\s+/g, "")}</span>
+      <span>=</span>
+      <span>{resultNumber}</span>
+    </span>
+  );
 }
 
 function ExploreValidationCard({ result }: { result: PreviewResult }) {
