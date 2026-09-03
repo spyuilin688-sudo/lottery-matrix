@@ -72,3 +72,89 @@ def test_fantasy5_transient_official_outage_is_waiting_source_not_failed() -> No
     )
     assert fantasy_job["job"]["status"] == "waiting_source"
     assert fantasy_job["job"]["error"] is None
+
+
+class NoNetworkSource:
+    def fetch(self, lottery: str) -> dict:
+        raise AssertionError("pre-draw recovery must not fetch when previous draw is current")
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        raise AssertionError("pre-draw recovery must not fetch history when previous draw is current")
+
+
+def test_predraw_recovery_skips_network_when_previous_draw_is_already_current() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "今彩539",
+        "period": "115000208",
+        "drawDate": "2026-08-27",
+        "numbers": ["01", "07", "12", "28", "39"],
+        "sortedNumbers": ["01", "07", "12", "28", "39"],
+        "drawOrderNumbers": ["28", "01", "39", "12", "07"],
+    })
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 18, 33, tzinfo=TAIPEI),
+        repository,
+        NoNetworkSource(),
+        {},
+    )
+
+    assert result == {
+        "lottery": "今彩539",
+        "drawPeriod": "115000208",
+        "status": "already-acquired",
+    }
+
+
+class Fantasy5PredrawRepairSource:
+    def __init__(self) -> None:
+        self.events: list[str] = []
+
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        return {
+            "period": "11988",
+            "drawDate": "2026-09-02",
+            "numbers": ["02", "09", "16", "27", "35"],
+            "sortedNumbers": ["02", "09", "16", "27", "35"],
+            "drawOrderNumbers": None,
+        }
+
+    def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+        self.events.append("history-all" if limit is None else f"history-{limit}")
+        return []
+
+
+def _test_builders() -> dict:
+    return {
+        kind: (lambda context, kind=kind: {"kind": kind})
+        for kind in ("explore", "tianyan", "tiangong", "status")
+    }
+
+
+def test_fantasy5_predraw_recovery_targets_previous_draw_not_upcoming_draw() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "天天樂",
+        "period": "11987",
+        "drawDate": "2026-09-01",
+        "numbers": ["01", "07", "08", "18", "39"],
+        "sortedNumbers": ["01", "07", "08", "18", "39"],
+        "drawOrderNumbers": None,
+    })
+    source = Fantasy5PredrawRepairSource()
+
+    result = run_scheduled_worker(
+        "天天樂",
+        datetime(2026, 9, 4, 7, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _test_builders(),
+    )
+
+    assert result["status"] == "complete"
+    assert repository.list_draws("天天樂", 1)[0]["period"] == "11988"
+    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-09-02"
+    assert source.events == ["latest"]
