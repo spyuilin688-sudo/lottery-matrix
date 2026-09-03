@@ -381,7 +381,7 @@
 
 .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
   --explore-validation-number-font-size: 12px;
-  grid-template-columns: max-content max-content minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(88px, 27vw, 108px), 108px);
 }
 
 .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {

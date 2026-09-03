@@ -22,7 +22,7 @@ test("Matrix Explore renders API validation with the merged three-column preview
   assert.match(source, /function displayValidationPeriod\(lottery: LotteryId, period: string\)\s*\{\s*return lottery === "今彩539" \|\| lottery === "大樂透"\s*\? period\.replace\(\/\^\(\\d\{3\}\)000\(\\d\{3\}\)\$\/, "\$1\$2"\)/s);
 
   assert.match(css, /\.explore-validation-group\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(92px, 30vw, 120px\), 120px\)/s);
-  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--explore-validation-number-font-size:\s*12px;[^}]*grid-template-columns:\s*max-content max-content minmax\(0, 1fr\)/s);
+  assert.match(css, /\.explore-validation-group:is\(\[data-lottery="六合彩"\], \[data-lottery="大樂透"\]\)\s*\{[^}]*--explore-validation-number-font-size:\s*12px;[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(88px, 27vw, 108px\), 108px\)/s);
   assert.match(css, /\.explore-validation-group:is\(\[data-lottery="今彩539"\], \[data-lottery="天天樂"\]\)\s*\{[^}]*grid-template-columns:\s*max-content minmax\(0, 1fr\) minmax\(clamp\(100px, 32vw, 128px\), 128px\)/s);
   assert.match(css, /\.explore-validation-summary-card\s*\{[\s\S]*?border:\s*1px solid #e6b76a/s);
 });
