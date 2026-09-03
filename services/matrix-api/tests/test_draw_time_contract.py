@@ -24,6 +24,7 @@ class LatestDrawRepository:
         }]
 
 
+# Homepage display time is the draw time, exactly three minutes before first crawl.
 def test_next_lottery_draw_time_is_three_minutes_before_first_crawl() -> None:
     next_draw_time = getattr(schedule, "next_lottery_draw_time", None)
 
