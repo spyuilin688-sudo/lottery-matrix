@@ -1,0 +1,120 @@
+name: Apply Fantasy5 crawler and draw-time fix
+
+on:
+  push:
+    branches:
+      - fix/fantasy5-crawler-draw-time
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/fantasy5-crawler-draw-time
+          fetch-depth: 0
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Apply guarded source changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text(encoding="utf-8")
+              if text.count(old) != 1:
+                  raise SystemExit(f"guard failed for {path}: expected one occurrence")
+              path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+          schedule_path = Path("services/matrix-api/app/schedule.py")
+          replace_once(
+              schedule_path,
+              'TAIPEI = ZoneInfo("Asia/Taipei")\n\nCALL_TIMES:',
+              'TAIPEI = ZoneInfo("Asia/Taipei")\nFIRST_CRAWL_DELAY = timedelta(minutes=3)\n\nCALL_TIMES:',
+          )
+          replace_once(
+              schedule_path,
+              '''def previous_lottery_call_time(lottery: str, before: datetime) -> datetime:\n''',
+              '''def next_lottery_draw_time(\n    lottery: str,\n    now: datetime | None = None,\n) -> datetime:\n    current = now or datetime.now(TAIPEI)\n    if current.tzinfo is None:\n        raise ValueError("schedule time must include a timezone")\n    taipei_now = current.astimezone(TAIPEI)\n    for offset in range(8):\n        day = taipei_now + timedelta(days=offset)\n        if day.weekday() not in DRAW_WEEKDAYS.get(lottery, frozenset(range(7))):\n            continue\n        scheduled = lottery_call_time(lottery, day) - FIRST_CRAWL_DELAY\n        if scheduled > taipei_now:\n            return scheduled\n    raise RuntimeError("NEXT_LOTTERY_DRAW_NOT_FOUND")\n\n\ndef previous_lottery_call_time(lottery: str, before: datetime) -> datetime:\n''',
+          )
+
+          api_path = Path("services/matrix-api/app/api_server.py")
+          replace_once(
+              api_path,
+              "from app.schedule import next_lottery_call_time",
+              "from app.schedule import next_lottery_draw_time",
+          )
+          replace_once(
+              api_path,
+              'item = {**item, "nextDrawAt": next_lottery_call_time(lottery).isoformat()}',
+              'item = {**item, "nextDrawAt": next_lottery_draw_time(lottery).isoformat()}',
+          )
+
+          source_path = Path("services/matrix-api/app/scraping/sources.py")
+          replace_once(
+              source_path,
+              "from datetime import datetime",
+              "from datetime import datetime, timedelta",
+          )
+          normalize_marker = '''def _exact_numbers(value: str, count: int, maximum: int) -> list[str]:\n'''
+          normalize_helper = '''def _normalize_sc888_fantasy5_history(\n    draws: list[MatrixDraw],\n) -> list[MatrixDraw]:\n    normalized: list[MatrixDraw] = []\n    for draw in draws:\n        date_match = DATE_PATTERN.search(str(draw.get("drawDate", "")))\n        if date_match is None:\n            continue\n        date_parts = [int(value) for value in re.findall(r"\\d+", date_match.group(0))]\n        if len(date_parts) != 3:\n            continue\n        try:\n            california_date = (\n                datetime(date_parts[0], date_parts[1], date_parts[2]).date()\n                - timedelta(days=1)\n            ).isoformat()\n        except ValueError:\n            continue\n        numbers = list(draw.get("sortedNumbers") or draw.get("numbers") or [])\n        if len(numbers) != 5:\n            continue\n        normalized.append({\n            "period": str(draw["period"]),\n            "drawDate": california_date,\n            "numbers": numbers,\n            "sortedNumbers": numbers,\n            "drawOrderNumbers": None,\n        })\n    return _newest_unique(normalized)\n\n\n'''
+          replace_once(source_path, normalize_marker, normalize_helper + normalize_marker)
+
+          source_text = source_path.read_text(encoding="utf-8")
+          method_marker = '''    def fetch_algorithm_history(self, lottery: str) -> list[MatrixDraw]:\n'''
+          fallback_method = '''    def _fetch_sc888_fantasy5_history(\n        self,\n        limit: int | None,\n    ) -> list[MatrixDraw]:\n        urls = (\n            [SC888_FANTASY5_URL, SC888_FANTASY5_DOWNLOAD_URL]\n            if limit is not None\n            else [SC888_FANTASY5_DOWNLOAD_URL, SC888_FANTASY5_URL]\n        )\n        last_error: Exception | None = None\n        for url in urls:\n            try:\n                response = self.client.get(\n                    url,\n                    headers={\n                        **HEADERS,\n                        "accept": (\n                            "text/html,application/xhtml+xml,"\n                            "application/vnd.ms-excel;q=0.9,*/*;q=0.8"\n                        ),\n                        "referer": "https://sc888.net/",\n                    },\n                    timeout=(\n                        30.0\n                        if url == SC888_FANTASY5_DOWNLOAD_URL\n                        else 20.0\n                    ),\n                    follow_redirects=True,\n                )\n                response.raise_for_status()\n                draws = _normalize_sc888_fantasy5_history(\n                    parse_sc888_fantasy5_history(_response_text(response))\n                )\n                if draws:\n                    return _newest_unique(draws, limit)\n                last_error = ValueError("SC888_HISTORY_INCOMPLETE")\n            except (httpx.HTTPError, ValueError) as error:\n                last_error = error\n        if last_error is not None:\n            raise last_error\n        raise ValueError("SC888_HISTORY_INCOMPLETE")\n\n'''
+          if source_text.count(method_marker) != 1:
+              raise SystemExit("guard failed for Fantasy5 fallback method insertion")
+          source_text = source_text.replace(method_marker, fallback_method + method_marker, 1)
+
+          fetch_start = source_text.index(
+              '        if lottery == "天天樂":\n',
+              source_text.index('    def fetch_history('),
+          )
+          fetch_end = source_text.index(
+              '        if lottery == "六合彩":\n',
+              fetch_start,
+          )
+          fantasy_block = '''        if lottery == "天天樂":\n            page_size = 50 if limit is None else min(50, limit)\n            official_draws: list[MatrixDraw] = []\n            previous_count = 0\n            page = 1\n            try:\n                while True:\n                    response = self.client.get(\n                        CALIFORNIA_FANTASY5_HISTORY_URL.format(\n                            page=page, size=page_size,\n                        ),\n                        headers=HEADERS,\n                        timeout=20.0,\n                        follow_redirects=True,\n                    )\n                    response.raise_for_status()\n                    page_draws = parse_california_fantasy5_history(response.json())\n                    if not page_draws:\n                        break\n                    official_draws.extend(page_draws)\n                    draws = _newest_unique(official_draws)\n                    if limit is not None and len(draws) >= limit:\n                        return _newest_unique(draws, limit)\n                    if len(draws) == previous_count or len(page_draws) < page_size:\n                        break\n                    previous_count = len(draws)\n                    page += 1\n            except httpx.HTTPStatusError as error:\n                if error.response.status_code != 403:\n                    raise\n                return self._fetch_sc888_fantasy5_history(limit)\n\n            draws = _newest_unique(official_draws)\n            if not draws or (limit is not None and len(draws) < limit):\n                raise ValueError("CALIFORNIA_FANTASY5_HISTORY_INCOMPLETE")\n            return _newest_unique(draws, limit)\n'''
+          source_text = source_text[:fetch_start] + fantasy_block + source_text[fetch_end:]
+          source_path.write_text(source_text, encoding="utf-8")
+          PY
+
+      - name: Verify Matrix API repair
+        working-directory: services/matrix-api
+        run: |
+          uv sync --frozen
+          uv run pytest -q \
+            tests/test_fantasy5_forbidden_fallback.py \
+            tests/test_draw_time_contract.py \
+            tests/test_scraping_sources.py \
+            tests/test_schedule.py \
+            tests/test_api_server_http.py
+          uv run pytest -q
+
+      - name: Commit implementation and remove one-time workflow
+        run: |
+          rm .github/workflows/apply-fantasy5-draw-time-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add services/matrix-api/app/schedule.py \
+                  services/matrix-api/app/api_server.py \
+                  services/matrix-api/app/scraping/sources.py \
+                  .github/workflows/apply-fantasy5-draw-time-fix.yml
+          git commit -m "fix: restore Fantasy5 fallback and actual draw time"
+          git push origin HEAD:fix/fantasy5-crawler-draw-time
