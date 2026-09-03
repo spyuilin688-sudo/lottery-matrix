@@ -516,8 +516,11 @@
 .explore-validation-number--hit {
   height: auto;
   aspect-ratio: auto;
+  width: max-content;
+  min-width: 0;
   padding-block: 0.3px;
   padding-inline: 1px;
+  justify-self: center;
 }
 
 .explore-validation-number--source {
@@ -620,6 +623,9 @@
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number--hit {
   height: auto;
   aspect-ratio: auto;
+  width: max-content;
+  min-width: 0;
+  justify-self: center;
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-formulas {
