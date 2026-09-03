@@ -1065,6 +1065,34 @@ function ExploreValidationProcess({
     : `${item.referenceOffset < 0 ? "上" : "下"} ${Math.abs(item.referenceOffset)} 期`;
 
   const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+  const lotteryMaximum = lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+  const normalizeFormulaNumber = (value: number) => String(
+    (((value - 1) % lotteryMaximum) + lotteryMaximum) % lotteryMaximum + 1,
+  ).padStart(2, "0");
+  const formulaResultNumber = (algorithmType: string, baseNumber: number, ruleValue: number) => (
+    normalizeFormulaNumber(algorithmType.startsWith("合值") ? ruleValue - baseNumber : baseNumber + ruleValue)
+  );
+  const validationFormula = (
+    position: number,
+    baseNumber: number,
+    algorithmType: string,
+    ruleValue: number,
+  ) => (
+    <span className="explore-validation-formula-expression">
+      <span>第</span>
+      <span>{position}</span>
+      <span>顆</span>
+      <span>{displayNumber(baseNumber)}</span>
+      {algorithmType.startsWith("合值") ? (
+        <>
+          <span>合值</span>
+          <span>{ruleValue}</span>
+        </>
+      ) : <span>{`+${ruleValue}`}</span>}
+      <span>=</span>
+      <span>{formulaResultNumber(algorithmType, baseNumber, ruleValue)}</span>
+    </span>
+  );
   const resultFormula = (resultNumbers: string) => (
     <>［{" "}<strong className="explore-validation-result-number">{resultNumbers}</strong>{" "}］</>
   );
@@ -1102,7 +1130,7 @@ function ExploreValidationProcess({
                 );
                 return index === 6 && (lottery === "六合彩" || lottery === "大樂透") ? (
                   <span className="explore-validation-special-number" key={`${value}-${index}`}>
-                    <i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
                     {number}
                   </span>
                 ) : <Fragment key={`${value}-${index}`}>{number}</Fragment>;
@@ -1111,7 +1139,7 @@ function ExploreValidationProcess({
           </div>
         ))}
       </div>
-      <div className="explore-validation-formulas explore-validation-numeric-text">
+      <div className="explore-validation-formulas">
         {rows.map((row, index) => <span className="explore-validation-formula-row" key={`${row.key}-formula`}>{formulas[index] ?? ""}</span>)}
       </div>
     </div>
@@ -1142,19 +1170,40 @@ function ExploreValidationProcess({
           return [...new Set(displays)];
         };
         const ruleDisplays = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => ruleDisplayValues(matchedRules).join("、");
-        const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
-          ruleDisplayValues(matchedRules).map((display) => {
-            if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
-            if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\+/, "")}`;
-            return display;
-          })
-        );
+        const formulaRules = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+          const resolved = matchedRules
+            ? matchedRules.map((matched) => {
+                if (typeof matched !== "number") {
+                  return ruleSet.rules.find((rule) => (
+                    rule.value === matched.value && rule.algorithmType === matched.algorithmType
+                  )) ?? matched;
+                }
+                return ruleSet.rules.find((rule) => (
+                  rule.value === matched && (
+                    rule.algorithmType === item.algorithmType || rule.algorithmType === `${item.algorithmType}版路`
+                  )
+                )) ?? ruleSet.rules.find((rule) => rule.value === matched) ?? {
+                  value: matched,
+                  display: String(matched),
+                  algorithmType: item.algorithmType,
+                };
+              })
+            : ruleSet.rules;
+          return item.algorithmType === "拖牌" ? [...resolved].reverse() : resolved;
+        };
+        const formulaRows = (
+          baseNumber: number,
+          matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"],
+        ) => formulaRules(matchedRules).slice(0, 2).map((rule) => validationFormula(
+          item.referencePosition ?? item.position,
+          baseNumber,
+          rule.algorithmType,
+          rule.value,
+        ));
         const summaryFormulaValues = ruleDisplayValues();
         const referenceFirst = (item.referenceOffset ?? 0) < 0;
         const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
-        const currentCalculations = validation.sourceA ? formulaDisplayValues().map((display) => (
-          `第${item.referencePosition ?? item.position}顆 ${displayNumber(validation.sourceA!.baseNumber)} ${display} = ${values(ruleSet.predictionNumbers).join("、")}`
-        )) : [];
+        const currentCalculations = validation.sourceA ? formulaRows(validation.sourceA.baseNumber) : [];
         return (
           <div className="validation-rule-set explore-validation-rule-set" key={`${validation.itemId}-${ruleSetIndex}`}>
             <header className="explore-validation-summary-card">
@@ -1188,12 +1237,9 @@ function ExploreValidationProcess({
                   hitNumbers: row.hitNumbers,
                 };
                 const resultNumbers = values(row.hitNumbers).join("、");
-                const calculations = formulaDisplayValues(row.matchedRules).map((display) => (
-                  `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`
-                ));
+                const calculations = formulaRows(row.baseNumber, row.matchedRules);
                 if (compactValidation) {
-                  const formulaDisplays = formulaDisplayValues(row.matchedRules);
-                  const formulaOnlyRows: ValidationDisplayRow[] = formulaDisplays.slice(1, 2).map((_, index) => ({
+                  const formulaOnlyRows: ValidationDisplayRow[] = calculations.slice(1, 2).map((_, index) => ({
                     key: `formula-${row.group}-${index + 2}`,
                     period: "",
                     numbers: [],
@@ -1202,7 +1248,7 @@ function ExploreValidationProcess({
                     `${ruleSetIndex}-${row.group}-${row.predictionPeriod}`,
                     [source, ...formulaOnlyRows, prediction],
                     [
-                      ...formulaDisplays.slice(0, 2).map((display) => `第${item.referencePosition ?? item.position}顆 ${displayNumber(row.baseNumber)} ${display} = ${resultNumbers}`),
+                      ...calculations.slice(0, 2),
                       resultFormula(resultNumbers),
                     ],
                   );
@@ -1228,7 +1274,7 @@ function ExploreValidationProcess({
                         numbers: validation.sourceA.sourceNumbers,
                         sourceNumber: item.number,
                       },
-                      ...formulaDisplayValues().slice(1, 2).map((_, index): ValidationDisplayRow => ({
+                      ...currentCalculations.slice(1, 2).map((_, index): ValidationDisplayRow => ({
                         key: `current-formula-${index + 2}`,
                         period: "",
                         numbers: [],

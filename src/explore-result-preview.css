@@ -499,7 +499,7 @@
   font-style: normal;
   font-weight: 800;
   line-height: 1;
-  white-space: pre;
+  white-space: nowrap;
 }
 
 .explore-validation-special-number {
@@ -507,7 +507,15 @@
   width: max-content;
   align-items: center;
   justify-self: end;
-  gap: 0;
+  margin-left: 2.5px;
+  gap: 2.5px;
+}
+
+.explore-validation-number--source,
+.explore-validation-number--step,
+.explore-validation-number--hit {
+  padding-block: 0.5px;
+  padding-inline: 0.5px;
 }
 
 .explore-validation-number--source {
@@ -564,7 +572,9 @@
 .explore-validation-formulas {
   color: #bac5d2;
   background: rgba(8, 15, 27, .82);
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   font-size: clamp(10px, 3.05vw, 12px);
+  font-variant-numeric: tabular-nums;
   line-height: 1.25;
 }
 
@@ -576,6 +586,7 @@
   height: auto;
   min-height: var(--explore-validation-row-min-height);
   padding: 2px;
+  color: #bac5d2;
   background: transparent;
   overflow-wrap: normal;
   white-space: nowrap;
@@ -639,28 +650,16 @@
   font-feature-settings: "tnum" 1, "zero" 0;
 }
 
-.explore-validation-formula-row:first-child {
-  color: #e4c980;
-}
-
-.explore-validation-group[data-row-count="3"] .explore-validation-formula-row:nth-child(2) {
-  color: #e4c980;
-}
-
-.explore-validation-group[data-road-type="拖牌"] .explore-validation-formula-row:nth-child(2) {
-  align-items: center;
+.explore-validation-formula-expression {
+  display: inline-flex;
+  align-items: baseline;
   justify-content: center;
-  padding: 2px;
-  font-size: inherit;
+  gap: 2px;
   color: #e4c980;
-  line-height: inherit;
-  text-align: center;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-
-.explore-validation-formula-row:last-child {
-  color: #bac5d2;
-}
-
 .explore-validation-result-number {
   font-size: .85em;
   font-weight: 700;
