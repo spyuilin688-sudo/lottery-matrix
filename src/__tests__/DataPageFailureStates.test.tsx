@@ -38,6 +38,7 @@ beforeEach(() => {
     callback(0);
     return 1;
   };
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(cleanup);
