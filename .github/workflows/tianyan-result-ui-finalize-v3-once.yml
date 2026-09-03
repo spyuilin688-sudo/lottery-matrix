@@ -1,0 +1,96 @@
+name: Finalize Matrix Tianyan result UI v3 once
+
+on:
+  push:
+    branches: ['fix/tianyan-result-ui-rules-20260903']
+    paths:
+      - '.github/workflows/tianyan-result-ui-finalize-v3-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/tianyan-result-ui-rules-20260903
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ensure main did not move during this bounded change
+        shell: bash
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "8b4461135db8c4b19937fab5fd1f582f300f33d8"
+
+      - name: Apply scoped Tianyan product patch
+        run: python scripts/tmp_apply_tianyan_result_ui.py
+
+      - name: Update superseded Tianyan history regression test
+        run: python scripts/tmp_patch_tianyan_legacy_test.py
+
+      - name: Retain Tianyan lazy-validation and hit-condition coverage
+        run: python scripts/tmp_extend_tianyan_tests.py
+
+      - name: Update mobile runtime lock
+        run: npm run update:runtime-lock
+
+      - name: Verify Tianyan behavior and API client contract
+        run: npm run test:unit -- src/__tests__/MatrixTianyanPage.test.tsx src/matrix-algorithm-api.test.ts
+
+      - name: Verify only the updated shared-page Tianyan regression
+        run: npm run test:unit -- src/__tests__/MatrixExplorePage.test.tsx -t 'Matrix 天衍移除近10期但保留 Matrix 探索頁布局'
+
+      - name: Verify Tianyan source and RPC contract
+        run: node --test tests/matrix-tianyan-result-ui-contract.test.mjs
+
+      - name: Verify repository runtime lock
+        run: npm run check:runtime
+
+      - name: Production build
+        run: npm run build
+
+      - name: Remove temporary implementation and diagnostic files
+        shell: bash
+        run: |
+          git rm -f --ignore-unmatch \
+            .github/workflows/tianyan-result-ui-once.yml \
+            .github/workflows/tianyan-result-ui-v2-once.yml \
+            .github/workflows/tianyan-result-ui-v3-once.yml \
+            .github/workflows/tianyan-result-ui-v4-once.yml \
+            .github/workflows/tianyan-unit-diagnose-once.yml \
+            .github/workflows/tianyan-main-baseline-diagnose-once.yml \
+            .github/workflows/tianyan-result-ui-finalize-once.yml \
+            .github/workflows/tianyan-result-ui-finalize-v2-once.yml \
+            .github/workflows/tianyan-result-ui-finalize-v3-once.yml \
+            scripts/tmp_apply_tianyan_result_ui.py \
+            scripts/tmp_patch_tianyan_legacy_test.py \
+            scripts/tmp_extend_tianyan_tests.py \
+            tianyan-unit-diagnostic.txt \
+            main-unit-diagnostic.txt
+
+      - name: Commit verified Tianyan implementation
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            src/FeaturePages.tsx \
+            src/matrix-algorithm-api.ts \
+            src/__tests__/MatrixTianyanPage.test.tsx \
+            src/__tests__/MatrixExplorePage.test.tsx \
+            tests/matrix-tianyan-result-ui-contract.test.mjs \
+            supabase/migrations/20260903073500_matrix_tianyan_result_road_types.sql \
+            mobile-runtime.lock.json
+          git diff --cached --check
+          git commit -m 'fix(tianyan): align result UI with Matrix Explore'
+          git push origin HEAD:fix/tianyan-result-ui-rules-20260903
