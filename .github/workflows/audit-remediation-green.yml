@@ -26,11 +26,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Validate patch script
-        run: python -m py_compile scripts/audit_remediation_frontend.py
+      - name: Validate patch scripts
+        run: |
+          python -m py_compile scripts/audit_remediation_frontend.py
+          python -m py_compile scripts/run_audit_remediation_frontend.py
 
       - name: Apply frontend remediation
-        run: python scripts/audit_remediation_frontend.py
+        run: python scripts/run_audit_remediation_frontend.py
 
       - name: Install dependencies
         run: npm ci
