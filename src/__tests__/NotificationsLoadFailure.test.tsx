@@ -33,6 +33,11 @@ vi.mock('../push-subscription', () => ({
 vi.mock('../push-public-key', () => ({ resolveWebPushPublicKey: vi.fn(() => 'key') }));
 vi.mock('../BottomNavigation', () => ({ BottomNavigation: () => null }));
 
+const lotteryNames = ['今彩539', '天天樂', '\u516d\u5408\u5f69', '大樂透'] as const;
+const emptyTimes = Object.fromEntries(lotteryNames.map((lottery) => [lottery, ['', '']])) as MemberNotificationSettings['betTimes'];
+const activeStatuses = Object.fromEntries(lotteryNames.map((lottery) => [lottery, ['啟動']])) as MemberNotificationSettings['statusOptions'];
+const collisionOptions = Object.fromEntries(lotteryNames.map((lottery) => [lottery, ['獨碰二星']])) as MemberNotificationSettings['collisionOptions'];
+
 const storedSettings: MemberNotificationSettings = {
   settings: {
     bet: true,
@@ -52,24 +57,9 @@ const storedSettings: MemberNotificationSettings = {
     expiry: ['提前1日'],
     system: ['維護'],
   },
-  betTimes: {
-    今彩539: ['', ''],
-    天天樂: ['', ''],
-    ลอตเตอรี่: ['', ''],
-    大樂透: ['', ''],
-  } as MemberNotificationSettings['betTimes'],
-  statusOptions: {
-    今彩539: ['啟動'],
-    天天樂: ['啟動'],
-    ลอตเตอรี่: ['啟動'],
-    大樂透: ['啟動'],
-  } as MemberNotificationSettings['statusOptions'],
-  collisionOptions: {
-    今彩539: ['獨碰二星'],
-    天天樂: ['獨碰二星'],
-    ลอตเตอรี่: ['獨碰二星'],
-    大樂透: ['獨碰二星'],
-  } as MemberNotificationSettings['collisionOptions'],
+  betTimes: emptyTimes,
+  statusOptions: activeStatuses,
+  collisionOptions,
 };
 
 describe('notification settings load failure recovery', () => {
