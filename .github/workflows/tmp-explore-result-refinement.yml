@@ -2,14 +2,14 @@ name: Temporary Explore Result Refinement
 
 on:
   push:
-    branches: [fix/explore-result-refinement-20260904]
+    branches:
+      - fix/explore-result-refinement-20260904
 
 permissions:
   contents: write
 
 jobs:
-  patch-test-commit:
-    if: github.actor != 'github-actions[bot]'
+  apply-test-commit:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -24,272 +24,31 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: RED regression proof
-        id: red
-        continue-on-error: true
-        run: node --test tests/matrix-explore-result-refinement-20260904.test.mjs
+      - name: Apply approved changes
+        run: python scripts/tmp_apply_explore_result_refinement.py
 
-      - name: Confirm RED failure
-        if: always()
-        run: |
-          if [ "${{ steps.red.outcome }}" != "failure" ]; then
-            echo "Expected the new regression test to fail before implementation."
-            exit 1
-          fi
-          echo "RED confirmed."
-
-      - name: Patch Explore feature logic
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(text: str, old: str, new: str, label: str) -> str:
-              if old not in text:
-                  raise SystemExit(f"{label}: source marker not found")
-              return text.replace(old, new, 1)
-
-          path = Path("src/FeaturePages.tsx")
-          text = path.read_text()
-
-          default_start = text.index('  const defaultFilters: Record<string, ConsecutiveOption[]> = {')
-          default_end = text.index('  const [lottery, setLottery]', default_start)
-          helper = '''  const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
-            if (title === "Matrix 天衍") {
-              return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
-            }
-            const isTrailer = roadValue === "拖牌版路";
-            if (hitValue === "準4+（鎖定1碼）") {
-              return isTrailer
-                ? ["準5進6", "準6進7", "準7進8"]
-                : ["準6進7", "準7進8"];
-            }
-            return isTrailer
-              ? ["準6進7", "準7進8", "準9進10", "準11進12"]
-              : ["準9進10", "準11進12"];
-          };
-          '''
-          text = text[:default_start] + helper + text[default_end:]
-
-          text = replace_once(
-              text,
-              '    defaultFilters[title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）"],',
-              '''    defaultFiltersFor(
-                title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）",
-                roadTypes[0],
-              ),''',
-              "selected filter initializer",
-          )
-
-          handler_start = text.index('  const changeHit = (value: string) => {')
-          handler_end = text.index('  const changeLottery = (value: LotteryId) => {', handler_start)
-          handlers = '''  const changeHit = (value: string) => {
-            setHit(value);
-            setSelectedFilters(defaultFiltersFor(value, road));
-            setExpandedRoad(null);
-            setResultPage(1);
-          };
-
-          const changeRoad = (value: string) => {
-            setRoad(value);
-            setSelectedFilters(defaultFiltersFor(hit, value));
-            setExpandedRoad(null);
-            setResultPage(1);
-          };
-
-          '''
-          text = text[:handler_start] + handlers + text[handler_end:]
-
-          text = replace_once(text, '    const nextFilters = defaultFilters[hit];', '    const nextFilters = defaultFiltersFor(hit, road);', "start defaults")
-          text = replace_once(text, 'onClick={() => setRoad(v)}', 'onClick={() => changeRoad(v)}', "road click")
-          text = replace_once(
-              text,
-              '<span>{`第${position}顆`}</span>{" "}',
-              '''<span className="explore-validation-formula-position">
-                <span>第</span><span>{position}</span><span>顆</span>
-              </span>{" "}''',
-              "formula position",
-          )
-          text = replace_once(
-              text,
-              '''{paginatedResults.map((item) => (
-                <article key={item.id}>''',
-              '''{paginatedResults.map((item, index) => (
-                <article
-                  data-number-group-start={sameCode && index > 0 && paginatedResults[index - 1]?.prediction !== item.prediction ? "true" : undefined}
-                  key={item.id}
-                >''',
-              "same-code group boundary",
-          )
-          path.write_text(text)
-          PY
-
-      - name: Patch Explore unit tests
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(text: str, old: str, new: str, label: str) -> str:
-              if old not in text:
-                  raise SystemExit(f"{label}: source marker not found")
-              return text.replace(old, new, 1)
-
-          path = Path("src/__tests__/MatrixExplorePage.test.tsx")
-          text = path.read_text()
-
-          text = replace_once(text,
-              "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);",
-              "expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true', 'true']);",
-              "準4 pressed defaults")
-
-          text = replace_once(text, '''  fireEvent.click(screen.getByRole('button', { name: '準5進6' }));
-          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-            expect.objectContaining({ selectedStreaks: ['準6進7', '準7進8'] }),
-          ));''', '''  fireEvent.click(screen.getByRole('button', { name: '準6進7' }));
-          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-            expect.objectContaining({ selectedStreaks: ['準7進8'] }),
-          ));''', "準4 temporary filter")
-
-          text = replace_once(text,
-              "expect(screen.getByRole('button', { name: '準5進6' }).getAttribute('aria-pressed')).toBe('true');",
-              "expect(screen.getByRole('button', { name: '準6進7' }).getAttribute('aria-pressed')).toBe('true');",
-              "準4 restored aria")
-
-          text = replace_once(text, '''  fireEvent.click(screen.getByRole('button', { name: '準7進8' }));
-
-          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-            expect.objectContaining({ selectedStreaks: ['準9進10', '準11進12'] }),
-          ));''', '''  fireEvent.click(screen.getByRole('button', { name: '準9進10' }));
-
-          await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-            expect.objectContaining({ selectedStreaks: ['準11進12'] }),
-          ));''', "準5 temporary filter")
-
-          text = replace_once(text,
-              "expect(screen.getByRole('button', { name: '準7進8' }).getAttribute('aria-pressed')).toBe('true');",
-              "expect(screen.getByRole('button', { name: '準9進10' }).getAttribute('aria-pressed')).toBe('true');",
-              "準5 restored aria")
-
-          text = text.replace(
-              "selectedStreaks: ['準5進6', '準6進7', '準7進8'],",
-              "selectedStreaks: ['準6進7', '準7進8'],",
-          )
-          text = text.replace(
-              "selectedStreaks: ['準7進8', '準9進10', '準11進12'],",
-              "selectedStreaks: ['準9進10', '準11進12'],",
-          )
-
-          anchor = "test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準', async () => {"
-          trailer_test = '''test('拖牌版路依命中條件使用例外預設連準', async () => {
-            render(<MatrixExplorePage onNavigate={vi.fn()} />);
-            fireEvent.click(screen.getByRole('button', { name: '拖牌版路推薦' }));
-            fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
-              roadTypes: ['拖牌'],
-              selectedStreaks: ['準5進6', '準6進7', '準7進8'],
-            })));
-
-            fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
-            fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-            await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
-              roadTypes: ['拖牌'],
-              selectedStreaks: ['準6進7', '準7進8', '準9進10', '準11進12'],
-            })));
-          });
-
-          '''
-          if anchor not in text:
-              raise SystemExit("trailer test anchor not found")
-          text = text.replace(anchor, trailer_test + anchor, 1)
-          path.write_text(text)
-          PY
-
-      - name: Patch Explore result CSS
-        run: |
-          cat >> src/explore-result-preview.css <<'CSS'
-
-          /* Matrix Explore result refinements: keep Tianyan isolated from Explore-only spacing. */
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-card {
-            padding-block: 12px;
-          }
-
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-formula-position {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 1px;
-          }
-
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen)
-            .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"])[data-wide-numbers="false"]
-            .explore-validation-numbers {
-            gap: calc(clamp(4px, 1.5vw, 6px) + 1px);
-            padding-inline: 4px;
-          }
-
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-result-number {
-            font-size: calc(.8em - 2px);
-            margin-inline: 2px;
-          }
-          CSS
-
-          cat >> src/matrix-explore-spacing.css <<'CSS'
-
-          /* Matrix Explore result table alignment and same-code grouping. */
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results-head {
-            align-items: end;
-            padding-bottom: 5px;
-          }
-
-          .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"] {
-            border-top: 1px solid rgba(230, 183, 106, .72);
-          }
-          CSS
-
-      - name: Add prediction-number grouping migration
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          source = Path("supabase/migrations/20260902040000_matrix_explore_v12_rpc.sql").read_text()
-          start = source.index("create or replace function public.matrix_explore_list")
-          end = source.index("create or replace function public.matrix_explore_validation")
-          function = source[start:end].rstrip()
-          old = "case when v_same then filtered.prediction_numbers::text else '' end,"
-          new = "case when v_same or v_prediction_number is not null then filtered.prediction_numbers::text else '' end,"
-          if old not in function:
-              raise SystemExit("RPC order source marker not found")
-          function = function.replace(old, new, 1)
-          Path("supabase/migrations/20260904040000_matrix_explore_prediction_number_group_order.sql").write_text(f'''-- Keep prediction-number card filtering grouped in the same order as 同碼 mode.
-begin;
-
-{function}
-
-revoke all on function public.matrix_explore_list(jsonb) from public;
-grant execute on function public.matrix_explore_list(jsonb) to anon, authenticated;
-
-commit;
-''')
-          PY
-
-      - name: GREEN regression proof
+      - name: Run new regressions
         run: node --test tests/matrix-explore-result-refinement-20260904.test.mjs
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Matrix Explore unit regression
+      - name: Run Matrix Explore unit tests
         run: npx vitest run src/__tests__/MatrixExplorePage.test.tsx
 
-      - name: Explore layout regressions
+      - name: Run Explore layout regressions
         run: node --test tests/matrix-explore-validation-preview-merge.test.mjs tests/matrix-explore-fluid-layout.test.mjs
 
-      - name: Production Pages build
+      - name: Build production Pages bundle
         run: npm run build:pages
 
-      - name: Diff safety check
+      - name: Check diff whitespace
         run: git diff --check
 
-      - name: Commit approved implementation
+      - name: Commit verified implementation
         run: |
           rm .github/workflows/tmp-explore-result-refinement.yml
+          rm scripts/tmp_apply_explore_result_refinement.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
