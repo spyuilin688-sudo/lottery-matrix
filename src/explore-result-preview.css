@@ -380,7 +380,8 @@
 }
 
 .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
-  grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(88px, 27vw, 108px), 108px);
+  --explore-validation-number-font-size: 12px;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
 }
 
 .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"]) {
@@ -481,7 +482,7 @@
   border: 1px solid transparent;
   border-radius: 3px;
   color: inherit;
-  font-size: 13px;
+  font-size: var(--explore-validation-number-font-size, 13px);
   font-style: normal;
   letter-spacing: normal;
   line-height: 1;
@@ -516,8 +517,11 @@
 .explore-validation-number--hit {
   height: auto;
   aspect-ratio: auto;
+  width: max-content;
+  min-width: 0;
   padding-block: 0.3px;
   padding-inline: 1px;
+  justify-self: center;
 }
 
 .explore-validation-number--source {
@@ -558,7 +562,7 @@
   border-radius: 3px;
   color: #e6b76a;
   background: rgba(230, 183, 106, .14);
-  font-size: 13px;
+  font-size: var(--explore-validation-number-font-size, 13px);
   font-style: normal;
   letter-spacing: -.06em;
   text-align: center;
@@ -612,7 +616,6 @@
   height: clamp(16px, 4.36vw, 17px);
   min-width: clamp(16px, 4.36vw, 17px);
   aspect-ratio: 1;
-  font-size: 13px;
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number {
@@ -624,6 +627,9 @@
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-number--hit {
   height: auto;
   aspect-ratio: auto;
+  width: max-content;
+  min-width: 0;
+  justify-self: center;
 }
 
 .explore-validation-group[data-wide-numbers="true"] .explore-validation-formulas {
@@ -674,7 +680,7 @@
   white-space: nowrap;
 }
 .explore-validation-result-number {
-  font-size: .85em;
+  font-size: .8em;
   font-weight: 700;
   line-height: 1;
 }
