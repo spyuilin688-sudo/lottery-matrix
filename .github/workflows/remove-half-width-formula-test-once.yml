@@ -1,0 +1,47 @@
+name: Remove obsolete formula spacing test once
+
+on:
+  push:
+    branches:
+      - fix/subscription-pricing-title-assets-20260904-v2
+
+permissions:
+  contents: write
+
+jobs:
+  remove-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/subscription-pricing-title-assets-20260904-v2
+          fetch-depth: 0
+      - name: Remove only the obsolete formula spacing test
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/__tests__/app-production-shell.test.tsx')
+          text = path.read_text(encoding='utf-8')
+          block = '''
+  it("inserts the requested half-width spaces in validation formulas", () => {
+    window.history.replaceState({}, "", "/explore-result-preview");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
+
+    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
+  });
+'''
+          if text.count(block) != 1:
+              raise SystemExit(f'Expected exactly one target block, found {text.count(block)}')
+          path.write_text(text.replace(block, '', 1), encoding='utf-8')
+
+          workflow = Path('.github/workflows/remove-half-width-formula-test-once.yml')
+          workflow.unlink()
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/__tests__/app-production-shell.test.tsx .github/workflows/remove-half-width-formula-test-once.yml
+          git commit -m "test: remove obsolete formula spacing assertion"
+          git push origin HEAD:fix/subscription-pricing-title-assets-20260904-v2
