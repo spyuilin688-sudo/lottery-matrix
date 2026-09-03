@@ -520,7 +520,8 @@
   width: max-content;
   min-width: 0;
   padding-block: 0.3px;
-  padding-inline: 1px;
+  padding-inline: 0.7px;
+  border-width: 0.7px;
   justify-self: center;
 }
 
