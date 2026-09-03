@@ -49,11 +49,14 @@ afterEach(() => {
 describe("Matrix Pro plan layout refinement", () => {
   it("uses one reachable page-scoped owner without legacy pull-out overrides", () => {
     expect(ownerExists).toBe(true);
-    expect(ownerCss).toMatch(/\.pro-plans-screen\s*\{[^}]*--pro-plans-inline:\s*18px;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*15px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
     expect(ownerCss).toMatch(/\.pro-plans-screen\s*>\s*\.feature-body\s*\{[^}]*padding-inline:\s*0;/s);
     expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0 0 18px;[^}]*gap:\s*12px;/s);
-    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex:\s*0 0 calc\(100% - \(var\(--pro-plans-inline\) \* 2\)\);/s);
-    expect(ownerCss).toMatch(/\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-inline\);[^}]*row-gap:\s*0;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex:\s*0 0 calc\(100% - \(var\(--pro-plans-plan-inline\) \* 2\)\);/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);[^}]*row-gap:\s*0;/s);
+    expect(ownerCss).not.toMatch(/--pro-plans-inline\s*:/);
+    expect(ownerCss).not.toMatch(/\.pro-plans-screen \.renewal-card\s*\{[^}]*margin-inline\s*:/s);
+    expect(ownerCss).not.toMatch(/\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin-inline\s*:/s);
     expect(ownerCss).not.toMatch(/margin-inline:\s*-[\d.]+px/);
     expect(ownerCss).not.toMatch(/width:\s*calc\(100%\s*\+/);
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
