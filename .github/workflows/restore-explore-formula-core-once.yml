@@ -1,0 +1,200 @@
+name: Restore Explore formula core once
+
+on:
+  push:
+    branches:
+      - fix/explore-result-refinement-20260904
+    paths:
+      - .github/workflows/restore-explore-formula-core-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/explore-result-refinement-20260904
+          fetch-depth: 0
+
+      - name: Merge latest main without discarding PR 284 work
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Restore PR 259 formula core on top of PR 284 UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          feature_path = Path("src/FeaturePages.tsx")
+          source = feature_path.read_text()
+
+          old_formula = '''  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+          const validationFormula = (
+            position: number,
+            baseNumber: number,
+            formula: string,
+            resultNumbers: string,
+          ) => (
+            <span className="explore-validation-formula-expression">
+              <span className="explore-validation-formula-position">
+                <span>第</span>
+                <span>{position}</span>
+                <span>顆</span>
+              </span>{" "}
+              <span>{displayNumber(baseNumber)}</span>{" "}
+              <span>{formula}</span>{" "}
+              <span>=</span>{" "}
+              <span>{resultNumbers}</span>
+            </span>
+          );'''
+
+          new_formula = '''  const displayNumber = (value: string | number) => String(value).padStart(2, "0");
+          const lotteryMaximum = lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+          const normalizeFormulaNumber = (value: number) => String(
+            (((value - 1) % lotteryMaximum) + lotteryMaximum) % lotteryMaximum + 1,
+          ).padStart(2, "0");
+          const formulaResultNumber = (algorithmType: string, baseNumber: number, ruleValue: number) => (
+            normalizeFormulaNumber(algorithmType.startsWith("合值") ? ruleValue - baseNumber : baseNumber + ruleValue)
+          );
+          const validationFormula = (
+            position: number,
+            baseNumber: number,
+            algorithmType: string,
+            ruleValue: number,
+          ) => (
+            <span className="explore-validation-formula-expression">
+              <span className="explore-validation-formula-position">
+                <span>第</span>
+                <span>{position}</span>
+                <span>顆</span>
+              </span>
+              <span>{displayNumber(baseNumber)}</span>
+              {algorithmType.startsWith("合值") ? (
+                <>
+                  <span>合值</span>
+                  <span>{ruleValue}</span>
+                </>
+              ) : <span>{`+${ruleValue}`}</span>}
+              <span>=</span>
+              <span>{formulaResultNumber(algorithmType, baseNumber, ruleValue)}</span>
+            </span>
+          );'''
+
+          if source.count(old_formula) != 1:
+              raise SystemExit(f"Expected exactly one regressed validationFormula block, found {source.count(old_formula)}")
+          source = source.replace(old_formula, new_formula, 1)
+
+          old_separator = '<i className="explore-validation-special-separator" aria-hidden="true">{" +"}</i>'
+          new_separator = '<i className="explore-validation-special-separator" aria-hidden="true">+</i>'
+          if source.count(old_separator) != 1:
+              raise SystemExit(f"Expected exactly one spaced special separator in Explore, found {source.count(old_separator)}")
+          source = source.replace(old_separator, new_separator, 1)
+
+          old_rules = '''        const formulaDisplayValues = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => (
+            ruleDisplayValues(matchedRules).map((display) => {
+              if (item.algorithmType === "拖牌" && display.startsWith("拖牌")) return `+${display.slice(2)}`;
+              if (item.algorithmType === "合值" && !display.startsWith("合值")) return `合值${display.replace(/^\\+/, "")}`;
+              return display;
+            })
+          );
+          const formulaRows = (
+            baseNumber: number,
+            resultNumbers: string,
+            matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"],
+          ) => formulaDisplayValues(matchedRules).slice(0, 2).map((display) => validationFormula(
+            item.referencePosition ?? item.position,
+            baseNumber,
+            display,
+            resultNumbers,
+          ));
+          const summaryFormulaValues = ruleDisplayValues();
+          const referenceFirst = (item.referenceOffset ?? 0) < 0;
+          const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
+          const currentCalculations = validation.sourceA
+            ? formulaRows(validation.sourceA.baseNumber, values(ruleSet.predictionNumbers).join("、"))
+            : [];'''
+
+          new_rules = '''        const formulaRules = (matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"]) => {
+            const resolved = matchedRules
+              ? matchedRules.map((matched) => {
+                  if (typeof matched !== "number") {
+                    return ruleSet.rules.find((rule) => (
+                      rule.value === matched.value && rule.algorithmType === matched.algorithmType
+                    )) ?? matched;
+                  }
+                  return ruleSet.rules.find((rule) => (
+                    rule.value === matched && (
+                      rule.algorithmType === item.algorithmType || rule.algorithmType === `${item.algorithmType}版路`
+                    )
+                  )) ?? ruleSet.rules.find((rule) => rule.value === matched) ?? {
+                    value: matched,
+                    display: String(matched),
+                    algorithmType: item.algorithmType,
+                  };
+                })
+              : ruleSet.rules;
+            return item.algorithmType === "拖牌" ? [...resolved].reverse() : resolved;
+          };
+          const formulaRows = (
+            baseNumber: number,
+            matchedRules?: ExploreValidation["ruleSets"][number]["historicalValidation"][number]["matchedRules"],
+          ) => formulaRules(matchedRules).slice(0, 2).map((rule) => validationFormula(
+            item.referencePosition ?? item.position,
+            baseNumber,
+            rule.algorithmType,
+            rule.value,
+          ));
+          const summaryFormulaValues = ruleDisplayValues();
+          const referenceFirst = (item.referenceOffset ?? 0) < 0;
+          const compactValidation = item.algorithmType === "拖牌" || (item.referenceOffset ?? 0) === 0;
+          const currentCalculations = validation.sourceA ? formulaRows(validation.sourceA.baseNumber) : [];'''
+
+          if source.count(old_rules) != 1:
+              raise SystemExit(f"Expected exactly one regressed formulaRules block, found {source.count(old_rules)}")
+          source = source.replace(old_rules, new_rules, 1)
+
+          old_call = 'const calculations = formulaRows(row.baseNumber, resultNumbers, row.matchedRules);'
+          new_call = 'const calculations = formulaRows(row.baseNumber, row.matchedRules);'
+          if source.count(old_call) != 1:
+              raise SystemExit(f"Expected exactly one historical formulaRows call, found {source.count(old_call)}")
+          source = source.replace(old_call, new_call, 1)
+
+          feature_path.write_text(source)
+
+          test_path = Path("tests/matrix-explore-validation-preview-merge.test.mjs")
+          test_source = test_path.read_text()
+          old_contract = '''  assert.match(component[0], /const formulaRows = \\(\\s*baseNumber: number,\\s*resultNumbers: string,/s);
+            assert.match(component[0], /validationFormula\\(\\s*item\\.referencePosition \\?\\? item\\.position,\\s*baseNumber,\\s*display,\\s*resultNumbers,/s);
+            assert.match(component[0], /display\\.replace\\(\\/\\^\\\\\\+\\\/, ""\\)/);
+            assert.doesNotMatch(component[0], /const formulaResultNumber/);'''
+          new_contract = '''  assert.match(component[0], /const formulaResultNumber = \\(algorithmType: string, baseNumber: number, ruleValue: number\\)/);
+            assert.match(component[0], /const formulaRows = \\(\\s*baseNumber: number,\\s*matchedRules\\?/s);
+            assert.match(component[0], /validationFormula\\(\\s*item\\.referencePosition \\?\\? item\\.position,\\s*baseNumber,\\s*rule\\.algorithmType,\\s*rule\\.value,/s);
+            assert.match(component[0], /item\\.algorithmType === "拖牌" \\? \\[\\.\\.\\.resolved\\]\\.reverse\\(\\) : resolved/);'''
+
+          if test_source.count(old_contract) != 1:
+              raise SystemExit(f"Expected exactly one regressed formula test contract, found {test_source.count(old_contract)}")
+          test_source = test_source.replace(old_contract, new_contract, 1)
+          test_path.write_text(test_source)
+          PY
+
+      - name: Verify restored core and PR 284 contracts
+        run: |
+          node --test tests/matrix-explore-formula-core-regression-20260904.test.mjs
+          node --test tests/matrix-explore-result-refinement-20260904.test.mjs
+          node --test tests/matrix-explore-validation-preview-merge.test.mjs
+          git diff --check
+
+      - name: Remove one-shot workflow and push integrated branch
+        run: |
+          rm .github/workflows/restore-explore-formula-core-once.yml
+          git add src/FeaturePages.tsx tests/matrix-explore-validation-preview-merge.test.mjs tests/matrix-explore-formula-core-regression-20260904.test.mjs .github/workflows/restore-explore-formula-core-once.yml
+          git diff --cached --check
+          git commit -m "fix(explore): restore formula core with PR 284 refinements"
+          git push origin HEAD:fix/explore-result-refinement-20260904
