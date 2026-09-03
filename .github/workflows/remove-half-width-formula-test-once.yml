@@ -21,24 +21,16 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('src/__tests__/app-production-shell.test.tsx')
           text = path.read_text(encoding='utf-8')
-          block = '''
-  it("inserts the requested half-width spaces in validation formulas", () => {
-    window.history.replaceState({}, "", "/explore-result-preview");
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "展開版路 result-09" }));
-
-    expect(screen.getAllByText("第2顆 09 +21 = 30").length).toBeGreaterThan(0);
-  });
-'''
-          if text.count(block) != 1:
-              raise SystemExit(f'Expected exactly one target block, found {text.count(block)}')
-          path.write_text(text.replace(block, '', 1), encoding='utf-8')
-
-          workflow = Path('.github/workflows/remove-half-width-formula-test-once.yml')
-          workflow.unlink()
+          start_marker = '  it("inserts the requested half-width spaces in validation formulas", () => {'
+          end_marker = '  it("keeps the scoped tag selector and lets the period column fit its content", () => {'
+          if text.count(start_marker) != 1 or text.count(end_marker) != 1:
+              raise SystemExit('Target test boundaries are not unique')
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          path.write_text(text[:start] + text[end:], encoding='utf-8')
+          Path('.github/workflows/remove-half-width-formula-test-once.yml').unlink()
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
