@@ -125,6 +125,9 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const [pushBusy, setPushBusy] = useState(false);
   const { settings, selectedOptions, betTimes, statusOptions } = notificationSettings;
   const notificationSettingsLoadState = useRef<"loading" | "ready" | "failed">("loading");
+  const [notificationSettingsLoadUiState, setNotificationSettingsLoadUiState] = useState<"loading" | "ready" | "failed">("loading");
+  const [notificationSettingsControlsBlocked, setNotificationSettingsControlsBlocked] = useState(false);
+  const [notificationSettingsReloadRevision, setNotificationSettingsReloadRevision] = useState(0);
   const pendingLoadEdits = useRef<NotificationSettingsEdit[]>([]);
   const lastSavedSettings = useRef("");
   const latestNotificationSettings = useRef(notificationSettings);
@@ -200,6 +203,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   useEffect(() => {
     let active = true;
     componentActive.current = true;
+    if (notificationSettingsReloadRevision > 0) {
+      notificationSettingsLoadState.current = "loading";
+      setNotificationSettingsLoadUiState("loading");
+    }
     void fetchNotificationSettings().then((stored) => {
       if (!active) return;
       const merged = pendingLoadEdits.current.reduce((current, edit) => edit(current), stored);
@@ -208,10 +215,14 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       latestNotificationSettings.current = merged;
       setNotificationSettings(merged);
       notificationSettingsLoadState.current = "ready";
+      setNotificationSettingsLoadUiState("ready");
+      setNotificationSettingsControlsBlocked(false);
     }).catch(() => {
       if (!active) return;
       pendingLoadEdits.current = [];
       notificationSettingsLoadState.current = "failed";
+      setNotificationSettingsLoadUiState("failed");
+      setNotificationSettingsControlsBlocked(true);
     });
     return () => {
       active = false;
@@ -224,7 +235,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       if (saveInFlight.current) flushAfterInFlightOnUnmount.current = true;
       else flushLatestSaveRef.current("unmount");
     };
-  }, []);
+  }, [notificationSettingsReloadRevision]);
 
   useEffect(() => {
     let active = true;
@@ -256,6 +267,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   }, [notificationSettings]);
 
   const applyNotificationSettingsEdit = (edit: NotificationSettingsEdit) => {
+    if (notificationSettingsLoadState.current === "failed" || notificationSettingsControlsBlocked) return;
     if (notificationSettingsLoadState.current === "loading") pendingLoadEdits.current.push(edit);
     setNotificationSettings(edit);
   };
@@ -347,7 +359,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         {LOTTERIES.map((lottery) => <span key={lottery}>{lottery}</span>)}
       </div>
       {([0, 1] as const).map((index) => <div className="notification-grid-row notification-grid-time-row" aria-label={`第${index + 1}組提醒時間`} key={index}>
-        {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} onChange={(event) => {
+        {LOTTERIES.map((lottery) => <div className="select-box native-select notification-time-select" key={lottery}><select aria-label={`${lottery}時間${index + 1}`} value={betTimes[lottery][index]} disabled={notificationSettingsControlsBlocked} onChange={(event) => {
           const value = event.target.value;
           applyNotificationSettingsEdit((current) => ({
             ...current,
@@ -367,14 +379,14 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         {LOTTERIES.map((lottery) => <span className="notification-status-lottery-label" key={lottery}>{lottery}</span>)}
       </div>
       {MATRIX_STATUSES.map((status) => <div className="notification-grid-row notification-grid-status-row" key={status}>
-        {LOTTERIES.map((lottery) => <label className="notification-choice" key={lottery}><input type="checkbox" checked={statusOptions[lottery].includes(status)} onChange={() => toggleStatus(lottery, status)} /><span>{status}</span></label>)}
+        {LOTTERIES.map((lottery) => <label className="notification-choice" key={lottery}><input type="checkbox" checked={statusOptions[lottery].includes(status)} disabled={notificationSettingsControlsBlocked} onChange={() => toggleStatus(lottery, status)} /><span>{status}</span></label>)}
       </div>)}
     </div>
   );
 
   const renderGenericSettings = (key: SettingKey, title: string, subtitle: string) => {
     const options = subtitle ? subtitle.split("、") : [];
-    return <div className="notification-inline-option-row" data-setting-key={key} role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
+    return <div className="notification-inline-option-row" data-setting-key={key} role={key === "win" ? "radiogroup" : "group"} aria-label={`${title}選項`}>{options.map((option) => <label className="notification-choice" key={option}><input type={key === "win" ? "radio" : "checkbox"} name={key === "win" ? "win-notification" : undefined} checked={selectedOptions[key]?.includes(option)} disabled={notificationSettingsControlsBlocked} onChange={() => toggleOption(key, option)} /><span>{option}</span></label>)}</div>;
   };
 
   const renderInlineSettings = (row: NotificationRow) => {
@@ -387,10 +399,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   const renderRow = (row: NotificationRow) => {
     const [key, title, subtitle, icon] = row;
-    const disabled = !settings[key] || key === "collision";
+    const isSystemRow = key === "system";
+    const disabled = !settings[key] || key === "collision" || (!isSystemRow && notificationSettingsControlsBlocked);
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
-    const isSystemRow = key === "system";
     const isMatrixProRow = key === "status" || key === "card" || key === "collision" || key === "expiry";
     const pushToggleUnavailable = pushAuthenticated !== true || !pushStatus.supported || pushStatus.permission === "denied";
     const pushToggleLabel = pushBusy
@@ -408,7 +420,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
         <div className="notification-title"><h2><span>{title}</span></h2>{isSystemRow ? <p className="notification-push-status" role={pushNotice === "enable-failed" || pushNotice === "disable-failed" ? "alert" : "status"} aria-live="polite" aria-atomic="true"><span>{pushStatusMessage}</span>{pushNotice === "denied" ? <span className="notification-push-status-detail">通知權限已拒絕</span> : null}</p> : null}</div>
         <div className="notification-actions">
           <button type="button" className="notification-settings-toggle" disabled={disabled} aria-controls={settingsPanelId} aria-expanded={expanded} onClick={() => setExpandedKey((current) => current === key ? null : key)}><span>設定選項</span><ChevronDownIcon aria-hidden="true" /></button>
-          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision"} label={isSystemRow ? pushToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
+          <Toggle checked={isSystemRow ? pushStatus.enabled : settings[key]} disabled={isSystemRow ? pushBusy || pushToggleUnavailable : key === "collision" || notificationSettingsControlsBlocked} label={isSystemRow ? pushToggleLabel : `${settings[key] ? "關閉" : "開啟"}${title}`} busy={isSystemRow && pushBusy} onChange={() => {
             if (isSystemRow) {
               void togglePushNotifications();
               return;
@@ -439,9 +451,10 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       </header>
       <div className="feature-body">
         <div className="notification-content">
+          {notificationSettingsLoadUiState === "failed" ? <div className="notification-settings-load-error panel" role="alert"><span>通知設定載入失敗</span><button type="button" className="title-card-compact-action" aria-label="重新載入通知設定" onClick={() => { notificationSettingsLoadState.current = "loading"; setNotificationSettingsControlsBlocked(true); setNotificationSettingsLoadUiState("loading"); setNotificationSettingsReloadRevision((current) => current + 1); }}>重新載入</button></div> : null}
           <div className="notification-bulk-actions" role="group" aria-label="批次通知設定">
-            <button type="button" className="notification-bulk-enable primary-action branded-explore-action" onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
-            <button type="button" className="notification-bulk-disable branded-explore-action" onClick={() => setAvailableNotifications(false)}><span>全部關閉</span></button>
+            <button type="button" className="notification-bulk-enable primary-action branded-explore-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
+            <button type="button" className="notification-bulk-disable branded-explore-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(false)}><span>全部關閉</span></button>
           </div>
           <div className="notification-list">
             <section className="notification-group" aria-label="一般通知">{PRIMARY_ROWS.map(renderRow)}</section>

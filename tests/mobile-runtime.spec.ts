@@ -185,7 +185,8 @@ for (const width of MOBILE_WIDTHS) {
     await expect(referral.getByRole("button", { name: "確認", exact: true })).toBeDisabled();
     await page.getByRole("button", { name: "邀請好友", exact: true }).click();
     await expect(page.getByRole("heading", { name: "邀請好友", exact: true })).toBeVisible();
-    await expect(page.getByText("推薦碼/邀請碼尚未提供。", { exact: true })).toBeVisible();
+    await expect(page.getByText("推薦碼/邀請碼尚未提供。", { exact: true })).toHaveCount(0);
+    await expect(page.locator(".referral-share-card").or(page.getByRole("alert"))).toBeVisible();
     await expectNoHorizontalDocumentOverflow(page);
 
     await page.goto("/tests/runtime-fixture.html?fixture=notes");

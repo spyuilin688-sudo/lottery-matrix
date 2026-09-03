@@ -1,8 +1,13 @@
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
+from uuid import uuid4
 
-from app.repositories.analysis_repository import ARTIFACT_KINDS, AnalysisRepository
+from app.repositories.analysis_repository import (
+    ANALYSIS_RUN_LEASE_SECONDS,
+    ARTIFACT_KINDS,
+    AnalysisRepository,
+)
 from app.repositories.artifact_chunks import chunk_manifest
 
 
@@ -31,14 +36,21 @@ class AnalysisPipeline:
         self.builders = builders
         self.analysis_version = analysis_version
         self.explore_batch_size = max(1, explore_batch_size)
+        self.owner_id = uuid4().hex
+        self.lease_seconds = ANALYSIS_RUN_LEASE_SECONDS
 
     def run(self, draw: dict[str, Any], history: Sequence[dict[str, Any]]) -> dict[str, Any]:
         self._validate_draw(draw)
         lottery = draw["lottery"]
         period = draw["period"]
         self.repository.upsert_draw(draw)
-        run = self.repository.begin_run(lottery, period, self.analysis_version, datetime.now(UTC).isoformat())
+        run = self.repository.begin_run(
+            lottery, period, self.analysis_version, datetime.now(UTC).isoformat(),
+            owner_id=self.owner_id, lease_seconds=self.lease_seconds,
+        )
         if run["status"] == "complete":
+            return {**run, "skipped": True}
+        if run.get("leaseAcquired") is False:
             return {**run, "skipped": True}
 
         context = {"draw": draw, "history": list(history), "artifacts": {}}
@@ -59,6 +71,7 @@ class AnalysisPipeline:
                         "start": start,
                         "limit": batch_size,
                     }
+                    self._require_lease(lottery, period)
                     built = self.builders[phase](context)
                     checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                     if isinstance(checkpoint, dict) and "artifact" in built:
@@ -68,17 +81,17 @@ class AnalysisPipeline:
                         total = int(checkpoint["total"])
                         chunk_index = cursor_start // batch_size
                         if cursor > cursor_start:
-                            self.repository.save_artifact_chunk(
+                            self._save_artifact_chunk(
                                 lottery, period, self.analysis_version, phase,
                                 chunk_index, cursor_start, cursor, payload,
                             )
                             if phase == "explore":
-                                self.repository.save_explore_results(
+                                self._save_explore_results(
                                     lottery, period, self.analysis_version, payload,
                                 )
                         elif not checkpoint.get("complete"):
                             raise RuntimeError("ANALYSIS_CHECKPOINT_MADE_NO_PROGRESS")
-                        self.repository.update_progress(
+                        self._update_progress(
                             lottery, period, self.analysis_version, phase, cursor, total,
                         )
                         context.pop(batch_key, None)
@@ -95,20 +108,20 @@ class AnalysisPipeline:
                         manifest = chunk_manifest(
                             expected_chunks, cursor, total, item_count,
                         )
-                        self.repository.save_artifact(
+                        self._save_artifact(
                             lottery, period, self.analysis_version, phase, manifest,
                         )
                         context["artifacts"][phase] = materialized
-                        self.repository.update_progress(
+                        self._update_progress(
                             lottery, period, self.analysis_version,
                             PHASES[phase_index + 1], phase_index + 1, phase_total,
                         )
                         continue
                     context.pop(batch_key, None)
-                    self.repository.update_progress(
+                    self._update_progress(
                         lottery, period, self.analysis_version, phase, phase_index, phase_total,
                     )
-                    self.repository.save_artifact(
+                    self._save_artifact(
                         lottery, period, self.analysis_version, phase, built,
                     )
                     context["artifacts"][phase] = built
@@ -119,12 +132,13 @@ class AnalysisPipeline:
                 ):
                     continue
                 self._hydrate_dependencies(context, lottery, period, phase)
+                self._require_lease(lottery, period)
                 built = self.builders[phase](context)
                 checkpoint = built.get("_checkpoint") if isinstance(built, dict) else None
                 if isinstance(checkpoint, dict) and "artifact" in built:
                     payload = built["artifact"]
-                    self.repository.save_artifact(lottery, period, self.analysis_version, phase, payload)
-                    self.repository.update_progress(
+                    self._save_artifact(lottery, period, self.analysis_version, phase, payload)
+                    self._update_progress(
                         lottery, period, self.analysis_version, phase,
                         int(checkpoint["cursor"]), int(checkpoint["total"]),
                     )
@@ -136,18 +150,58 @@ class AnalysisPipeline:
                         )
                         return {**(result or {}), "skipped": False}
                     continue
-                self.repository.update_progress(lottery, period, self.analysis_version, phase, phase_index, phase_total)
-                self.repository.save_artifact(lottery, period, self.analysis_version, phase, built)
+                self._update_progress(lottery, period, self.analysis_version, phase, phase_index, phase_total)
+                self._save_artifact(lottery, period, self.analysis_version, phase, built)
                 context["artifacts"][phase] = built
             completed_at = datetime.now(UTC).isoformat()
-            self.repository.complete_run(lottery, period, self.analysis_version, completed_at)
+            self._complete_run(lottery, period, self.analysis_version, completed_at)
             result = self.repository.get_progress(
                 lottery, period, self.analysis_version,
             )
             return {**(result or {}), "skipped": False}
         except Exception as error:
-            self.repository.fail_run(lottery, period, self.analysis_version, str(error))
+            try:
+                self.repository.fail_run(
+                    lottery, period, self.analysis_version, str(error),
+                    owner_id=self.owner_id,
+                )
+            except RuntimeError as lease_error:
+                if str(lease_error) != "ANALYSIS_RUN_LEASE_LOST":
+                    raise
             raise
+
+    def _require_lease(self, lottery: str, period: str) -> None:
+        if not self.repository.renew_run_lease(
+            lottery, period, self.analysis_version, self.owner_id,
+            lease_seconds=self.lease_seconds,
+        ):
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+
+    def _save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.save_artifact(lottery, draw_period, analysis_version, kind, payload)
+
+    def _save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.save_artifact_chunk(lottery, draw_period, analysis_version, kind, chunk_index, cursor_start, cursor_end, payload)
+
+    def _save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.save_explore_results(lottery, draw_period, analysis_version, payload)
+
+    def _update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.update_progress(
+            lottery, draw_period, analysis_version, phase, cursor, total,
+            owner_id=self.owner_id,
+        )
+
+    def _complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.complete_run(
+            lottery, draw_period, analysis_version, completed_at,
+            owner_id=self.owner_id,
+        )
 
     def _hydrate_dependencies(
         self,
