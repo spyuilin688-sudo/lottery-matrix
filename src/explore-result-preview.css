@@ -477,13 +477,13 @@
   height: clamp(17px, 4.87vw, 19px);
   min-width: clamp(17px, 4.87vw, 19px);
   aspect-ratio: 1;
-  padding: 0;
+  padding: 0 1px;
   border: 1px solid transparent;
   border-radius: 3px;
   color: inherit;
   font-size: 13px;
   font-style: normal;
-  letter-spacing: -.06em;
+  letter-spacing: normal;
   line-height: 1;
   white-space: nowrap;
   word-break: keep-all;
@@ -517,7 +517,7 @@
   height: auto;
   aspect-ratio: auto;
   padding-block: 0.3px;
-  padding-inline: 0.5px;
+  padding-inline: 1px;
 }
 
 .explore-validation-number--source {

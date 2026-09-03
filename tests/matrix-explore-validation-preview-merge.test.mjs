@@ -31,8 +31,8 @@ test("Matrix Explore keeps the requested validation spacing and typography scope
   assert.match(css, /\.explore-validation-summary\s*\{[^}]*padding:\s*5px 2px 5px 4px/s);
   assert.match(css, /\.explore-validation-summary-separator\s*\{[^}]*color:\s*var\(--explore-validation-summary-border-color\)/s);
   assert.match(css, /\.explore-validation-number\s*\{[^}]*font-size:\s*13px/s);
-  assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0;[^}]*letter-spacing:\s*-\.06em/s);
-  assert.match(css, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*0\.5px/s);
+  assert.match(css, /\.explore-validation-number\s*\{[^}]*padding:\s*0 1px;[^}]*letter-spacing:\s*normal/s);
+  assert.match(css, /\.explore-validation-number--source,\s*\.explore-validation-number--step,\s*\.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto;[^}]*padding-block:\s*0\.3px;[^}]*padding-inline:\s*1px/s);
   assert.match(css, /\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--source,\s*\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--step,\s*\.explore-validation-group\[data-wide-numbers="true"\] \.explore-validation-number--hit\s*\{[^}]*height:\s*auto;[^}]*aspect-ratio:\s*auto/s);
   assert.match(css, /\.explore-validation-numbers em\s*\{[^}]*font-size:\s*13px;[^}]*letter-spacing:\s*-\.06em/s);
   assert.match(css, /\.explore-validation-special-number\s*\{[^}]*margin-left:\s*2\.5px;[^}]*gap:\s*2\.5px/s);
