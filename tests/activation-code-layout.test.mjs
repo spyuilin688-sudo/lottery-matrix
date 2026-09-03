@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
+const compactCss = readFileSync(new URL("../src/activation-code-layout.css", import.meta.url), "utf8");
 const start = source.indexOf("function ActivationCodePage");
 const end = source.indexOf("function InviteFriendsPage", start);
 const page = source.slice(start, end);
@@ -51,4 +52,9 @@ test("referral and activation layout keeps the approved responsive measurements"
   assert.match(css, /\.referral-summary-heading\s*\{[^}]*gap:\s*8px;/s);
   assert.match(page, /className="activation-card-toggle"[^>]*aria-expanded=\{activationOpen\}[^>]*aria-controls="activation-code-panel"/s);
   assert.match(page, /id="activation-code-panel"[^>]*hidden=\{!activationOpen\}/s);
+});
+
+test("activation rule headers are borderless with 4px vertical padding", () => {
+  assert.match(compactCss, /\.activation-code-screen \.referral-rule-card\s*\{[^}]*border:\s*0;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-rule-toggle\s*\{[^}]*padding-block:\s*4px;/s);
 });
