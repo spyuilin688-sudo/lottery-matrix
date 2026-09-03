@@ -55,7 +55,7 @@ const storedSettings: MemberNotificationSettings = {
   betTimes: {
     今彩539: ['', ''],
     天天樂: ['', ''],
-    लอตเตอรี่: ['', ''],
+    ลอตเตอรี่: ['', ''],
     大樂透: ['', ''],
   } as MemberNotificationSettings['betTimes'],
   statusOptions: {
