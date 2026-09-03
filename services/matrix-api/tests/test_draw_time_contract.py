@@ -44,6 +44,10 @@ def test_next_lottery_draw_time_is_three_minutes_before_first_crawl() -> None:
         "天天樂",
         datetime(2026, 9, 4, 9, 0, tzinfo=TAIPEI),
     ).isoformat() == "2026-09-04T09:30:00+08:00"
+    assert next_draw_time(
+        "天天樂",
+        datetime(2026, 12, 4, 10, 0, tzinfo=TAIPEI),
+    ).isoformat() == "2026-12-04T10:30:00+08:00"
 
 
 def test_latest_api_returns_draw_time_instead_of_first_crawl_time(monkeypatch) -> None:
