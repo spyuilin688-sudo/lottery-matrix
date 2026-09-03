@@ -1,0 +1,59 @@
+name: Smoke Fantasy5 fallback once
+
+on:
+  push:
+    branches:
+      - fix/fantasy5-crawler-draw-time
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/fantasy5-crawler-draw-time
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Verify live SC888 Fantasy5 fallback
+        working-directory: services/matrix-api
+        run: |
+          uv sync --frozen
+          uv run python - <<'PY'
+          import json
+          import httpx
+
+          from app.scraping.sources import LatestDrawSource
+          from app.worker_all import create_railway_ssl_context
+
+          with httpx.Client(verify=create_railway_ssl_context()) as client:
+              draws = LatestDrawSource(client)._fetch_sc888_fantasy5_history(1)
+          assert len(draws) == 1
+          draw = draws[0]
+          assert draw["period"]
+          assert draw["drawDate"]
+          assert len(draw["numbers"]) == 5
+          assert draw["drawOrderNumbers"] is None
+          print(json.dumps(draw, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Remove one-time workflow
+        run: |
+          rm .github/workflows/smoke-fantasy5-fallback-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/smoke-fantasy5-fallback-once.yml
+          git commit -m "chore: remove Fantasy5 live smoke workflow"
+          git push origin HEAD:fix/fantasy5-crawler-draw-time
