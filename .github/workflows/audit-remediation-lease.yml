@@ -35,4 +35,5 @@ jobs:
         working-directory: services/matrix-api
         run: uv run pytest -q tests/test_analysis_run_lease.py
       - name: Run migration lease contract
+        if: always()
         run: node --test tests/matrix-analysis-run-lease-migration.test.mjs
