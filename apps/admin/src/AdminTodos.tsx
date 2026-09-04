@@ -47,6 +47,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   const mounted = useRef(true);
   const requestSequence = useRef(0);
   const mutation = useRef(false);
+  const mutationBlocked = loading || Boolean(loadError);
 
   const load = async () => {
     const request = ++requestSequence.current;
@@ -73,18 +74,9 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
     };
   }, [client]);
 
-  const invalidatePendingLoad = () => {
-    requestSequence.current += 1;
-    if (mounted.current) {
-      setLoading(false);
-      setLoadError('');
-    }
-  };
-
   const runMutation = async (action: Exclude<BusyAction, null>, operation: () => Promise<void>) => {
-    if (mutation.current) return;
+    if (mutation.current || mutationBlocked) return;
     mutation.current = true;
-    invalidatePendingLoad();
     setBusy(action);
     setFeedback('');
     try {
@@ -98,7 +90,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   const submitCreate = async (event: FormEvent) => {
     event.preventDefault();
     setDraftTouched(true);
-    if (!isValidAdminTodoContent(draft) || mutation.current) {
+    if (!isValidAdminTodoContent(draft) || mutation.current || mutationBlocked) {
       if (!isValidAdminTodoContent(draft)) setFormError('請輸入 1～100 字的代辦事項');
       return;
     }
@@ -118,7 +110,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   };
 
   const beginEdit = (item: AdminTodo) => {
-    if (mutation.current || !canEditAdminTodo(item, admin)) return;
+    if (mutation.current || mutationBlocked || !canEditAdminTodo(item, admin)) return;
     setEditingId(item.id);
     setEditDraft(item.content);
     setEditError('');
@@ -133,7 +125,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   };
 
   const saveEdit = async (item: AdminTodo) => {
-    if (!isValidAdminTodoContent(editDraft) || mutation.current) {
+    if (!isValidAdminTodoContent(editDraft) || mutation.current || mutationBlocked) {
       if (!isValidAdminTodoContent(editDraft)) setEditError('請輸入 1～100 字的代辦事項');
       return;
     }
@@ -165,9 +157,8 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   };
 
   const remove = async (item: AdminTodo) => {
-    if (mutation.current || !canDeleteAdminTodo(item, admin)) return;
+    if (mutation.current || mutationBlocked || !canDeleteAdminTodo(item, admin)) return;
     mutation.current = true;
-    invalidatePendingLoad();
     setBusy({ kind: 'confirm', id: item.id });
     setFeedback('');
     const confirmed = await requestConfirmation({
@@ -222,7 +213,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
             }}
             aria-invalid={draftInvalid || Boolean(formError)}
             aria-describedby="admin-todo-content-help"
-            disabled={Boolean(busy)}
+            disabled={Boolean(busy) || mutationBlocked}
           />
           <div className="adminTodosFormFooter">
             <p id="admin-todo-content-help" className={formError ? 'adminTodosInlineError' : ''} role={formError ? 'alert' : undefined}>
@@ -232,7 +223,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
             <button
               className="primary adminTodosPrimaryButton"
               type="submit"
-              disabled={Boolean(busy) || !isValidAdminTodoContent(draft)}
+              disabled={Boolean(busy) || mutationBlocked || !isValidAdminTodoContent(draft)}
               aria-busy={createBusy}
             >
               {createBusy ? '建立中…' : '建立'}
@@ -247,7 +238,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
       {loadError && (
         <div className="adminTodosState adminTodosStateError" role="alert">
           <span>{loadError}</span>
-          <button type="button" onClick={() => { void load(); }} disabled={loading}>重新讀取</button>
+          <button type="button" onClick={() => { void load(); }} disabled={loading || Boolean(busy)}>重新讀取</button>
         </div>
       )}
       {!loading && !loadError && items.length === 0 && (
@@ -279,7 +270,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                       onKeyDown={(event) => onEditKeyDown(event, item)}
                       aria-invalid={Boolean(editError) || !isValidAdminTodoContent(editDraft)}
                       aria-describedby={`admin-todo-edit-help-${item.id}`}
-                      disabled={editBusy}
+                      disabled={editBusy || loading}
                     />
                     <div className="adminTodosEditFooter">
                       <p id={`admin-todo-edit-help-${item.id}`} className={editError ? 'adminTodosInlineError' : ''} role={editError ? 'alert' : undefined}>
@@ -287,7 +278,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                       </p>
                       <div className="adminTodoActions">
                         <button type="button" onClick={cancelEdit} disabled={editBusy}>取消</button>
-                        <button className="primary" type="submit" disabled={editBusy || !isValidAdminTodoContent(editDraft)} aria-busy={editBusy}>
+                        <button className="primary" type="submit" disabled={editBusy || loading || !isValidAdminTodoContent(editDraft)} aria-busy={editBusy}>
                           {editBusy ? '儲存中…' : '儲存'}
                         </button>
                       </div>
@@ -299,12 +290,12 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                 {!editing && (canEditAdminTodo(item, admin) || canDeleteAdminTodo(item, admin)) && (
                   <div className="adminTodoActions">
                     {canEditAdminTodo(item, admin) && (
-                      <button type="button" onClick={() => beginEdit(item)} disabled={Boolean(busy)}>
+                      <button type="button" onClick={() => beginEdit(item)} disabled={Boolean(busy) || mutationBlocked}>
                         <Pencil size={14} aria-hidden="true" />編輯
                       </button>
                     )}
                     {canDeleteAdminTodo(item, admin) && (
-                      <button className="adminTodoDelete" type="button" onClick={() => { void remove(item); }} disabled={Boolean(busy)} aria-busy={deleteBusy}>
+                      <button className="adminTodoDelete" type="button" onClick={() => { void remove(item); }} disabled={Boolean(busy) || mutationBlocked} aria-busy={deleteBusy}>
                         <Trash2 size={14} aria-hidden="true" />{deleteBusy ? '處理中…' : '刪除'}
                       </button>
                     )}

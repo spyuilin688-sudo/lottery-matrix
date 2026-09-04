@@ -128,24 +128,27 @@ describe('AdminTodos', () => {
     expect(textarea.value).toBe('');
   });
 
-  it('does not let a stale initial list overwrite a successful create', async () => {
+  it('waits for a nonempty initial list before creating and preserves every row', async () => {
     const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
     const client = clientWith([]);
     client.get = vi.fn(() => staleList.promise);
     await render(client);
 
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea.disabled).toBe(true);
+    expect(button(container, '建立').disabled).toBe(true);
+    expect(client.post).not.toHaveBeenCalled();
+
+    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
+    await settle();
     await act(async () => setTextarea(textarea, '新建立內容'));
     await act(async () => button(container, '建立').click());
     await settle();
     expect(container.textContent).toContain('新建立內容');
-
-    await act(async () => { staleList.resolve({ data: { items: [] } }); });
-    await settle();
-    expect(container.textContent).toContain('新建立內容');
+    expect(container.textContent).toContain('原本內容');
   });
 
-  it('does not let a stale replacement list revert a successful edit', async () => {
+  it('serializes edit and delete controls behind a replacement list read', async () => {
     const initialClient = clientWith();
     await render(initialClient);
     const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
@@ -155,6 +158,15 @@ describe('AdminTodos', () => {
       root.render(<AdminTodos client={activeClient} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={vi.fn(async () => true)} />);
     });
     await settle();
+
+    expect(button(container, '編輯').disabled).toBe(true);
+    expect(button(container, '刪除').disabled).toBe(true);
+    expect((container.querySelector('.adminTodosComposer textarea') as HTMLTextAreaElement).disabled).toBe(true);
+
+    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
+    await settle();
+    expect(button(container, '編輯').disabled).toBe(false);
+    expect(button(container, '刪除').disabled).toBe(false);
 
     await act(async () => button(container, '編輯').click());
     const editTextarea = container.querySelector('article textarea') as HTMLTextAreaElement;
@@ -162,31 +174,32 @@ describe('AdminTodos', () => {
     await act(async () => button(container, '儲存').click());
     await settle();
     expect(container.textContent).toContain('已更新內容');
-
-    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
-    await settle();
-    expect(container.textContent).toContain('已更新內容');
-    expect(container.textContent).not.toContain('原本內容');
   });
 
-  it('does not let a stale replacement list resurrect a successful delete', async () => {
-    const initialClient = clientWith();
-    await render(initialClient);
-    const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
-    const activeClient = clientWith();
-    activeClient.get = vi.fn(() => staleList.promise);
+  it('keeps mutations disabled after a list failure until retry succeeds', async () => {
+    const client = clientWith();
+    client.get = vi.fn(async () => { throw new Error('load failed'); });
+    await render(client);
+
+    expect(button(container, '重新讀取')).toBeDefined();
+    expect((container.querySelector('.adminTodosComposer textarea') as HTMLTextAreaElement).disabled).toBe(true);
+    expect(button(container, '建立').disabled).toBe(true);
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('keeps a todo unchanged when deletion confirmation is canceled', async () => {
+    const client = clientWith();
+    const requestConfirmation = vi.fn(async () => false);
     await act(async () => {
-      root.render(<AdminTodos client={activeClient} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={vi.fn(async () => true)} />);
+      root.render(<AdminTodos client={client} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={requestConfirmation} />);
     });
     await settle();
 
     await act(async () => button(container, '刪除').click());
     await settle();
-    expect(container.textContent).not.toContain('原本內容');
-
-    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
-    await settle();
-    expect(container.textContent).not.toContain('原本內容');
+    expect(requestConfirmation).toHaveBeenCalledTimes(1);
+    expect(client.delete).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('原本內容');
   });
 
   it('keeps an inline edit draft when the server rejects the save', async () => {
