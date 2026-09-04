@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -182,3 +183,16 @@ class NotificationEventEmitter:
         ):
             raise NotificationDeliveryError("NOTIFICATION_INGEST_RESPONSE_INVALID")
         return {"created": created, "eventKey": response_event_key}
+
+
+@contextmanager
+def notification_emitter_context(settings: Any) -> Iterator[NotificationEventEmitter | None]:
+    url = str(getattr(settings, "notification_ingest_url", "") or "").strip()
+    token = str(getattr(settings, "notification_ingest_token", "") or "").strip()
+    if bool(url) != bool(token):
+        raise NotificationConfigurationError("NOTIFICATION_INGEST_CONFIGURATION_INCOMPLETE")
+    if not url:
+        yield None
+        return
+    with httpx.Client() as client:
+        yield NotificationEventEmitter(url, token, client)
