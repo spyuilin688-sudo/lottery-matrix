@@ -1,7 +1,76 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import "./matrix-explore-result-refinements.css";
+
+type SummaryElementProps = {
+  className?: string;
+  children?: ReactNode;
+};
+
+function containsRoadSummaryLabel(node: ReactNode): boolean {
+  if (typeof node === "string") return node.includes("版路：");
+  if (Array.isArray(node)) return node.some(containsRoadSummaryLabel);
+  if (isValidElement<SummaryElementProps>(node)) return containsRoadSummaryLabel(node.props.children);
+  return false;
+}
+
+function formatRoadFormulaText(value: string): ReactNode {
+  if (value.includes("拖牌")) {
+    return value.split(/(拖牌)/g).map((part, index) => (
+      part === "拖牌"
+        ? <span className="validation-summary-drag-label" key={`drag-${index}`}>拖牌</span>
+        : part
+    ));
+  }
+
+  const parts = value.split("、").map((part) => part.trim());
+  if (parts.length < 2 || !parts.every((part) => /^[+-]?\d+$/.test(part))) return value;
+
+  return parts
+    .map((part, index) => index === 0 ? part : part.replace(/^\+/, ""))
+    .join(".");
+}
+
+function formatFormulaChildren(children: ReactNode): ReactNode {
+  if (typeof children === "string") return formatRoadFormulaText(children);
+  return Children.map(children, (child) => typeof child === "string" ? formatRoadFormulaText(child) : child);
+}
+
+function formatRoadSummaryNode(node: ReactNode): ReactNode {
+  if (!isValidElement<SummaryElementProps>(node)) return node;
+
+  const element = node as ReactElement<SummaryElementProps>;
+  const classNames = element.props.className?.split(/\s+/) ?? [];
+  const nextChildren = classNames.includes("validation-summary-formula")
+    ? formatFormulaChildren(element.props.children)
+    : Children.map(element.props.children, formatRoadSummaryNode);
+
+  return cloneElement(element, undefined, nextChildren);
+}
 
 export function ExploreValidationSummary({ children }: { children: ReactNode }) {
   const summaryRef = useRef<HTMLParagraphElement>(null);
+  const [isMatrixExploreSummary, setIsMatrixExploreSummary] = useState(false);
+  const renderedChildren = isMatrixExploreSummary && containsRoadSummaryLabel(children)
+    ? Children.map(children, formatRoadSummaryNode)
+    : children;
+
+  useLayoutEffect(() => {
+    const summary = summaryRef.current;
+    if (!summary) return;
+    const nextIsMatrixExploreSummary = Boolean(
+      summary.closest(".matrix-explore-main-screen:not(.matrix-tianyan-screen)"),
+    );
+    setIsMatrixExploreSummary((current) => current === nextIsMatrixExploreSummary ? current : nextIsMatrixExploreSummary);
+  });
 
   useLayoutEffect(() => {
     const summary = summaryRef.current;
@@ -46,7 +115,7 @@ export function ExploreValidationSummary({ children }: { children: ReactNode }) 
       resizeObserver?.disconnect();
       window.removeEventListener("resize", fitSummary);
     };
-  }, [children]);
+  }, [children, isMatrixExploreSummary]);
 
-  return <p className="explore-validation-summary" ref={summaryRef}>{children}</p>;
+  return <p className="explore-validation-summary" ref={summaryRef}>{renderedChildren}</p>;
 }
