@@ -33,14 +33,64 @@ function custom(status: CustomStatusConfig['status'], overrides: Partial<CustomS
 }
 
 describe('Matrix status artifact orchestration', () => {
-  it('builds Chapter 15 from current thirteen-period complete-range Explore roads', () => {
+  it('keeps only the roads that actually witness a Chapter 15 trigger', () => {
     const result = buildMatrixStatusArtifact(explore([
       row(),
       row({ id: 'ignored-period', explorePeriods: 7 }),
       row({ id: 'ignored-date', exploreDateOffset: 1 }),
     ]), null, [], entitlements);
     expect(result.summary).toMatchObject({ lottery: '今彩539', drawPeriod: '114000123', status: 'RESONANCE', count: 1 });
-    expect(result.cards[0].roads).toHaveLength(2);
+    expect(result.cards[0].roads).toHaveLength(1);
+    expect(result.cards[0].roads[0]).toMatchObject({ id: 'road-1:08', validationItemId: 'road-1' });
+  });
+
+  it('retains every trigger card while projecting locked source rows without detail leakage', () => {
+    const source = explore([
+      row({ id: 'road-2', explorePeriods: 2, lockedSourceIndex: 0 }),
+      row({ id: 'road-7', explorePeriods: 7, lockedSourceIndex: 2 }),
+      row({ id: 'road-13', explorePeriods: 13, lockedSourceIndex: 7 }),
+    ]);
+    const result = buildMatrixStatusArtifact(source, null, [], {
+      ...entitlements,
+      canUseSeven: false,
+      canUseThirteen: false,
+      canViewFullStatus: false,
+    });
+    const card = result.cards.find((candidate) => candidate.ruleId === 'CRITICAL-1');
+
+    expect(card).toMatchObject({
+      result: ['08'],
+      sameCodeRoadCount: null,
+      sameCodeRoadCountLocked: true,
+    });
+    expect(card?.roads).toHaveLength(3);
+    expect(card?.roads.filter((road) => road.locked === false)).toEqual([
+      expect.objectContaining({ explorePeriods: 2, validationItemId: 'road-2' }),
+    ]);
+    const lockedRoads = card?.roads.filter((road) => road.locked === true) ?? [];
+    expect(lockedRoads).toHaveLength(2);
+    expect(lockedRoads.map((road) => Object.keys(road).sort())).toEqual([
+      ['id', 'locked', 'result'],
+      ['id', 'locked', 'result'],
+    ]);
+  });
+
+  it('keeps a thirteen-period prediction visible even when every road detail is locked', () => {
+    const result = buildMatrixStatusArtifact(explore([
+      row({ id: 'thirteen-only', explorePeriods: 13, lockedSourceIndex: 7 }),
+    ]), null, [], {
+      ...entitlements,
+      canUseSeven: false,
+      canUseThirteen: false,
+      canViewFullStatus: false,
+    });
+
+    expect(result.cards[0]).toMatchObject({
+      result: ['08'],
+      sameCodeRoadCount: null,
+      sameCodeRoadCountLocked: true,
+      roads: [{ result: ['08'], locked: true }],
+    });
   });
 
   it('treats rows from the first two locked sources as part of the thirteen-source result', () => {

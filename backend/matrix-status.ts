@@ -38,6 +38,7 @@ export type StatusRoad = {
   position: number;
   lockedNumber: string;
   explorePeriods: 2 | 7 | 13;
+  validationItemId?: string;
   validation?: Record<string, unknown>;
 };
 

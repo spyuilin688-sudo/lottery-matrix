@@ -101,6 +101,7 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
           position: item.lockedPosition,
           lockedNumber: item.number,
           explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
         });
       }
     } else {
@@ -115,6 +116,7 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
         position: item.lockedPosition,
         lockedNumber: item.number,
         explorePeriods: item.explorePeriods,
+        validationItemId: item.id,
       });
     }
   }
@@ -140,7 +142,8 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
         road: {
           id: `${item.id}:${result}`, hitType: 'one-code', result: [result], algorithmType: item.algorithmType,
           numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: 13,
+          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
         },
       });
     } else {
@@ -186,6 +189,7 @@ function tianyanMatchSeeds(artifact: TianyanArtifact | null): MatchSeed[] {
       position: item.lockedPosition,
       lockedNumber: item.number,
       explorePeriods: 13,
+      validationItemId: item.id,
     },
   }));
 }
@@ -230,37 +234,30 @@ function sortedStatusCards(cards: StatusTriggerCard[]) {
   ));
 }
 
-function sameResult(left: string[], right: string[]) {
-  return left.join(',') === right.join(',');
-}
-
 function visibleStatusCards(
   cards: StatusTriggerCard[],
-  explore: ExploreArtifact,
   entitlements: MatrixEntitlements,
 ) {
-  const periods = entitlements.canUseThirteen
-    ? new Set([2, 7, 13])
-    : entitlements.canUseSeven
-      ? new Set([2, 7])
-      : new Set([2]);
-  const exploreRoads = chapterRoads(explore.items.filter((item) => (
-    item.exploreDateOffset === 0
-    && item.numberOrder === '依號碼由小到大排序'
-    && periods.has(item.explorePeriods)
-  )));
   return cards.map((card) => {
-    const candidates = [
-      ...exploreRoads,
-      ...(entitlements.canUseThirteen ? card.roads : []),
-    ].filter((road) => road.hitType === card.hitType && sameResult(road.result, card.result));
-    const roads = sortedStatusRoads([
-      ...new Map(candidates.map((road) => [
-        [road.id, road.explorePeriods, road.result.join(',')].join('|'),
-        road,
-      ])).values(),
-    ]);
-    return { ...card, roads };
+    let hasLockedRoad = false;
+    const roads = sortedStatusRoads(card.roads).map((road, index) => {
+      const entitled = road.explorePeriods === 2
+        || (road.explorePeriods === 7 && entitlements.canUseSeven)
+        || (road.explorePeriods === 13 && entitlements.canUseThirteen);
+      if (entitled) return { ...road, locked: false as const };
+      hasLockedRoad = true;
+      return {
+        id: [card.id, 'locked', index + 1].join(':'),
+        result: [...road.result],
+        locked: true as const,
+      };
+    });
+    return {
+      ...card,
+      sameCodeRoadCount: hasLockedRoad ? null : card.sameCodeRoadCount,
+      sameCodeRoadCountLocked: hasLockedRoad,
+      roads,
+    };
   });
 }
 
@@ -337,7 +334,7 @@ export function buildMatrixStatusArtifact(
       message: messages[status],
     },
     counts,
-    cards: visibleStatusCards(sortedStatusCards(cards), explore, entitlements),
+    cards: visibleStatusCards(sortedStatusCards(cards), entitlements),
     customTriggers,
     customSettings,
   };
