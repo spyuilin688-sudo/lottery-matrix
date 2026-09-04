@@ -280,6 +280,23 @@ def test_jobs_refresh_does_not_invoke_the_crawler_without_a_valid_admin_token(mo
     assert calls == []
 
 
+def test_jobs_refresh_rejects_fantasy5_without_invoking_a_railway_crawler(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/refresh",
+        json.dumps({"lottery": "天天樂"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        refresh_lottery=lambda lottery, _: calls.append(lottery) or {},
+    )
+
+    assert (status, payload) == (409, {"error": "FANTASY5_CRAWLER_GITHUB_ONLY"})
+    assert calls == []
+
+
 def test_jobs_refresh_hides_upstream_failure_details(monkeypatch) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
 
@@ -330,6 +347,17 @@ def test_refresh_latest_draw_upserts_one_formal_latest_draw(monkeypatch) -> None
     assert draw["period"] == "115000211"
     assert repository.list_draws("今彩539", 1)[0]["period"] == "115000211"
     assert client_options == [{"verify": "ssl-context"}]
+
+
+def test_refresh_latest_draw_rejects_fantasy5_before_constructing_http(monkeypatch) -> None:
+    monkeypatch.setattr(
+        api_server.httpx,
+        "Client",
+        lambda **_: (_ for _ in ()).throw(AssertionError("Railway must not crawl Fantasy5")),
+    )
+
+    with pytest.raises(ValueError, match="FANTASY5_CRAWLER_GITHUB_ONLY"):
+        api_server.refresh_latest_draw("天天樂", InMemoryAnalysisRepository())
 
 
 class ExplodingHistoryRepository(InMemoryAnalysisRepository):

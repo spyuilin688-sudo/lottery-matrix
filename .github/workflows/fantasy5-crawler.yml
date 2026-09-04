@@ -1,0 +1,74 @@
+name: Fantasy5 draw crawler
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 09:33 Asia/Taipei base, 03/13 through 11/05.
+    - cron: "33,38,43,48,53,58 1 * 3-11 *"
+    - cron: "3,8,13,18,48 2 * 3-11 *"
+    - cron: "18,48 3 * 3-11 *"
+    - cron: "18 4-7 * 3-11 *"
+    # 10:33 Asia/Taipei base, 11/06 through 03/12.
+    - cron: "33,38,43,48,53,58 2 * 11,12,1-3 *"
+    - cron: "3,8,13,18,48 3 * 11,12,1-3 *"
+    - cron: "18,48 4 * 11,12,1-3 *"
+    - cron: "18 5-8 * 11,12,1-3 *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fantasy5-draw-crawler
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - name: Gate daylight-saving season
+        id: gate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          should_run=false
+          taipei_month_day="$(TZ=Asia/Taipei date +%m%d)"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            should_run=true
+          elif [[ "$EVENT_SCHEDULE" == *" 1 "* || "$EVENT_SCHEDULE" == "3,8,13,18,48 2 * 3-11 *" || "$EVENT_SCHEDULE" == "18,48 3 * 3-11 *" || "$EVENT_SCHEDULE" == "18 4-7 * 3-11 *" ]]; then
+            if (( 10#$taipei_month_day >= 313 && 10#$taipei_month_day <= 1105 )); then
+              should_run=true
+            fi
+          elif (( 10#$taipei_month_day >= 1106 || 10#$taipei_month_day <= 312 )); then
+            should_run=true
+          fi
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        if: steps.gate.outputs.should_run == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv and Python
+        if: steps.gate.outputs.should_run == 'true'
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: services/matrix-api/uv.lock
+
+      - name: Install production dependencies
+        if: steps.gate.outputs.should_run == 'true'
+        working-directory: services/matrix-api
+        run: uv sync --frozen --no-dev
+
+      - name: Fetch, validate, repair, and store Fantasy5 draws
+        if: steps.gate.outputs.should_run == 'true'
+        working-directory: services/matrix-api
+        run: uv run python -m app.fantasy5_crawler

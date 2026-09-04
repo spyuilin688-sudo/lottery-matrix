@@ -12,7 +12,7 @@ EnvironmentFile=/etc/lottery-matrix/matrix-api.env
 Environment=UV_CACHE_DIR=/var/cache/lottery-matrix/uv
 # A failed lottery does not prevent the other lottery processes from running.
 ExecStart=-/usr/local/bin/uv run python -m app.worker --lottery 今彩539 --scheduled
-ExecStart=-/usr/local/bin/uv run python -m app.worker --lottery 天天樂 --scheduled
+ExecStart=-/usr/local/bin/uv run python -m app.analysis_worker --lottery 天天樂
 ExecStart=-/usr/local/bin/uv run python -m app.worker --lottery 六合彩 --scheduled
 ExecStart=-/usr/local/bin/uv run python -m app.worker --lottery 大樂透 --scheduled
 NoNewPrivileges=true

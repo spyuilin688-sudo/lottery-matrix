@@ -7,6 +7,7 @@ import pytest
 from postgrest import SyncPostgrestClient
 
 from app.repositories.analysis_repository import (
+    DRAW_PAGE_SIZE,
     InMemoryAnalysisRepository,
     SupabaseAnalysisRepository,
     _explore_result_records,
@@ -40,7 +41,7 @@ class FakeQuery:
         self.client.last_filters.append((column, value))
         return self
 
-    def order(self, column: str, desc: bool = False) -> "FakeQuery":
+    def order(self, column: str, desc: bool = False, **_: Any) -> "FakeQuery":
         self.client.last_orders.append((column, desc))
         return self
 
@@ -89,6 +90,43 @@ class FakeSupabaseClient:
     def table(self, name: str) -> FakeQuery:
         self.last_table = name
         return FakeQuery(self, name)
+
+
+class PrependingDrawQuery(FakeQuery):
+    def execute(self) -> FakeResponse:
+        if self.table == "lottery_draws" and hasattr(self, "selected_range"):
+            self.client.draw_page_calls += 1
+            if self.client.draw_page_calls == 2:
+                self.client.responses["lottery_draws"].insert(
+                    0,
+                    _database_draw("02001", "2031-06-24"),
+                )
+        return super().execute()
+
+
+class PrependingDrawClient(FakeSupabaseClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.draw_page_calls = 0
+
+    def table(self, name: str) -> FakeQuery:
+        self.last_table = name
+        return PrependingDrawQuery(self, name)
+
+
+def _database_draw(
+    period: str,
+    draw_date: str,
+    numbers: list[str] | None = None,
+) -> dict[str, Any]:
+    actual_numbers = numbers or ["01", "02", "03", "04", "05"]
+    return {
+        "period": period,
+        "draw_date": draw_date,
+        "numbers": actual_numbers,
+        "sorted_numbers": sorted(actual_numbers),
+        "draw_order_numbers": None,
+    }
 
 
 def test_draw_upsert_is_idempotent_by_lottery_and_period() -> None:
@@ -273,6 +311,48 @@ def test_supabase_list_draws_puts_undated_rows_last() -> None:
     assert requests[0].url.params["order"] == (
         "draw_date.desc.nullslast,period.desc"
     )
+
+
+def test_supabase_full_history_restarts_when_a_draw_is_prepended_between_pages() -> None:
+    fake_client = PrependingDrawClient()
+    fake_client.responses["lottery_draws"] = [
+        _database_draw(
+            f"{period:05d}",
+            f"2031-06-{((period - 1) % 28) + 1:02d}",
+        )
+        for period in range(2000, 999, -1)
+    ]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    history = repository.list_draws("天天樂", None)
+
+    periods = [draw["period"] for draw in history]
+    assert periods[0] == "02001"
+    assert periods[-1] == "01000"
+    assert len(periods) == DRAW_PAGE_SIZE + 2
+    assert len(periods) == len(set(periods))
+    assert fake_client.last_ranges == [
+        (0, 999),
+        (1000, 1999),
+        (0, 999),
+        (1000, 1999),
+    ]
+
+
+def test_supabase_full_history_rejects_conflicting_duplicate_periods() -> None:
+    fake_client = FakeSupabaseClient()
+    fake_client.responses["lottery_draws"] = [
+        _database_draw("11988", "2026-09-02"),
+        _database_draw(
+            "11988",
+            "2026-09-02",
+            ["03", "06", "23", "29", "35"],
+        ),
+    ]
+    repository = SupabaseAnalysisRepository(fake_client)
+
+    with pytest.raises(ValueError, match="DRAW_HISTORY_CONFLICT"):
+        repository.list_draws("天天樂", None)
 
 
 def test_supabase_recent_draw_check_filters_by_draw_date() -> None:

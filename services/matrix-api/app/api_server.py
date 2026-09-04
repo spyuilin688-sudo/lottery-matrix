@@ -25,6 +25,7 @@ HISTORY_RANGES = {1000, 3000, 5000}
 PAGE_SIZE = 1000
 SERVICE_NAME = "matrix-railway-api"
 CARD_PREFIX = "/api/matrix/cards/"
+FANTASY5_CRAWLER_ERROR = "FANTASY5_CRAWLER_GITHUB_ONLY"
 
 
 def _service_version() -> str:
@@ -270,6 +271,8 @@ def refresh_latest_draw(
     lottery: str,
     repository: AnalysisRepository,
 ) -> dict[str, Any]:
+    if lottery == "天天樂":
+        raise ValueError(FANTASY5_CRAWLER_ERROR)
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         return DrawRefreshService(repository, LatestDrawSource(client)).refresh(lottery)
 
@@ -302,6 +305,8 @@ def handle_api_request(
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
             lottery = _parse_lottery(_decode_body(body).get("lottery"))
+            if lottery == "天天樂":
+                return 409, {"error": FANTASY5_CRAWLER_ERROR}
             try:
                 draw = (refresh_lottery or refresh_latest_draw)(lottery, repository)
                 return 200, {
