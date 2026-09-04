@@ -77,6 +77,7 @@ export function createMatrixStatusRoutes(dependencies: Dependencies) {
             lottery,
             drawPeriod: sources.drawPeriod,
             analysisVersion: `${sources.analysisVersion}:status`,
+            sourceAnalysisVersion: sources.analysisVersion,
             ...artifact,
             detailLocked,
             cards: artifact.cards,

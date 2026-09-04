@@ -35,13 +35,15 @@ function custom(status: CustomStatusConfig['status'], overrides: Partial<CustomS
 describe('Matrix status artifact orchestration', () => {
   it('keeps only the roads that actually witness a Chapter 15 trigger', () => {
     const result = buildMatrixStatusArtifact(explore([
-      row(),
+      row({ referenceOffset: -1, referencePosition: 2 }),
       row({ id: 'ignored-period', explorePeriods: 7 }),
       row({ id: 'ignored-date', exploreDateOffset: 1 }),
     ]), null, [], entitlements);
     expect(result.summary).toMatchObject({ lottery: '今彩539', drawPeriod: '114000123', status: 'RESONANCE', count: 1 });
     expect(result.cards[0].roads).toHaveLength(1);
-    expect(result.cards[0].roads[0]).toMatchObject({ id: 'road-1:08', validationItemId: 'road-1' });
+    expect(result.cards[0].roads[0]).toMatchObject({
+      id: 'road-1:08', validationItemId: 'road-1', referenceOffset: -1, referencePosition: 2,
+    });
   });
 
   it('retains every trigger card while projecting locked source rows without detail leakage', () => {

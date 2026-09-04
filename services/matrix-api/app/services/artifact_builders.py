@@ -130,7 +130,7 @@ def build_explore_artifact(
 _EXPLORE_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
     "predictionNumbers", "algorithmType", "numberOrder", "exploreDateOffset",
-    "ruleCount", "lockedSourceIndex",
+    "ruleCount", "lockedSourceIndex", "referenceOffset", "referencePosition",
 )
 _TIANYAN_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",

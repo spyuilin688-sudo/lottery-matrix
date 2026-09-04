@@ -126,6 +126,8 @@ def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
         **_explore("shared-id", 0),
         "exploreRange": "標準範圍",
         "scopeClass": "STANDARD_AND_FULL",
+        "referenceOffset": -1,
+        "referencePosition": 2,
     }
     full = {
         **_explore("full-id", 0),
@@ -151,3 +153,9 @@ def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
         "full-id",
     }
     assert artifact["artifactCounts"]["explore"] == 2
+    compact_shared = next(
+        item for item in artifact["statusSources"]["explore"]["items"]
+        if item["id"] == "shared-id"
+    )
+    assert compact_shared["referenceOffset"] == -1
+    assert compact_shared["referencePosition"] == 2

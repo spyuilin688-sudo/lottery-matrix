@@ -44,7 +44,11 @@ describe('Matrix status route', () => {
   it('returns live Chapter 15 status from the completed Explore artifact', async () => {
     await expect(routes(member('monthly')).get({ authorization: 'Bearer token', body: { lottery: '今彩539' } })).resolves.toMatchObject({
       status: 200,
-      body: { kind: 'status', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1:status', summary: { status: 'CRITICAL', count: 1 } },
+      body: {
+        kind: 'status', lottery: '今彩539', drawPeriod: '114000123',
+        analysisVersion: 'v1:status', sourceAnalysisVersion: 'v1',
+        summary: { status: 'CRITICAL', count: 1 },
+      },
     });
   });
 

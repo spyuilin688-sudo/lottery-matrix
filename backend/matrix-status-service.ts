@@ -38,6 +38,8 @@ type ExploreArtifactRow = {
   exploreDateOffset: number;
   ruleCount: number;
   lockedSourceIndex?: number;
+  referenceOffset?: number;
+  referencePosition?: number;
 };
 
 export type ExploreArtifact = {
@@ -112,6 +114,8 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
           lockedNumber: item.number,
           explorePeriods: item.explorePeriods,
           validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         });
       }
     } else {
@@ -127,6 +131,8 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
         lockedNumber: item.number,
         explorePeriods: item.explorePeriods,
         validationItemId: item.id,
+        referenceOffset: item.referenceOffset,
+        referencePosition: item.referencePosition,
       });
     }
   }
@@ -154,6 +160,8 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
           numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
           position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
           validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         },
       });
     } else {
@@ -164,7 +172,10 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
         road: {
           id: item.id, hitType: 'two-code', result: results, algorithmType: item.algorithmType,
           numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: 13,
+          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         },
       });
     }
