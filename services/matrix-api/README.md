@@ -96,9 +96,10 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 
 The GitHub crawler uses only `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. It obtains
 the latest California Fantasy5 draw through the existing source implementation,
-validates the source date and numbers, repairs internal recent-period gaps, and
-upserts `lottery_draws`. It owns 天天樂 acquisition status in
-`system_job_status` and never constructs Matrix artifact builders.
+normalizes the source date to the Taiwan draw calendar date, validates the date
+and numbers, repairs internal recent-period gaps, and upserts `lottery_draws`.
+It owns 天天樂 acquisition status in `system_job_status` and never constructs
+Matrix artifact builders.
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
@@ -109,7 +110,7 @@ offset page, so no duplicated draw reaches the algorithms. It does not
 construct an HTTP client, `LatestDrawSource`, or `DrawRefreshService`, and
 therefore cannot connect to California or SC888.
 
-天天樂只儲存並計算依號碼由小到大排列的順球資料；不要求、補抓或以其他資料偽造落球順序。其來源日期使用加州當地開獎日，因此台灣早上的排程週期必須對應來源的前一日。
+天天樂只儲存並計算依號碼由小到大排列的順球資料；不要求、補抓或以其他資料偽造落球順序。`drawDate` 的正式語意是 Asia/Taipei 的開獎日：California 官方來源日期會轉成隔日台灣日期，SC888 的台灣日期則直接保留；crawler 以當前台灣日期驗證本期資料。
 
 The other automated `app.worker` entrypoints must use `--scheduled`. The 天天樂
 analysis-only entrypoint intentionally has no scheduled crawl mode.
@@ -120,8 +121,8 @@ Base call times in Asia/Taipei:
 今彩539  20:33
 大樂透   20:53
 六合彩   21:33
-天天樂 GitHub crawler   Los Angeles PDT 09:33
-天天樂 GitHub crawler   Los Angeles PST 10:33
+天天樂 GitHub crawler (PDT)  09:33
+天天樂 GitHub crawler (PST)  10:33
 ```
 
 The three existing Railway crawl workers retain their current pre-draw and retry
