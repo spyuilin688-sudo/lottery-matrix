@@ -30,7 +30,7 @@ describe("contact support phone", () => {
   it("shows the support phone as a tappable telephone link", () => {
     render(<FeaturePageRouter screen="merchant-info" onNavigate={() => undefined} />);
 
-    expect(screen.getByRole("link", { name: "(02) 2686-1828" }))
-      .toHaveAttribute("href", "tel:+886226861828");
+    const phoneLink = screen.getByRole("link", { name: "(02) 2686-1828" });
+    expect(phoneLink.getAttribute("href")).toBe("tel:+886226861828");
   });
 });
