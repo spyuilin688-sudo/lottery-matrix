@@ -7,30 +7,57 @@ import {
   rememberLineProviderToken,
 } from '../line-provider-token';
 
+import * as lineAuthModule from '../line-auth';
 import { revokeLineProviderToken, signInWithLine, signOutFromMatrix } from '../line-auth';
 import { startMemberOnlineTracking } from '../../member-online';
+
+type LogicalSession = { access_token: string };
+
+function accessTokenForSession(sessionId: string, version: string) {
+  const encode = (value: unknown) => btoa(JSON.stringify(value))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ session_id: sessionId, version })}.signature`;
+}
+
+function reconcileUncertainPresence(session: LogicalSession | null | undefined) {
+  const reconcile = (lineAuthModule as unknown as {
+    reconcilePendingLineLogoutPresence?: (value: LogicalSession | null | undefined) => void;
+  }).reconcilePendingLineLogoutPresence;
+  if (!reconcile) throw new Error('RECONCILIATION_API_MISSING');
+  reconcile(session);
+}
 
 function createClient({
   session = { access_token: 'supabase-access-token', provider_token: 'provider-token' },
   sessionError = null,
   signOut = vi.fn().mockResolvedValue({ error: null }),
+  getSession,
 }: {
   session?: { access_token: string; provider_token?: string } | null;
   sessionError?: Error | null;
   signOut?: ReturnType<typeof vi.fn>;
+  getSession?: ReturnType<typeof vi.fn>;
 } = {}) {
+  const readSession = getSession ?? vi.fn().mockResolvedValue({ data: { session }, error: sessionError });
   return {
     client: {
       auth: {
-        getSession: vi.fn().mockResolvedValue({ data: { session }, error: sessionError }),
+        getSession: readSession,
         signOut,
       },
     },
+    getSession: readSession,
     signOut,
   };
 }
 
 afterEach(() => {
+  (lineAuthModule as unknown as {
+    reconcilePendingLineLogoutPresence?: (value: null) => void;
+  }).reconcilePendingLineLogoutPresence?.(null);
+  vi.useRealTimers();
   clearLineAuthEphemeralState();
   vi.restoreAllMocks();
 });
@@ -435,6 +462,440 @@ describe('LINE auth helper', () => {
     await signOutFromMatrix(second.client as never, revoke);
 
     expect(revoke).toHaveBeenNthCalledWith(2, 'second-provider-token');
+  });
+
+  it('bounds the initial session read at exactly 2.5 seconds before local sign-out', async () => {
+    vi.useFakeTimers();
+    const signOut = vi.fn().mockResolvedValue({ error: null });
+    const { client } = createClient({
+      getSession: vi.fn().mockReturnValue(new Promise(() => undefined)),
+      signOut,
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+    );
+
+    await vi.advanceTimersByTimeAsync(2_499);
+    expect(signOut).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await logout;
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('bounds a never-settling LINE revoke at exactly 5 seconds', async () => {
+    vi.useFakeTimers();
+    const { client, signOut } = createClient();
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockReturnValue(new Promise(() => undefined)),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+    );
+
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(signOut).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await logout;
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it.each([
+    ['online cleanup', 'online'],
+    ['push cleanup', 'push'],
+  ])('bounds never-settling %s at exactly 2.5 seconds', async (_label, pendingStep) => {
+    vi.useFakeTimers();
+    const { client, signOut } = createClient({ session: null });
+    const neverSettles = vi.fn().mockReturnValue(new Promise(() => undefined));
+    const resolves = vi.fn().mockResolvedValue(undefined);
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      pendingStep === 'push' ? neverSettles : resolves,
+      pendingStep === 'online' ? neverSettles : resolves,
+    );
+
+    await vi.advanceTimersByTimeAsync(2_499);
+    expect(signOut).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await logout;
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('runs revoke, online cleanup, and push cleanup in parallel', async () => {
+    vi.useFakeTimers();
+    const { client, signOut } = createClient();
+    const neverSettles = vi.fn().mockReturnValue(new Promise(() => undefined));
+    const logout = signOutFromMatrix(client as never, neverSettles, neverSettles, neverSettles);
+
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(signOut).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await logout;
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('reconciles a local sign-out timeout after exactly 8 seconds and succeeds when the session is gone', async () => {
+    vi.useFakeTimers();
+    rememberLineProviderToken('remembered-provider-token');
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: 'same-access-token' } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: null });
+    const { client, signOut } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockRejectedValue(new Error('LINE_PROVIDER_REQUEST_FAILED')),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+    );
+
+    await vi.advanceTimersByTimeAsync(7_999);
+    expect(getSession).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await logout;
+
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(getSession).toHaveBeenCalledTimes(2);
+    expect(readLineProviderToken()).toBeNull();
+  });
+
+  it('reports a failed timed-out sign-out and resumes presence when reconciliation still has a session', async () => {
+    vi.useFakeTimers();
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({
+        data: { session: { access_token: 'same-access-token', provider_token: 'provider-token' } },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { session: { access_token: 'same-access-token' } }, error: null });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_FAILED');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejection;
+
+    expect(resumeOnline).toHaveBeenCalledTimes(1);
+    expect(isLineProviderTokenRevokedFor('same-access-token')).toBe(true);
+  });
+
+  it('reports an uncertain sign-out without resuming presence when reconciliation cannot finish in 2.5 seconds', async () => {
+    vi.useFakeTimers();
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({
+        data: { session: { access_token: 'same-access-token', provider_token: 'provider-token' } },
+        error: null,
+      })
+      .mockReturnValueOnce(new Promise(() => undefined));
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await vi.advanceTimersByTimeAsync(2_499);
+    expect(resumeOnline).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await rejection;
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+    expect(isLineProviderTokenRevokedFor('same-access-token')).toBe(true);
+  });
+
+  it('reports an uncertain sign-out without resuming presence when reconciliation returns an error', async () => {
+    vi.useFakeTimers();
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: 'same-access-token' } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('private read detail') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejection;
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('resumes presence once when timed-out online cleanup returns its handle after a definite sign-out failure', async () => {
+    vi.useFakeTimers();
+    let resolveOnlineCleanup!: (resume: () => void) => void;
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockReturnValue(new Promise<void | (() => void)>((resolve) => {
+      resolveOnlineCleanup = resolve;
+    }));
+    const { client } = createClient({
+      session: null,
+      signOut: vi.fn().mockResolvedValue({ error: new Error('private returned detail') }),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn().mockResolvedValue(undefined),
+      cleanupOnline,
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_FAILED');
+    await vi.advanceTimersByTimeAsync(2_500);
+    await rejection;
+    expect(resumeOnline).not.toHaveBeenCalled();
+
+    resolveOnlineCleanup(resumeOnline);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(resumeOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not use a late online resume handle after successful sign-out', async () => {
+    vi.useFakeTimers();
+    let resolveOnlineCleanup!: (resume: () => void) => void;
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockReturnValue(new Promise<void | (() => void)>((resolve) => {
+      resolveOnlineCleanup = resolve;
+    }));
+    const { client } = createClient({ session: null });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn().mockResolvedValue(undefined),
+      cleanupOnline,
+    );
+
+    await vi.advanceTimersByTimeAsync(2_500);
+    await logout;
+    resolveOnlineCleanup(resumeOnline);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('does not use a late online resume handle after uncertain sign-out', async () => {
+    vi.useFakeTimers();
+    let resolveOnlineCleanup!: (resume: () => void) => void;
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockReturnValue(new Promise<void | (() => void)>((resolve) => {
+      resolveOnlineCleanup = resolve;
+    }));
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockReturnValueOnce(new Promise(() => undefined));
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn().mockResolvedValue(undefined),
+      cleanupOnline,
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(13_000);
+    await rejection;
+    resolveOnlineCleanup(resumeOnline);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('resumes uncertain logout presence exactly once after retry confirms the same logical session', async () => {
+    vi.useFakeTimers();
+    const firstToken = accessTokenForSession('same-session', 'first');
+    const refreshedToken = accessTokenForSession('same-session', 'refreshed');
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({
+        data: { session: { access_token: firstToken, provider_token: 'provider-token' } },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('private retry detail') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejection;
+    expect(resumeOnline).not.toHaveBeenCalled();
+
+    reconcileUncertainPresence({ access_token: refreshedToken });
+    reconcileUncertainPresence({ access_token: refreshedToken });
+
+    expect(resumeOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps uncertain presence paused for an unknown retry and resumes after a late handle arrives', async () => {
+    vi.useFakeTimers();
+    const firstToken = accessTokenForSession('late-session', 'first');
+    const refreshedToken = accessTokenForSession('late-session', 'refreshed');
+    let resolveOnlineCleanup!: (resume: () => void) => void;
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockReturnValue(new Promise<void | (() => void)>((resolve) => {
+      resolveOnlineCleanup = resolve;
+    }));
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: firstToken } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('private retry detail') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      cleanupOnline,
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(10_500);
+    await rejection;
+
+    reconcileUncertainPresence(undefined);
+    resolveOnlineCleanup(resumeOnline);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(resumeOnline).not.toHaveBeenCalled();
+
+    reconcileUncertainPresence({ access_token: refreshedToken });
+    expect(resumeOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears uncertain presence without using a late resume handle when retry confirms no session', async () => {
+    vi.useFakeTimers();
+    const firstToken = accessTokenForSession('cleared-session', 'first');
+    let resolveOnlineCleanup!: (resume: () => void) => void;
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockReturnValue(new Promise<void | (() => void)>((resolve) => {
+      resolveOnlineCleanup = resolve;
+    }));
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: firstToken } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('private retry detail') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      cleanupOnline,
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(10_500);
+    await rejection;
+
+    reconcileUncertainPresence(null);
+    resolveOnlineCleanup(resumeOnline);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('never resumes an uncertain tracker for a different logical session', async () => {
+    vi.useFakeTimers();
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({
+        data: { session: { access_token: accessTokenForSession('old-session', 'first') } },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('private retry detail') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejection;
+
+    reconcileUncertainPresence({
+      access_token: accessTokenForSession('new-session', 'first'),
+    });
+    reconcileUncertainPresence({
+      access_token: accessTokenForSession('old-session', 'refreshed'),
+    });
+
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
+  it('does not mistake a reconciliation error message for proof that the session remains', async () => {
+    vi.useFakeTimers();
+    const resumeOnline = vi.fn();
+    const getSession = vi.fn()
+      .mockResolvedValueOnce({ data: { session: { access_token: 'same-access-token' } }, error: null })
+      .mockResolvedValueOnce({ data: { session: null }, error: new Error('SUPABASE_SIGN_OUT_FAILED') });
+    const { client } = createClient({
+      getSession,
+      signOut: vi.fn().mockReturnValue(new Promise(() => undefined)),
+    });
+    const logout = signOutFromMatrix(
+      client as never,
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn().mockResolvedValue(resumeOnline),
+    );
+
+    const rejection = expect(logout).rejects.toThrow('SUPABASE_SIGN_OUT_UNCERTAIN');
+    await vi.advanceTimersByTimeAsync(8_000);
+    await rejection;
+
+    expect(resumeOnline).not.toHaveBeenCalled();
   });
 
   it('invokes the authenticated Supabase logout function with the exact provider token', async () => {
