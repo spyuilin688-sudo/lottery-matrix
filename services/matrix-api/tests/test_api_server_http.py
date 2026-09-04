@@ -186,3 +186,17 @@ def test_protected_status_503_is_safe_and_not_cacheable(monkeypatch) -> None:
         assert response.getheader("Access-Control-Allow-Origin") is None
         assert body == b'{"error":"STATUS_UNAVAILABLE"}'
         assert b"fake-database-secret" not in body
+
+
+def test_post_rejects_request_body_larger_than_64_kib() -> None:
+    oversized_body = b"x" * (64 * 1024 + 1)
+    with running_server(HttpOperationalRepository()) as address:
+        response, body = request(
+            address,
+            "POST",
+            "/api/matrix/tongxing",
+            {"Content-Type": "application/json"},
+            oversized_body,
+        )
+        assert response.status == 413
+        assert json.loads(body) == {"error": "PAYLOAD_TOO_LARGE"}
