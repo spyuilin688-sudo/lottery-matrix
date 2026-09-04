@@ -1336,10 +1336,12 @@ function ExploreValidationProcess({
 }
 
 function TianyanValidationProcess({
+  item,
   lottery,
   validation,
   loading,
 }: {
+  item: { number: string; position: number; predictionPeriod: number };
   lottery: LotteryId;
   validation?: TianyanValidation;
   loading: boolean;
@@ -1365,9 +1367,11 @@ function TianyanValidationProcess({
     calculationResult: number,
   ) => (
     <span className="explore-validation-formula-expression">
-      <span>第</span>
-      <span>{position}</span>
-      <span>顆</span>
+      <span className="explore-validation-formula-position">
+        <span>第</span>
+        <span>{position}</span>
+        <span>顆</span>
+      </span>
       <span>{displayNumber(baseNumber)}</span>
       {algorithmType.startsWith("合值") ? (
         <><span>合值</span><span>{ruleValue}</span></>
@@ -1431,6 +1435,19 @@ function TianyanValidationProcess({
     rule.ruleValue,
     rule.currentPredictionNumber,
   ));
+  const summaryRulePairs = Array.from(
+    { length: Math.ceil(validation.rules.length / 2) },
+    (_, index) => validation.rules.slice(index * 2, (index + 1) * 2),
+  );
+  const summaryLockedNumber = validation.sourceA?.lockedNumber ?? item.number;
+  const summaryLockedPosition = validation.sourceA?.lockedPosition ?? item.position;
+  const summaryPredictionDistance = validation.sourceA?.predictionDistance ?? item.predictionPeriod;
+  const summaryRuleDirection = (offset: number) => offset === 0
+    ? "同期"
+    : `${offset < 0 ? "上" : "下"} ${Math.abs(offset)} 期`;
+  const summaryRuleFormula = (rule: TianyanValidation["rules"][number]) => rule.algorithmType === "加減"
+    ? `${rule.ruleValue >= 0 ? "+" : ""}${rule.ruleValue}`
+    : `${rule.algorithmType} ${rule.ruleValue}`;
 
   return (
     <section
@@ -1444,14 +1461,31 @@ function TianyanValidationProcess({
       <div className="validation-rule-set explore-validation-rule-set">
         <header className="explore-validation-summary-card">
           <ExploreValidationSummary>
-            {validation.rules.slice(0, 2).map((rule, index) => (
-              <Fragment key={rule.id}>
-                {index > 0 ? <i className="explore-validation-summary-separator" aria-hidden="true">｜</i> : null}
-                規則{index === 0 ? "一" : "二"}：第 <i className="validation-summary-position">{rule.validationPosition}</i> 顆 {rule.algorithmType} <i className="validation-summary-formula">{rule.ruleValue}</i>
-              </Fragment>
-            ))}
+            <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
+              {summaryRulePairs.map((pair, pairIndex) => (
+                <Fragment key={pair.map((rule) => rule.id).join("-") || `pair-${pairIndex}`}>
+                  <span className="tianyan-validation-summary-row">
+                    <span>開 <i className="validation-summary-primary">{displayNumber(summaryLockedNumber)}</i> 第 <i className="validation-summary-position">{summaryLockedPosition}</i> 顆</span>
+                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
+                    <span>下 <i className="validation-summary-position">{summaryPredictionDistance}</i> 期開</span>
+                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
+                    <strong className="explore-validation-consecutive-tag">準{validation.groupCount}進{validation.groupCount + 1}</strong>
+                  </span>
+                  <span className="tianyan-validation-summary-row">
+                    {pair.map((rule, ruleIndex) => (
+                      <Fragment key={rule.id}>
+                        {ruleIndex > 0 ? <i className="explore-validation-summary-separator" aria-hidden="true">｜</i> : null}
+                        <span>
+                          {summaryRuleDirection(rule.referenceOffset)} 第 <i className="validation-summary-position">{rule.referencePosition}</i> 顆{" "}
+                          <i className="validation-summary-formula">{summaryRuleFormula(rule)}</i>
+                        </span>
+                      </Fragment>
+                    ))}
+                  </span>
+                </Fragment>
+              ))}
+            </span>
           </ExploreValidationSummary>
-          <strong className="explore-validation-consecutive-tag">準{validation.groupCount}進{validation.groupCount + 1}</strong>
         </header>
         <div className="explore-validation-groups">
           {validation.historicalValidation.map((row) => validationGroup(
@@ -1650,7 +1684,7 @@ export function MatrixExplorePage({
       .map(([number, count]) => ({ number, count }));
   }, [exploreResponse, title, visibleResults]);
 
-  const resultsPerPage = 30;
+  const resultsPerPage = 15;
   const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
   const paginatedResults = visibleResults.slice(
     (resultPage - 1) * resultsPerPage,
@@ -2045,7 +2079,16 @@ export function MatrixExplorePage({
                     aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
                     onClick={() => toggleRoad(item.id)}
                   >
-                    <span className="tag"><span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span><span className="numeric-text">{item.position}</span></span>
+                    <span className="tag">
+                      {item.position === 7 ? (
+                        <span>特別號</span>
+                      ) : (
+                        <>
+                          <span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
+                          <span className="numeric-text">{item.position}</span>
+                        </>
+                      )}
+                    </span>
                     <span className="result-number numeric-text">{item.number}</span>
                     <span className="result-period"><span>下</span><span className="numeric-text">{item.predictionPeriod}</span><span>期</span></span>
                     <span className="result-consecutive">
@@ -2067,6 +2110,7 @@ export function MatrixExplorePage({
                         />
                       : title === "Matrix 天衍" && tianyanResponse
                         ? <TianyanValidationProcess
+                            item={item}
                             lottery={lottery}
                             validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
                             loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
@@ -4585,10 +4629,10 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
             <h2>我的推薦碼</h2>
             <p className="referral-success-count">推薦成功 <strong className="referral-success-value">{referralSuccessCount}</strong> 人</p>
           </div>
-          <p className="referral-code-label">推薦碼：<strong className="referral-code-value">{myReferralCode}</strong></p>
-          <div className="referral-primary-actions">
-            <button type="button" className="gold-button" onClick={copyReferralCode} disabled={myReferralCode === "—"}>複製推薦碼</button>
-            <button type="button" className="gold-button" onClick={() => onNavigate("invite-friends")}>邀請好友</button>
+          <div className="referral-code-row">
+            <span className="referral-code-label">推薦碼：</span>
+            <strong className="referral-code-value">{myReferralCode}</strong>
+            <button type="button" className="gold-button referral-copy-button" onClick={copyReferralCode} disabled={myReferralCode === "—"}>複製推薦碼</button>
           </div>
         </div>
         <div className="referral-input-card">

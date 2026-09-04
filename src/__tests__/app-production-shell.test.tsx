@@ -124,6 +124,8 @@ describe("production member shell", () => {
     const summaryCard = document.querySelector(".explore-validation-summary-card");
     const summaryTag = document.querySelector(".explore-validation-consecutive-tag");
     const summary = document.querySelector(".explore-validation-summary");
+    const firstGroup = document.querySelector(".explore-validation-group:nth-child(1)");
+    const secondGroup = document.querySelector(".explore-validation-group:nth-child(2)");
     const issues = document.querySelector(".explore-validation-issues");
     const issueRow = document.querySelector(".explore-validation-issue");
     const numbers = document.querySelector(".explore-validation-numbers-card");
@@ -155,10 +157,12 @@ describe("production member shell", () => {
     expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
     expect(getComputedStyle(summary!).borderTopWidth).toBe("0px");
-    expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
+    expect(getComputedStyle(firstGroup!).backgroundColor).toBe("rgb(8, 15, 27)");
+    expect(getComputedStyle(secondGroup!).backgroundColor).toBe("rgb(12, 20, 34)");
+    expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
-    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(8, 15, 27, 0.82)");
+    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(prediction!).borderTopColor).toBe("rgb(230, 183, 106)");

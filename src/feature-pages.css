@@ -616,10 +616,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; align-items: flex-end; justify-content: flex-end; }
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0; overflow: visible; border: 1px solid rgba(170, 119, 46, .82); }
-.history-pagination { display: grid; width: 148px; height: 38px; margin: 10px auto 0; grid-template-columns: 38px 1fr 38px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
-.history-pagination button { display: grid; width: 38px; height: 36px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
+.history-pagination { box-sizing: border-box; display: grid; width: 132px; height: 32px; margin: 10px auto 0; grid-template-columns: 32px 68px 32px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
+.history-pagination button { display: grid; width: 32px; height: 30px; padding: 0; place-items: center; border: 0; background: transparent; color: #e2b64b; }
 .history-pagination button:disabled { color: #5f574a; }
-.history-pagination span { font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.history-pagination span { width: 68px; font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
 .draw-history-row .mini-ball { width: 25px; height: 25px; font-size: 9px; }
 .history-filter-trigger {
   display: flex;
@@ -2163,17 +2163,19 @@ opacity: .30; box-shadow: none;
   color: #f3c45c;
   font-weight: 700;
 }
-.referral-primary-actions {
-  display: grid;
-  margin-top: 4px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.referral-code-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
   gap: 8px;
 }
-.referral-primary-actions button {
+.referral-code-row .referral-code-label,
+.referral-code-row .referral-code-value {
+  white-space: nowrap;
+}
+.referral-code-row .referral-copy-button {
+  flex: 0 0 auto;
   min-width: 0;
-  height: 34px;
-  min-height: 34px;
-  font-size: 13px;
 }
 .activation-code-screen .gold-button {
   box-sizing: border-box;

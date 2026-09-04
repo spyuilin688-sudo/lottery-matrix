@@ -31,13 +31,20 @@
   font-size: 14px;
 }
 
-.activation-code-screen .referral-primary-actions {
-  margin-top: 0;
+.activation-code-screen .referral-code-row {
+  gap: 8px;
 }
 
-.activation-code-screen .referral-primary-actions button {
-  height: 30px;
-  min-height: 30px;
+.activation-code-screen .referral-copy-button {
+  box-sizing: border-box;
+  width: max-content;
+  height: auto;
+  min-height: 28px;
+  padding: 4px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: .25px;
 }
 
 .activation-code-screen .referral-input-card .code-entry-block,

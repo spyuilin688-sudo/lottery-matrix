@@ -88,6 +88,47 @@ test('天衍驗證右欄第一列與第二列分別顯示兩條公式', async ()
   expect(group?.querySelector('.explore-validation-issue')?.textContent).toBe('114120');
 });
 
+test('天衍版路摘要以兩列呈現鎖定條件與兩條規則', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const region = await screen.findByRole('region', { name: '天衍驗證過程' });
+  const summaryRows = [...region.querySelectorAll('.tianyan-validation-summary-row')]
+    .map((row) => row.textContent?.replace(/\s/g, ''));
+
+  expect(summaryRows).toEqual([
+    '開07第1顆｜下1期開｜準11進12',
+    '上1期第2顆+3｜上2期第4顆合值5',
+  ]);
+});
+
+test('天衍兩組共同值的版路摘要可呈現四列', async () => {
+  matrixApi.fetchTianyanValidation.mockResolvedValue({
+    ...envelope,
+    itemId: 'tianyan-api-1',
+    validation: {
+      ...validation,
+      rules: [
+        ...validation.rules,
+        { ...validation.rules[0], id: 'r3', referenceOffset: 3, referencePosition: 1, ruleValue: 7, value: 7 },
+        { ...validation.rules[1], id: 'r4', referenceOffset: 0, referencePosition: 5, algorithmType: '拖牌', ruleValue: 9, value: 9 },
+      ],
+    },
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const region = await screen.findByRole('region', { name: '天衍驗證過程' });
+  const summaryRows = [...region.querySelectorAll('.tianyan-validation-summary-row')]
+    .map((row) => row.textContent?.replace(/\s/g, ''));
+
+  expect(summaryRows).toHaveLength(4);
+  expect(summaryRows[2]).toBe('開07第1顆｜下1期開｜準11進12');
+  expect(summaryRows[3]).toBe('下3期第1顆+7｜同期第5顆拖牌9');
+});
+
 test('未登入時維持既有登入提示', async () => {
   matrixApi.fetchTianyanList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);

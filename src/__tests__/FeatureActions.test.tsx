@@ -151,9 +151,9 @@ describe("existing feature actions", () => {
     expect(await screen.findByText("MATRIX-7H4K9P")).toBeInTheDocument();
     expect(document.querySelector(".referral-success-count")).toHaveTextContent("推薦成功 3 人");
 
-    fireEvent.click(screen.getByRole("button", { name: "邀請好友" }));
-    expect(onNavigate).toHaveBeenCalledTimes(1);
-    expect(onNavigate).toHaveBeenCalledWith("invite-friends");
+    expect(screen.queryByRole("button", { name: "邀請好友" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "複製推薦碼" })).toBeInTheDocument();
+    expect(onNavigate).not.toHaveBeenCalled();
 
     const referralCard = screen.getByRole("heading", { name: "輸入推薦碼" }).closest("section");
     expect(referralCard).not.toBeNull();

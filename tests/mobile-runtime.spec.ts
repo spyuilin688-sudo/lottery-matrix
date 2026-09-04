@@ -174,7 +174,7 @@ for (const width of MOBILE_WIDTHS) {
     await expectNoHorizontalDocumentOverflow(page);
   });
 
-  test(`invite and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
+  test(`referral and uncontracted actions remain explicit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.goto("/");
     await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的", exact: true }).click();
@@ -183,10 +183,8 @@ for (const width of MOBILE_WIDTHS) {
     const referral = page.locator(".referral-input-card");
     await expect(referral.getByRole("heading", { name: "輸入推薦碼", exact: true })).toBeVisible();
     await expect(referral.getByRole("button", { name: "確認", exact: true })).toBeDisabled();
-    await page.getByRole("button", { name: "邀請好友", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "邀請好友", exact: true })).toBeVisible();
-    await expect(page.getByText("推薦碼/邀請碼尚未提供。", { exact: true })).toHaveCount(0);
-    await expect(page.locator(".referral-share-card").or(page.getByRole("alert"))).toBeVisible();
+    await expect(page.getByRole("button", { name: "邀請好友", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "複製推薦碼", exact: true })).toBeVisible();
     await expectNoHorizontalDocumentOverflow(page);
 
     await page.goto("/tests/runtime-fixture.html?fixture=notes");
