@@ -163,7 +163,7 @@ select is(
 );
 
 select ok(
-  not pg_catalog.coalesce(
+  not coalesce(
     pg_catalog.has_function_privilege(
       'anon',
       pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()'),
@@ -174,7 +174,7 @@ select ok(
   'anon cannot execute the trusted dispatch tick'
 );
 select ok(
-  not pg_catalog.coalesce(
+  not coalesce(
     pg_catalog.has_function_privilege(
       'authenticated',
       pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()'),
