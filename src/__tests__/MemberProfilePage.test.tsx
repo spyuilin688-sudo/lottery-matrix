@@ -86,7 +86,7 @@ describe("ProfilePage member API", () => {
 
     const menuTitles = Array.from(document.querySelectorAll<HTMLElement>(".profile-menu > .section-title"))
       .map((title) => title.textContent?.trim());
-    expect(menuTitles).toEqual(["會員相關", "推廣相關", "系統相關", "法律資訊", "客服與支援"]);
+    expect(menuTitles).toEqual(["會員相關", "推廣相關", "法律資訊", "系統相關", "客服與支援"]);
     expect(screen.getByRole("button", { name: "聯絡客服/問題回報/商務合作" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "問題回報" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "商務合作" })).not.toBeInTheDocument();
