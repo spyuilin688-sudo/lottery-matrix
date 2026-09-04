@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('feature pages use the shared 16px source while notification keeps its scoped 18px bulk and 20px list insets', () => {
+test('feature pages use the shared 16px source while notification keeps 18px bulk and 16px card insets', () => {
   const tokens = read('src/design-tokens.css');
   const home = read('src/homepage/base.css');
   const responsive = read('src/responsive-feature-pages.css');
@@ -24,7 +24,7 @@ test('feature pages use the shared 16px source while notification keeps its scop
   assert.match(explore, /padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/);
   assert.match(explore, /width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/);
 
-  assert.match(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*20px;/s);
+  assert.match(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*16px;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
   assert.doesNotMatch(adjustments, /\.profile-screen \.feature-body\s*\{\s*padding-inline:\s*16px;/s);

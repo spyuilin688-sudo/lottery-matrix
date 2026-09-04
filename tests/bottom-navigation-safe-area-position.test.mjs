@@ -38,8 +38,8 @@ test("所有非首頁子頁共用正式底部安全距離加 8px", () => {
   assert.match(featureCss, /\.feature-screen:not\(\.home-screen\) > \.feature-body\s*\{[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
 });
 
-test("通知頁批次區維持 18px、列表維持 20px 左右間距並保留正式底部安全距離", () => {
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*20px;/s);
+test("通知頁批次區維持 18px、列表維持 16px 左右間距並保留正式底部安全距離", () => {
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*16px;/s);
   assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
   assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
