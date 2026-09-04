@@ -2,6 +2,7 @@
 
 .notifications-screen-v2 {
   --notification-bulk-inline: 18px;
+  --notification-list-inline: 16px;
   --notification-pro-badge-overlap: 3px;
 }
 
@@ -61,7 +62,7 @@
 
 .notifications-screen-v2 .notification-list {
   display: grid;
-  margin-inline: 0;
+  margin-inline: calc(var(--notification-list-inline) - var(--notification-bulk-inline));
   gap: 12px;
 }
 
