@@ -423,6 +423,17 @@ def run_scheduled_worker(
     return result
 
 
+def create_notification_emitter(
+    settings: Any,
+    client: httpx.Client,
+) -> NotificationEventEmitter | None:
+    url = str(getattr(settings, "notification_ingest_url", "") or "").strip()
+    token = str(getattr(settings, "notification_ingest_token", "") or "").strip()
+    if not url and not token:
+        return None
+    return NotificationEventEmitter(url, token, client)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Refresh and analyze one Matrix lottery")
     lotteries = ["今彩539", "天天樂", "六合彩", "大樂透"]
@@ -436,7 +447,17 @@ def main(argv: list[str] | None = None) -> int:
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
     with httpx.Client() as client:
         source = LatestDrawSource(client)
-        result = run_scheduled_worker(lottery, None, repository, source)
+        notification_emitter = create_notification_emitter(settings, client)
+        if notification_emitter is None:
+            result = run_scheduled_worker(lottery, None, repository, source)
+        else:
+            result = run_scheduled_worker(
+                lottery,
+                None,
+                repository,
+                source,
+                notification_emitter=notification_emitter,
+            )
     draw_period = result.get("drawPeriod", "-")
     print(f'{result["lottery"]} {draw_period} {result["status"]}')
     return 0
