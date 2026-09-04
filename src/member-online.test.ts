@@ -72,4 +72,36 @@ describe('member online tracking', () => {
     expect(post).toHaveBeenLastCalledWith('/api/member-online/start', {});
     stop();
   });
+
+  it('waits for a pending end before starting the next visible session', async () => {
+    let resolveEnd: ((value: Record<string, unknown>) => void) | undefined;
+    const pendingEnd = new Promise<Record<string, unknown>>((resolve) => {
+      resolveEnd = resolve;
+    });
+    let startCount = 0;
+    const post = vi.fn((path: string) => {
+      if (path.endsWith('/start')) {
+        startCount += 1;
+        return Promise.resolve({ sessionId: `session-${startCount}` });
+      }
+      return pendingEnd;
+    });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+
+    const stop = startMemberOnlineTracking(post, document);
+    await vi.waitFor(() => expect(startCount).toBe(1));
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/end', { sessionId: 'session-1' }));
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(startCount).toBe(1);
+
+    resolveEnd?.({ onlineSeconds: 3 });
+    await vi.waitFor(() => expect(startCount).toBe(2));
+    stop();
+  });
 });

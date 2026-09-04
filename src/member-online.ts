@@ -19,10 +19,15 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
   let stopped = false;
   let paused = false;
   let startInFlight: Promise<void> | null = null;
+  let endInFlight: Promise<void> | null = null;
+  let pauseGeneration = 0;
   let listenersRemoved = false;
   const start = async () => {
     if (stopped || paused || target.visibilityState !== 'visible' || sessionId || startInFlight) return;
     const request = (async () => {
+      const pendingEnd = endInFlight;
+      if (pendingEnd) await pendingEnd;
+      if (stopped || paused || target.visibilityState !== 'visible' || sessionId) return;
       try {
         const result = await post('/api/member-online/start', {});
         sessionId = String(result.sessionId ?? '');
@@ -34,16 +39,25 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
     await request;
     if (startInFlight === request) startInFlight = null;
   };
-  const end = async () => {
-    await startInFlight;
-    const current = sessionId;
-    sessionId = '';
-    if (!current) return;
-    try {
-      await post('/api/member-online/end', { sessionId: current });
-    } catch {
-      // The next visible session can still start even if the background request is interrupted.
-    }
+  const end = (): Promise<void> => {
+    if (endInFlight) return endInFlight;
+    const request = (async () => {
+      const pendingStart = startInFlight;
+      if (pendingStart) await pendingStart;
+      const current = sessionId;
+      sessionId = '';
+      if (!current) return;
+      try {
+        await post('/api/member-online/end', { sessionId: current });
+      } catch {
+        // The next visible session can still start even if the background request is interrupted.
+      }
+    })();
+    endInFlight = request;
+    void request.then(() => {
+      if (endInFlight === request) endInFlight = null;
+    });
+    return request;
   };
   const visibility = () => {
     if (target.visibilityState === 'visible') void start();
@@ -67,14 +81,14 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
   void start();
   const pause = async (): Promise<ResumeMemberOnlineTracking> => {
     if (stopped) return () => undefined;
+    const generation = ++pauseGeneration;
     paused = true;
     removeListeners();
     await end();
 
-    let resumed = false;
     return () => {
-      if (resumed || stopped) return;
-      resumed = true;
+      if (stopped || generation !== pauseGeneration) return;
+      pauseGeneration += 1;
       paused = false;
       addListeners();
       void start();
@@ -83,6 +97,7 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
   const stop = async () => {
     stopped = true;
     paused = false;
+    pauseGeneration += 1;
     removeListeners();
     await end();
   };
