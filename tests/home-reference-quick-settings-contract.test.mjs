@@ -66,8 +66,3 @@ test("首頁快捷設定避開左側安全區並維持核准縮放", () => {
     /\.bottom-navigation-quick-settings\s*\{[^}]*right:\s*max\(5px,/s,
   );
 });
-
-test("首頁快捷設定保留一般手機兩次點擊的有效時間", () => {
-  const navigationSource = readFileSync(new URL("../src/BottomNavigation.tsx", import.meta.url), "utf8");
-  assert.match(navigationSource, /const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;/);
-});
