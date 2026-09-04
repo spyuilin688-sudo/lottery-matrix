@@ -19,6 +19,34 @@ FANTASY5 = "天天樂"
 TAIPEI = ZoneInfo("Asia/Taipei")
 
 
+class _TransientSourceError(Exception):
+    pass
+
+
+class _ClassifiedSource:
+    def __init__(self, source: DrawSource) -> None:
+        self.source = source
+
+    def fetch(self, lottery: str) -> dict[str, Any]:
+        return self._call(self.source.fetch, lottery)
+
+    def fetch_history(
+        self,
+        lottery: str,
+        limit: int | None,
+    ) -> list[dict[str, Any]]:
+        return self._call(self.source.fetch_history, lottery, limit)
+
+    @staticmethod
+    def _call(operation: Callable[..., Any], *args: Any) -> Any:
+        try:
+            return operation(*args)
+        except Exception as error:
+            if not _is_transient_source_error(error):
+                raise
+            raise _TransientSourceError from error
+
+
 def _best_effort_telemetry(write: Callable[[], None]) -> None:
     try:
         write()
@@ -44,7 +72,9 @@ def _is_transient_source_error(error: Exception) -> bool:
     if code.isdigit() and 500 <= int(code) <= 599:
         return True
     if isinstance(error, httpx.HTTPStatusError):
-        return 500 <= error.response.status_code <= 599
+        return error.response.status_code in {408, 429} or (
+            500 <= error.response.status_code <= 599
+        )
     if isinstance(error, httpx.TransportError):
         return True
     message = str(error).lower()
@@ -65,7 +95,9 @@ def run_fantasy5_crawler(
     latest = repository.list_draws(FANTASY5, 1)
     database_period = str(latest[0]["period"]) if latest else None
     job_name = JOB_NAME_BY_LOTTERY[FANTASY5]
-    refresh = DrawRefreshService(repository, source)
+    refresh = DrawRefreshService(repository, _ClassifiedSource(source))
+    source_period: str | None = None
+    written_period: str | None = None
 
     _best_effort_telemetry(
         lambda: repository.start_job(
@@ -77,20 +109,7 @@ def run_fantasy5_crawler(
 
     try:
         try:
-            if not latest:
-                refresh.ensure_history(FANTASY5)
             draw = refresh.fetch(FANTASY5)
-        except httpx.HTTPError as error:
-            if not _is_transient_source_error(error):
-                raise
-            acquisition = {
-                "sourcePeriod": None,
-                "databasePeriod": database_period,
-                "writtenPeriod": None,
-                "status": "not-acquired",
-                "drawPeriod": database_period or "",
-            }
-        else:
             source_period = str(draw["period"])
             if _normalized_draw_date(draw.get("drawDate")) != _expected_source_draw_date(now):
                 acquisition = {
@@ -101,15 +120,26 @@ def run_fantasy5_crawler(
                     "drawPeriod": source_period,
                 }
             else:
+                if not latest:
+                    refresh.ensure_history(FANTASY5)
                 refresh.store(draw)
+                written_period = source_period
                 refresh.ensure_history(FANTASY5)
                 acquisition = {
                     "sourcePeriod": source_period,
                     "databasePeriod": database_period,
-                    "writtenPeriod": source_period,
+                    "writtenPeriod": written_period,
                     "status": "acquired",
                     "drawPeriod": source_period,
                 }
+        except _TransientSourceError:
+            acquisition = {
+                "sourcePeriod": source_period,
+                "databasePeriod": database_period,
+                "writtenPeriod": written_period,
+                "status": "not-acquired",
+                "drawPeriod": source_period or database_period or "",
+            }
     except Exception as error:
         _best_effort_telemetry(
             lambda: repository.finish_job(

@@ -46,9 +46,11 @@ The health payload reports `adminApi.status` as `ok` or `misconfigured` without
 exposing the secret. AppDeploy is an administrator-backend consumer only; it is
 not a deployment target for the public PWA.
 
-`POST /jobs/refresh` accepts `{"lottery":"今彩539"}` (or another supported
-lottery), then fetches and upserts only its latest draw. It does not backfill
-history, run Matrix analysis, or update scheduled-job status records.
+`POST /jobs/refresh` accepts `{"lottery":"今彩539"}` for 今彩539、六合彩、or
+大樂透, then fetches and upserts only its latest draw. It does not backfill
+history, run Matrix analysis, or update scheduled-job status records. Requests
+for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; its only ingestion path is
+the GitHub crawler.
 
 ### Scheduled workers
 
@@ -57,7 +59,7 @@ Draw ingestion and Matrix analysis are split for 天天樂:
 | Deployment | Entrypoint | Responsibility |
 | --- | --- | --- |
 | GitHub Actions `fantasy5-crawler.yml` | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
-| Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read the newest stored 天天樂 draw and resume Matrix analysis only |
+| Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read stored 天天樂 draws and process pending Matrix analysis only |
 | Railway `railway.json` | `app.worker_all` | Scheduled ingestion and analysis for 今彩539、六合彩、大樂透 |
 | Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Existing 六合彩 worker |
 | Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Existing 大樂透 worker |
@@ -68,10 +70,14 @@ validates the source date and numbers, repairs internal recent-period gaps, and
 upserts `lottery_draws`. It owns 天天樂 acquisition status in
 `system_job_status` and never constructs Matrix artifact builders.
 
-The dedicated Railway 天天樂 process reads `lottery_draws` from Supabase, checks
-the current `period:matrix-python-v12` progress row, and runs or resumes analysis
-only when needed. It does not construct an HTTP client, `LatestDrawSource`, or
-`DrawRefreshService`, and therefore cannot connect to California or SC888.
+The dedicated Railway 天天樂 process reads a bounded set of recent
+`lottery_draws` from Supabase and batch-checks their
+`period:matrix-python-v12` progress rows. It processes a new tail in order and
+repairs bounded analysis gaps such as a late-backfilled period between two
+completed periods. Full-history reads restart if concurrent ingestion shifts an
+offset page, so no duplicated draw reaches the algorithms. It does not
+construct an HTTP client, `LatestDrawSource`, or `DrawRefreshService`, and
+therefore cannot connect to California or SC888.
 
 天天樂只儲存並計算依號碼由小到大排列的順球資料；不要求、補抓或以其他資料偽造落球順序。其來源日期使用加州當地開獎日，因此台灣早上的排程週期必須對應來源的前一日。
 

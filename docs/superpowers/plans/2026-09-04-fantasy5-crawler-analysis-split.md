@@ -63,7 +63,10 @@
 - Create: `services/matrix-api/app/analysis_worker.py`
 - Modify: `services/matrix-api/app/worker.py`
 - Modify: `services/matrix-api/app/worker_all.py`
+- Modify: `services/matrix-api/app/repositories/analysis_repository.py`
+- Modify: `services/matrix-api/app/api_server.py`
 - Modify: `services/matrix-api/railway.fantasy5.json`
+- Modify: `services/matrix-api/deploy/matrix-worker.service`
 - Modify: `.github/workflows/matrix-analysis.yml`
 - Modify: `services/matrix-api/tests/test_worker_all.py`
 - Test: `services/matrix-api/tests/test_fantasy5_worker_split.py`
@@ -73,10 +76,12 @@
 - Produces: `run_analysis_only_worker(lottery, repository, builders=None) -> dict[str, Any]` and a CLI that accepts only 天天樂.
 
 - [ ] Write a failing test proving a completed `11988:matrix-python-v12` returns without invoking builders.
-- [ ] Write a failing test proving an incomplete latest stored period resumes all required builders without source/network construction.
+- [ ] Write a failing test proving an incomplete stored period resumes all required builders without source/network construction.
+- [ ] Write a failing test proving a late-backfilled analysis gap is selected between completed periods.
+- [ ] Write a failing pagination-race test proving concurrent prepends cannot duplicate a draw in algorithm history.
 - [ ] Run focused tests and confirm the expected failures.
-- [ ] Implement the latest-period/progress check, complete-history gate, expired-lease cleanup, and existing pipeline call.
-- [ ] Change Railway and GitHub configuration boundaries and remove 天天樂 from `worker_all`.
+- [ ] Implement bounded progress selection, target-bounded stable history, complete-history gating, expired-lease cleanup, and the existing pipeline call.
+- [ ] Change Railway, systemd, API, and GitHub configuration boundaries and remove 天天樂 from `worker_all`.
 - [ ] Run focused tests and confirm they pass.
 - [ ] Commit the analysis-only implementation.
 

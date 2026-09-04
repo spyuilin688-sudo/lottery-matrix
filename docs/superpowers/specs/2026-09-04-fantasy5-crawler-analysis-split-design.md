@@ -35,13 +35,16 @@ Create `app.analysis_worker` and change `railway.fantasy5.json` to run it.
 
 The analysis worker:
 
-1. Reads the newest 天天樂 draw from `lottery_draws`.
-2. Uses `matrix_analysis_runs` and the current `matrix-python-v12` version as the idempotency boundary.
-3. Returns without analysis when that period/version is already complete.
-4. Resumes the existing period/version when it is incomplete.
-5. Requires complete recent stored history before starting.
-6. Writes Matrix run, Explore, 天衍, 天工, and status artifacts through the existing pipeline.
-7. Never constructs `LatestDrawSource`, an HTTP client, or `DrawRefreshService`.
+1. Reads a bounded set of the newest 天天樂 draws from `lottery_draws`.
+2. Batch-reads their current `matrix-python-v12` progress rows as the idempotency boundary.
+3. Processes a new tail chronologically and repairs an unprocessed analysis gap bounded by completed periods, so a draw repaired after a newer draw is not skipped forever.
+4. Returns without analysis when the selected period/version is already complete.
+5. Resumes the selected period/version when it is incomplete.
+6. Truncates stored history at the selected period before invoking algorithms, preventing a concurrently inserted newer draw from contaminating an older analysis.
+7. Restarts a full-history Supabase read if concurrent ingestion shifts an offset page; conflicting duplicate payloads fail closed.
+8. Requires complete recent stored history before starting.
+9. Writes Matrix run, Explore, 天衍, 天工, and status artifacts through the existing pipeline.
+10. Never constructs `LatestDrawSource`, an HTTP client, or `DrawRefreshService`.
 
 “Reads only from Supabase” applies to draw acquisition: Matrix analysis still writes its normal analysis results back to Supabase.
 
@@ -49,6 +52,8 @@ The analysis worker:
 
 - Remove 天天樂 from `app.worker_all.LOTTERIES`.
 - Remove the 天天樂 matrix entry from `.github/workflows/matrix-analysis.yml`; GitHub must not run 天天樂 Matrix analysis.
+- Change the legacy systemd 天天樂 command to `app.analysis_worker` so it cannot restore a Railway/server-side crawl path.
+- Reject 天天樂 in the administrative `POST /jobs/refresh` route with `409 FANTASY5_CRAWLER_GITHUB_ONLY`.
 - Leave 今彩539, 六合彩, and 大樂透 worker behavior unchanged.
 - Do not modify frontend source, layout, or API consumption.
 
@@ -84,7 +89,7 @@ Then verify `lottery_draws` continuity and wait for the Railway analysis-only wo
 - Tests prove the GitHub crawler workflow calls only `app.fantasy5_crawler` and uses the two existing Supabase secrets.
 - Tests prove `.github/workflows/matrix-analysis.yml` no longer includes 天天樂.
 - Crawler tests prove validation, stale-source rejection, recent-gap repair, and no Matrix analysis.
-- Analysis-worker tests prove no network/source construction, no reanalysis of completed periods, and resume of incomplete stored periods.
+- Analysis-worker tests prove no network/source construction, no reanalysis of completed periods, ordered tail/gap repair, target-bounded history, and stable full-history pagination.
 - Run the full Matrix API pytest suite and repository CI before merge.
 
 ## Non-goals

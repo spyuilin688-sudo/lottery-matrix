@@ -1,7 +1,10 @@
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
+
+import httpx
 
 from app import analysis_worker, fantasy5_crawler, worker
 from app.analysis_worker import run_analysis_only_worker
@@ -46,6 +49,16 @@ class Fantasy5Source:
         return rows if limit is None else rows[:limit]
 
 
+def _http_status_error(status_code: int) -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", "https://source.example.test/draws")
+    response = httpx.Response(status_code, request=request)
+    return httpx.HTTPStatusError(
+        f"source returned {status_code}",
+        request=request,
+        response=response,
+    )
+
+
 def test_fantasy5_railway_service_is_analysis_only() -> None:
     config = (SERVICE_ROOT / "railway.fantasy5.json").read_text(encoding="utf-8")
     entrypoint = (SERVICE_ROOT / "app" / "analysis_worker.py").read_text(encoding="utf-8")
@@ -69,7 +82,7 @@ def test_fantasy5_github_workflow_is_crawler_only() -> None:
     assert "AnalysisPipeline" not in entrypoint
     assert "create_artifact_builders" not in entrypoint
     assert "_run_analysis" not in entrypoint
-    for cron in (
+    expected_crons = (
         "33,38,43,48,53,58 1 * 3-11 *",
         "3,8,13,18,48 2 * 3-11 *",
         "18,48 3 * 3-11 *",
@@ -78,8 +91,15 @@ def test_fantasy5_github_workflow_is_crawler_only() -> None:
         "3,8,13,18,48 3 * 11,12,1-3 *",
         "18,48 4 * 11,12,1-3 *",
         "18 5-8 * 11,12,1-3 *",
-    ):
-        assert cron in workflow
+    )
+    assert tuple(re.findall(r'^\s+- cron: "([^"]+)"$', workflow, re.MULTILINE)) == (
+        expected_crons
+    )
+    assert "10#$taipei_month_day >= 313 && 10#$taipei_month_day <= 1105" in workflow
+    assert "10#$taipei_month_day >= 1106 || 10#$taipei_month_day <= 312" in workflow
+    assert workflow.index("Gate daylight-saving season") < workflow.index(
+        "Check out repository"
+    )
 
 
 def test_existing_github_analysis_workflow_excludes_fantasy5() -> None:
@@ -173,6 +193,69 @@ def test_crawler_rejects_a_stale_source_without_overwriting_supabase() -> None:
     assert job["writtenPeriod"] is None
 
 
+def test_empty_supabase_does_not_store_history_before_latest_date_validation() -> None:
+    repository = InMemoryAnalysisRepository()
+    stale = _draw("11987", "2026-09-01", ["01", "07", "08", "18", "39"])
+    source = Fantasy5Source(stale, [stale])
+
+    result = run_fantasy5_crawler(
+        repository,
+        source,
+        datetime(2026, 9, 4, 9, 33, tzinfo=TAIPEI),
+    )
+
+    assert result["status"] == "not-acquired"
+    assert repository.list_draws("天天樂", None) == []
+
+
+def test_crawler_treats_source_rate_limiting_as_waiting_source() -> None:
+    repository = InMemoryAnalysisRepository()
+
+    class RateLimitedSource:
+        def fetch(self, lottery: str) -> dict:
+            raise _http_status_error(429)
+
+        def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+            raise AssertionError("latest fetch did not succeed")
+
+    result = run_fantasy5_crawler(
+        repository,
+        RateLimitedSource(),
+        datetime(2026, 9, 4, 9, 33, tzinfo=TAIPEI),
+    )
+
+    assert result == {
+        "lottery": "天天樂",
+        "drawPeriod": "",
+        "status": "not-acquired",
+    }
+    assert repository.job_statuses[FANTASY5_JOB_NAME]["status"] == "waiting_source"
+
+
+def test_crawler_treats_transient_history_repair_failure_as_waiting_source() -> None:
+    repository = InMemoryAnalysisRepository()
+
+    class UnavailableHistorySource(Fantasy5Source):
+        def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+            raise _http_status_error(503)
+
+    source = UnavailableHistorySource(_draw("11989", "2026-09-03"))
+
+    result = run_fantasy5_crawler(
+        repository,
+        source,
+        datetime(2026, 9, 4, 9, 33, tzinfo=TAIPEI),
+    )
+
+    assert result == {
+        "lottery": "天天樂",
+        "drawPeriod": "11989",
+        "status": "not-acquired",
+    }
+    assert repository.list_draws("天天樂", None) == []
+    assert repository.job_statuses[FANTASY5_JOB_NAME]["status"] == "waiting_source"
+
+
 def test_crawler_cli_never_constructs_matrix_artifact_builders(monkeypatch) -> None:
     repository = InMemoryAnalysisRepository()
     expected_date = (datetime.now(TAIPEI).date() - timedelta(days=1)).isoformat()
@@ -211,17 +294,22 @@ def _repository_with_fantasy5_history() -> InMemoryAnalysisRepository:
     return repository
 
 
-def test_analysis_only_worker_skips_a_completed_latest_version() -> None:
-    repository = _repository_with_fantasy5_history()
-    repository.begin_run("天天樂", "11988", FANTASY5_VERSION, "2026-09-04T01:00:00+00:00")
+def _complete_analysis(repository: InMemoryAnalysisRepository, period: str) -> None:
+    version = f"{period}:matrix-python-v12"
+    repository.begin_run("天天樂", period, version, "2026-09-04T01:00:00+00:00")
     for kind in ARTIFACT_KINDS:
-        repository.save_artifact("天天樂", "11988", FANTASY5_VERSION, kind, {"kind": kind})
+        repository.save_artifact("天天樂", period, version, kind, {"kind": kind})
     repository.complete_run(
         "天天樂",
-        "11988",
-        FANTASY5_VERSION,
+        period,
+        version,
         "2026-09-04T01:10:00+00:00",
     )
+
+
+def test_analysis_only_worker_skips_a_completed_latest_version() -> None:
+    repository = _repository_with_fantasy5_history()
+    _complete_analysis(repository, "11988")
 
     def unexpected_builder(_: dict) -> dict:
         raise AssertionError("completed latest period must not be rebuilt")
@@ -276,6 +364,103 @@ def test_analysis_only_worker_resumes_from_supabase_without_constructing_a_sourc
     assert result["status"] == "complete"
     assert result["analysisVersion"] == FANTASY5_VERSION
     assert calls == ["explore", "tianyan", "tiangong", "status"]
+
+
+def test_analysis_only_worker_fills_a_missing_analysis_between_completed_periods() -> None:
+    repository = InMemoryAnalysisRepository()
+    for period in range(11989, 11908, -1):
+        repository.upsert_draw(_draw(str(period), "2026-09-03"))
+    _complete_analysis(repository, "11987")
+    _complete_analysis(repository, "11989")
+    analyzed_history_heads: list[str] = []
+
+    def build(kind: str):
+        def selected(context: dict) -> dict:
+            if kind == "explore":
+                analyzed_history_heads.append(context["history"][0]["period"])
+            return {"items": []}
+
+        return selected
+
+    result = run_analysis_only_worker(
+        "天天樂",
+        repository,
+        {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")},
+    )
+
+    assert result["status"] == "complete"
+    assert result["analysisVersion"] == FANTASY5_VERSION
+    assert analyzed_history_heads == ["11988"]
+
+
+def test_repaired_draw_is_next_analysis_after_newer_period_completed() -> None:
+    repository = InMemoryAnalysisRepository()
+    for period in range(11989, 11908, -1):
+        if period != 11988:
+            draw_date = (
+                datetime(2026, 9, 3) - timedelta(days=11989 - period)
+            ).date().isoformat()
+            repository.upsert_draw(_draw(str(period), draw_date))
+    _complete_analysis(repository, "11987")
+    _complete_analysis(repository, "11989")
+    source = Fantasy5Source(
+        _draw("11989", "2026-09-03"),
+        [
+            _draw("11989", "2026-09-03"),
+            _draw("11988", "2026-09-02"),
+        ],
+    )
+
+    crawl_result = run_fantasy5_crawler(
+        repository,
+        source,
+        datetime(2026, 9, 4, 9, 33, tzinfo=TAIPEI),
+    )
+    analysis_result = run_analysis_only_worker(
+        "天天樂",
+        repository,
+        {kind: (lambda _: {"items": []}) for kind in ARTIFACT_KINDS},
+    )
+
+    assert crawl_result["status"] == "acquired"
+    assert analysis_result["status"] == "complete"
+    assert analysis_result["analysisVersion"] == FANTASY5_VERSION
+
+
+class NewDrawDuringAnalysisReadRepository(InMemoryAnalysisRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.inserted_newer_draw = False
+
+    def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+        if limit is None and not self.inserted_newer_draw:
+            self.upsert_draw(_draw("11989", "2026-09-03"))
+            self.inserted_newer_draw = True
+        return super().list_draws(lottery, limit)
+
+
+def test_analysis_history_never_contains_draws_newer_than_the_selected_period() -> None:
+    repository = NewDrawDuringAnalysisReadRepository()
+    for period in range(11988, 11908, -1):
+        repository.upsert_draw(_draw(str(period), "2026-09-02"))
+    analyzed_history_heads: list[str] = []
+
+    def build(kind: str):
+        def selected(context: dict) -> dict:
+            if kind == "explore":
+                analyzed_history_heads.append(context["history"][0]["period"])
+            return {"items": []}
+
+        return selected
+
+    result = run_analysis_only_worker(
+        "天天樂",
+        repository,
+        {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")},
+    )
+
+    assert result["analysisVersion"] == FANTASY5_VERSION
+    assert analyzed_history_heads == ["11988"]
 
 
 def test_analysis_worker_cli_reads_only_supabase(monkeypatch) -> None:

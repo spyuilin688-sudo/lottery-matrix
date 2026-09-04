@@ -15,6 +15,47 @@ from app.worker import ANALYSIS_VERSION, _draw_from_history, _run_analysis
 
 
 FANTASY5 = "天天樂"
+ANALYSIS_CANDIDATE_LIMIT = 32
+
+
+def _select_analysis_draw(
+    draws: list[dict[str, Any]],
+    progress_by_period: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    completed_indices = [
+        index
+        for index, draw in enumerate(draws)
+        if progress_by_period.get(str(draw["period"]), {}).get("status") == "complete"
+    ]
+    if not completed_indices:
+        return draws[0]
+
+    newest_complete = min(completed_indices)
+    pending_new_draws = [
+        draw
+        for draw in draws[:newest_complete]
+        if progress_by_period.get(str(draw["period"]), {}).get("status") != "complete"
+    ]
+    if pending_new_draws:
+        return pending_new_draws[-1]
+
+    oldest_complete = max(completed_indices)
+    analysis_gaps = [
+        draw
+        for draw in draws[newest_complete + 1:oldest_complete]
+        if progress_by_period.get(str(draw["period"]), {}).get("status") != "complete"
+    ]
+    return analysis_gaps[-1] if analysis_gaps else draws[0]
+
+
+def _history_through_period(
+    history: list[dict[str, Any]],
+    period: str,
+) -> list[dict[str, Any]]:
+    for index, draw in enumerate(history):
+        if str(draw.get("period")) == period:
+            return history[index:]
+    raise ValueError("DRAW_HISTORY_INCOMPLETE")
 
 
 def _restore_completed_explore_results(
@@ -48,17 +89,24 @@ def run_analysis_only_worker(
     if lottery != FANTASY5:
         raise ValueError("ANALYSIS_ONLY_LOTTERY_UNSUPPORTED")
 
-    latest = repository.list_draws(lottery, 1)
-    if not latest:
+    candidates = repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT)
+    if not candidates:
         return {
             "lottery": lottery,
             "drawPeriod": "",
             "status": "waiting-draw",
         }
 
-    period = str(latest[0]["period"])
+    periods = [str(draw["period"]) for draw in candidates]
+    progress_by_period = repository.list_progress_for_periods(
+        lottery,
+        periods,
+        ANALYSIS_VERSION,
+    )
+    selected = _select_analysis_draw(candidates, progress_by_period)
+    period = str(selected["period"])
     analysis_version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, analysis_version)
+    progress = progress_by_period.get(period)
     if progress is not None and progress.get("status") == "complete":
         _restore_completed_explore_results(
             repository,
@@ -74,7 +122,10 @@ def run_analysis_only_worker(
         }
 
     repository.cleanup_expired(datetime.now(UTC))
-    history = repository.list_draws(lottery, None)
+    history = _history_through_period(
+        repository.list_draws(lottery, None),
+        period,
+    )
     require_complete_history(
         lottery,
         recent_history_window(history),
@@ -86,7 +137,7 @@ def run_analysis_only_worker(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Analyze the newest stored Fantasy5 draw without crawling",
+        description="Analyze pending stored Fantasy5 draws without crawling",
     )
     parser.add_argument("--lottery", choices=[FANTASY5])
     args = parser.parse_args(argv)

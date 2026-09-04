@@ -34,6 +34,10 @@ class RecordingQuery:
         self.client.filters.append((column, value))
         return self
 
+    def in_(self, column: str, values: list[str]) -> "RecordingQuery":
+        self.client.filters.append((column, tuple(values)))
+        return self
+
     def order(self, _: str, desc: bool = False) -> "RecordingQuery":
         return self
 
@@ -127,6 +131,43 @@ def test_supabase_progress_lookup_filters_by_analysis_version() -> None:
         ("lottery", LOTTERY),
         ("draw_period", PERIOD),
         ("analysis_version", CURRENT_VERSION),
+    ]
+
+
+def test_supabase_progress_batch_lookup_uses_exact_period_versions() -> None:
+    periods = ["11988", "11989"]
+    rows = [
+        {
+            "lottery": "天天樂",
+            "draw_period": period,
+            "analysis_version": f"{period}:matrix-python-v12",
+            "phase": "complete",
+            "cursor": 4,
+            "total": 4,
+            "status": "complete",
+            "started_at": "2026-09-04T01:00:00+00:00",
+            "completed_at": "2026-09-04T01:10:00+00:00",
+            "error": None,
+        }
+        for period in periods
+    ]
+    client = RecordingSupabaseClient(rows)
+    repository = SupabaseAnalysisRepository(client)
+
+    progress = repository.list_progress_for_periods(
+        "天天樂",
+        periods,
+        "matrix-python-v12",
+    )
+
+    assert set(progress) == {"11988", "11989"}
+    assert client.filters == [
+        ("lottery", "天天樂"),
+        ("draw_period", ("11988", "11989")),
+        (
+            "analysis_version",
+            ("11988:matrix-python-v12", "11989:matrix-python-v12"),
+        ),
     ]
 
 

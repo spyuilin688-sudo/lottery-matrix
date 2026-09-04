@@ -83,6 +83,8 @@ def test_other_automated_worker_entrypoints_use_scheduled_mode() -> None:
 
     for lottery in LOTTERIES:
         assert f"app.worker --lottery {lottery} --scheduled" in systemd_service
+    assert "app.worker --lottery 天天樂" not in systemd_service
+    assert "app.analysis_worker --lottery 天天樂" in systemd_service
     assert 'uv run python -m app.worker --lottery "$LOTTERY" --scheduled' in workflow
 
 

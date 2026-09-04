@@ -18,6 +18,7 @@ JOB_NAME_BY_LOTTERY = {
 }
 RETENTION = timedelta(days=3)
 DRAW_PAGE_SIZE = 1000
+DRAW_SNAPSHOT_MAX_ATTEMPTS = 3
 ARTIFACT_CHUNK_PAGE_SIZE = 2
 EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
 ANALYSIS_RUN_LEASE_SECONDS = 300
@@ -57,6 +58,7 @@ class AnalysisRepository(Protocol):
     def complete_run(self, lottery: str, draw_period: str, analysis_version: str, completed_at: str, *, owner_id: str | None = None) -> None: ...
     def fail_run(self, lottery: str, draw_period: str, analysis_version: str, error: str, *, owner_id: str | None = None) -> None: ...
     def get_progress(self, lottery: str, draw_period: str, analysis_version: str | None = None) -> dict[str, Any] | None: ...
+    def list_progress_for_periods(self, lottery: str, draw_periods: list[str], analysis_name: str) -> dict[str, dict[str, Any]]: ...
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None: ...
     def cleanup_expired(self, now: datetime) -> int: ...
 
@@ -442,6 +444,23 @@ class InMemoryAnalysisRepository:
         ]
         return dict(max(matches, key=lambda run: run["startedAt"])) if matches else None
 
+    def list_progress_for_periods(
+        self,
+        lottery: str,
+        draw_periods: list[str],
+        analysis_name: str,
+    ) -> dict[str, dict[str, Any]]:
+        progress: dict[str, dict[str, Any]] = {}
+        for period in draw_periods:
+            run = self.get_progress(
+                lottery,
+                period,
+                f"{period}:{analysis_name}",
+            )
+            if run is not None:
+                progress[period] = run
+        return progress
+
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None:
         complete = [run for key, run in self.runs.items() if key[:2] == (lottery, draw_period) and run["status"] == "complete"]
         if not complete:
@@ -640,6 +659,17 @@ class SupabaseAnalysisRepository:
         if limit is not None and limit <= 0:
             return []
 
+        for _ in range(DRAW_SNAPSHOT_MAX_ATTEMPTS):
+            draws = self._list_draw_rows(lottery, limit)
+            if not self._has_duplicate_draw_periods(draws):
+                return [self._normalize_draw(draw) for draw in draws]
+        raise ValueError("DRAW_HISTORY_UNSTABLE")
+
+    def _list_draw_rows(
+        self,
+        lottery: str,
+        limit: int | None,
+    ) -> list[dict[str, Any]]:
         draws: list[dict[str, Any]] = []
         offset = 0
         while limit is None or len(draws) < limit:
@@ -659,7 +689,34 @@ class SupabaseAnalysisRepository:
                 break
             offset += len(page)
 
-        return [self._normalize_draw(draw) for draw in draws]
+        return draws
+
+    @classmethod
+    def _has_duplicate_draw_periods(cls, draws: list[dict[str, Any]]) -> bool:
+        payload_by_period: dict[str, tuple[Any, ...]] = {}
+        duplicate_found = False
+        for raw in draws:
+            draw = cls._normalize_draw(raw)
+            period = str(draw.get("period") or "").strip()
+            payload = (
+                str(draw.get("drawDate") or "")
+                .strip()
+                .replace("/", "-")
+                .replace(".", "-")[:10],
+                tuple(draw.get("numbers") or ()),
+                tuple(draw.get("sortedNumbers") or draw.get("numbers") or ()),
+                None
+                if draw.get("drawOrderNumbers") is None
+                else tuple(draw["drawOrderNumbers"]),
+            )
+            existing = payload_by_period.get(period)
+            if existing is None:
+                payload_by_period[period] = payload
+                continue
+            if existing != payload:
+                raise ValueError("DRAW_HISTORY_CONFLICT")
+            duplicate_found = True
+        return duplicate_found
 
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
         response = (
@@ -921,6 +978,33 @@ class SupabaseAnalysisRepository:
             query = query.eq("analysis_version", analysis_version)
         response = query.order("started_at", desc=True).limit(1).execute()
         return self._normalize_run(dict(response.data[0])) if response.data else None
+
+    def list_progress_for_periods(
+        self,
+        lottery: str,
+        draw_periods: list[str],
+        analysis_name: str,
+    ) -> dict[str, dict[str, Any]]:
+        if not draw_periods:
+            return {}
+        analysis_versions = [
+            f"{period}:{analysis_name}"
+            for period in draw_periods
+        ]
+        response = (
+            self.client.table("matrix_analysis_runs")
+            .select("*")
+            .eq("lottery", lottery)
+            .in_("draw_period", draw_periods)
+            .in_("analysis_version", analysis_versions)
+            .order("started_at", desc=True)
+            .execute()
+        )
+        progress: dict[str, dict[str, Any]] = {}
+        for raw in response.data:
+            run = self._normalize_run(dict(raw))
+            progress.setdefault(str(run["drawPeriod"]), run)
+        return progress
 
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None:
         runs = self.client.table("matrix_analysis_runs").select("analysis_version").eq("lottery", lottery).eq("draw_period", draw_period).eq("status", "complete").order("completed_at", desc=True).limit(1).execute()
