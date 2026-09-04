@@ -28,6 +28,7 @@ Endpoints:
 GET  /health
 GET  /jobs/status
 POST /jobs/refresh
+POST /jobs/recover
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
 POST /api/matrix/tongxing
@@ -36,8 +37,9 @@ POST /api/matrix/number-reference
 
 The PWA reads this service through `VITE_RAILWAY_API_BASE`.
 
-`GET /health` is public. `GET /jobs/status` and `POST /jobs/refresh` are for
-the AppDeploy backend only and require the `X-Matrix-Admin-Token` request
+`GET /health` is public. `GET /jobs/status`, `POST /jobs/refresh`, and
+`POST /jobs/recover` are for the AppDeploy backend only and require the
+`X-Matrix-Admin-Token` request
 header. Railway and AppDeploy must store the same server-only secret under
 `MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
 or other browser configuration.
@@ -51,6 +53,34 @@ not a deployment target for the public PWA.
 history, run Matrix analysis, or update scheduled-job status records. Requests
 for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; its only ingestion path is
 the GitHub crawler.
+
+`POST /jobs/recover` starts one deduplicated background recovery for the selected
+lottery and returns `202` immediately. For 天天樂 it invokes only
+`app.analysis_worker`; it never constructs or calls a draw source. For the
+three Railway-owned lotteries it invokes the tracked scheduled pipeline. The
+pipeline refreshes only inside a due stale-draw window and otherwise resumes
+stored analysis. Concurrent requests in the Railway API process for the same lottery return
+`already-running`; recovery threads are non-daemon. The API atomically consumes the AppDeploy claim with a unique runner fence,
+renews its durable Supabase lease every minute while work runs, and releases it
+only after completion. If a live runner loses ownership, that Railway replica
+terminates before a replacement may continue.
+
+### Independent watchdog
+
+The AppDeploy admin backend owns `cron.json` and runs
+`matrix-independent-watchdog` on the `3/5 * * * *` Asia/Taipei grid. It reads
+`system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
+from Supabase, then calls `POST /jobs/recover` only for a stuck, missing, failed
+analysis, or due-but-stale draw. A 20-minute atomic Supabase lease prevents
+concurrent AppDeploy invocations from dispatching the same recovery twice.
+
+天天樂 draw recovery is dispatched only to
+`.github/workflows/fantasy5-crawler.yml`; Railway recovery remains
+analysis-only. AppDeploy requires a server-only `GITHUB_ACTIONS_TOKEN` with
+Actions read/write access to inspect active runs and dispatch that workflow.
+Deployment must validate this secret before enabling `cron.json`; a missing
+value is emitted as a degraded backend error. The token must never be exposed
+to frontend code.
 
 ### Scheduled workers
 
@@ -90,15 +120,16 @@ Base call times in Asia/Taipei:
 今彩539  20:33
 大樂透   20:53
 六合彩   21:33
-天天樂 GitHub crawler   03/13–11/05 09:33
-天天樂 GitHub crawler   11/06–03/12 10:33
+天天樂 GitHub crawler   Los Angeles PDT 09:33
+天天樂 GitHub crawler   Los Angeles PST 10:33
 ```
 
 The three existing Railway crawl workers retain their current pre-draw and retry
 grid. The GitHub 天天樂 crawler runs only at the bounded post-draw retry offsets:
 every 5 minutes from 0 through 45 minutes after the base call, then at 75, 105,
-135, 165, 225, 285, and 345 minutes. A Taipei-date season gate prevents the
-overlapping March and November UTC cron ranges from running twice.
+135, 165, 225, 285, and 345 minutes. An `America/Los_Angeles` UTC-offset gate follows the real annual DST
+transition and prevents the overlapping March and November cron ranges from
+running twice.
 
 ## Supabase data boundary
 

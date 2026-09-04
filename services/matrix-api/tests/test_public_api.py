@@ -249,7 +249,10 @@ def test_jobs_refresh_requires_the_admin_token_and_returns_only_the_latest_draw(
     status, payload = handle_api_request(
         "POST",
         "/jobs/refresh",
-        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        json.dumps({
+            "lottery": "今彩539",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
         repository,
         request_monitor_token="expected-token",
         refresh_lottery=refresh,
@@ -270,7 +273,10 @@ def test_jobs_refresh_does_not_invoke_the_crawler_without_a_valid_admin_token(mo
     status, payload = handle_api_request(
         "POST",
         "/jobs/refresh",
-        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        json.dumps({
+            "lottery": "今彩539",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
         OperationalRepository(),
         request_monitor_token="wrong-token",
         refresh_lottery=lambda lottery, _: calls.append(lottery) or {},
@@ -287,7 +293,10 @@ def test_jobs_refresh_rejects_fantasy5_without_invoking_a_railway_crawler(monkey
     status, payload = handle_api_request(
         "POST",
         "/jobs/refresh",
-        json.dumps({"lottery": "天天樂"}, ensure_ascii=False).encode("utf-8"),
+        json.dumps({
+            "lottery": "天天樂",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
         OperationalRepository(),
         request_monitor_token="expected-token",
         refresh_lottery=lambda lottery, _: calls.append(lottery) or {},
@@ -306,7 +315,10 @@ def test_jobs_refresh_hides_upstream_failure_details(monkeypatch) -> None:
     status, payload = handle_api_request(
         "POST",
         "/jobs/refresh",
-        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        json.dumps({
+            "lottery": "今彩539",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
         OperationalRepository(),
         request_monitor_token="expected-token",
         refresh_lottery=refresh,
@@ -468,3 +480,193 @@ def test_invalid_route_is_404() -> None:
     status, payload = handle_api_request("GET", "/missing", None, _repository())
     assert status == 404
     assert payload == {"error": "NOT_FOUND"}
+
+
+def test_jobs_recover_accepts_fantasy5_without_invoking_a_railway_crawler(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({
+            "lottery": "天天樂",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        recover_lottery=lambda lottery, owner: calls.append((lottery, owner)) or "accepted",
+    )
+
+    assert (status, payload) == (
+        202,
+        {"lottery": "天天樂", "status": "accepted"},
+    )
+    assert calls == [("天天樂", "invocation-1")]
+
+
+def test_jobs_recover_requires_the_shared_admin_token(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({
+            "lottery": "今彩539",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="wrong-token",
+        recover_lottery=lambda lottery, owner: calls.append((lottery, owner)) or "accepted",
+    )
+
+    assert (status, payload) == (403, {"error": "FORBIDDEN"})
+    assert calls == []
+
+
+def test_jobs_recover_hides_background_start_failure(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({
+            "lottery": "大樂透",
+            "leaseOwner": "invocation-1",
+        }, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        recover_lottery=lambda _lottery, _owner: (_ for _ in ()).throw(
+            RuntimeError("fake-platform-secret")
+        ),
+    )
+
+    assert (status, payload) == (503, {"error": "RECOVERY_UNAVAILABLE"})
+    assert "fake-platform-secret" not in str(payload)
+
+
+def test_fantasy5_recovery_runs_analysis_only_without_a_source(monkeypatch) -> None:
+    repository = OperationalRepository()
+    calls: list[tuple[str, object, object]] = []
+
+    class NotificationContext:
+        def __enter__(self) -> str:
+            return "notification-emitter"
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        api_server,
+        "load_settings",
+        lambda: type("Settings", (), {
+            "supabase_url": "https://supabase.example",
+            "supabase_secret_key": "secret",
+        })(),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "create_supabase_repository",
+        lambda *_: repository,
+    )
+    monkeypatch.setattr(
+        api_server,
+        "notification_emitter_context",
+        lambda _settings: NotificationContext(),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "run_analysis_only_worker",
+        lambda lottery, actual_repository, *, notification_emitter: calls.append(
+            (lottery, actual_repository, notification_emitter)
+        ),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "refresh_latest_draw",
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("Fantasy5 recovery must not crawl on Railway")
+        ),
+    )
+
+    api_server.run_lottery_recovery("天天樂")
+
+    assert calls == [("天天樂", repository, "notification-emitter")]
+
+
+def test_railway_recovery_uses_the_tracked_scheduled_worker_without_pre_refresh(
+    monkeypatch,
+) -> None:
+    repository = OperationalRepository()
+    client = object()
+    calls: list[tuple[object, ...]] = []
+
+    class ClientContext:
+        def __enter__(self) -> object:
+            return client
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        api_server,
+        "load_settings",
+        lambda: type("Settings", (), {
+            "supabase_url": "https://supabase.example",
+            "supabase_secret_key": "secret",
+        })(),
+    )
+    monkeypatch.setattr(api_server, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(api_server.httpx, "Client", lambda **_: ClientContext())
+    monkeypatch.setattr(
+        api_server, "LatestDrawSource", lambda actual_client: ("source", actual_client)
+    )
+    monkeypatch.setattr(
+        api_server,
+        "create_notification_emitter",
+        lambda _settings, actual_client: ("emitter", actual_client),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "refresh_latest_draw",
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("recovery must not bypass scheduled-job telemetry")
+        ),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "run_scheduled_worker",
+        lambda lottery, now, actual_repository, source, *, notification_emitter: calls.append(
+            (lottery, now, actual_repository, source, notification_emitter)
+        ),
+    )
+
+    api_server.run_lottery_recovery("今彩539")
+
+    assert calls == [(
+        "今彩539",
+        None,
+        repository,
+        ("source", client),
+        ("emitter", client),
+    )]
+
+
+def test_jobs_recover_requires_a_durable_lease_owner(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[tuple[str, str]] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        recover_lottery=lambda lottery, owner: calls.append((lottery, owner)) or "accepted",
+    )
+
+    assert (status, payload) == (400, {"error": "INVALID_RECOVERY_LEASE_OWNER"})
+    assert calls == []

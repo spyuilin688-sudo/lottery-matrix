@@ -59,6 +59,10 @@ export type WorkerRefresh = {
   period: string;
   drawDate: string | null;
 };
+export type WorkerRecovery = {
+  lottery: CrawlerLottery;
+  status: 'accepted' | 'already-running';
+};
 
 const jobNameByLottery: Record<CrawlerLottery, string> = {
   今彩539: 'matrix-539-refresh-v2',
@@ -203,6 +207,15 @@ function parseRefresh(
   return { lottery, period: value.period, drawDate: value.drawDate };
 }
 
+function parseRecovery(
+  value: unknown,
+  lottery: CrawlerLottery,
+): WorkerRecovery | null {
+  if (!isRecord(value) || value.lottery !== lottery) return null;
+  if (!includes(['accepted', 'already-running'] as const, value.status)) return null;
+  return { lottery, status: value.status };
+}
+
 const unavailable = (
   reason: Extract<WorkerStatus, { ok: false }>['reason'] = 'RAILWAY_UNAVAILABLE',
 ): WorkerStatus => ({
@@ -217,6 +230,14 @@ class WorkerRefreshError extends Error {
 
   constructor() {
     super('無法更新開獎資料，請稍後再試');
+  }
+}
+
+class WorkerRecoveryError extends Error {
+  statusCode = 503;
+
+  constructor() {
+    super('無法啟動自動恢復，請稍後再試');
   }
 }
 
@@ -341,6 +362,50 @@ export function createWorkerApi(
       } catch {
         controller.abort();
         throw new WorkerRefreshError();
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    },
+    async recoverLottery(
+      lottery: CrawlerLottery,
+      leaseOwner: string,
+    ): Promise<WorkerRecovery> {
+      const controller = new AbortController();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new WorkerRecoveryError());
+        }, timeoutMs);
+      });
+      const work = (async (): Promise<WorkerRecovery> => {
+        const config = await loadConfig();
+        const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
+        const statusToken = config?.statusToken.trim() ?? '';
+        if (!baseUrl || !statusToken || controller.signal.aborted) {
+          throw new WorkerRecoveryError();
+        }
+        const response = await fetcher(`${baseUrl}/jobs/recover`, {
+          method: 'POST',
+          signal: controller.signal,
+          redirect: 'error',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Matrix-Admin-Token': statusToken,
+          },
+          body: JSON.stringify({ lottery, leaseOwner }),
+        });
+        if (!response.ok) throw new WorkerRecoveryError();
+        const recovery = parseRecovery(await response.json(), lottery);
+        if (!recovery) throw new WorkerRecoveryError();
+        return recovery;
+      })();
+      try {
+        return await Promise.race([work, timeout]);
+      } catch {
+        controller.abort();
+        throw new WorkerRecoveryError();
       } finally {
         if (timer !== undefined) clearTimeout(timer);
       }
