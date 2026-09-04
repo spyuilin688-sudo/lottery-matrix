@@ -5,9 +5,9 @@
   right: 4px;
 }
 
-/* Notifications: 6px to the list below; reduce each bulk button by 3px total. */
+/* Notifications: 8px to the list below; reduce each bulk button by 3px total. */
 .notifications-screen-v2 .notification-content {
-  row-gap: 6px;
+  row-gap: 8px;
 }
 
 .notifications-screen-v2 .notification-bulk-actions button {
