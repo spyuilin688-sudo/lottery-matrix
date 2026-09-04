@@ -435,3 +435,40 @@ describe('admin revenue reset route wiring', () => {
     expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_reset_revenue_baseline', expect.objectContaining({ method: 'POST' }));
   });
 });
+
+describe('admin core mutation operation permissions', () => {
+  const mutationRoutes = [
+    ['PUT /api/members/:id/status', 'users', 'edit'],
+    ['PUT /api/subscriptions/:id', 'subscriptions', 'edit'],
+    ['PUT /api/transfer-requests/:id', 'subscriptions', 'edit'],
+    ['POST /api/activation-codes/batch', 'activationCodes', 'add'],
+    ['DELETE /api/activation-codes/:id', 'activationCodes', 'delete'],
+  ] as const;
+
+  it('requires both module edit access and the matching stored operation permission', async () => {
+    wiring.requireModulePermission.mockClear();
+    wiring.requirePermission.mockClear();
+
+    for (const [route, module, permission] of mutationRoutes) {
+      const context = await authenticate(route, sessionContext({ id: 'record-1' }));
+      const operationGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
+      await expect(operationGuard(context)).resolves.toBeUndefined();
+      expect(wiring.requireModulePermission).toHaveBeenLastCalledWith(wiring.admin, module, 'edit');
+      expect(wiring.requirePermission).toHaveBeenLastCalledWith(wiring.admin, permission);
+    }
+  });
+
+  it('denies every core mutation when its stored operation permission is disabled', async () => {
+    for (const [route] of mutationRoutes) {
+      wiring.requirePermission.mockReset();
+      wiring.requirePermission.mockImplementationOnce(() => {
+        throw Object.assign(new Error('權限不足'), { statusCode: 403 });
+      });
+      const context = await authenticate(route, sessionContext({ id: 'record-1' }));
+      const operationGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
+      const result = await operationGuard(context);
+      wiring.requirePermission.mockReset();
+      expect(result).toEqual({ error: '權限不足', status: 403 });
+    }
+  });
+});

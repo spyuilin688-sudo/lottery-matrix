@@ -233,11 +233,11 @@ function AdminApp() {
         admin?.role === "超級管理員",
     );
   const isSuper = admin?.role === "超級管理員";
-  const moduleCan = (module: string, action: "view" | "edit") =>
+  const moduleCan = (module: string, action: "view" | "edit", operation: PermissionKey) =>
     Boolean(
       (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
       ?? admin?.role === "超級管理員",
-    );
+    ) && can(operation);
   const load = async (name = active) => {
     setBusy(true);
     setError("");
@@ -579,7 +579,7 @@ function AdminApp() {
           {active === "用戶管理" && (
             <UserManager
               rows={rows}
-              canEdit={moduleCan("users", "edit")}
+              canEdit={moduleCan("users", "edit", "edit")}
               onStatus={async (id, status) => {
                 await runConfirmed(
                   () => requestConfirmation({
@@ -609,7 +609,7 @@ function AdminApp() {
               rows={rows}
               plans={plans}
               transfers={transfers}
-              canEdit={moduleCan("subscriptions", "edit")}
+              canEdit={moduleCan("subscriptions", "edit", "edit")}
               onSubscription={async (id, payload) => {
                 return runConfirmed(
                   () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
@@ -670,7 +670,7 @@ function AdminApp() {
             <>
               <div className="toolbar">
                 <div>{rows.length} 筆資料</div>
-                {can("add") && active === "啟動碼管理" && (
+                {active === "啟動碼管理" && moduleCan("activationCodes", "edit", "add") && (
                     <button
                       className="primary activationCodeAddButton"
                       onClick={() => showForm ? setShowForm(false) : openActivationCodeForm()}
@@ -725,7 +725,7 @@ function AdminApp() {
               <DataTable
                 rows={rows}
                 fields={fields}
-                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit")}
+                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
               />
             </>

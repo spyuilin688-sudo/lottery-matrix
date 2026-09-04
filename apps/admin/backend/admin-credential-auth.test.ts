@@ -25,6 +25,32 @@ describe('admin credential authentication', () => {
     expect(state.sessions[0].token_hash).not.toBe(login.token);
   });
 
+  it('preserves stored operation permissions across login and session reload', async () => {
+    const state = makeTransport();
+    const auth = createAdminCredentialAuth(state.transport, () => new Date('2026-09-03T00:00:00Z'));
+    const fields = await auth.passwordFields('distributed-password', true);
+    state.admins.push({
+      id: 'a1',
+      account: 'admin001',
+      name: 'Admin',
+      role: '營運管理員',
+      status: '啟用',
+      can_view: false,
+      can_add: false,
+      can_edit: false,
+      can_delete: true,
+      ...fields,
+    });
+
+    const login = await auth.login('admin001', 'distributed-password');
+    expect(login.admin.permissions).toEqual({ view: false, add: false, edit: false, delete: true });
+    await expect(auth.getAdminFromHeaders({
+      cookie: `matrix_admin_session=${login.token}`,
+    })).resolves.toMatchObject({
+      permissions: { view: false, add: false, edit: false, delete: true },
+    });
+  });
+
   it('rejects a wrong password with a generic credential error', async () => {
     const state = makeTransport();
     const auth = createAdminCredentialAuth(state.transport);
