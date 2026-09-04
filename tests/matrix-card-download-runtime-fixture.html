@@ -11,7 +11,6 @@
   <button id="download-again" type="button">download again</button>
   <button id="show-preview" type="button">show preview</button>
   <button id="show-current-preview" type="button">show current preview</button>
-  <div id="preview-host"><img id="preview" class="matrix-ticket-image" alt="preview" /></div>
   <script type="module">
     import {
       downloadMatrixCardPng,
@@ -52,11 +51,9 @@
       void downloadMatrixCardPng(cardUrl, 'matrix-card-again.png');
     });
     document.querySelector('#show-preview').addEventListener('click', async () => {
-      document.querySelector('#preview').src = previewUrl;
       await refreshMatrixCardPng(previewUrl);
     });
     document.querySelector('#show-current-preview').addEventListener('click', async () => {
-      document.querySelector('#preview').src = cardUrl;
       await refreshMatrixCardPng(cardUrl);
     });
 
