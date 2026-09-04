@@ -13,6 +13,7 @@ BLACK = "#000"
 MONTH_BLUE = "#0000ff"
 WEEKDAY_GREY = "#d3d3d3"
 MONDAY_RED = "#ff0000"
+MONDAY_BORDER_LOTTERIES = frozenset({"今彩539", "天天樂"})
 NUMBER_FONT_FAMILY = "Arial"
 CJK_FONT_FAMILY = "Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"
 
@@ -394,11 +395,18 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                     (panel["left"] + panel["month"]) / 2, top + 45,
                     value["month"], 45, fill=MONTH_BLUE, weight=700,
                 ))
+            if lottery in MONDAY_BORDER_LOTTERIES and value["weekday"] == "一":
+                output.extend([
+                    _line(panel["day_week"], top, panel["numbers"], top, stroke=MONDAY_RED),
+                    _line(panel["day_week"], top + row_height, panel["numbers"], top + row_height, stroke=MONDAY_RED),
+                    _line(panel["day_week"], top, panel["day_week"], top + row_height, stroke=MONDAY_RED),
+                    _line(panel["numbers"], top, panel["numbers"], top + row_height, stroke=MONDAY_RED),
+                ])
             output.extend([
                 _text((panel["month"] + panel["day_week"]) / 2, top + 41, value["day"], 39),
                 _text(
                     (panel["day_week"] + panel["numbers"]) / 2, top + 41,
-                    "—" if value["weekday"] == "一" else value["weekday"],
+                    value["weekday"],
                     39, fill=MONDAY_RED if value["weekday"] == "一" else BLACK,
                     font_family=CJK_FONT_FAMILY,
                 ),

@@ -72,7 +72,7 @@ def test_card_preserves_an_actual_539_sunday_draw_from_history() -> None:
     assert 'font-family="Microsoft JhengHei, Noto Sans TC, Arial, sans-serif"' in svg
 
 
-def test_actual_539_sunday_is_black_and_monday_is_a_red_dash() -> None:
+def test_actual_539_sunday_is_black_and_monday_is_a_red_boxed_one() -> None:
     svg = render_matrix_card(
         "今彩539",
         "draw",
@@ -87,9 +87,42 @@ def test_actual_539_sunday_is_black_and_monday_is_a_red_dash() -> None:
         svg,
     )
     assert re.search(
-        r'<text x="164\.0" y="194\.9"[^>]*fill="#ff0000">—</text>',
+        r'<text x="164\.0" y="194\.9"[^>]*fill="#ff0000">一</text>',
         svg,
     )
+
+    for x1, y1, x2, y2 in (
+        (137.0, 153.9, 191.0, 153.9),
+        (137.0, 208.8, 191.0, 208.8),
+        (137.0, 153.9, 137.0, 208.8),
+        (191.0, 153.9, 191.0, 208.8),
+    ):
+        assert (
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            'stroke="#ff0000" stroke-width="2"/>'
+        ) in svg
+
+def test_daily_monday_uses_a_red_boxed_one() -> None:
+    svg = render_matrix_card(
+        "天天樂",
+        "draw",
+        [{"drawDate": "2026-02-16", "numbers": []}],
+    )
+
+    assert re.search(
+        r'<text x="163\\.0" y="140\\.0"[^>]*fill="#ff0000">一</text>',
+        svg,
+    )
+    for x1, y1, x2, y2 in (
+        (137.0, 99.0, 189.0, 99.0),
+        (137.0, 153.9, 189.0, 153.9),
+        (137.0, 99.0, 137.0, 153.9),
+        (189.0, 99.0, 189.0, 153.9),
+    ):
+        assert (
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            'stroke="#ff0000" stroke-width="2"/>'
+        ) in svg
 
 
 def test_539_future_calendar_includes_only_the_confirmed_2026_sunday_draws() -> None:
@@ -301,7 +334,7 @@ def test_card_uses_the_reference_accent_colours() -> None:
 
 def test_future_rows_follow_each_lottery_draw_calendar() -> None:
     cases = (
-        ("今彩539", "2026-08-29", "31", "—", 164.0, 194.9, "#ff0000"),
+        ("今彩539", "2026-08-29", "31", "一", 164.0, 194.9, "#ff0000"),
         ("天天樂", "2026-08-29", "30", "日", 163.0, 194.9, "#000"),
         ("六合彩", "2026-08-29", "01", "二", 164.0, 194.0),
         ("大樂透", "2026-08-28", "01", "二", 164.0, 194.0),
