@@ -146,7 +146,7 @@ describe("existing feature actions", () => {
 
   it("loads referral details and lets an eligible member submit one referral code", async () => {
     const onNavigate = vi.fn();
-    render(<FeaturePageRouter screen="activation-code" onNavigate={onNavigate} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={onNavigate} /></AppDialogProvider>);
 
     expect(await screen.findByText("MATRIX-7H4K9P")).toBeInTheDocument();
     expect(document.querySelector(".referral-success-count")).toHaveTextContent("推薦成功 3 人");
@@ -165,6 +165,9 @@ describe("existing feature actions", () => {
     fireEvent.change(referralInput, { target: { value: "FRIEND-8A2K" } });
     expect(referralConfirm).toBeEnabled();
     fireEvent.click(referralConfirm);
+    const referralDialog = await screen.findByRole("dialog");
+    expect(referralDialog).toHaveTextContent("確認輸入推薦碼？");
+    fireEvent.click(within(referralDialog).getByRole("button", { name: "確認" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("推薦碼已儲存");
     expect(referralInput).toHaveValue("");
@@ -186,14 +189,15 @@ describe("existing feature actions", () => {
     expect(screen.getAllByRole("link", { name: "Matrix1150801@gmail.com" })).toHaveLength(3);
   });
 
-  it("does not display a dated message on the update-history page", () => {
-    render(<FeaturePageRouter screen="update-history" onNavigate={vi.fn()} />);
+  it("combines version information and update history into one page", () => {
+    render(<FeaturePageRouter screen="version-info" onNavigate={vi.fn()} />);
 
-    expect(screen.queryByText("調整「我的」頁面分類與排列順序。", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
+    expect(screen.getByText("0.1.0")).toBeInTheDocument();
   });
 
   it("keeps the activation-code input collapsed until the user opens it", () => {
-    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
 
     const toggle = screen.getByRole("button", { name: "啟動碼" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -215,7 +219,7 @@ describe("existing feature actions", () => {
       hasInvitationCode: true,
       canSubmitReferralCode: false,
     });
-    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
 
     await waitFor(() => expect(screen.getByRole("textbox", { name: "推薦碼" })).toBeDisabled());
     fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
@@ -225,11 +229,14 @@ describe("existing feature actions", () => {
   });
 
   it("shows a safe activation success and clears the redeemed code", async () => {
-    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
     fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
     const input = screen.getByRole("textbox", { name: "啟動碼" });
     fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });
     fireEvent.click(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" }));
+    const successDialog = await screen.findByRole("dialog");
+    expect(successDialog).toHaveTextContent("確認使用啟動碼？");
+    fireEvent.click(within(successDialog).getByRole("button", { name: "確認" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("啟動成功");
     expect(input).toHaveValue("");
@@ -239,11 +246,13 @@ describe("existing feature actions", () => {
     activation.redeem.mockRejectedValueOnce(Object.assign(new Error("hidden database detail"), {
       code: "ACTIVATION_CODE_ALREADY_USED",
     }));
-    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
     fireEvent.click(screen.getByRole("button", { name: "啟動碼" }));
     const input = screen.getByRole("textbox", { name: "啟動碼" });
     fireEvent.change(input, { target: { value: "A7K9-P2XM-4Q8R-N6TY" } });
     fireEvent.click(within(document.getElementById("activation-code-panel")!).getByRole("button", { name: "確認" }));
+    const failureDialog = await screen.findByRole("dialog");
+    fireEvent.click(within(failureDialog).getByRole("button", { name: "確認" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("啟動碼已使用");
