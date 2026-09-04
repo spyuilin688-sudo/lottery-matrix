@@ -56,7 +56,7 @@ describe("homepage requested spacing and selection", () => {
     expect(getComputedStyle(document.querySelector(".brand-header")!).alignItems).toBe("flex-end");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
-    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,11px)");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,12px)");
   });
 
   it("uses the requested independent homepage spacing values", () => {
@@ -70,9 +70,10 @@ describe("homepage requested spacing and selection", () => {
     expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("4px");
     expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(10px,1.35dvh,13px)");
     expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("clamp(14px,1.75dvh,17px)");
-    expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").trim()).toBe("8px");
-    expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(6px,0.9dvh,8px)");
-    expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,11px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").trim()).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
+    expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
+    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop).toBe("6px");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
