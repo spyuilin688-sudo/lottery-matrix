@@ -15,13 +15,6 @@ type SummaryElementProps = {
   children?: ReactNode;
 };
 
-function containsRoadSummaryLabel(node: ReactNode): boolean {
-  if (typeof node === "string") return node.includes("版路：");
-  if (Array.isArray(node)) return node.some(containsRoadSummaryLabel);
-  if (isValidElement<SummaryElementProps>(node)) return containsRoadSummaryLabel(node.props.children);
-  return false;
-}
-
 function formatRoadFormulaText(value: string): ReactNode {
   if (value.includes("拖牌")) {
     return value.split(/(拖牌)/g).map((part, index) => (
@@ -48,18 +41,22 @@ function formatRoadSummaryNode(node: ReactNode): ReactNode {
   if (!isValidElement<SummaryElementProps>(node)) return node;
 
   const element = node as ReactElement<SummaryElementProps>;
-  const classNames = element.props.className?.split(/\s+/) ?? [];
+  const classNames = element.props.className?.split(/\s+/).filter(Boolean) ?? [];
+  const isSamePeriod = classNames.includes("validation-summary-position") && element.props.children === "同期";
   const nextChildren = classNames.includes("validation-summary-formula")
     ? formatFormulaChildren(element.props.children)
     : Children.map(element.props.children, formatRoadSummaryNode);
+  const nextClassName = isSamePeriod
+    ? [...new Set([...classNames, "validation-summary-same-period"])].join(" ")
+    : element.props.className;
 
-  return cloneElement(element, undefined, nextChildren);
+  return cloneElement(element, { className: nextClassName }, nextChildren);
 }
 
 export function ExploreValidationSummary({ children }: { children: ReactNode }) {
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const [isMatrixExploreSummary, setIsMatrixExploreSummary] = useState(false);
-  const renderedChildren = isMatrixExploreSummary && containsRoadSummaryLabel(children)
+  const renderedChildren = isMatrixExploreSummary
     ? Children.map(children, formatRoadSummaryNode)
     : children;
 
