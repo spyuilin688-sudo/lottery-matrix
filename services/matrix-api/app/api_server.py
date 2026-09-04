@@ -33,6 +33,7 @@ LOTTERIES = {"今彩539", "天天樂", "六合彩", "大樂透"}
 NUMBER_ORDERS = {"依號碼由小到大排序", "依實際開獎順序排序"}
 HISTORY_RANGES = {1000, 3000, 5000}
 PAGE_SIZE = 1000
+MAX_REQUEST_BODY_BYTES = 64 * 1024
 SERVICE_NAME = "matrix-railway-api"
 CARD_PREFIX = "/api/matrix/cards/"
 FANTASY5_CRAWLER_ERROR = "FANTASY5_CRAWLER_GITHUB_ONLY"
@@ -501,6 +502,15 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
+        protected = self._is_protected_job_path()
+        if length > MAX_REQUEST_BODY_BYTES:
+            self._send(
+                413,
+                {"error": "PAYLOAD_TOO_LARGE"},
+                allow_cors=not protected,
+                no_store=protected,
+            )
+            return
         body = self.rfile.read(length) if length > 0 else b""
         status, payload = handle_api_request(
             "POST",
@@ -509,7 +519,6 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
         )
-        protected = self._is_protected_job_path()
         self._send(status, payload, allow_cors=not protected, no_store=protected)
 
     def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
