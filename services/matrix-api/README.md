@@ -52,33 +52,47 @@ history, run Matrix analysis, or update scheduled-job status records.
 
 ### Scheduled workers
 
-The four lottery worker configs are:
+Draw ingestion and Matrix analysis are split for 天天樂:
 
-```text
-railway.json
-railway.fantasy5.json
-railway.marksix.json
-railway.lotto649.json
-```
+| Deployment | Entrypoint | Responsibility |
+| --- | --- | --- |
+| GitHub Actions `fantasy5-crawler.yml` | `app.fantasy5_crawler` | Fetch, validate, repair recent gaps, and upsert 天天樂 draws only |
+| Railway `railway.fantasy5.json` | `app.analysis_worker --lottery 天天樂` | Read the newest stored 天天樂 draw and resume Matrix analysis only |
+| Railway `railway.json` | `app.worker_all` | Scheduled ingestion and analysis for 今彩539、六合彩、大樂透 |
+| Railway `railway.marksix.json` | `app.worker --lottery 六合彩 --scheduled` | Existing 六合彩 worker |
+| Railway `railway.lotto649.json` | `app.worker --lottery 大樂透 --scheduled` | Existing 大樂透 worker |
 
-Each worker is triggered on the five-minute Railway cron grid. `app.schedule` decides whether the current minute is one of the configured call times. `app.worker` checks Supabase before fetching; once the current draw has been acquired, later calls for that draw stop doing network work.
+The GitHub crawler uses only `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. It obtains
+the latest California Fantasy5 draw through the existing source implementation,
+validates the source date and numbers, repairs internal recent-period gaps, and
+upserts `lottery_draws`. It owns 天天樂 acquisition status in
+`system_job_status` and never constructs Matrix artifact builders.
+
+The dedicated Railway 天天樂 process reads `lottery_draws` from Supabase, checks
+the current `period:matrix-python-v12` progress row, and runs or resumes analysis
+only when needed. It does not construct an HTTP client, `LatestDrawSource`, or
+`DrawRefreshService`, and therefore cannot connect to California or SC888.
 
 天天樂只儲存並計算依號碼由小到大排列的順球資料；不要求、補抓或以其他資料偽造落球順序。其來源日期使用加州當地開獎日，因此台灣早上的排程週期必須對應來源的前一日。
 
-Automated entrypoints must use `--scheduled`. The CLI defaults to scheduled mode as a
-second safeguard for deployment configuration.
+The other automated `app.worker` entrypoints must use `--scheduled`. The 天天樂
+analysis-only entrypoint intentionally has no scheduled crawl mode.
 
-Call times in Asia/Taipei:
+Base call times in Asia/Taipei:
 
 ```text
 今彩539  20:33
 大樂透   20:53
 六合彩   21:33
-天天樂   03/13–11/05 09:33
-天天樂   11/06–03/12 10:33
+天天樂 GitHub crawler   03/13–11/05 09:33
+天天樂 GitHub crawler   11/06–03/12 10:33
 ```
 
-Additional calls occur 2 hours, 1 hour, and 30 minutes before the base call time. If the new draw has not been acquired, retries are 5 minutes × 10, 30 minutes × 4, 1 hour × 3, 3 hours × 2, then 6 hours × 1. Any successful acquisition stops later calls for that draw.
+The three existing Railway crawl workers retain their current pre-draw and retry
+grid. The GitHub 天天樂 crawler runs only at the bounded post-draw retry offsets:
+every 5 minutes from 0 through 45 minutes after the base call, then at 75, 105,
+135, 165, 225, 285, and 345 minutes. A Taipei-date season gate prevents the
+overlapping March and November UTC cron ranges from running twice.
 
 ## Supabase data boundary
 
