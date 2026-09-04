@@ -44,6 +44,12 @@ test('matrix card download does not revoke its blob URL synchronously', async ({
   ).toBeGreaterThan(0);
 });
 
+test('matrix card preview automatically prepares the current PNG before download confirmation', async ({ page }) => {
+  await page.goto('/tests/matrix-card-download-runtime-fixture.html');
+  await page.getByRole('button', { name: 'show preview' }).click();
+  await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.previewPrepared())).toBe(true);
+});
+
 declare global {
   interface Window {
     __matrixCardDownloadTest: {
@@ -52,6 +58,7 @@ declare global {
       revokeCount: () => number;
       resetRevokeCount: () => void;
       prepared: () => boolean;
+      previewPrepared: () => boolean;
     };
   }
 }
