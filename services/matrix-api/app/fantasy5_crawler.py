@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -62,7 +62,7 @@ def _expected_source_draw_date(now: datetime | None) -> str:
     current = now or datetime.now(TAIPEI)
     if current.tzinfo is None:
         current = current.replace(tzinfo=TAIPEI)
-    return (current.astimezone(TAIPEI).date() - timedelta(days=1)).isoformat()
+    return current.astimezone(TAIPEI).date().isoformat()
 
 
 def _is_transient_source_error(error: Exception) -> bool:
