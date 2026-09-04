@@ -45,11 +45,32 @@
   font-size: 12px;
   line-height: 1.2;
   letter-spacing: .25px;
+  scale: .9;
+  transform-origin: left center;
 }
 
 .activation-code-screen .referral-input-card .code-entry-block,
 .activation-code-screen .activation-card .code-entry-block {
   gap: 8px;
+}
+
+.activation-code-screen .code-entry-block::after {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  height: 1px;
+  background: rgba(170, 167, 162, .36);
+  content: "";
+}
+
+.activation-code-screen .referral-copy-button {
+  align-items: center;
+  gap: 3px;
+}
+
+.activation-code-screen .referral-copy-button svg {
+  width: 12px;
+  height: 12px;
 }
 
 .activation-code-screen .referral-input-card input,

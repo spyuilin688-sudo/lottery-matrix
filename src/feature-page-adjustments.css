@@ -66,8 +66,7 @@
   gap: 12px;
 }
 
-.notifications-screen-v2 .notification-group,
-.notifications-screen-v2 .notification-system-group {
+.notifications-screen-v2 :is(.notification-group, .notification-system-group) {
   overflow: hidden;
   border: 1px solid rgba(170, 119, 46, .82);
   border-radius: 12px;
@@ -85,8 +84,38 @@
   box-shadow: none;
 }
 
+.notifications-screen-v2 .notification-group {
+  position: relative;
+  border-top-color: transparent;
+}
+
+.notifications-screen-v2 .notification-group::before {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(170, 119, 46, .82);
+  pointer-events: none;
+  content: "";
+}
+
 .notifications-screen-v2 .notification-group .notification-row + .notification-row {
-  border-top: 1px solid rgba(170, 119, 46, .24);
+  position: relative;
+  border-top: 0;
+}
+
+.notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(170, 119, 46, .24);
+  pointer-events: none;
+  content: "";
 }
 
 .notifications-screen-v2 .notification-heading {
