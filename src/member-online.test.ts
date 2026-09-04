@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { startMemberOnlineTracking } from './member-online';
+import { endActiveMemberOnlineSession, startMemberOnlineTracking } from './member-online';
 
 describe('member online tracking', () => {
   it('starts on a visible PWA and ends when it moves to the background', async () => {
@@ -29,6 +29,21 @@ describe('member online tracking', () => {
 
     window.dispatchEvent(new Event('pagehide'));
     await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/end', { sessionId: 'session-leave' }));
+    stop();
+  });
+
+  it('lets logout await the active session end before credentials are cleared', async () => {
+    const post = vi.fn(async (path: string) => path.endsWith('/start')
+      ? { sessionId: 'session-logout' }
+      : { onlineSeconds: 30 });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+
+    const stop = startMemberOnlineTracking(post, document);
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/start', {}));
+
+    await endActiveMemberOnlineSession();
+
+    expect(post).toHaveBeenCalledWith('/api/member-online/end', { sessionId: 'session-logout' });
     stop();
   });
 });

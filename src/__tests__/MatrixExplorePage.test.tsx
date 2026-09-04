@@ -768,15 +768,15 @@ test('再次開始探索會恢復準5+預設連準', async () => {
   expect(screen.getByRole('button', { name: '準9進10' }).getAttribute('aria-pressed')).toBe('true');
 });
 
-test('探索結果每頁最多顯示30筆並可切換下一頁', async () => {
-  const items = Array.from({ length: 31 }, (_, index) => ({
+test('探索結果每頁最多顯示15筆並可切換下一頁', async () => {
+  const items = Array.from({ length: 16 }, (_, index) => ({
     ...exploreEnvelope.items[0],
     id: `api-item-${index + 1}`,
     number: String((index % 39) + 1).padStart(2, '0'),
   }));
   matrixApi.fetchExploreList.mockResolvedValue({
     ...exploreEnvelope,
-    total: 31,
+    total: 16,
     items,
   });
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
@@ -784,15 +784,32 @@ test('探索結果每頁最多顯示30筆並可切換下一頁', async () => {
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
   await screen.findByRole('button', { name: '展開版路 api-item-1' });
-  expect(screen.getAllByRole('button', { name: /展開版路 api-item-/ })).toHaveLength(30);
-  expect(screen.queryByRole('button', { name: '展開版路 api-item-31' })).toBeNull();
-  expect(screen.getByText('31')).toBeTruthy();
+  expect(screen.getAllByRole('button', { name: /展開版路 api-item-/ })).toHaveLength(15);
+  expect(screen.queryByRole('button', { name: '展開版路 api-item-16' })).toBeNull();
+  expect(document.querySelector('.result-count .numeric-text')?.textContent).toBe('16');
 
   fireEvent.click(screen.getByRole('button', { name: '探索結果下一頁' }));
 
-  expect(screen.getByRole('button', { name: '展開版路 api-item-31' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '展開版路 api-item-16' })).toBeTruthy();
   expect(screen.getAllByRole('button', { name: /展開版路 api-item-/ })).toHaveLength(1);
   expect(screen.getByText('2 / 2')).toBeTruthy();
+});
+
+test('排序結果第七球在位置欄顯示特別號', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{
+      ...exploreEnvelope.items[0],
+      lockedPosition: 7,
+      numberOrder: '依號碼由小到大排序',
+    }],
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  const resultRow = await screen.findByRole('button', { name: '展開版路 api-item-1' });
+  expect(resultRow.querySelector('.tag')?.textContent).toBe('特別號');
 });
 
 test('探索結果整列皆可展開驗證過程', async () => {

@@ -27,7 +27,7 @@ test("切換版路會同步切換對應的預設連準", () => {
 
 test("同碼模式在不同預測號碼群組交界建立明確分隔線", () => {
   assert.match(featurePages, /data-number-group-start=\{sameCode && index > 0 && paginatedResults\[index - 1\]\?\.prediction !== item\.prediction \? "true" : undefined\}/);
-  assert.match(spacingCss, /article\[data-number-group-start="true"\][\s\S]*?border-top:\s*1px solid rgba\(230, 183, 106, \.72\)/);
+  assert.match(spacingCss, /article\[data-number-group-start="true"\][\s\S]*?border-top:\s*0\.7px solid rgba\(230, 183, 106, \.72\)/);
 });
 
 test("點擊重複號碼小卡後使用與同碼相同的群組排序", () => {
