@@ -63,16 +63,16 @@ begin
       v_request.plan_id,
       v_request.id,
       v_request.amount,
-      pg_catalog.coalesce(v_request.transferred_at, p_now),
+      coalesce(v_request.transferred_at, p_now),
       'confirmed'
     );
 
     update public.members
     set current_plan_id = v_request.plan_id,
-        plan_started_at = pg_catalog.coalesce(v_member.plan_started_at, p_now),
-        plan_expires_at = pg_catalog.greatest(
+        plan_started_at = coalesce(v_member.plan_started_at, p_now),
+        plan_expires_at = greatest(
           p_now,
-          pg_catalog.coalesce(v_member.plan_expires_at, p_now)
+          coalesce(v_member.plan_expires_at, p_now)
         ) + pg_catalog.make_interval(days => v_duration),
         is_lifetime = false,
         auto_renew = false
