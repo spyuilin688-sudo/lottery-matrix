@@ -18,7 +18,7 @@ test('Matrix workflow triggers its one-shot recovery only when this workflow cha
   assert.match(workflow, /^      max-parallel: 1$/m);
 });
 
-test('Matrix workflow runs every lottery for a push in scheduled mode', () => {
+test('Matrix workflow runs only Railway-owned lotteries in scheduled mode', () => {
   assert.match(
     workflow,
     /if \[\[ "\$EVENT_NAME" == "push" \|\| "\$EVENT_NAME" == "workflow_dispatch" \|\| "\$EVENT_SCHEDULE" == "\*\/15 \* \* \* \*" \]\]; then\n            should_run=true/,
@@ -26,13 +26,13 @@ test('Matrix workflow runs every lottery for a push in scheduled mode', () => {
 
   for (const [id, lottery] of [
     ['daily539', '今彩539'],
-    ['fantasy5', '天天樂'],
     ['marksix', '六合彩'],
     ['lotto649', '大樂透'],
   ]) {
     assert.match(workflow, new RegExp(`- id: ${id}\\n\\s+lottery: ${lottery}`));
   }
 
+  assert.doesNotMatch(workflow, /- id: fantasy5\n\s+lottery: 天天樂/);
   assert.match(workflow, /uv run python -m app\.worker --lottery "\$LOTTERY" --scheduled/);
   assert.doesNotMatch(workflow, /app\.worker[^\n]*--immediate/);
 });

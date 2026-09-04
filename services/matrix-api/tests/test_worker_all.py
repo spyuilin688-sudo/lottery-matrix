@@ -14,7 +14,7 @@ from app.worker_all import LOTTERIES, run_all_workers
 TAIPEI = ZoneInfo("Asia/Taipei")
 
 
-def test_runs_all_four_lotteries_in_order() -> None:
+def test_runs_all_three_railway_crawler_lotteries_in_order() -> None:
     calls: list[str] = []
 
     def run_one(lottery: str) -> dict:
@@ -23,9 +23,10 @@ def test_runs_all_four_lotteries_in_order() -> None:
 
     result = run_all_workers(run_one)
 
-    assert calls == ["今彩539", "天天樂", "六合彩", "大樂透"]
+    assert LOTTERIES == ("今彩539", "六合彩", "大樂透")
+    assert calls == ["今彩539", "六合彩", "大樂透"]
     assert result == {
-        "completed": ["今彩539", "天天樂", "六合彩", "大樂透"],
+        "completed": ["今彩539", "六合彩", "大樂透"],
         "failed": {},
     }
 
@@ -35,15 +36,15 @@ def test_one_lottery_failure_does_not_block_the_remaining_lotteries() -> None:
 
     def run_one(lottery: str) -> dict:
         calls.append(lottery)
-        if lottery == "天天樂":
+        if lottery == "六合彩":
             raise RuntimeError("source failed")
         return {"lottery": lottery, "status": "complete"}
 
     result = run_all_workers(run_one)
 
     assert calls == list(LOTTERIES)
-    assert result["completed"] == ["今彩539", "六合彩", "大樂透"]
-    assert result["failed"] == {"天天樂": "source failed"}
+    assert result["completed"] == ["今彩539", "大樂透"]
+    assert result["failed"] == {"六合彩": "source failed"}
 
 
 def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_grid() -> None:
@@ -60,7 +61,7 @@ def test_primary_railway_config_runs_all_scheduled_workers_on_daily_five_minute_
 
     assert [config["deploy"]["startCommand"] for config in configs] == [
         "uv run python -u -m app.worker_all",
-        "uv run python -u -m app.worker --lottery 天天樂 --scheduled",
+        "uv run python -u -m app.analysis_worker --lottery 天天樂",
         "uv run python -u -m app.worker --lottery 六合彩 --scheduled",
         "uv run python -u -m app.worker --lottery 大樂透 --scheduled",
     ]
@@ -82,6 +83,8 @@ def test_other_automated_worker_entrypoints_use_scheduled_mode() -> None:
 
     for lottery in LOTTERIES:
         assert f"app.worker --lottery {lottery} --scheduled" in systemd_service
+    assert "app.worker --lottery 天天樂" not in systemd_service
+    assert "app.analysis_worker --lottery 天天樂" in systemd_service
     assert 'uv run python -m app.worker --lottery "$LOTTERY" --scheduled' in workflow
 
 

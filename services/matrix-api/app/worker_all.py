@@ -10,7 +10,7 @@ from app.settings import load_settings
 from app.worker import run_scheduled_worker
 
 
-LOTTERIES = ("今彩539", "天天樂", "六合彩", "大樂透")
+LOTTERIES = ("今彩539", "六合彩", "大樂透")
 
 
 def create_railway_ssl_context() -> ssl.SSLContext:
