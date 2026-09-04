@@ -12,6 +12,7 @@ import {
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
 import { createConnectionStatus } from './connection-status';
+import { createNotificationEvents, getNotificationEventConfig } from './notification-events';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-api';
@@ -36,6 +37,7 @@ type PermissionInput = {
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
+const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
 const adminData = createAdminData(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
@@ -218,6 +220,34 @@ const routes: Record<string, unknown> = {
   'GET /api/push-delivery-logs': [sessionGuard, guard('view'), async () => {
     try {
       return json({ items: await pushNotifications.listPushDeliveryLogs() });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'POST /api/system-notices': [sessionGuard, guard('edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const notice = await notificationEvents.sendSystemNotice(bodyOf(ctx));
+      if (shouldRecordAdminActivity(admin)) {
+        try {
+          const actor = actorOf(admin);
+          await supabase.insertRows('audit_logs', [{
+            admin_id: actor.id,
+            admin: actor.name || actor.account,
+            operation_type: '發送系統通知',
+            target_table: 'notification_events',
+            target_id: notice.eventKey,
+            content: `${notice.category}：${notice.title}`,
+            before_data: null,
+            after_data: notice,
+            ...requestMetadata(ctx),
+          }]);
+        } catch {
+          // An accepted event must not look failed only because audit storage is down.
+        }
+      }
+      return json({ notice }, 201);
     } catch (cause) {
       return fail(cause);
     }
