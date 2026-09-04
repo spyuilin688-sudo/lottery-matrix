@@ -36,7 +36,6 @@ test('Fantasy5 recovery keeps GitHub crawling separate from Railway analysis', (
   assert.doesNotMatch(watchdog, /California|SC888|LatestDrawSource/);
 });
 
-
 test('watchdog recoveries use one durable cross-host lease', () => {
   assert.match(watchdog, /claim_matrix_watchdog_lease/);
   assert.match(watchdogLeaseMigration, /on conflict \(lease_key\) do update/);
@@ -44,5 +43,12 @@ test('watchdog recoveries use one durable cross-host lease', () => {
   assert.match(watchdogLeaseMigration, /begin_matrix_watchdog_recovery/);
   assert.match(watchdogLeaseMigration, /renew_matrix_watchdog_recovery/);
   assert.match(watchdogLeaseMigration, /runner_id is null/);
-  assert.doesNotMatch(watchdogLeaseMigration, /or public\.matrix_watchdog_leases\.owner_id/);
+  assert.match(
+    watchdogLeaseMigration,
+    /renew_matrix_watchdog_recovery[\s\S]*runner_id = p_runner_id\s+and expires_at > now\(\)/,
+  );
+  assert.doesNotMatch(
+    watchdogLeaseMigration,
+    /or public\.matrix_watchdog_leases\.owner_id/,
+  );
 });

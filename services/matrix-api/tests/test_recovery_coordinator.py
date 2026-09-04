@@ -21,8 +21,9 @@ def test_recovery_coordinator_deduplicates_a_running_lottery() -> None:
     assert coordinator.enqueue("天天樂") == "accepted"
     assert started.wait(1)
     worker_thread = next(
-        thread for thread in active_threads()
-        if thread.name == 'matrix-recovery-天天樂'
+        thread
+        for thread in active_threads()
+        if thread.name == "matrix-recovery-天天樂"
     )
     assert worker_thread.daemon is False
     assert coordinator.enqueue("天天樂") == "already-running"
@@ -58,7 +59,8 @@ def test_recovery_coordinator_renews_and_releases_a_durable_lease() -> None:
         runner,
         begin_lease=lambda lottery, owner, runner_id: beginnings.append(
             (lottery, owner, runner_id)
-        ) or True,
+        )
+        or True,
         renew_lease=renew,
         release_lease=lambda lottery, owner, runner_id: releases.append(
             (lottery, owner, runner_id)
@@ -101,6 +103,38 @@ def test_recovery_coordinator_fences_work_after_lease_loss() -> None:
     )
 
     assert coordinator.enqueue("六合彩", lease_owner="invocation-2") == "accepted"
+    assert started.wait(1)
+    assert lost.wait(1)
+    release_worker.set()
+
+
+def test_recovery_coordinator_fences_when_renewal_errors_outlive_lease() -> None:
+    started = Event()
+    lost = Event()
+    release_worker = Event()
+    clock_value = [0.0]
+
+    def runner(_lottery: str) -> None:
+        started.set()
+        release_worker.wait(1)
+
+    def unavailable(*_: str) -> bool:
+        clock_value[0] = 2.0
+        raise RuntimeError("supabase unavailable")
+
+    coordinator = RecoveryCoordinator(
+        runner,
+        begin_lease=lambda *_: True,
+        renew_lease=unavailable,
+        release_lease=lambda *_: None,
+        on_lease_lost=lambda *_: lost.set(),
+        heartbeat_seconds=0.001,
+        lease_timeout_seconds=1.0,
+        runner_id_factory=lambda: "runner-3",
+        clock=lambda: clock_value[0],
+    )
+
+    assert coordinator.enqueue("大樂透", lease_owner="invocation-3") == "accepted"
     assert started.wait(1)
     assert lost.wait(1)
     release_worker.set()

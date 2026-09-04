@@ -130,7 +130,8 @@ begin
   set expires_at = now() + make_interval(secs => p_ttl_seconds)
   where lease_key = p_lease_key
     and owner_id = p_owner_id
-    and runner_id = p_runner_id;
+    and runner_id = p_runner_id
+    and expires_at > now();
   return found;
 end;
 $$;
