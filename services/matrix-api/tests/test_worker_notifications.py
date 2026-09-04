@@ -168,9 +168,31 @@ def test_card_event_waits_for_required_history_rows() -> None:
 def test_partial_analysis_never_emits_status(monkeypatch: pytest.MonkeyPatch) -> None:
     repository = InMemoryAnalysisRepository()
     emitter = RecordingEmitter(repository)
+    builders = _builders()
+
+    def partial_explore(context: dict) -> dict:
+        start = int(context["exploreBatch"]["start"])
+        return {
+            "artifact": {"items": [], "validationById": {}},
+            "_checkpoint": {
+                "cursorStart": start,
+                "cursor": start + 1,
+                "total": 2,
+                "complete": False,
+            },
+        }
+
+    builders["explore"] = partial_explore
     monkeypatch.setattr(worker_module, "MAX_CYCLES_PER_INVOCATION", 1)
 
-    result = run_worker(repository, NotificationSource(history_count=120), emitter)
+    result = run_scheduled_worker(
+        LOTTERY,
+        _due_time(),
+        repository,
+        NotificationSource(history_count=120),
+        builders,
+        notification_emitter=emitter,
+    )
 
     assert result["status"] == "running"
     assert RESULT_KEY in emitter.successful
