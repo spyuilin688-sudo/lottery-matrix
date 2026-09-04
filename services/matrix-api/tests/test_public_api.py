@@ -468,3 +468,60 @@ def test_invalid_route_is_404() -> None:
     status, payload = handle_api_request("GET", "/missing", None, _repository())
     assert status == 404
     assert payload == {"error": "NOT_FOUND"}
+
+
+def test_jobs_recover_accepts_fantasy5_without_invoking_a_railway_crawler(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({"lottery": "天天樂"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        recover_lottery=lambda lottery: calls.append(lottery) or "accepted",
+    )
+
+    assert (status, payload) == (
+        202,
+        {"lottery": "天天樂", "status": "accepted"},
+    )
+    assert calls == ["天天樂"]
+
+
+def test_jobs_recover_requires_the_shared_admin_token(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+    calls: list[str] = []
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({"lottery": "今彩539"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="wrong-token",
+        recover_lottery=lambda lottery: calls.append(lottery) or "accepted",
+    )
+
+    assert (status, payload) == (403, {"error": "FORBIDDEN"})
+    assert calls == []
+
+
+def test_jobs_recover_hides_background_start_failure(monkeypatch) -> None:
+    monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
+
+    status, payload = handle_api_request(
+        "POST",
+        "/jobs/recover",
+        json.dumps({"lottery": "大樂透"}, ensure_ascii=False).encode("utf-8"),
+        OperationalRepository(),
+        request_monitor_token="expected-token",
+        recover_lottery=lambda _lottery: (_ for _ in ()).throw(
+            RuntimeError("fake-platform-secret")
+        ),
+    )
+
+    assert (status, payload) == (503, {"error": "RECOVERY_UNAVAILABLE"})
+    assert "fake-platform-secret" not in str(payload)
