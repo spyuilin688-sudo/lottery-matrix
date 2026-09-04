@@ -6,7 +6,9 @@
 }
 
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
-  .explore-validation-card .explore-validation-summary .validation-summary-drag-label {
+  .explore-validation-card .explore-validation-summary .validation-summary-drag-label,
+.matrix-explore-main-screen:not(.matrix-tianyan-screen)
+  .explore-validation-card .explore-validation-summary .validation-summary-same-period {
   color: #c2b3dd;
   font-style: normal;
   font-weight: 800;
