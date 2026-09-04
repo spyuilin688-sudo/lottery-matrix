@@ -82,7 +82,7 @@ describe('Matrix status artifact orchestration', () => {
     });
     const result = buildMatrixStatusArtifact(explore([row(), row({ id: 'road-2', lockedPosition: 2 })]), null, [config], entitlements);
     expect(result.cards.find((card) => card.id === 'custom:ACTIVE:two-roads')).toEqual(expect.objectContaining({
-      id: 'custom:ACTIVE:two-roads', sameCodeRoadCount: 2,
+      id: 'custom:ACTIVE:two-roads', ruleId: 'CUSTOM:ACTIVE:two-roads', sameCodeRoadCount: 2,
       roads: [expect.objectContaining({ id: 'road-1:08' }), expect.objectContaining({ id: 'road-2:08' })],
     }));
   });

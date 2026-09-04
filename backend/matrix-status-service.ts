@@ -270,6 +270,7 @@ function customCard(status: CustomStatusConfig['status'], group: CustomCondition
   const result = [...new Set(witnesses.flatMap((match) => match.result))];
   return {
     id: `custom:${status}:${group.id}`,
+    ruleId: ['CUSTOM', status, group.id].join(':'),
     status,
     hitType,
     result,
