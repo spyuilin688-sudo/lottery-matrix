@@ -1,0 +1,20 @@
+/* Matrix Explore-only refinements for validation/result presentation. */
+.matrix-explore-main-screen:not(.matrix-tianyan-screen)
+  .explore-validation-card .explore-validation-result-number {
+  font-size: 15px;
+  margin-inline: 2px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen)
+  .explore-validation-card .explore-validation-summary .validation-summary-drag-label {
+  color: #c2b3dd;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen)
+  .explore-validation-card
+  .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"])
+  .explore-validation-special-number {
+  margin-left: 2px;
+}
