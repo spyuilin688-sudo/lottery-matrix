@@ -25,7 +25,7 @@ test("confirmed feature pages use the latest integrated title artwork", () => {
     ["歷史開獎號碼", "/assets/lottery/functions/歷史開獎標題K.png"],
     ["連碰計算機", "/assets/lottery/functions/連碰標題K.png"],
     ["立柱計算機", "/assets/lottery/functions/立柱標題K.png"],
-    ["Matrix Pro 會員方案與收費標準", "/assets/lottery/functions/會員方案標題K.png"],
+    ["Matrix Pro 訂閱方案與收費標準", "/assets/lottery/functions/訂閱方案標題K.png"],
     ["Matrix 自訂觸發狀態", "/assets/lottery/functions/自訂觸發標題K.png"],
   ];
 

@@ -27,3 +27,16 @@ test('Project CI runs the admin test and build scripts', () => {
   assert.match(admin, /run:\s+npm test(?:\s|$)/);
   assert.match(admin, /run:\s+APPDEPLOY_CI_EXTERNALS=true npm run build(?:\s|$)/);
 });
+
+test('Project CI avoids duplicate root tests and builds before packaging tests', () => {
+  const root = job('test-and-build');
+  const fullNodeCommands = root.match(/run:\s+node --test tests\/\*\.test\.mjs(?:\s|$)/g) ?? [];
+
+  assert.equal(fullNodeCommands.length, 1);
+  assert.doesNotMatch(root, /name:\s+Targeted Explore tests/);
+
+  const buildIndex = root.indexOf('run: npm run build');
+  const fullNodeIndex = root.indexOf('run: node --test tests/*.test.mjs');
+  assert.ok(buildIndex >= 0, 'Project CI is missing the production build');
+  assert.ok(fullNodeIndex > buildIndex, 'Project CI must build before running packaging tests');
+});
