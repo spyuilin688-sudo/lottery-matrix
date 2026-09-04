@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createMatrixStatusSourceReader } from '../supabase/functions/matrix-status/source-reader';
+import {
+  createMatrixStatusSourceReader,
+  createMatrixStatusValidationReader,
+} from '../supabase/functions/matrix-status/source-reader';
 
 const config = {
   url: 'https://project.supabase.co',
@@ -39,5 +42,31 @@ describe('Matrix status source reader', () => {
     const read = createMatrixStatusSourceReader(() => config, fetcher);
 
     await expect(read('今彩539')).rejects.toThrow('SUPABASE_ANALYSIS_READ_FAILED');
+  });
+
+  it('reads status validation through the service-role-only source function', async () => {
+    const payload = { itemId: 'road-2', validation: { itemId: 'road-2', ruleSets: [] } };
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    const read = createMatrixStatusValidationReader(() => config, fetcher);
+
+    await expect(read('今彩539', '115000210', 'v1', 'road-2')).resolves.toEqual(payload);
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://project.supabase.co/rest/v1/rpc/matrix_status_validation_source_get',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          apikey: 'service-role-key',
+          Authorization: 'Bearer service-role-key',
+        }),
+        body: JSON.stringify({
+          p_request: {
+            lottery: '今彩539', drawPeriod: '115000210', analysisVersion: 'v1', itemId: 'road-2',
+          },
+        }),
+      }),
+    );
   });
 });

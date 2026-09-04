@@ -14,6 +14,16 @@ import {
   type StatusTriggerCard,
 } from './matrix-status.ts';
 
+export type ProjectedStatusRoad =
+  | (StatusRoad & { locked: false })
+  | { id: string; result: string[]; explorePeriods: 2 | 7 | 13; locked: true };
+
+export type ProjectedStatusTriggerCard = Omit<StatusTriggerCard, 'sameCodeRoadCount' | 'roads'> & {
+  sameCodeRoadCount: number | null;
+  sameCodeRoadCountLocked: boolean;
+  roads: ProjectedStatusRoad[];
+};
+
 type ExploreArtifactRow = {
   id: string;
   number: string;
@@ -28,6 +38,8 @@ type ExploreArtifactRow = {
   exploreDateOffset: number;
   ruleCount: number;
   lockedSourceIndex?: number;
+  referenceOffset?: number;
+  referencePosition?: number;
 };
 
 export type ExploreArtifact = {
@@ -48,7 +60,7 @@ export type TianyanArtifact = {
     highestStreak: number;
     predictionNumbers: string[];
     numberOrder: CustomConditionMatch['numberOrder'];
-    explorePeriods: 13;
+    explorePeriods: 2 | 7 | 13;
     exploreDateOffset: number;
     lockedSourceIndex?: number;
   }>;
@@ -101,6 +113,9 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
           position: item.lockedPosition,
           lockedNumber: item.number,
           explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         });
       }
     } else {
@@ -115,6 +130,9 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
         position: item.lockedPosition,
         lockedNumber: item.number,
         explorePeriods: item.explorePeriods,
+        validationItemId: item.id,
+        referenceOffset: item.referenceOffset,
+        referencePosition: item.referencePosition,
       });
     }
   }
@@ -140,7 +158,10 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
         road: {
           id: `${item.id}:${result}`, hitType: 'one-code', result: [result], algorithmType: item.algorithmType,
           numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: 13,
+          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         },
       });
     } else {
@@ -151,7 +172,10 @@ function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
         road: {
           id: item.id, hitType: 'two-code', result: results, algorithmType: item.algorithmType,
           numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: 13,
+          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
+          validationItemId: item.id,
+          referenceOffset: item.referenceOffset,
+          referencePosition: item.referencePosition,
         },
       });
     }
@@ -185,7 +209,8 @@ function tianyanMatchSeeds(artifact: TianyanArtifact | null): MatchSeed[] {
       predictionDistance: item.predictionDistance,
       position: item.lockedPosition,
       lockedNumber: item.number,
-      explorePeriods: 13,
+      explorePeriods: item.explorePeriods,
+      validationItemId: item.id,
     },
   }));
 }
@@ -230,37 +255,34 @@ function sortedStatusCards(cards: StatusTriggerCard[]) {
   ));
 }
 
-function sameResult(left: string[], right: string[]) {
-  return left.join(',') === right.join(',');
-}
-
 function visibleStatusCards(
   cards: StatusTriggerCard[],
-  explore: ExploreArtifact,
   entitlements: MatrixEntitlements,
-) {
-  const periods = entitlements.canUseThirteen
-    ? new Set([2, 7, 13])
-    : entitlements.canUseSeven
-      ? new Set([2, 7])
-      : new Set([2]);
-  const exploreRoads = chapterRoads(explore.items.filter((item) => (
-    item.exploreDateOffset === 0
-    && item.numberOrder === '依號碼由小到大排序'
-    && periods.has(item.explorePeriods)
-  )));
+): ProjectedStatusTriggerCard[] {
   return cards.map((card) => {
-    const candidates = [
-      ...exploreRoads,
-      ...(entitlements.canUseThirteen ? card.roads : []),
-    ].filter((road) => road.hitType === card.hitType && sameResult(road.result, card.result));
-    const roads = sortedStatusRoads([
-      ...new Map(candidates.map((road) => [
-        [road.id, road.explorePeriods, road.result.join(',')].join('|'),
-        road,
-      ])).values(),
-    ]);
-    return { ...card, roads };
+    let hasLockedRoad = false;
+    const roads: ProjectedStatusRoad[] = [];
+    for (const road of sortedStatusRoads(card.roads)) {
+      const entitled = road.explorePeriods === 2
+        || (road.explorePeriods === 7 && entitlements.canUseSeven)
+        || (road.explorePeriods === 13 && entitlements.canUseThirteen);
+      if (entitled) roads.push({ ...road, locked: false });
+      else {
+        hasLockedRoad = true;
+        roads.push({
+          id: road.id,
+          result: [...road.result],
+          explorePeriods: road.explorePeriods,
+          locked: true as const,
+        });
+      }
+    }
+    return {
+      ...card,
+      sameCodeRoadCount: hasLockedRoad ? null : card.sameCodeRoadCount,
+      sameCodeRoadCountLocked: hasLockedRoad,
+      roads,
+    };
   });
 }
 
@@ -270,6 +292,7 @@ function customCard(status: CustomStatusConfig['status'], group: CustomCondition
   const result = [...new Set(witnesses.flatMap((match) => match.result))];
   return {
     id: `custom:${status}:${group.id}`,
+    ruleId: ['CUSTOM', status, group.id].join(':'),
     status,
     hitType,
     result,
@@ -336,7 +359,7 @@ export function buildMatrixStatusArtifact(
       message: messages[status],
     },
     counts,
-    cards: visibleStatusCards(sortedStatusCards(cards), explore, entitlements),
+    cards: visibleStatusCards(sortedStatusCards(cards), entitlements),
     customTriggers,
     customSettings,
   };

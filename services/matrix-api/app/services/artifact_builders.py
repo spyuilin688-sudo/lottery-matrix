@@ -130,7 +130,7 @@ def build_explore_artifact(
 _EXPLORE_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
     "predictionNumbers", "algorithmType", "numberOrder", "exploreDateOffset",
-    "ruleCount", "lockedSourceIndex",
+    "ruleCount", "lockedSourceIndex", "referenceOffset", "referencePosition",
 )
 _TIANYAN_STATUS_FIELDS = (
     "id", "number", "lockedPosition", "predictionDistance", "consecutive", "highestStreak",
@@ -145,11 +145,22 @@ def _applies_to_full_range(item: dict[str, Any]) -> bool:
     return item.get("exploreRange", "完整範圍") == "完整範圍"
 
 
+def _status_source_periods(item: dict[str, Any]) -> int:
+    source_index = item.get("lockedSourceIndex")
+    if isinstance(source_index, int) and not isinstance(source_index, bool):
+        if source_index < 2:
+            return 2
+        if source_index < 7:
+            return 7
+        return 13
+    return int(item.get("explorePeriods", 13))
+
+
 def _compact_status_items(
     items: list[dict[str, Any]],
     fields: tuple[str, ...],
     *,
-    derive_full_range: bool = False,
+    derive_source_periods: bool = False,
     full_range_only: bool = False,
 ) -> list[dict[str, Any]]:
     compact = [
@@ -158,9 +169,9 @@ def _compact_status_items(
         if item.get("exploreDateOffset") == 0 and item.get("lockedSourceIndex", 99) < 13
         and (not full_range_only or _applies_to_full_range(item))
     ]
-    if derive_full_range:
+    if derive_source_periods:
         for item in compact:
-            item["explorePeriods"] = 13
+            item["explorePeriods"] = _status_source_periods(item)
     return compact
 
 
@@ -187,7 +198,7 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
                 "hitType": hit_type, "result": result, "algorithmType": item["algorithmType"],
                 "numberOrder": item["numberOrder"], "streak": item["highestStreak"],
                 "predictionDistance": item["predictionDistance"], "position": item["lockedPosition"],
-                "lockedNumber": item["number"], "explorePeriods": 13,
+                "lockedNumber": item["number"], "explorePeriods": _status_source_periods(item),
             })
     status = evaluate_chapter15({"lottery": explore["lottery"], "drawPeriod": explore["drawPeriod"], "roads": roads})
     return {
@@ -204,14 +215,18 @@ def _status_artifact(explore: dict[str, Any], tianyan: dict[str, Any]) -> dict[s
                 "items": _compact_status_items(
                     explore["items"],
                     _EXPLORE_STATUS_FIELDS,
-                    derive_full_range=True,
+                    derive_source_periods=True,
                     full_range_only=True,
                 ),
             },
             "tianyan": {
                 "lottery": tianyan["lottery"],
                 "drawPeriod": tianyan["drawPeriod"],
-                "items": _compact_status_items(tianyan["items"], _TIANYAN_STATUS_FIELDS),
+                "items": _compact_status_items(
+                    tianyan["items"],
+                    _TIANYAN_STATUS_FIELDS,
+                    derive_source_periods=True,
+                ),
             },
         },
     }

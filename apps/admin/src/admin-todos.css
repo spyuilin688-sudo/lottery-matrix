@@ -1,0 +1,96 @@
+.adminTodos {
+  width: min(760px, 100%);
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.adminTodosComposer,
+.adminTodoCard,
+.adminTodosState {
+  min-width: 0;
+  border: 1px solid #292c32;
+  border-radius: 12px;
+  background: #111419;
+}
+
+.adminTodosComposer { padding: 12px; }
+.adminTodosHeadingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.adminTodosHeadingRow h1 { margin: 0; color: #ece7d8; font-size: 17px; }
+.adminTodosHeadingRow p { margin: 3px 0 0; color: #8d919a; font-size: 12px; line-height: 1.5; }
+.adminTodosHeadingRow > span { flex: 0 0 auto; color: #cbb675; font-size: 12px; }
+.adminTodos form { display: grid; min-width: 0; gap: 6px; margin-top: 10px; }
+.adminTodos label { color: #b7bac1; font-size: 12px; font-weight: 700; }
+.adminTodos textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 74px;
+  resize: none;
+  padding: 9px 10px;
+  border: 1px solid #343840;
+  border-radius: 9px;
+  background: #0b0d11;
+  color: #ece7d8;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.adminTodos textarea[aria-invalid="true"] { border-color: #a95757; }
+.adminTodos textarea:focus-visible,
+.adminTodos button:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
+.adminTodos textarea:disabled { opacity: .65; cursor: not-allowed; }
+
+.adminTodosFormFooter,
+.adminTodosEditFooter { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.adminTodosFormFooter p,
+.adminTodosEditFooter p { flex: 1 1 auto; min-width: 0; min-height: 18px; margin: 0; color: #777b84; font-size: 11px; overflow-wrap: anywhere; }
+.adminTodosFormFooter > span { flex: 0 0 auto; color: #8d919a; font-size: 11px; font-variant-numeric: tabular-nums; }
+.adminTodosInlineError { color: #efabab !important; }
+.primary.adminTodosPrimaryButton { width: auto; min-width: 76px; }
+
+.adminTodos button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #363a42;
+  border-radius: 8px;
+  background: #171a20;
+  color: #d7d9de;
+  cursor: pointer;
+}
+.adminTodos button:hover:not(:disabled) { border-color: #6e654f; background: #1c1f25; }
+.adminTodos button:active:not(:disabled) { background: #242831; }
+.adminTodos button:disabled { opacity: .45; cursor: not-allowed; }
+.adminTodos button.primary { border-color: #b48a35; background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; font-weight: 800; }
+
+.adminTodosFeedback { min-height: 18px; color: #8ed7a3; font-size: 12px; }
+.adminTodosState { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 12px; color: #8d919a; font-size: 13px; }
+.adminTodosStateError { border-color: #673b3b; color: #efb3b3; }
+.adminTodosList { display: grid; min-width: 0; gap: 8px; }
+.adminTodoCard { display: grid; gap: 8px; padding: 11px 12px; }
+.adminTodoMeta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.adminTodoMeta strong { min-width: 0; color: #d8b65e; font-size: 12px; overflow-wrap: anywhere; }
+.adminTodoMeta time { flex: 0 0 auto; color: #777b84; font-size: 11px; font-variant-numeric: tabular-nums; }
+.adminTodoContent { margin: 0; color: #d7d9de; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adminTodoActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.adminTodoActions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 66px; }
+.adminTodoActions .adminTodoDelete { border-color: #663d3d; color: #e8a0a0; }
+.adminTodoActions .adminTodoDelete:hover:not(:disabled) { border-color: #8c4f4f; background: #281616; }
+.adminTodosVisuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+@media (max-width: 480px) {
+  .adminTodos { gap: 8px; }
+  .adminTodosComposer,
+  .adminTodoCard { padding: 10px; }
+  .adminTodosFormFooter { display: grid; grid-template-columns:minmax(0, 1fr) auto; }
+  .adminTodosFormFooter .adminTodosPrimaryButton { grid-column: 1 / -1; width: 100%; }
+  .adminTodoMeta { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .adminTodosEditFooter { align-items: stretch; flex-direction: column; }
+  .adminTodoActions { width: 100%; }
+  .adminTodoActions button { flex: 1 1 0; min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adminTodos *,
+  .adminTodos *::before,
+  .adminTodos *::after { scroll-behavior: auto; transition-duration: .01ms; }
+}

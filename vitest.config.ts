@@ -6,7 +6,9 @@ export default mergeConfig(
   defineConfig({
     resolve: {
       alias: {
+        "@appdeploy/client": new URL("./test/appdeploy-client.ts", import.meta.url).pathname,
         "@appdeploy/sdk": new URL("./test/appdeploy-sdk.ts", import.meta.url).pathname,
+        "lucide-react": new URL("./test/lucide-react.tsx", import.meta.url).pathname,
       },
     },
     test: {

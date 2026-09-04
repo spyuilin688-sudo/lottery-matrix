@@ -7,7 +7,20 @@ export type MatrixStatusSourcePayload = {
   tianyan?: unknown;
 };
 
+export type MatrixStatusValidationSourcePayload = {
+  itemId?: unknown;
+  validation?: unknown;
+};
+
 type Config = { url: string; serviceRoleKey: string };
+
+function serviceHeaders(serviceRoleKey: string) {
+  return {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 export function createMatrixStatusSourceReader(
   loadConfig: () => Config,
@@ -17,11 +30,7 @@ export function createMatrixStatusSourceReader(
     const config = loadConfig();
     const response = await fetcher(`${config.url}/rest/v1/rpc/matrix_status_sources_get`, {
       method: 'POST',
-      headers: {
-        apikey: config.serviceRoleKey,
-        Authorization: `Bearer ${config.serviceRoleKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: serviceHeaders(config.serviceRoleKey),
       body: JSON.stringify({ p_request: { lottery, ...(drawPeriod ? { drawPeriod } : {}) } }),
     });
     if (!response.ok) {
@@ -34,5 +43,31 @@ export function createMatrixStatusSourceReader(
       throw new Error('SUPABASE_ANALYSIS_READ_FAILED');
     }
     return response.json() as Promise<MatrixStatusSourcePayload>;
+  };
+}
+
+export function createMatrixStatusValidationReader(
+  loadConfig: () => Config,
+  fetcher: typeof fetch = fetch,
+) {
+  return async (
+    lottery: MatrixLottery,
+    drawPeriod: string,
+    analysisVersion: string,
+    itemId: string,
+  ) => {
+    const config = loadConfig();
+    const response = await fetcher(
+      `${config.url}/rest/v1/rpc/matrix_status_validation_source_get`,
+      {
+        method: 'POST',
+        headers: serviceHeaders(config.serviceRoleKey),
+        body: JSON.stringify({
+          p_request: { lottery, drawPeriod, analysisVersion, itemId },
+        }),
+      },
+    );
+    if (!response.ok) throw new Error('SUPABASE_VALIDATION_READ_FAILED');
+    return response.json() as Promise<MatrixStatusValidationSourcePayload>;
   };
 }
