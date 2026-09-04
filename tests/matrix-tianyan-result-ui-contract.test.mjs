@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const source = readFileSync('src/FeaturePages.tsx', 'utf8');
 const api = readFileSync('src/matrix-algorithm-api.ts', 'utf8');
-const migration = readFileSync('supabase/migrations/20260903084602_matrix_tianyan_result_road_types.sql', 'utf8');
+const refinements = readFileSync('src/matrix-explore-result-refinements.css', 'utf8');
+const migration = readdirSync('supabase/migrations')
+  .filter((name) => name.includes('matrix_tianyan'))
+  .map((name) => readFileSync(`supabase/migrations/${name}`, 'utf8'))
+  .join('\n');
 
 test('Tianyan result UI matches the approved differences', () => {
   assert.match(source, /title === "Matrix 探索" \? \([\s\S]*?<HistoryList/);
@@ -26,4 +30,18 @@ test('Tianyan list preserves distinct draw-period offsets from PR 244', () => {
   assert.match(migration, /distinct on \(run\.draw_period\)/);
   assert.match(migration, /draw_date desc nulls last/);
   assert.match(migration, /offset v_offset/);
+});
+
+test('Tianyan duplicate and result filters use the same request contract as Matrix Explore', () => {
+  assert.match(api, /fetchTianyanList\(request: \{[\s\S]*?sameCode: boolean;[\s\S]*?predictionNumber\?: string;/);
+  assert.match(api, /type TianyanListResponse = \{[\s\S]*?duplicateStats: Array<\{ number: string; count: number \}>;/);
+  assert.match(migration, /v_same boolean/);
+  assert.match(migration, /v_prediction_number text/);
+  assert.match(migration, /'duplicateStats'/);
+  assert.match(migration, /limit 18/);
+});
+
+test('Tianyan same-code result grouping uses the shared Matrix Explore rule', () => {
+  assert.match(refinements, /\.matrix-explore-main-screen \.road-results article\[data-number-group-start=\\"true\\"\]/);
+  assert.doesNotMatch(refinements, /:not\(\.matrix-tianyan-screen\) \.road-results article\[data-number-group-start=/);
 });
