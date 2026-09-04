@@ -22,7 +22,7 @@
   --home-feature-card-aspect: 386 / 496;
   --home-gap-status-core: clamp(10px, 1.35dvh, 13px);
   --home-gap-core-features: clamp(14px, 1.75dvh, 17px);
-  --home-gap-features-nav: clamp(8px, 1.15dvh, 11px);
+  --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
   box-sizing: border-box;
   display: grid;
   width: min(100%, 390px);
@@ -39,9 +39,9 @@
 .home-screen .lottery-screen {
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
-  --home-gap-logo-switcher: 8px;
-  --home-gap-switcher-draw: clamp(6px, 0.9dvh, 8px);
-  --home-gap-draw-status: clamp(8px, 1.15dvh, 11px);
+  --home-gap-logo-switcher: clamp(9px, calc(1.15dvh + 1px), 12px);
+  --home-gap-switcher-draw: clamp(7px, calc(0.9dvh + 1px), 9px);
+  --home-gap-draw-status: clamp(9px, calc(1.15dvh + 1px), 12px);
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -122,7 +122,7 @@
   display: flex;
   box-sizing: border-box;
   width: 100%;
-  padding-top: 8px;
+  padding-top: 6px;
   align-items: flex-end;
   justify-content: center;
   overflow: visible;
@@ -736,3 +736,4 @@
     align-self: start;
   }
 }
+

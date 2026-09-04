@@ -81,12 +81,15 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
-  it("moves the combined support entry below legal information and removes its duplicate entries", () => {
+  it("orders profile groups and exposes one integrated version entry", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     const menuTitles = Array.from(document.querySelectorAll<HTMLElement>(".profile-menu > .section-title"))
       .map((title) => title.textContent?.trim());
-    expect(menuTitles).toEqual(["會員相關", "推廣相關", "系統相關", "法律資訊", "客服與支援"]);
+    expect(menuTitles).toEqual(["會員相關", "推廣相關", "法律資訊", "系統相關", "客服與支援"]);
+    expect(screen.getByRole("button", { name: "版本資訊/更新紀錄" }).closest("section")).toHaveTextContent("系統相關");
+    expect(screen.queryByRole("button", { name: "版本資訊" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "更新紀錄" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "聯絡客服/問題回報/商務合作" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "問題回報" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "商務合作" })).not.toBeInTheDocument();

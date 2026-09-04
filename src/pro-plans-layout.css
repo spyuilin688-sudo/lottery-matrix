@@ -33,6 +33,7 @@
 
 .pro-plans-screen .plan-card-heading {
   min-height: 20px;
+  gap: 12px;
 }
 
 .pro-plans-screen .plan-tool-icons {
@@ -42,30 +43,52 @@
 
 .pro-plans-screen .plan-card > strong {
   margin: 4px 0 6px;
+  font-size: 25px;
 }
 
 .pro-plans-screen .plan-card h2 {
   margin-bottom: 5px;
+  font-size: 13px;
 }
 
 .pro-plans-screen .plan-card ul {
+  padding-left: 17px;
   gap: 3px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .pro-plans-screen .pro-plans-checkout {
+  display: grid;
   margin-inline: var(--pro-plans-checkout-inline);
   row-gap: 0;
 }
 
 .pro-plans-screen .renewal-card {
+  width: 100%;
   margin: 0 0 8px;
   padding: 8px;
   border-color: #755329;
+  border-radius: 13px;
   box-shadow: none;
+}
+
+.pro-plans-screen .renewal-card h2 {
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 
 .pro-plans-screen .renewal-card dl > div {
   min-height: 29px;
+}
+
+.pro-plans-screen .renewal-card dt,
+.pro-plans-screen .renewal-card dd {
+  font-size: 11px;
+}
+
+.pro-plans-screen .renewal-card dd {
+  text-align: right;
 }
 
 .pro-plans-screen .renewal-card :is(h2, dt, dd, .auto-renew-setting label, .auto-renew-setting strong, .auto-renew-note) {
@@ -73,7 +96,13 @@
 }
 
 .pro-plans-screen .auto-renew-setting label {
+  min-height: 32px;
   gap: 4px;
+  font-size: 12px;
+}
+
+.pro-plans-screen .auto-renew-setting {
+  min-height: 36px;
 }
 
 .pro-plans-screen .auto-renew-setting input {
@@ -82,9 +111,21 @@
 }
 
 .pro-plans-screen .confirm-payment.branded-explore-action {
+  --payment-button-font-size: clamp(15px, 4.4vw, 17px);
+  height: 38px;
+  min-height: 38px;
   margin: 0 0 6px;
+  padding-block: 0;
+  font-size: var(--payment-button-font-size);
+  line-height: 1.2;
 }
 
 .pro-plans-screen .payment-note {
   font-size: 11px;
+}
+
+.pro-plans-screen .auto-renew-note {
+  padding-top: 0;
+  font-size: 9px;
+  line-height: 1.4;
 }

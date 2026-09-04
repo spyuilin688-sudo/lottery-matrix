@@ -19,14 +19,23 @@ function mountProfileSettings() {
           <div class="referral-code-row">
             <span class="referral-code-label">推薦碼：</span>
             <strong class="referral-code-value">MATRIX-7H4K9P</strong>
-            <button class="gold-button referral-copy-button">複製推薦碼</button>
+            <button class="referral-copy-button"><span class="gold-button referral-copy-button-visual">複製推薦碼</span></button>
           </div>
+          <p class="action-feedback" role="status" aria-live="polite" aria-atomic="true" data-visible="false"><svg aria-hidden="true"></svg><span></span></p>
         </div>
-        <div class="referral-input-card"><button class="primary-action">確認</button></div>
+        <div class="referral-input-card">
+          <div class="code-entry-block"><input><button class="primary-action">確認</button></div>
+          <p class="activation-result">推薦碼已儲存</p>
+        </div>
         <button class="referral-rule-toggle">推薦成功認定</button>
       </section>
       <section class="panel activation-code-section">
-        <div class="activation-card"><button class="primary-action">確認</button></div>
+        <div class="activation-card">
+          <div class="activation-code-panel">
+            <div class="code-entry-block"><input><button class="primary-action">確認</button></div>
+            <p class="activation-result">啟動成功</p>
+          </div>
+        </div>
         <button class="referral-rule-toggle">啟動碼使用說明</button>
       </section>
     </div></main>
@@ -68,13 +77,56 @@ describe("profile referral and contact layout", () => {
     const row = document.querySelector<HTMLElement>(".referral-code-row")!;
     const code = document.querySelector<HTMLElement>(".referral-code-value")!;
     const copy = document.querySelector<HTMLElement>(".referral-copy-button")!;
+    const copyVisual = document.querySelector<HTMLElement>(".referral-copy-button-visual")!;
 
     expect(getComputedStyle(row).display).toBe("flex");
     expect(getComputedStyle(row).gap).toBe("8px");
-    expect(getComputedStyle(copy).padding).toBe("4px");
+    expect(getComputedStyle(copy).padding).toBe("0px");
     expect(getComputedStyle(copy).width).toBe("max-content");
     expect(getComputedStyle(copy).height).toBe("auto");
-    expect(Number.parseFloat(getComputedStyle(copy).fontSize)).toBeLessThan(Number.parseFloat(getComputedStyle(code).fontSize));
+    expect(getComputedStyle(copy).minHeight).toBe("28px");
+    expect(getComputedStyle(copy).borderStyle).toBe("none");
+    expect(getComputedStyle(copy).transform).toBe("none");
+    expect(getComputedStyle(copyVisual).display).toBe("inline-block");
+    expect(getComputedStyle(copyVisual).padding).toBe("4px");
+    expect(getComputedStyle(copyVisual).minHeight).toBe("28px");
+    expect(getComputedStyle(copyVisual).borderStyle).toBe("solid");
+    expect(getComputedStyle(copyVisual).transform).toBe("scale(.9)");
+    expect(getComputedStyle(copyVisual).transformOrigin).toBe("right center");
+    expect(Number.parseFloat(getComputedStyle(copyVisual).fontSize)).toBeLessThan(Number.parseFloat(getComputedStyle(code).fontSize));
+  });
+
+  it("keeps eight pixels around each code-entry divider and dynamic activation result", () => {
+    mountProfileSettings();
+
+    const blocks = Array.from(document.querySelectorAll<HTMLElement>(".activation-code-screen .code-entry-block"));
+    const referralCard = document.querySelector<HTMLElement>(".referral-input-card")!;
+    const activationPanel = document.querySelector<HTMLElement>(".activation-code-panel")!;
+
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) {
+      expect(getComputedStyle(block).paddingBottom).toBe("8px");
+      expect(getComputedStyle(block).borderBottomWidth).toBe("1px");
+      expect(getComputedStyle(block).borderBottomStyle).toBe("solid");
+    }
+    expect(getComputedStyle(referralCard).gap).toBe("8px");
+    expect(getComputedStyle(activationPanel).rowGap).toBe("8px");
+  });
+
+  it("reserves stable geometry for the initialized copy feedback live region", () => {
+    mountProfileSettings();
+
+    const feedback = document.querySelector<HTMLElement>(".action-feedback")!;
+    expect(feedback.getAttribute("role")).toBe("status");
+    expect(feedback.getAttribute("aria-live")).toBe("polite");
+    expect(feedback.getAttribute("aria-atomic")).toBe("true");
+    expect(getComputedStyle(feedback).display).toBe("flex");
+    expect(getComputedStyle(feedback).minHeight).toBe("18px");
+    expect(getComputedStyle(feedback).opacity).toBe("0");
+
+    feedback.dataset.visible = "true";
+    expect(getComputedStyle(feedback).minHeight).toBe("18px");
+    expect(getComputedStyle(feedback).opacity).toBe("1");
   });
 
   it("uses the requested 16px contact gutter and eight-pixel card rhythm", () => {

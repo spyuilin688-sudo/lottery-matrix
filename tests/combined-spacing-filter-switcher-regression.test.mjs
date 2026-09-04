@@ -21,7 +21,7 @@ test("homepage owns the approved 10px, 14px, and responsive navigation rhythm fr
 
   assert.match(homeLayout, /--home-gap-status-core:\s*clamp\(10px,\s*1\.35dvh,\s*13px\)/);
   assert.match(homeLayout, /--home-gap-core-features:\s*clamp\(14px,\s*1\.75dvh,\s*17px\)/);
-  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*11px\)/);
+  assert.match(homeLayout, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\)/);
   assert.match(homeLayout, /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\)/);
   assert.doesNotMatch(lotteryScreen, /--home-gap-(?:status-core|core-features)/);
   assert.doesNotMatch(bottomGroup, /padding-bottom:\s*8px|--home-gap-core-features\s*:/);
@@ -53,3 +53,4 @@ test("Matrix switcher exposes all three pages in one vertical scroll-snap contro
   assert.match(css, /scroll-snap-type:\s*y mandatory/);
   assert.match(css, /touch-action:\s*pan-y/);
 });
+

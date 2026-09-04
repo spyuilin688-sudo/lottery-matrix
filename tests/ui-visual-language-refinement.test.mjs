@@ -33,7 +33,7 @@ test("homepage status frame owns 16px inset, 1.5px vertical padding and card gap
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding-block"), "1.5px");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), "0");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "1.5px");
-  assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(8px,\s*1\.15dvh,\s*11px\);/);
+  assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(9px,\s*calc\(1\.15dvh \+ 1px\),\s*12px\);/);
   assert.match(homeCss, /--home-gap-status-core:\s*clamp\(10px,\s*1\.35dvh,\s*13px\);/);
 });
 
@@ -115,3 +115,4 @@ test("refined responsive owners avoid forced layout compensation", () => {
     assert.doesNotMatch(body, /!important|margin(?:-[a-z]+)?:\s*-|translate\(/, selector);
   }
 });
+

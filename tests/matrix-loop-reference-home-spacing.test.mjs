@@ -25,13 +25,14 @@ test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () =>
   assert.match(reference, /border-left:\s*1px solid rgba\(161, 112, 40, \.78\)/);
 });
 
-test("首頁使用指定 10px 功能內距與響應式導覽淨空、16px 資訊容器外距及 6px 區段間距", () => {
+test("首頁使用指定 10px 功能內距、響應式導覽淨空、16px 資訊容器外距及切換器至開獎資訊 7–9px 響應式間距", () => {
   assert.match(home, /--home-feature-inline:\s*10px/);
-  assert.match(home, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*11px\)/);
-  assert.match(home, /--home-gap-switcher-draw:\s*clamp\(6px,\s*0\.9dvh,\s*8px\)/);
+  assert.match(home, /--home-gap-features-nav:\s*clamp\(8px,\s*1\.15dvh,\s*12px\)/);
+  assert.match(home, /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh \+ 1px\),\s*9px\)/);
   assert.match(home, /--home-content-width:\s*calc\(min\(100vw, 390px\) - 32px\)/);
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
   assert.match(home, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\)/s);
   assert.match(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%/s);
   assert.doesNotMatch(home, /\.home-screen \.home-shortcut-row\s*\{[^}]*margin-block-start:\s*0/s);
 });
+

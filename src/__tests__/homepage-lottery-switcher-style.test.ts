@@ -9,8 +9,8 @@ describe("homepage layout rules", () => {
     expect(css).not.toMatch(/\.home-screen \.lottery-switcher > \.lottery-switcher-hit-grid > \.lottery-card > img\s*\{/);
   });
 
-  it("uses the canonical 8px logo-to-switcher gap", () => {
-    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*8px;/s);
+  it("uses the canonical responsive logo-to-switcher gap", () => {
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*clamp\(9px,\s*calc\(1\.15dvh \+ 1px\),\s*12px\);/s);
     expect(css).toMatch(/\/\* Canonical homepage flow gaps[\s\S]*?\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-switcher\);/s);
   });
 
@@ -24,3 +24,4 @@ describe("homepage layout rules", () => {
     expect(css).toMatch(/\.next-draw-info--embedded \.next-draw-item\s*\{[^}]*padding-inline:\s*clamp\(6px, 2vw, 10px\);/s);
   });
 });
+

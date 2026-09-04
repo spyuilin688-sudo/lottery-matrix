@@ -53,9 +53,9 @@ test("homepage keeps surplus height above the logo and preserves the requested s
   assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "4px");
   assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(10px,1.35dvh,13px)");
   assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "clamp(14px,1.75dvh,17px)");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").trim(), "8px");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(6px,0.9dvh,8px)");
-  assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(8px,1.15dvh,11px)");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", ""), "clamp(9px,calc(1.15dvh+1px),12px)");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(7px,calc(0.9dvh+1px),9px)");
+  assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(9px,calc(1.15dvh+1px),12px)");
   assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 28px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");
 });
@@ -79,3 +79,4 @@ test("homepage selected lottery cards use the original per-lottery palettes", ()
     assert.equal(computed.filter, "none");
   }
 });
+

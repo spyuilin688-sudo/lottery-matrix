@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 declare const process: { cwd(): string };
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
-const notificationCss = () => `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}\n${readCss("src/notification-visual-refinement.css")}`;
+const notificationCss = () => `${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${readCss("src/feature-page-adjustments.css")}\n${readCss("src/mobile-layout-polish.css")}\n${readCss("src/notification-visual-refinement.css").replace(/^@import[^;]+;\s*/, "")}`;
 
 function mountStyles(css: string) {
   const style = document.createElement("style");
@@ -43,7 +43,7 @@ describe("notification visual refinement", () => {
 
     expect(featureBody.paddingBlockStart).toBe("4px");
     expect(featureBody.paddingBlockEnd).toBe("calc(var(--layout-bottom-nav-clearance) + 8px)");
-    expect(content.rowGap).toBe("16px");
+    expect(content.rowGap).toBe("8px");
     expect(list.gap).toBe("12px");
   });
 
@@ -108,24 +108,44 @@ describe("notification visual refinement", () => {
     expect(systemTitle.gap).toBe("0px");
   });
 
-  it("uses shared notification spacing and token-controlled Matrix badge overlap", () => {
+  it("uses Matrix-only line offsets without moving its badge", () => {
     const css = notificationCss();
     mountStyles(css);
     document.body.innerHTML = `
       <main class="notifications-screen-v2">
-        <article class="notification-row" data-notification-key="bet"><div class="notification-heading"><div class="notification-icon-stack"><div class="notification-icon"></div></div></div></article>
-        <article class="notification-row" data-notification-key="status"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
+        <section class="notification-group" aria-label="一般通知"><article class="notification-row" data-notification-key="bet"><div class="notification-heading"><div class="notification-icon-stack"><div class="notification-icon"></div></div></div></article></section>
+        <section class="notification-group" aria-label="Matrix 通知">
+          <article class="notification-row" data-notification-key="status"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
+          <article class="notification-row" data-notification-key="card"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
+          <article class="notification-row" data-notification-key="collision"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
+          <article class="notification-row" data-notification-key="expiry"><div class="notification-heading"><div class="notification-icon-stack"><em class="notification-pro-badge">Matrix Pro</em><div class="notification-icon"></div></div></div></article>
+        </section>
       </main>`;
     const generalHeading = getComputedStyle(document.querySelector('[data-notification-key="bet"] .notification-heading')!);
     const matrixHeading = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-heading')!);
     const matrixStack = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-icon-stack')!);
     const matrixBadge = getComputedStyle(document.querySelector('[data-notification-key="status"] .notification-pro-badge')!);
+    const matrixRows = Array.from(document.querySelectorAll('[aria-label="Matrix 通知"] .notification-row'));
+    const matrixBadges = Array.from(document.querySelectorAll('[aria-label="Matrix 通知"] .notification-pro-badge'));
     expect(generalHeading.paddingTop).toBe("4px");
     expect(matrixHeading.paddingTop).toBe("4px");
     expect(matrixStack.gap).toBe("0px");
     expect(css).toMatch(/--notification-pro-badge-overlap:\s*3px/);
+    expect(css).toMatch(/--notification-matrix-line-offset:\s*3px/);
     expect(css).toMatch(/\.notification-pro-badge\s*\{[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\)/s);
+    expect(css).toMatch(/\.notification-group\[aria-label="Matrix 通知"\]::before\s*\{[^}]*inset-block-start:\s*var\(--notification-matrix-line-offset\)[^}]*pointer-events:\s*none/s);
+    expect(css).toMatch(/\.notification-group\[aria-label="Matrix 通知"\] \.notification-row \+ \.notification-row::before\s*\{[^}]*inset-block-start:\s*var\(--notification-matrix-line-offset\)[^}]*pointer-events:\s*none/s);
     expect(matrixBadge.zIndex).toBe("1");
+    expect(matrixBadge.translate).toBe("0 var(--notification-pro-badge-overlap)");
+    expect(matrixRows).toHaveLength(4);
+    for (const row of matrixRows.slice(1)) {
+      expect(getComputedStyle(row).borderTopWidth).toBe("1px");
+      expect(getComputedStyle(row).borderTopColor).toBe("rgba(0, 0, 0, 0)");
+    }
+    expect(matrixBadges).toHaveLength(4);
+    for (const badge of matrixBadges) {
+      expect(getComputedStyle(badge).translate).toBe("0 var(--notification-pro-badge-overlap)");
+    }
   });
 
   it("uses lighter title weight and more compact bulk actions", () => {
@@ -146,8 +166,8 @@ describe("notification visual refinement", () => {
     const source = readCss("src/NotificationsPagePatched.tsx");
 
     expect(title.fontWeight).toBe("600");
-    expect(enable.height).toBe("32px");
-    expect(disable.height).toBe("32px");
+    expect(enable.height).toBe("29px");
+    expect(disable.height).toBe("29px");
     expect(css).not.toMatch(/\.notification-bulk-enable\s*\{[^}]*background:\s*var\(--lottery-gold-600\)/s);
     expect(source).toMatch(/className="notification-bulk-enable primary-action branded-explore-action"/);
     expect(source).toMatch(/className="notification-bulk-disable branded-explore-action"/);

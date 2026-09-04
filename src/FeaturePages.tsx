@@ -99,6 +99,7 @@ import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
 import { getSupabaseClient } from "./lib/supabase";
 import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
+import { ActionFeedback } from "./feedback/ActionFeedback";
 import { useDoubleClickAction } from "./useDoubleClickAction";
 import { usePwaLifecycle } from "./pwa-lifecycle";
 import { downloadMatrixCardPng } from "./matrix-ticket-download";
@@ -4172,8 +4173,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const menuGroups: Array<{ title: string; items: Array<[string, ScreenId]> }> = [
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
     { title: "推廣相關", items: [["我的推薦碼/啟動碼", "activation-code"], ["優惠活動", "promotions"]] },
-    { title: "系統相關", items: [["版本資訊", "version-info"], ["更新紀錄", "update-history"]] },
     { title: "法律資訊", items: [["關於 樂彩 Matrix", "about-matrix"], ["服務內容與使用說明", "service-info"], ["會員服務條例", "member-terms"], ["隱私權政策", "privacy-policy"], ["退款規範", "refund-policy"], ["聲明與免責事項", "disclaimer"]] },
+    { title: "系統相關", items: [["版本資訊/更新紀錄", "version-info"]] },
     { title: "客服與支援", items: [["聯絡客服/問題回報/商務合作", "merchant-info"]] },
   ];
 
@@ -4534,6 +4535,7 @@ function referralErrorCode(error: unknown): ReferralSubmissionErrorCode {
 }
 
 function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
+  const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
   const [openRules, setOpenRules] = useState({ recognition: false, reward: false, supplement: false });
@@ -4545,8 +4547,12 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [referralLoading, setReferralLoading] = useState(true);
   const [referralSubmitting, setReferralSubmitting] = useState(false);
   const [referralResultState, setReferralResultState] = useState<"idle" | "success" | ReferralSubmissionErrorCode>("idle");
+  const [copyFeedbackVisible, setCopyFeedbackVisible] = useState(false);
   const activationRequestRevision = useRef(0);
   const referralRequestRevision = useRef(0);
+  const copyRequestRevision = useRef(0);
+  const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mounted = useRef(true);
   const referralSuccessCount = referralSummary?.referralSuccessCount ?? 0;
   const myReferralCode = referralSummary?.referralCode ?? "—";
 
@@ -4554,12 +4560,44 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
     setOpenRules((current) => ({ ...current, [rule]: !current[rule] }));
   }
 
-  function copyReferralCode() {
-    if (myReferralCode !== "—") void navigator.clipboard.writeText(myReferralCode);
+  async function copyReferralCode() {
+    if (myReferralCode === "—") return;
+
+    const requestRevision = copyRequestRevision.current + 1;
+    copyRequestRevision.current = requestRevision;
+
+    try {
+      await navigator.clipboard.writeText(myReferralCode);
+      if (!mounted.current || copyRequestRevision.current !== requestRevision) return;
+      if (copyFeedbackTimer.current !== null) clearTimeout(copyFeedbackTimer.current);
+      setCopyFeedbackVisible(true);
+      copyFeedbackTimer.current = setTimeout(() => {
+        setCopyFeedbackVisible(false);
+        copyFeedbackTimer.current = null;
+      }, 1500);
+    } catch {
+      if (!mounted.current || copyRequestRevision.current !== requestRevision) return;
+      if (copyFeedbackTimer.current !== null) {
+        clearTimeout(copyFeedbackTimer.current);
+        copyFeedbackTimer.current = null;
+      }
+      setCopyFeedbackVisible(false);
+      await alertDialog({
+        title: "複製失敗",
+        description: "請稍後再試。",
+        tone: "danger",
+      });
+    }
   }
 
-  useEffect(() => () => {
-    activationRequestRevision.current += 1;
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      activationRequestRevision.current += 1;
+      copyRequestRevision.current += 1;
+      if (copyFeedbackTimer.current !== null) clearTimeout(copyFeedbackTimer.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -4602,6 +4640,14 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
     }
   }
 
+  async function confirmReferralSubmit() {
+    if (referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()) return;
+    const confirmationRevision = referralRequestRevision.current;
+    const confirmed = await confirmDialog({ title: "確認輸入推薦碼？" });
+    if (!mounted.current || referralRequestRevision.current !== confirmationRevision || !confirmed) return;
+    await handleReferralSubmit();
+  }
+
   async function handleActivation() {
     if (submitting) return;
 
@@ -4624,6 +4670,14 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
     }
   }
 
+  async function confirmActivation() {
+    if (submitting) return;
+    const confirmationRevision = activationRequestRevision.current;
+    const confirmed = await confirmDialog({ title: "確認使用啟動碼？" });
+    if (!mounted.current || activationRequestRevision.current !== confirmationRevision || !confirmed) return;
+    await handleActivation();
+  }
+
   return (
     <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" hidePageTitle headerArtwork="/assets/lottery/functions/推薦啟動標題K.png">
       <section className="panel referral-code-section" aria-label="推薦碼">
@@ -4635,8 +4689,9 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           <div className="referral-code-row">
             <span className="referral-code-label">推薦碼：</span>
             <strong className="referral-code-value">{myReferralCode}</strong>
-            <button type="button" className="gold-button referral-copy-button" onClick={copyReferralCode} disabled={myReferralCode === "—"}>複製推薦碼</button>
+            <button type="button" className="referral-copy-button" onClick={() => void copyReferralCode()} disabled={myReferralCode === "—"}><span className="gold-button referral-copy-button-visual">複製推薦碼</span></button>
           </div>
+          <ActionFeedback message="複製成功" visible={copyFeedbackVisible} />
         </div>
         <div className="referral-input-card">
           <h2>輸入推薦碼</h2>
@@ -4645,7 +4700,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
               setReferralCode(event.target.value);
               setReferralResultState("idle");
             }} aria-label="推薦碼" disabled={referralLoading || !referralSummary?.canSubmitReferralCode} />
-            <button type="button" className="primary-action branded-explore-action" onClick={() => void handleReferralSubmit()} disabled={referralLoading || referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()}><span>確認</span></button>
+            <button type="button" className="primary-action branded-explore-action" onClick={() => void confirmReferralSubmit()} disabled={referralLoading || referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()}><span>確認</span></button>
           </div>
           {referralResultState === "success" && <p className="activation-result success" role="status">推薦碼已儲存</p>}
           {referralResultState !== "idle" && referralResultState !== "success" && <p className="activation-result error" role="alert">{referralErrorText[referralResultState]}</p>}
@@ -4673,7 +4728,7 @@ function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
                 setActivationCode(event.target.value);
                 setResultState("idle");
               }} aria-label="啟動碼" />
-              <button type="button" className="primary-action branded-explore-action" onClick={handleActivation} disabled={submitting}><span>確認</span></button>
+              <button type="button" className="primary-action branded-explore-action" onClick={() => void confirmActivation()} disabled={submitting}><span>確認</span></button>
             </div>
             {resultState === "success" && <p className="activation-result success" role="status">啟動成功</p>}
             {resultState !== "idle" && resultState !== "success" && (
@@ -4740,11 +4795,7 @@ function ContactSupportPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 function VersionInfoPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="版本資訊" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="目前版本"><p>0.1.0</p></DetailCard></ProfileDetailShell>;
-}
-
-function UpdateHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="更新紀錄" onNavigate={onNavigate} className="profile-info-screen" />;
+  return <ProfileDetailShell title="版本資訊/更新紀錄" onNavigate={onNavigate} className="profile-info-screen"><DetailCard title="目前版本"><p>0.1.0</p></DetailCard></ProfileDetailShell>;
 }
 
 function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
@@ -5285,8 +5336,7 @@ export function FeaturePageRouter({
   if (screen === "merchant-info" || screen === "problem-report" || screen === "business-cooperation") return <ContactSupportPage onNavigate={onNavigate} />;
   if (screen === "invite-friends") return <InviteFriendsPage onNavigate={onNavigate} />;
   if (screen === "promotions") return <PromotionsPage onNavigate={onNavigate} />;
-  if (screen === "version-info") return <VersionInfoPage onNavigate={onNavigate} />;
-  if (screen === "update-history") return <UpdateHistoryPage onNavigate={onNavigate} />;
+  if (screen === "version-info" || screen === "update-history") return <VersionInfoPage onNavigate={onNavigate} />;
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;

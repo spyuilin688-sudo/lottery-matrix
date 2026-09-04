@@ -5,6 +5,7 @@ import test from "node:test";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
+const mobileCss = readFileSync(new URL("../src/mobile-layout-polish.css", import.meta.url), "utf8");
 
 test("全部關閉維持共用探索按鈕的次要邊框層級", () => {
   const base = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-disable$/);
@@ -52,22 +53,27 @@ test("Matrix Pro 標籤以既有比例縮減 30%", () => {
 test("通知批次按鈕列使用 18px 外距且不靠負 margin 或超寬補償", () => {
   const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
   const featureBody = ruleBodies(css, /^\.notifications-screen-v2 \.feature-body$/);
+  const content = ruleBodies(css, /^\.notifications-screen-v2 \.notification-content$/);
   const bulk = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-actions$/);
   const list = ruleBodies(css, /^\.notifications-screen-v2 \.notification-list$/);
 
   assert.equal(screen.length, 1);
   assert.equal(featureBody.length, 1);
+  assert.equal(content.length, 1);
   assert.equal(bulk.length, 1);
   assert.equal(list.length, 1);
 
   assert.match(screen[0], /--notification-bulk-inline:\s*18px;/);
   assert.match(screen[0], /--notification-list-inline:\s*20px;/);
   assert.match(featureBody[0], /padding-inline:\s*var\(--notification-bulk-inline\);/);
+  assert.match(content[0], /row-gap:\s*8px;/);
   assert.match(bulk[0], /width:\s*100%;/);
   assert.match(bulk[0], /margin-inline:\s*0;/);
   assert.doesNotMatch(bulk[0], /width:\s*calc\([^)]*\+[^)]*\)/);
   assert.doesNotMatch(bulk[0], /margin-inline:\s*-/);
   assert.match(list[0], /margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/);
+  assert.equal(ruleBodies(mobileCss, /^\.notifications-screen-v2 \.notification-content$/).length, 0);
+  assert.match(ruleBodies(mobileCss, /^\.notifications-screen-v2 \.notification-bulk-actions button$/)[0], /height:\s*29px;/);
 });
 
 test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
@@ -83,4 +89,30 @@ test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
   assert.match(badge[0], /translate:\s*0 var\(--notification-pro-badge-overlap\);/);
   assert.doesNotMatch(badge[0], /transform\s*:/);
   assert.doesNotMatch(badge[0], /(?:top|bottom|inset-block|margin-block-end)\s*:/);
+});
+
+test("Matrix 群組單獨將外框與列分隔線下移 3px", () => {
+  const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
+  const matrixGroup = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group\[aria-label="Matrix 通知"\]$/);
+  const matrixOuterLine = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group\[aria-label="Matrix 通知"\]::before$/);
+  const matrixLaterRows = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group\[aria-label="Matrix 通知"\] \.notification-row \+ \.notification-row$/);
+  const matrixSeparator = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group\[aria-label="Matrix 通知"\] \.notification-row \+ \.notification-row::before$/);
+
+  assert.match(screen[0], /--notification-matrix-line-offset:\s*3px;/);
+  assert.match(matrixGroup[0], /position:\s*relative;/);
+  assert.match(matrixGroup[0], /border-block-start-color:\s*transparent;/);
+  assert.match(matrixOuterLine[0], /position:\s*absolute;/);
+  assert.match(matrixOuterLine[0], /inset-block-start:\s*var\(--notification-matrix-line-offset\);/);
+  assert.match(matrixOuterLine[0], /border-block-start:\s*1px solid rgba\(170, 119, 46, \.82\);/);
+  assert.match(matrixOuterLine[0], /pointer-events:\s*none;/);
+  assert.match(matrixLaterRows[0], /position:\s*relative;/);
+  assert.match(matrixLaterRows[0], /border-top-color:\s*transparent;/);
+  assert.doesNotMatch(matrixLaterRows[0], /border-top:\s*0(?:\s|;)/);
+  assert.doesNotMatch(matrixLaterRows[0], /border-(?:top|block-start)-width:\s*0(?:\s|;)/);
+  assert.match(matrixSeparator[0], /position:\s*absolute;/);
+  assert.match(matrixSeparator[0], /inset-block-start:\s*var\(--notification-matrix-line-offset\);/);
+  assert.match(matrixSeparator[0], /border-block-start:\s*1px solid rgba\(170, 119, 46, \.24\);/);
+  assert.match(matrixSeparator[0], /pointer-events:\s*none;/);
+  assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-group\[aria-label="一般通知"\]::before$/).length, 0);
+  assert.equal(ruleBodies(css, /^\.notifications-screen-v2 \.notification-system-group::before$/).length, 0);
 });

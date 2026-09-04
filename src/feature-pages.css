@@ -1047,35 +1047,34 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .activation-result.error { border: 1px solid rgba(177, 81, 81, .55); background: rgba(103, 37, 37, .22); color: #efb3b3; }
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid #76521d; border-radius: 9px; background: rgba(183, 133, 32, .08); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
-.plan-carousel { display: flex; margin: 0 -14px; padding: 0 14px 4px; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
-.plan-card { position: relative; flex: 0 0 calc(100% - 24px); min-height: 300px; padding: 18px; scroll-snap-align: center; border: 1px solid #76521d; border-radius: 13px; background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
-.plan-card[data-current="true"] { border-color: #d6a42b; box-shadow: inset 0 0 24px rgba(202, 144, 30, .11), 0 0 14px rgba(194, 137, 31, .12); }
-.plan-card-heading { display: flex; min-height: 34px; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.plan-name { display: block; padding-top: 2px; color: #ece7df; font-size: 18px; font-weight: 650; white-space: nowrap; }
-.plan-tool-icons { position: absolute; top: 18px; right: 18px; display: flex; justify-content: flex-end; gap: 7px; }
-.plan-tool-icons--stacked { flex-direction: column; }
-.plan-tool-icon { display: block; width: 56px; height: 56px; overflow: hidden; border: 0; border-radius: 11px; box-shadow: none; }
-.plan-tool-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.plan-card--with-tools .plan-card-heading,
-.plan-card--with-tools > strong,
-.plan-card--with-tools > h2,
-.plan-card--with-tools > ul { width: calc(100% - 72px); }
-.plan-card > strong { display: block; margin: 10px 0 20px; color: #f1c352; font-size: 29px; }
-.plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
-.plan-card h2 { margin: 0 0 12px; color: #ece7df; font-size: 15px; }
-.plan-card ul { display: grid; margin: 0; padding-left: 20px; gap: 9px; color: #c8c1b7; font-size: 13px; line-height: 1.45; }
-.renewal-card { padding: 14px; }
-.renewal-card h2 { margin: 0 0 8px; color: #e5c36e; font-size: 17px; }
-.renewal-card dl { margin: 0; }
-.renewal-card dl > div { display: grid; min-height: 42px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
-.renewal-card dt { color: #bcb4a8; font-size: 13px; }
-.renewal-card dd { margin: 0; color: #e5c36e; font-size: 13px; }
-.auto-renew-setting { display: grid; min-height: 52px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
-.auto-renew-setting label { display: flex; min-height: 44px; align-items: center; gap: 9px; color: #ddd5c9; font-size: 14px; cursor: pointer; }
-.auto-renew-setting input { width: 18px; height: 18px; margin: 0; accent-color: #d6a42b; }
-.auto-renew-setting strong { color: #9f988e; font-size: 12px; font-weight: 600; }
-.auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
-.auto-renew-note { margin: 0; padding-top: 2px; color: #9f988e; font-size: 11px; line-height: 1.55; }
+.pro-plans-screen .plan-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.pro-plans-screen .plan-card { position: relative; scroll-snap-align: center; border: 1px solid #76521d; border-radius: 13px; background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
+.pro-plans-screen .plan-card[data-current="true"] { border-color: #d6a42b; box-shadow: inset 0 0 24px rgba(202, 144, 30, .11), 0 0 14px rgba(194, 137, 31, .12); }
+.pro-plans-screen .plan-card-heading { display: flex; align-items: flex-start; justify-content: space-between; }
+.pro-plans-screen .plan-name { display: block; padding-top: 2px; color: #ece7df; font-size: 18px; font-weight: 650; white-space: nowrap; }
+.pro-plans-screen .plan-tool-icons { position: absolute; display: flex; justify-content: flex-end; gap: 7px; }
+.pro-plans-screen .plan-tool-icons--stacked { flex-direction: column; }
+.pro-plans-screen .plan-tool-icon { display: block; width: 56px; height: 56px; overflow: hidden; border: 0; border-radius: 11px; box-shadow: none; }
+.pro-plans-screen .plan-tool-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pro-plans-screen .plan-card--with-tools .plan-card-heading,
+.pro-plans-screen .plan-card--with-tools > strong,
+.pro-plans-screen .plan-card--with-tools > h2,
+.pro-plans-screen .plan-card--with-tools > ul { width: calc(100% - 72px); }
+.pro-plans-screen .plan-card > strong { display: block; color: #f1c352; }
+.pro-plans-screen .plan-card > strong small { color: #aaa49a; font-size: 13px; font-weight: 500; }
+.pro-plans-screen .plan-card h2 { margin-top: 0; color: #ece7df; }
+.pro-plans-screen .plan-card ul { display: grid; margin: 0; color: #c8c1b7; }
+.pro-plans-screen .renewal-card h2 { margin-top: 0; color: #e5c36e; }
+.pro-plans-screen .renewal-card dl { margin: 0; }
+.pro-plans-screen .renewal-card dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
+.pro-plans-screen .renewal-card dt { color: #bcb4a8; }
+.pro-plans-screen .renewal-card dd { margin: 0; color: #e5c36e; }
+.pro-plans-screen .auto-renew-setting { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border-top: 1px solid #30271c; }
+.pro-plans-screen .auto-renew-setting label { display: flex; align-items: center; color: #ddd5c9; cursor: pointer; }
+.pro-plans-screen .auto-renew-setting input { margin: 0; accent-color: #d6a42b; }
+.pro-plans-screen .auto-renew-setting strong { color: #9f988e; font-size: 12px; font-weight: 600; }
+.pro-plans-screen .auto-renew-setting strong[data-active="true"] { color: #e5c36e; }
+.pro-plans-screen .auto-renew-note { margin: 0; color: #9f988e; }
 .confirm-payment:not(.branded-explore-action) { width: 100%; min-height: 48px; border: 1px solid #d1a030; border-radius: 10px; background: linear-gradient(180deg, #d9a529, #a96d08); color: #130d03; font-size: 16px; font-weight: 750; }
 .payment-note { margin: 0; color: #9f988e; font-size: 11px; text-align: center; }
 .about-matrix-card { padding: 18px 16px; }
@@ -2112,67 +2111,6 @@ opacity: .30; box-shadow: none;
   justify-self: end;
   color: #b98a31;
 }
-.pro-plans-checkout {
-  display: grid;
-}
-.pro-plans-screen .plan-card-heading {
-  min-height: 22px;
-}
-.pro-plans-screen .plan-tool-icons {
-  top: 12px;
-  right: 12px;
-}
-.pro-plans-screen .plan-card > strong {
-  margin: 5px 0 9px;
-  font-size: 25px;
-}
-.pro-plans-screen .plan-card h2 {
-  margin-bottom: 7px;
-  font-size: 13px;
-}
-.pro-plans-screen .plan-card ul {
-  padding-left: 17px;
-  gap: 4px;
-  font-size: 11px;
-  line-height: 1.35;
-}
-.pro-plans-screen .renewal-card {
-  width: 100%;
-  margin-inline: auto;
-  border-radius: 13px;
-}
-.pro-plans-screen .renewal-card h2 {
-  margin-bottom: 4px;
-  font-size: 14px;
-}
-.pro-plans-screen .renewal-card dl > div {
-  min-height: 29px;
-}
-.pro-plans-screen .renewal-card dt,
-.pro-plans-screen .renewal-card dd { font-size: 11px; }
-.pro-plans-screen .renewal-card dd {
-  text-align: right;
-}
-.pro-plans-screen .auto-renew-setting {
-  min-height: 36px;
-}
-.pro-plans-screen .auto-renew-setting label {
-  min-height: 32px;
-  font-size: 12px;
-}
-.pro-plans-screen .auto-renew-note {
-  padding-top: 0;
-  font-size: 9px;
-  line-height: 1.4;
-}
-.pro-plans-screen .confirm-payment.branded-explore-action {
-  --payment-button-font-size: clamp(15px, 4.4vw, 17px);
-  height: 38px;
-  min-height: 38px;
-  padding-block: 0;
-  font-size: var(--payment-button-font-size);
-  line-height: 1.2;
-}
 .matrix-explore-setting-icon { display: block; object-fit: contain; border-radius: 6px; }
 .record-play-setting { display: grid; gap: 10px; }.record-play-setting h3 { margin: 0; }.record-play-metrics { display: grid; gap: 8px; }.record-play-metrics > label { display: grid; grid-template-columns: auto minmax(96px, 1fr); gap: 10px; align-items: center; }.record-play-metrics input { min-width: 0; text-align: right; }.record-formula { margin: 0; padding: 9px 10px; border: 1px solid rgba(218, 170, 58, .28); border-radius: 9px; background: rgba(7, 13, 24, .76); line-height: 1.65; color: #cbd6e5; }.record-formula strong,.record-quantity strong,.notebook-stats strong,.record-card-details footer strong { color: #f6c95f; font-variant-numeric: tabular-nums; }.record-quantity { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }.record-quantity > span { min-width: 0; }.record-card-details footer { gap: 8px; }
 .feature-screen,
@@ -2337,18 +2275,6 @@ opacity: .30; box-shadow: none;
   height: 40px;
   min-height: 40px;
 }
-.pro-plans-screen .confirm-payment:not(.branded-explore-action) {
-  box-sizing: border-box;
-  height: 34px;
-  min-height: 34px;
-  border: 1px solid rgba(201, 154, 46, .72);
-  border-radius: 8px;
-  background: radial-gradient(circle at 50% 135%, rgba(234, 171, 35, .18), transparent 55%), #060d12;
-  color: #e6c56a;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .activation-card-toggle {
   display: flex;
   width: 100%;

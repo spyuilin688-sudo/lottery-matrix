@@ -9,9 +9,10 @@ declare const process: { cwd(): string };
 const ownerPath = `${process.cwd()}/src/pro-plans-layout.css`;
 const ownerExists = existsSync(ownerPath);
 const ownerCss = ownerExists ? readFileSync(ownerPath, "utf8") : "";
+const legacyCss = readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8");
 const mobileCss = readFileSync(`${process.cwd()}/src/mobile-layout-polish.css`, "utf8");
 const css = [
-  readFileSync(`${process.cwd()}/src/feature-pages.css`, "utf8"),
+  legacyCss,
   ownerCss,
   readFileSync(`${process.cwd()}/src/pro-plans-carousel-peek.css`, "utf8"),
 ].join("\n");
@@ -24,7 +25,12 @@ function mountPlans() {
     <main class="pro-plans-screen">
       <div class="feature-body">
         <div class="plan-carousel">
-          <article class="plan-card" data-current="false"></article>
+          <article class="plan-card" data-current="false">
+            <div class="plan-card-heading"></div>
+            <strong>NT$2,880</strong>
+            <h2>方案內容</h2>
+            <ul><li>Matrix Pro</li></ul>
+          </article>
           <article class="plan-card" data-current="true"></article>
         </div>
         <div class="pro-plans-checkout">
@@ -59,6 +65,11 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(ownerCss).not.toMatch(/\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin-inline\s*:/s);
     expect(ownerCss).not.toMatch(/margin-inline:\s*-[\d.]+px/);
     expect(ownerCss).not.toMatch(/width:\s*calc\(100%\s*\+/);
+    expect(ownerCss.match(/--pro-plans-plan-inline\s*:/g)).toHaveLength(1);
+    expect(legacyCss).not.toMatch(/--pro-plans-plan-inline\s*:/);
+    expect(legacyCss).not.toMatch(/(?:^|\n)\s*(?:\.pro-plans-screen\s+)?\.plan-carousel\s*\{[^}]*(?:margin|padding|gap)\s*:/s);
+    expect(legacyCss).not.toMatch(/(?:^|\n)\s*(?:\.pro-plans-screen\s+)?\.plan-card\s*\{[^}]*(?:flex|min-height|padding)\s*:/s);
+    expect(legacyCss).not.toMatch(/\.pro-plans-screen \.confirm-payment:not\(\.branded-explore-action\)/);
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
   });
 
@@ -74,6 +85,10 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(idlePlan.padding).toBe("12px");
     expect(idlePlan.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(currentPlan.borderTopColor).toBe("rgb(214, 164, 43)");
+    expect.soft(getComputedStyle(document.querySelector(".plan-card-heading")!).minHeight).toBe("20px");
+    expect.soft(getComputedStyle(document.querySelector(".plan-card > strong")!).margin).toBe("4px 0px 6px");
+    expect.soft(getComputedStyle(document.querySelector(".plan-card h2")!).marginBottom).toBe("5px");
+    expect.soft(getComputedStyle(document.querySelector(".plan-card ul")!).gap).toBe("3px");
     expect(renewal.padding).toBe("8px");
     expect(renewal.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(getComputedStyle(document.querySelector(".renewal-card dl > div")!).minHeight).toBe("29px");

@@ -40,16 +40,60 @@
   width: max-content;
   height: auto;
   min-height: 28px;
-  padding: 4px;
+  padding: 0;
   flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.activation-code-screen .referral-copy-button-visual {
+  box-sizing: border-box;
+  width: max-content;
+  height: auto;
+  min-height: 28px;
+  padding: 4px;
   font-size: 12px;
   line-height: 1.2;
   letter-spacing: .25px;
+  display: inline-block;
+  transform: scale(.9);
+  transform-origin: right center;
+}
+
+.activation-code-screen .action-feedback {
+  display: flex;
+  min-height: 18px;
+  margin: 0;
+  align-items: center;
+  gap: 4px;
+  color: #9bddab;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+}
+
+.activation-code-screen .action-feedback[data-visible="true"] {
+  opacity: 1;
+}
+
+.activation-code-screen .action-feedback svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 
 .activation-code-screen .referral-input-card .code-entry-block,
 .activation-code-screen .activation-card .code-entry-block {
   gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(118, 82, 29, .58);
+}
+
+.activation-code-screen .activation-code-panel {
+  row-gap: 8px;
 }
 
 .activation-code-screen .referral-input-card input,

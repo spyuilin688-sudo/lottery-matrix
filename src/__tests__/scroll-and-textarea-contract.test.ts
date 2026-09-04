@@ -237,10 +237,10 @@ describe("textarea and scrollbar ownership", () => {
     expect(mobileScroll).not.toMatch(/\bscrollbar-width:\s*none;/);
     expect(ruleBodies(stylesCss, /^\.mobile-scroll::-webkit-scrollbar$/)).toHaveLength(0);
 
-    const planCarousel = exactRule(featureCss, /^\.plan-carousel$/);
+    const planCarousel = exactRule(featureCss, /^\.pro-plans-screen \.plan-carousel$/);
     expect(planCarousel).toMatch(/\boverflow-x:\s*auto;/);
     expect(planCarousel).toMatch(/\bscroll-snap-type:\s*x mandatory;/);
     expect(planCarousel).not.toMatch(/\bscrollbar-width:\s*none;/);
-    expect(ruleBodies(featureCss, /^\.plan-carousel::-webkit-scrollbar$/)).toHaveLength(0);
+    expect(ruleBodies(featureCss, /^\.pro-plans-screen \.plan-carousel::-webkit-scrollbar$/)).toHaveLength(0);
   });
 });

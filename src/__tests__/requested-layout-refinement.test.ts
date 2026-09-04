@@ -8,6 +8,15 @@ declare const process: { cwd(): string };
 
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
 
+function proPlansCss() {
+  return [
+    "src/feature-pages.css",
+    "src/pro-plans-layout.css",
+    "src/pro-plans-carousel-peek.css",
+    "src/mobile-layout-polish.css",
+  ].map(readCss).join("\n");
+}
+
 function mountStyles(css: string) {
   const style = document.createElement("style");
   style.textContent = css;
@@ -128,7 +137,8 @@ describe("requested responsive layout refinement", () => {
   it("uses the canonical feature-page gutter and Pro plan card geometry", () => {
     const featureCss = readCss("src/feature-pages.css");
     const mobileCss = readCss("src/mobile-layout-polish.css");
-    const style = mountStyles(`${featureCss}\n${readCss("src/pro-plans-carousel-peek.css")}\n${mobileCss}`);
+    const ownerCss = readCss("src/pro-plans-layout.css");
+    const style = mountStyles(proPlansCss());
     style.dataset.layoutContract = "profile-details";
     document.body.innerHTML = `
       <main class="activation-code-screen"><div class="feature-body"><section class="panel referral-summary-card"></section></div></main>
@@ -138,15 +148,16 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("0px");
     expect(featureCss).toMatch(/\.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
-    expect(featureCss).toMatch(/\.plan-carousel\s*\{[^}]*margin:\s*0 -14px;[^}]*padding:\s*0 14px 4px;/s);
-    expect(featureCss).toMatch(/\.plan-card\s*\{[^}]*flex:\s*0 0 calc\(100% - 24px\)/s);
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("300px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("18px");
+    expect(ownerCss).toMatch(/--pro-plans-plan-inline:\s*18px;/);
+    expect(ownerCss).toMatch(/flex:\s*0 0 calc\(100% - \(var\(--pro-plans-plan-inline\) \* 2\)\);/);
+    expect(featureCss).not.toMatch(/\.plan-carousel\s*\{[^}]*margin:\s*0 -14px;/s);
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("190px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
   });
 
   it("uses the branded explore action on the membership-plan payment button", () => {
-    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
+    const style = mountStyles(proPlansCss());
     style.dataset.layoutContract = "profile-actions";
     document.body.innerHTML = `
       <main class="activation-code-screen"><section class="activation-card"><button class="primary-action branded-explore-action"><span>確認</span></button></section></main>
@@ -166,9 +177,8 @@ describe("requested responsive layout refinement", () => {
   });
 
   it("keeps the membership checkout in the canonical responsive flow", () => {
-    const featureCss = readCss("src/feature-pages.css");
     const mobileCss = readCss("src/mobile-layout-polish.css");
-    const style = mountStyles(featureCss);
+    const style = mountStyles(proPlansCss());
     style.dataset.layoutContract = "membership-checkout-spacing";
     document.body.innerHTML = `
       <main class="pro-plans-screen"><div class="feature-body">
@@ -194,7 +204,7 @@ describe("requested responsive layout refinement", () => {
   });
 
   it("separates membership plan hierarchy and removes tool icon frames", () => {
-    const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}\n${readCss("src/mobile-layout-polish.css")}`);
+    const style = mountStyles(proPlansCss());
     style.dataset.layoutContract = "pro-plan-visual-hierarchy";
     document.body.innerHTML = `
       <main class="pro-plans-screen">
@@ -217,9 +227,10 @@ describe("requested responsive layout refinement", () => {
     expect(toolIcon.borderTopWidth).toBe("0px");
     expect(toolIcon.boxShadow).toBe("none");
     expect(planCard.borderTopColor).toBe("rgb(214, 164, 43)");
-    expect(renewalCard.borderTopColor).toBe("rgb(108, 74, 32)");
+    expect(renewalCard.borderTopColor).toBe("rgb(117, 83, 41)");
     expect(renewalCard.borderRadius).toBe(planCard.borderRadius);
-    expect(renewalCard.boxShadow).not.toBe("none");
+    expect(renewalCard.borderRadius).toBe("13px");
+    expect(renewalCard.boxShadow).toBe("none");
   });
 
   it("compacts payment history without changing its two-column information order", () => {
@@ -258,7 +269,7 @@ describe("requested responsive layout refinement", () => {
     expect(status.fontSize).toBe("13px");
   });
 
-  it("keeps notification bulk actions equal-width, fluid, and touch-sized", () => {
+  it("keeps canonical notification bulk actions equal-width and fluid with approved spacing", () => {
     const adjustmentCss = readCss("src/feature-page-adjustments.css");
     const style = mountStyles(`${readCss("src/design-tokens.css")}\n${readCss("src/feature-pages.css")}\n${adjustmentCss}`);
     style.dataset.layoutContract = "notification-bulk-actions";
@@ -279,7 +290,7 @@ describe("requested responsive layout refinement", () => {
     const actions = getComputedStyle(document.querySelector(".notification-bulk-actions")!);
     const enable = getComputedStyle(document.querySelector(".notification-bulk-enable")!);
     const disable = getComputedStyle(document.querySelector(".notification-bulk-disable")!);
-    expect(content.rowGap).toBe("16px");
+    expect(content.rowGap).toBe("8px");
     expect(actions.display).toBe("grid");
     expect(actions.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
     expect(actions.columnGap).toBe("8px");
