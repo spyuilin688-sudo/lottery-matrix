@@ -43,9 +43,10 @@ test("referral and activation layout keeps the approved responsive measurements"
   assert.match(css, /\.activation-code-screen \.feature-body\s*\{[^}]*padding-inline:\s*16px;[^}]*gap:\s*12px;/s);
   assert.match(css, /\.referral-code-section,\s*\.activation-code-section\s*\{[^}]*padding:\s*16px;[^}]*gap:\s*12px;/s);
   assert.doesNotMatch(page, />邀請好友</);
-  assert.match(page, /className="referral-code-row"[\s\S]*className="gold-button referral-copy-button"/);
+  assert.match(page, /className="referral-code-row"[\s\S]*className="referral-copy-button"[\s\S]*className="gold-button referral-copy-button-visual"/);
   assert.match(compactCss, /\.activation-code-screen \.referral-code-row\s*\{[^}]*gap:\s*8px;/s);
-  assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*padding:\s*4px;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*min-height:\s*28px;[^}]*padding:\s*0;[^}]*border:\s*0;/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-copy-button-visual\s*\{[^}]*width:\s*max-content;[^}]*height:\s*auto;[^}]*min-height:\s*28px;[^}]*padding:\s*4px;[^}]*transform:\s*scale\(\.9\);[^}]*transform-origin:\s*right center;/s);
   assert.match(css, /\.referral-input-card \.code-entry-block,\s*\.activation-card \.code-entry-block\s*\{[^}]*gap:\s*10px;/s);
   assert.match(css, /\.referral-input-card input,\s*\.activation-card input\s*\{[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
   assert.match(css, /\.activation-code-screen \.referral-input-card \.primary-action,\s*\.activation-code-screen \.activation-card \.primary-action\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px;/s);
