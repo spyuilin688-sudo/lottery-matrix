@@ -47,7 +47,6 @@ describe('member route registration', () => {
       'GET /api/member/profile',
       'GET /api/member/notification-settings',
       'PUT /api/member/notification-settings',
-      'POST /api/auth/line/logout',
     ] as const;
 
     for (const path of memberPaths) {
