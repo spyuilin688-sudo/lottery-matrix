@@ -42,6 +42,7 @@ test('feature pages use the shared 16px source while notification keeps 18px bul
 
 
 test('portaled history settings retain the feature-page typeface outside the history screen subtree', () => {
+  const responsive = read('src/responsive-feature-pages.css');
   const sharedPanel = responsive.match(/\.history-filter-panel,\s*\.reference-query-panel,\s*\.tongxing-query\s*\{([\s\S]*?)\}/);
   assert.ok(sharedPanel, 'tool settings panels must have a shared base rule');
   assert.match(sharedPanel[1], /font-family:\s*Inter,\s*"Noto Sans TC",\s*"PingFang TC",\s*"Microsoft JhengHei",\s*sans-serif;/);
