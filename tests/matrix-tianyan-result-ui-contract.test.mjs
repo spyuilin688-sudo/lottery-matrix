@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const source = readFileSync('src/FeaturePages.tsx', 'utf8');
 const api = readFileSync('src/matrix-algorithm-api.ts', 'utf8');
-const refinements = readFileSync('src/matrix-explore-result-refinements.css', 'utf8');
+const spacing = readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const migration = readdirSync('supabase/migrations')
   .filter((name) => name.includes('matrix_tianyan'))
   .map((name) => readFileSync(`supabase/migrations/${name}`, 'utf8'))
@@ -42,6 +42,6 @@ test('Tianyan duplicate and result filters use the same request contract as Matr
 });
 
 test('Tianyan same-code result grouping uses the shared Matrix Explore rule', () => {
-  assert.match(refinements, /\.matrix-explore-main-screen \.road-results article\[data-number-group-start=\\"true\\"\]/);
-  assert.doesNotMatch(refinements, /:not\(\.matrix-tianyan-screen\) \.road-results article\[data-number-group-start=/);
+  assert.match(spacing, /\.matrix-explore-main-screen \.road-results article\[data-number-group-start="true"\]/);
+  assert.doesNotMatch(spacing, /:not\(\.matrix-tianyan-screen\) \.road-results article\[data-number-group-start=/);
 });
