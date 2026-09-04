@@ -90,20 +90,16 @@
   border-top-color: transparent;
 }
 
-.notifications-screen-v2 .notification-group::before,
-.notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
+.notifications-screen-v2 .notification-group::before {
   position: absolute;
   z-index: 1;
+  top: 3px;
   right: 0;
   left: 0;
   height: 1px;
+  background: rgba(170, 119, 46, .82);
   pointer-events: none;
   content: "";
-}
-
-.notifications-screen-v2 .notification-group::before {
-  top: 3px;
-  background: rgba(170, 119, 46, .82);
 }
 
 .notifications-screen-v2 .notification-group .notification-row + .notification-row {
@@ -112,8 +108,15 @@
 }
 
 .notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
+  position: absolute;
+  z-index: 1;
   top: 3px;
+  right: 0;
+  left: 0;
+  height: 1px;
   background: rgba(170, 119, 46, .24);
+  pointer-events: none;
+  content: "";
 }
 
 .notifications-screen-v2 .notification-heading {
