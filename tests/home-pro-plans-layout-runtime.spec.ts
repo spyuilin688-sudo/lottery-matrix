@@ -54,8 +54,8 @@ for (const width of MOBILE_WIDTHS) {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     })).toEqual({
-      cardLeft: 18,
-      cardRight: 18,
+      cardLeft: 19,
+      cardRight: 19,
       checkoutLeft: 16,
       checkoutRight: 16,
       overflow: 0,
