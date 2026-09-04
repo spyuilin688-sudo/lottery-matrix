@@ -192,7 +192,7 @@ describe("existing feature actions", () => {
   it("combines version information and update history into one page", () => {
     render(<FeaturePageRouter screen="version-info" onNavigate={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
     expect(screen.getByText("0.1.0")).toBeInTheDocument();
   });
 
