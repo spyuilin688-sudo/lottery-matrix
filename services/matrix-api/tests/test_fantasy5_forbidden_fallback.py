@@ -5,7 +5,7 @@ import httpx
 from app.scraping.sources import LatestDrawSource
 
 
-def test_fantasy5_403_uses_sc888_with_california_date_and_sorted_numbers_only() -> None:
+def test_fantasy5_403_uses_sc888_taipei_date_and_sorted_numbers_only() -> None:
     requested_urls: list[str] = []
     sc888_html = """
     <table>
@@ -35,7 +35,7 @@ def test_fantasy5_403_uses_sc888_with_california_date_and_sorted_numbers_only() 
 
     assert history == [{
         "period": "11988",
-        "drawDate": "2026-09-02",
+        "drawDate": "2026-09-03",
         "numbers": ["03", "06", "23", "29", "35"],
         "sortedNumbers": ["03", "06", "23", "29", "35"],
         "drawOrderNumbers": None,
