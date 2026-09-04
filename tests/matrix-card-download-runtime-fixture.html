@@ -17,6 +17,7 @@
       downloadMatrixCardPng,
       isMatrixCardPngPrepared,
       prepareMatrixCardPng,
+      refreshMatrixCardPng,
     } from '../src/matrix-ticket-download.ts';
 
     const cardUrl = `${location.origin}/tests/matrix-card-download-source.svg`;
@@ -50,11 +51,13 @@
     document.querySelector('#download-again').addEventListener('click', () => {
       void downloadMatrixCardPng(cardUrl, 'matrix-card-again.png');
     });
-    document.querySelector('#show-preview').addEventListener('click', () => {
+    document.querySelector('#show-preview').addEventListener('click', async () => {
       document.querySelector('#preview').src = previewUrl;
+      await refreshMatrixCardPng(previewUrl);
     });
-    document.querySelector('#show-current-preview').addEventListener('click', () => {
+    document.querySelector('#show-current-preview').addEventListener('click', async () => {
       document.querySelector('#preview').src = cardUrl;
+      await refreshMatrixCardPng(cardUrl);
     });
 
     window.__matrixCardDownloadTest = {
