@@ -36,7 +36,7 @@
 
 ### Files modified
 
-- `.github/workflows/ci.yml` — remove the redundant `Targeted Explore tests` step and make the one Full Node step explicit before build.
+- `.github/workflows/ci.yml` — remove the redundant `Targeted Explore tests` step and make the one Full Node step explicit after the packaging build.
 - `tests/ci-workflow-coverage.test.mjs` — lock the deduplicated CI contract.
 - Existing feature-domain test files only when their still-valid assertions need to be migrated before the old file is deleted.
 - `docs/testing/test-suite-audit-20260904.md` throughout execution as the source of truth.
@@ -105,11 +105,11 @@ Run in this order and save complete output:
 
 ```bash
 npm ci
-node --test tests/*.test.mjs 2>&1 | tee /tmp/baseline-node.log
 npm run test:unit 2>&1 | tee /tmp/baseline-vitest.log
+npm run build 2>&1 | tee /tmp/baseline-build.log
+node --test tests/*.test.mjs 2>&1 | tee /tmp/baseline-node.log
 PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
 npm run test:runtime 2>&1 | tee /tmp/baseline-playwright.log
-npm run build 2>&1 | tee /tmp/baseline-build.log
 ```
 
 Expected: all baseline failures, if any, are recorded verbatim. Do not change tests yet.
@@ -240,11 +240,11 @@ Change `test-and-build` to this sequence:
       - name: Full Vitest suite
         run: npm run test:unit
 
-      - name: Full Node tests
-        run: node --test tests/*.test.mjs
-
       - name: Production build for packaging tests
         run: npm run build
+
+      - name: Full Node tests
+        run: node --test tests/*.test.mjs
 ```
 
 Delete the entire previous block:
@@ -864,15 +864,7 @@ test "$(grep -c 'run: node --test tests/\*.test.mjs' .github/workflows/ci.yml)" 
 
 Expected: CI contract PASS; no targeted step; Full Node count exactly 1.
 
-- [ ] **Step 3: Run Full Node**
-
-```bash
-node --test tests/*.test.mjs
-```
-
-Expected: PASS, zero failed tests.
-
-- [ ] **Step 4: Run Full Vitest**
+- [ ] **Step 3: Run Full Vitest**
 
 ```bash
 npm run test:unit
@@ -880,7 +872,23 @@ npm run test:unit
 
 Expected: PASS, zero failed tests.
 
-- [ ] **Step 5: Run Full Playwright**
+- [ ] **Step 4: Run the production build**
+
+```bash
+npm run build
+```
+
+Expected: PASS; TypeScript, Vite, PWA build versioning, and sites packaging all complete.
+
+- [ ] **Step 5: Run Full Node**
+
+```bash
+node --test tests/*.test.mjs
+```
+
+Expected: PASS, zero failed tests.
+
+- [ ] **Step 6: Run Full Playwright**
 
 ```bash
 PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
@@ -888,14 +896,6 @@ npm run test:runtime
 ```
 
 Expected: PASS, zero failed tests.
-
-- [ ] **Step 6: Run the production build**
-
-```bash
-npm run build
-```
-
-Expected: PASS; TypeScript, Vite, PWA build versioning, and sites packaging all complete.
 
 - [ ] **Step 7: Check diff hygiene and scope**
 

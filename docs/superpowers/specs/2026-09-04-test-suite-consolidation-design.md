@@ -162,8 +162,8 @@
 `test-and-build` 最終改為：
 
 1. `Full Vitest suite` → `npm run test:unit`
-2. `Full Node tests` → `node --test tests/*.test.mjs`
-3. `Production build for packaging tests` → `npm run build`
+2. `Production build for packaging tests` → `npm run build`
+3. `Full Node tests` → `node --test tests/*.test.mjs`
 
 刪除獨立的 `Targeted Explore tests` step，因其測試已包含在 Full Node tests。
 
@@ -214,14 +214,14 @@
 
 完成整理後必須在同一個最終 commit/tree 上重新執行：
 
-1. **Full Node**
-   - `node --test tests/*.test.mjs`
-2. **Full Vitest**
+1. **Full Vitest**
    - `npm run test:unit`
-3. **Playwright**
-   - 安裝 Chromium/system deps 後 `npm run test:runtime`
-4. **Production Build**
+2. **Production Build**
    - `npm run build`
+3. **Full Node**
+   - `node --test tests/*.test.mjs`
+4. **Playwright**
+   - 安裝 Chromium/system deps 後 `npm run test:runtime`
 5. **Git whitespace / diff 檢查**
    - `git diff --check`
 6. **CI workflow contract**

@@ -34,11 +34,11 @@ test("號碼對照單固定與浮動設定共用 26px 控制高度", () => {
   assert.match(featureCss, /\.reference-query-panel \.reference-search input,\s*\.reference-query-panel \.reference-search \.gold-button\s*\{[^}]*height:\s*var\(--reference-control-height\);/s);
 });
 
-test("會員方案與管理訂閱使用指定外距、卡片尺寸與付款節奏", () => {
-  assert.match(proPlansLayoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-inline:\s*18px;/s);
+test("訂閱方案與管理訂閱使用指定外距、卡片尺寸與付款節奏", () => {
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*18px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\s*\{[^}]*min-height:\s*190px;[^}]*height:\s*auto;[^}]*padding:\s*12px;[^}]*border-color:\s*#755329;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.plan-card\[data-current="true"\]\s*\{[^}]*border-color:\s*#d6a42b;/s);
-  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-inline\);[^}]*row-gap:\s*0;/s);
+  assert.match(proPlansLayoutCss, /\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);[^}]*row-gap:\s*0;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card\s*\{[^}]*margin:\s*0 0 8px;[^}]*padding:\s*8px;[^}]*border-color:\s*#755329;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.renewal-card dl > div\s*\{[^}]*min-height:\s*29px;/s);
   assert.match(proPlansLayoutCss, /\.pro-plans-screen \.confirm-payment\.branded-explore-action\s*\{[^}]*margin:\s*0 0 6px;/s);
