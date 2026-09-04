@@ -20,6 +20,7 @@ import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-
 import {
   createFantasy5GithubDispatcher,
   createIndependentWatchdog,
+  createSupabaseWatchdogLeaseManager,
   createSupabaseWatchdogSnapshotLoader,
   getGithubActionsToken,
 } from './watchdog';
@@ -49,8 +50,11 @@ const adminData = createAdminData(supabase);
 const adminTodos = createAdminTodos(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
+const watchdogLeases = createSupabaseWatchdogLeaseManager(supabase);
 const independentWatchdog = createIndependentWatchdog({
   loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
+  claimLease: (key, owner) => watchdogLeases.claim(key, owner),
+  releaseLease: (key, owner) => watchdogLeases.release(key, owner),
   recoverRailway: (lottery) => workerApi.recoverLottery(lottery),
   dispatchFantasy5: createFantasy5GithubDispatcher(
     () => getGithubActionsToken(secrets),
@@ -477,11 +481,12 @@ const routes: Record<string, unknown> = {
 };
 
 export const matrixIndependentWatchdog = async (
-  event: { scheduledTime?: string },
+  event: { scheduledTime?: string; invocationId?: string },
 ) => {
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
-  const result = await independentWatchdog.run(at);
+  const owner = event?.invocationId || `cron:${at.toISOString()}`;
+  const result = await independentWatchdog.run(at, owner);
   console.log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
   return { statusCode: 200 };
 };

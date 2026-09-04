@@ -18,7 +18,7 @@ class RecoveryCoordinator:
         thread = Thread(
             target=self._execute,
             args=(lottery,),
-            daemon=True,
+            daemon=False,
             name=f"matrix-recovery-{lottery}",
         )
         try:
@@ -41,4 +41,3 @@ class RecoveryCoordinator:
         finally:
             with self._lock:
                 self._running.discard(lottery)
-

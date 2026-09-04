@@ -12,6 +12,8 @@ export type WatchdogSnapshot = {
     drawPeriod: string;
     status: 'running' | 'complete' | 'failed';
     startedAt: string | null;
+    updatedAt: string | null;
+    leaseExpiresAt: string | null;
   };
 };
 
@@ -22,7 +24,7 @@ export type WatchdogAction = {
 };
 
 type SupabaseReader = {
-  selectRows<T = unknown>(table: string, query: string): Promise<T[]>;
+  supabaseRequest<T = unknown>(path: string, init?: RequestInit): Promise<T>;
 };
 
 type SecretReader = {
@@ -42,6 +44,8 @@ const JOB_STALE_MS = 20 * 60 * 1000;
 const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const FINAL_RETRY_MINUTES = 345;
 const PRE_CALL_MINUTES = [-120, -60, -30];
+const REQUEST_TIMEOUT_MS = 8_000;
+const RECOVERY_LEASE_SECONDS = 20 * 60;
 
 type LocalDay = { year: number; month: number; day: number };
 
@@ -85,15 +89,43 @@ function isDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
   return true;
 }
 
+function zonedParts(value: Date, timeZone: string): LocalDay & { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(value);
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+  return {
+    year: get('year'),
+    month: get('month'),
+    day: get('day'),
+    hour: get('hour'),
+    minute: get('minute'),
+  };
+}
+
 function callClock(lottery: WatchdogLottery, day: LocalDay): [number, number] {
   if (lottery === '今彩539') return [20, 33];
   if (lottery === '大樂透') return [20, 53];
   if (lottery === '六合彩') return [21, 33];
-  const summer = day.month > 3
-    || day.month === 3 && day.day >= 13
-    ? day.month < 11 || day.month === 11 && day.day <= 5
-    : false;
-  return summer ? [9, 33] : [10, 33];
+  const sourceDay = addDays(day, -1);
+  for (const hour of [9, 10]) {
+    const candidate = new Date(taipeiInstant(day, hour, 33));
+    const california = zonedParts(candidate, 'America/Los_Angeles');
+    if (
+      california.year === sourceDay.year
+      && california.month === sourceDay.month
+      && california.day === sourceDay.day
+      && california.hour === 18
+      && california.minute === 33
+    ) return [hour, 33];
+  }
+  throw new Error('FANTASY5_CALL_CLOCK_NOT_FOUND');
 }
 
 function taipeiInstant(day: LocalDay, hour: number, minute: number): number {
@@ -155,15 +187,6 @@ export function planWatchdogActions(
 
   for (const snapshot of snapshots) {
     const crawlerTarget = snapshot.lottery === '天天樂' ? 'github' : 'railway';
-    if (snapshot.job?.status === 'failed') {
-      add(snapshot.lottery, crawlerTarget, 'job-failed');
-    } else if (
-      snapshot.job?.status === 'running'
-      && isOlderThan(snapshot.job.updatedAt ?? snapshot.job.startedAt, now, JOB_STALE_MS)
-    ) {
-      add(snapshot.lottery, crawlerTarget, 'job-stuck');
-    }
-
     const expectedDate = expectedDrawDateDuringCallWindow(snapshot.lottery, now);
     const drawDate = snapshot.latestDraw?.drawDate;
     const staleDraw = expectedDate && (
@@ -172,6 +195,14 @@ export function planWatchdogActions(
       || drawDate < expectedDate
     );
     if (staleDraw) {
+      if (snapshot.job?.status === 'failed') {
+        add(snapshot.lottery, crawlerTarget, 'job-failed');
+      } else if (
+        snapshot.job?.status === 'running'
+        && isOlderThan(snapshot.job.updatedAt ?? snapshot.job.startedAt, now, JOB_STALE_MS)
+      ) {
+        add(snapshot.lottery, crawlerTarget, 'job-stuck');
+      }
       add(snapshot.lottery, crawlerTarget, 'crawler-stale');
     }
 
@@ -183,7 +214,8 @@ export function planWatchdogActions(
       add(snapshot.lottery, 'railway', 'analysis-failed');
     } else if (
       analysis.status === 'running'
-      && isOlderThan(analysis.startedAt, now, ANALYSIS_STALE_MS)
+      && !(analysis.leaseExpiresAt && Date.parse(analysis.leaseExpiresAt) > now.getTime())
+      && isOlderThan(analysis.updatedAt ?? analysis.startedAt, now, ANALYSIS_STALE_MS)
     ) {
       add(snapshot.lottery, 'railway', 'analysis-stuck');
     }
@@ -195,24 +227,49 @@ const encode = (value: string) => encodeURIComponent(value);
 const nullableString = (value: unknown): string | null =>
   typeof value === 'string' ? value : null;
 
+async function supabaseRequest<T>(
+  supabase: SupabaseReader,
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await supabase.supabaseRequest<T>(path, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchWithTimeout(
+  fetcher: typeof fetch,
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetcher(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
   return async (): Promise<WatchdogSnapshot[]> => Promise.all(LOTTERIES.map(async (lottery) => {
     const [jobRows, drawRows] = await Promise.all([
-      supabase.selectRows<Record<string, unknown>>(
-        'system_job_status',
-        `select=status,started_at,updated_at&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
+      supabaseRequest<Record<string, unknown>[]>(supabase,
+        `system_job_status?select=status,started_at,updated_at&job_name=eq.${encode(JOB_NAME[lottery])}&limit=1`,
       ),
-      supabase.selectRows<Record<string, unknown>>(
-        'lottery_draws',
-        `select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
+      supabaseRequest<Record<string, unknown>[]>(supabase,
+        `lottery_draws?select=period,draw_date&lottery=eq.${encode(lottery)}&order=draw_date.desc.nullslast,period.desc&limit=1`,
       ),
     ]);
     const jobRow = jobRows[0];
     const drawRow = drawRows[0];
     const period = nullableString(drawRow?.period);
-    const analysisRows = period ? await supabase.selectRows<Record<string, unknown>>(
-      'matrix_analysis_runs',
-      `select=draw_period,status,started_at&lottery=eq.${encode(lottery)}&draw_period=eq.${encode(period)}&analysis_version=eq.${encode(`${period}:${ANALYSIS_VERSION}`)}&limit=1`,
+    const analysisRows = period ? await supabaseRequest<Record<string, unknown>[]>(supabase,
+      `matrix_analysis_runs?select=draw_period,status,started_at,updated_at,lease_expires_at&lottery=eq.${encode(lottery)}&draw_period=eq.${encode(period)}&analysis_version=eq.${encode(`${period}:${ANALYSIS_VERSION}`)}&limit=1`,
     ) : [];
     const analysisRow = analysisRows[0];
     const jobStatus = nullableString(jobRow?.status);
@@ -232,9 +289,32 @@ export function createSupabaseWatchdogSnapshotLoader(supabase: SupabaseReader) {
         drawPeriod: nullableString(analysisRow?.draw_period) ?? '',
         status: analysisStatus as WatchdogSnapshot['latestAnalysis'] extends { status: infer T } ? T : never,
         startedAt: nullableString(analysisRow?.started_at),
+        updatedAt: nullableString(analysisRow?.updated_at),
+        leaseExpiresAt: nullableString(analysisRow?.lease_expires_at),
       } : null,
     };
   }));
+}
+
+export function createSupabaseWatchdogLeaseManager(supabase: SupabaseReader) {
+  return {
+    async claim(key: string, owner: string): Promise<boolean> {
+      return await supabaseRequest<boolean>(supabase, 'rpc/claim_matrix_watchdog_lease', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_lease_key: key,
+          p_owner_id: owner,
+          p_ttl_seconds: RECOVERY_LEASE_SECONDS,
+        }),
+      }) === true;
+    },
+    async release(key: string, owner: string): Promise<void> {
+      await supabaseRequest<boolean>(supabase, 'rpc/release_matrix_watchdog_lease', {
+        method: 'POST',
+        body: JSON.stringify({ p_lease_key: key, p_owner_id: owner }),
+      });
+    },
+  };
 }
 
 export async function getGithubActionsToken(reader: SecretReader): Promise<string | null> {
@@ -262,7 +342,7 @@ export function createFantasy5GithubDispatcher(
       'X-GitHub-Api-Version': '2022-11-28',
     };
     try {
-      const runsResponse = await fetcher(`${workflowUrl}/runs?per_page=10`, {
+      const runsResponse = await fetchWithTimeout(fetcher, `${workflowUrl}/runs?per_page=10`, {
         cache: 'no-store',
         redirect: 'error',
         headers,
@@ -273,7 +353,7 @@ export function createFantasy5GithubDispatcher(
         ['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(String(run.status)))) {
         return 'already-running';
       }
-      const dispatchResponse = await fetcher(`${workflowUrl}/dispatches`, {
+      const dispatchResponse = await fetchWithTimeout(fetcher, `${workflowUrl}/dispatches`, {
         method: 'POST',
         cache: 'no-store',
         redirect: 'error',
@@ -289,13 +369,15 @@ export function createFantasy5GithubDispatcher(
 
 type WatchdogDependencies = {
   loadSnapshot: () => Promise<WatchdogSnapshot[]>;
+  claimLease: (key: string, owner: string) => Promise<boolean>;
+  releaseLease: (key: string, owner: string) => Promise<void>;
   recoverRailway: (lottery: WatchdogLottery) => Promise<unknown>;
   dispatchFantasy5: () => Promise<string>;
 };
 
 export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
   return {
-    async run(at: Date = new Date()) {
+    async run(at: Date = new Date(), owner = crypto.randomUUID()) {
       let snapshots: WatchdogSnapshot[];
       try {
         snapshots = await dependencies.loadSnapshot();
@@ -304,12 +386,24 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
       }
       const actions = planWatchdogActions(snapshots, at);
       const results = await Promise.all(actions.map(async (action) => {
+        const leaseKey = `${action.target}:${action.lottery}`;
+        let acquired = false;
         try {
-          const outcome = action.target === 'github'
-            ? await dependencies.dispatchFantasy5()
-            : await dependencies.recoverRailway(action.lottery).then(() => 'accepted');
+          acquired = await dependencies.claimLease(leaseKey, owner);
+          if (!acquired) return { ...action, outcome: 'lease-held' };
+          let outcome: string;
+          if (action.target === 'github') {
+            outcome = await dependencies.dispatchFantasy5();
+          } else {
+            const response = await dependencies.recoverRailway(action.lottery) as { status?: unknown };
+            outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
+          }
+          if (outcome === 'failed' || outcome === 'config-missing') {
+            await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
+          }
           return { ...action, outcome };
         } catch {
+          if (acquired) await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
           return { ...action, outcome: 'failed' };
         }
       }));

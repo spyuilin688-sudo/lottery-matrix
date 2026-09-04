@@ -14,6 +14,10 @@ const watchdog = readFileSync(
   new URL('../apps/admin/backend/watchdog.ts', import.meta.url),
   'utf8',
 );
+const watchdogLeaseMigration = readFileSync(
+  new URL('../supabase/migrations/20260904103000_add_matrix_watchdog_leases.sql', import.meta.url),
+  'utf8',
+);
 
 test('AppDeploy owns one independent five-minute Matrix watchdog', () => {
   assert.deepEqual(cron, [{
@@ -30,4 +34,11 @@ test('Fantasy5 recovery keeps GitHub crawling separate from Railway analysis', (
   assert.match(watchdog, /fantasy5-crawler\.yml/);
   assert.match(watchdog, /\/dispatches/);
   assert.doesNotMatch(watchdog, /California|SC888|LatestDrawSource/);
+});
+
+
+test('watchdog recoveries use one durable cross-host lease', () => {
+  assert.match(watchdog, /claim_matrix_watchdog_lease/);
+  assert.match(watchdogLeaseMigration, /on conflict \(lease_key\) do update/);
+  assert.match(watchdogLeaseMigration, /expires_at <= now\(\)/);
 });

@@ -574,3 +574,61 @@ def test_fantasy5_recovery_runs_analysis_only_without_a_source(monkeypatch) -> N
     api_server.run_lottery_recovery("天天樂")
 
     assert calls == [("天天樂", repository, "notification-emitter")]
+
+
+def test_railway_recovery_uses_the_tracked_scheduled_worker_without_pre_refresh(
+    monkeypatch,
+) -> None:
+    repository = OperationalRepository()
+    client = object()
+    calls: list[tuple[object, ...]] = []
+
+    class ClientContext:
+        def __enter__(self) -> object:
+            return client
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        api_server,
+        "load_settings",
+        lambda: type("Settings", (), {
+            "supabase_url": "https://supabase.example",
+            "supabase_secret_key": "secret",
+        })(),
+    )
+    monkeypatch.setattr(api_server, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(api_server.httpx, "Client", lambda **_: ClientContext())
+    monkeypatch.setattr(
+        api_server, "LatestDrawSource", lambda actual_client: ("source", actual_client)
+    )
+    monkeypatch.setattr(
+        api_server,
+        "create_notification_emitter",
+        lambda _settings, actual_client: ("emitter", actual_client),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "refresh_latest_draw",
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("recovery must not bypass scheduled-job telemetry")
+        ),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "run_scheduled_worker",
+        lambda lottery, now, actual_repository, source, *, notification_emitter: calls.append(
+            (lottery, now, actual_repository, source, notification_emitter)
+        ),
+    )
+
+    api_server.run_lottery_recovery("今彩539")
+
+    assert calls == [(
+        "今彩539",
+        None,
+        repository,
+        ("source", client),
+        ("emitter", client),
+    )]

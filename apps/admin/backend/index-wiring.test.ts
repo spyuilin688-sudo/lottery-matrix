@@ -57,6 +57,9 @@ const wiring = vi.hoisted(() => {
   const createIndependentWatchdog = vi.fn(() => ({ run: watchdogRun }));
   const loadWatchdogSnapshot = vi.fn(async () => []);
   const createSupabaseWatchdogSnapshotLoader = vi.fn(() => loadWatchdogSnapshot);
+  const watchdogLeaseClaim = vi.fn(async () => true);
+  const watchdogLeaseRelease = vi.fn(async () => undefined);
+  const createSupabaseWatchdogLeaseManager = vi.fn(() => ({ claim: watchdogLeaseClaim, release: watchdogLeaseRelease }));
   const dispatchFantasy5 = vi.fn(async () => 'dispatched');
   const createFantasy5GithubDispatcher = vi.fn(() => dispatchFantasy5);
   const getGithubActionsToken = vi.fn(async () => 'server-only-token');
@@ -78,7 +81,8 @@ const wiring = vi.hoisted(() => {
     todoList, todoCreate, todoUpdate, todoRemove, createAdminTodos,
     notice, sendSystemNotice, getNotificationEventConfig, createNotificationEvents,
     watchdogRun, createIndependentWatchdog, loadWatchdogSnapshot,
-    createSupabaseWatchdogSnapshotLoader, dispatchFantasy5,
+    createSupabaseWatchdogSnapshotLoader, createSupabaseWatchdogLeaseManager,
+    watchdogLeaseClaim, watchdogLeaseRelease, dispatchFantasy5,
     createFantasy5GithubDispatcher, getGithubActionsToken,
   };
 });
@@ -127,6 +131,7 @@ vi.mock('./notification-events', () => ({
 vi.mock('./watchdog', () => ({
   createIndependentWatchdog: wiring.createIndependentWatchdog,
   createSupabaseWatchdogSnapshotLoader: wiring.createSupabaseWatchdogSnapshotLoader,
+  createSupabaseWatchdogLeaseManager: wiring.createSupabaseWatchdogLeaseManager,
   createFantasy5GithubDispatcher: wiring.createFantasy5GithubDispatcher,
   getGithubActionsToken: wiring.getGithubActionsToken,
 }));
@@ -148,13 +153,16 @@ describe('independent watchdog cron wiring', () => {
   it('exports a cron handler that always completes with HTTP 200', async () => {
     expect(wiring.createIndependentWatchdog).toHaveBeenCalledTimes(1);
     expect(wiring.createSupabaseWatchdogSnapshotLoader).toHaveBeenCalledTimes(1);
+    expect(wiring.createSupabaseWatchdogLeaseManager).toHaveBeenCalledTimes(1);
     expect(wiring.createFantasy5GithubDispatcher).toHaveBeenCalledTimes(1);
 
     await expect(matrixIndependentWatchdog({
       scheduledTime: '2026-09-04T01:33:00.000Z',
+      invocationId: 'cron-invocation-1',
     })).resolves.toEqual({ statusCode: 200 });
     expect(wiring.watchdogRun).toHaveBeenCalledWith(
       new Date('2026-09-04T01:33:00.000Z'),
+      'cron-invocation-1',
     );
   });
 });

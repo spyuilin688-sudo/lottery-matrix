@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from threading import Event
+from threading import Event, enumerate as active_threads
 from time import sleep
 
 from app.recovery import RecoveryCoordinator
@@ -20,6 +20,11 @@ def test_recovery_coordinator_deduplicates_a_running_lottery() -> None:
 
     assert coordinator.enqueue("天天樂") == "accepted"
     assert started.wait(1)
+    worker_thread = next(
+        thread for thread in active_threads()
+        if thread.name == 'matrix-recovery-天天樂'
+    )
+    assert worker_thread.daemon is False
     assert coordinator.enqueue("天天樂") == "already-running"
     release.set()
     for _ in range(100):

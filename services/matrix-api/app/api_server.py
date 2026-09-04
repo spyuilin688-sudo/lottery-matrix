@@ -296,7 +296,6 @@ def run_lottery_recovery(lottery: str) -> None:
             )
         return
 
-    refresh_latest_draw(lottery, repository)
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         notification_emitter = create_notification_emitter(settings, client)
         run_scheduled_worker(
