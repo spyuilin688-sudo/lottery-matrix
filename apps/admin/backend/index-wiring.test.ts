@@ -34,11 +34,26 @@ const wiring = vi.hoisted(() => {
   const sendMemberTestPush = vi.fn(async () => ({ sent: 1, failed: 0 }));
   const listPushDeliveryLogs = vi.fn(async () => [{ id: 'log-1' }]);
   const createPushNotifications = vi.fn(() => ({ listMemberPushStatus, sendMemberTestPush, listPushDeliveryLogs }));
+  const notice = {
+    noticeId: '11111111-1111-4111-8111-111111111111',
+    eventKey: 'system_notice:11111111-1111-4111-8111-111111111111',
+    category: '更新',
+    title: '系統更新',
+    body: '新功能已上線。',
+    occurredAt: '2026-09-04T04:20:00.000Z',
+  } as const;
+  const sendSystemNotice = vi.fn(async () => notice);
+  const getNotificationEventConfig = vi.fn(async () => ({
+    supabaseUrl: 'https://supabase.example',
+    ingestToken: 'server-only-ingest-token',
+  }));
+  const createNotificationEvents = vi.fn(() => ({ sendSystemNotice }));
   return {
     workerGetStatus, workerRefreshLottery, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
     createSupabaseTransport, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
-    sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
+    sendMemberTestPush, listPushDeliveryLogs, createPushNotifications, notice, sendSystemNotice,
+    getNotificationEventConfig, createNotificationEvents,
   };
 });
 
@@ -77,6 +92,10 @@ vi.mock('./admin-auth', () => {
 vi.mock('./push-notifications', async (importOriginal) => ({
   ...await importOriginal<typeof import('./push-notifications')>(),
   createPushNotifications: wiring.createPushNotifications,
+}));
+vi.mock('./notification-events', () => ({
+  createNotificationEvents: wiring.createNotificationEvents,
+  getNotificationEventConfig: wiring.getNotificationEventConfig,
 }));
 
 import { handler } from './index';
@@ -194,6 +213,73 @@ describe('admin push notification route wiring', () => {
       const handler = routes[route][2] as (input: typeof context) => Promise<unknown>;
       await expect(handler(context)).resolves.toMatchObject({ body: expected });
     }
+  });
+});
+
+describe('admin formal system notification route wiring', () => {
+  it('loads the notification ingest configuration only from AppDeploy secrets', async () => {
+    expect(wiring.createNotificationEvents).toHaveBeenCalledTimes(1);
+    const loadConfig = wiring.createNotificationEvents.mock.calls[0][0];
+    await expect(loadConfig()).resolves.toEqual({
+      supabaseUrl: 'https://supabase.example',
+      ingestToken: 'server-only-ingest-token',
+    });
+    expect(wiring.getNotificationEventConfig).toHaveBeenCalledWith(sdk.secrets);
+  });
+
+  it('protects POST /api/system-notices with credential session and global edit permission', async () => {
+    wiring.requirePermission.mockClear();
+    const route = 'POST /api/system-notices';
+    expect(routes[route]).toHaveLength(3);
+    const context = await authenticate(route, sessionContext());
+    const permissionGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
+    await permissionGuard(context);
+    expect(wiring.requirePermission).toHaveBeenCalledWith(wiring.admin, 'edit');
+  });
+
+  it('creates a formal system notice and does not audit super-admin activity', async () => {
+    wiring.sendSystemNotice.mockClear();
+    wiring.insertRows.mockClear();
+    wiring.shouldRecordAdminActivity.mockReturnValue(false);
+    const route = 'POST /api/system-notices';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+    await expect(routeHandler({
+      ...context,
+      body: { category: '更新', title: '系統更新', body: '新功能已上線。' },
+    })).resolves.toEqual({ body: { notice: wiring.notice }, status: 201, headers: {} });
+    expect(wiring.sendSystemNotice).toHaveBeenCalledWith({
+      category: '更新', title: '系統更新', body: '新功能已上線。',
+    });
+    expect(wiring.insertRows).not.toHaveBeenCalled();
+  });
+
+  it('keeps an accepted notice successful when audit storage fails', async () => {
+    wiring.sendSystemNotice.mockClear();
+    wiring.insertRows.mockReset();
+    wiring.insertRows.mockRejectedValueOnce(new Error('audit unavailable'));
+    wiring.shouldRecordAdminActivity.mockReturnValueOnce(true);
+    const route = 'POST /api/system-notices';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+    await expect(routeHandler({
+      ...context,
+      body: { category: '更新', title: '系統更新', body: '新功能已上線。' },
+    })).resolves.toEqual({ body: { notice: wiring.notice }, status: 201, headers: {} });
+    expect(wiring.insertRows).toHaveBeenCalledWith('audit_logs', [expect.objectContaining({
+      admin_id: 'admin-1',
+      admin: '管理員',
+      operation_type: '發送系統通知',
+      target_table: 'notification_events',
+      target_id: wiring.notice.eventKey,
+      content: '更新：系統更新',
+      before_data: null,
+      after_data: wiring.notice,
+      ip: '127.0.0.1',
+      device: 'test-agent',
+    })]);
+    wiring.insertRows.mockImplementation(async () => []);
+    wiring.shouldRecordAdminActivity.mockReturnValue(false);
   });
 });
 
