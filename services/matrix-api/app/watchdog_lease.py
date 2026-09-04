@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
+from os import getpid, kill
+from signal import SIGTERM
 
-from app.repositories.analysis_repository import create_supabase_repository
+import httpx
+
 from app.settings import load_settings
 
 
@@ -13,39 +15,64 @@ def _lease_key(lottery: str) -> str:
     return f"railway:{lottery}"
 
 
-def _rpc_boolean(repository: Any, name: str, parameters: dict[str, object]) -> bool:
-    response = repository.client.rpc(name, parameters).execute()
-    return response.data is True
-
-
-def renew_recovery_lease(lottery: str, owner: str) -> bool:
+def _rpc_boolean(name: str, parameters: dict[str, object]) -> bool:
     settings = load_settings()
-    repository = create_supabase_repository(
-        settings.supabase_url,
-        settings.supabase_secret_key,
-    )
+    url = settings.supabase_url.rstrip("/")
+    key = settings.supabase_secret_key
+    if not url or not key:
+        raise RuntimeError("SUPABASE_CONFIG_MISSING")
+    with httpx.Client(timeout=8.0, follow_redirects=False) as client:
+        response = client.post(
+            f"{url}/rest/v1/rpc/{name}",
+            headers={
+                "apikey": key,
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json=parameters,
+        )
+        response.raise_for_status()
+        return response.json() is True
+
+
+def begin_recovery_lease(lottery: str, owner: str, runner_id: str) -> bool:
     return _rpc_boolean(
-        repository,
-        "renew_matrix_watchdog_lease",
+        "begin_matrix_watchdog_recovery",
         {
             "p_lease_key": _lease_key(lottery),
             "p_owner_id": owner,
+            "p_runner_id": runner_id,
             "p_ttl_seconds": WATCHDOG_LEASE_TTL_SECONDS,
         },
     )
 
 
-def release_recovery_lease(lottery: str, owner: str) -> bool:
-    settings = load_settings()
-    repository = create_supabase_repository(
-        settings.supabase_url,
-        settings.supabase_secret_key,
-    )
+def renew_recovery_lease(lottery: str, owner: str, runner_id: str) -> bool:
     return _rpc_boolean(
-        repository,
-        "release_matrix_watchdog_lease",
+        "renew_matrix_watchdog_recovery",
         {
             "p_lease_key": _lease_key(lottery),
             "p_owner_id": owner,
+            "p_runner_id": runner_id,
+            "p_ttl_seconds": WATCHDOG_LEASE_TTL_SECONDS,
         },
     )
+
+
+def release_recovery_lease(lottery: str, owner: str, runner_id: str) -> bool:
+    return _rpc_boolean(
+        "finish_matrix_watchdog_recovery",
+        {
+            "p_lease_key": _lease_key(lottery),
+            "p_owner_id": owner,
+            "p_runner_id": runner_id,
+        },
+    )
+
+
+def terminate_on_lease_loss(
+    _lottery: str,
+    _owner: str,
+    _runner_id: str,
+) -> None:
+    kill(getpid(), SIGTERM)

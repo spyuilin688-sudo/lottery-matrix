@@ -13,7 +13,12 @@ import httpx
 from app.card_renderer import card_layout, render_matrix_card
 from app.analysis_worker import run_analysis_only_worker
 from app.recovery import RecoveryCoordinator
-from app.watchdog_lease import renew_recovery_lease, release_recovery_lease
+from app.watchdog_lease import (
+    begin_recovery_lease,
+    release_recovery_lease,
+    renew_recovery_lease,
+    terminate_on_lease_loss,
+)
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
@@ -317,8 +322,10 @@ def run_lottery_recovery(lottery: str) -> None:
 
 _RECOVERY_COORDINATOR = RecoveryCoordinator(
     run_lottery_recovery,
+    begin_lease=begin_recovery_lease,
     renew_lease=renew_recovery_lease,
     release_lease=release_recovery_lease,
+    on_lease_lost=terminate_on_lease_loss,
 )
 
 

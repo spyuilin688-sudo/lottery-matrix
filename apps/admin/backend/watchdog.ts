@@ -442,12 +442,11 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
             const response = await dependencies.recoverRailway(action.lottery, owner) as { status?: unknown };
             outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
           }
-          if (outcome === 'failed' || outcome === 'config-missing') {
+          if (outcome === 'config-missing') {
             await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
           }
           return { ...action, outcome };
         } catch {
-          if (acquired) await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
           return { ...action, outcome: 'failed' };
         }
       }));

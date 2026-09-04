@@ -60,9 +60,10 @@ lottery and returns `202` immediately. For 天天樂 it invokes only
 three Railway-owned lotteries it invokes the tracked scheduled pipeline. The
 pipeline refreshes only inside a due stale-draw window and otherwise resumes
 stored analysis. Concurrent requests in the Railway API process for the same lottery return
-`already-running`; recovery threads are non-daemon. The API validates the
-AppDeploy lease owner, renews its durable Supabase lease every minute while work
-runs, and releases it only after completion.
+`already-running`; recovery threads are non-daemon. The API atomically consumes the AppDeploy claim with a unique runner fence,
+renews its durable Supabase lease every minute while work runs, and releases it
+only after completion. If a live runner loses ownership, that Railway replica
+terminates before a replacement may continue.
 
 ### Independent watchdog
 

@@ -206,7 +206,7 @@ describe('independent Matrix watchdog execution', () => {
     expect(recoverRailway).not.toHaveBeenCalled();
   });
 
-  it('releases an acquired lease when recovery fails', async () => {
+  it('retains an acquired lease when Railway acceptance is ambiguous', async () => {
     const releaseLease = vi.fn(async () => undefined);
     const snapshot = healthy('天天樂', '11989', '2026-09-03');
     snapshot.latestAnalysis = null;
@@ -224,7 +224,7 @@ describe('independent Matrix watchdog execution', () => {
       status: 'degraded',
       actions: [{ outcome: 'failed' }],
     });
-    expect(releaseLease).toHaveBeenCalledWith('railway:天天樂', 'invocation-3');
+    expect(releaseLease).not.toHaveBeenCalled();
   });
 
   it('claims cross-host leases through one atomic Supabase RPC', async () => {
