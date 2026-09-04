@@ -90,8 +90,6 @@ jobs:
         include:
           - id: daily539
             lottery: 今彩539
-          - id: fantasy5
-            lottery: 天天樂
           - id: marksix
             lottery: 六合彩
           - id: lotto649
@@ -118,8 +116,6 @@ jobs:
         run: |
           should_run=false
           if [[ "$EVENT_NAME" == "push" || "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_SCHEDULE" == "*/15 * * * *" ]]; then
-            should_run=true
-          elif [[ ( "$EVENT_SCHEDULE" == "50 1 * * *" || "$EVENT_SCHEDULE" == "50 2 * * *" ) && "$LOTTERY_ID" == "fantasy5" ]]; then
             should_run=true
           elif [[ "$EVENT_SCHEDULE" == "50 12 * * 1-6" && ( "$LOTTERY_ID" == "daily539" || "$LOTTERY_ID" == "lotto649" ) ]]; then
             should_run=true
@@ -149,15 +145,5 @@ jobs:
         if: steps.gate.outputs.should_run == 'true'
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          EVENT_SCHEDULE: ${{ github.event.schedule }}
           LOTTERY: ${{ matrix.lottery }}
-        run: |
-          if [[ "$EVENT_NAME" == "schedule" && "$LOTTERY" == "天天樂" && ( "$EVENT_SCHEDULE" == "50 1 * * *" || "$EVENT_SCHEDULE" == "50 2 * * *" ) ]]; then
-            due="$(uv run python -m app.schedule --lottery "$LOTTERY")"
-            if [[ "$due" != "due" ]]; then
-              echo "Skip 天天樂 refresh: current trigger is not Pacific 18:50"
-              exit 0
-            fi
-          fi
-          uv run python -m app.worker --lottery "$LOTTERY" --scheduled
+        run: uv run python -m app.worker --lottery "$LOTTERY" --scheduled

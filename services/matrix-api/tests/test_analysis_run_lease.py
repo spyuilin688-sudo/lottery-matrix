@@ -49,7 +49,7 @@ def test_only_one_owner_holds_a_live_analysis_lease() -> None:
 
 def test_expired_analysis_lease_can_be_taken_over_without_losing_checkpoint() -> None:
     repository = InMemoryAnalysisRepository()
-    first_started_at = datetime(2026, 9, 4, 1, 0, tzinfo=UTC)
+    first_started_at = datetime.now(UTC)
 
     repository.begin_run(
         "今彩539", "114000123", "v1", first_started_at.isoformat(),

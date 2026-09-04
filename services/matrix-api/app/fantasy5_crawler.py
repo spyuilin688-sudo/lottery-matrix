@@ -77,6 +77,8 @@ def run_fantasy5_crawler(
 
     try:
         try:
+            if not latest:
+                refresh.ensure_history(FANTASY5)
             draw = refresh.fetch(FANTASY5)
         except httpx.HTTPError as error:
             if not _is_transient_source_error(error):
