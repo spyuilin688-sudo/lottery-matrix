@@ -48,9 +48,9 @@ describe('Matrix status artifact orchestration', () => {
 
   it('retains every trigger card while projecting locked source rows without detail leakage', () => {
     const source = explore([
-      row({ id: 'road-2', explorePeriods: 2, lockedSourceIndex: 0 }),
-      row({ id: 'road-7', explorePeriods: 7, lockedSourceIndex: 2 }),
-      row({ id: 'road-13', explorePeriods: 13, lockedSourceIndex: 7 }),
+      row({ id: 'a-road-2', explorePeriods: 2, lockedSourceIndex: 0 }),
+      row({ id: 'b-road-7', explorePeriods: 7, lockedSourceIndex: 2 }),
+      row({ id: 'c-road-13', explorePeriods: 13, lockedSourceIndex: 7 }),
     ]);
     const result = buildMatrixStatusArtifact(source, null, [], {
       ...entitlements,
@@ -65,14 +65,17 @@ describe('Matrix status artifact orchestration', () => {
       sameCodeRoadCount: null,
       sameCodeRoadCountLocked: true,
     });
-    expect(card?.roads).toHaveLength(2);
+    expect(card?.roads).toHaveLength(3);
+    expect(card?.roads.map((road) => road.explorePeriods)).toEqual([2, 7, 13]);
     expect(card?.roads.filter((road) => road.locked === false)).toEqual([
-      expect.objectContaining({ explorePeriods: 2, validationItemId: 'road-2' }),
+      expect.objectContaining({ explorePeriods: 2, validationItemId: 'a-road-2' }),
     ]);
     const lockedRoads = card?.roads.filter((road) => road.locked === true) ?? [];
-    expect(lockedRoads).toHaveLength(1);
+    expect(lockedRoads).toHaveLength(2);
+    expect(lockedRoads.map((road) => road.id)).toEqual(['b-road-7:08', 'c-road-13:08']);
     expect(lockedRoads.map((road) => Object.keys(road).sort())).toEqual([
-      ['id', 'locked', 'result'],
+      ['explorePeriods', 'id', 'locked', 'result'],
+      ['explorePeriods', 'id', 'locked', 'result'],
     ]);
   });
 
@@ -90,7 +93,7 @@ describe('Matrix status artifact orchestration', () => {
       result: ['08'],
       sameCodeRoadCount: null,
       sameCodeRoadCountLocked: true,
-      roads: [{ result: ['08'], locked: true }],
+      roads: [{ result: ['08'], explorePeriods: 13, locked: true }],
     });
   });
 
@@ -170,6 +173,35 @@ describe('Matrix status artifact orchestration', () => {
     expect(result.summary).toMatchObject({ status: 'FOCUS', count: 1 });
     expect(result.customTriggers).toEqual([{ status: 'FOCUS', groupId: 'two' }]);
     expect(result.cards).toEqual([expect.objectContaining({ id: 'custom:FOCUS:two', status: 'FOCUS', roads: [expect.objectContaining({ algorithmType: '複合' })] })]);
+  });
+
+  it('preserves two, seven, and thirteen-period Tianyan access tiers during projection', () => {
+    const tianyan: TianyanArtifact = {
+      lottery: '今彩539', drawPeriod: '114000123', validationById: {}, items: [0, 2, 7].map((sourceIndex) => ({
+        id: `tianyan-${sourceIndex}`, number: '05', lockedPosition: sourceIndex + 1, predictionDistance: 1,
+        consecutive: '準5進6', highestStreak: 5, predictionNumbers: ['08', '09'], roadType: '複合' as const,
+        hitCondition: '準5+（鎖定2碼）' as const, numberOrder: '依號碼由小到大排序' as const,
+        ruleIds: [`a-${sourceIndex}`, `b-${sourceIndex}`] as [string, string],
+        explorePeriods: sourceIndex === 0 ? 2 as const : sourceIndex === 2 ? 7 as const : 13 as const,
+        exploreDateOffset: 0 as const, lockedSourceIndex: sourceIndex,
+      })),
+    };
+    const config = custom('FOCUS', {
+      oneCodeGroups: [],
+      twoCodeGroups: [{ id: 'tiered-composite', rows: [{ consecutive: '準5進6', roadType: '複合', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 1 }] }],
+    });
+    const result = buildMatrixStatusArtifact(explore([]), tianyan, [config], {
+      ...entitlements,
+      canUseSeven: false,
+      canUseThirteen: false,
+    });
+    const roads = result.cards.find((card) => card.id === 'custom:FOCUS:tiered-composite')?.roads ?? [];
+
+    expect(roads.map((road) => ({ explorePeriods: road.explorePeriods, locked: road.locked }))).toEqual([
+      { explorePeriods: 2, locked: false },
+      { explorePeriods: 7, locked: true },
+      { explorePeriods: 13, locked: true },
+    ]);
   });
 
   it('does not use non-current or non-thirteen-period composite rows for custom status', () => {

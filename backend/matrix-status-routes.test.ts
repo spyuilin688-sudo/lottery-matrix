@@ -80,7 +80,7 @@ describe('Matrix status route', () => {
     expect(card.roads).toHaveLength(3);
     expect(card.roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2, 7]);
     expect(card.roads.filter((road) => road.locked === true)).toEqual([
-      expect.objectContaining({ result: ['08'], locked: true }),
+      expect.objectContaining({ result: ['08'], explorePeriods: 13, locked: true }),
     ]);
     expect(card.roads.find((road) => road.locked === true)).not.toHaveProperty('algorithmType');
     expect(authCalls).toBe(0);
@@ -90,7 +90,7 @@ describe('Matrix status route', () => {
     const response = await routes(member('free', false), new Date('2026-08-24T00:00:00Z')).get({ authorization: undefined, body: { lottery: '今彩539' } });
     const roads = (response.body.cards as Array<{ roads: Array<Record<string, unknown>> }>)[0]?.roads ?? [];
     expect(roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2]);
-    expect(roads.filter((road) => road.locked === true)).toHaveLength(1);
+    expect(roads.filter((road) => road.locked === true).map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([7, 13]);
   });
 
   it('opens seven-period details for a free member whose referral access is active', async () => {

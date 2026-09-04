@@ -1587,17 +1587,14 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   cursor: default;
   color: #9a958d;
 }
-.matrix-status-screen .matrix-status-locked-meta {
-  grid-column: 1 / 5;
-  justify-self: center;
+.matrix-status-screen .matrix-status-locked-cell {
+  min-width: 0;
+  justify-self: stretch;
   color: #b7b0a6;
-  font-size: 9px;
-  white-space: nowrap;
-}
-.matrix-status-screen .matrix-status-locked-type {
-  color: #b7b0a6;
-  font-size: clamp(7px, 2.2vw, 9px);
-  white-space: nowrap;
+  font-size: clamp(6.5px, 1.9vw, 8px);
+  line-height: 1.15;
+  overflow-wrap: normal;
+  white-space: normal;
 }
 @media (prefers-reduced-motion: reduce) {
   .matrix-status-screen .status-block > button > svg,

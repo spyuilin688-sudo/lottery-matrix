@@ -9,6 +9,10 @@ const indexMigrationUrl = new URL(
   '../../../supabase/migrations/20260904081000_admin_todos_admin_id_index.sql',
   import.meta.url,
 );
+const cascadeMigrationUrl = new URL(
+  '../../../supabase/migrations/20260904082000_admin_todos_on_delete_cascade.sql',
+  import.meta.url,
+);
 
 describe('admin_todos migration', () => {
   it('creates a length-constrained todo table owned only by the backend service role', () => {
@@ -29,6 +33,14 @@ describe('admin_todos migration', () => {
     const sql = readFileSync(indexMigrationUrl, 'utf8');
     expect(sql).toMatch(
       /create index admin_todos_admin_id_idx\s+on public\.admin_todos\s*\(admin_id\)/i,
+    );
+  });
+
+  it('cascades todos when their administrator account is deleted', () => {
+    const sql = readFileSync(cascadeMigrationUrl, 'utf8');
+    expect(sql).toMatch(/drop constraint if exists admin_todos_admin_id_fkey/i);
+    expect(sql).toMatch(
+      /foreign key\s*\(admin_id\)\s*references public\.admin_accounts\s*\(id\)\s*on delete cascade/i,
     );
   });
 });

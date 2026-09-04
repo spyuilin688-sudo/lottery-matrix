@@ -16,7 +16,7 @@ import {
 
 export type ProjectedStatusRoad =
   | (StatusRoad & { locked: false })
-  | { id: string; result: string[]; locked: true };
+  | { id: string; result: string[]; explorePeriods: 2 | 7 | 13; locked: true };
 
 export type ProjectedStatusTriggerCard = Omit<StatusTriggerCard, 'sameCodeRoadCount' | 'roads'> & {
   sameCodeRoadCount: number | null;
@@ -60,7 +60,7 @@ export type TianyanArtifact = {
     highestStreak: number;
     predictionNumbers: string[];
     numberOrder: CustomConditionMatch['numberOrder'];
-    explorePeriods: 13;
+    explorePeriods: 2 | 7 | 13;
     exploreDateOffset: number;
     lockedSourceIndex?: number;
   }>;
@@ -209,7 +209,7 @@ function tianyanMatchSeeds(artifact: TianyanArtifact | null): MatchSeed[] {
       predictionDistance: item.predictionDistance,
       position: item.lockedPosition,
       lockedNumber: item.number,
-      explorePeriods: 13,
+      explorePeriods: item.explorePeriods,
       validationItemId: item.id,
     },
   }));
@@ -267,13 +267,16 @@ function visibleStatusCards(
         || (road.explorePeriods === 7 && entitlements.canUseSeven)
         || (road.explorePeriods === 13 && entitlements.canUseThirteen);
       if (entitled) roads.push({ ...road, locked: false });
-      else hasLockedRoad = true;
+      else {
+        hasLockedRoad = true;
+        roads.push({
+          id: road.id,
+          result: [...road.result],
+          explorePeriods: road.explorePeriods,
+          locked: true as const,
+        });
+      }
     }
-    if (hasLockedRoad) roads.push({
-      id: [card.id, 'locked'].join(':'),
-      result: [...card.result],
-      locked: true as const,
-    });
     return {
       ...card,
       sameCodeRoadCount: hasLockedRoad ? null : card.sameCodeRoadCount,

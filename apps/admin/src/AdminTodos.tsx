@@ -73,9 +73,18 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
     };
   }, [client]);
 
+  const invalidatePendingLoad = () => {
+    requestSequence.current += 1;
+    if (mounted.current) {
+      setLoading(false);
+      setLoadError('');
+    }
+  };
+
   const runMutation = async (action: Exclude<BusyAction, null>, operation: () => Promise<void>) => {
     if (mutation.current) return;
     mutation.current = true;
+    invalidatePendingLoad();
     setBusy(action);
     setFeedback('');
     try {
@@ -158,6 +167,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
   const remove = async (item: AdminTodo) => {
     if (mutation.current || !canDeleteAdminTodo(item, admin)) return;
     mutation.current = true;
+    invalidatePendingLoad();
     setBusy({ kind: 'confirm', id: item.id });
     setFeedback('');
     const confirmed = await requestConfirmation({

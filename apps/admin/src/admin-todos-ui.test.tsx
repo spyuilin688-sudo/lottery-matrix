@@ -39,6 +39,12 @@ async function settle() {
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => { resolve = next; });
+  return { promise, resolve };
+}
+
 describe('AdminTodos', () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -120,6 +126,67 @@ describe('AdminTodos', () => {
     await settle();
     expect(container.textContent).toContain('只建立一次');
     expect(textarea.value).toBe('');
+  });
+
+  it('does not let a stale initial list overwrite a successful create', async () => {
+    const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
+    const client = clientWith([]);
+    client.get = vi.fn(() => staleList.promise);
+    await render(client);
+
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => setTextarea(textarea, '新建立內容'));
+    await act(async () => button(container, '建立').click());
+    await settle();
+    expect(container.textContent).toContain('新建立內容');
+
+    await act(async () => { staleList.resolve({ data: { items: [] } }); });
+    await settle();
+    expect(container.textContent).toContain('新建立內容');
+  });
+
+  it('does not let a stale replacement list revert a successful edit', async () => {
+    const initialClient = clientWith();
+    await render(initialClient);
+    const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
+    const activeClient = clientWith();
+    activeClient.get = vi.fn(() => staleList.promise);
+    await act(async () => {
+      root.render(<AdminTodos client={activeClient} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={vi.fn(async () => true)} />);
+    });
+    await settle();
+
+    await act(async () => button(container, '編輯').click());
+    const editTextarea = container.querySelector('article textarea') as HTMLTextAreaElement;
+    await act(async () => setTextarea(editTextarea, '已更新內容'));
+    await act(async () => button(container, '儲存').click());
+    await settle();
+    expect(container.textContent).toContain('已更新內容');
+
+    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
+    await settle();
+    expect(container.textContent).toContain('已更新內容');
+    expect(container.textContent).not.toContain('原本內容');
+  });
+
+  it('does not let a stale replacement list resurrect a successful delete', async () => {
+    const initialClient = clientWith();
+    await render(initialClient);
+    const staleList = deferred<{ data: { items: ReturnType<typeof item>[] } }>();
+    const activeClient = clientWith();
+    activeClient.get = vi.fn(() => staleList.promise);
+    await act(async () => {
+      root.render(<AdminTodos client={activeClient} admin={{ id: 'admin-owner', role: '營運管理員' }} requestConfirmation={vi.fn(async () => true)} />);
+    });
+    await settle();
+
+    await act(async () => button(container, '刪除').click());
+    await settle();
+    expect(container.textContent).not.toContain('原本內容');
+
+    await act(async () => { staleList.resolve({ data: { items: [item()] } }); });
+    await settle();
+    expect(container.textContent).not.toContain('原本內容');
   });
 
   it('keeps an inline edit draft when the server rejects the save', async () => {

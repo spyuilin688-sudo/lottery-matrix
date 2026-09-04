@@ -44,6 +44,7 @@ export type MatrixStatusRoadDetail = {
 export type MatrixStatusLockedRoad = {
   id: string;
   result: string[];
+  explorePeriods: 2 | 7 | 13;
   locked: true;
 };
 

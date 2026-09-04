@@ -60,7 +60,7 @@ beforeEach(() => {
         id: 'road', locked: false, result: ['08'], algorithmType: '加減', numberOrder: '依號碼由小到大排序',
         streak: 7, predictionDistance: 1, position: 1, lockedNumber: '05', explorePeriods: 2,
         validationItemId: 'source-road',
-      }, { id: 'card-one:locked', locked: true, result: ['08'] }],
+      }, { id: 'road-locked', locked: true, result: ['08'], explorePeriods: 13 }],
     }, {
       id: 'card-two', ruleId: 'RESONANCE-4', status: 'RESONANCE', hitType: 'one-code', result: ['09'],
       sameCodeRoadCount: 1, sameCodeRoadCountLocked: false,
@@ -89,7 +89,12 @@ test('狀態頁逐一呈現觸發卡片，並沿用探索結果表頭與版路�
   const firstCard = screen.getAllByTestId('matrix-status-trigger-card')[0];
   expect(within(firstCard).getByText('單碼結果')).toBeInTheDocument();
   expect(within(firstCard).getByText('共振')).toBeInTheDocument();
-  expect(within(firstCard).getAllByText('🔒 Matrix Pro').length).toBeGreaterThan(0);
+  const lockedRow = firstCard.querySelector('.matrix-status-locked-road .road-result-row');
+  expect(lockedRow?.children).toHaveLength(6);
+  for (const index of [0, 1, 2, 3, 5]) {
+    expect(lockedRow?.children[index]).toHaveTextContent('🔒 Matrix Pro');
+  }
+  expect(lockedRow?.children[4]).toHaveTextContent('08');
   for (const heading of ['位置', '號碼', '預測期', '連準次數', '預測', '版路類型']) {
     expect(within(firstCard).getByText(heading)).toBeInTheDocument();
   }

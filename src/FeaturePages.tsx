@@ -4825,9 +4825,12 @@ function MatrixStatusTriggerCard({
             return (
               <article className="matrix-status-locked-road" key={road.id}>
                 <div className="road-result-row" aria-label="Matrix Pro 鎖定版路">
-                  <span className="matrix-status-locked-meta">🔒 Matrix Pro</span>
+                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
+                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
+                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
+                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
                   <strong className="numeric-text">{road.result.join("、")}</strong>
-                  <span className="matrix-status-locked-type">🔒 Matrix Pro</span>
+                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
                 </div>
               </article>
             );
