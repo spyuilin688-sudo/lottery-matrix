@@ -10,6 +10,7 @@ import {
 } from "./FeaturePagesCore";
 import type { LotteryId } from "./Prototype";
 import { NotificationsPagePatched } from "./NotificationsPagePatched";
+import { TianyanExpandedLayoutPatch } from "./TianyanExpandedLayoutPatch";
 
 export { QuickNavigationProvider };
 export type { ScreenId };
@@ -89,6 +90,7 @@ export function FeaturePageRouter({
         quickActive={quickActive}
       />
       <ContactSupportPhonePortal active={contactSupportActive} />
+      <TianyanExpandedLayoutPatch active={screen === "tianyan"} />
     </>
   );
 }
