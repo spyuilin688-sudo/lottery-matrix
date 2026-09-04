@@ -95,8 +95,10 @@ def test_fantasy5_github_workflow_is_crawler_only() -> None:
     assert tuple(re.findall(r'^\s+- cron: "([^"]+)"$', workflow, re.MULTILINE)) == (
         expected_crons
     )
-    assert "10#$taipei_month_day >= 313 && 10#$taipei_month_day <= 1105" in workflow
-    assert "10#$taipei_month_day >= 1106 || 10#$taipei_month_day <= 312" in workflow
+    assert "TZ=America/Los_Angeles date +%z" in workflow
+    assert 'expected_offset="-0700"' in workflow
+    assert 'expected_offset="-0800"' in workflow
+    assert "taipei_month_day" not in workflow
     assert workflow.index("Gate daylight-saving season") < workflow.index(
         "Check out repository"
     )
