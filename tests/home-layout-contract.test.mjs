@@ -20,8 +20,8 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns 8px top spacing and logo is reduced by 8 percent', () => {
-  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*8px;/);
+test('homepage brand header owns 6px top spacing and logo is reduced by 8 percent', () => {
+  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*6px;/);
   assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*87\.584%;/);
 });
 
@@ -31,7 +31,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .lottery-screen', /padding:\s*0;/);
   assertBlock(css, '.lottery-switcher--home-style', /width:\s*calc\(100% - 32px\);/);
   assertBlock(css, '.home-screen .latest-draw-card', /width:\s*calc\(100% - 32px\);/);
-  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*clamp\(6px,\s*0\.9dvh,\s*8px\);/);
+  assertBlock(css, '.home-screen .lottery-screen', /--home-gap-switcher-draw:\s*clamp\(7px,\s*calc\(0\.9dvh\s*\+\s*1px\),\s*9px\);/);
   assertLastBlock(css, '.lottery-switcher--home-style', /padding-inline:\s*4px;/);
   assertLastBlock(css, '.lottery-switcher--home-style .lottery-switcher-hit-grid', /gap:\s*6px;/);
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
