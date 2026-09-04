@@ -20,7 +20,7 @@ test("會員方案卡由正式版面 owner 控制左右間距並顯示跟隨方�
 
   assert.match(router, /import\s+["']\.\/pro-plans-layout\.css["'];/);
   assert.match(router, /import\s+["']\.\/pro-plans-carousel-peek\.css["'];/);
-  assert.match(layoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*18px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
+  assert.match(layoutCss, /\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*19px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
   assert.match(layoutCss, /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);/s);
   assert.match(layoutCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+100%;/s);
   assert.match(layoutCss, /\.pro-plans-screen\s+\.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);/s);
