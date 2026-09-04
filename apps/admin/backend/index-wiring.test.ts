@@ -55,6 +55,14 @@ const wiring = vi.hoisted(() => {
   const createNotificationEvents = vi.fn(() => ({ sendSystemNotice }));
   const watchdogRun = vi.fn(async () => ({ status: 'ok', checkedAt: '2026-09-04T01:33:00.000Z', actions: [] }));
   const createIndependentWatchdog = vi.fn(() => ({ run: watchdogRun }));
+  const expectedDrawDateForDueWindow = vi.fn((lottery: string) =>
+    lottery === '今彩539' ? '2026-09-04' : null);
+  const watchdogStatusLoad = vi.fn(async () => null);
+  const watchdogStatusSave = vi.fn(async (status: unknown) => status);
+  const createWatchdogStatusStore = vi.fn(() => ({
+    load: watchdogStatusLoad,
+    save: watchdogStatusSave,
+  }));
   const loadWatchdogSnapshot = vi.fn(async () => []);
   const createSupabaseWatchdogSnapshotLoader = vi.fn(() => loadWatchdogSnapshot);
   const watchdogLeaseClaim = vi.fn(async () => true);
@@ -80,7 +88,8 @@ const wiring = vi.hoisted(() => {
     sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
     todoList, todoCreate, todoUpdate, todoRemove, createAdminTodos,
     notice, sendSystemNotice, getNotificationEventConfig, createNotificationEvents,
-    watchdogRun, createIndependentWatchdog, loadWatchdogSnapshot,
+    watchdogRun, createIndependentWatchdog, expectedDrawDateForDueWindow, loadWatchdogSnapshot,
+    watchdogStatusLoad, watchdogStatusSave, createWatchdogStatusStore,
     createSupabaseWatchdogSnapshotLoader, createSupabaseWatchdogLeaseManager,
     watchdogLeaseClaim, watchdogLeaseRelease, dispatchFantasy5,
     createFantasy5GithubDispatcher, getGithubActionsToken,
@@ -95,6 +104,7 @@ const sdk = vi.hoisted(() => {
     json: vi.fn((body: unknown, status = 200) => ({ body, status, headers: {} as Record<string, string> })),
     error: vi.fn((message: string, status = 500) => ({ error: message, status })),
     secrets: { kind: 'test-secrets' },
+    db: { kind: 'test-db' },
   };
 });
 
@@ -134,6 +144,10 @@ vi.mock('./watchdog', () => ({
   createSupabaseWatchdogLeaseManager: wiring.createSupabaseWatchdogLeaseManager,
   createFantasy5GithubDispatcher: wiring.createFantasy5GithubDispatcher,
   getGithubActionsToken: wiring.getGithubActionsToken,
+  expectedDrawDateForDueWindow: wiring.expectedDrawDateForDueWindow,
+}));
+vi.mock('./watchdog-status', () => ({
+  createWatchdogStatusStore: wiring.createWatchdogStatusStore,
 }));
 
 import { handler, matrixIndependentWatchdog } from './index';
@@ -150,20 +164,123 @@ async function authenticate(route: string, context: ReturnType<typeof sessionCon
 }
 
 describe('independent watchdog cron wiring', () => {
-  it('exports a cron handler that always completes with HTTP 200', async () => {
+  it('persists the latest successful heartbeat and completes with HTTP 200', async () => {
     expect(wiring.createIndependentWatchdog).toHaveBeenCalledTimes(1);
     expect(wiring.createSupabaseWatchdogSnapshotLoader).toHaveBeenCalledTimes(1);
     expect(wiring.createSupabaseWatchdogLeaseManager).toHaveBeenCalledTimes(1);
     expect(wiring.createFantasy5GithubDispatcher).toHaveBeenCalledTimes(1);
+    expect(wiring.createWatchdogStatusStore).toHaveBeenCalledWith(sdk.db);
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T12:40:05.000Z'));
+    try {
+      wiring.watchdogRun.mockResolvedValueOnce({
+        status: 'ok',
+        checkedAt: '2026-09-04T12:39:00.000Z',
+        actions: [],
+      });
+      wiring.watchdogStatusSave.mockClear();
+
+      await expect(matrixIndependentWatchdog({
+        scheduledTime: '2026-09-04T12:39:00.000Z',
+        invocationId: 'cron-invocation-1',
+      })).resolves.toEqual({ statusCode: 200 });
+      expect(wiring.watchdogRun).toHaveBeenCalledWith(
+        new Date('2026-09-04T12:39:00.000Z'),
+        'cron-invocation-1',
+      );
+      expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
+        status: 'ok',
+        checkedAt: '2026-09-04T12:39:00.000Z',
+        completedAt: '2026-09-04T12:40:05.000Z',
+        dueLotteries: ['今彩539'],
+        actions: [],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stores a safe degraded heartbeat when the watchdog throws', async () => {
+    wiring.watchdogRun.mockRejectedValueOnce(new Error('upstream token=server-only-token'));
+    wiring.watchdogStatusSave.mockClear();
 
     await expect(matrixIndependentWatchdog({
-      scheduledTime: '2026-09-04T01:33:00.000Z',
-      invocationId: 'cron-invocation-1',
+      scheduledTime: '2026-09-04T01:39:00.000Z',
+      invocationId: 'cron-invocation-2',
     })).resolves.toEqual({ statusCode: 200 });
-    expect(wiring.watchdogRun).toHaveBeenCalledWith(
-      new Date('2026-09-04T01:33:00.000Z'),
-      'cron-invocation-1',
-    );
+
+    expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
+      status: 'degraded',
+      checkedAt: '2026-09-04T01:39:00.000Z',
+      completedAt: expect.any(String),
+      dueLotteries: ['今彩539'],
+      actions: [],
+      error: 'WATCHDOG_FAILED',
+    });
+  });
+
+  it('persists completion metadata for a degraded watchdog result with no actions', async () => {
+    wiring.watchdogRun.mockResolvedValueOnce({
+      status: 'degraded',
+      checkedAt: '2026-09-04T01:45:00.000Z',
+      actions: [],
+      error: 'STATUS_UNAVAILABLE',
+    });
+    wiring.watchdogStatusSave.mockClear();
+
+    await expect(matrixIndependentWatchdog({
+      scheduledTime: '2026-09-04T01:45:00.000Z',
+      invocationId: 'cron-invocation-degraded',
+    })).resolves.toEqual({ statusCode: 200 });
+
+    expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
+      status: 'degraded',
+      checkedAt: '2026-09-04T01:45:00.000Z',
+      completedAt: expect.any(String),
+      dueLotteries: ['今彩539'],
+      actions: [],
+      error: 'STATUS_UNAVAILABLE',
+    });
+  });
+
+  it('does not retry a failed heartbeat write and logs one safe degraded result', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T12:46:05.000Z'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      wiring.watchdogRun.mockResolvedValueOnce({
+        status: 'ok',
+        checkedAt: '2026-09-04T12:45:00.000Z',
+        actions: [],
+      });
+      wiring.watchdogStatusSave.mockClear();
+      wiring.watchdogStatusSave.mockRejectedValueOnce(new Error('quota 429 token=server-only-token'));
+
+      await expect(matrixIndependentWatchdog({
+        scheduledTime: '2026-09-04T12:45:00.000Z',
+        invocationId: 'cron-invocation-3',
+      })).resolves.toEqual({ statusCode: 200 });
+
+      expect(wiring.watchdogStatusSave).toHaveBeenCalledTimes(1);
+      expect(log).toHaveBeenCalledWith('matrix-independent-watchdog ' + JSON.stringify({
+        status: 'degraded',
+        checkedAt: '2026-09-04T12:45:00.000Z',
+        completedAt: '2026-09-04T12:46:05.000Z',
+        dueLotteries: ['今彩539'],
+        actions: [],
+        error: 'WATCHDOG_STATUS_WRITE_FAILED',
+      }));
+    } finally {
+      log.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('injects the typed heartbeat loader into connection status', async () => {
+    const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
+    await expect(dependencies.loadWatchdogStatus()).resolves.toBeNull();
+    expect(wiring.watchdogStatusLoad).toHaveBeenCalled();
   });
 });
 
@@ -183,6 +300,15 @@ describe('admin Railway route wiring', () => {
     expect(wiring.getWorkerConfig).toHaveBeenCalledWith(sdk.secrets);
     const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
     await expect(dependencies.getWorkerStatus()).resolves.toEqual({ ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' });
+  });
+
+  it('injects the server-only GitHub token loader into system status', async () => {
+    wiring.getGithubActionsToken.mockClear();
+    const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
+
+    await expect(dependencies.loadGithubToken()).resolves.toBe('server-only-token');
+
+    expect(wiring.getGithubActionsToken).toHaveBeenCalledWith(sdk.secrets);
   });
 
   it('uses credential sessions and preserves system-settings view permissions', async () => {

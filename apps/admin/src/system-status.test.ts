@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   canRefreshCrawler,
+  canRetrySystemStatus,
+  getGithubStatusFacts,
   groupSystemStatusItems,
   loadSystemStatus,
   refreshCrawlerSystemStatus,
@@ -70,7 +72,7 @@ describe('system status client', () => {
   });
 
   it('groups status rows in the fixed deployment-location order', () => {
-    const item = (id: string, location: 'AppDeploy' | 'Supabase' | 'Railway') => ({
+    const item = (id: string, location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway') => ({
       id,
       name: id,
       description: '狀態',
@@ -85,12 +87,102 @@ describe('system status client', () => {
 
     expect(groupSystemStatusItems([
       item('railway', 'Railway'),
+      item('github', 'GitHub'),
       item('supabase', 'Supabase'),
       item('admin', 'AppDeploy'),
     ])).toEqual([
       { location: 'AppDeploy', items: [expect.objectContaining({ id: 'admin' })] },
       { location: 'Supabase', items: [expect.objectContaining({ id: 'supabase' })] },
+      { location: 'GitHub', items: [expect.objectContaining({ id: 'github' })] },
       { location: 'Railway', items: [expect.objectContaining({ id: 'railway' })] },
+    ]);
+  });
+
+  it('omits deployment locations that do not have status rows', () => {
+    const item = (id: string, location: 'AppDeploy' | 'GitHub' | 'Railway') => ({
+      id,
+      name: id,
+      description: '狀態',
+      group: '系統',
+      location,
+      endpoint: '/health',
+      checkMode: 'live' as const,
+      ok: true,
+      checkedAt: '2026-09-02T00:00:00Z',
+      responseMs: 1,
+    });
+
+    expect(groupSystemStatusItems([
+      item('railway', 'Railway'),
+      item('admin', 'AppDeploy'),
+      item('github', 'GitHub'),
+    ]).map((group) => group.location)).toEqual(['AppDeploy', 'GitHub', 'Railway']);
+  });
+
+  it('projects the whitelisted GitHub workflow and latest-run detail for display', () => {
+    const github = {
+      id: 'github-fantasy5-workflow',
+      name: '天天樂 GitHub Actions 爬蟲',
+      description: '唯讀確認 workflow 與最近一次執行狀態。',
+      group: '排程',
+      location: 'GitHub' as const,
+      endpoint: '/repos/example/actions/workflows/fantasy5-crawler.yml',
+      checkMode: 'live' as const,
+      ok: true,
+      checkedAt: '2026-09-04T12:00:00Z',
+      responseMs: 14,
+      detail: {
+        workflow: {
+          name: 'Fantasy5 crawler',
+          path: '.github/workflows/fantasy5-crawler.yml',
+          state: 'active',
+        },
+        latestRun: {
+          status: 'completed',
+          conclusion: 'failure',
+          createdAt: '2026-09-04T11:40:00Z',
+          updatedAt: '2026-09-04T11:42:00Z',
+        },
+      },
+    };
+
+    expect(getGithubStatusFacts(github)).toEqual([
+      { label: 'Workflow 名稱', value: 'Fantasy5 crawler' },
+      { label: 'Workflow 路徑', value: '.github/workflows/fantasy5-crawler.yml' },
+      { label: 'Workflow 狀態', value: 'active' },
+      { label: '最近執行狀態', value: 'completed' },
+      { label: '最近執行結果', value: 'failure' },
+      { label: '最近執行建立時間', value: '2026-09-04T11:40:00Z', format: 'date' },
+      { label: '最近執行更新時間', value: '2026-09-04T11:42:00Z', format: 'date' },
+    ]);
+    expect(canRetrySystemStatus({ ...github, ok: false })).toBe(false);
+    expect(canRefreshCrawler({ ...github, ok: false }, true)).toBe(false);
+    expect(canRefreshCrawler({ ...github, id: 'cron-matrix-539-refresh-v2', ok: false, detail: null }, true)).toBe(false);
+  });
+
+  it('shows a clear state when GitHub has no workflow run history', () => {
+    const github = {
+      id: 'github-fantasy5-workflow',
+      name: '天天樂 GitHub Actions 爬蟲',
+      description: '唯讀確認 workflow 與最近一次執行狀態。',
+      group: '排程',
+      location: 'GitHub' as const,
+      endpoint: '/repos/example/actions/workflows/fantasy5-crawler.yml',
+      checkMode: 'live' as const,
+      ok: true,
+      checkedAt: '2026-09-04T12:00:00Z',
+      responseMs: 14,
+      detail: {
+        workflow: { name: 'Fantasy5 crawler', path: '.github/workflows/fantasy5-crawler.yml', state: 'active' },
+        latestRun: null,
+      },
+    };
+
+    expect(getGithubStatusFacts(github)).toEqual([
+      { label: 'Workflow 名稱', value: 'Fantasy5 crawler' },
+      { label: 'Workflow 路徑', value: '.github/workflows/fantasy5-crawler.yml' },
+      { label: 'Workflow 狀態', value: 'active' },
+      { label: '最近執行', value: '尚無執行紀錄' },
     ]);
   });
 });

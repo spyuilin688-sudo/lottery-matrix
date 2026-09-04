@@ -1,4 +1,4 @@
-import { error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
+import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
 import {
   AdminAccessError,
   requireAdmin,
@@ -22,8 +22,11 @@ import {
   createIndependentWatchdog,
   createSupabaseWatchdogLeaseManager,
   createSupabaseWatchdogSnapshotLoader,
+  expectedDrawDateForDueWindow,
   getGithubActionsToken,
+  type WatchdogLottery,
 } from './watchdog';
+import { createWatchdogStatusStore, type WatchdogStatus } from './watchdog-status';
 
 type Context = {
   body?: unknown;
@@ -60,10 +63,13 @@ const independentWatchdog = createIndependentWatchdog({
     () => getGithubActionsToken(secrets),
   ),
 });
+const watchdogStatus = createWatchdogStatusStore(db);
 const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
   getWorkerStatus: () => workerApi.getStatus(),
+  loadWatchdogStatus: () => watchdogStatus.load(),
+  loadGithubToken: () => getGithubActionsToken(secrets),
 });
 const now = () => new Date().toISOString();
 const fail = (cause: unknown) => {
@@ -155,6 +161,7 @@ const crawlerLotteryByStatusId: Record<string, CrawlerLottery> = {
   'cron-matrix-marksix-refresh-v2': '六合彩',
   'cron-matrix-649-refresh-v2': '大樂透',
 };
+const watchdogLotteries: WatchdogLottery[] = ['今彩539', '天天樂', '六合彩', '大樂透'];
 
 const routes: Record<string, unknown> = {
   'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
@@ -486,7 +493,34 @@ export const matrixIndependentWatchdog = async (
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
   const owner = event?.invocationId || `cron:${at.toISOString()}`;
-  const result = await independentWatchdog.run(at, owner);
+  const dueLotteries = watchdogLotteries.filter((lottery) =>
+    expectedDrawDateForDueWindow(lottery, at) !== null);
+  let watchdogResult: Record<string, unknown>;
+  try {
+    watchdogResult = { ...await independentWatchdog.run(at, owner) };
+  } catch {
+    watchdogResult = {
+      status: 'degraded',
+      checkedAt: at.toISOString(),
+      actions: [],
+      error: 'WATCHDOG_FAILED',
+    };
+  }
+  const completedAt = new Date().toISOString();
+  const heartbeat = { ...watchdogResult, completedAt, dueLotteries };
+  let result: WatchdogStatus;
+  try {
+    result = await watchdogStatus.save(heartbeat);
+  } catch {
+    result = {
+      status: 'degraded',
+      checkedAt: at.toISOString(),
+      completedAt,
+      dueLotteries,
+      actions: [],
+      error: 'WATCHDOG_STATUS_WRITE_FAILED',
+    };
+  }
   const log = result.status === 'ok' ? console.log : console.error;
   log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
   return { statusCode: 200 };
