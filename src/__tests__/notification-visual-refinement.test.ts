@@ -98,7 +98,7 @@ describe("notification visual refinement", () => {
     const systemSetting = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-settings-toggle")!);
     const systemTitle = getComputedStyle(document.querySelector("[data-notification-key=system] .notification-title")!);
 
-    expect(groupDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
+    expect(groupDivider.borderTopStyle).toBe("none");
     expect(inlineDivider.borderTopColor).toBe("rgba(170, 119, 46, 0.24)");
     expect(normalActions.gridTemplateColumns).toBe("56px 38px");
     expect(normalActions.gap).toBe("8px");
