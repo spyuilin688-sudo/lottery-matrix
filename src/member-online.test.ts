@@ -32,7 +32,7 @@ describe('member online tracking', () => {
     stop();
   });
 
-  it('lets logout await the active session end before credentials are cleared', async () => {
+  it('lets logout await the active session end and resume tracking when logout fails', async () => {
     const post = vi.fn(async (path: string) => path.endsWith('/start')
       ? { sessionId: 'session-logout' }
       : { onlineSeconds: 30 });
@@ -41,9 +41,14 @@ describe('member online tracking', () => {
     const stop = startMemberOnlineTracking(post, document);
     await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/start', {}));
 
-    await endActiveMemberOnlineSession();
+    const resume = await endActiveMemberOnlineSession();
 
     expect(post).toHaveBeenCalledWith('/api/member-online/end', { sessionId: 'session-logout' });
+    expect(post).toHaveBeenCalledTimes(2);
+
+    resume();
+    await vi.waitFor(() => expect(post).toHaveBeenCalledTimes(3));
+    expect(post).toHaveBeenLastCalledWith('/api/member-online/start', {});
     stop();
   });
 });

@@ -250,6 +250,36 @@ describe('LINE auth helper', () => {
     expect(order).toEqual(['cleanupOnline', 'cleanupPush', 'signOut']);
   });
 
+  it('resumes online tracking when local sign-out fails', async () => {
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockResolvedValue(resumeOnline);
+    const { client } = createClient({
+      session: null,
+      signOut: vi.fn().mockResolvedValue({ error: new Error('private returned detail') }),
+    });
+
+    await expect(signOutFromMatrix(
+      client as never,
+      vi.fn(),
+      vi.fn(),
+      cleanupOnline,
+    )).rejects.toThrow('SUPABASE_SIGN_OUT_FAILED');
+
+    expect(cleanupOnline).toHaveBeenCalledTimes(1);
+    expect(resumeOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves online tracking stopped after successful local sign-out', async () => {
+    const resumeOnline = vi.fn();
+    const cleanupOnline = vi.fn().mockResolvedValue(resumeOnline);
+    const { client } = createClient({ session: null });
+
+    await signOutFromMatrix(client as never, vi.fn(), vi.fn(), cleanupOnline);
+
+    expect(cleanupOnline).toHaveBeenCalledTimes(1);
+    expect(resumeOnline).not.toHaveBeenCalled();
+  });
+
   it('clears the in-memory provider token after successful revoke and sign-out', async () => {
     rememberLineProviderToken('remembered-provider-token');
     const { client } = createClient({ session: { access_token: 'supabase-access-token' } });
