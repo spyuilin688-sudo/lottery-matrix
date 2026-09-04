@@ -290,9 +290,12 @@ function validateAdminInput(input: AdminAccountInput) {
   if (!adminStatuses.includes(input.status)) throw new AdminDataError('帳號狀態不正確');
   const permissions = input.role === '超級管理員'
     ? { can_view: true, can_add: true, can_edit: true, can_delete: true }
-    : input.role === '營運管理員'
-      ? { can_view: true, can_add: true, can_edit: true, can_delete: false }
-      : { can_view: true, can_add: false, can_edit: false, can_delete: false };
+    : {
+        can_view: Boolean(input.can_view),
+        can_add: Boolean(input.can_add),
+        can_edit: Boolean(input.can_edit),
+        can_delete: Boolean(input.can_delete),
+      };
   return {
     account: input.account.trim().toLowerCase(),
     name: input.name.trim(),

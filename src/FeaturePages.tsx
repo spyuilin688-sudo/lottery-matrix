@@ -1218,7 +1218,10 @@ function ExploreValidationProcess({
                 開 <i className="validation-summary-primary">{item.number}</i> 第 <i className="validation-summary-position">{item.position}</i> 顆{" "}{summarySeparator()}{" "}
                 {relation === "同期" ? <i className="validation-summary-position">同期</i> : <>{relation.startsWith("上") ? "上 " : "下 "}<i className="validation-summary-lookback">{Math.abs(item.referenceOffset ?? 0)}</i> 期</>}{" "}{summarySeparator()}{" "}第 <i className="validation-summary-position">{item.referencePosition ?? item.position}</i> 顆{" "}{summarySeparator()}{" "}
                 {item.algorithmType === "合值" ? (
-                  <><span className="validation-summary-formula-label">合值</span>{" "}<i className="validation-summary-formula">{summaryFormulaValues.map((display) => display.replace(/^合值\s*/, "").replace(/^\+/, "")).join("、")}</i></>
+                  <span className="validation-summary-formula-sequence">
+                    <span className="validation-summary-formula-label">合值</span>
+                    <i className="validation-summary-formula">{summaryFormulaValues.map((display) => display.replace(/^合值\s*/, "")).join("、")}</i>
+                  </span>
                 ) : <i className="validation-summary-formula">{ruleDisplays()}</i>}{" "}{summarySeparator()}{" "}下 <i className="validation-summary-future">{item.predictionPeriod}</i> 期開
               </ExploreValidationSummary>
               <strong className="explore-validation-consecutive-tag">{item.consecutive}</strong>
@@ -1577,7 +1580,7 @@ export function MatrixExplorePage({
     if (hitValue === "準4+（鎖定1碼）") {
       return isTrailer
         ? ["準5進6", "準6進7", "準7進8"]
-        : ["準6進7", "準7進8"];
+        : ["準5進6", "準6進7", "準7進8"];
     }
     return isTrailer
       ? ["準6進7", "準7進8", "準9進10", "準11進12"]

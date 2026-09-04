@@ -30,7 +30,7 @@ describe('requireAdmin', () => {
     await expect(requireAdmin('OWNER@example.com', api)).resolves.toMatchObject({
       id: 'a1',
       account: 'owner@example.com',
-      permissions: { view: true, add: true, edit: true, delete: false },
+      permissions: { view: true, add: true, edit: false, delete: false },
     });
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('admin_accounts'));
   });
@@ -72,6 +72,13 @@ describe('permissions', () => {
       role: '查看人員',
       permissions: { view: true, add: false, edit: false, delete: false },
     }, 'add')).toThrowError('權限不足');
+  });
+
+  it('uses stored operation permissions for a non-super administrator', () => {
+    expect(getPermissions({
+      role: '營運管理員',
+      permissions: { view: false, add: false, edit: true, delete: true },
+    })).toEqual({ view: false, add: false, edit: true, delete: true });
   });
 
   it('applies one functional permission matrix to every account in a role', () => {

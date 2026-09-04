@@ -15,6 +15,20 @@ const cssRule = (css: string, selector: string) => {
 };
 
 describe("Matrix result visual contract", () => {
+  it("keeps a 14px result inset and gives the full added width to the Explore and Tianyan right column", () => {
+    const css = readCss("src/matrix-explore-spacing.css");
+    const screen = cssRule(css, ".matrix-explore-main-screen");
+    const panel = cssRule(css, ".matrix-explore-main-screen .feature-body > .result-panel");
+    const resultRows = cssRule(css, ".matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head,\n.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row");
+    const rightCells = cssRule(css, ".matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head > :last-child,\n.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row > :last-child");
+
+    expect(screen).toMatch(/--matrix-explore-result-panel-extra-width:\s*calc\(var\(--layout-page-inline\) \+ var\(--layout-page-inline\) - 28px\)/);
+    expect(panel).toMatch(/--matrix-explore-result-panel-width:\s*calc\(100% \+ var\(--matrix-explore-result-panel-extra-width\)\)/);
+    expect(resultRows).toMatch(/padding-right:\s*var\(--matrix-explore-result-panel-extra-width\)/);
+    expect(rightCells).toMatch(/width:\s*calc\(100% \+ var\(--matrix-explore-result-panel-extra-width\)\)/);
+    expect(rightCells).toMatch(/margin-right:\s*calc\(0px - var\(--matrix-explore-result-panel-extra-width\)\)/);
+  });
+
   it("uses the requested shared pagination dimensions", () => {
     const css = readCss("src/feature-pages.css");
     const pagination = cssRule(css, ".history-pagination");
@@ -43,14 +57,16 @@ describe("Matrix result visual contract", () => {
     expect(sameCode).toMatch(/border-top:\s*0\.7px solid rgba\(230,\s*183,\s*106,\s*\.72\)/);
   });
 
-  it("uses one alternating background across all three validation columns", () => {
+  it("uses the requested Explore-only alternating background across all three validation columns", () => {
     const css = readCss("src/explore-result-preview.css");
-    const odd = cssRule(css, ".explore-validation-group:nth-child(odd)");
-    const even = cssRule(css, ".explore-validation-group:nth-child(even)");
+    const odd = cssRule(css, ".matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(odd)");
+    const even = cssRule(css, ".matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(even)");
     const columns = cssRule(css, ".explore-validation-issues,\n.explore-validation-numbers-card,\n.explore-validation-formulas");
+    const prediction = cssRule(css, ".explore-validation-prediction b");
 
-    expect(odd).toMatch(/background:\s*#080f1b/i);
-    expect(even).toMatch(/background:\s*#0c1422/i);
+    expect(odd).toMatch(/background:\s*#12243a/i);
+    expect(even).toMatch(/background:\s*#0e1d30/i);
     expect(columns).toMatch(/background:\s*transparent/);
+    expect(prediction).toMatch(/font-weight:\s*800/);
   });
 });

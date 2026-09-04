@@ -157,8 +157,8 @@ describe("production member shell", () => {
     expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
     expect(getComputedStyle(summary!).borderTopWidth).toBe("0px");
-    expect(getComputedStyle(firstGroup!).backgroundColor).toBe("rgb(8, 15, 27)");
-    expect(getComputedStyle(secondGroup!).backgroundColor).toBe("rgb(12, 20, 34)");
+    expect(getComputedStyle(firstGroup!).backgroundColor).toBe("rgb(18, 36, 58)");
+    expect(getComputedStyle(secondGroup!).backgroundColor).toBe("rgb(14, 29, 48)");
     expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
     expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
@@ -550,7 +550,7 @@ describe("production member shell", () => {
     expect(css).toMatch(/\.explore-validation-prediction\s*\{[^}]*padding:\s*4px 8px[^}]*border:\s*1px solid #e6b76a[^}]*border-radius:\s*8px[^}]*background:\s*rgba\(230,\s*183,\s*106,\s*\.14\)/s);
     expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*color:\s*#e6b76a/s);
     expect(css).toMatch(/\.explore-validation-prediction strong\s*\{[^}]*font-size:\s*16px/s);
-    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*700/s);
+    expect(css).toMatch(/\.explore-validation-prediction b\s*\{[^}]*font-size:\s*18px[^}]*font-weight:\s*800/s);
     expect(css).toMatch(/\.explore-validation-special-separator\s*\{[^}]*color:\s*#d4a63b/s);
     expect(css).toMatch(/\.explore-validation-special-number\s*\{[^}]*gap:\s*2\.5px/s);
   });

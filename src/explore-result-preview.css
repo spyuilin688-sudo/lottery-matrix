@@ -423,6 +423,14 @@
   background: #0c1422;
 }
 
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(odd) {
+  background: #12243A;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(even) {
+  background: #0E1D30;
+}
+
 .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
   --explore-validation-number-font-size: 12px;
   grid-template-columns: max-content minmax(0, 1fr) minmax(clamp(92px, calc(27vw + 4px), 112px), 112px);
@@ -783,7 +791,7 @@
 .explore-validation-prediction b {
   color: #e6b76a;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: .06em;
 }
 

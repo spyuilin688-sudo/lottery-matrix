@@ -127,6 +127,35 @@ describe('authorized Supabase writes', () => {
     expect(insertRows).toHaveBeenCalledTimes(1);
   });
 
+  it('persists the requested operation permissions for a non-super administrator', async () => {
+    const insertRows = vi.fn(async (table: string, rows: unknown[]) => table === 'admin_accounts'
+      ? [{ id: 'new', ...(rows[0] as object), last_login_at: null, created_at: '2026-08-21T00:00:00Z' }]
+      : [{ id: 'audit' }]);
+    const data = createAdminData({
+      insertRows,
+      selectRows: vi.fn(async () => []),
+      updateRows: vi.fn(async () => []),
+      deleteRows: vi.fn(async () => []),
+      supabaseRequest: vi.fn(async () => []),
+    });
+
+    await data.createAdminAccount({
+      ...input,
+      role: '營運管理員',
+      can_view: false,
+      can_add: false,
+      can_edit: true,
+      can_delete: true,
+    }, { ...actor, role: '超級管理員' });
+
+    expect(insertRows).toHaveBeenCalledWith('admin_accounts', [expect.objectContaining({
+      can_view: false,
+      can_add: false,
+      can_edit: true,
+      can_delete: true,
+    })]);
+  });
+
   it('creates the requested activation-code quantity through the database RPC', async () => {
     const rpc = vi.fn(async () => Array.from({ length: 10 }, (_, index) => ({
       id: String(index + 1),

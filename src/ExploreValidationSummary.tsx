@@ -27,9 +27,16 @@ function formatRoadFormulaText(value: string): ReactNode {
   const parts = value.split("、").map((part) => part.trim());
   if (parts.length < 2 || !parts.every((part) => /^[+-]?\d+$/.test(part))) return value;
 
-  return parts
-    .map((part, index) => index === 0 ? part : part.replace(/^\+/, ""))
-    .join(".");
+  const tokens = parts.flatMap((part, index) => (
+    index === 0 ? [part] : [".", part.replace(/^\+/, "")]
+  ));
+  return (
+    <span className="validation-summary-formula-tokens">
+      {tokens.map((token, index) => (
+        <span className="validation-summary-formula-token" key={`${index}-${token}`}>{token}</span>
+      ))}
+    </span>
+  );
 }
 
 function formatFormulaChildren(children: ReactNode): ReactNode {
