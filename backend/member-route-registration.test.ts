@@ -47,7 +47,6 @@ describe('member route registration', () => {
       'GET /api/member/profile',
       'GET /api/member/notification-settings',
       'PUT /api/member/notification-settings',
-      'POST /api/auth/line/logout',
     ] as const;
 
     for (const path of memberPaths) {
@@ -57,6 +56,12 @@ describe('member route registration', () => {
         statusCode: 401,
       });
     }
+  });
+
+  it('does not register the Supabase-owned LINE logout route', () => {
+    const routes = handler as Record<string, unknown>;
+
+    expect(routes['POST /api/auth/line/logout']).toBeUndefined();
   });
 
   it('ignores a forged line_user_id body when bootstrapping', async () => {

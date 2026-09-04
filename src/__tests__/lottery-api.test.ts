@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
 import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
 import { resetReadCacheForTests } from '../read-cache';
 
@@ -27,6 +28,77 @@ function jsonResponse(body: unknown) {
 }
 
 describe('lottery-api response validation', () => {
+  it('adds one request id and retries a transient read response once', async () => {
+    const draw = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(jsonResponse(draw));
+
+    await expect(fetchLatestLotteryDraw('今彩539')).resolves.toMatchObject({ period: '115207' });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    const requestIds = fetcher.mock.calls.map(([, init]) => (
+      new Headers(init?.headers).get('X-Request-ID')
+    ));
+    expect(requestIds[0]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(requestIds[1]).toBe(requestIds[0]);
+  });
+
+  it('stops a stalled Railway read at the shared deadline', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => new Promise<Response>(() => undefined),
+    );
+    const result = fetchLatestLotteryDraw('今彩539');
+    const rejection = expect(result).rejects.toMatchObject({
+      code: 'REQUEST_TIMEOUT',
+      message: 'REQUEST_TIMEOUT',
+    });
+
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
+
+    await rejection;
+  });
+
+  it('keeps the shared deadline through Railway body delivery and cancels a stalled body', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      new ReadableStream<Uint8Array>({ cancel }),
+      { headers: { 'content-type': 'application/json' } },
+    ));
+    let settled = false;
+    let failure: unknown;
+
+    void fetchLatestLotteryDraw('今彩539').then(
+      () => { settled = true; },
+      (error: unknown) => {
+        settled = true;
+        failure = error;
+      },
+    );
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(failure).toMatchObject({ code: 'REQUEST_TIMEOUT', message: 'REQUEST_TIMEOUT' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not retry an unauthorized Railway read', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('private upstream body', { status: 401, statusText: 'private upstream message' }),
+    );
+
+    const failure = await fetchLatestLotteryDraw('今彩539').catch((error: unknown) => error);
+
+    expect(String(failure)).not.toContain('private upstream');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it('所有同類舊期數格式都正規化為六碼且不誤改正常值', () => {
     expect(normalizePeriod('今彩539', '96000024')).toBe('096024');
     expect(normalizePeriod('今彩539', '105000123')).toBe('105123');

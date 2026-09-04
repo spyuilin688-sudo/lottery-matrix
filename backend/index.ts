@@ -21,9 +21,6 @@ import { createMemberNotificationRoutes } from './member-notification-routes';
 import { createMemberBootstrap } from './member-bootstrap';
 import { createMemberBootstrapRoutes } from './member-bootstrap-routes';
 import { createMemberRouteHandlers } from './member-route-handlers';
-import { createLineLogout, LineLogoutError } from './line-logout';
-import { createLineLogoutRoutes } from './line-logout-routes';
-import { createLineAuthRouteHandlers } from './line-auth-route-handlers';
 
 async function loadMatrixSupabaseConfig() {
     const names = await secrets.listSecretNames();
@@ -32,21 +29,6 @@ async function loadMatrixSupabaseConfig() {
     const [url,anonKey,serviceRoleKey] = await Promise.all(required.map(name => secrets.readSecret(name)));
     if (!url?.trim() || !anonKey?.trim() || !serviceRoleKey?.trim()) throw new Error('SUPABASE_CONFIG_MISSING');
     return { url:url.trim().replace(/\/+$/,''),anonKey:anonKey.trim(),serviceRoleKey:serviceRoleKey.trim() };
-}
-
-async function loadLineLoginConfig() {
-    const names = await secrets.listSecretNames();
-    if (!names.includes('LINE_CHANNEL_ID') || !names.includes('LINE_CHANNEL_SECRET')) {
-        throw new LineLogoutError('LINE_LOGIN_NOT_CONFIGURED', 503);
-    }
-    const [channelId, channelSecret] = await Promise.all([
-        secrets.readSecret('LINE_CHANNEL_ID'),
-        secrets.readSecret('LINE_CHANNEL_SECRET'),
-    ]);
-    if (!channelId?.trim() || !channelSecret?.trim()) {
-        throw new LineLogoutError('LINE_LOGIN_NOT_CONFIGURED', 503);
-    }
-    return { channelId: channelId.trim(), channelSecret: channelSecret.trim() };
 }
 
 const matrixMemberAuth = createMemberAuth(loadMatrixSupabaseConfig);
@@ -137,14 +119,6 @@ const memberRouteHandlers = createMemberRouteHandlers({
     authorizationHeader,
     json,
 });
-const lineLogout = createLineLogout(loadMatrixSupabaseConfig, loadLineLoginConfig);
-const lineLogoutRoutes = createLineLogoutRoutes({ logout: lineLogout.logout });
-const lineAuthRouteHandlers = createLineAuthRouteHandlers({
-    logoutPost: input => lineLogoutRoutes.post(input),
-    authorizationHeader,
-    json,
-});
-
 export const handler = router({
     'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
     'POST /api/matrix/algorithm/tianyan': [async ({ body,event }) => {
@@ -180,7 +154,6 @@ export const handler = router({
         return json(response.body,response.status);
     }],
     ...memberRouteHandlers,
-    ...lineAuthRouteHandlers,
     'POST /api/member-online/start': [async ({ event }) => {
         try {
             const member=await matrixMemberAuth.requireMember(authorizationHeader(event));
