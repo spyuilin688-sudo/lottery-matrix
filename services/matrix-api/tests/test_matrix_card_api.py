@@ -110,7 +110,7 @@ def test_daily_monday_uses_a_red_boxed_one() -> None:
     )
 
     assert re.search(
-        r'<text x="163\\.0" y="140\\.0"[^>]*fill="#ff0000">一</text>',
+        r'<text x="163\.0" y="140\.0"[^>]*fill="#ff0000">一</text>',
         svg,
     )
     for x1, y1, x2, y2 in (
