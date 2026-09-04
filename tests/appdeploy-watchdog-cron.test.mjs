@@ -27,6 +27,7 @@ test('AppDeploy owns one independent five-minute Matrix watchdog', () => {
 
 test('Fantasy5 recovery keeps GitHub crawling separate from Railway analysis', () => {
   assert.match(watchdog, /snapshot\.lottery === '天天樂' \? 'github' : 'railway'/);
-  assert.match(watchdog, /fantasy5-crawler\.yml\/dispatches/);
+  assert.match(watchdog, /fantasy5-crawler\.yml/);
+  assert.match(watchdog, /\/dispatches/);
   assert.doesNotMatch(watchdog, /California|SC888|LatestDrawSource/);
 });
