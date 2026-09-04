@@ -13,6 +13,7 @@ vi.mock('../member-api', async (importOriginal) => ({
 }));
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
+import { AppDialogProvider } from '../dialog/AppDialog';
 
 const summary = {
   referralCode: 'MATRIX-7H4K9P',
@@ -43,7 +44,7 @@ describe('invite friends referral summary', () => {
   });
 
   test('我的推薦碼頁移除邀請好友按鈕並保留行內複製功能', async () => {
-    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+    render(<AppDialogProvider><FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} /></AppDialogProvider>);
 
     expect(await screen.findByText('MATRIX-7H4K9P')).toBeVisible();
     expect(screen.queryByRole('button', { name: '邀請好友' })).not.toBeInTheDocument();
