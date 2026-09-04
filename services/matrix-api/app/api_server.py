@@ -11,11 +11,15 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 import httpx
 
 from app.card_renderer import card_layout, render_matrix_card
+from app.analysis_worker import run_analysis_only_worker
+from app.recovery import RecoveryCoordinator
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
 from app.services.draw_refresh import DrawRefreshService
+from app.services.notification_events import notification_emitter_context
 from app.settings import load_settings
+from app.worker import create_notification_emitter, run_scheduled_worker
 from app.worker_all import create_railway_ssl_context
 
 
@@ -277,6 +281,36 @@ def refresh_latest_draw(
         return DrawRefreshService(repository, LatestDrawSource(client)).refresh(lottery)
 
 
+def run_lottery_recovery(lottery: str) -> None:
+    settings = load_settings()
+    repository = create_supabase_repository(
+        settings.supabase_url,
+        settings.supabase_secret_key,
+    )
+    if lottery == "天天樂":
+        with notification_emitter_context(settings) as notification_emitter:
+            run_analysis_only_worker(
+                lottery,
+                repository,
+                notification_emitter=notification_emitter,
+            )
+        return
+
+    refresh_latest_draw(lottery, repository)
+    with httpx.Client(verify=create_railway_ssl_context()) as client:
+        notification_emitter = create_notification_emitter(settings, client)
+        run_scheduled_worker(
+            lottery,
+            None,
+            repository,
+            LatestDrawSource(client),
+            notification_emitter=notification_emitter,
+        )
+
+
+_RECOVERY_COORDINATOR = RecoveryCoordinator(run_lottery_recovery)
+
+
 def handle_api_request(
     method: str,
     target: str,
@@ -284,6 +318,7 @@ def handle_api_request(
     repository: AnalysisRepository,
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
+    recover_lottery: Callable[[str], str] | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -316,6 +351,17 @@ def handle_api_request(
                 }
             except Exception:
                 return 503, {"error": "REFRESH_UNAVAILABLE"}
+        if method == "POST" and path == "/jobs/recover":
+            if not _status_token_authorized(request_monitor_token):
+                return 403, {"error": "FORBIDDEN"}
+            lottery = _parse_lottery(_decode_body(body).get("lottery"))
+            try:
+                recovery_status = (recover_lottery or _RECOVERY_COORDINATOR.enqueue)(
+                    lottery
+                )
+                return 202, {"lottery": lottery, "status": recovery_status}
+            except Exception:
+                return 503, {"error": "RECOVERY_UNAVAILABLE"}
         if method == "GET" and path.startswith(CARD_PREFIX):
             card_lottery = path[len(CARD_PREFIX):]
             if "/" not in card_lottery:
@@ -377,7 +423,11 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def _is_protected_job_path(self) -> bool:
-        return urlsplit(self.path).path in {"/jobs/status", "/jobs/refresh"}
+        return urlsplit(self.path).path in {
+            "/jobs/status",
+            "/jobs/refresh",
+            "/jobs/recover",
+        }
 
     def _is_matrix_card_path(self) -> bool:
         return urlsplit(self.path).path.startswith(CARD_PREFIX)
