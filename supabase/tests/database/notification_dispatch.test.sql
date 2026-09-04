@@ -1,6 +1,6 @@
 begin;
 
-select plan(70);
+select plan(71);
 
 select has_table('public', 'notification_events', 'notification_events table exists');
 select has_table('public', 'notification_outbox', 'notification_outbox table exists');
@@ -28,6 +28,12 @@ select has_index(
   'notification_outbox',
   'notification_outbox_event_id_member_id_channel_key',
   'notification_outbox member event channel unique index exists'
+);
+select has_index(
+  'public',
+  'notification_outbox',
+  'notification_outbox_member_id_idx',
+  'notification_outbox member foreign key index exists'
 );
 
 set local role anon;
