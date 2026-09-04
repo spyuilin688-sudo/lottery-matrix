@@ -1,42 +1,19 @@
-export type PushSubscription = {
-  id: string;
-  endpoint: string;
-  p256dh: string;
-  authKey: string;
-};
+import {
+  deliverPushToSubscription,
+  type DeliveryDependencies,
+  type PushPayload,
+  type PushSubscription,
+} from "../_shared/web-push-delivery.ts";
 
-export type PushPayload = {
-  title: string;
-  body: string;
-  url: string;
-};
+export type {
+  DeliveryLog,
+  PushPayload,
+  PushSubscription,
+} from "../_shared/web-push-delivery.ts";
 
-export type DeliveryLog = {
-  userId: string;
-  subscriptionId: string;
-  title: string;
-  body: string;
-  status: "sent" | "failed";
-  failureReason: string | null;
-  adminAccount: string;
-  sentAt: string;
-};
-
-type Dependencies = {
+type Dependencies = DeliveryDependencies & {
   serviceRoleKey: string;
   listSubscriptions(userId: string): Promise<PushSubscription[]>;
-  sendPush(
-    subscription: PushSubscription,
-    payload: PushPayload,
-  ): Promise<void>;
-  recordDelivery(log: DeliveryLog): Promise<void>;
-  markSuccess(subscriptionId: string, at: string): Promise<void>;
-  markFailure(
-    subscriptionId: string,
-    at: string,
-    disable: boolean,
-  ): Promise<void>;
-  now?: () => Date;
 };
 
 const CORS_HEADERS = {
@@ -84,20 +61,7 @@ function constantTimeEqual(left: string, right: string) {
   return difference === 0;
 }
 
-function failureReason(cause: unknown) {
-  if (cause instanceof Error && cause.message.trim()) return cause.message;
-  return "Push delivery failed";
-}
-
-function expiredEndpoint(cause: unknown) {
-  if (!cause || typeof cause !== "object") return false;
-  const statusCode = Reflect.get(cause, "statusCode");
-  return statusCode === 404 || statusCode === 410;
-}
-
 export function createSendTestPushHandler(dependencies: Dependencies) {
-  const now = dependencies.now ?? (() => new Date());
-
   return async (request: Request): Promise<Response> => {
     if (request.method === "OPTIONS") {
       return new Response("ok", { headers: CORS_HEADERS });
@@ -143,44 +107,14 @@ export function createSendTestPushHandler(dependencies: Dependencies) {
     let sent = 0;
     let failed = 0;
     for (const subscription of subscriptions) {
-      const sentAt = now().toISOString();
-      let delivered = false;
-      let sendFailure: unknown;
-      try {
-        await dependencies.sendPush(subscription, PAYLOAD);
-        delivered = true;
-      } catch (cause) {
-        sendFailure = cause;
-      }
-
-      if (delivered) {
-        await dependencies.markSuccess(subscription.id, sentAt);
-        await dependencies.recordDelivery({
-          userId,
-          subscriptionId: subscription.id,
-          title: PAYLOAD.title,
-          body: PAYLOAD.body,
-          status: "sent",
-          failureReason: null,
-          adminAccount,
-          sentAt,
-        });
-        sent += 1;
-      } else {
-        const disable = expiredEndpoint(sendFailure);
-        await dependencies.markFailure(subscription.id, sentAt, disable);
-        await dependencies.recordDelivery({
-          userId,
-          subscriptionId: subscription.id,
-          title: PAYLOAD.title,
-          body: PAYLOAD.body,
-          status: "failed",
-          failureReason: failureReason(sendFailure),
-          adminAccount,
-          sentAt,
-        });
-        failed += 1;
-      }
+      const result = await deliverPushToSubscription(dependencies, {
+        userId,
+        subscription,
+        payload: PAYLOAD,
+        adminAccount,
+      });
+      if (result.delivered) sent += 1;
+      else failed += 1;
     }
 
     return json({ sent, failed }, 200);

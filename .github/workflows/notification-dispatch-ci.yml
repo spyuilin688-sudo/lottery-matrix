@@ -1,0 +1,187 @@
+name: Notification Dispatch CI
+
+on:
+  push:
+    branches:
+      - work/notification-dispatch-20260903
+
+jobs:
+  edge-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Targeted admin notification tests
+        shell: bash
+        run: |
+          tests=(
+            apps/admin/backend/push-notifications.test.ts
+            apps/admin/backend/index-wiring.test.ts
+          )
+          if [ -f apps/admin/backend/notification-events.test.ts ]; then
+            tests+=(apps/admin/backend/notification-events.test.ts)
+          fi
+          npx vitest run "${tests[@]}"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Targeted Edge Function tests
+        shell: bash
+        run: |
+          deno test supabase/functions/send-test-push/handler.test.ts
+          if [ -f supabase/functions/_shared/web-push-delivery.test.ts ]; then
+            deno test supabase/functions/_shared/web-push-delivery.test.ts
+          fi
+          if [ -f supabase/functions/notification-ingest/handler.test.ts ]; then
+            deno test supabase/functions/notification-ingest/handler.test.ts
+          fi
+          if [ -f supabase/functions/notification-ingest/index.ts ]; then
+            deno check --config supabase/functions/notification-ingest/deno.json supabase/functions/notification-ingest/index.ts
+          fi
+          if [ -f supabase/functions/notification-dispatch/handler.test.ts ]; then
+            deno test supabase/functions/notification-dispatch/handler.test.ts
+          fi
+          if [ -f supabase/functions/notification-dispatch/index.ts ]; then
+            deno check --config supabase/functions/notification-dispatch/deno.json supabase/functions/notification-dispatch/index.ts
+          fi
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Targeted Railway notification tests
+        working-directory: services/matrix-api
+        shell: bash
+        run: |
+          python - <<'PY' > /tmp/matrix-api-test-requirements.txt
+          import tomllib
+          from pathlib import Path
+          data = tomllib.loads(Path('pyproject.toml').read_text())
+          for dependency in data['project']['dependencies']:
+              print(dependency)
+          for dependency in data.get('dependency-groups', {}).get('dev', []):
+              print(dependency)
+          PY
+          python -m pip install -r /tmp/matrix-api-test-requirements.txt
+          tests=(tests/test_worker.py)
+          if [ -f tests/test_notification_events.py ]; then
+            tests+=(tests/test_notification_events.py)
+          fi
+          pytest -q "${tests[@]}"
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ghcr.io/supabase/postgres:17.6.1.165
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGPORT: 54322
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGOPTIONS: -c search_path=public,extensions
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pgTAP test runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client libtap-parser-sourcehandler-pgtap-perl
+      - name: Bootstrap only notification prerequisites
+        shell: bash
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "select 1" >/dev/null
+          psql -tAc "select 1 from pg_roles where rolname='anon'" | grep -q 1 || psql -v ON_ERROR_STOP=1 -c "create role anon nologin"
+          psql -tAc "select 1 from pg_roles where rolname='authenticated'" | grep -q 1 || psql -v ON_ERROR_STOP=1 -c "create role authenticated nologin"
+          psql -tAc "select 1 from pg_roles where rolname='service_role'" | grep -q 1 || psql -v ON_ERROR_STOP=1 -c "create role service_role nologin bypassrls"
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create schema if not exists extensions;
+          create schema if not exists private;
+          create extension if not exists pgcrypto with schema extensions;
+          create extension if not exists pgtap with schema extensions;
+
+          create table if not exists public.members (
+            id uuid primary key default gen_random_uuid(),
+            auth_user_id uuid not null references auth.users(id) on delete cascade,
+            line_user_id text,
+            current_plan_id uuid,
+            plan_expires_at timestamptz,
+            is_lifetime boolean not null default false,
+            status text
+          );
+
+          create table if not exists public.notification_settings (
+            member_id uuid primary key references public.members(id) on delete cascade,
+            settings jsonb not null check (jsonb_typeof(settings) = 'object'),
+            updated_at timestamptz not null default now()
+          );
+
+          create or replace function private.default_member_notification_settings()
+          returns jsonb
+          language sql
+          immutable
+          security invoker
+          set search_path = ''
+          as $$
+            select pg_catalog.jsonb_build_object(
+              'settings', pg_catalog.jsonb_build_object(
+                'bet', true, 'result', true, 'win', true, 'status', true,
+                'card', true, 'collision', false, 'system', true, 'expiry', true
+              ),
+              'selectedOptions', pg_catalog.jsonb_build_object(
+                'result', pg_catalog.jsonb_build_array('今彩539', '天天樂', '六合彩', '大樂透'),
+                'win', pg_catalog.jsonb_build_array('彩種通知'),
+                'status', pg_catalog.jsonb_build_array('今彩539', '天天樂', '六合彩', '大樂透'),
+                'card', pg_catalog.jsonb_build_array('今彩539', '天天樂', '六合彩', '大樂透'),
+                'system', pg_catalog.jsonb_build_array('維護', '更新'),
+                'expiry', pg_catalog.jsonb_build_array('提前1日', '提前3日', '提前7日')
+              ),
+              'betTimes', pg_catalog.jsonb_build_object(
+                '今彩539', pg_catalog.jsonb_build_array('', ''),
+                '天天樂', pg_catalog.jsonb_build_array('', ''),
+                '六合彩', pg_catalog.jsonb_build_array('', ''),
+                '大樂透', pg_catalog.jsonb_build_array('', '')
+              ),
+              'statusOptions', pg_catalog.jsonb_build_object(
+                '今彩539', pg_catalog.jsonb_build_array('啟動', '聚合', '共振', '臨界'),
+                '天天樂', pg_catalog.jsonb_build_array('啟動', '聚合', '共振', '臨界'),
+                '六合彩', pg_catalog.jsonb_build_array('啟動', '聚合', '共振', '臨界'),
+                '大樂透', pg_catalog.jsonb_build_array('啟動', '聚合', '共振', '臨界')
+              ),
+              'collisionOptions', pg_catalog.jsonb_build_object(
+                '今彩539', pg_catalog.jsonb_build_array('獨碰二星', '獨碰三星'),
+                '天天樂', pg_catalog.jsonb_build_array('獨碰二星', '獨碰三星'),
+                '六合彩', pg_catalog.jsonb_build_array('獨碰二星', '獨碰三星'),
+                '大樂透', pg_catalog.jsonb_build_array('獨碰二星', '獨碰三星')
+              )
+            );
+          $$;
+          SQL
+      - name: Apply notification migrations under test
+        shell: bash
+        run: |
+          shopt -s nullglob
+          migrations=(supabase/migrations/20260903133*.sql supabase/migrations/20260903134*.sql)
+          for migration in "${migrations[@]}"; do
+            echo "Applying $migration"
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Notification database contracts
+        run: pg_prove --verbose supabase/tests/database/notification_dispatch*.test.sql

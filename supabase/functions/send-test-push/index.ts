@@ -2,12 +2,12 @@ import "edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 // @ts-types="web-push-types"
 import webpush from "web-push";
-import {
-  createSendTestPushHandler,
-  type DeliveryLog,
-  type PushPayload,
-  type PushSubscription,
-} from "./handler.ts";
+import { createSendTestPushHandler } from "./handler.ts";
+import type {
+  DeliveryLog,
+  PushPayload,
+  PushSubscription,
+} from "../_shared/web-push-delivery.ts";
 
 function secret(name: string) {
   const value = Deno.env.get(name)?.trim() ?? "";
