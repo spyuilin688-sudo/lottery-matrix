@@ -10,6 +10,7 @@
   <button id="download" type="button">download</button>
   <button id="download-again" type="button">download again</button>
   <button id="show-preview" type="button">show preview</button>
+  <button id="show-current-preview" type="button">show current preview</button>
   <div id="preview-host"><img id="preview" class="matrix-ticket-image" alt="preview" /></div>
   <script type="module">
     import {
@@ -51,6 +52,9 @@
     });
     document.querySelector('#show-preview').addEventListener('click', () => {
       document.querySelector('#preview').src = previewUrl;
+    });
+    document.querySelector('#show-current-preview').addEventListener('click', () => {
+      document.querySelector('#preview').src = cardUrl;
     });
 
     window.__matrixCardDownloadTest = {
