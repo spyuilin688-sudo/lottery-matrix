@@ -17,6 +17,7 @@ from app.services.notification_events import (
     lottery_result_event,
     matrix_card_event,
     matrix_status_event,
+    notification_emitter_context,
 )
 from app.settings import load_settings
 from app.worker import ANALYSIS_VERSION, _draw_from_history, _run_analysis
@@ -279,7 +280,15 @@ def main(argv: list[str] | None = None) -> int:
         settings.supabase_url,
         settings.supabase_secret_key,
     )
-    result = run_analysis_only_worker(lottery, repository)
+    with notification_emitter_context(settings) as notification_emitter:
+        if notification_emitter is None:
+            result = run_analysis_only_worker(lottery, repository)
+        else:
+            result = run_analysis_only_worker(
+                lottery,
+                repository,
+                notification_emitter=notification_emitter,
+            )
     print(f'{result["lottery"]} {result["drawPeriod"] or "-"} {result["status"]}')
     return 0
 
