@@ -28,6 +28,7 @@ Endpoints:
 GET  /health
 GET  /jobs/status
 POST /jobs/refresh
+POST /jobs/recover
 GET  /api/matrix/latest/{lottery}
 GET  /api/matrix/history/{lottery}
 POST /api/matrix/tongxing
@@ -36,8 +37,9 @@ POST /api/matrix/number-reference
 
 The PWA reads this service through `VITE_RAILWAY_API_BASE`.
 
-`GET /health` is public. `GET /jobs/status` and `POST /jobs/refresh` are for
-the AppDeploy backend only and require the `X-Matrix-Admin-Token` request
+`GET /health` is public. `GET /jobs/status`, `POST /jobs/refresh`, and
+`POST /jobs/recover` are for the AppDeploy backend only and require the
+`X-Matrix-Admin-Token` request
 header. Railway and AppDeploy must store the same server-only secret under
 `MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
 or other browser configuration.
@@ -51,6 +53,27 @@ not a deployment target for the public PWA.
 history, run Matrix analysis, or update scheduled-job status records. Requests
 for 天天樂 return `409 FANTASY5_CRAWLER_GITHUB_ONLY`; its only ingestion path is
 the GitHub crawler.
+
+`POST /jobs/recover` starts one deduplicated background recovery for the selected
+lottery and returns `202` immediately. For 天天樂 it invokes only
+`app.analysis_worker`; it never constructs or calls a draw source. For the
+three Railway-owned lotteries it refreshes the latest draw and resumes the
+idempotent Matrix pipeline. Concurrent requests for the same lottery return
+`already-running`.
+
+### Independent watchdog
+
+The AppDeploy admin backend owns `cron.json` and runs
+`matrix-independent-watchdog` on the `3/5 * * * *` Asia/Taipei grid. It reads
+`system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
+from Supabase, then calls `POST /jobs/recover` only for a failed, stuck, missing,
+or due-but-stale item.
+
+天天樂 draw recovery is dispatched only to
+`.github/workflows/fantasy5-crawler.yml`; Railway recovery remains
+analysis-only. AppDeploy requires a server-only `GITHUB_ACTIONS_TOKEN` with
+Actions read/write access to inspect active runs and dispatch that workflow.
+The token must never be exposed to frontend code.
 
 ### Scheduled workers
 
