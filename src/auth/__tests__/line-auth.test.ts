@@ -8,6 +8,7 @@ import {
 } from '../line-provider-token';
 
 import { revokeLineProviderToken, signInWithLine, signOutFromMatrix } from '../line-auth';
+import { startMemberOnlineTracking } from '../../member-online';
 
 function createClient({
   session = { access_token: 'supabase-access-token', provider_token: 'provider-token' },
@@ -248,6 +249,39 @@ describe('LINE auth helper', () => {
     await signOutFromMatrix(client as never, vi.fn(), cleanupPush, cleanupOnline);
 
     expect(order).toEqual(['cleanupOnline', 'cleanupPush', 'signOut']);
+  });
+
+  it('waits for an already in-flight presence end before local sign-out', async () => {
+    let resolveEnd: ((value: Record<string, unknown>) => void) | undefined;
+    const pendingEnd = new Promise<Record<string, unknown>>((resolve) => {
+      resolveEnd = resolve;
+    });
+    const post = vi.fn((path: string) => path.endsWith('/start')
+      ? Promise.resolve({ sessionId: 'session-backgrounding' })
+      : pendingEnd);
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    const stopTracking = startMemberOnlineTracking(post, document);
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/start', {}));
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith(
+      '/api/member-online/end',
+      { sessionId: 'session-backgrounding' },
+    ));
+
+    const signOut = vi.fn().mockResolvedValue({ error: null });
+    const { client } = createClient({ session: null, signOut });
+    const logout = signOutFromMatrix(client as never, vi.fn(), vi.fn());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(signOut).not.toHaveBeenCalled();
+    resolveEnd?.({ onlineSeconds: 5 });
+    await logout;
+    expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
+
+    stopTracking();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   });
 
   it('resumes online tracking when local sign-out fails', async () => {

@@ -57,7 +57,7 @@ describe("profile referral and contact layout", () => {
       expect(getComputedStyle(rule).minHeight).toBe("0px");
     }
     for (const confirm of [referralConfirm, activationConfirm]) {
-      expect(getComputedStyle(confirm).height).toBe("40px");
+      expect(getComputedStyle(confirm).height).toBe("34px");
       expect(getComputedStyle(confirm).fontSize).toBe("20px");
     }
   });

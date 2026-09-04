@@ -51,4 +51,25 @@ describe('member online tracking', () => {
     expect(post).toHaveBeenLastCalledWith('/api/member-online/start', {});
     stop();
   });
+
+  it('allows only the newest overlapping pause to resume tracking', async () => {
+    const post = vi.fn(async (path: string) => path.endsWith('/start')
+      ? { sessionId: 'session-generation' }
+      : { onlineSeconds: 10 });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+
+    const stop = startMemberOnlineTracking(post, document);
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('/api/member-online/start', {}));
+
+    const firstResume = await endActiveMemberOnlineSession();
+    const newestResume = await endActiveMemberOnlineSession();
+    firstResume();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(post).toHaveBeenCalledTimes(2);
+
+    newestResume();
+    await vi.waitFor(() => expect(post).toHaveBeenCalledTimes(3));
+    expect(post).toHaveBeenLastCalledWith('/api/member-online/start', {});
+    stop();
+  });
 });
