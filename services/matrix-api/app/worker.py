@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 
+from app.card_renderer import card_layout
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
 from app.schedule import due_call_cycle, previous_lottery_call_time
 from app.scraping.sources import LatestDrawSource
@@ -17,6 +18,13 @@ from app.services.draw_refresh import (
     DrawSource,
     recent_history_window,
     require_complete_history,
+)
+from app.services.notification_events import (
+    NotificationDeliveryError,
+    NotificationEventEmitter,
+    lottery_result_event,
+    matrix_card_event,
+    matrix_status_event,
 )
 from app.settings import load_settings
 
@@ -99,6 +107,94 @@ def _run_analysis(
         if result.get("status") != "running":
             return result
     return result
+
+
+def _notification_enabled(notification_emitter: NotificationEventEmitter | None) -> bool:
+    return notification_emitter is not None and notification_emitter.enabled
+
+
+def _card_ready(lottery: str, repository: AnalysisRepository) -> bool:
+    required_rows = sum(card_layout(lottery)["column_rows"])
+    return len(repository.list_draws(lottery, required_rows)) >= required_rows
+
+
+def _latest_draw_for_period(
+    lottery: str,
+    period: str,
+    repository: AnalysisRepository,
+) -> dict[str, Any]:
+    latest = repository.list_draws(lottery, 1)
+    if not latest or str(latest[0].get("period")) != period:
+        raise ValueError("NOTIFICATION_DRAW_NOT_AVAILABLE")
+    return {"lottery": lottery, **latest[0]}
+
+
+def _emit_notification_event(
+    notification_emitter: NotificationEventEmitter | None,
+    event: dict[str, Any] | None,
+    emitted_event_keys: set[str],
+) -> None:
+    if not _notification_enabled(notification_emitter) or event is None:
+        return
+    event_key = str(event["eventKey"])
+    if event_key in emitted_event_keys:
+        return
+    notification_emitter.emit(event)
+    emitted_event_keys.add(event_key)
+
+
+def _emit_early_notifications(
+    draw: dict[str, Any],
+    repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    emitted_event_keys: set[str],
+) -> None:
+    if not _notification_enabled(notification_emitter):
+        return
+    events = [lottery_result_event(draw)]
+    if _card_ready(str(draw["lottery"]), repository):
+        events.append(matrix_card_event(draw))
+    for event in events:
+        try:
+            _emit_notification_event(notification_emitter, event, emitted_event_keys)
+        except NotificationDeliveryError:
+            continue
+
+
+def emit_ready_notifications(
+    lottery: str,
+    period: str,
+    repository: AnalysisRepository,
+    notification_emitter: NotificationEventEmitter | None,
+    emitted_event_keys: set[str],
+) -> None:
+    if not _notification_enabled(notification_emitter):
+        return
+    draw = _latest_draw_for_period(lottery, period, repository)
+    _emit_notification_event(
+        notification_emitter,
+        lottery_result_event(draw),
+        emitted_event_keys,
+    )
+    if _card_ready(lottery, repository):
+        _emit_notification_event(
+            notification_emitter,
+            matrix_card_event(draw),
+            emitted_event_keys,
+        )
+
+    version = f"{period}:{ANALYSIS_VERSION}"
+    progress = repository.get_progress(lottery, period, version)
+    if progress is None or progress.get("status") != "complete":
+        return
+    status_artifact = repository.read_completed_artifact(lottery, period, "status")
+    if not isinstance(status_artifact, Mapping):
+        return
+    _emit_notification_event(
+        notification_emitter,
+        matrix_status_event(lottery, period, status_artifact),
+        emitted_event_keys,
+    )
 
 
 def _best_effort_telemetry(write: Callable[[], None]) -> None:
@@ -192,7 +288,9 @@ def run_scheduled_worker(
     repository: AnalysisRepository,
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
+    notification_emitter: NotificationEventEmitter | None = None,
 ) -> dict[str, Any]:
+    emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
     cycle = due_call_cycle(lottery, now)
 
@@ -200,6 +298,14 @@ def run_scheduled_worker(
         if latest:
             resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
             if resumed is not None:
+                if resumed.get("status") == "complete":
+                    emit_ready_notifications(
+                        lottery,
+                        str(latest[0]["period"]),
+                        repository,
+                        notification_emitter,
+                        emitted_event_keys,
+                    )
                 return resumed
         return {"lottery": lottery, "status": "not-due"}
 
@@ -221,7 +327,22 @@ def run_scheduled_worker(
             }
         resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
         if resumed is not None:
+            if resumed.get("status") == "complete":
+                emit_ready_notifications(
+                    lottery,
+                    str(latest[0]["period"]),
+                    repository,
+                    notification_emitter,
+                    emitted_event_keys,
+                )
             return resumed
+        emit_ready_notifications(
+            lottery,
+            str(latest[0]["period"]),
+            repository,
+            notification_emitter,
+            emitted_event_keys,
+        )
         return {
             "lottery": lottery,
             "drawPeriod": latest[0]["period"],
@@ -262,6 +383,12 @@ def run_scheduled_worker(
 
         refresh.store(draw)
         refresh.ensure_history(lottery)
+        _emit_early_notifications(
+            draw,
+            repository,
+            notification_emitter,
+            emitted_event_keys,
+        )
         return {
             "lottery": lottery,
             "drawPeriod": draw["period"],
@@ -284,7 +411,27 @@ def run_scheduled_worker(
     else:
         history = repository.list_draws(lottery, None)
     draw = _draw_from_history(lottery, str(acquisition["drawPeriod"]), history)
-    return _run_analysis(repository, draw, history, builders)
+    result = _run_analysis(repository, draw, history, builders)
+    if result.get("status") == "complete":
+        emit_ready_notifications(
+            lottery,
+            str(acquisition["drawPeriod"]),
+            repository,
+            notification_emitter,
+            emitted_event_keys,
+        )
+    return result
+
+
+def create_notification_emitter(
+    settings: Any,
+    client: httpx.Client,
+) -> NotificationEventEmitter | None:
+    url = str(getattr(settings, "notification_ingest_url", "") or "").strip()
+    token = str(getattr(settings, "notification_ingest_token", "") or "").strip()
+    if not url and not token:
+        return None
+    return NotificationEventEmitter(url, token, client)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -300,7 +447,17 @@ def main(argv: list[str] | None = None) -> int:
     repository = create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
     with httpx.Client() as client:
         source = LatestDrawSource(client)
-        result = run_scheduled_worker(lottery, None, repository, source)
+        notification_emitter = create_notification_emitter(settings, client)
+        if notification_emitter is None:
+            result = run_scheduled_worker(lottery, None, repository, source)
+        else:
+            result = run_scheduled_worker(
+                lottery,
+                None,
+                repository,
+                source,
+                notification_emitter=notification_emitter,
+            )
     draw_period = result.get("drawPeriod", "-")
     print(f'{result["lottery"]} {draw_period} {result["status"]}')
     return 0

@@ -2,15 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const migrationUrl = new URL(
-  '../../../supabase/migrations/20260904070000_admin_todos.sql',
+  '../../../supabase/migrations/20260904080846_admin_todos.sql',
   import.meta.url,
 );
 const indexMigrationUrl = new URL(
-  '../../../supabase/migrations/20260904081000_admin_todos_admin_id_index.sql',
+  '../../../supabase/migrations/20260904081015_admin_todos_admin_id_index.sql',
   import.meta.url,
 );
 const cascadeMigrationUrl = new URL(
-  '../../../supabase/migrations/20260904082000_admin_todos_on_delete_cascade.sql',
+  '../../../supabase/migrations/20260904083730_admin_todos_on_delete_cascade.sql',
   import.meta.url,
 );
 
