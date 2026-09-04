@@ -52,6 +52,7 @@
       cardUrl,
       fetchCount: () => cardFetchCount,
       revokeCount: () => revokeCount,
+      resetRevokeCount: () => { revokeCount = 0; },
       prepared: () => isMatrixCardPngPrepared(cardUrl),
     };
   </script>
