@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createConnectionStatus } from './connection-status';
 import type { WorkerStatus } from './worker-api';
+import type { WatchdogStatus } from './watchdog-status';
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const healthyWorkerStatus: WorkerStatus = {
@@ -47,7 +48,7 @@ describe('connection status', () => {
       endpoint: '/rest/v1/rpc/redeem_activation_code',
       checkMode: 'openapi',
     });
-    expect(result.items).toHaveLength(38);
+    expect(result.items).toHaveLength(56);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -102,7 +103,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(38);
+    expect(result.items).toHaveLength(56);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
@@ -160,9 +161,246 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(fetcher.mock.calls.some(([input, init]) =>
-      String(input).includes('/redeem_activation_code') && init?.method === 'POST')).toBe(false);
-    expect(JSON.stringify(result)).not.toMatch(/raw-service-secret|serviceRoleKey|workerToken/);
+    expect(fetcher.mock.calls.every(([, init]) =>
+      init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS')).toBe(true);
+    expect(fetcher.mock.calls.some(([input]) =>
+      String(input).includes('/redeem_activation_code'))).toBe(false);
+    expect(fetcher.mock.calls.some(([input]) =>
+      String(input).includes('/jobs/recover'))).toBe(false);
+    expect(JSON.stringify(result)).not.toMatch(/raw-service-secret|serviceRoleKey|workerToken|Authorization/);
+  });
+
+  it('reads only GitHub workflow metadata and the latest run with a server-side token', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/fantasy5-crawler.yml')) return response({
+        name: 'Fantasy5 crawler',
+        path: '.github/workflows/fantasy5-crawler.yml',
+        state: 'active',
+        token: 'raw-upstream-secret',
+      });
+      if (url.endsWith('/fantasy5-crawler.yml/runs?per_page=1')) return response({
+        workflow_runs: [{
+          status: 'completed', conclusion: 'success',
+          created_at: '2026-09-04T11:40:00Z', updated_at: '2026-09-04T11:42:00Z',
+          head_sha: 'secret-source-sha', logs_url: 'https://api.github.test/raw-secret',
+        }],
+      });
+      if (url.endsWith('/rest/v1/')) return response({ paths: {} });
+      return response({ ok: true });
+    });
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      loadGithubToken: async () => 'github-server-secret',
+      fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+      now: () => new Date('2026-09-04T12:00:00Z'),
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'github-fantasy5-workflow')).toMatchObject({
+      ok: true,
+      detail: {
+        workflow: { name: 'Fantasy5 crawler', path: '.github/workflows/fantasy5-crawler.yml', state: 'active' },
+        latestRun: {
+          status: 'completed', conclusion: 'success',
+          createdAt: '2026-09-04T11:40:00Z', updatedAt: '2026-09-04T11:42:00Z',
+        },
+      },
+    });
+    const githubCalls = fetcher.mock.calls.filter(([input]) =>
+      String(input).startsWith('https://api.github.com/'));
+    expect(githubCalls).toHaveLength(2);
+    expect(githubCalls.map(([input]) => String(input))).toEqual([
+      'https://api.github.com/repos/spyuilin688-sudo/lottery-matrix/actions/workflows/fantasy5-crawler.yml',
+      'https://api.github.com/repos/spyuilin688-sudo/lottery-matrix/actions/workflows/fantasy5-crawler.yml/runs?per_page=1',
+    ]);
+    expect(githubCalls.every(([, init]) => init?.method === 'GET')).toBe(true);
+    expect(githubCalls.every(([, init]) =>
+      new Headers(init?.headers).get('Authorization') === 'Bearer github-server-secret')).toBe(true);
+    expect(JSON.stringify(result)).not.toMatch(/github-server-secret|raw-upstream-secret|secret-source-sha|raw-secret/);
+  });
+
+  it('reports missing GitHub configuration without sending a request or leaking loader errors', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+      ? response({ paths: {} })
+      : response({ ok: true }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      loadGithubToken: async () => { throw new Error('token=github-raw-secret'); },
+      fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'github-fantasy5-workflow')).toMatchObject({
+      ok: false,
+      error: 'GitHub Actions API 暫時無法使用',
+    });
+    expect(fetcher.mock.calls.some(([input]) => String(input).startsWith('https://api.github.com/'))).toBe(false);
+    expect(JSON.stringify(result)).not.toContain('github-raw-secret');
+  });
+
+  it('checks all Edge Functions with OPTIONS only', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+      ? response({ paths: {} })
+      : response({ ok: true }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+
+    await status.get();
+    const functionCalls = fetcher.mock.calls.filter(([input]) =>
+      String(input).includes('/functions/v1/'));
+    expect(functionCalls.map(([input]) => String(input))).toEqual([
+      'https://db.test/functions/v1/matrix-status',
+      'https://db.test/functions/v1/notification-ingest',
+      'https://db.test/functions/v1/notification-dispatch',
+      'https://db.test/functions/v1/send-test-push',
+      'https://db.test/functions/v1/line-logout',
+    ]);
+    expect(functionCalls.every(([, init]) => init?.method === 'OPTIONS')).toBe(true);
+    expect(functionCalls.every(([, init]) => {
+      const headers = new Headers(init?.headers);
+      return headers.get('apikey') === 'service-secret'
+        && headers.get('Authorization') === 'Bearer service-secret';
+    })).toBe(true);
+    expect(functionCalls.every(([, init]) => init?.body === undefined)).toBe(true);
+  });
+
+  it('uses one OpenAPI document to confirm write RPC presence without invoking any RPC', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+      ? response({ paths: {
+        '/rpc/claim_matrix_watchdog_lease': { post: {} },
+        '/rpc/notification_dispatch_mark_sent': { post: {} },
+      } })
+      : response({ ok: true }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'supabase-rpc-claim_matrix_watchdog_lease')).toMatchObject({ ok: true });
+    expect(result.items.find((item) => item.id === 'supabase-rpc-notification_dispatch_mark_sent')).toMatchObject({ ok: true });
+    expect(fetcher.mock.calls.filter(([input]) => String(input).endsWith('/rest/v1/'))).toHaveLength(1);
+    expect(fetcher.mock.calls.some(([input]) => String(input).includes('/rest/v1/rpc/'))).toBe(false);
+  });
+
+  it('inherits Railway recovery status without posting to recovery', async () => {
+    const getWorkerStatus = vi.fn(async () => healthyWorkerStatus);
+    const fetcher = vi.fn(async () => response({ paths: {} }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher,
+      getWorkerStatus,
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'railway-jobs-recover')).toMatchObject({
+      ok: true,
+      detail: { inheritedFrom: ['/health', '/jobs/status'] },
+    });
+    expect(getWorkerStatus).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls.some(([input]) => String(input).includes('/jobs/recover'))).toBe(false);
+  });
+
+  it('marks an 18-minute watchdog heartbeat healthy and exposes only safe schedule detail', async () => {
+    const heartbeat: WatchdogStatus = {
+      status: 'ok',
+      checkedAt: '2026-09-04T11:41:00.000Z',
+      completedAt: '2026-09-04T11:42:00.000Z',
+      dueLotteries: ['天天樂'],
+      actions: [{ lottery: '天天樂', target: 'github', reasons: ['crawler-stale'], outcome: 'dispatched' }],
+    };
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher: vi.fn(async () => response({ paths: {} })),
+      getWorkerStatus: async () => healthyWorkerStatus,
+      loadWatchdogStatus: async () => ({ ...heartbeat, token: 'raw-heartbeat-secret' } as WatchdogStatus),
+      now: () => new Date('2026-09-04T12:00:00.000Z'),
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+      ok: true,
+      detail: {
+        status: 'ok',
+        checkedAt: '2026-09-04T11:41:00.000Z',
+        completedAt: '2026-09-04T11:42:00.000Z',
+        dueLotteries: ['天天樂'],
+        actions: heartbeat.actions,
+        physicalCronIntervalMinutes: 6,
+        freshnessThresholdMinutes: 18,
+        logicalPhases: [
+          { intervalMinutes: 6, checks: 50 },
+          { intervalMinutes: 10, checks: 60 },
+          { intervalMinutes: 30, checks: 18 },
+        ],
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain('raw-heartbeat-secret');
+  });
+
+  it.each([
+    ['missing', null, '尚無 AppDeploy 獨立監控心跳'],
+    ['stale', {
+      status: 'ok', checkedAt: '2026-09-04T11:40:59.000Z', completedAt: '2026-09-04T11:41:59.000Z',
+      dueLotteries: [], actions: [],
+    } satisfies WatchdogStatus, 'AppDeploy 獨立監控心跳已超過 18 分鐘'],
+  ])('marks a %s watchdog heartbeat unavailable with a safe error', async (_case, heartbeat, error) => {
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher: vi.fn(async () => response({ paths: {} })),
+      getWorkerStatus: async () => healthyWorkerStatus,
+      loadWatchdogStatus: async () => heartbeat,
+      now: () => new Date('2026-09-04T12:00:00.000Z'),
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({ ok: false, error });
+  });
+
+  it('does not accept a watchdog heartbeat that is materially ahead of the status-check clock', async () => {
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher: vi.fn(async () => response({ paths: {} })),
+      getWorkerStatus: async () => healthyWorkerStatus,
+      loadWatchdogStatus: async () => ({
+        status: 'ok', checkedAt: '2026-09-04T12:05:00.000Z', completedAt: '2026-09-04T12:05:00.000Z',
+        dueLotteries: [], actions: [],
+      }),
+      now: () => new Date('2026-09-04T12:00:00.000Z'),
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+      ok: false,
+      error: 'AppDeploy 獨立監控心跳時間異常',
+    });
+  });
+
+  it('finishes status collection when a read-only HTTP probe never responds', async () => {
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher: vi.fn(() => new Promise<Response>(() => {})),
+      getWorkerStatus: async () => healthyWorkerStatus,
+      requestTimeoutMs: 5,
+    });
+
+    await expect(status.get()).resolves.toMatchObject({ items: expect.any(Array) });
   });
 
   it('projects existing cron rows without raw errors', async () => {

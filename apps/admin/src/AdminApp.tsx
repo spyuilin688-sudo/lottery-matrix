@@ -26,7 +26,18 @@ import "./system-status.css";
 import { saveOwnAdminName } from "./admin-profile";
 import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
-import { loadSystemStatus, retrySystemStatus, type SystemStatusItem } from "./system-status";
+import {
+  canRefreshCrawler,
+  canRetrySystemStatus,
+  focusSystemStatusAfterAction,
+  getGithubStatusFacts,
+  groupSystemStatusItems,
+  loadSystemStatus,
+  refreshCrawlerSystemStatus,
+  retrySystemStatus,
+  type SystemStatusActionOutcome,
+  type SystemStatusItem,
+} from "./system-status";
 import { NotificationManagement } from "./NotificationManagement";
 import { AdminTodos } from "./AdminTodos";
 type Row = Record<string, unknown> & { id: string };
@@ -553,7 +564,7 @@ function AdminApp() {
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
-          {active === "系統設定" && <SystemSettings />}{" "}
+          {active === "系統設定" && <SystemSettings canEdit={can("edit")} />}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos
@@ -1149,18 +1160,23 @@ function Revenue({
     </>
   );
 }
-function SystemSettings() {
+function SystemSettings({ canEdit }: { canEdit: boolean }) {
   const [items, setItems] = useState<SystemStatusItem[]>([]);
   const [checkedAt, setCheckedAt] = useState("");
   const [checking, setChecking] = useState(false);
   const [retryingId, setRetryingId] = useState("");
+  const [refreshingId, setRefreshingId] = useState("");
   const [statusError, setStatusError] = useState("");
+  const [statusNotice, setStatusNotice] = useState("");
+  const [focusRequest, setFocusRequest] = useState<{ id: string; outcome: Exclude<SystemStatusActionOutcome, "failure"> } | null>(null);
   const requestInFlight = useRef(false);
+  const statusSectionRef = useRef<HTMLElement | null>(null);
   const refresh = async () => {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     setChecking(true);
     setStatusError("");
+    setStatusNotice("");
     try {
       const result = await loadSystemStatus(api);
       setItems(result.items);
@@ -1177,10 +1193,13 @@ function SystemSettings() {
     requestInFlight.current = true;
     setRetryingId(id);
     setStatusError("");
+    setStatusNotice("");
     try {
       const next = await retrySystemStatus(api, id);
       setItems((current) => current.map((item) => item.id === id ? next : item));
       setCheckedAt(next.checkedAt);
+      setStatusNotice(`${next.name} 重新呼叫完成，API 連線${next.ok ? "正常" : "仍為異常"}`);
+      setFocusRequest({ id, outcome: "success" });
     } catch (cause) {
       setStatusError(cause instanceof Error ? cause.message : "API 重新呼叫失敗");
     } finally {
@@ -1188,36 +1207,113 @@ function SystemSettings() {
       setRetryingId("");
     }
   };
+  const refreshCrawler = async (item: SystemStatusItem) => {
+    if (requestInFlight.current || !canRefreshCrawler(item, canEdit)) return;
+    requestInFlight.current = true;
+    setRefreshingId(item.id);
+    setStatusError("");
+    setStatusNotice("");
+    try {
+      const result = await refreshCrawlerSystemStatus(api, item.id);
+      setStatusNotice(`${result.lottery} 已手動更新至 ${result.period} 期`);
+      try {
+        const next = await loadSystemStatus(api);
+        setItems(next.items);
+        setCheckedAt(next.checkedAt);
+        setFocusRequest({ id: item.id, outcome: "success" });
+      } catch {
+        setStatusError("開獎資料已更新，但狀態重新檢查失敗");
+        setFocusRequest({ id: item.id, outcome: "partial-success" });
+      }
+    } catch (cause) {
+      setStatusError(cause instanceof Error ? cause.message : "開獎資料手動更新失敗");
+    } finally {
+      requestInFlight.current = false;
+      setRefreshingId("");
+    }
+  };
   useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    if (!focusRequest) return;
+    focusSystemStatusAfterAction(statusSectionRef.current, focusRequest.id, focusRequest.outcome);
+    setFocusRequest(null);
+  }, [focusRequest, items]);
+  const actionPending = checking || Boolean(retryingId) || Boolean(refreshingId);
   return (
-    <>
-      <div className="systemStatusHeader">
-        <div><h2>連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
-        <button className="compactButton" onClick={refresh} disabled={checking || Boolean(retryingId)}><RefreshCw size={15} />{checking ? "檢查中" : "重新檢查"}</button>
-      </div>
-      {statusError && <div className="error">{statusError}</div>}
-      <div className="statusCards">
-        {items.map((item) => {
-          const detail = item.detail && typeof item.detail === "object" ? item.detail as Record<string, unknown> : null;
+    <section ref={statusSectionRef} className="systemStatusSection" aria-labelledby="system-status-title" tabIndex={-1}>
+      <header className="systemStatusHeader">
+        <div><h2 id="system-status-title">連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
+        <button className="compactButton" onClick={refresh} disabled={actionPending} aria-busy={checking}><RefreshCw size={15} />{checking ? "檢查中…" : "重新檢查全部服務"}</button>
+      </header>
+      {statusError && <div className="error" role="alert">{statusError}</div>}
+      {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
+      {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
+      <div className="statusGroups">
+        {groupSystemStatusItems(items).map((group) => {
+          const healthyCount = group.items.filter((item) => item.ok).length;
+          const groupTitleId = `status-group-${group.location.toLowerCase()}`;
           return (
-            <article className="statusCard" key={item.id}>
-              <div className="statusCardTitle"><b>{item.name}</b><span className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</span></div>
-              <p>{item.description}</p>
-              <div className="statusMeta"><span>最後檢查時間</span><b>{formatAdminDateTime(item.checkedAt)}</b></div>
-              <div className="statusMeta"><span>回應時間</span><b>{item.responseMs} ms</b></div>
-              {detail?.status !== undefined && <div className="statusMeta"><span>排程最後執行狀態</span><b>{text(detail.status)}</b></div>}
-              {detail?.finished_at !== undefined && <div className="statusMeta"><span>排程完成時間</span><b>{formatAdminDateTime(detail.finished_at)}</b></div>}
-              {item.error && <div className="statusErrorText">{item.error}</div>}
-              {!item.ok && item.retryable && (
-                <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={checking || Boolean(retryingId)}>
-                  <RefreshCw size={14} />{retryingId === item.id ? "呼叫中" : "重新呼叫"}
-                </button>
-              )}
-            </article>
+            <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
+              <header className="statusGroupHeader">
+                <h3 id={groupTitleId}>{group.location}</h3>
+                <span>{healthyCount}／{group.items.length} 正常</span>
+              </header>
+              <div className="statusRows">
+                {group.items.map((item) => {
+                  const detail = item.detail && typeof item.detail === "object" && !Array.isArray(item.detail)
+                    ? item.detail as Record<string, unknown>
+                    : null;
+                  const finishedAt = detail?.finishedAt ?? detail?.finished_at;
+                  return (
+                    <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${item.ok ? "正常" : "異常"}`}>
+                      <div className="statusRowMain">
+                        <div className="statusRowTitle">
+                          <div className="statusIdentity"><b>{item.name}</b><span>{item.group}</span></div>
+                          <div className="statusState"><span>{item.location === "GitHub" ? "API 連線" : "狀態"}</span><b className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</b></div>
+                        </div>
+                        <dl className="statusFacts">
+                          <div><dt>用途</dt><dd>{item.description}</dd></div>
+                          <div><dt>Endpoint</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
+                          <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
+                          <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
+                          {getGithubStatusFacts(item).map((fact) => (
+                            <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>
+                          ))}
+                          {detail?.status !== undefined && <div><dt>狀態</dt><dd>{text(detail.status)}</dd></div>}
+                          {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
+                          {item.id === "appdeploy-watchdog-heartbeat" && (
+                            <>
+                              <div><dt>心跳完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
+                              <div><dt>實體排程</dt><dd>每 6 分鐘</dd></div>
+                              <div><dt>Logical 排程</dt><dd>6×50、10×60、30×18</dd></div>
+                            </>
+                          )}
+                        </dl>
+                        {item.error && <div className="statusErrorText">{item.error}</div>}
+                      </div>
+                      {(canRetrySystemStatus(item) || canRefreshCrawler(item, canEdit)) && (
+                        <div className="statusRowActions">
+                          {canRetrySystemStatus(item) && (
+                            <button className="compactButton statusRetryButton" onClick={() => retry(item.id)} disabled={actionPending} aria-busy={retryingId === item.id}>
+                              <RefreshCw size={14} />{retryingId === item.id ? "呼叫 Railway 中…" : "重新呼叫 Railway"}
+                            </button>
+                          )}
+                          {canRefreshCrawler(item, canEdit) && (
+                            <button className="compactButton statusManualRefreshButton" onClick={() => refreshCrawler(item)} disabled={actionPending} aria-busy={refreshingId === item.id}>
+                              <RefreshCw size={14} />{refreshingId === item.id ? "更新開獎資料中…" : "手動更新開獎資料"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           );
         })}
       </div>
-    </>
+    </section>
   );
 }
 function DataTable({

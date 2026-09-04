@@ -42,10 +42,24 @@ const JOB_NAME: Record<WatchdogLottery, string> = {
 const ANALYSIS_VERSION = 'matrix-python-v12';
 const JOB_STALE_MS = 20 * 60 * 1000;
 const ANALYSIS_STALE_MS = 45 * 60 * 1000;
-const FINAL_RETRY_MINUTES = 345;
-const PRE_CALL_MINUTES = [-120, -60, -30];
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
+const PHYSICAL_TICK_MINUTES = 6;
+const WATCHDOG_PHASES = [
+  { first: 6, last: 300, every: 6 },
+  { first: 310, last: 900, every: 10 },
+  { first: 930, last: 1_440, every: 30 },
+] as const;
+
+export function buildWatchdogPhasePlan(): number[] {
+  return WATCHDOG_PHASES.flatMap(({ first, last, every }) => {
+    const checkpoints: number[] = [];
+    for (let minute = first; minute <= last; minute += every) checkpoints.push(minute);
+    return checkpoints;
+  });
+}
+
+const WATCHDOG_CHECKPOINT_MINUTES = buildWatchdogPhasePlan();
 
 type LocalDay = { year: number; month: number; day: number };
 
@@ -132,37 +146,29 @@ function taipeiInstant(day: LocalDay, hour: number, minute: number): number {
   return Date.UTC(day.year, day.month - 1, day.day, hour - 8, minute);
 }
 
-function previousDrawDay(lottery: WatchdogLottery, day: LocalDay): LocalDay {
-  for (let offset = 1; offset <= 8; offset += 1) {
-    const candidate = addDays(day, -offset);
-    if (isDrawDay(lottery, candidate)) return candidate;
-  }
-  throw new Error('PREVIOUS_DRAW_DAY_NOT_FOUND');
-}
-
 function dateText(day: LocalDay): string {
   return `${String(day.year).padStart(4, '0')}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
 }
 
-function expectedDrawDateDuringCallWindow(
+export function expectedDrawDateForDueWindow(
   lottery: WatchdogLottery,
   now: Date,
 ): string | null {
   const local = taipeiParts(now);
   const currentMinute = Math.floor(now.getTime() / 60_000) * 60_000;
-  for (const offset of [-1, 0, 1]) {
+  const previousTick = currentMinute - PHYSICAL_TICK_MINUTES * 60_000;
+  for (const offset of [0, -1]) {
     const cycleDay = addDays(local, offset);
     if (!isDrawDay(lottery, cycleDay)) continue;
     const [hour, minute] = callClock(lottery, cycleDay);
     const base = taipeiInstant(cycleDay, hour, minute);
-    const isPreCall = PRE_CALL_MINUTES.some(
-      (minutes) => currentMinute === base + minutes * 60_000,
-    );
-    const isRetryWindow = currentMinute >= base
-      && currentMinute <= base + FINAL_RETRY_MINUTES * 60_000;
-    if (!isPreCall && !isRetryWindow) continue;
-    const targetDay = isPreCall ? previousDrawDay(lottery, cycleDay) : cycleDay;
-    return dateText(lottery === '天天樂' ? addDays(targetDay, -1) : targetDay);
+    const hasDueCheckpoint = WATCHDOG_CHECKPOINT_MINUTES.some((checkpoint) => {
+      const dueAt = base + checkpoint * 60_000;
+      return dueAt > previousTick && dueAt <= currentMinute;
+    });
+    if (hasDueCheckpoint) {
+      return dateText(lottery === '天天樂' ? addDays(cycleDay, -1) : cycleDay);
+    }
   }
   return null;
 }
@@ -186,10 +192,11 @@ export function planWatchdogActions(
   };
 
   for (const snapshot of snapshots) {
+    const expectedDate = expectedDrawDateForDueWindow(snapshot.lottery, now);
+    if (!expectedDate) continue;
     const crawlerTarget = snapshot.lottery === '天天樂' ? 'github' : 'railway';
-    const expectedDate = expectedDrawDateDuringCallWindow(snapshot.lottery, now);
     const drawDate = snapshot.latestDraw?.drawDate;
-    const staleDraw = expectedDate && (
+    const staleDraw = (
       !drawDate
       || !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)
       || drawDate < expectedDate

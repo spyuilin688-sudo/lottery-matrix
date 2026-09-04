@@ -1,10 +1,29 @@
 import { readFileSync } from 'node:fs';
+import { parse } from 'postcss';
 import { describe, expect, it } from 'vitest';
 
 const operationsCss = readFileSync(new URL('./admin-operations.css', import.meta.url), 'utf8');
 const adminCss = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
+const statusCss = readFileSync(new URL('./system-status.css', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('./AdminApp.tsx', import.meta.url), 'utf8');
 const rule = (css: string, selector: string) => css.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+const statusStyles = parse(statusCss);
+const statusDeclarationsAt = (selector: string, viewportWidth: number) => {
+  const declarations = new Map<string, string>();
+  statusStyles.walkRules(selector, (statusRule) => {
+    const media = statusRule.parent?.type === 'atrule' && statusRule.parent.name === 'media'
+      ? statusRule.parent.params
+      : '';
+    const minimum = media.match(/min-width:\s*(\d+)px/)?.[1];
+    const maximum = media.match(/max-width:\s*(\d+)px/)?.[1];
+    if (minimum && viewportWidth < Number(minimum)) return;
+    if (maximum && viewportWidth > Number(maximum)) return;
+    statusRule.walkDecls((declaration) => {
+      declarations.set(declaration.prop, declaration.value);
+    });
+  });
+  return declarations;
+};
 
 describe('admin interface styles', () => {
   it('keeps primary action buttons visible inside form action rows', () => {
@@ -75,5 +94,79 @@ describe('admin interface styles', () => {
     expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationLogTable table\{[^}]*min-width:0/);
     expect(adminCss).toMatch(/@media\(max-width:760px\)[\s\S]*\.notificationLogTable td\{[^}]*overflow-wrap:anywhere/);
     expect(adminCss).not.toContain('.notificationLogCards');
+  });
+
+  it('renders grouped semantic system status rows instead of legacy cards', () => {
+    expect(appSource).toContain('groupSystemStatusItems(items).map');
+    expect(appSource).toContain('<section className="statusGroup"');
+    expect(appSource).toContain('<header className="statusGroupHeader">');
+    expect(appSource).toContain('<article className="statusRow"');
+    expect(appSource).not.toContain('className="statusCards"');
+    expect(appSource).not.toContain('className="statusCard"');
+  });
+
+  it('keeps semantic status headers in normal flow despite the admin shell header rule', () => {
+    expect(rule(statusCss, '.systemStatusHeader')).toMatch(/position: static;/);
+    expect(rule(statusCss, '.systemStatusHeader')).toMatch(/min-height: 0;/);
+    expect(rule(statusCss, '.statusGroupHeader')).toMatch(/position: static;/);
+    expect(rule(statusCss, '.statusGroupHeader')).toMatch(/min-height: 0;/);
+  });
+
+  it('shows complete row diagnostics and explicit watchdog cadence', () => {
+    for (const label of ['用途', 'Endpoint', '狀態', '檢查時間', '回應時間', '心跳完成時間', '實體排程', 'Logical 排程']) {
+      expect(appSource).toContain(label);
+    }
+    expect(appSource).toContain('每 6 分鐘');
+    expect(appSource).toContain('6×50、10×60、30×18');
+    expect(appSource).toContain('detail?.completedAt');
+  });
+
+  it('renders GitHub API health separately from read-only workflow facts', () => {
+    expect(appSource).toContain('item.location === "GitHub" ? "API 連線" : "狀態"');
+    expect(appSource).toContain('getGithubStatusFacts(item).map');
+    expect(appSource).not.toContain('dispatchGithub');
+    expect(appSource).not.toContain('retryGithub');
+  });
+
+  it('keeps retry and permission-gated crawler refresh actions identifiable', () => {
+    expect(appSource).toContain('<SystemSettings canEdit={can("edit")} />');
+    expect(appSource).toContain('canRefreshCrawler(item, canEdit)');
+    expect(appSource).toContain('refreshCrawlerSystemStatus(api, item.id)');
+    expect(appSource).toContain('重新呼叫 Railway');
+    expect(appSource).toContain('手動更新開獎資料');
+  });
+
+  it('connects successful status actions to the shared live notice and stable focus target', () => {
+    expect(appSource).toContain('<div className="systemStatusNotice" role="status">');
+    expect(appSource).toContain('setStatusNotice(`${next.name} 重新呼叫完成，API 連線${next.ok ? "正常" : "仍為異常"}`)');
+    expect(appSource).toContain('focusSystemStatusAfterAction(statusSectionRef.current, focusRequest.id, focusRequest.outcome)');
+    expect(appSource).toContain('setFocusRequest({ id: item.id, outcome: "partial-success" })');
+    expect(appSource).toContain('data-status-id={item.id} tabIndex={-1}');
+  });
+
+  it('neutralizes the shell header into the same full-width mobile layout at 320, 390, and 430px', () => {
+    for (const viewportWidth of [320, 390, 430]) {
+      const header = statusDeclarationsAt('.systemStatusHeader', viewportWidth);
+      expect(header.get('width')).toBe('100%');
+      expect(header.get('display')).toBe('grid');
+      expect(header.get('grid-template-columns')).toBe('minmax(0, 1fr)');
+      expect(header.get('justify-content')).toBe('stretch');
+      expect(header.get('align-items')).toBe('stretch');
+      expect(statusDeclarationsAt('.systemStatusHeader button', viewportWidth).get('width')).toBe('100%');
+    }
+  });
+
+  it('switches the system status header and action back to desktop layout at 761px', () => {
+    const header = statusDeclarationsAt('.systemStatusHeader', 761);
+    expect(header.get('display')).toBe('flex');
+    expect(header.get('align-items')).toBe('flex-end');
+    expect(header.get('justify-content')).toBe('space-between');
+    expect(statusDeclarationsAt('.systemStatusHeader button', 761).get('width')).toBe('auto');
+  });
+
+  it('keeps status row actions full width and copy wrap-safe on phones', () => {
+    expect(rule(statusCss, '.statusRowActions button')).toMatch(/width: 100%;/);
+    expect(statusCss).toMatch(/@media \(min-width: 761px\)/);
+    expect(statusCss).toMatch(/\.statusRowTitle b \{[^}]*overflow-wrap: anywhere;/);
   });
 });
