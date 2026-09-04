@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   evaluateChapter15,
   type MatrixStatus,
+  type MatrixStatusRuleId,
   type StatusRoad,
   type StatusSource,
 } from './matrix-status';
@@ -27,6 +28,37 @@ function source(allRoads: StatusRoad[]): StatusSource {
 }
 
 function repeated(type: RoadType, count: number) { return Array(count).fill(type) as RoadType[]; }
+
+type RuleCase = {
+  ruleId: MatrixStatusRuleId;
+  status: Exclude<MatrixStatus, 'DORMANT'>;
+  allRoads: StatusRoad[];
+};
+
+const ruleCases: RuleCase[] = [
+  { ruleId: 'ACTIVE-1', status: 'ACTIVE', allRoads: roads('one-code', 5, repeated('加減', 2)) },
+  { ruleId: 'ACTIVE-2', status: 'ACTIVE', allRoads: roads('two-code', 7, repeated('合值', 3)) },
+  { ruleId: 'FOCUS-1', status: 'FOCUS', allRoads: roads('one-code', 6, repeated('加減', 5)) },
+  { ruleId: 'FOCUS-2', status: 'FOCUS', allRoads: roads('one-code', 5, ['加減', '加減', '拖牌']) },
+  { ruleId: 'FOCUS-3', status: 'FOCUS', allRoads: roads('one-code', 7, ['拖牌']) },
+  { ruleId: 'FOCUS-4', status: 'FOCUS', allRoads: roads('two-code', 8, repeated('合值', 6)) },
+  { ruleId: 'FOCUS-5', status: 'FOCUS', allRoads: [...roads('two-code', 11, ['加減']), ...roads('two-code', 7, ['合值'])] },
+  { ruleId: 'FOCUS-6', status: 'FOCUS', allRoads: [...roads('two-code', 11, repeated('加減', 3)), ...roads('two-code', 5, repeated('合值', 6))] },
+  { ruleId: 'RESONANCE-1', status: 'RESONANCE', allRoads: roads('one-code', 7, ['加減']) },
+  { ruleId: 'RESONANCE-2', status: 'RESONANCE', allRoads: roads('one-code', 5, repeated('合值', 7)) },
+  { ruleId: 'RESONANCE-3', status: 'RESONANCE', allRoads: roads('one-code', 6, ['加減', '加減', '加減', '加減', '拖牌']) },
+  { ruleId: 'RESONANCE-4', status: 'RESONANCE', allRoads: [...roads('one-code', 7, ['拖牌']), ...roads('one-code', 5, ['加減'])] },
+  { ruleId: 'RESONANCE-5', status: 'RESONANCE', allRoads: [...roads('one-code', 7, ['拖牌']), ...roads('one-code', 6, ['合值'])] },
+  { ruleId: 'RESONANCE-6', status: 'RESONANCE', allRoads: roads('two-code', 9, repeated('加減', 8)) },
+  { ruleId: 'RESONANCE-7', status: 'RESONANCE', allRoads: [...roads('two-code', 11, ['加減']), ...roads('two-code', 8, ['合值', '加減'])] },
+  { ruleId: 'RESONANCE-8', status: 'RESONANCE', allRoads: [...roads('two-code', 11, repeated('加減', 6)), ...roads('two-code', 5, repeated('合值', 8))] },
+  { ruleId: 'RESONANCE-9', status: 'RESONANCE', allRoads: [...roads('two-code', 7, ['拖牌']), ...roads('two-code', 5, repeated('加減', 6))] },
+  { ruleId: 'RESONANCE-10', status: 'RESONANCE', allRoads: [...roads('two-code', 9, ['拖牌']), ...roads('two-code', 6, repeated('合值', 6))] },
+  { ruleId: 'CRITICAL-1', status: 'CRITICAL', allRoads: roads('one-code', 7, ['加減', '合值']) },
+  { ruleId: 'CRITICAL-2', status: 'CRITICAL', allRoads: roads('one-code', 7, ['加減', '拖牌']) },
+  { ruleId: 'CRITICAL-3', status: 'CRITICAL', allRoads: roads('one-code', 7, ['拖牌', '拖牌']) },
+  { ruleId: 'CRITICAL-4', status: 'CRITICAL', allRoads: roads('two-code', 11, ['加減', '合值']) },
+];
 
 const thresholdCases: Array<{ name: string; allRoads: StatusRoad[]; status: MatrixStatus; count: number }> = [
   { name: 'A 準7進8一組為共振', allRoads: roads('one-code', 7, ['加減']), status: 'RESONANCE', count: 1 },
@@ -65,6 +97,12 @@ describe('Chapter 15 thresholds', () => {
     const result = evaluateChapter15(source(allRoads));
     expect(result.summary).toMatchObject({ status, count });
   });
+
+  it.each(ruleCases)('emits $ruleId as one independently identified trigger', ({ ruleId, status, allRoads }) => {
+    const card = evaluateChapter15(source(allRoads)).cards.find((candidate) => candidate.ruleId === ruleId);
+    expect(card).toEqual(expect.objectContaining({ ruleId, status }));
+    expect(card?.sameCodeRoadCount).toBe(card?.roads.length);
+  });
 });
 
 describe('Chapter 15 cards and ordering', () => {
@@ -80,29 +118,70 @@ describe('Chapter 15 cards and ordering', () => {
   });
 
   it('creates one card per satisfied rule and removes duplicate road display inside it', () => {
-    const duplicate = roads('one-code', 5, repeated('加減', 2));
-    duplicate[1] = { ...duplicate[0] };
-    const result = evaluateChapter15(source(duplicate));
-    expect(result.cards).toHaveLength(1);
-    expect(result.cards[0].sameCodeRoadCount).toBe(2);
-    expect(result.cards[0].roads).toHaveLength(1);
+    const unique = roads('one-code', 5, repeated('加減', 2));
+    const result = evaluateChapter15(source([unique[0], { ...unique[0] }, unique[1]]));
+    const card = result.cards.find((candidate) => candidate.ruleId === 'ACTIVE-1');
+    expect(card?.sameCodeRoadCount).toBe(2);
+    expect(card?.roads).toHaveLength(2);
     expect(result.cards[0]).not.toHaveProperty('ruleClass');
   });
 
-  it('sorts card roads by type, streak, prediction period and position', () => {
+  it('keeps only roads used by a trigger and sorts them by the formal order', () => {
     const input = [
+      ...roads('one-code', 5, ['加減', '加減']),
       ...roads('one-code', 5, ['拖牌']),
-      ...roads('one-code', 6, ['合值']),
-      ...roads('one-code', 7, ['加減']),
-      ...roads('one-code', 5, ['加減']),
+      ...roads('one-code', 7, ['合值']),
     ];
+    input[0].predictionDistance = 2;
+    input[1].predictionDistance = 1;
     input[2].predictionDistance = 3;
-    input[3].predictionDistance = 1;
     const result = evaluateChapter15(source(input));
-    const resonance = result.cards.find((card) => card.status === 'RESONANCE');
-    expect(resonance?.roads.map((road) => [road.algorithmType, road.streak, road.predictionDistance])).toEqual([
-      ['加減', 7, 3], ['加減', 5, 1], ['合值', 6, 1], ['拖牌', 5, 1],
+    const focus = result.cards.find((card) => card.ruleId === 'FOCUS-2');
+    expect(focus?.roads.map((road) => [road.algorithmType, road.streak, road.predictionDistance])).toEqual([
+      ['加減', 5, 1], ['加減', 5, 2], ['拖牌', 5, 3],
     ]);
+  });
+
+  it('creates one OR-rule trigger when both mixed-road alternatives qualify', () => {
+    const result = evaluateChapter15(source(roads('one-code', 7, ['加減', '合值', '拖牌'])));
+    const mixed = result.cards.filter((card) => card.ruleId === 'CRITICAL-2');
+    expect(mixed).toHaveLength(1);
+    expect(mixed[0].sameCodeRoadCount).toBe(3);
+    expect(mixed[0].roads.map((road) => road.algorithmType)).toEqual(['加減', '合值', '拖牌']);
+  });
+
+  it('does not emit a mixed-road trigger when either side is absent', () => {
+    const noDrag = evaluateChapter15(source(roads('one-code', 5, repeated('加減', 5))));
+    const onlyDrag = evaluateChapter15(source(roads('one-code', 7, repeated('拖牌', 4))));
+    expect(noDrag.cards.some((card) => ['FOCUS-2', 'RESONANCE-3', 'CRITICAL-2'].includes(card.ruleId))).toBe(false);
+    expect(onlyDrag.cards.some((card) => ['FOCUS-2', 'RESONANCE-3', 'CRITICAL-2'].includes(card.ruleId))).toBe(false);
+  });
+
+  it('allows one actual road to witness different independently satisfied rules', () => {
+    const input = roads('one-code', 7, ['加減', '拖牌']);
+    const result = evaluateChapter15(source(input));
+    const addRoadId = input[0].id;
+    expect(result.cards.find((card) => card.ruleId === 'RESONANCE-1')?.roads.map((road) => road.id)).toContain(addRoadId);
+    expect(result.cards.find((card) => card.ruleId === 'CRITICAL-2')?.roads.map((road) => road.id)).toContain(addRoadId);
+  });
+
+  it('normalizes a two-code result as one complete result and never combines two one-code groups', () => {
+    const pair = [
+      ...roads('two-code', 11, ['加減'], ['22', '08']),
+      ...roads('two-code', 11, ['合值'], ['08', '22']),
+    ];
+    const pairResult = evaluateChapter15(source(pair));
+    expect(pairResult.cards.find((card) => card.ruleId === 'CRITICAL-4')).toMatchObject({
+      hitType: 'two-code',
+      result: ['08', '22'],
+      sameCodeRoadCount: 2,
+    });
+
+    const singles = [
+      ...roads('one-code', 11, ['加減'], ['08']),
+      ...roads('one-code', 11, ['合值'], ['22']),
+    ];
+    expect(evaluateChapter15(source(singles)).cards.some((card) => card.hitType === 'two-code')).toBe(false);
   });
 
   it('returns DORMANT with zero when no rule is satisfied', () => {

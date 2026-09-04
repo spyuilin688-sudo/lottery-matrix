@@ -10,6 +10,7 @@ import {
   type PermissionKey,
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
+import { createAdminTodos } from './admin-todos';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
 import { createConnectionStatus } from './connection-status';
 import { createNotificationEvents, getNotificationEventConfig } from './notification-events';
@@ -39,6 +40,7 @@ const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
 const adminData = createAdminData(supabase);
+const adminTodos = createAdminTodos(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const connectionStatus = createConnectionStatus({
@@ -177,6 +179,37 @@ const routes: Record<string, unknown> = {
   'GET /api/bootstrap': [sessionGuard, async (ctx: Context) => {
     try { return json({ admin: await getAdmin(ctx) }); }
     catch (cause) { return fail(cause); }
+  }],
+
+  'GET /api/todos': [sessionGuard, async (ctx: Context) => {
+    try {
+      await getAdmin(ctx);
+      return json({ items: await adminTodos.list() });
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'POST /api/todos': [sessionGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const item = await adminTodos.create(bodyOf(ctx).content, actorOf(admin));
+      return json({ item }, 201);
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'PUT /api/todos/:id': [sessionGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const item = await adminTodos.update(ctx.params.id, bodyOf(ctx).content, actorOf(admin));
+      return json({ item });
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'DELETE /api/todos/:id': [sessionGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const removed = await adminTodos.remove(ctx.params.id, actorOf(admin));
+      return json({ deleted: true, id: removed.id });
+    } catch (cause) { return fail(cause); }
   }],
 
   'GET /api/dashboard': [sessionGuard, guard('view'), async () => {

@@ -55,6 +55,7 @@ function exploreFixture() {
           <div class="road-results-head"><span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>版路類型</span></div>
           <div class="road-results">
             <article><div class="road-result-row"><span class="tag">順球2</span><strong>08</strong><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div></article>
+            <article><div class="road-result-row"><span class="tag">順球3</span><strong>09</strong><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div></article>
           </div>
           <section class="road-validation-process">
             <header class="validation-summary-card">
@@ -208,12 +209,13 @@ test("重複號碼統計與探索結果區使用六層金色與分隔線層級",
   assert.equal(style(".road-results .tag").borderTopColor, "rgba(117, 83, 41, 0.62)");
   assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopColor, "rgba(117, 83, 41, 0.68)");
   assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomColor, "rgba(117, 83, 41, 0.68)");
-  assert.equal(style(".road-results-head").borderBottomColor, "rgba(117, 83, 41, 0.48)");
-  assert.equal(style(".road-result-row").borderBottomColor, "rgba(90, 87, 80, 0.28)");
+  assert.equal(style(".road-results-head").borderBottomColor, "rgba(117, 83, 41, 0.82)");
+  assert.equal(style(".road-results article + article").borderTopColor, "rgba(57, 55, 49, 0.58)");
   assert.equal(style(".matrix-explore-consecutive-filter-options").borderTopWidth, "1px");
   assert.equal(style(".matrix-explore-consecutive-filter-options").borderBottomWidth, "1px");
   assert.equal(style(".road-results-head").borderBottomWidth, "1px");
-  assert.equal(style(".road-result-row").borderBottomWidth, "1px");
+  assert.equal(style(".road-result-row").borderBottomWidth, "0px");
+  assert.equal(style(".road-results article + article").borderTopWidth, "1px");
   assert.equal(style(".road-results article").borderTopWidth, "0px");
 });
 
@@ -231,14 +233,14 @@ test("結果標語與右上角組數維持單列清楚層級", () => {
   assert.equal(count.fontSize, "10px");
   assert.equal(count.paddingRight, "8px");
   assert.equal(number.fontSize, "12px");
-  assert.equal(number.color, "rgb(53, 191, 240)");
+  assert.equal(number.color, "rgb(167, 216, 234)");
 });
 
-test("六個結果標題與版路結果之間使用 48% 表頭分隔線", () => {
+test("六個結果標題與版路結果之間使用 82% 表頭分隔線", () => {
   const { style } = exploreFixture();
   const head = style(".road-results-head");
   assert.equal(head.borderBottomWidth, "1px");
-  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.48)");
+  assert.equal(head.borderBottomColor, "rgba(117, 83, 41, 0.82)");
   assert.equal(head.marginBottom, "4px");
 });
 

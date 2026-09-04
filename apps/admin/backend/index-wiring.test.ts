@@ -48,12 +48,23 @@ const wiring = vi.hoisted(() => {
     ingestToken: 'server-only-ingest-token',
   }));
   const createNotificationEvents = vi.fn(() => ({ sendSystemNotice }));
+  const todoList = vi.fn(async () => [{ id: 'todo-1', content: '待處理' }]);
+  const todoCreate = vi.fn(async () => ({ id: 'todo-2', content: '新事項' }));
+  const todoUpdate = vi.fn(async () => ({ id: 'todo-1', content: '已更新' }));
+  const todoRemove = vi.fn(async () => ({ id: 'todo-1' }));
+  const createAdminTodos = vi.fn(() => ({
+    list: todoList,
+    create: todoCreate,
+    update: todoUpdate,
+    remove: todoRemove,
+  }));
   return {
     workerGetStatus, workerRefreshLottery, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
     createSupabaseTransport, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
-    sendMemberTestPush, listPushDeliveryLogs, createPushNotifications, notice, sendSystemNotice,
-    getNotificationEventConfig, createNotificationEvents,
+    sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
+    todoList, todoCreate, todoUpdate, todoRemove, createAdminTodos,
+    notice, sendSystemNotice, getNotificationEventConfig, createNotificationEvents,
   };
 });
 
@@ -93,6 +104,7 @@ vi.mock('./push-notifications', async (importOriginal) => ({
   ...await importOriginal<typeof import('./push-notifications')>(),
   createPushNotifications: wiring.createPushNotifications,
 }));
+vi.mock('./admin-todos', () => ({ createAdminTodos: wiring.createAdminTodos }));
 vi.mock('./notification-events', () => ({
   createNotificationEvents: wiring.createNotificationEvents,
   getNotificationEventConfig: wiring.getNotificationEventConfig,
@@ -213,6 +225,83 @@ describe('admin push notification route wiring', () => {
       const handler = routes[route][2] as (input: typeof context) => Promise<unknown>;
       await expect(handler(context)).resolves.toMatchObject({ body: expected });
     }
+  });
+});
+
+describe('admin todo route wiring', () => {
+  it('protects all four todo routes with credential sessions only', () => {
+    for (const route of [
+      'GET /api/todos',
+      'POST /api/todos',
+      'PUT /api/todos/:id',
+      'DELETE /api/todos/:id',
+    ]) {
+      expect(routes[route]).toHaveLength(2);
+    }
+  });
+
+  it('lists todos from the dedicated service', async () => {
+    const route = 'GET /api/todos';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][1] as (input: typeof context) => Promise<unknown>;
+
+    await expect(routeHandler(context)).resolves.toMatchObject({
+      body: { items: [{ id: 'todo-1', content: '待處理' }] },
+    });
+  });
+
+  it('creates a todo with the credential-session actor and ignores forged identity fields', async () => {
+    wiring.todoCreate.mockClear();
+    const route = 'POST /api/todos';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][1] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(routeHandler({
+      ...context,
+      body: { content: '新事項', adminId: 'attacker', role: '超級管理員' },
+    })).resolves.toMatchObject({ status: 201, body: { item: { id: 'todo-2' } } });
+    expect(wiring.todoCreate).toHaveBeenCalledWith('新事項', {
+      id: wiring.admin.id,
+      account: wiring.admin.account,
+      name: wiring.admin.name,
+      role: wiring.admin.role,
+    });
+  });
+
+  it('updates and deletes by route id while keeping role and ownership server-owned', async () => {
+    wiring.todoUpdate.mockClear();
+    wiring.todoRemove.mockClear();
+
+    const updateRoute = 'PUT /api/todos/:id';
+    const updateContext = await authenticate(updateRoute, sessionContext({ id: 'todo-1' }));
+    const updateHandler = routes[updateRoute][1] as (input: typeof updateContext & { body?: unknown }) => Promise<unknown>;
+    await updateHandler({ ...updateContext, body: { content: '已更新', adminId: 'attacker' } });
+
+    const deleteRoute = 'DELETE /api/todos/:id';
+    const deleteContext = await authenticate(deleteRoute, sessionContext({ id: 'todo-1' }));
+    const deleteHandler = routes[deleteRoute][1] as (input: typeof deleteContext) => Promise<unknown>;
+    await deleteHandler(deleteContext);
+
+    const actor = {
+      id: wiring.admin.id,
+      account: wiring.admin.account,
+      name: wiring.admin.name,
+      role: wiring.admin.role,
+    };
+    expect(wiring.todoUpdate).toHaveBeenCalledWith('todo-1', '已更新', actor);
+    expect(wiring.todoRemove).toHaveBeenCalledWith('todo-1', actor);
+  });
+
+  it('maps todo service errors without exposing a raw exception', async () => {
+    wiring.todoUpdate.mockRejectedValueOnce(Object.assign(new Error('只能編輯自己的代辦事項'), { statusCode: 403 }));
+    const route = 'PUT /api/todos/:id';
+    const context = await authenticate(route, sessionContext({ id: 'todo-1' }));
+    const routeHandler = routes[route][1] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(routeHandler({ ...context, body: { content: '越權' } })).resolves.toEqual({
+      error: '只能編輯自己的代辦事項',
+      status: 403,
+    });
   });
 });
 

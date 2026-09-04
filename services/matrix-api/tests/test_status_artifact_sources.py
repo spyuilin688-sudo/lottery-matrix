@@ -67,6 +67,58 @@ def test_status_artifact_embeds_only_compact_status_eligible_sources() -> None:
     assert "extraValidationData" not in sources["tianyan"]["items"][0]
 
 
+def test_status_sources_keep_their_two_seven_or_thirteen_period_tier() -> None:
+    lottery = "今彩539"
+    period = "115000210"
+    indices = [0, 1, 2, 6, 7, 12]
+    context = {
+        "draw": {"lottery": lottery, "period": period},
+        "artifacts": {
+            "explore": {
+                "lottery": lottery,
+                "drawPeriod": period,
+                "items": [_explore(f"road-{index}", index) for index in indices],
+            },
+            "tianyan": {"lottery": lottery, "drawPeriod": period, "items": []},
+        },
+    }
+
+    artifact = create_artifact_builders()["status"](context)
+
+    assert {
+        item["lockedSourceIndex"]: item["explorePeriods"]
+        for item in artifact["statusSources"]["explore"]["items"]
+    } == {0: 2, 1: 2, 2: 7, 6: 7, 7: 13, 12: 13}
+
+
+def test_status_cards_preserve_the_source_tier_for_access_projection() -> None:
+    lottery = "今彩539"
+    period = "115000210"
+    items = []
+    for index in (0, 2, 7):
+        item = _explore(f"road-{index}", index)
+        item.update({
+            "highestStreak": 7,
+            "consecutive": "準7進8",
+            "predictionNumbers": [str(6 + index)],
+        })
+        items.append(item)
+    context = {
+        "draw": {"lottery": lottery, "period": period},
+        "artifacts": {
+            "explore": {"lottery": lottery, "drawPeriod": period, "items": items},
+            "tianyan": {"lottery": lottery, "drawPeriod": period, "items": []},
+        },
+    }
+
+    cards = create_artifact_builders()["status"](context)["cards"]
+
+    assert {
+        card["result"][0]: card["roads"][0]["explorePeriods"]
+        for card in cards
+    } == {"06": 2, "08": 7, "13": 13}
+
+
 def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
     lottery = "今彩539"
     period = "115000210"
@@ -74,6 +126,8 @@ def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
         **_explore("shared-id", 0),
         "exploreRange": "標準範圍",
         "scopeClass": "STANDARD_AND_FULL",
+        "referenceOffset": -1,
+        "referencePosition": 2,
     }
     full = {
         **_explore("full-id", 0),
@@ -99,3 +153,9 @@ def test_status_uses_every_canonical_result_applicable_to_full_range() -> None:
         "full-id",
     }
     assert artifact["artifactCounts"]["explore"] == 2
+    compact_shared = next(
+        item for item in artifact["statusSources"]["explore"]["items"]
+        if item["id"] == "shared-id"
+    )
+    assert compact_shared["referenceOffset"] == -1
+    assert compact_shared["referencePosition"] == 2

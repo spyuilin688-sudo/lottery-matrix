@@ -1,6 +1,7 @@
 import type { LotteryId } from './Prototype';
 import { getSupabaseClient } from './lib/supabase';
 import { MatrixApiError } from './matrix-api-client';
+import type { ExploreValidationResponse } from './matrix-algorithm-api';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type CustomMatrixStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
@@ -24,9 +25,10 @@ export type CustomStatusConfig = {
   twoCodeGroups: CustomConditionGroup[];
 };
 
-export type MatrixStatusRoad = {
+export type MatrixStatusRoadDetail = {
   id: string;
   result: string[];
+  locked: false;
   algorithmType: '加減' | '合值' | '拖牌' | '複合';
   numberOrder?: CustomNumberOrder;
   streak: number;
@@ -34,6 +36,29 @@ export type MatrixStatusRoad = {
   position: number;
   lockedNumber: string;
   explorePeriods: 2 | 7 | 13;
+  validationItemId: string;
+  referenceOffset?: number;
+  referencePosition?: number;
+};
+
+export type MatrixStatusLockedRoad = {
+  id: string;
+  result: string[];
+  explorePeriods: 2 | 7 | 13;
+  locked: true;
+};
+
+export type MatrixStatusRoad = MatrixStatusRoadDetail | MatrixStatusLockedRoad;
+
+export type MatrixStatusCard = {
+  id: string;
+  ruleId: string;
+  status: CustomMatrixStatusCode;
+  hitType: 'one-code' | 'two-code';
+  result: string[];
+  sameCodeRoadCount: number | null;
+  sameCodeRoadCountLocked: boolean;
+  roads: MatrixStatusRoad[];
 };
 
 export type MatrixStatusResponse = {
@@ -41,17 +66,21 @@ export type MatrixStatusResponse = {
   lottery: LotteryId;
   drawPeriod: string;
   analysisVersion: string;
+  sourceAnalysisVersion?: string;
   summary: { status: MatrixStatusCode; count: number; message: string };
   counts: Record<CustomMatrixStatusCode, number>;
-  cards: Array<{
-    id: string;
-    status: CustomMatrixStatusCode;
-    result: string[];
-    sameCodeRoadCount: number;
-    roads: MatrixStatusRoad[];
-  }>;
+  cards: MatrixStatusCard[];
   customTriggers: Array<{ status: CustomMatrixStatusCode; groupId: string }>;
   detailLocked: boolean;
+};
+
+export type MatrixStatusValidationResponse = {
+  kind: 'status-validation';
+  lottery: LotteryId;
+  drawPeriod: string;
+  analysisVersion: string;
+  itemId: string;
+  validation: ExploreValidationResponse['validation'];
 };
 
 function statusRpcError(error: { message?: string } | null): never {
@@ -77,9 +106,13 @@ export function fetchMatrixStatus(lottery: LotteryId) {
 }
 
 async function fetchMatrixStatusFromFunction(lottery: LotteryId) {
+  return statusFunction<MatrixStatusResponse>({ lottery });
+}
+
+async function statusFunction<T>(body: Record<string, unknown>) {
   const client = getSupabaseClient();
   const { data, error } = await client.functions.invoke('matrix-status', {
-    body: { lottery },
+    body,
   });
   if (error) {
     let code = '';
@@ -94,7 +127,18 @@ async function fetchMatrixStatusFromFunction(lottery: LotteryId) {
     }
     statusRpcError({ message: code || error.message });
   }
-  return data as MatrixStatusResponse;
+  return data as T;
+}
+
+export function fetchMatrixStatusValidation(
+  meta: { lottery: LotteryId; drawPeriod: string; analysisVersion: string },
+  itemId: string,
+) {
+  return statusFunction<MatrixStatusValidationResponse>({
+    action: 'validation',
+    ...meta,
+    itemId,
+  });
 }
 
 export function listCustomStatusSettings() {

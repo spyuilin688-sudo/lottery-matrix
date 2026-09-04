@@ -42,6 +42,16 @@ describe('invite friends referral summary', () => {
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('MATRIX-7H4K9P'));
   });
 
+  test('我的推薦碼頁移除邀請好友按鈕並保留行內複製功能', async () => {
+    render(<FeaturePageRouter screen="activation-code" onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText('MATRIX-7H4K9P')).toBeVisible();
+    expect(screen.queryByRole('button', { name: '邀請好友' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '複製推薦碼' }));
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('MATRIX-7H4K9P'));
+  });
+
   test('載入失敗顯示可恢復錯誤，重新載入成功後顯示會員推薦碼', async () => {
     memberApi.fetchMemberReferralSummary
       .mockRejectedValueOnce(new Error('offline'))

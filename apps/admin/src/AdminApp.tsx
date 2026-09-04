@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
   BarChart3,
+  ListTodo,
   Users,
   CreditCard,
   Wallet,
@@ -27,6 +28,7 @@ import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, sa
 import { runConfirmed } from "./admin-confirmation";
 import { loadSystemStatus, retrySystemStatus, type SystemStatusItem } from "./system-status";
 import { NotificationManagement } from "./NotificationManagement";
+import { AdminTodos } from "./AdminTodos";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   totalUsers: number;
@@ -57,6 +59,7 @@ type ConfirmationRequest = {
 };
 const modules = [
   ["營運概覽", BarChart3],
+  ["代辦事項", ListTodo],
   ["用戶管理", Users],
   ["訂閱管理", CreditCard],
   ["收入報表", Wallet],
@@ -249,7 +252,7 @@ function AdminApp() {
         setRows(subscriptionsResult.data.items || []);
         setPlans(plansResult.data.items || []);
         setTransfers(transfersResult.data.items || []);
-      } else if (name === "系統設定" || name === "通知管理") {
+      } else if (name === "系統設定" || name === "通知管理" || name === "代辦事項") {
         setRows([]);
       } else {
         const t = tableMap[name];
@@ -552,6 +555,13 @@ function AdminApp() {
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
           {active === "系統設定" && <SystemSettings />}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
+          {active === "代辦事項" && admin && (
+            <AdminTodos
+              client={api}
+              admin={{ id: String(admin.id ?? ""), role: String(admin.role ?? "") }}
+              requestConfirmation={requestConfirmation}
+            />
+          )}{" "}
           {active === "用戶管理" && (
             <UserManager
               rows={rows}

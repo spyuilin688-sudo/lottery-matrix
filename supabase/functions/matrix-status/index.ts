@@ -2,7 +2,10 @@ import { createCustomStatusStore } from '../../../backend/matrix-custom-status-s
 import { createMemberAuth } from '../../../backend/matrix-member-auth.ts';
 import type { ExploreArtifact, TianyanArtifact } from '../../../backend/matrix-status-service.ts';
 import { createMatrixStatusEdgeHandler } from './handler.ts';
-import { createMatrixStatusSourceReader } from './source-reader.ts';
+import {
+  createMatrixStatusSourceReader,
+  createMatrixStatusValidationReader,
+} from './source-reader.ts';
 
 type LotteryId = '今彩539' | '天天樂' | '六合彩' | '大樂透';
 
@@ -23,6 +26,7 @@ function loadConfig() {
 const memberAuth = createMemberAuth(loadConfig);
 const customStatusStore = createCustomStatusStore(loadConfig);
 const readStatusSources = createMatrixStatusSourceReader(loadConfig);
+const readStatusValidation = createMatrixStatusValidationReader(loadConfig);
 
 const handler = createMatrixStatusEdgeHandler({
   requireMember: (authorization) => memberAuth.requireMember(authorization),
@@ -38,6 +42,12 @@ const handler = createMatrixStatusEdgeHandler({
       explore: source.explore as ExploreArtifact,
       tianyan: source.tianyan as TianyanArtifact,
     };
+  },
+  async readStatusValidation(lottery, drawPeriod, analysisVersion, itemId) {
+    const source = await readStatusValidation(lottery, drawPeriod, analysisVersion, itemId);
+    const sourceItemId = String(source.itemId ?? '').trim();
+    if (!sourceItemId || source.validation == null) return null;
+    return { itemId: sourceItemId, validation: source.validation };
   },
   listConfigs: (memberId) => customStatusStore.list(memberId),
 });
