@@ -1,6 +1,6 @@
 /* Canonical layout owner for Matrix Pro 會員方案與收費標準. */
 .pro-plans-screen {
-  --pro-plans-plan-inline: 15px;
+  --pro-plans-plan-inline: 18px;
   --pro-plans-checkout-inline: 16px;
 }
 
@@ -17,7 +17,7 @@
   gap: 12px;
 }
 
-/* Plan cards use their own 15px outer inset without coupling checkout spacing. */
+/* Plan cards use their own 18px outer inset without coupling checkout spacing. */
 .pro-plans-screen .plan-card {
   flex: 0 0 calc(100% - (var(--pro-plans-plan-inline) * 2));
   min-width: 0;
