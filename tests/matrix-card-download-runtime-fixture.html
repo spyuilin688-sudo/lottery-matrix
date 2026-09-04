@@ -9,7 +9,8 @@
   <button id="prepare" type="button">prepare</button>
   <button id="download" type="button">download</button>
   <button id="download-again" type="button">download again</button>
-  <div id="preview-host"></div>
+  <button id="show-preview" type="button">show preview</button>
+  <div id="preview-host"><img id="preview" class="matrix-ticket-image" alt="preview" /></div>
   <script type="module">
     import {
       downloadMatrixCardPng,
@@ -19,6 +20,7 @@
 
     const cardUrl = `${location.origin}/tests/matrix-card-download-source.svg`;
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24"><rect width="32" height="24" fill="#fff"/><text x="4" y="16">M</text></svg>';
+    const previewUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     const originalFetch = window.fetch.bind(window);
     const originalRevoke = URL.revokeObjectURL.bind(URL);
     let cardFetchCount = 0;
@@ -47,6 +49,9 @@
     document.querySelector('#download-again').addEventListener('click', () => {
       void downloadMatrixCardPng(cardUrl, 'matrix-card-again.png');
     });
+    document.querySelector('#show-preview').addEventListener('click', () => {
+      document.querySelector('#preview').src = previewUrl;
+    });
 
     window.__matrixCardDownloadTest = {
       cardUrl,
@@ -54,6 +59,7 @@
       revokeCount: () => revokeCount,
       resetRevokeCount: () => { revokeCount = 0; },
       prepared: () => isMatrixCardPngPrepared(cardUrl),
+      previewPrepared: () => isMatrixCardPngPrepared(previewUrl),
     };
   </script>
 </body>
