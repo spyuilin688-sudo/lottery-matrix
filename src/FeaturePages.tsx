@@ -68,6 +68,7 @@ import {
 } from "./matrix-algorithm-api";
 import {
   fetchMatrixStatus,
+  fetchMatrixStatusValidation,
   listCustomStatusSettings,
   resetCustomStatusSetting,
   saveCustomStatusSetting,
@@ -75,6 +76,8 @@ import {
   type CustomConditionRow,
   type CustomMatrixStatusCode,
   type CustomStatusConfig,
+  type MatrixStatusCard,
+  type MatrixStatusRoadDetail,
   type MatrixStatusResponse,
 } from "./matrix-status-api";
 import {
@@ -4768,11 +4771,128 @@ function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
   return <ProfileDetailShell title="聲明與免責事項" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></DetailCard><DetailCard title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></DetailCard><DetailCard title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></DetailCard><DetailCard title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></DetailCard><DetailCard title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></DetailCard><DetailCard title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></DetailCard><DetailCard title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></DetailCard><DetailCard title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></DetailCard><DetailCard title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></DetailCard></ProfileDetailShell>;
 }
 
+const MATRIX_STATUS_LABELS: Record<CustomMatrixStatusCode, string> = {
+  ACTIVE: "啟動",
+  FOCUS: "聚合",
+  RESONANCE: "共振",
+  CRITICAL: "臨界",
+};
+
+function MatrixStatusTriggerCard({
+  card,
+  lottery,
+  analysisVersion,
+  expandedRoad,
+  validationById,
+  validationLoadingId,
+  validationErrorId,
+  onToggleRoad,
+}: {
+  card: MatrixStatusCard;
+  lottery: LotteryId;
+  analysisVersion: string;
+  expandedRoad: string | null;
+  validationById: Record<string, ExploreValidation>;
+  validationLoadingId: string | null;
+  validationErrorId: string | null;
+  onToggleRoad(cardId: string, road: MatrixStatusRoadDetail): void;
+}) {
+  const resultLabel = card.hitType === "one-code" ? "單碼結果" : "兩碼結果";
+  return (
+    <article className="matrix-status-trigger-card" data-testid="matrix-status-trigger-card">
+      <header className="matrix-status-trigger-summary">
+        <span className="matrix-status-trigger-result">
+          <small>{resultLabel}</small>
+          <strong className="numeric-text">{card.result.join("、")}</strong>
+        </span>
+        <strong className="matrix-status-trigger-state">{MATRIX_STATUS_LABELS[card.status]}</strong>
+        <span className="matrix-status-trigger-count">
+          <small>同碼版路數量</small>
+          <strong>{card.sameCodeRoadCountLocked ? "🔒 Matrix Pro" : String(card.sameCodeRoadCount ?? 0) + " 組"}</strong>
+        </span>
+      </header>
+      <div className="road-results matrix-status-road-results">
+        <div className="road-results-head" aria-hidden="true">
+          <span>位置</span>
+          <span>號碼</span>
+          <span>預測期</span>
+          <span>連準次數</span>
+          <span>預測</span>
+          <span>版路類型</span>
+        </div>
+        {card.roads.map((road) => {
+          if (road.locked) {
+            return (
+              <article className="matrix-status-locked-road" key={road.id}>
+                <div className="road-result-row" aria-label="Matrix Pro 鎖定版路">
+                  <span className="matrix-status-locked-meta">🔒 Matrix Pro</span>
+                  <strong className="numeric-text">{road.result.join("、")}</strong>
+                  <span className="matrix-status-locked-type">🔒 Matrix Pro</span>
+                </div>
+              </article>
+            );
+          }
+          const rowIdentity = card.id + "|" + road.id;
+          const cacheKey = analysisVersion + ":" + road.validationItemId;
+          const expanded = expandedRoad === rowIdentity;
+          return (
+            <article key={road.id}>
+              <button
+                type="button"
+                className="road-result-row"
+                aria-expanded={expanded}
+                aria-label={(expanded ? "收合" : "展開") + "版路 " + road.id}
+                onClick={() => onToggleRoad(card.id, road)}
+              >
+                <span className="tag">
+                  <span>{road.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
+                  <span className="numeric-text">{road.position}</span>
+                </span>
+                <span className="result-number numeric-text">{road.lockedNumber}</span>
+                <span className="result-period"><span>下</span><span className="numeric-text">{road.predictionDistance}</span><span>期</span></span>
+                <span className="result-consecutive"><span>準</span><span className="numeric-text">{road.streak}</span><span>進</span><span className="numeric-text">{road.streak + 1}</span></span>
+                <strong className="numeric-text">{road.result.join("、")}</strong>
+                <span className="road-type-toggle">
+                  <span>{road.algorithmType === "複合" ? road.algorithmType : road.algorithmType + "版路"}</span>
+                  <ChevronDownIcon data-open={expanded} aria-hidden="true" />
+                </span>
+              </button>
+              {expanded ? (
+                validationErrorId === cacheKey
+                  ? <p className="empty-result" role="alert">驗證資料讀取失敗</p>
+                  : <ExploreValidationProcess
+                      item={{
+                        number: road.lockedNumber,
+                        position: road.position,
+                        predictionPeriod: road.predictionDistance,
+                        consecutive: "準" + road.streak + "進" + (road.streak + 1),
+                        algorithmType: road.algorithmType,
+                        referenceOffset: road.referenceOffset,
+                        referencePosition: road.referencePosition,
+                      }}
+                      lottery={lottery}
+                      validation={validationById[cacheKey]}
+                      loading={validationLoadingId === cacheKey}
+                    />
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
 export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: { onNavigate: Navigate; initialLottery?: LotteryId }) {
   const [lottery, setLottery] = useState<LotteryId>(initialLottery);
-  const [open, setOpen] = useState<MatrixStatusResponse['summary']['status'] | "">("");
+  const [open, setOpen] = useState<MatrixStatusResponse["summary"]["status"] | "">("");
   const [result, setResult] = useState<MatrixStatusResponse | null>(null);
   const [requestError, setRequestError] = useState("");
+  const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
+  const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
+  const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const [validationErrorId, setValidationErrorId] = useState<string | null>(null);
+  const validationRevision = useRef(0);
   const handleStatusSettingsClick = useDoubleClickAction<HTMLButtonElement>(
     () => onNavigate("status-settings"),
     QUICK_SETTINGS_DOUBLE_TAP_MS,
@@ -4786,8 +4906,13 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
 
   useEffect(() => {
     let active = true;
+    validationRevision.current += 1;
     setResult(null);
     setRequestError("");
+    setExpandedRoad(null);
+    setValidationById({});
+    setValidationLoadingId(null);
+    setValidationErrorId(null);
     void fetchMatrixStatus(lottery)
       .then((response) => {
         if (!active) return;
@@ -4798,8 +4923,44 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
         if (!active) return;
         setRequestError((cause as { code?: string })?.code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : "Matrix 狀態讀取失敗");
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      validationRevision.current += 1;
+    };
   }, [lottery]);
+
+  const toggleRoad = (cardId: string, road: MatrixStatusRoadDetail) => {
+    if (!result) return;
+    const rowIdentity = cardId + "|" + road.id;
+    if (expandedRoad === rowIdentity) {
+      setExpandedRoad(null);
+      return;
+    }
+    setExpandedRoad(rowIdentity);
+    const cacheKey = result.analysisVersion + ":" + road.validationItemId;
+    if (validationById[cacheKey] || validationLoadingId === cacheKey) return;
+    const revision = validationRevision.current + 1;
+    validationRevision.current = revision;
+    setValidationLoadingId(cacheKey);
+    setValidationErrorId(null);
+    const validationAnalysisVersion = result.sourceAnalysisVersion
+      ?? result.analysisVersion.replace(/:status$/, "");
+    void fetchMatrixStatusValidation({
+      lottery,
+      drawPeriod: result.drawPeriod,
+      analysisVersion: validationAnalysisVersion,
+    }, road.validationItemId).then((response) => {
+      if (validationRevision.current !== revision) return;
+      setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+    }).catch(() => {
+      if (validationRevision.current !== revision) return;
+      setValidationErrorId(cacheKey);
+    }).finally(() => {
+      if (validationRevision.current === revision) {
+        setValidationLoadingId((current) => current === cacheKey ? null : current);
+      }
+    });
+  };
 
   return (
     <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
@@ -4810,28 +4971,48 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
         {statuses.map(([title, titleEn, description, tone]) => {
           const cards = result?.cards.filter((card) => card.status === titleEn) ?? [];
           const count = result?.counts[titleEn] ?? 0;
+          const expanded = open === titleEn;
+          const detailId = "matrix-status-" + titleEn.toLowerCase();
           return (
-          <section className="status-block" data-tone={tone} key={title}>
-            <button type="button" onClick={() => setOpen(open === titleEn ? "" : titleEn)}>
-              <span><strong><i />{title}<small>{titleEn}</small></strong><small>{description}</small></span><em>{count} 組</em><ChevronRightIcon data-open={open === titleEn} />
-            </button>
-            {open === titleEn ? <div className="status-detail">
-              {result?.detailLocked ? <p className="matrix-api-state"><LockClosedIcon />目前顯示公開版路；Matrix Pro 可查看十三期版路</p> : null}
-              <div className="status-road-table">
-                <div className="status-road-table-head" aria-hidden="true">
-                  <span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>類型</span>
-                </div>
-                {cards.flatMap((card) => card.roads.map((road) => (
-                  <article key={`${card.id}-${road.id}`}>
-                    <div className="status-road-table-row">
-                      <span>{road.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}{road.position}</span><span>{road.lockedNumber}</span><span>下{road.predictionDistance}期</span><span>準{road.streak}進{road.streak + 1}</span><strong>{road.result.join("、")}</strong><span>{road.algorithmType}</span>
+            <section className="status-block" data-tone={tone} data-status={titleEn} key={title}>
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={detailId}
+                onClick={() => {
+                  setOpen(expanded ? "" : titleEn);
+                  setExpandedRoad(null);
+                }}
+              >
+                <span className="matrix-status-category-heading">
+                  <strong>•{title}</strong>
+                  <small>{description}</small>
+                </span>
+                <em className="matrix-status-category-count">{count} 組</em>
+                <ChevronRightIcon data-open={expanded} aria-hidden="true" />
+              </button>
+              {expanded ? (
+                <div className="status-detail" id={detailId}>
+                  {cards.length > 0 && result ? (
+                    <div className="matrix-status-trigger-list">
+                      {cards.map((card) => <MatrixStatusTriggerCard
+                        card={card}
+                        lottery={lottery}
+                        analysisVersion={result.analysisVersion}
+                        expandedRoad={expandedRoad}
+                        validationById={validationById}
+                        validationLoadingId={validationLoadingId}
+                        validationErrorId={validationErrorId}
+                        onToggleRoad={toggleRoad}
+                        key={card.id}
+                      />)}
                     </div>
-                  </article>
-                )))}
-              </div>
-            </div> : null}
-          </section>
-        );})}
+                  ) : <p className="empty-result">尚無成立觸發</p>}
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
       </div>
       <MobilePagePortal active>
         <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
@@ -4870,8 +5051,7 @@ const CHAPTER_15_DEFAULT_RULES: Record<CustomMatrixStatusCode, { one: Chapter15D
   FOCUS: {
     one: [
       { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "5～6組" },
-      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
-      { consecutive: "準5進6～準6進7", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
+      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
       { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "1組" },
     ],
     two: [
@@ -4884,8 +5064,7 @@ const CHAPTER_15_DEFAULT_RULES: Record<CustomMatrixStatusCode, { one: Chapter15D
     one: [
       { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組" },
       { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "7組以上" },
-      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
-      { consecutive: "準5進6～準6進7", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
+      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
       { consecutive: "拖牌準7進8＋加減準5進6～準6進7", roadType: "拖牌＋加減", numberOrder: "順球", quantity: "各1組以上" },
       { consecutive: "拖牌準7進8＋合值準5進6～準6進7", roadType: "拖牌＋合值", numberOrder: "順球", quantity: "各1組以上" },
     ],
@@ -4900,8 +5079,7 @@ const CHAPTER_15_DEFAULT_RULES: Record<CustomMatrixStatusCode, { one: Chapter15D
   CRITICAL: {
     one: [
       { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "2組以上" },
-      { consecutive: "準7進8", roadType: "加減＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
-      { consecutive: "準7進8", roadType: "合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
+      { consecutive: "準7進8", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
       { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "2組以上" },
     ],
     two: [

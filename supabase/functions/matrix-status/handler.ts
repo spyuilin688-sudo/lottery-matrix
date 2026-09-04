@@ -30,7 +30,11 @@ export function createMatrixStatusEdgeHandler(dependencies: MatrixStatusDependen
     } catch {
       return json({ error: { code: 'INVALID_REQUEST' } }, 400);
     }
-    const result = await routes.get({
+    const action = body && typeof body === 'object' && !Array.isArray(body)
+      ? String((body as Record<string, unknown>).action ?? '')
+      : '';
+    const route = action === 'validation' ? routes.validation : routes.get;
+    const result = await route({
       authorization: request.headers.get('authorization') ?? undefined,
       body,
     });

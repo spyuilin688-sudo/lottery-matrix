@@ -25,7 +25,9 @@ export type MatrixStatusRuleId =
   | 'CRITICAL-2'
   | 'CRITICAL-3'
   | 'CRITICAL-4';
-export type StatusTriggerRuleId = MatrixStatusRuleId | string;
+export type StatusTriggerRuleId =
+  | MatrixStatusRuleId
+  | `CUSTOM:${Exclude<MatrixStatus, "DORMANT">}:${string}`;
 
 export type StatusRoad = {
   id: string;

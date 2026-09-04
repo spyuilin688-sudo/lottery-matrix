@@ -36,6 +36,10 @@ function routes(context: MemberContext, now = new Date('2026-08-21T00:00:00Z')) 
       tianyan: { lottery: '今彩539', drawPeriod: artifact.drawPeriod, items: [], validationById: {} },
     }),
     listConfigs: async () => [],
+    readStatusValidation: async (_lottery, _drawPeriod, _analysisVersion, itemId) => ({
+      itemId,
+      validation: { itemId, ruleSets: [] },
+    }),
     now: () => now,
   });
 }
@@ -111,6 +115,53 @@ describe('Matrix status route', () => {
     expect(card).toMatchObject({ sameCodeRoadCount: 3, sameCodeRoadCountLocked: false });
     expect(card.roads.map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([2, 7, 13]);
     expect(card.roads.every((road) => road.locked === false && typeof road.validationItemId === 'string')).toBe(true);
+  });
+
+  it('returns validation only when the requested status road is visible to the caller', async () => {
+    const response = await routes(member('free', false)).validation({
+      body: {
+        lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'v1', itemId: 'road-7',
+      },
+    });
+
+    expect(response).toEqual({
+      status: 200,
+      body: {
+        kind: 'status-validation', lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'v1', itemId: 'road-7',
+        validation: { itemId: 'road-7', ruleSets: [] },
+      },
+    });
+  });
+
+  it('does not disclose validation for a locked or guessed status road', async () => {
+    const api = routes(member('free', false), new Date('2026-08-24T00:00:00Z'));
+    await expect(api.validation({
+      body: {
+        lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'v1', itemId: 'road-7',
+      },
+    })).resolves.toMatchObject({ status: 403, body: { error: { code: 'FORBIDDEN' } } });
+    await expect(api.validation({
+      body: {
+        lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'v1', itemId: 'guessed-road',
+      },
+    })).resolves.toMatchObject({ status: 403, body: { error: { code: 'FORBIDDEN' } } });
+  });
+
+  it('rejects stale status validation versions before reading validation data', async () => {
+    await expect(routes(member('monthly')).validation({
+      authorization: 'Bearer token',
+      body: {
+        lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'stale', itemId: 'road',
+      },
+    })).resolves.toMatchObject({
+      status: 409,
+      body: { error: { code: 'ANALYSIS_VERSION_MISMATCH' } },
+    });
   });
 
   it('returns analysis-not-ready instead of sample data', async () => {

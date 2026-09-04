@@ -6,6 +6,7 @@ vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc, functions: {
 
 import {
   fetchMatrixStatus,
+  fetchMatrixStatusValidation,
   listCustomStatusSettings,
   resetCustomStatusSetting,
   saveCustomStatusSetting,
@@ -21,6 +22,18 @@ describe('Matrix status Supabase RPC', () => {
     await fetchMatrixStatus('六合彩');
     expect(invoke).toHaveBeenCalledWith('matrix-status', { body: { lottery: '六合彩' } });
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('loads expanded road validation through the protected status function', async () => {
+    await fetchMatrixStatusValidation({
+      lottery: '今彩539', drawPeriod: '115000210', analysisVersion: 'v1',
+    }, 'road-2');
+    expect(invoke).toHaveBeenCalledWith('matrix-status', {
+      body: {
+        action: 'validation', lottery: '今彩539', drawPeriod: '115000210',
+        analysisVersion: 'v1', itemId: 'road-2',
+      },
+    });
   });
 
   it('lists, saves and resets the authenticated member settings', async () => {
