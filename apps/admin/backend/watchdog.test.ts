@@ -71,6 +71,12 @@ describe('independent Matrix watchdog planning', () => {
     ], new Date('2026-09-04T08:00:00.000Z'))).toEqual([]);
   });
 
+  it('treats a draw newer than the pre-call target as already acquired', () => {
+    expect(planWatchdogActions([
+      healthy('天天樂', '11989', '2026-09-03'),
+    ], new Date('2026-09-03T23:33:00.000Z'))).toEqual([]);
+  });
+
   it('deduplicates crawler and analysis failures into one Railway recovery', () => {
     const snapshot = healthy('今彩539', '115000214', '2026-09-03');
     snapshot.job = { status: 'failed', startedAt: null, updatedAt: null };
