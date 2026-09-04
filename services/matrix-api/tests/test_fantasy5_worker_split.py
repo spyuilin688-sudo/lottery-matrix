@@ -113,13 +113,13 @@ def test_existing_github_analysis_workflow_excludes_fantasy5() -> None:
 
 def test_crawler_repairs_an_internal_period_gap_without_running_analysis() -> None:
     repository = InMemoryAnalysisRepository()
-    repository.upsert_draw(_draw("11989", "2026-09-03"))
-    repository.upsert_draw(_draw("11987", "2026-09-01", ["01", "07", "08", "18", "39"]))
+    repository.upsert_draw(_draw("11989", "2026-09-04"))
+    repository.upsert_draw(_draw("11987", "2026-09-02", ["01", "07", "08", "18", "39"]))
     source = Fantasy5Source(
-        _draw("11989", "2026-09-03"),
+        _draw("11989", "2026-09-04"),
         [
-            _draw("11989", "2026-09-03"),
-            _draw("11988", "2026-09-02"),
+            _draw("11989", "2026-09-04"),
+            _draw("11988", "2026-09-03"),
         ],
     )
 
@@ -146,11 +146,11 @@ def test_crawler_repairs_an_internal_period_gap_without_running_analysis() -> No
 def test_crawler_bootstraps_history_when_supabase_has_no_draws() -> None:
     repository = InMemoryAnalysisRepository()
     source = Fantasy5Source(
-        _draw("11989", "2026-09-03"),
+        _draw("11989", "2026-09-04"),
         [
-            _draw("11989", "2026-09-03"),
-            _draw("11988", "2026-09-02"),
-            _draw("11987", "2026-09-01"),
+            _draw("11989", "2026-09-04"),
+            _draw("11988", "2026-09-03"),
+            _draw("11987", "2026-09-02"),
         ],
     )
 
@@ -241,7 +241,7 @@ def test_crawler_treats_transient_history_repair_failure_as_waiting_source() -> 
         def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
             raise _http_status_error(503)
 
-    source = UnavailableHistorySource(_draw("11989", "2026-09-03"))
+    source = UnavailableHistorySource(_draw("11989", "2026-09-04"))
 
     result = run_fantasy5_crawler(
         repository,
@@ -260,7 +260,7 @@ def test_crawler_treats_transient_history_repair_failure_as_waiting_source() -> 
 
 def test_crawler_cli_never_constructs_matrix_artifact_builders(monkeypatch) -> None:
     repository = InMemoryAnalysisRepository()
-    expected_date = (datetime.now(TAIPEI).date() - timedelta(days=1)).isoformat()
+    expected_date = datetime.now(TAIPEI).date().isoformat()
     source = Fantasy5Source(_draw("11989", expected_date))
     repository.upsert_draw(_draw("11989", expected_date))
 
@@ -400,16 +400,16 @@ def test_repaired_draw_is_next_analysis_after_newer_period_completed() -> None:
     for period in range(11989, 11908, -1):
         if period != 11988:
             draw_date = (
-                datetime(2026, 9, 3) - timedelta(days=11989 - period)
+                datetime(2026, 9, 4) - timedelta(days=11989 - period)
             ).date().isoformat()
             repository.upsert_draw(_draw(str(period), draw_date))
     _complete_analysis(repository, "11987")
     _complete_analysis(repository, "11989")
     source = Fantasy5Source(
-        _draw("11989", "2026-09-03"),
+        _draw("11989", "2026-09-04"),
         [
-            _draw("11989", "2026-09-03"),
-            _draw("11988", "2026-09-02"),
+            _draw("11989", "2026-09-04"),
+            _draw("11988", "2026-09-03"),
         ],
     )
 

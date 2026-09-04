@@ -356,14 +356,14 @@ def test_fantasy5_limited_history_uses_california_official_api() -> None:
     assert history == [
         {
             "period": "11978",
-            "drawDate": "2026-08-23",
+            "drawDate": "2026-08-24",
             "numbers": ["08", "10", "22", "23", "36"],
             "sortedNumbers": ["08", "10", "22", "23", "36"],
             "drawOrderNumbers": None,
         },
         {
             "period": "11977",
-            "drawDate": "2026-08-22",
+            "drawDate": "2026-08-23",
             "numbers": ["03", "09", "17", "25", "38"],
             "sortedNumbers": ["03", "09", "17", "25", "38"],
             "drawOrderNumbers": None,

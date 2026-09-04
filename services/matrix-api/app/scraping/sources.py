@@ -159,7 +159,10 @@ def parse_california_fantasy5_history(payload: Any) -> list[MatrixDraw]:
         if not isinstance(raw_draw_date, str):
             continue
         try:
-            draw_date = datetime.fromisoformat(raw_draw_date.replace("Z", "+00:00")).date().isoformat()
+            california_draw_date = datetime.fromisoformat(
+                raw_draw_date.replace("Z", "+00:00")
+            ).date()
+            draw_date = (california_draw_date + timedelta(days=1)).isoformat()
         except ValueError:
             continue
         winning_numbers = item.get("WinningNumbers")
@@ -260,10 +263,9 @@ def _normalize_sc888_fantasy5_history(
         if len(date_parts) != 3:
             continue
         try:
-            california_date = (
-                datetime(date_parts[0], date_parts[1], date_parts[2]).date()
-                - timedelta(days=1)
-            ).isoformat()
+            taipei_draw_date = datetime(
+                date_parts[0], date_parts[1], date_parts[2]
+            ).date().isoformat()
         except ValueError:
             continue
         numbers = list(draw.get("sortedNumbers") or draw.get("numbers") or [])
@@ -271,7 +273,7 @@ def _normalize_sc888_fantasy5_history(
             continue
         normalized.append({
             "period": str(draw["period"]),
-            "drawDate": california_date,
+            "drawDate": taipei_draw_date,
             "numbers": numbers,
             "sortedNumbers": numbers,
             "drawOrderNumbers": None,
