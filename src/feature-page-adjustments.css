@@ -85,8 +85,35 @@
   box-shadow: none;
 }
 
+.notifications-screen-v2 .notification-group {
+  position: relative;
+  border-top-color: transparent;
+}
+
+.notifications-screen-v2 .notification-group::before,
+.notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  content: "";
+}
+
+.notifications-screen-v2 .notification-group::before {
+  top: 3px;
+  background: rgba(170, 119, 46, .82);
+}
+
 .notifications-screen-v2 .notification-group .notification-row + .notification-row {
-  border-top: 1px solid rgba(170, 119, 46, .24);
+  position: relative;
+  border-top: 0;
+}
+
+.notifications-screen-v2 .notification-group .notification-row + .notification-row::before {
+  top: 3px;
+  background: rgba(170, 119, 46, .24);
 }
 
 .notifications-screen-v2 .notification-heading {
