@@ -127,7 +127,7 @@ test('notification page follows the current compact responsive layout specificat
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-icon-stack\s*\{[^}]*display:\s*grid;[^}]*justify-items:\s*center;[^}]*gap:\s*0;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*padding:\s*0 1\.4px;[^}]*border:\s*\.7px solid #f6c95f;[^}]*border-radius:\s*2\.1px;[^}]*font-size:\s*4\.2px;[^}]*translate:\s*0 var\(--notification-pro-badge-overlap\);/s);
   assert.doesNotMatch(adjustmentsCss, /\.notifications-screen-v2 \.notification-pro-badge\s*\{[^}]*transform\s*:/s);
-  assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-group,[\s\S]*?border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius:\s*12px;[^}]*background:\s*#020c12;/s);
+  assert.match(adjustmentsCss, /\.notifications-screen-v2 :is\(\.notification-group, \.notification-system-group\)\s*\{[^}]*border:\s*1px solid rgba\(170, 119, 46, \.82\);[^}]*border-radius:\s*12px;[^}]*background:\s*#020c12;/s);
   assert.match(adjustmentsCss, /\.notifications-screen-v2 \.notification-row\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/s);
   assert.match(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*gap:\s*4px;/);
   assert.doesNotMatch(responsiveCss, /\.notifications-screen \.feature-body \{[^}]*padding-inline:/);
