@@ -82,7 +82,7 @@ describe('Matrix status route', () => {
     const response = await routes(member('free', false), new Date('2026-08-24T00:00:00Z')).get({ authorization: undefined, body: { lottery: '今彩539' } });
     const roads = (response.body.cards as Array<{ roads: Array<Record<string, unknown>> }>)[0]?.roads ?? [];
     expect(roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2]);
-    expect(roads.filter((road) => road.locked === true)).toHaveLength(2);
+    expect(roads.filter((road) => road.locked === true)).toHaveLength(1);
   });
 
   it('opens seven-period details for a free member whose referral access is active', async () => {

@@ -63,14 +63,13 @@ describe('Matrix status artifact orchestration', () => {
       sameCodeRoadCount: null,
       sameCodeRoadCountLocked: true,
     });
-    expect(card?.roads).toHaveLength(3);
+    expect(card?.roads).toHaveLength(2);
     expect(card?.roads.filter((road) => road.locked === false)).toEqual([
       expect.objectContaining({ explorePeriods: 2, validationItemId: 'road-2' }),
     ]);
     const lockedRoads = card?.roads.filter((road) => road.locked === true) ?? [];
-    expect(lockedRoads).toHaveLength(2);
+    expect(lockedRoads).toHaveLength(1);
     expect(lockedRoads.map((road) => Object.keys(road).sort())).toEqual([
-      ['id', 'locked', 'result'],
       ['id', 'locked', 'result'],
     ]);
   });

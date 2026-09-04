@@ -14,6 +14,16 @@ import {
   type StatusTriggerCard,
 } from './matrix-status.ts';
 
+export type ProjectedStatusRoad =
+  | (StatusRoad & { locked: false })
+  | { id: string; result: string[]; locked: true };
+
+export type ProjectedStatusTriggerCard = Omit<StatusTriggerCard, 'sameCodeRoadCount' | 'roads'> & {
+  sameCodeRoadCount: number | null;
+  sameCodeRoadCountLocked: boolean;
+  roads: ProjectedStatusRoad[];
+};
+
 type ExploreArtifactRow = {
   id: string;
   number: string;
@@ -237,20 +247,21 @@ function sortedStatusCards(cards: StatusTriggerCard[]) {
 function visibleStatusCards(
   cards: StatusTriggerCard[],
   entitlements: MatrixEntitlements,
-) {
+): ProjectedStatusTriggerCard[] {
   return cards.map((card) => {
     let hasLockedRoad = false;
-    const roads = sortedStatusRoads(card.roads).map((road, index) => {
+    const roads: ProjectedStatusRoad[] = [];
+    for (const road of sortedStatusRoads(card.roads)) {
       const entitled = road.explorePeriods === 2
         || (road.explorePeriods === 7 && entitlements.canUseSeven)
         || (road.explorePeriods === 13 && entitlements.canUseThirteen);
-      if (entitled) return { ...road, locked: false as const };
-      hasLockedRoad = true;
-      return {
-        id: [card.id, 'locked', index + 1].join(':'),
-        result: [...road.result],
-        locked: true as const,
-      };
+      if (entitled) roads.push({ ...road, locked: false });
+      else hasLockedRoad = true;
+    }
+    if (hasLockedRoad) roads.push({
+      id: [card.id, 'locked'].join(':'),
+      result: [...card.result],
+      locked: true as const,
     });
     return {
       ...card,
