@@ -80,6 +80,9 @@ jobs:
           if [ -f tests/test_worker_entrypoint_notifications.py ]; then
             tests+=(tests/test_worker_entrypoint_notifications.py)
           fi
+          if [ -f tests/test_analysis_worker_notifications.py ]; then
+            tests+=(tests/test_analysis_worker_notifications.py)
+          fi
           pytest -q "${tests[@]}"
 
   database:
