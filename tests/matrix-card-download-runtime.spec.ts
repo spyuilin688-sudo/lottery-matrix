@@ -50,6 +50,16 @@ test('matrix card preview automatically prepares the current PNG before download
   await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.previewPrepared())).toBe(true);
 });
 
+test('a new matrix card preview refreshes preparation even when the endpoint URL is unchanged', async ({ page }) => {
+  await page.goto('/tests/matrix-card-download-runtime-fixture.html');
+  await page.getByRole('button', { name: 'prepare' }).click();
+  await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.fetchCount())).toBe(1);
+
+  await page.getByRole('button', { name: 'show current preview' }).click();
+  await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.fetchCount())).toBe(2);
+  await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.prepared())).toBe(true);
+});
+
 declare global {
   interface Window {
     __matrixCardDownloadTest: {
