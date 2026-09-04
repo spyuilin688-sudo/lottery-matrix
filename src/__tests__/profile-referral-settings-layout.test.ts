@@ -50,7 +50,7 @@ describe("profile referral and contact layout", () => {
     const activationConfirm = document.querySelector<HTMLElement>(".activation-card .primary-action")!;
     const body = document.querySelector<HTMLElement>(".activation-code-screen .feature-body")!;
 
-    expect(getComputedStyle(body).paddingInline).toBe("16px");
+    expect(getComputedStyle(body).paddingInline).toBe("var(--layout-page-inline)");
     for (const rule of [referralRule, activationRule]) {
       expect(getComputedStyle(rule).paddingTop).toBe("4px");
       expect(getComputedStyle(rule).paddingBottom).toBe("4px");

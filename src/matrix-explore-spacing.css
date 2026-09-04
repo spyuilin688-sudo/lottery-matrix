@@ -892,7 +892,7 @@
   font-size: clamp(10px, 2.8vw, 12px);
 }
 
-.matrix-explore-main-screen .road-results article {
+.matrix-explore-main-screen .road-results article + article {
   border-top: 1px solid rgba(57, 55, 49, .58);
 }
 
@@ -1157,4 +1157,8 @@
 
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"] {
   border-top: 0.7px solid rgba(230, 183, 106, .72);
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article:first-child {
+  border-top: 0;
 }

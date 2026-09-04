@@ -34,7 +34,7 @@ export async function signOutFromMatrix(
   client: SupabaseClient = getSupabaseClient(),
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
   cleanupPush: () => Promise<void> = cleanupBrowserPushSubscription,
-  cleanupOnline: () => Promise<void> = endActiveMemberOnlineSession,
+  cleanupOnline: () => Promise<void | (() => void)> = endActiveMemberOnlineSession,
 ) {
   let session: Session | null = null;
   try {
@@ -60,8 +60,10 @@ export async function signOutFromMatrix(
     }
   }
 
+  let resumeOnline: (() => void) | null = null;
   try {
-    await cleanupOnline();
+    const resume = await cleanupOnline();
+    if (typeof resume === 'function') resumeOnline = resume;
   } catch {
     // Presence cleanup is best-effort; local logout must remain available.
   }
@@ -76,6 +78,11 @@ export async function signOutFromMatrix(
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
   } catch {
+    try {
+      resumeOnline?.();
+    } catch {
+      // Preserve the sanitized sign-out failure even if presence cannot resume.
+    }
     throw new Error('SUPABASE_SIGN_OUT_FAILED');
   }
 
