@@ -11,12 +11,12 @@
   <button id="download-again" type="button">download again</button>
   <button id="show-preview" type="button">show preview</button>
   <button id="show-current-preview" type="button">show current preview</button>
-  <div id="preview-host"><img id="preview" class="matrix-ticket-image" alt="preview" /></div>
   <script type="module">
     import {
       downloadMatrixCardPng,
       isMatrixCardPngPrepared,
       prepareMatrixCardPng,
+      refreshMatrixCardPng,
     } from '../src/matrix-ticket-download.ts';
 
     const cardUrl = `${location.origin}/tests/matrix-card-download-source.svg`;
@@ -50,11 +50,11 @@
     document.querySelector('#download-again').addEventListener('click', () => {
       void downloadMatrixCardPng(cardUrl, 'matrix-card-again.png');
     });
-    document.querySelector('#show-preview').addEventListener('click', () => {
-      document.querySelector('#preview').src = previewUrl;
+    document.querySelector('#show-preview').addEventListener('click', async () => {
+      await refreshMatrixCardPng(previewUrl);
     });
-    document.querySelector('#show-current-preview').addEventListener('click', () => {
-      document.querySelector('#preview').src = cardUrl;
+    document.querySelector('#show-current-preview').addEventListener('click', async () => {
+      await refreshMatrixCardPng(cardUrl);
     });
 
     window.__matrixCardDownloadTest = {

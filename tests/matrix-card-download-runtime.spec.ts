@@ -27,7 +27,7 @@ test('prepared matrix card downloads as PNG and repeated downloads reuse the pre
   expect(await page.evaluate(() => window.__matrixCardDownloadTest.fetchCount())).toBe(1);
 });
 
-test('matrix card download does not revoke its blob URL synchronously', async ({ page }) => {
+test('matrix card download keeps its blob URL alive instead of revoking it on a short timer', async ({ page }) => {
   await page.goto('/tests/matrix-card-download-runtime-fixture.html');
   await page.getByRole('button', { name: 'prepare' }).click();
   await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.prepared())).toBe(true);
@@ -36,15 +36,12 @@ test('matrix card download does not revoke its blob URL synchronously', async ({
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'download', exact: true }).click();
   await downloadPromise;
+  await page.waitForTimeout(1_500);
 
   expect(await page.evaluate(() => window.__matrixCardDownloadTest.revokeCount())).toBe(0);
-  await expect.poll(
-    () => page.evaluate(() => window.__matrixCardDownloadTest.revokeCount()),
-    { timeout: 5_000 },
-  ).toBeGreaterThan(0);
 });
 
-test('matrix card preview automatically prepares the current PNG before download confirmation', async ({ page }) => {
+test('matrix card preparation is explicit and current before download', async ({ page }) => {
   await page.goto('/tests/matrix-card-download-runtime-fixture.html');
   await page.getByRole('button', { name: 'show preview' }).click();
   await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.previewPrepared())).toBe(true);

@@ -59,11 +59,33 @@ export type MemberPushSubscriptionDisableResponse = {
 
 export type { MemberNotificationSettings };
 
+function isMemberAuthError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String(error.code ?? '') : '';
+  return code === 'PGRST301';
+}
+
 async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
   const client = getSupabaseClient();
-  const { data, error } = args
-    ? await client.rpc(name, args)
-    : await client.rpc(name);
+  const request = () => args
+    ? client.rpc(name, args)
+    : client.rpc(name);
+
+  let { data, error } = await request();
+  if (!error) return data as T;
+  if (!isMemberAuthError(error)) throw error;
+
+  const { data: userData, error: userError } = await client.auth.getUser();
+  if (userError || !userData.user) {
+    try {
+      await client.auth.signOut({ scope: 'local' });
+    } catch {
+      // A rejected server session can still be cleared from local auth storage by Supabase.
+    }
+    throw new Error('MEMBER_SESSION_EXPIRED');
+  }
+
+  ({ data, error } = await request());
   if (error) throw error;
   return data as T;
 }
