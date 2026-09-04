@@ -1438,10 +1438,7 @@ function TianyanValidationProcess({
     rule.ruleValue,
     rule.currentPredictionNumber,
   ));
-  const summaryRulePairs = Array.from(
-    { length: Math.ceil(validation.rules.length / 2) },
-    (_, index) => validation.rules.slice(index * 2, (index + 1) * 2),
-  );
+  const summaryRulePairs = [validation.rules.slice(0, 2)];
   const summaryLockedNumber = validation.sourceA?.lockedNumber ?? item.number;
   const summaryLockedPosition = validation.sourceA?.lockedPosition ?? item.position;
   const summaryPredictionDistance = validation.sourceA?.predictionDistance ?? item.predictionPeriod;
@@ -1676,16 +1673,9 @@ export function MatrixExplorePage({
     }));
   }, [exploreResponse, tianyanResponse, title]);
 
-  const duplicateStats = useMemo(() => {
-    if (title === "Matrix 探索") return exploreResponse?.duplicateStats ?? [];
-    const counts = new Map<string, number>();
-    for (const item of visibleResults) {
-      for (const number of item.prediction.split(".")) counts.set(number, (counts.get(number) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .sort((left, right) => right[1] - left[1] || Number(left[0]) - Number(right[0]))
-      .map(([number, count]) => ({ number, count }));
-  }, [exploreResponse, title, visibleResults]);
+  const duplicateStats = title === "Matrix 探索"
+    ? exploreResponse?.duplicateStats ?? []
+    : tianyanResponse?.duplicateStats ?? [];
 
   const resultsPerPage = 15;
   const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
@@ -1710,6 +1700,8 @@ export function MatrixExplorePage({
           lottery,
           exploreDateOffset,
           selectedStreaks: nextFilters,
+          sameCode: nextSameCode,
+          ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
         });
         setTianyanResponse(response);
         setTianyanValidationById({});
@@ -1797,7 +1789,6 @@ export function MatrixExplorePage({
   };
 
   const togglePredictionNumber = (number: string) => {
-    if (title !== "Matrix 探索") return;
     const next = selectedPredictionNumber === number ? null : number;
     setSelectedPredictionNumber(next);
     setExpandedRoad(null);
@@ -1998,7 +1989,7 @@ export function MatrixExplorePage({
               <span>點選進行版路篩選</span>
             </header>
             <div className="result-summary">
-              {duplicateStats.map(({ number, count }) => title === "Matrix 探索" ? (
+              {duplicateStats.map(({ number, count }) => (title === "Matrix 探索" || title === "Matrix 天衍") ? (
                 <button
                   type="button"
                   key={number}

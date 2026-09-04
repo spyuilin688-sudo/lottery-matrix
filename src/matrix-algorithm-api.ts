@@ -134,6 +134,7 @@ export type TianyanListResponse = {
   analysisVersion: string;
   status: 'complete';
   items: TianyanApiRow[];
+  duplicateStats: Array<{ number: string; count: number }>;
   total: number;
 };
 
@@ -318,6 +319,8 @@ export function fetchTianyanList(request: {
   drawPeriod?: string;
   exploreDateOffset?: 0 | 1 | 2;
   selectedStreaks: string[];
+  sameCode: boolean;
+  predictionNumber?: string;
 }) {
   return cachedMatrixResultRpc<TianyanListResponse>('matrix_tianyan_list', request);
 }
