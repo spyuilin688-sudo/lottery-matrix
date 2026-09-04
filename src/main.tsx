@@ -17,13 +17,9 @@ import "./feature-page-adjustments.css";
 import "./notification-visual-refinement.css";
 import "./number-reference-visual-refinement.css";
 
-import { startMemberOnlineTracking } from "./member-online";
-import { postMemberOnline } from "./member-online-api";
 import { registerPushServiceWorker } from "./push-subscription";
 
 installGlobalInputBehavior();
-
-startMemberOnlineTracking(postMemberOnline);
 
 if ('serviceWorker' in navigator) {
   void registerPushServiceWorker().catch(() => undefined);
