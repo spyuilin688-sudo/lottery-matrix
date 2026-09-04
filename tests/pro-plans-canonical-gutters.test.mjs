@@ -44,7 +44,7 @@ test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 own
   assert.deepEqual(dotsOwners, ["src/FeaturePagesPatched.tsx"]);
 });
 
-test("方案卡與付款區以實際水平 gutter 擁有 18px 與 16px", () => {
+test("方案卡與付款區以實際水平 gutter 擁有 19px 與 16px", () => {
   assert.match(
     ownerCss,
     /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);/s,
