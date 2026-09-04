@@ -57,6 +57,55 @@ describe('production Supabase configuration', () => {
     expect(client.supabaseUrl).toBe('https://wcimzbbapfrdotjsfyxa.supabase.co');
     expect(client.supabaseKey).toBe('sb_publishable_sJuiSZhS6bCOza_RGTMVPg_JFiVv0F8');
   });
+
+  it('uses the shared GET retry policy without adding a request id header', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new Error('temporary network failure'))
+      .mockResolvedValueOnce(new Response('[]', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }));
+
+    const result = await supabaseModule.getSupabaseClient().from('lottery_draws').select('*');
+
+    expect(result.error).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    for (const [, init] of fetcher.mock.calls) {
+      expect(new Headers(init?.headers).get('X-Request-ID')).toBeNull();
+    }
+  });
+
+  it('does not return a network-stallable response body after the shared deadline', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      new ReadableStream<Uint8Array>({ cancel }),
+      { headers: { 'content-type': 'application/json' } },
+    ));
+    let settled = false;
+    let outcome: unknown;
+
+    void supabaseModule.getSupabaseClient().from('lottery_draws').select('*').then(
+      (result) => {
+        settled = true;
+        outcome = result;
+      },
+      (error: unknown) => {
+        settled = true;
+        outcome = error;
+      },
+    );
+    await vi.advanceTimersByTimeAsync(8_000 - 1);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(settled).toBe(true);
+    expect(outcome).toMatchObject({ error: expect.anything() });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
 
 describe('provider-token-safe Supabase auth storage', () => {
