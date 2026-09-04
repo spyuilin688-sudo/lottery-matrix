@@ -61,3 +61,42 @@ test("activation rule headers are borderless with 4px vertical padding", () => {
   assert.match(compactCss, /\.activation-code-screen \.referral-rule-card\s*\{[^}]*border:\s*0;/s);
   assert.match(compactCss, /\.activation-code-screen \.referral-rule-toggle\s*\{[^}]*padding-block:\s*4px;/s);
 });
+
+
+test("profile groups use the confirmed order and merge version information with update history", () => {
+  const profileStart = source.indexOf("export function ProfilePage");
+  const profileEnd = source.indexOf("function SubscriptionManagementPage", profileStart);
+  const profile = source.slice(profileStart, profileEnd);
+  const ordered = ["會員相關", "推廣相關", "法律資訊", "系統相關", "客服與支援"];
+  let previous = -1;
+  for (const title of ordered) {
+    const current = profile.indexOf(`title: "${title}"`);
+    assert.ok(current > previous, title);
+    previous = current;
+  }
+  assert.match(profile, /\["版本資訊\/更新紀錄",\s*"version-info"\]/);
+  assert.doesNotMatch(profile, /"update-history"/);
+  assert.doesNotMatch(source, /function UpdateHistoryPage/);
+});
+
+test("referral and activation confirmations use AppDialog before submitting", () => {
+  assert.match(page, /const \{ confirm: confirmDialog \} = useAppDialog\(\);/);
+  assert.match(page, /confirmDialog\(\{\s*title:\s*"確認輸入推薦碼？"/s);
+  assert.match(page, /confirmDialog\(\{\s*title:\s*"確認使用啟動碼？"/s);
+});
+
+test("copy referral feedback is non-blocking and clears after 1.5 seconds", () => {
+  assert.match(page, /CheckIcon/);
+  assert.match(page, /複製成功/);
+  assert.match(page, /setTimeout\([\s\S]*1500\)/);
+  assert.doesNotMatch(page, /alertDialog[\s\S]*複製成功/);
+});
+
+test("both confirmation controls place a divider eight pixels below with eight pixels before following content", () => {
+  assert.match(compactCss, /\.activation-code-screen \.code-entry-block::after\s*\{[^}]*margin-top:\s*0;[^}]*height:\s*1px;[^}]*background:/s);
+  assert.match(compactCss, /\.activation-code-screen \.referral-input-card \.code-entry-block,[\s\S]*\.activation-code-screen \.activation-card \.code-entry-block\s*\{[^}]*gap:\s*8px;/s);
+});
+
+test("copy referral control is visually scaled to ninety percent", () => {
+  assert.match(compactCss, /\.activation-code-screen \.referral-copy-button\s*\{[^}]*scale:\s*\.9;/s);
+});
