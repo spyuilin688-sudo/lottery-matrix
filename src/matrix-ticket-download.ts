@@ -1,7 +1,6 @@
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10] as const;
-const MATRIX_CARD_DOWNLOAD_URL_REVOKE_MS = 1_000;
 const VOID_ELEMENTS = new Set([
   "AREA",
   "BASE",
@@ -313,6 +312,7 @@ async function renderMatrixCardPng(cardUrl: string) {
 
 let preparedMatrixCardUrl: string | null = null;
 let preparedMatrixCardPng: Blob | null = null;
+let preparedMatrixCardDownloadUrl: string | null = null;
 let pendingMatrixCardUrl: string | null = null;
 let pendingMatrixCardPng: Promise<Blob> | null = null;
 let matrixCardPreparationVersion = 0;
@@ -333,6 +333,7 @@ function prepareMatrixCardPngInternal(cardUrl: string, force: boolean): Promise<
   const version = ++matrixCardPreparationVersion;
   preparedMatrixCardUrl = null;
   preparedMatrixCardPng = null;
+  preparedMatrixCardDownloadUrl = null;
   pendingMatrixCardUrl = cardUrl;
 
   const preparation = renderMatrixCardPng(cardUrl)
@@ -340,6 +341,7 @@ function prepareMatrixCardPngInternal(cardUrl: string, force: boolean): Promise<
       if (matrixCardPreparationVersion === version && pendingMatrixCardUrl === cardUrl) {
         preparedMatrixCardUrl = cardUrl;
         preparedMatrixCardPng = png;
+        preparedMatrixCardDownloadUrl = null;
       }
       return png;
     })
@@ -347,6 +349,7 @@ function prepareMatrixCardPngInternal(cardUrl: string, force: boolean): Promise<
       if (matrixCardPreparationVersion === version && pendingMatrixCardUrl === cardUrl) {
         preparedMatrixCardUrl = null;
         preparedMatrixCardPng = null;
+        preparedMatrixCardDownloadUrl = null;
       }
       throw error;
     })
@@ -365,15 +368,22 @@ export function prepareMatrixCardPng(cardUrl: string): Promise<Blob> {
   return prepareMatrixCardPngInternal(cardUrl, false);
 }
 
+export function refreshMatrixCardPng(cardUrl: string): Promise<Blob> {
+  return prepareMatrixCardPngInternal(cardUrl, true);
+}
+
 function triggerMatrixCardPngDownload(png: Blob, filename: string) {
-  const downloadUrl = URL.createObjectURL(png);
+  let downloadUrl = preparedMatrixCardPng === png ? preparedMatrixCardDownloadUrl : null;
+  if (!downloadUrl) {
+    downloadUrl = URL.createObjectURL(png);
+    if (preparedMatrixCardPng === png) preparedMatrixCardDownloadUrl = downloadUrl;
+  }
   const anchor = document.createElement("a");
   anchor.href = downloadUrl;
   anchor.download = filename;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), MATRIX_CARD_DOWNLOAD_URL_REVOKE_MS);
 }
 
 export async function downloadMatrixCardPng(cardUrl: string, filename: string) {
@@ -390,7 +400,7 @@ function prepareMatrixCardPreview(image: HTMLImageElement) {
   const cardUrl = image.currentSrc || image.getAttribute("src") || "";
   if (!cardUrl || matrixCardPreviewSources.get(image) === cardUrl) return;
   matrixCardPreviewSources.set(image, cardUrl);
-  void prepareMatrixCardPngInternal(cardUrl, true).catch(() => undefined);
+  void refreshMatrixCardPng(cardUrl).catch(() => undefined);
 }
 
 function scanMatrixCardPreviewNode(node: Node) {
