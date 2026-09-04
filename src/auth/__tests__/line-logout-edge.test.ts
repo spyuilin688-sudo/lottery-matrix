@@ -1,45 +1,53 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createLineLogoutHandler } from '../../../supabase/functions/line-logout/handler';
+// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
+import { readdirSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
 
-function request(body: unknown) {
-  return new Request('https://project.supabase.co/functions/v1/line-logout', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer user-jwt', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+declare const process: { cwd(): string };
+
+function backendSources(directory = `${process.cwd()}/backend`): string {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry: {
+    isDirectory(): boolean;
+    name: string;
+  }) => {
+    const path = `${directory}/${entry.name}`;
+    if (entry.isDirectory()) return backendSources(path);
+    return entry.name.endsWith('.ts') ? [readFileSync(path, 'utf8')] : [];
+  }).join('\n');
 }
 
-describe('LINE logout Edge Function', () => {
-  it('verifies channel and identity before revoking the provider token', async () => {
-    const fetcher = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ client_id: 'channel-id', expires_in: 3600 }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ sub: 'line-user-id' }), { status: 200 }))
-      .mockResolvedValueOnce(new Response('', { status: 200 }));
-    const handler = createLineLogoutHandler({
-      getUser: vi.fn().mockResolvedValue({ identities: [{ provider: 'custom:line', provider_id: 'line-user-id' }] }),
-      getLineConfig: () => ({ channelId: 'channel-id', channelSecret: 'channel-secret' }),
-      fetcher,
-    });
+function routeKeys(source: string) {
+  const pattern = /(['"`])((?:DELETE|GET|HEAD|OPTIONS|PATCH|POST|PUT)\s+\/api\/[^'"`\r\n]+)\1\s*:/g;
+  return Array.from(source.matchAll(pattern), (match) => match[2]);
+}
 
-    const response = await handler(request({ providerAccessToken: 'provider-token' }));
+function assertNoDuplicateLineRoute(source: string) {
+  const registeredRoutes = routeKeys(source);
+  expect(source).not.toContain('/api/auth/line/logout');
+  expect(registeredRoutes).not.toContain('POST /api/auth/line/logout');
+  expect(registeredRoutes.some((key) => key.endsWith(' /api/auth/line/logout'))).toBe(false);
+  expect(registeredRoutes).toEqual(expect.arrayContaining([
+    'GET /api/_healthcheck',
+    'POST /api/member-online/start',
+    'POST /api/member-online/end',
+  ]));
+}
 
-    expect(response.status).toBe(200);
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    expect(String(fetcher.mock.calls[2]?.[1]?.body)).toContain('client_secret=channel-secret');
+describe('LINE logout ownership contracts', () => {
+  it('does not register a duplicate AppDeploy LINE logout route', () => {
+    assertNoDuplicateLineRoute(backendSources());
   });
 
-  it('fails closed when the provider token is missing', async () => {
-    const fetcher = vi.fn();
-    const handler = createLineLogoutHandler({
-      getUser: vi.fn().mockResolvedValue({ identities: [{ provider: 'custom:line', provider_id: 'line-user-id' }] }),
-      getLineConfig: () => ({ channelId: 'channel-id', channelSecret: 'channel-secret' }),
-      fetcher,
-    });
+  it('rejects a renamed inline AppDeploy LINE logout route', () => {
+    const renamedInlineRoute = `${backendSources()}\nconst renamedRoutes = { 'POST /api/auth/line/logout': [] };`;
 
-    const response = await handler(request({}));
+    expect(() => assertNoDuplicateLineRoute(renamedInlineRoute)).toThrow();
+  });
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: { code: 'LINE_PROVIDER_TOKEN_REQUIRED' } });
-    expect(fetcher).not.toHaveBeenCalled();
+  it('does not load LINE credentials in the AppDeploy backend', () => {
+    const backendIndex = readFileSync(new URL('../../../backend/index.ts', import.meta.url), 'utf8');
+
+    expect(backendIndex).not.toContain('loadLineLoginConfig');
+    expect(backendIndex).not.toContain('LINE_CHANNEL_ID');
+    expect(backendIndex).not.toContain('LINE_CHANNEL_SECRET');
   });
 });

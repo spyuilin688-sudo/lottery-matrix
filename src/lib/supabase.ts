@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { fetchWithPolicy } from './api-resilience';
 import { createSupabaseAuthStorage } from './supabase-auth-storage';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
@@ -15,11 +16,17 @@ export function getSupabaseClient() {
   if (!url || !anonKey) throw new Error("SUPABASE_CONFIG_MISSING");
 
   client ??= createClient(url, anonKey, {
+    db: {
+      retry: false,
+    },
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storage: createSupabaseAuthStorage(),
+    },
+    global: {
+      fetch: (input, init) => fetchWithPolicy(input, init),
     },
   });
 

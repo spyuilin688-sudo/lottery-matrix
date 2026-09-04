@@ -1,4 +1,12 @@
 import { getSupabaseClient } from './lib/supabase';
+import {
+  ApiRequestError,
+  fetchWithPolicy,
+  isRetryableStatus,
+  isSafeReadMethod,
+  withDeadline,
+  withRequestId,
+} from './lib/api-resilience';
 import { RAILWAY_API_BASE } from './runtime-api-config';
 
 export type MatrixApiErrorCode =
@@ -13,6 +21,8 @@ export type MatrixApiErrorCode =
   | 'ANALYSIS_NOT_READY'
   | 'ANALYSIS_VERSION_MISMATCH'
   | 'NON_JSON_RESPONSE'
+  | 'REQUEST_TIMEOUT'
+  | 'REQUEST_ABORTED'
   | 'NETWORK_ERROR'
   | 'API_ERROR';
 
@@ -31,12 +41,21 @@ const REMOTE_ERROR_STATUS = {
 export class MatrixApiError extends Error {
   code: MatrixApiErrorCode;
   status: number;
+  requestId: string | undefined;
+  retryable: boolean;
 
-  constructor(code: MatrixApiErrorCode, status: number, message = code) {
+  constructor(
+    code: MatrixApiErrorCode,
+    status: number,
+    message = code,
+    options: { requestId?: string; retryable?: boolean } = {},
+  ) {
     super(message);
     this.name = 'MatrixApiError';
     this.code = code;
     this.status = status;
+    this.requestId = options.requestId;
+    this.retryable = options.retryable ?? false;
   }
 }
 
@@ -78,43 +97,65 @@ export function createMatrixApiClient(
       init: RequestInit = {},
       options: { auth?: 'required' | 'optional' } = {},
     ): Promise<T> {
-      const accessToken = await getAccessToken();
-      if (!accessToken && options.auth !== 'optional') throw new MatrixApiError('AUTH_REQUIRED', 401);
-      if (!baseUrl) throw new MatrixApiError('NETWORK_ERROR', 0);
-
-      const headers = new Headers(init.headers);
-      headers.set('Accept', 'application/json');
-      if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-      const url = `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
-
-      let response: Response;
+      const { headers, requestId } = withRequestId(init.headers);
       try {
-        response = await fetcher(url, { ...init, headers });
-      } catch {
-        throw new MatrixApiError('NETWORK_ERROR', 0);
-      }
-
-      if (!response.ok) {
-        let payload: unknown;
-        const contentType = response.headers.get('content-type') ?? '';
-        if (isJsonContentType(contentType)) {
-          try {
-            payload = await response.json();
-          } catch {
-            payload = undefined;
+        return await withDeadline(async (signal) => {
+          const accessToken = await getAccessToken();
+          if (!accessToken && options.auth !== 'optional') {
+            throw new MatrixApiError('AUTH_REQUIRED', 401);
           }
+          if (!baseUrl) throw new MatrixApiError('NETWORK_ERROR', 0);
+
+          headers.set('Accept', 'application/json');
+          if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+          const url = `${baseUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
+          const response = await fetchWithPolicy(url, { ...init, headers, signal }, { fetcher });
+
+          if (!response.ok) {
+            let payload: unknown;
+            const contentType = response.headers.get('content-type') ?? '';
+            if (isJsonContentType(contentType)) {
+              try {
+                payload = await response.json();
+              } catch {
+                payload = undefined;
+              }
+            }
+            const code = errorCodeFromPayload(payload);
+            const remoteCode = isRecognizedApiErrorCode(code, response.status)
+              ? code
+              : codeForStatus(response.status);
+            throw new MatrixApiError(remoteCode, response.status, remoteCode, {
+              requestId,
+              retryable: isSafeReadMethod(init.method) && isRetryableStatus(response.status),
+            });
+          }
+          const contentType = response.headers.get('content-type') ?? '';
+          if (!isJsonContentType(contentType)) {
+            throw new MatrixApiError('NON_JSON_RESPONSE', response.status, 'NON_JSON_RESPONSE', { requestId });
+          }
+          try {
+            return await response.json() as T;
+          } catch {
+            throw new MatrixApiError('NON_JSON_RESPONSE', response.status, 'NON_JSON_RESPONSE', { requestId });
+          }
+        }, { signal: init.signal });
+      } catch (error) {
+        if (error instanceof MatrixApiError) throw error;
+        if (error instanceof ApiRequestError && error.code === 'REQUEST_TIMEOUT') {
+          throw new MatrixApiError('REQUEST_TIMEOUT', 0, 'REQUEST_TIMEOUT', {
+            requestId,
+            retryable: isSafeReadMethod(init.method),
+          });
         }
-        const code = errorCodeFromPayload(payload);
-        const remoteCode = isRecognizedApiErrorCode(code, response.status)
-          ? code
-          : codeForStatus(response.status);
-        throw new MatrixApiError(remoteCode, response.status);
+        if (error instanceof ApiRequestError && error.code === 'REQUEST_ABORTED') {
+          throw new MatrixApiError('REQUEST_ABORTED', 0, 'REQUEST_ABORTED', { requestId });
+        }
+        throw new MatrixApiError('NETWORK_ERROR', 0, 'NETWORK_ERROR', {
+          requestId,
+          retryable: isSafeReadMethod(init.method),
+        });
       }
-      const contentType = response.headers.get('content-type') ?? '';
-      if (!isJsonContentType(contentType)) {
-        throw new MatrixApiError('NON_JSON_RESPONSE', response.status);
-      }
-      return response.json() as Promise<T>;
     },
   };
 }

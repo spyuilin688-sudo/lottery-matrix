@@ -1,4 +1,5 @@
 import type { NumberBallLottery } from './NumberBall';
+import { fetchWithPolicy, withRequestId } from './lib/api-resilience';
 import { RAILWAY_API_BASE } from './runtime-api-config';
 import { clearReadCache, readThroughCache, stableCacheKey } from './read-cache';
 import {
@@ -208,20 +209,24 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!LOTTERY_API_BASE) {
     throw new Error('Railway Lottery API is not configured');
   }
-  const headers = new Headers(init?.headers);
+  const { headers } = withRequestId(init?.headers);
   headers.set('Accept', 'application/json');
-  const response = await fetch(`${LOTTERY_API_BASE}${path}`, {
+  const response = await fetchWithPolicy(`${LOTTERY_API_BASE}${path}`, {
     ...init,
     headers,
   });
   if (!response.ok) {
-    throw new Error(`Lottery API ${response.status}: ${response.statusText}`);
+    throw new Error(`Lottery API ${response.status}`);
   }
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
-    throw new Error(`Lottery API returned ${contentType || 'non-JSON response'}`);
+    throw new Error('Lottery API returned non-JSON response');
   }
-  return response.json() as Promise<T>;
+  try {
+    return await response.json() as T;
+  } catch {
+    throw new Error('Lottery API returned invalid JSON');
+  }
 }
 
 function normalizeProjectedRecord(lottery: NumberBallLottery, record: LotteryDrawRecord): LotteryDrawRecord {

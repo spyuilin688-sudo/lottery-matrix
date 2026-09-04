@@ -95,7 +95,17 @@ import {
   type ManualTransferPlanCode,
 } from "./member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "./manual-transfer-selection";
-import { signInWithLine, signOutFromMatrix } from "./auth/line-auth";
+import {
+  reconcilePendingLineLogoutPresence,
+  signInWithLine,
+  signOutFromMatrix,
+} from "./auth/line-auth";
+import {
+  clearLineLoginAttempt,
+  consumeLineLoginAttempt,
+  markLineLoginAttempt,
+} from "./auth/line-login-attempt";
+import { withDeadline } from "./lib/api-resilience";
 import { getSupabaseClient } from "./lib/supabase";
 import { getExploreEntryDefaults } from "./explore-defaults";
 import { useAppDialog } from "./dialog/AppDialog";
@@ -4043,74 +4053,84 @@ function lineNicknameFromSession(session: unknown) {
   return typeof name === "string" && name.trim() ? name.trim() : null;
 }
 
-const LINE_LOGIN_PENDING_KEY = "matrix-line-login-pending";
+type ProfileAuthState =
+  | "initializing"
+  | "anonymous"
+  | "signing-in"
+  | "authenticated"
+  | "signing-out"
+  | "degraded";
 
-function markLineLoginPending() {
-  try {
-    window.sessionStorage.setItem(LINE_LOGIN_PENDING_KEY, "1");
-  } catch {
-    // Login still works if session storage is unavailable.
-  }
-}
-
-function clearLineLoginPending() {
-  try {
-    window.sessionStorage.removeItem(LINE_LOGIN_PENDING_KEY);
-  } catch {
-    // Nothing to clear when session storage is unavailable.
-  }
-}
-
-function consumeLineLoginPending() {
-  try {
-    const pending = window.sessionStorage.getItem(LINE_LOGIN_PENDING_KEY) === "1";
-    if (pending) window.sessionStorage.removeItem(LINE_LOGIN_PENDING_KEY);
-    return pending;
-  } catch {
-    return false;
-  }
-}
+const PROFILE_SESSION_TIMEOUT_MS = 2_500;
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
   const { showInstallAction, requestInstall } = usePwaLifecycle();
-  const [authState, setAuthState] = useState<"loading" | "authenticated" | "anonymous">("loading");
+  const [authState, setAuthState] = useState<ProfileAuthState>("initializing");
+  const [authRetrying, setAuthRetrying] = useState(false);
+  const [authCheckRevision, setAuthCheckRevision] = useState(0);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
-  const [authPending, setAuthPending] = useState(false);
   useEffect(() => {
     let active = true;
     let authRevision = 0;
+    let initialReadSettled = false;
+    let initialReadFailed = false;
     const client = getSupabaseClient();
     const applySession = (session: unknown) => {
       if (!active) return;
+      setAuthRetrying(false);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
       setLineNickname(lineNicknameFromSession(session));
-      if (session && consumeLineLoginPending()) {
+      if (consumeLineLoginAttempt({ hasSession: Boolean(session) })) {
         void alertDialog({ title: "登入成功", tone: "success" });
       }
     };
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION" && !session && (!initialReadSettled || initialReadFailed)) return;
       authRevision += 1;
+      if (event === "SIGNED_OUT") {
+        reconcilePendingLineLogoutPresence(null);
+        applySession(null);
+        return;
+      }
+      reconcilePendingLineLogoutPresence(session);
       applySession(session);
     });
     const initialRevision = authRevision;
-    void client.auth.getSession().then(({ data, error }) => {
+    void withDeadline(() => client.auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS }).then(({ data, error }) => {
+      initialReadSettled = true;
       if (!active || authRevision !== initialRevision) return;
-      applySession(error ? null : data.session);
+      if (error) {
+        reconcilePendingLineLogoutPresence(undefined);
+        setAuthRetrying(false);
+        initialReadFailed = true;
+        consumeLineLoginAttempt({ hasSession: false });
+        setAuthState("degraded");
+        return;
+      }
+      reconcilePendingLineLogoutPresence(data.session);
+      applySession(data.session);
     }).catch(() => {
-      if (active && authRevision === initialRevision) applySession(null);
+      initialReadSettled = true;
+      if (active && authRevision === initialRevision) {
+        initialReadFailed = true;
+        consumeLineLoginAttempt({ hasSession: false });
+        reconcilePendingLineLogoutPresence(undefined);
+        setAuthRetrying(false);
+        setAuthState("degraded");
+      }
     });
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, [alertDialog]);
+  }, [alertDialog, authCheckRevision]);
   useEffect(() => {
     if (authState !== "authenticated") {
-      setMemberProfile(null);
+      if (authState === "anonymous" || authState === "degraded") setMemberProfile(null);
       return;
     }
     let active = true;
@@ -4125,11 +4145,16 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
   const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
   const handleAuthAction = async () => {
-    if (authPending || authState === "loading") return;
+    if (authRetrying || authState === "initializing" || authState === "signing-in" || authState === "signing-out") return;
+    if (authState === "degraded") {
+      setAuthRetrying(true);
+      setAuthCheckRevision((revision) => revision + 1);
+      return;
+    }
     const action = authState === "authenticated" ? "logout" : "login";
-    setAuthPending(true);
     try {
       if (action === "logout") {
+        setAuthState("signing-out");
         const confirmed = await confirmDialog({
           title: "確認登出？",
           description: "登出後需重新登入才能繼續使用帳號功能。",
@@ -4138,26 +4163,38 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           tone: "warning",
           icon: "logout",
         });
-        if (!confirmed) return;
+        if (!confirmed) {
+          setAuthState("authenticated");
+          return;
+        }
         await signOutFromMatrix();
+        setAuthState("anonymous");
+        setLineAvatarUrl(null);
+        setLineNickname(null);
         await alertDialog({ title: "已登出", tone: "success" });
       } else {
-        markLineLoginPending();
+        setAuthState("signing-in");
+        markLineLoginAttempt();
         try {
           await signInWithLine();
         } catch (error) {
-          clearLineLoginPending();
+          clearLineLoginAttempt();
           throw error;
         }
       }
-    } catch {
+    } catch (error) {
+      setAuthState(action === "logout"
+        && error instanceof Error
+        && error.message === "SUPABASE_SIGN_OUT_UNCERTAIN"
+        ? "degraded"
+        : action === "logout" ? "authenticated" : "anonymous");
       await alertDialog({
         title: action === "logout" ? "登出失敗" : "登入失敗",
         description: "請稍後再試。",
         tone: "danger",
       });
     } finally {
-      setAuthPending(false);
+      setAuthState((current) => current === "signing-in" ? "anonymous" : current);
     }
   };
   const handleInstallAction = async () => {
@@ -4194,13 +4231,19 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           >LINE 暱稱：{lineNickname ?? ""}</p>
         </div>
         <div className="profile-watermark" aria-hidden="true">M</div>
-        {authState !== "loading" ? <button
+        {authState !== "initializing" ? <button
           type="button"
           className="profile-logout"
           onClick={() => void handleAuthAction()}
-          disabled={authPending}
-          aria-busy={authPending}
-        >{authState === "authenticated" ? "登出" : "LINE 登入"}</button> : null}
+          disabled={authRetrying || authState === "signing-in" || authState === "signing-out"}
+          aria-busy={authRetrying || authState === "signing-in" || authState === "signing-out"}
+        >{
+          authState === "authenticated" ? "登出"
+            : authState === "signing-in" ? "登入中…"
+              : authState === "signing-out" ? "登出中…"
+                : authState === "degraded" ? "重新檢查"
+                  : "LINE 登入"
+        }</button> : null}
       </section>
       <section className="panel subscription-status-card">
         <SectionTitle>目前訂閱狀態</SectionTitle>
