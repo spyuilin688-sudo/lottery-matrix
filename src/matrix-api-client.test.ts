@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { API_REQUEST_TIMEOUT_MS } from './lib/api-resilience';
 import { createMatrixApiClient, MatrixApiError } from './matrix-api-client';
 
 function jsonResponse(value: unknown, status = 200) {
@@ -8,7 +9,81 @@ function jsonResponse(value: unknown, status = 200) {
   });
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
 describe('authenticated Matrix API client', () => {
+  it('applies the one total deadline while acquiring the Supabase access token', async () => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn();
+    const client = createMatrixApiClient(
+      () => new Promise<string | null>(() => undefined),
+      fetcher,
+      'https://api.test',
+    );
+    let settled = false;
+    let failure: unknown;
+
+    void client.fetchJson('/result').then(
+      () => { settled = true; },
+      (error: unknown) => {
+        settled = true;
+        failure = error;
+      },
+    );
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(failure).toMatchObject({
+      code: 'REQUEST_TIMEOUT',
+      status: 0,
+      retryable: true,
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      message: 'REQUEST_TIMEOUT',
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('keeps the one total deadline through body delivery and cancels a stalled body', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const fetcher = vi.fn().mockResolvedValue(new Response(
+      new ReadableStream<Uint8Array>({ cancel }),
+      { headers: { 'content-type': 'application/json' } },
+    ));
+    const client = createMatrixApiClient(async () => 'token', fetcher, 'https://api.test');
+    let settled = false;
+    let failure: unknown;
+
+    void client.fetchJson('/result').then(
+      () => { settled = true; },
+      (error: unknown) => {
+        settled = true;
+        failure = error;
+      },
+    );
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(failure).toMatchObject({
+      code: 'REQUEST_TIMEOUT',
+      status: 0,
+      retryable: true,
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      message: 'REQUEST_TIMEOUT',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('adds the current Supabase access token', async () => {
     const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => (
       jsonResponse({ ok: true })
@@ -21,6 +96,75 @@ describe('authenticated Matrix API client', () => {
     expect(fetcher.mock.calls[0]?.[0]).toBe('https://api.test/api/matrix/status/summary');
     expect(headers.get('Authorization')).toBe('Bearer access-token');
     expect(headers.get('Accept')).toBe('application/json');
+    expect(headers.get('X-Request-ID')).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('preserves a valid caller request id across a safe retry', async () => {
+    const requestId = '123e4567-e89b-42d3-a456-426614174000';
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ error: { code: 'temporary' } }, 503))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    const client = createMatrixApiClient(async () => 'token', fetcher, 'https://api.test');
+
+    await client.fetchJson('/result', { headers: { 'X-Request-ID': requestId } });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    for (const [, init] of fetcher.mock.calls) {
+      expect(new Headers(init?.headers).get('X-Request-ID')).toBe(requestId);
+    }
+  });
+
+  it('does not retry a mutation and marks its transient response as non-retryable', async () => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse({ error: { code: 'temporary' } }, 503));
+    const client = createMatrixApiClient(async () => 'token', fetcher, 'https://api.test');
+
+    await expect(client.fetchJson('/mutate', { method: 'POST' })).rejects.toMatchObject({
+      code: 'API_ERROR',
+      status: 503,
+      retryable: false,
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps the shared deadline to a fixed retryable Matrix error', async () => {
+    vi.useFakeTimers();
+    const client = createMatrixApiClient(
+      async () => 'token',
+      async () => new Promise<Response>(() => undefined),
+      'https://api.test',
+    );
+    const result = client.fetchJson('/result');
+    const rejection = expect(result).rejects.toMatchObject({
+      code: 'REQUEST_TIMEOUT',
+      status: 0,
+      retryable: true,
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      message: 'REQUEST_TIMEOUT',
+    });
+
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
+
+    await rejection;
+  });
+
+  it('maps caller cancellation to a fixed non-retryable Matrix error', async () => {
+    const controller = new AbortController();
+    const client = createMatrixApiClient(
+      async () => 'token',
+      async () => new Promise<Response>(() => undefined),
+      'https://api.test',
+    );
+    const result = client.fetchJson('/result', { signal: controller.signal });
+
+    controller.abort(new Error('private caller reason'));
+
+    await expect(result).rejects.toMatchObject({
+      code: 'REQUEST_ABORTED',
+      status: 0,
+      retryable: false,
+      message: 'REQUEST_ABORTED',
+    });
   });
 
   it('rejects before fetch when no session exists', async () => {
@@ -144,6 +288,10 @@ describe('authenticated Matrix API client', () => {
       'https://api.test',
     );
 
-    await expect(client.fetchJson('/result')).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+    await expect(client.fetchJson('/result')).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+      retryable: true,
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
   });
 });

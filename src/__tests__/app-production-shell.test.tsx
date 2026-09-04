@@ -670,4 +670,11 @@ describe("production member shell", () => {
     expect(mainSource).not.toContain("admin/admin.css");
     expect(mainSource).not.toContain('startsWith("/admin")');
   });
+
+  it("does not start member online tracking unconditionally from the production entry", () => {
+    const mainSource = readFileSync(`${process.cwd()}/src/main.tsx`, "utf8");
+
+    expect(mainSource).not.toContain("startMemberOnlineTracking");
+    expect(mainSource).not.toContain("postMemberOnline");
+  });
 });
