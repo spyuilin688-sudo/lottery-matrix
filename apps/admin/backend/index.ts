@@ -17,6 +17,12 @@ import { createNotificationEvents, getNotificationEventConfig } from './notifica
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-api';
+import {
+  createFantasy5GithubDispatcher,
+  createIndependentWatchdog,
+  createSupabaseWatchdogSnapshotLoader,
+  getGithubActionsToken,
+} from './watchdog';
 
 type Context = {
   body?: unknown;
@@ -43,6 +49,13 @@ const adminData = createAdminData(supabase);
 const adminTodos = createAdminTodos(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
+const independentWatchdog = createIndependentWatchdog({
+  loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
+  recoverRailway: (lottery) => workerApi.recoverLottery(lottery),
+  dispatchFantasy5: createFantasy5GithubDispatcher(
+    () => getGithubActionsToken(secrets),
+  ),
+});
 const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
@@ -461,6 +474,16 @@ const routes: Record<string, unknown> = {
       return fail(cause);
     }
   }],
+};
+
+export const matrixIndependentWatchdog = async (
+  event: { scheduledTime?: string },
+) => {
+  const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
+  const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
+  const result = await independentWatchdog.run(at);
+  console.log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
+  return { statusCode: 200 };
 };
 
 export const handler = router(routes);
