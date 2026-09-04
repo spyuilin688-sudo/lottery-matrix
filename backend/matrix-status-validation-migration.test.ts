@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20260904080000_matrix_status_validation_source.sql', import.meta.url),
+  new URL('../supabase/migrations/20260904080854_matrix_status_validation_source.sql', import.meta.url),
   'utf8',
 );
 
