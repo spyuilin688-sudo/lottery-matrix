@@ -165,7 +165,13 @@ export function planWatchdogActions(
     }
 
     const expectedDate = expectedDrawDateDuringCallWindow(snapshot.lottery, now);
-    if (expectedDate && snapshot.latestDraw?.drawDate !== expectedDate) {
+    const drawDate = snapshot.latestDraw?.drawDate;
+    const staleDraw = expectedDate && (
+      !drawDate
+      || !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)
+      || drawDate < expectedDate
+    );
+    if (staleDraw) {
       add(snapshot.lottery, crawlerTarget, 'crawler-stale');
     }
 
@@ -317,4 +323,3 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
     },
   };
 }
-
