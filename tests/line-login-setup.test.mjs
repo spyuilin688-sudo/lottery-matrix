@@ -32,13 +32,13 @@ test("LINE operator guide locks required configuration and secret-safety invaria
   assert.match(guide, /production normalized\s+origin root/i);
   assert.match(guide, /no paths, queries, fragments, or external\s+origins/i);
   assert.match(guide, /do not request the `email` scope/i);
-  assert.match(guide, /current browser page-process memory/i);
-  assert.match(guide, /stripped from the persisted Supabase session/i);
+  assert.match(guide, /current browser page-process\s+memory/i);
+  assert.match(guide, /stripped from\s+the persisted Supabase session/i);
   assert.match(guide, /page reload/i);
   assert.match(guide, /fail(?:s)? closed/i);
-  assert.match(guide, /Supabase session (?:remains|stays) intact/i);
-  assert.match(guide, /retry or re-authenticate/i);
-  assert.match(guide, /operator recovery/i);
+  assert.match(guide, /does not trap the member in a\s+local Supabase session/i);
+  assert.match(guide, /continues to\s+the bounded local sign-out/i);
+  assert.match(guide, /recoverable\/uncertain state/i);
   assert.doesNotMatch(guide, /LINE_CHANNEL_SECRET\s*=\s*\S+/);
   assert.doesNotMatch(guide, /LINE_CHANNEL_ID\s*=\s*\S+/);
   assert.doesNotMatch(guide, /LINE Channel secret\s*[:=]\s*\S+/i);

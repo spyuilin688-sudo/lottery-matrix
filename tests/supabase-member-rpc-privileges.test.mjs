@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const migrationsDir = path.resolve('supabase/migrations');
 const migrationSuffix = '_restrict_member_rpc_execute.sql';
-const deployedMigrationFloor = '20260904092249';
+const deployedMigrationFloor = '20260904103000';
 const targets = [
   'public.matrix_custom_status_reset(text, text)',
   'public.member_notification_settings_get()',
