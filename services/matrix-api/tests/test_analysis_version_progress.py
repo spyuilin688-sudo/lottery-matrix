@@ -171,6 +171,32 @@ def test_supabase_progress_batch_lookup_uses_exact_period_versions() -> None:
     ]
 
 
+def test_supabase_progress_batch_ignores_mismatched_period_version_pair() -> None:
+    rows = [
+        {
+            "lottery": "天天樂",
+            "draw_period": "11988",
+            "analysis_version": "11989:matrix-python-v12",
+            "phase": "complete",
+            "cursor": 4,
+            "total": 4,
+            "status": "complete",
+            "started_at": "2026-09-04T01:00:00+00:00",
+            "completed_at": "2026-09-04T01:10:00+00:00",
+            "error": None,
+        },
+    ]
+    repository = SupabaseAnalysisRepository(RecordingSupabaseClient(rows))
+
+    progress = repository.list_progress_for_periods(
+        "天天樂",
+        ["11988", "11989"],
+        "matrix-python-v12",
+    )
+
+    assert progress == {}
+
+
 def test_pipeline_returns_current_version_progress_when_legacy_run_is_newer() -> None:
     repository = InMemoryAnalysisRepository()
     _complete_run(

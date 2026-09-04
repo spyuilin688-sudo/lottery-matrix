@@ -1003,7 +1003,10 @@ class SupabaseAnalysisRepository:
         progress: dict[str, dict[str, Any]] = {}
         for raw in response.data:
             run = self._normalize_run(dict(raw))
-            progress.setdefault(str(run["drawPeriod"]), run)
+            period = str(run["drawPeriod"])
+            if run["analysisVersion"] != f"{period}:{analysis_name}":
+                continue
+            progress.setdefault(period, run)
         return progress
 
     def read_completed_artifact(self, lottery: str, draw_period: str, kind: str) -> Any | None:
