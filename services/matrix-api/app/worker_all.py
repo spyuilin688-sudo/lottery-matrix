@@ -7,7 +7,7 @@ import httpx
 from app.repositories.analysis_repository import create_supabase_repository
 from app.scraping.sources import LatestDrawSource
 from app.settings import load_settings
-from app.worker import run_scheduled_worker
+from app.worker import create_notification_emitter, run_scheduled_worker
 
 
 LOTTERIES = ("今彩539", "天天樂", "六合彩", "大樂透")
@@ -40,9 +40,23 @@ def main() -> int:
     )
     with httpx.Client(verify=create_railway_ssl_context()) as client:
         source = LatestDrawSource(client)
-        result = run_all_workers(
-            lambda lottery: run_scheduled_worker(lottery, None, repository, source),
-        )
+        notification_emitter = create_notification_emitter(settings, client)
+        if notification_emitter is None:
+            run_one = lambda lottery: run_scheduled_worker(
+                lottery,
+                None,
+                repository,
+                source,
+            )
+        else:
+            run_one = lambda lottery: run_scheduled_worker(
+                lottery,
+                None,
+                repository,
+                source,
+                notification_emitter=notification_emitter,
+            )
+        result = run_all_workers(run_one)
     for lottery in result["completed"]:
         print(f"{lottery} complete")
     for lottery, error in result["failed"].items():
