@@ -41,4 +41,5 @@ test('watchdog recoveries use one durable cross-host lease', () => {
   assert.match(watchdog, /claim_matrix_watchdog_lease/);
   assert.match(watchdogLeaseMigration, /on conflict \(lease_key\) do update/);
   assert.match(watchdogLeaseMigration, /expires_at <= now\(\)/);
+  assert.match(watchdogLeaseMigration, /renew_matrix_watchdog_lease/);
 });

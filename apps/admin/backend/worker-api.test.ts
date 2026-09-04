@@ -478,7 +478,7 @@ describe('Railway recovery adapter', () => {
       fetcher,
     );
 
-    await expect(api.recoverLottery('天天樂')).resolves.toEqual({
+    await expect(api.recoverLottery('天天樂', 'invocation-1')).resolves.toEqual({
       lottery: '天天樂',
       status: 'accepted',
     });
@@ -493,7 +493,10 @@ describe('Railway recovery adapter', () => {
         'Content-Type': 'application/json',
         'X-Matrix-Admin-Token': 'server-token',
       },
-      body: JSON.stringify({ lottery: '天天樂' }),
+      body: JSON.stringify({
+        lottery: '天天樂',
+        leaseOwner: 'invocation-1',
+      }),
     });
   });
 });

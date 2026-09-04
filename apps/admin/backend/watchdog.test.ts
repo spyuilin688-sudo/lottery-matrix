@@ -171,7 +171,10 @@ describe('independent Matrix watchdog execution', () => {
       dispatchFantasy5,
     });
 
-    await expect(watchdog.run(new Date('2026-09-04T09:00:00.000Z'))).resolves.toMatchObject({
+    await expect(watchdog.run(
+      new Date('2026-09-04T09:00:00.000Z'),
+      'invocation-1',
+    )).resolves.toMatchObject({
       status: 'ok',
       actions: [{
         lottery: '天天樂',
@@ -179,7 +182,7 @@ describe('independent Matrix watchdog execution', () => {
         outcome: 'accepted',
       }],
     });
-    expect(recoverRailway).toHaveBeenCalledWith('天天樂');
+    expect(recoverRailway).toHaveBeenCalledWith('天天樂', 'invocation-1');
     expect(dispatchFantasy5).not.toHaveBeenCalled();
   });
   it('does not execute an action while another host owns its lease', async () => {
@@ -239,6 +242,26 @@ describe('independent Matrix watchdog execution', () => {
         }),
       }),
     );
+  });
+
+  it('times out a stalled GitHub workflow response body', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetcher = vi.fn(async () => ({
+        ok: true,
+        json: () => new Promise(() => undefined),
+      } as Response));
+      const dispatch = createFantasy5GithubDispatcher(
+        async () => 'server-token',
+        fetcher as typeof fetch,
+      );
+      const pending = dispatch();
+      await vi.advanceTimersByTimeAsync(8_000);
+      await expect(pending).resolves.toBe('failed');
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
 });

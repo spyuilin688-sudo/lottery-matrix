@@ -4,7 +4,7 @@ const wiring = vi.hoisted(() => {
   const workerStatus = { ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
   const workerRefreshLottery = vi.fn(async (lottery: string) => ({ lottery, period: '115000211', drawDate: '2026-09-01' }));
-  const workerRecoverLottery = vi.fn(async (lottery: string) => ({ lottery, status: 'accepted' }));
+  const workerRecoverLottery = vi.fn(async (lottery: string, _leaseOwner: string) => ({ lottery, status: 'accepted' }));
   const getWorkerConfig = vi.fn(async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }));
   const createWorkerApi = vi.fn(() => ({
     getStatus: workerGetStatus,

@@ -13,6 +13,7 @@ import httpx
 from app.card_renderer import card_layout, render_matrix_card
 from app.analysis_worker import run_analysis_only_worker
 from app.recovery import RecoveryCoordinator
+from app.watchdog_lease import renew_recovery_lease, release_recovery_lease
 from app.repositories.analysis_repository import AnalysisRepository, create_supabase_repository
 from app.schedule import next_lottery_draw_time
 from app.scraping.sources import LatestDrawSource
@@ -70,6 +71,13 @@ def _parse_lottery(value: Any) -> str:
     if lottery not in LOTTERIES:
         raise ValueError("未知彩種")
     return lottery
+
+
+def _parse_recovery_lease_owner(value: Any) -> str:
+    owner = str(value or "").strip()
+    if not owner or len(owner) > 200:
+        raise ValueError("INVALID_RECOVERY_LEASE_OWNER")
+    return owner
 
 
 def _parse_number_order(value: Any) -> str:
@@ -307,7 +315,11 @@ def run_lottery_recovery(lottery: str) -> None:
         )
 
 
-_RECOVERY_COORDINATOR = RecoveryCoordinator(run_lottery_recovery)
+_RECOVERY_COORDINATOR = RecoveryCoordinator(
+    run_lottery_recovery,
+    renew_lease=renew_recovery_lease,
+    release_lease=release_recovery_lease,
+)
 
 
 def handle_api_request(
@@ -317,7 +329,7 @@ def handle_api_request(
     repository: AnalysisRepository,
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
-    recover_lottery: Callable[[str], str] | None = None,
+    recover_lottery: Callable[[str, str], str] | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -353,10 +365,15 @@ def handle_api_request(
         if method == "POST" and path == "/jobs/recover":
             if not _status_token_authorized(request_monitor_token):
                 return 403, {"error": "FORBIDDEN"}
-            lottery = _parse_lottery(_decode_body(body).get("lottery"))
+            recovery_request = _decode_body(body)
+            lottery = _parse_lottery(recovery_request.get("lottery"))
+            lease_owner = _parse_recovery_lease_owner(
+                recovery_request.get("leaseOwner")
+            )
             try:
                 recovery_status = (recover_lottery or _RECOVERY_COORDINATOR.enqueue)(
-                    lottery
+                    lottery,
+                    lease_owner,
                 )
                 return 202, {"lottery": lottery, "status": recovery_status}
             except Exception:

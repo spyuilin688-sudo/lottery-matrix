@@ -75,7 +75,32 @@ begin
 end;
 $$;
 
+create or replace function public.renew_matrix_watchdog_lease(
+  p_lease_key text,
+  p_owner_id text,
+  p_ttl_seconds integer
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_ttl_seconds not between 60 and 3600 then
+    raise exception 'INVALID_WATCHDOG_LEASE';
+  end if;
+
+  update public.matrix_watchdog_leases
+  set expires_at = now() + make_interval(secs => p_ttl_seconds)
+  where lease_key = p_lease_key
+    and owner_id = p_owner_id;
+  return found;
+end;
+$$;
+
 revoke all on function public.claim_matrix_watchdog_lease(text, text, integer) from public;
 revoke all on function public.release_matrix_watchdog_lease(text, text) from public;
+revoke all on function public.renew_matrix_watchdog_lease(text, text, integer) from public;
 grant execute on function public.claim_matrix_watchdog_lease(text, text, integer) to service_role;
 grant execute on function public.release_matrix_watchdog_lease(text, text) to service_role;
+grant execute on function public.renew_matrix_watchdog_lease(text, text, integer) to service_role;

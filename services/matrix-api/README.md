@@ -60,8 +60,9 @@ lottery and returns `202` immediately. For 天天樂 it invokes only
 three Railway-owned lotteries it invokes the tracked scheduled pipeline. The
 pipeline refreshes only inside a due stale-draw window and otherwise resumes
 stored analysis. Concurrent requests in the Railway API process for the same lottery return
-`already-running`; recovery threads are non-daemon. Automated cross-host calls
-are additionally serialized by the durable Supabase watchdog lease.
+`already-running`; recovery threads are non-daemon. The API validates the
+AppDeploy lease owner, renews its durable Supabase lease every minute while work
+runs, and releases it only after completion.
 
 ### Independent watchdog
 
@@ -76,7 +77,9 @@ concurrent AppDeploy invocations from dispatching the same recovery twice.
 `.github/workflows/fantasy5-crawler.yml`; Railway recovery remains
 analysis-only. AppDeploy requires a server-only `GITHUB_ACTIONS_TOKEN` with
 Actions read/write access to inspect active runs and dispatch that workflow.
-The token must never be exposed to frontend code.
+Deployment must validate this secret before enabling `cron.json`; a missing
+value is emitted as a degraded backend error. The token must never be exposed
+to frontend code.
 
 ### Scheduled workers
 

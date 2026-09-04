@@ -55,7 +55,7 @@ const independentWatchdog = createIndependentWatchdog({
   loadSnapshot: createSupabaseWatchdogSnapshotLoader(supabase),
   claimLease: (key, owner) => watchdogLeases.claim(key, owner),
   releaseLease: (key, owner) => watchdogLeases.release(key, owner),
-  recoverRailway: (lottery) => workerApi.recoverLottery(lottery),
+  recoverRailway: (lottery, owner) => workerApi.recoverLottery(lottery, owner),
   dispatchFantasy5: createFantasy5GithubDispatcher(
     () => getGithubActionsToken(secrets),
   ),
@@ -487,7 +487,8 @@ export const matrixIndependentWatchdog = async (
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
   const owner = event?.invocationId || `cron:${at.toISOString()}`;
   const result = await independentWatchdog.run(at, owner);
-  console.log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
+  const log = result.status === 'ok' ? console.log : console.error;
+  log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
   return { statusCode: 200 };
 };
 

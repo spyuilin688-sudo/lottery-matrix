@@ -366,7 +366,10 @@ export function createWorkerApi(
         if (timer !== undefined) clearTimeout(timer);
       }
     },
-    async recoverLottery(lottery: CrawlerLottery): Promise<WorkerRecovery> {
+    async recoverLottery(
+      lottery: CrawlerLottery,
+      leaseOwner: string,
+    ): Promise<WorkerRecovery> {
       const controller = new AbortController();
       let timer: ReturnType<typeof setTimeout> | undefined;
       const timeout = new Promise<never>((_, reject) => {
@@ -391,7 +394,7 @@ export function createWorkerApi(
             'Content-Type': 'application/json',
             'X-Matrix-Admin-Token': statusToken,
           },
-          body: JSON.stringify({ lottery }),
+          body: JSON.stringify({ lottery, leaseOwner }),
         });
         if (!response.ok) throw new WorkerRecoveryError();
         const recovery = parseRecovery(await response.json(), lottery);

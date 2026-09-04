@@ -233,11 +233,20 @@ async function supabaseRequest<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('REQUEST_TIMEOUT'));
+    }, REQUEST_TIMEOUT_MS);
+  });
   try {
-    return await supabase.supabaseRequest<T>(path, { ...init, signal: controller.signal });
+    return await Promise.race([
+      supabase.supabaseRequest<T>(path, { ...init, signal: controller.signal }),
+      timeout,
+    ]);
   } finally {
-    clearTimeout(timer);
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 
@@ -247,11 +256,45 @@ async function fetchWithTimeout(
   init: RequestInit,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('REQUEST_TIMEOUT'));
+    }, REQUEST_TIMEOUT_MS);
+  });
   try {
-    return await fetcher(input, { ...init, signal: controller.signal });
+    return await Promise.race([
+      fetcher(input, { ...init, signal: controller.signal }),
+      timeout,
+    ]);
   } finally {
-    clearTimeout(timer);
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+async function fetchJsonWithTimeout<T>(
+  fetcher: typeof fetch,
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<{ response: Response; payload: T | null }> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('REQUEST_TIMEOUT'));
+    }, REQUEST_TIMEOUT_MS);
+  });
+  const work = (async () => {
+    const response = await fetcher(input, { ...init, signal: controller.signal });
+    const payload = response.ok ? await response.json() as T : null;
+    return { response, payload };
+  })();
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 
@@ -342,14 +385,15 @@ export function createFantasy5GithubDispatcher(
       'X-GitHub-Api-Version': '2022-11-28',
     };
     try {
-      const runsResponse = await fetchWithTimeout(fetcher, `${workflowUrl}/runs?per_page=10`, {
+      const { response: runsResponse, payload } = await fetchJsonWithTimeout<{
+        workflow_runs?: Array<{ status?: string }>;
+      }>(fetcher, `${workflowUrl}/runs?per_page=10`, {
         cache: 'no-store',
         redirect: 'error',
         headers,
       });
       if (!runsResponse.ok) return 'failed';
-      const payload = await runsResponse.json() as { workflow_runs?: Array<{ status?: string }> };
-      if ((payload.workflow_runs ?? []).some((run) =>
+      if ((payload?.workflow_runs ?? []).some((run) =>
         ['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(String(run.status)))) {
         return 'already-running';
       }
@@ -371,7 +415,7 @@ type WatchdogDependencies = {
   loadSnapshot: () => Promise<WatchdogSnapshot[]>;
   claimLease: (key: string, owner: string) => Promise<boolean>;
   releaseLease: (key: string, owner: string) => Promise<void>;
-  recoverRailway: (lottery: WatchdogLottery) => Promise<unknown>;
+  recoverRailway: (lottery: WatchdogLottery, leaseOwner: string) => Promise<unknown>;
   dispatchFantasy5: () => Promise<string>;
 };
 
@@ -395,7 +439,7 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           if (action.target === 'github') {
             outcome = await dependencies.dispatchFantasy5();
           } else {
-            const response = await dependencies.recoverRailway(action.lottery) as { status?: unknown };
+            const response = await dependencies.recoverRailway(action.lottery, owner) as { status?: unknown };
             outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
           }
           if (outcome === 'failed' || outcome === 'config-missing') {
