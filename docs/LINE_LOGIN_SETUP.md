@@ -65,8 +65,8 @@ bearer, verifies the LINE token's Channel, binds LINE userinfo to the verified
 userinfo, and revoke each have an independent 5,000 ms deadline and every
 network request receives an abort signal.
 
-The LINE provider access token stays only in the current browser page-process
-memory long enough to attempt revoke. Provider credentials are stripped from
+The LINE provider access token stays only in the current browser page-process memory
+long enough to attempt revoke. Provider credentials are stripped from
 the persisted Supabase session: specifically, the `provider_token` and
 `provider_refresh_token` fields are removed while retaining the Supabase access
 token, refresh token, and user needed for session persistence. The Edge Function
