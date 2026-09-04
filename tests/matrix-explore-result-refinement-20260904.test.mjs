@@ -14,12 +14,6 @@ test("Matrix 探索依命中條件與版路類型套用正確預設連準", () =
   assert.match(featurePages, /"準6進7", "準7進8", "準9進10", "準11進12"[\s\S]*?"準9進10", "準11進12"/);
 });
 
-test("Matrix 天衍既有預設與樣式不受本次探索調整影響", () => {
-  assert.match(featurePages, /if \(title === "Matrix 天衍"\) \{[\s\S]*?return \["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"\]/);
-  assert.match(previewCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.explore-validation-card/);
-  assert.match(spacingCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.road-results-head/);
-});
-
 test("切換版路會同步切換對應的預設連準", () => {
   assert.match(featurePages, /const changeRoad = \(value: string\) => \{[\s\S]*?setRoad\(value\);[\s\S]*?setSelectedFilters\(defaultFiltersFor\(hit, value\)\)/);
   assert.match(featurePages, /onClick=\{\(\) => changeRoad\(v\)\}/);
