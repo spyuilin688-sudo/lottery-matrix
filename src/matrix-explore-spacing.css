@@ -863,7 +863,7 @@
 }
 
 .matrix-explore-main-screen .result-title .result-count .numeric-text {
-  color: #35bff0;
+  color: #a7d8ea;
   font-size: 12px;
   font-weight: 700;
 }
@@ -888,18 +888,18 @@
 
 .matrix-explore-main-screen .road-results-head {
   min-height: 32px;
-  border-bottom: 1px solid rgba(117, 83, 41, .48);
+  border-bottom: 1px solid rgba(117, 83, 41, .82);
   font-size: clamp(10px, 2.8vw, 12px);
 }
 
 .matrix-explore-main-screen .road-results article {
-  border-top: 0;
+  border-top: 1px solid rgba(57, 55, 49, .58);
 }
 
 .matrix-explore-main-screen .road-result-row {
   min-height: 0;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(90, 87, 80, .28);
+  border-bottom: 0;
   border-top: 0;
   border-right: 0;
   border-left: 0;
@@ -1156,5 +1156,5 @@
 }
 
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"] {
-  border-top: 1px solid rgba(230, 183, 106, .72);
+  border-top: 0.7px solid rgba(230, 183, 106, .72);
 }

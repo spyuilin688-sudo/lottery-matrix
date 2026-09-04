@@ -9,9 +9,9 @@ declare const process: { cwd(): string };
 const readCss = (path: string) => readFileSync(`${process.cwd()}/${path}`, "utf8");
 const escapeRegExp = (value: string) => value.replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
 const cssRule = (css: string, selector: string) => {
-  const match = css.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`));
-  expect(match, `Missing CSS rule: ${selector}`).not.toBeNull();
-  return match?.[1] ?? "";
+  const matches = [...css.matchAll(new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`, "g"))];
+  expect(matches.length, `Missing CSS rule: ${selector}`).toBeGreaterThan(0);
+  return matches.map((match) => match[1]).join("\n");
 };
 
 describe("Matrix result visual contract", () => {

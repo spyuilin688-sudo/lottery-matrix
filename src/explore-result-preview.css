@@ -358,6 +358,42 @@
   overflow: hidden;
 }
 
+.matrix-tianyan-screen .explore-validation-summary-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.matrix-tianyan-screen .explore-validation-summary-card > .explore-validation-summary {
+  grid-column: 1 / -1;
+  padding: 4px;
+  white-space: normal;
+}
+
+.tianyan-validation-summary-lines {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  row-gap: 2px;
+}
+
+.tianyan-validation-summary-row {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.tianyan-validation-summary-row .explore-validation-consecutive-tag {
+  color: #e4c980;
+  font-size: .9em;
+  font-weight: 700;
+}
+
+.tianyan-validation-summary-row i {
+  font-style: normal;
+}
+
 .explore-validation-groups {
   display: grid;
   row-gap: 4px;
@@ -375,8 +411,16 @@
   padding: 0;
   border: 0;
   border-radius: 8px;
-  background: rgba(3, 9, 20, .72);
+  background: #080f1b;
   overflow: visible;
+}
+
+.explore-validation-group:nth-child(odd) {
+  background: #080f1b;
+}
+
+.explore-validation-group:nth-child(even) {
+  background: #0c1422;
 }
 
 .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"]) {
@@ -401,19 +445,19 @@
   min-width: 0;
   border: 1px solid rgba(91, 126, 169, .42);
   border-radius: 6px;
-  background: rgba(8, 15, 27, .82);
+  background: transparent;
   overflow: hidden;
 }
 
 .explore-validation-issues {
   margin-right: 6px;
   border-radius: 3px;
-  background: rgba(8, 15, 27, .82);
+  background: transparent;
 }
 
 .explore-validation-numbers-card {
   margin-right: 4px;
-  background: rgba(8, 15, 27, .82);
+  background: transparent;
 }
 
 .explore-validation-draw-row {
@@ -577,7 +621,7 @@
 
 .explore-validation-formulas {
   color: #bac5d2;
-  background: rgba(8, 15, 27, .82);
+  background: transparent;
   font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   font-size: clamp(10px, 3.05vw, 12px);
   font-variant-numeric: tabular-nums;

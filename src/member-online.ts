@@ -3,19 +3,36 @@ export type MemberOnlinePost = (
   body: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
+let stopActiveTracking: (() => Promise<void>) | null = null;
+
+export async function endActiveMemberOnlineSession() {
+  const stop = stopActiveTracking;
+  if (!stop) return;
+  stopActiveTracking = null;
+  await stop();
+}
+
 export function startMemberOnlineTracking(post: MemberOnlinePost, target: Document = document) {
   let sessionId = '';
   let stopped = false;
+  let startInFlight: Promise<void> | null = null;
+  let listenersRemoved = false;
   const start = async () => {
-    if (stopped || target.visibilityState !== 'visible' || sessionId) return;
-    try {
-      const result = await post('/api/member-online/start', {});
-      if (!stopped) sessionId = String(result.sessionId ?? '');
-    } catch {
-      sessionId = '';
-    }
+    if (stopped || target.visibilityState !== 'visible' || sessionId || startInFlight) return;
+    const request = (async () => {
+      try {
+        const result = await post('/api/member-online/start', {});
+        sessionId = String(result.sessionId ?? '');
+      } catch {
+        sessionId = '';
+      }
+    })();
+    startInFlight = request;
+    await request;
+    if (startInFlight === request) startInFlight = null;
   };
   const end = async () => {
+    await startInFlight;
     const current = sessionId;
     sessionId = '';
     if (!current) return;
@@ -33,10 +50,18 @@ export function startMemberOnlineTracking(post: MemberOnlinePost, target: Docume
   target.addEventListener('visibilitychange', visibility);
   target.defaultView?.addEventListener('pagehide', pagehide);
   void start();
-  return () => {
+  const stop = async () => {
     stopped = true;
-    target.removeEventListener('visibilitychange', visibility);
-    target.defaultView?.removeEventListener('pagehide', pagehide);
-    void end();
+    if (!listenersRemoved) {
+      listenersRemoved = true;
+      target.removeEventListener('visibilitychange', visibility);
+      target.defaultView?.removeEventListener('pagehide', pagehide);
+    }
+    await end();
+  };
+  stopActiveTracking = stop;
+  return () => {
+    if (stopActiveTracking === stop) stopActiveTracking = null;
+    void stop();
   };
 }

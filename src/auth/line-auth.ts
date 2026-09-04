@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
 import {
   clearLineAuthEphemeralState,
@@ -8,6 +8,7 @@ import {
   readLineProviderToken,
 } from './line-provider-token';
 import { cleanupBrowserPushSubscription } from '../push-subscription';
+import { endActiveMemberOnlineSession } from '../member-online';
 
 function resolveApprovedRedirect(redirectTo: string, origin: string) {
   const approved = new URL('/', origin).href;
@@ -33,22 +34,36 @@ export async function signOutFromMatrix(
   client: SupabaseClient = getSupabaseClient(),
   revoke: (providerAccessToken: string) => Promise<void> = revokeLineProviderToken,
   cleanupPush: () => Promise<void> = cleanupBrowserPushSubscription,
+  cleanupOnline: () => Promise<void> = endActiveMemberOnlineSession,
 ) {
-  const { data, error: sessionError } = await client.auth.getSession();
-  if (sessionError) throw sessionError;
-
-  const session = data.session;
+  let session: Session | null = null;
+  try {
+    const { data, error: sessionError } = await client.auth.getSession();
+    if (!sessionError) session = data.session;
+  } catch {
+    // Provider session inspection is best-effort; local logout must remain available.
+  }
   const accessToken = session?.access_token ?? null;
   if (accessToken && !isLineProviderTokenRevokedFor(accessToken)) {
     const sessionProviderToken = session?.provider_token;
     const providerAccessToken = typeof sessionProviderToken === 'string' && sessionProviderToken.length > 0
       ? sessionProviderToken
       : readLineProviderToken();
-    if (!providerAccessToken) throw new Error('LINE_PROVIDER_TOKEN_REQUIRED');
+    if (providerAccessToken) {
+      try {
+        await revoke(providerAccessToken);
+        clearLineProviderToken();
+        markLineProviderTokenRevokedFor(accessToken);
+      } catch {
+        // LINE revocation is best-effort; never trap the user in the local session.
+      }
+    }
+  }
 
-    await revoke(providerAccessToken);
-    clearLineProviderToken();
-    markLineProviderTokenRevokedFor(accessToken);
+  try {
+    await cleanupOnline();
+  } catch {
+    // Presence cleanup is best-effort; local logout must remain available.
   }
 
   try {
