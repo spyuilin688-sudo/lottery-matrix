@@ -1,27 +1,47 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 const root = process.cwd();
-const prototypePath = join(root, "src", "Prototype.tsx");
-const patchedRouterPath = join(root, "src", "FeaturePagesPatched.tsx");
-const ownerPath = join(root, "src", "pro-plans-layout.css");
-const debugPath = join(root, "src", "homepage-debug.css");
+const srcRoot = join(root, "src");
+const prototypePath = join(srcRoot, "Prototype.tsx");
+const patchedRouterPath = join(srcRoot, "FeaturePagesPatched.tsx");
+const ownerPath = join(srcRoot, "pro-plans-layout.css");
+const debugPath = join(srcRoot, "homepage-debug.css");
 
 const prototypeSource = readFileSync(prototypePath, "utf8");
 const patchedRouterSource = readFileSync(patchedRouterPath, "utf8");
 const ownerCss = readFileSync(ownerPath, "utf8");
 
-test("正式頁面入口依序載入共用樣式與 Pro 方案 owner", () => {
+function listSourceFiles(directory) {
+  return readdirSync(directory).flatMap((name) => {
+    const path = join(directory, name);
+    if (statSync(path).isDirectory()) return listSourceFiles(path);
+    return /\.(?:ts|tsx|js|jsx)$/.test(name) ? [path] : [];
+  });
+}
+
+test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 owner", () => {
   const sharedIndex = prototypeSource.indexOf('import "./feature-pages.css";');
-  const layoutIndex = prototypeSource.indexOf('import "./pro-plans-layout.css";');
-  const dotsIndex = prototypeSource.indexOf('import "./pro-plans-carousel-peek.css";');
+  const patchedRouterIndex = prototypeSource.indexOf('from "./FeaturePagesPatched";');
+  const layoutIndex = patchedRouterSource.indexOf('import "./pro-plans-layout.css";');
+  const dotsIndex = patchedRouterSource.indexOf('import "./pro-plans-carousel-peek.css";');
 
   assert.ok(sharedIndex >= 0, "Prototype 缺少共用 feature-pages 樣式");
-  assert.ok(layoutIndex > sharedIndex, "Pro 方案版面 owner 必須在共用樣式之後載入");
+  assert.ok(patchedRouterIndex > sharedIndex, "正式入口必須先載入共用樣式，再載入 patched router");
+  assert.ok(layoutIndex >= 0, "patched router 缺少 Pro 方案版面 owner");
   assert.ok(dotsIndex > layoutIndex, "Pro 方案分頁指示樣式必須在版面 owner 之後載入");
-  assert.doesNotMatch(patchedRouterSource, /import\s+["']\.\/pro-plans-(?:layout|carousel-peek)\.css["'];/);
+
+  const layoutOwners = listSourceFiles(srcRoot)
+    .filter((path) => readFileSync(path, "utf8").includes('import "./pro-plans-layout.css";'))
+    .map((path) => relative(root, path).replaceAll("\\", "/"));
+  const dotsOwners = listSourceFiles(srcRoot)
+    .filter((path) => readFileSync(path, "utf8").includes('import "./pro-plans-carousel-peek.css";'))
+    .map((path) => relative(root, path).replaceAll("\\", "/"));
+
+  assert.deepEqual(layoutOwners, ["src/FeaturePagesPatched.tsx"]);
+  assert.deepEqual(dotsOwners, ["src/FeaturePagesPatched.tsx"]);
 });
 
 test("方案卡與付款區以實際水平 gutter 擁有 18px 與 16px", () => {
