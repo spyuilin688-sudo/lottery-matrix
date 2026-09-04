@@ -66,6 +66,9 @@ jobs:
       - name: Full Vitest suite
         run: npm run test:unit
 
+      - name: Edge Function tests
+        run: npm run test:edge-functions
+
       - name: Production build for packaging tests
         run: npm run build
 
