@@ -127,32 +127,32 @@ select is(
   'dispatch cron runs every minute and calls the trusted HTTP tick'
 );
 
-select extensions.like(
+select extensions.matches(
   pg_catalog.pg_get_functiondef(
     pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()')
   ),
-  '%vault.decrypted_secrets%',
+  'vault\.decrypted_secrets',
   'dispatch tick reads secrets from Vault'
 );
-select extensions.like(
+select extensions.matches(
   pg_catalog.pg_get_functiondef(
     pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()')
   ),
-  '%matrix_project_url%',
+  'matrix_project_url',
   'dispatch tick uses the project URL Vault name'
 );
-select extensions.like(
+select extensions.matches(
   pg_catalog.pg_get_functiondef(
     pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()')
   ),
-  '%matrix_notification_dispatch_token%',
+  'matrix_notification_dispatch_token',
   'dispatch tick uses the dispatch token Vault name'
 );
-select extensions.like(
+select extensions.matches(
   pg_catalog.pg_get_functiondef(
     pg_catalog.to_regprocedure('private.notification_dispatch_http_tick()')
   ),
-  '%x-matrix-dispatch-token%',
+  'x-matrix-dispatch-token',
   'dispatch tick sends the custom dispatch token header'
 );
 
