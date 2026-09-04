@@ -1,3 +1,4 @@
+// Approved parity contract: Tianyan reuses Matrix Explore result rules except its two-row summary and up-to-four-row expanded validation.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
