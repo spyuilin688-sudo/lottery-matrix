@@ -1,0 +1,6 @@
+/* Final owner for the current 13px Matrix result-card inset.
+   General content remains at 16px, so the result card gains 3px per side (6px total).
+   Matrix 探索與 Matrix 天衍 allocate that full added width to the rightmost result column. */
+.matrix-explore-main-screen {
+  --matrix-explore-result-panel-extra-width: calc(var(--layout-page-inline) + var(--layout-page-inline) - 26px);
+}
