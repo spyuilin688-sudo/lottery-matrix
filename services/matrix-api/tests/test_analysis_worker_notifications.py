@@ -20,7 +20,7 @@ PERIOD = "11988"
 VERSION = f"{PERIOD}:{ANALYSIS_VERSION}"
 RESULT_KEY = f"lottery_result:fantasy5:{PERIOD}"
 CARD_KEY = f"matrix_card:fantasy5:{PERIOD}"
-STATUS_KEY = f"matrix_status:fantasy5:{PERIOD}:ACTIVE"
+STATUS_KEY = f"matrix_status:fantasy5:{PERIOD}"
 
 
 def _draw(period: int, offset: int) -> dict:

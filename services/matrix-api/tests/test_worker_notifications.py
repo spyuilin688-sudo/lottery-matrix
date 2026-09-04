@@ -20,7 +20,7 @@ PERIOD = "000001001"
 VERSION = f"{PERIOD}:{ANALYSIS_VERSION}"
 RESULT_KEY = f"lottery_result:539:{PERIOD}"
 CARD_KEY = f"matrix_card:539:{PERIOD}"
-STATUS_KEY = f"matrix_status:539:{PERIOD}:ACTIVE"
+STATUS_KEY = f"matrix_status:539:{PERIOD}"
 
 
 class NotificationSource:
