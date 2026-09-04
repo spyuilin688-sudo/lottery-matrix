@@ -15,6 +15,7 @@ import "./matrix-explore-spacing.css";
 import "./feature-page-adjustments.css";
 import "./notification-visual-refinement.css";
 import "./number-reference-visual-refinement.css";
+import "./matrix-explore-result-refinements.css";
 
 import { startMemberOnlineTracking } from "./member-online";
 import { postMemberOnline } from "./member-online-api";
