@@ -4,8 +4,13 @@ const wiring = vi.hoisted(() => {
   const workerStatus = { ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
   const workerRefreshLottery = vi.fn(async (lottery: string) => ({ lottery, period: '115000211', drawDate: '2026-09-01' }));
+  const workerRecoverLottery = vi.fn(async (lottery: string) => ({ lottery, status: 'accepted' }));
   const getWorkerConfig = vi.fn(async () => ({ baseUrl: 'https://railway.example', statusToken: 'server-token' }));
-  const createWorkerApi = vi.fn(() => ({ getStatus: workerGetStatus, refreshLottery: workerRefreshLottery }));
+  const createWorkerApi = vi.fn(() => ({
+    getStatus: workerGetStatus,
+    refreshLottery: workerRefreshLottery,
+    recoverLottery: workerRecoverLottery,
+  }));
   const insertRows = vi.fn(async () => []);
   const supabaseRequest = vi.fn(async () => []);
   const createSupabaseTransport = vi.fn(() => ({
@@ -48,6 +53,13 @@ const wiring = vi.hoisted(() => {
     ingestToken: 'server-only-ingest-token',
   }));
   const createNotificationEvents = vi.fn(() => ({ sendSystemNotice }));
+  const watchdogRun = vi.fn(async () => ({ status: 'ok', checkedAt: '2026-09-04T01:33:00.000Z', actions: [] }));
+  const createIndependentWatchdog = vi.fn(() => ({ run: watchdogRun }));
+  const loadWatchdogSnapshot = vi.fn(async () => []);
+  const createSupabaseWatchdogSnapshotLoader = vi.fn(() => loadWatchdogSnapshot);
+  const dispatchFantasy5 = vi.fn(async () => 'dispatched');
+  const createFantasy5GithubDispatcher = vi.fn(() => dispatchFantasy5);
+  const getGithubActionsToken = vi.fn(async () => 'server-only-token');
   const todoList = vi.fn(async () => [{ id: 'todo-1', content: '待處理' }]);
   const todoCreate = vi.fn(async () => ({ id: 'todo-2', content: '新事項' }));
   const todoUpdate = vi.fn(async () => ({ id: 'todo-1', content: '已更新' }));
@@ -59,12 +71,15 @@ const wiring = vi.hoisted(() => {
     remove: todoRemove,
   }));
   return {
-    workerGetStatus, workerRefreshLottery, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
+    workerGetStatus, workerRefreshLottery, workerRecoverLottery, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
     createSupabaseTransport, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
     sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
     todoList, todoCreate, todoUpdate, todoRemove, createAdminTodos,
     notice, sendSystemNotice, getNotificationEventConfig, createNotificationEvents,
+    watchdogRun, createIndependentWatchdog, loadWatchdogSnapshot,
+    createSupabaseWatchdogSnapshotLoader, dispatchFantasy5,
+    createFantasy5GithubDispatcher, getGithubActionsToken,
   };
 });
 
@@ -109,8 +124,14 @@ vi.mock('./notification-events', () => ({
   createNotificationEvents: wiring.createNotificationEvents,
   getNotificationEventConfig: wiring.getNotificationEventConfig,
 }));
+vi.mock('./watchdog', () => ({
+  createIndependentWatchdog: wiring.createIndependentWatchdog,
+  createSupabaseWatchdogSnapshotLoader: wiring.createSupabaseWatchdogSnapshotLoader,
+  createFantasy5GithubDispatcher: wiring.createFantasy5GithubDispatcher,
+  getGithubActionsToken: wiring.getGithubActionsToken,
+}));
 
-import { handler } from './index';
+import { handler, matrixIndependentWatchdog } from './index';
 const routes = handler as unknown as Record<string, unknown[]>;
 const sessionContext = (params: Record<string, string> = {}) => ({
   params,
@@ -122,6 +143,21 @@ async function authenticate(route: string, context: ReturnType<typeof sessionCon
   await middleware(context);
   return context as typeof context & { admin: typeof wiring.admin };
 }
+
+describe('independent watchdog cron wiring', () => {
+  it('exports a cron handler that always completes with HTTP 200', async () => {
+    expect(wiring.createIndependentWatchdog).toHaveBeenCalledTimes(1);
+    expect(wiring.createSupabaseWatchdogSnapshotLoader).toHaveBeenCalledTimes(1);
+    expect(wiring.createFantasy5GithubDispatcher).toHaveBeenCalledTimes(1);
+
+    await expect(matrixIndependentWatchdog({
+      scheduledTime: '2026-09-04T01:33:00.000Z',
+    })).resolves.toEqual({ statusCode: 200 });
+    expect(wiring.watchdogRun).toHaveBeenCalledWith(
+      new Date('2026-09-04T01:33:00.000Z'),
+    );
+  });
+});
 
 describe('admin Railway route wiring', () => {
   it('keeps status, retry, and selected crawler refresh routes', () => {
