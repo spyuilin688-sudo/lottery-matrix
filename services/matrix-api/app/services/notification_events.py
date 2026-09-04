@@ -119,7 +119,7 @@ def matrix_status_event(
     if not isinstance(status, str) or status not in STATUS_LABELS:
         raise NotificationConfigurationError("NOTIFICATION_STATUS_INVALID")
     return {
-        "eventKey": f"matrix_status:{lottery_code}:{normalized_period}:{status}",
+        "eventKey": f"matrix_status:{lottery_code}:{normalized_period}",
         "eventType": "matrix_status",
         "source": "railway",
         "occurredAt": _occurred_at(),

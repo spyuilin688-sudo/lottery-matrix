@@ -93,7 +93,7 @@ def test_matrix_status_event_maps_status_label(status: str, label: str) -> None:
     )
 
     assert event is not None
-    assert event["eventKey"] == f"matrix_status:marksix:115203:{status}"
+    assert event["eventKey"] == "matrix_status:marksix:115203"
     assert event["eventType"] == "matrix_status"
     assert event["source"] == "railway"
     assert event["payload"] == {
@@ -222,3 +222,22 @@ def test_settings_load_notification_ingest_environment(monkeypatch: pytest.Monke
 
     assert settings.notification_ingest_url == "https://example.invalid/ingest"
     assert settings.notification_ingest_token == "secret-token"
+
+def test_matrix_status_event_deduplicates_status_upgrades_by_lottery_and_period() -> None:
+    resonance = matrix_status_event(
+        "今彩539",
+        "115203",
+        {"summary": {"status": "RESONANCE"}},
+    )
+    critical = matrix_status_event(
+        "今彩539",
+        "115203",
+        {"summary": {"status": "CRITICAL"}},
+    )
+
+    assert resonance is not None
+    assert critical is not None
+    assert resonance["eventKey"] == "matrix_status:539:115203"
+    assert critical["eventKey"] == resonance["eventKey"]
+    assert resonance["payload"]["status"] == "RESONANCE"
+    assert critical["payload"]["status"] == "CRITICAL"
