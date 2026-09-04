@@ -316,16 +316,17 @@ let preparedMatrixCardPng: Blob | null = null;
 let pendingMatrixCardUrl: string | null = null;
 let pendingMatrixCardPng: Promise<Blob> | null = null;
 let matrixCardPreparationVersion = 0;
+const matrixCardPreviewSources = new WeakMap<HTMLImageElement, string>();
 
 export function isMatrixCardPngPrepared(cardUrl: string) {
   return preparedMatrixCardUrl === cardUrl && preparedMatrixCardPng !== null;
 }
 
-export function prepareMatrixCardPng(cardUrl: string): Promise<Blob> {
-  if (preparedMatrixCardUrl === cardUrl && preparedMatrixCardPng) {
+function prepareMatrixCardPngInternal(cardUrl: string, force: boolean): Promise<Blob> {
+  if (!force && preparedMatrixCardUrl === cardUrl && preparedMatrixCardPng) {
     return Promise.resolve(preparedMatrixCardPng);
   }
-  if (pendingMatrixCardUrl === cardUrl && pendingMatrixCardPng) {
+  if (!force && pendingMatrixCardUrl === cardUrl && pendingMatrixCardPng) {
     return pendingMatrixCardPng;
   }
 
@@ -360,6 +361,10 @@ export function prepareMatrixCardPng(cardUrl: string): Promise<Blob> {
   return preparation;
 }
 
+export function prepareMatrixCardPng(cardUrl: string): Promise<Blob> {
+  return prepareMatrixCardPngInternal(cardUrl, false);
+}
+
 function triggerMatrixCardPngDownload(png: Blob, filename: string) {
   const downloadUrl = URL.createObjectURL(png);
   const anchor = document.createElement("a");
@@ -382,9 +387,10 @@ export async function downloadMatrixCardPng(cardUrl: string, filename: string) {
 }
 
 function prepareMatrixCardPreview(image: HTMLImageElement) {
-  const cardUrl = image.currentSrc || image.getAttribute("src") || image.src;
-  if (!cardUrl) return;
-  void prepareMatrixCardPng(cardUrl).catch(() => undefined);
+  const cardUrl = image.currentSrc || image.getAttribute("src") || "";
+  if (!cardUrl || matrixCardPreviewSources.get(image) === cardUrl) return;
+  matrixCardPreviewSources.set(image, cardUrl);
+  void prepareMatrixCardPngInternal(cardUrl, true).catch(() => undefined);
 }
 
 function scanMatrixCardPreviewNode(node: Node) {
