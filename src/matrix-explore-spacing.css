@@ -2,6 +2,7 @@
 
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
+  --matrix-explore-result-panel-extra-width: calc(var(--layout-page-inline) + var(--layout-page-inline) - 28px);
   --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
   --road-validation-inline-padding: 4px;
   --validation-issue-font-family: inherit;
@@ -38,7 +39,7 @@
 }
 
 .matrix-explore-main-screen .feature-body > .result-panel {
-  --matrix-explore-result-panel-width: calc(100% + 4px);
+  --matrix-explore-result-panel-width: calc(100% + var(--matrix-explore-result-panel-extra-width));
   align-self: center;
 }
 
@@ -909,6 +910,18 @@
   cursor: pointer;
   font-family: inherit;
   font-size: .6875rem;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row {
+  padding-right: var(--matrix-explore-result-panel-extra-width);
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head > :last-child,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row > :last-child {
+  box-sizing: border-box;
+  width: calc(100% + var(--matrix-explore-result-panel-extra-width));
+  margin-right: calc(0px - var(--matrix-explore-result-panel-extra-width));
 }
 
 .matrix-explore-main-screen .road-result-row > span,

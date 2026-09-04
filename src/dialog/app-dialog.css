@@ -14,8 +14,11 @@
   z-index: 9999;
   top: 50%;
   left: 50%;
+  box-sizing: border-box;
   display: grid;
-  width: min(calc(100vw - (var(--layout-dialog-inline) * 2)), 310px);
+  width: 310px;
+  max-width: calc(100vw - (var(--layout-dialog-inline) * 2));
+  height: 200px;
   max-height: min(78dvh, 480px);
   gap: 10px;
   padding: 16px 14px 14px;

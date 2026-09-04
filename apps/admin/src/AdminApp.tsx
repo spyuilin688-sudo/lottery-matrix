@@ -61,6 +61,7 @@ type AdminForm = {
   status: string;
   permissions: { view: boolean; add: boolean; edit: boolean; delete: boolean };
 };
+type PermissionKey = keyof AdminForm["permissions"];
 type ConfirmationRequest = {
   title: string;
   message: string;
@@ -191,16 +192,25 @@ const text = (v: unknown) =>
   typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "—");
 const dateFields = new Set(["registeredAt", "planStartedAt", "planExpiresAt", "loginAt", "logoutAt", "operationTime", "paidAt", "createdAt", "redeemedAt", "expiresAt", "lastLoginAt", "lastOnlineAt"]);
 const displayValue = (field: string, value: unknown) => dateFields.has(field) ? formatAdminDateTime(value) : text(value);
+const permissionEntries: Array<[PermissionKey, string]> = [
+  ["view", "查看"],
+  ["add", "新增"],
+  ["edit", "修改"],
+  ["delete", "刪除"],
+];
+const defaultOperationPermissions = (role: string): AdminForm["permissions"] =>
+  role === "超級管理員"
+    ? { view: true, add: true, edit: true, delete: true }
+    : role === "營運管理員"
+      ? { view: true, add: true, edit: true, delete: false }
+      : { view: true, add: false, edit: false, delete: false };
 const defaultAdmin = (role = "查看人員"): AdminForm => ({
   account: "",
   name: "",
   password: "",
   role,
   status: "啟用",
-  permissions:
-    role === "營運管理員"
-      ? { view: true, add: true, edit: true, delete: false }
-      : { view: true, add: false, edit: false, delete: false },
+  permissions: defaultOperationPermissions(role),
 });
 function AdminApp() {
   const [signed, setSigned] = useState(false);
@@ -234,11 +244,11 @@ function AdminApp() {
         admin?.role === "超級管理員",
     );
   const isSuper = admin?.role === "超級管理員";
-  const moduleCan = (module: string, action: "view" | "edit") =>
+  const moduleCan = (module: string, action: "view" | "edit", operation: PermissionKey) =>
     Boolean(
       (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
       ?? admin?.role === "超級管理員",
-    );
+    ) && can(operation);
   const load = async (name = active) => {
     setBusy(true);
     setError("");
@@ -481,7 +491,11 @@ function AdminApp() {
       },
     );
   };
-  const roleChange = (role: string) => setAdminForm(defaultAdmin(role));
+  const roleChange = (role: string) => setAdminForm((current) => ({
+    ...current,
+    role,
+    permissions: defaultOperationPermissions(role),
+  }));
   if (!signed)
     return (
       <div className="login">
@@ -576,7 +590,7 @@ function AdminApp() {
           {active === "用戶管理" && (
             <UserManager
               rows={rows}
-              canEdit={moduleCan("users", "edit")}
+              canEdit={moduleCan("users", "edit", "edit")}
               onStatus={async (id, status) => {
                 await runConfirmed(
                   () => requestConfirmation({
@@ -606,7 +620,7 @@ function AdminApp() {
               rows={rows}
               plans={plans}
               transfers={transfers}
-              canEdit={moduleCan("subscriptions", "edit")}
+              canEdit={moduleCan("subscriptions", "edit", "edit")}
               onSubscription={async (id, payload) => {
                 return runConfirmed(
                   () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
@@ -667,7 +681,7 @@ function AdminApp() {
             <>
               <div className="toolbar">
                 <div>{rows.length} 筆資料</div>
-                {can("add") && active === "啟動碼管理" && (
+                {active === "啟動碼管理" && moduleCan("activationCodes", "edit", "add") && (
                     <button
                       className="primary activationCodeAddButton"
                       onClick={() => showForm ? setShowForm(false) : openActivationCodeForm()}
@@ -722,7 +736,7 @@ function AdminApp() {
               <DataTable
                 rows={rows}
                 fields={fields}
-                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit")}
+                canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
               />
             </>
@@ -1022,7 +1036,25 @@ function AdminManager({
               </select>
             </label>
           </div>
-          <div className="permissionBox"><b>角色權限</b><span>{roleDescription[form.role]}</span></div>
+          <div className="permissionBox">
+            <b>操作權限</b>
+            {permissionEntries.map(([key, label]) => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  aria-label={label}
+                  checked={form.role === "超級管理員" || form.permissions[key]}
+                  disabled={form.role === "超級管理員"}
+                  onChange={(event) => setForm({
+                    ...form,
+                    permissions: { ...form.permissions, [key]: event.target.checked },
+                  })}
+                />
+                {label}
+              </label>
+            ))}
+            <span>{roleDescription[form.role]}</span>
+          </div>
           <div className="formActions">
             <button onClick={() => setShowForm(false)}>取消</button>
             <button className="primary" onClick={onSave}>
@@ -1060,7 +1092,10 @@ function AdminManager({
                     <td>{text(r.role)}</td>
                     <td>{text(r.status)}</td>
                     <td>{formatAdminDateTime(r.lastLoginAt)}</td>
-                    <td>{roleDescription[String(r.role)] || "—"}</td>
+                    <td>{permissionEntries
+                      .filter(([key]) => Boolean((r.permissions as Record<string, boolean> | undefined)?.[key]))
+                      .map(([, label]) => label)
+                      .join("、") || "無"}</td>
                     {isSuper && (
                       <td>
                         <div className="rowActions">

@@ -55,7 +55,19 @@ const headerValue = (headers: Record<string, string | undefined> | undefined, na
 const cookieToken = (headers?: Record<string, string | undefined>) => headerValue(headers, 'cookie').split(';').map((part) => part.trim()).find((part) => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1) ?? '';
 const normalizeAccount = (account: string) => account.trim().toLowerCase();
 const mapAdmin = (row: Row): CredentialAdmin => {
-  const base: AdminAccount = { id: String(row.id), account: String(row.account ?? ''), name: String(row.name ?? row.account ?? ''), role: String(row.role ?? ''), status: String(row.status ?? '') };
+  const base: AdminAccount = {
+    id: String(row.id),
+    account: String(row.account ?? ''),
+    name: String(row.name ?? row.account ?? ''),
+    role: String(row.role ?? ''),
+    status: String(row.status ?? ''),
+    permissions: {
+      view: typeof row.can_view === 'boolean' ? row.can_view : undefined,
+      add: typeof row.can_add === 'boolean' ? row.can_add : undefined,
+      edit: typeof row.can_edit === 'boolean' ? row.can_edit : undefined,
+      delete: typeof row.can_delete === 'boolean' ? row.can_delete : undefined,
+    },
+  };
   return { ...base, id: String(row.id), account: String(row.account ?? ''), name: String(row.name ?? row.account ?? ''), role: String(row.role ?? ''), status: String(row.status ?? ''), permissions: getPermissions(base), modulePermissions: getModulePermissions(base), lastLoginAt: typeof row.last_login_at === 'string' ? row.last_login_at : null, createdAt: typeof row.created_at === 'string' ? row.created_at : undefined };
 };
 

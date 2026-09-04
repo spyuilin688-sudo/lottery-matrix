@@ -113,10 +113,11 @@ const guard = (permission: PermissionKey) => async (ctx: Context) => {
   }
 };
 
-const moduleGuard = (module: ModuleKey, action: ModuleAction) => async (ctx: Context) => {
+const moduleGuard = (module: ModuleKey, action: ModuleAction, operation?: PermissionKey) => async (ctx: Context) => {
   try {
     const admin = await getAdmin(ctx);
     requireModulePermission(admin, module, action);
+    if (operation) requirePermission(admin, operation);
   } catch (cause) {
     return fail(cause);
   }
@@ -402,7 +403,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'PUT /api/members/:id/status': [sessionGuard, moduleGuard('users', 'edit'), async (ctx: Context) => {
+  'PUT /api/members/:id/status': [sessionGuard, moduleGuard('users', 'edit', 'edit'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       return json(await adminData.updateMemberStatus(
@@ -415,7 +416,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'PUT /api/subscriptions/:id': [sessionGuard, moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
+  'PUT /api/subscriptions/:id': [sessionGuard, moduleGuard('subscriptions', 'edit', 'edit'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       const body = bodyOf(ctx);
@@ -429,7 +430,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'PUT /api/transfer-requests/:id': [sessionGuard, moduleGuard('subscriptions', 'edit'), async (ctx: Context) => {
+  'PUT /api/transfer-requests/:id': [sessionGuard, moduleGuard('subscriptions', 'edit', 'edit'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       return json(await adminData.reviewTransferRequest(
@@ -464,7 +465,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'POST /api/activation-codes/batch': [sessionGuard, moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
+  'POST /api/activation-codes/batch': [sessionGuard, moduleGuard('activationCodes', 'edit', 'add'), async (ctx: Context) => {
     try {
       const body = bodyOf(ctx);
       const rawDuration = String(body.durationType ?? body.durationDays ?? '30_days');
@@ -477,7 +478,7 @@ const routes: Record<string, unknown> = {
     }
   }],
 
-  'DELETE /api/activation-codes/:id': [sessionGuard, moduleGuard('activationCodes', 'edit'), async (ctx: Context) => {
+  'DELETE /api/activation-codes/:id': [sessionGuard, moduleGuard('activationCodes', 'edit', 'delete'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
       return json(await adminData.deleteActivationCode(ctx.params.id, actorOf(admin)));

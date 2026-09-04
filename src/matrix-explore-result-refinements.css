@@ -14,6 +14,17 @@
   font-weight: 800;
 }
 
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .validation-summary-formula-sequence,
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .validation-summary-formula-tokens {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen) .validation-summary-formula-sequence {
+  white-space: nowrap;
+}
+
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-card
   .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"])

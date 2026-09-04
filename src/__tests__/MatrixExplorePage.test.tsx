@@ -646,7 +646,7 @@ test('合值版路的 API 驗證概要顯示合值規則', async () => {
   fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
 
   const validation = await screen.findByRole('region', { name: '驗證過程' });
-  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值 36 ｜ 下 3 期開');
+  expect(validation.querySelector('.explore-validation-summary')?.textContent).toBe('開 44 第 2 顆 ｜ 上 7 期 ｜ 第 4 顆 ｜ 合值36 ｜ 下 3 期開');
   expect(validation.querySelector('.validation-summary-formula-label')?.textContent).toBe('合值');
   expect(validation.querySelector('.explore-validation-formula-row')?.textContent).toBe('第4顆14合值36=22');
 });
@@ -665,7 +665,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
-    selectedStreaks: ['準6進7', '準7進8'],
+    selectedStreaks: ['準5進6', '準6進7', '準7進8'],
     sameCode: false,
   }));
 });
@@ -681,7 +681,7 @@ test('探索頁使用單列收合連準篩選並套用兩種命中條件預設�
   const filter = screen.getByRole('group', { name: '準4+（鎖定1碼）連準篩選' });
   const options = [...filter.querySelectorAll('button')];
   expect(options.map((button) => button.textContent)).toEqual(['準4進5', '準5進6', '準6進7', '準7進8']);
-  expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'true', 'true']);
+  expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);
   expect(screen.queryByRole('dialog', { name: '連準篩選' })).toBeNull();
 
   fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
@@ -727,7 +727,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
   fireEvent.click(screen.getByRole('button', { name: '準6進7' }));
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-    expect.objectContaining({ selectedStreaks: ['準7進8'] }),
+    expect.objectContaining({ selectedStreaks: ['準5進6', '準7進8'] }),
   ));
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
@@ -735,7 +735,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({
       sameCode: false,
-      selectedStreaks: ['準6進7', '準7進8'],
+      selectedStreaks: ['準5進6', '準6進7', '準7進8'],
     }),
   ));
   expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(

@@ -44,8 +44,15 @@ export class AdminAccessError extends Error {
 
 export function getPermissions(admin: AdminAccount): Permissions {
   if (admin.role === '超級管理員') return { view: true, add: true, edit: true, delete: true };
-  if (admin.role === '營運管理員') return { view: true, add: true, edit: true, delete: false };
-  return { view: true, add: false, edit: false, delete: false };
+  const defaults = admin.role === '營運管理員'
+    ? { view: true, add: true, edit: true, delete: false }
+    : { view: true, add: false, edit: false, delete: false };
+  return {
+    view: admin.permissions?.view ?? defaults.view,
+    add: admin.permissions?.add ?? defaults.add,
+    edit: admin.permissions?.edit ?? defaults.edit,
+    delete: admin.permissions?.delete ?? defaults.delete,
+  };
 }
 
 export function shouldRecordAdminActivity(admin: AdminAccount) {
@@ -86,7 +93,12 @@ export async function requireAdmin(email: string | null | undefined, api: Reques
   if (row.status !== '啟用') throw new AdminAccessError('管理員帳號已停用');
   const admin = {
     id: row.id, account: row.account, name: row.name, role: row.role, status: row.status,
-    permissions: { view: Boolean(row.can_view), add: Boolean(row.can_add), edit: Boolean(row.can_edit), delete: Boolean(row.can_delete) },
+    permissions: {
+      view: typeof row.can_view === 'boolean' ? row.can_view : undefined,
+      add: typeof row.can_add === 'boolean' ? row.can_add : undefined,
+      edit: typeof row.can_edit === 'boolean' ? row.can_edit : undefined,
+      delete: typeof row.can_delete === 'boolean' ? row.can_delete : undefined,
+    },
     modulePermissions: getModulePermissions({ role: row.role }), lastLoginAt: row.last_login_at ?? null, createdAt: row.created_at,
   };
   return { ...admin, permissions: getPermissions(admin) };

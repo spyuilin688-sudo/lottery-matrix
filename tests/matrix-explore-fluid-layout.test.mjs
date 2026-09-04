@@ -109,7 +109,8 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.repeat-stats-panel\s*\{[^}]*margin-top:\s*4px;[^}]*padding:\s*10px 6px;/s);
   assert.match(css, /\.matrix-explore-main-screen \.result-panel\s*\{[^}]*padding:\s*6px 6px 12px;/s);
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
-  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*calc\(100% \+ 4px\);[^}]*align-self:\s*center;/s);
+  assert.match(css, /\.matrix-explore-main-screen\s*\{[^}]*--matrix-explore-result-panel-extra-width:\s*calc\(var\(--layout-page-inline\) \+ var\(--layout-page-inline\) - 28px\);/s);
+  assert.match(css, /\.matrix-explore-main-screen \.feature-body > \.result-panel\s*\{[^}]*--matrix-explore-result-panel-width:\s*calc\(100% \+ var\(--matrix-explore-result-panel-extra-width\)\);[^}]*align-self:\s*center;/s);
   assert.match(css, /\.matrix-explore-main-screen \.feature-brand-header,\s*\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[^}]*width:\s*var\(--matrix-explore-result-panel-width, 100%\);/s);
   assert.match(css, /--road-validation-inline-padding:\s*4px;/);
