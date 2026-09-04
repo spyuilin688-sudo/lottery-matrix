@@ -13,19 +13,24 @@ function matrixCardPageSource() {
   return featurePages.slice(start, end);
 }
 
-test('MatrixCardPage downloads the current card through the real PNG exporter', () => {
+test('MatrixCardPage prepares and downloads the current PNG explicitly', () => {
   const source = matrixCardPageSource();
 
-  assert.match(featurePages, /import\s*\{\s*downloadMatrixCardPng\s*\}\s*from\s*["']\.\/matrix-ticket-download["']/);
+  assert.match(featurePages, /import\s*\{[^}]*downloadMatrixCardPng[^}]*refreshMatrixCardPng[^}]*\}\s*from\s*["']\.\/matrix-ticket-download["']/s);
+  assert.match(source, /refreshMatrixCardPng\s*\(\s*cardUrl\s*\)/);
+  assert.match(source, /\[\s*cardUrl\s*,\s*cardPeriod\s*\]/);
   assert.match(source, /await\s+downloadMatrixCardPng\s*\(/);
   assert.match(source, /牌單\.png/);
   assert.doesNotMatch(source, /牌單\.svg/);
   assert.doesNotMatch(source, /anchor\.download\s*=/);
 });
 
-test('matrix ticket download module exposes a dedicated SVG-to-PNG card exporter', () => {
+test('matrix card helper owns PNG encoding but not page DOM observation or short-timer revocation', () => {
   assert.match(downloadHelper, /export\s+async\s+function\s+downloadMatrixCardPng\s*\(/);
+  assert.match(downloadHelper, /export\s+function\s+refreshMatrixCardPng\s*\(/);
   assert.match(downloadHelper, /canvasToPng\s*\(/);
   assert.match(downloadHelper, /validatePng\s*\(/);
   assert.match(downloadHelper, /image\/png/);
+  assert.doesNotMatch(downloadHelper, /MutationObserver/);
+  assert.doesNotMatch(downloadHelper, /MATRIX_CARD_DOWNLOAD_URL_REVOKE_MS/);
 });
