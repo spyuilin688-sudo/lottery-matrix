@@ -525,3 +525,52 @@ def test_jobs_recover_hides_background_start_failure(monkeypatch) -> None:
 
     assert (status, payload) == (503, {"error": "RECOVERY_UNAVAILABLE"})
     assert "fake-platform-secret" not in str(payload)
+
+
+def test_fantasy5_recovery_runs_analysis_only_without_a_source(monkeypatch) -> None:
+    repository = OperationalRepository()
+    calls: list[tuple[str, object, object]] = []
+
+    class NotificationContext:
+        def __enter__(self) -> str:
+            return "notification-emitter"
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        api_server,
+        "load_settings",
+        lambda: type("Settings", (), {
+            "supabase_url": "https://supabase.example",
+            "supabase_secret_key": "secret",
+        })(),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "create_supabase_repository",
+        lambda *_: repository,
+    )
+    monkeypatch.setattr(
+        api_server,
+        "notification_emitter_context",
+        lambda _settings: NotificationContext(),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "run_analysis_only_worker",
+        lambda lottery, actual_repository, *, notification_emitter: calls.append(
+            (lottery, actual_repository, notification_emitter)
+        ),
+    )
+    monkeypatch.setattr(
+        api_server,
+        "refresh_latest_draw",
+        lambda *_: (_ for _ in ()).throw(
+            AssertionError("Fantasy5 recovery must not crawl on Railway")
+        ),
+    )
+
+    api_server.run_lottery_recovery("天天樂")
+
+    assert calls == [("天天樂", repository, "notification-emitter")]
