@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matrix card download runtime fixture</title>
+</head>
+<body>
+  <button id="prepare" type="button">prepare</button>
+  <button id="download" type="button">download</button>
+  <button id="download-again" type="button">download again</button>
+  <button id="show-preview" type="button">show preview</button>
+  <button id="show-current-preview" type="button">show current preview</button>
+  <div id="preview-host"><img id="preview" class="matrix-ticket-image" alt="preview" /></div>
+  <script type="module">
+    import {
+      downloadMatrixCardPng,
+      isMatrixCardPngPrepared,
+      prepareMatrixCardPng,
+    } from '../src/matrix-ticket-download.ts';
+
+    const cardUrl = `${location.origin}/tests/matrix-card-download-source.svg`;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24"><rect width="32" height="24" fill="#fff"/><text x="4" y="16">M</text></svg>';
+    const previewUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    const originalFetch = window.fetch.bind(window);
+    const originalRevoke = URL.revokeObjectURL.bind(URL);
+    let cardFetchCount = 0;
+    let revokeCount = 0;
+
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : new URL(String(input), location.href).href;
+      if (url === cardUrl) {
+        cardFetchCount += 1;
+        return new Response(svg, { status: 200, headers: { 'content-type': 'image/svg+xml' } });
+      }
+      return originalFetch(input, init);
+    };
+
+    URL.revokeObjectURL = (url) => {
+      revokeCount += 1;
+      originalRevoke(url);
+    };
+
+    document.querySelector('#prepare').addEventListener('click', async () => {
+      await prepareMatrixCardPng(cardUrl);
+    });
+    document.querySelector('#download').addEventListener('click', () => {
+      void downloadMatrixCardPng(cardUrl, 'matrix-card.png');
+    });
+    document.querySelector('#download-again').addEventListener('click', () => {
+      void downloadMatrixCardPng(cardUrl, 'matrix-card-again.png');
+    });
+    document.querySelector('#show-preview').addEventListener('click', () => {
+      document.querySelector('#preview').src = previewUrl;
+    });
+    document.querySelector('#show-current-preview').addEventListener('click', () => {
+      document.querySelector('#preview').src = cardUrl;
+    });
+
+    window.__matrixCardDownloadTest = {
+      cardUrl,
+      fetchCount: () => cardFetchCount,
+      revokeCount: () => revokeCount,
+      resetRevokeCount: () => { revokeCount = 0; },
+      prepared: () => isMatrixCardPngPrepared(cardUrl),
+      previewPrepared: () => isMatrixCardPngPrepared(previewUrl),
+    };
+  </script>
+</body>
+</html>
