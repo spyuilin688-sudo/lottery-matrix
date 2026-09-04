@@ -3,7 +3,7 @@ name: Notification Dispatch CI
 on:
   push:
     branches:
-      - work/notification-dispatch-20260903
+      - work/notification-dispatch-20260904-v2
 
 jobs:
   edge-admin:
