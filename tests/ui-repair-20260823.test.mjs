@@ -39,9 +39,10 @@ test('all three portal floating setting cards share explicit 16px inline offsets
 
 test('notification compact responsive layout is present in the v2 canonical stylesheet', () => {
   assert.match(responsive, /\.notifications-screen \.feature-body\s*\{[^}]*gap:\s*4px;/s);
-  assert.match(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*20px;/s);
+  assert.match(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;/s);
+  assert.doesNotMatch(adjustments, /\.notifications-screen-v2\s*\{[^}]*--notification-list-inline\s*:/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
-  assert.match(adjustments, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
+  assert.match(adjustments, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*0;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*grid-template-columns:\s*56px 38px;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-icon,[\s\S]*?width:\s*36px;[^}]*height:\s*36px;/s);
   assert.match(adjustments, /\.notifications-screen-v2 \.notification-heading\s*\{[^}]*padding:\s*4px 8px 4px 4px;/s);
