@@ -199,6 +199,7 @@
 .reference-query-panel,
 .tongxing-query {
   box-sizing: border-box;
+  font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   width: 100%;
   max-width: 100%;
   min-width: 0;
