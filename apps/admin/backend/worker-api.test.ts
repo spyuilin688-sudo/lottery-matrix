@@ -462,3 +462,38 @@ describe('Railway worker secret configuration', () => {
     expect(JSON.stringify(config)).not.toContain('fake-secret-value');
   });
 });
+
+
+describe('Railway recovery adapter', () => {
+  it('requests one protected asynchronous recovery without exposing the token', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      lottery: '天天樂',
+      status: 'accepted',
+    }, 202));
+    const api = createWorkerApi(
+      async () => ({
+        baseUrl: 'https://railway.example/',
+        statusToken: 'server-token',
+      }),
+      fetcher,
+    );
+
+    await expect(api.recoverLottery('天天樂')).resolves.toEqual({
+      lottery: '天天樂',
+      status: 'accepted',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, init] = fetcher.mock.calls[0];
+    expect(String(url)).toBe('https://railway.example/jobs/recover');
+    expect(init).toMatchObject({
+      method: 'POST',
+      redirect: 'error',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Matrix-Admin-Token': 'server-token',
+      },
+      body: JSON.stringify({ lottery: '天天樂' }),
+    });
+  });
+});
