@@ -5,6 +5,10 @@ const migrationUrl = new URL(
   '../../../supabase/migrations/20260904070000_admin_todos.sql',
   import.meta.url,
 );
+const indexMigrationUrl = new URL(
+  '../../../supabase/migrations/20260904081000_admin_todos_admin_id_index.sql',
+  import.meta.url,
+);
 
 describe('admin_todos migration', () => {
   it('creates a length-constrained todo table owned only by the backend service role', () => {
@@ -19,5 +23,12 @@ describe('admin_todos migration', () => {
     expect(sql).toMatch(/alter table public\.admin_todos enable row level security/i);
     expect(sql).toMatch(/revoke all on table public\.admin_todos from public\s*,\s*anon\s*,\s*authenticated/i);
     expect(sql).toMatch(/grant select\s*,\s*insert\s*,\s*update\s*,\s*delete on table public\.admin_todos to service_role/i);
+  });
+
+  it('indexes the todo author foreign key used by ownership checks', () => {
+    const sql = readFileSync(indexMigrationUrl, 'utf8');
+    expect(sql).toMatch(
+      /create index admin_todos_admin_id_idx\s+on public\.admin_todos\s*\(admin_id\)/i,
+    );
   });
 });
