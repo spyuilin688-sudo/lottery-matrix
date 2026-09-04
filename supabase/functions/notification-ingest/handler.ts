@@ -223,7 +223,7 @@ function parseEvent(value: unknown): NotificationEventInput | null {
     if (source !== "railway") return null;
     const payload = parseMatrixStatus(rawPayload);
     if (!payload) return null;
-    if (eventKey !== `matrix_status:${payload.lotteryCode}:${payload.period}:${payload.status}`) return null;
+    if (eventKey !== `matrix_status:${payload.lotteryCode}:${payload.period}`) return null;
     return { eventKey, eventType, source, occurredAt, payload };
   }
 

@@ -1,6 +1,6 @@
 begin;
 
-select plan(67);
+select plan(70);
 
 select has_table('public', 'notification_events', 'notification_events table exists');
 select has_table('public', 'notification_outbox', 'notification_outbox table exists');
@@ -219,21 +219,21 @@ values (
 );
 
 select private.notification_event_enqueue(
-  'matrix_status:539:115203:ACTIVE',
+  'matrix_status:539:115203',
   'matrix_status',
   'railway',
   '2026-09-03T12:01:00+08:00',
   '{"lottery":"今彩539","lotteryCode":"539","period":"115203","status":"ACTIVE","statusLabel":"啟動"}'::jsonb
 );
 select private.notification_event_enqueue(
-  'matrix_status:539:115204:FOCUS',
+  'matrix_status:539:115204',
   'matrix_status',
   'railway',
   '2026-09-03T12:02:00+08:00',
   '{"lottery":"今彩539","lotteryCode":"539","period":"115204","status":"FOCUS","statusLabel":"聚合"}'::jsonb
 );
 select private.notification_event_enqueue(
-  'matrix_status:539:115205:UNKNOWN',
+  'matrix_status:539:115205',
   'matrix_status',
   'railway',
   '2026-09-03T12:03:00+08:00',
@@ -245,6 +245,28 @@ select private.notification_event_enqueue(
   'railway',
   '2026-09-03T11:53:00+08:00',
   '{"lottery":"大樂透","lotteryCode":"649","period":"115206"}'::jsonb
+);
+
+select is(
+  private.notification_event_enqueue(
+    'matrix_status:539:115203',
+    'matrix_status',
+    'railway',
+    '2026-09-03T12:04:00+08:00',
+    '{"lottery":"今彩539","lotteryCode":"539","period":"115203","status":"CRITICAL","statusLabel":"臨界"}'::jsonb
+  )->>'created',
+  'false',
+  'later status upgrade reuses the draw-level Matrix event'
+);
+select is(
+  (select count(*) from public.notification_events where event_key = 'matrix_status:539:115203'),
+  1::bigint,
+  'status upgrade keeps exactly one Matrix event for the lottery and period'
+);
+select is(
+  (select payload->>'status' from public.notification_events where event_key = 'matrix_status:539:115203'),
+  'ACTIVE',
+  'status upgrade does not rewrite or re-notify the already accepted event'
 );
 
 select is(
@@ -286,7 +308,7 @@ select is(
 select is(
   private.notification_render_payload(
     'matrix_status',
-    'matrix_status:539:115203:ACTIVE',
+    'matrix_status:539:115203',
     '{"lottery":"今彩539","period":"115203","status":"ACTIVE","statusLabel":"啟動"}'::jsonb
   )->>'title',
   'Matrix 狀態｜今彩539',
@@ -295,7 +317,7 @@ select is(
 select is(
   private.notification_render_payload(
     'matrix_status',
-    'matrix_status:539:115203:ACTIVE',
+    'matrix_status:539:115203',
     '{"lottery":"今彩539","period":"115203","status":"ACTIVE","statusLabel":"啟動"}'::jsonb
   )->>'body',
   '第115203期｜啟動',
@@ -438,14 +460,14 @@ select is(
 );
 select is(
   private.notification_fanout_event(
-    (select id from public.notification_events where event_key = 'matrix_status:539:115203:ACTIVE')
+    (select id from public.notification_events where event_key = 'matrix_status:539:115203')
   ),
   2,
   'ACTIVE status fans out to explicit and default enabled members'
 );
 select is(
   private.notification_fanout_event(
-    (select id from public.notification_events where event_key = 'matrix_status:539:115204:FOCUS')
+    (select id from public.notification_events where event_key = 'matrix_status:539:115204')
   ),
   1,
   'FOCUS status fans out only to the default member when explicit status is not selected'
@@ -468,13 +490,13 @@ select is(
 );
 select is(
   private.notification_fanout_event(
-    (select id from public.notification_events where event_key = 'matrix_status:539:115205:UNKNOWN')
+    (select id from public.notification_events where event_key = 'matrix_status:539:115205')
   ),
   0,
   'event with no matching notification settings completes with zero outbox rows'
 );
 select is(
-  (select fanout_status from public.notification_events where event_key = 'matrix_status:539:115205:UNKNOWN'),
+  (select fanout_status from public.notification_events where event_key = 'matrix_status:539:115205'),
   'complete',
   'no-match event is complete rather than retried forever'
 );

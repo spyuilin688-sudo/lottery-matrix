@@ -153,7 +153,7 @@ Deno.test("notification ingest rejects malformed occurredAt and payload", async 
 Deno.test("notification ingest validates matrix status label and deterministic key", async () => {
   const test = setup();
   const invalid = await test.handler(request({
-    eventKey: "matrix_status:539:115207:ACTIVE",
+    eventKey: "matrix_status:539:115207",
     eventType: "matrix_status",
     source: "railway",
     occurredAt: "2026-09-03T09:00:00.000Z",
@@ -240,7 +240,7 @@ Deno.test("notification ingest accepts valid card and status events", async () =
     },
   };
   const status = {
-    eventKey: "matrix_status:marksix:115209:CRITICAL",
+    eventKey: "matrix_status:marksix:115209",
     eventType: "matrix_status",
     source: "railway",
     occurredAt: "2026-09-03T09:01:00.000Z",
@@ -255,6 +255,56 @@ Deno.test("notification ingest accepts valid card and status events", async () =
   assertEquals((await test.handler(request(card))).status, 200);
   assertEquals((await test.handler(request(status))).status, 200);
   assertEquals(test.events, [card, status]);
+});
+
+Deno.test("notification ingest accepts one deterministic draw key across status upgrades", async () => {
+  const test = setup();
+  const resonance = {
+    eventKey: "matrix_status:539:115210",
+    eventType: "matrix_status",
+    source: "railway",
+    occurredAt: "2026-09-03T09:01:00.000Z",
+    payload: {
+      lottery: "今彩539",
+      lotteryCode: "539",
+      period: "115210",
+      status: "RESONANCE",
+      statusLabel: "共振",
+    },
+  };
+  const critical = {
+    ...resonance,
+    occurredAt: "2026-09-03T09:02:00.000Z",
+    payload: {
+      ...resonance.payload,
+      status: "CRITICAL",
+      statusLabel: "臨界",
+    },
+  };
+
+  assertEquals((await test.handler(request(resonance))).status, 200);
+  assertEquals((await test.handler(request(critical))).status, 200);
+  assertEquals(test.events, [resonance, critical]);
+});
+
+Deno.test("notification ingest rejects the legacy status-specific event key", async () => {
+  const test = setup();
+  const response = await test.handler(request({
+    eventKey: "matrix_status:539:115210:CRITICAL",
+    eventType: "matrix_status",
+    source: "railway",
+    occurredAt: "2026-09-03T09:02:00.000Z",
+    payload: {
+      lottery: "今彩539",
+      lotteryCode: "539",
+      period: "115210",
+      status: "CRITICAL",
+      statusLabel: "臨界",
+    },
+  }));
+
+  assertEquals(response.status, 400);
+  assertEquals(test.events, []);
 });
 
 Deno.test("notification ingest accepts a valid admin system notice", async () => {
