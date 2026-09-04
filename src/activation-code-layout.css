@@ -4,19 +4,20 @@
   --activation-section-gap: 8px;
 }
 
-/* Preserve the integrated artwork aspect ratio while reducing header height responsively. */
+/* Align the integrated title artwork with the canonical page inset. */
 .activation-code-screen > .feature-brand-header.integrated-title-header .matrix-title-banner {
-  width: calc(100% - clamp(64px, 21vw, 82px));
+  width: calc(100% - (var(--layout-page-inline) * 2));
 }
 
-/* Keep the existing 16px page sides and 12px gap between the two main panels. */
+/* Keep the two main panels on the same responsive 16px page inset. */
 .activation-code-screen > .feature-body {
+  padding-inline: var(--layout-page-inline);
   gap: 12px;
 }
 
 .activation-code-screen .referral-code-section,
 .activation-code-screen .activation-code-section {
-  padding: var(--activation-section-padding-block) 16px;
+  padding: var(--activation-section-padding-block) var(--layout-page-inline);
   gap: var(--activation-section-gap);
 }
 
