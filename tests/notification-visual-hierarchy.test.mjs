@@ -49,7 +49,7 @@ test("Matrix Pro 標籤以既有比例縮減 30%", () => {
   assert.match(badge[0], /line-height:\s*5\.6px;/);
 });
 
-test("通知批次按鈕列與通知卡片共用 18px 左右外距", () => {
+test("通知批次按鈕列維持 18px、通知卡片維持 16px 左右外距", () => {
   const screen = ruleBodies(css, /^\.notifications-screen-v2$/);
   const featureBody = ruleBodies(css, /^\.notifications-screen-v2 \.feature-body$/);
   const bulk = ruleBodies(css, /^\.notifications-screen-v2 \.notification-bulk-actions$/);
@@ -61,11 +61,11 @@ test("通知批次按鈕列與通知卡片共用 18px 左右外距", () => {
   assert.equal(list.length, 1);
 
   assert.match(screen[0], /--notification-bulk-inline:\s*18px;/);
-  assert.doesNotMatch(screen[0], /--notification-list-inline\s*:/);
+  assert.match(screen[0], /--notification-list-inline:\s*16px;/);
   assert.match(featureBody[0], /padding-inline:\s*var\(--notification-bulk-inline\);/);
   assert.match(bulk[0], /width:\s*100%;/);
   assert.match(bulk[0], /margin-inline:\s*0;/);
-  assert.match(list[0], /margin-inline:\s*0;/);
+  assert.match(list[0], /margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/);
 });
 
 test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
