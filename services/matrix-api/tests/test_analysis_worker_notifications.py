@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
+from app import analysis_worker
 from app.analysis_worker import run_analysis_only_worker
 from app.repositories.analysis_repository import ARTIFACT_KINDS, InMemoryAnalysisRepository
 from app.services.notification_events import (
@@ -227,6 +229,78 @@ def test_disabled_notifications_preserve_analysis_only_behavior() -> None:
 
     assert result["status"] == "complete"
     assert repository.get_progress(LOTTERY, PERIOD, VERSION)["status"] == "complete"
+
+
+def test_analysis_worker_cli_passes_emitter_when_fully_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = _repository(history_count=80)
+    emitter = RecordingEmitter()
+    captured: list[tuple[str, object, object | None]] = []
+
+    class EmitterContext:
+        def __enter__(self) -> RecordingEmitter:
+            return emitter
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        analysis_worker,
+        "load_settings",
+        lambda: SimpleNamespace(
+            supabase_url="https://example.test",
+            supabase_secret_key="secret",
+            notification_ingest_url="https://example.test/functions/v1/notification-ingest",
+            notification_ingest_token="ingest-token",
+        ),
+    )
+    monkeypatch.setattr(analysis_worker, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(
+        analysis_worker,
+        "notification_emitter_context",
+        lambda _settings: EmitterContext(),
+        raising=False,
+    )
+
+    def fake_run(lottery: str, actual_repository: object, **kwargs: object) -> dict:
+        captured.append((lottery, actual_repository, kwargs.get("notification_emitter")))
+        return {"lottery": lottery, "drawPeriod": PERIOD, "status": "already-analyzed"}
+
+    monkeypatch.setattr(analysis_worker, "run_analysis_only_worker", fake_run)
+
+    assert analysis_worker.main(["--lottery", LOTTERY]) == 0
+    assert captured == [(LOTTERY, repository, emitter)]
+
+
+def test_analysis_worker_cli_rejects_partial_notification_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = _repository(history_count=80)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        analysis_worker,
+        "load_settings",
+        lambda: SimpleNamespace(
+            supabase_url="https://example.test",
+            supabase_secret_key="secret",
+            notification_ingest_url="https://example.test/functions/v1/notification-ingest",
+            notification_ingest_token="",
+        ),
+    )
+    monkeypatch.setattr(analysis_worker, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(
+        analysis_worker,
+        "run_analysis_only_worker",
+        lambda *_args, **_kwargs: calls.append("called") or {},
+    )
+
+    with pytest.raises(
+        NotificationConfigurationError,
+        match="NOTIFICATION_INGEST_CONFIGURATION_INCOMPLETE",
+    ):
+        analysis_worker.main(["--lottery", LOTTERY])
+    assert calls == []
 
 
 def test_analysis_worker_source_boundary_still_has_no_http_client_symbols() -> None:
