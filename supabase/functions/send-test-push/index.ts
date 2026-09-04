@@ -2,30 +2,15 @@ import "edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 // @ts-types="web-push-types"
 import webpush from "web-push";
-import { createSendTestPushHandler } from "./handler.ts";
-import type {
-  DeliveryLog,
-  PushPayload,
-  PushSubscription,
-} from "../_shared/web-push-delivery.ts";
+import {
+  createSendTestPushHandler,
+  type DeliveryLog,
+  type PushPayload,
+  type PushSubscription,
+} from "./handler.ts";
+import { createSendTestPushRuntime } from "./startup.ts";
 
-function secret(name: string) {
-  const value = Deno.env.get(name)?.trim() ?? "";
-  if (!value) throw new Error(`Missing required secret: ${name}`);
-  return value;
-}
-
-const supabaseUrl = secret("SUPABASE_URL");
-const serviceRoleKey = secret("SUPABASE_SERVICE_ROLE_KEY");
-const publicKey = secret("WEB_PUSH_PUBLIC_KEY");
-const privateKey = secret("WEB_PUSH_PRIVATE_KEY");
-const subject = secret("WEB_PUSH_SUBJECT");
-
-const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
-webpush.setVapidDetails(subject, publicKey, privateKey);
+let supabase: ReturnType<typeof createClient>;
 
 async function listSubscriptions(userId: string): Promise<PushSubscription[]> {
   const { data, error } = await supabase
@@ -97,13 +82,25 @@ async function markFailure(
   if (error) throw error;
 }
 
-const handler = createSendTestPushHandler({
-  serviceRoleKey,
-  listSubscriptions,
-  sendPush,
-  recordDelivery,
-  markSuccess,
-  markFailure,
+const handler = createSendTestPushRuntime({
+  getEnv: (name) => Deno.env.get(name),
+  createSupabaseClient: (url, serviceRoleKey) =>
+    createClient(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }),
+  configureWebPush: (subject, publicKey, privateKey) =>
+    webpush.setVapidDetails(subject, publicKey, privateKey),
+  createHandler: ({ serviceRoleKey, supabase: initializedSupabase }) => {
+    supabase = initializedSupabase;
+    return createSendTestPushHandler({
+      serviceRoleKey,
+      listSubscriptions,
+      sendPush,
+      recordDelivery,
+      markSuccess,
+      markFailure,
+    });
+  },
 });
 
 Deno.serve(handler);
