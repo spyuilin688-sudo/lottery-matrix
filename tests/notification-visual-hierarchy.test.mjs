@@ -84,3 +84,25 @@ test("四個 Matrix Pro 標籤由單一 3px owner 往下重疊圖示", () => {
   assert.doesNotMatch(badge[0], /transform\s*:/);
   assert.doesNotMatch(badge[0], /(?:top|bottom|inset-block|margin-block-end)\s*:/);
 });
+
+
+test("通知批次按鈕區與通知列表維持 8px 間距", () => {
+  const mobileCss = readFileSync(new URL("../src/mobile-layout-polish.css", import.meta.url), "utf8");
+  const content = ruleBodies(mobileCss, /^\.notifications-screen-v2 \.notification-content$/);
+  assert.equal(content.length, 1);
+  assert.match(content[0], /row-gap:\s*8px;/);
+});
+
+test("Matrix 通知群組上框線與列分隔線由下移 3px 的偽元素繪製", () => {
+  const group = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group$/);
+  const groupBefore = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group::before$/);
+  const rowBefore = ruleBodies(css, /^\.notifications-screen-v2 \.notification-group \.notification-row \+ \.notification-row::before$/);
+
+  assert.equal(group.length, 1);
+  assert.equal(groupBefore.length, 1);
+  assert.equal(rowBefore.length, 1);
+  assert.match(group[0], /position:\s*relative;/);
+  assert.match(group[0], /border-top-color:\s*transparent;/);
+  assert.match(groupBefore[0], /top:\s*3px;/);
+  assert.match(rowBefore[0], /top:\s*3px;/);
+});
