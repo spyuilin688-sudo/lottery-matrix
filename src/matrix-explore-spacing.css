@@ -1162,3 +1162,19 @@
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article:first-child {
   border-top: 0;
 }
+
+
+/* Matrix 探索、天衍、天工：結果卡維持 13px，其餘內容維持 16px。 */
+.matrix-explore-screen .feature-body {
+  padding-inline: 13px;
+}
+
+.matrix-explore-screen .feature-body > :not(.result-panel),
+.matrix-explore-screen .feature-body > .matrix-explore-history-scope .history-panel {
+  width: auto;
+  margin-inline: 3px;
+}
+
+.matrix-explore-main-screen .feature-body > .result-panel {
+  --matrix-explore-result-panel-width: 100%;
+}
