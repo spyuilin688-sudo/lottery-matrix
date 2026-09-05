@@ -1,3 +1,12 @@
+/* Use the existing Roboto 800 asset only for the approved home Mark Six variant. */
+@font-face {
+  font-family: "Roboto Mark Six Home";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url("@fontsource/roboto/files/roboto-latin-800-normal.woff2") format("woff2");
+}
+
 .number-ball-component {
   --number-ball-size: 56px;
   --number-ball-asset-scale: 1;
@@ -217,8 +226,15 @@
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component[data-lottery="六合彩"] {
+  --number-font-size: 13.5px;
   --underline-height: .75px;
   --underline-y: -1.5px;
+}
+
+/* Keep the shared white-panel anchor and per-number optical adjustments. */
+.home-screen .latest-draw-card .number-ball-component[data-lottery="六合彩"] .number-ball-value {
+  font-family: "Roboto Mark Six Home", "Roboto", Arial, sans-serif;
+  font-weight: 800;
 }
 
 .history-panel .number-ball-component.history-lottery-ball {
