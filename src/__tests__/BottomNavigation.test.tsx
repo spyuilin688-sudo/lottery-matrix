@@ -82,19 +82,25 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("右下快捷設定按鈕只在指定時顯示，連續點擊兩下才開啟設定", () => {
-    vi.useFakeTimers();
+  it("快捷設定入口只在顯示設定且提供處理函式時出現", () => {
     const onQuickConfigure = vi.fn();
     const { rerender } = render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
 
-    expect(screen.queryByRole("button", { name: "快捷設定，連續點擊兩下開啟" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
+
+    rerender(<BottomNavigation showQuickSettings />);
+    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
 
     rerender(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
-    const settingsButton = screen.getByRole("button", { name: "快捷設定，連續點擊兩下開啟" });
-
-    fireEvent.click(settingsButton, { detail: 1 });
+    expect(screen.getByRole("button", { name: /快捷設定/ })).toBeVisible();
     expect(onQuickConfigure).not.toHaveBeenCalled();
-    fireEvent.click(settingsButton, { detail: 1 });
+  });
+
+  it("快捷設定保留鍵盤及輔助操作的原生 click 入口", () => {
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+
+    fireEvent.click(screen.getByRole("button", { name: /快捷設定/ }), { detail: 0 });
 
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
   });
