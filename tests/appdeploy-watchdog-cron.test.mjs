@@ -21,7 +21,7 @@ const watchdogLeaseMigration = readFileSync(
 
 test('AppDeploy owns one independent six-minute Matrix watchdog', () => {
   assert.deepEqual(cron, [{
-    name: 'matrix-independent-watchdog',
+    name: 'matrix-independent-watchdog-v2',
     cron: '3/6 * * * *',
     handler: 'matrixIndependentWatchdog',
     timezone: 'Asia/Taipei',
