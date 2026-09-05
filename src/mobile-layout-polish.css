@@ -115,7 +115,7 @@
 
 .manual-transfer-submit.confirm-payment::before {
   inset: 0;
-  background:
+  background-image:
     radial-gradient(circle at 6% 54%, rgba(255, 238, 190, .68) 0 .55px, transparent 1.5px),
     radial-gradient(circle at 10% 25%, rgba(255, 222, 127, .9) 0 .7px, transparent 1.7px),
     radial-gradient(circle at 18% 72%, rgba(255, 205, 77, .72) 0 1px, transparent 2px),

@@ -21,7 +21,7 @@ Database provisioning is additive and service-only. Apply and validate the migra
 
 The original production entry was 766.48 KB (Vite gzip 214.56 KB). After splitting, the entry is about 273 KB, with every emitted JS chunk below the unchanged 500 KB threshold. The initial **static import graph**, including Supabase and shared code, totals 529.23 KB before transfer compression. This is about 31% less initial JavaScript; the entry-file reduction alone must not be presented as total initial-download reduction. Deferred features still download when used.
 
-The 16-layer CSS value had been exhausting css-tree's grammar matcher; this was not a selector-count limit. The longhand preserves all 16 layers and parser diagnostics remain enabled. Both targeted parser regression and the expanded local CSS tests pass without the reported messages.
+The 16-layer branded-action and eight-layer transfer-action CSS values had been exhausting css-tree's grammar matcher; this was not a selector-count limit. The longhands preserve every layer and parser diagnostics remain enabled. The transfer-action regression also validates with JSDOM's patched grammar directly, so lazy style evaluation and shared value caches cannot hide the failure.
 
 `admin_sessions_admin_id_idx` already covers admin_sessions(admin_id), so no duplicate index was created. The equivalent SELECT policy migration was applied as `20260905114917`, with 12 rollback role scenarios passing. Static PNG publication infrastructure was applied as `20260905122413`, with 39 rollback ACL/lease/manifest checks passing after application. Unused indexes remain untouched.
 
@@ -42,9 +42,10 @@ All four public history snapshots passed the complete-window check and produced 
 
 - Production build passes with every JS chunk below 500 KB. Protected runtime: all 27 files unchanged and verified.
 - Frontend: 140 Vitest files / 1,141 tests passed after synchronization with main.
-- Node: 532 tests passed; CSS iteration-cap and relative-import diagnostics absent.
+- Node: 532 tests passed before the additional transfer-action parser regression; both parser regression cases pass after that fix.
 - Edge Functions: 44 tests passed.
 - Matrix API: 635 tests passed, including fixed PNG rendering, timing, atomic publication, races and adapter transport checks.
 - RLS fixtures: 12 member/admin scenarios; publication fixtures: 39 real database ACL/lease/manifest checks. All fixtures rolled back.
 - Independent reviews approved the frontend extraction and amended PNG pipeline.
 - Local Playwright browser installation was blocked by repeated CDN download timeouts. The browser runtime suite remains a GitHub Actions gate; no local browser pass is claimed.
+- GitHub Actions run 2277 passed all five jobs, including all 43 Playwright runtime tests. Its final log audit found two remaining transfer-action parser warnings; the follow-up corrects that declaration and adds a direct grammar regression.
