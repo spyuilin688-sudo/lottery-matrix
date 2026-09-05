@@ -441,7 +441,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
         if allow_cors:
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type,X-Request-ID")
             self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.end_headers()
         self.wfile.write(encoded)

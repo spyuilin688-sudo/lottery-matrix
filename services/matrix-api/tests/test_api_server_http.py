@@ -4,6 +4,10 @@ from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from threading import Thread
 from typing import Iterator
+from urllib.parse import quote
+from xml.etree import ElementTree
+
+import pytest
 
 import app.api_server as api_server
 from app.api_server import RailwayApiHandler
@@ -86,15 +90,70 @@ def test_protected_status_errors_have_no_store_and_no_cors(monkeypatch) -> None:
         assert response.getheader("Access-Control-Allow-Origin") is None
 
 
-def test_protected_status_preflight_does_not_advertise_admin_header(monkeypatch) -> None:
+@pytest.mark.parametrize("path", ["/jobs/status", "/jobs/refresh", "/jobs/recover"])
+def test_protected_status_preflight_does_not_advertise_admin_header(monkeypatch, path) -> None:
     monkeypatch.setenv("MATRIX_ADMIN_STATUS_TOKEN", "expected-token")
     with running_server(HttpOperationalRepository()) as address:
-        response, _ = request(address, "OPTIONS", "/jobs/status")
+        response, _ = request(address, "OPTIONS", path)
         assert response.getheader("Cache-Control") == "no-store"
         assert response.getheader("Access-Control-Allow-Origin") is None
         assert "X-Matrix-Admin-Token" not in str(
             response.getheader("Access-Control-Allow-Headers")
         )
+
+
+@pytest.mark.parametrize("lottery", ["今彩539", "天天樂", "六合彩", "大樂透"])
+def test_card_preflight_allows_frontend_request_id_and_cards_are_readable(lottery) -> None:
+    repository = HttpOperationalRepository()
+    numbers = ["01", "02", "03", "04", "05"]
+    if lottery in {"六合彩", "大樂透"}:
+        numbers += ["06", "07"]
+    repository.upsert_draw({
+        "lottery": lottery,
+        "period": "115000215",
+        "drawDate": "2026-09-05",
+        "numbers": numbers,
+        "sortedNumbers": numbers,
+        "drawOrderNumbers": list(reversed(numbers)),
+    })
+    origin = "https://matrixlottery.idv.tw"
+    path = f"/api/matrix/cards/{quote(lottery, safe='')}"
+    with running_server(repository) as address:
+        response, _ = request(address, "OPTIONS", path, {
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "x-request-id",
+        })
+        assert response.status == 204
+        assert response.getheader("Access-Control-Allow-Origin") == "*"
+        allowed_headers = {
+            value.strip().lower()
+            for value in (response.getheader("Access-Control-Allow-Headers") or "").split(",")
+        }
+        assert "x-request-id" in allowed_headers
+        assert "x-matrix-admin-token" not in allowed_headers
+        assert "GET" in response.getheader("Access-Control-Allow-Methods").split(",")
+
+        response, body = request(address, "GET", path, {
+            "Origin": origin,
+            "X-Request-ID": "6fd41d9d-2a56-4bcf-8d9c-23de131f4e57",
+        })
+        assert response.status == 200
+        assert response.getheader("Access-Control-Allow-Origin") == "*"
+        manifest = json.loads(body)
+        assert manifest["lottery"] == lottery
+        assert manifest["period"] == "115000215"
+        for order in ("draw", "sorted"):
+            response, body = request(address, "GET", manifest["cards"][order]["url"], {
+                "Origin": origin,
+            })
+            assert response.status == 200
+            assert response.getheader("Access-Control-Allow-Origin") == "*"
+            assert response.getheader("Content-Type").startswith("image/svg+xml")
+            svg = ElementTree.fromstring(body)
+            assert svg.tag == "{http://www.w3.org/2000/svg}svg"
+            assert float(svg.attrib["width"]) > 0
+            assert float(svg.attrib["height"]) > 0
 
 
 def test_non_get_protected_status_response_has_no_store_and_no_cors(monkeypatch) -> None:
