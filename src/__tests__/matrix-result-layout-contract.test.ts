@@ -69,4 +69,19 @@ describe("Matrix result visual contract", () => {
     expect(columns).toMatch(/background:\s*transparent/);
     expect(prediction).toMatch(/font-weight:\s*800/);
   });
+
+  it("uses deep black between validation columns and validation groups", () => {
+    const css = readCss("src/explore-result-preview.css");
+    const groups = cssRule(
+      css,
+      ".matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-groups",
+    );
+    const group = cssRule(
+      css,
+      ".matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group",
+    );
+
+    expect(groups).toMatch(/background:\s*#02070c/i);
+    expect(group).toMatch(/background:\s*#02070c/i);
+  });
 });
