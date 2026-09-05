@@ -45,8 +45,10 @@ class MemoryCards:
         self.objects[path] = png
         return f'https://cards.example/{path}'
 
-    def prune(self, lottery, keep_periods, keep_generation):
-        self.prunes.append((lottery, tuple(keep_periods), keep_generation))
+    def prune(self, lottery, current_period, keep_generation, lease_token):
+        self.prunes.append((
+            lottery, current_period, keep_generation, lease_token == self.owner,
+        ))
         if self.prune_error is not None:
             raise self.prune_error
 
@@ -117,7 +119,7 @@ def test_successful_publication_prunes_to_latest_three_periods():
     repository, cards = fixture()
     manifest = publish_initial(repository, cards)
     assert cards.prunes == [
-        ('今彩539', ('10000', '9999', '9998'), manifest['generation']),
+        ('今彩539', '10000', manifest['generation'], True),
     ]
 
 
@@ -135,6 +137,23 @@ def test_cleanup_failure_keeps_published_manifest_and_retries_without_rendering(
     assert publisher.ensure_current('今彩539', NOW + timedelta(minutes=11)) == manifest
     assert len(cards.prunes) == 2
     assert cards.objects == objects
+
+
+def test_cleanup_retry_runs_before_observing_a_changed_snapshot():
+    repository, cards = fixture()
+    cards.prune_error = RuntimeError('cleanup unavailable')
+    manifest = publish_initial(repository, cards)
+    assert len(cards.prunes) == 1
+
+    changed = history()[0]
+    changed['period'] = '10001'
+    repository.upsert_draw(changed)
+    cards.prune_error = None
+    assert service(repository, cards).ensure_current(
+        '今彩539', NOW + timedelta(minutes=11),
+    ) == manifest
+    assert len(cards.prunes) == 2
+    assert cards.prunes[-1][1] == manifest['period']
 
 
 def test_historical_correction_creates_new_generation_and_keeps_old_until_ready():
