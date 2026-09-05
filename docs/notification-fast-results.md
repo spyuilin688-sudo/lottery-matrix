@@ -44,4 +44,8 @@ SQL 唯一索引以「彩種＋開獎日期」去重，快速來源和正式來�
 
 驗證包含：75 項 Python 通知／worker／牌單測試、71 項 Edge Function 測試、通知 handler TypeScript strict 檢查，以及 `supabase/tests/notification-fast-results.sql` 的本機隔離 PostgreSQL 相容環境測試（PGlite，cron／Vault／HTTP 使用本機替身）。三個來源的實際 DOM 已核對。正式資料庫只讀預檢顯示重複日期組數為 0，既有兩個 Vault 設定均存在。
 
+另補三個彩種各一項來源隔離測試：通知端已有當日 Pilio 結果，且刻意使用與正式來源不同的號碼；正式來源未更新時，worker 仍回報 `not-acquired`，不執行新期分析或發布新期牌單。正式來源更新後，仍抓取及寫入正式資料，分析輸入與牌單內容均使用正式號碼，結果通知去重不阻止分析完成。SQL 驗證比較完整正式開獎資料前後內容，確認通知呼叫沒有新增、修改或刪除正式開獎資料。
+
+正式資料庫只讀檢查顯示通知事件、outbox 及投遞紀錄沒有使用者定義的觸發器；讀取通知事件／outbox 的資料庫函式均屬通知流程。首頁與牌單取用正式資料，不從通知內容填入開獎快取。原 PR 程式版本 `aa59f8c8` 的完整 GitHub CI 已通過。
+
 尚未在正式 Supabase 執行新 Edge Function 或發送實際通知；部署後仍須確認 Supabase 對 Pilio 的 HTTP 存取與手機收件。

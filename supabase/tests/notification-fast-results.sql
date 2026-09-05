@@ -46,11 +46,11 @@ do $$
 declare
   v_early jsonb;
   v_formal jsonb;
-  v_draws bigint;
+  v_draws jsonb;
   v_events bigint;
   v_outbox bigint;
 begin
-  select count(*) into v_draws from public.lottery_draws;
+  select coalesce(jsonb_agg(to_jsonb(d) order by lottery,period),'[]'::jsonb) into v_draws from public.lottery_draws d;
   v_early := public.notification_fast_result_publish('539','2099-09-05',array['03','08','10','28','38']);
   v_formal := private.notification_event_enqueue('lottery_result:539:test-formal-period','lottery_result','railway',now(),
     '{"lottery":"今彩539","lotteryCode":"539","period":"test-formal-period","drawDate":"2099-09-05","numbers":["03","08","10","28","38"]}');
@@ -65,7 +65,8 @@ begin
     'early result is rendered and queued for all matching members immediately';
   perform private.notification_fanout_event((v_formal->>'id')::uuid);
   assert (select count(*) from public.notification_outbox where event_id=(v_early->>'id')::uuid) = v_outbox, 'repeat source does not fan out again';
-  assert (select count(*) from public.lottery_draws) = v_draws, 'early notification never writes formal draws';
+  assert (select coalesce(jsonb_agg(to_jsonb(d) order by lottery,period),'[]'::jsonb) from public.lottery_draws d) = v_draws,
+    'early notification and duplicate acknowledgement cannot insert, update or delete formal draw data';
   assert private.notification_pilio_http_tick('2099-09-05T12:35:00Z') is null, 'recorded result stops source polling';
   assert private.notification_pilio_http_tick('2099-09-05T12:34:59Z') is null, 'no request before the configured window';
   assert private.notification_pilio_http_tick('2099-09-05T13:41:00Z') is null, 'no request after the final window';
