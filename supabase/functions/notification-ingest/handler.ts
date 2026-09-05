@@ -17,12 +17,14 @@ export type MatrixStatusPayload = {
   period: string;
   status: MatrixStatus;
   statusLabel: MatrixStatusLabel;
+  drawDate?: string;
 };
 
 export type MatrixCardPayload = {
   lottery: LotteryName;
   lotteryCode: LotteryCode;
   period: string;
+  drawDate?: string;
 };
 
 export type SystemNoticePayload = {
@@ -181,14 +183,18 @@ function parseMatrixStatus(payload: Record<string, unknown>): MatrixStatusPayloa
   const statusLabel = strictString(payload.statusLabel) as MatrixStatusLabel | null;
   if (!pair || !period || !status || !statusLabel || !(status in STATUS_LABELS)) return null;
   if (STATUS_LABELS[status] !== statusLabel) return null;
-  return { ...pair, period, status, statusLabel };
+  const drawDate = payload.drawDate;
+  if (drawDate !== undefined && (typeof drawDate !== "string" || !validDateOnly(drawDate))) return null;
+  return { ...pair, period, ...(drawDate === undefined ? {} : { drawDate }), status, statusLabel };
 }
 
 function parseMatrixCard(payload: Record<string, unknown>): MatrixCardPayload | null {
   const pair = lotteryPair(payload);
   const period = strictString(payload.period);
   if (!pair || !period) return null;
-  return { ...pair, period };
+  const drawDate = payload.drawDate;
+  if (drawDate !== undefined && (typeof drawDate !== "string" || !validDateOnly(drawDate))) return null;
+  return { ...pair, period, ...(drawDate === undefined ? {} : { drawDate }) };
 }
 
 function parseSystemNotice(payload: Record<string, unknown>): SystemNoticePayload | null {

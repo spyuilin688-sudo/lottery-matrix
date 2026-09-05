@@ -90,6 +90,7 @@ def lottery_result_event(draw: Mapping[str, Any]) -> dict[str, Any]:
 def matrix_card_event(draw: Mapping[str, Any]) -> dict[str, Any]:
     lottery, lottery_code = _lottery_code(draw.get("lottery"))
     period = _period(draw.get("period"))
+    draw_date = _draw_date(draw.get("drawDate"))
     return {
         "eventKey": f"matrix_card:{lottery_code}:{period}",
         "eventType": "matrix_card",
@@ -99,6 +100,7 @@ def matrix_card_event(draw: Mapping[str, Any]) -> dict[str, Any]:
             "lottery": lottery,
             "lotteryCode": lottery_code,
             "period": period,
+            "drawDate": draw_date,
         },
     }
 
@@ -107,6 +109,8 @@ def matrix_status_event(
     lottery: str,
     period: str,
     status_artifact: Mapping[str, Any],
+    *,
+    draw_date: str,
 ) -> dict[str, Any] | None:
     lottery_name, lottery_code = _lottery_code(lottery)
     normalized_period = _period(period)
@@ -127,6 +131,7 @@ def matrix_status_event(
             "lottery": lottery_name,
             "lotteryCode": lottery_code,
             "period": normalized_period,
+            "drawDate": _draw_date(draw_date),
             "status": status,
             "statusLabel": STATUS_LABELS[status],
         },

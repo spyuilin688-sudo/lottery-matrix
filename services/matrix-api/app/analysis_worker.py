@@ -126,26 +126,6 @@ def _emit_early_result(
         pass
 
 
-def _emit_early_card(
-    draw: dict[str, Any],
-    repository: AnalysisRepository,
-    notification_emitter: NotificationEventEmitter | None,
-    emitted_event_keys: set[str],
-) -> None:
-    if not _notification_enabled(notification_emitter):
-        return
-    if not is_card_published(str(draw['lottery']), str(draw['period']), repository):
-        return
-    try:
-        _emit_notification_event(
-            notification_emitter,
-            matrix_card_event(draw),
-            emitted_event_keys,
-        )
-    except NotificationDeliveryError:
-        pass
-
-
 def _emit_ready_notifications(
     draw: dict[str, Any],
     history: list[dict[str, Any]],
@@ -157,11 +137,18 @@ def _emit_ready_notifications(
         return
     lottery = str(draw["lottery"])
     period = str(draw["period"])
+    latest = repository.list_draws(lottery, 1)
+    if not latest or str(latest[0].get("period")) != period:
+        return
     _emit_notification_event(
         notification_emitter,
         lottery_result_event(draw),
         emitted_event_keys,
     )
+    version = f"{period}:{ANALYSIS_VERSION}"
+    progress = repository.get_progress(lottery, period, version)
+    if progress is None or progress.get("status") != "complete":
+        return
     if is_card_published(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
@@ -169,16 +156,12 @@ def _emit_ready_notifications(
             emitted_event_keys,
         )
 
-    version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, version)
-    if progress is None or progress.get("status") != "complete":
-        return
     status_artifact = repository.read_completed_artifact(lottery, period, "status")
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
         notification_emitter,
-        matrix_status_event(lottery, period, status_artifact),
+        matrix_status_event(lottery, period, status_artifact, draw_date=draw["drawDate"]),
         emitted_event_keys,
     )
 
@@ -203,8 +186,6 @@ def run_analysis_only_worker(
             "status": "waiting-draw",
         }
 
-    _emit_early_card({'lottery': lottery, **candidates[0]}, repository,
-                     notification_emitter, emitted_event_keys)
     periods = [str(draw["period"]) for draw in candidates]
     progress_by_period = repository.list_progress_for_periods(
         lottery,
@@ -215,7 +196,7 @@ def run_analysis_only_worker(
     period = str(selected["period"])
     analysis_version = f"{period}:{ANALYSIS_VERSION}"
     draw = {"lottery": lottery, **selected}
-    _emit_early_result(draw, notification_emitter, emitted_event_keys)
+    _emit_early_result({"lottery": lottery, **candidates[0]}, notification_emitter, emitted_event_keys)
 
     progress = progress_by_period.get(period)
     if progress is not None and progress.get("status") == "complete" and repository.has_artifact(
@@ -256,7 +237,6 @@ def run_analysis_only_worker(
         period,
     )
     draw = _draw_from_history(lottery, period, history)
-    _emit_early_card(draw, repository, notification_emitter, emitted_event_keys)
     result = _run_analysis(repository, draw, history, builders)
     if result.get("status") == "complete":
         _emit_ready_notifications(
