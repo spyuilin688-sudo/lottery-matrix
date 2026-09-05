@@ -30,7 +30,7 @@ function formatRoadFormulaText(value: string, sumSequence = false): ReactNode {
 
   const tokens = parts.flatMap((part, index) => (
     index === 0
-      ? [sumSequence && /^\d+$/.test(part) ? `+${part}` : part]
+      ? [sumSequence ? part.replace(/^\+/, "") : part]
       : [".", part.replace(/^\+/, "")]
   ));
   return (
