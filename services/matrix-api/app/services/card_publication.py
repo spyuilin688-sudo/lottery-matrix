@@ -117,11 +117,12 @@ class CardPublicationService:
         self.cards = cards
         self.renderer = renderer
 
-    def _prune(self, lottery: str, draws: list[dict[str, Any]],
-               manifest: dict[str, Any]) -> None:
-        keep_periods = tuple(str(row['period']) for row in draws[:3])
+    def _prune(self, lottery: str, manifest: dict[str, Any],
+               lease_token: str) -> None:
         try:
-            self.cards.prune(lottery, keep_periods, manifest['generation'])
+            self.cards.prune(
+                lottery, manifest['period'], manifest['generation'], lease_token,
+            )
         except Exception as error:
             # Publication is already durable; retry cleanup on the next tick.
             LOGGER.warning('Matrix card cleanup failed for %s (%s)',
@@ -136,14 +137,15 @@ class CardPublicationService:
         error_code = None
         try:
             now = datetime.fromisoformat(state['claimed_at'])
+            manifest = state['manifest']
+            if manifest:
+                self._prune(lottery, manifest, token)
             count = sum(card_layout(lottery)['column_rows'])
             draws = self.repository.list_draws(lottery, count)
             if not complete_snapshot(lottery, draws):
                 return state['manifest']
             digest = snapshot_digest(lottery, draws)
-            manifest = state['manifest']
             if manifest and manifest['generation'] == digest:
-                self._prune(lottery, draws, manifest)
                 return manifest
             if state['desired_digest'] != digest:
                 self.cards.update(lottery, token, {
@@ -174,7 +176,7 @@ class CardPublicationService:
             published = {'lottery': lottery, 'period': period, 'generation': digest,
                          'generatedAt': now.isoformat(), 'cards': files}
             if self.cards.update(lottery, token, {'manifest': published}):
-                self._prune(lottery, draws, published)
+                self._prune(lottery, published, token)
                 return published
             return self.cards.read_manifest(lottery)
         except Exception as error:
