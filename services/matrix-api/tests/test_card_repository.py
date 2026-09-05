@@ -63,18 +63,46 @@ class PrunableStorage(Storage):
         return []
 
 
+class PruneClient:
+    def __init__(self, storage, renew_results=(True, True)):
+        self.storage = SimpleNamespace(from_=lambda _: storage)
+        self.renew_results = iter(renew_results)
+        self.rpc_calls = []
+
+    def rpc(self, name, parameters):
+        self.rpc_calls.append((name, parameters))
+        result = next(self.renew_results)
+        return SimpleNamespace(execute=lambda: SimpleNamespace(data=result))
+
+
 def test_prune_removes_old_periods_and_stale_current_generation():
     storage = PrunableStorage()
-    repo = SupabaseCardRepository(
-        SimpleNamespace(storage=SimpleNamespace(from_=lambda _: storage)),
-    )
-    repo.prune('今彩539', ('100', '99', '98'), 'current-generation')
+    client = PruneClient(storage)
+    repo = SupabaseCardRepository(client)
+    repo.prune('今彩539', '100', 'current-generation', 'lease-token')
     assert set(storage.removed) == {
         '539/100/stale-generation/draw.png',
         '539/100/stale-generation/sorted.png',
         '539/97/old-generation/draw.png',
         '539/97/old-generation/sorted.png',
     }
+    assert [name for name, _ in client.rpc_calls] == [
+        'renew_matrix_card_cleanup_lease',
+        'renew_matrix_card_cleanup_lease',
+    ]
+    assert all(parameters == {
+        'p_lottery': '今彩539', 'p_token': 'lease-token',
+        'p_period': '100', 'p_digest': 'current-generation',
+    } for _, parameters in client.rpc_calls)
+
+
+def test_prune_stops_before_delete_when_lease_is_lost_after_listing():
+    storage = PrunableStorage()
+    client = PruneClient(storage, renew_results=(True, False))
+    repo = SupabaseCardRepository(client)
+    with pytest.raises(RuntimeError, match='MATRIX_CARD_CLEANUP_LEASE_LOST'):
+        repo.prune('今彩539', '100', 'current-generation', 'lease-token')
+    assert storage.removed == []
 
 
 def test_claim_observe_and_publish_use_the_server_guarded_rpcs():
