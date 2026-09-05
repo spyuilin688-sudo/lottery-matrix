@@ -51,7 +51,7 @@ describe("Matrix Pro plan layout refinement", () => {
     expect(ownerExists).toBe(true);
     expect(ownerCss).toMatch(/\.pro-plans-screen\s*\{[^}]*--pro-plans-plan-inline:\s*19px;[^}]*--pro-plans-checkout-inline:\s*16px;/s);
     expect(ownerCss).toMatch(/\.pro-plans-screen\s*>\s*\.feature-body\s*\{[^}]*padding-inline:\s*0;/s);
-    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0 var\(--pro-plans-plan-inline\) 18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*12px;/s);
+    expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-carousel\s*\{[^}]*width:\s*100%;[^}]*margin:\s*0;[^}]*padding:\s*0 var\(--pro-plans-plan-inline\) 18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*var\(--pro-plans-plan-inline\);/s);
     expect(ownerCss).toMatch(/\.pro-plans-screen \.plan-card\s*\{[^}]*flex:\s*0 0 100%;/s);
     expect(ownerCss).toMatch(/\.pro-plans-screen \.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);[^}]*row-gap:\s*0;/s);
     expect(ownerCss).not.toMatch(/--pro-plans-inline\s*:/);
