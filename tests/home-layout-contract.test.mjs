@@ -20,8 +20,8 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns 6px top spacing and logo is reduced by 8 percent', () => {
-  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*6px;/);
+test('homepage brand header owns zero top spacing and logo is reduced by 8 percent', () => {
+  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*0;/);
   assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*87\.584%;/);
 });
 
