@@ -4,7 +4,8 @@ from datetime import UTC, datetime
 from os import environ
 from typing import Any
 
-from app.card_renderer import card_layout
+from app.repositories.card_repository import is_card_published
+from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import (
     AnalysisRepository,
     create_supabase_repository,
@@ -127,14 +128,13 @@ def _emit_early_result(
 
 def _emit_early_card(
     draw: dict[str, Any],
-    history: list[dict[str, Any]],
+    repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,
     emitted_event_keys: set[str],
 ) -> None:
     if not _notification_enabled(notification_emitter):
         return
-    required_rows = sum(card_layout(str(draw["lottery"]))["column_rows"])
-    if len(history) < required_rows:
+    if not is_card_published(str(draw['lottery']), str(draw['period']), repository):
         return
     try:
         _emit_notification_event(
@@ -162,8 +162,7 @@ def _emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
-    required_rows = sum(card_layout(lottery)["column_rows"])
-    if len(history) >= required_rows:
+    if is_card_published(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
             matrix_card_event(draw),
@@ -194,6 +193,8 @@ def run_analysis_only_worker(
     if lottery != FANTASY5:
         raise ValueError("ANALYSIS_ONLY_LOTTERY_UNSUPPORTED")
 
+    emitted_event_keys: set[str] = set()
+    publish_current_card(lottery, repository)
     candidates = repository.list_draws(lottery, ANALYSIS_CANDIDATE_LIMIT)
     if not candidates:
         return {
@@ -202,6 +203,8 @@ def run_analysis_only_worker(
             "status": "waiting-draw",
         }
 
+    _emit_early_card({'lottery': lottery, **candidates[0]}, repository,
+                     notification_emitter, emitted_event_keys)
     periods = [str(draw["period"]) for draw in candidates]
     progress_by_period = repository.list_progress_for_periods(
         lottery,
@@ -212,7 +215,6 @@ def run_analysis_only_worker(
     period = str(selected["period"])
     analysis_version = f"{period}:{ANALYSIS_VERSION}"
     draw = {"lottery": lottery, **selected}
-    emitted_event_keys: set[str] = set()
     _emit_early_result(draw, notification_emitter, emitted_event_keys)
 
     progress = progress_by_period.get(period)
@@ -254,7 +256,7 @@ def run_analysis_only_worker(
         period,
     )
     draw = _draw_from_history(lottery, period, history)
-    _emit_early_card(draw, history, notification_emitter, emitted_event_keys)
+    _emit_early_card(draw, repository, notification_emitter, emitted_event_keys)
     result = _run_analysis(repository, draw, history, builders)
     if result.get("status") == "complete":
         _emit_ready_notifications(

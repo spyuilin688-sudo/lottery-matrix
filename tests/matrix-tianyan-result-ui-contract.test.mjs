@@ -1,4 +1,4 @@
-// Tianyan reuses Matrix Explore filters; summary row behavior is unchanged by user request.
+// Tianyan reuses Matrix Explore filters and only renders historical rules that actually hit.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ test('Tianyan result UI matches the approved differences', () => {
   assert.match(source, /algorithmType: item\.roadTypeLabel/);
   assert.match(source, /numberOrder: item\.numberOrder/);
   assert.match(source, /aria-label="天衍驗證過程"/);
-  assert.match(source, /validationFormula\(row\.rule1[\s\S]*?validationFormula\(row\.rule2/);
+  assert.match(source, /const matchedRules = \[row\.rule1, row\.rule2\]\.filter\(\(rule\) => rule\.hit\);/);
 });
 
 test('Tianyan road types are exactly the six approved labels', () => {
