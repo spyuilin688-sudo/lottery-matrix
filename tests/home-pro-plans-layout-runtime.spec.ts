@@ -26,7 +26,7 @@ for (const width of MOBILE_WIDTHS) {
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
       drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
       featuresNav: "clamp(8px,1.15dvh,12px)",
-      headerTop: "6px",
+      headerTop: "0px",
     });
 
     await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的", exact: true }).click();
@@ -43,6 +43,10 @@ for (const width of MOBILE_WIDTHS) {
       const body = root.querySelector<HTMLElement>(":scope > .feature-body")!;
       const card = root.querySelector<HTMLElement>('.plan-card[data-current="true"]')!;
       const checkoutElement = root.querySelector<HTMLElement>(".pro-plans-checkout")!;
+      const cards = Array.from(root.querySelectorAll<HTMLElement>(".plan-card"));
+      const cardIndex = cards.indexOf(card);
+      const previousCardRect = cards[cardIndex - 1]!.getBoundingClientRect();
+      const nextCardRect = cards[cardIndex + 1]!.getBoundingClientRect();
       const bodyRect = body.getBoundingClientRect();
       const cardRect = card.getBoundingClientRect();
       const checkoutRect = checkoutElement.getBoundingClientRect();
@@ -51,6 +55,8 @@ for (const width of MOBILE_WIDTHS) {
         cardRight: Math.round(bodyRect.right - cardRect.right),
         checkoutLeft: Math.round(checkoutRect.left - bodyRect.left),
         checkoutRight: Math.round(bodyRect.right - checkoutRect.right),
+        previousCardPeek: Math.max(0, Math.round(previousCardRect.right - bodyRect.left)),
+        nextCardPeek: Math.max(0, Math.round(bodyRect.right - nextCardRect.left)),
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     })).toEqual({
@@ -58,6 +64,8 @@ for (const width of MOBILE_WIDTHS) {
       cardRight: 19,
       checkoutLeft: 16,
       checkoutRight: 16,
+      previousCardPeek: 0,
+      nextCardPeek: 0,
       overflow: 0,
     });
   });

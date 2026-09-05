@@ -47,7 +47,7 @@ test("homepage keeps surplus height above the logo and preserves the requested s
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(style(".brand-header").flexGrow, "1");
   assert.equal(style(".brand-header").alignItems, "flex-end");
-  assert.equal(style(".brand-header").paddingTop, "6px");
+  assert.equal(style(".brand-header").paddingTop, "0px");
   assert.equal(style(".home-logo-image").height, "auto");
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "10px");

@@ -15,7 +15,7 @@
   margin: 0;
   padding: 0 var(--pro-plans-plan-inline) 18px;
   scroll-padding-inline: var(--pro-plans-plan-inline);
-  gap: 12px;
+  gap: var(--pro-plans-plan-inline);
 }
 
 /* The carousel content box already excludes the 19px padding on both sides. */
