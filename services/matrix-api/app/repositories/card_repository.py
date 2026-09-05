@@ -12,8 +12,8 @@ class CardRepository(Protocol):
     def claim(self, lottery: str, token: str, now: datetime) -> dict[str, Any] | None: ...
     def update(self, lottery: str, token: str, values: dict[str, Any]) -> bool: ...
     def upload(self, path: str, png: bytes) -> str: ...
-    def prune(self, lottery: str, keep_periods: tuple[str, ...],
-              keep_generation: str) -> None: ...
+    def prune(self, lottery: str, current_period: str,
+              keep_generation: str, lease_token: str) -> None: ...
     def release(self, lottery: str, token: str, error: str | None = None) -> None: ...
     def read_manifest(self, lottery: str) -> dict[str, Any] | None: ...
 
@@ -71,19 +71,37 @@ class SupabaseCardRepository:
                 return rows
             offset += len(page)
 
-    def prune(self, lottery: str, keep_periods: tuple[str, ...],
-              keep_generation: str) -> None:
+    def _renew_cleanup_lease(self, lottery: str, current_period: str,
+                             keep_generation: str, lease_token: str) -> None:
+        renewed = self.client.rpc('renew_matrix_card_cleanup_lease', {
+            'p_lottery': lottery, 'p_token': lease_token,
+            'p_period': current_period, 'p_digest': keep_generation,
+        }).execute().data
+        if not renewed:
+            raise RuntimeError('MATRIX_CARD_CLEANUP_LEASE_LOST')
+
+    def prune(self, lottery: str, current_period: str,
+              keep_generation: str, lease_token: str) -> None:
         code = {
             '今彩539': '539', '天天樂': 'fantasy5',
             '六合彩': 'marksix', '大樂透': 'lotto649',
         }[lottery]
+        self._renew_cleanup_lease(
+            lottery, current_period, keep_generation, lease_token,
+        )
         bucket = self.client.storage.from_(BUCKET)
-        current_period = keep_periods[0]
-        retained = set(keep_periods)
+        periods = [
+            str(item.get('name', ''))
+            for item in self._list_all(bucket, code)
+            if str(item.get('name', '')).isdigit()
+        ]
+        retained = set(sorted(
+            (period for period in periods if int(period) <= int(current_period)),
+            key=int, reverse=True,
+        )[:3])
         paths = []
-        for period_item in self._list_all(bucket, code):
-            period = str(period_item.get('name', ''))
-            if not period or (period in retained and period != current_period):
+        for period in periods:
+            if period in retained and period != current_period:
                 continue
             for generation_item in self._list_all(bucket, f'{code}/{period}'):
                 generation = str(generation_item.get('name', ''))
@@ -93,6 +111,9 @@ class SupabaseCardRepository:
                 base = f'{code}/{period}/{generation}'
                 paths.extend((f'{base}/draw.png', f'{base}/sorted.png'))
         for offset in range(0, len(paths), 100):
+            self._renew_cleanup_lease(
+                lottery, current_period, keep_generation, lease_token,
+            )
             bucket.remove(paths[offset:offset + 100])
 
     def release(self, lottery: str, token: str, error: str | None = None) -> None:
