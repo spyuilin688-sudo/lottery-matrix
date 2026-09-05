@@ -13,7 +13,7 @@ Preflight:
 - Use the latest GitHub main as base and inspect the live AppDeploy snapshot before applying scoped diffs. Preserve concurrent changes.
 - Apply the verified migration, merge after CI, verify PWA and existing admin deployment. Do not insert fake visits into production.
 
-Verification so far: 1102 unit tests passed before the final concurrency regression; the added four dual-context checks and dashboard failure test passed. TypeScript, production build, isolated SQL boundaries/retention/ACL and Premium contracts passed. Migration 20260905105134 is applied with cleanup active. No synthetic production visits were inserted.
+Verification so far: 1102 unit tests passed before the final concurrency regression; the added four dual-context checks and dashboard failure test passed. TypeScript, production build, isolated SQL boundaries/retention/ACL and Premium contracts passed. Migration 20260905105134 is applied with cleanup active. The first remote browser run unexpectedly recorded 23 development visits before frontend release. Development mode is now excluded and the 23 records were removed with exact count/time preconditions; all aggregates returned to zero. The regression verifies development creates neither an identifier nor an RPC call.
 
 Deployment preservation: AppDeploy version 1788533369327 predates main's administrator-permission changes. Apply only visitor-count diffs to its current source, preserving that deployment's other code. GitHub keeps the existing main permissions unchanged. The previous full admin QA suite is retained separately; the deployment QA entry contains only read-only checks for this change, avoiding unrelated production writes.
 
