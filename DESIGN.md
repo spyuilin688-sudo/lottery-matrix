@@ -119,6 +119,8 @@ components:
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
+Matrix 探索與天衍的驗證過程，依鎖定條件整組交替使用 `#12243A`、`#0E1D30`。左、中、右三欄共用同組底色，欄間與組間間距皆透出頁面黑色背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。
+
 ### Forms and overlays
 
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。

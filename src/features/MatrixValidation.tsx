@@ -506,6 +506,7 @@ export function TianyanValidationProcess({
     <section
       className="road-validation-process explore-validation-card"
       aria-label="天衍驗證過程"
+      data-lottery={lottery}
       data-content-protected={contentProtected ? "true" : "false"}
       onCopy={(event) => event.preventDefault()}
       onCut={(event) => event.preventDefault()}

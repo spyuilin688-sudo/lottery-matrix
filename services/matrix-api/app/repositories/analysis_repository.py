@@ -266,7 +266,10 @@ class InMemoryAnalysisRepository:
             return {**self.runs[key], "leaseAcquired": True}
 
         run = self.runs[key]
-        if run.get("status") == "complete":
+        rebuild_missing_artifact = run.get("status") == "complete" and not self.has_artifact(
+            lottery, draw_period, analysis_version, "explore",
+        )
+        if run.get("status") == "complete" and not rebuild_missing_artifact:
             return {**run, "leaseAcquired": False}
         current_expiry_raw = run.get("leaseExpiresAt")
         current_expiry = (
@@ -274,13 +277,16 @@ class InMemoryAnalysisRepository:
             if current_expiry_raw else None
         )
         can_acquire = (
-            run.get("status") == "failed"
+            rebuild_missing_artifact
+            or run.get("status") == "failed"
             or not run.get("leaseOwner")
             or run.get("leaseOwner") == owner_id
             or current_expiry is None
             or current_expiry <= now
         )
         if can_acquire:
+            if rebuild_missing_artifact:
+                run.update({"phase": "explore", "cursor": 0, "total": 0})
             run.update({
                 "status": "running",
                 "completedAt": None,
@@ -469,16 +475,39 @@ class InMemoryAnalysisRepository:
         return self.read_artifact(lottery, draw_period, run["analysisVersion"], kind)
 
     def cleanup_expired(self, now: datetime) -> int:
-        expired = [key for key, record in self.artifacts.items() if record["expiresAt"] < now]
-        for key in expired:
-            del self.artifacts[key]
-        expired_chunks = [key for key, record in self.artifact_chunks.items() if record["expiresAt"] < now]
-        for key in expired_chunks:
-            del self.artifact_chunks[key]
-        expired_results = [key for key, record in self.explore_results.items() if record["expiresAt"] < now]
-        for key in expired_results:
-            del self.explore_results[key]
-        return len(expired) + len(expired_chunks) + len(expired_results)
+        completed_periods: dict[str, set[str]] = {}
+        running = set()
+        for key, run in self.runs.items():
+            if run["status"] == "complete":
+                completed_periods.setdefault(key[0], set()).add(key[1])
+            elif run["status"] == "running":
+                running.add(key)
+        retained_periods = set()
+        for lottery, periods in completed_periods.items():
+            ordered = sorted(
+                periods,
+                key=lambda period: (
+                    str(self.draws.get((lottery, period), {}).get("drawDate") or ""),
+                    period,
+                ),
+                reverse=True,
+            )
+            retained_periods.update((lottery, period) for period in ordered[:3])
+        retained_runs = running | {
+            key for key in self.runs if key[:2] in retained_periods
+        }
+
+        removed = 0
+        for collection in (self.artifacts, self.artifact_chunks, self.explore_results):
+            expired = [
+                key for key, record in collection.items()
+                if record["expiresAt"] < now
+                and key[:3] not in retained_runs
+            ]
+            for key in expired:
+                del collection[key]
+            removed += len(expired)
+        return removed
 
 
 class SupabaseAnalysisRepository:
@@ -1017,16 +1046,10 @@ class SupabaseAnalysisRepository:
         return self.read_artifact(lottery, draw_period, version, kind)
 
     def cleanup_expired(self, now: datetime) -> int:
-        expired = self.client.table("matrix_analysis_artifacts").select("id").lt("expires_at", now.isoformat()).execute()
-        if expired.data:
-            self.client.table("matrix_analysis_artifacts").delete().lt("expires_at", now.isoformat()).execute()
-        expired_chunks = self.client.table("matrix_analysis_artifact_chunks").select("id").lt("expires_at", now.isoformat()).execute()
-        if expired_chunks.data:
-            self.client.table("matrix_analysis_artifact_chunks").delete().lt("expires_at", now.isoformat()).execute()
-        expired_results = self.client.table("matrix_explore_results").select("item_id").lt("expires_at", now.isoformat()).execute()
-        if expired_results.data:
-            self.client.table("matrix_explore_results").delete().lt("expires_at", now.isoformat()).execute()
-        return len(expired.data) + len(expired_chunks.data) + len(expired_results.data)
+        response = self.client.rpc("matrix_analysis_cleanup_expired", {
+            "p_now": now.isoformat(),
+        }).execute()
+        return int(response.data)
 
 
 def create_supabase_repository(url: str, secret_key: str) -> SupabaseAnalysisRepository:

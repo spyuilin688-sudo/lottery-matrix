@@ -1,3 +1,8 @@
+.matrix-tianyan-screen .explore-validation-summary-card[hidden],
+.matrix-tianyan-screen .explore-validation-groups[hidden] {
+  display: none;
+}
+
 .matrix-tianyan-screen .tianyan-expanded-layout-summary-host {
   position: relative;
 }

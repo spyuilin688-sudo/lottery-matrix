@@ -128,8 +128,6 @@ describe("production member shell", () => {
     const secondGroup = document.querySelector(".explore-validation-group:nth-child(2)");
     const issues = document.querySelector(".explore-validation-issues");
     const issueRow = document.querySelector(".explore-validation-issue");
-    const numbers = document.querySelector(".explore-validation-numbers-card");
-    const formulas = document.querySelector(".explore-validation-formulas");
     const prediction = document.querySelector(".explore-validation-prediction");
     const secondFormula = document.querySelector(".explore-validation-formula-row:nth-child(2)");
     const source = document.querySelector(".explore-validation-number--source");
@@ -157,12 +155,16 @@ describe("production member shell", () => {
     expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
     expect(getComputedStyle(summary!).borderTopWidth).toBe("0px");
-    expect(getComputedStyle(firstGroup!).backgroundColor).toBe("rgb(18, 36, 58)");
-    expect(getComputedStyle(secondGroup!).backgroundColor).toBe("rgb(14, 29, 48)");
-    expect(getComputedStyle(issues!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    for (const [group, color] of [[firstGroup, "#12243A"], [secondGroup, "#0E1D30"]] as const) {
+      expect(getComputedStyle(group!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+      expect(getComputedStyle(group!).getPropertyValue("--explore-validation-group-background")).toBe(color);
+      const columns = group!.querySelectorAll(":scope > .explore-validation-issues, :scope > .explore-validation-numbers-card, :scope > .explore-validation-formulas");
+      expect(columns).toHaveLength(3);
+      columns.forEach((column) => {
+        expect(getComputedStyle(column).background).toBe("var(--explore-validation-group-background)");
+      });
+    }
     expect(getComputedStyle(issueRow!).color).toBe("rgb(186, 197, 210)");
-    expect(getComputedStyle(numbers!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
-    expect(getComputedStyle(formulas!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(secondFormula!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(prediction!).borderTopColor).toBe("rgb(230, 183, 106)");

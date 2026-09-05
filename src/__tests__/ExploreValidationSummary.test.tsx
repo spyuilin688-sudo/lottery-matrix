@@ -23,6 +23,23 @@ function mountSummaryStyles() {
 }
 
 describe("Matrix Explore validation summary formula tokens", () => {
+  it.each(['matrix-explore-main-screen', 'matrix-explore-main-screen matrix-tianyan-screen'])("formats actual unsigned sum API values in %s", (className) => {
+    mountSummaryStyles();
+    const { container } = render(
+      <div className={className}>
+        <ExploreValidationSummary>
+          <span className="validation-summary-formula-sequence">
+            <span className="validation-summary-formula-label">合值</span>
+            <i className="validation-summary-formula">5、15</i>
+          </span>
+        </ExploreValidationSummary>
+      </div>,
+    );
+    expect([...container.querySelectorAll('.validation-summary-formula-label, .validation-summary-formula-token')]
+      .map((node) => node.textContent)).toEqual(['合值', '5', '.', '15']);
+    expect(getComputedStyle(container.querySelector('.validation-summary-formula-tokens')!).gap).toBe('1px');
+    expect(getComputedStyle(container.querySelector('.validation-summary-formula-sequence')!).gap).toBe('1px');
+  });
   it("formats nested and keyed Fragment children without invalid props or extra DOM wrappers", () => {
     const consoleError = vi.spyOn(console, "error");
     const { container } = render(
@@ -69,7 +86,7 @@ describe("Matrix Explore validation summary formula tokens", () => {
     expect(getComputedStyle(container.querySelector(".validation-summary-formula-tokens")!).gap).toBe("1px");
   });
 
-  it("keeps the sum label and +5 dot 15 in one one-pixel-spaced sequence", async () => {
+  it("removes plus signs from the sum sequence and keeps one-pixel spacing", async () => {
     mountSummaryStyles();
     const { container } = render(
       <div className="matrix-explore-main-screen">
@@ -85,7 +102,7 @@ describe("Matrix Explore validation summary formula tokens", () => {
     await waitFor(() => expect(container.querySelectorAll(".validation-summary-formula-token")).toHaveLength(3));
     const sequence = container.querySelector(".validation-summary-formula-sequence")!;
     expect([...sequence.querySelectorAll(".validation-summary-formula-label, .validation-summary-formula-token")]
-      .map((token) => token.textContent)).toEqual(["合值", "+5", ".", "15"]);
+      .map((token) => token.textContent)).toEqual(["合值", "5", ".", "15"]);
     expect(getComputedStyle(sequence).gap).toBe("1px");
   });
 });
