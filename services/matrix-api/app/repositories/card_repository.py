@@ -12,6 +12,8 @@ class CardRepository(Protocol):
     def claim(self, lottery: str, token: str, now: datetime) -> dict[str, Any] | None: ...
     def update(self, lottery: str, token: str, values: dict[str, Any]) -> bool: ...
     def upload(self, path: str, png: bytes) -> str: ...
+    def prune(self, lottery: str, keep_periods: tuple[str, ...],
+              keep_generation: str) -> None: ...
     def release(self, lottery: str, token: str, error: str | None = None) -> None: ...
     def read_manifest(self, lottery: str) -> dict[str, Any] | None: ...
 
@@ -54,6 +56,44 @@ class SupabaseCardRepository:
             if bucket.download(path) != png:
                 raise ValueError('MATRIX_CARD_OBJECT_CONFLICT') from error
         return bucket.get_public_url(path)
+
+    @staticmethod
+    def _list_all(bucket: Any, path: str) -> list[dict[str, Any]]:
+        rows = []
+        offset = 0
+        while True:
+            page = bucket.list(path, options={
+                'limit': 100, 'offset': offset,
+                'sortBy': {'column': 'name', 'order': 'asc'},
+            })
+            rows.extend(page)
+            if len(page) < 100:
+                return rows
+            offset += len(page)
+
+    def prune(self, lottery: str, keep_periods: tuple[str, ...],
+              keep_generation: str) -> None:
+        code = {
+            '今彩539': '539', '天天樂': 'fantasy5',
+            '六合彩': 'marksix', '大樂透': 'lotto649',
+        }[lottery]
+        bucket = self.client.storage.from_(BUCKET)
+        current_period = keep_periods[0]
+        retained = set(keep_periods)
+        paths = []
+        for period_item in self._list_all(bucket, code):
+            period = str(period_item.get('name', ''))
+            if not period or (period in retained and period != current_period):
+                continue
+            for generation_item in self._list_all(bucket, f'{code}/{period}'):
+                generation = str(generation_item.get('name', ''))
+                if not generation or (period == current_period
+                                      and generation == keep_generation):
+                    continue
+                base = f'{code}/{period}/{generation}'
+                paths.extend((f'{base}/draw.png', f'{base}/sorted.png'))
+        for offset in range(0, len(paths), 100):
+            bucket.remove(paths[offset:offset + 100])
 
     def release(self, lottery: str, token: str, error: str | None = None) -> None:
         (self.client.table(TABLE).update({
