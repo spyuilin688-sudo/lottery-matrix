@@ -37,6 +37,7 @@ export function recordVisitor(): Promise<void> {
 }
 
 export function installVisitorTracking() {
+  if (import.meta.env.DEV) return () => undefined;
   void recordVisitor();
   const onVisible = () => {
     if (document.visibilityState === 'visible') void recordVisitor();

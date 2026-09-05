@@ -4,8 +4,8 @@ const rpc = vi.hoisted(() => vi.fn());
 vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc }) }));
 import { recordVisitor, installVisitorTracking } from './visitor-counts';
 
-beforeEach(() => { localStorage.clear(); rpc.mockReset().mockResolvedValue({ error: null }); vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-05T10:00:00Z')); });
-afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+beforeEach(() => { localStorage.clear(); rpc.mockReset().mockResolvedValue({ error: null }); vi.stubEnv('DEV', false); vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-05T10:00:00Z')); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 it('stores only a random anonymous hash and reuses it for repeated visits', async () => {
   await recordVisitor(); await recordVisitor();
@@ -38,4 +38,14 @@ it('records reopening the visible app and removes its listener on cleanup', asyn
   await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(2));
   stop(); document.dispatchEvent(new Event('visibilitychange'));
   expect(rpc).toHaveBeenCalledTimes(2);
+});
+
+it('does not count development or browser test sessions', async () => {
+  vi.stubEnv('DEV', true);
+  const stop = installVisitorTracking();
+  document.dispatchEvent(new Event('visibilitychange'));
+  await Promise.resolve();
+  expect(rpc).not.toHaveBeenCalled();
+  expect(localStorage.length).toBe(0);
+  stop();
 });
