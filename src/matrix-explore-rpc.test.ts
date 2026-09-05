@@ -116,13 +116,13 @@ describe('Matrix exploration Supabase RPC', () => {
   it('reads Tianyan results and validation from Supabase artifacts', async () => {
     rpc.mockResolvedValue({ data: { kind: 'tianyan', items: [] }, error: null });
 
-    await fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'] });
+    await fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false });
     await fetchTianyanValidation({
       lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3',
     }, 'tianyan-1');
 
     expect(rpc.mock.calls).toEqual([
-      ['matrix_tianyan_list', { p_request: { lottery: '今彩539', selectedStreaks: ['準5進6'] } }],
+      ['matrix_tianyan_list', { p_request: { lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false } }],
       ['matrix_tianyan_validation', { p_request: {
         lottery: '今彩539', drawPeriod: '115000207', analysisVersion: 'v3', itemId: 'tianyan-1',
       } }],

@@ -423,6 +423,7 @@ async function resolveTianyanLayout(target: ActiveTianyanTarget): Promise<Resolv
       lottery,
       exploreDateOffset,
       selectedStreaks: [consecutive],
+      sameCode: false,
     });
     const matched = candidate.items.find((row) => row.id === target.itemId);
     if (matched) {
