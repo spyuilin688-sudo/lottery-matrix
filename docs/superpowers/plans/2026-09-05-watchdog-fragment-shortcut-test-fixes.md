@@ -4,7 +4,9 @@
 
 **Base:** `fb6955e0dd53374f3d8b77351054b97970dbb4ee`.
 
-**Scope:** Restrict the five Watchdog RPCs to service_role; recurse through Fragment children without adding className; retire the identified obsolete shortcut double-click test requirements.
+**Scope:** Restrict the five Watchdog RPCs to service_role; recurse through Fragment children without adding className; consolidate shortcut double-click coverage according to the user's confirmed specification.
+
+**User clarification:** 「跟自訂觸發條件一樣是雙擊開啟」 (2026-09-05). Double-click activation is the current shortcut-settings specification; the earlier classification of that behavior as obsolete is superseded.
 
 ## 1. Watchdog RPC permissions
 
@@ -21,13 +23,14 @@ The existing database test is `supabase/tests/database/matrix_watchdog_rpc_permi
 - [x] In `src/ExploreValidationSummary.tsx`, check `element.type === Fragment`, recurse through children, and clone with undefined props, as accepted by the installed React typings.
 - [x] Run the updated summary tests, affected navigation tests, typecheck, and build.
 
-## 3. Obsolete shortcut test requirements
+## 3. Confirmed shortcut double-click requirements
 
-- [x] Remove `BottomNavigationDoubleTap.test.tsx` and `bottom-navigation-double-click-window.test.tsx`.
-- [x] Remove the remaining duplicate double-click assertion from `BottomNavigation.test.tsx`; retain entry visibility and keyboard/assistive click coverage without fixing an accessible label to gesture-specific wording.
+- [x] Consolidate the overlapping `BottomNavigationDoubleTap.test.tsx` and `bottom-navigation-double-click-window.test.tsx` coverage into `BottomNavigation.test.tsx`, then remove the duplicate files.
+- [x] Verify single pointer clicks do not open settings, paired clicks open exactly once without activating the primary shortcut, and a third click starts a new pair. Preserve the existing 500/799ms accepted cases and 800ms expiry case; these characterize the existing shared handler rather than introduce a new product condition.
+- [x] Retain entry visibility and keyboard/assistive click coverage.
 - [x] Keep the Node layout assertion about four navigation columns and the positioned settings entry; remove its handler-name and forbidden-long-press/pointer assertions.
 
-**Unresolved product requirement:** The current production component still uses an independent settings gear with double-click activation, and the guide describes it. The current request identifies double-click tests as obsolete but does not specify a replacement activation method or target control. Historical records contain different gestures. This change does not invent a replacement or claim that the production gesture has been updated. Confirmation is required before changing the component and guide together.
+**Resolved product requirement:** The shortcut settings gear and custom trigger settings already share `useDoubleClickAction` and `QUICK_SETTINGS_DOUBLE_TAP_MS`. Their production behavior and guide agree with the user's clarification, so no gesture implementation change is needed. Record the confirmed rule in `UX-CONTRACT.md` and verify both owning components.
 
 ## Verification and delivery
 
@@ -36,4 +39,4 @@ The existing database test is `supabase/tests/database/matrix_watchdog_rpc_permi
 
 Validation results: 134 Vitest files / 1,088 tests passed; 41 relevant Node tests passed; production build including TypeScript passed; runtime integrity passed for 27 protected files; Premium strict audit returned zero findings. The existing Vite large-chunk warning remains. The original 384px icon was retrieved for local validation and matched the main blob hash; assets are not part of this changeset. Independent review found no code issues and reran the changed component and Node tests successfully. Live mobile/browser QA was not performed.
 
-Delivery must report the GitHub PR state and the unresolved shortcut activation requirement, without claiming that the production gesture has changed.
+Validation after the user's clarification: all 134 Vitest files / 1,091 tests passed; the shortcut, custom-trigger and Fragment component subset passed 28 tests; the relevant Node contract subset passed 15 tests; TypeScript passed. The previous PR revision also completed all five GitHub Project CI jobs successfully. Delivery must report the current GitHub PR state and preserve the confirmed double-click rule.
