@@ -35,6 +35,48 @@ def test_upload_is_immutable_png_with_long_cache_and_content_checked_retry():
         repo.upload('generation/sorted.png', b'changed')
 
 
+class PrunableStorage(Storage):
+    def __init__(self):
+        super().__init__()
+        self.removed = []
+        self.listings = {
+            '539': [
+                {'name': '100'},
+                {'name': '99'},
+                {'name': '98'},
+                {'name': '97'},
+            ],
+            '539/100': [
+                {'name': 'current-generation'},
+                {'name': 'stale-generation'},
+            ],
+            '539/97': [{'name': 'old-generation'}],
+        }
+
+    def list(self, path, options):
+        rows = self.listings.get(path, [])
+        offset = options['offset']
+        return rows[offset:offset + options['limit']]
+
+    def remove(self, paths):
+        self.removed.extend(paths)
+        return []
+
+
+def test_prune_removes_old_periods_and_stale_current_generation():
+    storage = PrunableStorage()
+    repo = SupabaseCardRepository(
+        SimpleNamespace(storage=SimpleNamespace(from_=lambda _: storage)),
+    )
+    repo.prune('今彩539', ('100', '99', '98'), 'current-generation')
+    assert set(storage.removed) == {
+        '539/100/stale-generation/draw.png',
+        '539/100/stale-generation/sorted.png',
+        '539/97/old-generation/draw.png',
+        '539/97/old-generation/sorted.png',
+    }
+
+
 def test_claim_observe_and_publish_use_the_server_guarded_rpcs():
     calls = []
     def rpc(name, parameters):
