@@ -68,7 +68,7 @@ terminates before a replacement may continue.
 ### Independent watchdog
 
 The AppDeploy admin backend owns `cron.json` and runs
-`matrix-independent-watchdog` on the `3/6 * * * *` Asia/Taipei grid. Its
+`matrix-independent-watchdog-v2` on the `3/6 * * * *` Asia/Taipei grid. Its
 logical checkpoints run every 6 minutes for 50 checks, every 10 minutes for 60
 checks, then every 30 minutes for 18 checks after each lottery's base call. It reads
 `system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
