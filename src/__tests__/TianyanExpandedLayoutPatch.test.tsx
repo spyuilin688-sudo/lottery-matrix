@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TianyanApiRow, TianyanValidation } from "../matrix-algorithm-api";
 import {
   buildTianyanHistoricalRows,
   TianyanPatchedSummary,
+  TianyanExpandedLayoutPatch,
 } from "../TianyanExpandedLayoutPatch";
+
+const api = vi.hoisted(() => ({ list: vi.fn(), validation: vi.fn(), history: vi.fn() }));
+vi.mock('../matrix-algorithm-api', () => ({ fetchTianyanList: api.list, fetchTianyanValidation: api.validation }));
+vi.mock('../lottery-api', () => ({ fetchLotteryHistory: api.history }));
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const item: TianyanApiRow = {
   id: "road-1",
@@ -104,6 +110,35 @@ const validation: TianyanValidation = {
 };
 
 describe("Tianyan expanded layout", () => {
+  it("reopens seven-number results using the applied lottery and keeps the special-number separator", async () => {
+    const wideValidation = structuredClone(validation);
+    wideValidation.sourceA!.sourceNumbers.push(41, 49);
+    wideValidation.historicalValidation[0].sourceNumbers.push(41, 49);
+    wideValidation.historicalValidation[0].predictionNumbers.push(41, 49);
+    api.list.mockResolvedValue({ lottery: '六合彩', items: [item], drawPeriod: '115043', analysisVersion: 'v1' });
+    api.validation.mockResolvedValue({ validation: wideValidation });
+    api.history.mockResolvedValue(['115044', '115045'].map((period) => ({ period, numbers: [1, 2, 3, 4, 5, 41, 49] })));
+    const { container } = render(<div className="matrix-tianyan-screen matrix-explore-main-screen">
+      <select defaultValue="今彩539"><option>今彩539</option><option>六合彩</option></select>
+      <button className="road-result-row" aria-expanded="true" aria-label="收合版路 road-1"><span className="result-consecutive">準15進16</span></button>
+      <section aria-label="天衍驗證過程" data-lottery="六合彩"><div>
+        <header className="explore-validation-summary-card" />
+        <div className="explore-validation-groups" />
+      </div></section>
+      <TianyanExpandedLayoutPatch active />
+    </div>);
+    await waitFor(() => expect(container.querySelector('.tianyan-expanded-layout-groups-host .explore-validation-group')).not.toBeNull());
+    expect(api.list).toHaveBeenCalledWith(expect.objectContaining({ lottery: '六合彩' }));
+    expect(api.history).toHaveBeenCalledWith('六合彩', 1000);
+    const rows = container.querySelectorAll('.tianyan-expanded-layout-groups-host .explore-validation-numbers');
+    expect(rows.length).toBeGreaterThan(0);
+    rows.forEach((row) => {
+      expect(row.querySelectorAll('.explore-validation-number')).toHaveLength(7);
+      expect(row.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
+    });
+    expect(container.querySelector('.explore-validation-groups:not(.tianyan-expanded-layout-groups-host)')?.hasAttribute('hidden')).toBe(true);
+  });
+
   it("orders each historical validation block as lock, formula 1, formula 2, result", () => {
     const historyNumbers = new Map<string, Array<string | number>>([
       ["115044", [1, 2, 3, 4, 5]],

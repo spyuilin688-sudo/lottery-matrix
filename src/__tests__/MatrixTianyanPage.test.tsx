@@ -52,6 +52,18 @@ test('天衍移除近10期開獎號碼', () => {
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();
 });
 
+test('天衍修改彩種但未開始探索時，原結果及補充排版使用的彩種保持不變', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+  const region = await screen.findByRole('region', { name: '天衍驗證過程' });
+  const before = region.innerHTML;
+  fireEvent.change(screen.getByRole('combobox', { name: '彩種' }), { target: { value: '六合彩' } });
+  expect(region.innerHTML).toBe(before);
+  expect(region.getAttribute('data-lottery')).toBe('今彩539');
+  expect(matrixApi.fetchTianyanList).toHaveBeenCalledTimes(1);
+});
+
 test('天衍連準篩選固定為指定五項', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));

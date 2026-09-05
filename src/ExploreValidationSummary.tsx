@@ -16,7 +16,7 @@ type SummaryElementProps = {
   children?: ReactNode;
 };
 
-function formatRoadFormulaText(value: string): ReactNode {
+function formatRoadFormulaText(value: string, sumSequence = false): ReactNode {
   if (value.includes("拖牌")) {
     return value.split(/(拖牌)/g).map((part, index) => (
       part === "拖牌"
@@ -29,7 +29,9 @@ function formatRoadFormulaText(value: string): ReactNode {
   if (parts.length < 2 || !parts.every((part) => /^[+-]?\d+$/.test(part))) return value;
 
   const tokens = parts.flatMap((part, index) => (
-    index === 0 ? [part] : [".", part.replace(/^\+/, "")]
+    index === 0
+      ? [sumSequence && /^\d+$/.test(part) ? `+${part}` : part]
+      : [".", part.replace(/^\+/, "")]
   ));
   return (
     <span className="validation-summary-formula-tokens">
@@ -40,24 +42,26 @@ function formatRoadFormulaText(value: string): ReactNode {
   );
 }
 
-function formatFormulaChildren(children: ReactNode): ReactNode {
-  if (typeof children === "string") return formatRoadFormulaText(children);
-  return Children.map(children, (child) => typeof child === "string" ? formatRoadFormulaText(child) : child);
+function formatFormulaChildren(children: ReactNode, sumSequence: boolean): ReactNode {
+  if (typeof children === "string") return formatRoadFormulaText(children, sumSequence);
+  return Children.map(children, (child) => typeof child === "string" ? formatRoadFormulaText(child, sumSequence) : child);
 }
 
-function formatRoadSummaryNode(node: ReactNode): ReactNode {
+function formatRoadSummaryNode(node: ReactNode, sumSequence = false): ReactNode {
   if (!isValidElement<SummaryElementProps>(node)) return node;
 
   const element = node as ReactElement<SummaryElementProps>;
   if (element.type === Fragment) {
-    return cloneElement(element, undefined, Children.map(element.props.children, formatRoadSummaryNode));
+    return cloneElement(element, undefined, Children.map(element.props.children, (child) => formatRoadSummaryNode(child, sumSequence)));
   }
 
   const classNames = element.props.className?.split(/\s+/).filter(Boolean) ?? [];
   const isSamePeriod = classNames.includes("validation-summary-position") && element.props.children === "同期";
   const nextChildren = classNames.includes("validation-summary-formula")
-    ? formatFormulaChildren(element.props.children)
-    : Children.map(element.props.children, formatRoadSummaryNode);
+    ? formatFormulaChildren(element.props.children, sumSequence)
+    : Children.map(element.props.children, (child) => formatRoadSummaryNode(
+        child, sumSequence || classNames.includes("validation-summary-formula-sequence"),
+      ));
   const nextClassName = isSamePeriod
     ? [...new Set([...classNames, "validation-summary-same-period"])].join(" ")
     : element.props.className;
@@ -69,14 +73,14 @@ export function ExploreValidationSummary({ children }: { children: ReactNode }) 
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const [isMatrixExploreSummary, setIsMatrixExploreSummary] = useState(false);
   const renderedChildren = isMatrixExploreSummary
-    ? Children.map(children, formatRoadSummaryNode)
+    ? Children.map(children, (child) => formatRoadSummaryNode(child))
     : children;
 
   useLayoutEffect(() => {
     const summary = summaryRef.current;
     if (!summary) return;
     const nextIsMatrixExploreSummary = Boolean(
-      summary.closest(".matrix-explore-main-screen:not(.matrix-tianyan-screen)"),
+      summary.closest(".matrix-explore-main-screen"),
     );
     setIsMatrixExploreSummary((current) => current === nextIsMatrixExploreSummary ? current : nextIsMatrixExploreSummary);
   });
