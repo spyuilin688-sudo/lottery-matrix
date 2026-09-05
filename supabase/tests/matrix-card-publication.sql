@@ -19,12 +19,14 @@ SELECT 'publication table and RPC privileges are service-only',
     SELECT 1 FROM pg_roles r CROSS JOIN (VALUES
       ('public.claim_matrix_card_publication(text,uuid)'),
       ('public.observe_matrix_card_snapshot(text,uuid,text,text)'),
-      ('public.publish_matrix_card(text,uuid,text,jsonb)')) p(signature)
+      ('public.publish_matrix_card(text,uuid,text,jsonb)'),
+      ('public.renew_matrix_card_cleanup_lease(text,uuid,text,text)')) p(signature)
     WHERE r.rolname IN ('anon','authenticated') AND has_function_privilege(r.rolname,p.signature,'EXECUTE')
   )
   AND has_function_privilege('service_role','public.claim_matrix_card_publication(text,uuid)','EXECUTE')
   AND has_function_privilege('service_role','public.observe_matrix_card_snapshot(text,uuid,text,text)','EXECUTE')
-  AND has_function_privilege('service_role','public.publish_matrix_card(text,uuid,text,jsonb)','EXECUTE'), '{}'::jsonb;
+  AND has_function_privilege('service_role','public.publish_matrix_card(text,uuid,text,jsonb)','EXECUTE')
+  AND has_function_privilege('service_role','public.renew_matrix_card_cleanup_lease(text,uuid,text,text)','EXECUTE'), '{}'::jsonb;
 
 DO $tests$
 DECLARE
@@ -116,6 +118,12 @@ BEGIN
   INSERT INTO pg_temp.card_test_results VALUES ('replaced token cannot release new owner',changed=0,'{}');
   INSERT INTO pg_temp.card_test_results VALUES ('eligible current owner publishes complete pair',
     public.publish_matrix_card('今彩539',second_token,digest_a,fixture_manifest),'{}');
+  INSERT INTO pg_temp.card_test_results VALUES ('current manifest owner can renew cleanup lease',
+    public.renew_matrix_card_cleanup_lease('今彩539',second_token,'10000',digest_a),'{}');
+  INSERT INTO pg_temp.card_test_results VALUES ('wrong cleanup token cannot renew lease',
+    NOT public.renew_matrix_card_cleanup_lease('今彩539',never_owned_token,'10000',digest_a),'{}');
+  INSERT INTO pg_temp.card_test_results VALUES ('wrong cleanup generation cannot renew lease',
+    NOT public.renew_matrix_card_cleanup_lease('今彩539',second_token,'10000',digest_b),'{}');
 
   FOR malformed IN SELECT * FROM (VALUES
     ('mixed period and generation URLs',ARRAY['cards','sorted','url'],to_jsonb('https://example.supabase.co/storage/v1/object/public/matrix-card-png/539/10001/'||digest_b||'/sorted.png')),
@@ -161,6 +169,12 @@ BEGIN
     EXCEPTION WHEN OTHERS THEN denied := SQLSTATE;
     END;
     result_items := result_items || jsonb_build_array(jsonb_build_object('name',candidate_role||' cannot publish via RPC','passed',denied='42501'));
+    denied := NULL;
+    BEGIN
+      PERFORM public.renew_matrix_card_cleanup_lease('今彩539',second_token,'10000',digest_a);
+    EXCEPTION WHEN OTHERS THEN denied := SQLSTATE;
+    END;
+    result_items := result_items || jsonb_build_array(jsonb_build_object('name',candidate_role||' cannot renew cleanup lease','passed',denied='42501'));
     denied := NULL;
     BEGIN
       INSERT INTO storage.objects(bucket_id,name) VALUES ('matrix-card-png',candidate_role||'-forbidden.png');
