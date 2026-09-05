@@ -7,7 +7,8 @@ from typing import Any
 
 import httpx
 
-from app.card_renderer import card_layout
+from app.repositories.card_repository import is_card_published
+from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
 from app.schedule import due_call_cycle, previous_lottery_call_time
 from app.scraping.sources import LatestDrawSource
@@ -113,9 +114,8 @@ def _notification_enabled(notification_emitter: NotificationEventEmitter | None)
     return notification_emitter is not None and notification_emitter.enabled
 
 
-def _card_ready(lottery: str, repository: AnalysisRepository) -> bool:
-    required_rows = sum(card_layout(lottery)["column_rows"])
-    return len(repository.list_draws(lottery, required_rows)) >= required_rows
+def _card_ready(lottery: str, period: str, repository: AnalysisRepository) -> bool:
+    return is_card_published(lottery, period, repository)
 
 
 def _latest_draw_for_period(
@@ -152,7 +152,7 @@ def _emit_early_notifications(
     if not _notification_enabled(notification_emitter):
         return
     events = [lottery_result_event(draw)]
-    if _card_ready(str(draw["lottery"]), repository):
+    if _card_ready(str(draw["lottery"]), str(draw["period"]), repository):
         events.append(matrix_card_event(draw))
     for event in events:
         try:
@@ -176,7 +176,7 @@ def emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
-    if _card_ready(lottery, repository):
+    if _card_ready(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
             matrix_card_event(draw),
@@ -294,6 +294,15 @@ def run_scheduled_worker(
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
+    manifest = publish_current_card(lottery, repository, now)
+    if manifest and latest and manifest['period'] == str(latest[0]['period']):
+        try:
+            _emit_notification_event(
+                notification_emitter, matrix_card_event({'lottery': lottery, **latest[0]}),
+                emitted_event_keys,
+            )
+        except NotificationDeliveryError:
+            pass
     cycle = due_call_cycle(lottery, now)
 
     if cycle is None:
@@ -385,6 +394,7 @@ def run_scheduled_worker(
 
         refresh.store(draw)
         refresh.ensure_history(lottery)
+        publish_current_card(lottery, repository, now)
         _emit_early_notifications(
             draw,
             repository,
