@@ -1,0 +1,635 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { type LotteryId } from "../Prototype";
+import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
+import { bootstrapMember, fetchMemberProfile } from "../member-api";
+import { getExploreEntryDefaults } from "../explore-defaults";
+import { Navigate } from "./navigation";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
+import { ExploreValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
+
+export function MatrixExplorePage({
+  onNavigate,
+  title = "Matrix 探索",
+  roadTypes = ["加減版路", "合值版路", "拖牌版路"],
+}: {
+  onNavigate: Navigate;
+  title?: "Matrix 探索" | "Matrix 天衍" | "Matrix 天工";
+  roadTypes?: string[];
+}) {
+  type ConsecutiveOption =
+    | "準4進5"
+    | "準5進6"
+    | "準6進7"
+    | "準7進8"
+    | "準9進10"
+    | "準11進12"
+    | "準14進15"
+    | "準15進16"
+    | "準16進17"
+    | "準17進18";
+
+  type ExploreDate = "本日 (最新)" | "昨日 (上1期)" | "前日 (上2期)";
+
+  type ExploreResult = {
+    id: string;
+    position: number;
+    number: string;
+    predictionPeriod: number;
+    consecutive: ConsecutiveOption;
+    prediction: string;
+    sameCode: boolean;
+    algorithmType: string;
+    numberOrder: string;
+    referenceOffset?: number;
+    referencePosition?: number;
+  };
+
+  const filterOptions: Record<string, ConsecutiveOption[]> = {
+    "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
+    "準5+（鎖定2碼）": title === "Matrix 天衍"
+      ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
+      : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
+  };
+  const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
+    if (title === "Matrix 天衍") {
+      return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
+    }
+    const isTrailer = roadValue === "拖牌版路";
+    if (hitValue === "準4+（鎖定1碼）") {
+      return isTrailer
+        ? ["準5進6", "準6進7", "準7進8"]
+        : ["準5進6", "準6進7", "準7進8"];
+    }
+    return isTrailer
+      ? ["準6進7", "準7進8", "準9進10", "準11進12"]
+      : ["準9進10", "準11進12"];
+  };
+  const [lottery, setLottery] = useState<LotteryId>("今彩539");
+  const initialExploreDefaults = useMemo(
+    () => title === "Matrix 探索"
+      ? getExploreEntryDefaults(null)
+      : { period: "二期", range: "標準範圍" } as const,
+    [title],
+  );
+  const [period, setPeriod] = useState(initialExploreDefaults.period);
+  const [road, setRoad] = useState(roadTypes[0]);
+  const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
+  const [advanced, setAdvanced] = useState(false);
+  const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
+  const [exploreDate, setExploreDate] = useState<ExploreDate>("本日 (最新)");
+  const [exploreRange, setExploreRange] = useState(initialExploreDefaults.range);
+  const [searched, setSearched] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [expandedRoad, setExpandedRoad] = useState<string | null>(null);
+  const [sameCode, setSameCode] = useState(false);
+  const [selectedPredictionNumber, setSelectedPredictionNumber] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [resultPage, setResultPage] = useState(1);
+  const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
+    defaultFiltersFor(
+      title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）",
+      roadTypes[0],
+    ),
+  );
+  const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
+  const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreError, setExploreError] = useState<string | null>(null);
+  const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
+  const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
+  const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const roadResultRowRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingRoadScrollRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const itemId = pendingRoadScrollRef.current;
+    if (!itemId || expandedRoad !== itemId) return;
+    pendingRoadScrollRef.current = null;
+    roadResultRowRefs.current.get(itemId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [expandedRoad]);
+
+  useEffect(() => {
+    if (title !== "Matrix 探索") return;
+    let active = true;
+    void bootstrapMember()
+      .then(() => fetchMemberProfile())
+      .then((profile) => {
+        if (!active) return;
+        const defaults = getExploreEntryDefaults(profile);
+        setPeriod(defaults.period);
+        setExploreRange(defaults.range);
+      })
+      .catch(() => {
+        if (!active) return;
+        const defaults = getExploreEntryDefaults(null);
+        setPeriod(defaults.period);
+        setExploreRange(defaults.range);
+      });
+    return () => { active = false; };
+  }, [title]);
+
+  const visibleResults = useMemo(() => {
+    if (title === "Matrix 探索") {
+      return (exploreResponse?.items ?? []).map((item): ExploreResult => ({
+        id: item.id,
+        position: item.lockedPosition,
+        number: item.number,
+        predictionPeriod: item.predictionDistance,
+        consecutive: item.consecutive as ConsecutiveOption,
+        prediction: item.predictionNumbers.join("."),
+        sameCode: true,
+        algorithmType: item.algorithmType,
+        numberOrder: item.numberOrder,
+        referenceOffset: item.referenceOffset,
+        referencePosition: item.referencePosition,
+      }));
+    }
+    return (tianyanResponse?.items ?? []).map((item): ExploreResult => ({
+      id: item.id,
+      position: item.lockedPosition,
+      number: item.number,
+      predictionPeriod: item.predictionDistance,
+      consecutive: item.consecutive as ConsecutiveOption,
+      prediction: item.predictionNumbers.join("."),
+      sameCode: true,
+      algorithmType: item.roadTypeLabel,
+      numberOrder: item.numberOrder,
+    }));
+  }, [exploreResponse, tianyanResponse, title]);
+
+  const duplicateStats = title === "Matrix 探索"
+    ? exploreResponse?.duplicateStats ?? []
+    : tianyanResponse?.duplicateStats ?? [];
+
+  const resultsPerPage = 15;
+  const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
+  const paginatedResults = visibleResults.slice(
+    (resultPage - 1) * resultsPerPage,
+    resultPage * resultsPerPage,
+  );
+  const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
+  const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
+  const exploreDateOffset = exploreDate === "前日 (上2期)" ? 2 : exploreDate === "昨日 (上1期)" ? 1 : 0;
+
+  const loadExplore = async (
+    nextFilters = selectedFilters,
+    nextSameCode = sameCode,
+    nextPredictionNumber = selectedPredictionNumber,
+  ) => {
+    setExploreLoading(true);
+    setExploreError(null);
+    try {
+      if (title === "Matrix 天衍") {
+        const response = await fetchTianyanList({
+          lottery,
+          exploreDateOffset,
+          selectedStreaks: nextFilters,
+          sameCode: nextSameCode,
+          ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
+        });
+        setTianyanResponse(response);
+        setTianyanValidationById({});
+        setExpandedRoad(null);
+        return;
+      }
+      if (title !== "Matrix 探索") return;
+      const roadType = road.startsWith("合值") ? "合值" : road.startsWith("拖牌") ? "拖牌" : "加減";
+      const response = await fetchExploreList({
+        lottery,
+        numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
+        explorePeriods: selectedExplorePeriods,
+        exploreDateOffset,
+        exploreRange: exploreRange as "標準範圍" | "完整範圍",
+        ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
+        roadTypes: [roadType],
+        selectedStreaks: nextFilters,
+        sameCode: nextSameCode,
+        ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
+      });
+      setExploreResponse(response);
+      setValidationById({});
+      setExpandedRoad(null);
+    } catch (cause) {
+      const code = String((cause as { code?: unknown })?.code ?? "");
+      setExploreError(
+        code === "ANALYSIS_NOT_READY"
+          ? "分析中，請稍後再試"
+          : code === "FORBIDDEN"
+            ? "目前會員權限無法使用此設定"
+            : code === "AUTH_REQUIRED"
+              ? "請先登入後再使用 Matrix 天衍"
+              : "Matrix API 讀取失敗",
+      );
+    } finally {
+      setExploreLoading(false);
+    }
+  };
+
+  const changeHit = (value: string) => {
+    setHit(value);
+    setSelectedFilters(defaultFiltersFor(value, road));
+    setExpandedRoad(null);
+    setResultPage(1);
+  };
+
+  const changeRoad = (value: string) => {
+    setRoad(value);
+    setSelectedFilters(defaultFiltersFor(hit, value));
+    setExpandedRoad(null);
+    setResultPage(1);
+  };
+
+  const changeLottery = (value: LotteryId) => {
+    setLottery(value);
+    setHistoryExpanded(true);
+  };
+
+  const startExplore = () => {
+    const nextFilters = defaultFiltersFor(hit, road);
+    setSearched(true);
+    setHistoryExpanded(false);
+    setSameCode(false);
+    setSelectedFilters(nextFilters);
+    setSelectedPredictionNumber(null);
+    setResultPage(1);
+    void loadExplore(nextFilters, false, null);
+  };
+
+  const toggleFilter = (value: ConsecutiveOption) => {
+    const next = selectedFilters.includes(value)
+      ? selectedFilters.filter((item) => item !== value)
+      : [...selectedFilters, value];
+    setSelectedFilters(next);
+    setExpandedRoad(null);
+    setResultPage(1);
+    if (searched) void loadExplore(next, sameCode);
+  };
+
+  const toggleSameCode = () => {
+    const next = !sameCode;
+    setSameCode(next);
+    setResultPage(1);
+    if (searched) void loadExplore(selectedFilters, next, selectedPredictionNumber);
+  };
+
+  const togglePredictionNumber = (number: string) => {
+    const next = selectedPredictionNumber === number ? null : number;
+    setSelectedPredictionNumber(next);
+    setExpandedRoad(null);
+    setResultPage(1);
+    void loadExplore(selectedFilters, sameCode, next);
+  };
+
+  const toggleRoad = (itemId: string) => {
+    if (expandedRoad === itemId) {
+      pendingRoadScrollRef.current = null;
+      setExpandedRoad(null);
+      return;
+    }
+    pendingRoadScrollRef.current = expandedRoad === null ? null : itemId;
+    setExpandedRoad(itemId);
+    if (title === "Matrix 天衍" && tianyanResponse) {
+      const cacheKey = `${tianyanResponse.analysisVersion}:${itemId}`;
+      if (tianyanValidationById[cacheKey]) return;
+      setValidationLoadingId(cacheKey);
+      void fetchTianyanValidation({
+        lottery: tianyanResponse.lottery,
+        drawPeriod: tianyanResponse.drawPeriod,
+        analysisVersion: tianyanResponse.analysisVersion,
+      }, itemId).then((response) => {
+        setTianyanValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+      }).catch(() => {
+        setExploreError("Matrix API 讀取失敗");
+      }).finally(() => {
+        setValidationLoadingId((current) => current === cacheKey ? null : current);
+      });
+      return;
+    }
+    if (title !== "Matrix 探索" || !exploreResponse) return;
+    const cacheKey = `${exploreResponse.analysisVersion}:${itemId}`;
+    if (validationById[cacheKey]) return;
+    setValidationLoadingId(cacheKey);
+    void fetchExploreValidation({
+      lottery: exploreResponse.lottery,
+      drawPeriod: exploreResponse.drawPeriod,
+      analysisVersion: exploreResponse.analysisVersion,
+    }, itemId, {
+      explorePeriods: selectedExplorePeriods,
+      exploreRange: exploreRange as "標準範圍" | "完整範圍",
+    }).then((response) => {
+      setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+    }).catch(() => {
+      setExploreError("Matrix API 讀取失敗");
+    }).finally(() => {
+      setValidationLoadingId((current) => current === cacheKey ? null : current);
+    });
+  };
+
+  return (
+    <FeatureShell
+      title={title}
+      onNavigate={onNavigate}
+      backTarget={title === "Matrix 探索" ? "home" : "explore"}
+      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
+      headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}
+    >
+      <section className="panel explore-settings">
+        <SectionTitle>探索設定</SectionTitle>
+        <div className="setting-grid">
+          <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span>
+            <div className="select-box native-select">
+              <select
+                aria-label="彩種"
+                value={lottery}
+                onChange={(event) => changeLottery(event.target.value as LotteryId)}
+              >
+                {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
+              </select>
+              <ChevronDownIcon aria-hidden="true" />
+            </div>
+          </label>
+          <label><span><SettingLabelIcon type="period" />探索期數</span>
+            <div className="segmented three">
+              {(["二期", "七期", "十三期"] as const).map((v) => (
+                <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
+                  {v}
+                  {title === "Matrix 探索" && v === "十三期" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                </button>
+              ))}
+            </div>
+          </label>
+          <label><span><SettingLabelIcon type="road" />版路類型</span>
+            <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
+              {roadTypes.map((v) => (
+                <button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>
+                  {v}
+                  {title === "Matrix 探索" && v === "拖牌版路" ? <em>推薦</em> : null}
+                </button>
+              ))}
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section className="panel hit-advanced-panel">
+        <SectionTitle>命中條件</SectionTitle>
+        <div className="segmented two hit-options">
+          {(title === "Matrix 天衍" ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
+            <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
+          ))}
+        </div>
+
+        <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
+          <img src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" />
+          <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
+        </button>
+        {advanced ? (
+          <div className="advanced-panel">
+            <label>
+              <span className="advanced-setting-title">
+                <SettingLabelIcon type="order" />號碼順序
+              </span>
+              <div className="select-box native-select">
+                <select
+                  aria-label="號碼順序"
+                  value={numberOrder}
+                  onChange={(event) => setNumberOrder(event.target.value)}
+                >
+                  <option value="依號碼由小到大排序">依號碼由小到大排序</option>
+                  <option value="依實際開獎順序排序">依實際開獎順序排序</option>
+                </select>
+                <ChevronDownIcon aria-hidden="true" />
+              </div>
+            </label>
+            <label>
+              <span className="advanced-setting-title">
+                <SettingLabelIcon type="date" />探索日期
+              </span>
+              <div className="segmented three">
+                {(["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"] as const).map((value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    data-selected={exploreDate === value}
+                    onClick={() => setExploreDate(value)}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </label>
+            <label>
+              <span className="advanced-setting-title">
+                <SettingLabelIcon type="range" />探索範圍
+              </span>
+              <div className="segmented two">
+                {(["標準範圍", "完整範圍"] as const).map((value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    data-selected={exploreRange === value}
+                    onClick={() => setExploreRange(value)}
+                  >
+                    {value}
+                    {title === "Matrix 探索" && value === "完整範圍" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                  </button>
+                ))}
+              </div>
+            </label>
+          </div>
+        ) : null}
+      </section>
+
+      <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
+        <MagnifyingGlassIcon /><span>開始探索</span>
+      </button>
+
+      {title === "Matrix 探索" ? (
+        <HistoryList
+          lottery={lottery}
+          numberOrder={numberOrder}
+          onOpenHistory={() => onNavigate("history")}
+          collapsible
+          collapseControl="title"
+          showOrderText={false}
+          expanded={historyExpanded}
+          onExpandedChange={setHistoryExpanded}
+        />
+      ) : null}
+
+      {searched ? (
+        <>
+          <section className="panel repeat-stats-panel">
+            <header className="repeat-stats-heading">
+              <SectionTitle>重複號碼統計</SectionTitle>
+              <button
+                type="button"
+                aria-pressed={sameCode}
+                data-selected={sameCode}
+                onClick={toggleSameCode}
+              >
+                同碼
+              </button>
+              <span>點選進行版路篩選</span>
+            </header>
+            <div className="result-summary">
+              {duplicateStats.map(({ number, count }) => (title === "Matrix 探索" || title === "Matrix 天衍") ? (
+                <button
+                  type="button"
+                  key={number}
+                  aria-label={`篩選預測號碼 ${number}，${count}次`}
+                  aria-pressed={selectedPredictionNumber === number}
+                  data-selected={selectedPredictionNumber === number}
+                  onClick={() => togglePredictionNumber(number)}
+                >
+                  <b>{number}</b><small>{count}次</small>
+                </button>
+              ) : (
+                <div key={number}><b>{number}</b><small>{count}次</small></div>
+              ))}
+            </div>
+          </section>
+
+          <p className="explore-result-disclaimer">
+            探索結果依歷史資料與所選條件產生，僅供參考之用，不保證中獎或<span className="explore-disclaimer-nowrap">獲利</span>。
+          </p>
+
+          <section className="panel result-panel">
+            <header className="result-title">
+              <SectionTitle>探索結果區</SectionTitle>
+              <button
+                type="button"
+                className="consecutive-filter-button"
+                aria-expanded={filterOpen}
+                aria-controls="matrix-explore-consecutive-filter-options"
+                onClick={() => setFilterOpen((current) => !current)}
+              >
+                <span>連準篩選</span><ChevronDownIcon data-open={filterOpen} aria-hidden="true" />
+              </button>
+              <strong className="result-count">
+                <span>探索到&nbsp;</span><span className="numeric-text">{resultCount}</span><span>&nbsp;組符合條件版路</span>
+              </strong>
+            </header>
+            {filterOpen ? (
+              <div
+                id="matrix-explore-consecutive-filter-options"
+                className="explore-consecutive-filter-options matrix-explore-consecutive-filter-options"
+                role="group"
+                aria-label={`${hit}連準篩選`}
+              >
+                {filterOptions[hit].map((option) => (
+                  <button
+                    type="button"
+                    className="explore-consecutive-filter-option"
+                    aria-pressed={selectedFilters.includes(option)}
+                    onClick={() => toggleFilter(option)}
+                    key={option}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div className="road-results">
+              {exploreLoading ? <p className="explore-request-state" role="status">分析結果載入中</p> : null}
+              {exploreError ? <p className="explore-request-state" role="alert">{exploreError}</p> : null}
+              <div className="road-results-head" aria-hidden="true">
+                <span>位置</span>
+                <span>號碼</span>
+                <span>預測期</span>
+                <span>連準次數</span>
+                <span>預測</span>
+                <span>版路類型</span>
+              </div>
+              {paginatedResults.map((item, index) => (
+                <article
+                  data-number-group-start={sameCode && index > 0 && paginatedResults[index - 1]?.prediction !== item.prediction ? "true" : undefined}
+                  key={item.id}
+                >
+                  <button
+                    type="button"
+                    className="road-result-row"
+                    ref={(node) => {
+                      if (node) roadResultRowRefs.current.set(item.id, node);
+                      else roadResultRowRefs.current.delete(item.id);
+                    }}
+                    aria-expanded={expandedRoad === item.id}
+                    aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
+                    onClick={() => toggleRoad(item.id)}
+                  >
+                    <span className="tag">
+                      {item.position === 7 ? (
+                        <span>特別號</span>
+                      ) : (
+                        <>
+                          <span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
+                          <span className="numeric-text">{item.position}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="result-number numeric-text">{item.number}</span>
+                    <span className="result-period"><span>下</span><span className="numeric-text">{item.predictionPeriod}</span><span>期</span></span>
+                    <span className="result-consecutive">
+                      <span>準</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[0]}</span><span>進</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[1]}</span>
+                    </span>
+                    <strong className="numeric-text">{item.prediction}</strong>
+                    <span className="road-type-toggle">
+                      <span>{title === "Matrix 天衍" ? item.algorithmType : item.algorithmType.endsWith("版路") ? item.algorithmType : `${item.algorithmType}版路`}</span>
+                      <ChevronDownIcon data-open={expandedRoad === item.id} />
+                    </span>
+                  </button>
+                  {expandedRoad === item.id ? (
+                    title === "Matrix 探索" && exploreResponse
+                      ? <ExploreValidationProcess
+                          item={item}
+                          lottery={lottery}
+                          validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}
+                          loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}
+                        />
+                      : title === "Matrix 天衍" && tianyanResponse
+                        ? <TianyanValidationProcess
+                            item={item}
+                            lottery={lottery}
+                            validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
+                            loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
+                          />
+                        : <RoadValidationProcess number={item.number} position={item.position} predictionPeriod={item.predictionPeriod} consecutive={item.consecutive} prediction={item.prediction} roadType={road} />
+                  ) : null}
+                </article>
+              ))}
+              {visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+              {visibleResults.length > 0 && resultPageCount > 1 ? (
+                <nav className="history-pagination explore-results-pagination" aria-label="探索結果分頁">
+                  <button
+                    type="button"
+                    aria-label="探索結果上一頁"
+                    disabled={resultPage === 1}
+                    onClick={() => {
+                      setExpandedRoad(null);
+                      setResultPage((current) => Math.max(1, current - 1));
+                    }}
+                  >
+                    <ChevronLeftIcon aria-hidden="true" />
+                  </button>
+                  <span>{resultPage} / {resultPageCount}</span>
+                  <button
+                    type="button"
+                    aria-label="探索結果下一頁"
+                    disabled={resultPage === resultPageCount}
+                    onClick={() => {
+                      setExpandedRoad(null);
+                      setResultPage((current) => Math.min(resultPageCount, current + 1));
+                    }}
+                  >
+                    <ChevronRightIcon aria-hidden="true" />
+                  </button>
+                </nav>
+              ) : null}
+            </div>
+          </section>
+        </>
+      ) : null}
+    </FeatureShell>
+  );
+}

@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -11,7 +12,7 @@ test('latest draw refreshes immediately and every 60 seconds', () => {
 });
 
 test('lottery history refreshes immediately and every 60 seconds', () => {
-  const source = readFileSync(new URL('../src/FeaturePages.tsx', import.meta.url), 'utf8');
+  const source = readFeaturePagesSource();
   assert.match(source, /const refreshLotteryHistory\s*=\s*\(\)\s*=>/);
   assert.match(source, /refreshLotteryHistory\(\);/);
   assert.match(source, /window\.setInterval\(refreshLotteryHistory,\s*60_000\)/);

@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const featurePages = readFileSync("src/FeaturePages.tsx", "utf8");
+const featurePages = readFeaturePagesSource();
 const featureStyles = readFileSync("src/feature-pages.css", "utf8");
 const notificationStyles = readFileSync("src/feature-page-adjustments.css", "utf8");
 

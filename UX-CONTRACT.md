@@ -123,3 +123,9 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
   popup or lost native-app window relationships have a working browser fallback;
   automated tests do not claim physical-device LINE return was verified.
 - No page geometry, shortcuts, provider scopes or callback allowlist changes.
+
+## Pre-generated Matrix cards — 2026-09-05
+
+The existing four-lottery, sorted/draw tabs and download confirmation remain the card-page flow. New clients request the PNG manifest explicitly. Its period and both URLs describe the latest complete published generation; an ungenerated newer draw never relabels the older image. Preview and confirmed download use the same immutable PNG bytes, with no browser rasterization or document-wide observer. Download failure remains inline and retryable. The prior SVG manifest/routes remain available to installed older PWA clients during rollout.
+
+Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled CJK and Arial-compatible font subsets make generated PNG text deterministic across worker hosts. Publication waits ten minutes after the publisher first observes a complete snapshot, then runs on the next available worker tick; this does not promise an exact ten-minute completion time. A missing period, invalid numbers, failed upload, or lost lease retains the previous complete card. Card-ready notifications require the matching published period.

@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -5,7 +6,7 @@ import test from "node:test";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 
 test("探索、天衍、天工共用固定尺寸的 Logo 標題卡", () => {
   assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);

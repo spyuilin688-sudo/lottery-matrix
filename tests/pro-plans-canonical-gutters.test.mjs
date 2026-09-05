@@ -24,9 +24,9 @@ function listSourceFiles(directory) {
 
 test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 owner", () => {
   const sharedIndex = prototypeSource.indexOf('import "./feature-pages.css";');
-  const patchedRouterIndex = prototypeSource.indexOf('from "./FeaturePagesPatched";');
-  const layoutIndex = patchedRouterSource.indexOf('import "./pro-plans-layout.css";');
-  const dotsIndex = patchedRouterSource.indexOf('import "./pro-plans-carousel-peek.css";');
+  const patchedRouterIndex = prototypeSource.indexOf('import("./FeaturePagesPatched")');
+  const layoutIndex = prototypeSource.indexOf('import "./pro-plans-layout.css";');
+  const dotsIndex = prototypeSource.indexOf('import "./pro-plans-carousel-peek.css";');
 
   assert.ok(sharedIndex >= 0, "Prototype 缺少共用 feature-pages 樣式");
   assert.ok(patchedRouterIndex > sharedIndex, "正式入口必須先載入共用樣式，再載入 patched router");
@@ -40,8 +40,8 @@ test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 own
     .filter((path) => readFileSync(path, "utf8").includes('import "./pro-plans-carousel-peek.css";'))
     .map((path) => relative(root, path).replaceAll("\\", "/"));
 
-  assert.deepEqual(layoutOwners, ["src/FeaturePagesPatched.tsx"]);
-  assert.deepEqual(dotsOwners, ["src/FeaturePagesPatched.tsx"]);
+  assert.deepEqual(layoutOwners, ["src/Prototype.tsx"]);
+  assert.deepEqual(dotsOwners, ["src/Prototype.tsx"]);
 });
 
 test("方案卡與付款區以實際水平 gutter 擁有 19px 與 16px", () => {

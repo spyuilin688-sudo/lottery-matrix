@@ -1,10 +1,11 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 const baseCss=fs.readFileSync(new URL("../src/homepage/base.css",import.meta.url),"utf8");
 const switcherCss=fs.readFileSync(new URL("../src/homepage/lottery-switcher.css",import.meta.url),"utf8");
 const visualCss=fs.readFileSync(new URL("../src/homepage/visual-language.css",import.meta.url),"utf8");
-const featureSource=fs.readFileSync(new URL("../src/FeaturePages.tsx",import.meta.url),"utf8");
+const featureSource=readFeaturePagesSource();
 test("homepage and status lottery switchers use a shared 4px inline inset",()=>{assert.match(switcherCss,/\.lottery-switcher--home-style\s*\{[^}]*padding-inline:\s*4px;/s);assert.doesNotMatch(switcherCss,/\.lottery-switcher--home-style\s*\{[^}]*padding-inline:\s*0;/s);assert.doesNotMatch(baseCss,/\.lottery-switcher--home-style\s*\{[^}]*padding:\s*0;/s);});
 test("unselected lottery keeps the shared frame while selected lottery hides it",()=>{assert.match(switcherCss,/\.lottery-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);[^}]*-webkit-mask:\s*none;[^}]*mask:\s*none;/s);assert.match(switcherCss,/\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s);assert.doesNotMatch(baseCss,/lottery-card\[data-selected="true"\]::after/);assert.doesNotMatch(visualCss,/lottery-card\[data-selected="true"\]::after/);});
 test("latest draw card renders a visible octagon frame layer",()=>assert.match(visualCss,/\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s));

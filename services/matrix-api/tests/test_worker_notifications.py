@@ -126,18 +126,18 @@ def run_worker(
     )
 
 
-def test_new_draw_emits_result_card_and_status_after_complete() -> None:
+def test_new_draw_emits_result_and_status_but_waits_for_card_publication() -> None:
     repository = InMemoryAnalysisRepository()
     emitter = RecordingEmitter(repository)
 
     result = run_worker(repository, NotificationSource(history_count=226), emitter)
 
     assert result["status"] == "complete"
-    assert emitter.successful == [RESULT_KEY, CARD_KEY, STATUS_KEY]
+    assert emitter.successful == [RESULT_KEY, STATUS_KEY]
     assert emitter.status_progress == ["complete"]
 
 
-def test_dormant_status_emits_result_and_card_without_status_event() -> None:
+def test_dormant_status_emits_result_without_unpublished_card_or_status_event() -> None:
     repository = InMemoryAnalysisRepository()
     emitter = RecordingEmitter(repository)
 
@@ -149,7 +149,7 @@ def test_dormant_status_emits_result_and_card_without_status_event() -> None:
     )
 
     assert result["status"] == "complete"
-    assert emitter.successful == [RESULT_KEY, CARD_KEY]
+    assert emitter.successful == [RESULT_KEY]
     assert not any(key.startswith("matrix_status:") for key in emitter.attempts)
 
 
@@ -228,7 +228,7 @@ def test_completed_period_reemits_the_same_stable_keys_on_later_invocation() -> 
     assert first["status"] == "complete"
     assert second["status"] == "already-acquired"
     assert emitter.successful.count(RESULT_KEY) == 2
-    assert emitter.successful.count(CARD_KEY) == 2
+    assert CARD_KEY not in emitter.attempts
     assert emitter.successful.count(STATUS_KEY) == 2
 
 

@@ -19,10 +19,10 @@
       refreshMatrixCardPng,
     } from '../src/matrix-ticket-download.ts';
 
-    const cardUrl = `${location.origin}/tests/matrix-card-download-source.svg`;
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24"><rect width="32" height="24" fill="#fff"/><text x="4" y="16">M</text></svg>';
-    const previewUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    const cardUrl = `${location.origin}/tests/539/115000215/version/sorted.png`;
     const originalFetch = window.fetch.bind(window);
+    const png = await (await originalFetch(new URL('./fixtures/matrix-card.png', import.meta.url))).blob();
+    const previewUrl = URL.createObjectURL(png);
     const originalRevoke = URL.revokeObjectURL.bind(URL);
     let cardFetchCount = 0;
     let revokeCount = 0;
@@ -31,7 +31,7 @@
       const url = input instanceof Request ? input.url : new URL(String(input), location.href).href;
       if (url === cardUrl) {
         cardFetchCount += 1;
-        return new Response(svg, { status: 200, headers: { 'content-type': 'image/svg+xml' } });
+        return new Response(png, { status: 200, headers: { 'content-type': 'image/png' } });
       }
       return originalFetch(input, init);
     };

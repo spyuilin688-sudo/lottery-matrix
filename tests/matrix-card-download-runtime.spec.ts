@@ -17,6 +17,7 @@ test('prepared matrix card downloads as PNG and repeated downloads reuse the pre
   const firstPath = await firstDownload.path();
   expect(firstPath).not.toBeNull();
   const firstBytes = await readFile(firstPath!);
+  expect(firstBytes).toEqual(await readFile(new URL('./fixtures/matrix-card.png', import.meta.url)));
   expect([...firstBytes.subarray(0, PNG_SIGNATURE.length)]).toEqual(PNG_SIGNATURE);
   expect(await page.evaluate(() => window.__matrixCardDownloadTest.fetchCount())).toBe(1);
 
@@ -47,7 +48,7 @@ test('matrix card preparation is explicit and current before download', async ({
   await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.previewPrepared())).toBe(true);
 });
 
-test('a new matrix card preview refreshes preparation even when the endpoint URL is unchanged', async ({ page }) => {
+test('an explicit retry fetches fresh bytes even for an already prepared immutable URL', async ({ page }) => {
   await page.goto('/tests/matrix-card-download-runtime-fixture.html');
   await page.getByRole('button', { name: 'prepare' }).click();
   await expect.poll(() => page.evaluate(() => window.__matrixCardDownloadTest.fetchCount())).toBe(1);

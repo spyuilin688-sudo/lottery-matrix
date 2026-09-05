@@ -1,11 +1,12 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync("src/FeaturePages.tsx", "utf8");
+const source = readFeaturePagesSource();
 const previewSource = readFileSync("src/ExploreResultPreviewPage.tsx", "utf8");
 const css = readFileSync("src/explore-result-preview.css", "utf8");
-const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nfunction TianyanValidationProcess/);
+const component = source.match(/function ExploreValidationProcess\([\s\S]*?\n}\n\nexport function TianyanValidationProcess/);
 
 test("Matrix Explore renders API validation with the merged three-column preview layout", () => {
   assert.ok(component, "ExploreValidationProcess must exist");

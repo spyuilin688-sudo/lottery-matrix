@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -12,7 +13,7 @@ const prototypeView = read("src/Prototype.tsx");
 const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
 const visual = read("src/homepage/visual-language.css");
-const pages = read("src/FeaturePages.tsx");
+const pages = readFeaturePagesSource();
 
 test("號碼對照單只使用一條 1px 的期數與開獎號碼分隔線", () => {
   assert.match(reference, /\.reference-row > \.reference-issue \+ span\s*\{[^}]*border-left:\s*1px solid rgba\(161, 112, 40, \.78\);/s);

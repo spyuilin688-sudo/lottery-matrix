@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -5,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 import { readLocalCss } from "./helpers/read-local-css.mjs";
 
-const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featurePages = readFeaturePagesSource();
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
 const homepageStyles = readLocalCss(new URL("../src/homepage-repair.css", import.meta.url));

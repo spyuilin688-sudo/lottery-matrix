@@ -1,10 +1,11 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 
 test("Matrix Pro 與推薦標籤共用上移後的位置規則", () => {
   assert.match(source, /<em><LockClosedIcon \/>Matrix Pro<\/em>/);

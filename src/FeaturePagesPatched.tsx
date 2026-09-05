@@ -1,8 +1,5 @@
-import { useLayoutEffect, useState } from "react";
+import { Suspense, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import "./pro-plans-layout.css";
-import "./pro-plans-carousel-peek.css";
-import "./activation-code-layout.css";
 import {
   FeaturePageRouter as CoreFeaturePageRouter,
   QuickNavigationProvider,
@@ -79,7 +76,7 @@ export function FeaturePageRouter({
     || screen === "business-cooperation";
 
   return (
-    <>
+    <Suspense fallback={<p role="status">載入中…</p>}>
       <CoreFeaturePageRouter
         screen={screen}
         onNavigate={onNavigate}
@@ -91,6 +88,6 @@ export function FeaturePageRouter({
       />
       <ContactSupportPhonePortal active={contactSupportActive} />
       <TianyanExpandedLayoutPatch active={screen === "tianyan"} />
-    </>
+    </Suspense>
   );
 }

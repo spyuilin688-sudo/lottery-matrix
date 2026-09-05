@@ -1,10 +1,11 @@
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { JSDOM } from "jsdom";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
+const exploreCss = readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url));
 const css = `html { font-size: 16px; }\n${featureCss}\n${exploreCss}`;
 
 function exploreFixture() {

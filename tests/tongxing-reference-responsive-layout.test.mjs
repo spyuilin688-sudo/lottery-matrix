@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
 const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
 const brandHeader = fs.readFileSync('src/brand-header-unify.css', 'utf8');
-const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+const source = readFeaturePagesSource();
 
 function block(css, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

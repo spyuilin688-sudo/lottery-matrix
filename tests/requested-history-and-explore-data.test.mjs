@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const featureSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featureSource = readFeaturePagesSource();
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
 const exploreService = readFileSync(new URL("../backend/matrix-explore-service.ts", import.meta.url), "utf8");
 const exploreContextSource = readFileSync(new URL("../services/matrix-api/app/domain/explore_context.py", import.meta.url), "utf8");

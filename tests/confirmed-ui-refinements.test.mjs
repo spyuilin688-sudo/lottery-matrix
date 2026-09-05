@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -11,7 +12,7 @@ const home = readFileSync("src/homepage/base.css", "utf8");
 const notification = readFileSync("src/feature-page-adjustments.css", "utf8");
 const switcher = readFileSync("src/homepage/lottery-switcher.css", "utf8");
 const tokens = readFileSync("src/design-tokens.css", "utf8");
-const source = readFileSync("src/FeaturePages.tsx", "utf8");
+const source = readFeaturePagesSource();
 
 test("Matrix 狀態的自訂觸發條件固定於底部導覽右側", () => {
   assert.doesNotMatch(feature, /status-title-trigger/);

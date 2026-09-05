@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 // Permanent regression coverage for audit issues #8 and #11.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -15,7 +16,7 @@ test("推薦碼 UX contract 反映現行 member_referral_submit", () => {
 });
 
 test("matrix-core 保留相容路由但不保留不可達 MatrixCorePage", () => {
-  const featurePages = read("src/FeaturePages.tsx");
+  const featurePages = readFeaturePagesSource();
   const prototype = read("src/Prototype.tsx");
   assert.doesNotMatch(featurePages, /(?:export\s+)?function\s+MatrixCorePage\s*\(/);
   assert.match(featurePages, /if \(screen === "matrix-core"\) return <MatrixExplorePage onNavigate=\{onNavigate\} \/>;/);

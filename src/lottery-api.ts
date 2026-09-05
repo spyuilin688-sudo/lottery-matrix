@@ -44,6 +44,8 @@ export type MatrixCardOrder = 'draw' | 'sorted';
 export type MatrixCardManifest = {
   lottery: NumberBallLottery;
   period: string | null;
+  generation?: string;
+  generatedAt?: string;
   cards: Record<MatrixCardOrder, { url: string }>;
 };
 
@@ -56,10 +58,14 @@ export function matrixCardUrl(path: string) {
 
 export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promise<MatrixCardManifest> {
   const payload = await requestJson<Partial<MatrixCardManifest>>(
-    `/api/matrix/cards/${encodeURIComponent(lottery)}`,
+    `/api/matrix/cards/${encodeURIComponent(lottery)}?format=png`,
   );
+  if (payload.lottery === lottery && payload.period === null) {
+    return { lottery, period: null, cards: { draw: { url: '' }, sorted: { url: '' } } };
+  }
   if (
     payload.lottery !== lottery
+    || typeof payload.period !== 'string' || !payload.period
     || !payload.cards?.draw?.url
     || !payload.cards?.sorted?.url
   ) {
@@ -67,7 +73,9 @@ export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promi
   }
   return {
     lottery,
-    period: typeof payload.period === 'string' ? payload.period : null,
+    period: payload.period,
+    generation: payload.generation,
+    generatedAt: payload.generatedAt,
     cards: {
       draw: { url: payload.cards.draw.url },
       sorted: { url: payload.cards.sorted.url },

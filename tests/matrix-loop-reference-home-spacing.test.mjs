@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const pages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const pages = readFeaturePagesSource();
 const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const reference = readFileSync(new URL("../src/number-reference-visual-refinement.css", import.meta.url), "utf8");
 const home = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");

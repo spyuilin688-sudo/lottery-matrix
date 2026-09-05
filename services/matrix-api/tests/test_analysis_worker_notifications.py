@@ -105,7 +105,7 @@ class DisabledEmitter:
         raise AssertionError(f"disabled emitter must not emit {event['eventKey']}")
 
 
-def test_analysis_only_worker_emits_result_card_and_status_after_complete() -> None:
+def test_analysis_only_worker_waits_for_card_publication_despite_complete_history() -> None:
     repository = _repository()
     emitter = RecordingEmitter()
 
@@ -117,7 +117,7 @@ def test_analysis_only_worker_emits_result_card_and_status_after_complete() -> N
     )
 
     assert result["status"] == "complete"
-    assert emitter.successful == [RESULT_KEY, CARD_KEY, STATUS_KEY]
+    assert emitter.successful == [RESULT_KEY, STATUS_KEY]
 
 
 def test_analysis_only_worker_dormant_status_has_no_status_event() -> None:
@@ -132,7 +132,7 @@ def test_analysis_only_worker_dormant_status_has_no_status_event() -> None:
     )
 
     assert result["status"] == "complete"
-    assert emitter.successful == [RESULT_KEY, CARD_KEY]
+    assert emitter.successful == [RESULT_KEY]
     assert not any(key.startswith("matrix_status:") for key in emitter.attempts)
 
 
@@ -166,7 +166,7 @@ def test_analysis_only_worker_reemits_stable_keys_for_completed_period() -> None
     )
 
     assert result["status"] == "already-analyzed"
-    assert emitter.successful == [RESULT_KEY, CARD_KEY, STATUS_KEY]
+    assert emitter.successful == [RESULT_KEY, STATUS_KEY]
 
 
 def test_analysis_only_worker_early_transient_failure_does_not_block_analysis() -> None:

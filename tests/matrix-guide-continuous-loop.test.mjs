@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 const css = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
 test("Matrix 指南使用三組原生捲動內容並在頭尾等距校正", () => {

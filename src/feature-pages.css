@@ -187,7 +187,7 @@
   content: "";
 }
 .branded-explore-action::before {
-  background:
+  background-image:
     radial-gradient(circle at 6% 54%, rgba(255, 238, 190, .68) 0 .55px, transparent 1.5px),
     radial-gradient(circle at 10% 25%, rgba(255, 222, 127, .9) 0 .7px, transparent 1.7px),
     radial-gradient(circle at 14% 42%, rgba(255, 205, 77, .5) 0 .5px, transparent 1.4px),

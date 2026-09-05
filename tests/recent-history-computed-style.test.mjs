@@ -1,3 +1,4 @@
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -12,8 +13,7 @@ const css = [
   responsiveIssueRules,
   readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8"),
   readFileSync(new URL("../src/tongxing-compact.css", import.meta.url), "utf8"),
-  readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8"),
-  readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8"),
+  readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url)),
 ].join("\n");
 
 function historyFixture(lottery, mainCount, hasSpecial, screenClass = "matrix-explore-main-screen") {

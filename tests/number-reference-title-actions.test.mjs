@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -5,7 +6,7 @@ import assert from "node:assert/strict";
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
 test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () => {
-  const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+  const source = readFeaturePagesSource();
   const start = source.indexOf('title="號碼對照單"');
   const end = source.indexOf('className="reference-query-panel"', start);
   const header = source.slice(start, end);

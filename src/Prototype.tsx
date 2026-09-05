@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -8,7 +8,13 @@ import {
   CountdownTimerIcon,
 } from "@radix-ui/react-icons";
 import { MobileScroll, useMobileDevice } from "./mobile";
-import { FeaturePageRouter, QuickNavigationProvider, type ScreenId } from "./FeaturePagesPatched";
+import { QuickNavigationProvider, type ScreenId } from "./features/navigation";
+import "./explore-validation-protection.css";
+import "./pro-plans-layout.css";
+import "./pro-plans-carousel-peek.css";
+import "./activation-code-layout.css";
+import "./tianyan-expanded-layout-patch.css";
+const FeaturePageRouter = lazy(() => import("./FeaturePagesPatched").then(module => ({ default: module.FeaturePageRouter })));
 import { BottomNavigation } from "./BottomNavigation";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
@@ -452,7 +458,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     : null;
 
   if (screen !== "home") {
-    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} />{quickSettings}</MobileScroll></QuickNavigationProvider>;
+    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><Suspense fallback={<p role="status">載入中…</p>}><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} /></Suspense>{quickSettings}</MobileScroll></QuickNavigationProvider>;
   }
 
   return (

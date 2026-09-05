@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 import httpx
 
+from app.repositories.card_repository import published_manifest
 from app.card_renderer import card_layout, render_matrix_card
 from app.analysis_worker import run_analysis_only_worker
 from app.recovery import RecoveryCoordinator
@@ -389,7 +390,13 @@ def handle_api_request(
         if method == "GET" and path.startswith(CARD_PREFIX):
             card_lottery = path[len(CARD_PREFIX):]
             if "/" not in card_lottery:
-                return 200, _card_manifest(_parse_lottery(unquote(card_lottery)), repository)
+                lottery = _parse_lottery(unquote(card_lottery))
+                if parse_qs(parsed.query).get('format') == ['png']:
+                    return 200, published_manifest(lottery, repository) or {
+                        'lottery': lottery, 'period': None, 'cards': {},
+                    }
+                # Keep the pre-PNG manifest for installed PWA clients.
+                return 200, _card_manifest(lottery, repository)
         latest_prefix = "/api/matrix/latest/"
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):

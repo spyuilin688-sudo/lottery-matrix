@@ -11,7 +11,7 @@ const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css"
 test("歷史開獎 live route 由 Prototype 經 patched router 指向 core implementation", () => {
   assert.match(
     prototypeSource,
-    /import \{ FeaturePageRouter, QuickNavigationProvider, type ScreenId \} from "\.\/FeaturePagesPatched";/,
+    /lazy\(\(\) => import\("\.\/FeaturePagesPatched"\)/,
   );
   assert.match(
     prototypeSource,

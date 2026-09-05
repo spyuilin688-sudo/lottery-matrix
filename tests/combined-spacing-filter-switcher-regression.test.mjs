@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -30,7 +31,7 @@ test("homepage owns the approved 10px, 14px, and responsive navigation rhythm fr
 });
 
 test("single-number marking remains independent from the selected row", async () => {
-  const source = await read("src/FeaturePages.tsx");
+  const source = await readFeaturePagesSource();
   const body = source.match(/const toggleMarkedCell = \(issue: string, number: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? "";
   assert.ok(body, "toggleMarkedCell should exist");
   assert.match(body, /setMarkedCells/);
@@ -39,7 +40,7 @@ test("single-number marking remains independent from the selected row", async ()
 
 test("Matrix switcher exposes all three pages in one vertical scroll-snap control", async () => {
   const [source, css] = await Promise.all([
-    read("src/FeaturePages.tsx"),
+    readFeaturePagesSource(),
     read("src/feature-pages.css"),
   ]);
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
