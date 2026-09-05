@@ -424,7 +424,7 @@
 }
 
 .matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(odd) {
-  --explore-validation-group-background: #12243A;
+  --explore-validation-group-background: #152A42;
 }
 
 .matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(even) {
@@ -432,7 +432,7 @@
 }
 
 .matrix-tianyan-screen .explore-validation-group:nth-child(odd) {
-  --explore-validation-group-background: #12243A;
+  --explore-validation-group-background: #152A42;
 }
 
 .matrix-tianyan-screen .explore-validation-group:nth-child(even) {

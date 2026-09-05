@@ -39,8 +39,8 @@ test("Matrix Guide contains the requested chapters and exact notification set", 
     featureSource,
     /summary: "可設定選號提醒、開獎結果、中獎通知、Matrix 牌單、Matrix 狀態、系統通知。"/,
   );
-  assert.match(featureSource, /標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。/);
-  assert.match(featureSource, /完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。/);
+  assert.match(featureSource, /標準範圍：上1～7、當期、下 N 至結果期前一期；不包含結果期。/);
+  assert.match(featureSource, /完整範圍：上1～14、當期、下 N 至結果期前一期；不包含結果期。/);
   assert.match(featureSource, /title: "自訂觸發條件"/);
   assert.match(featureSource, /title: "四狀態條件設定"/);
   assert.doesNotMatch(featureSource, /投注通知/);
@@ -88,20 +88,20 @@ test("Matrix Guide documents thirteen-period validation totals for every Matrix 
   const tiangongStart = guide.indexOf('title: "Matrix 天工"');
   const tiangong = guide.slice(tiangongStart, guide.indexOf('title: "Matrix 狀態"', tiangongStart));
 
-  assert.match(explore, /今彩539：依號碼由小到大排序65個；依實際開獎順序排序65個鎖定條件。/);
-  assert.match(explore, /天天樂：依號碼由小到大排序65個鎖定條件。/);
-  assert.match(explore, /加減版路驗證球位：每種排序合計6,760個。/);
-  assert.match(explore, /合值版路驗證球位：每種排序合計6,760個。/);
-  assert.match(explore, /拖牌版路驗證球位：每種排序合計65個。/);
-  assert.match(explore, /六合彩、大樂透：依號碼由小到大排序91個；依實際開獎順序排序91個鎖定條件。/);
-  assert.match(explore, /加減版路驗證球位：每種排序合計13,286個。/);
-  assert.match(explore, /合值版路驗證球位：每種排序合計13,286個。/);
-  assert.match(explore, /拖牌版路驗證球位：每種排序合計91個。/);
+  assert.match(explore, /今彩539：依號碼由小到大排序 65 個；依實際開獎順序排序 65 個鎖定條件。/);
+  assert.match(explore, /天天樂：依號碼由小到大排序 65 個鎖定條件。/);
+  assert.match(explore, /加減版路驗證球位：每種排序合計 6,760 個。/);
+  assert.match(explore, /合值版路驗證球位：每種排序合計 6,760 個。/);
+  assert.match(explore, /拖牌版路驗證球位：每種排序合計 65 個。/);
+  assert.match(explore, /六合彩、大樂透：依號碼由小到大排序 91 個；依實際開獎順序排序 91 個鎖定條件。/);
+  assert.match(explore, /加減版路驗證球位：每種排序合計 13,286 個。/);
+  assert.match(explore, /合值版路驗證球位：每種排序合計 13,286 個。/);
+  assert.match(explore, /拖牌版路驗證球位：每種排序合計 91 個。/);
   assert.doesNotMatch(explore, /74、79、84、89/);
   assert.doesNotMatch(explore, /104、111、118、125/);
-  assert.match(explore, /四彩種近十三期合計147,407個比對球位。/);
-  assert.match(tianyan, /複合版路每組使用1個鎖定條件與2條規則。/);
-  assert.match(tianyan, /每條規則各驗證1個球位；同一球位時，兩條規則必須使用不同演算法。/);
+  assert.match(explore, /四彩種近十三期合計 147,407 個比對球位。/);
+  assert.match(tianyan, /複合版路每組使用 1 個鎖定條件與 2 條規則。/);
+  assert.match(tianyan, /每條規則各驗證 1 個球位；同一球位時，兩條規則必須使用不同演算法。/);
   assert.match(tiangong, /定位版路不使用鎖定條件；探索、第一段與第二段各使用1個球位路徑。/);
   assert.match(tiangong, /第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生預測。/);
 });

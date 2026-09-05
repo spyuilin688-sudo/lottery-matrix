@@ -155,7 +155,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(summaryTag!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
     expect(getComputedStyle(summary!).borderTopWidth).toBe("0px");
-    for (const [group, color] of [[firstGroup, "#12243A"], [secondGroup, "#0E1D30"]] as const) {
+    for (const [group, color] of [[firstGroup, "#152A42"], [secondGroup, "#0E1D30"]] as const) {
       expect(getComputedStyle(group!).backgroundColor).toBe("rgba(0, 0, 0, 0)");
       expect(getComputedStyle(group!).getPropertyValue("--explore-validation-group-background")).toBe(color);
       const columns = group!.querySelectorAll(":scope > .explore-validation-issues, :scope > .explore-validation-numbers-card, :scope > .explore-validation-formulas");

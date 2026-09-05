@@ -130,6 +130,7 @@ describe("Tianyan expanded layout", () => {
     await waitFor(() => expect(container.querySelector('.tianyan-expanded-layout-groups-host .explore-validation-group')).not.toBeNull());
     expect(api.list).toHaveBeenCalledWith(expect.objectContaining({ lottery: '六合彩' }));
     expect(api.history).toHaveBeenCalledWith('六合彩', 1000);
+    expect(container.querySelector('.tianyan-expanded-layout-groups-host')?.textContent).not.toContain('鎖定條件');
     const rows = container.querySelectorAll('.tianyan-expanded-layout-groups-host .explore-validation-numbers');
     expect(rows.length).toBeGreaterThan(0);
     rows.forEach((row) => {
@@ -158,6 +159,24 @@ describe("Tianyan expanded layout", () => {
     expect(rows?.[2].numbers).toEqual([20, 21, 22, 23, 24]);
   });
 
+  it.each([1, 2])("omits missed rule %s without requiring its history", (missedRule) => {
+    const group = structuredClone(validation.historicalValidation[0]);
+    const missed = missedRule === 1 ? group.rule1 : group.rule2;
+    const hit = missedRule === 1 ? group.rule2 : group.rule1;
+    missed.hit = false;
+    const rows = buildTianyanHistoricalRows("今彩539", group,
+      new Map([[hit.validationPeriod, [1, 2, 3, 4, 5]]]));
+    expect(rows?.map((row) => row.period)).toEqual([group.sourcePeriod, hit.validationPeriod, group.predictionPeriod]);
+    expect(rows?.map((row) => row.right.kind)).toEqual(["lock", "formula", "result"]);
+  });
+
+  it("omits a historical group when neither rule hit", () => {
+    const group = structuredClone(validation.historicalValidation[0]);
+    group.rule1.hit = false;
+    group.rule2.hit = false;
+    expect(buildTianyanHistoricalRows("今彩539", group, new Map())).toBeNull();
+  });
+
   it("renders the two-line road summary in the requested order and color roles", () => {
     const { container } = render(
       <div className="matrix-explore-main-screen matrix-tianyan-screen">
@@ -169,6 +188,10 @@ describe("Tianyan expanded layout", () => {
 
     const rows = container.querySelectorAll(".tianyan-validation-summary-row");
     expect(rows).toHaveLength(2);
+    const indent = rows[1].querySelector(".tianyan-expanded-summary-indent");
+    expect(indent?.getAttribute("aria-hidden")).toBe("true");
+    expect(indent?.querySelector(".validation-summary-divider")).toBeNull();
+    expect(indent?.nextElementSibling?.textContent).toBe("｜");
     expect(rows[0].textContent?.replace(/\s+/g, "")).toBe("開10第2顆｜下2期｜第5顆｜合值57");
     expect(rows[1].textContent?.replace(/\s+/g, "")).toContain("下3期｜第2顆｜+31｜下5期開");
 
