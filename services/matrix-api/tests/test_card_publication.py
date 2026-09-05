@@ -266,7 +266,7 @@ def test_png_manifest_has_no_phantom_latest_period_before_publication():
     assert manifest == {'lottery': '今彩539', 'period': None, 'cards': {}}
 
 
-def test_scheduled_not_due_branch_still_publishes_and_notifies(monkeypatch):
+def test_scheduled_not_due_branch_publishes_but_waits_for_analysis_to_notify(monkeypatch):
     import app.worker as worker
     from types import SimpleNamespace
     repository, cards = fixture()
@@ -280,10 +280,10 @@ def test_scheduled_not_due_branch_still_publishes_and_notifies(monkeypatch):
     result = worker.run_scheduled_worker('今彩539', NOW, repository, None, notification_emitter=emitter)
     assert result['status'] == 'not-due'
     assert cards.row['manifest']['period'] == '10000'
-    assert [e['eventType'] for e in events] == ['matrix_card']
+    assert [e['eventType'] for e in events] == ['lottery_result']
 
 
-def test_analysis_backlog_publishes_newest_card_before_selected_older_analysis(monkeypatch):
+def test_analysis_backlog_publishes_card_without_notifying_before_analysis(monkeypatch):
     import app.analysis_worker as worker
     from types import SimpleNamespace
     repository, cards = fixture('天天樂')
@@ -296,7 +296,7 @@ def test_analysis_backlog_publishes_newest_card_before_selected_older_analysis(m
     emitter = SimpleNamespace(enabled=True, emit=lambda e: events.append(e))
     worker.run_analysis_only_worker('天天樂', repository, notification_emitter=emitter)
     assert cards.row['manifest']['period'] == '10000'
-    assert [e['eventKey'] for e in events if e['eventType'] == 'matrix_card'] == ['matrix_card:fantasy5:10000']
+    assert not any(e['eventType'] == 'matrix_card' for e in events)
 
 
 def test_card_notifications_retry_only_published_period(monkeypatch):
@@ -304,6 +304,11 @@ def test_card_notifications_retry_only_published_period(monkeypatch):
     from types import SimpleNamespace
     repository, cards = fixture()
     publish_initial(repository, cards)
+    version = f'10000:{worker.ANALYSIS_VERSION}'
+    repository.begin_run('今彩539', '10000', version, NOW.isoformat())
+    for kind in ('explore', 'tianyan', 'tiangong', 'status'):
+        repository.save_artifact('今彩539', '10000', version, kind, {'summary': {'status': 'DORMANT'}} if kind == 'status' else {})
+    repository.complete_run('今彩539', '10000', version, NOW.isoformat())
     events = []
     emitter = SimpleNamespace(enabled=True, emit=lambda e: events.append(e))
     for _ in range(2):

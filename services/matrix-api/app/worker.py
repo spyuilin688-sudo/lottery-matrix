@@ -152,8 +152,6 @@ def _emit_early_notifications(
     if not _notification_enabled(notification_emitter):
         return
     events = [lottery_result_event(draw)]
-    if _card_ready(str(draw["lottery"]), str(draw["period"]), repository):
-        events.append(matrix_card_event(draw))
     for event in events:
         try:
             _emit_notification_event(notification_emitter, event, emitted_event_keys)
@@ -176,6 +174,10 @@ def emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
+    version = f"{period}:{ANALYSIS_VERSION}"
+    progress = repository.get_progress(lottery, period, version)
+    if progress is None or progress.get("status") != "complete":
+        return
     if _card_ready(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
@@ -183,16 +185,12 @@ def emit_ready_notifications(
             emitted_event_keys,
         )
 
-    version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, version)
-    if progress is None or progress.get("status") != "complete":
-        return
     status_artifact = repository.read_completed_artifact(lottery, period, "status")
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
         notification_emitter,
-        matrix_status_event(lottery, period, status_artifact),
+        matrix_status_event(lottery, period, status_artifact, draw_date=draw["drawDate"]),
         emitted_event_keys,
     )
 
@@ -294,15 +292,7 @@ def run_scheduled_worker(
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
-    manifest = publish_current_card(lottery, repository, now)
-    if manifest and latest and manifest['period'] == str(latest[0]['period']):
-        try:
-            _emit_notification_event(
-                notification_emitter, matrix_card_event({'lottery': lottery, **latest[0]}),
-                emitted_event_keys,
-            )
-        except NotificationDeliveryError:
-            pass
+    publish_current_card(lottery, repository, now)
     cycle = due_call_cycle(lottery, now)
 
     if cycle is None:
@@ -318,6 +308,10 @@ def run_scheduled_worker(
                         emitted_event_keys,
                     )
                 return resumed
+            emit_ready_notifications(
+                lottery, str(latest[0]["period"]), repository,
+                notification_emitter, emitted_event_keys,
+            )
         return {"lottery": lottery, "status": "not-due"}
 
     current = now or datetime.now(cycle.tzinfo)

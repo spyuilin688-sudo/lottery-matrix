@@ -72,6 +72,7 @@ def test_lottery_code_mapping_is_shared_by_result_and_card(lottery: str, code: s
         "lottery": lottery,
         "lotteryCode": code,
         "period": "115203",
+        "drawDate": "2026-09-03",
     }
     _assert_timestamp(card["occurredAt"])
 
@@ -90,6 +91,7 @@ def test_matrix_status_event_maps_status_label(status: str, label: str) -> None:
         "六合彩",
         "115203",
         {"summary": {"status": status}},
+        draw_date="2026-09-03",
     )
 
     assert event is not None
@@ -102,6 +104,7 @@ def test_matrix_status_event_maps_status_label(status: str, label: str) -> None:
         "period": "115203",
         "status": status,
         "statusLabel": label,
+        "drawDate": "2026-09-03",
     }
     _assert_timestamp(event["occurredAt"])
 
@@ -111,6 +114,7 @@ def test_dormant_status_produces_no_event() -> None:
         "今彩539",
         "115203",
         {"summary": {"status": "DORMANT"}},
+        draw_date="2026-09-03",
     ) is None
 
 
@@ -228,11 +232,13 @@ def test_matrix_status_event_deduplicates_status_upgrades_by_lottery_and_period(
         "今彩539",
         "115203",
         {"summary": {"status": "RESONANCE"}},
+        draw_date="2026-09-03",
     )
     critical = matrix_status_event(
         "今彩539",
         "115203",
         {"summary": {"status": "CRITICAL"}},
+        draw_date="2026-09-03",
     )
 
     assert resonance is not None

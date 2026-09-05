@@ -42,6 +42,19 @@ const RESULT_EVENT = {
   },
 };
 
+Deno.test("notification ingest preserves the draw date on card and status events", async () => {
+  for (const eventType of ["matrix_card", "matrix_status"] as const) {
+    const test = setup();
+    const payload = { lottery: "今彩539", lotteryCode: "539", period: "115000216", drawDate: "2026-09-05",
+      ...(eventType === "matrix_status" ? { status: "CRITICAL", statusLabel: "臨界" } : {}) };
+    const response = await test.handler(request({ eventKey: `${eventType}:539:115000216`, eventType, source: "railway", occurredAt: "2026-09-06T00:01:00Z", payload }));
+    assertEquals(response.status, 200);
+    assertEquals(test.events[0].payload, payload);
+    const invalid = await test.handler(request({ eventKey: `${eventType}:539:115000216`, eventType, source: "railway", occurredAt: "2026-09-06T00:01:00Z", payload: { ...payload, drawDate: "2026-02-30" } }));
+    assertEquals(invalid.status, 400);
+  }
+});
+
 function setup(result: NotificationEventResult = {
   id: "event-1",
   eventKey: RESULT_EVENT.eventKey,
