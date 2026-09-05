@@ -68,7 +68,9 @@ terminates before a replacement may continue.
 ### Independent watchdog
 
 The AppDeploy admin backend owns `cron.json` and runs
-`matrix-independent-watchdog` on the `3/5 * * * *` Asia/Taipei grid. It reads
+`matrix-independent-watchdog` on the `3/6 * * * *` Asia/Taipei grid. Its
+logical checkpoints run every 6 minutes for 50 checks, every 10 minutes for 60
+checks, then every 30 minutes for 18 checks after each lottery's base call. It reads
 `system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
 from Supabase, then calls `POST /jobs/recover` only for a stuck, missing, failed
 analysis, or due-but-stale draw. A 20-minute atomic Supabase lease prevents
