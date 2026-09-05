@@ -141,7 +141,7 @@ const labels: Record<string, string[]> = {
     "durationType",
     "status",
     "createdAt",
-    "redeemedByMemberId",
+    "redeemedByLineDisplayName",
     "redeemedAt",
     "expiresAt",
     "batchId",
@@ -185,7 +185,7 @@ const zh: Record<string, string> = {
   code: "啟動碼",
   durationType: "啟動期限",
   createdAt: "建立時間",
-  redeemedByMemberId: "兌換會員",
+  redeemedByLineDisplayName: "兌換會員",
   redeemedAt: "兌換時間",
   expiresAt: "到期時間",
   batchId: "批次",
@@ -195,6 +195,25 @@ const text = (v: unknown) =>
   typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "—");
 const dateFields = new Set(["registeredAt", "planStartedAt", "planExpiresAt", "loginAt", "logoutAt", "operationTime", "paidAt", "createdAt", "redeemedAt", "expiresAt", "lastLoginAt", "lastOnlineAt"]);
 const displayValue = (field: string, value: unknown) => dateFields.has(field) ? formatAdminDateTime(value) : text(value);
+const redeemedActivationCode = (row: Row) => row.status === "used" || Boolean(row.redeemedAt || row.redeemedByLineDisplayName);
+
+async function writeClipboardText(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    if (!copied) throw new Error("COPY_FAILED");
+  }
+}
 const permissionEntries: Array<[PermissionKey, string]> = [
   ["view", "查看"],
   ["add", "新增"],
@@ -235,6 +254,10 @@ function AdminApp() {
   const [showProfileName, setShowProfileName] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [confirmation, setConfirmation] = useState<ConfirmationRequest | null>(null);
+  const [activationSelectionMode, setActivationSelectionMode] = useState(false);
+  const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
+  const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
+  const activationCopyFeedbackTimer = useRef<number | null>(null);
   const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) =>
     new Promise<boolean>((resolve) => setConfirmation({ ...request, resolve }));
   const finishConfirmation = (confirmed: boolean) => {
@@ -306,7 +329,16 @@ function AdminApp() {
     } finally { setBusy(false); }
   };
   useEffect(() => { void boot(false); }, []);
+  useEffect(() => () => {
+    if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
+  }, []);
+  const clearActivationSelection = () => {
+    setActivationSelectionMode(false);
+    setSelectedActivationCodeIds(new Set());
+    setActivationCopyFeedback("");
+  };
   const choose = (name: string) => {
+    clearActivationSelection();
     setActive(name);
     setDrawer(false);
     setShowForm(false);
@@ -412,6 +444,44 @@ function AdminApp() {
         }
       },
     );
+  };
+  const toggleActivationSelectionMode = () => {
+    setActivationSelectionMode((current) => !current);
+    setSelectedActivationCodeIds(new Set());
+    setActivationCopyFeedback("");
+  };
+  const toggleActivationCode = (id: string) => {
+    setSelectedActivationCodeIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setActivationCopyFeedback("");
+  };
+  const showActivationCopyFeedback = (message: string) => {
+    setActivationCopyFeedback(message);
+    if (activationCopyFeedbackTimer.current !== null) window.clearTimeout(activationCopyFeedbackTimer.current);
+    activationCopyFeedbackTimer.current = window.setTimeout(() => {
+      setActivationCopyFeedback("");
+      activationCopyFeedbackTimer.current = null;
+    }, 2000);
+  };
+  const copySelectedActivationCodes = async () => {
+    const codes = rows
+      .filter((row) => selectedActivationCodeIds.has(row.id))
+      .map((row) => String(row.code ?? ""))
+      .filter(Boolean);
+    if (codes.length === 0) {
+      showActivationCopyFeedback("請先勾選啟動碼");
+      return;
+    }
+    try {
+      await writeClipboardText(codes.join("\n"));
+      showActivationCopyFeedback(`已複製 ${codes.length} 組啟動碼`);
+    } catch {
+      showActivationCopyFeedback("複製失敗");
+    }
   };
   const saveAdmin = async () => {
     await runConfirmed(
@@ -684,15 +754,32 @@ function AdminApp() {
             <>
               <div className="toolbar">
                 <div>{rows.length} 筆資料</div>
-                {active === "啟動碼管理" && moduleCan("activationCodes", "edit", "add") && (
+                {active === "啟動碼管理" && (
+                  <div className="activationCodeToolbarActions">
+                    {activationCopyFeedback && <span className="activationCopyStatus" role="status">{activationCopyFeedback}</span>}
                     <button
-                      className="primary activationCodeAddButton"
-                      onClick={() => showForm ? setShowForm(false) : openActivationCodeForm()}
+                      className="compactButton activationCodeSelectButton"
+                      aria-pressed={activationSelectionMode}
+                      onClick={toggleActivationSelectionMode}
                     >
-                      <Plus size={15} />
-                      新增
+                      選取
                     </button>
-                  )}
+                    {activationSelectionMode && (
+                      <button className="compactButton activationCodeCopyButton" onClick={() => void copySelectedActivationCodes()}>
+                        複製
+                      </button>
+                    )}
+                    {moduleCan("activationCodes", "edit", "add") && (
+                      <button
+                        className="primary activationCodeAddButton"
+                        onClick={() => showForm ? setShowForm(false) : openActivationCodeForm()}
+                      >
+                        <Plus size={15} />
+                        新增
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               {showForm && active === "啟動碼管理" && (
                 <div className="formCard activationCodeFormCard">
@@ -741,6 +828,14 @@ function AdminApp() {
                 fields={fields}
                 canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
+                selection={active === "啟動碼管理" ? {
+                  enabled: activationSelectionMode,
+                  selectedIds: selectedActivationCodeIds,
+                  onToggle: toggleActivationCode,
+                } : undefined}
+                getDeleteDisabledReason={active === "啟動碼管理" && !isSuper
+                  ? (row) => redeemedActivationCode(row) ? "已兌換，僅超級管理員可刪除" : ""
+                  : undefined}
               />
             </>
           )}
@@ -1362,45 +1457,75 @@ function DataTable({
   fields,
   canDelete,
   onDelete,
+  selection,
+  getDeleteDisabledReason,
 }: {
   rows: Row[];
   fields: string[];
   canDelete: boolean;
   onDelete: (id: string) => void;
+  selection?: {
+    enabled: boolean;
+    selectedIds: ReadonlySet<string>;
+    onToggle: (id: string) => void;
+  };
+  getDeleteDisabledReason?: (row: Row) => string;
 }) {
   return (
     <div className="tableWrap">
       <table>
         <thead>
           <tr>
+            {selection?.enabled && <th scope="col">選取</th>}
             {fields.map((f) => (
-              <th key={f}>{zh[f] || f}</th>
+              <th scope="col" key={f}>{zh[f] || f}</th>
             ))}
-            {canDelete && <th>操作</th>}
+            {canDelete && <th scope="col">操作</th>}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={fields.length + (canDelete ? 1 : 0)} className="empty">
+              <td colSpan={fields.length + (canDelete ? 1 : 0) + (selection?.enabled ? 1 : 0)} className="empty">
                 目前沒有資料
               </td>
             </tr>
           ) : (
-            rows.map((r) => (
-              <tr key={r.id}>
-                {fields.map((f) => (
-                  <td key={f}>{displayValue(f, r[f])}</td>
-                ))}
-                {canDelete && (
-                  <td>
-                    <button className="danger" aria-label={`刪除啟動碼 ${text(r.code)}`} onClick={() => onDelete(r.id)}>
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))
+            rows.map((r) => {
+              const deleteDisabledReason = getDeleteDisabledReason?.(r) ?? "";
+              const deleteReasonId = `activation-delete-reason-${r.id}`;
+              return (
+                <tr key={r.id}>
+                  {selection?.enabled && (
+                    <td className="activationSelectionCell">
+                      <input
+                        type="checkbox"
+                        checked={selection.selectedIds.has(r.id)}
+                        onChange={() => selection.onToggle(r.id)}
+                        aria-label={`選取啟動碼 ${text(r.code)}`}
+                      />
+                    </td>
+                  )}
+                  {fields.map((f) => (
+                    <td key={f}>{displayValue(f, r[f])}</td>
+                  ))}
+                  {canDelete && (
+                    <td className="activationDeleteCell">
+                      <button
+                        className="danger"
+                        aria-label={`刪除啟動碼 ${text(r.code)}`}
+                        aria-describedby={deleteDisabledReason ? deleteReasonId : undefined}
+                        disabled={Boolean(deleteDisabledReason)}
+                        onClick={() => { if (!deleteDisabledReason) onDelete(r.id); }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      {deleteDisabledReason && <span id={deleteReasonId} className="activationDeleteRestriction">{deleteDisabledReason}</span>}
+                    </td>
+                  )}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

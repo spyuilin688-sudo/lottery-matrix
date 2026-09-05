@@ -149,7 +149,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   activationCodes: {
-    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_by_member_id,redeemed_at,status&order=created_at.desc&limit=200',
+    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(line_display_name)&order=created_at.desc&limit=200',
     map: (row) => ({
       id: String(row.id),
       batchId: row.batch_id,
@@ -157,7 +157,7 @@ const definitions: Record<string, TableDefinition> = {
       durationType: row.duration_type,
       createdAt: row.created_at,
       expiresAt: row.expires_at,
-      redeemedByMemberId: row.redeemed_by_member_id,
+      redeemedByLineDisplayName: (row.redeemed_member as Row | null)?.line_display_name ?? null,
       redeemedAt: row.redeemed_at,
       status: row.status,
     }),
@@ -510,6 +510,17 @@ export function createAdminData(transport: WriteTransport) {
   }
 
   async function deleteActivationCode(id: string, actor: AdminActor) {
+    const [activationCode] = await transport.selectRows<Row>(
+      'activation_codes',
+      `select=id,status,redeemed_at,redeemed_by_member_id&id=eq.${encodeURIComponent(id)}`,
+    );
+    if (!activationCode) throw new AdminDataError('找不到啟動碼', 404);
+    const redeemed = activationCode.status === 'used'
+      || Boolean(activationCode.redeemed_at)
+      || Boolean(activationCode.redeemed_by_member_id);
+    if (redeemed && actor.role !== '超級管理員') {
+      throw new AdminDataError('已兌換的啟動碼僅限超級管理員刪除', 403);
+    }
     return transport.supabaseRequest<{ deleted: boolean }>('rpc/admin_delete_activation_code', {
       method: 'POST',
       body: JSON.stringify({

@@ -42,19 +42,20 @@ Steps:
 
 Expected: 搜尋與狀態控制高度為 32px，搜尋卡高度依內容自動適配且沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE名稱、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗顯示 LINE名稱且「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
 
-## Test 4 - 審核轉帳、管理員權限與啟動碼刪除
+## Test 4 - 審核轉帳、管理員權限與啟動碼管理
 Viewport: desktop and mobile
-Covers: GET /api/data/transferRequests, members.line_display_name, PUT /api/transfer-requests/:id, DELETE /api/activation-codes/:id, payments linkage, activation_codes, admin_login_records, audit_logs, role module permissions, last-super and self-delete protection
-Description: 驗證營運管理員可審核轉帳與刪除啟動碼，查看人員只能查看，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
+Covers: GET /api/data/transferRequests, members.line_display_name, PUT /api/transfer-requests/:id, DELETE /api/activation-codes/:id, clipboard, payments linkage, activation_codes, admin_login_records, audit_logs, role module permissions, last-super and self-delete protection
+Description: 驗證營運管理員可審核轉帳、選取並複製啟動碼，但不能刪除已兌換啟動碼；查看人員只能查看，超級管理員保留已兌換碼刪除權限，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
 
 Steps:
 1. 以營運管理員進入「訂閱管理」的「轉帳申請」
 2. 對待審核申請點擊「確認」或「拒絕」，再完成二次確認
 3. 以查看人員重新登入並開啟相同頁面
 4. 以超級管理員登入並完成一次管理員操作，再檢查「登入紀錄」與「審計日誌」
-5. 以營運管理員進入「啟動碼管理」，建立一批啟動碼後刪除其中一筆並完成二次確認
+5. 以營運管理員進入「啟動碼管理」，確認已兌換碼的會員欄顯示 LINE 暱稱；點擊「選取」、勾選多組啟動碼並點擊「複製」
+6. 以營運管理員分別查看未兌換與已兌換碼的刪除操作，再以超級管理員查看已兌換碼的刪除操作
 
-Expected: 轉帳申請卡片使用緊湊間距，手機寬度下「確認」與「拒絕」維持同列且文字不直排；申請顯示 LINE名稱；取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；超級管理員本次登入與操作不新增紀錄，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
+Expected: 轉帳申請卡片使用緊湊間距，手機寬度下「確認」與「拒絕」維持同列且文字不直排；申請顯示 LINE名稱；取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；超級管理員本次登入與操作不新增紀錄，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；已兌換碼顯示 LINE 暱稱，複製內容依列表順序以換行分隔；營運管理員可刪除未兌換碼，但已兌換碼的刪除按鈕停用並顯示原因，後端與資料庫也拒絕繞過介面刪除；超級管理員的已兌換碼刪除按鈕維持可用。
 
 ## Test 5 - 概覽卡片、手機選單與分組系統狀態
 Viewport: mobile

@@ -196,7 +196,9 @@ describe('authorized Supabase writes', () => {
   it('deletes the selected activation code and records the deleted value', async () => {
     const deleteRows = vi.fn();
     const insertRows = vi.fn();
-    const selectRows = vi.fn();
+    const selectRows = vi.fn(async () => [{
+      id: 'code-1', status: 'unused', redeemed_at: null, redeemed_by_member_id: null,
+    }]);
     const supabaseRequest = vi.fn(async () => ({ deleted: true }));
     const data = createAdminData({
       insertRows,
@@ -215,9 +217,46 @@ describe('authorized Supabase writes', () => {
         p_actor_name: '管理員',
       }),
     });
-    expect(selectRows).not.toHaveBeenCalled();
+    expect(selectRows).toHaveBeenCalledWith(
+      'activation_codes',
+      'select=id,status,redeemed_at,redeemed_by_member_id&id=eq.code-1',
+    );
     expect(deleteRows).not.toHaveBeenCalled();
     expect(insertRows).not.toHaveBeenCalled();
+  });
+
+  it('rejects deleting a redeemed activation code for a non-super administrator', async () => {
+    const supabaseRequest = vi.fn();
+    const data = createAdminData({
+      insertRows: vi.fn(),
+      selectRows: vi.fn(async () => [{
+        id: 'code-used', status: 'used', redeemed_at: '2026-09-05T01:00:00Z', redeemed_by_member_id: 'member-1',
+      }]),
+      updateRows: vi.fn(),
+      deleteRows: vi.fn(),
+      supabaseRequest,
+    });
+
+    await expect(data.deleteActivationCode('code-used', { ...actor, role: '營運管理員' }))
+      .rejects.toMatchObject({ statusCode: 403 });
+    expect(supabaseRequest).not.toHaveBeenCalled();
+  });
+
+  it('allows a super administrator to delete a redeemed activation code', async () => {
+    const supabaseRequest = vi.fn(async () => ({ deleted: true }));
+    const data = createAdminData({
+      insertRows: vi.fn(),
+      selectRows: vi.fn(async () => [{
+        id: 'code-used', status: 'used', redeemed_at: '2026-09-05T01:00:00Z', redeemed_by_member_id: 'member-1',
+      }]),
+      updateRows: vi.fn(),
+      deleteRows: vi.fn(),
+      supabaseRequest,
+    });
+
+    await expect(data.deleteActivationCode('code-used', { ...actor, role: '超級管理員' }))
+      .resolves.toEqual({ deleted: true });
+    expect(supabaseRequest).toHaveBeenCalledTimes(1);
   });
 
   it('does not fall back to a non-transactional activation-code delete when the RPC fails', async () => {
@@ -225,7 +264,9 @@ describe('authorized Supabase writes', () => {
     const insertRows = vi.fn();
     const data = createAdminData({
       insertRows,
-      selectRows: vi.fn(),
+      selectRows: vi.fn(async () => [{
+        id: 'code-1', status: 'unused', redeemed_at: null, redeemed_by_member_id: null,
+      }]),
       updateRows: vi.fn(),
       deleteRows,
       supabaseRequest: vi.fn(async () => { throw new Error('audit failed'); }),

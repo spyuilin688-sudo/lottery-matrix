@@ -52,8 +52,8 @@
 .operationDialog p { color: #989ca5; }
 .operationDialog label { display: block; color: #989ca5; font-size: 12px; }
 .operationDialog label input, .operationDialog label select { margin-top: 6px; }
-.transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #24272d; }
-.transferRow > div:first-child { display: grid; gap: 4px; }
+.transferRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 5px 0; border-top: 1px solid #24272d; }
+.transferRow > div:first-child { display: grid; gap: 2px; }
 .transferRow span { color: #888d96; font-size: 12px; }
 .transferActions { display: flex; gap: 6px; }
 .transferActions button { width: auto; min-width: 52px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid #30333a; border-radius: 8px; background: #15181d; color: #c9cbd1; white-space: nowrap; cursor: pointer; }
@@ -87,9 +87,17 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .metric span { font-size: 12px; }
 .metric strong { font-size: 23px; }
 .panel { padding: 14px; }
-.transferPanel { margin-top: 10px; }
-.panel.transferPanel { padding: 10px; }
-.transferPanel h2 { margin-bottom: 6px; }
+.transferPanel { margin-top: 8px; }
+.panel.transferPanel { padding: 8px 10px; }
+.transferPanel h2 { margin: 0 0 4px; }
+.activationCodeToolbarActions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.activationCopyStatus { color: #a4a8b0; font-size: 12px; }
+.activationCodeSelectButton[aria-pressed="true"] { border-color: #8c6d28; background: #272115; color: #f0d98f; }
+.activationSelectionCell { width: 44px; text-align: center; }
+.activationSelectionCell input { width: 18px; height: 18px; accent-color: #c99b3d; cursor: pointer; }
+.activationDeleteCell { min-width: 140px; }
+.activationDeleteRestriction { display: block; max-width: 132px; margin-top: 4px; color: #888d96; font-size: 11px; line-height: 1.35; }
+.activationDeleteCell .danger:disabled { cursor: not-allowed; opacity: .45; }
 .revenueActions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .revenueResetButton { min-width: 88px; border-color: #6f3737; background: #241616; color: #efabab; }
 .revenueResetButton:hover:not(:disabled),
@@ -134,7 +142,9 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
   .transferRow { grid-template-columns: 1fr auto; }
-  .transferRow .transferActions { grid-column: 1 / -1; display: flex; flex-wrap: nowrap; justify-self: start; }
+  .transferRow > div:first-child { grid-row: 1 / span 2; }
+  .transferRow .transferActions { grid-column: 2; grid-row: 2; display: flex; flex-wrap: nowrap; justify-self: end; }
+  .activationCodeToolbarActions { justify-content: flex-start; }
   .managementCard > .compactButton { width: 100%; margin-top: 10px; }
   .pagination { justify-content: center; }
   .userInfoRows > div { grid-template-columns: 105px minmax(0, 1fr); }

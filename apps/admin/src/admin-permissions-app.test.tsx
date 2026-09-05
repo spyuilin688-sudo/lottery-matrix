@@ -45,7 +45,10 @@ const app = vi.hoisted(() => {
     if (url === '/api/data/users') return { data: { items: [{ id: 'member-1', status: 'active' }] } };
     if (url === '/api/data/subscriptions') return { data: { items: [{ id: 'member-1', status: 'active' }] } };
     if (url === '/api/data/plans' || url === '/api/data/transferRequests') return { data: { items: [] } };
-    if (url === '/api/data/activationCodes') return { data: { items: [{ id: 'code-1', code: 'ABC-123' }] } };
+    if (url === '/api/data/activationCodes') return { data: { items: [
+      { id: 'code-1', code: 'ABCD-EFGH-IJKL-MNOP', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
+      { id: 'code-2', code: 'QRST-UVWX-YZ12-3456', status: 'used', redeemedAt: '2026-09-05T01:00:00Z', redeemedByLineDisplayName: '兌換者' },
+    ] } };
     return { data: { items: [] } };
   });
   return {
@@ -86,6 +89,10 @@ describe('administrator operation permission editing', () => {
       role: '超級管理員',
       permissions: { view: true, add: true, edit: true, delete: true },
     };
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn(async () => undefined) },
+    });
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -173,6 +180,62 @@ describe('administrator operation permission editing', () => {
     await act(async () => buttonWithText(container, '啟動碼管理')?.click());
     await settle();
     expect(buttonWithText(container, '新增')).toBeUndefined();
-    expect(container.querySelector('[aria-label="刪除啟動碼 ABC-123"]')).toBeNull();
+    expect(container.querySelector('[aria-label="刪除啟動碼 ABCD-EFGH-IJKL-MNOP"]')).toBeNull();
+  });
+
+  it('copies multiple checked activation codes one per line', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await settle();
+
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+    await act(async () => buttonWithText(container, '選取')?.click());
+
+    const first = container.querySelector<HTMLInputElement>('[aria-label="選取啟動碼 ABCD-EFGH-IJKL-MNOP"]');
+    const second = container.querySelector<HTMLInputElement>('[aria-label="選取啟動碼 QRST-UVWX-YZ12-3456"]');
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    await act(async () => {
+      first?.click();
+      second?.click();
+    });
+    await act(async () => buttonWithText(container, '複製')?.click());
+    await settle();
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'ABCD-EFGH-IJKL-MNOP\nQRST-UVWX-YZ12-3456',
+    );
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('已複製 2 組啟動碼');
+  });
+
+  it('disables redeemed-code deletion for an operations administrator but keeps unused deletion available', async () => {
+    app.state.admin = {
+      id: 'admin-1',
+      account: 'operator@example.com',
+      name: '營運管理員',
+      role: '營運管理員',
+      permissions: { view: true, add: true, edit: true, delete: true },
+      modulePermissions: { activationCodes: { view: true, edit: true } },
+    };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+
+    expect(container.querySelector<HTMLButtonElement>('[aria-label="刪除啟動碼 ABCD-EFGH-IJKL-MNOP"]')?.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>('[aria-label="刪除啟動碼 QRST-UVWX-YZ12-3456"]')?.disabled).toBe(true);
+    expect(container.textContent).toContain('已兌換，僅超級管理員可刪除');
+  });
+
+  it('keeps redeemed-code deletion enabled for a super administrator', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await settle();
+    await act(async () => buttonWithText(container, '啟動碼管理')?.click());
+    await settle();
+
+    expect(container.querySelector<HTMLButtonElement>('[aria-label="刪除啟動碼 QRST-UVWX-YZ12-3456"]')?.disabled).toBe(false);
   });
 });
