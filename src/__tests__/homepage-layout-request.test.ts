@@ -73,7 +73,7 @@ describe("homepage requested spacing and selection", () => {
     expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
-    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop).toBe("6px");
+    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop).toBe("0px");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
