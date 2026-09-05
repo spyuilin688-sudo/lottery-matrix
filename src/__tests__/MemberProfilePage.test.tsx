@@ -99,6 +99,44 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it('PWA 回傳確認前維持登入中，完成後只提示一次並回首頁', async () => {
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    let complete!: (value: string) => void;
+    lineAuth.signInWithLine.mockReturnValue(new Promise((resolve) => { complete = resolve; }));
+    const onNavigate = vi.fn();
+    render(<ProfilePage onNavigate={onNavigate} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'LINE 登入' }));
+    act(() => supabase.emitAuthState('SIGNED_IN', { access_token: 'early-broadcast' }));
+    expect(screen.getByRole('button', { name: '登入中…' })).toBeDisabled();
+    expect(appDialog.alert).not.toHaveBeenCalled();
+    await act(async () => { complete('pwa'); });
+    expect(appDialog.alert).toHaveBeenCalledExactlyOnceWith({ title: '登入成功', tone: 'success' });
+    expect(onNavigate).toHaveBeenCalledExactlyOnceWith('home');
+    expect(window.sessionStorage.getItem('matrix-line-login-pending')).toBeNull();
+  });
+
+  it('PWA 視窗失聯後重新讀到 session 時保留登入並回首頁', async () => {
+    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    lineAuth.signInWithLine.mockRejectedValue(new Error('LINE_LOGIN_INCOMPLETE'));
+    const onNavigate = vi.fn();
+    render(<ProfilePage onNavigate={onNavigate} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'LINE 登入' }));
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('home'));
+    expect(screen.getByRole('button', { name: '登出' })).toBeInTheDocument();
+    expect(appDialog.alert).toHaveBeenCalledExactlyOnceWith({ title: '登入成功', tone: 'success' });
+  });
+
+  it('PWA 視窗失聯且 session 無法確認時提供重新檢查', async () => {
+    supabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockRejectedValueOnce(new Error('unavailable'));
+    lineAuth.signInWithLine.mockRejectedValue(new Error('LINE_LOGIN_INCOMPLETE'));
+    render(<ProfilePage onNavigate={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'LINE 登入' }));
+    expect(await screen.findByRole('button', { name: '重新檢查' })).toBeInTheDocument();
+    expect(appDialog.alert).not.toHaveBeenCalledWith({ title: '登入成功', tone: 'success' });
+  });
+
   it("moves the combined support entry below legal information and removes its duplicate entries", () => {
     render(<ProfilePage onNavigate={vi.fn()} />);
 

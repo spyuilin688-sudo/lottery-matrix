@@ -18,18 +18,27 @@ import "./notification-visual-refinement.css";
 import "./number-reference-visual-refinement.css";
 
 import { registerPushServiceWorker } from "./push-subscription";
-import { installVisitorTracking } from "./visitor-counts";
+import { finishLineLoginPopup } from './auth/line-login-popup';
+import { getSupabaseClient } from './lib/supabase';
+import { installVisitorTracking } from './visitor-counts';
 
 installGlobalInputBehavior();
-const stopVisitorTracking = installVisitorTracking();
-if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
 
 if ('serviceWorker' in navigator) {
   void registerPushServiceWorker().catch(() => undefined);
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const root = document.getElementById('root')!;
+const renderApp = () => {
+  const stopVisitorTracking = installVisitorTracking();
+  if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
+  ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+};
+root.textContent = '正在開啟樂彩 Matrix…';
+void finishLineLoginPopup(getSupabaseClient).then((handled) => {
+  if (!handled) renderApp();
+}).catch(renderApp);
