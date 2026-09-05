@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../FeaturePages';
 
@@ -13,6 +13,7 @@ vi.mock('../matrix-algorithm-api', () => matrixApi);
 
 const envelope = {
   kind: 'tianyan', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: '114000123:v1', status: 'complete', total: 1,
+  duplicateStats: [{ number: '14', count: 3 }, { number: '27', count: 2 }],
   items: [{
     id: 'tianyan-api-1', number: '07', lockedPosition: 1, predictionDistance: 1,
     consecutive: '準11進12', highestStreak: 11, predictionNumbers: ['14', '27'],
@@ -58,12 +59,43 @@ test('天衍連準篩選固定為指定五項', async () => {
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledWith({
     lottery: '今彩539', exploreDateOffset: 0,
     selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
+    sameCode: false,
   });
   fireEvent.click(screen.getByRole('button', { name: /連準篩選/ }));
   for (const label of ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18']) {
     expect(screen.getByRole('button', { name: label })).toBeTruthy();
   }
   expect(screen.queryByRole('button', { name: '準5進6' })).toBeNull();
+});
+
+test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩選', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  const stat = await screen.findByRole('button', { name: '篩選預測號碼 14，3次' });
+  fireEvent.click(stat);
+
+  await waitFor(() => expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith({
+    lottery: '今彩539', exploreDateOffset: 0,
+    selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
+    sameCode: false,
+    predictionNumber: '14',
+  }));
+  expect(screen.getByRole('button', { name: '篩選預測號碼 14，3次' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+test('天衍同碼篩選比照 Matrix 探索送出相同篩選規則', async () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  await screen.findByText('14.27');
+
+  fireEvent.click(screen.getByRole('button', { name: '同碼' }));
+
+  await waitFor(() => expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith({
+    lottery: '今彩539', exploreDateOffset: 0,
+    selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
+    sameCode: true,
+  }));
 });
 
 test('天衍結果依兩條規則分類並保留 Matrix 探索欄位呈現', async () => {

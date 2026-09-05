@@ -49,7 +49,7 @@ describe("Matrix result visual contract", () => {
     const count = cssRule(css, ".matrix-explore-main-screen .result-title .result-count .numeric-text");
     const header = cssRule(css, ".matrix-explore-main-screen .road-results-head");
     const result = cssRule(css, ".matrix-explore-main-screen .road-results article + article");
-    const sameCode = cssRule(css, '.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"]');
+    const sameCode = cssRule(css, '.matrix-explore-main-screen .road-results article[data-number-group-start="true"]');
 
     expect(count).toMatch(/color:\s*#a7d8ea/i);
     expect(header).toMatch(/border-bottom:\s*1px solid rgba\(117,\s*83,\s*41,\s*\.82\)/);

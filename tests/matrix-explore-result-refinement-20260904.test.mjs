@@ -31,7 +31,7 @@ test("點擊重複號碼小卡後使用與同碼相同的群組排序", () => {
 });
 
 test("探索結果表頭文字到底部分隔線保留 5px", () => {
-  assert.match(spacingCss, /matrix-explore-main-screen:not\(\.matrix-tianyan-screen\) \.road-results-head[\s\S]*?align-items:\s*end;[\s\S]*?padding-bottom:\s*5px;/);
+  assert.match(spacingCss, /matrix-explore-main-screen \.road-results-head[\s\S]*?align-items:\s*end;[\s\S]*?padding-bottom:\s*5px;/);
 });
 
 test("探索展開內容上下分隔線到摘要與本期預測皆為 12px", () => {

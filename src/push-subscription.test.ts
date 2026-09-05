@@ -203,6 +203,7 @@ describe('PWA push subscriptions', () => {
 
   it('reuses an existing browser subscription and saves it again', async () => {
     requestPermission.mockResolvedValue('granted');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: true });
 
     await expect(enablePushNotifications('BElong-key', true)).resolves.toEqual({
       supported: true,
@@ -216,6 +217,46 @@ describe('PWA push subscriptions', () => {
       p256dh: 'p256dh-value',
       auth: 'auth-value',
     });
+  });
+
+  it('replaces a disabled endpoint before saving a fresh browser subscription', async () => {
+    requestPermission.mockResolvedValue('granted');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: false });
+    const renewed = {
+      endpoint: 'https://push.test/renewed',
+      toJSON: () => ({ endpoint: 'https://push.test/renewed', keys: { p256dh: 'new-key', auth: 'new-auth' } }),
+    };
+    subscribe.mockResolvedValue(renewed);
+
+    await expect(enablePushNotifications('BElong-key', true)).resolves.toMatchObject({ enabled: true });
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(unsubscribe.mock.invocationCallOrder[0]).toBeLessThan(subscribe.mock.invocationCallOrder[0]);
+    expect(memberApi.savePushSubscription).toHaveBeenCalledWith({
+      endpoint: 'https://push.test/renewed', p256dh: 'new-key', auth: 'new-auth',
+    });
+  });
+
+  it('does not replace or save a subscription when its server status cannot be read', async () => {
+    requestPermission.mockResolvedValue('granted');
+    memberApi.fetchPushSubscriptionStatus.mockRejectedValue(new Error('offline'));
+
+    await expectFixedFailure(enablePushNotifications('BElong-key', true), 'granted', 'supabase-save');
+
+    expect(unsubscribe).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
+  });
+
+  it('does not revive a disabled endpoint if browser unsubscription fails', async () => {
+    requestPermission.mockResolvedValue('granted');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: false });
+    unsubscribe.mockResolvedValue(false);
+
+    await expectFixedFailure(enablePushNotifications('BElong-key', true), 'granted', 'browser-subscription');
+
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(memberApi.savePushSubscription).not.toHaveBeenCalled();
   });
 
   it('reads the authenticated member subscription status without requesting permission', async () => {

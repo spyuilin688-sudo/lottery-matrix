@@ -1163,16 +1163,16 @@
 }
 
 /* Matrix Explore result table alignment and same-code grouping. */
-.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results-head {
+.matrix-explore-main-screen .road-results-head {
   align-items: end;
   padding-bottom: 5px;
 }
 
-.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article[data-number-group-start="true"] {
+.matrix-explore-main-screen .road-results article[data-number-group-start="true"] {
   border-top: 0.7px solid rgba(230, 183, 106, .72);
 }
 
-.matrix-explore-main-screen:not(.matrix-tianyan-screen) .road-results article:first-child {
+.matrix-explore-main-screen .road-results article:first-child {
   border-top: 0;
 }
 

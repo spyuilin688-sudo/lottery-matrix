@@ -128,12 +128,26 @@ export function enablePushNotifications(publicKey: string, authenticated = false
 
     let input: ReturnType<typeof subscriptionInput>;
     try {
-      const subscription = await pushManager.getSubscription() ?? await pushManager.subscribe({
+      let subscription = await pushManager.getSubscription();
+      if (subscription) {
+        let enabled: boolean;
+        try {
+          ({ enabled } = await fetchPushSubscriptionStatus(subscription.endpoint));
+        } catch {
+          return failure(resolvedPermission, false, 'supabase-save');
+        }
+        if (!enabled) {
+          if (!await subscription.unsubscribe()) return failure(resolvedPermission, false, 'browser-subscription');
+          subscription = null;
+        }
+      }
+      subscription ??= await pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
       input = subscriptionInput(subscription);
-    } catch {
+    } catch (error) {
+      if (error instanceof PushSubscriptionError) throw error;
       return failure(resolvedPermission, false, 'browser-subscription');
     }
     if (!input) return failure(resolvedPermission, false, 'browser-subscription');
