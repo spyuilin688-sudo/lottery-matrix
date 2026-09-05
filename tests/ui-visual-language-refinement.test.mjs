@@ -7,7 +7,6 @@ const homeCss = readLocalCss("src/homepage-repair.css");
 const navCss = readFileSync(new URL("../src/prototype.css", import.meta.url), "utf8");
 const featureCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const canonicalFeatureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-const navSource = readFileSync(new URL("../src/BottomNavigation.tsx", import.meta.url), "utf8");
 
 function ruleBodies(source, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -80,11 +79,7 @@ test("draw footer reference uses zero parent gap and no parent divider lines", (
   assert.doesNotMatch(footer, /border-top\s*:/);
 });
 
-test("bottom navigation exposes homepage-only double-tap quick settings without changing four primary columns", () => {
-  assert.match(navSource, /showQuickSettings\?: boolean/);
-  assert.match(navSource, /showQuickSettings && onQuickConfigure \? \(/);
-  assert.match(navSource, /handleQuickSettingsClick/);
-  assert.doesNotMatch(navSource, /QUICK_LONG_PRESS_MS|onPointerDown|onPointerUp|onPointerCancel|setPointerCapture|長按/);
+test("bottom navigation keeps four primary columns with a separately positioned quick settings entry", () => {
   assert.equal(finalDeclaration(navCss, ".bottom-navigation", "grid-template-columns"), "repeat(4, minmax(0, 1fr))");
   assert.equal(finalDeclaration(navCss, ".bottom-navigation-quick-settings", "position"), "absolute");
 });

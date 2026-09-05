@@ -1,5 +1,6 @@
 import {
   Children,
+  Fragment,
   cloneElement,
   isValidElement,
   useLayoutEffect,
@@ -48,6 +49,10 @@ function formatRoadSummaryNode(node: ReactNode): ReactNode {
   if (!isValidElement<SummaryElementProps>(node)) return node;
 
   const element = node as ReactElement<SummaryElementProps>;
+  if (element.type === Fragment) {
+    return cloneElement(element, undefined, Children.map(element.props.children, formatRoadSummaryNode));
+  }
+
   const classNames = element.props.className?.split(/\s+/).filter(Boolean) ?? [];
   const isSamePeriod = classNames.includes("validation-summary-position") && element.props.children === "同期";
   const nextChildren = classNames.includes("validation-summary-formula")

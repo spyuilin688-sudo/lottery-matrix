@@ -82,21 +82,58 @@ describe("BottomNavigation", () => {
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
   });
 
-  it("右下快捷設定按鈕只在指定時顯示，連續點擊兩下才開啟設定", () => {
-    vi.useFakeTimers();
+  it("快捷設定入口只在顯示設定且提供處理函式時出現", () => {
     const onQuickConfigure = vi.fn();
     const { rerender } = render(<BottomNavigation onQuickConfigure={onQuickConfigure} />);
 
-    expect(screen.queryByRole("button", { name: "快捷設定，連續點擊兩下開啟" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
+
+    rerender(<BottomNavigation showQuickSettings />);
+    expect(screen.queryByRole("button", { name: /快捷設定/ })).not.toBeInTheDocument();
 
     rerender(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+    expect(screen.getByRole("button", { name: /快捷設定/ })).toBeVisible();
+    expect(onQuickConfigure).not.toHaveBeenCalled();
+  });
+
+  it("快捷設定保留鍵盤及輔助操作的原生 click 入口", () => {
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+
+    fireEvent.click(screen.getByRole("button", { name: /快捷設定/ }), { detail: 0 });
+
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([500, 799])("快捷設定與自訂觸發條件一樣雙擊開啟，兩次點擊相隔 %ims", (intervalMs) => {
+    vi.useFakeTimers();
+    const onQuickConfigure = vi.fn();
+    const onQuickOpen = vi.fn();
+    render(<BottomNavigation onQuickConfigure={onQuickConfigure} onQuickOpen={onQuickOpen} showQuickSettings />);
     const settingsButton = screen.getByRole("button", { name: "快捷設定，連續點擊兩下開啟" });
 
     fireEvent.click(settingsButton, { detail: 1 });
+    vi.advanceTimersByTime(intervalMs);
     expect(onQuickConfigure).not.toHaveBeenCalled();
-    fireEvent.click(settingsButton, { detail: 1 });
 
+    fireEvent.click(settingsButton, { detail: 1 });
     expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+    expect(onQuickOpen).not.toHaveBeenCalled();
+
+    fireEvent.click(settingsButton, { detail: 1 });
+    expect(onQuickConfigure).toHaveBeenCalledTimes(1);
+  });
+
+  it("快捷設定沿用既有雙擊判定，間隔達 800ms 的點擊不開啟", () => {
+    vi.useFakeTimers();
+    const onQuickConfigure = vi.fn();
+    render(<BottomNavigation onQuickConfigure={onQuickConfigure} showQuickSettings />);
+    const settingsButton = screen.getByRole("button", { name: /快捷設定/ });
+
+    fireEvent.click(settingsButton, { detail: 1 });
+    vi.advanceTimersByTime(800);
+    fireEvent.click(settingsButton, { detail: 1 });
+    expect(onQuickConfigure).not.toHaveBeenCalled();
   });
 
   it.each([
