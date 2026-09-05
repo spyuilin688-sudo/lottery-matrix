@@ -4,7 +4,7 @@
   "scripts/prepare-sites-build.mjs": "27a075dd9d312787a21631245d1dc6c304fd4b1420cba7177aba91aaa0240239",
   "scripts/update-mobile-runtime-lock.mjs": "15d0c06425b507e5cecede96bb8b15a146ab12a7b353ddf9b57179d3056dfae3",
   "vite.config.ts": "afb5d8a275e5498a06c04b77b4683652a6b0ba0140de6c9ee064554cae026253",
-  "src/main.tsx": "271bdde6af09f9ab26d7e8c853d6598cea74cabd79dce71163b8802d2b13ffe5",
+  "src/main.tsx": "1f8a87a46f010da271e45f55053090904f59fa2c1171439daa1ab4455ece094f",
   "src/mobile/BottomSheet.tsx": "f9c376dc78b8b5feb1c8752aa23414993ab66013d11e81b2ebb8342c570032ac",
   "src/mobile/Carousel.tsx": "242f4a7488e18c35e9b43651c9d5877288655a6f9f1734e03e56108f17526bf7",
   "src/mobile/Device.tsx": "a98f4e934336efd7f2fdd3459493c5e5c2278ba23b8ebc0673706e417582fea3",

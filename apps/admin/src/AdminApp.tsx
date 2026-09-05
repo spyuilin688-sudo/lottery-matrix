@@ -42,6 +42,9 @@ import { NotificationManagement } from "./NotificationManagement";
 import { AdminTodos } from "./AdminTodos";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
+  todayVisitors: number | null;
+  monthVisitors: number | null;
+  totalVisitors: number | null;
   totalUsers: number;
   monthlyPro: number;
   quarterlyPro: number;
@@ -1138,6 +1141,9 @@ function Overview({ d }: { d: Dashboard }) {
     <>
       <Cards
         items={[
+          ["本日瀏覽人數", d.todayVisitors == null ? "—" : String(d.todayVisitors)],
+          ["本月瀏覽人數", d.monthVisitors == null ? "—" : String(d.monthVisitors)],
+          ["總瀏覽人數", d.totalVisitors == null ? "—" : String(d.totalVisitors)],
           ["總用戶數", String(d.totalUsers)],
           ["Matrix Pro 月費用戶數", String(d.monthlyPro)],
           ["Matrix Pro 季費用戶數", String(d.quarterlyPro)],

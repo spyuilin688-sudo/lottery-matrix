@@ -234,9 +234,10 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
   const resetFilter = resetTime === null
     ? ''
     : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
-  const [members, paymentRows] = await Promise.all([
+  const [members, paymentRows, visitorStats] = await Promise.all([
     api.request<Row[]>('/rest/v1/members?select=plan_expires_at,current_plan:plans!members_current_plan_id_fkey(duration_days)&limit=10000'),
     listDashboardPayments(api, resetFilter),
+    api.request<{ todayVisitors: number; monthVisitors: number; totalVisitors: number }>('/rest/v1/rpc/admin_visitor_stats', { method: 'POST', body: '{}' }).catch(() => null),
   ]);
   const payments = paymentRows
     .filter((row) => row.status === 'confirmed'
@@ -261,6 +262,9 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
   }).length;
 
   return {
+    todayVisitors: visitorStats?.todayVisitors ?? null,
+    monthVisitors: visitorStats?.monthVisitors ?? null,
+    totalVisitors: visitorStats?.totalVisitors ?? null,
     totalUsers: members.length,
     monthlyPro: members.filter((member) => duration(member) === 30).length,
     quarterlyPro: members.filter((member) => duration(member) === 90).length,

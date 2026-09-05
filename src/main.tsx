@@ -18,8 +18,11 @@ import "./notification-visual-refinement.css";
 import "./number-reference-visual-refinement.css";
 
 import { registerPushServiceWorker } from "./push-subscription";
+import { installVisitorTracking } from "./visitor-counts";
 
 installGlobalInputBehavior();
+const stopVisitorTracking = installVisitorTracking();
+if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
 
 if ('serviceWorker' in navigator) {
   void registerPushServiceWorker().catch(() => undefined);

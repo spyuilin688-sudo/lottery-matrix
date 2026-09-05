@@ -87,6 +87,8 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 ## Navigation, async and recovery
 
+2026-09-05：營運概覽新增本日瀏覽人數、本月瀏覽人數、總瀏覽人數，沿用既有 Cards 與手機排列。匿名識別雜湊保留 90 天，清除後再次造訪重新累加總瀏覽人數；彙總人數保留。日期沿用 Asia/Taipei。
+
 使用者於 2026-09-05 確認：快捷設定與自訂觸發條件一樣，皆為雙擊開啟。兩個設定入口沿用共用的 `useDoubleClickAction`；對應行為驗證位於 `BottomNavigation.test.tsx` 與 `MatrixStatusPage.test.tsx`。快捷設定的雙擊測試屬於正式規格驗證。
 
 Bottom navigation, feature back actions and existing routes remain the navigation owners. Async actions prevent duplicates, expose busy state, preserve user-entered data on recoverable failure and ignore stale completions after unmount where their existing request owner supports cancellation or revision tracking. No direct action may use an empty handler, empty link, dummy request or success copy without a completed operation.
