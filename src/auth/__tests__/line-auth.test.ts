@@ -64,6 +64,42 @@ afterEach(() => {
 });
 
 describe('LINE auth helper', () => {
+  it.each([
+    { name: 'Android fullscreen PWA', userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 },
+    { name: 'iPhone home-screen PWA', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
+    { name: 'iPad desktop user agent', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
+  ])('keeps $name in its original auth context with LINE web SSO', async (device) => {
+    vi.stubGlobal('navigator', device);
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+    try {
+      await signInWithLine(undefined, { auth: { signInWithOAuth } } as unknown as SupabaseClient);
+      expect(open).not.toHaveBeenCalled();
+      expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
+        provider: 'custom:line',
+        options: {
+          redirectTo: new URL('/', window.location.origin).href,
+          queryParams: { disable_auto_login: 'true' },
+        },
+      });
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it('preserves native LINE auto login in a regular Android browser tab', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 16) Mobile', maxTouchPoints: 5 });
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+    try {
+      await signInWithLine(undefined, { auth: { signInWithOAuth } } as unknown as SupabaseClient);
+      expect(open).not.toHaveBeenCalled();
+      expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
+        provider: 'custom:line', options: { redirectTo: new URL('/', window.location.origin).href },
+      });
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it('opens an installed fullscreen PWA login window before OAuth starts', async () => {
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);

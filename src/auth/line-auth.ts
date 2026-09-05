@@ -11,7 +11,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
-import { isPwaDisplayMode } from '../pwa-display-mode';
+import { isMobilePwa, isPwaDisplayMode } from '../pwa-display-mode';
 import { signInWithLinePopup } from './line-login-popup';
 
 const SESSION_READ_TIMEOUT_MS = 2_500;
@@ -77,13 +77,20 @@ export async function signInWithLine(
   client: SupabaseClient = getSupabaseClient(),
 ) {
   const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
-  if (isPwaDisplayMode()) {
+  const mobilePwa = isMobilePwa();
+  if (isPwaDisplayMode() && !mobilePwa) {
     const popupLogin = signInWithLinePopup(approvedRedirect, client);
     if (popupLogin) return popupLogin;
   }
   const { error } = await client.auth.signInWithOAuth({
     provider: 'custom:line',
-    options: { redirectTo: approvedRedirect },
+    options: {
+      redirectTo: approvedRedirect,
+      // Mobile native LINE auto login can return to a new browser tab, losing
+      // the PWA's navigation context. Web SSO keeps its in-app authorization
+      // navigation intact so the in-scope callback can return to the PWA.
+      ...(mobilePwa ? { queryParams: { disable_auto_login: 'true' } } : {}),
+    },
   });
 
   if (error) throw error;
