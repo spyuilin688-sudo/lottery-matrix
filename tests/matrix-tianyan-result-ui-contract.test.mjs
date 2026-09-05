@@ -1,10 +1,9 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 // Tianyan reuses Matrix Explore filters and only renders historical rules that actually hit.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
-const source = readFeaturePagesSource();
+const source = readFileSync('src/FeaturePages.tsx', 'utf8');
 const api = readFileSync('src/matrix-algorithm-api.ts', 'utf8');
 const spacing = readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const migration = readdirSync('supabase/migrations')
