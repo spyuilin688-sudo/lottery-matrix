@@ -106,3 +106,17 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - Premium audit: strict audit over `src` only; Tasks 7–9 own the currently planned action, form, textarea and scrollbar corrections.
 - Runtime verification: project unit, Node, typecheck and build commands plus real-browser checks for native popup/calendar, failure, keyboard, narrow viewport and forced-colors behavior when the owning task changes those surfaces.
 - Canonical sibling comparison: existing feature pages inside `FeatureShell`, profile direct logout, native select fields and native date fields.
+
+
+## LINE login return — 2026-09-05
+
+- User request: opening LINE login from the installed PWA must return to the PWA.
+- The existing login button starts a controlled authorization window where the
+  browser supports one. Successful session import returns the original PWA to
+  home through SPA navigation and uses the existing success dialog.
+- Fullscreen (the current manifest setting), standalone, minimal-ui and iOS
+  home-screen mode share detection with the install UI.
+- Ordinary browser login keeps the existing origin-root redirect. Unsupported
+  popup or lost native-app window relationships have a working browser fallback;
+  automated tests do not claim physical-device LINE return was verified.
+- No page geometry, shortcuts, provider scopes or callback allowlist changes.

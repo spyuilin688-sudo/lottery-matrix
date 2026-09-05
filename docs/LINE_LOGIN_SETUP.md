@@ -102,3 +102,23 @@ boundaries, but it is not a live-provider result. The following items are
 Do not represent the mock results as proof that real LINE login or real revoke
 works. Perform those checks only with authorized live credentials and the
 actual production callback and PWA origin settings.
+
+## Installed PWA return behavior
+
+Installed fullscreen/standalone/minimal-ui apps attempt a script-controlled
+OAuth window, created directly from the login click. The return URL remains the
+exact approved origin root. The temporary callback hands its session to the
+original PWA only after matching the origin, window source and one-time attempt
+ID; it closes after the PWA acknowledges importing that session. The callback
+does not mount the member-presence UI while waiting.
+
+The optional LINE revoke token is read from the existing callback fragment before
+Supabase clears it, then transferred only in memory to the original PWA. It is
+never added to a new URL, log, or storage record. The popup storage marker contains
+only a random ID and timestamp.
+
+If the browser cannot provide a controllable window, login uses its original
+redirect flow. If a native LINE handoff loses the opener or opens a new browser
+tab, that callback loads the normal application. Automatic foreground return is
+not guaranteed in those cases. Verify the actual installed Android/iOS/desktop
+app with a live LINE account; unit tests cannot establish OS-level return behavior.

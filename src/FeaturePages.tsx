@@ -4066,6 +4066,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const [authState, setAuthState] = useState<ProfileAuthState>("initializing");
   const [authRetrying, setAuthRetrying] = useState(false);
   const [authCheckRevision, setAuthCheckRevision] = useState(0);
+  const lineLoginInProgress = useRef(false);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
@@ -4077,6 +4078,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     const client = getSupabaseClient();
     const applySession = (session: unknown) => {
       if (!active) return;
+      // Supabase can broadcast the callback session before the PWA handoff is
+      // acknowledged. Keep the login button pending until this attempt settles.
+      if (session && lineLoginInProgress.current) return;
       setAuthRetrying(false);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
@@ -4172,19 +4176,50 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       } else {
         setAuthState("signing-in");
         markLineLoginAttempt();
+        lineLoginInProgress.current = true;
         try {
-          await signInWithLine();
+          const completedInPwa = await signInWithLine();
+          if (completedInPwa === 'pwa') {
+            clearLineLoginAttempt();
+            setAuthState('authenticated');
+            await alertDialog({ title: '登入成功', tone: 'success' });
+            onNavigate('home');
+          }
         } catch (error) {
           clearLineLoginAttempt();
           throw error;
+        } finally {
+          lineLoginInProgress.current = false;
         }
       }
     } catch (error) {
-      setAuthState(action === "logout"
-        && error instanceof Error
-        && error.message === "SUPABASE_SIGN_OUT_UNCERTAIN"
-        ? "degraded"
-        : action === "logout" ? "authenticated" : "anonymous");
+      if (action === 'login' && error instanceof Error && error.message === 'LINE_LOGIN_INCOMPLETE') {
+        // The callback may already have signed in through Supabase's cross-tab
+        // broadcast even if the native app/browser lost the popup connection.
+        try {
+          const { data, error: sessionError } = await withDeadline(
+            () => getSupabaseClient().auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS },
+          );
+          if (sessionError) throw sessionError;
+          if (data.session) {
+            setAuthState('authenticated');
+            setLineAvatarUrl(lineAvatarFromSession(data.session));
+            setLineNickname(lineNicknameFromSession(data.session));
+            await alertDialog({ title: '登入成功', tone: 'success' });
+            onNavigate('home');
+            return;
+          }
+          setAuthState('anonymous');
+        } catch {
+          setAuthState('degraded');
+        }
+      } else {
+        setAuthState(action === "logout"
+          && error instanceof Error
+          && error.message === "SUPABASE_SIGN_OUT_UNCERTAIN"
+          ? "degraded"
+          : action === "logout" ? "authenticated" : "anonymous");
+      }
       await alertDialog({
         title: action === "logout" ? "登出失敗" : "登入失敗",
         description: "請稍後再試。",

@@ -9,9 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import { useAppDialog } from "./dialog/AppDialog";
+import { isPwaDisplayMode, PWA_DISPLAY_QUERIES } from './pwa-display-mode';
 
 const SERVICE_WORKER_PATH = "/push-service-worker.js";
-const STANDALONE_QUERY = "(display-mode: standalone)";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -35,10 +35,7 @@ const unavailableLifecycle: PwaLifecycleValue = {
 const PwaLifecycleContext = createContext<PwaLifecycleValue>(unavailableLifecycle);
 
 function isStandalone() {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
-  return Boolean(navigatorWithStandalone.standalone)
-    || Boolean(window.matchMedia?.(STANDALONE_QUERY).matches);
+  return isPwaDisplayMode();
 }
 
 function isIosDevice() {
@@ -62,7 +59,7 @@ export function PwaLifecycleProvider({
   const updatePromptedRef = useRef(false);
 
   useEffect(() => {
-    const media = window.matchMedia?.(STANDALONE_QUERY);
+    const mediaQueries = PWA_DISPLAY_QUERIES.map((query) => window.matchMedia?.(query));
     const refreshInstalledState = () => setInstalled(isStandalone());
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -75,8 +72,10 @@ export function PwaLifecycleProvider({
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
-    if (typeof media?.addEventListener === "function") media.addEventListener("change", refreshInstalledState);
-    else media?.addListener?.(refreshInstalledState);
+    for (const media of mediaQueries) {
+      if (typeof media?.addEventListener === "function") media.addEventListener("change", refreshInstalledState);
+      else media?.addListener?.(refreshInstalledState);
+    }
 
     const serviceWorker = navigator.serviceWorker;
     const hadController = Boolean(serviceWorker?.controller);
@@ -102,8 +101,10 @@ export function PwaLifecycleProvider({
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
-      if (typeof media?.removeEventListener === "function") media.removeEventListener("change", refreshInstalledState);
-      else media?.removeListener?.(refreshInstalledState);
+      for (const media of mediaQueries) {
+        if (typeof media?.removeEventListener === "function") media.removeEventListener("change", refreshInstalledState);
+        else media?.removeListener?.(refreshInstalledState);
+      }
       serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
     };
   }, [confirm, reloadPage]);

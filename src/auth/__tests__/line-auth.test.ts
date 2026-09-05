@@ -9,6 +9,7 @@ import {
 
 import * as lineAuthModule from '../line-auth';
 import { revokeLineProviderToken, signInWithLine, signOutFromMatrix } from '../line-auth';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { startMemberOnlineTracking } from '../../member-online';
 
 type LogicalSession = { access_token: string };
@@ -63,6 +64,23 @@ afterEach(() => {
 });
 
 describe('LINE auth helper', () => {
+  it('opens an installed fullscreen PWA login window before OAuth starts', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+    try {
+      const login = signInWithLine(undefined, { auth: { signInWithOAuth } } as unknown as SupabaseClient);
+      expect(open).toHaveBeenCalledOnce();
+      await login;
+      // Engines without controllable windows retain their existing redirect flow.
+      expect(signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'custom:line', options: { redirectTo: new URL('/', window.location.origin).href },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('uses the exact approved origin root', async () => {
     const signInWithOAuth = vi.fn().mockResolvedValue({ data: {}, error: null });
 
