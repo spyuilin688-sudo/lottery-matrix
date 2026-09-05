@@ -142,8 +142,8 @@ test('天衍版路摘要以兩列呈現鎖定條件與兩條規則', async () =>
     .map((row) => row.textContent?.replace(/\s/g, ''));
 
   expect(summaryRows).toEqual([
-    '開07第1顆｜下1期開｜準11進12',
-    '上1期第2顆+3｜上2期第4顆合值5',
+    '開07第1顆｜上1期｜第2顆｜+3',
+    '開07第1顆｜上2期｜第4顆｜合值5｜下1期開',
   ]);
 });
 
@@ -169,8 +169,8 @@ test('天衍兩組共同值的版路摘要可呈現四列', async () => {
     .map((row) => row.textContent?.replace(/\s/g, ''));
 
   expect(summaryRows).toHaveLength(4);
-  expect(summaryRows[2]).toBe('開07第1顆｜下1期開｜準11進12');
-  expect(summaryRows[3]).toBe('下3期第1顆+7｜同期第5顆拖牌9');
+  expect(summaryRows[2]).toBe('開07第1顆｜下3期｜第1顆｜+7');
+  expect(summaryRows[3]).toBe('開07第1顆｜同期｜第5顆｜拖牌9｜下1期開');
 });
 
 test('未登入時維持既有登入提示', async () => {

@@ -49,9 +49,16 @@ window.fetch = async (input, options) => {
   else if (url.includes('/rpc/matrix_tianyan_validation')) {
     const validation = structuredClone(tianyanValidation) as any;
     validation.sourceA.sourceNumbers = numbers.map(Number);
+    validation.sourceA.lockedNumber = 38;
+    validation.sourceA.lockedPosition = 5;
+    Object.assign(validation.rules[0], { referenceOffset: -10, referencePosition: 4, ruleValue: 14 });
+    Object.assign(validation.rules[1], { referenceOffset: -1, referencePosition: 4, ruleValue: 55 });
     const row = validation.historicalValidation[0];
     validation.historicalValidation = Array.from({ length: 3 }, (_, index) => ({
       ...row, group: String(index), sourceNumbers: numbers.map(Number), predictionNumbers: numbers.map(Number),
+      rule1: { ...row.rule1, hit: index !== 1 },
+      rule2: { ...row.rule2, hit: index !== 0 },
+      hitNumbers: index === 0 ? [14] : index === 1 ? [27] : [14, 27],
     }));
     data = { ...tianyanEnvelope, lottery, validation };
   }
