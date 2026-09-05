@@ -3,26 +3,21 @@
   display: none;
 }
 
-.matrix-tianyan-screen .tianyan-expanded-layout-summary-host {
+.matrix-tianyan-screen .explore-validation-summary-card {
   position: relative;
 }
 
-.matrix-tianyan-screen .tianyan-expanded-layout-summary-host > .explore-validation-consecutive-tag {
+.matrix-tianyan-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   top: 2px;
   right: 2px;
   margin: 0;
 }
 
-.matrix-tianyan-screen .tianyan-expanded-layout-summary-host .tianyan-expanded-summary-indent {
+.matrix-tianyan-screen .explore-validation-summary-card .tianyan-expanded-summary-indent {
   display: inline-flex;
   align-items: center;
   visibility: hidden;
-}
-
-.matrix-tianyan-screen .tianyan-expanded-layout-summary-host .tianyan-expanded-summary-indent > span {
-  display: inline-flex;
-  align-items: center;
 }
 
 .matrix-tianyan-screen .tianyan-expanded-layout-groups-host .tianyan-expanded-validation-group[data-row-count="4"] > .explore-validation-issues,
@@ -37,6 +32,11 @@
   grid-template-rows: repeat(3, minmax(0, 1fr));
 }
 
-.matrix-tianyan-screen .tianyan-expanded-layout-groups-host .tianyan-expanded-lock-condition {
-  white-space: nowrap;
+.matrix-tianyan-screen .tianyan-expanded-summary-lines .tianyan-validation-summary-row {
+  width: max-content;
+  justify-content: flex-start;
+}
+
+.matrix-tianyan-screen .tianyan-expanded-summary-lines .tianyan-validation-summary-row > * {
+  flex: none;
 }

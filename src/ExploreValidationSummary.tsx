@@ -69,7 +69,10 @@ function formatRoadSummaryNode(node: ReactNode, sumSequence = false): ReactNode 
   return cloneElement(element, { className: nextClassName }, nextChildren);
 }
 
-export function ExploreValidationSummary({ children }: { children: ReactNode }) {
+export function ExploreValidationSummary({ children, layout = "explore" }: {
+  children: ReactNode;
+  layout?: "explore" | "tianyan";
+}) {
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const [isMatrixExploreSummary, setIsMatrixExploreSummary] = useState(false);
   const renderedChildren = isMatrixExploreSummary
@@ -99,6 +102,25 @@ export function ExploreValidationSummary({ children }: { children: ReactNode }) 
       if (availableWidth <= 0) return;
 
       const maximumFontSize = Number.parseFloat(getComputedStyle(summary).fontSize) || 13;
+      if (layout === "tianyan") {
+        const rows = [...summary.querySelectorAll<HTMLElement>(".tianyan-validation-summary-row")];
+        const style = getComputedStyle(summary);
+        const contentLeft = summary.getBoundingClientRect().left + Number.parseFloat(style.paddingLeft);
+        const contentWidth = availableWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+        const tag = summary.parentElement?.querySelector<HTMLElement>(".explore-validation-consecutive-tag");
+        const firstRowWidth = tag ? Math.min(contentWidth, tag.getBoundingClientRect().left - contentLeft - 4) : contentWidth;
+        if (!rows.length || firstRowWidth <= 0) return;
+        let fontSize = maximumFontSize;
+        // Re-measure fixed gaps as the shared font shrinks, keeping both rows aligned.
+        for (let pass = 0; pass < 4; pass += 1) {
+          const scale = Math.min(1, ...rows.map((row, index) =>
+            (index === 0 ? firstRowWidth : contentWidth) / Math.max(1, row.getBoundingClientRect().width)));
+          if (scale >= 1) break;
+          fontSize = Math.max(1, fontSize * scale * .98);
+          summary.style.setProperty("--explore-summary-fit-font-size", `${fontSize}px`);
+        }
+        return;
+      }
       const requiredWidth = summary.scrollWidth;
       if (availableWidth === lastAvailableWidth && requiredWidth === lastRequiredWidth) {
         summary.style.setProperty("--explore-summary-fit-font-size", `${lastFittedFontSize}px`);
@@ -128,7 +150,7 @@ export function ExploreValidationSummary({ children }: { children: ReactNode }) 
       resizeObserver?.disconnect();
       window.removeEventListener("resize", fitSummary);
     };
-  }, [children, isMatrixExploreSummary]);
+  }, [children, isMatrixExploreSummary, layout]);
 
   return <p className="explore-validation-summary" ref={summaryRef}>{renderedChildren}</p>;
 }

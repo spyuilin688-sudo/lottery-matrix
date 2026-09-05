@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
+import { TianyanPatchedSummary } from "../TianyanExpandedLayoutPatch";
 import { type ExploreValidation, type TianyanValidation } from "../matrix-algorithm-api";
 import { ROAD_VALIDATION_SAMPLE_HISTORY } from "./shared";
 
@@ -488,20 +489,6 @@ export function TianyanValidationProcess({
     rule.ruleValue,
     rule.currentPredictionNumber,
   ));
-  const summaryRulePairs = Array.from(
-    { length: Math.ceil(validation.rules.length / 2) },
-    (_, index) => validation.rules.slice(index * 2, (index + 1) * 2),
-  );
-  const summaryLockedNumber = validation.sourceA?.lockedNumber ?? item.number;
-  const summaryLockedPosition = validation.sourceA?.lockedPosition ?? item.position;
-  const summaryPredictionDistance = validation.sourceA?.predictionDistance ?? item.predictionPeriod;
-  const summaryRuleDirection = (offset: number) => offset === 0
-    ? "同期"
-    : `${offset < 0 ? "上" : "下"} ${Math.abs(offset)} 期`;
-  const summaryRuleFormula = (rule: TianyanValidation["rules"][number]) => rule.algorithmType === "加減"
-    ? `${rule.ruleValue >= 0 ? "+" : ""}${rule.ruleValue}`
-    : `${rule.algorithmType} ${rule.ruleValue}`;
-
   return (
     <section
       className="road-validation-process explore-validation-card"
@@ -514,47 +501,28 @@ export function TianyanValidationProcess({
     >
       <div className="validation-rule-set explore-validation-rule-set">
         <header className="explore-validation-summary-card">
-          <ExploreValidationSummary>
-            <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
-              {summaryRulePairs.map((pair, pairIndex) => (
-                <Fragment key={pair.map((rule) => rule.id).join("-") || `pair-${pairIndex}`}>
-                  <span className="tianyan-validation-summary-row">
-                    <span>開 <i className="validation-summary-primary">{displayNumber(summaryLockedNumber)}</i> 第 <i className="validation-summary-position">{summaryLockedPosition}</i> 顆</span>
-                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
-                    <span>下 <i className="validation-summary-position">{summaryPredictionDistance}</i> 期開</span>
-                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
-                    <strong className="explore-validation-consecutive-tag">準{validation.groupCount}進{validation.groupCount + 1}</strong>
-                  </span>
-                  <span className="tianyan-validation-summary-row">
-                    {pair.map((rule, ruleIndex) => (
-                      <Fragment key={rule.id}>
-                        {ruleIndex > 0 ? <i className="explore-validation-summary-separator" aria-hidden="true">｜</i> : null}
-                        <span>
-                          {summaryRuleDirection(rule.referenceOffset)} 第 <i className="validation-summary-position">{rule.referencePosition}</i> 顆{" "}
-                          <i className="validation-summary-formula">{summaryRuleFormula(rule)}</i>
-                        </span>
-                      </Fragment>
-                    ))}
-                  </span>
-                </Fragment>
-              ))}
-            </span>
-          </ExploreValidationSummary>
+          <TianyanPatchedSummary
+            item={{ number: item.number, lockedPosition: item.position, predictionDistance: item.predictionPeriod }}
+            validation={validation}
+          />
         </header>
         <div className="explore-validation-groups">
-          {validation.historicalValidation.map((row) => validationGroup(
-            `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
-            [
-              { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
-              { key: `formula-${row.group}-2`, period: "", numbers: [] },
-              { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
-            ],
-            [
-              validationFormula(row.rule1.validationPosition, row.rule1.baseNumber, row.rule1.algorithmType, row.rule1.ruleValue, row.rule1.calculationResult),
-              validationFormula(row.rule2.validationPosition, row.rule2.baseNumber, row.rule2.algorithmType, row.rule2.ruleValue, row.rule2.calculationResult),
-              resultFormula(row.hitNumbers),
-            ],
-          ))}
+          {validation.historicalValidation.map((row) => {
+            const matchedRules = [row.rule1, row.rule2].filter((rule) => rule.hit);
+            if (!matchedRules.length) return null;
+            return validationGroup(
+              `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
+              [
+                { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
+                ...matchedRules.slice(1).map((_, index) => ({ key: `formula-${row.group}-${index}`, period: "", numbers: [] })),
+                { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
+              ],
+              [
+                ...matchedRules.map((rule) => validationFormula(rule.validationPosition, rule.baseNumber, rule.algorithmType, rule.ruleValue, rule.calculationResult)),
+                resultFormula(row.hitNumbers),
+              ],
+            );
+          })}
           {validation.sourceA && currentFormulas.length === 2 ? validationGroup(
             `${validation.itemId}-current`,
             [
