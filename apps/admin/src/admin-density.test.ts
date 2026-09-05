@@ -23,11 +23,14 @@ describe('admin compact density', () => {
   });
 
   it('compacts transfer requests without shrinking text actions into square buttons', () => {
-    expect(operationsCss).toMatch(/\.transferPanel \{[^}]*margin-top: 10px;/);
-    expect(operationsCss).toMatch(/\.panel\.transferPanel \{[^}]*padding: 10px;/);
-    expect(operationsCss).toMatch(/\.transferRow \{[^}]*gap: 8px;[^}]*padding: 8px 0;/);
+    expect(operationsCss).toMatch(/\.transferPanel \{[^}]*margin-top: 8px;/);
+    expect(operationsCss).toMatch(/\.panel\.transferPanel \{[^}]*padding: 8px 10px;/);
+    expect(operationsCss).toMatch(/\.transferPanel h2 \{[^}]*margin: 0 0 4px;/);
+    expect(operationsCss).toMatch(/\.transferRow \{[^}]*gap: 6px;[^}]*padding: 5px 0;/);
+    expect(operationsCss).toMatch(/\.transferRow > div:first-child \{[^}]*gap: 2px;/);
     expect(operationsCss).toMatch(/\.transferActions button \{[^}]*width: auto;[^}]*min-width: 52px;[^}]*white-space: nowrap;/);
-    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.transferRow \.transferActions \{[^}]*display: flex;[^}]*flex-wrap: nowrap;/);
+    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.transferRow > div:first-child \{[^}]*grid-row: 1 \/ span 2;/);
+    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.transferRow \.transferActions \{[^}]*grid-column: 2;[^}]*grid-row: 2;/);
   });
 
   it('uses grouped compact system status rows without fixed row geometry', () => {

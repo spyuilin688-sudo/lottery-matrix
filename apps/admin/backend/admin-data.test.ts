@@ -63,6 +63,23 @@ describe('listAdminTable', () => {
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
   });
 
+  it('maps the activation-code redeemer LINE nickname without exposing the member ID', async () => {
+    const api = { request: vi.fn(async () => [{
+      id: 'code-1', batch_id: 'batch-1', code: 'ABCD-EFGH-IJKL-MNOP', duration_type: '30_days',
+      created_at: '2026-09-05T00:00:00Z', expires_at: '2026-10-05T00:00:00Z',
+      redeemed_by_member_id: 'member-1', redeemed_at: '2026-09-05T01:00:00Z', status: 'used',
+      redeemed_member: { line_display_name: '兌換者暱稱' },
+    }]) };
+
+    const result = await listAdminTable('activationCodes', api);
+
+    expect(result.items[0]).toMatchObject({ redeemedByLineDisplayName: '兌換者暱稱' });
+    expect(result.items[0]).not.toHaveProperty('redeemedByMemberId');
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining(
+      'redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(line_display_name)',
+    ));
+  });
+
   it('excludes super administrators from login records without hiding historical audit rows', async () => {
     const request = vi.fn(async () => []);
     await listAdminTable('loginRecords', { request });
