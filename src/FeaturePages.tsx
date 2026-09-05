@@ -1469,6 +1469,7 @@ function TianyanValidationProcess({
     <section
       className="road-validation-process explore-validation-card"
       aria-label="天衍驗證過程"
+      data-lottery={lottery}
       data-content-protected={contentProtected ? "true" : "false"}
       onCopy={(event) => event.preventDefault()}
       onCut={(event) => event.preventDefault()}
@@ -2114,14 +2115,14 @@ export function MatrixExplorePage({
                     title === "Matrix 探索" && exploreResponse
                       ? <ExploreValidationProcess
                           item={item}
-                          lottery={lottery}
+                          lottery={exploreResponse.lottery}
                           validation={validationById[`${exploreResponse.analysisVersion}:${item.id}`]}
                           loading={validationLoadingId === `${exploreResponse.analysisVersion}:${item.id}`}
                         />
                       : title === "Matrix 天衍" && tianyanResponse
                         ? <TianyanValidationProcess
                             item={item}
-                            lottery={lottery}
+                            lottery={tianyanResponse.lottery}
                             validation={tianyanValidationById[`${tianyanResponse.analysisVersion}:${item.id}`]}
                             loading={validationLoadingId === `${tianyanResponse.analysisVersion}:${item.id}`}
                           />

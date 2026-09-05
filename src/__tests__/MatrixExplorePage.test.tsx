@@ -418,6 +418,7 @@ test('拖牌多個驗證值時只保留一列空白公式列且每組最多三�
 });
 
 test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前顯示加號', async (lottery) => {
+  matrixApi.fetchExploreList.mockResolvedValue({ ...exploreEnvelope, lottery });
   const sevenNumbers = ['01', '08', '14', '22', '31', '36', '44'];
   matrixApi.fetchExploreValidation.mockResolvedValue({
     ...exploreValidationEnvelope,
@@ -450,6 +451,31 @@ test.each(['六合彩', '大樂透'] as const)('%s驗證號碼會在特別號前
   expect(validation.querySelectorAll('.explore-validation-special-separator').length).toBeGreaterThan(0);
   expect(validation.querySelector('.explore-validation-special-separator')?.textContent).toBe('+');
   expect(validation.querySelector('.explore-validation-special-number')?.textContent).toMatch(/^\+\d{2}$/);
+});
+
+test.each([
+  ['今彩539', '六合彩'],
+  ['大樂透', '今彩539'],
+  ['六合彩', '今彩539'],
+] as const)('%s結果在設定改成%s但未開始探索時，驗證內容與彩種格式不變', async (resultLottery, draftLottery) => {
+  matrixApi.fetchExploreList.mockResolvedValue({ ...exploreEnvelope, lottery: resultLottery });
+  matrixApi.fetchExploreValidation.mockResolvedValue({ ...exploreValidationEnvelope, lottery: resultLottery });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  const select = screen.getByRole('combobox', { name: '彩種' });
+  fireEvent.change(select, { target: { value: resultLottery } });
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  const before = validation.innerHTML;
+
+  fireEvent.change(select, { target: { value: draftLottery } });
+
+  expect(validation.innerHTML).toBe(before);
+  expect(validation.querySelector('.explore-validation-group')?.getAttribute('data-lottery')).toBe(resultLottery);
+  expect(matrixApi.fetchExploreList).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: /收合版路/ }));
+  fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));
+  expect(screen.getByRole('region', { name: '驗證過程' }).innerHTML).toBe(before);
 });
 
 test('驗證期在鎖定條件之後時排列在第二列', async () => {

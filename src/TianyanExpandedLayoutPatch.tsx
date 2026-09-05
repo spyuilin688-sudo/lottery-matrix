@@ -81,10 +81,9 @@ function findActiveTianyanTarget(): ActiveTianyanTarget | null {
   return { itemId: match[1], button, section, root };
 }
 
-function readLottery(root: HTMLElement): NumberBallLottery | null {
-  const select = Array.from(root.querySelectorAll<HTMLSelectElement>("select"))
-    .find((candidate) => TIANyan_LOTTERIES.includes(candidate.value as NumberBallLottery));
-  return select ? select.value as NumberBallLottery : null;
+function readLottery(section: HTMLElement): NumberBallLottery | null {
+  const lottery = section.dataset.lottery as NumberBallLottery | undefined;
+  return lottery && TIANyan_LOTTERIES.includes(lottery) ? lottery : null;
 }
 
 function readExploreDateOffset(root: HTMLElement): 0 | 1 | 2 | null {
@@ -360,6 +359,8 @@ function PatchedValidationGroup({
   return (
     <div
       className="explore-validation-group tianyan-expanded-validation-group"
+      data-lottery={lottery}
+      data-wide-numbers={rows.some((row) => row.numbers.length >= 6) ? "true" : "false"}
       data-row-count={rows.length}
       data-validation-group={groupKey}
     >
@@ -384,11 +385,17 @@ function PatchedValidationGroup({
                       ? " explore-validation-number--source"
                       : " explore-validation-number--step"
                   : "";
-                const specialClass = (lottery === "六合彩" || lottery === "大樂透") && index === 6
-                  ? " explore-validation-number--special"
-                  : "";
+                const isSpecial = (lottery === "六合彩" || lottery === "大樂透") && index === 6;
+                if (isSpecial) {
+                  return <span className="explore-validation-special-number" key={`${row.key}-${index}`}>
+                    <i className="explore-validation-special-separator" aria-hidden="true">+</i>
+                    <i className={`explore-validation-number${highlightClass} explore-validation-number--special`}>
+                      {displayNumber(number)}
+                    </i>
+                  </span>;
+                }
                 return (
-                  <i className={`explore-validation-number${highlightClass}${specialClass}`} key={`${row.key}-${index}`}>
+                  <i className={`explore-validation-number${highlightClass}`} key={`${row.key}-${index}`}>
                     {displayNumber(number)}
                   </i>
                 );
@@ -409,7 +416,7 @@ function PatchedValidationGroup({
 }
 
 async function resolveTianyanLayout(target: ActiveTianyanTarget): Promise<ResolvedTianyanLayout | null> {
-  const lottery = readLottery(target.root);
+  const lottery = readLottery(target.section);
   const consecutive = readConsecutive(target.button);
   if (!lottery || !consecutive) return null;
 
