@@ -9,3 +9,14 @@ export function isPwaDisplayMode() {
   return Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
     || PWA_DISPLAY_QUERIES.some((query) => window.matchMedia?.(query).matches);
 }
+
+export function isMobilePwa() {
+  if (!isPwaDisplayMode()) return false;
+  const device = window.navigator as Navigator & {
+    standalone?: boolean;
+    userAgentData?: { mobile?: boolean };
+  };
+  return Boolean(device.standalone || device.userAgentData?.mobile)
+    || /Android|iPhone|iPad|iPod/i.test(device.userAgent ?? '')
+    || (device.platform === 'MacIntel' && device.maxTouchPoints > 1);
+}

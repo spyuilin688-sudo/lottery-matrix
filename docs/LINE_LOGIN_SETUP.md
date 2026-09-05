@@ -105,9 +105,15 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-Installed fullscreen/standalone/minimal-ui apps attempt a script-controlled
-OAuth window, created directly from the login click. The return URL remains the
-exact approved origin root. The temporary callback hands its session to the
+Mobile installed PWAs use the original-window OAuth navigation and pass
+`queryParams: { disable_auto_login: 'true' }`. This keeps LINE's automatic native
+app handoff from opening the completed login in an unrelated browser tab. LINE
+uses its web SSO confirmation when a valid cookie exists; otherwise its own
+login page is shown. No blank popup is opened on mobile. The return URL remains
+the exact approved origin root, within the PWA's existing scope.
+
+Desktop installed PWAs attempt a script-controlled OAuth window, created
+directly from the login click. The temporary callback hands its session to the
 original PWA only after matching the origin, window source and one-time attempt
 ID; it closes after the PWA acknowledges importing that session. The callback
 does not mount the member-presence UI while waiting.
@@ -122,3 +128,9 @@ redirect flow. If a native LINE handoff loses the opener or opens a new browser
 tab, that callback loads the normal application. Automatic foreground return is
 not guaranteed in those cases. Verify the actual installed Android/iOS/desktop
 app with a live LINE account; unit tests cannot establish OS-level return behavior.
+
+On 2026-09-05, the production Supabase authorize endpoint's first HTTP 302 was
+checked without following it or completing a login. The control request did not
+include `disable_auto_login`; the mobile request's LINE URL included exactly
+`disable_auto_login=true`. Both retained `S256` and the existing Supabase callback.
+Provider configuration was read but not changed (`authorization_params` was `{}`).

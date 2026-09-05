@@ -111,9 +111,12 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-05
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- The existing login button starts a controlled authorization window where the
-  browser supports one. Successful session import returns the original PWA to
-  home through SPA navigation and uses the existing success dialog.
+- Mobile installed PWAs keep OAuth in the original navigation context and send
+  LINE `disable_auto_login=true`, avoiding the native auto-login handoff that
+  returned to a separate Chrome tab in the user's recording. LINE web SSO is
+  used when available; otherwise LINE displays its own login page.
+- Desktop installed PWAs retain the controlled authorization window. Successful
+  session import returns the original PWA home with the existing success dialog.
 - Fullscreen (the current manifest setting), standalone, minimal-ui and iOS
   home-screen mode share detection with the install UI.
 - Ordinary browser login keeps the existing origin-root redirect. Unsupported
