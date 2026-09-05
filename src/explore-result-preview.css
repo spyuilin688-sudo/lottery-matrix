@@ -439,8 +439,12 @@
   --explore-validation-group-background: #0E1D30;
 }
 
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-groups {
+  background: #02070C;
+}
+
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group {
-  background: transparent;
+  background: #02070C;
 }
 
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group > :is(
