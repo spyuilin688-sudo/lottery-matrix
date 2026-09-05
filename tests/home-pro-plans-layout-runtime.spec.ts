@@ -26,7 +26,7 @@ for (const width of MOBILE_WIDTHS) {
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
       drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
       featuresNav: "clamp(8px,1.15dvh,12px)",
-      headerTop: "6px",
+      headerTop: "0px",
     });
 
     await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的", exact: true }).click();
