@@ -30,11 +30,12 @@ export type TianyanPatchedValidationRow = {
   key: string;
   period: string;
   numbers: Array<string | number>;
-  highlightNumbers: number[];
-  highlightKind: "locked" | "source" | "result" | null;
+  lockedNumbers: number[];
+  sourceNumbers: number[];
+  resultNumbers: number[];
   right:
     | { kind: "lock" }
-    | { kind: "formula"; formula: FormulaModel }
+    | { kind: "formula"; formulas: FormulaModel[] }
     | { kind: "result"; numbers: number[] };
 };
 
@@ -120,12 +121,19 @@ function buildHistoryNumbers(
   return lookup;
 }
 
-function requiredRulePeriods(validation: TianyanValidation) {
+function requiredRulePeriods(lottery: NumberBallLottery, validation: TianyanValidation) {
   return [
     ...validation.historicalValidation.flatMap((group) => [group.rule1, group.rule2]
-      .filter((rule) => rule.hit).map((rule) => rule.validationPeriod)),
-    ...validation.rules.slice(0, 2).map((rule) => rule.validationPeriod),
-  ].filter(Boolean);
+      .filter((rule) => rule.hit)
+      .map((rule) => ({ period: rule.validationPeriod, sourcePeriod: group.sourcePeriod }))),
+    ...validation.rules.slice(0, 2).map((rule) => ({
+      period: rule.validationPeriod,
+      sourcePeriod: validation.sourceA?.sourcePeriod,
+    })),
+  ].filter(({ period, sourcePeriod }) => (
+    Boolean(period)
+    && normalizePeriodKey(lottery, period) !== normalizePeriodKey(lottery, sourcePeriod)
+  )).map(({ period }) => period);
 }
 
 function hasRequiredPeriods(
@@ -133,17 +141,44 @@ function hasRequiredPeriods(
   lookup: Map<string, Array<string | number>>,
   validation: TianyanValidation,
 ) {
-  return requiredRulePeriods(validation).every((period) => lookup.has(normalizePeriodKey(lottery, period)));
+  return requiredRulePeriods(lottery, validation).every((period) => lookup.has(normalizePeriodKey(lottery, period)));
 }
 
-function formulaFromHistoricalRule(rule: TianyanRuleValidation): FormulaModel {
+function lotteryMaximum(lottery: NumberBallLottery) {
+  return lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
+}
+
+function wrappedOffset(baseNumber: number, targetNumber: number, maximum: number) {
+  return ((targetNumber - baseNumber) % maximum + maximum) % maximum;
+}
+
+function formulaFromHistoricalRule(
+  lottery: NumberBallLottery,
+  rule: TianyanRuleValidation,
+): FormulaModel {
+  const isDrag = rule.algorithmType === "拖牌";
   return {
     position: rule.validationPosition,
     baseNumber: rule.baseNumber,
     algorithmType: rule.algorithmType,
-    ruleValue: rule.ruleValue,
-    calculationResult: rule.calculationResult,
+    ruleValue: isDrag
+      ? wrappedOffset(rule.baseNumber, rule.ruleValue, lotteryMaximum(lottery))
+      : rule.ruleValue,
+    calculationResult: isDrag ? rule.ruleValue : rule.calculationResult,
   };
+}
+
+function distinctNumbers(values: number[]) {
+  return [...new Set(values)];
+}
+
+function appendFormula(
+  right: TianyanPatchedValidationRow["right"],
+  formula: FormulaModel,
+): TianyanPatchedValidationRow["right"] {
+  return right.kind === "formula"
+    ? { kind: "formula", formulas: [...right.formulas, formula] }
+    : { kind: "formula", formulas: [formula] };
 }
 
 export function buildTianyanHistoricalRows(
@@ -155,42 +190,70 @@ export function buildTianyanHistoricalRows(
     .map((rule, index) => ({ rule, index }))
     .filter(({ rule }) => rule.hit);
   if (!matchedRules.length) return null;
-  const ruleRows: TianyanPatchedValidationRow[] = [];
-  for (const { rule, index } of matchedRules) {
-    const numbers = historyNumbers.get(normalizePeriodKey(lottery, rule.validationPeriod));
-    if (!numbers) return null;
-    ruleRows.push({
-      key: `${group.group}-rule-${index + 1}`,
-      period: rule.validationPeriod,
-      numbers,
-      highlightNumbers: [rule.baseNumber],
-      highlightKind: "source",
-      right: { kind: "formula", formula: formulaFromHistoricalRule(rule) },
-    });
-  }
-
-  return [
-    {
+  const sourcePeriodKey = normalizePeriodKey(lottery, group.sourcePeriod);
+  const orderedRows: Array<{ offset: number; order: number; row: TianyanPatchedValidationRow }> = [{
+    offset: 0,
+    order: -1,
+    row: {
       key: `${group.group}-lock`,
       period: group.sourcePeriod,
       numbers: group.sourceNumbers,
-      highlightNumbers: [group.lockedNumber],
-      highlightKind: "locked",
+      lockedNumbers: [group.lockedNumber],
+      sourceNumbers: [],
+      resultNumbers: [],
       right: { kind: "lock" },
     },
-    ...ruleRows,
+  }];
+  for (const { rule, index } of matchedRules) {
+    const periodKey = normalizePeriodKey(lottery, rule.validationPeriod);
+    const numbers = periodKey === sourcePeriodKey
+      ? group.sourceNumbers
+      : historyNumbers.get(periodKey);
+    if (!numbers) return null;
+    let target = orderedRows.find(({ row }) => normalizePeriodKey(lottery, row.period) === periodKey);
+    if (!target) {
+      target = {
+        offset: rule.validationPeriodOffset,
+        order: index,
+        row: {
+          key: `${group.group}-rule-${index + 1}`,
+          period: rule.validationPeriod,
+          numbers,
+          lockedNumbers: [],
+          sourceNumbers: [],
+          resultNumbers: [],
+          right: { kind: "lock" },
+        },
+      };
+      orderedRows.push(target);
+    }
+    target.row.sourceNumbers = distinctNumbers([
+      ...target.row.sourceNumbers,
+      ...(!target.row.lockedNumbers.includes(rule.baseNumber) ? [rule.baseNumber] : []),
+    ]);
+    target.row.right = appendFormula(
+      target.row.right,
+      formulaFromHistoricalRule(lottery, rule),
+    );
+  }
+
+  return [
+    ...orderedRows
+      .sort((left, right) => left.offset - right.offset || left.order - right.order)
+      .map(({ row }) => row),
     {
       key: `${group.group}-result`,
       period: group.predictionPeriod,
       numbers: group.predictionNumbers,
-      highlightNumbers: group.hitNumbers,
-      highlightKind: "result",
+      lockedNumbers: [],
+      sourceNumbers: [],
+      resultNumbers: group.hitNumbers,
       right: { kind: "result", numbers: group.hitNumbers },
     },
   ];
 }
 
-function buildTianyanCurrentRows(
+export function buildTianyanCurrentRows(
   lottery: NumberBallLottery,
   validation: TianyanValidation,
   historyNumbers: Map<string, Array<string | number>>,
@@ -198,44 +261,65 @@ function buildTianyanCurrentRows(
   const source = validation.sourceA;
   const [rule1, rule2] = validation.rules;
   if (!source || !rule1 || !rule2) return [];
-  const rule1Numbers = historyNumbers.get(normalizePeriodKey(lottery, rule1.validationPeriod));
-  const rule2Numbers = historyNumbers.get(normalizePeriodKey(lottery, rule2.validationPeriod));
-  if (!rule1Numbers || !rule2Numbers) return [];
+  const sourcePeriodKey = normalizePeriodKey(lottery, source.sourcePeriod);
 
   const currentFormula = (rule: typeof rule1): FormulaModel => ({
     position: rule.referencePosition,
     baseNumber: rule.currentBaseNumber,
     algorithmType: rule.algorithmType,
-    ruleValue: rule.ruleValue,
-    calculationResult: rule.currentPredictionNumber,
+    ruleValue: rule.algorithmType === "拖牌"
+      ? wrappedOffset(rule.currentBaseNumber, rule.ruleValue, lotteryMaximum(lottery))
+      : rule.ruleValue,
+    calculationResult: rule.algorithmType === "拖牌"
+      ? rule.ruleValue
+      : rule.currentPredictionNumber,
   });
 
-  return [
-    {
+  const orderedRows: Array<{ offset: number; order: number; row: TianyanPatchedValidationRow }> = [{
+    offset: 0,
+    order: -1,
+    row: {
       key: "current-lock",
       period: source.sourcePeriod,
       numbers: source.sourceNumbers,
-      highlightNumbers: [source.lockedNumber],
-      highlightKind: "locked",
+      lockedNumbers: [source.lockedNumber],
+      sourceNumbers: [],
+      resultNumbers: [],
       right: { kind: "lock" },
     },
-    {
-      key: "current-rule-1",
-      period: rule1.validationPeriod,
-      numbers: rule1Numbers,
-      highlightNumbers: [rule1.currentBaseNumber],
-      highlightKind: "source",
-      right: { kind: "formula", formula: currentFormula(rule1) },
-    },
-    {
-      key: "current-rule-2",
-      period: rule2.validationPeriod,
-      numbers: rule2Numbers,
-      highlightNumbers: [rule2.currentBaseNumber],
-      highlightKind: "source",
-      right: { kind: "formula", formula: currentFormula(rule2) },
-    },
-  ];
+  }];
+  for (const [index, rule] of [rule1, rule2].entries()) {
+    const periodKey = normalizePeriodKey(lottery, rule.validationPeriod);
+    const numbers = periodKey === sourcePeriodKey
+      ? source.sourceNumbers
+      : historyNumbers.get(periodKey);
+    if (!numbers) return [];
+    let target = orderedRows.find(({ row }) => normalizePeriodKey(lottery, row.period) === periodKey);
+    if (!target) {
+      target = {
+        offset: rule.referenceOffset,
+        order: index,
+        row: {
+          key: `current-rule-${index + 1}`,
+          period: rule.validationPeriod,
+          numbers,
+          lockedNumbers: [],
+          sourceNumbers: [],
+          resultNumbers: [],
+          right: { kind: "lock" },
+        },
+      };
+      orderedRows.push(target);
+    }
+    target.row.sourceNumbers = distinctNumbers([
+      ...target.row.sourceNumbers,
+      ...(!target.row.lockedNumbers.includes(rule.currentBaseNumber) ? [rule.currentBaseNumber] : []),
+    ]);
+    target.row.right = appendFormula(target.row.right, currentFormula(rule));
+  }
+  return orderedRows
+    .sort((left, right) => left.offset - right.offset || left.order - right.order)
+    .map(({ row }) => row);
 }
 
 function SummaryDirection({ offset }: { offset: number }) {
@@ -252,11 +336,20 @@ function SummaryPosition({ position }: { position: number }) {
   return <span>第 <i className="validation-summary-position">{position}</i> 顆</span>;
 }
 
-function SummaryFormula({ rule }: { rule: TianyanValidation["rules"][number] }) {
-  const numeric = rule.algorithmType === "加減"
-    ? `${rule.ruleValue >= 0 ? "+" : ""}${rule.ruleValue}`
-    : String(rule.ruleValue);
-  if (rule.algorithmType === "加減") {
+function SummaryFormula({
+  lottery,
+  rule,
+}: {
+  lottery: NumberBallLottery;
+  rule: TianyanValidation["rules"][number];
+}) {
+  const formulaValue = rule.algorithmType === "拖牌"
+    ? wrappedOffset(rule.currentBaseNumber, rule.ruleValue, lotteryMaximum(lottery))
+    : rule.ruleValue;
+  const numeric = rule.algorithmType === "加減" || rule.algorithmType === "拖牌"
+    ? `${formulaValue >= 0 ? "+" : ""}${formulaValue}`
+    : String(formulaValue);
+  if (rule.algorithmType === "加減" || rule.algorithmType === "拖牌") {
     return <i className="validation-summary-formula">{numeric}</i>;
   }
   return <span>{rule.algorithmType} <i className="validation-summary-formula">{numeric}</i></span>;
@@ -272,9 +365,11 @@ function SummaryLocked({ number, position }: { number: string | number; position
 }
 
 export function TianyanPatchedSummary({
+  lottery,
   item,
   validation,
 }: {
+  lottery: NumberBallLottery;
   item: Pick<TianyanApiRow, "number" | "lockedPosition" | "predictionDistance">;
   validation: TianyanValidation;
 }) {
@@ -298,7 +393,7 @@ export function TianyanPatchedSummary({
                 <i className="validation-summary-divider" aria-hidden="true">｜</i>
                 <SummaryPosition position={rule1.referencePosition} />
                 <i className="validation-summary-divider" aria-hidden="true">｜</i>
-                <SummaryFormula rule={rule1} />
+                <SummaryFormula lottery={lottery} rule={rule1} />
               </span>
               {rule2 ? <span className="tianyan-validation-summary-row">
                 <span className="tianyan-expanded-summary-indent" aria-hidden="true">
@@ -309,7 +404,7 @@ export function TianyanPatchedSummary({
                 <i className="validation-summary-divider" aria-hidden="true">｜</i>
                 <SummaryPosition position={rule2.referencePosition} />
                 <i className="validation-summary-divider" aria-hidden="true">｜</i>
-                <SummaryFormula rule={rule2} />
+                <SummaryFormula lottery={lottery} rule={rule2} />
                 <i className="validation-summary-divider" aria-hidden="true">｜</i>
                 <span>下 <i className="validation-summary-future">{predictionDistance}</i> 期開</span>
               </span> : null}
@@ -333,9 +428,7 @@ function ValidationFormula({ formula }: { formula: FormulaModel }) {
       <span>{displayNumber(formula.baseNumber)}</span>
       {formula.algorithmType === "合值"
         ? <><span>合值</span><span>{formula.ruleValue}</span></>
-        : formula.algorithmType === "加減"
-          ? <span>{`${formula.ruleValue >= 0 ? "+" : ""}${formula.ruleValue}`}</span>
-          : <><span>拖牌</span><span>{formula.ruleValue}</span></>}
+        : <span>{`${formula.ruleValue >= 0 ? "+" : ""}${formula.ruleValue}`}</span>}
       <span>=</span><span>{displayNumber(formula.calculationResult)}</span>
     </span>
   );
@@ -343,7 +436,13 @@ function ValidationFormula({ formula }: { formula: FormulaModel }) {
 
 function ValidationRight({ row }: { row: TianyanPatchedValidationRow }) {
   if (row.right.kind === "lock") return null;
-  if (row.right.kind === "formula") return <ValidationFormula formula={row.right.formula} />;
+  if (row.right.kind === "formula") return (
+    <span className="tianyan-expanded-formula-list">
+      {row.right.formulas.map((formula, index) => (
+        <ValidationFormula formula={formula} key={`${row.key}-formula-${index}`} />
+      ))}
+    </span>
+  );
   return (
     <>［<strong className="explore-validation-result-number">
       {row.right.numbers.map(displayNumber).join("、")}
@@ -381,14 +480,13 @@ function PatchedValidationGroup({
             <span className="explore-validation-numbers">
               {row.numbers.map((number, index) => {
                 const numeric = Number(number);
-                const highlighted = row.highlightNumbers.includes(numeric);
-                const highlightClass = highlighted
-                  ? row.highlightKind === "locked"
-                    ? " explore-validation-number--hit"
-                    : row.highlightKind === "source"
-                      ? " explore-validation-number--source"
-                      : " explore-validation-number--step"
-                  : "";
+                const highlightClass = row.lockedNumbers.includes(numeric)
+                  ? " explore-validation-number--hit"
+                  : row.sourceNumbers.includes(numeric)
+                    ? " explore-validation-number--source"
+                    : row.resultNumbers.includes(numeric)
+                      ? " explore-validation-number--step"
+                      : "";
                 const isSpecial = (lottery === "六合彩" || lottery === "大樂透") && index === 6;
                 if (isSpecial) {
                   return <span className="explore-validation-special-number" key={`${row.key}-${index}`}>
@@ -555,7 +653,7 @@ export function TianyanExpandedLayoutPatch({ active }: { active: boolean }) {
   return (
     <>
       {createPortal(
-        <TianyanPatchedSummary item={resolved.item} validation={resolved.validation} />,
+        <TianyanPatchedSummary lottery={resolved.lottery} item={resolved.item} validation={resolved.validation} />,
         hosts.summary,
       )}
       {createPortal(

@@ -156,7 +156,7 @@ test('天衍兩組共同值的版路摘要可呈現四列', async () => {
       rules: [
         ...validation.rules,
         { ...validation.rules[0], id: 'r3', referenceOffset: 3, referencePosition: 1, ruleValue: 7, value: 7 },
-        { ...validation.rules[1], id: 'r4', referenceOffset: 0, referencePosition: 5, algorithmType: '拖牌', ruleValue: 9, value: 9 },
+        { ...validation.rules[1], id: 'r4', referenceOffset: 0, referencePosition: 5, algorithmType: '拖牌', ruleValue: 9, value: 2, currentBaseNumber: 7, currentPredictionNumber: 9 },
       ],
     },
   });
@@ -170,7 +170,7 @@ test('天衍兩組共同值的版路摘要可呈現四列', async () => {
 
   expect(summaryRows).toHaveLength(4);
   expect(summaryRows[2]).toBe('開07第1顆｜下3期｜第1顆｜+7');
-  expect(summaryRows[3]).toBe('開07第1顆｜同期｜第5顆｜拖牌9｜下1期開');
+  expect(summaryRows[3]).toBe('開07第1顆｜同期｜第5顆｜+2｜下1期開');
 });
 
 test('未登入時維持既有登入提示', async () => {
