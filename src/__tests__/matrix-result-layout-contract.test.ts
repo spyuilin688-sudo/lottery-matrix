@@ -64,7 +64,7 @@ describe("Matrix result visual contract", () => {
     const columns = cssRule(css, ".explore-validation-issues,\n.explore-validation-numbers-card,\n.explore-validation-formulas");
     const prediction = cssRule(css, ".explore-validation-prediction b");
 
-    expect(odd).toMatch(/background:\s*#12243a/i);
+    expect(odd).toMatch(/background:\s*#152a42/i);
     expect(even).toMatch(/background:\s*#0e1d30/i);
     expect(columns).toMatch(/background:\s*transparent/);
     expect(prediction).toMatch(/font-weight:\s*800/);
