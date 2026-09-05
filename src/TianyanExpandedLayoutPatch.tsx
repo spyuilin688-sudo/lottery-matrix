@@ -123,7 +123,8 @@ function buildHistoryNumbers(
 
 function requiredRulePeriods(validation: TianyanValidation) {
   return [
-    ...validation.historicalValidation.flatMap((group) => [group.rule1.validationPeriod, group.rule2.validationPeriod]),
+    ...validation.historicalValidation.flatMap((group) => [group.rule1, group.rule2]
+      .filter((rule) => rule.hit).map((rule) => rule.validationPeriod)),
     ...validation.rules.slice(0, 2).map((rule) => rule.validationPeriod),
   ].filter(Boolean);
 }
@@ -151,9 +152,23 @@ export function buildTianyanHistoricalRows(
   group: TianyanValidation["historicalValidation"][number],
   historyNumbers: Map<string, Array<string | number>>,
 ): TianyanPatchedValidationRow[] | null {
-  const rule1Numbers = historyNumbers.get(normalizePeriodKey(lottery, group.rule1.validationPeriod));
-  const rule2Numbers = historyNumbers.get(normalizePeriodKey(lottery, group.rule2.validationPeriod));
-  if (!rule1Numbers || !rule2Numbers) return null;
+  const matchedRules = [group.rule1, group.rule2]
+    .map((rule, index) => ({ rule, index }))
+    .filter(({ rule }) => rule.hit);
+  if (!matchedRules.length) return null;
+  const ruleRows: TianyanPatchedValidationRow[] = [];
+  for (const { rule, index } of matchedRules) {
+    const numbers = historyNumbers.get(normalizePeriodKey(lottery, rule.validationPeriod));
+    if (!numbers) return null;
+    ruleRows.push({
+      key: `${group.group}-rule-${index + 1}`,
+      period: rule.validationPeriod,
+      numbers,
+      highlightNumbers: [rule.baseNumber],
+      highlightKind: "source",
+      right: { kind: "formula", formula: formulaFromHistoricalRule(rule) },
+    });
+  }
 
   return [
     {
@@ -164,22 +179,7 @@ export function buildTianyanHistoricalRows(
       highlightKind: "locked",
       right: { kind: "lock" },
     },
-    {
-      key: `${group.group}-rule-1`,
-      period: group.rule1.validationPeriod,
-      numbers: rule1Numbers,
-      highlightNumbers: [group.rule1.baseNumber],
-      highlightKind: "source",
-      right: { kind: "formula", formula: formulaFromHistoricalRule(group.rule1) },
-    },
-    {
-      key: `${group.group}-rule-2`,
-      period: group.rule2.validationPeriod,
-      numbers: rule2Numbers,
-      highlightNumbers: [group.rule2.baseNumber],
-      highlightKind: "source",
-      right: { kind: "formula", formula: formulaFromHistoricalRule(group.rule2) },
-    },
+    ...ruleRows,
     {
       key: `${group.group}-result`,
       period: group.predictionPeriod,
@@ -276,41 +276,46 @@ export function TianyanPatchedSummary({
   item,
   validation,
 }: {
-  item: TianyanApiRow;
+  item: Pick<TianyanApiRow, "number" | "lockedPosition" | "predictionDistance">;
   validation: TianyanValidation;
 }) {
-  const [rule1, rule2] = validation.rules;
-  if (!rule1 || !rule2) return null;
+  const rulePairs = Array.from({ length: Math.ceil(validation.rules.length / 2) },
+    (_, index) => validation.rules.slice(index * 2, index * 2 + 2));
+  if (!rulePairs.length) return null;
   const lockedNumber = validation.sourceA?.lockedNumber ?? item.number;
   const lockedPosition = validation.sourceA?.lockedPosition ?? item.lockedPosition;
   const predictionDistance = validation.sourceA?.predictionDistance ?? item.predictionDistance;
 
   return (
     <>
-      <ExploreValidationSummary>
+      <ExploreValidationSummary layout="tianyan">
         <span className="tianyan-validation-summary-lines tianyan-expanded-summary-lines" aria-label="版路摘要">
-          <span className="tianyan-validation-summary-row">
-            <SummaryLocked number={lockedNumber} position={lockedPosition} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <SummaryDirection offset={rule1.referenceOffset} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <SummaryPosition position={rule1.referencePosition} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <SummaryFormula rule={rule1} />
-          </span>
-          <span className="tianyan-validation-summary-row">
-            <span className="tianyan-expanded-summary-indent" aria-hidden="true">
-              <SummaryLocked number={lockedNumber} position={lockedPosition} />
-              <i className="validation-summary-divider">｜</i>
-            </span>
-            <SummaryDirection offset={rule2.referenceOffset} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <SummaryPosition position={rule2.referencePosition} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <SummaryFormula rule={rule2} />
-            <i className="validation-summary-divider" aria-hidden="true">｜</i>
-            <span>下 <i className="validation-summary-future">{predictionDistance}</i> 期開</span>
-          </span>
+          {rulePairs.map(([rule1, rule2]) => (
+            <Fragment key={rule1.id}>
+              <span className="tianyan-validation-summary-row">
+                <SummaryLocked number={lockedNumber} position={lockedPosition} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryDirection offset={rule1.referenceOffset} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryPosition position={rule1.referencePosition} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryFormula rule={rule1} />
+              </span>
+              {rule2 ? <span className="tianyan-validation-summary-row">
+                <span className="tianyan-expanded-summary-indent" aria-hidden="true">
+                  <SummaryLocked number={lockedNumber} position={lockedPosition} />
+                </span>
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryDirection offset={rule2.referenceOffset} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryPosition position={rule2.referencePosition} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <SummaryFormula rule={rule2} />
+                <i className="validation-summary-divider" aria-hidden="true">｜</i>
+                <span>下 <i className="validation-summary-future">{predictionDistance}</i> 期開</span>
+              </span> : null}
+            </Fragment>
+          ))}
         </span>
       </ExploreValidationSummary>
       <strong className="explore-validation-consecutive-tag">
@@ -338,7 +343,7 @@ function ValidationFormula({ formula }: { formula: FormulaModel }) {
 }
 
 function ValidationRight({ row }: { row: TianyanPatchedValidationRow }) {
-  if (row.right.kind === "lock") return <span className="tianyan-expanded-lock-condition">鎖定條件</span>;
+  if (row.right.kind === "lock") return null;
   if (row.right.kind === "formula") return <ValidationFormula formula={row.right.formula} />;
   return (
     <>［<strong className="explore-validation-result-number">

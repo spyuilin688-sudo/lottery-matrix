@@ -40,6 +40,7 @@ import {
 } from "./lottery-api";
 import { BrandLogo, PRIMARY_BRAND_LOGO } from "./BrandLogo";
 import { ExploreValidationSummary } from "./ExploreValidationSummary";
+import { TianyanPatchedSummary } from "./TianyanExpandedLayoutPatch";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek, isNearHistoryWeekBoundary } from "./history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "./reference-number-input";
@@ -1451,19 +1452,6 @@ function TianyanValidationProcess({
     rule.ruleValue,
     rule.currentPredictionNumber,
   ));
-  const summaryRulePairs = Array.from(
-    { length: Math.ceil(validation.rules.length / 2) },
-    (_, index) => validation.rules.slice(index * 2, (index + 1) * 2),
-  );
-  const summaryLockedNumber = validation.sourceA?.lockedNumber ?? item.number;
-  const summaryLockedPosition = validation.sourceA?.lockedPosition ?? item.position;
-  const summaryPredictionDistance = validation.sourceA?.predictionDistance ?? item.predictionPeriod;
-  const summaryRuleDirection = (offset: number) => offset === 0
-    ? "同期"
-    : `${offset < 0 ? "上" : "下"} ${Math.abs(offset)} 期`;
-  const summaryRuleFormula = (rule: TianyanValidation["rules"][number]) => rule.algorithmType === "加減"
-    ? `${rule.ruleValue >= 0 ? "+" : ""}${rule.ruleValue}`
-    : `${rule.algorithmType} ${rule.ruleValue}`;
 
   return (
     <section
@@ -1477,47 +1465,28 @@ function TianyanValidationProcess({
     >
       <div className="validation-rule-set explore-validation-rule-set">
         <header className="explore-validation-summary-card">
-          <ExploreValidationSummary>
-            <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
-              {summaryRulePairs.map((pair, pairIndex) => (
-                <Fragment key={pair.map((rule) => rule.id).join("-") || `pair-${pairIndex}`}>
-                  <span className="tianyan-validation-summary-row">
-                    <span>開 <i className="validation-summary-primary">{displayNumber(summaryLockedNumber)}</i> 第 <i className="validation-summary-position">{summaryLockedPosition}</i> 顆</span>
-                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
-                    <span>下 <i className="validation-summary-position">{summaryPredictionDistance}</i> 期開</span>
-                    <i className="explore-validation-summary-separator" aria-hidden="true">｜</i>
-                    <strong className="explore-validation-consecutive-tag">準{validation.groupCount}進{validation.groupCount + 1}</strong>
-                  </span>
-                  <span className="tianyan-validation-summary-row">
-                    {pair.map((rule, ruleIndex) => (
-                      <Fragment key={rule.id}>
-                        {ruleIndex > 0 ? <i className="explore-validation-summary-separator" aria-hidden="true">｜</i> : null}
-                        <span>
-                          {summaryRuleDirection(rule.referenceOffset)} 第 <i className="validation-summary-position">{rule.referencePosition}</i> 顆{" "}
-                          <i className="validation-summary-formula">{summaryRuleFormula(rule)}</i>
-                        </span>
-                      </Fragment>
-                    ))}
-                  </span>
-                </Fragment>
-              ))}
-            </span>
-          </ExploreValidationSummary>
+          <TianyanPatchedSummary
+            item={{ number: item.number, lockedPosition: item.position, predictionDistance: item.predictionPeriod }}
+            validation={validation}
+          />
         </header>
         <div className="explore-validation-groups">
-          {validation.historicalValidation.map((row) => validationGroup(
-            `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
-            [
-              { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
-              { key: `formula-${row.group}-2`, period: "", numbers: [] },
-              { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
-            ],
-            [
-              validationFormula(row.rule1.validationPosition, row.rule1.baseNumber, row.rule1.algorithmType, row.rule1.ruleValue, row.rule1.calculationResult),
-              validationFormula(row.rule2.validationPosition, row.rule2.baseNumber, row.rule2.algorithmType, row.rule2.ruleValue, row.rule2.calculationResult),
-              resultFormula(row.hitNumbers),
-            ],
-          ))}
+          {validation.historicalValidation.map((row) => {
+            const matchedRules = [row.rule1, row.rule2].filter((rule) => rule.hit);
+            if (!matchedRules.length) return null;
+            return validationGroup(
+              `${validation.itemId}-${row.group}-${row.predictionPeriod}`,
+              [
+                { key: `source-${row.group}`, period: row.sourcePeriod, numbers: row.sourceNumbers, sourceNumber: row.lockedNumber },
+                ...matchedRules.slice(1).map((_, index) => ({ key: `formula-${row.group}-${index}`, period: "", numbers: [] })),
+                { key: `prediction-${row.group}`, period: row.predictionPeriod, numbers: row.predictionNumbers, hitNumbers: row.hitNumbers },
+              ],
+              [
+                ...matchedRules.map((rule) => validationFormula(rule.validationPosition, rule.baseNumber, rule.algorithmType, rule.ruleValue, rule.calculationResult)),
+                resultFormula(row.hitNumbers),
+              ],
+            );
+          })}
           {validation.sourceA && currentFormulas.length === 2 ? validationGroup(
             `${validation.itemId}-current`,
             [
@@ -2955,10 +2924,10 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "Matrix 探索",
       summary: "依彩種、探索期數、版路類型、命中條件與進階設定，篩選符合條件的版路結果。",
       blocks: [
-        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)或準5+ (鎖定2碼) 單選。"] },
-        { title: "近十三期：今彩539、天天樂", items: ["今彩539：依號碼由小到大排序65個；依實際開獎順序排序65個鎖定條件。", "天天樂：依號碼由小到大排序65個鎖定條件。", "加減版路驗證球位：每種排序合計6,760個。", "合值版路驗證球位：每種排序合計6,760個。", "拖牌版路驗證球位：每種排序合計65個。", "今彩539兩種排序合計27,170個比對球位；天天樂合計13,585個。"] },
-        { title: "近十三期：六合彩、大樂透", items: ["六合彩、大樂透：依號碼由小到大排序91個；依實際開獎順序排序91個鎖定條件。", "加減版路驗證球位：每種排序合計13,286個。", "合值版路驗證球位：每種排序合計13,286個。", "拖牌版路驗證球位：每種排序合計91個。", "六合彩兩種排序合計53,326個比對球位；大樂透兩種排序合計53,326個比對球位。", "四彩種近十三期合計147,407個比對球位。"] },
-        { title: "進階探索設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "探索日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍：上1～7、當期、下N至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下N至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
+        { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "探索期數：二期、七期、十三期 (Matrix Pro)。", "版路類型：加減版路、合值版路、拖牌版路。", "命中條件：準4+ (鎖定1碼)、準5+ (鎖定2碼)。"] },
+        { title: "近十三期：今彩539、天天樂", items: ["今彩539：依號碼由小到大排序 65 個；依實際開獎順序排序 65 個鎖定條件。", "天天樂：依號碼由小到大排序 65 個鎖定條件。", "加減版路驗證球位：每種排序合計 6,760 個。", "合值版路驗證球位：每種排序合計 6,760 個。", "拖牌版路驗證球位：每種排序合計 65 個。", "今彩539兩種排序合計 27,170 個比對球位；天天樂合計 13,585 個。"] },
+        { title: "近十三期：六合彩、大樂透", items: ["六合彩、大樂透：依號碼由小到大排序 91 個；依實際開獎順序排序 91 個鎖定條件。", "加減版路驗證球位：每種排序合計 13,286 個。", "合值版路驗證球位：每種排序合計 13,286 個。", "拖牌版路驗證球位：每種排序合計 91 個。", "六合彩兩種排序合計 53,326 個比對球位；大樂透兩種排序合計 53,326 個比對球位。", "四彩種近十三期合計 147,407 個比對球位。"] },
+        { title: "進階探索設定", items: ["號碼順序：今彩539、六合彩、大樂透可選依號碼由小到大排序或依實際開獎順序排序；天天樂固定依號碼由小到大排序。", "探索日期：可選本日 (最新)、昨日 (上1期)、前日 (上2期)。", "標準範圍：上1～7、當期、下 N 至結果期前一期；不包含結果期。", "完整範圍：上1～14、當期、下 N 至結果期前一期；不包含結果期。", "完整範圍為 Matrix Pro 功能。"] },
         { title: "查看結果", items: ["按下「開始探索」後，查看重複號碼統計與探索結果。", "結果顯示位置、號碼、預測期、連準次數、預測及版路類型。", "可使用同碼與連準篩選，並展開每條版路查看驗證過程。"] },
       ],
     },
@@ -2967,7 +2936,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "使用複合版路進行探索，命中條件固定為準5+ (鎖定2碼)。",
       blocks: [
         { title: "探索設定", items: ["彩種：今彩539、天天樂、六合彩、大樂透。", "版路類型使用複合版路。", "命中條件固定為準5+ (鎖定2碼)。"] },
-        { title: "複合版路", items: ["複合版路每組使用1個鎖定條件與2條規則。", "每條規則各驗證1個球位；同一球位時，兩條規則必須使用不同演算法。"] },
+        { title: "複合版路", items: ["複合版路每組使用 1 個鎖定條件與 2 條規則。", "每條規則各驗證 1 個球位；同一球位時，兩條規則必須使用不同演算法。"] },
         { title: "查看結果", items: ["按下「開始探索」後顯示符合條件的結果。", "可使用連準篩選，並展開版路查看驗證過程。"] },
       ],
     },
@@ -2995,15 +2964,15 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       title: "Matrix 同星",
       summary: "輸入指定號碼後，查詢指定期數的開獎結果。",
       blocks: [
-        { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入1至3個號碼，號碼不可重複。", "「之後下」可選擇1至30期，再按「開始探索」。"] },
-        { title: "結果內容", items: ["結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示5個號碼；六合彩與大樂透顯示6個號碼及特別號。"] },
+        { title: "設定條件", items: ["選擇彩種及號碼順序。", "輸入 1 至 3 個號碼，號碼不可重複。", "「之後下」可選擇 1 至 30 期，再按「開始探索」。"] },
+        { title: "結果內容", items: ["結果左側顯示期數與日期，右側顯示開獎號碼。", "今彩539與天天樂顯示 5 個號碼；六合彩與大樂透顯示 6 個號碼及特別號。"] },
       ],
     },
     {
       title: "號碼對照單",
       summary: "瀏覽完整歷史開獎紀錄，並以探索號碼與手動標記比對歷史資料。",
       blocks: [
-        { title: "查詢設定", items: ["選擇彩種、歷史範圍 (1000／3000／5000期) 及號碼順序。", "可輸入0至3個探索號碼；空白格不參與探索，號碼不可重複。"] },
+        { title: "查詢設定", items: ["選擇彩種、歷史範圍 (1000/3000/5000期) 及號碼順序。", "可輸入 0 至 3 個探索號碼；空白格不參與探索，號碼不可重複。"] },
         { title: "開始探索", items: ["修改條件後，需按「開始探索」才更新歷史資料與標記。", "未輸入探索號碼時，仍可顯示完整歷史表格且不顯示探索標記。", "探索顏色固定依輸入格位置對應。"] },
         { title: "手動標記與刷新", items: ["點擊期數或單一號碼可手動標記，並立即生效。", "刷新後清空探索號碼與所有標記，並重新載入資料。"] },
       ],
@@ -3044,7 +3013,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       summary: "Matrix Pro 為樂彩 Matrix 的付費訂閱方案。",
       blocks: [
         { title: "方案與期間", items: ["提供月方案、季方案與年方案。", "實際價格、期間及權限請至「Matrix Pro 訂閱方案與收費標準」查看。"] },
-        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
+        { title: "權限內容", items: ["Matrix 狀態進階資訊。", "Matrix 狀態自訂觸發條件。", "Matrix 探索期數十三期。", "Matrix 探索完整範圍。", "Matrix Pro 專屬推播通知。", "依訂閱方案顯示 Matrix 天衍、Matrix 天工權限。"] },
       ],
     },
     {
