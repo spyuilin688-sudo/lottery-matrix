@@ -327,7 +327,7 @@ test('展開版路後套用獨立結果區並完整顯示 API 驗證過程', asy
   expect(validation.querySelector('.explore-validation-prediction-arrow--right')).not.toBeNull();
 });
 
-test('同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色', async () => {
+test('同期驗證條件是鎖定號碼本身時只顯示粉紅狀態', async () => {
   matrixApi.fetchExploreList.mockResolvedValue({
     ...exploreEnvelope,
     items: [{ ...exploreEnvelope.items[0], referenceOffset: 0 }],
@@ -366,6 +366,40 @@ test('同期驗證會合併鎖定與驗證列並顯示鎖定與命中顏色', as
   expect(firstGroup!.querySelector('.explore-validation-number--source')).toBeNull();
   expect(firstGroup!.querySelector('.explore-validation-number--step')?.textContent).toBe('22');
   expect(validation.querySelectorAll('.explore-validation-group')[1].querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
+});
+
+test('同期驗證條件不是鎖定號碼本身時同列顯示粉紅與藍色狀態', async () => {
+  matrixApi.fetchExploreList.mockResolvedValue({
+    ...exploreEnvelope,
+    items: [{ ...exploreEnvelope.items[0], referenceOffset: 0 }],
+  });
+  matrixApi.fetchExploreValidation.mockResolvedValue({
+    ...exploreValidationEnvelope,
+    validation: {
+      ...exploreValidationEnvelope.validation,
+      ruleSets: [{
+        ...exploreValidationEnvelope.validation.ruleSets[0],
+        historicalValidation: [{
+          ...exploreValidationEnvelope.validation.ruleSets[0].historicalValidation[0],
+          sourcePeriod: '114000120',
+          sourceNumbers: ['03', '10', '14', '22', '44'],
+          referencePeriod: '114000120',
+          referenceNumbers: ['03', '10', '14', '22', '44'],
+          baseNumber: 14,
+        }],
+      }],
+    },
+  });
+  render(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
+
+  const validation = await screen.findByRole('region', { name: '驗證過程' });
+  const firstGroup = validation.querySelector('.explore-validation-group');
+  expect(firstGroup!.querySelectorAll('.explore-validation-number-row')).toHaveLength(2);
+  expect(firstGroup!.querySelector('.explore-validation-number--hit')?.textContent).toBe('44');
+  expect(firstGroup!.querySelector('.explore-validation-number--source')?.textContent).toBe('14');
 });
 
 test('拖牌多個驗證值時只保留一列空白公式列且每組最多三列', async () => {

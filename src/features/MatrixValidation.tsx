@@ -281,6 +281,9 @@ export function ExploreValidationProcess({
                   period: row.sourcePeriod,
                   numbers: row.sourceNumbers,
                   sourceNumber: item.number,
+                  stepNumber: item.algorithmType !== "拖牌" && (item.referenceOffset ?? 0) === 0
+                    ? row.baseNumber
+                    : undefined,
                 };
                 const reference: ValidationDisplayRow = {
                   key: `reference-${row.group}`,
@@ -331,6 +334,9 @@ export function ExploreValidationProcess({
                         period: validation.sourceA.sourcePeriod,
                         numbers: validation.sourceA.sourceNumbers,
                         sourceNumber: item.number,
+                        stepNumber: item.algorithmType !== "拖牌" && (item.referenceOffset ?? 0) === 0
+                          ? validation.sourceA.baseNumber
+                          : undefined,
                       },
                       ...currentCalculations.slice(1, 2).map((_, index): ValidationDisplayRow => ({
                         key: `current-formula-${index + 2}`,
@@ -502,6 +508,7 @@ export function TianyanValidationProcess({
       <div className="validation-rule-set explore-validation-rule-set">
         <header className="explore-validation-summary-card">
           <TianyanPatchedSummary
+            lottery={lottery}
             item={{ number: item.number, lockedPosition: item.position, predictionDistance: item.predictionPeriod }}
             validation={validation}
           />
