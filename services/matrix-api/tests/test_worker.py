@@ -331,6 +331,7 @@ def test_worker_cleans_expired_artifacts_before_running() -> None:
     repository = TrackingRepository()
     source = Source()
     repository.begin_run("今彩539", "old", "old-version", datetime.now(UTC).isoformat())
+    repository.fail_run("今彩539", "old", "old-version", "abandoned")
     repository.save_artifact("今彩539", "old", "old-version", "explore", {"old": True})
     old_key = ("今彩539", "old", "old-version", "explore")
     repository.artifacts[old_key]["expiresAt"] = datetime.now(UTC) - timedelta(days=1)

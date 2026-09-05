@@ -260,7 +260,9 @@ def _resume_stored_analysis(
     period = str(latest_draw["period"])
     expected_version = f"{period}:{ANALYSIS_VERSION}"
     progress = repository.get_progress(lottery, period, expected_version)
-    if progress is not None and progress.get("status") == "complete":
+    if progress is not None and progress.get("status") == "complete" and repository.has_artifact(
+        lottery, period, expected_version, "explore",
+    ):
         if not repository.has_explore_results(lottery, period, expected_version):
             artifact = repository.read_artifact(lottery, period, expected_version, "explore")
             if artifact is not None:

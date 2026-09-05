@@ -216,7 +216,9 @@ def run_analysis_only_worker(
     _emit_early_result(draw, notification_emitter, emitted_event_keys)
 
     progress = progress_by_period.get(period)
-    if progress is not None and progress.get("status") == "complete":
+    if progress is not None and progress.get("status") == "complete" and repository.has_artifact(
+        lottery, period, analysis_version, "explore",
+    ):
         _restore_completed_explore_results(
             repository,
             lottery,
