@@ -1,0 +1,44 @@
+// Isolated PostgreSQL only. Never writes test visits to production.
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+const { PGlite } = await import(process.env.PGLITE_MODULE_PATH || '@electric-sql/pglite');
+const db = new PGlite();
+try {
+  await db.exec(`create schema private; create schema cron; create role anon; create role authenticated; create role service_role;
+    create function cron.schedule(text,text,text) returns bigint language sql as $$select 1::bigint$$;`);
+  const file = readdirSync('supabase/migrations').find(n => n.endsWith('_matrix_visitor_counts.sql'));
+  await db.exec(readFileSync(file ? `supabase/migrations/${file}` : 'supabase/visitor-counts.sql', 'utf8'));
+  const a = 'a'.repeat(64), b = 'b'.repeat(64);
+  const visit = (hash,time) => db.query('select private.record_matrix_visit($1,$2::timestamptz)', [hash,time]);
+  const count = async (kind,date) => Number((await db.query('select visitors from private.matrix_visitor_counts where period_type=$1 and period_start=$2::date',[kind,date])).rows[0]?.visitors ?? 0);
+  await visit(a,'2026-09-05T10:00:00Z'); await visit(a,'2026-09-05T11:00:00Z');
+  assert.equal(await count('total','1970-01-01'),1); assert.equal(await count('day','2026-09-05'),1);
+  await visit(a,'2026-09-05T16:00:00Z');
+  assert.equal(await count('day','2026-09-06'),1); assert.equal(await count('month','2026-09-01'),1);
+  await visit(b,'2026-09-06T01:00:00Z');
+  assert.equal(await count('day','2026-09-06'),2); assert.equal(await count('total','1970-01-01'),2);
+  await visit(a,'2026-09-30T16:00:00Z');
+  assert.equal(await count('month','2026-10-01'),1); assert.equal(await count('total','1970-01-01'),2);
+  await visit(a,'2026-12-04T09:59:59Z'); assert.equal(await count('total','1970-01-01'),2);
+  await visit(a,'2026-12-04T10:00:00Z'); assert.equal(await count('total','1970-01-01'),3);
+  await visit(a,'2026-12-04T10:00:01Z'); assert.equal(await count('total','1970-01-01'),3);
+  await db.exec("update private.matrix_visitor_identifiers set created_at=now()-interval '91 days'; select private.purge_matrix_visitor_identifiers();");
+  assert.equal((await db.query('select count(*)::int n from private.matrix_visitor_identifiers')).rows[0].n,0);
+  assert.equal(await count('total','1970-01-01'),3);
+  const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0,10);
+  const todayBefore = await count('day',today), monthBefore = await count('month',today.slice(0,7)+'-01');
+  await db.exec('set role anon');
+  await db.query('select public.record_matrix_visit($1)',[a]);
+  await assert.rejects(db.query("select public.record_matrix_visit('not-a-hash')"),/INVALID_VISITOR_HASH/);
+  await assert.rejects(db.query('select public.admin_visitor_stats()'),/permission denied/);
+  await assert.rejects(db.query('select * from private.matrix_visitor_identifiers'),/permission denied/);
+  await db.exec('reset role; set role authenticated');
+  await assert.rejects(db.query('select public.admin_visitor_stats()'),/permission denied/);
+  await db.exec('reset role; set role service_role');
+  const stats=(await db.query('select public.admin_visitor_stats() result')).rows[0].result;
+  assert.equal(stats.totalVisitors,4); assert.equal(stats.todayVisitors,todayBefore+1); assert.equal(stats.monthVisitors,monthBefore+1);
+  await db.exec('reset role');
+  const acl=(await db.query("select has_function_privilege('anon','private.record_matrix_visit(text,timestamptz)','execute') allowed")).rows[0];
+  assert.equal(acl.allowed,false);
+  console.log('Visitor counting, Taipei boundaries, 90-day expiry, retained totals and access checks passed.');
+} finally { await db.close(); }

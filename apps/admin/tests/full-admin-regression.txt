@@ -1,0 +1,102 @@
+# Tests
+
+## Test 1 - 管理員登入並修改自己的名稱 [sanity]
+Viewport: desktop
+Covers: AppDeploy Auth, GET /api/bootstrap, PUT /api/me/name, Supabase admin_accounts, audit_logs
+Description: 驗證啟用中的管理員可登入並修改自己的名稱，重新整理後仍保留修改結果。
+
+Steps:
+1. 使用已存在於 admin_accounts 且狀態為啟用的管理員帳號登入
+2. 點擊右上角自己的管理員名稱
+3. 輸入新的名稱並點擊儲存
+4. 在二次確認視窗點擊「確認修改」
+5. 重新整理頁面
+
+Expected: 點擊儲存後先出現二次確認，取消時不寫入；確認後右上角顯示新的管理員名稱，重新整理後名稱仍維持不變。
+
+## Test 2 - 手機版搜尋會員並停權或啟動
+Viewport: mobile
+Covers: GET /api/data/users, PUT /api/members/:id/status, member search/filter, compact admin layout, 30-row pagination, audit_logs
+Description: 驗證營運管理員可在手機版列表搜尋會員、查看在線統計並切換帳號狀態。
+
+Steps:
+1. 以營運管理員進入「用戶管理」
+2. 使用會員 ID、方案、推薦碼或邀請碼搜尋一位會員
+3. 使用狀態選項篩選會員
+4. 點擊列表中的「停權」或「啟動」
+5. 檢查二次確認內容後確認操作
+
+Expected: 固定標題列維持內容置中且高度縮減，搜尋與狀態控制高度為 32px，搜尋卡沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE名稱、註冊時間、最後上線時間、平均在線時間、狀態、驗證用戶ID及最新帳號狀態；取消二次確認時狀態不得改變。
+
+## Test 3 - 手動管理會員訂閱
+Viewport: desktop
+Covers: GET /api/data/subscriptions, PUT /api/subscriptions/:id, adjustExpiry, compact search card, user information dialog, 30-row pagination
+Description: 驗證營運管理員可查看訂閱列表、會員資訊並調整方案到期日。
+
+Steps:
+1. 以營運管理員進入「訂閱管理」
+2. 點擊一位會員的「用戶資訊」，確認顯示用戶管理內的相同資料
+3. 點擊「調整到期日」，輸入日期後儲存
+4. 在二次確認視窗確認修改
+5. 重新載入「訂閱管理」
+
+Expected: 搜尋與狀態控制高度為 32px，搜尋卡高度依內容自動適配且沒有多餘空白；列表儲存格上下間距約 6px，最後操作欄不固定；列表每頁最多 30 筆，依序顯示 LINE名稱、訂閱方案、開始時間、到期時間、自動續訂、調整到期日及用戶資訊；用戶資訊視窗顯示 LINE名稱且「關閉」按鍵文字清楚可見；取消二次確認時不更新，確認後到期日依操作更新。
+
+## Test 4 - 審核轉帳、管理員權限與啟動碼刪除
+Viewport: desktop and mobile
+Covers: GET /api/data/transferRequests, members.line_display_name, PUT /api/transfer-requests/:id, DELETE /api/activation-codes/:id, payments linkage, activation_codes, admin_login_records, audit_logs, role module permissions, last-super and self-delete protection
+Description: 驗證營運管理員可審核轉帳與刪除啟動碼，查看人員只能查看，管理員保護規則不允許刪除自己或移除最後一位啟用中的超級管理員。
+
+Steps:
+1. 以營運管理員進入「訂閱管理」的「轉帳申請」
+2. 對待審核申請點擊「確認」或「拒絕」，再完成二次確認
+3. 以查看人員重新登入並開啟相同頁面
+4. 以超級管理員登入並完成一次管理員操作，再檢查「登入紀錄」與「審計日誌」
+5. 以營運管理員進入「啟動碼管理」，建立一批啟動碼後刪除其中一筆並完成二次確認
+
+Expected: 轉帳申請卡片使用緊湊間距，手機寬度下「確認」與「拒絕」維持同列且文字不直排；申請顯示 LINE名稱；取消二次確認時不異動資料；確認的申請建立付款並開通方案，拒絕的申請不建立付款；查看人員沒有異動按鈕；超級管理員本次登入與操作不新增紀錄，且系統拒絕刪除自己及移除最後一位啟用中的超級管理員；啟動碼每列有刪除按鈕，確認後資料與列表同步移除。
+
+## Test 5 - 概覽卡片、手機選單與分組系統狀態
+Viewport: mobile
+Covers: compact overview and revenue cards, mobile drawer backdrop, GET /api/system-status, POST /api/system-status/:id/retry, POST /api/system-status/:id/refresh, grouped AppDeploy/Supabase/GitHub/Railway status rows, watchdog heartbeat, GitHub read-only workflow check, segmented logical schedule, four lottery cron statuses, permission-gated crawler refresh, fault isolation
+Description: 驗證概覽與收入卡片縮減後內容仍完整；手機選單可點擊外部收合，系統狀態依固定部署位置分組，Railway 可重新呼叫，且具編輯權限時可手動更新停止的爬蟲。
+
+Steps:
+1. 查看「營運概覽」與「收入報表」的統計卡片
+2. 點擊左上角選單，確認側欄不超過 220px，再點擊側欄外區域
+3. 重新開啟選單並進入「系統設定」
+4. 分別以 320px、390px、430px 寬度查看 AppDeploy、Supabase、GitHub、Railway 群組，確認空群組不顯示、header 維持全寬單欄且每組顯示正常數／總數；再以 761px 確認切回桌面排列
+5. 檢查 AppDeploy 獨立監控心跳的完成時間、實體每 6 分鐘與 Logical `6×50、10×60、30×18`
+6. 檢查 GitHub 群組將 API 連線健康與 workflow 名稱／路徑／狀態、最近執行狀態／結果／建立與更新時間分開顯示；沒有 run 時顯示「尚無執行紀錄」，且沒有 dispatch 或 retry 操作
+7. 讓 Railway Worker 呈現異常，點擊「重新呼叫 Railway」，確認 live 成功訊息與焦點位置，再點擊頁面上方的「重新檢查全部服務」
+8. 讓其中一個 crawler 排程呈現 failed；分別以查看與編輯權限檢查「手動更新開獎資料」並由編輯者執行，另模擬更新成功但狀態重新讀取失敗
+
+Expected: 概覽與收入統計卡片高度縮減且標籤、數值不碰撞；點擊外部後選單自動收合；群組順序固定為 AppDeploy→Supabase→GitHub→Railway，每列顯示名稱、用途、Endpoint、狀態、檢查時間與回應時間；320／390／430px 下 header 為全寬單欄、按鈕全寬且長 endpoint 與名稱不溢出，761px 才切回桌面排列；心跳明確顯示 completedAt 與兩種排程；GitHub API 健康與最近 workflow 執行結果清楚分開且保持唯讀；Railway 重試只更新對應狀態並透過 live region 宣告結果；Railway 或 crawler 操作成功後焦點移到該列，該列消失時移到系統狀態 section，更新成功但重新讀取失敗也維持穩定焦點，請求失敗時原按鈕保有焦點；查看人員沒有 crawler 手動更新按鈕，編輯者執行後顯示更新期別並重新檢查狀態；正常項目沒有多餘操作。
+
+## Test 6 - 超級管理員重設收入
+Viewport: desktop and mobile
+Covers: GET /api/dashboard, POST /api/revenue/reset, admin_revenue_settings, server-side super-admin authorization, shared confirmation dialog
+Description: 驗證只有超級管理員看得到並能使用收入重設，付款紀錄保留且五項收入從最新基準時間重新累積。
+
+Steps:
+1. 以查看人員或營運管理員進入「收入報表」，確認沒有「重設收入」按鈕，並直接呼叫重設 API
+2. 以超級管理員進入「收入報表」並點擊「重設收入」
+3. 在確認視窗先選擇取消，確認五項數值與基準時間均未改變
+4. 再次點擊並選擇「確認重設」
+5. 重新整理收入報表並查核原有 payments 資料
+
+Expected: 非超級管理員看不到按鈕且 API 回傳 403；確認視窗明示五項收入歸零但付款紀錄保留；取消不執行；確認後五項收入先歸零，原 payments 列數與內容不變，後續已確認付款只從 reset_at 起重新累積。
+
+## Test 7 - 啟動碼方案映射與不降級
+Viewport: mobile
+Covers: redeem_activation_code, members.current_plan_id, members.plan_expires_at, activation_codes
+Description: 驗證天數型與永久啟動碼會授予正確 Matrix Pro 方案，並且不降低有效中的較高方案。
+
+Steps:
+1. 以免費會員分別兌換 7、15、30、90、365 天啟動碼，檢查方案與到期日
+2. 以有效年費會員兌換 30 天啟動碼
+3. 以有效月費會員兌換 90 天啟動碼
+4. 以永久會員兌換天數型啟動碼
+5. 重複兌換已使用或已過期的啟動碼
+
+Expected: 7／15／30 天授予月費、90 天授予季費、365 天授予年費；較低方案啟動碼只延長有效中的較高方案而不降級；較高方案立即升級並延長；永久會員不消耗天數型啟動碼；已使用、已過期與無效啟動碼均回傳安全且可辨識的錯誤。

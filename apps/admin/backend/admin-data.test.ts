@@ -92,7 +92,7 @@ describe('listAdminTable', () => {
 
 describe('getDashboard', () => {
   it('derives plan counts and confirmed revenue only from real Supabase columns', async () => {
-    const api = { request: vi.fn(async (path: string) => path.includes('/members?') ? [
+    const api = { request: vi.fn(async (path: string) => path.includes('/rpc/admin_visitor_stats') ? { todayVisitors: 2, monthVisitors: 7, totalVisitors: 10 } : path.includes('/members?') ? [
       { plan_expires_at: '2026-08-25T00:00:00Z', current_plan: { duration_days: 30 } },
       { plan_expires_at: '2026-10-01T00:00:00Z', current_plan: { duration_days: 90 } },
       { plan_expires_at: null, current_plan: { duration_days: 365 } },
@@ -101,8 +101,17 @@ describe('getDashboard', () => {
       { amount: 50, paid_at: '2026-08-01T01:00:00Z', status: 'confirmed' },
     ]) };
     await expect(getDashboard(api, new Date('2026-08-21T12:00:00Z'))).resolves.toEqual({
+      todayVisitors: 2, monthVisitors: 7, totalVisitors: 10,
       totalUsers: 3, monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 1,
       todayRevenue: 100, monthRevenue: 150, quarterRevenue: 150, yearRevenue: 150, cumulativeRevenue: 150,
     });
   });
+});
+
+ it('keeps existing dashboard data when visitor counts are unavailable', async () => {
+  const api = { request: vi.fn(async (path: string) => {
+    if (path.includes('/rpc/admin_visitor_stats')) throw Error('unavailable');
+    return [];
+  }) };
+  expect(await getDashboard(api)).toMatchObject({ todayVisitors: null, monthVisitors: null, totalVisitors: null, totalUsers: 0, cumulativeRevenue: 0 });
 });
