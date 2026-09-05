@@ -117,6 +117,16 @@ class CardPublicationService:
         self.cards = cards
         self.renderer = renderer
 
+    def _prune(self, lottery: str, draws: list[dict[str, Any]],
+               manifest: dict[str, Any]) -> None:
+        keep_periods = tuple(str(row['period']) for row in draws[:3])
+        try:
+            self.cards.prune(lottery, keep_periods, manifest['generation'])
+        except Exception as error:
+            # Publication is already durable; retry cleanup on the next tick.
+            LOGGER.warning('Matrix card cleanup failed for %s (%s)',
+                           lottery, type(error).__name__)
+
     def ensure_current(self, lottery: str, now: datetime | None = None) -> dict[str, Any] | None:
         now = now or datetime.now(UTC)
         token = str(uuid4())
@@ -133,6 +143,7 @@ class CardPublicationService:
             digest = snapshot_digest(lottery, draws)
             manifest = state['manifest']
             if manifest and manifest['generation'] == digest:
+                self._prune(lottery, draws, manifest)
                 return manifest
             if state['desired_digest'] != digest:
                 self.cards.update(lottery, token, {
@@ -163,6 +174,7 @@ class CardPublicationService:
             published = {'lottery': lottery, 'period': period, 'generation': digest,
                          'generatedAt': now.isoformat(), 'cards': files}
             if self.cards.update(lottery, token, {'manifest': published}):
+                self._prune(lottery, draws, published)
                 return published
             return self.cards.read_manifest(lottery)
         except Exception as error:
