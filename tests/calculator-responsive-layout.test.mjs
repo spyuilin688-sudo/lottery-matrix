@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { JSDOM, VirtualConsole } from 'jsdom';
+import { JSDOM } from 'jsdom';
 
 const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
 const prototype = fs.readFileSync('src/prototype.css', 'utf8');
@@ -15,9 +15,6 @@ function block(css, selector) {
 }
 
 function calculatorStyles() {
-  const virtualConsole = new VirtualConsole();
-  const warn = console.warn;
-  console.warn = () => {};
   const dom = new JSDOM(`<!doctype html>
     <style>${tokens}\n${feature}</style>
     <main class="calculator-screen">
@@ -40,8 +37,7 @@ function calculatorStyles() {
           <div><article><span>二星</span><strong>2</strong></article></div>
         </section>
       </div>
-    </main>`, { virtualConsole });
-  console.warn = warn;
+    </main>`);
   const style = (selector) => dom.window.getComputedStyle(dom.window.document.querySelector(selector));
   return { dom, style };
 }

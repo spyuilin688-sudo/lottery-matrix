@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
-const routerPath = join(root, "src", "FeaturePagesPatched.tsx");
+const routerPath = join(root, "src", "Prototype.tsx");
 const overridePath = join(root, "src", "pro-plans-carousel-peek.css");
 const layoutPath = join(root, "src", "pro-plans-layout.css");
 const mobileLayoutPath = join(root, "src", "mobile-layout-polish.css");

@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -7,7 +8,7 @@ const homeVisualCss = readFileSync(new URL("../src/homepage/visual-language.css"
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const proPlansLayoutCss = readFileSync(new URL("../src/pro-plans-layout.css", import.meta.url), "utf8");
 const adjustmentCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
-const guideSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const guideSource = readFeaturePagesSource();
 const prototypeSource = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
 const notificationsSource = readFileSync(new URL("../src/NotificationsPagePatched.tsx", import.meta.url), "utf8");
 

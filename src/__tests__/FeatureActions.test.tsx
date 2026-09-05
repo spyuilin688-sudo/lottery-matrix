@@ -60,8 +60,8 @@ beforeEach(() => {
     lottery: "今彩539",
     period: "115000001",
     cards: {
-      draw: { url: "/api/matrix/cards/今彩539/draw.svg" },
-      sorted: { url: "/api/matrix/cards/今彩539/sorted.svg" },
+      draw: { url: "/api/matrix/cards/今彩539/draw.png" },
+      sorted: { url: "/api/matrix/cards/今彩539/sorted.png" },
     },
   });
   matrixCards.matrixCardUrl.mockReset().mockImplementation((path: string) => `https://matrix.example.test${path}`);
@@ -123,7 +123,7 @@ describe("existing feature actions", () => {
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "確認" }));
 
     await waitFor(() => expect(matrixTicket.download).toHaveBeenCalledWith(
-      "https://matrix.example.test/api/matrix/cards/今彩539/sorted.svg",
+      "https://matrix.example.test/api/matrix/cards/今彩539/sorted.png",
       "今彩539-順球牌單.png",
     ));
     expect(matrixTicket.download).toHaveBeenCalledTimes(1);
@@ -177,9 +177,10 @@ describe("existing feature actions", () => {
     expect(screen.getByRole("button", { name: "紀錄設定" })).toBeDisabled();
   });
 
-  it("places the three support contacts together on the contact page", () => {
+  it("places the three support contacts together on the contact page", async () => {
     render(<FeaturePageRouter screen="merchant-info" onNavigate={vi.fn()} />);
 
+    await screen.findByText("聯絡客服");
     const contactCards = Array.from(document.querySelectorAll(".contact-support-screen .detail-card"));
     expect(contactCards.map((card) => card.querySelector("h2")?.textContent)).toEqual([
       "聯絡客服",
@@ -189,10 +190,10 @@ describe("existing feature actions", () => {
     expect(screen.getAllByRole("link", { name: "Matrix1150801@gmail.com" })).toHaveLength(3);
   });
 
-  it("combines version information and update history into one page", () => {
+  it("combines version information and update history into one page", async () => {
     render(<FeaturePageRouter screen="version-info" onNavigate={vi.fn()} />);
 
-    expect(screen.getByRole("img", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: "版本資訊/更新紀錄" })).toBeInTheDocument();
     expect(screen.getByText("0.1.0")).toBeInTheDocument();
   });
 

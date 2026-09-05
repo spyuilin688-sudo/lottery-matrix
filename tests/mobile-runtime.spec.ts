@@ -103,7 +103,7 @@ for (const width of MOBILE_WIDTHS) {
     const firstAssetFetchStarted = deferred();
     const releaseFirstAssetFetch = deferred();
     let ticketAssetFetches = 0;
-    const cardSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="320" height="180" fill="#061019"/></svg>';
+    const cardPng = await readFile(new URL("./fixtures/matrix-card.png", import.meta.url));
 
     await page.route("**/api/matrix/cards/**", async (route) => {
       await route.fulfill({
@@ -113,15 +113,15 @@ for (const width of MOBILE_WIDTHS) {
           lottery: "今彩539",
           period: "115000001",
           cards: {
-            draw: { url: "/test-assets/matrix-card-draw.svg" },
-            sorted: { url: "/test-assets/matrix-card-sorted.svg" },
+            draw: { url: "/test-assets/matrix-card-draw.png" },
+            sorted: { url: "/test-assets/matrix-card-sorted.png" },
           },
         }),
       });
     });
-    await page.route("**/test-assets/matrix-card-*.svg", async (route) => {
+    await page.route("**/test-assets/matrix-card-*.png", async (route) => {
       if (route.request().resourceType() !== "fetch") {
-        await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
+        await route.fulfill({ status: 200, contentType: "image/png", body: cardPng });
         return;
       }
       ticketAssetFetches += 1;
@@ -131,7 +131,7 @@ for (const width of MOBILE_WIDTHS) {
         await route.fulfill({ status: 503, contentType: "text/plain", body: "unavailable" });
         return;
       }
-      await route.fulfill({ status: 200, contentType: "image/svg+xml", body: cardSvg });
+      await route.fulfill({ status: 200, contentType: "image/png", body: cardPng });
     });
 
     await page.goto("/");
@@ -153,13 +153,15 @@ for (const width of MOBILE_WIDTHS) {
     await expect(button).toHaveAttribute("aria-busy", "false");
 
     await button.click();
+    const downloadPromise = page.waitForEvent("download");
     await page.getByRole("dialog").getByRole("button", { name: "確認", exact: true }).click();
-    const download = await page.waitForEvent("download");
+    const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe("今彩539-順球牌單.png");
     const downloadPath = await download.path();
     expect(downloadPath).not.toBeNull();
     const bytes = await readFile(downloadPath!);
-    expect(bytes.byteLength).toBeGreaterThan(PNG_SIGNATURE.length);
+    expect(bytes).toEqual(cardPng);
+    expect(ticketAssetFetches).toBe(2);
     expect(Array.from(bytes.subarray(0, PNG_SIGNATURE.length))).toEqual(PNG_SIGNATURE);
 
     const dimensions = await page.evaluate(async (source) => new Promise<{ width: number; height: number }>((resolve, reject) => {
@@ -168,8 +170,7 @@ for (const width of MOBILE_WIDTHS) {
       image.onerror = () => reject(new Error("DOWNLOADED_PNG_DECODE_FAILED"));
       image.src = source;
     }), `data:image/png;base64,${bytes.toString("base64")}`);
-    expect(dimensions.width).toBeGreaterThan(0);
-    expect(dimensions.height).toBeGreaterThan(0);
+    expect(dimensions).toEqual({ width: 2276, height: 3438 });
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expectNoHorizontalDocumentOverflow(page);
   });

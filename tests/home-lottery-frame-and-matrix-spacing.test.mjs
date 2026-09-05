@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -6,7 +7,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const prototype = read("src/Prototype.tsx");
 const switcher = read("src/homepage/lottery-switcher.css");
 const spacing = read("src/matrix-explore-spacing.css");
-const pages = read("src/FeaturePages.tsx");
+const pages = readFeaturePagesSource();
 
 test("首頁彩種在選取後只保留單一 0.7px 響應式八角外框", () => {
   assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);

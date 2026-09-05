@@ -1,10 +1,11 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 const adjustments = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const featurePages = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const guideStart = source.indexOf("export function MatrixGuidePage");

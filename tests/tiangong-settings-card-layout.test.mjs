@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const source = readFileSync(new URL('../src/FeaturePages.tsx', import.meta.url), 'utf8');
+const source = readFeaturePagesSource();
 const pageStart = source.indexOf('export function MatrixTiangongPage');
 const pageEnd = source.indexOf('export function TongXingPage', pageStart);
 const page = source.slice(pageStart, pageEnd);

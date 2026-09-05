@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -5,7 +6,7 @@ import { JSDOM } from 'jsdom';
 
 import { ruleBodies } from './helpers/css-rules.mjs';
 
-const featureSource = readFileSync(new URL('../src/FeaturePages.tsx', import.meta.url), 'utf8');
+const featureSource = readFeaturePagesSource();
 const prototypeSource = readFileSync(new URL('../src/Prototype.tsx', import.meta.url), 'utf8');
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 const featureCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');

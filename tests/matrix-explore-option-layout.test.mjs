@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -6,7 +7,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const main = readFileSync("src/main.tsx", "utf8");
-const source = readFileSync("src/FeaturePages.tsx", "utf8");
+const source = readFeaturePagesSource();
 const exploreStart = source.indexOf("export function MatrixExplorePage");
 const exploreEnd = source.indexOf("function MatrixTiangongPage");
 const exploreSource = source.slice(exploreStart, exploreEnd);

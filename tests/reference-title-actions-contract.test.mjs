@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 const css = readFileSync(new URL("../src/responsive-feature-pages.css", import.meta.url), "utf8");
 
 test("號碼對照單標題操作保持左側刷新，並沿用歷史頁的同一位置規則", () => {

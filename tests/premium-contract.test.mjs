@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -180,7 +181,7 @@ test("documents only evidenced font loading and route-focus behavior", () => {
 
 test("routes every reachable confirmation through the shared accessible dialog owner", () => {
   const contract = readFileSync("UX-CONTRACT.md", "utf8");
-  const featurePages = readFileSync("src/FeaturePages.tsx", "utf8");
+  const featurePages = readFeaturePagesSource();
   const dialogSource = readFileSync("src/dialog/AppDialog.tsx", "utf8");
   const notebookSource = featurePages.slice(
     featurePages.indexOf("export function MatrixNotebookPage"),
@@ -200,7 +201,7 @@ test("routes every reachable confirmation through the shared accessible dialog o
   );
 
   assert.doesNotMatch(featurePages, /window\.(?:confirm|alert)\(/);
-  assert.match(featurePages, /import \{ useAppDialog \} from "\.\/dialog\/AppDialog"/);
+  assert.match(featurePages, /import \{ useAppDialog \} from "\.\.\/dialog\/AppDialog"/);
   assert.ok((notebookSource.match(/appDialog\.confirm\(/g) ?? []).length >= 11);
   assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 1);
   assert.equal(profileSource.match(/confirmDialog\(/g)?.length, 1);

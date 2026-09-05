@@ -14,11 +14,11 @@ import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek } from "./history-week-groups";
 import { filterHistoryRecords, normalizeLookupNumber } from "./feature-tool-logic";
 import {
-  FeaturePageRouter as OriginalFeaturePageRouter,
   QuickNavigationProvider,
   useQuickNavigation,
   type ScreenId,
-} from "./FeaturePages";
+} from "./features/navigation";
+import { FeaturePageRouter as OriginalFeaturePageRouter } from "./features/router";
 import type { DrawOrder, LotteryId } from "./Prototype";
 
 export { QuickNavigationProvider };

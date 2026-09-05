@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const featurePagesSource = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featurePagesSource = readFeaturePagesSource();
 const pricingMigrationSource = readFileSync(new URL("../supabase/migrations/20260904032000_update_subscription_plan_prices.sql", import.meta.url), "utf8");
 
 const countOccurrences = (source, value) => source.split(value).length - 1;

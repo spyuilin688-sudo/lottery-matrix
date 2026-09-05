@@ -56,7 +56,7 @@ describe('data page request failures are not normal empty data', () => {
     lotteryApi.fetchTongXing.mockRejectedValueOnce(new Error('tongxing offline'));
     render(<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    fireEvent.click(await screen.findByRole('button', { name: '開始探索' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Matrix 同星資料載入失敗');
     expect(screen.getByRole('button', { name: '重新載入 Matrix 同星資料' })).toBeEnabled();
@@ -66,7 +66,7 @@ describe('data page request failures are not normal empty data', () => {
     lotteryApi.fetchNumberReference.mockRejectedValueOnce(new Error('reference offline'));
     render(<FeaturePageRouter screen="reference" onNavigate={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+    fireEvent.click(await screen.findByRole('button', { name: '開始探索' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('號碼對照資料載入失敗');
     expect(screen.getByRole('button', { name: '重新載入號碼對照資料' })).toBeEnabled();

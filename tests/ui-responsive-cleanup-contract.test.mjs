@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -9,7 +10,7 @@ const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
 const explore = fs.readFileSync('src/matrix-explore-spacing.css', 'utf8');
 const balls = fs.readFileSync('src/number-ball.css', 'utf8');
-const source = fs.readFileSync('src/FeaturePages.tsx', 'utf8');
+const source = readFeaturePagesSource();
 const coreSource = fs.readFileSync('src/FeaturePagesCore.tsx', 'utf8');
 const main = fs.readFileSync('src/main.tsx', 'utf8');
 const adjustments = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');

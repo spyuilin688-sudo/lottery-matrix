@@ -1,9 +1,10 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const prototypeSource = await readFile(new URL("../src/Prototype.tsx", import.meta.url), "utf8");
-const featurePagesSource = await readFile(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featurePagesSource = readFeaturePagesSource();
 const headerCss = await readFile(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
 
 test("首頁號碼對照單導向號碼對照單頁面", () => {

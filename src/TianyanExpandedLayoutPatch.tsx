@@ -10,7 +10,6 @@ import {
   type TianyanRuleValidation,
 } from "./matrix-algorithm-api";
 import type { NumberBallLottery } from "./NumberBall";
-import "./tianyan-expanded-layout-patch.css";
 
 type ActiveTianyanTarget = {
   itemId: string;

@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync("src/FeaturePages.tsx", "utf8");
+const source = readFeaturePagesSource();
 const spacingCss = readFileSync("src/matrix-explore-spacing.css", "utf8");
 
 const frameFreeAssets = [

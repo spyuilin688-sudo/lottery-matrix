@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -6,7 +7,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const ballCss = readFileSync("src/number-ball.css", "utf8");
-const featureSource = readFileSync("src/FeaturePages.tsx", "utf8");
+const featureSource = readFeaturePagesSource();
 const tokens = readFileSync("src/design-tokens.css", "utf8");
 
 function ruleBlock(source, selectorPattern) {

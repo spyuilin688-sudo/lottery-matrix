@@ -1,12 +1,13 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featurePages = readFeaturePagesSource();
 const previewCss = readFileSync(new URL("../src/explore-result-preview.css", import.meta.url), "utf8");
 
 const processSource = featurePages.match(
-  /function ExploreValidationProcess\([\s\S]*?\n}\n\nfunction TianyanValidationProcess/,
+  /function ExploreValidationProcess\([\s\S]*?\n}\n\nexport function TianyanValidationProcess/,
 )?.[0] ?? "";
 
 test("Matrix Explore restores PR #259 formula computation and exact rule resolution", () => {

@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const compactCss = readFileSync(new URL("../src/activation-code-layout.css", import.meta.url), "utf8");
 const start = source.indexOf("function ActivationCodePage");

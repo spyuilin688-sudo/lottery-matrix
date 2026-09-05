@@ -1,8 +1,9 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-const featurePages = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const featurePages = readFeaturePagesSource();
 const previewPage = readFileSync(new URL("../src/ExploreResultPreviewPage.tsx", import.meta.url), "utf8");
 const previewCss = readFileSync(new URL("../src/explore-result-preview.css", import.meta.url), "utf8");
 const spacingCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");

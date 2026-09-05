@@ -1,3 +1,4 @@
+import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -7,7 +8,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 const css = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const ballCss = readFileSync(new URL("../src/number-ball.css", import.meta.url), "utf8");
-const source = readFileSync(new URL("../src/FeaturePages.tsx", import.meta.url), "utf8");
+const source = readFeaturePagesSource();
 
 test("Matrix Explore 近10期標題整合收合箭頭並可隱藏排序文字", () => {
   assert.match(exploreCss, /\.matrix-explore-main-screen \.history-panel-title\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
