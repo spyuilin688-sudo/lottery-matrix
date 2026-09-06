@@ -2,7 +2,7 @@ export const TRANSFER_PUSH_API = '/api/admin-transfer-push';
 export type TransferPushApi = {
   get(url: string): Promise<{ data: { publicKey?: string; enabled?: boolean } }>;
   post(url: string, body: unknown): Promise<{ data: { enabled?: boolean } }>;
-  delete(url: string, body?: unknown): Promise<{ data: { enabled?: boolean } }>;
+  delete(url: string, config?: { data: { endpoint: string } }): Promise<{ data: { enabled?: boolean } }>;
 };
 
 export function pushAvailability(): string {
@@ -59,7 +59,7 @@ export async function enableTransferPush(client: TransferPushApi) {
 
 export async function disableTransferPush(client: TransferPushApi, subscription: PushSubscription | null) {
   if (!subscription) throw new Error('找不到此裝置的通知設定，請重新整理後再試。');
-  const response = await client.delete(TRANSFER_PUSH_API, { endpoint: subscription.endpoint });
+  const response = await client.delete(TRANSFER_PUSH_API, { data: { endpoint: subscription.endpoint } });
   if (response.data.enabled !== false) throw new Error('通知設定尚未停用，請重試。');
   // Server disabling is authoritative; keep the browser subscription reusable for later enable.
 }
