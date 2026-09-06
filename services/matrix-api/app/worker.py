@@ -289,6 +289,7 @@ def run_scheduled_worker(
     source: DrawSource,
     builders: Mapping[str, ArtifactBuilder] | None = None,
     notification_emitter: NotificationEventEmitter | None = None,
+    allow_recovery_crawl: bool = False,
 ) -> dict[str, Any]:
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
@@ -315,6 +316,7 @@ def run_scheduled_worker(
         return {"lottery": lottery, "status": "not-due"}
 
     current = now or datetime.now(cycle.tzinfo)
+    current_minute = current.astimezone(cycle.tzinfo).replace(second=0, microsecond=0)
     is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
     target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
     expected_draw_date = _expected_source_draw_date(lottery, target_cycle)
@@ -353,6 +355,9 @@ def run_scheduled_worker(
             "drawPeriod": latest[0]["period"],
             "status": "already-acquired",
         }
+
+    if not allow_recovery_crawl and current_minute != cycle:
+        return {"lottery": lottery, "status": "not-due"}
 
     database_period = str(latest[0]["period"]) if latest else None
     refresh = DrawRefreshService(repository, source)

@@ -162,6 +162,20 @@ describe('independent Matrix watchdog planning', () => {
     }]);
   });
 
+  it('does not dispatch recovery while the crawler heartbeat is fresh', () => {
+    const snapshot = healthy('天天樂', '11988', '2026-09-02');
+    snapshot.job = {
+      status: 'running',
+      startedAt: '2026-09-04T01:35:00.000Z',
+      updatedAt: '2026-09-04T01:44:00.000Z',
+    };
+
+    expect(planWatchdogActions(
+      [snapshot],
+      new Date('2026-09-04T01:45:00.000Z'),
+    )).toEqual([]);
+  });
+
   it('recovers Fantasy5 analysis on Railway without asking GitHub to run algorithms', () => {
     const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = null;

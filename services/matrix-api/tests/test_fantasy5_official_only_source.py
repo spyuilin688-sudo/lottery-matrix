@@ -152,6 +152,7 @@ def test_fantasy5_predraw_recovery_targets_previous_draw_not_upcoming_draw() -> 
         repository,
         source,
         _test_builders(),
+        allow_recovery_crawl=True,
     )
 
     assert result["status"] == "complete"

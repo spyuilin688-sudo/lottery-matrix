@@ -17,6 +17,7 @@ from app.settings import load_settings
 
 FANTASY5 = "天天樂"
 TAIPEI = ZoneInfo("Asia/Taipei")
+PREFLIGHT_HISTORY_LIMIT = 32
 
 
 class _TransientSourceError(Exception):
@@ -87,13 +88,34 @@ def _is_transient_source_error(error: Exception) -> bool:
     ))
 
 
+def _has_known_period_gap(draws: list[dict[str, Any]]) -> bool:
+    periods = sorted({
+        int(period)
+        for draw in draws
+        if (period := str(draw.get("period", "")).strip()).isdigit()
+    }, reverse=True)
+    return any(newer - older > 1 for newer, older in zip(periods, periods[1:]))
+
+
 def run_fantasy5_crawler(
     repository: AnalysisRepository,
     source: DrawSource,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    latest = repository.list_draws(FANTASY5, 1)
+    latest = repository.list_draws(FANTASY5, PREFLIGHT_HISTORY_LIMIT)
     database_period = str(latest[0]["period"]) if latest else None
+    if (
+        latest
+        and _normalized_draw_date(latest[0].get("drawDate"))
+        == _expected_source_draw_date(now)
+        and not _has_known_period_gap(latest)
+    ):
+        return {
+            "lottery": FANTASY5,
+            "drawPeriod": database_period,
+            "status": "already-acquired",
+        }
+
     job_name = JOB_NAME_BY_LOTTERY[FANTASY5]
     refresh = DrawRefreshService(repository, _ClassifiedSource(source))
     source_period: str | None = None

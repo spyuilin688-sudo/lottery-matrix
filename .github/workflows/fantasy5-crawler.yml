@@ -4,15 +4,9 @@ on:
   workflow_dispatch:
   schedule:
     # 09:33 Asia/Taipei candidate while Los Angeles is on PDT.
-    - cron: "33,38,43,48,53,58 1 * 3-11 *"
-    - cron: "3,8,13,18,48 2 * 3-11 *"
-    - cron: "18,48 3 * 3-11 *"
-    - cron: "18 4-7 * 3-11 *"
+    - cron: "33 1 * 3-11 *"
     # 10:33 Asia/Taipei candidate while Los Angeles is on PST.
-    - cron: "33,38,43,48,53,58 2 * 11,12,1-3 *"
-    - cron: "3,8,13,18,48 3 * 11,12,1-3 *"
-    - cron: "18,48 4 * 11,12,1-3 *"
-    - cron: "18 5-8 * 11,12,1-3 *"
+    - cron: "33 2 * 11,12,1-3 *"
 
 permissions:
   contents: read
@@ -43,7 +37,7 @@ jobs:
           else
             los_angeles_offset="$(TZ=America/Los_Angeles date +%z)"
             case "$EVENT_SCHEDULE" in
-              "33,38,43,48,53,58 1 * 3-11 *"|"3,8,13,18,48 2 * 3-11 *"|"18,48 3 * 3-11 *"|"18 4-7 * 3-11 *")
+              "33 1 * 3-11 *")
                 expected_offset="-0700"
                 ;;
               *)

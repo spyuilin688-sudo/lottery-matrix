@@ -83,14 +83,8 @@ def test_fantasy5_github_workflow_is_crawler_only() -> None:
     assert "create_artifact_builders" not in entrypoint
     assert "_run_analysis" not in entrypoint
     expected_crons = (
-        "33,38,43,48,53,58 1 * 3-11 *",
-        "3,8,13,18,48 2 * 3-11 *",
-        "18,48 3 * 3-11 *",
-        "18 4-7 * 3-11 *",
-        "33,38,43,48,53,58 2 * 11,12,1-3 *",
-        "3,8,13,18,48 3 * 11,12,1-3 *",
-        "18,48 4 * 11,12,1-3 *",
-        "18 5-8 * 11,12,1-3 *",
+        "33 1 * 3-11 *",
+        "33 2 * 11,12,1-3 *",
     )
     assert tuple(re.findall(r'^\s+- cron: "([^"]+)"$', workflow, re.MULTILINE)) == (
         expected_crons
@@ -141,6 +135,26 @@ def test_crawler_repairs_an_internal_period_gap_without_running_analysis() -> No
     }
     assert repository.runs == {}
     assert repository.artifacts == {}
+
+
+def test_crawler_skips_source_when_current_draw_is_already_complete() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw(_draw("11989", "2026-09-04"))
+    source = Fantasy5Source(_draw("11989", "2026-09-04"))
+
+    result = run_fantasy5_crawler(
+        repository,
+        source,
+        datetime(2026, 9, 4, 9, 38, tzinfo=TAIPEI),
+    )
+
+    assert result == {
+        "lottery": "天天樂",
+        "drawPeriod": "11989",
+        "status": "already-acquired",
+    }
+    assert source.latest_calls == []
+    assert source.history_limits == []
 
 
 def test_crawler_bootstraps_history_when_supabase_has_no_draws() -> None:

@@ -319,6 +319,7 @@ def run_lottery_recovery(lottery: str) -> None:
             repository,
             LatestDrawSource(client),
             notification_emitter=notification_emitter,
+            allow_recovery_crawl=True,
         )
 
 

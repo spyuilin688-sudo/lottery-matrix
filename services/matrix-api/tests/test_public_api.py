@@ -639,9 +639,15 @@ def test_railway_recovery_uses_the_tracked_scheduled_worker_without_pre_refresh(
     monkeypatch.setattr(
         api_server,
         "run_scheduled_worker",
-        lambda lottery, now, actual_repository, source, *, notification_emitter: calls.append(
-            (lottery, now, actual_repository, source, notification_emitter)
-        ),
+        lambda lottery, now, actual_repository, source, *, notification_emitter,
+        allow_recovery_crawl: calls.append((
+            lottery,
+            now,
+            actual_repository,
+            source,
+            notification_emitter,
+            allow_recovery_crawl,
+        )),
     )
 
     api_server.run_lottery_recovery("今彩539")
@@ -652,6 +658,7 @@ def test_railway_recovery_uses_the_tracked_scheduled_worker_without_pre_refresh(
         repository,
         ("source", client),
         ("emitter", client),
+        True,
     )]
 
 

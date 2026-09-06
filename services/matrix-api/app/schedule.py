@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
+LOS_ANGELES = ZoneInfo("America/Los_Angeles")
 FIRST_CRAWL_DELAY = timedelta(minutes=3)
 
 CALL_TIMES: dict[str, tuple[int, int]] = {
@@ -32,9 +33,15 @@ def retry_offsets() -> list[int]:
 
 
 def _fantasy5_call_time(day: datetime) -> tuple[int, int]:
-    month_day = (day.month, day.day)
-    summer = (3, 13) <= month_day <= (11, 5)
-    return (9, 33) if summer else (10, 33)
+    taipei_day = day.astimezone(TAIPEI)
+    source_day = (taipei_day - timedelta(days=1)).date()
+    los_angeles_call = datetime.combine(
+        source_day,
+        time(hour=18, minute=33),
+        tzinfo=LOS_ANGELES,
+    )
+    taipei_call = los_angeles_call.astimezone(TAIPEI)
+    return taipei_call.hour, taipei_call.minute
 
 
 def lottery_call_time(lottery: str, day: datetime) -> datetime:

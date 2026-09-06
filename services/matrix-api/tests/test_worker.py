@@ -538,6 +538,50 @@ def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> No
     assert source.events == ["history-all", "latest"]
 
 
+@pytest.mark.parametrize(
+    ("lottery", "now"),
+    [
+        ("今彩539", datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI)),
+        ("大樂透", datetime(2026, 8, 28, 20, 58, tzinfo=TAIPEI)),
+        ("六合彩", datetime(2026, 8, 28, 21, 38, tzinfo=TAIPEI)),
+    ],
+)
+def test_primary_scheduler_does_not_retry_source_five_minutes_later(
+    lottery: str,
+    now: datetime,
+) -> None:
+    repository = InMemoryAnalysisRepository()
+    source = StaleScheduledSource()
+
+    result = run_scheduled_worker(
+        lottery,
+        now,
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "not-due"
+    assert source.events == []
+
+
+def test_recovery_worker_can_retry_a_missing_draw_after_primary_call() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = StaleScheduledSource()
+
+    result = run_scheduled_worker(
+        "今彩539",
+        datetime(2026, 8, 28, 20, 39, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        allow_recovery_crawl=True,
+    )
+
+    assert result["status"] == "not-acquired"
+    assert source.events == ["history-all", "latest"]
+
+
 def test_fantasy5_accepts_previous_california_date_for_taipei_cycle() -> None:
     repository = InMemoryAnalysisRepository()
     source = Fantasy5ScheduledSource()
@@ -585,10 +629,10 @@ def test_scheduled_worker_catches_up_after_midnight_then_stops_after_store() -> 
     now = datetime(2026, 8, 29, 2, 17, tzinfo=TAIPEI)
 
     first = run_scheduled_worker(
-        "今彩539", now, repository, source, _builders([]),
+        "今彩539", now, repository, source, _builders([]), allow_recovery_crawl=True,
     )
     second = run_scheduled_worker(
-        "今彩539", now, repository, source, _builders([]),
+        "今彩539", now, repository, source, _builders([]), allow_recovery_crawl=True,
     )
 
     assert first["status"] == "complete"

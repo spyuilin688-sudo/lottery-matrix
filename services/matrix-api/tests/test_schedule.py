@@ -23,10 +23,10 @@ def test_taipei_lottery_call_times() -> None:
 
 
 def test_fantasy5_uses_summer_and_winter_call_times() -> None:
-    assert lottery_call_time("天天樂", datetime(2026, 3, 13, tzinfo=TAIPEI)).strftime("%H:%M") == "09:33"
-    assert lottery_call_time("天天樂", datetime(2026, 11, 5, tzinfo=TAIPEI)).strftime("%H:%M") == "09:33"
-    assert lottery_call_time("天天樂", datetime(2026, 11, 6, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
-    assert lottery_call_time("天天樂", datetime(2027, 3, 12, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
+    assert lottery_call_time("天天樂", datetime(2026, 3, 8, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
+    assert lottery_call_time("天天樂", datetime(2026, 3, 9, tzinfo=TAIPEI)).strftime("%H:%M") == "09:33"
+    assert lottery_call_time("天天樂", datetime(2026, 11, 1, tzinfo=TAIPEI)).strftime("%H:%M") == "09:33"
+    assert lottery_call_time("天天樂", datetime(2026, 11, 2, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
 
 
 def test_next_call_time_uses_the_existing_draw_schedule() -> None:
