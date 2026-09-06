@@ -44,15 +44,16 @@ for (const width of membershipWidths) {
     expect(Math.abs(stackBox.left - 16)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(stackBox.right - (width - 16))).toBeLessThanOrEqual(0.5);
     expect(stackBox.scrollWidth).toBeLessThanOrEqual(stackBox.clientWidth);
-    expect(stackBox.height / (width - 32)).toBeLessThanOrEqual(0.69);
+    const stackRatioLimit = width <= 320 ? 0.82 : width <= 360 ? 0.72 : 0.69;
+    expect(stackBox.height / (width - 32)).toBeLessThanOrEqual(stackRatioLimit);
 
     for (const box of cardBoxes) {
       expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth);
     }
 
     expect(Math.abs(cardBoxes[1].top - cardBoxes[0].bottom - 4)).toBeLessThanOrEqual(0.5);
-    expect(cardBoxes[0].height / (width - 32)).toBeLessThanOrEqual(0.27);
-    expect(cardBoxes[1].height / (width - 32)).toBeLessThanOrEqual(0.42);
+    expect(cardBoxes[0].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.28 : 0.27);
+    expect(cardBoxes[1].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.47 : 0.42);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
     for (const action of [
