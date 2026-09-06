@@ -2218,10 +2218,86 @@ opacity: .30; box-shadow: none;
 .profile-info-screen .detail-card ul {
   gap: 6px;
 }
-.service-info-document > section + section {
+.legal-info-document {
+  min-width: 0;
+  padding: 12px;
+}
+.legal-info-document > h1 {
+  margin: 0 0 16px;
+  color: #e5c36e;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.legal-info-section + .legal-info-section {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #30271c;
+}
+.legal-info-section > h2 {
+  margin: 0 0 8px;
+  color: #e5c36e;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.legal-info-copy {
+  min-width: 0;
+  color: #c9c2b8;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.legal-info-copy p {
+  margin: 0 0 8px;
+}
+.legal-info-copy p:last-child {
+  margin-bottom: 0;
+}
+.legal-info-copy > ul {
+  display: grid;
+  margin: 0;
+  padding-left: var(--legal-info-list-indent, 20px);
+  row-gap: var(--legal-info-list-gap, 6px);
+}
+.legal-info-functions {
+  --legal-info-list-gap: 4px;
+}
+.legal-info-subfunctions {
+  display: grid;
+  margin: 4px 0 0;
+  padding-left: 16px;
+  row-gap: 4px;
+  list-style: none;
+}
+.legal-info-lotteries {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+}
+.legal-info-plans {
+  --legal-info-list-indent: 0px;
+  list-style: none;
+}
+.legal-info-plans > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  column-gap: 8px;
+}
+.legal-info-plans > li > span {
+  min-width: 0;
+}
+.legal-info-plans > li > span:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.legal-info-document a {
+  color: #e5c36e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.legal-info-document a:focus-visible {
+  outline: 2px solid #e5c36e;
+  outline-offset: 2px;
 }
 .profile-screen .panel {
   border-color: rgba(177, 129, 43, .72);
