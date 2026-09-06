@@ -80,6 +80,8 @@ beforeEach(() => {
 
 test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索結果表頭', async () => {
   render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  await screen.findByText('2 組');
+  fireEvent.click(screen.getByRole('button', { name: /•共振/ }));
   const roadRow = await screen.findByRole('button', { name: '展開版路 road' });
   expect(roadRow).toHaveTextContent('順球1');
   expect(screen.getByText('05')).toBeTruthy();
@@ -90,7 +92,7 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
   expect(resultGroups).toHaveLength(2);
   const firstGroup = resultGroups[0];
   expect(within(firstGroup).getByText('單碼結果')).toBeInTheDocument();
-  expect(within(firstGroup).getByText('共振')).toBeInTheDocument();
+  expect(within(firstGroup).queryByText('共振')).not.toBeInTheDocument();
   const lockedRow = firstGroup.querySelector('.matrix-status-locked-road .road-result-row');
   expect(lockedRow?.children).toHaveLength(2);
   expect(lockedRow?.children[0]).toHaveTextContent('🔒 Matrix Pro');
@@ -109,6 +111,8 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
 
 test('版路列可點擊展開，且只在展開已授權版路時讀取驗證過程', async () => {
   render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  await screen.findByText('2 組');
+  fireEvent.click(screen.getByRole('button', { name: /•共振/ }));
   const road = await screen.findByRole('button', { name: '展開版路 road' });
   expect(statusApi.fetchMatrixStatusValidation).not.toHaveBeenCalled();
 
@@ -136,8 +140,15 @@ test('狀態類別首列採用八像素間距，數量與狀態名稱同列且�
 test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩下才可進入', async () => {
   const navigate = vi.fn();
   render(<MatrixStatusPage onNavigate={navigate} />);
+  await screen.findByText('2 組');
+  expect(screen.getByRole('button', { name: /•共振/ })).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(screen.getByRole('button', { name: /•共振/ }));
+  expect(screen.getByRole('button', { name: /•共振/ })).toHaveAttribute('aria-expanded', 'true');
   fireEvent.click(screen.getByRole('radio', { name: '六合彩' }));
+  expect(screen.getByRole('button', { name: /•共振/ })).toHaveAttribute('aria-expanded', 'false');
   await waitFor(() => expect(statusApi.fetchMatrixStatus).toHaveBeenCalledWith('六合彩'));
+  await screen.findByText('2 組');
+  expect(screen.getByRole('button', { name: /•共振/ })).toHaveAttribute('aria-expanded', 'false');
   const trigger = screen.getByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' });
   fireEvent.click(trigger, { detail: 1 });
   expect(navigate).not.toHaveBeenCalled();

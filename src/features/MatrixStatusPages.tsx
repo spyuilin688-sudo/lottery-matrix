@@ -146,6 +146,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
     let active = true;
     validationRevision.current += 1;
     setResult(null);
+    setOpen("");
     setRequestError("");
     setExpandedRoad(null);
     setValidationById({});
@@ -155,7 +156,6 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
       .then((response) => {
         if (!active) return;
         setResult(response);
-        setOpen(response.summary.status === "DORMANT" ? "" : response.summary.status);
       })
       .catch((cause) => {
         if (!active) return;

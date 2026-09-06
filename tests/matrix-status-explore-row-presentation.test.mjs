@@ -30,7 +30,7 @@ test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () =
   const dividerRule = rule(statusCss, '.matrix-status-screen .matrix-status-group-divider');
   assert.match(statusComponent, /index > 0 \? <hr className="matrix-status-group-divider"/);
   assert.match(dividerRule, /margin:\s*20px 0;/);
-  assert.match(dividerRule, /border-top:\s*1px solid/);
+  assert.match(dividerRule, /border-top:\s*1px solid #aaa49a;/);
   const categoryRule = rule(statusCss, '.matrix-status-screen .status-block > button');
   assert.match(categoryRule, /min-height:\s*0;/);
   assert.match(categoryRule, /padding:\s*8px 10px;/);
@@ -72,4 +72,12 @@ test('Matrix 狀態版路欄寬與探索結果區一致', () => {
 
   assert.ok(statusColumns);
   assert.equal(statusColumns, exploreColumns);
+});
+
+test('Matrix 狀態進入與切換彩種後保持收合，資料回應不會自動展開', () => {
+  const effect = statusComponent.slice(statusComponent.indexOf('  useEffect(() => {'), statusComponent.indexOf('  const toggleRoad ='));
+  assert.ok(effect.includes('setOpen("");'));
+  const responseHandler = effect.slice(effect.indexOf('.then((response) => {'), effect.indexOf('.catch('));
+  assert.ok(!responseHandler.includes('setOpen('));
+  assert.ok(statusComponent.includes('setOpen(expanded ? "" : titleEn)'));
 });
