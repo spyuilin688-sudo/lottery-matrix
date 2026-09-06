@@ -24,7 +24,7 @@
 .adminTodos textarea {
   width: 100%;
   min-width: 0;
-  min-height: 74px;
+  min-height: 60px;
   resize: none;
   padding: 9px 10px;
   border: 1px solid #343840;
@@ -49,8 +49,8 @@
 .primary.adminTodosPrimaryButton { width: auto; min-width: 76px; }
 
 .adminTodos button {
-  min-height: 36px;
-  padding: 7px 11px;
+  min-height: 32px;
+  padding: 5px 9px;
   border: 1px solid #363a42;
   border-radius: 8px;
   background: #171a20;
@@ -81,12 +81,12 @@
   .adminTodos { gap: 8px; }
   .adminTodosComposer,
   .adminTodoCard { padding: 10px; }
-  .adminTodosFormFooter { display: grid; grid-template-columns:minmax(0, 1fr) auto; }
-  .adminTodosFormFooter .adminTodosPrimaryButton { grid-column: 1 / -1; width: 100%; }
+  .adminTodosFormFooter { display: grid; grid-template-columns:minmax(0, 1fr) auto auto; }
+  .adminTodosFormFooter .adminTodosPrimaryButton { grid-column: auto; width: auto; }
   .adminTodoMeta { align-items: flex-start; flex-direction: column; gap: 2px; }
   .adminTodosEditFooter { align-items: stretch; flex-direction: column; }
   .adminTodoActions { width: 100%; }
-  .adminTodoActions button { flex: 1 1 0; min-width: 0; }
+  .adminTodoActions button { flex: 0 0 auto; min-width: 58px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

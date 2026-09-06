@@ -7,13 +7,21 @@ const statusCss = readFileSync(new URL('./system-status.css', import.meta.url), 
 
 describe('admin compact density', () => {
   it('keeps the sticky title bar compact while content remains centered', () => {
-    expect(adminCss).toMatch(/header\{min-height:52px;height:auto;/);
+    expect(adminCss).toMatch(/header\{min-height:46px;height:auto;/);
     expect(adminCss).toMatch(/header\{[^}]*align-items:center/);
   });
 
   it('reduces overview and revenue card height at desktop and mobile widths', () => {
-    expect(operationsCss).toMatch(/\.metric \{ min-height: 82px; padding: 12px;/);
-    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.metric \{ min-height: 78px; padding: 12px; \}/);
+    expect(operationsCss).toMatch(/\.metric \{ min-height: 60px; padding: 8px 10px;/);
+    expect(operationsCss).toMatch(/@media \(max-width: 760px\)[\s\S]*\.metric \{ min-height: 60px; padding: 8px; \}/);
+  });
+
+  it('separates overview groups with 8px grid gaps and keeps the record count inline', () => {
+    expect(operationsCss).toMatch(/\.cards \{ gap: 8px;/);
+    expect(operationsCss).toMatch(/\.metricDivider \{ grid-column: 1 \/ -1; height: 1px; margin: 0;/);
+    expect(operationsCss).toContain('grid-template-columns: minmax(0, 1fr) 92px minmax(64px, max-content)');
+    expect(operationsCss).toContain('.managementToolbar span { grid-column: auto; }');
+    expect(operationsCss).toMatch(/\.managementCount \{[^}]*min-width: 64px;[^}]*text-align: right;/);
   });
 
   it('keeps user and subscription search cards compact', () => {
@@ -34,9 +42,9 @@ describe('admin compact density', () => {
   });
 
   it('uses grouped compact system status rows without fixed row geometry', () => {
-    expect(statusCss).toMatch(/\.statusGroups \{[^}]*gap: 12px;/);
+    expect(statusCss).toMatch(/\.statusGroups \{[^}]*gap: 8px;/);
     expect(statusCss).toMatch(/\.statusRows \{[^}]*gap: 1px;/);
-    expect(statusCss).toMatch(/\.statusRow \{[^}]*padding: 10px 12px;/);
+    expect(statusCss).toMatch(/\.statusRow \{[^}]*padding: 8px 10px;/);
     expect(statusCss).toMatch(/\.statusEndpoint \{[^}]*overflow-wrap: anywhere;/);
     expect(statusCss).not.toMatch(/\.statusRow \{[^}]*(?:height|min-height|width):/);
     expect(statusCss).not.toMatch(/\.statusManualRefreshButton \{[^}]*min-inline-size:/);
@@ -44,8 +52,8 @@ describe('admin compact density', () => {
 
   it('uses compact shared action controls and reduced administration spacing', () => {
     expect(operationsCss).toMatch(/\.compactButton \{ height: 32px;/);
-    expect(operationsCss).toMatch(/\.pagination button \{ min-width: 36px; min-height: 36px; \}/);
-    expect(operationsCss).toMatch(/\.content \{ padding: 20px; \}/);
+    expect(operationsCss).toMatch(/\.pagination button \{ min-width: 0; min-height: 30px;/);
+    expect(operationsCss).toMatch(/\.content \{ padding: 14px; \}/);
     expect(operationsCss).toMatch(/\.actions \{ gap: 6px; \}/);
   });
 });

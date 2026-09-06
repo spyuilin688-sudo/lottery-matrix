@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 afterEach(async () => { if (root) await act(async () => root?.unmount()); root = undefined; container.remove(); vi.unstubAllGlobals(); });
 async function render(isSuper = true) { root = createRoot(container); await act(async () => root?.render(<AdminTransferPush client={client} isSuper={isSuper} />)); }
-async function click() { await act(async () => container.querySelector('button')?.click()); }
+async function click() { await act(async () => { const details = container.querySelector('details'); if (details && !details.open) container.querySelector('summary')?.click(); container.querySelector('button')?.click(); }); }
 it('requests permission synchronously before network and persists before success', async () => {
   const promise = enableTransferPush(client); expect(permission).toHaveBeenCalledOnce(); expect(client.get).not.toHaveBeenCalled(); await promise;
   expect(client.post).toHaveBeenCalledWith('/api/admin-transfer-push', { subscription: subscription.toJSON() });
@@ -77,4 +77,27 @@ it('worker ignores payload navigation/data and opens fixed same-origin admin URL
   expect(showNotification).toHaveBeenCalledWith('新轉帳申請', expect.objectContaining({ body: '有新的轉帳申請待處理，請登入後台查看。' }));
   listeners.notificationclick({ notification: { close: vi.fn(), data: { url: 'https://evil.example' } }, waitUntil: (value: Promise<unknown>) => { done = value; } }); await done;
   expect(openWindow).toHaveBeenCalledWith('https://admin.example/backoffice/#transfer-requests');
+});
+
+it('starts collapsed with a readable state and expands without changing enrollment', async () => {
+  await render();
+  const details = container.querySelector('details');
+  expect(details).not.toBeNull();
+  expect(details?.open).toBe(false);
+  expect(container.querySelector('summary')?.textContent).toContain('未啟用');
+  await act(async () => container.querySelector('summary')?.click());
+  expect(details?.open).toBe(true);
+  expect(client.post).not.toHaveBeenCalled();
+  expect(client.delete).not.toHaveBeenCalled();
+  expect(permission).not.toHaveBeenCalled();
+  await click();
+  expect(container.querySelector('summary')?.textContent).toContain('已啟用');
+  await act(async () => container.querySelector('summary')?.click());
+  expect(details?.open).toBe(false);
+});
+it('keeps an initial read failure visible in the collapsed summary', async () => {
+  vi.mocked(client.get).mockRejectedValue(new Error('offline'));
+  await render();
+  expect(container.querySelector('summary')?.textContent).toContain('設定需重試');
+  expect(container.querySelector('details')?.open).toBe(false);
 });

@@ -153,15 +153,15 @@ describe('admin interface styles', () => {
     expect(appSource).toContain('data-status-id={item.id} tabIndex={-1}');
   });
 
-  it('neutralizes the shell header into the same full-width mobile layout at 320, 390, and 430px', () => {
+  it('neutralizes the shell header into the compact inline mobile layout at 320, 390, and 430px', () => {
     for (const viewportWidth of [320, 390, 430]) {
       const header = statusDeclarationsAt('.systemStatusHeader', viewportWidth);
       expect(header.get('width')).toBe('100%');
       expect(header.get('display')).toBe('grid');
-      expect(header.get('grid-template-columns')).toBe('minmax(0, 1fr)');
+      expect(header.get('grid-template-columns')).toBe('minmax(0, 1fr) auto');
       expect(header.get('justify-content')).toBe('stretch');
-      expect(header.get('align-items')).toBe('stretch');
-      expect(statusDeclarationsAt('.systemStatusHeader button', viewportWidth).get('width')).toBe('100%');
+      expect(header.get('align-items')).toBe('center');
+      expect(statusDeclarationsAt('.systemStatusHeader button', viewportWidth).get('width')).toBe('auto');
     }
   });
 
@@ -173,8 +173,8 @@ describe('admin interface styles', () => {
     expect(statusDeclarationsAt('.systemStatusHeader button', 761).get('width')).toBe('auto');
   });
 
-  it('keeps status row actions full width and copy wrap-safe on phones', () => {
-    expect(rule(statusCss, '.statusRowActions button')).toMatch(/width: 100%;/);
+  it('keeps status row actions content width and copy wrap-safe on phones', () => {
+    expect(rule(statusCss, '.statusRowActions button')).toMatch(/width: auto;/);
     expect(statusCss).toMatch(/@media \(min-width: 761px\)/);
     expect(statusCss).toMatch(/\.statusRowTitle b \{[^}]*overflow-wrap: anywhere;/);
   });

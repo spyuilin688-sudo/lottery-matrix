@@ -1,1 +1,12 @@
-.adminTransferPush{border-bottom:1px solid #292c32;padding:0 0 12px;margin-bottom:12px;font-size:13px}.adminTransferPushRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.adminTransferPushRow strong{color:#cbb675;font-weight:600}.adminTransferPushRow button{min-width:148px;min-height:44px;padding:8px 12px;border:1px solid #8c6d28;background:#1b1913;color:#e7c46d;border-radius:8px;cursor:pointer}.adminTransferPushRow button:hover:not(:disabled){background:#2b2415}.adminTransferPushRow button:active:not(:disabled){background:#38301b}.adminTransferPushRow button:focus-visible{outline:2px solid #e7c46d;outline-offset:3px}.adminTransferPushRow button:disabled{opacity:.55;cursor:not-allowed}.adminTransferPush p{margin:6px 0 0;font-size:12px}.adminTransferPush .adminTransferPushStatus{min-height:21px;color:#c4c6cc}.adminTransferPushStatus[role=alert]{color:#efb3b3}#transfer-requests{scroll-margin-top:80px}
+.adminTransferPush{border-bottom:1px solid #292c32;padding:0 0 4px;margin-bottom:0;font-size:13px}.adminTransferPushRow{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap}.adminTransferPushRow strong{color:#cbb675;font-weight:600}.adminTransferPushRow button{min-width:124px;min-height:32px;padding:5px 8px;font-size:12px;white-space:nowrap;border:1px solid #8c6d28;background:#1b1913;color:#e7c46d;border-radius:8px;cursor:pointer}.adminTransferPushRow button:hover:not(:disabled){background:#2b2415}.adminTransferPushRow button:active:not(:disabled){background:#38301b}.adminTransferPushRow button:focus-visible{outline:2px solid #e7c46d;outline-offset:3px}.adminTransferPushRow button:disabled{opacity:.55;cursor:not-allowed}.panel .adminTransferPush p{margin:4px 0 0;font-size:12px;line-height:1.45}.adminTransferPush .adminTransferPushStatus{min-height:18px;color:#c4c6cc}.adminTransferPushStatus[role=alert]{color:#efb3b3}#transfer-requests{scroll-margin-top:80px}
+
+.adminTransferPushDetails > summary{display:flex;align-items:center;gap:8px;min-height:30px;padding:4px 0;list-style:none;cursor:pointer;color:#cbb675;font-size:12px}
+.adminTransferPushDetails > summary::-webkit-details-marker{display:none}
+.adminTransferPushDetails > summary::after{content:'⌄';flex:0 0 16px;text-align:center;color:#989ca5}
+.adminTransferPushDetails[open] > summary::after{content:'⌃'}
+.adminTransferPushDetails > summary:focus-visible{outline:2px solid #e7c46d;outline-offset:2px;border-radius:4px}
+.adminTransferPushDetails > summary:hover{color:#f0d98f}
+.pushSummaryState{margin-left:auto;font-size:11px;color:#989ca5}
+.pushSummaryError{color:#efb3b3}
+.adminTransferPushBody{padding:0 0 4px}
+.adminTransferPushBody .adminTransferPushRow{margin-top:6px}
