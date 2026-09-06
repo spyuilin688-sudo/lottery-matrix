@@ -81,14 +81,15 @@ for (const width of MOBILE_WIDTHS) {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     })).toEqual({
-      cardLeft: 19,
-      cardRight: 19,
+      // Full-width cards retain 25px visible gutters; 13px gaps reveal 12px neighbors.
+      cardLeft: 25,
+      cardRight: 25,
       checkoutLeft: 16,
       checkoutRight: 16,
       planOuterShadow: false,
       paymentOuterShadow: false,
-      previousCardPeek: 0,
-      nextCardPeek: 0,
+      previousCardPeek: 12,
+      nextCardPeek: 12,
       overflow: 0,
     });
   });

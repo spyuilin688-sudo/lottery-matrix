@@ -287,46 +287,48 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
-      <section className="panel membership-card profile-card">
-        <div className="profile-avatar">
-          <img
-            src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
-            alt={lineAvatarUrl ? "LINE 頭貼" : "Matrix 預設頭貼"}
-          />
-        </div>
-        <div className="profile-copy">
-          <h2>樂彩玩家</h2>
-          <p
-            className="profile-nickname"
-            data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
-          >LINE 暱稱：{lineNickname ?? ""}</p>
-        </div>
-        <div className="profile-watermark" aria-hidden="true">M</div>
-        {authState !== "initializing" ? <button
-          type="button"
-          className="profile-logout"
-          onClick={() => void handleAuthAction()}
-          disabled={authRetrying || authState === "signing-in" || authState === "signing-out"}
-          aria-busy={authRetrying || authState === "signing-in" || authState === "signing-out"}
-        >{
-          authState === "authenticated" ? "登出"
-            : authState === "signing-in" ? "登入中…"
-              : authState === "signing-out" ? "登出中…"
-                : authState === "degraded" ? "重新檢查"
-                  : "LINE 登入"
-        }</button> : null}
-      </section>
-      <section className="panel membership-card subscription-status-card">
-        <SectionTitle>目前訂閱狀態</SectionTitle>
-        <div className="subscription-status-content">
-          <img className="subscription-crown" src="/assets/lottery/membership/membership-emblem.png" alt="" aria-hidden="true" />
-          <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
-          <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
-        </div>
-        <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
-          <span>訂閱方案／收費標準</span><ChevronRightIcon />
-        </button>
-      </section>
+      <div className="membership-card-stack">
+        <section className="panel membership-card profile-card">
+          <div className="profile-avatar">
+            <img
+              src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
+              alt={lineAvatarUrl ? "LINE 頭貼" : "Matrix 預設頭貼"}
+            />
+          </div>
+          <div className="profile-copy">
+            <h2>樂彩玩家</h2>
+            <p
+              className="profile-nickname"
+              data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
+            >LINE 暱稱：{lineNickname ?? ""}</p>
+          </div>
+          <div className="profile-watermark" aria-hidden="true">M</div>
+          {authState !== "initializing" ? <button
+            type="button"
+            className="profile-logout"
+            onClick={() => void handleAuthAction()}
+            disabled={authRetrying || authState === "signing-in" || authState === "signing-out"}
+            aria-busy={authRetrying || authState === "signing-in" || authState === "signing-out"}
+          ><span>{
+            authState === "authenticated" ? "登出"
+              : authState === "signing-in" ? "登入中…"
+                : authState === "signing-out" ? "登出中…"
+                  : authState === "degraded" ? "重新檢查"
+                    : "LINE 登入"
+          }</span></button> : null}
+        </section>
+        <section className="panel membership-card subscription-status-card">
+          <SectionTitle>目前訂閱狀態</SectionTitle>
+          <div className="subscription-status-content">
+            <img className="subscription-crown" src="/assets/lottery/membership/membership-emblem.png" alt="" aria-hidden="true" />
+            <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
+            <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
+          </div>
+          <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
+            <span>訂閱方案／收費標準</span><ChevronRightIcon />
+          </button>
+        </section>
+      </div>
       {menuGroups.map((group) => (
         <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title}>
           {group.title === "系統相關" && showInstallAction ? (
