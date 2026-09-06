@@ -36,7 +36,7 @@ function exploreFixture(tianyan = false) {
         <section class="panel repeat-stats-panel">
           <header class="repeat-stats-heading">
             <h2 class="section-title"><span></span>重複號碼統計</h2>
-            <button data-selected="false">同碼</button>
+            <button data-selected="true">同碼</button>
             <span>點選進行版路篩選</span>
           </header>
           <div class="result-summary">
@@ -223,9 +223,9 @@ test("重複號碼統計與探索結果區使用六層金色與分隔線層級",
   assert.equal(style(".repeat-stats-heading .section-title").color, "rgba(244, 206, 103, 0.84)");
   assert.equal(style(".result-title .section-title").color, "rgba(244, 206, 103, 0.84)");
   assert.equal(style(".road-results-head").color, "rgba(244, 206, 103, 0.84)");
-  assert.equal(style(".result-summary b").color, "rgb(242, 245, 248)");
+  assert.equal(style('.result-summary > button[data-selected="false"] b').color, "rgb(242, 245, 248)");
   assert.equal(style(".road-result-row > strong").color, "rgb(244, 206, 103)");
-  assert.equal(selectedSummary.borderTopColor, "rgb(244, 206, 103)");
+  assert.equal(selectedSummary.borderTopColor, "rgb(196, 145, 69)");
   assert.equal(selectedFilter.borderTopColor, "rgb(196, 145, 69)");
   assert.equal(normalSummary.borderTopColor, "rgba(117, 83, 41, 0.62)");
   assert.equal(normalFilter.borderTopColor, "rgba(117, 83, 41, 0.62)");
@@ -302,3 +302,18 @@ test("版路按鈕與概要卡使用指定右距、內距、標籤位置及數�
   assert.match(featureCss, /\.validation-summary-card > span i\s*\{[^}]*font-weight:\s*inherit;/s);
   assert.match(featureCss, /\.matrix-explore-main-screen \.validation-summary-card > span i\s*\{[^}]*font-weight:\s*800;/s);
 });
+
+
+for (const tianyan of [false, true]) {
+  test(`${tianyan ? "天衍" : "探索"}同碼與號碼小卡選取色比照連準次數`, () => {
+    const { style } = exploreFixture(tianyan);
+    const reference = exploreFixture().style('.explore-consecutive-filter-option[aria-pressed="true"]');
+    for (const selector of ['.repeat-stats-heading button[data-selected="true"]', '.result-summary > button[data-selected="true"]']) {
+      const selected = style(selector);
+      for (const property of ["borderTopColor", "color", "backgroundColor", "boxShadow"]) {
+        assert.equal(selected[property], reference[property], `${selector}: ${property}`);
+      }
+    }
+    assert.equal(style('.result-summary > button[data-selected="true"] b').color, reference.color);
+  });
+}
