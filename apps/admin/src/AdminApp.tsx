@@ -40,6 +40,7 @@ import {
   type SystemStatusItem,
 } from "./system-status";
 import { NotificationManagement } from "./NotificationManagement";
+import { AdminTransferPush } from "./AdminTransferPush";
 import { AdminTodos } from "./AdminTodos";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
@@ -322,7 +323,9 @@ function AdminApp() {
       const r = await api.get("/api/bootstrap");
       setAdmin(r.data.admin);
       setSigned(true);
-      await load("營運概覽");
+      const initial = window.location.hash === "#transfer-requests" && r.data.admin?.role === "超級管理員" ? "訂閱管理" : "營運概覽";
+      setActive(initial);
+      await load(initial);
     } catch (e) {
       setSigned(false);
       setAdmin(null);
@@ -346,6 +349,15 @@ function AdminApp() {
     setEditingAdmin(null);
     void load(name);
   };
+  useEffect(() => {
+    if (!signed || !isSuper) return;
+    const openTransfers = () => { if (window.location.hash === "#transfer-requests") choose("訂閱管理"); };
+    window.addEventListener("hashchange", openTransfers);
+    return () => window.removeEventListener("hashchange", openTransfers);
+  }, [signed, isSuper]);
+  useEffect(() => {
+    if (signed && active === "訂閱管理" && window.location.hash === "#transfer-requests") document.getElementById("transfer-requests")?.scrollIntoView?.({ block: "start" });
+  }, [signed, active, busy]);
   const signIn = async () => {
     setError("");
     try {
@@ -694,6 +706,7 @@ function AdminApp() {
               rows={rows}
               plans={plans}
               transfers={transfers}
+              isSuper={isSuper}
               canEdit={moduleCan("subscriptions", "edit", "edit")}
               onSubscription={async (id, payload) => {
                 return runConfirmed(
@@ -932,6 +945,7 @@ function SubscriptionManager({
   rows,
   plans,
   transfers,
+  isSuper,
   canEdit,
   onSubscription,
   onTransfer,
@@ -939,6 +953,7 @@ function SubscriptionManager({
   rows: Row[];
   plans: Row[];
   transfers: Row[];
+  isSuper: boolean;
   canEdit: boolean;
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
@@ -1005,8 +1020,9 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog row={userInfo} onClose={() => setUserInfo(null)} />}
-      <div className="panel transferPanel">
+      <div className="panel transferPanel" id="transfer-requests">
         <h2>轉帳申請</h2>
+        <AdminTransferPush client={api} isSuper={isSuper} />
         {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
           <div className="transferRow" key={row.id}>
             <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>

@@ -11,6 +11,7 @@ import {
 } from './admin-auth';
 import { createAdminData, getDashboard, listAdminTable } from './admin-data';
 import { createAdminTodos } from './admin-todos';
+import { createAdminTransferPush } from './admin-transfer-push';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
 import { createConnectionStatus } from './connection-status';
 import { createNotificationEvents, getNotificationEventConfig } from './notification-events';
@@ -30,6 +31,7 @@ import { createWatchdogStatusStore, type WatchdogStatus } from './watchdog-statu
 
 type Context = {
   body?: unknown;
+  query?: Record<string, string>;
   event?: {
     headers?: Record<string, string | undefined>;
     requestContext?: { http?: { sourceIp?: string } };
@@ -47,6 +49,7 @@ type PermissionInput = {
 };
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
+const adminTransferPush = createAdminTransferPush(() => getSupabaseConfig(secrets));
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
 const adminData = createAdminData(supabase);
@@ -132,6 +135,7 @@ const requireSuperRole = (message: string) => async (ctx: Context) => {
   }
 };
 const superGuard = requireSuperRole('僅超級管理員可管理管理員帳號');
+const transferPushGuard = requireSuperRole('僅超級管理員可管理匯款推播通知');
 const revenueResetGuard = requireSuperRole('僅超級管理員可重設收入');
 
 function adminInput(body: Record<string, unknown>) {
@@ -252,6 +256,27 @@ const routes: Record<string, unknown> = {
     } catch (cause) {
       return fail(cause);
     }
+  }],
+
+  'GET /api/admin-transfer-push': [sessionGuard, transferPushGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminTransferPush.getConfig(admin.id, ctx.query?.endpoint));
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'POST /api/admin-transfer-push': [sessionGuard, transferPushGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminTransferPush.enable(admin.id, bodyOf(ctx).subscription));
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'DELETE /api/admin-transfer-push': [sessionGuard, transferPushGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      return json(await adminTransferPush.disable(admin.id, bodyOf(ctx).endpoint));
+    } catch (cause) { return fail(cause); }
   }],
 
   'GET /api/push-members': [sessionGuard, guard('view'), async () => {
