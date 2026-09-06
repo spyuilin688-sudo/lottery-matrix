@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -16,6 +16,7 @@ import "./activation-code-layout.css";
 import "./tianyan-expanded-layout-patch.css";
 const FeaturePageRouter = lazy(() => import("./FeaturePagesPatched").then(module => ({ default: module.FeaturePageRouter })));
 import { BottomNavigation } from "./BottomNavigation";
+import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import type { LotteryDrawRecord } from "./lottery-api";
@@ -458,7 +459,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     : null;
 
   if (screen !== "home") {
-    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><Suspense fallback={<p role="status">載入中…</p>}><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} /></Suspense>{quickSettings}</MobileScroll></QuickNavigationProvider>;
+    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageLoadBoundary resetKey={screen} onHome={() => navigate("home")}><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} /></FeaturePageLoadBoundary>{quickSettings}</MobileScroll></QuickNavigationProvider>;
   }
 
   return (

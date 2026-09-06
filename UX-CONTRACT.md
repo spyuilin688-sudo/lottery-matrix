@@ -40,6 +40,7 @@
 | Form | The React screen that owns each product form | This contract and the owning component test | Sign-in, settings and data-entry forms with app-owned validation | Component tests for validation, busy, recovery and first-error focus |
 | Scrollbar | Global application stylesheet `src/styles.css` | `DESIGN.md` and this contract | Scrolling remains enabled while native and app-owned scrollbar visuals stay hidden | Computed overflow plus Firefox and WebKit hidden-scrollbar source checks |
 | PWA install/update | `PwaLifecycleProvider` | This contract and `src/pwa-lifecycle.tsx` | Browser-native install prompt; iOS add-to-home-screen instructions; app-owned update confirmation | Lifecycle component tests plus production build fingerprint test |
+| Feature page loading/recovery | `FeaturePageLoadBoundary` | This contract and the approved black-screen repair (2026-09-06) | Visible pending state with home action; failed import/render state with explicit reload and home actions | Boundary component tests and the Prototype lazy-import recovery test |
 | Matrix status triggers | `MatrixStatusPage` and the Matrix status Edge response | Approved Matrix status design (2026-09-04) | Compact status-category cards, one card per trigger, Explore-style result rows, server-projected locked rows | Component tests at 320/360px plus route projection tests |
 | Admin todos | Existing AppDeploy admin `AdminApp` | Approved admin todo design (2026-09-04) | All administrators create; owner edits/deletes; super administrator may delete any item | Service, route, component and narrow-viewport tests |
 
@@ -89,6 +90,8 @@ Live LINE callback and revoke behavior remain **NOT EXECUTED** without an author
 The dialog preserves the existing navy, gold, danger-red and success-green visual language. It supplies a labelled title, optional description, explicit primary and secondary actions, a minimum 44px touch target, viewport-safe sizing, queued requests and reduced-motion behavior. Escape and overlay dismissal resolve as cancellation. When the queue is empty, focus returns to the control that opened the dialog; destructive actions use the danger tone and explicit destructive copy.
 
 ## Navigation, async and recovery
+
+Feature-page imports use the shared `FeaturePageLoadBoundary` at both deferred router levels. Loading remains visible and offers `返回首頁`; rejected imports and page render errors retain `頁面載入失敗`, `重新載入` and `返回首頁` instead of unmounting the entire app. Reload is user initiated and reloads the document to discard a rejected lazy import and read current module URLs. Navigation clears failure state without remounting a healthy shared page; successful pages retain their existing markup, local state and navigation.
 
 2026-09-05：營運概覽新增本日瀏覽人數、本月瀏覽人數、總瀏覽人數，沿用既有 Cards 與手機排列。匿名識別雜湊保留 90 天，清除後再次造訪重新累加總瀏覽人數；彙總人數保留。日期沿用 Asia/Taipei。
 
