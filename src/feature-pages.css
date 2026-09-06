@@ -1633,7 +1633,15 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   width: 100%;
   margin: 0 0 8px;
 }
-.matrix-status-screen .status-list { gap: 7px; }
+.matrix-status-screen .status-list {
+  margin-inline: -3px;
+  gap: 7px;
+}
+
+/* Match the Explore result panel inset without moving status headers or rows. */
+.matrix-status-screen .explore-validation-card {
+  margin-inline: 6px;
+}
 .matrix-status-screen .status-block { border-radius: 10px; }
 .matrix-status-screen .status-block[data-expanded="true"] {
   border: 0;
@@ -2785,3 +2793,4 @@ opacity: .30; box-shadow: none;
 .referral-rule-content li::marker {
   color: #b98a31;
 }
+

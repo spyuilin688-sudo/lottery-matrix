@@ -1,10 +1,16 @@
 /* Matrix Explore-only refinements for validation/result presentation. */
+.matrix-status-screen
+  .explore-validation-card .explore-validation-result-number,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-card .explore-validation-result-number {
   font-size: 15px;
   margin-inline: 2px;
 }
 
+.matrix-status-screen
+  .explore-validation-card .explore-validation-summary .validation-summary-drag-label,
+.matrix-status-screen
+  .explore-validation-card .explore-validation-summary .validation-summary-same-period,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-card .explore-validation-summary .validation-summary-drag-label,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
@@ -14,6 +20,8 @@
   font-weight: 800;
 }
 
+.matrix-status-screen .validation-summary-formula-sequence,
+.matrix-status-screen .validation-summary-formula-tokens,
 .matrix-explore-main-screen .validation-summary-formula-sequence,
 .matrix-explore-main-screen .validation-summary-formula-tokens {
   display: inline-flex;
@@ -21,13 +29,19 @@
   gap: 1px;
 }
 
+.matrix-status-screen .validation-summary-formula-sequence,
 .matrix-explore-main-screen .validation-summary-formula-sequence {
   white-space: nowrap;
 }
 
+.matrix-status-screen
+  .explore-validation-card
+  .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"])
+  .explore-validation-special-number,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-card
   .explore-validation-group:is([data-lottery="六合彩"], [data-lottery="大樂透"])
   .explore-validation-special-number {
   margin-left: 2px;
 }
+
