@@ -8,11 +8,20 @@ const srcRoot = join(root, "src");
 const prototypePath = join(srcRoot, "Prototype.tsx");
 const patchedRouterPath = join(srcRoot, "FeaturePagesPatched.tsx");
 const ownerPath = join(srcRoot, "pro-plans-layout.css");
+const sharedPath = join(srcRoot, "feature-pages.css");
 const debugPath = join(srcRoot, "homepage-debug.css");
 
 const prototypeSource = readFileSync(prototypePath, "utf8");
 const patchedRouterSource = readFileSync(patchedRouterPath, "utf8");
 const ownerCss = readFileSync(ownerPath, "utf8");
+const sharedCss = readFileSync(sharedPath, "utf8");
+
+function ruleBody(css, selector) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, "s"));
+  assert.ok(match, `找不到 ${selector} 規則`);
+  return match[1];
+}
 
 function listSourceFiles(directory) {
   return readdirSync(directory).flatMap((name) => {
@@ -55,6 +64,24 @@ test("方案卡與付款區以實際水平 gutter 擁有 19px 與 16px", () => {
     /\.pro-plans-screen\s+\.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);/s,
   );
   assert.doesNotMatch(ownerCss, /calc\(100%\s*-\s*\(var\(--pro-plans-plan-inline\)\s*\*\s*2\)\)/);
+});
+
+test("Pro 方案水平幾何只由專屬 layout 檔控制", () => {
+  assert.doesNotMatch(
+    ruleBody(sharedCss, ".plan-carousel"),
+    /(?:^|;)\s*(?:margin|padding|gap|column-gap)\s*:/,
+    "共用 plan-carousel 不得覆寫 Pro 方案的水平間距",
+  );
+  assert.doesNotMatch(
+    ruleBody(sharedCss, ".plan-card"),
+    /(?:^|;)\s*(?:flex|width|min-width|max-width|margin)\s*:/,
+    "共用 plan-card 不得覆寫 Pro 方案卡片寬度",
+  );
+  assert.doesNotMatch(
+    ruleBody(sharedCss, ".pro-plans-screen .renewal-card"),
+    /(?:^|;)\s*(?:width|min-width|max-width|margin|margin-inline)\s*:/,
+    "共用 feature-pages 不得覆寫管理訂閱卡片的水平幾何",
+  );
 });
 
 test("移除未載入的首頁暫時除錯覆寫檔", () => {

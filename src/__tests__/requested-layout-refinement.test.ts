@@ -127,8 +127,9 @@ describe("requested responsive layout refinement", () => {
 
   it("uses the canonical feature-page gutter and Pro plan card geometry", () => {
     const featureCss = readCss("src/feature-pages.css");
+    const proPlansCss = readCss("src/pro-plans-layout.css");
     const mobileCss = readCss("src/mobile-layout-polish.css");
-    const style = mountStyles(`${featureCss}\n${readCss("src/pro-plans-carousel-peek.css")}\n${mobileCss}`);
+    const style = mountStyles(`${featureCss}\n${proPlansCss}\n${readCss("src/pro-plans-carousel-peek.css")}\n${mobileCss}`);
     style.dataset.layoutContract = "profile-details";
     document.body.innerHTML = `
       <main class="activation-code-screen"><div class="feature-body"><section class="panel referral-summary-card"></section></div></main>
@@ -138,11 +139,12 @@ describe("requested responsive layout refinement", () => {
     expect(getComputedStyle(document.querySelector(".referral-summary-card")!).padding).toBe("0px");
     expect(featureCss).toMatch(/\.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\)/s);
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
-    expect(featureCss).toMatch(/\.plan-carousel\s*\{[^}]*margin:\s*0 -14px;[^}]*padding:\s*0 14px 4px;/s);
-    expect(featureCss).toMatch(/\.plan-card\s*\{[^}]*flex:\s*0 0 calc\(100% - 24px\)/s);
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("300px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("18px");
-    expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).width).toBe("100%");
+    expect(featureCss).not.toMatch(/\.plan-carousel\s*\{[^}]*(?:margin|padding|gap):/s);
+    expect(featureCss).not.toMatch(/\.plan-card\s*\{[^}]*flex:/s);
+    expect(proPlansCss).toMatch(/--pro-plans-plan-inline:\s*19px/);
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("190px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
+    expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).padding).toBe("8px");
   });
 
   it("uses the branded explore action on the membership-plan payment button", () => {
@@ -167,8 +169,9 @@ describe("requested responsive layout refinement", () => {
 
   it("keeps the membership checkout in the canonical responsive flow", () => {
     const featureCss = readCss("src/feature-pages.css");
+    const proPlansCss = readCss("src/pro-plans-layout.css");
     const mobileCss = readCss("src/mobile-layout-polish.css");
-    const style = mountStyles(featureCss);
+    const style = mountStyles(`${featureCss}\n${proPlansCss}`);
     style.dataset.layoutContract = "membership-checkout-spacing";
     document.body.innerHTML = `
       <main class="pro-plans-screen"><div class="feature-body">
@@ -186,7 +189,9 @@ describe("requested responsive layout refinement", () => {
     const paymentNote = getComputedStyle(document.querySelector(".payment-note")!);
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
     expect(checkout.display).toBe("grid");
-    expect(renewalCard.width).toBe("100%");
+    expect(checkout.marginInline).toBe("var(--pro-plans-checkout-inline)");
+    expect(checkout.getPropertyValue("--pro-plans-checkout-inline")).toBe("16px");
+    expect(renewalCard.marginLeft).toBe("0px");
     expect(paymentButton.width).toBe("100%");
     expect(paymentButton.height).toBe("38px");
     expect(paymentNote.marginTop).toBe("0px");
