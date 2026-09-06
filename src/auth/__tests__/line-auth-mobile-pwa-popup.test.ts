@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 describe('mobile PWA LINE login', () => {
-  it('uses the existing PWA popup flow when Android PWA has Service Worker support', async () => {
+  it('keeps native LINE defaults in the original navigation even when Android PWA supports Service Workers', async () => {
     vi.stubGlobal('navigator', {
       userAgent: 'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36',
       platform: 'Linux',
@@ -29,12 +29,17 @@ describe('mobile PWA LINE login', () => {
     })));
 
     const loginClient = {
-      auth: { signInWithOAuth: vi.fn() },
+      auth: { signInWithOAuth: vi.fn().mockResolvedValue({
+        data: { provider: 'custom:line', url: 'https://access.line.me/oauth2/v2.1/authorize' }, error: null,
+      }) },
     } as unknown as SupabaseClient;
     popupMock.mockReturnValue(Promise.resolve('pwa'));
 
-    await expect(signInWithLine(undefined, loginClient)).resolves.toBe('pwa');
-    expect(popupMock).toHaveBeenCalledOnce();
-    expect(loginClient.auth.signInWithOAuth).not.toHaveBeenCalled();
+    await expect(signInWithLine(undefined, loginClient)).resolves.toBeUndefined();
+    expect(popupMock).not.toHaveBeenCalled();
+    expect(loginClient.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'custom:line',
+      options: { redirectTo: new URL('/', window.location.origin).href },
+    });
   });
 });

@@ -219,13 +219,15 @@ function lineCallbackUrl(client) {
   }
 }
 
-async function findLinePwaClient() {
+async function findLinePwaClient(report, callbackClientId) {
   for (const id of [...linePwaClientIds]) {
+    if (id === callbackClientId) continue;
     try {
       const client = await self.clients.get(id);
       if (isSameOriginClient(client)) return client;
       linePwaClientIds.delete(id);
-    } catch {
+    } catch (error) {
+      report('PWA_CLIENT_STALE', error);
       linePwaClientIds.delete(id);
     }
   }
@@ -233,12 +235,17 @@ async function findLinePwaClient() {
   let clientList = [];
   try {
     clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-  } catch {
+  } catch (error) {
+    report('PWA_CLIENT_LOOKUP_FAILED', error);
     return null;
   }
 
-  const candidates = clientList.filter(isSameOriginClient);
-  if (!candidates.length) return null;
+  const candidates = clientList.filter((client) => isSameOriginClient(client) && client.id !== callbackClientId);
+  if (!candidates.length) {
+    report('PWA_CLIENT_NOT_FOUND', undefined, { candidateCount: 0 });
+    return null;
+  }
+  report('PWA_PROBE_STARTED', undefined, { candidateCount: candidates.length });
 
   const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return await new Promise((resolve) => {
@@ -248,9 +255,12 @@ async function findLinePwaClient() {
       settled = true;
       pendingLinePwaProbes.delete(requestId);
       clearTimeout(timeout);
-      resolve(isSameOriginClient(client) ? client : null);
+      resolve(isSameOriginClient(client) && client.id !== callbackClientId ? client : null);
     };
-    const timeout = setTimeout(() => finish(null), LINE_PWA_PROBE_TIMEOUT_MS);
+    const timeout = setTimeout(() => {
+      report('PWA_PROBE_TIMEOUT');
+      finish(null);
+    }, LINE_PWA_PROBE_TIMEOUT_MS);
     pendingLinePwaProbes.set(requestId, finish);
     for (const client of candidates) {
       postClientMessage(client, { type: LINE_PWA_PING, requestId });
@@ -260,27 +270,51 @@ async function findLinePwaClient() {
 
 async function handleLinePwaReturn(event) {
   const callbackClient = isSameOriginClient(event.source) ? event.source : null;
+  const rawRequestId = event.data?.requestId;
+  const requestId = typeof rawRequestId === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(rawRequestId) ? rawRequestId : undefined;
+  const startedAt = Date.now();
+  let diagnostic;
+  const report = (code, error, counts = {}) => {
+    const allowedErrorNames = ['InvalidAccessError', 'InvalidStateError', 'SecurityError',
+      'NotAllowedError', 'AbortError', 'NotFoundError', 'TypeError', 'Error'];
+    diagnostic = { code, workerBuild: STATIC_CACHE_NAME, elapsedMs: Date.now() - startedAt, ...counts };
+    if (error) diagnostic.errorName = allowedErrorNames.includes(error.name) ? error.name : 'UnknownError';
+    postClientMessage(callbackClient, { type: 'matrix-line-pwa-return-progress', requestId, diagnostic });
+  };
   const callbackUrl = lineCallbackUrl(callbackClient);
-  const pwaClient = await findLinePwaClient();
+  let pwaClient = null;
+  if (callbackUrl) {
+    report('PWA_LOOKUP_STARTED');
+    pwaClient = await findLinePwaClient(report, callbackClient.id);
+  } else report('CALLBACK_INVALID');
   let ok = false;
 
   if (pwaClient && callbackUrl) {
+    report('PWA_CLIENT_FOUND');
     try {
+      report('PWA_FOCUS_STARTED');
       await pwaClient.focus();
+      report('PWA_FOCUS_RESOLVED');
       // Transfer the callback only after focus succeeds. Otherwise the browser
       // still owns it and must be able to complete login without consuming it twice.
       try {
+        report('PWA_NAVIGATION_STARTED');
         ok = Boolean(await pwaClient.navigate(callbackUrl));
-      } catch { /* Fall back to the existing page-side callback handler. */ }
+        if (!ok) report('PWA_NAVIGATION_EMPTY');
+      } catch (error) { report('PWA_NAVIGATION_REJECTED', error); }
       if (!ok) {
         ok = postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
+        if (!ok) report('PWA_CALLBACK_POST_FAILED');
       }
-    } catch {
+      // API completion is handoff evidence, not proof of native foreground state.
+      if (ok) report('HANDOFF_DISPATCHED');
+    } catch (error) {
+      report('PWA_FOCUS_REJECTED', error);
       // Background navigation or opening an ordinary tab is not a PWA return.
     }
   }
 
-  postClientMessage(callbackClient, { type: LINE_PWA_RETURN_RESULT, ok });
+  postClientMessage(callbackClient, { type: LINE_PWA_RETURN_RESULT, requestId, ok, diagnostic });
 }
 
 async function findLinePwaLoginAttempt(attemptId) {

@@ -34,8 +34,13 @@ function serviceWorkerStub() {
 
 function browserWindow(url = `${ORIGIN}/`, standalone = false) {
   const location = Object.assign(new URL(url), { replace: vi.fn() });
+  const storage = new Map<string, string>();
   return {
     location,
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    },
     matchMedia: vi.fn((query: string) => ({ matches: standalone && query === '(display-mode: standalone)' })),
     setTimeout,
     clearTimeout,
@@ -82,9 +87,9 @@ describe('LINE PWA browser return handoff', () => {
     const callback = browserWindow(`${ORIGIN}/?code=oauth-code`);
 
     const resultPromise = requestLinePwaReturn(callback, serviceWorker);
-    await vi.waitFor(() => expect(serviceWorker.controller.postMessage).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(serviceWorker.controller.postMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: 'matrix-line-pwa-return-request',
-    }));
+    })));
 
     serviceWorker.emit({ type: 'matrix-line-pwa-return-result', ok: true });
 
@@ -143,6 +148,57 @@ describe('LINE PWA browser return handoff', () => {
       const result = requestLinePwaReturn(callback, serviceWorker);
       await vi.advanceTimersByTimeAsync(2_500);
       await expect(result).resolves.toBe(false);
+      expect(callback.localStorage.getItem('matrix-line-pwa-diagnostics-v1')).toContain('WORKER_READY_TIMEOUT');
     } finally { vi.useRealTimers(); }
+  });
+
+  it('persists sanitized worker failure details and ignores responses for another request', async () => {
+    const serviceWorker = serviceWorkerStub();
+    const callback = browserWindow(`${ORIGIN}/?code=secret-code#access_token=secret-token`);
+    const result = requestLinePwaReturn(callback, serviceWorker);
+    await vi.waitFor(() => expect(serviceWorker.active.postMessage).toHaveBeenCalled());
+    const { requestId } = serviceWorker.active.postMessage.mock.calls[0][0];
+    serviceWorker.emit({ type: 'matrix-line-pwa-return-result', requestId: 'other-request', ok: true });
+    serviceWorker.emit({ type: 'matrix-line-pwa-return-progress', requestId, diagnostic: {
+      code: 'PWA_FOCUS_STARTED', workerBuild: 'matrix-pwa-shell-0123456789abcdef',
+    } });
+    serviceWorker.emit({ type: 'matrix-line-pwa-return-result', requestId, ok: false, diagnostic: {
+      code: 'PWA_FOCUS_REJECTED', errorName: 'InvalidAccessError', workerBuild: 'matrix-pwa-shell-0123456789abcdef',
+      message: 'secret-token', url: callback.location.href, access_token: 'secret-token',
+    } });
+    await expect(result).resolves.toBe(false);
+    const stored = callback.localStorage.getItem('matrix-line-pwa-diagnostics-v1')!;
+    expect(stored).toContain('PWA_FOCUS_STARTED');
+    expect(stored).toContain('PWA_FOCUS_REJECTED');
+    expect(stored).toContain('InvalidAccessError');
+    expect(stored).toContain('0123456789abcdef');
+    expect(stored).not.toContain('secret');
+  });
+
+  it('keeps the last worker stage when the callback response times out', async () => {
+    vi.useFakeTimers();
+    try {
+      const serviceWorker = serviceWorkerStub();
+      const callback = browserWindow(`${ORIGIN}/?code=secret`);
+      const result = requestLinePwaReturn(callback, serviceWorker);
+      await vi.advanceTimersByTimeAsync(0);
+      const { requestId } = serviceWorker.active.postMessage.mock.calls[0][0];
+      serviceWorker.emit({ type: 'matrix-line-pwa-return-progress', requestId, diagnostic: { code: 'PWA_FOCUS_STARTED' } });
+      await vi.advanceTimersByTimeAsync(2_500);
+      await expect(result).resolves.toBe(false);
+      const stored = callback.localStorage.getItem('matrix-line-pwa-diagnostics-v1')!;
+      expect(stored).toContain('PWA_FOCUS_STARTED');
+      expect(stored).toContain('WORKER_RESPONSE_TIMEOUT');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('does not block callback recovery if diagnostic storage is denied', async () => {
+    const serviceWorker = serviceWorkerStub();
+    const callback = browserWindow(`${ORIGIN}/?code=secret`);
+    Object.defineProperty(callback, 'localStorage', { get: () => { throw new Error('storage denied'); } });
+    const result = requestLinePwaReturn(callback, serviceWorker);
+    await vi.waitFor(() => expect(serviceWorker.active.postMessage).toHaveBeenCalled());
+    serviceWorker.emit({ type: 'matrix-line-pwa-return-result', ok: false });
+    await expect(result).resolves.toBe(false);
   });
 });
