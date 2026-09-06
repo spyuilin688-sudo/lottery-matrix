@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, GearIcon, PlusIcon, ReaderIcon, ReloadIcon, TrashIcon } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "../Prototype";
 import { QUICK_SETTINGS_DOUBLE_TAP_MS } from "../BottomNavigation";
@@ -212,7 +212,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
           const expanded = open === titleEn;
           const detailId = "matrix-status-" + titleEn.toLowerCase();
           return (
-            <section className="status-block" data-tone={tone} data-status={titleEn} key={title}>
+            <section className="status-block" data-tone={tone} data-status={titleEn} data-expanded={expanded} key={title}>
               <button
                 type="button"
                 aria-expanded={expanded}
@@ -234,9 +234,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                   {cards.length > 0 && result ? (
                     <div className="matrix-status-trigger-list">
                       <article className="matrix-status-trigger-table" data-testid="matrix-status-trigger-table">
-                        {cards.map((card, index) => <Fragment key={card.id}>
-                          {index > 0 ? <hr className="matrix-status-group-divider" /> : null}
-                          <MatrixStatusTriggerCard
+                        {cards.map((card) => <MatrixStatusTriggerCard
                           card={card}
                           showColumnHead={true}
                           lottery={lottery}
@@ -246,7 +244,8 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                           validationLoadingId={validationLoadingId}
                           validationErrorId={validationErrorId}
                           onToggleRoad={toggleRoad}
-                        /></Fragment>)}
+                          key={card.id}
+                        />)}
                       </article>
                     </div>
                   ) : <p className="empty-result">尚無成立觸發</p>}
