@@ -103,6 +103,30 @@ describe('administrator operation permission editing', () => {
     container.remove();
   });
 
+  it('opens transfer requests from a notification on cold start', async () => {
+    window.history.replaceState(null, '', '/#transfer-requests');
+    try {
+      await act(async () => root.render(<AdminApp />));
+      await settle();
+      expect(container.querySelector('#transfer-requests')).not.toBeNull();
+      expect(container.querySelector('[aria-label="新轉帳手機通知"]')).not.toBeNull();
+      expect(app.api.get).toHaveBeenCalledWith('/api/data/transferRequests');
+    } finally { window.history.replaceState(null, '', '/'); }
+  });
+
+  it('opens transfer requests on a notification hash change in an existing tab', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    try {
+      await act(async () => {
+        window.history.replaceState(null, '', '/#transfer-requests');
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+      });
+      await settle();
+      expect(container.querySelector('#transfer-requests')).not.toBeNull();
+    } finally { window.history.replaceState(null, '', '/'); }
+  });
+
   it('lets a super administrator edit and save all four permissions for another administrator', async () => {
     await act(async () => root.render(<AdminApp />));
     await settle();
