@@ -114,14 +114,19 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- Installed PWAs, including mobile, keep the original app open and attempt the
-  managed authorization window. The callback stays at the approved origin root;
-  an internally generated `matrix_line_return` UUID binds it to the waiting
-  attempt. Public redirect arguments still reject arbitrary paths or queries.
-  Allow native LINE auto login. Do not force
+- Mobile installed PWAs start OAuth in the original window and return to the
+  exact approved origin root, without opening a separate authorization window
+  or adding a popup correlation query. Restore the routing before PR #357;
+  automatic native LINE foreground return still requires a physical-device
+  check. Allow native LINE auto login. Do not force
   `disable_auto_login=true`: this prevents single-phone users without web SSO
   from using the installed LINE app. Supabase detects and persists the callback
   session through the existing provider-token-safe storage.
+- Desktop installed PWAs retain the managed authorization window. Its callback
+  stays at the approved origin root; an internally generated `matrix_line_return`
+  UUID binds it to the waiting attempt. Public redirect arguments still reject
+  arbitrary paths or queries. Keep this handoff available for callbacks from
+  older mobile clients that already opened a popup.
 - When native LINE opens a callback without its opener, a same-origin
   BroadcastChannel matched to the callback's own UUID can import the session
   into the waiting PWA. Never choose a pending attempt from shared storage.
