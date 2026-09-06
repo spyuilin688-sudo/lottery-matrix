@@ -58,11 +58,13 @@ export async function registerLinePwaClient(
       return;
     }
 
-    if (type !== LINE_PWA_RETURN) return;
+    if (type !== LINE_PWA_RETURN || typeof event.data?.url !== 'string') return;
     try {
-      browser.location.reload();
+      const callbackUrl = new URL(event.data.url, browser.location.origin);
+      if (callbackUrl.origin !== browser.location.origin) return;
+      browser.location.replace(callbackUrl.href);
     } catch {
-      // The PWA can still be focused by the service worker if reload is blocked.
+      // The PWA can still be focused by the service worker if navigation is blocked.
     }
   };
 
@@ -70,7 +72,10 @@ export async function registerLinePwaClient(
   try {
     const registration = await serviceWorker.ready;
     const target = serviceWorkerTarget(serviceWorker, registration.active);
-    if (!target) return false;
+    if (!target) {
+      serviceWorker.removeEventListener('message', handleMessage);
+      return false;
+    }
     target.postMessage({ type: LINE_PWA_READY });
     return true;
   } catch {
