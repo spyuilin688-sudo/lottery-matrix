@@ -32,7 +32,7 @@ function mountProfileSettings() {
       </section>
     </div></main>
     <main class="profile-detail-screen profile-info-screen contact-support-screen"><div class="feature-body">
-      <section class="panel detail-card"><h2>聯絡客服</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a><div class="contact-support-phone-row"><a href="tel:+886226861828">(02) 2686-1828</a></div></section><section class="panel detail-card"><h2>問題回報</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></section><section class="panel detail-card"><h2>商務合作</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></section>
+      <section class="panel detail-card"><h2>聯絡客服</h2><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a><div class="contact-support-phone-row"><a href="tel:+886226861828">(02) 2686-1828</a></div></section><section class="panel detail-card"><h2>問題回報</h2><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a></section><section class="panel detail-card"><h2>商務合作</h2><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a></section>
     </div></main>`;
 }
 
