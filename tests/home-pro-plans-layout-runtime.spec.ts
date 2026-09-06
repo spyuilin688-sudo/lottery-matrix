@@ -67,7 +67,7 @@ for (const width of MOBILE_WIDTHS) {
           }
         }
         shadows.push(value.slice(start));
-        return shadows.some((shadow) => !/\\binset\\b/.test(shadow));
+        return shadows.some((shadow) => !/\binset\b/.test(shadow));
       };
       return {
         cardLeft: Math.round(cardRect.left - bodyRect.left),
