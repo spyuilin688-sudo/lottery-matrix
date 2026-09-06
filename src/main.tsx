@@ -71,7 +71,7 @@ async function bootstrap() {
     }
   }
 
-  const handled = await finishLineLoginPopup(getSupabaseClient());
+  const handled = await finishLineLoginPopup(getSupabaseClient);
   if (!handled) renderApp();
 }
 
