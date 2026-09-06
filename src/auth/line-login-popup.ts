@@ -168,7 +168,13 @@ export function signInWithLinePopup(
       else stopPwaRegistration = stop;
     });
     void Promise.all([registration, client.auth.signInWithOAuth({
-      provider: 'custom:line', options: { redirectTo: callbackUrl.href, skipBrowserRedirect: true },
+      provider: 'custom:line', options: {
+        redirectTo: callbackUrl.href,
+        skipBrowserRedirect: true,
+        // Native LINE auto-login can return into a detached Chrome task, which
+        // loses the script-owned popup and prevents it from closing back to PWA.
+        queryParams: { disable_auto_login: 'true' },
+      },
     })]).then(([, { data, error }]) => {
       if (settled) return;
       if (error || !data?.url) { fail(); return; }
