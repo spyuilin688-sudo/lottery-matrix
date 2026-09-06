@@ -581,7 +581,16 @@ def create_repository() -> AnalysisRepository:
     settings = load_settings()
     if not settings.supabase_url or not settings.supabase_secret_key:
         raise RuntimeError("SUPABASE_CONFIG_MISSING")
-    return create_supabase_repository(settings.supabase_url, settings.supabase_secret_key)
+    # A terminated shared HTTP/2 connection caused concurrent history/Tongxing 500s.
+    # Keep the PostgREST timeout while using HTTP/1.1 for this long-lived API client.
+    client = httpx.Client(http2=False, timeout=120, follow_redirects=True)
+    try:
+        return create_supabase_repository(
+            settings.supabase_url, settings.supabase_secret_key, httpx_client=client,
+        )
+    except Exception:
+        client.close()
+        raise
 
 
 def main() -> None:
