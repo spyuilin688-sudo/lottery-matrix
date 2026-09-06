@@ -317,28 +317,6 @@ def run_scheduled_worker(
 
     current = now or datetime.now(cycle.tzinfo)
     current_minute = current.astimezone(cycle.tzinfo).replace(second=0, microsecond=0)
-    if not allow_recovery_crawl and current_minute != cycle:
-        if latest:
-            resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
-            if resumed is not None:
-                if resumed.get("status") == "complete":
-                    emit_ready_notifications(
-                        lottery,
-                        str(latest[0]["period"]),
-                        repository,
-                        notification_emitter,
-                        emitted_event_keys,
-                    )
-                return resumed
-            emit_ready_notifications(
-                lottery,
-                str(latest[0]["period"]),
-                repository,
-                notification_emitter,
-                emitted_event_keys,
-            )
-        return {"lottery": lottery, "status": "not-due"}
-
     is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
     target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
     expected_draw_date = _expected_source_draw_date(lottery, target_cycle)
@@ -377,6 +355,9 @@ def run_scheduled_worker(
             "drawPeriod": latest[0]["period"],
             "status": "already-acquired",
         }
+
+    if not allow_recovery_crawl and current_minute != cycle:
+        return {"lottery": lottery, "status": "not-due"}
 
     database_period = str(latest[0]["period"]) if latest else None
     refresh = DrawRefreshService(repository, source)
