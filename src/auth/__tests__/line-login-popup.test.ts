@@ -330,6 +330,7 @@ describe('installed PWA LINE login return', () => {
       provider: 'custom:line', options: {
         redirectTo: `${origin}/?matrix_line_return=${JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id}`,
         skipBrowserRedirect: true,
+        queryParams: { disable_auto_login: 'true' },
       },
     });
     expect(popup.location.replace).toHaveBeenCalledWith('https://auth.example/authorize');
