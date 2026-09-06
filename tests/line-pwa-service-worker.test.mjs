@@ -103,7 +103,7 @@ test('does not claim a foreground return when navigation succeeds but focus is r
   const { listeners, windowClients, workerScope } = await loadWorker();
   const messages = [];
   const pwa = { id: 'pwa', url: 'https://matrixlottery.idv.tw/', postMessage() {},
-    navigate: async () => pwa, focus: async () => { throw new Error('InvalidAccessError'); } };
+    navigate: async () => pwa, focus: async () => { throw Object.assign(new Error('private-callback-token'), { name: 'InvalidAccessError' }); } };
   const callback = { id: 'callback', url: 'https://matrixlottery.idv.tw/?code=callback-code', postMessage: (data) => messages.push(data) };
   windowClients.push(pwa, callback);
   workerScope.clients.openWindow = async () => { throw new Error('InvalidAccessError'); };
@@ -112,6 +112,50 @@ test('does not claim a foreground return when navigation succeeds but focus is r
   listeners.get('message')({ data: { type: 'matrix-line-pwa-return-request' }, source: callback, waitUntil: (p) => waits.push(p) });
   await Promise.all(waits);
   assert.equal(messages.at(-1).ok, false);
+  assert.equal(messages.at(-1).diagnostic.code, 'PWA_FOCUS_REJECTED');
+  assert.equal(messages.at(-1).diagnostic.errorName, 'InvalidAccessError');
+  assert.equal(messages.at(-1).diagnostic.workerBuild, 'matrix-pwa-shell-__BUILD_ID__');
+  assert.equal(JSON.stringify(messages).includes('private-callback-token'), false);
+  assert.equal(JSON.stringify(messages).includes('callback-code'), false);
+});
+
+test('reports a missing PWA separately from client enumeration failure', async () => {
+  for (const unavailable of [false, true]) {
+    const { listeners, workerScope } = await loadWorker();
+    const messages = [];
+    const callback = { id: 'callback', url: 'https://matrixlottery.idv.tw/?code=secret', postMessage: (data) => messages.push(data) };
+    if (unavailable) workerScope.clients.matchAll = async () => { throw Object.assign(new Error('secret'), { name: 'SecurityError' }); };
+    const waits = [];
+    listeners.get('message')({ data: { type: 'matrix-line-pwa-return-request', requestId: 'diagnostic-1' }, source: callback, waitUntil: (p) => waits.push(p) });
+    await Promise.all(waits);
+    const result = messages.at(-1);
+    assert.equal(result.ok, false);
+    assert.equal(result.requestId, 'diagnostic-1');
+    assert.equal(result.diagnostic.code, unavailable ? 'PWA_CLIENT_LOOKUP_FAILED' : 'PWA_CLIENT_NOT_FOUND');
+    assert.equal(result.diagnostic.errorName, unavailable ? 'SecurityError' : undefined);
+    assert.equal(JSON.stringify(messages).includes('secret'), false);
+  }
+});
+
+test('reports the current stage before a focus request stalls', async () => {
+  const { listeners, windowClients } = await loadWorker();
+  const messages = [];
+  let release;
+  const pwa = { id: 'pwa', url: 'https://matrixlottery.idv.tw/', postMessage() {},
+    focus: () => new Promise((resolve) => { release = resolve; }), navigate: async () => pwa };
+  const callback = { id: 'callback', url: 'https://matrixlottery.idv.tw/?code=secret', postMessage: (data) => messages.push(data) };
+  windowClients.push(pwa, callback);
+  listeners.get('message')({ data: { type: 'matrix-line-pwa-ready' }, source: pwa });
+  const waits = [];
+  listeners.get('message')({ data: { type: 'matrix-line-pwa-return-request' }, source: callback, waitUntil: (p) => waits.push(p) });
+  for (let i = 0; i < 10 && !release; i += 1) await Promise.resolve();
+  try {
+    assert.equal(messages.at(-1)?.type, 'matrix-line-pwa-return-progress');
+    assert.equal(messages.at(-1)?.diagnostic.code, 'PWA_FOCUS_STARTED');
+  } finally {
+    release?.(pwa);
+    await Promise.all(waits);
+  }
 });
 
 test('focuses only the PWA that started the matching popup login', async () => {

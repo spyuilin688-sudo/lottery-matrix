@@ -177,3 +177,48 @@ On 2026-09-06, a read-only check of the production Supabase authorize endpoint
 without the disabling parameter returned HTTP 302 to `access.line.me`. Its LINE
 URL contained neither `disable_auto_login` nor `prompt`, and retained the existing
 Supabase callback. The redirect was not followed and no LINE login was completed.
+
+## Browser-to-PWA handoff diagnostics
+
+Normal mobile callbacks now record a request ID, stage, elapsed time, an
+allowlisted exception name, and the worker's stamped build ID. Progress is sent
+before awaiting focus/navigation, so a response timeout retains the last known
+stage. Distinct outcomes cover unavailable workers, client lookup failures,
+missing PWAs, probe timeouts, focus rejection, and callback navigation failures.
+The callback tab itself is excluded from PWA candidates. Existing PWA
+registration/probing remains authoritative; matching a same-origin URL alone
+does not identify an installed PWA window.
+
+The callback page stores the latest 40 sanitized events under localStorage key
+`matrix-line-pwa-diagnostics-v1`. Each write removes records older than 24 hours.
+Storage failures cannot stop login. No callback URL, OAuth code, token, user
+identity, exception message, or arbitrary worker payload is recorded. The worker
+does not use localStorage. These records stay on the device; this change does
+not upload them to Supabase or make them remotely readable by support.
+
+For an authorized device investigation, inspect that one key in the callback
+origin's browser storage after reproducing the failure. Do not export the full
+storage or an unsanitized callback URL. `WORKER_LEGACY_SUCCESS` or
+`WORKER_LEGACY_FAILURE` means an older worker supplied only a boolean; it cannot
+establish why focus failed. `PWA_FOCUS_RESOLVED` and `HANDOFF_DISPATCHED` report
+API completion only. They do not certify native foreground activation. Correlate
+the events with the physical-device recording before declaring a return fixed.
+
+The diagnostic patch preserves native LINE auto login and the existing
+Supabase callback and PWA root redirect. It introduces no password form,
+manual-return screen, or alternate Android intent. The following suggestions
+are not established fixes for automatic PWA return:
+
+- [`share_target`](https://developer.chrome.com/docs/capabilities/web-apis/web-share-target)
+  registers an app in the OS share chooser; it is not an OAuth return handler.
+- An [`intent:` URL](https://developer.chrome.com/docs/android/intents) specifying
+  `package=com.android.chrome` targets Chrome. It does not select a particular
+  Matrix WebAPK, and automatic invocation cannot bypass user-gesture rules.
+- Adding a callback path within the manifest scope does not itself prove the OS
+  will bring an already installed PWA to the foreground.
+
+Focused tests cover diagnostic classification, retained progress on timeout,
+request correlation, sensitive-data exclusion, blocked storage, and compatibility
+with older workers. They use worker/client test doubles and do not reproduce
+native LINE or Android window activation. Automatic device return remains
+unverified by this patch.

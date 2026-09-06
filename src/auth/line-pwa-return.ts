@@ -1,5 +1,6 @@
 import { isPwaDisplayMode } from '../pwa-display-mode';
-import { withDeadline } from '../lib/api-resilience';
+import { ApiRequestError, withDeadline } from '../lib/api-resilience';
+import { recordLinePwaDiagnostic } from './line-pwa-diagnostics';
 
 export const LINE_PWA_READY = 'matrix-line-pwa-ready';
 export const LINE_PWA_PING = 'matrix-line-pwa-ping';
@@ -95,19 +96,34 @@ export async function requestLinePwaReturn(
 ) {
   if (isPwaDisplayMode(browser) || !callbackDetected) return false;
 
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const startedAt = Date.now();
+  const record = (code: string, details: Record<string, unknown> = {}) => {
+    recordLinePwaDiagnostic(browser, requestId, { ...details, code, elapsedMs: Date.now() - startedAt });
+  };
+  record('CALLBACK_RECEIVED');
+
   let registration: Awaited<LineServiceWorkerBridge['ready']>;
   try {
     registration = await withDeadline(() => serviceWorker.ready, { timeoutMs: HANDOFF_TIMEOUT_MS });
-  } catch {
+  } catch (error) {
+    record(error instanceof ApiRequestError && error.code === 'REQUEST_TIMEOUT'
+      ? 'WORKER_READY_TIMEOUT' : 'WORKER_READY_FAILED');
     return false;
   }
 
   const target = serviceWorkerTarget(serviceWorker, registration.active);
-  if (!target) return false;
+  if (!target) {
+    record('WORKER_UNAVAILABLE');
+    return false;
+  }
 
   return await new Promise<boolean>((resolve) => {
     let settled = false;
-    const timeout = browser.setTimeout(() => finish(false), HANDOFF_TIMEOUT_MS);
+    const timeout = browser.setTimeout(() => {
+      record('WORKER_RESPONSE_TIMEOUT');
+      finish(false);
+    }, HANDOFF_TIMEOUT_MS);
     const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
@@ -116,14 +132,28 @@ export async function requestLinePwaReturn(
       resolve(ok);
     };
     const receive = (event: MessageEvent) => {
-      if (event.data?.type !== LINE_PWA_RETURN_RESULT) return;
+      const type = event.data?.type;
+      if (type !== LINE_PWA_RETURN_RESULT && type !== 'matrix-line-pwa-return-progress') return;
+      if (event.source && event.source !== target && event.source !== serviceWorker.controller) return;
+      // Keep callbacks usable while an older worker is still controlling the page.
+      // Its uncorrelated boolean result is explicitly recorded as legacy evidence.
+      if (event.data.requestId !== undefined && event.data.requestId !== requestId) return;
+      if (type === 'matrix-line-pwa-return-progress' && event.data.requestId !== requestId) return;
+      const diagnostic = event.data.diagnostic;
+      if (diagnostic && typeof diagnostic === 'object') {
+        record(typeof diagnostic.code === 'string' ? diagnostic.code : 'WORKER_RESULT_UNKNOWN', diagnostic);
+      } else if (type === LINE_PWA_RETURN_RESULT) {
+        record(event.data.ok === true ? 'WORKER_LEGACY_SUCCESS' : 'WORKER_LEGACY_FAILURE');
+      }
+      if (type !== LINE_PWA_RETURN_RESULT) return;
       finish(event.data.ok === true);
     };
 
     serviceWorker.addEventListener('message', receive);
     try {
-      target.postMessage({ type: LINE_PWA_RETURN_REQUEST });
+      target.postMessage({ type: LINE_PWA_RETURN_REQUEST, requestId });
     } catch {
+      record('WORKER_REQUEST_POST_FAILED');
       finish(false);
     }
   });
