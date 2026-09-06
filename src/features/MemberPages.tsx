@@ -929,7 +929,43 @@ export function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><DetailCard title="一、服務名稱"><p>樂彩 Matrix</p></DetailCard><DetailCard title="二、服務形式"><p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p></DetailCard><DetailCard title="三、主要功能"><DetailList items={["Matrix Core", "　Matrix 探索", "　Matrix 天衍", "　Matrix 天工", "Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"]} /></DetailCard><DetailCard title="四、支援彩種"><DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} /></DetailCard><DetailCard title="五、使用方式"><p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p><p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p></DetailCard><DetailCard title="六、探索結果說明"><p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p></DetailCard><DetailCard title="七、Matrix Pro 說明"><p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 訂閱方案與收費標準」及帳號顯示為準。</p></DetailCard></ProfileDetailShell>;
+  return (
+    <ProfileDetailShell title="服務內容與使用說明" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png">
+      <article className="panel detail-card service-info-document" aria-label="服務內容與使用說明">
+        <section>
+          <h2>一、服務名稱</h2>
+          <p>樂彩 Matrix</p>
+        </section>
+        <section>
+          <h2>二、服務形式</h2>
+          <p>樂彩 Matrix 為可安裝於手機桌面的 PWA 服務。</p>
+        </section>
+        <section>
+          <h2>三、主要功能</h2>
+          <DetailList items={["Matrix Core", "　Matrix 探索", "　Matrix 天衍", "　Matrix 天工", "Matrix 狀態", "Matrix 同星", "號碼對照單", "連碰立柱計算機", "Matrix 牌單", "Matrix 指南", "歷史開獎號碼", "Matrix 筆記本"]} />
+        </section>
+        <section>
+          <h2>四、支援彩種</h2>
+          <DetailList items={["今彩539", "天天樂", "六合彩", "大樂透"]} />
+        </section>
+        <section>
+          <h2>五、使用方式</h2>
+          <p>使用者透過 LINE 登入後，可查看會員資訊、訂閱資訊及目前帳號可使用的功能。</p>
+          <p>不同會員狀態可使用的功能及權限，依目前帳號顯示為準。</p>
+        </section>
+        <section>
+          <h2>六、探索結果說明</h2>
+          <p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p>
+        </section>
+        <section>
+          <h2>七、Matrix Pro 說明</h2>
+          <p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p>
+          <p>使用者可自行選擇是否開啟自動續訂。</p>
+          <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 訂閱方案與收費標準」及帳號顯示為準。</p>
+        </section>
+      </article>
+    </ProfileDetailShell>
+  );
 }
 
 export function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
