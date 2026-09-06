@@ -1055,7 +1055,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   inset: -9px 34px auto auto;
   color: var(--lottery-label);
   opacity: .09;
-  font-size: 108px;
+  font-size: 118px;
   font-weight: 800;
   line-height: 1;
   pointer-events: none;
@@ -1069,7 +1069,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   padding-bottom: 3px;
   border-bottom: 1px solid var(--lottery-border-default);
   color: var(--lottery-text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 18px;
 }
@@ -1134,9 +1134,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 0 0 2px 6px;
   gap: 9px;
   color: var(--lottery-text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 18px;
+  line-height: 19px;
 }
 .subscription-status-card > .section-title::after {
   content: "";
@@ -1147,7 +1147,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: grid;
   min-width: 0;
   margin: 0;
-  grid-template-columns: 42px minmax(0, .72fr) minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, .8fr) minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -1155,6 +1155,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: block;
   width: 42px;
   height: 42px;
+  margin-left: 2px;
   object-fit: contain;
 }
 .subscription-status-content > div { min-width: 0; }
@@ -1243,6 +1244,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   .profile-avatar { width: 52px; height: 52px; }
   .profile-logout { width: 54px; font-size: 11px; }
   .profile-card .profile-copy h2 { font-size: 14px; }
+  .subscription-status-card > .section-title { font-size: 14px; line-height: 18px; }
   .subscription-status-content {
     grid-template-columns: 38px minmax(0, 1.1fr) minmax(0, 1fr);
     gap: 5px;
