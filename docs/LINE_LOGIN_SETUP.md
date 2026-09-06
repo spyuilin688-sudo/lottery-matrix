@@ -105,20 +105,22 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-As of 2026-09-06, mobile installed PWAs use original-window OAuth navigation
-without `disable_auto_login=true`. Native LINE auto login is allowed so users
-with one phone can authenticate through the installed LINE app. No blank popup
-is opened on mobile. The return URL remains the exact approved origin root,
-within the PWA's existing scope. The normal callback lets Supabase detect and
-persist its session through the existing provider-token-safe storage; a later
-PWA session read can restore a session available in that browser storage.
-Browser/PWA storage sharing and foreground return still require device checks.
+As of the second 2026-09-06 correction, mobile and desktop installed PWAs attempt
+a script-controlled OAuth window directly from the login click, keeping the
+original PWA open. Native LINE auto login remains allowed; do not add
+`disable_auto_login=true`. The return URL stays at the approved origin root,
+within the existing PWA scope. After validating that root, the implementation
+adds its own `matrix_line_return` UUID to correlate this callback. User-supplied
+redirect paths and query strings remain rejected.
 
-Desktop installed PWAs attempt a script-controlled OAuth window, created
-directly from the login click. The temporary callback hands its session to the
-original PWA only after matching the origin, window source and one-time attempt
-ID; it closes after the PWA acknowledges importing that session. The callback
-does not mount the member-presence UI while waiting.
+The callback hands its session to the original PWA after matching the origin,
+window source and one-time attempt ID. If native LINE opens a fresh callback
+tab without an opener, an origin-scoped BroadcastChannel uses the callback's
+own UUID to reach the correct waiting PWA. It never selects an arbitrary recent
+attempt from shared storage. A detached callback checks for a listening PWA
+within 2,500 ms before consuming its session; without a peer the normal app
+initializes. Temporary auth windows close after the PWA accepts the session.
+The callback does not mount the member-presence UI while the handoff is pending.
 
 The optional LINE revoke token is read from the existing callback fragment before
 Supabase clears it, then transferred only in memory to the original PWA. It is
@@ -126,10 +128,19 @@ never added to a new URL, log, or storage record. The popup storage marker conta
 only a random ID and timestamp.
 
 If the browser cannot provide a controllable window, login uses its original
-redirect flow. If a native LINE handoff loses the opener or opens a new browser
-tab, that callback loads the normal application. Automatic foreground return is
-not guaranteed in those cases. Verify the actual installed Android/iOS/desktop
-app with a live LINE account; unit tests cannot establish OS-level return behavior.
+redirect flow. Different browser/PWA storage partitions, including iOS Home
+Screen apps and Safari, cannot communicate through this channel. An unreachable
+PWA retains normal browser callback initialization. A successful session import
+does not prove OS foreground activation: focus and close can be refused. Verify
+actual installed Android/iOS devices with LINE; unit and desktop-browser tests
+cannot establish native-app return behavior.
+
+A production check generated an unauthenticated OAuth transaction with the
+correlation query and immediately cancelled only that transaction through the
+existing Supabase callback. Both responses were HTTP 302; the final redirect
+retained the exact UUID at `https://matrixlottery.idv.tw/`. No provider,
+callback allowlist or credential configuration was changed. This cancellation
+check verifies redirect preservation, not a successful LINE login.
 
 Historical check before the 2026-09-06 correction: on 2026-09-05, the production Supabase authorize endpoint's first HTTP 302 was
 checked without following it or completing a login. The control request did not

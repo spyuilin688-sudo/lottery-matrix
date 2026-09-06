@@ -114,21 +114,28 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- Mobile installed PWAs initiate OAuth in the current window with the approved
-  origin-root callback and allow native LINE auto login. Do not force
+- Installed PWAs, including mobile, keep the original app open and attempt the
+  managed authorization window. The callback stays at the approved origin root;
+  an internally generated `matrix_line_return` UUID binds it to the waiting
+  attempt. Public redirect arguments still reject arbitrary paths or queries.
+  Allow native LINE auto login. Do not force
   `disable_auto_login=true`: this prevents single-phone users without web SSO
   from using the installed LINE app. Supabase detects and persists the callback
-  session through the existing provider-token-safe storage. The OS controls
-  whether native LINE returns directly to the PWA or a browser tab; automated
-  callback checks do not guarantee physical-device PWA activation.
-- Desktop installed PWAs retain the controlled authorization window. Successful
-  session import returns the original PWA home with the existing success dialog.
+  session through the existing provider-token-safe storage.
+- When native LINE opens a callback without its opener, a same-origin
+  BroadcastChannel matched to the callback's own UUID can import the session
+  into the waiting PWA. Never choose a pending attempt from shared storage.
+  Check for a listening PWA before consuming a detached callback. Successful
+  import acknowledges the callback, closes the temporary authorization windows
+  and requests focus of the original PWA, which uses its existing success UI.
 - Fullscreen (the current manifest setting), standalone, minimal-ui and iOS
   home-screen mode share detection with the install UI.
 - Ordinary browser login keeps the existing origin-root redirect. Unsupported
-  popup or lost native-app window relationships have a working browser fallback;
-  automated tests do not claim physical-device LINE return was verified.
-- No page geometry, shortcuts, provider scopes or callback allowlist changes.
+  popup or unreachable return channels retain normal browser initialization.
+  Separate browser/PWA partitions (including iOS Home Screen/Safari) cannot use
+  this channel. Window focus is controlled by the OS; unit or desktop-browser
+  checks do not verify physical Android/iOS foreground return.
+- No page geometry, shortcuts, provider scopes or Supabase allowlist changes.
 
 ## Notification settings login state — 2026-09-06
 
