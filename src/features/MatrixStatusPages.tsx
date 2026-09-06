@@ -42,7 +42,7 @@ export function MatrixStatusTriggerCard({
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
           {card.hitType === "one-code" ? <small>單碼結果</small> : null}
-          <strong className="numeric-text">{card.result.join("、")}</strong>
+          <strong className="numeric-text">預測：{card.result.join("、")}</strong>
         </span>
         <span className="matrix-status-trigger-count">
           <strong>{card.sameCodeRoadCountLocked ? "🔒 Matrix Pro" : String(card.sameCodeRoadCount ?? 0) + " 組"}</strong>
@@ -111,6 +111,7 @@ export function MatrixStatusTriggerCard({
                       lottery={lottery}
                       validation={validationById[cacheKey]}
                       loading={validationLoadingId === cacheKey}
+                      loadingLabel="資料載入中"
                     />
               ) : null}
             </article>

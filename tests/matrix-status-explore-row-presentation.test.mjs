@@ -20,7 +20,7 @@ test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () =
   assert.match(statusComponent, /showColumnHead=\{true\}/);
   assert.match(statusComponent, /\{showColumnHead \? \([\s\S]*?className="road-results-head"[\s\S]*?\) : null\}/);
   assert.match(triggerTableRule, /display:\s*grid;/);
-  assert.match(triggerTableRule, /gap:\s*8px;/);
+  assert.match(triggerTableRule, /gap:\s*10px;/);
   assert.match(triggerTableRule, /overflow:\s*visible;/);
   assert.match(triggerTableRule, /border:\s*0;/);
   assert.match(groupRule, /overflow:\s*hidden;/);
