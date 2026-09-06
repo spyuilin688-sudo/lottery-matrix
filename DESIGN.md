@@ -135,6 +135,12 @@ Matrix 探索與天衍的驗證過程，依鎖定條件整組交替使用 `#152A
 
 沿用 16px 頁面留白、12px 容器內距，分隔線為 1px 金褐色 `#8a6d3b`，上下各 12px；頁名 18px、章節標題 15px、正文 13px／1.65 行高、段距 8px。Matrix Core 的探索／天衍／天工以無圓點子清單縮排，功能項目間距為 4px；彩種採兩欄兩列，訂閱方案每個方案以完整一行靠左呈現，方案之間沿用 6px 行距。郵件連結使用與標題相同的暖金色並保留底線。原文、價格、天數、章節及閱讀順序不變，窄螢幕允許換行，容器隨內容增加高度。
 
+### Contact support and referral layout — 2026-09-06
+
+聯絡客服、問題回報、商務合作維持三張卡片，標題 15px；信箱與電話使用 14px 暖金色 `#e5c36e` 及底線，電話列與信箱間距 8px。電話沿用 `ContactSupportPhonePortal`，不重複新增；`src/feature-pages.css` 擁有此頁聯絡資訊樣式。
+
+推薦成功人數在「我的推薦碼」同列靠右。推薦碼標籤獨立一行，下行使用完整推薦碼與右側複製按鈕；窄螢幕允許長碼換行，不截斷內容。三個推薦說明標題左側與輸入框對齊，啟動碼使用說明保留原縮排。「確認」字級為 16px，按鈕沿用 34px 高度；推薦摘要與排列由 `src/feature-pages.css` 擁有，精簡控制尺寸由 `src/activation-code-layout.css` 擁有。資料、文字、登入狀態、確認、複製與展開流程維持原邏輯。
+
 ### Forms and overlays
 
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。

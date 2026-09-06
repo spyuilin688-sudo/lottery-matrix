@@ -84,6 +84,7 @@
 .activation-code-screen .activation-card .primary-action {
   height: 34px;
   min-height: 34px;
+  font-size: 16px;
 }
 
 .activation-code-screen .referral-rule-card {
@@ -92,6 +93,10 @@
 
 .activation-code-screen .referral-rule-toggle {
   padding-block: 4px;
+}
+
+.activation-code-screen .referral-code-section .referral-rule-toggle {
+  padding-inline: 0;
 }
 
 .activation-code-screen .activation-card-toggle {
