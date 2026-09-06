@@ -5,6 +5,8 @@ import {
   requestLinePwaReturn,
 } from '../line-pwa-return';
 
+const ORIGIN = 'https://matrixlottery.idv.tw';
+
 function serviceWorkerStub() {
   const messageListeners = new Set<(event: MessageEvent) => void>();
   const active = { postMessage: vi.fn() };
@@ -21,14 +23,14 @@ function serviceWorkerStub() {
     }),
     emit(data: unknown) {
       for (const listener of [...messageListeners]) {
-        listener(new MessageEvent('message', { data, origin: window.location.origin }));
+        listener({ data, origin: ORIGIN } as MessageEvent);
       }
     },
     active,
   };
 }
 
-function browserWindow(url = 'https://matrixlottery.idv.tw/', standalone = false) {
+function browserWindow(url = `${ORIGIN}/`, standalone = false) {
   const location = Object.assign(new URL(url), { replace: vi.fn() });
   return {
     location,
@@ -49,33 +51,33 @@ describe('LINE PWA browser return handoff', () => {
   });
 
   it('recognizes a normal OAuth callback without requiring the popup correlation parameter', () => {
-    expect(hasLineOAuthCallback(browserWindow('https://matrixlottery.idv.tw/?code=oauth-code'))).toBe(true);
-    expect(hasLineOAuthCallback(browserWindow('https://matrixlottery.idv.tw/?error=access_denied'))).toBe(true);
-    expect(hasLineOAuthCallback(browserWindow('https://matrixlottery.idv.tw/?matrix_line_return=attempt&code=oauth-code'))).toBe(false);
-    expect(hasLineOAuthCallback(browserWindow('https://matrixlottery.idv.tw/'))).toBe(false);
+    expect(hasLineOAuthCallback(browserWindow(`${ORIGIN}/?code=oauth-code`))).toBe(true);
+    expect(hasLineOAuthCallback(browserWindow(`${ORIGIN}/?error=access_denied`))).toBe(true);
+    expect(hasLineOAuthCallback(browserWindow(`${ORIGIN}/?matrix_line_return=attempt&code=oauth-code`))).toBe(false);
+    expect(hasLineOAuthCallback(browserWindow(`${ORIGIN}/`))).toBe(false);
   });
 
   it('registers a standalone PWA client and navigates it to the supplied callback', async () => {
     const serviceWorker = serviceWorkerStub();
-    const pwa = browserWindow('https://matrixlottery.idv.tw/', true);
+    const pwa = browserWindow(`${ORIGIN}/`, true);
 
     await registerLinePwaClient(pwa, serviceWorker);
     serviceWorker.emit({
       type: 'matrix-line-pwa-return',
-      url: 'https://matrixlottery.idv.tw/?code=oauth-code',
+      url: `${ORIGIN}/?code=oauth-code`,
     });
 
     expect(serviceWorker.controller.postMessage).toHaveBeenCalledWith({
       type: 'matrix-line-pwa-ready',
     });
     expect(pwa.location.replace).toHaveBeenCalledWith(
-      'https://matrixlottery.idv.tw/?code=oauth-code',
+      `${ORIGIN}/?code=oauth-code`,
     );
   });
 
   it('sends a browser OAuth callback to the service worker and resolves only on a successful PWA handoff', async () => {
     const serviceWorker = serviceWorkerStub();
-    const callback = browserWindow('https://matrixlottery.idv.tw/?code=oauth-code');
+    const callback = browserWindow(`${ORIGIN}/?code=oauth-code`);
 
     const resultPromise = requestLinePwaReturn(callback, serviceWorker);
     await Promise.resolve();
