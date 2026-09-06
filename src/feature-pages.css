@@ -1685,6 +1685,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .matrix-status-trigger-list { display: grid; gap: 7px; }
 .matrix-status-screen .matrix-status-trigger-card {
   min-width: 0;
+  margin-top: 0;
   overflow: hidden;
   border: 1px solid rgba(179, 139, 71, .58);
   border-radius: 8px;
@@ -1759,8 +1760,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   color: #d2a52a;
   font-size: clamp(9px, 2.8vw, 12px);
 }
-.matrix-status-screen .matrix-status-road-results article { border-top: 0; }
-.matrix-status-screen .matrix-status-road-results article + article {
+.matrix-status-screen .matrix-status-road-results > article {
+  margin-top: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+.matrix-status-screen .matrix-status-road-results > article + article {
   border-top: 1px solid rgba(57, 55, 49, .58);
 }
 .matrix-status-screen .road-result-row {
