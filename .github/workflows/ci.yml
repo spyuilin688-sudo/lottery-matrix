@@ -97,6 +97,9 @@ jobs:
       - name: Playwright runtime tests
         run: npm run test:runtime
 
+      - name: Profile membership responsive tests
+        run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright test --config playwright.membership-preview.config.ts
+
   admin:
     runs-on: ubuntu-latest
     timeout-minutes: 15
