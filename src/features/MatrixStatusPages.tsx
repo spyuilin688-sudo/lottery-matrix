@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, GearIcon, PlusIcon, ReaderIcon, ReloadIcon, TrashIcon } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "../Prototype";
 import { QUICK_SETTINGS_DOUBLE_TAP_MS } from "../BottomNavigation";
@@ -37,17 +37,15 @@ export function MatrixStatusTriggerCard({
   validationErrorId: string | null;
   onToggleRoad(cardId: string, road: MatrixStatusRoadDetail): void;
 }) {
-  const resultLabel = card.hitType === "one-code" ? "單碼結果" : "兩碼結果";
   return (
     <section className="matrix-status-trigger-group" data-testid="matrix-status-trigger-group">
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
-          <small>{resultLabel}</small>
+          {card.hitType === "one-code" ? <small>單碼結果</small> : null}
           <strong className="numeric-text">{card.result.join("、")}</strong>
         </span>
         <strong className="matrix-status-trigger-state">{MATRIX_STATUS_LABELS[card.status]}</strong>
         <span className="matrix-status-trigger-count">
-          <small>同碼版路數量</small>
           <strong>{card.sameCodeRoadCountLocked ? "🔒 Matrix Pro" : String(card.sameCodeRoadCount ?? 0) + " 組"}</strong>
         </span>
       </header>
@@ -237,7 +235,9 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                   {cards.length > 0 && result ? (
                     <div className="matrix-status-trigger-list">
                       <article className="matrix-status-trigger-table" data-testid="matrix-status-trigger-table">
-                        {cards.map((card) => <MatrixStatusTriggerCard
+                        {cards.map((card, index) => <Fragment key={card.id}>
+                          {index > 0 ? <hr className="matrix-status-group-divider" /> : null}
+                          <MatrixStatusTriggerCard
                           card={card}
                           showColumnHead={true}
                           lottery={lottery}
@@ -247,8 +247,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                           validationLoadingId={validationLoadingId}
                           validationErrorId={validationErrorId}
                           onToggleRoad={toggleRoad}
-                          key={card.id}
-                        />)}
+                        /></Fragment>)}
                       </article>
                     </div>
                   ) : <p className="empty-result">尚無成立觸發</p>}

@@ -20,13 +20,27 @@ test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () =
   assert.match(statusComponent, /showColumnHead=\{true\}/);
   assert.match(statusComponent, /\{showColumnHead \? \([\s\S]*?className="road-results-head"[\s\S]*?\) : null\}/);
   assert.match(triggerTableRule, /display:\s*grid;/);
-  assert.match(triggerTableRule, /gap:\s*16px;/);
+  assert.match(triggerTableRule, /gap:\s*0;/);
   assert.match(triggerTableRule, /overflow:\s*visible;/);
   assert.match(triggerTableRule, /border:\s*0;/);
   assert.match(groupRule, /overflow:\s*hidden;/);
   assert.match(groupRule, /border:\s*1px solid rgba\(179,\s*139,\s*71,\s*\.58\);/);
   assert.match(groupRule, /border-radius:\s*8px;/);
   assert.equal(groupSeparatorRule, '');
+  const dividerRule = rule(statusCss, '.matrix-status-screen .matrix-status-group-divider');
+  assert.match(statusComponent, /index > 0 \? <hr className="matrix-status-group-divider"/);
+  assert.match(dividerRule, /margin:\s*20px 0;/);
+  assert.match(dividerRule, /border-top:\s*1px solid/);
+  const categoryRule = rule(statusCss, '.matrix-status-screen .status-block > button');
+  assert.match(categoryRule, /min-height:\s*0;/);
+  assert.match(categoryRule, /padding:\s*8px 10px;/);
+  const headRule = rule(statusCss, '.matrix-status-screen .road-results-head');
+  assert.match(headRule, /min-height:\s*0;/);
+  assert.match(headRule, /padding:\s*4px 0;/);
+  const trigger = statusComponent.slice(statusComponent.indexOf('export function MatrixStatusTriggerCard'), statusComponent.indexOf('export function MatrixStatusPage'));
+  assert.ok(!trigger.includes('兩碼結果'));
+  assert.ok(!trigger.includes('同碼版路數量'));
+  assert.ok(!trigger.includes('>狀態<'));
 });
 
 test('Matrix 狀態驗證摘要不受 status-detail 六欄段落規則影響', () => {
