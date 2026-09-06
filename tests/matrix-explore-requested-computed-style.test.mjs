@@ -10,7 +10,7 @@ const exploreCss = readLocalCss(new URL("../src/matrix-explore-spacing.css", imp
 const resolvedExploreCss = exploreCss.replaceAll("var(--lottery-gold-500, #c49145)", "#c49145");
 const css = `html { font-size: 16px; }\n${featureCss}\n${resolvedExploreCss}`;
 
-function exploreFixture() {
+function exploreFixture(tianyan = false) {
   const dom = new JSDOM(`
     <style>${css}</style>
     <main class="matrix-explore-main-screen">
@@ -73,8 +73,28 @@ function exploreFixture() {
   `, { pretendToBeVisual: true });
 
   const { document } = dom.window;
+  if (tianyan) {
+    document.querySelector("main").classList.add("matrix-tianyan-screen");
+    document.querySelector(".consecutive-filter-button").remove();
+    document.querySelector(".matrix-explore-consecutive-filter-options").remove();
+  }
   const style = (selector) => dom.window.getComputedStyle(document.querySelector(selector));
   return { style };
+}
+
+for (const tianyan of [false, true]) {
+  test(`${tianyan ? "天衍" : "探索"}兩張結果卡上內距與標題列對齊`, () => {
+    const { style } = exploreFixture(tianyan);
+    for (const selector of [".repeat-stats-panel", ".result-panel"]) {
+      assert.equal(style(selector).paddingTop, "6px");
+    }
+    for (const selector of [".repeat-stats-heading", ".result-title"]) {
+      assert.equal(style(selector).minHeight, "22px");
+      assert.equal(style(selector).alignItems, "center");
+    }
+    assert.equal(style(".repeat-stats-heading button").height, "22px");
+    assert.equal(style(".repeat-stats-heading button").fontSize, "11px");
+  });
 }
 
 test("探索與進階設定的三列圖示使用 7px 垂直間距", () => {
