@@ -16,6 +16,7 @@ function mountProfileSettings() {
     <main class="activation-code-screen"><div class="feature-body">
       <section class="panel referral-code-section">
         <div class="referral-summary-card">
+          <div class="referral-summary-heading"><h2>我的推薦碼</h2><p class="referral-success-count">推薦成功 <strong>0</strong> 人</p></div>
           <div class="referral-code-row">
             <span class="referral-code-label">推薦碼：</span>
             <strong class="referral-code-value">MATRIX-7H4K9P</strong>
@@ -31,7 +32,7 @@ function mountProfileSettings() {
       </section>
     </div></main>
     <main class="profile-detail-screen profile-info-screen contact-support-screen"><div class="feature-body">
-      <section class="panel detail-card"></section><section class="panel detail-card"></section><section class="panel detail-card"></section>
+      <section class="panel detail-card"><h2>聯絡客服</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a><div class="contact-support-phone-row"><a href="tel:+886226861828">(02) 2686-1828</a></div></section><section class="panel detail-card"><h2>問題回報</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></section><section class="panel detail-card"><h2>商務合作</h2><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></section>
     </div></main>`;
 }
 
@@ -41,7 +42,7 @@ afterEach(() => {
 });
 
 describe("profile referral and contact layout", () => {
-  it("keeps the requested compact referral controls without changing their text size", () => {
+  it("uses 16px confirmation text while preserving compact control heights", () => {
     mountProfileSettings();
 
     const referralRule = document.querySelector<HTMLElement>(".referral-code-section .referral-rule-toggle")!;
@@ -58,18 +59,23 @@ describe("profile referral and contact layout", () => {
     }
     for (const confirm of [referralConfirm, activationConfirm]) {
       expect(getComputedStyle(confirm).height).toBe("34px");
-      expect(getComputedStyle(confirm).fontSize).toBe("20px");
+      expect(getComputedStyle(confirm).fontSize).toBe("16px");
     }
   });
 
-  it("places the compact copy control eight pixels to the right of the referral code", () => {
+  it("places the label above the code and copy control with the success count at the right", () => {
     mountProfileSettings();
 
     const row = document.querySelector<HTMLElement>(".referral-code-row")!;
     const code = document.querySelector<HTMLElement>(".referral-code-value")!;
     const copy = document.querySelector<HTMLElement>(".referral-copy-button")!;
 
-    expect(getComputedStyle(row).display).toBe("flex");
+    expect(getComputedStyle(row).display).toBe("grid");
+    expect(getComputedStyle(row).gridTemplateColumns).toBe("minmax(0, 1fr) auto");
+    expect(getComputedStyle(document.querySelector(".referral-code-label")!).gridColumn).toBe("1 / -1");
+    expect(getComputedStyle(document.querySelector(".referral-summary-heading")!).justifyContent).toBe("space-between");
+    expect(getComputedStyle(code).overflowWrap).toBe("anywhere");
+    expect(getComputedStyle(code).whiteSpace).toBe("normal");
     expect(getComputedStyle(row).gap).toBe("8px");
     expect(getComputedStyle(copy).padding).toBe("4px");
     expect(getComputedStyle(copy).width).toBe("max-content");
@@ -84,5 +90,26 @@ describe("profile referral and contact layout", () => {
 
     expect(getComputedStyle(contactBody).paddingInline).toBe("16px");
     expect(getComputedStyle(contactBody).gap).toBe("8px");
+  });
+
+  it("uses readable contact links with eight pixels before the phone", () => {
+    mountProfileSettings();
+    for (const link of document.querySelectorAll(".contact-support-screen a")) {
+      const style = getComputedStyle(link);
+      expect(style.color).toBe("rgb(229, 195, 110)");
+      expect(style.fontSize).toBe("14px");
+      expect(style.textDecoration).toBe("underline");
+    }
+    expect(getComputedStyle(document.querySelector(".contact-support-screen h2")!).fontSize).toBe("15px");
+    expect(getComputedStyle(document.querySelector(".contact-support-phone-row")!).marginTop).toBe("8px");
+  });
+
+  it("aligns the three referral rule labels with the input without moving activation instructions", () => {
+    mountProfileSettings();
+    const referral = getComputedStyle(document.querySelector(".referral-code-section .referral-rule-toggle")!);
+    const activation = getComputedStyle(document.querySelector(".activation-code-section .referral-rule-toggle")!);
+    expect(referral.paddingInline).toBe("0px");
+    expect(activation.paddingLeft).toBe("16px");
+    expect(activation.paddingRight).toBe("16px");
   });
 });

@@ -2212,6 +2212,25 @@ opacity: .30; box-shadow: none;
   padding-inline: 16px;
   gap: 8px;
 }
+.contact-support-screen .detail-card a {
+  display: block;
+  color: #e5c36e;
+  font-size: 14px;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.contact-support-screen .detail-card a:hover {
+  color: #f4ce67;
+}
+.contact-support-screen .detail-card a:focus-visible {
+  outline: 2px solid #e5c36e;
+  outline-offset: 2px;
+}
+.contact-support-screen .contact-support-phone-row {
+  margin-top: 8px;
+}
 .profile-info-screen .detail-card {
   padding: 12px;
 }
@@ -2517,6 +2536,7 @@ opacity: .30; box-shadow: none;
   display: flex;
   min-width: 0;
   align-items: baseline;
+  justify-content: space-between;
   gap: 8px;
 }
 .referral-summary-heading .referral-success-count {
@@ -2540,14 +2560,19 @@ opacity: .30; box-shadow: none;
   font-weight: 700;
 }
 .referral-code-row {
-  display: flex;
+  display: grid;
   min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
-.referral-code-row .referral-code-label,
+.referral-code-row .referral-code-label {
+  grid-column: 1 / -1;
+}
 .referral-code-row .referral-code-value {
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .referral-code-row .referral-copy-button {
   flex: 0 0 auto;
