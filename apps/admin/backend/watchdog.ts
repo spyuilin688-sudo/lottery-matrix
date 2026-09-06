@@ -451,13 +451,14 @@ export function createIndependentWatchdog(dependencies: WatchdogDependencies) {
           if (!acquired) return { ...action, outcome: 'lease-held' };
           let outcome: string;
           if (action.target === 'github') {
-            outcome = await dependencies.dispatchFantasy5();
+            try {
+              outcome = await dependencies.dispatchFantasy5();
+            } finally {
+              await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
+            }
           } else {
             const response = await dependencies.recoverRailway(action.lottery, owner) as { status?: unknown };
             outcome = response?.status === 'already-running' ? 'already-running' : 'accepted';
-          }
-          if (outcome === 'config-missing') {
-            await dependencies.releaseLease(leaseKey, owner).catch(() => undefined);
           }
           return { ...action, outcome };
         } catch {
