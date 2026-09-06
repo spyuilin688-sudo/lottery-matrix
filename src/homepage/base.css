@@ -39,7 +39,7 @@
 .home-screen .lottery-screen {
   --layout-page-inline: 16px;
   --home-content-width: calc(min(100vw, 390px) - 32px);
-  --home-gap-logo-switcher: clamp(9px, calc(1.15dvh + 1px), 12px);
+  --home-gap-logo-switcher: clamp(13px, calc(1.15dvh + 5px), 16px);
   --home-gap-switcher-draw: clamp(7px, calc(0.9dvh + 1px), 9px);
   --home-gap-draw-status: clamp(9px, calc(1.15dvh + 1px), 12px);
   box-sizing: border-box;
