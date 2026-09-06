@@ -1,0 +1,40 @@
+.feature-page-load-state {
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
+  gap: var(--layout-page-inline);
+  min-block-size: 60dvh;
+  padding: var(--layout-page-inline);
+  color: var(--lottery-text-primary);
+  text-align: center;
+}
+
+.feature-page-load-state__message {
+  color: var(--lottery-text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.feature-page-load-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--layout-section-gap);
+}
+
+.feature-page-load-state__actions button {
+  min-block-size: var(--layout-touch-target);
+  padding: var(--layout-section-gap) var(--layout-page-inline);
+  border: 1px solid var(--lottery-border-default);
+  border-radius: var(--lottery-card-radius);
+  background: var(--lottery-card-bg);
+  color: var(--lottery-text-primary);
+  font: inherit;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.feature-page-load-state__actions button:focus-visible {
+  outline: 2px solid var(--lottery-border-selected);
+  outline-offset: 2px;
+}

@@ -1,4 +1,4 @@
-import { Suspense, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   FeaturePageRouter as CoreFeaturePageRouter,
@@ -8,6 +8,7 @@ import {
 import type { LotteryId } from "./Prototype";
 import { NotificationsPagePatched } from "./NotificationsPagePatched";
 import { TianyanExpandedLayoutPatch } from "./TianyanExpandedLayoutPatch";
+import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 
 export { QuickNavigationProvider };
 export type { ScreenId };
@@ -76,7 +77,7 @@ export function FeaturePageRouter({
     || screen === "business-cooperation";
 
   return (
-    <Suspense fallback={<p role="status">載入中…</p>}>
+    <FeaturePageLoadBoundary resetKey={screen} onHome={() => onNavigate("home")}>
       <CoreFeaturePageRouter
         screen={screen}
         onNavigate={onNavigate}
@@ -88,6 +89,6 @@ export function FeaturePageRouter({
       />
       <ContactSupportPhonePortal active={contactSupportActive} />
       <TianyanExpandedLayoutPatch active={screen === "tianyan"} />
-    </Suspense>
+    </FeaturePageLoadBoundary>
   );
 }
