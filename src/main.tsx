@@ -26,6 +26,7 @@ import {
   requestLinePwaReturn,
 } from './auth/line-pwa-return';
 import { installVisitorTracking } from './visitor-counts';
+import { flushLinePwaDiagnostics } from './auth/line-pwa-diagnostics';
 
 installGlobalInputBehavior();
 
@@ -35,6 +36,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const root = document.getElementById('root')!;
+let diagnosticFlushStarted = false;
 const renderApp = () => {
   const stopVisitorTracking = installVisitorTracking();
   if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
@@ -43,6 +45,10 @@ const renderApp = () => {
       <App />
     </React.StrictMode>,
   );
+  if (!diagnosticFlushStarted) {
+    diagnosticFlushStarted = true;
+    void flushLinePwaDiagnostics(window, getSupabaseClient());
+  }
 };
 
 root.textContent = '正在開啟樂彩 Matrix…';

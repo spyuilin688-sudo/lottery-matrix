@@ -191,14 +191,17 @@ does not identify an installed PWA window.
 
 The callback page stores the latest 40 sanitized events under localStorage key
 `matrix-line-pwa-diagnostics-v1`. Each write removes records older than 24 hours.
-Storage failures cannot stop login. No callback URL, OAuth code, token, user
-identity, exception message, or arbitrary worker payload is recorded. The worker
-does not use localStorage. These records stay on the device; this change does
-not upload them to Supabase or make them remotely readable by support.
+After an authenticated session is available, startup submits the buffered events
+through `member_line_pwa_diagnostics_submit` and clears them only after the RPC
+accepts the upload. Missing sessions, network errors, and rejected uploads retain
+the local buffer for the next startup. Storage and upload failures cannot stop
+login. No callback URL, OAuth code, token, user identity, exception message, or
+arbitrary worker payload is recorded. The worker does not use localStorage.
 
-For an authorized device investigation, inspect that one key in the callback
-origin's browser storage after reproducing the failure. Do not export the full
-storage or an unsanitized callback URL. `WORKER_LEGACY_SUCCESS` or
+For an authorized device investigation, read the matching row from
+`private.line_pwa_handoff_diagnostics`. The table is not readable by `anon` or
+`authenticated`; the authenticated RPC accepts only the documented allowlisted
+fields. `WORKER_LEGACY_SUCCESS` or
 `WORKER_LEGACY_FAILURE` means an older worker supplied only a boolean; it cannot
 establish why focus failed. `PWA_FOCUS_RESOLVED` and `HANDOFF_DISPATCHED` report
 API completion only. They do not certify native foreground activation. Correlate
