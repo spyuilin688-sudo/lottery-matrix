@@ -30,7 +30,7 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     expect(rows).toHaveLength(2);
     expect(rows[0].querySelector('.statusBadge')?.textContent).toBe('API 已建立');
     expect(rows[0].querySelector('.statusDescription')?.closest('details')).toBeNull();
-    expect(rows[0].querySelector('.statusScope')?.textContent).toContain('尚未執行其功能');
+    expect(rows[0].querySelector('.statusScope')?.textContent).toContain('此操作會修改資料或工作狀態，自動檢查不會執行正式操作');
     expect(rows[1].querySelector('[role=alert]')?.closest('details')).toBeNull();
     expect(rows[1].querySelector('[role=alert]')?.textContent).toContain('HTTP 502');
     const details = rows[0].querySelector('details')!;
