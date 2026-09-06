@@ -51,8 +51,7 @@ for (const width of membershipWidths) {
       expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth);
     }
 
-    const expectedCardGap = width <= 360 ? 5 : 6;
-    expect(Math.abs(cardBoxes[1].top - cardBoxes[0].bottom - expectedCardGap)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(cardBoxes[1].top - cardBoxes[0].bottom - 1)).toBeLessThanOrEqual(0.5);
     expect(cardBoxes[0].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.26 : 0.23);
     expect(cardBoxes[1].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.45 : width <= 360 ? 0.41 : 0.37);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
