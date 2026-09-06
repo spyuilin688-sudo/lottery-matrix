@@ -6,8 +6,12 @@ import { rememberLineProviderToken } from './line-provider-token';
 const POPUP_KEY = 'matrix-line-login-popup';
 const RESULT = 'matrix-line-login-result';
 const ACK = 'matrix-line-login-ack';
+const PING = 'matrix-line-login-ping';
+const PONG = 'matrix-line-login-pong';
+const PEER_TIMEOUT_MS = 2_500;
 const CALLBACK_TIMEOUT_MS = 15_000;
 const ACK_TIMEOUT_MS = 30_000;
+const RETURN_ATTEMPT_PARAM = 'matrix_line_return';
 
 function safely(action: () => void) {
   try { action(); } catch { /* Window handles may be severed by the browser. */ }
@@ -15,12 +19,43 @@ function safely(action: () => void) {
 
 type Attempt = { id: string; startedAt: number };
 
+function validAttempt(value: unknown): value is Attempt {
+  if (!value || typeof value !== 'object') return false;
+  const attempt = value as Partial<Attempt>;
+  const age = Date.now() - (attempt.startedAt ?? Number.NaN);
+  return typeof attempt.id === 'string' && /^[0-9a-f-]{36}$/i.test(attempt.id)
+    && typeof attempt.startedAt === 'number' && age >= 0 && age < LINE_LOGIN_ATTEMPT_TTL_MS;
+}
+
+function openReturnChannel(browser: Window, attempt: Attempt): BroadcastChannel | null {
+  try {
+    const Channel = (browser as Window & { BroadcastChannel?: typeof BroadcastChannel }).BroadcastChannel;
+    return Channel ? new Channel(`matrix-line-return-${attempt.id}`) : null;
+  } catch { return null; }
+}
+
+function hasReturnPeer(browser: Window, channel: BroadcastChannel, attempt: Attempt): Promise<boolean> {
+  return new Promise((resolve) => {
+    const finish = (ready: boolean) => {
+      browser.clearTimeout(timeout);
+      channel.removeEventListener('message', receive);
+      resolve(ready);
+    };
+    const receive = (event: MessageEvent) => {
+      if (event.origin === browser.location.origin && event.data?.type === PONG
+        && event.data?.id === attempt.id) finish(true);
+    };
+    const timeout = browser.setTimeout(() => finish(false), PEER_TIMEOUT_MS);
+    channel.addEventListener('message', receive);
+    try { channel.postMessage({ type: PING, id: attempt.id }); }
+    catch { finish(false); }
+  });
+}
+
 function readAttempt(browser: Window): Attempt | null {
   try {
     const value = JSON.parse(browser.sessionStorage.getItem(POPUP_KEY) ?? 'null');
-    const age = Date.now() - value?.startedAt;
-    if (typeof value?.id === 'string' && /^[0-9a-f-]{36}$/i.test(value.id)
-      && typeof value.startedAt === 'number' && age >= 0 && age < LINE_LOGIN_ATTEMPT_TTL_MS) return value;
+    if (validAttempt(value)) return value;
   } catch { /* Storage can be unavailable in embedded browsers. */ }
   return null;
 }
@@ -48,14 +83,22 @@ export function signInWithLinePopup(
     return null;
   }
   const authWindow = popup;
+  const channel = openReturnChannel(browser, attempt);
+  const callbackUrl = new URL(redirectTo);
+  // The destination stays at the approved origin root. This internally-created
+  // ID binds a callback from a fresh LINE tab to this exact waiting PWA attempt.
+  callbackUrl.searchParams.set(RETURN_ATTEMPT_PARAM, attempt.id);
 
   return new Promise((resolve, reject) => {
     let settled = false;
     let receiving = false;
+    let closedTimeout: number | undefined;
     const cleanup = () => {
       browser.clearTimeout(timeout);
+      browser.clearTimeout(closedTimeout);
       browser.removeEventListener('message', receive);
       browser.removeEventListener('focus', checkClosed);
+      channel?.close();
     };
     const fail = () => {
       if (settled) return;
@@ -67,12 +110,19 @@ export function signInWithLinePopup(
     const checkClosed = () => {
       // Do not poll closed during cross-origin navigation: COOP can sever the
       // handle while the actual auth window is still open.
-      safely(() => { if (authWindow.closed && !receiving) fail(); });
+      safely(() => {
+        if (!authWindow.closed || receiving || settled) return;
+        if (!channel) { fail(); return; }
+        // Native LINE/COOP may sever the old handle while its new callback tab
+        // is still loading. Give the return channel time to finish that handoff.
+        closedTimeout ??= browser.setTimeout(fail, CALLBACK_TIMEOUT_MS);
+      });
     };
-    const receive = (event: MessageEvent) => {
-      if (settled || receiving || event.origin !== browser.location.origin || event.source !== authWindow
+    const acceptResult = (event: MessageEvent, viaChannel: boolean) => {
+      if (settled || receiving || event.origin !== browser.location.origin || (!viaChannel && event.source !== authWindow)
         || event.data?.type !== RESULT || event.data?.id !== attempt.id) return;
       receiving = true;
+      browser.clearTimeout(closedTimeout);
       if (event.data.error === true) { fail(); return; }
       const { access_token, refresh_token } = event.data;
       if (typeof access_token !== 'string' || !access_token
@@ -87,17 +137,31 @@ export function signInWithLinePopup(
         if (error || !data.session) { fail(); return; }
         rememberLineProviderToken(event.data.provider_token);
         settled = true;
+        const ack = { type: ACK, id: attempt.id };
+        if (viaChannel) safely(() => channel?.postMessage(ack));
+        else safely(() => authWindow.postMessage(ack, browser.location.origin));
+        // A detached native callback otherwise leaves the original OAuth window
+        // underneath it. Close that script-owned window after accepting the session.
+        if (viaChannel) safely(() => authWindow.close());
         cleanup();
-        safely(() => authWindow.postMessage({ type: ACK, id: attempt.id }, browser.location.origin));
         safely(() => browser.focus());
         resolve('pwa');
       }).catch(fail);
     };
+    const receive = (event: MessageEvent) => acceptResult(event, false);
     const timeout = browser.setTimeout(fail, LINE_LOGIN_ATTEMPT_TTL_MS);
     browser.addEventListener('message', receive);
     browser.addEventListener('focus', checkClosed);
+    channel?.addEventListener('message', (event) => {
+      if (!settled && event.origin === browser.location.origin && event.data?.type === PING
+        && event.data?.id === attempt.id) {
+        safely(() => channel.postMessage({ type: PONG, id: attempt.id }));
+        return;
+      }
+      acceptResult(event, true);
+    });
     void client.auth.signInWithOAuth({
-      provider: 'custom:line', options: { redirectTo, skipBrowserRedirect: true },
+      provider: 'custom:line', options: { redirectTo: callbackUrl.href, skipBrowserRedirect: true },
     }).then(({ data, error }) => {
       if (settled) return;
       if (error || !data?.url) { fail(); return; }
@@ -111,21 +175,38 @@ export async function finishLineLoginPopup(
   getClient: () => SupabaseClient,
   browser: Window = window,
 ): Promise<boolean> {
-  const attempt = readAttempt(browser);
-  const opener = browser.opener as Window | null;
-  if (!attempt || !opener || opener.closed) {
+  const query = new URLSearchParams(browser.location.search);
+  const callbackIds = query.getAll(RETURN_ATTEMPT_PARAM);
+  const storedAttempt = readAttempt(browser);
+  const callbackAttempt = callbackIds.length === 1
+    ? { id: callbackIds[0], startedAt: Date.now() } : null;
+  const attempt = callbackIds.length === 0 ? storedAttempt
+    : validAttempt(callbackAttempt) && (!storedAttempt || storedAttempt.id === callbackAttempt.id)
+      ? callbackAttempt : null;
+  if (!attempt) {
     clearAttempt(browser);
     return false;
   }
   const params = new URLSearchParams(browser.location.hash.slice(1));
-  const query = new URLSearchParams(browser.location.search);
   const authError = [params, query].some((values) => values.has('error') || values.has('error_code'));
   if (!authError && !params.has('access_token') && !query.has('code')) {
     clearAttempt(browser);
     return false;
   }
+  let opener: Window | null = null;
+  safely(() => { if (browser.opener && !browser.opener.closed) opener = browser.opener; });
+  const channel = openReturnChannel(browser, attempt);
+  if (!opener && !channel) {
+    clearAttempt(browser);
+    return false;
+  }
 
   try {
+    if (!opener && channel && !await hasReturnPeer(browser, channel, attempt)) {
+      channel.close();
+      clearAttempt(browser);
+      return false;
+    }
     const providerToken = params.get('provider_token');
     const session = authError ? null : await withDeadline(
       () => getClient().auth.getSession(), { timeoutMs: CALLBACK_TIMEOUT_MS },
@@ -136,31 +217,37 @@ export async function finishLineLoginPopup(
       const cleanup = () => {
         browser.clearTimeout(timeout);
         browser.removeEventListener('message', receive);
+        channel?.close();
       };
-      const receive = (event: MessageEvent) => {
-        if (event.origin !== browser.location.origin || event.source !== opener
+      const acceptAck = (event: MessageEvent, viaChannel: boolean) => {
+        if (event.origin !== browser.location.origin || (!viaChannel && event.source !== opener)
           || event.data?.type !== ACK || event.data?.id !== attempt.id) return;
         cleanup();
-        safely(() => opener.focus());
+        safely(() => opener?.focus());
         safely(() => browser.close());
         let closed = false;
         safely(() => { closed = browser.closed; });
         resolve(closed);
       };
+      const receive = (event: MessageEvent) => acceptAck(event, false);
       const timeout = browser.setTimeout(() => { cleanup(); resolve(false); }, ACK_TIMEOUT_MS);
       browser.addEventListener('message', receive);
-      try {
-        opener.postMessage(session ? {
-          type: RESULT, id: attempt.id,
-          access_token: session.access_token, refresh_token: session.refresh_token,
-          ...(providerToken ? { provider_token: providerToken } : {}),
-        } : { type: RESULT, id: attempt.id, error: true }, browser.location.origin);
-      } catch {
+      channel?.addEventListener('message', (event) => acceptAck(event, true));
+      const result = session ? {
+        type: RESULT, id: attempt.id,
+        access_token: session.access_token, refresh_token: session.refresh_token,
+        ...(providerToken ? { provider_token: providerToken } : {}),
+      } : { type: RESULT, id: attempt.id, error: true };
+      let sent = false;
+      safely(() => { if (opener) { opener.postMessage(result, browser.location.origin); sent = true; } });
+      safely(() => { if (channel) { channel.postMessage(result); sent = true; } });
+      if (!sent) {
         cleanup();
         resolve(false);
       }
     });
   } catch {
+    channel?.close();
     clearAttempt(browser);
     // A browser or native LINE handoff can lose its opener. Let the normal app
     // initialize the callback rather than trapping the user on a blank page.

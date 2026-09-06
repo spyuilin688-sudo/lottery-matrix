@@ -11,7 +11,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
-import { isMobilePwa, isPwaDisplayMode } from '../pwa-display-mode';
+import { isPwaDisplayMode } from '../pwa-display-mode';
 import { signInWithLinePopup } from './line-login-popup';
 
 const SESSION_READ_TIMEOUT_MS = 2_500;
@@ -77,8 +77,7 @@ export async function signInWithLine(
   client: SupabaseClient = getSupabaseClient(),
 ) {
   const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
-  const mobilePwa = isMobilePwa();
-  if (isPwaDisplayMode() && !mobilePwa) {
+  if (isPwaDisplayMode()) {
     const popupLogin = signInWithLinePopup(approvedRedirect, client);
     if (popupLogin) return popupLogin;
   }
