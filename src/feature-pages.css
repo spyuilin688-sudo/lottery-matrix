@@ -1003,8 +1003,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: grid;
   box-sizing: border-box;
   min-width: 0;
-  padding: 9px 8px 12px;
-  gap: 4px;
+  padding: 10px 8px 15px;
+  gap: 6px;
   overflow: hidden;
   border-radius: 24px;
   background:
@@ -1026,7 +1026,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .profile-card {
   display: grid;
-  min-height: 82px;
+  min-height: 76px;
   overflow: hidden;
   grid-template-columns: 56px minmax(0, 1fr) 58px;
   align-items: center;
@@ -1069,7 +1069,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   padding-bottom: 3px;
   border-bottom: 1px solid var(--lottery-border-default);
   color: var(--lottery-text-primary);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 18px;
 }
@@ -1113,7 +1113,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout::before {
   position: absolute;
   z-index: -1;
-  inset: 7px 0;
+  inset: 11px 0;
   border: 1px solid var(--lottery-border-selected);
   border-radius: 999px;
   background: var(--lottery-neutral-950);
@@ -1131,12 +1131,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .subscription-status-card > .section-title {
   min-width: 0;
-  margin: 0 0 3px;
+  margin: 0 0 2px;
   gap: 6px;
   color: var(--lottery-text-primary);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 19px;
+  line-height: 18px;
 }
 .subscription-status-card > .section-title::after {
   content: "";
@@ -1146,7 +1146,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-content {
   display: grid;
   min-width: 0;
-  margin: 0 0 2px;
+  margin: 0;
   grid-template-columns: 42px minmax(0, 1.15fr) minmax(0, 1fr);
   align-items: center;
   gap: 6px;
@@ -1207,7 +1207,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-entry::before {
   position: absolute;
   z-index: -1;
-  inset: 3px 0;
+  inset: 7px 0;
   border: 8px solid transparent;
   border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 14px / 0 stretch;
   content: "";
@@ -1232,10 +1232,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 @media (max-width: 360px) {
   .membership-card-stack {
     padding: 8px 6px 10px;
+    gap: 5px;
     border-radius: 20px;
   }
   .profile-card {
-    min-height: 78px;
+    min-height: 72px;
     grid-template-columns: 52px minmax(0, 1fr) 54px;
     gap: 6px;
   }
