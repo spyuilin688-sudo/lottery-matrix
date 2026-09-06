@@ -19,6 +19,19 @@ const ERROR_NAMES = new Set([
   'AbortError', 'NotFoundError', 'TypeError', 'Error', 'UnknownError',
 ]);
 
+type DiagnosticUploadClient = {
+  auth: {
+    getSession: () => Promise<{
+      data: { session: unknown | null };
+      error: unknown | null;
+    }>;
+  };
+  rpc: (name: string, params: { p_events: Record<string, unknown>[] }) => PromiseLike<{
+    data: unknown;
+    error: unknown | null;
+  }>;
+};
+
 function sanitize(value: Record<string, unknown>) {
   return {
     at: typeof value.at === 'number' && Number.isFinite(value.at) ? value.at : Date.now(),
@@ -49,5 +62,29 @@ export function recordLinePwaDiagnostic(browser: Window, requestId: string, deta
     browser.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-MAX_ENTRIES)));
   } catch {
     // Storage can be disabled or full. Diagnostics must never block login.
+  }
+}
+
+export async function flushLinePwaDiagnostics(
+  browser: Window = window,
+  client: DiagnosticUploadClient,
+): Promise<boolean> {
+  try {
+    const stored = JSON.parse(browser.localStorage.getItem(STORAGE_KEY) ?? '[]');
+    if (!Array.isArray(stored)) return false;
+    const entries = stored.slice(-MAX_ENTRIES)
+      .filter((entry) => entry && typeof entry === 'object')
+      .map((entry) => JSON.parse(JSON.stringify(sanitize(entry))))
+      .filter((entry) => typeof entry.requestId === 'string');
+    if (!entries.length) return false;
+
+    const { data: { session }, error: sessionError } = await client.auth.getSession();
+    if (sessionError || !session) return false;
+    const { error } = await client.rpc('member_line_pwa_diagnostics_submit', { p_events: entries });
+    if (error) return false;
+    browser.localStorage.removeItem(STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
   }
 }
