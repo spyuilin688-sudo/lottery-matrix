@@ -2281,18 +2281,7 @@ opacity: .30; box-shadow: none;
 .legal-info-plans {
   --legal-info-list-indent: 0px;
   list-style: none;
-}
-.legal-info-plans > li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
-  column-gap: 8px;
-}
-.legal-info-plans > li > span {
-  min-width: 0;
-}
-.legal-info-plans > li > span:last-child {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+  text-align: left;
 }
 .legal-info-document a {
   color: #e5c36e;
