@@ -270,7 +270,7 @@ async function handleLinePwaReturn(event) {
       }
     }
 
-    if (!navigated) postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
+    postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
 
     try {
       await pwaClient.focus();
