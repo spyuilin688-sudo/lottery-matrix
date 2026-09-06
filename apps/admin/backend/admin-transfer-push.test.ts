@@ -13,6 +13,8 @@ const routeDeps = vi.hoisted(() => ({
   fetcher: vi.fn<typeof fetch>(),
   getAdminFromHeaders: vi.fn(),
 }));
+// Admin CI runs without the repository-root Vitest SDK alias.
+vi.mock('@appdeploy/sdk', () => import('../../../test/appdeploy-sdk'));
 vi.mock('./admin-credential-auth', () => ({
   createAdminCredentialAuth: () => ({ getAdminFromHeaders: routeDeps.getAdminFromHeaders }),
 }));
