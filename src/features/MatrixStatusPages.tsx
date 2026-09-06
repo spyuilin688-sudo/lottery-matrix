@@ -44,7 +44,6 @@ export function MatrixStatusTriggerCard({
           {card.hitType === "one-code" ? <small>單碼結果</small> : null}
           <strong className="numeric-text">{card.result.join("、")}</strong>
         </span>
-        <strong className="matrix-status-trigger-state">{MATRIX_STATUS_LABELS[card.status]}</strong>
         <span className="matrix-status-trigger-count">
           <strong>{card.sameCodeRoadCountLocked ? "🔒 Matrix Pro" : String(card.sameCodeRoadCount ?? 0) + " 組"}</strong>
         </span>

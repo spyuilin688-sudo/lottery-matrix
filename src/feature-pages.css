@@ -1711,7 +1711,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: grid;
   min-height: 42px;
   padding: 6px 8px;
-  grid-template-columns: minmax(0, 1fr) auto minmax(92px, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
   align-items: center;
   gap: 7px;
   border-bottom: 1px solid rgba(117, 83, 41, .72);
@@ -1731,14 +1731,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .matrix-status-trigger-result strong {
   color: #f4ce67;
   font-size: 16px;
-}
-.matrix-status-screen .matrix-status-trigger-state {
-  padding: 2px 5px;
-  border: 1px solid var(--tone);
-  border-radius: 999px;
-  color: var(--tone);
-  font-size: 10px;
-  line-height: 1.2;
 }
 .matrix-status-screen .matrix-status-trigger-count {
   display: flex;

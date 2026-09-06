@@ -40,7 +40,8 @@ test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () =
   const trigger = statusComponent.slice(statusComponent.indexOf('export function MatrixStatusTriggerCard'), statusComponent.indexOf('export function MatrixStatusPage'));
   assert.ok(!trigger.includes('兩碼結果'));
   assert.ok(!trigger.includes('同碼版路數量'));
-  assert.ok(!trigger.includes('>狀態<'));
+  assert.ok(!trigger.includes('matrix-status-trigger-state'));
+  assert.match(rule(statusCss, '.matrix-status-screen .matrix-status-trigger-summary'), /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(92px, auto\);/);
 });
 
 test('Matrix 狀態驗證摘要不受 status-detail 六欄段落規則影響', () => {
