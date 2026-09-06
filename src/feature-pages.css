@@ -1091,7 +1091,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 9px; }
+.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 10px; }
 .profile-logout {
   position: relative;
   z-index: 1;
