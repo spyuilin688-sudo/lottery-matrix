@@ -129,6 +129,12 @@ Matrix 探索與天衍的驗證過程，依鎖定條件整組交替使用 `#152A
 
 「我的」頁的會員資料卡與目前訂閱狀態卡採已確認的 A+B 參考：切角雙金框、低透明度 M、資訊分區與金色方案／日期。`src/feature-pages.css` 是兩張卡片的特定樣式唯一來源；裝飾素材位於 `public/assets/lottery/membership/`，框線以 border-image 適配內容高度。沿用既有 16px 頁面留白；兩張卡片置於同一個圓角深色底座，卡片盒模型間距固定為 1px，搭配框圖內緣形成參考圖的可見間距，後續一般區段仍維持 8px。資料繫結與導覽不變。LINE 暱稱保持資訊文字；登入／登出與訂閱入口保留至少 44px 觸控高度，視覺框線可在觸控區內縮。320–430px 使用流動版面，窄螢幕允許說明換行，長暱稱沿用既有縮字與省略策略。
 
+### Legal information pages — approved complete layout
+
+「服務內容與使用說明」「會員服務條例」「隱私權政策」「退款規範」「聲明與免責事項」共用 `LegalInfoDocument` 與 `LegalInfoSection`，各頁使用一個金框容器，頂端顯示頁名，章節之間以細分隔線區分。`src/feature-pages.css` 的 `.legal-info-*` 是唯一樣式來源，取代原 `.service-info-document` 規則；其他資訊頁的 `DetailCard` 維持原狀。
+
+沿用 16px 頁面留白、12px 容器內距，分隔線上下各 12px；頁名 18px、章節標題 15px、正文 13px／1.65 行高、段距 8px。Matrix Core 的探索／天衍／天工以無圓點子清單縮排，功能項目間距為 4px；彩種採兩欄兩列，訂閱方案的名稱／天數／金額對齊。郵件連結使用與標題相同的暖金色並保留底線。原文、價格、天數、章節及閱讀順序不變，窄螢幕允許換行，容器隨內容增加高度。
+
 ### Forms and overlays
 
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。
