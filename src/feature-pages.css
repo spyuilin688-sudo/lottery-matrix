@@ -2212,8 +2212,21 @@ opacity: .30; box-shadow: none;
   padding-inline: 16px;
   gap: 8px;
 }
+.contact-support-screen .contact-support-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  color: #c9c2b8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.contact-support-screen .contact-support-label {
+  white-space: nowrap;
+  text-decoration: none;
+}
 .contact-support-screen .detail-card a {
   display: block;
+  min-width: 0;
   color: #c9c2b8;
   font-size: 14px;
   line-height: 1.5;
