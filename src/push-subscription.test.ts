@@ -20,6 +20,7 @@ import {
   enablePushNotifications,
   getPushStatus,
   PushSubscriptionError,
+  registerPushServiceWorker,
 } from './push-subscription';
 
 const requestPermission = vi.fn<() => Promise<NotificationPermission>>();
@@ -28,6 +29,9 @@ const getSubscription = vi.fn();
 const unsubscribe = vi.fn<() => Promise<boolean>>();
 const register = vi.fn();
 const getRegistration = vi.fn();
+const updateRegistration = vi.fn();
+const addServiceWorkerListener = vi.fn();
+const removeServiceWorkerListener = vi.fn();
 
 const subscription = {
   endpoint: 'https://push.test/device',
@@ -40,7 +44,12 @@ const subscription = {
 
 function installSupportedPushApi(
   permission: NotificationPermission = 'default',
-  serviceWorker: unknown = { register, getRegistration },
+  serviceWorker: unknown = {
+    register,
+    getRegistration,
+    addEventListener: addServiceWorkerListener,
+    removeEventListener: removeServiceWorkerListener,
+  },
 ) {
   Object.defineProperty(globalThis, 'Notification', {
     configurable: true,
@@ -66,7 +75,11 @@ beforeEach(() => {
   subscribe.mockResolvedValue(subscription);
   getSubscription.mockResolvedValue(subscription);
   unsubscribe.mockResolvedValue(true);
-  const registration = { pushManager: { subscribe, getSubscription } };
+  const registration = {
+    pushManager: { subscribe, getSubscription },
+    update: updateRegistration,
+  };
+  updateRegistration.mockResolvedValue(registration);
   register.mockResolvedValue(registration);
   getRegistration.mockResolvedValue(registration);
   supabase.auth.getSession.mockResolvedValue({ data: { session: { access_token: 'member-token' } }, error: null });
@@ -88,6 +101,53 @@ async function expectFixedFailure(
 }
 
 describe('PWA push subscriptions', () => {
+  it('checks an existing service worker registration for an update', async () => {
+    await expect(registerPushServiceWorker()).resolves.toBeDefined();
+
+    expect(updateRegistration).toHaveBeenCalledTimes(1);
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('waits for an installing update to control the page before resolving', async () => {
+    const listeners = new Set<EventListener>();
+    const oldController = {} as ServiceWorker;
+    const nextController = {} as ServiceWorker;
+    const serviceWorker = {
+      controller: oldController,
+      getRegistration,
+      register,
+      addEventListener: vi.fn((type: string, listener: EventListener) => {
+        if (type === 'controllerchange') listeners.add(listener);
+      }),
+      removeEventListener: vi.fn((type: string, listener: EventListener) => {
+        if (type === 'controllerchange') listeners.delete(listener);
+      }),
+    };
+    const registration = {
+      active: oldController,
+      installing: {} as ServiceWorker,
+      waiting: null,
+      pushManager: { subscribe, getSubscription },
+      update: updateRegistration,
+    };
+    updateRegistration.mockResolvedValue(registration);
+    getRegistration.mockResolvedValue(registration);
+    installSupportedPushApi('default', serviceWorker);
+
+    let resolved = false;
+    const operation = registerPushServiceWorker().then(() => { resolved = true; });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    serviceWorker.controller = nextController;
+    for (const listener of listeners) listener(new Event('controllerchange'));
+
+    await operation;
+    expect(resolved).toBe(true);
+    expect(serviceWorker.removeEventListener).toHaveBeenCalled();
+  });
+
   it('does not create a subscription when the Push API is unsupported', async () => {
     Object.defineProperty(globalThis, 'Notification', { configurable: true, value: undefined });
     Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {} });
