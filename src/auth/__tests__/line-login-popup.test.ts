@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { finishLineLoginPopup, signInWithLinePopup } from '../line-login-popup';
 import { LINE_LOGIN_ATTEMPT_TTL_MS } from '../line-login-attempt';
@@ -9,8 +9,10 @@ const origin = 'https://matrixlottery.idv.tw';
 const session = { access_token: 'supabase-access', refresh_token: 'supabase-refresh' };
 function browserWindow() {
   const storage = new Map<string, string>();
+  const location = { origin, pathname: '/', hash: '', search: '', replace: vi.fn() };
   return Object.assign(new EventTarget(), {
-    location: { origin, hash: '', search: '', replace: vi.fn() },
+    location,
+    history: { state: null, replaceState: vi.fn(() => { location.hash = ''; }) },
     sessionStorage: {
       getItem: (key: string) => storage.get(key) ?? null,
       setItem: (key: string, value: string) => { storage.set(key, value); },
@@ -34,16 +36,19 @@ function setup() {
     setSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
   };
   const client = { auth } as unknown as SupabaseClient;
+  const callbackClient = { auth: { ...auth,
+    setSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
+  } } as unknown as SupabaseClient;
   const send = (target: typeof parent, source: typeof parent, data: unknown, from = origin) => {
     target.dispatchEvent(new MessageEvent('message', { data, origin: from, source: source as unknown as Window }));
   };
   popup.postMessage.mockImplementation((data) => send(popup, parent, data));
   parent.postMessage.mockImplementation((data) => send(parent, popup, data));
   const start = () => signInWithLinePopup(`${origin}/`, client, parent as unknown as Window)!;
-  const callback = () => finishLineLoginPopup(() => client, popup as unknown as Window);
+  const callback = () => finishLineLoginPopup(() => callbackClient, popup as unknown as Window);
   const result = () => ({ type: 'matrix-line-login-result',
     id: JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id, ...session });
-  return { parent, popup, auth, client, send, start, callback, result };
+  return { parent, popup, auth, client: callbackClient, send, start, callback, result };
 }
 
 function connectBrowserChannels(...windows: ReturnType<typeof browserWindow>[]) {
@@ -79,6 +84,55 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); clearLineAuthEphemeralState(); });
 
 describe('installed PWA LINE login return', () => {
+  it('keeps a native callback at one history entry while the installed Auth client accepts its session', async () => {
+    vi.useRealTimers();
+    const previousUrl = window.location.href;
+    const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated',
+      role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-09-06T00:00:00Z' };
+    const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const token = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: user.id,
+      exp: Math.floor(Date.now() / 1000) + 3600 })}.${btoa('test-signature').replace(/=/g, '')}`;
+    const id = crypto.randomUUID();
+    window.history.replaceState(null, '', `/?matrix_line_return=${id}#${new URLSearchParams({
+      access_token: token, refresh_token: 'callback-refresh', expires_in: '3600',
+      token_type: 'bearer', provider_token: 'line-memory-only',
+    })}`);
+    const initialHistoryLength = window.history.length;
+    let importedTokens: unknown;
+    const parent = { closed: false, focus: vi.fn(), postMessage: (data: Record<string, unknown>) => {
+      importedTokens = data;
+      window.dispatchEvent(new MessageEvent('message', { origin: window.location.origin,
+        source: parent as unknown as Window, data: { type: 'matrix-line-login-ack', id } }));
+    } };
+    vi.stubGlobal('opener', parent);
+    vi.stubGlobal('closed', false);
+    // Model the non-script-opened tab close rule; the actual Auth client and
+    // jsdom History/Location operations remain real so hash navigation is visible.
+    vi.spyOn(window, 'close').mockImplementation(() => {
+      if (window.history.length === initialHistoryLength) vi.stubGlobal('closed', true);
+    });
+    let client: SupabaseClient | undefined;
+    const getClient = () => client ??= createClient('https://auth.example', 'test-publishable-key', {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: true,
+        lock: async (_name, _timeout, action) => action() },
+      global: { fetch: async () => new Response(JSON.stringify(user), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      }) },
+    });
+    try {
+      const handled = await finishLineLoginPopup(getClient, window);
+      expect(window.history.length).toBe(initialHistoryLength);
+      expect(handled).toBe(true);
+      expect(window.location.hash).toBe('');
+      expect(importedTokens).toMatchObject({ access_token: token, refresh_token: 'callback-refresh' });
+      expect(readLineProviderToken()).toBe('line-memory-only');
+    } finally {
+      await client?.auth.stopAutoRefresh();
+      vi.unstubAllGlobals();
+      window.history.replaceState(null, '', previousUrl);
+    }
+  });
+
   it('returns a LINE callback opened in a different browser tab to the waiting PWA', async () => {
     const { parent, popup, auth, start, client } = setup();
     const returnedTab = browserWindow();
@@ -88,7 +142,7 @@ describe('installed PWA LINE login return', () => {
     // A native LINE handoff opens a fresh tab: neither opener nor sessionStorage survives.
     const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
     returnedTab.location.search = `?matrix_line_return=${id}`;
-    returnedTab.location.hash = '#access_token=callback-token&provider_token=line-revoke-only';
+    returnedTab.location.hash = '#access_token=callback-token&refresh_token=callback-refresh&provider_token=line-revoke-only';
     const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(0);
     expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
@@ -149,7 +203,7 @@ describe('installed PWA LINE login return', () => {
     const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
     await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
     await rejected;
-    returnedTab.location.hash = '#access_token=late-token';
+    returnedTab.location.hash = '#access_token=late-token&refresh_token=callback-refresh';
     returnedTab.location.search = `?matrix_line_return=${id}`;
     const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(30_000);
@@ -169,7 +223,7 @@ describe('installed PWA LINE login return', () => {
     popup.closed = true;
     parent.dispatchEvent(new Event('focus'));
     await vi.advanceTimersByTimeAsync(1_000);
-    returnedTab.location.hash = '#access_token=callback-token';
+    returnedTab.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
     returnedTab.location.search = `?matrix_line_return=${id}`;
     const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(0);
@@ -186,7 +240,7 @@ describe('installed PWA LINE login return', () => {
     connectBrowserChannels(first.parent, first.popup, second.parent, second.popup, returnedTab);
     const rejectedFirst = expect(first.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
     const rejectedSecond = expect(second.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
-    returnedTab.location.hash = '#access_token=ambiguous-callback';
+    returnedTab.location.hash = '#access_token=ambiguous-callback&refresh_token=callback-refresh';
     await expect(finishLineLoginPopup(() => first.client, returnedTab as unknown as Window)).resolves.toBe(false);
     expect(first.auth.setSession).not.toHaveBeenCalled();
     expect(second.auth.setSession).not.toHaveBeenCalled();
@@ -211,7 +265,7 @@ describe('installed PWA LINE login return', () => {
     await rejectedFirst;
     const rejectedSecond = expect(second.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
     returnedTab.location.search = `?matrix_line_return=${oldId}`;
-    returnedTab.location.hash = '#access_token=old-callback';
+    returnedTab.location.hash = '#access_token=old-callback&refresh_token=callback-refresh';
     const finish = finishLineLoginPopup(() => first.client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(2_500);
     await expect(finish).resolves.toBe(false);
@@ -230,13 +284,13 @@ describe('installed PWA LINE login return', () => {
     const rejected = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
     const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
     returnedTab.location.search = `?matrix_line_return=${id}`;
-    returnedTab.location.hash = '#access_token=callback-token';
+    returnedTab.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
     const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(2_500);
     await expect(finish).resolves.toBe(false);
     expect(auth.getSession).not.toHaveBeenCalled();
     expect(returnedTab.close).not.toHaveBeenCalled();
-    expect(returnedTab.location.hash).toBe('#access_token=callback-token');
+    expect(returnedTab.location.hash).toBe('#access_token=callback-token&refresh_token=callback-refresh');
     await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
     await rejected;
   });
@@ -246,7 +300,7 @@ describe('installed PWA LINE login return', () => {
       const { popup, client, auth } = setup();
       connectBrowserChannels(popup);
       popup.location.search = `?matrix_line_return=${id}`;
-      popup.location.hash = '#access_token=callback-token';
+      popup.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
       await expect(finishLineLoginPopup(() => client, popup as unknown as Window)).resolves.toBe(false);
       expect(auth.getSession).not.toHaveBeenCalled();
     },
@@ -265,7 +319,7 @@ describe('installed PWA LINE login return', () => {
     });
     expect(popup.location.replace).toHaveBeenCalledWith('https://auth.example/authorize');
     expect(parent.location.replace).not.toHaveBeenCalled();
-    popup.location.hash = '#access_token=supabase-access&provider_token=line-revoke-only';
+    popup.location.hash = '#access_token=supabase-access&refresh_token=callback-refresh&provider_token=line-revoke-only';
     const finish = callback();
     await expect(login).resolves.toBe('pwa');
     await expect(finish).resolves.toBe(true);
@@ -323,7 +377,7 @@ describe('installed PWA LINE login return', () => {
     parent.focus.mockImplementation(() => { throw new Error('blocked'); });
     popup.close.mockImplementation(() => { throw new Error('blocked'); });
     const login = start();
-    popup.location.hash = '#access_token=callback-token';
+    popup.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
     await expect(callback()).resolves.toBe(false);
     await expect(login).resolves.toBe('pwa');
     expect(vi.getTimerCount()).toBe(0);
@@ -404,11 +458,50 @@ describe('installed PWA LINE login return', () => {
     await finish;
   });
 
+  it('does not use an older session when an implicit callback is missing its refresh token', async () => {
+    const { popup, auth, start, callback } = setup();
+    const rejection = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    popup.location.hash = '#access_token=incomplete-callback';
+    const finish = callback();
+    await rejection;
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(auth.setSession).not.toHaveBeenCalled();
+    expect(popup.history.replaceState).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await expect(finish).resolves.toBe(false);
+  });
+
+  it('preserves the Auth client code-exchange path for a PKCE callback', async () => {
+    const { popup, auth, start, callback } = setup();
+    const login = start();
+    popup.location.search = '?code=pkce-callback';
+    await expect(callback()).resolves.toBe(true);
+    await expect(login).resolves.toBe('pwa');
+    expect(auth.getSession).toHaveBeenCalledOnce();
+    expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
+    expect(popup.history.replaceState).not.toHaveBeenCalled();
+  });
+
+  it('does not return a successful session when the callback client rejects the captured tokens', async () => {
+    const { popup, auth, client, start, callback } = setup();
+    vi.mocked(client.auth.setSession).mockResolvedValue({ data: { session: null, user: null },
+      error: new Error('rejected callback') as never });
+    const rejection = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    popup.location.hash = '#access_token=rejected&refresh_token=rejected-refresh&provider_token=unused-line-token';
+    const finish = callback();
+    await rejection;
+    expect(auth.setSession).not.toHaveBeenCalled();
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(readLineProviderToken()).toBeNull();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await expect(finish).resolves.toBe(false);
+  });
+
   it('lets an ordinary browser or a callback with a lost opener load the app', async () => {
     const { popup, callback, start, parent } = setup();
     await expect(callback()).resolves.toBe(false);
     const rejection = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
-    popup.location.hash = '#access_token=callback-token';
+    popup.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
     popup.opener = null;
     await expect(callback()).resolves.toBe(false);
     expect(popup.close).not.toHaveBeenCalled();
@@ -421,7 +514,7 @@ describe('installed PWA LINE login return', () => {
     const { popup, parent, start, callback } = setup();
     const rejection = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
     parent.postMessage.mockReset();
-    popup.location.hash = '#access_token=callback-token&provider_token=fallback-revoke-token';
+    popup.location.hash = '#access_token=callback-token&refresh_token=callback-refresh&provider_token=fallback-revoke-token';
     const finish = callback();
     await vi.advanceTimersByTimeAsync(30_000);
     await expect(finish).resolves.toBe(false);
