@@ -69,7 +69,9 @@ describe('LINE auth helper', () => {
     { name: 'iPhone home-screen PWA', displayMode: undefined, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
     { name: 'iPad desktop user agent', displayMode: 'fullscreen', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
   ])('starts OAuth in the original window for $name without disabling native LINE login', async (device) => {
-    vi.stubGlobal('navigator', device);
+    // Installed mobile PWAs have Service Worker support. Omitting it hid the
+    // regression that sent real phones through the desktop popup/close flow.
+    vi.stubGlobal('navigator', { ...device, serviceWorker: {} });
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === `(display-mode: ${device.displayMode})` })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });

@@ -105,11 +105,17 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-Installed desktop PWAs and mobile PWAs with Service Worker support use the
-script-controlled OAuth window opened directly from the login click. Opening
-that window does not guarantee an Android in-app browser or foreground return.
+Mobile PWAs start OAuth in their original navigation, including phones with
+Service Worker support. Do not use worker availability to opt a phone into the
+desktop popup flow. Commit `cedd29d` reintroduced that route after PR #361;
+the subsequent device screenshots show Chrome's new-tab page in front after
+LINE login. Closing a browser tab does not establish that the PWA is in front.
+The original-navigation route follows the [PWA authorization flow](https://web.dev/learn/pwa/windows#authorization_flows).
 Native LINE auto login remains allowed; do not add `disable_auto_login=true`.
-After validating the approved root, this popup flow adds
+This routing correction still needs a physical-device check through native LINE.
+
+Desktop PWAs retain the script-controlled OAuth window. After validating the
+approved root, this popup flow adds
 its own `matrix_line_return` UUID to correlate the callback. User-supplied
 redirect paths and query strings remain rejected. The following handoff also
 remains available for callbacks from older clients that already opened a popup.
