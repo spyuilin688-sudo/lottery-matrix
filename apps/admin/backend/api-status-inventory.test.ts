@@ -19,12 +19,12 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(52);
+    expect(apiStatusInventory).toHaveLength(57);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });
 
-  it('covers the five deployed Edge Functions', () => {
+  it('covers the six deployed Edge Functions', () => {
     expect(apiStatusInventory
       .filter((item) => item.endpoint.startsWith('/functions/v1/'))
       .map((item) => item.endpoint))
@@ -32,6 +32,7 @@ describe('api status inventory', () => {
         '/functions/v1/matrix-status',
         '/functions/v1/notification-ingest',
         '/functions/v1/notification-dispatch',
+        '/functions/v1/notification-pilio',
         '/functions/v1/send-test-push',
         '/functions/v1/line-logout',
       ]);
@@ -39,6 +40,10 @@ describe('api status inventory', () => {
 
   it('covers watchdog and notification server RPCs as OpenAPI presence checks', () => {
     const rpcNames = [
+      'member_referral_summary',
+      'member_referral_submit',
+      'member_line_pwa_diagnostics_submit',
+      'record_matrix_visit',
       'claim_matrix_watchdog_lease',
       'release_matrix_watchdog_lease',
       'begin_matrix_watchdog_recovery',
@@ -60,6 +65,10 @@ describe('api status inventory', () => {
       })));
   });
 
+  it('describes the deployed ten-minute watchdog schedule', () => {
+    expect(apiStatusInventory.find((item) => item.id === 'appdeploy-watchdog-heartbeat')?.description).toContain('每 10 分鐘');
+  });
+
   it('never live-probes write endpoints', () => {
     const writeEndpoints = new Set([
       '/rest/v1/rpc/matrix_custom_status_save',
@@ -70,6 +79,9 @@ describe('api status inventory', () => {
       '/rest/v1/rpc/member_push_subscription_disable',
       '/rest/v1/rpc/member_online_start',
       '/rest/v1/rpc/member_online_end',
+      '/rest/v1/rpc/member_referral_submit',
+      '/rest/v1/rpc/member_line_pwa_diagnostics_submit',
+      '/rest/v1/rpc/record_matrix_visit',
       '/rest/v1/rpc/redeem_activation_code',
       '/rest/v1/rpc/claim_matrix_watchdog_lease',
       '/rest/v1/rpc/release_matrix_watchdog_lease',

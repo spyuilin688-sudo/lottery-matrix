@@ -1,9 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getDashboard, listAdminTable } from './admin-data';
 
+// Model the REST offset/limit behavior for fixture-backed table responses.
+const fixtureRequest = (respond: (path: string) => Promise<unknown>, serverCap = 1000) => vi.fn(async (path: string) => {
+  const data = await respond(path);
+  if (!Array.isArray(data)) return data;
+  const query = new URL(path, 'https://example.test').searchParams;
+  const offset = Number(query.get('offset') ?? 0);
+  const limit = Math.min(Number(query.get('limit') ?? serverCap), serverCap);
+  return data.slice(offset, offset + limit);
+});
+
 describe('listAdminTable', () => {
   it('maps only real member columns and preserves nulls', async () => {
-    const api = { request: vi.fn(async (path: string) => path.includes('member_online_sessions') ? [{ member_id: 'm1', online_seconds: 1800 }, { member_id: 'm1', online_seconds: 900 }] : [{
+    const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [{ member_id: 'm1', online_seconds: 1800 }, { member_id: 'm1', online_seconds: 900 }] : [{
       id: 'm1',
       auth_user_id: 'u1',
       line_user_id: null,
@@ -45,14 +55,14 @@ describe('listAdminTable', () => {
   });
 
   it('maps subscription LINE nickname without exposing the LINE user ID', async () => {
-    const api = { request: vi.fn(async (path: string) => path.includes('member_online_sessions') ? [] : [{ id: 'm1', auth_user_id: 'u1', line_user_id: 'internal-line-id', line_display_name: 'LINE 暱稱', current_plan: null }]) };
+    const api = { request: fixtureRequest(async (path: string) => path.includes('member_online_sessions') ? [] : [{ id: 'm1', auth_user_id: 'u1', line_user_id: 'internal-line-id', line_display_name: 'LINE 暱稱', current_plan: null }]) };
     const result = await listAdminTable('subscriptions', api);
     expect(result.items[0]).toMatchObject({ lineDisplayName: 'LINE 暱稱' });
     expect(result.items[0]).not.toHaveProperty('lineUserId');
   });
 
   it('maps the transfer applicant LINE display name', async () => {
-    const api = { request: vi.fn(async () => [{
+    const api = { request: fixtureRequest(async () => [{
       id: 'transfer-1', member_id: 'member-1', plan_id: 'plan-1', amount: 1880,
       transferred_at: '2026-09-01T00:00:00Z', account_last_five: '12345',
       submitted_at: '2026-09-01T00:00:00Z', status: 'pending',
@@ -64,7 +74,7 @@ describe('listAdminTable', () => {
   });
 
   it('maps the activation-code redeemer LINE nickname without exposing the member ID', async () => {
-    const api = { request: vi.fn(async () => [{
+    const api = { request: fixtureRequest(async () => [{
       id: 'code-1', batch_id: 'batch-1', code: 'ABCD-EFGH-IJKL-MNOP', duration_type: '30_days',
       created_at: '2026-09-05T00:00:00Z', expires_at: '2026-10-05T00:00:00Z',
       redeemed_by_member_id: 'member-1', redeemed_at: '2026-09-05T01:00:00Z', status: 'used',
@@ -81,7 +91,7 @@ describe('listAdminTable', () => {
   });
 
   it('excludes super administrators from login records without hiding historical audit rows', async () => {
-    const request = vi.fn(async () => []);
+    const request = fixtureRequest(async () => []);
     await listAdminTable('loginRecords', { request });
     await listAdminTable('auditLogs', { request });
     expect(request.mock.calls[0][0]).toContain('admin_account.role=neq.');
@@ -89,7 +99,7 @@ describe('listAdminTable', () => {
   });
 
   it('maps administrator permission columns into the existing permission object', async () => {
-    const api = { request: vi.fn(async () => [{
+    const api = { request: fixtureRequest(async () => [{
       id: 'a1', account: 'owner@example.com', name: 'Owner', role: '查看人員', status: '啟用',
       can_view: true, can_add: false, can_edit: false, can_delete: false,
       last_login_at: null, created_at: '2026-08-01T00:00:00Z',
@@ -109,7 +119,7 @@ describe('listAdminTable', () => {
 
 describe('getDashboard', () => {
   it('derives plan counts and confirmed revenue only from real Supabase columns', async () => {
-    const api = { request: vi.fn(async (path: string) => path.includes('/rpc/admin_visitor_stats') ? { todayVisitors: 2, monthVisitors: 7, totalVisitors: 10 } : path.includes('/members?') ? [
+    const api = { request: fixtureRequest(async (path: string) => path.includes('/rpc/admin_visitor_stats') ? { todayVisitors: 2, monthVisitors: 7, totalVisitors: 10 } : path.includes('/members?') ? [
       { plan_expires_at: '2026-08-25T00:00:00Z', current_plan: { duration_days: 30 } },
       { plan_expires_at: '2026-10-01T00:00:00Z', current_plan: { duration_days: 90 } },
       { plan_expires_at: null, current_plan: { duration_days: 365 } },
@@ -126,9 +136,53 @@ describe('getDashboard', () => {
 });
 
  it('keeps existing dashboard data when visitor counts are unavailable', async () => {
-  const api = { request: vi.fn(async (path: string) => {
+  const api = { request: fixtureRequest(async (path: string) => {
     if (path.includes('/rpc/admin_visitor_stats')) throw Error('unavailable');
     return [];
   }) };
   expect(await getDashboard(api)).toMatchObject({ todayVisitors: null, monthVisitors: null, totalVisitors: null, totalUsers: 0, cumulativeRevenue: 0 });
+});
+
+describe('complete admin data pagination', () => {
+  it.each(['users', 'subscriptions', 'loginRecords', 'subscriptionRecords', 'auditLogs', 'admins', 'activationCodes', 'plans', 'transferRequests'])(
+    'keeps every %s row accessible across capped pages and tied sort values', async (table) => {
+      const rows = Array.from({ length: 1105 }, (_, index) => ({ id: String(index), created_at: '2026-09-01T00:00:00Z' }));
+      const request = fixtureRequest(async (path) => path.includes('member_online_sessions') ? [] : rows, 137);
+      const result = await listAdminTable(table, { request });
+      expect(result.items.map((item) => item.id)).toEqual(rows.map((row) => row.id));
+      const paths = request.mock.calls.map(([path]) => path).filter((path) => !path.includes('member_online_sessions'));
+      expect(paths.length).toBeGreaterThan(2);
+      for (const path of paths) {
+        const query = new URL(path, 'https://example.test').searchParams;
+        expect(query.get('order')).toMatch(/(?:^|,)id\.(?:asc|desc)$/);
+        expect(Number(query.get('limit'))).toBeLessThanOrEqual(1000);
+      }
+    },
+  );
+
+  it('includes recent online time from every page for both member tables', async () => {
+    const request = fixtureRequest(async (path) => path.includes('member_online_sessions')
+      ? Array.from({ length: 1105 }, () => ({ member_id: 'm1', online_seconds: 60 }))
+      : [{ id: 'm1' }], 137);
+    for (const table of ['users', 'subscriptions']) {
+      const result = await listAdminTable(table, { request });
+      expect(result.items[0]).toMatchObject({ recentOnlineMinutes: 1105 });
+    }
+    expect(request.mock.calls.filter(([path]) => path.includes('member_online_sessions')).every(([path]) => path.includes('order=id.asc'))).toBe(true);
+  });
+
+  it('counts dashboard members beyond the server cap', async () => {
+    const request = fixtureRequest(async (path) => path.includes('/members?')
+      ? Array.from({ length: 1105 }, () => ({ current_plan: { duration_days: 30 }, plan_expires_at: '2026-09-07T00:00:00Z' }))
+      : [], 137);
+    expect(await getDashboard({ request }, new Date('2026-09-06T00:00:00Z'))).toMatchObject({ totalUsers: 1105, monthlyPro: 1105, expiring: 1105 });
+  });
+
+  it('rejects a later page failure instead of returning incomplete records', async () => {
+    const request = vi.fn(async (path: string) => {
+      if (Number(new URL(path, 'https://example.test').searchParams.get('offset')) > 0) throw new Error('page unavailable');
+      return [{ id: 'first' }];
+    });
+    await expect(listAdminTable('auditLogs', { request })).rejects.toThrow('page unavailable');
+  });
 });

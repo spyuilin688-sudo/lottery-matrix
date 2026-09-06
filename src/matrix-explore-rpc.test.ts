@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();
+const getSession = vi.fn();
 
 vi.mock('./lib/supabase', () => ({
-  getSupabaseClient: () => ({ rpc }),
+  getSupabaseClient: () => ({ rpc, auth: { getSession } }),
 }));
 
 import {
@@ -15,8 +16,20 @@ import {
   fetchTianyanValidation,
 } from './matrix-algorithm-api';
 
+import { resetReadCacheForTests } from './read-cache';
+import { updateAlgorithmCacheSession } from './auth/algorithm-cache-scope';
+
 describe('Matrix exploration Supabase RPC', () => {
-  beforeEach(() => rpc.mockReset());
+  beforeEach(() => {
+    resetReadCacheForTests();
+    updateAlgorithmCacheSession(null);
+    rpc.mockReset();
+    getSession.mockReset();
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: 'rpc-test-user' }, access_token: 'rpc-test-session' } },
+      error: null,
+    });
+  });
 
   it('calls the list RPC directly instead of an HTTP API URL', async () => {
     const request = {
@@ -94,7 +107,7 @@ describe('Matrix exploration Supabase RPC', () => {
     })).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
   });
 
-  it('maps an anonymous function-permission error to login required', async () => {
+  it('maps an RPC function-permission error to login required', async () => {
     rpc.mockResolvedValue({
       data: null,
       error: { code: '42501', message: 'permission denied for function matrix_tiangong_list' },
@@ -111,6 +124,16 @@ describe('Matrix exploration Supabase RPC', () => {
       secondStageDirections: ['固定'],
       secondRoadTypes: ['加減'],
     })).rejects.toMatchObject({ code: 'AUTH_REQUIRED', status: 401 });
+  });
+
+  it('rejects an anonymous session before calling the RPC', async () => {
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    await expect(fetchTianyanList({
+      lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false,
+    })).rejects.toMatchObject({ code: 'AUTH_REQUIRED', status: 401 });
+
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('reads Tianyan results and validation from Supabase artifacts', async () => {

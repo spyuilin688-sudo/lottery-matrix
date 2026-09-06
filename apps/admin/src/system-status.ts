@@ -6,6 +6,7 @@ export type SystemStatusItem = {
   location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'service';
+  checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported';
   ok: boolean;
   checkedAt: string;
   responseMs: number;
@@ -43,6 +44,25 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
   'GitHub',
   'Railway',
 ];
+
+// Older servers omit checkEvidence; keep their partial probes visibly limited too.
+export function getSystemStatusPresentation(item: SystemStatusItem) {
+  const evidence = item.checkEvidence ?? (
+    item.endpoint.startsWith('/functions/v1/') ? 'options'
+      : item.checkMode === 'openapi' ? 'registered'
+        : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
+          : item.id === 'appdeploy-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
+  );
+  const presentations = {
+    live: { label: '檢查通過', tone: 'good', scope: '唯讀連線檢查；不代表全部業務功能成功。' },
+    registered: { label: '已登錄', tone: 'limited', scope: '僅檢查 RPC 登錄狀態，未驗證功能執行。' },
+    options: { label: 'OPTIONS 可達', tone: 'limited', scope: '僅檢查 OPTIONS 回應，未驗證功能執行。' },
+    inherited: { label: '服務可達', tone: 'limited', scope: '沿用 Railway 健康與排程 API 檢查，未驗證此端點。' },
+    reported: { label: '回報正常', tone: 'good', scope: '依據最近心跳或排程紀錄，未重新執行工作。' },
+  } as const;
+  const presentation = presentations[evidence];
+  return item.ok ? presentation : { ...presentation, label: '異常', tone: 'bad' as const };
+}
 
 export function groupSystemStatusItems(items: SystemStatusItem[]): SystemStatusGroup[] {
   return statusLocationOrder

@@ -22,6 +22,8 @@ import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBa
 import type { LotteryDrawRecord } from "./lottery-api";
 import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown, secondsUntil } from "./countdown.mjs";
 import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-api";
+import { subscribeMatrixDataRevision } from "./matrix-data-revision";
+import { withDeadline } from "./lib/api-resilience";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -287,13 +289,19 @@ export function NextDrawInfoBar({ nextDraw, nextDrawAt, remainingTime, className
   );
 }
 
+type StatusLoadState = "loading" | "error" | "ready";
+type StatusLoadStates = Record<LotteryId, StatusLoadState>;
+const loadingStatusStates = (): StatusLoadStates => ({ 今彩539: "loading", 天天樂: "loading", 六合彩: "loading", 大樂透: "loading" });
+
 export type MatrixStatusSectionProps = {
   statuses?: MatrixStatusMap;
+  loadStates?: StatusLoadStates;
   onOpen?: (lottery: LotteryId) => void;
 };
 
 export function MatrixStatusSection({
   statuses = MATRIX_STATUS_BY_LOTTERY,
+  loadStates,
   onOpen,
 }: MatrixStatusSectionProps = {}) {
   return (
@@ -305,13 +313,17 @@ export function MatrixStatusSection({
       <div className="matrix-status-card-grid" aria-label="四個彩種 Matrix 狀態">
         {LOTTERIES.map((lottery) => {
           const status = statuses[lottery.id];
+          const loadState = loadStates?.[lottery.id] ?? "ready";
+          const message = loadState === "loading" ? "讀取中" : loadState === "error" ? "讀取失敗" : null;
           return (
             <button
               type="button"
               className="matrix-status-card"
-              aria-label={`${lottery.id} ${status.status}`}
+              aria-label={`${lottery.id} ${message ?? status.status}`}
               data-lottery={lottery.id}
-              data-status={status.statusEn}
+              data-status={message ? undefined : status.statusEn}
+              data-load-state={loadState}
+              aria-busy={loadState === "loading"}
               key={lottery.id}
               onClick={() => onOpen?.(lottery.id)}
             >
@@ -321,6 +333,7 @@ export function MatrixStatusSection({
                 alt=""
                 draggable={false}
               />
+              {message ? <span className="matrix-status-message" role="status">{message}</span> : null}
               <img
                 className="matrix-status-lottery-logo"
                 src={lottery.logo}
@@ -397,6 +410,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   const { deviceId, setDeviceId } = useMobileDevice();
   const { data: latestDraw } = useLatestLotteryDraw(selected);
   const [matrixStatuses, setMatrixStatuses] = useState<MatrixStatusMap>(MATRIX_STATUS_BY_LOTTERY);
+  const [matrixStatusLoads, setMatrixStatusLoads] = useState<StatusLoadStates>(loadingStatusStates);
   const [statusLottery, setStatusLottery] = useState<LotteryId>("今彩539");
   const nextDrawInfo: NextDrawInfoData = latestDraw?.nextDrawAt
     ? {
@@ -409,28 +423,59 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
 
   useEffect(() => { setDeviceId("pixel-10"); }, [setDeviceId]);
   useEffect(() => {
+    if (screen !== "home") return;
     let active = true;
-    void Promise.all(
-      LOTTERIES.map(async ({ id: lottery }) => {
-        try {
-          const result = await fetchMatrixStatus(lottery);
-          return { lottery, status: toHomepageMatrixStatus(result.summary) };
-        } catch {
-          return null;
-        }
-      }),
-    ).then((results) => {
-      if (!active) return;
-      setMatrixStatuses((current) => {
-        const next = { ...current };
-        results.forEach((result) => {
-          if (result) next[result.lottery] = result.status;
-        });
-        return next;
-      });
-    });
-    return () => { active = false; };
-  }, []);
+    let generation = 0;
+    let request: AbortController | undefined;
+    let queued: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (!active || document.visibilityState === "hidden") return;
+      const current = ++generation;
+      request?.abort();
+      request = new AbortController();
+      const signal = request.signal;
+      // Each card settles independently; an unavailable lottery cannot block the others.
+      for (const { id } of LOTTERIES) {
+        void withDeadline(() => fetchMatrixStatus(id), { signal })
+          .then((result) => {
+            if (!active || current !== generation) return;
+            const status = toHomepageMatrixStatus(result.summary);
+            setMatrixStatuses((previous) => ({ ...previous, [id]: status }));
+            setMatrixStatusLoads((previous) => ({ ...previous, [id]: "ready" }));
+          })
+          .catch(() => {
+            if (!active || current !== generation) return;
+            setMatrixStatusLoads((previous) => ({ ...previous, [id]: "error" }));
+          });
+      }
+    };
+    const queueRefresh = () => {
+      if (queued !== undefined) return;
+      queued = setTimeout(() => { queued = undefined; refresh(); }, 0);
+    };
+    const invalidate = () => {
+      generation += 1;
+      request?.abort();
+      setMatrixStatusLoads(loadingStatusStates());
+      queueRefresh();
+    };
+    refresh();
+    // Match the existing latest-draw refresh cadence; this only reads stored results.
+    const timer = setInterval(refresh, 60_000);
+    const unsubscribe = subscribeMatrixDataRevision(invalidate);
+    document.addEventListener("visibilitychange", queueRefresh);
+    window.addEventListener("online", queueRefresh);
+    return () => {
+      active = false;
+      generation += 1;
+      request?.abort();
+      clearInterval(timer);
+      if (queued !== undefined) clearTimeout(queued);
+      unsubscribe();
+      document.removeEventListener("visibilitychange", queueRefresh);
+      window.removeEventListener("online", queueRefresh);
+    };
+  }, [screen]);
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
 
@@ -470,7 +515,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
           <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
           <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
           <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
-          <MatrixStatusSection statuses={matrixStatuses} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
+          <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
         </main>
         <div className="home-bottom-group">
           <MatrixCoreBanner onOpen={() => navigate("explore")} />

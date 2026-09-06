@@ -41,14 +41,16 @@ describe('connection status', () => {
       endpoint: '/rest/v1/plans?select=id&limit=1',
       group: '系統',
       checkMode: 'live',
+      checkEvidence: 'live',
     });
     expect(result.items.find((item) => item.id === 'supabase-rpc-redeem_activation_code')).toMatchObject({
       ok: true,
       location: 'Supabase',
       endpoint: '/rest/v1/rpc/redeem_activation_code',
       checkMode: 'openapi',
+      checkEvidence: 'registered',
     });
-    expect(result.items).toHaveLength(56);
+    expect(result.items).toHaveLength(61);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -103,7 +105,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(56);
+    expect(result.items).toHaveLength(61);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
@@ -222,6 +224,31 @@ describe('connection status', () => {
     expect(JSON.stringify(result)).not.toMatch(/github-server-secret|raw-upstream-secret|secret-source-sha|raw-secret/);
   });
 
+  it.each([
+    { status: 'completed', conclusion: 'failure' },
+    { status: 'in_progress', conclusion: null },
+    null,
+  ])('keeps GitHub API reachability separate from the latest job outcome: %j', async (run) => {
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      loadGithubToken: async () => 'github-server-secret',
+      fetcher: vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/runs?per_page=1')) return response({ workflow_runs: run ? [run] : [] });
+        if (url.endsWith('/fantasy5-crawler.yml')) return response({ state: 'active' });
+        return response({ paths: {} });
+      }),
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'github-fantasy5-workflow')).toMatchObject({
+      ok: true,
+      checkEvidence: 'live',
+      detail: { latestRun: run ? expect.objectContaining(run) : null },
+    });
+  });
+
   it('reports missing GitHub configuration without sending a request or leaking loader errors', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
       ? response({ paths: {} })
@@ -254,13 +281,17 @@ describe('connection status', () => {
       getWorkerStatus: async () => healthyWorkerStatus,
     });
 
-    await status.get();
+    const result = await status.get();
+    expect(result.items.filter((item) => item.endpoint.startsWith('/functions/v1/'))).toEqual(
+      Array.from({ length: 6 }, () => expect.objectContaining({ ok: true, checkEvidence: 'options' })),
+    );
     const functionCalls = fetcher.mock.calls.filter(([input]) =>
       String(input).includes('/functions/v1/'));
     expect(functionCalls.map(([input]) => String(input))).toEqual([
       'https://db.test/functions/v1/matrix-status',
       'https://db.test/functions/v1/notification-ingest',
       'https://db.test/functions/v1/notification-dispatch',
+      'https://db.test/functions/v1/notification-pilio',
       'https://db.test/functions/v1/send-test-push',
       'https://db.test/functions/v1/line-logout',
     ]);
@@ -307,6 +338,7 @@ describe('connection status', () => {
     const result = await status.get();
     expect(result.items.find((item) => item.id === 'railway-jobs-recover')).toMatchObject({
       ok: true,
+      checkEvidence: 'inherited',
       detail: { inheritedFrom: ['/health', '/jobs/status'] },
     });
     expect(getWorkerStatus).toHaveBeenCalledTimes(1);
@@ -339,7 +371,7 @@ describe('connection status', () => {
         completedAt: '2026-09-04T11:42:00.000Z',
         dueLotteries: ['天天樂'],
         actions: heartbeat.actions,
-        physicalCronIntervalMinutes: 6,
+        physicalCronIntervalMinutes: 10,
         freshnessThresholdMinutes: 18,
         logicalPhases: [
           { intervalMinutes: 6, checks: 50 },

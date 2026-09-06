@@ -1,4 +1,5 @@
 export type ApiLocation = 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
+export type ApiCheckEvidence = 'live' | 'registered' | 'options' | 'inherited' | 'reported';
 export type ApiCheckMode = 'live' | 'openapi' | 'service';
 
 export type ApiStatusDefinition = {
@@ -22,6 +23,10 @@ const supabaseRpcDefinitions = [
   ['matrix_custom_status_save', '儲存自訂觸發條件', 'Matrix 狀態', '儲存會員自訂觸發條件。'],
   ['matrix_custom_status_reset', '重設自訂觸發條件', 'Matrix 狀態', '重設會員自訂觸發條件。'],
   ['member_bootstrap', '建立會員資料', '會員', '建立或補齊會員資料。'],
+  ['member_referral_summary', '會員推薦摘要', '會員', '取得會員推薦紀錄摘要。'],
+  ['member_referral_submit', '提交會員推薦碼', '會員', '提交會員推薦碼。'],
+  ['member_line_pwa_diagnostics_submit', '提交 LINE PWA 診斷', '會員', '提交會員 LINE PWA 診斷資料。'],
+  ['record_matrix_visit', '記錄 Matrix 瀏覽', '系統', '記錄 Matrix 瀏覽人數。'],
   ['member_profile', '會員資料', '會員', '取得會員資料。'],
   ['member_notification_settings_get', '通知設定', '通知', '取得會員通知設定。'],
   ['member_notification_settings_save', '儲存通知設定', '通知', '儲存會員通知設定。'],
@@ -61,12 +66,13 @@ const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
 
 export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'admin-api', name: '管理者後臺 API', group: '系統', location: 'AppDeploy', endpoint: '/api/_healthcheck', checkMode: 'live', description: '確認管理者後臺 API 可正常回應。' },
-  { id: 'appdeploy-watchdog-heartbeat', name: 'AppDeploy 獨立監控心跳', group: 'Watchdog', location: 'AppDeploy', endpoint: '/internal/matrix-watchdog-status', checkMode: 'service', description: '確認每 6 分鐘執行的 AppDeploy 獨立監控持續運作。' },
+  { id: 'appdeploy-watchdog-heartbeat', name: 'AppDeploy 獨立監控心跳', group: 'Watchdog', location: 'AppDeploy', endpoint: '/internal/matrix-watchdog-status', checkMode: 'service', description: '確認每 10 分鐘執行的 AppDeploy 獨立監控持續運作。' },
   { id: 'supabase-database', name: 'Supabase Database REST API', group: '系統', location: 'Supabase', endpoint: '/rest/v1/plans?select=id&limit=1', checkMode: 'live', description: '確認 Supabase 資料庫 REST API 可正常讀取。' },
   { id: 'supabase-auth', name: 'Supabase Auth API', group: '系統', location: 'Supabase', endpoint: '/auth/v1/settings', checkMode: 'live', description: '確認 Supabase Auth 服務可正常回應。' },
   { id: 'matrix-status-function', name: 'Matrix 狀態 Edge Function', group: 'Matrix 狀態', location: 'Supabase', endpoint: '/functions/v1/matrix-status', checkMode: 'live', description: '提供 Matrix 狀態相關處理。' },
   { id: 'notification-ingest-function', name: '通知事件接收 Edge Function', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-ingest', checkMode: 'live', description: '接收並建立通知事件。' },
   { id: 'notification-dispatch-function', name: '通知派送 Edge Function', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-dispatch', checkMode: 'live', description: '派送待處理通知事件。' },
+  { id: 'notification-pilio-function', name: 'Pilio 通知 Edge Function', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-pilio', checkMode: 'live', description: '處理 Pilio 通知事件。' },
   { id: 'send-test-push-function', name: '測試推播 Edge Function', group: '通知', location: 'Supabase', endpoint: '/functions/v1/send-test-push', checkMode: 'live', description: '提供管理後台會員測試推播。' },
   { id: 'line-logout-function', name: 'LINE 登出 Edge Function', group: '會員', location: 'Supabase', endpoint: '/functions/v1/line-logout', checkMode: 'live', description: '處理 LINE 登出流程。' },
   ...supabaseRpcInventory,

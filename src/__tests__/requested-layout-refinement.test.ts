@@ -109,12 +109,13 @@ describe("requested responsive layout refinement", () => {
     expect(matrixCss).toMatch(/\.matrix-explore-main-screen \.feature-body\s*\{[^}]*overflow-x:\s*clip;/s);
   });
 
-  it("keeps the compact A+B card rhythm with existing profile section spacing", () => {
+  it("keeps the A+B artwork and live-data overlays with existing profile section spacing", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}`);
     style.dataset.layoutContract = "profile";
     document.body.innerHTML = `
       <main class="profile-screen"><div class="feature-body">
         <div class="membership-card-stack">
+          <div class="membership-reference-art" aria-hidden="true"><svg></svg></div>
           <section class="panel membership-card profile-card"></section>
           <section class="panel membership-card subscription-status-card"></section>
         </div>
@@ -122,12 +123,18 @@ describe("requested responsive layout refinement", () => {
       </div></main>`;
 
     expect(getComputedStyle(document.querySelector(".profile-screen .feature-body")!).gap).toBe("8px");
-    expect(getComputedStyle(document.querySelector(".membership-card-stack")!).gap).toBe("1px");
-    expect(getComputedStyle(document.querySelector(".membership-card-stack")!).paddingTop).toBe("10px");
+    const stack = getComputedStyle(document.querySelector(".membership-card-stack")!);
+    const artwork = getComputedStyle(document.querySelector(".membership-reference-art")!);
+    expect(stack.position).toBe("relative");
+    expect(stack.containerType).toBe("inline-size");
+    expect(stack.paddingBottom).toBe("4px");
+    expect(artwork.gridTemplateRows).toBe("47.34485cqw var(--subscription-content-shift) 12.22009cqw");
+    expect(artwork.pointerEvents).toBe("none");
     for (const card of document.querySelectorAll(".membership-card")) {
       expect(getComputedStyle(card).paddingTop).toBe("0px");
-      expect(getComputedStyle(card).borderTopWidth).toBe("8px");
-      expect(getComputedStyle(card).borderImage).toContain("membership-frame.png");
+      expect(getComputedStyle(card).position).toBe("absolute");
+      expect(getComputedStyle(card).borderTopWidth).toBe("0px");
+      expect(getComputedStyle(card).backgroundColor).toBe("rgba(0, 0, 0, 0)");
     }
     expect(getComputedStyle(document.querySelector(".profile-menu")!).paddingTop).toBe("6px");
   });
