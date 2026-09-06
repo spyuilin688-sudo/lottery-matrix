@@ -1208,11 +1208,17 @@
   border-top: 0;
 }
 
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-heading button[data-selected="true"],
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"],
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-consecutive-filter-option[aria-pressed="true"] {
   border-color: var(--lottery-gold-500, #c49145);
   color: var(--lottery-gold-500, #c49145);
   background: rgba(196, 145, 69, .06);
   box-shadow: none;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"] b {
+  color: inherit;
 }
 
 
