@@ -49,15 +49,25 @@ root.textContent = '正在開啟樂彩 Matrix…';
 const hasNormalLineCallback = hasLineOAuthCallback();
 
 async function bootstrap() {
-  if (hasNormalLineCallback && 'serviceWorker' in navigator) {
-    const handedOff = await requestLinePwaReturn(
-      window,
-      navigator.serviceWorker,
-      hasNormalLineCallback,
-    );
-    if (handedOff) {
-      root.textContent = '登入成功，正在返回樂彩 Matrix…';
-      return;
+  if (hasNormalLineCallback) {
+    if ('serviceWorker' in navigator) {
+      const handedOff = await requestLinePwaReturn(
+        window,
+        navigator.serviceWorker,
+        hasNormalLineCallback,
+      );
+      if (handedOff) {
+        root.textContent = '登入成功，正在返回樂彩 Matrix…';
+        return;
+      }
+    }
+
+    // If the callback is already inside the PWA, or no installed PWA can accept
+    // it, let Supabase consume the callback in this exact browsing context.
+    try {
+      await getSupabaseClient().auth.getSession();
+    } catch {
+      // The normal App bootstrap retains its existing session/error handling.
     }
   }
 
