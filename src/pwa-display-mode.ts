@@ -4,15 +4,17 @@ export const PWA_DISPLAY_QUERIES = [
   '(display-mode: minimal-ui)',
 ] as const;
 
-export function isPwaDisplayMode() {
-  if (typeof window === 'undefined') return false;
-  return Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
-    || PWA_DISPLAY_QUERIES.some((query) => window.matchMedia?.(query).matches);
+type PwaDisplayWindow = Pick<Window, 'navigator' | 'matchMedia'>;
+
+export function isPwaDisplayMode(browser: PwaDisplayWindow = window) {
+  if (!browser) return false;
+  return Boolean((browser.navigator as Navigator & { standalone?: boolean }).standalone)
+    || PWA_DISPLAY_QUERIES.some((query) => browser.matchMedia?.(query).matches);
 }
 
-export function isMobilePwa() {
-  if (!isPwaDisplayMode()) return false;
-  const device = window.navigator as Navigator & {
+export function isMobilePwa(browser: PwaDisplayWindow = window) {
+  if (!isPwaDisplayMode(browser)) return false;
+  const device = browser.navigator as Navigator & {
     standalone?: boolean;
     userAgentData?: { mobile?: boolean };
   };
