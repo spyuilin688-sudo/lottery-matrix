@@ -1,11 +1,13 @@
+import { invalidateMatrixData } from './matrix-data-revision';
 import type { NumberBallLottery } from './NumberBall';
 import { fetchWithPolicy, withRequestId } from './lib/api-resilience';
 import { RAILWAY_API_BASE } from './runtime-api-config';
 import { clearReadCache, readThroughCache, stableCacheKey } from './read-cache';
 import {
   getMatrixCurrentPeriod,
-  readLotteryHistoryCache,
-  readLotteryLatestCache,
+  clearMatrixLotteryData,
+  readLotteryHistoryCacheEntry,
+  readLotteryLatestCacheEntry,
   setMatrixCurrentPeriod,
   writeLotteryHistoryCache,
   writeLotteryLatestCache,
@@ -13,7 +15,42 @@ import {
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
 const LOTTERY_READ_CACHE_MS = 5 * 60 * 1_000;
-const latestPeriods = new Map<NumberBallLottery, string | undefined>();
+const latestRecords = new Map<NumberBallLottery, LotteryDrawRecord>();
+const historyRecords = new Map<string, LotteryDrawRecord[]>();
+const historyIdentities = new WeakMap<LotteryDrawRecord[], number>();
+let nextHistoryIdentity = 0;
+
+function historyIdentity(records: LotteryDrawRecord[]) {
+  let identity = historyIdentities.get(records);
+  if (identity === undefined) {
+    identity = ++nextHistoryIdentity;
+    historyIdentities.set(records, identity);
+  }
+  return identity;
+}
+
+function drawFingerprint(record: LotteryDrawRecord) {
+  return stableCacheKey('', {
+    period: record.period, drawDate: record.drawDate, numbers: record.numbers,
+    sortedNumbers: record.sortedNumbers, drawOrderNumbers: record.drawOrderNumbers,
+    specialNumber: record.specialNumber,
+  });
+}
+
+function historyFingerprint(records: LotteryDrawRecord[]) {
+  return records.map(drawFingerprint).join('|');
+}
+
+function invalidateLotteryData(lottery: NumberBallLottery) {
+  clearReadCache(`lottery:history:${lottery}:`);
+  clearReadCache(`lottery:tongxing:${lottery}:`);
+  clearReadCache(`lottery:number-reference:${lottery}:`);
+  invalidateMatrixData();
+  clearMatrixLotteryData(lottery);
+  for (const key of historyRecords.keys()) {
+    if (key.startsWith(`${lottery}:`)) historyRecords.delete(key);
+  }
+}
 
 export type LotteryDrawRecord = {
   period?: string;
@@ -299,61 +336,85 @@ function assertNumberReferenceItem(value: unknown, index: number): asserts value
   }
 }
 
-export async function fetchLatestLotteryDraw(lottery: NumberBallLottery) {
+export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promise<LotteryDrawRecord | null> {
+  let expiresAt = Infinity;
   return readThroughCache(
     stableCacheKey('lottery:latest', { lottery }),
     LOTTERY_READ_CACHE_MS,
-    async () => {
-      const cached = readLotteryLatestCache<LotteryDrawRecord>(lottery, LOTTERY_READ_CACHE_MS);
+    async ({ isCurrent }) => {
+      // Keep the expired snapshot only for correction detection, never as fresh data.
+      const stored = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, Infinity);
+      const cached = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, LOTTERY_READ_CACHE_MS);
       if (cached) {
-        const record = normalizeRecord(lottery, cached);
+        const record = normalizeRecord(lottery, cached.value);
+        const previous = latestRecords.get(lottery);
+        if (previous && drawFingerprint(previous) !== drawFingerprint(record)) invalidateLotteryData(lottery);
         if (record.period) setMatrixCurrentPeriod(lottery, record.period);
-        latestPeriods.set(lottery, record.period);
+        latestRecords.set(lottery, record);
+        expiresAt = cached.savedAt + LOTTERY_READ_CACHE_MS;
         return record;
       }
       const data = await requestJson<LatestLotteryResponse>(
         `/api/matrix/latest/${encodeURIComponent(lottery)}`,
       );
+      if (!isCurrent()) return fetchLatestLotteryDraw(lottery);
       const item = isLatestLotteryEnvelope(data) ? data.item : data;
       if (item === null || item === undefined) return null;
       assertLotteryDrawRecord(item, 'item');
       const record = normalizeRecord(lottery, item);
-      const previousPeriod = latestPeriods.get(lottery);
-      if (previousPeriod && previousPeriod !== record.period) clearReadCache(`lottery:history:${lottery}:`);
+      const previous = latestRecords.get(lottery) ?? (stored ? normalizeRecord(lottery, stored.value) : undefined);
+      const previousPeriod = getMatrixCurrentPeriod(lottery);
+      if ((previous && drawFingerprint(previous) !== drawFingerprint(record))
+        || (previousPeriod && previousPeriod !== record.period)) invalidateLotteryData(lottery);
       if (record.period) setMatrixCurrentPeriod(lottery, record.period);
-      latestPeriods.set(lottery, record.period);
+      latestRecords.set(lottery, record);
       writeLotteryLatestCache(lottery, record);
+      expiresAt = Date.now() + LOTTERY_READ_CACHE_MS;
       return record;
     },
+    { expiresAt: () => expiresAt },
   );
 }
 
 export async function fetchLotteryHistory(
   lottery: NumberBallLottery,
   limit?: number,
-) {
+): Promise<LotteryDrawRecord[]> {
+  // Check the latest data before a history hit, so changed draws invalidate it.
+  const latest = await fetchLatestLotteryDraw(lottery);
+  const drawPeriod = latestRecords.get(lottery)?.period ?? latest?.period ?? getMatrixCurrentPeriod(lottery);
+  let expiresAt = Infinity;
+  const historyKey = `${lottery}:${limit ?? 'all'}`;
   return readThroughCache(
     `lottery:history:${lottery}:${stableCacheKey('', { limit })}`,
     LOTTERY_READ_CACHE_MS,
-    async () => {
-      const latest = await fetchLatestLotteryDraw(lottery);
-      const drawPeriod = latest?.period ?? getMatrixCurrentPeriod(lottery);
-      if (drawPeriod) {
-        const cached = readLotteryHistoryCache<LotteryDrawRecord[]>(lottery, drawPeriod, limit);
-        if (cached) return cached;
+    async ({ isCurrent }) => {
+      const stored = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit, Infinity) : null;
+      const cached = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit) : null;
+      if (cached) {
+        expiresAt = cached.savedAt + LOTTERY_READ_CACHE_MS;
+        historyRecords.set(historyKey, cached.value);
+        return cached.value;
       }
+      const previous = historyRecords.get(historyKey) ?? stored?.value;
       const query = typeof limit === 'number' ? `?limit=${limit}` : '';
       const data = await requestJson<LotteryHistoryResponse>(
         `/api/matrix/history/${encodeURIComponent(lottery)}${query}`,
       );
+      // A superseded response must not restore persistent data or reach callers.
+      if (!isCurrent()) return fetchLotteryHistory(lottery, limit);
       const items = Array.isArray(data) ? data : data.items ?? [];
       assertArrayField(items, 'items');
       items.forEach((item, index) => assertLotteryDrawRecord(item, `items[${index}]`));
       const result = items.map((item) => normalizeRecord(lottery, item));
+      if (previous && historyFingerprint(previous) !== historyFingerprint(result)) invalidateLotteryData(lottery);
       const resultPeriod = drawPeriod ?? result[0]?.period;
       if (resultPeriod) writeLotteryHistoryCache(lottery, resultPeriod, limit, result);
+      historyRecords.set(historyKey, result);
+      expiresAt = Date.now() + LOTTERY_READ_CACHE_MS;
       return result;
     },
+    { expiresAt: () => expiresAt },
   );
 }
 
@@ -378,8 +439,8 @@ function projectHistoryRecord(
 }
 
 export async function fetchTongXing(input: TongXingRequest) {
-  return readThroughCache(stableCacheKey('lottery:tongxing', input), LOTTERY_READ_CACHE_MS, async () => {
-    const history = await fetchLotteryHistory(input.lottery);
+  const history = await fetchLotteryHistory(input.lottery);
+  return readThroughCache(stableCacheKey(`lottery:tongxing:${input.lottery}`, { ...input, source: historyIdentity(history) }), LOTTERY_READ_CACHE_MS, async () => {
     const groups: TongXingPair[] = [];
     for (let lockedIndex = input.futureOffset; lockedIndex < history.length; lockedIndex += 1) {
       const lockedEntry = history[lockedIndex];
@@ -396,8 +457,8 @@ export async function fetchTongXing(input: TongXingRequest) {
 }
 
 export async function fetchNumberReference(input: NumberReferenceRequest) {
-  return readThroughCache(stableCacheKey('lottery:number-reference', input), LOTTERY_READ_CACHE_MS, async () => {
-    const history = await fetchLotteryHistory(input.lottery, input.historyRange);
+  const history = await fetchLotteryHistory(input.lottery, input.historyRange);
+  return readThroughCache(stableCacheKey(`lottery:number-reference:${input.lottery}`, { ...input, source: historyIdentity(history) }), LOTTERY_READ_CACHE_MS, async () => {
     return {
       ...input,
       items: [...history].reverse().map((record) => {

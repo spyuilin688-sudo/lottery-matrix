@@ -2,6 +2,8 @@ import type { NumberBallLottery } from './NumberBall';
 import { MatrixApiError } from './matrix-api-client';
 import { getSupabaseClient } from './lib/supabase';
 import { readThroughCache, stableCacheKey } from './read-cache';
+import { readAlgorithmCacheScope } from './auth/algorithm-cache-scope';
+import { getMatrixDataRevision } from './matrix-data-revision';
 
 export type MatrixNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
 export type MatrixAlgorithmType = '加減' | '合值' | '拖牌' | '加減版路' | '合值版路' | '拖牌版路';
@@ -295,8 +297,31 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   name: string,
   request: unknown,
 ): Promise<T> {
-  const key = stableCacheKey(`matrix-rpc:${name}`, request);
-  return readThroughCache(key, MATRIX_READ_CACHE_MS, () => matrixResultRpc<T>(name, request));
+  const client = getSupabaseClient();
+  const scope = await readAlgorithmCacheScope(client);
+  const assertCurrentSession = async () => {
+    if (await readAlgorithmCacheScope(client) !== scope) {
+      throw new MatrixApiError('AUTH_REQUIRED', 401);
+    }
+  };
+  const revision = getMatrixDataRevision();
+  const assertCurrentData = () => {
+    if (getMatrixDataRevision() !== revision) {
+      throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    }
+  };
+  const key = stableCacheKey(`matrix-rpc:${name}`, { scope, request });
+  const result = await readThroughCache(key, MATRIX_READ_CACHE_MS, async ({ isCurrent }) => {
+    const value = await matrixResultRpc<T>(name, request);
+    await assertCurrentSession();
+    assertCurrentData();
+    if (!isCurrent()) throw new MatrixApiError('ANALYSIS_VERSION_MISMATCH', 409);
+    return value;
+  });
+  // Cache hits must also verify the session before reaching a caller.
+  await assertCurrentSession();
+  assertCurrentData();
+  return result;
 }
 
 export function fetchExploreList(request: ExploreListRequest) {

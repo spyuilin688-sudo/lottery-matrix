@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_REQUEST_TIMEOUT_MS } from '../lib/api-resilience';
 import { LOTTERY_API_BASE, fetchLatestLotteryDraw, fetchLotteryHistory, fetchNumberReference, fetchTongXing, normalizePeriod } from '../lottery-api';
-import { resetReadCacheForTests } from '../read-cache';
+import { clearReadCache, readThroughCache, resetReadCacheForTests } from '../read-cache';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -306,4 +306,91 @@ describe('lottery-api response validation', () => {
     expect(result?.numbers).toEqual(['01', '02', '03', '04', '05', '06']);
     expect(result?.drawOrderNumbers).toEqual(['01', '02', '03', '04', '05', '06']);
   });
+});
+
+
+describe('cache freshness and draw corrections', () => {
+  it('does not restart the latest expiry when persistent data enters memory', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'));
+    const first = { period: '115207', numbers: ['01'] };
+    const second = { period: '115208', numbers: ['02'] };
+    const fetcher = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(first))
+      .mockResolvedValueOnce(jsonResponse(second));
+    await fetchLatestLotteryDraw('今彩539');
+    resetReadCacheForTests();
+    vi.advanceTimersByTime(299_000);
+    await fetchLatestLotteryDraw('今彩539');
+    vi.advanceTimersByTime(1_000);
+    expect((await fetchLatestLotteryDraw('今彩539'))?.period).toBe('115208');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes same-period history and derived results at the original history expiry', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'));
+    const latest = { period: '115208', numbers: ['02'] };
+    let historicalNumber = '01';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => jsonResponse(
+      String(url).includes('/latest/') ? latest : { items: [latest, { period: '115207', numbers: [historicalNumber] }] },
+    ));
+    await fetchLotteryHistory('今彩539', 1000);
+    resetReadCacheForTests();
+    vi.advanceTimersByTime(299_000);
+    const request = { lottery: '今彩539' as const, numberOrder: '依號碼由小到大排序' as const, historyRange: 1000 as const, numbers: ['01'] };
+    expect((await fetchNumberReference(request)).items[0].matchSlots).toEqual([1]);
+    historicalNumber = '03';
+    await readThroughCache('matrix-rpc:correction-test', 60_000, async () => 'old');
+    vi.advanceTimersByTime(1_000);
+    expect((await fetchNumberReference(request)).items[0].matchSlots).toEqual([0]);
+    expect(await readThroughCache('matrix-rpc:correction-test', 60_000, async () => 'fresh')).toBe('fresh');
+  });
+
+  it.each(['115208', '115209'])('invalidates dependent results when latest changes to %s', async (period) => {
+    const first = { period: '115208', numbers: ['01'] };
+    let latest = first;
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => jsonResponse(
+      String(url).includes('/latest/') ? latest : { items: [latest] },
+    ));
+    const request = { lottery: '今彩539' as const, numberOrder: '依號碼由小到大排序' as const, historyRange: 1000 as const, numbers: ['01'] };
+    await fetchNumberReference(request);
+    await readThroughCache('matrix-rpc:latest-change-test', 60_000, async () => 'old');
+    latest = { period, numbers: ['03'] };
+    clearReadCache('lottery:latest');
+    localStorage.removeItem(`lottery-latest:${encodeURIComponent('今彩539')}`);
+    await fetchLatestLotteryDraw('今彩539');
+    expect((await fetchNumberReference(request)).items[0].matchSlots).toEqual([0]);
+    expect(await readThroughCache('matrix-rpc:latest-change-test', 60_000, async () => 'fresh')).toBe('fresh');
+    expect(fetcher).toHaveBeenCalledTimes(4);
+  });
+});
+
+
+it('does not restore an older pending history after a newer draw invalidates it', async () => {
+  let latest = { period: '115208', numbers: ['01'] };
+  let resolveHistory!: (response: Response) => void;
+  let historyStarted!: () => void;
+  const started = new Promise<void>((resolve) => { historyStarted = resolve; });
+  let historyCalls = 0;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+    if (String(url).includes('/latest/')) return jsonResponse(latest);
+    if (++historyCalls === 1) {
+      historyStarted();
+      return new Promise<Response>((resolve) => { resolveHistory = resolve; });
+    }
+    return jsonResponse({ items: [latest] });
+  });
+  const oldHistory = fetchLotteryHistory('今彩539', 1000);
+  await started;
+  latest = { period: '115209', numbers: ['03'] };
+  clearReadCache('lottery:latest');
+  localStorage.removeItem(`lottery-latest:${encodeURIComponent('今彩539')}`);
+  await fetchLatestLotteryDraw('今彩539');
+  await fetchLotteryHistory('今彩539', 1000);
+  resolveHistory(jsonResponse({ items: [{ period: '115208', numbers: ['01'] }] }));
+  expect((await oldHistory)[0].period).toBe('115209');
+  resetReadCacheForTests();
+  expect((await fetchLotteryHistory('今彩539', 1000))[0].period).toBe('115209');
+  expect(historyCalls).toBe(2);
 });

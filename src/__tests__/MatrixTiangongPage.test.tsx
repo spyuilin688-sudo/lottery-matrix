@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
+import { invalidateMatrixData } from "../matrix-data-revision";
+import type { Session } from '@supabase/supabase-js';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixTiangongPage } from '../FeaturePages';
 
@@ -125,4 +128,36 @@ test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天工');
+});
+
+
+test('切換帳號清除已顯示的分析快取並忽略先前未完成請求', async () => {
+  updateAlgorithmCacheSession({ access_token: 'account-a', user: { id: 'a' } } as Session);
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
+  act(() => updateAlgorithmCacheSession(null));
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  act(() => updateAlgorithmCacheSession({ access_token: 'account-b', user: { id: 'b' } } as Session));
+  let resolve!: (value: typeof envelope) => void;
+  matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  act(() => updateAlgorithmCacheSession(null));
+  await act(async () => { resolve(envelope); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+});
+
+
+test('開獎資料更正清除畫面分析快取並忽略晚到的舊分析', async () => {
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
+  act(() => invalidateMatrixData());
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  let resolve!: (value: typeof envelope) => void;
+  matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  act(() => invalidateMatrixData());
+  await act(async () => { resolve(envelope); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
 });

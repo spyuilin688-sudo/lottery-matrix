@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { subscribeAlgorithmCacheScope } from '../algorithm-cache-scope';
 import { MemberSessionBridge } from '../MemberSessionBridge';
 import { endActiveMemberOnlineSession, startMemberOnlineTracking } from '../../member-online';
 import {
@@ -561,4 +562,17 @@ describe('MemberSessionBridge', () => {
     expect(bootstrap).not.toHaveBeenCalled();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
+});
+
+it('invalidates algorithm consumers synchronously when the auth bridge receives logout', async () => {
+  const { client, emit } = createClient({ access_token: 'cache-session', user: { id: 'member-cache' } } as never);
+  const bootstrap = vi.fn().mockResolvedValue(undefined);
+  render(<MemberSessionBridge client={client as never} bootstrap={bootstrap}
+    cleanupPush={vi.fn().mockResolvedValue(undefined)} startTracking={noopStartTracking} />);
+  await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+  const onScopeChange = vi.fn();
+  const unsubscribe = subscribeAlgorithmCacheScope(onScopeChange);
+  emit('SIGNED_OUT', null);
+  expect(onScopeChange).toHaveBeenCalledTimes(1);
+  unsubscribe();
 });

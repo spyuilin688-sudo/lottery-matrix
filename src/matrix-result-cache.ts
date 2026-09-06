@@ -128,15 +128,16 @@ export function setMatrixCurrentPeriod(lottery: string, drawPeriod: string) {
   const previous = readStorageItem(key);
   if (previous === drawPeriod) return;
 
-  const prefixes = [
-    lotteryCachePrefix(lottery),
-    lotteryQueryCachePrefix(lottery),
-    lotteryHistoryCachePrefix(lottery),
-  ];
-  storageKeys()
-    .filter((itemKey) => prefixes.some((prefix) => itemKey.startsWith(prefix)))
-    .forEach(removeStorageItem);
+  clearMatrixLotteryData(lottery);
   writeStorageItem(key, drawPeriod);
+}
+
+/** Clear derived data even when corrected numbers retain the same draw period. */
+export function clearMatrixLotteryData(lottery: string) {
+  const prefixes = [lotteryCachePrefix(lottery), lotteryQueryCachePrefix(lottery), lotteryHistoryCachePrefix(lottery)];
+  storageKeys()
+    .filter((key) => prefixes.some((prefix) => key.startsWith(prefix)))
+    .forEach(removeStorageItem);
 }
 
 export function readMatrixResultCache<T>(request: MatrixResultCacheRequest): T | null {
@@ -182,53 +183,53 @@ export function writeLotteryQueryCache<T>(lottery: string, drawPeriod: string, q
   writeJsonStorage(buildLotteryQueryCacheKey(lottery, drawPeriod, query), result);
 }
 
-type TimedLotteryCache<T> = { savedAt: number; value: T };
+export type TimedLotteryCache<T> = { savedAt: number; value: T };
+const LOTTERY_CACHE_MAX_AGE_MS = 5 * 60 * 1_000;
 
-export function readLotteryLatestCache<T>(lottery: string, maxAgeMs: number): T | null {
-  if (!storageAvailable()) return null;
-  const key = lotteryLatestCacheKey(lottery);
+function readTimedCache<T>(key: string, maxAgeMs: number): TimedLotteryCache<T> | null {
   const stored = readStorageItem(key);
   if (!stored) return null;
   try {
-    const cached = JSON.parse(stored) as TimedLotteryCache<T>;
-    if (!Number.isFinite(cached.savedAt) || Date.now() - cached.savedAt >= maxAgeMs) {
+    const cached = JSON.parse(stored) as TimedLotteryCache<T> | null;
+    if (!cached || !Number.isFinite(cached.savedAt) || cached.savedAt > Date.now()
+      || Date.now() - cached.savedAt >= maxAgeMs || !Object.prototype.hasOwnProperty.call(cached, 'value')) {
       removeStorageItem(key);
       return null;
     }
-    return cached.value;
+    return cached;
   } catch {
     removeStorageItem(key);
     return null;
   }
 }
 
+export function readLotteryLatestCacheEntry<T>(lottery: string, maxAgeMs: number) {
+  return readTimedCache<T>(lotteryLatestCacheKey(lottery), maxAgeMs);
+}
+
+export function readLotteryLatestCache<T>(lottery: string, maxAgeMs: number): T | null {
+  return readLotteryLatestCacheEntry<T>(lottery, maxAgeMs)?.value ?? null;
+}
+
 export function writeLotteryLatestCache<T>(lottery: string, value: T) {
-  if (!storageAvailable()) return;
-  writeJsonStorage(
-    lotteryLatestCacheKey(lottery),
-    { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>,
-  );
+  writeJsonStorage(lotteryLatestCacheKey(lottery), { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>);
 }
 
 function buildLotteryHistoryCacheKey(lottery: string, drawPeriod: string, limit?: number) {
   return `${lotteryHistoryCachePrefix(lottery)}${encodeSegment(drawPeriod)}:${limit ?? 'all'}`;
 }
 
+export function readLotteryHistoryCacheEntry<T>(lottery: string, drawPeriod: string, limit?: number, maxAgeMs = LOTTERY_CACHE_MAX_AGE_MS) {
+  if (getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
+  return readTimedCache<T>(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), maxAgeMs);
+}
+
 export function readLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit?: number): T | null {
-  if (!storageAvailable() || getMatrixCurrentPeriod(lottery) !== drawPeriod) return null;
-  const key = buildLotteryHistoryCacheKey(lottery, drawPeriod, limit);
-  const stored = readStorageItem(key);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored) as T;
-  } catch {
-    removeStorageItem(key);
-    return null;
-  }
+  return readLotteryHistoryCacheEntry<T>(lottery, drawPeriod, limit)?.value ?? null;
 }
 
 export function writeLotteryHistoryCache<T>(lottery: string, drawPeriod: string, limit: number | undefined, value: T) {
   if (!storageAvailable() || !drawPeriod) return;
   setMatrixCurrentPeriod(lottery, drawPeriod);
-  writeJsonStorage(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), value);
+  writeJsonStorage(buildLotteryHistoryCacheKey(lottery, drawPeriod, limit), { savedAt: Date.now(), value } satisfies TimedLotteryCache<T>);
 }
