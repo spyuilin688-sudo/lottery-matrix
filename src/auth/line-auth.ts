@@ -11,7 +11,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
-import { isMobilePwa, isPwaDisplayMode } from '../pwa-display-mode';
+import { isPwaDisplayMode } from '../pwa-display-mode';
 import { signInWithLinePopup } from './line-login-popup';
 
 const SESSION_READ_TIMEOUT_MS = 2_500;
@@ -77,10 +77,10 @@ export async function signInWithLine(
   client: SupabaseClient = getSupabaseClient(),
 ) {
   const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
-  // Mobile login stays in the originating PWA navigation. Service Worker support
-  // does not make a separate popup return to the PWA after native LINE opens
-  // Chrome; closing that popup can leave Chrome's new-tab page in front.
-  if (isPwaDisplayMode() && !isMobilePwa()) {
+  // Keep every installed PWA, including Android and iOS, alive while LINE runs
+  // in a script-owned auth window. If the browser blocks that window, preserve
+  // the existing same-window OAuth fallback below.
+  if (isPwaDisplayMode()) {
     const popupLogin = signInWithLinePopup(approvedRedirect, client);
     if (popupLogin) return popupLogin;
   }
