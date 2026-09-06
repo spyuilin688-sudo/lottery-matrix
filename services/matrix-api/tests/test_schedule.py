@@ -1,7 +1,13 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from app.schedule import call_due, lottery_call_time, next_lottery_call_time, retry_offsets
+from app.schedule import (
+    call_due,
+    due_call_cycle,
+    lottery_call_time,
+    next_lottery_call_time,
+    retry_offsets,
+)
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
@@ -9,10 +15,15 @@ TAIPEI = ZoneInfo("Asia/Taipei")
 
 def test_retry_offsets_follow_formal_call_rule() -> None:
     assert retry_offsets() == [
-        0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
-        75, 105, 135, 165,
-        225, 285, 345,
+        0,
+        *range(10, 91, 10),
+        *range(120, 301, 30),
+        *range(360, 1381, 60),
+        1410,
     ]
+    assert len(retry_offsets()) == 36
+    assert retry_offsets()[-1] == 1410
+    assert 1440 not in retry_offsets()
 
 
 def test_taipei_lottery_call_times() -> None:
@@ -38,7 +49,7 @@ def test_next_call_time_uses_the_existing_draw_schedule() -> None:
     ).isoformat() == "2026-09-01T20:53:00+08:00"
     assert next_lottery_call_time(
         "六合彩", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)
-    ).isoformat() == "2026-08-30T21:33:00+08:00"
+    ).isoformat() == "2026-09-01T21:33:00+08:00"
     assert next_lottery_call_time(
         "天天樂", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)
     ).isoformat() == "2026-08-31T09:33:00+08:00"
@@ -68,48 +79,56 @@ def test_each_other_lottery_retry_window_keeps_delayed_cron_runs_due() -> None:
         "大樂透", datetime(2026, 8, 28, 22, 49, tzinfo=TAIPEI)
     ) is True
     assert call_due(
-        "六合彩", datetime(2026, 8, 28, 23, 49, tzinfo=TAIPEI)
+        "六合彩", datetime(2026, 8, 27, 23, 49, tzinfo=TAIPEI)
     ) is True
 
 
 def test_each_other_lottery_retry_window_stops_after_its_own_deadline() -> None:
     assert call_due(
-        "天天樂", datetime(2026, 8, 28, 15, 18, tzinfo=TAIPEI)
+        "天天樂", datetime(2026, 8, 29, 9, 3, tzinfo=TAIPEI)
     ) is True
     assert call_due(
-        "天天樂", datetime(2026, 8, 28, 15, 19, tzinfo=TAIPEI)
+        "天天樂", datetime(2026, 8, 29, 9, 4, tzinfo=TAIPEI)
     ) is False
     assert call_due(
-        "大樂透", datetime(2026, 8, 29, 2, 38, tzinfo=TAIPEI)
+        "大樂透", datetime(2026, 8, 29, 20, 23, tzinfo=TAIPEI)
     ) is True
     assert call_due(
-        "大樂透", datetime(2026, 8, 29, 2, 39, tzinfo=TAIPEI)
+        "大樂透", datetime(2026, 8, 29, 20, 24, tzinfo=TAIPEI)
     ) is False
     assert call_due(
-        "六合彩", datetime(2026, 8, 29, 3, 18, tzinfo=TAIPEI)
+        "六合彩", datetime(2026, 8, 28, 21, 3, tzinfo=TAIPEI)
     ) is True
     assert call_due(
-        "六合彩", datetime(2026, 8, 29, 3, 19, tzinfo=TAIPEI)
+        "六合彩", datetime(2026, 8, 28, 21, 4, tzinfo=TAIPEI)
     ) is False
 
 
-def test_no_calls_after_final_six_hour_retry() -> None:
+def test_no_calls_after_final_retry_before_the_next_primary() -> None:
     base = lottery_call_time("今彩539", datetime(2026, 8, 28, tzinfo=TAIPEI))
-    final_retry = base.replace(day=29, hour=2, minute=18)
+    final_retry = base.replace(day=29, hour=20, minute=3)
     assert call_due("今彩539", final_retry) is True
-    assert call_due("今彩539", final_retry.replace(minute=23)) is False
-    assert call_due("今彩539", base.replace(day=29, hour=14, minute=18)) is False
+    assert call_due("今彩539", final_retry.replace(minute=4)) is False
+    assert call_due("今彩539", base.replace(day=29, hour=20, minute=33)) is True
 
 
 def test_lotteries_do_not_create_call_cycles_on_non_draw_days() -> None:
     assert call_due("今彩539", datetime(2026, 8, 30, 20, 33, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 26, 20, 53, tzinfo=TAIPEI)) is False
+    assert call_due("六合彩", datetime(2026, 8, 30, 21, 33, tzinfo=TAIPEI)) is False
+
+
+def test_marksix_recovery_can_use_sunday_only_as_a_weekend_fallback() -> None:
+    now = datetime(2026, 8, 30, 21, 43, tzinfo=TAIPEI)
+    assert due_call_cycle("六合彩", now) is None
+    assert due_call_cycle(
+        "六合彩", now, allow_weekend_fallback=True,
+    ) == datetime(2026, 8, 30, 21, 33, tzinfo=TAIPEI)
 
 
 def test_lotto649_stops_after_final_retry_until_nearest_draw_pre_calls() -> None:
-    assert call_due("大樂透", datetime(2026, 8, 26, 2, 38, tzinfo=TAIPEI)) is True
-    assert call_due("大樂透", datetime(2026, 8, 26, 14, 38, tzinfo=TAIPEI)) is False
-    assert call_due("大樂透", datetime(2026, 8, 26, 14, 43, tzinfo=TAIPEI)) is False
+    assert call_due("大樂透", datetime(2026, 8, 26, 20, 23, tzinfo=TAIPEI)) is True
+    assert call_due("大樂透", datetime(2026, 8, 26, 20, 24, tzinfo=TAIPEI)) is False
     assert call_due("大樂透", datetime(2026, 8, 28, 18, 53, tzinfo=TAIPEI)) is True
 
 

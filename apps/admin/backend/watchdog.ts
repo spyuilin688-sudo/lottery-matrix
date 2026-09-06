@@ -44,12 +44,14 @@ const JOB_STALE_MS = 20 * 60 * 1000;
 const ANALYSIS_STALE_MS = 45 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const RECOVERY_LEASE_SECONDS = 20 * 60;
-const PHYSICAL_TICK_MINUTES = 6;
+const PHYSICAL_TICK_MINUTES = 10;
 const WATCHDOG_PHASES = [
-  { first: 6, last: 300, every: 6 },
-  { first: 310, last: 900, every: 10 },
-  { first: 930, last: 1_440, every: 30 },
+  { first: 10, last: 90, every: 10 },
+  { first: 120, last: 300, every: 30 },
+  { first: 360, last: 1_380, every: 60 },
+  { first: 1_410, last: 1_410, every: 30 },
 ] as const;
+const MARKSIX_SATURDAY_RECOVERY_LIMIT_MINUTES = 90;
 
 export function buildWatchdogPhasePlan(): number[] {
   return WATCHDOG_PHASES.flatMap(({ first, last, every }) => {
@@ -100,7 +102,20 @@ function isDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
   const value = weekday(day);
   if (lottery === '今彩539') return value >= 1 && value <= 6;
   if (lottery === '大樂透') return value === 2 || value === 5;
+  if (lottery === '六合彩') return value === 0 || value === 2 || value === 4 || value === 6;
   return true;
+}
+
+function checkpointAllowed(
+  lottery: WatchdogLottery,
+  cycleDay: LocalDay,
+  checkpoint: number,
+): boolean {
+  return !(
+    lottery === '六合彩'
+    && weekday(cycleDay) === 6
+    && checkpoint > MARKSIX_SATURDAY_RECOVERY_LIMIT_MINUTES
+  );
 }
 
 function zonedParts(value: Date, timeZone: string): LocalDay & { hour: number; minute: number } {
@@ -163,6 +178,7 @@ export function expectedDrawDateForDueWindow(
     const [hour, minute] = callClock(lottery, cycleDay);
     const base = taipeiInstant(cycleDay, hour, minute);
     const hasDueCheckpoint = WATCHDOG_CHECKPOINT_MINUTES.some((checkpoint) => {
+      if (!checkpointAllowed(lottery, cycleDay, checkpoint)) return false;
       const dueAt = base + checkpoint * 60_000;
       return dueAt > previousTick && dueAt <= currentMinute;
     });
@@ -171,6 +187,13 @@ export function expectedDrawDateForDueWindow(
     }
   }
   return null;
+}
+
+function minimumExpectedDrawDate(lottery: WatchdogLottery, expectedDate: string): string {
+  if (lottery !== '六合彩') return expectedDate;
+  const [year, month, day] = expectedDate.split('-').map(Number);
+  const cycleDay = { year, month, day };
+  return weekday(cycleDay) === 0 ? dateText(addDays(cycleDay, -1)) : expectedDate;
 }
 
 function isOlderThan(value: string | null | undefined, now: Date, ageMs: number): boolean {
@@ -196,10 +219,11 @@ export function planWatchdogActions(
     if (!expectedDate) continue;
     const crawlerTarget = snapshot.lottery === '天天樂' ? 'github' : 'railway';
     const drawDate = snapshot.latestDraw?.drawDate;
+    const minimumDrawDate = minimumExpectedDrawDate(snapshot.lottery, expectedDate);
     const staleDraw = (
       !drawDate
       || !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)
-      || drawDate < expectedDate
+      || drawDate < minimumDrawDate
     );
     if (staleDraw) {
       const jobHeartbeat = snapshot.job?.updatedAt ?? snapshot.job?.startedAt;

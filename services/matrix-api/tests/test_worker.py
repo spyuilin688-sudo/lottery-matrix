@@ -128,6 +128,12 @@ class Fantasy5ScheduledSource(Source):
         return rows if limit is None else rows[:limit]
 
 
+class MarkSixSundaySource(Source):
+    def fetch(self, lottery: str) -> dict:
+        self.events.append("latest")
+        return self._draw(221, 7, "2026-08-30")
+
+
 class CalendarHistorySource(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
@@ -342,10 +348,21 @@ def test_worker_cleans_expired_artifacts_before_running() -> None:
 
 
 def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None:
+    class TuesdayMarkSixSource(Source):
+        def fetch(self, lottery: str) -> dict:
+            self.events.append("latest")
+            return self._draw(220, 7, "2026-08-25")
+
     repository = InMemoryAnalysisRepository()
     run_due_worker("今彩539", repository, Source(), _builders([]))
     with pytest.raises(RuntimeError, match="builder failed"):
-        run_due_worker("六合彩", repository, Source(), _builders([], failing="tianyan"))
+        run_due_worker(
+            "六合彩",
+            repository,
+            TuesdayMarkSixSource(),
+            _builders([], failing="tianyan"),
+            draw_date="2026-08-25",
+        )
     assert repository.read_completed_artifact("今彩539", "000000220", "status") == {"kind": "status"}
     assert repository.get_progress("六合彩", "000000220")["status"] == "failed"
 
@@ -580,6 +597,62 @@ def test_recovery_worker_can_retry_a_missing_draw_after_primary_call() -> None:
 
     assert result["status"] == "not-acquired"
     assert source.events == ["history-all", "latest"]
+
+
+def test_marksix_primary_scheduler_does_not_crawl_on_sunday() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = MarkSixSundaySource()
+
+    result = run_scheduled_worker(
+        "六合彩",
+        datetime(2026, 8, 30, 21, 33, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+    )
+
+    assert result["status"] == "not-due"
+    assert source.events == []
+
+
+def test_marksix_sunday_recovery_accepts_the_sunday_draw() -> None:
+    repository = InMemoryAnalysisRepository()
+    source = MarkSixSundaySource()
+
+    result = run_scheduled_worker(
+        "六合彩",
+        datetime(2026, 8, 30, 21, 43, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        allow_recovery_crawl=True,
+    )
+
+    assert result["status"] == "complete"
+    assert repository.list_draws("六合彩", 1)[0]["drawDate"] == "2026-08-30"
+
+
+def test_marksix_sunday_recovery_stops_when_saturday_is_already_stored() -> None:
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw({
+        "lottery": "六合彩",
+        "period": "000000220",
+        "drawDate": "2026-08-29",
+        "numbers": ["01", "02", "03", "04", "05", "06", "07"],
+    })
+    source = MarkSixSundaySource()
+
+    result = run_scheduled_worker(
+        "六合彩",
+        datetime(2026, 8, 30, 21, 43, tzinfo=TAIPEI),
+        repository,
+        source,
+        _builders([]),
+        allow_recovery_crawl=True,
+    )
+
+    assert result["status"] == "complete"
+    assert source.events == []
 
 
 def test_fantasy5_accepts_previous_california_date_for_taipei_cycle() -> None:
