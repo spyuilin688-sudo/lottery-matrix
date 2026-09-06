@@ -1,6 +1,6 @@
 .managementToolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px auto;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(64px, max-content);
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
@@ -141,7 +141,7 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .metric { min-height: 60px; padding: 8px; }
   .panel { padding: 10px; }
   .formCard { padding: 10px; }
-  .managementToolbar { grid-template-columns: minmax(0, 1fr) 94px auto; gap: 6px; padding: 6px; }
+  .managementToolbar { grid-template-columns: minmax(0, 1fr) 92px minmax(64px, max-content); gap: 6px; padding: 6px; }
   .managementToolbar span { grid-column: auto; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
@@ -206,3 +206,5 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .nameDialog h2 { margin-bottom: 10px; font-size: 17px; }
 .nameDialog input { padding: 6px 8px; }
 @media (max-width: 760px) { .nameDialog { padding: 12px; } }
+
+.managementCount { min-width: 64px; text-align: right; font-variant-numeric: tabular-nums; }

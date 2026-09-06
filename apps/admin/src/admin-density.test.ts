@@ -19,8 +19,9 @@ describe('admin compact density', () => {
   it('separates overview groups with 8px grid gaps and keeps the record count inline', () => {
     expect(operationsCss).toMatch(/\.cards \{ gap: 8px;/);
     expect(operationsCss).toMatch(/\.metricDivider \{ grid-column: 1 \/ -1; height: 1px; margin: 0;/);
-    expect(operationsCss).toContain('grid-template-columns: minmax(0, 1fr) 94px auto');
+    expect(operationsCss).toContain('grid-template-columns: minmax(0, 1fr) 92px minmax(64px, max-content)');
     expect(operationsCss).toContain('.managementToolbar span { grid-column: auto; }');
+    expect(operationsCss).toMatch(/\.managementCount \{[^}]*min-width: 64px;[^}]*text-align: right;/);
   });
 
   it('keeps user and subscription search cards compact', () => {

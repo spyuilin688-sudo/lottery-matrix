@@ -35,9 +35,15 @@ function TransferPushControl({ client }: { client: TransferPushApi }) {
     } catch (cause) { setError(cause instanceof Error ? cause.message : '通知設定失敗，請重試。'); }
     finally { setBusy(false); }
   };
+  const summaryState = busy ? '確認中' : unavailable ? '無法使用' : error ? '設定需重試' : enabled ? '已啟用' : '未啟用';
   return <section className="adminTransferPush" aria-label="新轉帳手機通知">
-    <div className="adminTransferPushRow"><strong>手機通知</strong><button type="button" disabled={busy || Boolean(unavailable)} aria-busy={busy} onClick={toggle}>{enabled ? '停用此裝置通知' : '啟用此裝置通知'}</button></div>
-    <p>新轉帳申請通知此裝置，關閉後台或登出後仍可接收。僅提醒，不含轉帳資料。</p>
-    <p className="adminTransferPushStatus" role={error ? 'alert' : 'status'}>{unavailable || error || notice || (busy ? '正在確認通知狀態…' : enabled ? '此裝置已啟用通知。' : '此裝置尚未啟用通知。')}</p>
+    <details className="adminTransferPushDetails">
+      <summary><strong>手機通知</strong><span className={error ? 'pushSummaryState pushSummaryError' : 'pushSummaryState'} role="status">{summaryState}</span></summary>
+      <div className="adminTransferPushBody">
+        <p>新轉帳申請通知此裝置，關閉後台或登出後仍可接收。僅提醒，不含轉帳資料。</p>
+        <p className="adminTransferPushStatus" role={error ? 'alert' : 'status'}>{unavailable || error || notice || (busy ? '正在確認通知狀態…' : enabled ? '此裝置已啟用通知。' : '此裝置尚未啟用通知。')}</p>
+        <div className="adminTransferPushRow"><button type="button" disabled={busy || Boolean(unavailable)} aria-busy={busy} onClick={toggle}>{enabled ? '停用此裝置通知' : '啟用此裝置通知'}</button></div>
+      </div>
+    </details>
   </section>;
 }
