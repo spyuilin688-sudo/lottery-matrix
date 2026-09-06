@@ -62,9 +62,12 @@ export async function registerLinePwaClient(
     try {
       const callbackUrl = new URL(event.data.url, browser.location.origin);
       if (callbackUrl.origin !== browser.location.origin) return;
-      browser.location.replace(callbackUrl.href);
+      try { browser.focus(); } catch { /* Best effort; browser may deny focus. */ }
+      if (browser.location.href !== callbackUrl.href) {
+        browser.location.replace(callbackUrl.href);
+      }
     } catch {
-      // The PWA can still be focused by the service worker if navigation is blocked.
+      // The service worker can still navigate/focus the PWA directly.
     }
   };
 
