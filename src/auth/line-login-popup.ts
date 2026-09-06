@@ -208,9 +208,18 @@ export async function finishLineLoginPopup(
       return false;
     }
     const providerToken = params.get('provider_token');
-    const session = authError ? null : await withDeadline(
-      () => getClient().auth.getSession(), { timeoutMs: CALLBACK_TIMEOUT_MS },
-    ).then(({ data, error }) => error ? null : data.session);
+    const session = authError ? null : await withDeadline(async () => {
+      if (!params.has('access_token')) return getClient().auth.getSession();
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (!access_token || !refresh_token) return { data: { session: null }, error: null };
+      // Auth's implicit-URL parser clears location.hash by navigating, adding a
+      // second history entry. A fresh tab opened by native LINE then loses its
+      // script-close eligibility. Replace the URL before creating the client,
+      // and let setSession validate/import the captured tokens without navigation.
+      browser.history.replaceState(browser.history.state, '', `${browser.location.pathname}${browser.location.search}`);
+      return getClient().auth.setSession({ access_token, refresh_token });
+    }, { timeoutMs: CALLBACK_TIMEOUT_MS }).then(({ data, error }) => error ? null : data.session);
     if (session) rememberLineProviderToken(providerToken);
     clearAttempt(browser);
     return await new Promise<boolean>((resolve) => {

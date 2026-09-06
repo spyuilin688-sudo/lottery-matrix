@@ -58,14 +58,14 @@ test("方案輪播與付款區保留 25px 與 16px 間距及鄰卡露出", () =>
   assert.match(ownerCss, /--pro-plans-checkout-inline:\s*16px;/);
   assert.match(
     ownerCss,
-    /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*var\(--pro-plans-plan-inline\);/s,
+    /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*13px;/s,
   );
-  assert.match(ownerCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+calc\(100%\s*-\s*24px\);/s);
+  assert.match(ownerCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+100%;/s);
   assert.match(
     ownerCss,
     /\.pro-plans-screen\s+\.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);/s,
   );
-  assert.match(ownerCss, /flex:\s*0\s+0\s+calc\(100%\s*-\s*24px\)/);
+  assert.match(ownerCss, /flex:\s*0\s+0\s+100%/);
 });
 
 test("Pro 方案水平幾何只由專屬 layout 檔控制", () => {

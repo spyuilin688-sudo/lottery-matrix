@@ -81,9 +81,9 @@ for (const width of MOBILE_WIDTHS) {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     })).toEqual({
-      // 25px carousel gutter plus half the 24px card reduction for neighbor peeks.
-      cardLeft: 37,
-      cardRight: 37,
+      // Full-width cards retain 25px visible gutters; 13px gaps reveal 12px neighbors.
+      cardLeft: 25,
+      cardRight: 25,
       checkoutLeft: 16,
       checkoutRight: 16,
       planOuterShadow: false,
