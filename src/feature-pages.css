@@ -2199,6 +2199,11 @@ opacity: .30; box-shadow: none;
 .profile-info-screen .detail-card ul {
   gap: 6px;
 }
+.service-info-document > section + section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #30271c;
+}
 .profile-screen .panel {
   border-color: rgba(177, 129, 43, .72);
   border-radius: 10px;
