@@ -71,6 +71,7 @@ const connectionStatus = createConnectionStatus({
   supabase,
   loadConfig: () => getSupabaseConfig(secrets),
   getWorkerStatus: () => workerApi.getStatus(),
+  loadWorkerUrl: async () => (await getWorkerConfig(secrets))?.baseUrl,
   loadWatchdogStatus: () => watchdogStatus.load(),
   loadGithubToken: () => getGithubActionsToken(secrets),
 });

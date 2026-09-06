@@ -197,6 +197,8 @@ describe('system status evidence presentation', () => {
   };
 
   it.each([
+    ['query', '查詢正常', 'good'],
+    ['no-sample', '缺少測試資料', 'limited'],
     ['live', '連線正常', 'good'],
     ['registered', 'API 已建立', 'limited'],
     ['options', '連線正常', 'limited'],
@@ -209,7 +211,7 @@ describe('system status evidence presentation', () => {
   });
 
   it('preserves limited evidence for older backend payloads', () => {
-    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: '已在資料庫找到此 API，尚未執行其功能。' });
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' });
     expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: '連線正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, id: 'appdeploy-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });

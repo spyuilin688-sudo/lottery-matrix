@@ -17,6 +17,34 @@ const healthyWorkerStatus: WorkerStatus = {
 };
 
 describe('connection status', () => {
+  it('keeps individual query failures separate from healthy host and registry evidence', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes('/latest/')) {
+        const lottery = decodeURIComponent(url.pathname.split('/').pop()!);
+        if (lottery === '六合彩') return response({}, 503);
+        return response({ item: { period: '123', numbers: lottery === '大樂透' ? ['01','02','03','04','05','06','07'] : ['01','02','03','04','05'] } });
+      }
+      if (url.pathname.endsWith('matrix_explore_list')) {
+        const body = JSON.parse(url.searchParams.get('p_request')!);
+        return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: 'v1', total: 0, items: [] });
+      }
+      return response({ paths: { '/rpc/member_profile': { post: {} } } });
+    });
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
+      loadWorkerUrl: async () => 'https://worker.test', fetcher,
+      getWorkerStatus: async () => healthyWorkerStatus,
+    });
+    const result = await status.get();
+    expect(result.items.find((i) => i.id === 'railway-health')).toMatchObject({ ok: true });
+    expect(result.items.find((i) => i.id === 'railway-latest')).toMatchObject({ ok: false, checkEvidence: 'query', error: expect.stringContaining('六合彩') });
+    expect(result.items.find((i) => i.id === 'supabase-rpc-matrix_explore_list')).toMatchObject({ ok: true, checkEvidence: 'query' });
+    expect(result.items.find((i) => i.id === 'supabase-rpc-matrix_explore_validation')).toMatchObject({ ok: true, checkEvidence: 'no-sample' });
+    expect(result.items.find((i) => i.id === 'supabase-rpc-member_profile')).toMatchObject({ ok: true, checkEvidence: 'registered' });
+  });
+
   it('returns every current API with its location and endpoint plus the four jobs', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
       ? response({ paths: { '/rpc/redeem_activation_code': { post: {} } } })
@@ -320,7 +348,7 @@ describe('connection status', () => {
     expect(functionCalls.every(([, init]) => init?.body === undefined)).toBe(true);
   });
 
-  it('uses one OpenAPI document to confirm write RPC presence without invoking any RPC', async () => {
+  it('uses one OpenAPI document to confirm write RPC presence without invoking write RPCs', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
       ? response({ paths: {
         '/rpc/claim_matrix_watchdog_lease': { post: {} },
@@ -338,7 +366,7 @@ describe('connection status', () => {
     expect(result.items.find((item) => item.id === 'supabase-rpc-claim_matrix_watchdog_lease')).toMatchObject({ ok: true });
     expect(result.items.find((item) => item.id === 'supabase-rpc-notification_dispatch_mark_sent')).toMatchObject({ ok: true });
     expect(fetcher.mock.calls.filter(([input]) => String(input).endsWith('/rest/v1/'))).toHaveLength(1);
-    expect(fetcher.mock.calls.some(([input]) => String(input).includes('/rest/v1/rpc/'))).toBe(false);
+    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('/rest/v1/rpc/')).every(([input]) => new URL(String(input)).pathname === '/rest/v1/rpc/matrix_explore_list')).toBe(true);
   });
 
   it('inherits Railway recovery status without posting to recovery', async () => {

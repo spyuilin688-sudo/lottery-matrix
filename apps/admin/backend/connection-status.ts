@@ -2,12 +2,14 @@ import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } f
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
+import { createApiQueryChecks, queryCheckIds } from './api-query-checks';
 
 type Row = Record<string, unknown>;
 type Dependencies = {
   supabase: { selectRows<T = unknown>(table: string, query: string): Promise<T[]> };
   loadConfig: () => Promise<SupabaseConfig>;
   getWorkerStatus: () => Promise<WorkerStatus>;
+  loadWorkerUrl?: () => Promise<string | undefined>;
   loadWatchdogStatus?: () => Promise<WatchdogStatus | null>;
   loadGithubToken?: () => Promise<string | null>;
   fetcher?: typeof fetch;
@@ -155,11 +157,12 @@ export function createConnectionStatus(dependencies: Dependencies) {
       if (!document.paths || typeof document.paths !== 'object' || Array.isArray(document.paths)) throw new Error('OPENAPI_INVALID');
       return new Set(Object.keys(document.paths));
     });
-    return { config, worker, openApiPaths };
+    const query = createApiQueryChecks({ loadWorkerUrl: () => withDeadline(async () => dependencies.loadWorkerUrl?.()), loadSupabaseConfig: config, fetcher, timeoutMs: requestTimeoutMs });
+    return { config, worker, openApiPaths, query };
   };
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
-    const checkEvidence: ApiCheckEvidence = definition.endpoint.startsWith('/functions/v1/') ? 'options'
+    const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query' : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'openapi' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
       : definition.id === 'appdeploy-watchdog-heartbeat' ? 'reported' : 'live';
@@ -174,7 +177,10 @@ export function createConnectionStatus(dependencies: Dependencies) {
     });
     try {
       let detail: unknown;
-      if (definition.id === 'admin-api') {
+      if (queryCheckIds.has(definition.id)) {
+        const result = await shared.query(definition.id);
+        return { ...finish(result.ok, { samples: result.samples }, result.error), checkEvidence: result.ok && result.skipped ? 'no-sample' : 'query' };
+      } else if (definition.id === 'admin-api') {
         const response = await fetchWithDeadline(`${adminUrl}${definition.endpoint}`, { cache: 'no-store', redirect: 'error' });
         if (!response.ok) throw new Error('ADMIN_API_UNAVAILABLE');
         detail = { status: response.status };

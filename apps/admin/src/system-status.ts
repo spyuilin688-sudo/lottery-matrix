@@ -6,7 +6,7 @@ export type SystemStatusItem = {
   location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'service';
-  checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported';
+  checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
   ok: boolean;
   checkedAt: string;
   responseMs: number;
@@ -53,15 +53,20 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
         : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
           : item.id === 'appdeploy-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
   );
+  const memberRead = /(?:matrix_(?:tianyan|tiangong)_(?:list|validation)|matrix_custom_status_list|member_(?:referral_summary|profile|notification_settings_get|pending_transfer_request|payment_history_get|push_subscription_status))$/.test(item.id);
   const presentations = {
+    query: { label: '查詢正常', tone: 'good', scope: '四彩種均完成實際查詢，回傳資料格式正常。' },
+    'no-sample': { label: '缺少測試資料', tone: 'limited', scope: '探索查詢正常，但部分彩種沒有符合條件的結果，本次無法完整檢查展開資料。' },
     live: { label: '連線正常', tone: 'good', scope: '此項連線或資料讀取檢查已通過。' },
-    registered: { label: 'API 已建立', tone: 'limited', scope: '已在資料庫找到此 API，尚未執行其功能。' },
-    options: { label: '連線正常', tone: 'limited', scope: '此 API 有回應；這次只檢查連線，未執行其功能。' },
-    inherited: { label: '主機正常', tone: 'limited', scope: 'Railway 主機與排程查詢有回應；此 API 尚未個別檢查。' },
+    registered: { label: 'API 已建立', tone: 'limited', scope: memberRead ? '此查詢需要會員登入；自動檢查僅確認 API 已建立，沒有讀取會員資料。' : 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' },
+    options: { label: '連線正常', tone: 'limited', scope: '已收到連線回應；自動檢查不會派送通知、處理事件或執行登出。' },
+    inherited: { label: '主機正常', tone: 'limited', scope: '主機與排程查詢正常；自動檢查不會啟動資料更新或復原工作。' },
     reported: { label: '執行正常', tone: 'good', scope: '最近的執行紀錄正常；這次檢查沒有重新執行工作。' },
   } as const;
   const presentation = presentations[evidence];
   const failedScopes = {
+    query: '四彩種查詢未全部通過，原因顯示於下方。',
+    'no-sample': '本次未完成查詢驗證。',
     live: '本次連線或資料讀取檢查失敗。',
     registered: '這次無法確認資料庫內是否有此 API。',
     options: '這次連線檢查失敗，未執行此 API 的功能。',
