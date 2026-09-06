@@ -1081,13 +1081,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   border-radius: 0;
   background: transparent;
   color: #b8b9b8;
-  font-size: 2.72cqw;
+  font-size: 3.08cqw;
   font-weight: 400;
   line-height: 3.52cqw;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 2.55cqw; }
+.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 2.8cqw; }
 .profile-logout {
   position: absolute;
   left: 78.44cqw;
