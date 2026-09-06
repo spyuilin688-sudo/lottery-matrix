@@ -3,6 +3,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { AdminTransferPush } from './AdminTransferPush';
 import { enableTransferPush, currentTransferPush, disableTransferPush, type TransferPushApi } from './admin-transfer-push';
@@ -58,7 +60,7 @@ it('worker ignores payload navigation/data and opens fixed same-origin admin URL
   const listeners: Record<string, (event: any) => void> = {};
   const showNotification = vi.fn(async () => {}); const openWindow = vi.fn(async () => {});
   const worker = { addEventListener: (type: string, handler: (event: any) => void) => { listeners[type] = handler; }, registration: { scope: 'https://admin.example/backoffice/', showNotification }, clients: { matchAll: async () => [{ url: 'https://evil.example/backoffice/', navigate: vi.fn(), focus: vi.fn() }], openWindow } };
-  vm.runInNewContext(readFileSync('public/admin-push-sw.js', 'utf8'), { self: worker, URL });
+  vm.runInNewContext(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../public/admin-push-sw.js'), 'utf8'), { self: worker, URL });
   let done: Promise<unknown> | undefined;
   listeners.push({ data: { json: () => ({ url: 'https://evil.example', body: 'private financial information' }) }, waitUntil: (value: Promise<unknown>) => { done = value; } }); await done;
   expect(showNotification).toHaveBeenCalledWith('新轉帳申請', expect.objectContaining({ body: '有新的轉帳申請待處理，請登入後台查看。' }));
