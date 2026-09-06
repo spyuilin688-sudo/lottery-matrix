@@ -79,7 +79,9 @@ export function createSupabaseTransport(
       if (!response.ok) {
         throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
       }
-      if (response.status === 204) return undefined as T;
+      // PostgREST minimal writes can return 201 with an empty body, not only 204.
+      const minimal = headers.Prefer.split(',').some((value) => value.trim() === 'return=minimal');
+      if (response.status === 204 || minimal) return undefined as T;
       return await response.json() as T;
     },
     async supabaseRequest<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
