@@ -63,7 +63,12 @@
 .notifications-screen-v2 .notification-list {
   display: grid;
   margin-inline: calc(var(--notification-list-inline) - var(--notification-bulk-inline));
-  gap: 12px;
+  gap: 8px;
+}
+
+/* Preserve the existing 12px spacing before system notifications. */
+.notifications-screen-v2 .notification-list > .notification-system-group {
+  margin-block-start: 4px;
 }
 
 .notifications-screen-v2 :is(.notification-group, .notification-system-group) {
