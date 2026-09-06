@@ -29,6 +29,10 @@
   padding-top: 8px;
 }
 
+.profile-screen > .feature-brand-header.integrated-title-header {
+  margin-bottom: 1px;
+}
+
 .feature-brand-row {
   position: relative;
   display: grid;
