@@ -68,11 +68,7 @@ export function MatrixStatusTriggerCard({
               <article className="matrix-status-locked-road" key={road.id}>
                 <div className="road-result-row" aria-label="Matrix Pro 鎖定版路">
                   <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
-                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
-                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
-                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
-                  <strong className="numeric-text">{road.result.join("、")}</strong>
-                  <span className="matrix-status-locked-cell">🔒 Matrix Pro</span>
+                  <strong className="numeric-text">{road.result.join(".")}</strong>
                 </div>
               </article>
             );
@@ -96,7 +92,7 @@ export function MatrixStatusTriggerCard({
                 <span className="result-number numeric-text">{road.lockedNumber}</span>
                 <span className="result-period"><span>下</span><span className="numeric-text">{road.predictionDistance}</span><span>期</span></span>
                 <span className="result-consecutive"><span>準</span><span className="numeric-text">{road.streak}</span><span>進</span><span className="numeric-text">{road.streak + 1}</span></span>
-                <strong className="numeric-text">{road.result.join("、")}</strong>
+                <strong className="numeric-text">{road.result.join(".")}</strong>
                 <span className="road-type-toggle">
                   <span>{road.algorithmType === "複合" ? road.algorithmType : road.algorithmType + "版路"}</span>
                   <ChevronDownIcon data-open={expanded} aria-hidden="true" />

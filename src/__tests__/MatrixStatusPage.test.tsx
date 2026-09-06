@@ -57,10 +57,10 @@ beforeEach(() => {
       id: 'card-one', ruleId: 'RESONANCE-1', status: 'RESONANCE', hitType: 'one-code', result: ['08'],
       sameCodeRoadCount: null, sameCodeRoadCountLocked: true,
       roads: [{
-        id: 'road', locked: false, result: ['08'], algorithmType: '加減', numberOrder: '依號碼由小到大排序',
+        id: 'road', locked: false, result: ['07', '09'], algorithmType: '加減', numberOrder: '依號碼由小到大排序',
         streak: 7, predictionDistance: 1, position: 1, lockedNumber: '05', explorePeriods: 2,
         validationItemId: 'source-road',
-      }, { id: 'road-locked', locked: true, result: ['08'], explorePeriods: 13 }],
+      }, { id: 'road-locked', locked: true, result: ['07', '09'], explorePeriods: 13 }],
     }, {
       id: 'card-two', ruleId: 'RESONANCE-4', status: 'RESONANCE', hitType: 'one-code', result: ['09'],
       sameCodeRoadCount: 1, sameCodeRoadCountLocked: false,
@@ -83,7 +83,7 @@ test('狀態頁以單一結果框呈現所有同碼群組，並只顯示一份�
   const roadRow = await screen.findByRole('button', { name: '展開版路 road' });
   expect(roadRow).toHaveTextContent('順球1');
   expect(screen.getByText('05')).toBeTruthy();
-  expect(screen.getAllByText('08').length).toBeGreaterThan(0);
+  expect(roadRow.children[4]).toHaveTextContent('07.09');
   expect(screen.getByText('2 組')).toBeTruthy();
   const resultTable = screen.getByTestId('matrix-status-trigger-table');
   expect(screen.getAllByTestId('matrix-status-trigger-group')).toHaveLength(2);
@@ -91,11 +91,9 @@ test('狀態頁以單一結果框呈現所有同碼群組，並只顯示一份�
   expect(within(firstGroup).getByText('單碼結果')).toBeInTheDocument();
   expect(within(firstGroup).getByText('共振')).toBeInTheDocument();
   const lockedRow = firstGroup.querySelector('.matrix-status-locked-road .road-result-row');
-  expect(lockedRow?.children).toHaveLength(6);
-  for (const index of [0, 1, 2, 3, 5]) {
-    expect(lockedRow?.children[index]).toHaveTextContent('🔒 Matrix Pro');
-  }
-  expect(lockedRow?.children[4]).toHaveTextContent('08');
+  expect(lockedRow?.children).toHaveLength(2);
+  expect(lockedRow?.children[0]).toHaveTextContent('🔒 Matrix Pro');
+  expect(lockedRow?.children[1]).toHaveTextContent('07.09');
   for (const heading of ['位置', '號碼', '預測期', '連準次數', '預測', '版路類型']) {
     expect(within(resultTable).getAllByText(heading)).toHaveLength(1);
   }
