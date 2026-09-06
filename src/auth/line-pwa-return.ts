@@ -82,8 +82,9 @@ export async function registerLinePwaClient(
 export async function requestLinePwaReturn(
   browser: Window = window,
   serviceWorker: LineServiceWorkerBridge = navigator.serviceWorker,
+  callbackDetected = hasLineOAuthCallback(browser),
 ) {
-  if (isPwaDisplayMode(browser) || !hasLineOAuthCallback(browser)) return false;
+  if (isPwaDisplayMode(browser) || !callbackDetected) return false;
 
   let registration: Awaited<LineServiceWorkerBridge['ready']>;
   try {
@@ -97,11 +98,11 @@ export async function requestLinePwaReturn(
 
   return await new Promise<boolean>((resolve) => {
     let settled = false;
-    const timeout = window.setTimeout(() => finish(false), HANDOFF_TIMEOUT_MS);
+    const timeout = browser.setTimeout(() => finish(false), HANDOFF_TIMEOUT_MS);
     const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
-      window.clearTimeout(timeout);
+      browser.clearTimeout(timeout);
       serviceWorker.removeEventListener('message', receive);
       resolve(ok);
     };
