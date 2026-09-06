@@ -58,6 +58,7 @@ async function bootstrap() {
       );
       if (handedOff) {
         root.textContent = '登入成功，正在返回樂彩 Matrix…';
+        try { window.close(); } catch { /* Browser may refuse closing a top-level tab. */ }
         return;
       }
     }
