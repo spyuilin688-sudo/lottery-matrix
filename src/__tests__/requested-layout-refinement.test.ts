@@ -109,19 +109,22 @@ describe("requested responsive layout refinement", () => {
     expect(matrixCss).toMatch(/\.matrix-explore-main-screen \.feature-body\s*\{[^}]*overflow-x:\s*clip;/s);
   });
 
-  it("uses eight-pixel profile rhythm and six-pixel card top padding", () => {
+  it("keeps eight-pixel profile rhythm with A+B frame insets and existing menu padding", () => {
     const style = mountStyles(`${readCss("src/feature-pages.css")}\n${readCss("src/pro-plans-carousel-peek.css")}`);
     style.dataset.layoutContract = "profile";
     document.body.innerHTML = `
       <main class="profile-screen"><div class="feature-body">
-        <section class="panel profile-card"></section>
-        <section class="panel subscription-status-card"></section>
+        <section class="panel membership-card profile-card"></section>
+        <section class="panel membership-card subscription-status-card"></section>
         <section class="panel profile-menu"></section>
       </div></main>`;
 
     expect(getComputedStyle(document.querySelector(".profile-screen .feature-body")!).gap).toBe("8px");
-    expect(getComputedStyle(document.querySelector(".profile-card")!).paddingTop).toBe("6px");
-    expect(getComputedStyle(document.querySelector(".subscription-status-card")!).paddingTop).toBe("6px");
+    for (const card of document.querySelectorAll(".membership-card")) {
+      expect(getComputedStyle(card).paddingTop).toBe("2px");
+      expect(getComputedStyle(card).borderTopWidth).toBe("12px");
+      expect(getComputedStyle(card).borderImage).toContain("membership-frame.png");
+    }
     expect(getComputedStyle(document.querySelector(".profile-menu")!).paddingTop).toBe("6px");
   });
 

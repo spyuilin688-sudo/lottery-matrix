@@ -14,7 +14,8 @@ LINE 頭像、暱稱、方案、到期日與剩餘天數仍使用既有資料。
 
 ## 本次重新驗證
 
-- 132 項 Vitest：會員頁、相關版面、訂閱方案、正式入口與 LINE auth 測試通過。
+- 148 項 Vitest：會員頁、相關版面、訂閱方案、正式入口與 LINE auth 測試通過。
+- 首次完整 CI 的 1,172 項 Vitest 中，僅原有會員卡 6px padding 斷言失敗；更新測試範例使其包含正式卡片的 `membership-card` class，驗證新框線 inset 並保留選單 6px 與區段 8px 斷言，該測試檔 16 項通過。
 - 31 項 Node 檢查：會員卡、既有 UI、Premium contract、方案卡 19px 與付款區 16px owner 通過。
 - `npm run build:pages` 通過，包含 TypeScript 與 27 個受保護 runtime 檔案完整性檢查。
 - 新副本瀏覽器：390px 兩卡為 358×100／358×179；320px 為 288×100／288×195，兩種寬度皆無水平溢出、日期可讀。
