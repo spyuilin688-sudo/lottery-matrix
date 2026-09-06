@@ -3,6 +3,8 @@ import {
   hasLineOAuthCallback,
   registerLinePwaClient,
   requestLinePwaReturn,
+  registerLinePwaLoginAttempt,
+  requestLinePwaFocus,
 } from '../line-pwa-return';
 
 const ORIGIN = 'https://matrixlottery.idv.tw';
@@ -80,10 +82,9 @@ describe('LINE PWA browser return handoff', () => {
     const callback = browserWindow(`${ORIGIN}/?code=oauth-code`);
 
     const resultPromise = requestLinePwaReturn(callback, serviceWorker);
-    await Promise.resolve();
-    expect(serviceWorker.controller.postMessage).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(serviceWorker.controller.postMessage).toHaveBeenCalledWith({
       type: 'matrix-line-pwa-return-request',
-    });
+    }));
 
     serviceWorker.emit({ type: 'matrix-line-pwa-return-result', ok: true });
 
@@ -96,5 +97,52 @@ describe('LINE PWA browser return handoff', () => {
 
     await expect(requestLinePwaReturn(ordinaryPage, serviceWorker, false)).resolves.toBe(false);
     expect(serviceWorker.controller.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('registers the popup attempt with the PWA service worker before OAuth leaves', async () => {
+    const serviceWorker = serviceWorkerStub();
+    const pwa = browserWindow(`${ORIGIN}/`, true);
+    Object.assign(pwa.navigator, { serviceWorker });
+    const attemptId = '11111111-1111-4111-8111-111111111111';
+    const stop = await registerLinePwaLoginAttempt(attemptId, pwa);
+    expect(serviceWorker.active.postMessage).toHaveBeenCalledWith({ type: 'matrix-line-pwa-ready', attemptId });
+    serviceWorker.active.postMessage.mockClear();
+    serviceWorker.emit({ type: 'matrix-line-pwa-login-ping', attemptId: 'other' });
+    expect(serviceWorker.active.postMessage).not.toHaveBeenCalled();
+    serviceWorker.emit({ type: 'matrix-line-pwa-login-ping', attemptId });
+    expect(serviceWorker.active.postMessage).toHaveBeenCalledWith({ type: 'matrix-line-pwa-ready', attemptId });
+    stop?.();
+    serviceWorker.active.postMessage.mockClear();
+    serviceWorker.emit({ type: 'matrix-line-pwa-login-ping', attemptId });
+    expect(serviceWorker.active.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('asks the worker to foreground the same attempt and ignores another attempt response', async () => {
+    const serviceWorker = serviceWorkerStub();
+    const attemptId = '11111111-1111-4111-8111-111111111111';
+    const callback = browserWindow(`${ORIGIN}/?matrix_line_return=${attemptId}#access_token=callback-token`);
+    Object.assign(callback.navigator, { serviceWorker });
+    const result = requestLinePwaFocus(attemptId, callback);
+    await vi.waitFor(() => expect(serviceWorker.active.postMessage).toHaveBeenCalledWith({ type: 'matrix-line-pwa-focus-request', attemptId }));
+    let settled = false;
+    void result.then(() => { settled = true; });
+    serviceWorker.emit({ type: 'matrix-line-pwa-focus-result', attemptId: 'other', ok: true });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(serviceWorker.active.postMessage).toHaveBeenCalledWith({ type: 'matrix-line-pwa-focus-request', attemptId });
+    serviceWorker.emit({ type: 'matrix-line-pwa-focus-result', attemptId, ok: true });
+    await expect(result).resolves.toBe(true);
+  });
+
+  it('does not hang the callback when service worker readiness never settles', async () => {
+    vi.useFakeTimers();
+    try {
+      const serviceWorker = serviceWorkerStub();
+      serviceWorker.ready = new Promise(() => {});
+      const callback = browserWindow(`${ORIGIN}/?code=callback-code`);
+      const result = requestLinePwaReturn(callback, serviceWorker);
+      await vi.advanceTimersByTimeAsync(2_500);
+      await expect(result).resolves.toBe(false);
+    } finally { vi.useRealTimers(); }
   });
 });

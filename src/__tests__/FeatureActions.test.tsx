@@ -12,6 +12,11 @@ const matrixTicket = vi.hoisted(() => ({ download: vi.fn() }));
 const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 const memberReferral = vi.hoisted(() => ({ fetchSummary: vi.fn(), submit: vi.fn() }));
 
+vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
+  getSession: async () => ({ data: { session: { access_token: 'member-session' } }, error: null }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+} }) }));
+
 vi.mock("../lottery-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lottery-api")>()),
   fetchMatrixCardManifest: matrixCards.fetchMatrixCardManifest,

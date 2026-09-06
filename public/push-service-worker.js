@@ -18,9 +18,14 @@ const LINE_PWA_IDENTIFIED = "matrix-line-pwa-identified";
 const LINE_PWA_RETURN_REQUEST = "matrix-line-pwa-return-request";
 const LINE_PWA_RETURN = "matrix-line-pwa-return";
 const LINE_PWA_RETURN_RESULT = "matrix-line-pwa-return-result";
+const LINE_PWA_FOCUS_REQUEST = "matrix-line-pwa-focus-request";
+const LINE_PWA_FOCUS_RESULT = "matrix-line-pwa-focus-result";
 const LINE_PWA_PROBE_TIMEOUT_MS = 1_500;
 const linePwaClientIds = new Set();
 const pendingLinePwaProbes = new Map();
+const linePwaLoginAttempts = new Map();
+const pendingLinePwaLoginProbes = new Map();
+const LINE_PWA_LOGIN_TTL_MS = 10 * 60 * 1_000;
 
 function isGetRequest(request) {
   return request && request.method === "GET";
@@ -260,42 +265,65 @@ async function handleLinePwaReturn(event) {
   let ok = false;
 
   if (pwaClient && callbackUrl) {
-    let navigated = false;
-    if (typeof pwaClient.navigate === "function") {
-      try {
-        await pwaClient.navigate(callbackUrl);
-        navigated = true;
-      } catch {
-        // Fall through to the page-side navigation handler.
-      }
-    }
-
-    postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
-
     try {
       await pwaClient.focus();
-      ok = true;
-    } catch {
-      // Focus may be refused when the OAuth redirect no longer has transient activation.
-    }
-
-    if (!ok) {
+      // Transfer the callback only after focus succeeds. Otherwise the browser
+      // still owns it and must be able to complete login without consuming it twice.
       try {
-        const opened = await self.clients.openWindow(callbackUrl);
-        if (opened) {
-          ok = true;
-          try { await opened.focus(); } catch { /* Best effort only. */ }
-        }
-      } catch {
-        // Some browsers reject openWindow without transient activation.
+        ok = Boolean(await pwaClient.navigate(callbackUrl));
+      } catch { /* Fall back to the existing page-side callback handler. */ }
+      if (!ok) {
+        ok = postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
       }
+    } catch {
+      // Background navigation or opening an ordinary tab is not a PWA return.
     }
-
-    // Navigation itself is a successful handoff even when the browser refuses foreground focus.
-    ok ||= navigated;
   }
 
   postClientMessage(callbackClient, { type: LINE_PWA_RETURN_RESULT, ok });
+}
+
+async function findLinePwaLoginAttempt(attemptId) {
+  const known = linePwaLoginAttempts.get(attemptId);
+  if (known && Date.now() - known.startedAt < LINE_PWA_LOGIN_TTL_MS) return known;
+  const candidates = (await self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+    .filter(isSameOriginClient);
+  if (!candidates.length) return null;
+  // Workers can stop during the native LINE handoff. Only the page still waiting
+  // for this exact attempt may restore its registration; another PWA cannot win.
+  return new Promise((resolve) => {
+    const probes = pendingLinePwaLoginProbes.get(attemptId) ?? new Set();
+    const finish = (attempt) => {
+      clearTimeout(timeout);
+      probes.delete(finish);
+      if (!probes.size) pendingLinePwaLoginProbes.delete(attemptId);
+      resolve(attempt);
+    };
+    const timeout = setTimeout(() => finish(null), LINE_PWA_PROBE_TIMEOUT_MS);
+    probes.add(finish);
+    pendingLinePwaLoginProbes.set(attemptId, probes);
+    for (const client of candidates) postClientMessage(client, { type: "matrix-line-pwa-login-ping", attemptId });
+  });
+}
+
+async function handleLinePwaFocus(event) {
+  const callbackClient = isSameOriginClient(event.source) ? event.source : null;
+  const attemptId = event.data?.attemptId;
+  let ok = false;
+  try {
+    const url = new URL(callbackClient?.url ?? "");
+    const ids = url.searchParams.getAll("matrix_line_return");
+    if (url.pathname === "/" && ids.length === 1 && ids[0] === attemptId
+      && typeof attemptId === "string" && /^[0-9a-f-]{36}$/i.test(attemptId)) {
+      const attempt = await findLinePwaLoginAttempt(attemptId);
+      const pwa = attempt ? await self.clients.get(attempt.clientId) : null;
+      if (isSameOriginClient(pwa) && pwa.id !== callbackClient.id) {
+        await pwa.focus();
+        ok = true;
+      }
+    }
+  } catch { /* A platform may refuse foreground activation. Keep normal login available. */ }
+  postClientMessage(callbackClient, { type: LINE_PWA_FOCUS_RESULT, attemptId, ok });
 }
 
 self.addEventListener("message", (event) => {
@@ -304,6 +332,15 @@ self.addEventListener("message", (event) => {
 
   if (type === LINE_PWA_READY && source?.id && isSameOriginClient(source)) {
     linePwaClientIds.add(source.id);
+    const attemptId = event.data?.attemptId;
+    if (typeof attemptId === "string" && /^[0-9a-f-]{36}$/i.test(attemptId)) {
+      for (const [id, attempt] of linePwaLoginAttempts) {
+        if (Date.now() - attempt.startedAt >= LINE_PWA_LOGIN_TTL_MS || attempt.clientId === source.id) linePwaLoginAttempts.delete(id);
+      }
+      const registration = { clientId: source.id, startedAt: Date.now() };
+      linePwaLoginAttempts.set(attemptId, registration);
+      for (const finish of [...(pendingLinePwaLoginProbes.get(attemptId) ?? [])]) finish(registration);
+    }
     return;
   }
 
@@ -315,6 +352,7 @@ self.addEventListener("message", (event) => {
   if (type === LINE_PWA_RETURN_REQUEST) {
     event.waitUntil(handleLinePwaReturn(event));
   }
+  if (type === LINE_PWA_FOCUS_REQUEST) event.waitUntil(handleLinePwaFocus(event));
 });
 
 self.addEventListener("install", (event) => {

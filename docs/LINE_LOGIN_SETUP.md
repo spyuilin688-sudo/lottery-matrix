@@ -105,21 +105,23 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-Mobile installed PWAs start OAuth in the original window, restoring the mobile
-routing used before PR #357. That PR made mobile use a separate OAuth window;
-the reported Android recording shows Chrome remaining in front after the
-callback closes, with the authenticated PWA visible only after Android Back.
-Restoring the original-window route removes that extra authorization window;
-automatic foreground return through native LINE still needs a physical-device
-check. Native LINE auto login remains allowed; do not add
-`disable_auto_login=true`. The mobile return URL is exactly the approved origin
-root, within the existing PWA scope, without a popup correlation query.
-
-Desktop installed PWAs retain the script-controlled OAuth window opened directly
-from the login click. After validating the approved root, this popup flow adds
+Installed desktop PWAs and mobile PWAs with Service Worker support use the
+script-controlled OAuth window opened directly from the login click. Opening
+that window does not guarantee an Android in-app browser or foreground return.
+Native LINE auto login remains allowed; do not add `disable_auto_login=true`.
+After validating the approved root, this popup flow adds
 its own `matrix_line_return` UUID to correlate the callback. User-supplied
 redirect paths and query strings remain rejected. The following handoff also
 remains available for callbacks from older clients that already opened a popup.
+
+Before leaving for OAuth, the PWA registers its attempt UUID with the worker.
+The callback requests foreground focus of that exact PWA before peer detection;
+it never sends tokens through this worker protocol or navigates the PWA to the
+popup callback. If the worker restarted, only a page still waiting for that UUID
+can answer its bounded probe and restore the registration. Worker readiness and
+focus acknowledgement have deadlines so unavailable workers cannot stall login.
+For ordinary redirect callbacks, the worker must focus the PWA before handing
+over the callback; background navigation alone is not a successful return.
 
 The callback hands its session to the original PWA after matching the origin,
 window source and one-time attempt ID. If native LINE opens a fresh callback

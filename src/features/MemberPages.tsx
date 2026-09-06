@@ -1,5 +1,6 @@
 import { useId, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckIcon, ChevronRightIcon } from "@radix-ui/react-icons";
+import type { Session } from "@supabase/supabase-js";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
 import { bootstrapMember, fetchMemberPaymentHistory, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberPaymentHistoryItem, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
 import { readManualTransferPlan, saveManualTransferPlan } from "../manual-transfer-selection";
@@ -7,6 +8,7 @@ import { reconcilePendingLineLogoutPresence, signInWithLine, signOutFromMatrix }
 import { clearLineLoginAttempt, consumeLineLoginAttempt, markLineLoginAttempt } from "../auth/line-login-attempt";
 import { withDeadline } from "../lib/api-resilience";
 import { getSupabaseClient } from "../lib/supabase";
+import { logicalSessionIdentity } from "../auth/session-identity";
 import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
 import { Navigate, ScreenId } from "./navigation";
@@ -737,6 +739,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   const [resultState, setResultState] = useState<"idle" | "success" | ActivationRedemptionErrorCode>("idle");
   const [referralSummary, setReferralSummary] = useState<MemberReferralSummary | null>(null);
   const [referralLoading, setReferralLoading] = useState(true);
+  const [referralLoginRequired, setReferralLoginRequired] = useState(false);
   const [referralSubmitting, setReferralSubmitting] = useState(false);
   const [referralResultState, setReferralResultState] = useState<"idle" | "success" | ReferralSubmissionErrorCode>("idle");
   const [copySucceeded, setCopySucceeded] = useState(false);
@@ -772,18 +775,53 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
 
   useEffect(() => {
     let active = true;
-    setReferralLoading(true);
-    void fetchMemberReferralSummary().then((summary) => {
-      if (!active) return;
-      setReferralSummary(summary);
-      setReferralLoading(false);
-    }).catch(() => {
-      if (!active) return;
+    let authRevision = 0;
+    let loadTimer: ReturnType<typeof setTimeout> | undefined;
+    let currentIdentity: string | null | undefined;
+    const client = getSupabaseClient();
+    const applySession = (session: Session | null) => {
+      const identity = logicalSessionIdentity(session);
+      if (currentIdentity === identity) return;
+      currentIdentity = identity;
+      const revision = ++authRevision;
+      clearTimeout(loadTimer);
+      referralRequestRevision.current += 1;
       setReferralSummary(null);
-      setReferralLoading(false);
+      setReferralCode("");
+      setReferralSubmitting(false);
+      setReferralResultState("idle");
+      setReferralLoginRequired(!session);
+      setReferralLoading(Boolean(session));
+      if (!session) return;
+      // Defer API work until Supabase releases its auth-event lock.
+      loadTimer = setTimeout(() => {
+        void fetchMemberReferralSummary().then((summary) => {
+          if (active && authRevision === revision) setReferralSummary(summary);
+        }).catch((error: unknown) => {
+          if (!active || authRevision !== revision) return;
+          const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+          setReferralLoginRequired(["MEMBER_SESSION_EXPIRED", "AUTH_REQUIRED", "LINE_IDENTITY_REQUIRED"].includes(message));
+        }).finally(() => {
+          if (active && authRevision === revision) setReferralLoading(false);
+        });
+      }, 0);
+    };
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      if (!active || event === "INITIAL_SESSION") return;
+      applySession(event === "SIGNED_OUT" ? null : session);
+    });
+    const initialRevision = authRevision;
+    void withDeadline(() => client.auth.getSession(), { timeoutMs: PROFILE_SESSION_TIMEOUT_MS }).then(({ data, error }) => {
+      if (!active || authRevision !== initialRevision) return;
+      if (error) throw error;
+      applySession(data.session);
+    }).catch(() => {
+      if (active && authRevision === initialRevision) setReferralLoading(false);
     });
     return () => {
       active = false;
+      clearTimeout(loadTimer);
+      subscription.unsubscribe();
       referralRequestRevision.current += 1;
     };
   }, []);
@@ -791,12 +829,14 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   async function handleReferralSubmit() {
     if (referralSubmitting || !referralSummary?.canSubmitReferralCode || !referralCode.trim()) return;
 
+    const sessionRevision = referralRequestRevision.current;
     setReferralSubmitting(true);
     const confirmed = await confirmDialog({
       title: "確認輸入推薦碼？",
       confirmLabel: "確認",
       cancelLabel: "取消",
     });
+    if (referralRequestRevision.current !== sessionRevision) return;
     if (!confirmed) {
       setReferralSubmitting(false);
       return;
@@ -876,7 +916,8 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
           {referralResultState === "success" && <p className="activation-result success" role="status">推薦碼已儲存</p>}
           {referralResultState !== "idle" && referralResultState !== "success" && <p className="activation-result error" role="alert">{referralErrorText[referralResultState]}</p>}
-          {!referralLoading && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
+          {referralLoginRequired && <p className="activation-result" role="status">請先以 LINE 登入</p>}
+          {!referralLoading && !referralLoginRequired && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
         </div>
         <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", "輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"]} /></CollapsibleRuleCard>
         <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>

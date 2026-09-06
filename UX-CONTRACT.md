@@ -114,19 +114,20 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- Mobile installed PWAs start OAuth in the original window and return to the
-  exact approved origin root, without opening a separate authorization window
-  or adding a popup correlation query. Restore the routing before PR #357;
-  automatic native LINE foreground return still requires a physical-device
-  check. Allow native LINE auto login. Do not force
-  `disable_auto_login=true`: this prevents single-phone users without web SSO
-  from using the installed LINE app. Supabase detects and persists the callback
-  session through the existing provider-token-safe storage.
-- Desktop installed PWAs retain the managed authorization window. Its callback
+- Desktop installed PWAs and mobile PWAs with Service Worker support retain the
+  managed authorization window. Automatic native LINE foreground return still
+  requires a physical-device check. Allow native LINE auto login; do not add
+  `disable_auto_login=true`. The callback
   stays at the approved origin root; an internally generated `matrix_line_return`
   UUID binds it to the waiting attempt. Public redirect arguments still reject
   arbitrary paths or queries. Keep this handoff available for callbacks from
   older mobile clients that already opened a popup.
+- Register the login attempt before leaving for OAuth. The callback asks the
+  worker to focus that exact waiting PWA before detecting its return channel.
+  A restarted worker can rediscover only the matching active attempt; worker
+  readiness, probing and acknowledgement are bounded. A normal redirect callback
+  is handed over only after focus succeeds. Background navigation alone does
+  not count as returning to the PWA.
 - When native LINE opens a callback without its opener, a same-origin
   BroadcastChannel matched to the callback's own UUID can import the session
   into the waiting PWA. Never choose a pending attempt from shared storage.
@@ -141,6 +142,16 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
   this channel. Window focus is controlled by the OS; unit or desktop-browser
   checks do not verify physical Android/iOS foreground return.
 - No page geometry, shortcuts, provider scopes or Supabase allowlist changes.
+
+## Referral page login state — 2026-09-06
+
+- Signed-out visitors see `請先以 LINE 登入`; do not call the member referral API
+  or show a generic read failure for an absent session.
+- Login loads referral data in the open page. Logout or a different session
+  clears previous member data and drafts, and discards stale responses. Repeated
+  events for the same session preserve the draft.
+- Real authenticated request failures retain the existing read error. Session
+  expiry or a missing LINE identity asks the visitor to log in through LINE.
 
 ## Notification settings login state — 2026-09-06
 
