@@ -1,8 +1,13 @@
 {
+  "id": "/",
   "name": "樂彩 Matrix",
   "short_name": "樂彩 Matrix",
   "start_url": "/",
+  "scope": "/",
   "display": "fullscreen",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "theme_color": "#02070c",
   "background_color": "#02070c",
   "icons": [
