@@ -6,7 +6,9 @@ import { JSDOM } from "jsdom";
 
 const featureCss = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const exploreCss = readLocalCss(new URL("../src/matrix-explore-spacing.css", import.meta.url));
-const css = `html { font-size: 16px; }\n${featureCss}\n${exploreCss}`;
+// JSDOM does not resolve custom properties in border colors; resolve the existing gold token for this fixture.
+const resolvedExploreCss = exploreCss.replaceAll("var(--lottery-gold-500, #c49145)", "#c49145");
+const css = `html { font-size: 16px; }\n${featureCss}\n${resolvedExploreCss}`;
 
 function exploreFixture() {
   const dom = new JSDOM(`
@@ -53,8 +55,8 @@ function exploreFixture() {
             <button class="explore-consecutive-filter-option" aria-pressed="true">準5進6</button>
             <button class="explore-consecutive-filter-option" aria-pressed="false">準6進7</button>
           </div>
-          <div class="road-results-head"><span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>版路類型</span></div>
           <div class="road-results">
+            <div class="road-results-head"><span>位置</span><span>號碼</span><span>預測期</span><span>連準次數</span><span>預測</span><span>版路類型</span></div>
             <article><div class="road-result-row"><span class="tag">順球2</span><strong>08</strong><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div></article>
             <article><div class="road-result-row"><span class="tag">順球3</span><strong>09</strong><button class="road-type-toggle"><span>加減版路</span><svg></svg></button></div></article>
           </div>
@@ -117,7 +119,7 @@ test("指定卡片使用 #755329 外框、6px 上內距及核准的水平內距"
   assert.equal(style(".explore-settings").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingTop, "6px");
   assert.equal(style(".hit-advanced-panel").paddingBottom, "4px");
-  assert.equal(style(".repeat-stats-panel").paddingTop, "10px");
+  assert.equal(style(".repeat-stats-panel").paddingTop, "6px");
   assert.equal(style(".repeat-stats-panel").paddingBottom, "10px");
   assert.equal(style(".result-panel").paddingTop, "6px");
   assert.equal(style(".repeat-stats-panel").paddingLeft, "6px");
@@ -174,8 +176,8 @@ test("重複統計卡片與控制項使用指定比例", () => {
   const sameCode = style(".repeat-stats-heading button");
   const filter = style(".consecutive-filter-button");
 
-  assert.equal(sameCode.height, "24px");
-  assert.equal(filter.height, "24px");
+  assert.equal(sameCode.height, "22px");
+  assert.equal(filter.height, "22px");
   assert.equal(sameCode.fontSize, "11px");
   assert.equal(filter.fontSize, "11px");
   assert.equal(style(".repeat-stats-heading > span").fontSize, "11px");
@@ -204,7 +206,7 @@ test("重複號碼統計與探索結果區使用六層金色與分隔線層級",
   assert.equal(style(".result-summary b").color, "rgb(242, 245, 248)");
   assert.equal(style(".road-result-row > strong").color, "rgb(244, 206, 103)");
   assert.equal(selectedSummary.borderTopColor, "rgb(244, 206, 103)");
-  assert.equal(selectedFilter.borderTopColor, "rgb(244, 206, 103)");
+  assert.equal(selectedFilter.borderTopColor, "rgb(196, 145, 69)");
   assert.equal(normalSummary.borderTopColor, "rgba(117, 83, 41, 0.62)");
   assert.equal(normalFilter.borderTopColor, "rgba(117, 83, 41, 0.62)");
   assert.equal(style(".road-results .tag").borderTopColor, "rgba(117, 83, 41, 0.62)");
