@@ -10,7 +10,7 @@ describe("homepage layout rules", () => {
   });
 
   it("uses the requested responsive logo-to-switcher gap", () => {
-    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*clamp\(9px,\s*calc\(1\.15dvh \+ 1px\),\s*12px\);/s);
+    expect(css).toMatch(/\.home-screen \.lottery-screen\s*\{[^}]*--home-gap-logo-switcher:\s*clamp\(13px,\s*calc\(1\.15dvh \+ 5px\),\s*16px\);/s);
     expect(css).toMatch(/\/\* Canonical homepage flow gaps[\s\S]*?\.home-screen \.lottery-switcher\s*\{[^}]*margin-block-start:\s*var\(--home-gap-logo-switcher\);/s);
   });
 
