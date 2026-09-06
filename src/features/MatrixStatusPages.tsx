@@ -42,7 +42,15 @@ export function MatrixStatusTriggerCard({
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
           {card.hitType === "one-code" ? <small>單碼結果</small> : null}
-          <strong className="numeric-text">預測：{card.result.join("、")}</strong>
+          <strong className="numeric-text">
+            <span className="matrix-status-prediction-label">預測：</span>
+            {card.result.map((number, index) => (
+              <span key={index}>
+                {index > 0 ? <span className="matrix-status-prediction-separator">、</span> : null}
+                {number}
+              </span>
+            ))}
+          </strong>
         </span>
         <span className="matrix-status-trigger-count">
           <strong>{card.sameCodeRoadCountLocked ? "🔒 Matrix Pro" : String(card.sameCodeRoadCount ?? 0) + " 組"}</strong>
