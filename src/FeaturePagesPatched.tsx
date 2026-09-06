@@ -40,7 +40,8 @@ function ContactSupportPhonePortal({ active }: { active: boolean }) {
   if (!host) return null;
 
   return createPortal(
-    <div className="contact-support-phone-row">
+    <div className="contact-support-row contact-support-phone-row">
+      <span className="contact-support-label">電話：</span>
       <a href="tel:+886226861828">(02) 2686-1828</a>
     </div>,
     host,

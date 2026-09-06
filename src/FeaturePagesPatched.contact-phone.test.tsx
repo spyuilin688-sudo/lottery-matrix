@@ -20,6 +20,10 @@ vi.mock("./NotificationsPagePatched", () => ({
   NotificationsPagePatched: () => null,
 }));
 
+vi.mock("./TianyanExpandedLayoutPatch", () => ({
+  TianyanExpandedLayoutPatch: () => null,
+}));
+
 import { FeaturePageRouter } from "./FeaturePagesPatched";
 
 describe("contact support phone", () => {
@@ -27,10 +31,13 @@ describe("contact support phone", () => {
     document.body.innerHTML = "";
   });
 
-  it("shows the support phone as a tappable telephone link", () => {
+  it("shows the phone label outside the tappable telephone link", () => {
     render(<FeaturePageRouter screen="merchant-info" onNavigate={() => undefined} />);
 
     const phoneLink = screen.getByRole("link", { name: "(02) 2686-1828" });
     expect(phoneLink.getAttribute("href")).toBe("tel:+886226861828");
+    const label = screen.getByText("電話：");
+    expect(label.closest("a")).toBeNull();
+    expect(label.nextElementSibling).toBe(phoneLink);
   });
 });

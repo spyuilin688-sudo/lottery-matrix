@@ -1048,9 +1048,9 @@ export function RefundPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
 export function ContactSupportPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <ProfileDetailShell title="聯絡客服/問題回報/商務合作" onNavigate={onNavigate} className="profile-info-screen contact-support-screen">
-      <DetailCard title="聯絡客服"><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a></DetailCard>
-      <DetailCard title="問題回報"><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a></DetailCard>
-      <DetailCard title="商務合作"><a href="mailto:Matrix1150801@gmail.com">信箱：Matrix1150801@gmail.com</a></DetailCard>
+      <DetailCard title="聯絡客服"><div className="contact-support-row"><span className="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></DetailCard>
+      <DetailCard title="問題回報"><div className="contact-support-row"><span className="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></DetailCard>
+      <DetailCard title="商務合作"><div className="contact-support-row"><span className="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></DetailCard>
     </ProfileDetailShell>
   );
 }
