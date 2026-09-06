@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
 from secrets import compare_digest
@@ -449,7 +451,19 @@ def handle_api_request(
         return 404, {"error": "NOT_FOUND"}
     except (ValueError, json.JSONDecodeError) as error:
         return 400, {"error": str(error)}
-    except Exception:
+    except Exception as error:
+        # Log only exception classes and code locations; messages may contain credentials.
+        chain = []
+        seen = set()
+        current = error
+        while current is not None and id(current) not in seen and len(chain) < 5:
+            seen.add(id(current))
+            frames = traceback.extract_tb(current.__traceback__)
+            chain.append({"type": type(current).__name__, "frames": [
+                {"function": frame.name, "line": frame.lineno} for frame in frames[-6:]
+            ]})
+            current = current.__cause__ or current.__context__
+        logging.getLogger(__name__).error("matrix-api-internal-error %s", json.dumps(chain))
         return 500, {"error": "INTERNAL_ERROR"}
 
 
