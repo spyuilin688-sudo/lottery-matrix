@@ -99,6 +99,27 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
+  it("會員卡的登入與訂閱入口保留至少 44px 觸控高度", async () => {
+    const onNavigate = vi.fn();
+    render(<ProfilePage onNavigate={onNavigate} />);
+
+    const logout = await screen.findByRole("button", { name: "登出" });
+    const plans = screen.getByRole("button", { name: "訂閱方案／收費標準" });
+    for (const action of [logout, plans]) {
+      expect(parseFloat(getComputedStyle(action).minHeight)).toBeGreaterThanOrEqual(44);
+    }
+    fireEvent.click(plans);
+    expect(onNavigate).toHaveBeenCalledWith("pro-plans");
+  });
+
+  it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
+    render(<ProfilePage onNavigate={vi.fn()} />);
+    await screen.findByRole("button", { name: "登出" });
+    const nickname = screen.getByText("LINE 暱稱：");
+    expect(getComputedStyle(nickname).borderTopWidth).toBe("0px");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
   it('PWA 回傳確認前維持登入中，完成後只提示一次並回首頁', async () => {
     supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     let complete!: (value: string) => void;

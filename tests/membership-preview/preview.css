@@ -1,0 +1,12 @@
+/* Only the review canvas. No membership-card overrides. */
+html, body, #root { min-height: 100%; }
+.qa-toolbar { position: fixed; inset: 20px auto auto 20px; display: grid; max-width: 210px; gap: 12px; font: 14px/1.5 system-ui; color: #f5f2ea; }
+.qa-toolbar nav { display: flex; flex-wrap: wrap; gap: 10px; }
+.qa-toolbar a { color: #f4ce67; }
+.qa-toolbar > span { color: #aaa7a2; font-size: 12px; }
+.qa-viewport { display: block; height: 900px; margin: 20px auto; border: 0; }
+body:has(.qa-toolbar) { overflow: auto; }
+.mobile-page { min-height: 100vh; }
+.qa-reference { position: absolute; top: 87px; right: 10px; width: 378px; margin: 0; color: #aaa7a2; font: 12px/1.5 system-ui; }
+.qa-reference figcaption { margin-bottom: 5px; }
+.qa-reference img { display: block; width: 100%; }
