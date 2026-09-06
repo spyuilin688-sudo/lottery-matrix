@@ -94,8 +94,9 @@ test("guide categories scroll horizontally and status settings stays in bottom n
   assert.equal(finalDeclaration(featureCss, ".matrix-status-settings-entry", "z-index"), "21");
 });
 
-test("profile expiry column no longer draws the unwanted vertical rule", () => {
-  assert.equal(finalDeclaration(featureCss, ".subscription-status-content > div:last-child", "border-left"), "0");
+test("approved A+B membership cards keep the expiry divider with one style owner", () => {
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "1px solid var(--lottery-label)");
+  assert.equal(ruleBodies(featureCss, ".subscription-status-content > div:last-child").length, 0);
 });
 
 test("refined responsive owners avoid forced layout compensation", () => {

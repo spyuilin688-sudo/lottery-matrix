@@ -91,8 +91,7 @@ test("首頁開獎資訊卡維持獨立 12px 外距且高度約縮 10%", () => {
   assert.match(home, /\.home-screen \.latest-draw-card\s*\{[^}]*--draw-card-height:\s*calc\(\(var\(--home-content-width\) \* 732 \/ 1672\) \* \.9\);[^}]*width:\s*calc\(100% - 32px\);[^}]*margin-inline:\s*0;/s);
 });
 
-test("我的與通知內容採較緊密比例，通知右側動作固定欄對齊", () => {
-  assert.match(feature, /\.profile-card\s*\{[^}]*grid-template-columns:\s*56px minmax\(0, 1fr\) auto;[^}]*gap:\s*8px;/s);
+test("通知內容採較緊密比例，右側動作固定欄對齊", () => {
   assert.match(notification, /\.notifications-screen-v2 \.notification-actions\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*56px 38px;[^}]*gap:\s*8px;/s);
 });
 

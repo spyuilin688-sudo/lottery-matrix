@@ -125,6 +125,10 @@ Matrix 探索與天衍的驗證過程，依鎖定條件整組交替使用 `#152A
 
 首頁六合彩採使用者確認的 A 方案：保留彩球素材與尺寸，數字由 15px 縮小 10% 至 13.5px，字重由 900 降至 800，沿用白色區域的中心定位與既有光學微調。`src/number-ball.css` 是此首頁變體的唯一樣式來源；既有 Roboto 800 字型檔以首頁六合彩專用字型名稱載入，避免改變其他介面原有的字重匹配。歷史頁、其他彩種與彩球間距不在此次修改範圍。
 
+### Profile membership cards — approved A+B
+
+「我的」頁的會員資料卡與目前訂閱狀態卡採已確認的 A+B 參考：切角雙金框、低透明度 M、資訊分區與金色方案／日期。`src/feature-pages.css` 是兩張卡片的特定樣式唯一來源；裝飾素材位於 `public/assets/lottery/membership/`，框線以 border-image 適配內容高度。沿用既有 16px 頁面留白、8px 區段間距、資料繫結與導覽。LINE 暱稱保持資訊文字；登入／登出與訂閱入口保留至少 44px 觸控高度。320–430px 使用流動版面，窄螢幕允許說明換行，長暱稱沿用既有縮字與省略策略。
+
 ### Forms and overlays
 
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。

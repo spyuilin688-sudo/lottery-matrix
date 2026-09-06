@@ -287,7 +287,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
-      <section className="panel profile-card">
+      <section className="panel membership-card profile-card">
         <div className="profile-avatar">
           <img
             src={lineAvatarUrl ?? "/assets/lottery/matrix-profile-avatar.jpg"}
@@ -316,12 +316,12 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
                   : "LINE 登入"
         }</button> : null}
       </section>
-      <section className="panel subscription-status-card">
+      <section className="panel membership-card subscription-status-card">
         <SectionTitle>目前訂閱狀態</SectionTitle>
         <div className="subscription-status-content">
-          <div className="subscription-crown">♛</div>
-          <div><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
-          <div><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
+          <img className="subscription-crown" src="/assets/lottery/membership/membership-emblem.png" alt="" aria-hidden="true" />
+          <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
+          <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
         </div>
         <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
           <span>訂閱方案／收費標準</span><ChevronRightIcon />

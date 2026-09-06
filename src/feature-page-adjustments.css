@@ -712,11 +712,6 @@
   justify-self: end;
 }
 
-.subscription-status-content > div:last-child {
-  padding-left: 0;
-  border-left: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .notifications-screen-v2 .notification-inline-settings {
     transform: none;
