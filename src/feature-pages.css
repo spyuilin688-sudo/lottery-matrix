@@ -2243,6 +2243,9 @@ opacity: .30; box-shadow: none;
 }
 .legal-info-copy {
   min-width: 0;
+}
+.legal-info-copy,
+.legal-info-copy p {
   color: #c9c2b8;
   font-size: 13px;
   line-height: 1.65;
