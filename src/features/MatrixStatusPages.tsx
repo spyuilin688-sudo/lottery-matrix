@@ -237,9 +237,9 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                   {cards.length > 0 && result ? (
                     <div className="matrix-status-trigger-list">
                       <article className="matrix-status-trigger-table" data-testid="matrix-status-trigger-table">
-                        {cards.map((card, index) => <MatrixStatusTriggerCard
+                        {cards.map((card) => <MatrixStatusTriggerCard
                           card={card}
-                          showColumnHead={index === 0}
+                          showColumnHead={true}
                           lottery={lottery}
                           analysisVersion={result.analysisVersion}
                           expandedRoad={expandedRoad}
