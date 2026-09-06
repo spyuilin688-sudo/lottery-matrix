@@ -33,7 +33,7 @@ function listSourceFiles(directory) {
 
 test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 owner", () => {
   const sharedIndex = prototypeSource.indexOf('import "./feature-pages.css";');
-  const patchedRouterIndex = prototypeSource.indexOf('import("./FeaturePagesPatched")');
+  const patchedRouterIndex = prototypeSource.indexOf('import { FeaturePageRouter } from "./FeaturePagesPatched";');
   const layoutIndex = prototypeSource.indexOf('import "./pro-plans-layout.css";');
   const dotsIndex = prototypeSource.indexOf('import "./pro-plans-carousel-peek.css";');
 
