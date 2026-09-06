@@ -195,11 +195,22 @@ async function handleStaticAsset(event) {
   return response;
 }
 
+function lineCallbackUrl(client) {
+  try {
+    const url = new URL(client?.url ?? "", self.location.origin);
+    if (url.origin !== self.location.origin || url.pathname !== "/") return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
 async function findLinePwaClient() {
   for (const id of [...linePwaClientIds]) {
     try {
       const client = await self.clients.get(id);
       if (isSameOriginClient(client)) return client;
+      linePwaClientIds.delete(id);
     } catch {
       linePwaClientIds.delete(id);
     }
@@ -235,11 +246,21 @@ async function findLinePwaClient() {
 
 async function handleLinePwaReturn(event) {
   const callbackClient = isSameOriginClient(event.source) ? event.source : null;
+  const callbackUrl = lineCallbackUrl(callbackClient);
   const pwaClient = await findLinePwaClient();
   let ok = false;
 
-  if (pwaClient) {
-    postClientMessage(pwaClient, { type: LINE_PWA_RETURN });
+  if (pwaClient && callbackUrl) {
+    if (typeof pwaClient.navigate === "function") {
+      try {
+        await pwaClient.navigate(callbackUrl);
+        ok = true;
+      } catch {
+        // Fall through to focus/openWindow best-effort recovery.
+      }
+    }
+
+    postClientMessage(pwaClient, { type: LINE_PWA_RETURN, url: callbackUrl });
     try {
       await pwaClient.focus();
       ok = true;
@@ -249,10 +270,9 @@ async function handleLinePwaReturn(event) {
 
     if (!ok) {
       try {
-        const opened = await self.clients.openWindow(`${self.location.origin}/`);
+        const opened = await self.clients.openWindow(callbackUrl);
         if (opened) {
           ok = true;
-          postClientMessage(opened, { type: LINE_PWA_RETURN });
           try { await opened.focus(); } catch { /* Best effort only. */ }
         }
       } catch {
