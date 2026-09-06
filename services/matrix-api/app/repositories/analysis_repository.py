@@ -2,6 +2,8 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
+from httpx import Client as HttpClient
+
 from app.repositories.artifact_chunks import (
     encode_chunk_payload,
     materialize_chunks,
@@ -1052,12 +1054,16 @@ class SupabaseAnalysisRepository:
         return int(response.data)
 
 
-def create_supabase_repository(url: str, secret_key: str) -> SupabaseAnalysisRepository:
+def create_supabase_repository(
+    url: str, secret_key: str, *, httpx_client: HttpClient | None = None,
+) -> SupabaseAnalysisRepository:
     if not url or not secret_key:
         raise ValueError("SUPABASE_SERVER_CONFIGURATION_MISSING")
     from supabase import create_client
+    from supabase.lib.client_options import SyncClientOptions
 
-    return SupabaseAnalysisRepository(create_client(url, secret_key))
+    options = SyncClientOptions(httpx_client=httpx_client) if httpx_client is not None else None
+    return SupabaseAnalysisRepository(create_client(url, secret_key, options=options))
 
 
 def _explore_result_records(
