@@ -119,8 +119,17 @@ tab without an opener, an origin-scoped BroadcastChannel uses the callback's
 own UUID to reach the correct waiting PWA. It never selects an arbitrary recent
 attempt from shared storage. A detached callback checks for a listening PWA
 within 2,500 ms before consuming its session; without a peer the normal app
-initializes. Temporary auth windows close after the PWA accepts the session.
+initializes. Temporary auth windows attempt to close after the PWA accepts the session.
 The callback does not mount the member-presence UI while the handoff is pending.
+
+For implicit callbacks, the handler captures the Supabase access/refresh tokens,
+removes the fragment with `history.replaceState` before creating the Auth client,
+and validates/imports them through `setSession`. The installed Auth client's
+automatic implicit parser clears `location.hash` by navigation, which adds a
+history entry and can prevent a native-opened tab from closing. The regression
+test uses the installed client and real History/Location behavior; it reproduced
+history growing from one entry to two before this change. Native OS foreground
+activation still requires a physical-device check.
 
 The optional LINE revoke token is read from the existing callback fragment before
 Supabase clears it, then transferred only in memory to the original PWA. It is
