@@ -30,10 +30,11 @@ import { flushLinePwaDiagnostics } from './auth/line-pwa-diagnostics';
 
 installGlobalInputBehavior();
 
-if ('serviceWorker' in navigator) {
-  void registerPushServiceWorker().catch(() => undefined);
-  void registerLinePwaClient().catch(() => undefined);
-}
+const linePwaWorkerReady = 'serviceWorker' in navigator
+  ? registerPushServiceWorker()
+    .then(() => registerLinePwaClient())
+    .catch(() => false)
+  : Promise.resolve(false);
 
 const root = document.getElementById('root')!;
 let diagnosticFlushStarted = false;
@@ -57,6 +58,7 @@ const hasNormalLineCallback = hasLineOAuthCallback();
 async function bootstrap() {
   if (hasNormalLineCallback) {
     if ('serviceWorker' in navigator) {
+      await linePwaWorkerReady;
       const handedOff = await requestLinePwaReturn(
         window,
         navigator.serviceWorker,

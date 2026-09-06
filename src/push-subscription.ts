@@ -38,6 +38,33 @@ function withRegistrationTimeout<T>(promise: Promise<T>): Promise<T> {
   });
 }
 
+function observeControllerChange(serviceWorker: ServiceWorkerContainer) {
+  let changed = false;
+  let resolveChange!: () => void;
+  let rejectChange!: (error: Error) => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    resolveChange = resolve;
+    rejectChange = reject;
+  });
+  const handleChange = () => {
+    changed = true;
+    resolveChange();
+  };
+  const timer = setTimeout(
+    () => rejectChange(new Error('PUSH_SERVICE_WORKER_ACTIVATION_TIMEOUT')),
+    REGISTRATION_TIMEOUT_MS,
+  );
+  serviceWorker.addEventListener('controllerchange', handleChange);
+  return {
+    changed: () => changed,
+    promise,
+    stop: () => {
+      clearTimeout(timer);
+      serviceWorker.removeEventListener('controllerchange', handleChange);
+    },
+  };
+}
+
 export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration> {
   const serviceWorker = serviceWorkerContainer();
   if (!serviceWorker) throw new Error('PUSH_SERVICE_WORKER_UNSUPPORTED');
@@ -45,7 +72,20 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
     const existing = typeof serviceWorker.getRegistration === 'function'
       ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
       : undefined;
-    return existing ?? await serviceWorker.register(SERVICE_WORKER_PATH);
+    if (!existing) return await serviceWorker.register(SERVICE_WORKER_PATH);
+    if (typeof existing.update !== 'function') return existing;
+
+    const previousController = serviceWorker.controller;
+    const controllerChange = observeControllerChange(serviceWorker);
+    try {
+      const updated = await existing.update();
+      if (controllerChange.changed() || serviceWorker.controller !== previousController) return updated;
+      if (!updated.installing && !updated.waiting) return updated;
+      await controllerChange.promise;
+      return updated;
+    } finally {
+      controllerChange.stop();
+    }
   })());
 }
 

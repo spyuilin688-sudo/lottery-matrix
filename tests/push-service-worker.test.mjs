@@ -160,7 +160,8 @@ test("notification click opens a safe same-origin URL when no client exists", as
 test("main starts the observable push service worker registration helper", () => {
   const source = readFileSync(mainPath, "utf8");
   assert.match(source, /if\s*\(\s*["']serviceWorker["']\s+in\s+navigator\s*\)/);
-  assert.match(source, /registerPushServiceWorker\(\)\.catch\(\(\) => undefined\)/);
+  assert.match(source, /const linePwaWorkerReady = [\s\S]*registerPushServiceWorker\(\)/);
+  assert.match(source, /await linePwaWorkerReady/);
   const pushSource = readFileSync(new URL("../src/push-subscription.ts", import.meta.url), "utf8");
   assert.match(pushSource, /SERVICE_WORKER_PATH = ["']\/push-service-worker\.js["']/);
   assert.match(pushSource, /serviceWorker\.register\(SERVICE_WORKER_PATH\)/);
