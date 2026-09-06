@@ -53,7 +53,9 @@ test("正式入口先載入共用樣式，Pro 方案樣式只有一個匯入 own
   assert.deepEqual(dotsOwners, ["src/Prototype.tsx"]);
 });
 
-test("方案卡與付款區以實際水平 gutter 擁有 19px 與 16px", () => {
+test("方案輪播與付款區保留 25px 與 16px 間距及鄰卡露出", () => {
+  assert.match(ownerCss, /--pro-plans-plan-inline:\s*25px;/);
+  assert.match(ownerCss, /--pro-plans-checkout-inline:\s*16px;/);
   assert.match(
     ownerCss,
     /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*var\(--pro-plans-plan-inline\);/s,

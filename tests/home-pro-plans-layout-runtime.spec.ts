@@ -81,14 +81,15 @@ for (const width of MOBILE_WIDTHS) {
         overflow: document.documentElement.scrollWidth - window.innerWidth,
       };
     })).toEqual({
-      cardLeft: 19,
-      cardRight: 19,
+      // 25px carousel gutter plus half the 24px card reduction for neighbor peeks.
+      cardLeft: 37,
+      cardRight: 37,
       checkoutLeft: 16,
       checkoutRight: 16,
       planOuterShadow: false,
       paymentOuterShadow: false,
-      previousCardPeek: 0,
-      nextCardPeek: 0,
+      previousCardPeek: 12,
+      nextCardPeek: 12,
       overflow: 0,
     });
   });

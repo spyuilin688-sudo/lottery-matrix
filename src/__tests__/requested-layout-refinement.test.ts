@@ -148,7 +148,7 @@ describe("requested responsive layout refinement", () => {
     expect(mobileCss).not.toMatch(/\.pro-plans-screen/);
     expect(featureCss).not.toMatch(/\.plan-carousel\s*\{[^}]*(?:margin|padding|gap):/s);
     expect(featureCss).not.toMatch(/\.plan-card\s*\{[^}]*flex:/s);
-    expect(proPlansCss).toMatch(/--pro-plans-plan-inline:\s*19px/);
+    expect(proPlansCss).toMatch(/--pro-plans-plan-inline:\s*25px/);
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).minHeight).toBe("190px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .plan-card")!).padding).toBe("12px");
     expect(getComputedStyle(document.querySelector(".pro-plans-screen .renewal-card")!).padding).toBe("8px");
