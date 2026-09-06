@@ -148,11 +148,11 @@ describe('system status client', () => {
     };
 
     expect(getGithubStatusFacts(github)).toEqual([
-      { label: 'Workflow 名稱', value: 'Fantasy5 crawler' },
-      { label: 'Workflow 路徑', value: '.github/workflows/fantasy5-crawler.yml' },
-      { label: 'Workflow 狀態', value: 'active' },
-      { label: '最近執行狀態', value: 'completed' },
-      { label: '最近執行結果', value: 'failure' },
+      { label: '排程名稱', value: 'Fantasy5 crawler' },
+      { label: '排程檔案', value: '.github/workflows/fantasy5-crawler.yml' },
+      { label: '排程開關', value: '已啟用' },
+      { label: '最近執行狀態', value: '已結束' },
+      { label: '最近執行結果', value: '失敗' },
       { label: '最近執行建立時間', value: '2026-09-04T11:40:00Z', format: 'date' },
       { label: '最近執行更新時間', value: '2026-09-04T11:42:00Z', format: 'date' },
     ]);
@@ -180,9 +180,9 @@ describe('system status client', () => {
     };
 
     expect(getGithubStatusFacts(github)).toEqual([
-      { label: 'Workflow 名稱', value: 'Fantasy5 crawler' },
-      { label: 'Workflow 路徑', value: '.github/workflows/fantasy5-crawler.yml' },
-      { label: 'Workflow 狀態', value: 'active' },
+      { label: '排程名稱', value: 'Fantasy5 crawler' },
+      { label: '排程檔案', value: '.github/workflows/fantasy5-crawler.yml' },
+      { label: '排程開關', value: '已啟用' },
       { label: '最近執行', value: '尚無執行紀錄' },
     ]);
   });
@@ -197,20 +197,21 @@ describe('system status evidence presentation', () => {
   };
 
   it.each([
-    ['live', '檢查通過', 'good'],
-    ['registered', '已登錄', 'limited'],
-    ['options', 'OPTIONS 可達', 'limited'],
-    ['inherited', '服務可達', 'limited'],
-    ['reported', '回報正常', 'good'],
+    ['live', '連線正常', 'good'],
+    ['registered', 'API 已建立', 'limited'],
+    ['options', '連線正常', 'limited'],
+    ['inherited', '主機正常', 'limited'],
+    ['reported', '執行正常', 'good'],
   ] as const)('labels %s evidence without upgrading it to functional success', (checkEvidence, label, tone) => {
     expect(getSystemStatusPresentation({ ...item, checkEvidence })).toMatchObject({ label, tone });
     expect(getSystemStatusPresentation({ ...item, checkEvidence, ok: false })).toMatchObject({ label: '異常', tone: 'bad' });
+    expect(getSystemStatusPresentation({ ...item, checkEvidence, ok: false }).scope).not.toMatch(/檢查已通過|執行紀錄正常|主機與排程查詢有回應|此 API 有回應|已在資料庫找到/);
   });
 
   it('preserves limited evidence for older backend payloads', () => {
-    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: '已登錄', tone: 'limited', scope: '僅檢查 RPC 登錄狀態，未驗證功能執行。' });
-    expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: 'OPTIONS 可達', tone: 'limited' });
-    expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '服務可達', tone: 'limited' });
-    expect(getSystemStatusPresentation({ ...item, id: 'appdeploy-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '回報正常' });
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: '已在資料庫找到此 API，尚未執行其功能。' });
+    expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: '連線正常', tone: 'limited' });
+    expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
+    expect(getSystemStatusPresentation({ ...item, id: 'appdeploy-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });
   });
 });

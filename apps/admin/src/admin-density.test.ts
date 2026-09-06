@@ -43,7 +43,7 @@ describe('admin compact density', () => {
 
   it('uses grouped compact system status rows without fixed row geometry', () => {
     expect(statusCss).toMatch(/\.statusGroups \{[^}]*gap: 8px;/);
-    expect(statusCss).toMatch(/\.statusRows \{[^}]*gap: 1px;/);
+    expect(statusCss).toMatch(/\.statusRows \{[^}]*gap: 8px;/);
     expect(statusCss).toMatch(/\.statusRow \{[^}]*padding: 8px 10px;/);
     expect(statusCss).toMatch(/\.statusEndpoint \{[^}]*overflow-wrap: anywhere;/);
     expect(statusCss).not.toMatch(/\.statusRow \{[^}]*(?:height|min-height|width):/);

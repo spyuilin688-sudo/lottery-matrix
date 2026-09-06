@@ -32,6 +32,7 @@ import {
   focusSystemStatusAfterAction,
   getGithubStatusFacts,
   getSystemStatusPresentation,
+  formatSystemStatusValue,
   groupSystemStatusItems,
   loadSystemStatus,
   refreshCrawlerSystemStatus,
@@ -1397,8 +1398,8 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
   return (
     <section ref={statusSectionRef} className="systemStatusSection" aria-labelledby="system-status-title" tabIndex={-1}>
       <header className="systemStatusHeader">
-        <div><h2 id="system-status-title">連線狀態</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
-        <button className="compactButton" onClick={refresh} disabled={actionPending} aria-busy={checking}><RefreshCw size={15} />{checking ? "檢查中…" : "重新檢查全部服務"}</button>
+        <div><h2 id="system-status-title">服務檢查</h2><span>最後檢查時間：{checkedAt ? formatAdminDateTime(checkedAt) : "尚未檢查"}</span></div>
+        <button className="compactButton" onClick={refresh} disabled={actionPending} aria-busy={checking}><RefreshCw size={15} />{checking ? "檢查中…" : "重新檢查"}</button>
       </header>
       {statusError && <div className="error" role="alert">{statusError}</div>}
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
@@ -1412,7 +1413,7 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>{group.items.length} 項 · {limitedCount} 項有限檢查 · {abnormalCount} 項異常</span>
+                <span>{group.items.length} 項 · {limitedCount} 項僅部分檢查 · {abnormalCount} 項異常</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
@@ -1426,28 +1427,31 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
                       <div className="statusRowMain">
                         <div className="statusRowTitle">
                           <div className="statusIdentity"><b>{item.name}</b><span>{item.group}</span></div>
-                          <div className="statusState"><span>{item.location === "GitHub" ? "API 連線" : "狀態"}</span><b className={`statusBadge ${presentation.tone}`}>{presentation.label}</b></div>
+                          <div className="statusState"><b className={`statusBadge ${presentation.tone}`}>{presentation.label}</b></div>
                         </div>
+                        <p className="statusDescription">{item.description}</p>
+                        <p className="statusScope">{presentation.scope}</p>
+                        {item.error && <div className="statusErrorText" role="alert">{item.error}</div>}
+                        <details className="statusDetails">
+                          <summary>檢查明細</summary>
                         <dl className="statusFacts">
-                          <div><dt>用途</dt><dd>{item.description}</dd></div>
-                          <div><dt>檢查範圍</dt><dd>{presentation.scope}</dd></div>
-                          <div><dt>Endpoint</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
+                          <div><dt>API 位址</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
                           {getGithubStatusFacts(item).map((fact) => (
                             <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.format === "date" ? formatAdminDateTime(fact.value) : text(fact.value)}</dd></div>
                           ))}
-                          {detail?.status !== undefined && <div><dt>狀態</dt><dd>{text(detail.status)}</dd></div>}
+                          {detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
                           {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
                           {item.id === "appdeploy-watchdog-heartbeat" && (
                             <>
-                              <div><dt>心跳完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
-                              <div><dt>實體排程</dt><dd>每 10 分鐘</dd></div>
-                              <div><dt>Logical 排程</dt><dd>6×50、10×60、30×18</dd></div>
+                              <div><dt>監控完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
+                              <div><dt>執行頻率</dt><dd>每 10 分鐘</dd></div>
+                              <div><dt>檢查設定</dt><dd>依序為 6 分鐘／50 次、10 分鐘／60 次、30 分鐘／18 次；實際每 10 分鐘執行一次。</dd></div>
                             </>
                           )}
                         </dl>
-                        {item.error && <div className="statusErrorText">{item.error}</div>}
+                        </details>
                       </div>
                       {(canRetrySystemStatus(item) || canRefreshCrawler(item, canEdit)) && (
                         <div className="statusRowActions">

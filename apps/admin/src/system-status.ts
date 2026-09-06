@@ -54,14 +54,21 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
           : item.id === 'appdeploy-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
   );
   const presentations = {
-    live: { label: '檢查通過', tone: 'good', scope: '唯讀連線檢查；不代表全部業務功能成功。' },
-    registered: { label: '已登錄', tone: 'limited', scope: '僅檢查 RPC 登錄狀態，未驗證功能執行。' },
-    options: { label: 'OPTIONS 可達', tone: 'limited', scope: '僅檢查 OPTIONS 回應，未驗證功能執行。' },
-    inherited: { label: '服務可達', tone: 'limited', scope: '沿用 Railway 健康與排程 API 檢查，未驗證此端點。' },
-    reported: { label: '回報正常', tone: 'good', scope: '依據最近心跳或排程紀錄，未重新執行工作。' },
+    live: { label: '連線正常', tone: 'good', scope: '此項連線或資料讀取檢查已通過。' },
+    registered: { label: 'API 已建立', tone: 'limited', scope: '已在資料庫找到此 API，尚未執行其功能。' },
+    options: { label: '連線正常', tone: 'limited', scope: '此 API 有回應；這次只檢查連線，未執行其功能。' },
+    inherited: { label: '主機正常', tone: 'limited', scope: 'Railway 主機與排程查詢有回應；此 API 尚未個別檢查。' },
+    reported: { label: '執行正常', tone: 'good', scope: '最近的執行紀錄正常；這次檢查沒有重新執行工作。' },
   } as const;
   const presentation = presentations[evidence];
-  return item.ok ? presentation : { ...presentation, label: '異常', tone: 'bad' as const };
+  const failedScopes = {
+    live: '本次連線或資料讀取檢查失敗。',
+    registered: '這次無法確認資料庫內是否有此 API。',
+    options: '這次連線檢查失敗，未執行此 API 的功能。',
+    inherited: 'Railway 主機或排程查詢檢查失敗，尚未個別測試此 API。',
+    reported: '最近的執行紀錄未通過檢查。',
+  };
+  return item.ok ? presentation : { ...presentation, label: '異常', tone: 'bad' as const, scope: failedScopes[evidence] };
 }
 
 export function groupSystemStatusItems(items: SystemStatusItem[]): SystemStatusGroup[] {
@@ -81,9 +88,9 @@ export function getGithubStatusFacts(item: SystemStatusItem): SystemStatusFact[]
   if (item.location !== 'GitHub' || !isRecord(item.detail)) return [];
   const workflow = isRecord(item.detail.workflow) ? item.detail.workflow : {};
   const facts: SystemStatusFact[] = [
-    { label: 'Workflow 名稱', value: workflow.name },
-    { label: 'Workflow 路徑', value: workflow.path },
-    { label: 'Workflow 狀態', value: workflow.state },
+    { label: '排程名稱', value: workflow.name },
+    { label: '排程檔案', value: workflow.path },
+    { label: '排程開關', value: formatSystemStatusValue(workflow.state) },
   ];
   if (item.detail.latestRun === null) {
     return [...facts, { label: '最近執行', value: '尚無執行紀錄' }];
@@ -91,8 +98,8 @@ export function getGithubStatusFacts(item: SystemStatusItem): SystemStatusFact[]
   if (!isRecord(item.detail.latestRun)) return facts;
   return [
     ...facts,
-    { label: '最近執行狀態', value: item.detail.latestRun.status },
-    { label: '最近執行結果', value: item.detail.latestRun.conclusion },
+    { label: '最近執行狀態', value: formatSystemStatusValue(item.detail.latestRun.status) },
+    { label: '最近執行結果', value: formatSystemStatusValue(item.detail.latestRun.conclusion) },
     { label: '最近執行建立時間', value: item.detail.latestRun.createdAt, format: 'date' },
     { label: '最近執行更新時間', value: item.detail.latestRun.updatedAt, format: 'date' },
   ];
@@ -148,4 +155,15 @@ export function canRefreshCrawler(item: SystemStatusItem, canEdit: boolean) {
     return false;
   }
   return (item.detail as Record<string, unknown>).status === 'failed';
+}
+
+export function formatSystemStatusValue(value: unknown): string {
+  const labels: Record<string, string> = {
+    ok: '正常', success: '已完成', succeeded: '已完成', completed: '已結束',
+    failed: '失敗', failure: '失敗', running: '執行中', in_progress: '執行中',
+    waiting_source: '等待開獎來源更新', queued: '等待執行', active: '已啟用',
+    disabled_manually: '已手動停用', cancelled: '已取消', skipped: '已略過',
+  };
+  if (value === null || value === undefined || value === '') return '尚無紀錄';
+  return labels[String(value)] ?? String(value);
 }
