@@ -138,14 +138,29 @@ describe('installed PWA LINE login return', () => {
     const returnedTab = browserWindow();
     returnedTab.close.mockImplementation(() => { returnedTab.closed = true; });
     const { storage, channels } = connectBrowserChannels(parent, popup, returnedTab);
+    const serviceWorker = new EventTarget();
+    const activeWorker = { postMessage: vi.fn((data: Record<string, unknown>) => {
+      if (data.type === 'matrix-line-pwa-focus-request') {
+        serviceWorker.dispatchEvent(new MessageEvent('message', {
+          data: { type: 'matrix-line-pwa-focus-result', attemptId: data.attemptId, ok: true },
+        }));
+      }
+    }) };
+    Object.assign(serviceWorker, { controller: activeWorker, ready: Promise.resolve({ active: activeWorker }) });
+    Object.assign(parent, { navigator: { serviceWorker } });
+    Object.assign(returnedTab, { navigator: { serviceWorker } });
     const login = start();
+    await vi.advanceTimersByTimeAsync(0);
     // A native LINE handoff opens a fresh tab: neither opener nor sessionStorage survives.
     const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    expect(activeWorker.postMessage).toHaveBeenCalledExactlyOnceWith({ type: 'matrix-line-pwa-ready', attemptId: id });
+    expect(popup.location.replace).toHaveBeenCalledWith('https://auth.example/authorize');
     returnedTab.location.search = `?matrix_line_return=${id}`;
     returnedTab.location.hash = '#access_token=callback-token&refresh_token=callback-refresh&provider_token=line-revoke-only';
     const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
     await vi.advanceTimersByTimeAsync(0);
     expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
+    expect(activeWorker.postMessage).toHaveBeenCalledWith({ type: 'matrix-line-pwa-focus-request', attemptId: id });
     await expect(login).resolves.toBe('pwa');
     await expect(finish).resolves.toBe(true);
     expect(parent.focus).toHaveBeenCalled();

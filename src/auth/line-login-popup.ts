@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { withDeadline } from '../lib/api-resilience';
 import { LINE_LOGIN_ATTEMPT_TTL_MS } from './line-login-attempt';
 import { rememberLineProviderToken } from './line-provider-token';
+import { registerLinePwaLoginAttempt, requestLinePwaFocus } from './line-pwa-return';
 
 const POPUP_KEY = 'matrix-line-login-popup';
 const RESULT = 'matrix-line-login-result';
@@ -93,12 +94,14 @@ export function signInWithLinePopup(
     let settled = false;
     let receiving = false;
     let closedTimeout: number | undefined;
+    let stopPwaRegistration: (() => void) | undefined;
     const cleanup = () => {
       browser.clearTimeout(timeout);
       browser.clearTimeout(closedTimeout);
       browser.removeEventListener('message', receive);
       browser.removeEventListener('focus', checkClosed);
       channel?.close();
+      stopPwaRegistration?.();
     };
     const fail = () => {
       if (settled) return;
@@ -160,9 +163,13 @@ export function signInWithLinePopup(
       }
       acceptResult(event, true);
     });
-    void client.auth.signInWithOAuth({
+    const registration = registerLinePwaLoginAttempt(attempt.id, browser).then((stop) => {
+      if (settled) stop?.();
+      else stopPwaRegistration = stop;
+    });
+    void Promise.all([registration, client.auth.signInWithOAuth({
       provider: 'custom:line', options: { redirectTo: callbackUrl.href, skipBrowserRedirect: true },
-    }).then(({ data, error }) => {
+    })]).then(([, { data, error }]) => {
       if (settled) return;
       if (error || !data?.url) { fail(); return; }
       authWindow.location.replace(data.url);
@@ -202,6 +209,9 @@ export async function finishLineLoginPopup(
   }
 
   try {
+    // A native LINE callback may have lost its opener. Ask the worker to
+    // foreground only the PWA that registered this attempt before peer detection.
+    await requestLinePwaFocus(attempt.id, browser);
     if (!opener && channel && !await hasReturnPeer(browser, channel, attempt)) {
       channel.close();
       clearAttempt(browser);

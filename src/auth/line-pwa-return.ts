@@ -1,4 +1,5 @@
 import { isPwaDisplayMode } from '../pwa-display-mode';
+import { withDeadline } from '../lib/api-resilience';
 
 export const LINE_PWA_READY = 'matrix-line-pwa-ready';
 export const LINE_PWA_PING = 'matrix-line-pwa-ping';
@@ -96,7 +97,7 @@ export async function requestLinePwaReturn(
 
   let registration: Awaited<LineServiceWorkerBridge['ready']>;
   try {
-    registration = await serviceWorker.ready;
+    registration = await withDeadline(() => serviceWorker.ready, { timeoutMs: HANDOFF_TIMEOUT_MS });
   } catch {
     return false;
   }
@@ -125,5 +126,46 @@ export async function requestLinePwaReturn(
     } catch {
       finish(false);
     }
+  });
+}
+
+export async function registerLinePwaLoginAttempt(attemptId: string, browser: Window = window) {
+  const serviceWorker = browser.navigator?.serviceWorker;
+  if (!serviceWorker) return;
+  const receive = (event: MessageEvent) => {
+    if (event.data?.type !== 'matrix-line-pwa-login-ping' || event.data.attemptId !== attemptId) return;
+    try { serviceWorker.controller?.postMessage({ type: LINE_PWA_READY, attemptId }); }
+    catch { /* The next worker probe can retry after a controller change. */ }
+  };
+  serviceWorker.addEventListener('message', receive);
+  try {
+    const registration = await withDeadline(() => serviceWorker.ready, { timeoutMs: HANDOFF_TIMEOUT_MS });
+    serviceWorkerTarget(serviceWorker, registration.active)?.postMessage({ type: LINE_PWA_READY, attemptId });
+  } catch { /* Existing popup messaging remains available when the worker is unavailable. */ }
+  return () => serviceWorker.removeEventListener('message', receive);
+}
+
+export async function requestLinePwaFocus(attemptId: string, browser: Window = window): Promise<boolean> {
+  const serviceWorker = browser.navigator?.serviceWorker;
+  if (!serviceWorker) return false;
+  let target: ServiceWorker | null;
+  try {
+    const registration = await withDeadline(() => serviceWorker.ready, { timeoutMs: HANDOFF_TIMEOUT_MS });
+    target = registration.active ?? serviceWorker.controller;
+  } catch { return false; }
+  if (!target) return false;
+  return new Promise((resolve) => {
+    const finish = (ok: boolean) => {
+      browser.clearTimeout(timeout);
+      serviceWorker.removeEventListener('message', receive);
+      resolve(ok);
+    };
+    const receive = (event: MessageEvent) => {
+      if (event.data?.type === 'matrix-line-pwa-focus-result' && event.data.attemptId === attemptId) finish(event.data.ok === true);
+    };
+    const timeout = browser.setTimeout(() => finish(false), HANDOFF_TIMEOUT_MS);
+    serviceWorker.addEventListener('message', receive);
+    try { target.postMessage({ type: 'matrix-line-pwa-focus-request', attemptId }); }
+    catch { finish(false); }
   });
 }

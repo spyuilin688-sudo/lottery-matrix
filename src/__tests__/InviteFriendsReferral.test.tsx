@@ -7,6 +7,11 @@ const memberApi = vi.hoisted(() => ({
   fetchMemberReferralSummary: vi.fn(),
 }));
 
+vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
+  getSession: async () => ({ data: { session: { access_token: 'member-session' } }, error: null }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+} }) }));
+
 vi.mock('../member-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../member-api')>()),
   fetchMemberReferralSummary: memberApi.fetchMemberReferralSummary,
