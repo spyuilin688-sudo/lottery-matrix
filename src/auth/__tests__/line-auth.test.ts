@@ -65,17 +65,17 @@ afterEach(() => {
 
 describe('LINE auth helper', () => {
   it.each([
-    { name: 'Android fullscreen PWA', userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 },
-    { name: 'iPhone home-screen PWA', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
-    { name: 'iPad desktop user agent', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
-  ])('starts the managed PWA return flow for $name without disabling native LINE login', async (device) => {
+    ...['fullscreen', 'standalone', 'minimal-ui'].map((displayMode) => ({ name: `Android ${displayMode} PWA`, displayMode, userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 })),
+    { name: 'iPhone home-screen PWA', displayMode: undefined, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
+    { name: 'iPad desktop user agent', displayMode: 'fullscreen', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
+  ])('starts OAuth in the original window for $name without disabling native LINE login', async (device) => {
     vi.stubGlobal('navigator', device);
-    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
+    vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === `(display-mode: ${device.displayMode})` })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
     try {
       await signInWithLine(undefined, { auth: { signInWithOAuth } } as unknown as SupabaseClient);
-      expect(open).toHaveBeenCalledOnce();
+      expect(open).not.toHaveBeenCalled();
       expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
         provider: 'custom:line',
         options: {
@@ -99,7 +99,8 @@ describe('LINE auth helper', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 
-  it('opens an installed fullscreen PWA login window before OAuth starts', async () => {
+  it('opens an installed desktop fullscreen PWA login window before OAuth starts', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', platform: 'Linux', maxTouchPoints: 0 });
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });

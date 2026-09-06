@@ -11,7 +11,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { endActiveMemberOnlineSession } from '../member-online';
 import { ApiRequestError, withDeadline } from '../lib/api-resilience';
 import { logicalSessionIdentity } from './session-identity';
-import { isPwaDisplayMode } from '../pwa-display-mode';
+import { isMobilePwa, isPwaDisplayMode } from '../pwa-display-mode';
 import { signInWithLinePopup } from './line-login-popup';
 
 const SESSION_READ_TIMEOUT_MS = 2_500;
@@ -77,7 +77,9 @@ export async function signInWithLine(
   client: SupabaseClient = getSupabaseClient(),
 ) {
   const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
-  if (isPwaDisplayMode()) {
+  // Keep mobile OAuth in the originating PWA window. A separate window can
+  // leave Chrome in front after native LINE returns and the callback closes.
+  if (isPwaDisplayMode() && !isMobilePwa()) {
     const popupLogin = signInWithLinePopup(approvedRedirect, client);
     if (popupLogin) return popupLogin;
   }

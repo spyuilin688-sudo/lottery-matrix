@@ -105,13 +105,21 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-As of the second 2026-09-06 correction, mobile and desktop installed PWAs attempt
-a script-controlled OAuth window directly from the login click, keeping the
-original PWA open. Native LINE auto login remains allowed; do not add
-`disable_auto_login=true`. The return URL stays at the approved origin root,
-within the existing PWA scope. After validating that root, the implementation
-adds its own `matrix_line_return` UUID to correlate this callback. User-supplied
-redirect paths and query strings remain rejected.
+Mobile installed PWAs start OAuth in the original window, restoring the mobile
+routing used before PR #357. That PR made mobile use a separate OAuth window;
+the reported Android recording shows Chrome remaining in front after the
+callback closes, with the authenticated PWA visible only after Android Back.
+Restoring the original-window route removes that extra authorization window;
+automatic foreground return through native LINE still needs a physical-device
+check. Native LINE auto login remains allowed; do not add
+`disable_auto_login=true`. The mobile return URL is exactly the approved origin
+root, within the existing PWA scope, without a popup correlation query.
+
+Desktop installed PWAs retain the script-controlled OAuth window opened directly
+from the login click. After validating the approved root, this popup flow adds
+its own `matrix_line_return` UUID to correlate the callback. User-supplied
+redirect paths and query strings remain rejected. The following handoff also
+remains available for callbacks from older clients that already opened a popup.
 
 The callback hands its session to the original PWA after matching the origin,
 window source and one-time attempt ID. If native LINE opens a fresh callback
