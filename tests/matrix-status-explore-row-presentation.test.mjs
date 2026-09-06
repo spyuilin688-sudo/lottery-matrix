@@ -11,16 +11,22 @@ function rule(source, selector) {
   return source.match(new RegExp(`${escapedSelector}\\s*\\{[^}]*\\}`, 's'))?.[0] ?? '';
 }
 
-test('Matrix 狀態所有同碼結果共用單一結果框與一份表頭', () => {
+test('Matrix 狀態每個同碼結果使用獨立結果框與各自表頭', () => {
   const triggerTableRule = rule(statusCss, '.matrix-status-screen .matrix-status-trigger-table');
+  const groupRule = rule(statusCss, '.matrix-status-screen .matrix-status-trigger-group');
   const groupSeparatorRule = rule(statusCss, '.matrix-status-screen .matrix-status-trigger-group + .matrix-status-trigger-group');
 
   assert.match(statusComponent, /className="matrix-status-trigger-table"/);
-  assert.match(statusComponent, /showColumnHead=\{index === 0\}/);
+  assert.match(statusComponent, /showColumnHead=\{true\}/);
   assert.match(statusComponent, /\{showColumnHead \? \([\s\S]*?className="road-results-head"[\s\S]*?\) : null\}/);
-  assert.match(triggerTableRule, /margin-top:\s*0;/);
-  assert.match(triggerTableRule, /overflow:\s*hidden;/);
-  assert.match(groupSeparatorRule, /border-top:\s*1px solid rgba\(179,\s*139,\s*71,\s*\.58\);/);
+  assert.match(triggerTableRule, /display:\s*grid;/);
+  assert.match(triggerTableRule, /gap:\s*16px;/);
+  assert.match(triggerTableRule, /overflow:\s*visible;/);
+  assert.match(triggerTableRule, /border:\s*0;/);
+  assert.match(groupRule, /overflow:\s*hidden;/);
+  assert.match(groupRule, /border:\s*1px solid rgba\(179,\s*139,\s*71,\s*\.58\);/);
+  assert.match(groupRule, /border-radius:\s*8px;/);
+  assert.equal(groupSeparatorRule, '');
 });
 
 test('Matrix 狀態驗證摘要不受 status-detail 六欄段落規則影響', () => {
