@@ -1682,14 +1682,18 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .matrix-status-screen .status-block > button > svg[data-open="true"] { transform: rotate(90deg); }
 .matrix-status-screen .status-detail { padding: 0 7px 7px; }
-.matrix-status-screen .matrix-status-trigger-list { display: grid; gap: 7px; }
-.matrix-status-screen .matrix-status-trigger-card {
+.matrix-status-screen .matrix-status-trigger-list { display: block; }
+.matrix-status-screen .matrix-status-trigger-table {
   min-width: 0;
   margin-top: 0;
   overflow: hidden;
   border: 1px solid rgba(179, 139, 71, .58);
   border-radius: 8px;
   background: #030a0f;
+}
+.matrix-status-screen .matrix-status-trigger-group { min-width: 0; }
+.matrix-status-screen .matrix-status-trigger-group + .matrix-status-trigger-group {
+  border-top: 1px solid rgba(179, 139, 71, .58);
 }
 .matrix-status-screen .matrix-status-trigger-summary {
   display: grid;
@@ -1768,6 +1772,21 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .matrix-status-screen .matrix-status-road-results > article + article {
   border-top: 1px solid rgba(57, 55, 49, .58);
+}
+.matrix-status-screen .status-detail .explore-validation-summary {
+  display: block;
+  margin: 0;
+  padding: 5px 2px 5px 4px;
+  grid-template-columns: none;
+  align-items: initial;
+  border-top: 0;
+  color: #f2f5f8;
+  font-size: var(--explore-summary-fit-font-size, var(--explore-validation-summary-font-size));
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -.04em;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .matrix-status-screen .road-result-row {
   min-height: 0;

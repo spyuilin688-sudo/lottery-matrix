@@ -78,25 +78,26 @@ beforeEach(() => {
   });
 });
 
-test('狀態頁逐一呈現觸發卡片，並沿用探索結果表頭與版路列', async () => {
+test('狀態頁以單一結果框呈現所有同碼群組，並只顯示一份探索結果表頭', async () => {
   render(<MatrixStatusPage onNavigate={vi.fn()} />);
   const roadRow = await screen.findByRole('button', { name: '展開版路 road' });
   expect(roadRow).toHaveTextContent('順球1');
   expect(screen.getByText('05')).toBeTruthy();
   expect(screen.getAllByText('08').length).toBeGreaterThan(0);
   expect(screen.getByText('2 組')).toBeTruthy();
-  expect(screen.getAllByTestId('matrix-status-trigger-card')).toHaveLength(2);
-  const firstCard = screen.getAllByTestId('matrix-status-trigger-card')[0];
-  expect(within(firstCard).getByText('單碼結果')).toBeInTheDocument();
-  expect(within(firstCard).getByText('共振')).toBeInTheDocument();
-  const lockedRow = firstCard.querySelector('.matrix-status-locked-road .road-result-row');
+  const resultTable = screen.getByTestId('matrix-status-trigger-table');
+  expect(screen.getAllByTestId('matrix-status-trigger-group')).toHaveLength(2);
+  const firstGroup = screen.getAllByTestId('matrix-status-trigger-group')[0];
+  expect(within(firstGroup).getByText('單碼結果')).toBeInTheDocument();
+  expect(within(firstGroup).getByText('共振')).toBeInTheDocument();
+  const lockedRow = firstGroup.querySelector('.matrix-status-locked-road .road-result-row');
   expect(lockedRow?.children).toHaveLength(6);
   for (const index of [0, 1, 2, 3, 5]) {
     expect(lockedRow?.children[index]).toHaveTextContent('🔒 Matrix Pro');
   }
   expect(lockedRow?.children[4]).toHaveTextContent('08');
   for (const heading of ['位置', '號碼', '預測期', '連準次數', '預測', '版路類型']) {
-    expect(within(firstCard).getByText(heading)).toBeInTheDocument();
+    expect(within(resultTable).getAllByText(heading)).toHaveLength(1);
   }
   expect(screen.queryByText('成立次數')).not.toBeInTheDocument();
   expect(screen.queryByText(/A 類型|B 類型|C 類型|D 類型/)).not.toBeInTheDocument();

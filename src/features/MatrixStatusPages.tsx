@@ -18,6 +18,7 @@ export const MATRIX_STATUS_LABELS: Record<CustomMatrixStatusCode, string> = {
 
 export function MatrixStatusTriggerCard({
   card,
+  showColumnHead,
   lottery,
   analysisVersion,
   expandedRoad,
@@ -27,6 +28,7 @@ export function MatrixStatusTriggerCard({
   onToggleRoad,
 }: {
   card: MatrixStatusCard;
+  showColumnHead: boolean;
   lottery: LotteryId;
   analysisVersion: string;
   expandedRoad: string | null;
@@ -37,7 +39,7 @@ export function MatrixStatusTriggerCard({
 }) {
   const resultLabel = card.hitType === "one-code" ? "單碼結果" : "兩碼結果";
   return (
-    <article className="matrix-status-trigger-card" data-testid="matrix-status-trigger-card">
+    <section className="matrix-status-trigger-group" data-testid="matrix-status-trigger-group">
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
           <small>{resultLabel}</small>
@@ -50,14 +52,16 @@ export function MatrixStatusTriggerCard({
         </span>
       </header>
       <div className="road-results matrix-status-road-results">
-        <div className="road-results-head" aria-hidden="true">
-          <span>位置</span>
-          <span>號碼</span>
-          <span>預測期</span>
-          <span>連準次數</span>
-          <span>預測</span>
-          <span>版路類型</span>
-        </div>
+        {showColumnHead ? (
+          <div className="road-results-head" aria-hidden="true">
+            <span>位置</span>
+            <span>號碼</span>
+            <span>預測期</span>
+            <span>連準次數</span>
+            <span>預測</span>
+            <span>版路類型</span>
+          </div>
+        ) : null}
         {card.roads.map((road) => {
           if (road.locked) {
             return (
@@ -120,7 +124,7 @@ export function MatrixStatusTriggerCard({
           );
         })}
       </div>
-    </article>
+    </section>
   );
 }
 
@@ -236,17 +240,20 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                 <div className="status-detail" id={detailId}>
                   {cards.length > 0 && result ? (
                     <div className="matrix-status-trigger-list">
-                      {cards.map((card) => <MatrixStatusTriggerCard
-                        card={card}
-                        lottery={lottery}
-                        analysisVersion={result.analysisVersion}
-                        expandedRoad={expandedRoad}
-                        validationById={validationById}
-                        validationLoadingId={validationLoadingId}
-                        validationErrorId={validationErrorId}
-                        onToggleRoad={toggleRoad}
-                        key={card.id}
-                      />)}
+                      <article className="matrix-status-trigger-table" data-testid="matrix-status-trigger-table">
+                        {cards.map((card, index) => <MatrixStatusTriggerCard
+                          card={card}
+                          showColumnHead={index === 0}
+                          lottery={lottery}
+                          analysisVersion={result.analysisVersion}
+                          expandedRoad={expandedRoad}
+                          validationById={validationById}
+                          validationLoadingId={validationLoadingId}
+                          validationErrorId={validationErrorId}
+                          onToggleRoad={toggleRoad}
+                          key={card.id}
+                        />)}
+                      </article>
                     </div>
                   ) : <p className="empty-result">尚無成立觸發</p>}
                 </div>
