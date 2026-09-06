@@ -139,9 +139,9 @@
   justify-self: start;
 }
 
-/* Keep these three icons 4px below their visible top divider. */
+/* Reserve top spacing in layout so the 4px bottom padding is preserved. */
 .notifications-screen-v2 .notification-row:is([data-notification-key="bet"], [data-notification-key="result"], [data-notification-key="win"]) .notification-icon {
-  translate: 0 4px;
+  margin-block-start: 4px;
 }
 
 .notifications-screen-v2 .notification-icon img {
