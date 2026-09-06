@@ -999,32 +999,44 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notification-modal:has(.notification-status-settings) .notification-modal-done { min-height: 48px; margin-top: 8px; }
 
 /* Approved A+B membership cards: sole owner of the two profile surfaces. */
+.membership-card-stack {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 9px 8px 12px;
+  gap: 4px;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(13, 24, 29, .45), transparent 28%),
+    var(--lottery-neutral-950);
+}
 .profile-screen .panel.membership-card {
   position: relative;
   isolation: isolate;
   box-sizing: border-box;
   min-width: 0;
   margin: 0;
-  padding: 2px;
-  border: 12px solid transparent;
+  padding: 0 1px;
+  border: 8px solid transparent;
   border-radius: 0;
-  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 20px / 0 stretch;
+  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 16px / 0 stretch;
   background: transparent;
   box-shadow: none;
 }
 .profile-card {
   display: grid;
-  min-height: 100px;
+  min-height: 82px;
   overflow: hidden;
-  grid-template-columns: 64px minmax(0, 1fr) 70px;
+  grid-template-columns: 56px minmax(0, 1fr) 58px;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 .profile-avatar {
   z-index: 1;
   display: grid;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -1040,10 +1052,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-watermark {
   position: absolute;
   z-index: -1;
-  inset: -9px 34px auto auto;
+  inset: -9px 30px auto auto;
   color: var(--lottery-label);
   opacity: .09;
-  font-size: 96px;
+  font-size: 86px;
   font-weight: 800;
   line-height: 1;
   pointer-events: none;
@@ -1053,13 +1065,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   min-width: 0;
 }
 .profile-card .profile-copy h2 {
-  margin: 0 0 6px;
-  padding-bottom: 6px;
+  margin: 0 0 3px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--lottery-border-default);
   color: var(--lottery-text-primary);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 18px;
 }
 .profile-card .profile-copy p {
   display: block;
@@ -1069,32 +1081,49 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 0px solid transparent;
+  border: 0 solid transparent;
   border-radius: 0;
   background: transparent;
   color: var(--lottery-text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 10px; }
+.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 9px; }
 .profile-logout {
+  position: relative;
   z-index: 1;
+  display: grid;
   align-self: center;
-  width: 70px;
+  width: 58px;
   min-width: 0;
   min-height: 44px;
-  height: auto;
-  padding: 6px 4px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--lottery-border-selected);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.profile-logout::before {
+  position: absolute;
+  z-index: -1;
+  inset: 7px 0;
   border: 1px solid var(--lottery-border-selected);
   border-radius: 999px;
   background: var(--lottery-neutral-950);
-  color: var(--lottery-border-selected);
-  font-size: 13px;
-  line-height: 1.3;
-  cursor: pointer;
+  content: "";
+}
+.profile-logout > span {
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .profile-logout:disabled {
   cursor: wait;
@@ -1102,12 +1131,12 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .subscription-status-card > .section-title {
   min-width: 0;
-  margin: 0 0 10px;
-  gap: 8px;
+  margin: 0 0 3px;
+  gap: 6px;
   color: var(--lottery-text-primary);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 24px;
+  line-height: 19px;
 }
 .subscription-status-card > .section-title::after {
   content: "";
@@ -1117,91 +1146,112 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-content {
   display: grid;
   min-width: 0;
-  margin: 0 0 12px;
-  grid-template-columns: 48px minmax(0, 1.15fr) minmax(0, 1fr);
+  margin: 0 0 2px;
+  grid-template-columns: 42px minmax(0, 1.15fr) minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .subscription-crown {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
 }
 .subscription-status-content > div { min-width: 0; }
 .subscription-status-content .subscription-expiry {
   align-self: stretch;
-  padding-left: 12px;
+  padding-left: 8px;
   border-left: 1px solid var(--lottery-label);
 }
 .subscription-status-content span {
   display: block;
   color: var(--lottery-text-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 10px;
+  line-height: 13px;
 }
 .subscription-status-content strong {
   display: block;
-  margin-top: 3px;
+  margin-top: 1px;
   color: var(--lottery-border-selected);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 22px;
+  line-height: 18px;
   font-variant-numeric: tabular-nums;
 }
 .subscription-status-content p {
-  margin: 4px 0 0;
+  margin: 1px 0 0;
   color: var(--lottery-text-secondary);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 9px;
+  line-height: 12px;
 }
 .subscription-entry {
+  position: relative;
+  isolation: isolate;
   display: grid;
   box-sizing: border-box;
   width: 100%;
   min-height: 44px;
-  height: auto;
+  height: 44px;
   margin: 0;
-  padding: 2px 4px;
-  grid-template-columns: 1fr 18px;
+  padding: 0 9px;
+  grid-template-columns: 1fr 16px;
   align-items: center;
-  border: 10px solid transparent;
-  border-radius: 0;
-  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 18px / 0 stretch;
+  border: 0;
   background: transparent;
   color: var(--lottery-text-primary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 20px;
+  line-height: 18px;
   cursor: pointer;
 }
+.subscription-entry::before {
+  position: absolute;
+  z-index: -1;
+  inset: 3px 0;
+  border: 8px solid transparent;
+  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 14px / 0 stretch;
+  content: "";
+}
 .subscription-entry svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   justify-self: end;
   color: var(--lottery-border-selected);
 }
 .profile-logout:focus-visible,
 .subscription-entry:focus-visible {
   outline: 2px solid var(--lottery-border-selected);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .profile-logout:active,
 .subscription-entry:active { opacity: .8; }
 @media (hover: hover) {
-  .profile-logout:not(:disabled):hover,
-  .subscription-entry:hover { background-color: var(--lottery-card-bg); }
+  .profile-logout:not(:disabled):hover::before,
+  .subscription-entry:hover::before { filter: brightness(1.08); }
 }
 @media (max-width: 360px) {
-  .profile-card { grid-template-columns: 52px minmax(0, 1fr) 66px; gap: 6px; }
+  .membership-card-stack {
+    padding: 8px 6px 10px;
+    border-radius: 20px;
+  }
+  .profile-card {
+    min-height: 78px;
+    grid-template-columns: 52px minmax(0, 1fr) 54px;
+    gap: 6px;
+  }
   .profile-avatar { width: 52px; height: 52px; }
-  .profile-logout { width: 66px; font-size: 12px; }
-  .profile-card .profile-copy h2 { font-size: 15px; }
-  .subscription-status-content { grid-template-columns: 38px minmax(0, 1.1fr) minmax(0, 1fr); gap: 6px; }
+  .profile-logout { width: 54px; font-size: 11px; }
+  .profile-card .profile-copy h2 { font-size: 14px; }
+  .subscription-status-content {
+    grid-template-columns: 38px minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 5px;
+  }
   .subscription-crown { width: 38px; height: 38px; }
-  .subscription-status-content .subscription-expiry { padding-left: 8px; }
-  .subscription-status-content strong { font-size: 14px; }
+  .subscription-status-content .subscription-expiry { padding-left: 6px; }
+  .subscription-status-content strong { font-size: 13px; }
+  .subscription-status-content p { font-size: 8px; }
 }
+
 @media (forced-colors: active) {
   .profile-screen .panel.membership-card,
   .subscription-entry { border: 1px solid CanvasText; border-image: none; background: Canvas; padding: 12px; }
