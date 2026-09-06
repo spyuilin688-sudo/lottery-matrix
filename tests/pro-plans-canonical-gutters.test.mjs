@@ -58,12 +58,12 @@ test("方案卡與付款區以實際水平 gutter 擁有 19px 與 16px", () => {
     ownerCss,
     /\.pro-plans-screen\s+\.plan-carousel\s*\{[^}]*padding:\s*0\s+var\(--pro-plans-plan-inline\)\s+18px;[^}]*scroll-padding-inline:\s*var\(--pro-plans-plan-inline\);[^}]*gap:\s*var\(--pro-plans-plan-inline\);/s,
   );
-  assert.match(ownerCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+100%;/s);
+  assert.match(ownerCss, /\.pro-plans-screen\s+\.plan-card\s*\{[^}]*flex:\s*0\s+0\s+calc\(100%\s*-\s*24px\);/s);
   assert.match(
     ownerCss,
     /\.pro-plans-screen\s+\.pro-plans-checkout\s*\{[^}]*margin-inline:\s*var\(--pro-plans-checkout-inline\);/s,
   );
-  assert.doesNotMatch(ownerCss, /calc\(100%\s*-\s*\(var\(--pro-plans-plan-inline\)\s*\*\s*2\)\)/);
+  assert.match(ownerCss, /flex:\s*0\s+0\s+calc\(100%\s*-\s*24px\)/);
 });
 
 test("Pro 方案水平幾何只由專屬 layout 檔控制", () => {
