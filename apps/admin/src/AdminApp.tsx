@@ -917,7 +917,7 @@ function UserManager({
           <option value="active">啟用</option>
           <option value="disabled">停用</option>
         </select>
-        <span>{filtered.length} 筆資料</span>
+        <span className="managementCount" aria-label={`共 ${filtered.length} 筆資料`}>{filtered.length} 筆</span>
       </div>
       <div className="managementList tableWrap">
         <table>
@@ -992,7 +992,7 @@ function SubscriptionManager({
         <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
           <option value="all">全部狀態</option><option value="active">啟用</option><option value="disabled">停用</option>
         </select>
-        <span>{filtered.length} 筆資料</span>
+        <span className="managementCount" aria-label={`共 ${filtered.length} 筆資料`}>{filtered.length} 筆</span>
       </div>
       <div className="managementList tableWrap">
         <table>
@@ -1026,7 +1026,7 @@ function SubscriptionManager({
         {transfers.length === 0 ? <div className="empty">目前沒有資料</div> : transfers.map((row) => (
           <div className="transferRow" key={row.id}>
             <div><b>{text(row.lineDisplayName)}</b><span>{text(row.planName)}／{money(Number(row.amount))}／末五碼 {text(row.accountLastFive)}</span></div>
-            <span>{text(row.status)}</span>
+            <span>{({ pending: "待確認", confirmed: "已確認", rejected: "已拒絕" } as Record<string, string>)[String(row.status)] || text(row.status)}</span>
             {canEdit && row.status === "pending" && <div className="transferActions"><button onClick={() => onTransfer(row.id, "confirmed")}>確認</button><button className="transferReject" onClick={() => onTransfer(row.id, "rejected")}>拒絕</button></div>}
           </div>
         ))}
@@ -1236,15 +1236,16 @@ function AdminManager({
     </>
   );
 }
-function Cards({ items }: { items: [string, string][] }) {
+function Cards({ items, splitAfter }: { items: [string, string][]; splitAfter?: number }) {
   return (
-    <div className="cards">
-      {items.map(([a, b]) => (
+    <div className={splitAfter ? "cards overviewCards" : "cards"}>
+      {items.flatMap(([a, b], index) => [
+        ...(index === splitAfter ? [<div className="metricDivider" role="separator" aria-label="瀏覽與訂閱統計分隔" key="divider" />] : []),
         <div className="metric" key={a}>
           <span>{a}</span>
           <strong>{b}</strong>
-        </div>
-      ))}
+        </div>,
+      ])}
     </div>
   );
 }
@@ -1252,6 +1253,7 @@ function Overview({ d }: { d: Dashboard }) {
   return (
     <>
       <Cards
+        splitAfter={4}
         items={[
           ["本日瀏覽人數", d.todayVisitors == null ? "—" : String(d.todayVisitors)],
           ["本月瀏覽人數", d.monthVisitors == null ? "—" : String(d.monthVisitors)],

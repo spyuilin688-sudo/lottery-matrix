@@ -21,5 +21,9 @@ it('shows the three visitor counts alongside existing member counts', async () =
     expect(metrics).toContain('本月瀏覽人數7');
     expect(metrics).toContain('總瀏覽人數12');
     expect(metrics).toContain('總用戶數4');
+    const grid = container.querySelector('.overviewCards')!;
+    expect(grid.children).toHaveLength(9);
+    expect(grid.children[4].getAttribute('role')).toBe('separator');
+    expect([...grid.children].slice(5)).toHaveLength(4);
   } finally { await act(async () => root.unmount()); container.remove(); }
 });

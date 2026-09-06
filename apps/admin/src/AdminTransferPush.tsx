@@ -37,7 +37,7 @@ function TransferPushControl({ client }: { client: TransferPushApi }) {
   };
   return <section className="adminTransferPush" aria-label="新轉帳手機通知">
     <div className="adminTransferPushRow"><strong>手機通知</strong><button type="button" disabled={busy || Boolean(unavailable)} aria-busy={busy} onClick={toggle}>{enabled ? '停用此裝置通知' : '啟用此裝置通知'}</button></div>
-    <p>新轉帳申請送出時通知此裝置；關閉後台或登出後仍可接收。通知僅顯示提醒，不包含轉帳資料。</p>
+    <p>新轉帳申請通知此裝置，關閉後台或登出後仍可接收。僅提醒，不含轉帳資料。</p>
     <p className="adminTransferPushStatus" role={error ? 'alert' : 'status'}>{unavailable || error || notice || (busy ? '正在確認通知狀態…' : enabled ? '此裝置已啟用通知。' : '此裝置尚未啟用通知。')}</p>
   </section>;
 }

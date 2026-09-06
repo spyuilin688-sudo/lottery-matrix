@@ -1,6 +1,6 @@
 .managementToolbar {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 180px auto;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
@@ -28,11 +28,12 @@
 .operationDialog select,
 .formGrid input,
 .formGrid select,
-.nameDialog input { min-height: 42px; }
+.nameDialog input { min-height: 34px; }
 .operationDialog input,
-.operationDialog select { padding: 10px; }
+.operationDialog select { padding: 6px 8px; }
 
-.managementToolbar span { color: #8f939b; font-size: 13px; }
+.managementToolbar span { color: #8f939b; font-size: 12px; white-space: nowrap; }
+.managementToolbar input, .managementToolbar select { min-width: 0; font-size: 13px; }
 .compactButton { height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #4b4534; background: #1b1913; color: #e1c170; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .formActions .primary { background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; border-color: #b48a35; }
 .mobileManagement { display: none; }
@@ -47,7 +48,7 @@
 .statusBadge.bad { color: #efabab; background: #371919; }
 .mobileManagement.subscriptionGrid { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .cardActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.operationDialog { width: min(430px, 100%); padding: 18px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
+.operationDialog { width: min(430px, 100%); padding: 14px; border: 1px solid #8c6d28; border-radius: 12px; background: #111419; box-shadow: 0 24px 80px #000b; }
 .operationDialog h2 { margin: 0 0 10px; font-size: 18px; }
 .operationDialog p { color: #989ca5; }
 .operationDialog label { display: block; color: #989ca5; font-size: 12px; }
@@ -62,7 +63,7 @@
 .transferActions .transferReject { color: #d98585; }
 .permissionBox span { font-size: 13px; color: #c4c6cc; }
 .managementList table { min-width: 980px; }
-.pagination { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; }
+.pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
 .pagination button { border: 1px solid #343840; background: #15181d; color: #eee; border-radius: 8px; padding: 7px 10px; }
 .pagination button:disabled { opacity: .4; }
 .pagination span { color: #8f939b; font-size: 13px; }
@@ -72,21 +73,23 @@
 .userInfoRows b { font-size: 13px; overflow-wrap: anywhere; }
 
 /* Shared hierarchy and rhythm across every admin surface. */
-.content { padding: 20px; }
+.content { padding: 14px; }
 .side nav { gap: 6px; }
-.nav { min-height: 42px; padding: 10px 12px; font-size: 13px; }
+.nav { min-height: 34px; padding: 10px 12px; font-size: 13px; }
 header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .actions button,
 .menu { min-width: 40px; min-height: 40px; }
-.cards { gap: 12px; }
+.cards { gap: 8px; }
+.overviewCards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.metricDivider { grid-column: 1 / -1; height: 1px; margin: 0; background: #30333a; }
 .metric,
 .panel,
 .formCard,
 .tableWrap { border-color: #30333a; box-shadow: 0 8px 24px #0002; }
-.metric { min-height: 82px; padding: 12px; }
+.metric { min-height: 60px; padding: 8px 10px; gap: 4px; }
 .metric span { font-size: 12px; }
-.metric strong { font-size: 23px; }
-.panel { padding: 14px; }
+.metric strong { font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+.panel { padding: 10px; }
 .transferPanel { margin-top: 8px; }
 .panel.transferPanel { padding: 8px 10px; }
 .transferPanel h2 { margin: 0 0 4px; }
@@ -103,22 +106,22 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .revenueResetButton:hover:not(:disabled),
 .revenueResetButton:focus-visible { border-color: #a84a4a; background: #321b1b; color: #ffd2d2; }
 .revenueResetButton:disabled { cursor: not-allowed; opacity: .55; }
-.formCard { padding: 18px; }
+.formCard { padding: 12px; }
 .panel h2,
-.formCard h3 { font-size: 17px; line-height: 1.4; }
-.toolbar { min-height: 42px; gap: 12px; }
+.formCard h3 { font-size: 15px; line-height: 1.4; }
+.toolbar { min-height: 34px; gap: 12px; }
 .toolbar .primary { height: 32px; min-height: 0; padding: 4px 10px; }
 .tableWrap tbody tr:last-child td { border-bottom: 0; }
 .tableWrap tbody tr:hover td { background: #14171c; }
-.formActions button { min-width: 84px; min-height: 38px; }
-.pagination button { min-width: 36px; min-height: 36px; }
+.formActions button { min-width: 64px; min-height: 32px; font-size: 13px; }
+.pagination button { min-width: 0; min-height: 30px; padding: 4px 8px; font-size: 12px; }
 
 .modalBackdrop { overflow-y: auto; }
 .confirmationBackdrop { z-index: 60; }
 .confirmationDialog {
   width: 100%;
   max-width: 420px;
-  padding: 20px;
+  padding: 14px;
   border: 1px solid #8c6d28;
   border-radius: 14px;
   background: #111419;
@@ -126,19 +129,20 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 }
 .confirmationDialog h2 { margin: 0 0 10px; font-size: 19px; line-height: 1.4; }
 .confirmationDialog p { margin: 0; color: #a4a8b0; font-size: 14px; line-height: 1.65; }
-.confirmationDialog .formActions { margin-top: 20px; }
+.confirmationDialog .formActions { margin-top: 12px; }
 .confirmationDialog .confirmDanger { border-color: #a84a4a; background: #6f2727; color: #fff; font-weight: 800; }
 
 @media (max-width: 760px) {
-  .content { padding: 12px; }
+  .content { padding: 10px; }
   header { padding: 0 10px; }
   .actions { gap: 6px; }
-  .cards { gap: 10px; }
-  .metric { min-height: 78px; padding: 12px; }
-  .panel { padding: 12px; }
-  .formCard { padding: 14px; }
-  .managementToolbar { grid-template-columns: minmax(0, 1fr) 118px; gap: 6px; padding: 6px; }
-  .managementToolbar span { grid-column: 1 / -1; }
+  .cards { gap: 8px; }
+  .overviewCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric { min-height: 60px; padding: 8px; }
+  .panel { padding: 10px; }
+  .formCard { padding: 10px; }
+  .managementToolbar { grid-template-columns: minmax(0, 1fr) 94px auto; gap: 6px; padding: 6px; }
+  .managementToolbar span { grid-column: auto; }
   .managementList { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .managementList table { min-width: 920px; }
   .transferRow { grid-template-columns: 1fr auto; }
@@ -148,11 +152,11 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
   .managementCard > .compactButton { width: 100%; margin-top: 10px; }
   .pagination { justify-content: center; }
   .userInfoRows > div { grid-template-columns: 105px minmax(0, 1fr); }
-  .formActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .formActions button { width: 100%; min-width: 0; }
+  .formActions { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+  .formActions button { width: auto; min-width: 64px; }
   .confirmationDialog,
   .operationDialog,
-  .nameDialog { padding: 16px; }
+  .nameDialog { padding: 12px; }
 }
 
 .activationCodeFormCard {
@@ -185,7 +189,20 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .activationCodeCreateButton { height: 30px; min-height: 0; }
 
 @media(max-width:520px) {
-  .activationCodeFormCard { max-width: none; width: 100%; padding: 10px; }
+  .activationCodeFormCard { max-width: none; width: 100%; padding: 6px 8px; }
   .activationCodeFormGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .activationCodeFormCard .formActions { display: flex; justify-content: flex-end; }
 }
+
+.managementList td { height: 34px; padding: 4px 10px; }
+.managementList th { padding: 7px 10px; }
+.tableWrap .compactButton { height: 28px; }
+.transferRow b { font-size: 13px; line-height: 1.4; }
+.transferRow > div:first-child { min-width: 0; }
+.transferRow > div:first-child span { overflow-wrap: anywhere; }
+.transferPanel .transferRow:first-of-type { border-top: 0; }
+
+.nameDialog { padding: 14px; }
+.nameDialog h2 { margin-bottom: 10px; font-size: 17px; }
+.nameDialog input { padding: 6px 8px; }
+@media (max-width: 760px) { .nameDialog { padding: 12px; } }
