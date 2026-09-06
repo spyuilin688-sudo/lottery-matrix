@@ -139,6 +139,11 @@
   justify-self: start;
 }
 
+/* Keep these three icons 4px below their visible top divider. */
+.notifications-screen-v2 .notification-row:is([data-notification-key="bet"], [data-notification-key="result"], [data-notification-key="win"]) .notification-icon {
+  translate: 0 4px;
+}
+
 .notifications-screen-v2 .notification-icon img {
   display: block;
   object-fit: contain;
