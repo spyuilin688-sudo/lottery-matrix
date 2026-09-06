@@ -168,12 +168,30 @@ def _normalize_supabase_draw(draw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _history(repository: AnalysisRepository, lottery: str, limit: int | None) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    seen: dict[str, dict[str, Any]] = {}
+
+    def append_unique(draw: dict[str, Any]) -> None:
+        period = draw["period"]
+        if lottery in {"今彩539", "大樂透"} and len(period) == 8 and period.isdigit():
+            period = period.zfill(9)
+        draw = {**draw, "period": period, "issue": period}
+        previous = seen.get(period)
+        if previous is not None:
+            if previous != draw:
+                raise ValueError("DRAW_HISTORY_CONFLICT")
+            return
+        seen[period] = draw
+        items.append(draw)
+
     client = getattr(repository, "client", None)
     if client is None:
-        request_limit = limit if limit is not None else 100_000
-        return [_normalize_draw(draw) for draw in repository.list_draws(lottery, request_limit)]
+        for draw in repository.list_draws(lottery, None):
+            append_unique(_normalize_draw(draw))
+            if limit is not None and len(items) >= limit:
+                break
+        return items
 
-    items: list[dict[str, Any]] = []
     offset = 0
     remaining = limit
     while remaining is None or remaining > 0:
@@ -188,12 +206,13 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
             .execute()
         )
         rows = [dict(row) for row in response.data]
-        items.extend(_normalize_supabase_draw(row) for row in rows)
+        for row in rows:
+            append_unique(_normalize_supabase_draw(row))
         if len(rows) < page_size:
             break
         offset += len(rows)
         if remaining is not None:
-            remaining -= len(rows)
+            remaining = limit - len(items)
     return items if limit is None else items[:limit]
 
 
