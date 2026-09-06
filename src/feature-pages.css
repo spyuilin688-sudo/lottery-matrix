@@ -1256,8 +1256,19 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 
 @media (forced-colors: active) {
-  .profile-screen .panel.membership-card,
-  .subscription-entry { border: 1px solid CanvasText; border-image: none; background: Canvas; padding: 12px; }
+  .membership-card-stack { background: Canvas; }
+  .profile-screen .panel.membership-card {
+    padding: 12px;
+    border: 1px solid CanvasText;
+    border-image: none;
+    background: Canvas;
+  }
+  .profile-logout::before,
+  .subscription-entry::before {
+    border: 1px solid ButtonText;
+    border-image: none;
+    background: Canvas;
+  }
   .profile-watermark { display: none; }
 }
 
