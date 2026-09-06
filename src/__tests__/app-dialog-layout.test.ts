@@ -16,11 +16,11 @@ function rule(selector: string) {
 }
 
 describe("shared front-end confirmation dialog layout", () => {
-  it("uses one 310 by 200 pixel size with viewport safeguards and internal scrolling", () => {
+  it("uses a compact content-adaptive size with viewport safeguards and internal scrolling", () => {
     const content = rule(".app-dialog-content");
 
-    expect(content).toMatch(/width:\s*310px/);
-    expect(content).toMatch(/height:\s*200px/);
+    expect(content).toMatch(/width:\s*280px/);
+    expect(content).not.toMatch(/height:\s*200px/);
     expect(content).toMatch(/max-width:\s*calc\(100vw - \(var\(--layout-dialog-inline\) \* 2\)\)/);
     expect(content).toMatch(/max-height:\s*min\(78dvh, 480px\)/);
     expect(content).toMatch(/overflow:\s*auto/);

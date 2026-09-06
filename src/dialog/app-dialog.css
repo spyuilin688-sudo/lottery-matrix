@@ -16,12 +16,11 @@
   left: 50%;
   box-sizing: border-box;
   display: grid;
-  width: 310px;
+  width: 280px;
   max-width: calc(100vw - (var(--layout-dialog-inline) * 2));
-  height: 200px;
   max-height: min(78dvh, 480px);
-  gap: 10px;
-  padding: 16px 14px 14px;
+  gap: 8px;
+  padding: 12px;
   overflow: auto;
   transform: translate(-50%, -50%);
   border: 1px solid var(--dialog-accent);
@@ -48,7 +47,7 @@
 
 .app-dialog-icon {
   display: grid;
-  width: 50px;
+  width: 42px;
   aspect-ratio: 1;
   margin-inline: auto;
   place-items: center;
@@ -57,14 +56,14 @@
   background: color-mix(in srgb, var(--dialog-accent) 13%, #06101c);
   box-shadow: 0 0 22px color-mix(in srgb, var(--dialog-accent) 28%, transparent);
   color: var(--dialog-accent-bright);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 400;
   line-height: 1;
 }
 
 .app-dialog-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 
 .app-dialog-title {
@@ -93,12 +92,16 @@
 
 .app-dialog-actions[data-single="true"] {
   grid-template-columns: 1fr;
+  width: 200px;
+  max-width: 100%;
+  justify-self: center;
 }
 
 .app-dialog-button {
+  box-sizing: border-box;
   min-width: 0;
   min-height: var(--layout-touch-target);
-  padding: 8px 9px;
+  padding: 6px 8px;
   border: 1px solid var(--dialog-accent);
   border-radius: 8px;
   font-weight: 800;

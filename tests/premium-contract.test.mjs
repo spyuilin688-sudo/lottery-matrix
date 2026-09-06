@@ -214,12 +214,15 @@ test("routes every reachable confirmation through the shared accessible dialog o
   assert.doesNotMatch(dialogContract, /LegacyMatrixNotebookPage/);
 });
 
-test("keeps shared confirmation prompt size and typography compact on mobile", () => {
+test("keeps every shared prompt compact and content-adaptive on mobile", () => {
   const dialogStyles = readFileSync("src/dialog/app-dialog.css", "utf8");
-  assert.doesNotMatch(dialogStyles, /\.app-dialog-content\s*\{[^}]*330px/s);
-  assert.match(dialogStyles, /\.app-dialog-content\s*\{[^}]*width:\s*310px;[^}]*max-width:\s*calc\(100vw - \(var\(--layout-dialog-inline\) \* 2\)\);[^}]*height:\s*200px;[^}]*max-height:\s*min\(78dvh,\s*480px\);[^}]*gap:\s*10px;[^}]*padding:\s*16px 14px 14px;[^}]*overflow:\s*auto;[^}]*border-radius:\s*12px;/s);
-  assert.match(dialogStyles, /\.app-dialog-icon\s*\{[^}]*width:\s*50px;[^}]*font-size:\s*28px;/s);
+
+  assert.match(dialogStyles, /\.app-dialog-content\s*\{[^}]*width:\s*280px;[^}]*max-width:\s*calc\(100vw - \(var\(--layout-dialog-inline\) \* 2\)\);[^}]*max-height:\s*min\(78dvh,\s*480px\);[^}]*gap:\s*8px;[^}]*padding:\s*12px;[^}]*overflow:\s*auto;[^}]*border-radius:\s*12px;/s);
+  assert.doesNotMatch(dialogStyles, /\.app-dialog-content\s*\{[^}]*height:\s*200px;/s);
+  assert.match(dialogStyles, /\.app-dialog-icon\s*\{[^}]*width:\s*42px;[^}]*font-size:\s*24px;/s);
+  assert.match(dialogStyles, /\.app-dialog-icon svg\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/s);
   assert.match(dialogStyles, /\.app-dialog-title\s*\{[^}]*font-size:\s*17px;/s);
   assert.match(dialogStyles, /\.app-dialog-description\s*\{[^}]*font-size:\s*13px;[^}]*line-height:\s*1\.5;/s);
-  assert.match(dialogStyles, /\.app-dialog-button\s*\{[^}]*min-height:\s*var\(--layout-touch-target\);[^}]*padding:\s*8px 9px;[^}]*border-radius:\s*8px;/s);
+  assert.match(dialogStyles, /\.app-dialog-actions\[data-single="true"\]\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*width:\s*200px;[^}]*max-width:\s*100%;[^}]*justify-self:\s*center;/s);
+  assert.match(dialogStyles, /\.app-dialog-button\s*\{[^}]*box-sizing:\s*border-box;[^}]*min-height:\s*var\(--layout-touch-target\);[^}]*padding:\s*6px 8px;[^}]*border-radius:\s*8px;/s);
 });
