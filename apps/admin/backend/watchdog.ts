@@ -167,7 +167,7 @@ export function expectedDrawDateForDueWindow(
       return dueAt > previousTick && dueAt <= currentMinute;
     });
     if (hasDueCheckpoint) {
-      return dateText(lottery === '天天樂' ? addDays(cycleDay, -1) : cycleDay);
+      return dateText(cycleDay);
     }
   }
   return null;

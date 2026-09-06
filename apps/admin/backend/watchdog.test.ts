@@ -138,8 +138,18 @@ describe('independent Matrix watchdog planning', () => {
 
   it('does nothing when the latest draw and its analysis are complete', () => {
     expect(planWatchdogActions([
-      healthy('天天樂', '11989', '2026-09-03'),
+      healthy('天天樂', '11989', '2026-09-04'),
     ], new Date('2026-09-04T01:45:00.000Z'))).toEqual([]);
+  });
+
+  it('dispatches GitHub when the current Taipei Fantasy5 draw is missing', () => {
+    expect(planWatchdogActions([
+      healthy('天天樂', '11990', '2026-09-05'),
+    ], new Date('2026-09-06T01:39:00.000Z'))).toEqual([{
+      lottery: '天天樂',
+      target: 'github',
+      reasons: ['crawler-stale'],
+    }]);
   });
 
   it('dispatches only GitHub when Fantasy5 is stale at a due checkpoint', () => {
@@ -153,7 +163,7 @@ describe('independent Matrix watchdog planning', () => {
   });
 
   it('recovers Fantasy5 analysis on Railway without asking GitHub to run algorithms', () => {
-    const snapshot = healthy('天天樂', '11989', '2026-09-03');
+    const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = null;
     expect(planWatchdogActions(
       [snapshot],
@@ -193,7 +203,7 @@ describe('independent Matrix watchdog planning', () => {
 
   it('treats the due draw as already acquired', () => {
     expect(planWatchdogActions([
-      healthy('天天樂', '11989', '2026-09-03'),
+      healthy('天天樂', '11989', '2026-09-04'),
     ], new Date('2026-09-04T01:45:00.000Z'))).toEqual([]);
   });
 
@@ -217,7 +227,7 @@ describe('independent Matrix watchdog planning', () => {
   });
 
   it('uses the analysis heartbeat and live lease instead of immutable start time', () => {
-    const snapshot = healthy('天天樂', '11989', '2026-09-03');
+    const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = {
       drawPeriod: '11989',
       status: 'running',
@@ -229,7 +239,7 @@ describe('independent Matrix watchdog planning', () => {
   });
 
   it('recovers running analysis only after heartbeat and lease both expire', () => {
-    const snapshot = healthy('天天樂', '11989', '2026-09-03');
+    const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = {
       drawPeriod: '11989',
       status: 'running',
@@ -304,7 +314,7 @@ describe('independent Matrix watchdog execution', () => {
     const dispatchFantasy5 = vi.fn(async () => 'dispatched');
     const watchdog = createIndependentWatchdog({
       loadSnapshot: async () => [{
-        ...healthy('天天樂', '11989', '2026-09-03'),
+        ...healthy('天天樂', '11989', '2026-09-04'),
         latestAnalysis: null,
       }],
       claimLease: async () => true,
@@ -329,7 +339,7 @@ describe('independent Matrix watchdog execution', () => {
   });
   it('does not execute an action while another host owns its lease', async () => {
     const recoverRailway = vi.fn(async () => ({ status: 'accepted' }));
-    const snapshot = healthy('天天樂', '11989', '2026-09-03');
+    const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = null;
     const watchdog = createIndependentWatchdog({
       loadSnapshot: async () => [snapshot],
@@ -350,7 +360,7 @@ describe('independent Matrix watchdog execution', () => {
 
   it('retains an acquired lease when Railway acceptance is ambiguous', async () => {
     const releaseLease = vi.fn(async () => undefined);
-    const snapshot = healthy('天天樂', '11989', '2026-09-03');
+    const snapshot = healthy('天天樂', '11989', '2026-09-04');
     snapshot.latestAnalysis = null;
     const watchdog = createIndependentWatchdog({
       loadSnapshot: async () => [snapshot],
