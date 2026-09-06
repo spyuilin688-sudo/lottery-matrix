@@ -80,6 +80,7 @@ export function ExploreValidationProcess({
   lottery,
   validation,
   loading,
+  loadingLabel = "驗證資料載入中",
 }: {
   item: {
     number: string;
@@ -93,10 +94,11 @@ export function ExploreValidationProcess({
   lottery: LotteryId;
   validation?: ExploreValidation;
   loading: boolean;
+  loadingLabel?: string;
 }) {
   const contentProtected = useExploreValidationProtection();
 
-  if (loading) return <p className="empty-result">驗證資料載入中</p>;
+  if (loading) return <p className="empty-result">{loadingLabel}</p>;
   if (!validation || validation.ruleSets.length === 0) {
     return <p className="empty-result">無驗證資料</p>;
   }
