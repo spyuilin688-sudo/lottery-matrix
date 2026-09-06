@@ -65,5 +65,10 @@ for (const width of membershipWidths) {
       expect(box).not.toBeNull();
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
+
+    if (width === 390) {
+      const capture = await stack.screenshot({ type: "jpeg", quality: 85 });
+      console.log(`MEMBERSHIP_CARD_CAPTURE:${capture.toString("base64")}`);
+    }
   });
 }
