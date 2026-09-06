@@ -1,35 +1,34 @@
-import { lazy } from "react";
 import { type LotteryId } from "../Prototype";
 import { ScreenId, Navigate } from "./navigation";
-const MatrixExplorePage = lazy(() => import("./MatrixExplorePage").then(module => ({ default: module.MatrixExplorePage })));
-const MatrixTiangongPage = lazy(() => import("./MatrixTiangongPage").then(module => ({ default: module.MatrixTiangongPage })));
-const TongXingPage = lazy(() => import("./LegacyTongXingPage").then(module => ({ default: module.TongXingPage })));
-const DrawHistoryPage = lazy(() => import("./LegacyHistoryPage").then(module => ({ default: module.DrawHistoryPage })));
-const NumberReferencePage = lazy(() => import("./NumberReferencePage").then(module => ({ default: module.NumberReferencePage })));
-const CalculatorPage = lazy(() => import("./CalculatorPage").then(module => ({ default: module.CalculatorPage })));
-const MatrixCardPage = lazy(() => import("./MatrixCardPage").then(module => ({ default: module.MatrixCardPage })));
-const MatrixGuidePage = lazy(() => import("./MatrixGuidePage").then(module => ({ default: module.MatrixGuidePage })));
-const NotesPage = lazy(() => import("./NotebookPages").then(module => ({ default: module.NotesPage })));
-const MatrixNotebookPage = lazy(() => import("./NotebookPages").then(module => ({ default: module.MatrixNotebookPage })));
-const NotificationsPage = lazy(() => import("./LegacyNotificationsPage").then(module => ({ default: module.NotificationsPage })));
-const ProfilePage = lazy(() => import("./MemberPages").then(module => ({ default: module.ProfilePage })));
-const SubscriptionManagementPage = lazy(() => import("./MemberPages").then(module => ({ default: module.SubscriptionManagementPage })));
-const PaymentHistoryPage = lazy(() => import("./MemberPages").then(module => ({ default: module.PaymentHistoryPage })));
-const ProPlansPage = lazy(() => import("./MemberPages").then(module => ({ default: module.ProPlansPage })));
-const ManualTransferPage = lazy(() => import("./MemberPages").then(module => ({ default: module.ManualTransferPage })));
-const AboutMatrixPage = lazy(() => import("./MemberPages").then(module => ({ default: module.AboutMatrixPage })));
-const ActivationCodePage = lazy(() => import("./MemberPages").then(module => ({ default: module.ActivationCodePage })));
-const ServiceInfoPage = lazy(() => import("./MemberPages").then(module => ({ default: module.ServiceInfoPage })));
-const RefundPolicyPage = lazy(() => import("./MemberPages").then(module => ({ default: module.RefundPolicyPage })));
-const ContactSupportPage = lazy(() => import("./MemberPages").then(module => ({ default: module.ContactSupportPage })));
-const InviteFriendsPage = lazy(() => import("./MemberPages").then(module => ({ default: module.InviteFriendsPage })));
-const PromotionsPage = lazy(() => import("./MemberPages").then(module => ({ default: module.PromotionsPage })));
-const VersionInfoPage = lazy(() => import("./MemberPages").then(module => ({ default: module.VersionInfoPage })));
-const MemberTermsPage = lazy(() => import("./MemberPages").then(module => ({ default: module.MemberTermsPage })));
-const PrivacyPolicyPage = lazy(() => import("./MemberPages").then(module => ({ default: module.PrivacyPolicyPage })));
-const DisclaimerPage = lazy(() => import("./MemberPages").then(module => ({ default: module.DisclaimerPage })));
-const MatrixCustomStatusPage = lazy(() => import("./MatrixStatusPages").then(module => ({ default: module.MatrixCustomStatusPage })));
-const MatrixStatusPage = lazy(() => import("./MatrixStatusPages").then(module => ({ default: module.MatrixStatusPage })));
+import { MatrixExplorePage } from "./MatrixExplorePage";
+import { MatrixTiangongPage } from "./MatrixTiangongPage";
+import { TongXingPage } from "./LegacyTongXingPage";
+import { DrawHistoryPage } from "./LegacyHistoryPage";
+import { NumberReferencePage } from "./NumberReferencePage";
+import { CalculatorPage } from "./CalculatorPage";
+import { MatrixCardPage } from "./MatrixCardPage";
+import { MatrixGuidePage } from "./MatrixGuidePage";
+import { NotesPage, MatrixNotebookPage } from "./NotebookPages";
+import { NotificationsPage } from "./LegacyNotificationsPage";
+import {
+  ProfilePage,
+  SubscriptionManagementPage,
+  PaymentHistoryPage,
+  ProPlansPage,
+  ManualTransferPage,
+  AboutMatrixPage,
+  ActivationCodePage,
+  ServiceInfoPage,
+  RefundPolicyPage,
+  ContactSupportPage,
+  InviteFriendsPage,
+  PromotionsPage,
+  VersionInfoPage,
+  MemberTermsPage,
+  PrivacyPolicyPage,
+  DisclaimerPage,
+} from "./MemberPages";
+import { MatrixCustomStatusPage, MatrixStatusPage } from "./MatrixStatusPages";
 
 export function FeaturePageRouter({
   screen,

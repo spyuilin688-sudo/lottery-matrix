@@ -1,4 +1,4 @@
-import { lazy, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import "./feature-pages.css";
 import {
@@ -14,7 +14,7 @@ import "./pro-plans-layout.css";
 import "./pro-plans-carousel-peek.css";
 import "./activation-code-layout.css";
 import "./tianyan-expanded-layout-patch.css";
-const FeaturePageRouter = lazy(() => import("./FeaturePagesPatched").then(module => ({ default: module.FeaturePageRouter })));
+import { FeaturePageRouter } from "./FeaturePagesPatched";
 import { BottomNavigation } from "./BottomNavigation";
 import { FeaturePageLoadBoundary } from "./FeaturePageLoadBoundary";
 import { useLatestLotteryDraw } from "./useLatestLotteryDraw";
