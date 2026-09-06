@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import test from 'node:test';
-import vm from 'node:vm';
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import vm from "node:vm";
 
 async function loadWorker() {
   const source = await readFile(new URL('../public/push-service-worker.js', import.meta.url), 'utf8');
@@ -35,6 +35,8 @@ async function loadWorker() {
     Date,
     Math,
     console,
+    setTimeout,
+    clearTimeout,
     fetch: async () => new Response('ok'),
     addEventListener: (type, listener) => listeners.set(type, listener),
     skipWaiting: async () => undefined,
@@ -50,6 +52,7 @@ test('hands a LINE OAuth callback from a browser client back to the installed PW
   let focused = false;
   const callbackMessages = [];
   const pwaMessages = [];
+  const callbackUrl = 'https://matrixlottery.idv.tw/?code=oauth-code&state=abc#access_token=token';
   const pwa = {
     id: 'pwa-client',
     url: 'https://matrixlottery.idv.tw/',
@@ -65,10 +68,14 @@ test('hands a LINE OAuth callback from a browser client back to the installed PW
       }
     },
     focus: async () => { focused = true; },
+    navigate: async (url) => {
+      pwa.url = url;
+      return pwa;
+    },
   };
   const callback = {
     id: 'browser-callback',
-    url: 'https://matrixlottery.idv.tw/?code=oauth-code',
+    url: callbackUrl,
     postMessage: (message) => callbackMessages.push(message),
   };
   windowClients.push(callback, pwa);
@@ -83,6 +90,7 @@ test('hands a LINE OAuth callback from a browser client back to the installed PW
   await Promise.all(waits);
 
   assert.equal(focused, true);
+  assert.equal(pwa.url, callbackUrl);
   assert.deepEqual(pwaMessages.map(({ type }) => type), [
     'matrix-line-pwa-ping',
     'matrix-line-pwa-return',
