@@ -68,14 +68,14 @@ describe('LINE auth helper', () => {
     { name: 'Android fullscreen PWA', userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 },
     { name: 'iPhone home-screen PWA', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
     { name: 'iPad desktop user agent', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
-  ])('allows native LINE auto login for $name with the approved PWA return URL', async (device) => {
+  ])('starts the managed PWA return flow for $name without disabling native LINE login', async (device) => {
     vi.stubGlobal('navigator', device);
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
     try {
       await signInWithLine(undefined, { auth: { signInWithOAuth } } as unknown as SupabaseClient);
-      expect(open).not.toHaveBeenCalled();
+      expect(open).toHaveBeenCalledOnce();
       expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
         provider: 'custom:line',
         options: {

@@ -46,17 +46,222 @@ function setup() {
   return { parent, popup, auth, client, send, start, callback, result };
 }
 
+function connectBrowserChannels(...windows: ReturnType<typeof browserWindow>[]) {
+  const storage = new Map<string, string>();
+  const channels = new Set<BrowserChannel>();
+  class BrowserChannel extends EventTarget {
+    closed = false;
+    constructor(readonly name: string) { super(); channels.add(this); }
+    postMessage(data: unknown) {
+      if (this.closed) throw new Error('channel closed');
+      for (const channel of channels) {
+        if (channel !== this && channel.name === this.name && !channel.closed) {
+          queueMicrotask(() => {
+            if (!channel.closed) channel.dispatchEvent(new MessageEvent('message', { data, origin }));
+          });
+        }
+      }
+    }
+    close() { this.closed = true; channels.delete(this); }
+  }
+  for (const browser of windows) Object.assign(browser, {
+    BroadcastChannel: BrowserChannel,
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => { storage.set(key, value); },
+      removeItem: (key: string) => { storage.delete(key); },
+    },
+  });
+  return { storage, channels, BrowserChannel };
+}
+
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); clearLineAuthEphemeralState(); });
 
 describe('installed PWA LINE login return', () => {
+  it('returns a LINE callback opened in a different browser tab to the waiting PWA', async () => {
+    const { parent, popup, auth, start, client } = setup();
+    const returnedTab = browserWindow();
+    returnedTab.close.mockImplementation(() => { returnedTab.closed = true; });
+    const { storage, channels } = connectBrowserChannels(parent, popup, returnedTab);
+    const login = start();
+    // A native LINE handoff opens a fresh tab: neither opener nor sessionStorage survives.
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    returnedTab.location.search = `?matrix_line_return=${id}`;
+    returnedTab.location.hash = '#access_token=callback-token&provider_token=line-revoke-only';
+    const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
+    await expect(login).resolves.toBe('pwa');
+    await expect(finish).resolves.toBe(true);
+    expect(parent.focus).toHaveBeenCalled();
+    expect(returnedTab.close).toHaveBeenCalledOnce();
+    expect(popup.close).toHaveBeenCalledOnce();
+    expect(parent.close).not.toHaveBeenCalled();
+    expect(readLineProviderToken()).toBe('line-revoke-only');
+    expect([...storage.values()].join('')).not.toContain('supabase-access');
+    expect([...storage.values()].join('')).not.toContain('line-revoke-only');
+    expect(channels.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not broadcast or close a normal tab that has no OAuth callback', async () => {
+    const { parent, popup, auth, start, client } = setup();
+    const otherTab = browserWindow();
+    connectBrowserChannels(parent, popup, otherTab);
+    const rejected = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    await expect(finishLineLoginPopup(() => client, otherTab as unknown as Window)).resolves.toBe(false);
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(auth.setSession).not.toHaveBeenCalled();
+    expect(otherTab.close).not.toHaveBeenCalled();
+    popup.closed = true;
+    parent.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(15_000);
+    await rejected;
+  });
+
+  it('does not trust a channel message with a different origin or attempt ID', async () => {
+    const { parent, popup, auth, start } = setup();
+    const { channels } = connectBrowserChannels(parent, popup);
+    const rejected = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    expect(channels.size).toBe(1);
+    const channel = [...channels][0];
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    channel.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://other.example', data: { type: 'matrix-line-login-result', id, ...session },
+    }));
+    channel.dispatchEvent(new MessageEvent('message', {
+      origin, data: { type: 'matrix-line-login-result', id: crypto.randomUUID(), ...session },
+    }));
+    expect(auth.setSession).not.toHaveBeenCalled();
+    popup.closed = true;
+    parent.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(15_000);
+    await rejected;
+    expect(channels.size).toBe(0);
+  });
+
+  it('cannot resume a completed or expired shared return attempt', async () => {
+    const { parent, popup, auth, start, client } = setup();
+    const returnedTab = browserWindow();
+    const { channels } = connectBrowserChannels(parent, popup, returnedTab);
+    const rejected = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
+    await rejected;
+    returnedTab.location.hash = '#access_token=late-token';
+    returnedTab.location.search = `?matrix_line_return=${id}`;
+    const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await expect(finish).resolves.toBe(false);
+    expect(auth.setSession).not.toHaveBeenCalled();
+    expect(returnedTab.close).not.toHaveBeenCalled();
+    expect(channels.size).toBe(0);
+  });
+
+  it('waits for a detached callback when native navigation severs the old window handle', async () => {
+    const { parent, popup, auth, start, client } = setup();
+    const returnedTab = browserWindow();
+    returnedTab.close.mockImplementation(() => { returnedTab.closed = true; });
+    connectBrowserChannels(parent, popup, returnedTab);
+    const login = start();
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    popup.closed = true;
+    parent.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(1_000);
+    returnedTab.location.hash = '#access_token=callback-token';
+    returnedTab.location.search = `?matrix_line_return=${id}`;
+    const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(login).resolves.toBe('pwa');
+    await expect(finish).resolves.toBe(true);
+    expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not assign a detached callback to one of several overlapping login attempts', async () => {
+    const first = setup();
+    const second = setup();
+    const returnedTab = browserWindow();
+    connectBrowserChannels(first.parent, first.popup, second.parent, second.popup, returnedTab);
+    const rejectedFirst = expect(first.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    const rejectedSecond = expect(second.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    returnedTab.location.hash = '#access_token=ambiguous-callback';
+    await expect(finishLineLoginPopup(() => first.client, returnedTab as unknown as Window)).resolves.toBe(false);
+    expect(first.auth.setSession).not.toHaveBeenCalled();
+    expect(second.auth.setSession).not.toHaveBeenCalled();
+    first.popup.closed = true;
+    first.parent.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(15_000);
+    await rejectedFirst;
+    // Removing one overlapping attempt must not make the other appear unambiguous.
+    await expect(finishLineLoginPopup(() => second.client, returnedTab as unknown as Window)).resolves.toBe(false);
+    await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
+    await rejectedSecond;
+  });
+
+  it('does not attach a late callback from attempt A to a newer attempt B', async () => {
+    const first = setup();
+    const second = setup();
+    const returnedTab = browserWindow();
+    connectBrowserChannels(first.parent, first.popup, second.parent, second.popup, returnedTab);
+    const rejectedFirst = expect(first.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    const oldId = JSON.parse(first.popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
+    await rejectedFirst;
+    const rejectedSecond = expect(second.start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    returnedTab.location.search = `?matrix_line_return=${oldId}`;
+    returnedTab.location.hash = '#access_token=old-callback';
+    const finish = finishLineLoginPopup(() => first.client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(2_500);
+    await expect(finish).resolves.toBe(false);
+    expect(first.auth.getSession).not.toHaveBeenCalled();
+    expect(second.auth.setSession).not.toHaveBeenCalled();
+    expect(returnedTab.close).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
+    await rejectedSecond;
+  });
+
+  it('falls back promptly without consuming the callback when browser partitions cannot communicate', async () => {
+    const { parent, popup, client, start, auth } = setup();
+    const returnedTab = browserWindow();
+    connectBrowserChannels(parent, popup);
+    connectBrowserChannels(returnedTab); // Separate browser/PWA storage partition.
+    const rejected = expect(start()).rejects.toThrow('LINE_LOGIN_INCOMPLETE');
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    returnedTab.location.search = `?matrix_line_return=${id}`;
+    returnedTab.location.hash = '#access_token=callback-token';
+    const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(2_500);
+    await expect(finish).resolves.toBe(false);
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(returnedTab.close).not.toHaveBeenCalled();
+    expect(returnedTab.location.hash).toBe('#access_token=callback-token');
+    await vi.advanceTimersByTimeAsync(LINE_LOGIN_ATTEMPT_TTL_MS);
+    await rejected;
+  });
+
+  it.each(['bad-id', `${crypto.randomUUID()}&matrix_line_return=${crypto.randomUUID()}`])(
+    'does not use malformed or duplicate callback IDs: %s', async (id) => {
+      const { popup, client, auth } = setup();
+      connectBrowserChannels(popup);
+      popup.location.search = `?matrix_line_return=${id}`;
+      popup.location.hash = '#access_token=callback-token';
+      await expect(finishLineLoginPopup(() => client, popup as unknown as Window)).resolves.toBe(false);
+      expect(auth.getSession).not.toHaveBeenCalled();
+    },
+  );
+
   it('keeps the PWA open, imports the session and closes only the callback after acknowledgement', async () => {
     const { parent, popup, auth, start, callback } = setup();
     const login = start();
     expect(parent.open).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(0);
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
-      provider: 'custom:line', options: { redirectTo: `${origin}/`, skipBrowserRedirect: true },
+      provider: 'custom:line', options: {
+        redirectTo: `${origin}/?matrix_line_return=${JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id}`,
+        skipBrowserRedirect: true,
+      },
     });
     expect(popup.location.replace).toHaveBeenCalledWith('https://auth.example/authorize');
     expect(parent.location.replace).not.toHaveBeenCalled();
