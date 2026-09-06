@@ -1698,7 +1698,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   height: 0;
   margin: 20px 0;
   border: 0;
-  border-top: 1px solid rgba(179, 139, 71, .58);
+  border-top: 1px solid #aaa49a;
 }
 .matrix-status-screen .matrix-status-trigger-group {
   min-width: 0;
