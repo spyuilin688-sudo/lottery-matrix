@@ -18,7 +18,7 @@
   gap: var(--pro-plans-plan-inline);
 }
 
-/* The carousel content box already excludes the 19px padding on both sides. */
+/* The carousel content box already excludes the configured padding on both sides. */
 .pro-plans-screen .plan-card {
   box-sizing: border-box;
   flex: 0 0 calc(100% - 24px);
