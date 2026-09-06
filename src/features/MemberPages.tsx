@@ -18,23 +18,54 @@ import { FeatureShell, SectionTitle } from "./shared";
  */
 function MembershipArtwork() {
   const maskId = useId();
+  const headingClipId = `${maskId}-heading`;
+  const informationClipId = `${maskId}-information`;
+  const source = "/assets/lottery/membership/membership-ab-reference.png";
   return (
-    <svg className="membership-reference-art" viewBox="0 0 1563 1006" aria-hidden="true" focusable="false">
-      <defs>
-        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1006">
-          <rect width="1563" height="1006" fill="white" />
-          <circle cx="225" cy="216" r="111" fill="black" />
-          <rect x="388" y="132" width="490" height="81" fill="black" />
-          <rect x="388" y="235" width="516" height="57" fill="black" />
-          <rect x="1280" y="180" width="145" height="67" fill="black" />
-          <rect x="145" y="423" width="410" height="84" fill="black" />
-          <rect x="320" y="528" width="473" height="207" fill="black" />
-          <rect x="906" y="528" width="430" height="207" fill="black" />
-          <rect x="530" y="793" width="540" height="76" fill="black" />
-        </mask>
-      </defs>
-      <image href="/assets/lottery/membership/membership-ab-reference.png" width="1563" height="1006" mask={`url(#${maskId})`} />
-    </svg>
+    <div className="membership-reference-art" aria-hidden="true">
+      <svg viewBox="0 0 1563 740" preserveAspectRatio="none" focusable="false">
+        <defs>
+          <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1006">
+            <rect width="1563" height="1006" fill="white" />
+            <circle cx="225" cy="216" r="111" fill="black" />
+            <rect x="388" y="132" width="490" height="81" fill="black" />
+            <rect x="388" y="235" width="516" height="57" fill="black" />
+            <rect x="1280" y="180" width="145" height="67" fill="black" />
+            <rect x="145" y="423" width="410" height="84" fill="black" />
+            <rect x="320" y="528" width="473" height="207" fill="black" />
+            <rect x="906" y="528" width="430" height="207" fill="black" />
+            <rect x="530" y="793" width="540" height="76" fill="black" />
+            <rect x="65" y="412" width="82" height="112" fill="black" />
+            <rect x="565" y="418" width="920" height="93" fill="black" />
+            <rect x="86" y="522" width="222" height="214" fill="black" />
+            <rect x="800" y="534" width="39" height="196" fill="black" />
+          </mask>
+          <clipPath id={headingClipId} clipPathUnits="userSpaceOnUse">
+            <rect x="565" y="418" width="920" height="93" />
+          </clipPath>
+          <clipPath id={informationClipId} clipPathUnits="userSpaceOnUse">
+            <rect x="86" y="522" width="222" height="214" />
+            <rect x="800" y="534" width="39" height="196" />
+          </clipPath>
+        </defs>
+        <image href={source} width="1563" height="1006" mask={`url(#${maskId})`} />
+      </svg>
+      <svg viewBox="0 738 1563 2" preserveAspectRatio="none" focusable="false">
+        <image href={source} width="1563" height="1006" />
+      </svg>
+      <svg viewBox="0 740 1563 191" preserveAspectRatio="none" focusable="false">
+        <image href={source} width="1563" height="1006" mask={`url(#${maskId})`} />
+      </svg>
+      <svg className="subscription-heading-mark" viewBox="65 412 82 112" preserveAspectRatio="none" focusable="false">
+        <image href={source} width="1563" height="1006" />
+      </svg>
+      <svg className="subscription-heading-art" viewBox="0 387 1563 353" preserveAspectRatio="none" focusable="false">
+        <image href={source} width="1563" height="1006" clipPath={`url(#${headingClipId})`} />
+      </svg>
+      <svg className="subscription-information-art" viewBox="0 387 1563 353" preserveAspectRatio="none" focusable="false">
+        <image href={source} width="1563" height="1006" clipPath={`url(#${informationClipId})`} />
+      </svg>
+    </div>
   );
 }
 

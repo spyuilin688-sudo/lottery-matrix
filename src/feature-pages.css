@@ -1004,20 +1004,48 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   container-type: inline-size;
   box-sizing: border-box;
   min-width: 0;
-  aspect-ratio: 1563 / 1006;
-  /* Artwork ends at y=931; remove its bottom blank area, leaving 12px including the 8px row gap. */
-  margin-bottom: calc(4px - 4.7985%);
+  --subscription-title-top: calc(0.7031cqw + 10px);
+  --subscription-title-height: 5.4cqw;
+  --subscription-content-top: calc(var(--subscription-title-top) + var(--subscription-title-height) + 8px);
+  --subscription-content-shift: calc(var(--subscription-content-top) - 9.58cqw);
+  /* Four painted pixels below the frame plus the existing 8px row gap = 12px. */
+  padding-bottom: 4px;
   overflow: hidden;
   border-radius: 24px;
   background: #030a0d;
 }
 .membership-reference-art {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  display: grid;
+  width: 100%;
+  /* Extend only the straight frame rails between the information and button. */
+  grid-template-rows: 47.34485cqw var(--subscription-content-shift) 12.22009cqw;
+  pointer-events: none;
+}
+.membership-reference-art > svg {
   display: block;
   width: 100%;
   height: 100%;
-  pointer-events: none;
+}
+.membership-reference-art > .subscription-heading-art,
+.membership-reference-art > .subscription-information-art {
+  position: absolute;
+  left: 0;
+  height: 22.58477cqw;
+}
+.membership-reference-art > .subscription-heading-art {
+  top: calc(24.76cqw + var(--subscription-title-top) - 2.8cqw);
+}
+.membership-reference-art > .subscription-information-art {
+  top: calc(24.76cqw + var(--subscription-content-shift));
+}
+.membership-reference-art > .subscription-heading-mark {
+  position: absolute;
+  left: 4.15867cqw;
+  top: calc(24.76cqw + var(--subscription-title-top) + var(--subscription-title-height) / 2);
+  width: 5.24632cqw;
+  height: 7.16571cqw;
+  transform: translateY(-50%);
 }
 .profile-screen .panel.membership-card {
   position: absolute;
@@ -1117,11 +1145,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-logout > span { white-space: nowrap; }
 .profile-logout:disabled { cursor: wait; opacity: .56; }
 .subscription-status-card {
-  /* The gold frame starts 0.7031cqw below this section's origin. */
-  --subscription-title-top: calc(0.7031cqw + 10px);
-  --subscription-title-height: 5.4cqw;
   top: 24.76cqw;
-  height: 35.83cqw;
+  height: calc(34.80494cqw + var(--subscription-content-shift));
 }
 .subscription-status-card > .section-title {
   position: absolute;
@@ -1141,7 +1166,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-status-card > .section-title::after { display: none; }
 .subscription-status-content {
   position: absolute;
-  inset: calc(var(--subscription-title-top) + var(--subscription-title-height) + 8px) 0 auto;
+  inset: var(--subscription-content-top) 0 auto;
   min-width: 0;
   margin: 0;
 }
@@ -1185,7 +1210,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .subscription-entry {
   position: absolute;
   left: 4.73cqw;
-  top: 28.28cqw;
+  top: calc(28.28cqw + var(--subscription-content-shift));
   transform: translateY(-50%);
   display: grid;
   box-sizing: border-box;
@@ -2294,9 +2319,7 @@ opacity: .30; box-shadow: none;
   max-height: none;
   overflow-wrap: anywhere;
 }
-.panel,
-.profile-card,
-.subscription-status-card,
+.panel:where(:not(.membership-card)),
 .plan-card,
 .matrix-ticket,
 .matrix-core-entry,
@@ -2338,9 +2361,7 @@ opacity: .30; box-shadow: none;
 .feature-screen:not(.home-screen) > .feature-body {
   padding-bottom: calc(var(--layout-bottom-nav-clearance) + 8px);
 }
-.panel,
-.profile-card,
-.subscription-status-card,
+.panel:where(:not(.membership-card)),
 .plan-card,
 .matrix-ticket,
 .matrix-core-entry,
