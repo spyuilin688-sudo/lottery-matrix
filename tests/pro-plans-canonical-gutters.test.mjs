@@ -17,9 +17,7 @@ const ownerCss = readFileSync(ownerPath, "utf8");
 const sharedCss = readFileSync(sharedPath, "utf8");
 
 function ruleBody(css, selector) {
-  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\const ownerCss = readFileSync(ownerPath, "utf8");
-
-function listSourceFiles");
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = css.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, "s"));
   assert.ok(match, `找不到 ${selector} 規則`);
   return match[1];
