@@ -20,12 +20,18 @@ import "./number-reference-visual-refinement.css";
 import { registerPushServiceWorker } from "./push-subscription";
 import { finishLineLoginPopup } from './auth/line-login-popup';
 import { getSupabaseClient } from './lib/supabase';
+import {
+  hasLineOAuthCallback,
+  registerLinePwaClient,
+  requestLinePwaReturn,
+} from './auth/line-pwa-return';
 import { installVisitorTracking } from './visitor-counts';
 
 installGlobalInputBehavior();
 
 if ('serviceWorker' in navigator) {
   void registerPushServiceWorker().catch(() => undefined);
+  void registerLinePwaClient().catch(() => undefined);
 }
 
 const root = document.getElementById('root')!;
@@ -38,7 +44,25 @@ const renderApp = () => {
     </React.StrictMode>,
   );
 };
+
 root.textContent = '正在開啟樂彩 Matrix…';
-void finishLineLoginPopup(getSupabaseClient).then((handled) => {
+const hasNormalLineCallback = hasLineOAuthCallback();
+
+async function bootstrap() {
+  if (hasNormalLineCallback && 'serviceWorker' in navigator) {
+    const handedOff = await requestLinePwaReturn(
+      window,
+      navigator.serviceWorker,
+      hasNormalLineCallback,
+    );
+    if (handedOff) {
+      root.textContent = '登入成功，正在返回樂彩 Matrix…';
+      return;
+    }
+  }
+
+  const handled = await finishLineLoginPopup(getSupabaseClient());
   if (!handled) renderApp();
-}).catch(renderApp);
+}
+
+void bootstrap().catch(renderApp);
