@@ -1,3 +1,5 @@
+import { subscribeMatrixDataRevision } from "../matrix-data-revision";
+import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -104,6 +106,28 @@ export function MatrixExplorePage({
   const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
   const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const cacheGeneration = useRef(0);
+  useEffect(() => {
+    const clearResults = () => {
+      cacheGeneration.current += 1;
+      setExploreResponse(null);
+      setTianyanResponse(null);
+      setValidationById({});
+      setTianyanValidationById({});
+      setExpandedRoad(null);
+      setValidationLoadingId(null);
+      setExploreLoading(false);
+      setExploreError(null);
+      setSearched(false);
+    };
+    const unsubscribeSession = subscribeAlgorithmCacheScope(clearResults);
+    const unsubscribeData = subscribeMatrixDataRevision(clearResults);
+    return () => {
+      cacheGeneration.current += 1;
+      unsubscribeSession();
+      unsubscribeData();
+    };
+  }, []);
   const roadResultRowRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingRoadScrollRef = useRef<string | null>(null);
 
@@ -182,6 +206,7 @@ export function MatrixExplorePage({
     nextSameCode = sameCode,
     nextPredictionNumber = selectedPredictionNumber,
   ) => {
+    const generation = cacheGeneration.current;
     setExploreLoading(true);
     setExploreError(null);
     try {
@@ -193,6 +218,7 @@ export function MatrixExplorePage({
           sameCode: nextSameCode,
           ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
         });
+        if (generation !== cacheGeneration.current) return;
         setTianyanResponse(response);
         setTianyanValidationById({});
         setExpandedRoad(null);
@@ -212,10 +238,12 @@ export function MatrixExplorePage({
         sameCode: nextSameCode,
         ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
       });
+      if (generation !== cacheGeneration.current) return;
       setExploreResponse(response);
       setValidationById({});
       setExpandedRoad(null);
     } catch (cause) {
+      if (generation !== cacheGeneration.current) return;
       const code = String((cause as { code?: unknown })?.code ?? "");
       setExploreError(
         code === "ANALYSIS_NOT_READY"
@@ -227,7 +255,7 @@ export function MatrixExplorePage({
               : "Matrix API 讀取失敗",
       );
     } finally {
-      setExploreLoading(false);
+      if (generation === cacheGeneration.current) setExploreLoading(false);
     }
   };
 
@@ -287,6 +315,7 @@ export function MatrixExplorePage({
   };
 
   const toggleRoad = (itemId: string) => {
+    const generation = cacheGeneration.current;
     if (expandedRoad === itemId) {
       pendingRoadScrollRef.current = null;
       setExpandedRoad(null);
@@ -303,10 +332,13 @@ export function MatrixExplorePage({
         drawPeriod: tianyanResponse.drawPeriod,
         analysisVersion: tianyanResponse.analysisVersion,
       }, itemId).then((response) => {
+        if (generation !== cacheGeneration.current) return;
         setTianyanValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
       }).catch(() => {
+        if (generation !== cacheGeneration.current) return;
         setExploreError("Matrix API 讀取失敗");
       }).finally(() => {
+        if (generation !== cacheGeneration.current) return;
         setValidationLoadingId((current) => current === cacheKey ? null : current);
       });
       return;
@@ -323,10 +355,13 @@ export function MatrixExplorePage({
       explorePeriods: selectedExplorePeriods,
       exploreRange: exploreRange as "標準範圍" | "完整範圍",
     }).then((response) => {
+      if (generation !== cacheGeneration.current) return;
       setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
     }).catch(() => {
+      if (generation !== cacheGeneration.current) return;
       setExploreError("Matrix API 讀取失敗");
     }).finally(() => {
+      if (generation !== cacheGeneration.current) return;
       setValidationLoadingId((current) => current === cacheKey ? null : current);
     });
   };

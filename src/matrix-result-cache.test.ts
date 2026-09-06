@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildMatrixResultCacheKey,
   readLotteryLatestCache,
+  readLotteryHistoryCache,
+  readLotteryHistoryCacheEntry,
   readMatrixResultCache,
   setMatrixCurrentPeriod,
   writeLotteryHistoryCache,
@@ -51,6 +53,7 @@ const baseRequest = {
 
 describe('Matrix result PWA cache', () => {
   beforeEach(() => installStorage());
+  afterEach(() => vi.useRealTimers());
 
   it('uses every result-affecting condition in the cache key', () => {
     const first = buildMatrixResultCacheKey(baseRequest);
@@ -86,5 +89,29 @@ describe('Matrix result PWA cache', () => {
     installStorage({ [key]: '{bad json' }, { removeItem: () => { throw new Error('storage unavailable'); } });
 
     expect(readLotteryLatestCache('今彩539', 5 * 60 * 1_000)).toBeNull();
+  });
+});
+
+
+describe('history freshness metadata', () => {
+  afterEach(() => vi.useRealTimers());
+  it('treats legacy history without a saved timestamp as a miss', () => {
+    const lottery = '今彩539';
+    installStorage({
+      [`matrix-result-period:${encodeURIComponent(lottery)}`]: '115207',
+      [`lottery-history:${encodeURIComponent(lottery)}:115207:1000`]: JSON.stringify([{ numbers: ['01'] }]),
+    });
+    expect(readLotteryHistoryCache(lottery, '115207', 1000)).toBeNull();
+  });
+
+  it('preserves the history save time and expires it even within the same period', () => {
+    installStorage();
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    writeLotteryHistoryCache('今彩539', '115207', 1000, [{ numbers: ['01'] }]);
+    vi.advanceTimersByTime(299_999);
+    expect(readLotteryHistoryCacheEntry('今彩539', '115207', 1000)?.savedAt).toBe(1_000_000);
+    vi.advanceTimersByTime(1);
+    expect(readLotteryHistoryCache('今彩539', '115207', 1000)).toBeNull();
   });
 });

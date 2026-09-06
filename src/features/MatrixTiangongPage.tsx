@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { subscribeMatrixDataRevision } from "../matrix-data-revision";
+import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { fetchTiangongList, fetchTiangongValidation, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
@@ -43,6 +45,26 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validationById, setValidationById] = useState<Record<string, TiangongValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const cacheGeneration = useRef(0);
+  useEffect(() => {
+    const clearResults = () => {
+      cacheGeneration.current += 1;
+      setResponse(null);
+      setValidationById({});
+      setExpandedId(null);
+      setValidationLoadingId(null);
+      setLoading(false);
+      setRequestError(null);
+      setSearched(false);
+    };
+    const unsubscribeSession = subscribeAlgorithmCacheScope(clearResults);
+    const unsubscribeData = subscribeMatrixDataRevision(clearResults);
+    return () => {
+      cacheGeneration.current += 1;
+      unsubscribeSession();
+      unsubscribeData();
+    };
+  }, []);
   const positionOptions: Array<{ value: Direction; label: string }> = [
     { value: "依序遞增", label: "由左至右" },
     { value: "固定", label: "固定" },
@@ -56,6 +78,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   const startExplore = async () => {
     if (loading) return;
+    const generation = cacheGeneration.current;
     setSearched(true);
     setLoading(true);
     setRequestError(null);
@@ -71,17 +94,20 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         secondStageDirections: secondPositions,
         secondRoadTypes: secondRoads.map((item) => item === "加減版路" ? "加減" : "合值"),
       });
+      if (generation !== cacheGeneration.current) return;
       setResponse(next);
       setExpandedId(null);
       setValidationById({});
     } catch (cause) {
+      if (generation !== cacheGeneration.current) return;
       const code = String((cause as { code?: unknown })?.code ?? "");
       setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : code === "AUTH_REQUIRED" ? "請先登入後再使用 Matrix 天工" : "Matrix API 讀取失敗");
     } finally {
-      setLoading(false);
+      if (generation === cacheGeneration.current) setLoading(false);
     }
   };
   const toggleResult = (itemId: string) => {
+    const generation = cacheGeneration.current;
     if (expandedId === itemId) { setExpandedId(null); return; }
     setExpandedId(itemId);
     if (!response) return;
@@ -89,9 +115,15 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     if (validationById[cacheKey]) return;
     setValidationLoadingId(cacheKey);
     void fetchTiangongValidation({ lottery: response.lottery, drawPeriod: response.drawPeriod, analysisVersion: response.analysisVersion }, itemId)
-      .then((detail) => setValidationById((current) => ({ ...current, [cacheKey]: detail.validation })))
-      .catch(() => setRequestError("Matrix API 讀取失敗"))
-      .finally(() => setValidationLoadingId((current) => current === cacheKey ? null : current));
+      .then((detail) => {
+        if (generation === cacheGeneration.current) setValidationById((current) => ({ ...current, [cacheKey]: detail.validation }));
+      })
+      .catch(() => {
+        if (generation === cacheGeneration.current) setRequestError("Matrix API 讀取失敗");
+      })
+      .finally(() => {
+        if (generation === cacheGeneration.current) setValidationLoadingId((current) => current === cacheKey ? null : current);
+      });
   };
   return (
     <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen" headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}>

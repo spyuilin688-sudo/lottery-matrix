@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
+import { invalidateMatrixData } from "../matrix-data-revision";
+import type { Session } from '@supabase/supabase-js';
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
 import { resetReadCacheForTests } from '../read-cache';
@@ -747,7 +750,7 @@ test('探索頁使用單列收合連準篩選並套用兩種命中條件預設�
   fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
-    selectedStreaks: ['準9進10', '準11進12'],
+    selectedStreaks: ['準7進8', '準9進10', '準11進12'],
   }));
 });
 
@@ -766,7 +769,7 @@ test('拖牌版路依命中條件使用例外預設連準', async () => {
 
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
     roadTypes: ['拖牌'],
-    selectedStreaks: ['準6進7', '準7進8', '準9進10', '準11進12'],
+    selectedStreaks: ['準5進6', '準6進7', '準7進8', '準9進10', '準11進12'],
   })));
 });
 
@@ -814,7 +817,7 @@ test('再次開始探索會恢復準5+預設連準', async () => {
   fireEvent.click(screen.getByRole('button', { name: '準9進10' }));
 
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-    expect.objectContaining({ selectedStreaks: ['準11進12'] }),
+    expect.objectContaining({ selectedStreaks: ['準7進8', '準11進12'] }),
   ));
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
@@ -822,7 +825,7 @@ test('再次開始探索會恢復準5+預設連準', async () => {
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({
       sameCode: false,
-      selectedStreaks: ['準9進10', '準11進12'],
+      selectedStreaks: ['準7進8', '準9進10', '準11進12'],
     }),
   ));
   expect(screen.getByRole('button', { name: '準9進10' }).getAttribute('aria-pressed')).toBe('true');
@@ -1001,4 +1004,36 @@ test('Matrix 探索驗證過程在頁面 hidden 時遮蔽、回到前景後還�
     if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
     else delete (document as { hidden?: boolean }).hidden;
   }
+});
+
+
+test('切換帳號清除已顯示的分析快取並忽略先前未完成請求', async () => {
+  updateAlgorithmCacheSession({ access_token: 'account-a', user: { id: 'a' } } as Session);
+  render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
+  act(() => updateAlgorithmCacheSession(null));
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  act(() => updateAlgorithmCacheSession({ access_token: 'account-b', user: { id: 'b' } } as Session));
+  let resolve!: (value: typeof exploreEnvelope) => void;
+  matrixApi.fetchExploreList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  act(() => updateAlgorithmCacheSession(null));
+  await act(async () => { resolve(exploreEnvelope); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+});
+
+
+test('開獎資料更正清除畫面分析快取並忽略晚到的舊分析', async () => {
+  render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
+  act(() => invalidateMatrixData());
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  let resolve!: (value: typeof exploreEnvelope) => void;
+  matrixApi.fetchExploreList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  act(() => invalidateMatrixData());
+  await act(async () => { resolve(exploreEnvelope); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
 });

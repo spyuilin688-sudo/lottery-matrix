@@ -7,6 +7,7 @@ import { cleanupBrowserPushSubscription } from '../push-subscription';
 import { startMemberOnlineTracking } from '../member-online';
 import { postMemberOnline } from '../member-online-api';
 import { logicalSessionIdentity } from './session-identity';
+import { updateAlgorithmCacheSession } from './algorithm-cache-scope';
 
 type Props = {
   client?: SupabaseClient;
@@ -77,6 +78,7 @@ export function MemberSessionBridge({
     };
 
     const updateSession = (session: Session | null, deferBootstrap: boolean) => {
+      updateAlgorithmCacheSession(session);
       const identity = logicalSessionIdentity(session);
       if (currentSessionIdentity !== identity) {
         currentSessionIdentity = identity;
