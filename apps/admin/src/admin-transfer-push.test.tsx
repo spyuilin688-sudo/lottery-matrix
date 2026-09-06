@@ -41,8 +41,19 @@ it('checks current owner on server rather than trusting browser permission', asy
   expect((await currentTransferPush(client)).enabled).toBe(false); expect(client.get).toHaveBeenCalledWith('/api/admin-transfer-push?endpoint=https%3A%2F%2Fpush.example%2Fdevice');
 });
 it('disables server enrollment and surfaces failure', async () => {
-  await disableTransferPush(client, subscription); expect(client.delete).toHaveBeenCalledWith('/api/admin-transfer-push', { endpoint: subscription.endpoint });
+  await disableTransferPush(client, subscription); expect(client.delete).toHaveBeenCalledWith('/api/admin-transfer-push', { data: { endpoint: subscription.endpoint } });
   vi.mocked(client.delete).mockRejectedValue(new Error('offline')); await expect(disableTransferPush(client, subscription)).rejects.toThrow('offline');
+});
+it('sends the disable endpoint in the Axios DELETE request body', async () => {
+  let sentBody: unknown;
+  client.delete = vi.fn(async (_url, config) => {
+    // The deployed SDK exports an Axios instance; DELETE reads config.data.
+    sentBody = (config as { data?: unknown } | undefined)?.data;
+    if (!sentBody) throw new Error('Request failed with status code 400');
+    return { data: { enabled: false } };
+  });
+  await disableTransferPush(client, subscription);
+  expect(sentBody).toEqual({ endpoint: subscription.endpoint });
 });
 it('hides controls and performs no requests for non-superadmins', async () => { await render(false); expect(container.textContent).toBe(''); expect(client.get).not.toHaveBeenCalled(); });
 it('does not prompt on mount and enables/disables with truthful feedback', async () => {
