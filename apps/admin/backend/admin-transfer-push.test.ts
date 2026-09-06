@@ -122,6 +122,11 @@ describe('admin transfer push registration', () => {
 });
 
 describe('admin transfer push route authorization', () => {
+  it('acknowledges enrollment when PostgREST returns 201 with no body', async () => {
+    routeDeps.fetcher.mockResolvedValueOnce(new Response(null, { status: 201, headers: { 'Preference-Applied': 'resolution=merge-duplicates,return=minimal' } }));
+    expect(await request('POST', { params: {}, body: { subscription } })).toMatchObject({ statusCode: 200, body: { enabled: true } });
+  });
+
   it.each(['GET', 'POST', 'DELETE'])('%s rejects absent sessions and non-superadmins before storage access', async (method) => {
     routeDeps.getAdminFromHeaders.mockRejectedValueOnce(Object.assign(new Error('管理員登入已失效'), { statusCode: 401 }));
     expect(await request(method)).toMatchObject({ statusCode: 401 });
