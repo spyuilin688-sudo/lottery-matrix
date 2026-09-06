@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from threading import Thread
+from types import SimpleNamespace
 from typing import Iterator
 from urllib.parse import quote
 from xml.etree import ElementTree
@@ -259,3 +260,51 @@ def test_post_rejects_request_body_larger_than_64_kib() -> None:
         )
         assert response.status == 413
         assert json.loads(body) == {"error": "PAYLOAD_TOO_LARGE"}
+
+
+def test_railway_recovery_explicitly_enables_conditional_crawler_retry(monkeypatch) -> None:
+    settings = SimpleNamespace(
+        supabase_url="https://example.test",
+        supabase_secret_key="secret",
+    )
+    repository = object()
+    source = object()
+    calls: list[tuple[str, object, object, object, dict]] = []
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_: object) -> bool:
+            return False
+
+    monkeypatch.setattr(api_server, "load_settings", lambda: settings)
+    monkeypatch.setattr(api_server, "create_supabase_repository", lambda *_: repository)
+    monkeypatch.setattr(api_server, "create_railway_ssl_context", lambda: object())
+    monkeypatch.setattr(api_server.httpx, "Client", lambda **_: Client())
+    monkeypatch.setattr(api_server, "LatestDrawSource", lambda _: source)
+    monkeypatch.setattr(api_server, "create_notification_emitter", lambda *_: None)
+    monkeypatch.setattr(
+        api_server,
+        "run_scheduled_worker",
+        lambda lottery, now, actual_repository, actual_source, **kwargs: calls.append((
+            lottery,
+            now,
+            actual_repository,
+            actual_source,
+            kwargs,
+        )),
+    )
+
+    api_server.run_lottery_recovery("今彩539")
+
+    assert calls == [(
+        "今彩539",
+        None,
+        repository,
+        source,
+        {
+            "notification_emitter": None,
+            "allow_recovery_crawl": True,
+        },
+    )]
