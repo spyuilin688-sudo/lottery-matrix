@@ -297,11 +297,10 @@ def run_scheduled_worker(
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
     publish_current_card(lottery, repository, now)
-    cycle = due_call_cycle(
-        lottery,
-        now,
-        allow_weekend_fallback=allow_recovery_crawl,
-    )
+    if allow_recovery_crawl:
+        cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
+    else:
+        cycle = due_call_cycle(lottery, now)
 
     if cycle is None:
         if latest:

@@ -24,7 +24,6 @@ class LatestDrawRepository:
         }]
 
 
-# Homepage display time is the draw time, exactly three minutes before first crawl.
 def test_next_lottery_draw_time_is_three_minutes_before_first_crawl() -> None:
     next_draw_time = getattr(schedule, "next_lottery_draw_time", None)
 
@@ -40,8 +39,7 @@ def test_next_lottery_draw_time_is_three_minutes_before_first_crawl() -> None:
     assert next_draw_time(
         "六合彩",
         datetime(2026, 9, 4, 21, 0, tzinfo=TAIPEI),
-    ).isoformat() == "2026-09-04T21:30:00+08:00"
-    # Fantasy5 assertions cover both California daylight-saving branches.
+    ).isoformat() == "2026-09-05T21:30:00+08:00"
     assert next_draw_time(
         "天天樂",
         datetime(2026, 9, 4, 9, 0, tzinfo=TAIPEI),

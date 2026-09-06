@@ -22,13 +22,14 @@ from tests.test_worker_notifications import _builders
 def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
     monkeypatch, lottery, code, hour, minute, count,
 ):
-    now = datetime(2026, 8, 28, hour, minute, tzinfo=ZoneInfo("Asia/Taipei"))
+    day = 29 if lottery == "六合彩" else 28
+    now = datetime(2026, 8, day, hour, minute, tzinfo=ZoneInfo("Asia/Taipei"))
     formal_numbers = [f"{n:02}" for n in range(1, count + 1)]
     early_numbers = [f"{n:02}" for n in range(31, 31 + count)]
     repository = InMemoryAnalysisRepository()
 
-    def draw(period, day):
-        return {"lottery": lottery, "period": str(period), "drawDate": day.date().isoformat(),
+    def draw(period, draw_day):
+        return {"lottery": lottery, "period": str(period), "drawDate": draw_day.date().isoformat(),
                 "numbers": formal_numbers[:], "sortedNumbers": formal_numbers[:],
                 "drawOrderNumbers": formal_numbers[:]}
 

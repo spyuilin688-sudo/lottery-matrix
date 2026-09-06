@@ -140,17 +140,19 @@ def due_call_cycle(
     if current.tzinfo is None:
         raise ValueError("schedule time must include a timezone")
     taipei_now = current.astimezone(TAIPEI).replace(second=0, microsecond=0)
-    for base in _candidate_call_times(
+    candidate_calls = _candidate_call_times(
         lottery,
         taipei_now,
         allow_weekend_fallback=allow_weekend_fallback,
-    ):
+    )
+    for base in candidate_calls:
         pre_calls = [
             base + timedelta(minutes=offset)
             for offset in PRE_CALL_OFFSETS_MINUTES
         ]
         if taipei_now in pre_calls:
             return base
+    for base in candidate_calls:
         final_retry = base + timedelta(minutes=RETRY_OFFSETS_MINUTES[-1])
         if base <= taipei_now <= final_retry:
             return base
