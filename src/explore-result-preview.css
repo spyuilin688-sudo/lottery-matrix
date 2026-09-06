@@ -423,10 +423,12 @@
   background: #0c1422;
 }
 
+.matrix-status-screen .explore-validation-group:nth-child(odd),
 .matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(odd) {
   --explore-validation-group-background: #152A42;
 }
 
+.matrix-status-screen .explore-validation-group:nth-child(even),
 .matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-validation-group:nth-child(even) {
   --explore-validation-group-background: #0E1D30;
 }
@@ -439,14 +441,19 @@
   --explore-validation-group-background: #0E1D30;
 }
 
+.matrix-status-screen .explore-validation-groups,
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-groups {
   background: #02070C;
 }
 
+.matrix-status-screen .explore-validation-group,
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group {
   background: #02070C;
 }
 
+.matrix-status-screen .explore-validation-group > :is(
+  .explore-validation-issues, .explore-validation-numbers-card, .explore-validation-formulas
+),
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group > :is(
   .explore-validation-issues, .explore-validation-numbers-card, .explore-validation-formulas
 ) {
@@ -829,16 +836,21 @@
 }
 
 /* Matrix Explore result refinements: keep Tianyan isolated from Explore-only spacing. */
+.matrix-status-screen .explore-validation-card,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-card {
   padding-block: 12px;
 }
 
+.matrix-status-screen .explore-validation-formula-position,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-formula-position {
   display: inline-flex;
   align-items: baseline;
   gap: 1px;
 }
 
+.matrix-status-screen
+  .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"])[data-wide-numbers="false"]
+  .explore-validation-numbers,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen)
   .explore-validation-group:is([data-lottery="今彩539"], [data-lottery="天天樂"])[data-wide-numbers="false"]
   .explore-validation-numbers {
@@ -846,7 +858,9 @@
   padding-inline: 4px;
 }
 
+.matrix-status-screen .explore-validation-result-number,
 .matrix-explore-main-screen:not(.matrix-tianyan-screen) .explore-validation-result-number {
   font-size: calc(.8em - 2px);
   margin-inline: 2px;
 }
+
