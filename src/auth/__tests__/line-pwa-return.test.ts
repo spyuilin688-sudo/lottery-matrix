@@ -29,11 +29,9 @@ function serviceWorkerStub() {
 }
 
 function browserWindow(url = 'https://matrixlottery.idv.tw/', standalone = false) {
+  const location = Object.assign(new URL(url), { replace: vi.fn() });
   return {
-    location: {
-      ...new URL(url),
-      replace: vi.fn(),
-    },
+    location,
     matchMedia: vi.fn((query: string) => ({ matches: standalone && query === '(display-mode: standalone)' })),
     setTimeout,
     clearTimeout,
