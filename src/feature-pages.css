@@ -1059,7 +1059,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   position: absolute;
   left: 25.21cqw;
   top: 8.89cqw;
-  width: 32.7cqw;
+  /* Use the available width up to 4px before the auth button at 78.44cqw. */
+  right: calc(21.56cqw + 4px);
+  width: auto;
   min-width: 0;
 }
 .profile-card .profile-copy h2 {
