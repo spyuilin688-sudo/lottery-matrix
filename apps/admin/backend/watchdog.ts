@@ -98,12 +98,19 @@ function weekday(day: LocalDay): number {
   return new Date(Date.UTC(day.year, day.month - 1, day.day)).getUTCDay();
 }
 
-function isDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
+function isPrimaryDrawDay(lottery: WatchdogLottery, day: LocalDay): boolean {
   const value = weekday(day);
   if (lottery === '今彩539') return value >= 1 && value <= 6;
   if (lottery === '大樂透') return value === 2 || value === 5;
-  if (lottery === '六合彩') return value === 0 || value === 2 || value === 4 || value === 6;
+  if (lottery === '六合彩') return value === 2 || value === 4 || value === 6;
   return true;
+}
+
+function isRecoveryCycleDay(lottery: WatchdogLottery, day: LocalDay): boolean {
+  return (
+    isPrimaryDrawDay(lottery, day)
+    || (lottery === '六合彩' && weekday(day) === 0)
+  );
 }
 
 function checkpointAllowed(
@@ -161,6 +168,16 @@ function taipeiInstant(day: LocalDay, hour: number, minute: number): number {
   return Date.UTC(day.year, day.month - 1, day.day, hour - 8, minute);
 }
 
+function nextPrimaryInstant(lottery: WatchdogLottery, cycleDay: LocalDay): number {
+  for (let offset = 1; offset <= 8; offset += 1) {
+    const day = addDays(cycleDay, offset);
+    if (!isPrimaryDrawDay(lottery, day)) continue;
+    const [hour, minute] = callClock(lottery, day);
+    return taipeiInstant(day, hour, minute);
+  }
+  throw new Error('NEXT_PRIMARY_CALL_NOT_FOUND');
+}
+
 function dateText(day: LocalDay): string {
   return `${String(day.year).padStart(4, '0')}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
 }
@@ -174,13 +191,18 @@ export function expectedDrawDateForDueWindow(
   const previousTick = currentMinute - PHYSICAL_TICK_MINUTES * 60_000;
   for (const offset of [0, -1]) {
     const cycleDay = addDays(local, offset);
-    if (!isDrawDay(lottery, cycleDay)) continue;
+    if (!isRecoveryCycleDay(lottery, cycleDay)) continue;
     const [hour, minute] = callClock(lottery, cycleDay);
     const base = taipeiInstant(cycleDay, hour, minute);
+    const nextPrimary = nextPrimaryInstant(lottery, cycleDay);
     const hasDueCheckpoint = WATCHDOG_CHECKPOINT_MINUTES.some((checkpoint) => {
       if (!checkpointAllowed(lottery, cycleDay, checkpoint)) return false;
       const dueAt = base + checkpoint * 60_000;
-      return dueAt > previousTick && dueAt <= currentMinute;
+      return (
+        dueAt < nextPrimary
+        && dueAt > previousTick
+        && dueAt <= currentMinute
+      );
     });
     if (hasDueCheckpoint) {
       return dateText(cycleDay);

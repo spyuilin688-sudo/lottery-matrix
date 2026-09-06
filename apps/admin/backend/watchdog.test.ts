@@ -4,6 +4,7 @@ import {
   createFantasy5GithubDispatcher,
   createIndependentWatchdog,
   createSupabaseWatchdogLeaseManager,
+  expectedDrawDateForDueWindow,
   planWatchdogActions,
   type WatchdogSnapshot,
 } from './watchdog';
@@ -313,6 +314,14 @@ describe('independent Matrix watchdog planning', () => {
         reasons: ['crawler-stale'],
       }]);
     }
+  });
+
+  it('does not run the previous Fantasy5 recovery at the spring DST primary', () => {
+    const primary = new Date('2026-03-09T01:33:00.000Z');
+    expect(expectedDrawDateForDueWindow('天天樂', primary)).toBeNull();
+    expect(planWatchdogActions([
+      healthy('天天樂', '11989', '2026-03-07'),
+    ], primary)).toEqual([]);
   });
 
 });

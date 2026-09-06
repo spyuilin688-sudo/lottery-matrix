@@ -40,6 +40,14 @@ def test_fantasy5_uses_summer_and_winter_call_times() -> None:
     assert lottery_call_time("天天樂", datetime(2026, 11, 2, tzinfo=TAIPEI)).strftime("%H:%M") == "10:33"
 
 
+def test_fantasy5_spring_dst_primary_wins_over_the_previous_recovery_window() -> None:
+    primary = datetime(2026, 3, 9, 9, 33, tzinfo=TAIPEI)
+    assert due_call_cycle("天天樂", primary) == primary
+    assert due_call_cycle(
+        "天天樂", primary.replace(minute=43),
+    ) == primary
+
+
 def test_next_call_time_uses_the_existing_draw_schedule() -> None:
     assert next_lottery_call_time(
         "今彩539", datetime(2026, 8, 30, 12, 0, tzinfo=TAIPEI)

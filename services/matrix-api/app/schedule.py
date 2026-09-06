@@ -146,13 +146,16 @@ def due_call_cycle(
         allow_weekend_fallback=allow_weekend_fallback,
     )
     for base in candidate_calls:
+        if taipei_now == base:
+            return base
+    for base in candidate_calls:
         pre_calls = [
             base + timedelta(minutes=offset)
             for offset in PRE_CALL_OFFSETS_MINUTES
         ]
         if taipei_now in pre_calls:
             return base
-    for base in candidate_calls:
+    for base in reversed(candidate_calls):
         final_retry = base + timedelta(minutes=RETRY_OFFSETS_MINUTES[-1])
         if base <= taipei_now <= final_retry:
             return base
