@@ -67,6 +67,16 @@ for (const width of membershipWidths) {
     }
 
     if (width === 390) {
+      await page.goto("/qa/?inner=1&state=year");
+      await expect(page.getByRole("button", { name: "登出" })).toBeVisible();
+      await page.locator(".profile-avatar img").evaluate((node) => {
+        (node as HTMLImageElement).src = "/qa/assets/lottery/matrix-profile-avatar.jpg";
+      });
+      await page.locator(".subscription-crown").evaluate((node) => {
+        (node as HTMLImageElement).src = "/qa/assets/lottery/membership/membership-emblem.png";
+      });
+      await expect.poll(() => page.locator(".subscription-crown").evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      await page.evaluate(() => document.fonts.ready);
       const capture = await stack.screenshot({ type: "jpeg", quality: 85 });
       console.log(`MEMBERSHIP_CARD_CAPTURE:${capture.toString("base64")}`);
     }
