@@ -2214,7 +2214,7 @@ opacity: .30; box-shadow: none;
 }
 .contact-support-screen .detail-card a {
   display: block;
-  color: #e5c36e;
+  color: #c9c2b8;
   font-size: 14px;
   line-height: 1.5;
   text-decoration: underline;
@@ -2222,7 +2222,7 @@ opacity: .30; box-shadow: none;
   overflow-wrap: anywhere;
 }
 .contact-support-screen .detail-card a:hover {
-  color: #f4ce67;
+  color: #f1ece3;
 }
 .contact-support-screen .detail-card a:focus-visible {
   outline: 2px solid #e5c36e;

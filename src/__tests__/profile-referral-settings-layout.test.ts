@@ -92,11 +92,11 @@ describe("profile referral and contact layout", () => {
     expect(getComputedStyle(contactBody).gap).toBe("8px");
   });
 
-  it("uses readable contact links with eight pixels before the phone", () => {
+  it("distinguishes contact text from gold headings with eight pixels before the phone", () => {
     mountProfileSettings();
     for (const link of document.querySelectorAll(".contact-support-screen a")) {
       const style = getComputedStyle(link);
-      expect(style.color).toBe("rgb(229, 195, 110)");
+      expect(style.color).toBe("rgb(201, 194, 184)");
       expect(style.fontSize).toBe("14px");
       expect(style.textDecoration).toBe("underline");
     }
