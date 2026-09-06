@@ -12,6 +12,15 @@ const APP_SHELL_PATHS = [
 ];
 const STATIC_DESTINATIONS = new Set(["font", "image", "manifest", "script", "style"]);
 const SENSITIVE_PATH_SEGMENT = /(?:^|\/)(?:auth|login|logout|sign-in|signin|sign-up|signup|member|membership|subscription|subscribe|account|profile)(?:\/|$)/;
+const LINE_PWA_READY = "matrix-line-pwa-ready";
+const LINE_PWA_PING = "matrix-line-pwa-ping";
+const LINE_PWA_IDENTIFIED = "matrix-line-pwa-identified";
+const LINE_PWA_RETURN_REQUEST = "matrix-line-pwa-return-request";
+const LINE_PWA_RETURN = "matrix-line-pwa-return";
+const LINE_PWA_RETURN_RESULT = "matrix-line-pwa-return-result";
+const LINE_PWA_PROBE_TIMEOUT_MS = 1_500;
+const linePwaClientIds = new Set();
+const pendingLinePwaProbes = new Map();
 
 function isGetRequest(request) {
   return request && request.method === "GET";
@@ -20,6 +29,24 @@ function isGetRequest(request) {
 function isSameOrigin(request) {
   try {
     return new URL(request.url).origin === self.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function isSameOriginClient(client) {
+  if (!client) return false;
+  try {
+    return new URL(client.url).origin === self.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function postClientMessage(client, message) {
+  try {
+    client?.postMessage?.(message);
+    return true;
   } catch {
     return false;
   }
@@ -167,6 +194,94 @@ async function handleStaticAsset(event) {
   if (response && response.ok) keepAlive(event, cacheResponse(cache, event.request, response));
   return response;
 }
+
+async function findLinePwaClient() {
+  for (const id of [...linePwaClientIds]) {
+    try {
+      const client = await self.clients.get(id);
+      if (isSameOriginClient(client)) return client;
+    } catch {
+      linePwaClientIds.delete(id);
+    }
+  }
+
+  let clientList = [];
+  try {
+    clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  } catch {
+    return null;
+  }
+
+  const candidates = clientList.filter(isSameOriginClient);
+  if (!candidates.length) return null;
+
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (client) => {
+      if (settled) return;
+      settled = true;
+      pendingLinePwaProbes.delete(requestId);
+      clearTimeout(timeout);
+      resolve(isSameOriginClient(client) ? client : null);
+    };
+    const timeout = setTimeout(() => finish(null), LINE_PWA_PROBE_TIMEOUT_MS);
+    pendingLinePwaProbes.set(requestId, finish);
+    for (const client of candidates) {
+      postClientMessage(client, { type: LINE_PWA_PING, requestId });
+    }
+  });
+}
+
+async function handleLinePwaReturn(event) {
+  const callbackClient = isSameOriginClient(event.source) ? event.source : null;
+  const pwaClient = await findLinePwaClient();
+  let ok = false;
+
+  if (pwaClient) {
+    postClientMessage(pwaClient, { type: LINE_PWA_RETURN });
+    try {
+      await pwaClient.focus();
+      ok = true;
+    } catch {
+      // Focus may be refused when the OAuth redirect no longer has transient activation.
+    }
+
+    if (!ok) {
+      try {
+        const opened = await self.clients.openWindow(`${self.location.origin}/`);
+        if (opened) {
+          ok = true;
+          postClientMessage(opened, { type: LINE_PWA_RETURN });
+          try { await opened.focus(); } catch { /* Best effort only. */ }
+        }
+      } catch {
+        // Some browsers reject openWindow without transient activation.
+      }
+    }
+  }
+
+  postClientMessage(callbackClient, { type: LINE_PWA_RETURN_RESULT, ok });
+}
+
+self.addEventListener("message", (event) => {
+  const type = event.data?.type;
+  const source = event.source;
+
+  if (type === LINE_PWA_READY && source?.id && isSameOriginClient(source)) {
+    linePwaClientIds.add(source.id);
+    return;
+  }
+
+  if (type === LINE_PWA_IDENTIFIED && typeof event.data?.requestId === "string") {
+    pendingLinePwaProbes.get(event.data.requestId)?.(source);
+    return;
+  }
+
+  if (type === LINE_PWA_RETURN_REQUEST) {
+    event.waitUntil(handleLinePwaReturn(event));
+  }
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(Promise.all([precacheAppShell(), skipWaiting()]).then(() => undefined));
