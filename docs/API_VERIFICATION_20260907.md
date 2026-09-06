@@ -28,7 +28,7 @@ alias normalization: 今彩539 731, 天天樂 1547,六合彩 912,大樂透 351.
 | Latest draws | Actual GET for all four lotteries | HTTP 200; periods matched database |
 | History | Actual GET, limit 3, all four lotteries | HTTP 200; newest records matched database; historic aliases found in full-history consumer |
 | Legacy card manifests | Actual GET for all four lotteries | HTTP 200; expected draw/sorted URLs |
-| PNG manifests | Actual GET succeeded for 今彩539、天天樂、大樂透 | 六合彩 request timed out at 12 seconds; not treated as proof of service failure |
+| PNG manifests | Actual GET succeeded for all four lotteries | An initial 12-second timeout for六合彩 was followed by HTTP 200 in 11.1 seconds; no service-outage claim |
 | Explore list RPC | Executed database functions for all four lotteries, standard two-period request | complete; 8/13/31/23 items for 今彩539/天天樂/六合彩/大樂透 |
 | Explore validation RPC | Executed one returned item per lottery | complete; validation contains itemId/sourceA/ruleSets |
 | Tongxing | Actual POST query for 今彩539 | HTTP 200 exposed duplicate-period defect above |
@@ -39,12 +39,14 @@ alias normalization: 今彩539 731, 天天樂 1547,六合彩 912,大樂透 351.
 | Transfer notifications | Read queue and cron responses | No jobs yet; enabled device is not proof of end-to-end receipt |
 | Scheduled HTTP failures | Existing net response history | Two WORKER_ERROR HTTP 500 at 01:14/01:15; latest inspected responses HTTP 200. Original cause not established from available logs |
 | Watchdog | AppDeploy current cron status | Last run success, failure_count 0 |
+| Watchdog database functions | Executed claim/begin/renew/finish/release with a random isolated key | 10 positive/negative behavior checks passed; subtransaction rolled back and fixture absence checked |
 | RPC access controls | Read actual database grants | Notification dispatch/watchdog operations denied to anon and authenticated, allowed to service_role; member entry points denied to anon |
 
 Database RPC execution does not establish browser HTTP authentication behavior.
 Paid-member Tianyan/Tiangong and member mutation flows have not been verified
 with a signed-in test member. No real member settings, payments, activation codes,
-leases, subscriptions, or notification jobs were modified for this verification.
+production leases, subscriptions, or notification jobs were modified for this verification.
+Only the isolated watchdog fixture was temporarily written and fully rolled back.
 No real notification was deliberately sent. A successful dispatch record does
 not establish that the phone displayed the notification.
 
@@ -55,8 +57,12 @@ not establish that the phone displayed the notification.
 - 79 Edge Function tests across ingest, dispatch, Pilio, admin transfer push,
   member test push and shared push delivery passed (mocked external delivery).
 - New historic-alias regressions failed before correction.
-- Final affected suite: 70 passed across `test_public_history_aliases.py`,
-  `test_public_api.py`, `test_api_server_http.py`, `test_matrix_card_api.py`.
+- CI exposed a requested-limit compatibility assertion in the existing latest
+  draw test. The reader now preserves the requested limit and only reads more
+  when aliases cause an underfilled result.
+- Final affected suite: 72 passed across `test_public_history_aliases.py`,
+  `test_public_api.py`, `test_api_server_http.py`, `test_matrix_card_api.py`,
+  `test_draw_time_contract.py`.
 
 This is a mixed verification result, not a declaration that all API business
 flows passed. The admin status page's automatic probes were not expanded by

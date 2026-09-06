@@ -186,11 +186,15 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
 
     client = getattr(repository, "client", None)
     if client is None:
-        for draw in repository.list_draws(lottery, None):
+        rows = repository.list_draws(lottery, limit)
+        for draw in rows:
             append_unique(_normalize_draw(draw))
-            if limit is not None and len(items) >= limit:
-                break
-        return items
+        if limit is not None and len(items) < limit and len(rows) == limit:
+            for draw in repository.list_draws(lottery, None):
+                append_unique(_normalize_draw(draw))
+                if len(items) >= limit:
+                    break
+        return items if limit is None else items[:limit]
 
     offset = 0
     remaining = limit
