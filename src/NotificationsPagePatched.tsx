@@ -33,6 +33,7 @@ type Lottery = (typeof LOTTERIES)[number];
 type SettingKey = "bet" | "result" | "win" | "status" | "card" | "collision" | "expiry" | "system";
 type NotificationRow = readonly [SettingKey, string, string, string];
 type NotificationSettingsEdit = (current: MemberNotificationSettings) => MemberNotificationSettings;
+type NotificationSettingsLoadState = "loading" | "ready" | "failed" | "unauthenticated";
 
 const SAVE_DEBOUNCE_MS = 25;
 const SAVE_RETRY_INITIAL_MS = 100;
@@ -124,8 +125,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const [pushAuthenticated, setPushAuthenticated] = useState<boolean | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const { settings, selectedOptions, betTimes, statusOptions } = notificationSettings;
-  const notificationSettingsLoadState = useRef<"loading" | "ready" | "failed">("loading");
-  const [notificationSettingsLoadUiState, setNotificationSettingsLoadUiState] = useState<"loading" | "ready" | "failed">("loading");
+  const notificationSettingsLoadState = useRef<NotificationSettingsLoadState>("loading");
+  const [notificationSettingsLoadUiState, setNotificationSettingsLoadUiState] = useState<NotificationSettingsLoadState>("loading");
   const [notificationSettingsControlsBlocked, setNotificationSettingsControlsBlocked] = useState(false);
   const [notificationSettingsReloadRevision, setNotificationSettingsReloadRevision] = useState(0);
   const pendingLoadEdits = useRef<NotificationSettingsEdit[]>([]);
@@ -207,8 +208,18 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       notificationSettingsLoadState.current = "loading";
       setNotificationSettingsLoadUiState("loading");
     }
-    void fetchNotificationSettings().then((stored) => {
-      if (!active) return;
+    void hasAuthenticatedMemberSession().then((authenticated) => {
+      if (!active) return null;
+      if (!authenticated) {
+        pendingLoadEdits.current = [];
+        notificationSettingsLoadState.current = "unauthenticated";
+        setNotificationSettingsLoadUiState("unauthenticated");
+        setNotificationSettingsControlsBlocked(true);
+        return null;
+      }
+      return fetchNotificationSettings();
+    }).then((stored) => {
+      if (!active || !stored) return;
       const merged = pendingLoadEdits.current.reduce((current, edit) => edit(current), stored);
       pendingLoadEdits.current = [];
       lastSavedSettings.current = JSON.stringify(stored);
@@ -267,7 +278,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   }, [notificationSettings]);
 
   const applyNotificationSettingsEdit = (edit: NotificationSettingsEdit) => {
-    if (notificationSettingsLoadState.current === "failed" || notificationSettingsControlsBlocked) return;
+    if (notificationSettingsLoadState.current === "failed" || notificationSettingsLoadState.current === "unauthenticated" || notificationSettingsControlsBlocked) return;
     if (notificationSettingsLoadState.current === "loading") pendingLoadEdits.current.push(edit);
     setNotificationSettings(edit);
   };
@@ -400,7 +411,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const renderRow = (row: NotificationRow) => {
     const [key, title, subtitle, icon] = row;
     const isSystemRow = key === "system";
-    const disabled = !settings[key] || key === "collision" || (!isSystemRow && notificationSettingsControlsBlocked);
+    const disabled = !settings[key] || key === "collision" || notificationSettingsLoadUiState === "unauthenticated" || (!isSystemRow && notificationSettingsControlsBlocked);
     const expanded = expandedKey === key && !disabled;
     const settingsPanelId = `notification-settings-${key}`;
     const isMatrixProRow = key === "status" || key === "card" || key === "collision" || key === "expiry";
