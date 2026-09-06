@@ -77,11 +77,10 @@ export async function signInWithLine(
   client: SupabaseClient = getSupabaseClient(),
 ) {
   const approvedRedirect = resolveApprovedRedirect(redirectTo, window.location.origin);
-  // Android standalone PWAs should keep LINE OAuth attached to the PWA window.
-  // With Service Worker support, open() uses the PWA's Android in-app browser;
-  // the existing callback flow then returns the authenticated session to this PWA.
-  // If popup creation is unavailable, retain the normal OAuth fallback.
-  if (isPwaDisplayMode() && (!isMobilePwa() || 'serviceWorker' in navigator)) {
+  // Mobile login stays in the originating PWA navigation. Service Worker support
+  // does not make a separate popup return to the PWA after native LINE opens
+  // Chrome; closing that popup can leave Chrome's new-tab page in front.
+  if (isPwaDisplayMode() && !isMobilePwa()) {
     const popupLogin = signInWithLinePopup(approvedRedirect, client);
     if (popupLogin) return popupLogin;
   }

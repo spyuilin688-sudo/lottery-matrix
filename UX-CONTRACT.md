@@ -114,10 +114,13 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 ## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- Desktop installed PWAs and mobile PWAs with Service Worker support retain the
-  managed authorization window. Automatic native LINE foreground return still
-  requires a physical-device check. Allow native LINE auto login; do not add
-  `disable_auto_login=true`. The callback
+- Mobile PWAs start OAuth in the original PWA navigation, including when Service
+  Worker support is available. Do not select the desktop popup flow merely
+  because a phone supports Service Workers. The mobile return URL is the
+  approved origin root, without the popup correlation query.
+- Desktop installed PWAs retain the managed authorization window. Automatic
+  native LINE foreground return still requires a physical-device check. Allow
+  native LINE auto login; do not add `disable_auto_login=true`. The callback
   stays at the approved origin root; an internally generated `matrix_line_return`
   UUID binds it to the waiting attempt. Public redirect arguments still reject
   arbitrary paths or queries. Keep this handoff available for callbacks from
