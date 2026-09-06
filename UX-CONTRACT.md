@@ -143,11 +143,16 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - Fullscreen (the current manifest setting), standalone, minimal-ui and iOS
   home-screen mode share detection with the install UI.
 - Ordinary browser login keeps the existing origin-root redirect. Unsupported
-  popup or unreachable return channels retain normal browser initialization.
+  popup or unreachable return channels first consume the successful Supabase
+  session, then show only `登入成功` and the `返回 Matrix` navigation action.
+  Android uses a user-activated HTTPS intent with the origin root as its browser
+  fallback; other platforms use the origin root directly. A callback that is
+  already running inside the installed PWA continues normal app initialization.
   Separate browser/PWA partitions (including iOS Home Screen/Safari) cannot use
   this channel. Window focus is controlled by the OS; unit or desktop-browser
   checks do not verify physical Android/iOS foreground return.
-- No page geometry, shortcuts, provider scopes or Supabase allowlist changes.
+- No existing application-page geometry, shortcuts, provider scopes or Supabase
+  allowlist changes.
 
 ## Referral page login state — 2026-09-06
 
