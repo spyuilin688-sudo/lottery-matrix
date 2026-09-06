@@ -122,7 +122,7 @@ describe("requested responsive layout refinement", () => {
       </div></main>`;
 
     expect(getComputedStyle(document.querySelector(".profile-screen .feature-body")!).gap).toBe("8px");
-    expect(getComputedStyle(document.querySelector(".membership-card-stack")!).gap).toBe("6px");
+    expect(getComputedStyle(document.querySelector(".membership-card-stack")!).gap).toBe("1px");
     expect(getComputedStyle(document.querySelector(".membership-card-stack")!).paddingTop).toBe("10px");
     for (const card of document.querySelectorAll(".membership-card")) {
       expect(getComputedStyle(card).paddingTop).toBe("0px");
