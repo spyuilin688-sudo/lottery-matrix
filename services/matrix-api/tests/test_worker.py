@@ -113,7 +113,7 @@ class StaleScheduledSource(Source):
 class Fantasy5ScheduledSource(Source):
     def fetch(self, lottery: str) -> dict:
         self.events.append("latest")
-        return self._draw(221, 5, "2026-08-27")
+        return self._draw(221, 5, "2026-08-28")
 
     def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
         self.events.append("history-all" if limit is None else f"history-{limit}")
@@ -121,7 +121,7 @@ class Fantasy5ScheduledSource(Source):
             self._draw(
                 221 - offset,
                 5,
-                (datetime(2026, 8, 27) - timedelta(days=offset)).date().isoformat(),
+                (datetime(2026, 8, 28) - timedelta(days=offset)).date().isoformat(),
             )
             for offset in range(self.history_count)
         ]
@@ -655,7 +655,7 @@ def test_marksix_sunday_recovery_stops_when_saturday_is_already_stored() -> None
     assert source.events == []
 
 
-def test_fantasy5_accepts_previous_california_date_for_taipei_cycle() -> None:
+def test_fantasy5_accepts_normalized_taipei_date_for_taipei_cycle() -> None:
     repository = InMemoryAnalysisRepository()
     source = Fantasy5ScheduledSource()
 
@@ -668,11 +668,11 @@ def test_fantasy5_accepts_previous_california_date_for_taipei_cycle() -> None:
     )
 
     assert result["status"] == "complete"
-    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-08-27"
+    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-08-28"
     assert source.events == ["history-all", "latest"]
 
 
-def test_fantasy5_stops_fetching_after_previous_california_date_is_stored() -> None:
+def test_fantasy5_stops_fetching_after_normalized_taipei_date_is_stored() -> None:
     repository = InMemoryAnalysisRepository()
     source = Fantasy5ScheduledSource()
     run_scheduled_worker(

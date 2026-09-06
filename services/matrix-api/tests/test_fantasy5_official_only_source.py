@@ -116,7 +116,7 @@ class Fantasy5PredrawRepairSource:
         self.events.append("latest")
         return {
             "period": "11988",
-            "drawDate": "2026-09-02",
+            "drawDate": "2026-09-03",
             "numbers": ["02", "09", "16", "27", "35"],
             "sortedNumbers": ["02", "09", "16", "27", "35"],
             "drawOrderNumbers": None,
@@ -157,5 +157,5 @@ def test_fantasy5_predraw_recovery_targets_previous_draw_not_upcoming_draw() -> 
 
     assert result["status"] == "complete"
     assert repository.list_draws("天天樂", 1)[0]["period"] == "11988"
-    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-09-02"
+    assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-09-03"
     assert source.events == ["latest"]

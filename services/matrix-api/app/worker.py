@@ -243,8 +243,6 @@ def _normalized_draw_date(value: Any) -> str:
 
 def _expected_source_draw_dates(lottery: str, cycle: datetime) -> frozenset[str]:
     source_date = cycle.date()
-    if lottery == "天天樂":
-        source_date -= timedelta(days=1)
     dates = {source_date.isoformat()}
     if lottery == "六合彩" and cycle.weekday() == 6:
         dates.add((source_date - timedelta(days=1)).isoformat())
