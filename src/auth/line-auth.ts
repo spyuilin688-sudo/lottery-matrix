@@ -86,10 +86,8 @@ export async function signInWithLine(
     provider: 'custom:line',
     options: {
       redirectTo: approvedRedirect,
-      // Mobile native LINE auto login can return to a new browser tab, losing
-      // the PWA's navigation context. Web SSO keeps its in-app authorization
-      // navigation intact so the in-scope callback can return to the PWA.
-      ...(mobilePwa ? { queryParams: { disable_auto_login: 'true' } } : {}),
+      // Allow the installed LINE app to authenticate mobile users. The approved
+      // origin-root callback keeps normal Supabase session recovery available.
     },
   });
 

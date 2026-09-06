@@ -111,13 +111,16 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - Canonical sibling comparison: existing feature pages inside `FeatureShell`, profile direct logout, native select fields and native date fields.
 
 
-## LINE login return — 2026-09-05
+## LINE login return — 2026-09-06
 
 - User request: opening LINE login from the installed PWA must return to the PWA.
-- Mobile installed PWAs keep OAuth in the original navigation context and send
-  LINE `disable_auto_login=true`, avoiding the native auto-login handoff that
-  returned to a separate Chrome tab in the user's recording. LINE web SSO is
-  used when available; otherwise LINE displays its own login page.
+- Mobile installed PWAs initiate OAuth in the current window with the approved
+  origin-root callback and allow native LINE auto login. Do not force
+  `disable_auto_login=true`: this prevents single-phone users without web SSO
+  from using the installed LINE app. Supabase detects and persists the callback
+  session through the existing provider-token-safe storage. The OS controls
+  whether native LINE returns directly to the PWA or a browser tab; automated
+  callback checks do not guarantee physical-device PWA activation.
 - Desktop installed PWAs retain the controlled authorization window. Successful
   session import returns the original PWA home with the existing success dialog.
 - Fullscreen (the current manifest setting), standalone, minimal-ui and iOS
@@ -126,6 +129,16 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
   popup or lost native-app window relationships have a working browser fallback;
   automated tests do not claim physical-device LINE return was verified.
 - No page geometry, shortcuts, provider scopes or callback allowlist changes.
+
+## Notification settings login state — 2026-09-06
+
+- Check the member session before reading notification settings. Signed-out
+  visitors retain the existing `請先使用 LINE 登入` message and cannot edit or
+  save member settings; being signed out is not a settings load failure.
+- Discard pending edits when the session check confirms no login. After login,
+  entering the notification page loads the member's saved settings.
+- Authenticated request failures retain the existing failure message, retry
+  control and protection against overwriting unknown remote settings.
 
 ## Pre-generated Matrix cards — 2026-09-05
 

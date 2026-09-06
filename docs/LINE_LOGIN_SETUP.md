@@ -105,12 +105,14 @@ actual production callback and PWA origin settings.
 
 ## Installed PWA return behavior
 
-Mobile installed PWAs use the original-window OAuth navigation and pass
-`queryParams: { disable_auto_login: 'true' }`. This keeps LINE's automatic native
-app handoff from opening the completed login in an unrelated browser tab. LINE
-uses its web SSO confirmation when a valid cookie exists; otherwise its own
-login page is shown. No blank popup is opened on mobile. The return URL remains
-the exact approved origin root, within the PWA's existing scope.
+As of 2026-09-06, mobile installed PWAs use original-window OAuth navigation
+without `disable_auto_login=true`. Native LINE auto login is allowed so users
+with one phone can authenticate through the installed LINE app. No blank popup
+is opened on mobile. The return URL remains the exact approved origin root,
+within the PWA's existing scope. The normal callback lets Supabase detect and
+persist its session through the existing provider-token-safe storage; a later
+PWA session read can restore a session available in that browser storage.
+Browser/PWA storage sharing and foreground return still require device checks.
 
 Desktop installed PWAs attempt a script-controlled OAuth window, created
 directly from the login click. The temporary callback hands its session to the
@@ -129,8 +131,13 @@ tab, that callback loads the normal application. Automatic foreground return is
 not guaranteed in those cases. Verify the actual installed Android/iOS/desktop
 app with a live LINE account; unit tests cannot establish OS-level return behavior.
 
-On 2026-09-05, the production Supabase authorize endpoint's first HTTP 302 was
+Historical check before the 2026-09-06 correction: on 2026-09-05, the production Supabase authorize endpoint's first HTTP 302 was
 checked without following it or completing a login. The control request did not
 include `disable_auto_login`; the mobile request's LINE URL included exactly
 `disable_auto_login=true`. Both retained `S256` and the existing Supabase callback.
 Provider configuration was read but not changed (`authorization_params` was `{}`).
+
+On 2026-09-06, a read-only check of the production Supabase authorize endpoint
+without the disabling parameter returned HTTP 302 to `access.line.me`. Its LINE
+URL contained neither `disable_auto_login` nor `prompt`, and retained the existing
+Supabase callback. The redirect was not followed and no LINE login was completed.

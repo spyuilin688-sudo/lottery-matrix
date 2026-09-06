@@ -68,7 +68,7 @@ describe('LINE auth helper', () => {
     { name: 'Android fullscreen PWA', userAgent: 'Mozilla/5.0 (Linux; Android 16) Chrome/140.0 Mobile Safari/537.36', standalone: false, platform: 'Linux', maxTouchPoints: 5 },
     { name: 'iPhone home-screen PWA', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', standalone: true, platform: 'iPhone', maxTouchPoints: 5 },
     { name: 'iPad desktop user agent', userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', standalone: false, platform: 'MacIntel', maxTouchPoints: 5 },
-  ])('keeps $name in its original auth context with LINE web SSO', async (device) => {
+  ])('allows native LINE auto login for $name with the approved PWA return URL', async (device) => {
     vi.stubGlobal('navigator', device);
     vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === '(display-mode: fullscreen)' })));
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
@@ -80,7 +80,6 @@ describe('LINE auth helper', () => {
         provider: 'custom:line',
         options: {
           redirectTo: new URL('/', window.location.origin).href,
-          queryParams: { disable_auto_login: 'true' },
         },
       });
     } finally { vi.unstubAllGlobals(); }
