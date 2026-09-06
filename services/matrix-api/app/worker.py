@@ -241,11 +241,14 @@ def _normalized_draw_date(value: Any) -> str:
     return str(value or "").strip().replace("/", "-").replace(".", "-")[:10]
 
 
-def _expected_source_draw_date(lottery: str, cycle: datetime) -> str:
+def _expected_source_draw_dates(lottery: str, cycle: datetime) -> frozenset[str]:
     source_date = cycle.date()
     if lottery == "天天樂":
         source_date -= timedelta(days=1)
-    return source_date.isoformat()
+    dates = {source_date.isoformat()}
+    if lottery == "六合彩" and cycle.weekday() == 6:
+        dates.add((source_date - timedelta(days=1)).isoformat())
+    return frozenset(dates)
 
 
 def _resume_stored_analysis(
@@ -294,7 +297,10 @@ def run_scheduled_worker(
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
     publish_current_card(lottery, repository, now)
-    cycle = due_call_cycle(lottery, now)
+    if allow_recovery_crawl:
+        cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
+    else:
+        cycle = due_call_cycle(lottery, now)
 
     if cycle is None:
         if latest:
@@ -319,12 +325,13 @@ def run_scheduled_worker(
     current_minute = current.astimezone(cycle.tzinfo).replace(second=0, microsecond=0)
     is_pre_draw_recovery = current.astimezone(cycle.tzinfo) < cycle
     target_cycle = previous_lottery_call_time(lottery, cycle) if is_pre_draw_recovery else cycle
-    expected_draw_date = _expected_source_draw_date(lottery, target_cycle)
+    expected_draw_dates = _expected_source_draw_dates(lottery, target_cycle)
+    oldest_expected_draw_date = min(expected_draw_dates)
     latest_draw_date = _normalized_draw_date(latest[0].get("drawDate")) if latest else ""
 
     if latest and (
-        latest_draw_date == expected_draw_date
-        or (is_pre_draw_recovery and latest_draw_date > expected_draw_date)
+        latest_draw_date in expected_draw_dates
+        or (is_pre_draw_recovery and latest_draw_date > oldest_expected_draw_date)
     ):
         if is_pre_draw_recovery:
             return {
@@ -381,7 +388,7 @@ def run_scheduled_worker(
             raise
         source_period = str(draw["period"])
 
-        if _normalized_draw_date(draw.get("drawDate")) != expected_draw_date:
+        if _normalized_draw_date(draw.get("drawDate")) not in expected_draw_dates:
             return {
                 "lottery": lottery,
                 "drawPeriod": draw["period"],

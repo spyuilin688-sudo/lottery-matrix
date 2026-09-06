@@ -100,7 +100,7 @@ def test_systemd_timer_covers_the_scheduled_worker_grid() -> None:
         ("今彩539", datetime(2026, 8, 28, 20, 33, tzinfo=TAIPEI)),
         ("今彩539", datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI)),
         ("天天樂", datetime(2026, 8, 28, 9, 33, tzinfo=TAIPEI)),
-        ("六合彩", datetime(2026, 8, 28, 21, 33, tzinfo=TAIPEI)),
+        ("六合彩", datetime(2026, 8, 29, 21, 33, tzinfo=TAIPEI)),
         ("大樂透", datetime(2026, 8, 28, 20, 53, tzinfo=TAIPEI)),
     )
 

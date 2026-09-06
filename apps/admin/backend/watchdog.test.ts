@@ -4,6 +4,7 @@ import {
   createFantasy5GithubDispatcher,
   createIndependentWatchdog,
   createSupabaseWatchdogLeaseManager,
+  expectedDrawDateForDueWindow,
   planWatchdogActions,
   type WatchdogSnapshot,
 } from './watchdog';
@@ -39,7 +40,7 @@ const plannedAtOffsets = (
   lastOffset: number,
 ) => {
   const offsets: number[] = [];
-  for (let offset = firstOffset; offset <= lastOffset; offset += 6) {
+  for (let offset = firstOffset; offset <= lastOffset; offset += 10) {
     if (planWatchdogActions([snapshot], minutesAfter(cycleCall, offset)).length > 0) {
       offsets.push(offset);
     }
@@ -48,52 +49,54 @@ const plannedAtOffsets = (
 };
 
 describe('independent Matrix watchdog planning', () => {
-  it('schedules exactly 128 checkpoints across the 6, 10, and 30 minute phases', () => {
+  it('backs off from ten-minute to thirty-minute and hourly recovery without reaching the next primary', () => {
     const checkpoints = buildWatchdogPhasePlan();
     const cycleCall = new Date('2026-09-05T12:33:00.000Z');
     const stale = healthy('今彩539', '115000215', '2026-09-04');
-    const offsets = plannedAtOffsets(stale, cycleCall, 6, 1_446);
+    const offsets = plannedAtOffsets(stale, cycleCall, 10, 1_440);
 
-    const sixMinutePhase = checkpoints.slice(0, 50);
-    const tenMinutePhase = checkpoints.slice(50, 110);
-    const thirtyMinutePhase = checkpoints.slice(110);
+    const tenMinutePhase = checkpoints.slice(0, 9);
+    const thirtyMinutePhase = checkpoints.slice(9, 16);
+    const hourlyPhase = checkpoints.slice(16, 34);
 
-    expect(checkpoints).toHaveLength(128);
-    expect(sixMinutePhase).toHaveLength(50);
-    expect([sixMinutePhase[0], sixMinutePhase.at(-1)]).toEqual([6, 300]);
-    expect(tenMinutePhase).toHaveLength(60);
-    expect([tenMinutePhase[0], tenMinutePhase.at(-1)]).toEqual([310, 900]);
-    expect(thirtyMinutePhase).toHaveLength(18);
-    expect([thirtyMinutePhase[0], thirtyMinutePhase.at(-1)]).toEqual([930, 1_440]);
-    expect(offsets).toHaveLength(128);
-    expect(offsets).not.toContain(306);
-    expect(offsets).not.toContain(906);
-    expect(offsets).not.toContain(1_446);
+    expect(checkpoints).toHaveLength(35);
+    expect(tenMinutePhase).toHaveLength(9);
+    expect([tenMinutePhase[0], tenMinutePhase.at(-1)]).toEqual([10, 90]);
+    expect(thirtyMinutePhase).toHaveLength(7);
+    expect([thirtyMinutePhase[0], thirtyMinutePhase.at(-1)]).toEqual([120, 300]);
+    expect(hourlyPhase).toHaveLength(18);
+    expect([hourlyPhase[0], hourlyPhase.at(-1)]).toEqual([360, 1_380]);
+    expect(checkpoints.at(-1)).toBe(1_410);
+    expect(offsets).toEqual(checkpoints);
+    expect(offsets).not.toContain(1_440);
   });
 
-  it('assigns each 10 minute checkpoint to only the immediately following 6 minute tick', () => {
+  it('does not recover before the first ten-minute checkpoint', () => {
     const cycleCall = new Date('2026-09-05T12:33:00.000Z');
     const stale = healthy('今彩539', '115000215', '2026-09-04');
-    const logicalDueOffsets = Array.from({ length: 60 }, (_, index) => 310 + index * 10);
-    const claimedDueOffsets: number[] = [];
-    const delays: number[] = [];
+    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 9))).toEqual([]);
+    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 10))).toHaveLength(1);
+    expect(planWatchdogActions([stale], minutesAfter(cycleCall, 20))).toHaveLength(1);
+  });
 
-    for (let physicalOffset = 306; physicalOffset <= 906; physicalOffset += 6) {
-      const dueInPreviousInterval = logicalDueOffsets.filter(
-        (dueOffset) => dueOffset > physicalOffset - 6 && dueOffset <= physicalOffset,
-      );
-      const actions = planWatchdogActions([stale], minutesAfter(cycleCall, physicalOffset));
-      expect(actions.length > 0).toBe(dueInPreviousInterval.length > 0);
-      for (const dueOffset of dueInPreviousInterval) {
-        claimedDueOffsets.push(dueOffset);
-        delays.push(physicalOffset - dueOffset);
-      }
-    }
+  it('runs Mark Six only on Tuesday, Thursday, Saturday, and Sunday fallback windows', () => {
+    const stale = healthy('六合彩', '026095', '2026-09-03');
+    expect(planWatchdogActions([stale], new Date('2026-09-07T13:43:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([stale], new Date('2026-09-08T13:43:00.000Z'))).toHaveLength(1);
+    expect(planWatchdogActions([stale], new Date('2026-09-09T13:43:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([stale], new Date('2026-09-10T13:43:00.000Z'))).toHaveLength(1);
+  });
 
-    expect(claimedDueOffsets).toEqual(logicalDueOffsets);
-    expect(new Set(claimedDueOffsets).size).toBe(60);
-    expect(Math.max(...delays)).toBe(4);
-    expect(new Set(delays)).toEqual(new Set([0, 2, 4]));
+  it('does not replay a Sunday Mark Six fallback when Saturday is already stored', () => {
+    expect(planWatchdogActions([
+      healthy('六合彩', '026096', '2026-09-05'),
+    ], new Date('2026-09-06T13:43:00.000Z'))).toEqual([]);
+  });
+
+  it('stops uncertain Saturday Mark Six recovery after ninety minutes', () => {
+    const stale = healthy('六合彩', '026095', '2026-09-03');
+    expect(planWatchdogActions([stale], new Date('2026-09-05T15:03:00.000Z'))).toHaveLength(1);
+    expect(planWatchdogActions([stale], new Date('2026-09-05T15:13:00.000Z'))).toEqual([]);
   });
 
   it('handles non-draw days, midnight crossing, California DST, and the next draw cycle', () => {
@@ -101,7 +104,7 @@ describe('independent Matrix watchdog planning', () => {
     const currentThroughSaturday = healthy('今彩539', '115000216', '2026-09-05');
     expect(planWatchdogActions(
       [stale539],
-      new Date('2026-09-05T17:45:00.000Z'),
+      new Date('2026-09-05T18:33:00.000Z'),
     )).toEqual([{
       lottery: '今彩539',
       target: 'railway',
@@ -109,11 +112,11 @@ describe('independent Matrix watchdog planning', () => {
     }]);
     expect(planWatchdogActions(
       [currentThroughSaturday],
-      new Date('2026-09-06T12:39:00.000Z'),
+      new Date('2026-09-06T12:43:00.000Z'),
     )).toEqual([]);
     expect(planWatchdogActions(
       [currentThroughSaturday],
-      new Date('2026-09-07T12:39:00.000Z'),
+      new Date('2026-09-07T12:43:00.000Z'),
     )).toEqual([{
       lottery: '今彩539',
       target: 'railway',
@@ -122,14 +125,14 @@ describe('independent Matrix watchdog planning', () => {
 
     expect(planWatchdogActions([
       healthy('天天樂', '11988', '2026-03-06'),
-    ], new Date('2026-03-08T02:45:00.000Z'))).toEqual([{
+    ], new Date('2026-03-08T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
     }]);
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-03-07'),
-    ], new Date('2026-03-09T01:45:00.000Z'))).toEqual([{
+    ], new Date('2026-03-09T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
@@ -139,13 +142,13 @@ describe('independent Matrix watchdog planning', () => {
   it('does nothing when the latest draw and its analysis are complete', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-09-04'),
-    ], new Date('2026-09-04T01:45:00.000Z'))).toEqual([]);
+    ], new Date('2026-09-04T01:43:00.000Z'))).toEqual([]);
   });
 
   it('dispatches GitHub when the current Taipei Fantasy5 draw is missing', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11990', '2026-09-05'),
-    ], new Date('2026-09-06T01:39:00.000Z'))).toEqual([{
+    ], new Date('2026-09-06T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
@@ -155,7 +158,7 @@ describe('independent Matrix watchdog planning', () => {
   it('dispatches only GitHub when Fantasy5 is stale at a due checkpoint', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11988', '2026-09-02'),
-    ], new Date('2026-09-04T01:45:00.000Z'))).toEqual([{
+    ], new Date('2026-09-04T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
@@ -167,12 +170,12 @@ describe('independent Matrix watchdog planning', () => {
     snapshot.job = {
       status: 'running',
       startedAt: '2026-09-04T01:35:00.000Z',
-      updatedAt: '2026-09-04T01:44:00.000Z',
+      updatedAt: '2026-09-04T01:42:00.000Z',
     };
 
     expect(planWatchdogActions(
       [snapshot],
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
     )).toEqual([]);
   });
 
@@ -181,7 +184,7 @@ describe('independent Matrix watchdog planning', () => {
     snapshot.latestAnalysis = null;
     expect(planWatchdogActions(
       [snapshot],
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
     )).toEqual([{
       lottery: '天天樂',
       target: 'railway',
@@ -192,7 +195,7 @@ describe('independent Matrix watchdog planning', () => {
   it('recovers a Railway-owned crawler when the due draw is stale', () => {
     expect(planWatchdogActions([
       healthy('今彩539', '115000214', '2026-09-03'),
-    ], new Date('2026-09-04T12:39:00.000Z'))).toEqual([{
+    ], new Date('2026-09-04T12:43:00.000Z'))).toEqual([{
       lottery: '今彩539',
       target: 'railway',
       reasons: ['crawler-stale'],
@@ -202,7 +205,7 @@ describe('independent Matrix watchdog planning', () => {
   it('uses the 大樂透 20:53 call time before scheduling recovery', () => {
     expect(planWatchdogActions([
       healthy('大樂透', '115000214', '2026-09-03'),
-    ], new Date('2026-09-04T12:59:00.000Z'))).toEqual([{
+    ], new Date('2026-09-04T13:03:00.000Z'))).toEqual([{
       lottery: '大樂透',
       target: 'railway',
       reasons: ['crawler-stale'],
@@ -218,7 +221,7 @@ describe('independent Matrix watchdog planning', () => {
   it('treats the due draw as already acquired', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-09-04'),
-    ], new Date('2026-09-04T01:45:00.000Z'))).toEqual([]);
+    ], new Date('2026-09-04T01:43:00.000Z'))).toEqual([]);
   });
 
   it('deduplicates crawler and analysis failures into one Railway recovery', () => {
@@ -227,7 +230,7 @@ describe('independent Matrix watchdog planning', () => {
     snapshot.latestAnalysis = null;
     expect(planWatchdogActions(
       [snapshot],
-      new Date('2026-09-04T12:39:00.000Z'),
+      new Date('2026-09-04T12:43:00.000Z'),
     )).toEqual([{
       lottery: '今彩539',
       target: 'railway',
@@ -237,7 +240,7 @@ describe('independent Matrix watchdog planning', () => {
   it('does not replay an old failed job after the expected draw is present', () => {
     const snapshot = healthy('今彩539', '115000215', '2026-09-04');
     snapshot.job = { status: 'failed', startedAt: null, updatedAt: null };
-    expect(planWatchdogActions([snapshot], new Date('2026-09-04T12:39:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([snapshot], new Date('2026-09-04T12:43:00.000Z'))).toEqual([]);
   });
 
   it('uses the analysis heartbeat and live lease instead of immutable start time', () => {
@@ -249,7 +252,7 @@ describe('independent Matrix watchdog planning', () => {
       updatedAt: '2026-09-04T01:40:00.000Z',
       leaseExpiresAt: '2026-09-04T02:05:00.000Z',
     };
-    expect(planWatchdogActions([snapshot], new Date('2026-09-04T01:45:00.000Z'))).toEqual([]);
+    expect(planWatchdogActions([snapshot], new Date('2026-09-04T01:43:00.000Z'))).toEqual([]);
   });
 
   it('recovers running analysis only after heartbeat and lease both expire', () => {
@@ -263,7 +266,7 @@ describe('independent Matrix watchdog planning', () => {
     };
     expect(planWatchdogActions(
       [snapshot],
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
     )).toEqual([{
       lottery: '天天樂',
       target: 'railway',
@@ -274,14 +277,14 @@ describe('independent Matrix watchdog planning', () => {
   it('uses the actual Los Angeles DST transition in March', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '11988', '2026-03-06'),
-    ], new Date('2026-03-08T02:45:00.000Z'))).toEqual([{
+    ], new Date('2026-03-08T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
     }]);
     expect(planWatchdogActions([
       healthy('天天樂', '11989', '2026-03-07'),
-    ], new Date('2026-03-09T01:45:00.000Z'))).toEqual([{
+    ], new Date('2026-03-09T01:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
@@ -291,7 +294,7 @@ describe('independent Matrix watchdog planning', () => {
   it('uses the post-fall-DST Fantasy5 call time without overlapping an older cycle', () => {
     expect(planWatchdogActions([
       healthy('天天樂', '12044', '2026-10-31'),
-    ], new Date('2026-11-02T02:39:00.000Z'))).toEqual([{
+    ], new Date('2026-11-02T02:43:00.000Z'))).toEqual([{
       lottery: '天天樂',
       target: 'github',
       reasons: ['crawler-stale'],
@@ -313,6 +316,14 @@ describe('independent Matrix watchdog planning', () => {
     }
   });
 
+  it('does not run the previous Fantasy5 recovery at the spring DST primary', () => {
+    const primary = new Date('2026-03-09T01:33:00.000Z');
+    expect(expectedDrawDateForDueWindow('天天樂', primary)).toBeNull();
+    expect(planWatchdogActions([
+      healthy('天天樂', '11989', '2026-03-07'),
+    ], primary)).toEqual([]);
+  });
+
 });
 
 describe('independent Matrix watchdog execution', () => {
@@ -327,7 +338,7 @@ describe('independent Matrix watchdog execution', () => {
     });
 
     await expect(watchdog.run(
-      new Date('2026-09-06T01:39:00.000Z'),
+      new Date('2026-09-06T01:43:00.000Z'),
       'invocation-fantasy5',
     )).resolves.toMatchObject({
       status: 'ok',
@@ -361,7 +372,7 @@ describe('independent Matrix watchdog execution', () => {
     });
 
     await expect(watchdog.run(
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
       'invocation-1',
     )).resolves.toMatchObject({
       status: 'ok',
@@ -386,7 +397,7 @@ describe('independent Matrix watchdog execution', () => {
       dispatchFantasy5: vi.fn(async () => 'dispatched'),
     });
     await expect(watchdog.run(
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
       'invocation-2',
     )).resolves.toMatchObject({
       status: 'ok',
@@ -407,7 +418,7 @@ describe('independent Matrix watchdog execution', () => {
       dispatchFantasy5: vi.fn(async () => 'dispatched'),
     });
     await expect(watchdog.run(
-      new Date('2026-09-04T01:45:00.000Z'),
+      new Date('2026-09-04T01:43:00.000Z'),
       'invocation-3',
     )).resolves.toMatchObject({
       status: 'degraded',
