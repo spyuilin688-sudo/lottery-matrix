@@ -7,6 +7,23 @@ import { fetchTiangongList, fetchTiangongValidation, type TiangongListResponse, 
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES } from "./shared";
 
+function describeDGroupCheck(status: string): string {
+  switch (status) {
+    case "breaks_at_stage1":
+      return "D 組第一段計算與開獎號碼不符，此版路可保留。";
+    case "breaks_at_stage2":
+      return "D 組第二段計算與開獎號碼不符，此版路可保留。";
+    case "path_not_extendable":
+      return "球位無法延伸至 D 組，此版路可保留。";
+    case "extends_to_near_3_to_4":
+      return "D 組兩段皆符合，已延伸為準3進4，不符合本次準2進3條件。";
+    case "unverifiable":
+      return "較早期的開獎資料不足，無法確認 D 組是否符合。";
+    default:
+      return "目前無法解讀 D 組檢查結果，請重新探索。";
+  }
+}
+
 export function TiangongValidationProcess({ validation, loading }: { validation?: TiangongValidation; loading: boolean }) {
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
@@ -23,7 +40,7 @@ export function TiangongValidationProcess({ validation, loading }: { validation?
         </div>
       ))}
       {d.source && d.stage1 ? <div className="validation-period-block"><div className="validation-period-row"><strong>D</strong><span>{`D 來源 ${d.source.period} 第${d.source.position}位：${d.source.number}｜${stage("第一段", d.stage1)}${d.stage2 ? `｜${stage("第二段", d.stage2)}` : ""}`}</span></div></div> : null}
-      <p className="empty-result">D 排除：{d.status}</p>
+      <p className="empty-result">D 組檢查：{describeDGroupCheck(d.status)}</p>
     </section>
   );
 }

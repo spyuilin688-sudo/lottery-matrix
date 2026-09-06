@@ -6,6 +6,7 @@ import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixTiangongPage } from '../FeaturePages';
+import { TiangongValidationProcess } from '../features/MatrixTiangongPage';
 
 const matrixApi = vi.hoisted(() => ({
   fetchExploreList: vi.fn(), fetchExploreValidation: vi.fn(),
@@ -160,4 +161,21 @@ test('開獎資料更正清除畫面分析快取並忽略晚到的舊分析', as
   act(() => invalidateMatrixData());
   await act(async () => { resolve(envelope); });
   expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+});
+
+test.each([
+  ['breaks_at_stage1', 'D 組第一段計算與開獎號碼不符，此版路可保留。'],
+  ['breaks_at_stage2', 'D 組第二段計算與開獎號碼不符，此版路可保留。'],
+  ['path_not_extendable', '球位無法延伸至 D 組，此版路可保留。'],
+  ['extends_to_near_3_to_4', 'D 組兩段皆符合，已延伸為準3進4，不符合本次準2進3條件。'],
+  ['unverifiable', '較早期的開獎資料不足，無法確認 D 組是否符合。'],
+  ['future_status', '目前無法解讀 D 組檢查結果，請重新探索。'],
+])('D 組檢查 %s 顯示中文原因，不洩漏內部代碼', (status, explanation) => {
+  render(<TiangongValidationProcess loading={false} validation={{
+    itemId: 'status-copy',
+    evidence: { rows: [], d_exclusion: { status } },
+  }} />);
+  const region = screen.getByRole('region', { name: '天工驗證過程' });
+  expect(within(region).getByText('D 組檢查：' + explanation)).toBeTruthy();
+  expect(region.textContent).not.toContain(status);
 });
