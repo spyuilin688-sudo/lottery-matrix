@@ -202,6 +202,13 @@ export function planWatchdogActions(
       || drawDate < expectedDate
     );
     if (staleDraw) {
+      const jobHeartbeat = snapshot.job?.updatedAt ?? snapshot.job?.startedAt;
+      const crawlerIsRunning = (
+        snapshot.job?.status === 'running'
+        && Boolean(jobHeartbeat)
+        && !isOlderThan(jobHeartbeat, now, JOB_STALE_MS)
+      );
+      if (crawlerIsRunning) continue;
       if (snapshot.job?.status === 'failed') {
         add(snapshot.lottery, crawlerTarget, 'job-failed');
       } else if (
