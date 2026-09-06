@@ -1742,7 +1742,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   color: #f4ce67;
   font-size: 16px;
 }
-.matrix-status-screen .matrix-status-prediction-label,
+.matrix-status-screen .matrix-status-prediction-label {
+  color: #aaa7a2;
+}
 .matrix-status-screen .matrix-status-prediction-separator {
   color: #ffffff;
 }
