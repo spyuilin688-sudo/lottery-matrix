@@ -1191,3 +1191,26 @@
 .matrix-explore-main-screen .feature-body > .result-panel {
   --matrix-explore-result-panel-width: 100%;
 }
+
+/* Requested Explore-only result spacing and quieter selected filters. */
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .repeat-stats-panel {
+  padding-top: 6px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .consecutive-filter-button,
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .repeat-stats-heading button {
+  min-height: 22px;
+  height: 22px;
+  padding-block: 1px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .road-results-head + article {
+  border-top: 0;
+}
+
+.matrix-explore-main-screen:not(.matrix-tianyan-screen):not(.matrix-tiangong-screen) .explore-consecutive-filter-option[aria-pressed="true"] {
+  border-color: var(--lottery-gold-500, #c49145);
+  color: var(--lottery-gold-500, #c49145);
+  background: rgba(196, 145, 69, .06);
+  box-shadow: none;
+}
