@@ -538,13 +538,24 @@ def test_scheduled_worker_calls_source_when_draw_is_due_and_not_acquired() -> No
     assert source.events == ["history-all", "latest"]
 
 
-def test_primary_scheduler_does_not_retry_source_five_minutes_later() -> None:
+@pytest.mark.parametrize(
+    ("lottery", "now"),
+    [
+        ("今彩539", datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI)),
+        ("大樂透", datetime(2026, 8, 28, 20, 58, tzinfo=TAIPEI)),
+        ("六合彩", datetime(2026, 8, 28, 21, 38, tzinfo=TAIPEI)),
+    ],
+)
+def test_primary_scheduler_does_not_retry_source_five_minutes_later(
+    lottery: str,
+    now: datetime,
+) -> None:
     repository = InMemoryAnalysisRepository()
     source = StaleScheduledSource()
 
     result = run_scheduled_worker(
-        "今彩539",
-        datetime(2026, 8, 28, 20, 38, tzinfo=TAIPEI),
+        lottery,
+        now,
         repository,
         source,
         _builders([]),
