@@ -95,7 +95,11 @@ test("guide categories scroll horizontally and status settings stays in bottom n
 });
 
 test("approved A+B membership cards keep the expiry divider with one style owner", () => {
-  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "1px solid var(--lottery-label)");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border"), "0");
+  assert.equal(finalDeclaration(canonicalFeatureCss, ".subscription-status-content .subscription-expiry", "border-left"), "");
+  const memberSource = readFileSync(new URL("../src/features/MemberPages.tsx", import.meta.url), "utf8");
+  assert.match(memberSource, /<clipPath id=\{informationClipId\}[^>]*>[\s\S]*?<rect x="800" y="534" width="39" height="196" \/>[\s\S]*?<\/clipPath>/);
+  assert.match(memberSource, /<svg className="subscription-information-art"[^>]*>\s*<image[^>]*clipPath=\{`url\(#\$\{informationClipId\}\)`\}/);
   assert.equal(ruleBodies(featureCss, ".subscription-status-content > div:last-child").length, 0);
 });
 

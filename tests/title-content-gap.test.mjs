@@ -7,9 +7,10 @@ const explore = fs.readFileSync(new URL('../src/matrix-explore-spacing.css', imp
 const featurePages = fs.readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const responsive = fs.readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
 
-test('all title cards use the shared eight-pixel content gap without page overrides', () => {
+test('title cards use the shared eight-pixel default and the approved profile spacing', () => {
   assert.match(shared, /\.feature-brand-header,\s*\.feature-brand-header\[data-compact="true"\]\s*\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)\s*;/s);
-  assert.doesNotMatch(shared, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/s);
+  assert.doesNotMatch(shared, /^\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/ms);
+  assert.match(shared, /^\.profile-screen > \.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom:\s*1px;/ms);
   assert.match(shared, /\.bottom-nav-brand-screen\s*>\s*\.feature-brand-header:not\(\.integrated-title-header\)\s*\{/);
   assert.doesNotMatch(shared, /\.bottom-nav-brand-screen\s*>\s*\.feature-brand-header\.integrated-title-header\s*\{/);
   assert.doesNotMatch(explore, /\.matrix-explore-main-screen\s*>\s*\.feature-brand-header\.integrated-title-header\s*\{/);

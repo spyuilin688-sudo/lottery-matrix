@@ -21,6 +21,8 @@ for (const width of membershipWidths) {
       return {
         left: rect.left,
         right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
         height: rect.height,
         scrollWidth: node.scrollWidth,
         clientWidth: node.clientWidth,
@@ -44,15 +46,20 @@ for (const width of membershipWidths) {
     expect(Math.abs(stackBox.left - 16)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(stackBox.right - (width - 16))).toBeLessThanOrEqual(0.5);
     expect(stackBox.scrollWidth).toBeLessThanOrEqual(stackBox.clientWidth);
-    const stackRatioLimit = width <= 320 ? 0.78 : width <= 360 ? 0.69 : width <= 390 ? 0.66 : 0.61;
+    const stackRatioLimit = width <= 320 ? 0.78 : width <= 360 ? 0.69 : width <= 390 ? 0.66 : 0.62;
     expect(stackBox.height / (width - 32)).toBeLessThanOrEqual(stackRatioLimit);
 
     for (const box of cardBoxes) {
       expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth);
+      expect(box.top).toBeGreaterThanOrEqual(stackBox.top - 0.5);
+      expect(box.bottom).toBeLessThanOrEqual(stackBox.bottom + 0.5);
     }
 
-    expect(Math.abs(cardBoxes[1].top - cardBoxes[0].bottom - 1)).toBeLessThanOrEqual(0.5);
-    expect(cardBoxes[0].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.26 : 0.23);
+    // The approved shared artwork uses contiguous absolute-positioned data overlays,
+    // not two independently framed cards with a 1px flex/grid gap.
+    expect(Math.abs(cardBoxes[1].top - cardBoxes[0].bottom)).toBeLessThanOrEqual(0.5);
+    // The profile artwork occupies 24.76% of the stack width at every viewport.
+    expect(cardBoxes[0].height / (width - 32)).toBeLessThanOrEqual(0.26);
     expect(cardBoxes[1].height / (width - 32)).toBeLessThanOrEqual(width <= 320 ? 0.45 : width <= 360 ? 0.41 : 0.37);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 

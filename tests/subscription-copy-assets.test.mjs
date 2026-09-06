@@ -6,8 +6,6 @@ import test from "node:test";
 const featurePagesSource = readFeaturePagesSource();
 const pricingMigrationSource = readFileSync(new URL("../supabase/migrations/20260904032000_update_subscription_plan_prices.sql", import.meta.url), "utf8");
 
-const countOccurrences = (source, value) => source.split(value).length - 1;
-
 test("subscription pricing and naming use the current approved copy", () => {
   assert.match(featurePagesSource, /\$2,880/);
   assert.match(featurePagesSource, /\$5,580/);
@@ -33,10 +31,15 @@ test("profile detail pages use the uploaded title artwork", () => {
     featurePagesSource,
     /ProfileDetailShell title="我的推薦碼\/啟動碼"[^>]*headerArtwork="\/assets\/lottery\/functions\/推薦啟動標題K\.png"/,
   );
-  assert.equal(
-    countOccurrences(featurePagesSource, 'headerArtwork="/assets/lottery/functions/法律資訊標題K.png"'),
-    6,
+  const legalWrapper = featurePagesSource.slice(
+    featurePagesSource.indexOf("function LegalInfoDocument("),
+    featurePagesSource.indexOf("function LegalInfoSection("),
   );
+  assert.match(legalWrapper, /<ProfileDetailShell[^>]*headerArtwork="\/assets\/lottery\/functions\/法律資訊標題K\.png"/);
+  for (const title of ["服務內容與使用說明", "退款規範", "會員服務條例", "隱私權政策", "聲明與免責事項"]) {
+    assert.ok(featurePagesSource.includes('<LegalInfoDocument title="' + title + '"'), title + " must use the shared legal artwork owner");
+  }
+  assert.match(featurePagesSource, /<ProfileDetailShell title="關於 樂彩 Matrix"[^>]*headerArtwork="\/assets\/lottery\/functions\/法律資訊標題K\.png"/);
 });
 
 test("database plan prices are migrated to the current approved amounts", () => {

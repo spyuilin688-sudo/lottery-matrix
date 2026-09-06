@@ -91,7 +91,8 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
   const resultGroups = screen.getAllByTestId('matrix-status-trigger-group');
   expect(resultGroups).toHaveLength(2);
   const firstGroup = resultGroups[0];
-  expect(within(firstGroup).getByText('單碼結果')).toBeInTheDocument();
+  expect(within(firstGroup).queryByText('單碼結果')).not.toBeInTheDocument();
+  expect(within(firstGroup).getByText('預測：')).toBeInTheDocument();
   expect(within(firstGroup).queryByText('共振')).not.toBeInTheDocument();
   const lockedRow = firstGroup.querySelector('.matrix-status-locked-road .road-result-row');
   expect(lockedRow?.children).toHaveLength(2);
