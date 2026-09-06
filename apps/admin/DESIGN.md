@@ -53,3 +53,9 @@ Runtime ownership（Model B）：src/admin.css 擁有基本排版，src/admin-op
 ## Do / Don't
 
 使用自然高度與可收縮欄位，保留可操作焦點、錯誤及空狀態。不要以固定高度裁切內容、改變權限或把預覽資料帶入正式站。
+
+### 系統設定服務檢查
+
+狀態標籤由 src/system-status.css 的 .statusState .statusBadge 擁有：11px 字級、最小高度 20px、2px／6px 內距與 4px 圓角。藍色表示只確認 API 存在、連線或所屬主機；綠色表示該項檢查／最近執行正常；紅色表示檢查失敗。不得把部分檢查改成已驗證完整功能。
+
+每項服務以獨立邊框分隔，間距 8px。名稱、用途、檢查範圍及錯誤訊息常駐；API 位址、時間、回應代碼及排程明細使用原生 details，預設收合，鍵盤可操作。文案由 src/system-status.ts 與 backend/api-status-inventory.ts 擁有，技術詞改成具體用途，既有功能與操作權限保持一致。

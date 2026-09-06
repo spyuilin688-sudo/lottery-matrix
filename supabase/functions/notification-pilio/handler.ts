@@ -15,6 +15,7 @@ function tokenEquals(left: string, right: string): boolean {
 
 export function createPilioNotificationHandler(dependencies: Dependencies) {
   return async (request: Request): Promise<Response> => {
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { Allow: "POST, OPTIONS" } });
     if (request.method !== "POST") return Response.json({ error: "METHOD_NOT_ALLOWED" }, { status: 405 });
     const token = request.headers.get("x-matrix-dispatch-token")?.trim() ?? "";
     if (!token) return Response.json({ error: "AUTH_REQUIRED" }, { status: 401 });

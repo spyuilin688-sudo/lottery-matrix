@@ -54,16 +54,16 @@ Steps:
 3. 分別以桌面與手機寬度檢查版面。
 Expected: 搜尋、狀態與筆數維持同一列，筆數欄至少 64px、可依多位數增長，搜尋框主動收縮，搜尋後筆數正確更新；無結果時仍可清除搜尋恢復列表。區塊與每列使用緊湊間距，不出現過大的卡片留白；桌面操作靠右，手機的「確認」與「拒絕」維持同列且文字不直排；畫面沒有水平溢出。全程不點擊確認或拒絕。
 
-## Test 6 - API 檢查範圍與排程文字
-Viewport: desktop (1280x800)
-Covers: GET /api/system-status, API inventory, checkEvidence badges, watchdog cadence
+## Test 6 - 系統設定服務狀態、明細與異常
+Viewport: desktop (1280x800) and mobile (375x667)
+Covers: GET /api/system-status, compact status badges, readable probe evidence, native details, per-function HTTP errors
 Description: 只使用已有授權管理員工作階段唯讀檢查；沒有工作階段則回報無法執行，不建立帳號或修改權限。
 Steps:
-1. 開啟系統設定的 API 狀態清單。
-2. 同時確認狀態列操作按鈕依內容寬度排列；切換待辦、權限與通知管理，表單和對話框的按鈕不強制滿版，長文及操作可完整捲動到达。
-3. 查看 member_referral_summary、member_referral_submit、member_line_pwa_diagnostics_submit、record_matrix_visit、notification-pilio。
-4. 查看端點存在、OPTIONS、繼承、直接檢查與服務回報的狀態文字，以及看門狗週期。
-Expected: 五項 API 均列入；部分檢查不等同功能正常，失敗仍顯示異常；看門狗顯示 10 分鐘。不得執行修復、發送通知或變更排程。
+1. 開啟系統設定，確認各服務以獨立邊框及 8px 間距分隔。
+2. 查看「API 已建立」「連線正常」「主機正常」及檢查說明；藍色部分檢查不等於已驗證完整功能，標籤約 20px 高。
+3. 展開、收合「檢查明細」，查看 API 位址、時間及回應代碼；收合時用途、檢查範圍與錯誤訊息仍可見。
+4. 點擊「重新檢查」，確認資料更新。查看 Pilio 開獎通知的連線檢查結果。
+Expected: 狀態文字清楚、小型標籤不擠壓名稱；失敗維持紅色並顯示該 API 的錯誤原因。Pilio 接受不執行通知工作的 OPTIONS 檢查，回應 204；這只代表連線有回應，不代表已派送通知。展開與重新檢查不觸發資料更新、兌換、發送通知或變更排程。
 
 ## Test 7 - 後台清單完整性與權限
 Viewport: mobile (375x667)

@@ -40,3 +40,17 @@ describe("notification-only polling boundary", () => {
     expect(test.calls).toEqual([]);
   });
 });
+
+it('answers the admin OPTIONS probe without reading or sending anything', async () => {
+  const test = setup();
+  const response = await test.handler(new Request('https://example.test/notification-pilio', { method: 'OPTIONS' }));
+  expect(response.status).toBe(204);
+  expect(response.headers.get('Allow')).toBe('POST, OPTIONS');
+  expect(await response.text()).toBe('');
+  expect(test.calls).toEqual([]);
+});
+it('still rejects a POST without the dispatch token', async () => {
+  const test = setup();
+  expect((await test.handler(new Request('https://example.test/notification-pilio', { method: 'POST' }))).status).toBe(401);
+  expect(test.calls).toEqual([]);
+});

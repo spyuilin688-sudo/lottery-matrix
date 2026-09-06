@@ -270,6 +270,22 @@ describe('connection status', () => {
     expect(JSON.stringify(result)).not.toContain('github-raw-secret');
   });
 
+  it('retains the failed function HTTP status without blaming all Supabase APIs', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/notification-pilio')
+      ? response({ error: 'METHOD_NOT_ALLOWED' }, 405)
+      : String(input).endsWith('/rest/v1/') ? response({ paths: {} }) : response({ ok: true }));
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
+      fetcher, getWorkerStatus: async () => healthyWorkerStatus,
+    });
+    const result = await status.get();
+    expect(result.items.find(item => item.id === 'notification-pilio-function')).toMatchObject({
+      ok: false, detail: { status: 405 }, error: '此 API 不接受連線檢查（HTTP 405）。',
+    });
+    expect(result.items.find(item => item.id === 'notification-dispatch-function')?.ok).toBe(true);
+  });
+
   it('checks all Edge Functions with OPTIONS only', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
       ? response({ paths: {} })
@@ -384,11 +400,11 @@ describe('connection status', () => {
   });
 
   it.each([
-    ['missing', null, '尚無 AppDeploy 獨立監控心跳'],
+    ['missing', null, '尚無自動監控執行紀錄'],
     ['stale', {
       status: 'ok', checkedAt: '2026-09-04T11:40:59.000Z', completedAt: '2026-09-04T11:41:59.000Z',
       dueLotteries: [], actions: [],
-    } satisfies WatchdogStatus, 'AppDeploy 獨立監控心跳已超過 18 分鐘'],
+    } satisfies WatchdogStatus, '自動監控已超過 18 分鐘未完成更新'],
   ])('marks a %s watchdog heartbeat unavailable with a safe error', async (_case, heartbeat, error) => {
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
@@ -419,7 +435,7 @@ describe('connection status', () => {
     const result = await status.get();
     expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
       ok: false,
-      error: 'AppDeploy 獨立監控心跳時間異常',
+      error: '自動監控的執行時間異常',
     });
   });
 

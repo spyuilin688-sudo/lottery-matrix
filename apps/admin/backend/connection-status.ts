@@ -86,7 +86,7 @@ const safeErrorFor = (definition: ApiStatusDefinition, workerStatus?: WorkerStat
   }
   if (definition.location === 'Railway') return 'Railway Worker API 暫時無法使用';
   if (definition.location === 'GitHub') return 'GitHub Actions API 暫時無法使用';
-  if (definition.checkMode === 'openapi') return 'Supabase API 登錄檢查失敗';
+  if (definition.checkMode === 'openapi') return '無法確認資料庫內是否有此 API';
   return `${definition.location} API 暫時無法使用`;
 };
 const safeWatchdogDetail = (status: WatchdogStatus) => ({
@@ -180,17 +180,17 @@ export function createConnectionStatus(dependencies: Dependencies) {
         detail = { status: response.status };
       } else if (definition.id === 'appdeploy-watchdog-heartbeat') {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
-        if (!heartbeat) return finish(false, undefined, '尚無 AppDeploy 獨立監控心跳');
+        if (!heartbeat) return finish(false, undefined, '尚無自動監控執行紀錄');
         detail = safeWatchdogDetail(heartbeat);
         const ageMs = now().getTime() - Date.parse(heartbeat.completedAt);
         if (!Number.isFinite(ageMs) || ageMs < -watchdogAllowedFutureSkewMs) {
-          return finish(false, detail, 'AppDeploy 獨立監控心跳時間異常');
+          return finish(false, detail, '自動監控的執行時間異常');
         }
         if (ageMs > watchdogFreshnessMs) {
-          return finish(false, detail, 'AppDeploy 獨立監控心跳已超過 18 分鐘');
+          return finish(false, detail, '自動監控已超過 18 分鐘未完成更新');
         }
         if (heartbeat.status !== 'ok') {
-          return finish(false, detail, 'AppDeploy 獨立監控心跳回報降級');
+          return finish(false, detail, '最近一次自動監控回報異常');
         }
       } else if (definition.id === 'supabase-database') {
         await withDeadline(() => dependencies.supabase.selectRows('plans', 'select=id&limit=1'));
@@ -203,7 +203,13 @@ export function createConnectionStatus(dependencies: Dependencies) {
       } else if (definition.endpoint.startsWith('/functions/v1/')) {
         const current = await shared.config();
         const response = await fetchWithDeadline(`${current.url}${definition.endpoint}`, { method: 'OPTIONS', cache: 'no-store', redirect: 'error', headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` } });
-        if (!response.ok) throw new Error('FUNCTION_UNAVAILABLE');
+        if (!response.ok) {
+          const message = response.status === 405 ? '此 API 不接受連線檢查（HTTP 405）。'
+            : response.status === 404 ? '找不到此 API（HTTP 404）。'
+              : response.status === 401 || response.status === 403 ? `此 API 的存取驗證未通過（HTTP ${response.status}）。`
+                : `此 API 回應異常（HTTP ${response.status}）。`;
+          return finish(false, { status: response.status }, message);
+        }
         detail = { status: response.status };
       } else if (definition.checkMode === 'openapi') {
         const paths = await shared.openApiPaths();
@@ -237,7 +243,8 @@ export function createConnectionStatus(dependencies: Dependencies) {
         else detail = { inheritedFrom: ['/health', '/jobs/status'] };
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');
       return finish(true, detail);
-    } catch {
+    } catch (cause) {
+      if (cause instanceof Error && cause.message === 'STATUS_PROBE_TIMEOUT') return finish(false, undefined, '連線檢查逾時，請重新檢查。');
       const workerStatus = definition.location === 'Railway' ? await shared.worker().catch(() => undefined) : undefined;
       return finish(false, undefined, safeErrorFor(definition, workerStatus));
     }
