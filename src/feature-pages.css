@@ -1047,8 +1047,8 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .activation-result.error { border: 1px solid rgba(177, 81, 81, .55); background: rgba(103, 37, 37, .22); color: #efb3b3; }
 .support-contact-card { display: grid; padding: 18px 14px; gap: 12px; }
 .support-contact-card a { display: block; min-height: 48px; padding: 13px 12px; border: 1px solid #76521d; border-radius: 9px; background: rgba(183, 133, 32, .08); color: #efc95e; font-size: 14px; line-height: 1.5; text-align: center; text-decoration: none; overflow-wrap: anywhere; }
-.plan-carousel { display: flex; margin: 0 -14px; padding: 0 14px 4px; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
-.plan-card { position: relative; flex: 0 0 calc(100% - 24px); min-height: 300px; padding: 18px; scroll-snap-align: center; border: 1px solid #76521d; border-radius: 13px; background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
+.plan-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.plan-card { position: relative; min-height: 300px; padding: 18px; scroll-snap-align: center; border: 1px solid #76521d; border-radius: 13px; background: linear-gradient(150deg, rgba(12, 19, 24, .98), rgba(3, 8, 12, .99)); color: #d7d0c5; text-align: left; }
 .plan-card[data-current="true"] { border-color: #d6a42b; box-shadow: inset 0 0 24px rgba(202, 144, 30, .11), 0 0 14px rgba(194, 137, 31, .12); }
 .plan-card-heading { display: flex; min-height: 34px; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .plan-name { display: block; padding-top: 2px; color: #ece7df; font-size: 18px; font-weight: 650; white-space: nowrap; }
@@ -2137,8 +2137,6 @@ opacity: .30; box-shadow: none;
   line-height: 1.35;
 }
 .pro-plans-screen .renewal-card {
-  width: 100%;
-  margin-inline: auto;
   border-radius: 13px;
 }
 .pro-plans-screen .renewal-card h2 {
