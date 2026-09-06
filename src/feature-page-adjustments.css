@@ -132,6 +132,11 @@
   column-gap: 6px;
 }
 
+/* The next row divider starts 3px lower; leave 4px of visible clearance. */
+.notifications-screen-v2 .notification-group > .notification-row:not(:last-child):not(:has(.notification-inline-settings[data-expanded="true"])) > .notification-heading {
+  padding-block-end: 1px;
+}
+
 .notifications-screen-v2 .notification-icon,
 .notifications-screen-v2 .notification-icon img {
   width: 36px;
@@ -213,6 +218,7 @@
   display: grid;
   min-width: 0;
   justify-items: center;
+  align-self: end;
   gap: 0;
 }
 
