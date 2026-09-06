@@ -3,6 +3,7 @@ import {
   canRefreshCrawler,
   canRetrySystemStatus,
   getGithubStatusFacts,
+  getSystemStatusPresentation,
   groupSystemStatusItems,
   loadSystemStatus,
   refreshCrawlerSystemStatus,
@@ -184,5 +185,32 @@ describe('system status client', () => {
       { label: 'Workflow 狀態', value: 'active' },
       { label: '最近執行', value: '尚無執行紀錄' },
     ]);
+  });
+});
+
+
+describe('system status evidence presentation', () => {
+  const item = {
+    id: 'admin-api', name: 'API', description: '', group: '系統',
+    location: 'AppDeploy' as const, endpoint: '/api/_healthcheck',
+    checkMode: 'live' as const, ok: true, checkedAt: '', responseMs: 0,
+  };
+
+  it.each([
+    ['live', '檢查通過', 'good'],
+    ['registered', '已登錄', 'limited'],
+    ['options', 'OPTIONS 可達', 'limited'],
+    ['inherited', '服務可達', 'limited'],
+    ['reported', '回報正常', 'good'],
+  ] as const)('labels %s evidence without upgrading it to functional success', (checkEvidence, label, tone) => {
+    expect(getSystemStatusPresentation({ ...item, checkEvidence })).toMatchObject({ label, tone });
+    expect(getSystemStatusPresentation({ ...item, checkEvidence, ok: false })).toMatchObject({ label: '異常', tone: 'bad' });
+  });
+
+  it('preserves limited evidence for older backend payloads', () => {
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: '已登錄', tone: 'limited', scope: '僅檢查 RPC 登錄狀態，未驗證功能執行。' });
+    expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: 'OPTIONS 可達', tone: 'limited' });
+    expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '服務可達', tone: 'limited' });
+    expect(getSystemStatusPresentation({ ...item, id: 'appdeploy-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '回報正常' });
   });
 });

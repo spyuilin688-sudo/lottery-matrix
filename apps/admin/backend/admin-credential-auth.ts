@@ -31,6 +31,7 @@ export class AdminCredentialError extends Error {
 const encoder = new TextEncoder();
 const cookieName = 'matrix_admin_session';
 const sessionSeconds = 86_400;
+const sessionCleanupTimeoutMs = 1500;
 const passwordIterations = 210_000;
 const bytesToBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 const base64ToBytes = (value: string) => Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
@@ -98,8 +99,21 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     if (!row || !salt || !storedHash) throw new AdminCredentialError('管理員帳號或密碼錯誤');
     if (!equalBase64(await derivePasswordHash(password, base64ToBytes(salt)), storedHash)) throw new AdminCredentialError('管理員帳號或密碼錯誤');
     if (row.status !== '啟用') throw new AdminCredentialError('管理員帳號已停用', 403);
+    const loginTime = now();
     const token = randomBase64Url(32);
-    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, expires_at: new Date(now().getTime() + sessionSeconds * 1000).toISOString() }]);
+    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
+    // Expiry is inclusive, matching session validation. Maintenance must not
+    // prevent a valid login, and runs here rather than on every authenticated request.
+    let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        transport.deleteRows('admin_sessions', `expires_at=lte.${encodeURIComponent(loginTime.toISOString())}`),
+        new Promise<void>((resolve) => { cleanupTimer = setTimeout(resolve, sessionCleanupTimeoutMs); }),
+      ]);
+    } catch { /* Retry maintenance at the next successful login. */ }
+    finally {
+      if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
+    }
     return { admin: mapAdmin(row), token };
   };
   const getAdminFromHeaders = async (headers?: Record<string, string | undefined>) => {

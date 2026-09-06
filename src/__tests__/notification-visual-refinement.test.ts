@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe("notification visual refinement", () => {
-  it("gives notification groups more room while keeping the mobile content vertically balanced", () => {
+  it("keeps notification groups at the requested 8px spacing with balanced mobile content", () => {
     mountStyles(notificationCss());
     document.body.innerHTML = `
       <main class="notifications-screen-v2" style="--layout-bottom-nav-clearance:72px">
@@ -44,7 +44,7 @@ describe("notification visual refinement", () => {
     expect(featureBody.paddingBlockStart).toBe("4px");
     expect(featureBody.paddingBlockEnd).toBe("calc(var(--layout-bottom-nav-clearance) + 8px)");
     expect(content.rowGap).toBe("16px");
-    expect(list.gap).toBe("12px");
+    expect(list.gap).toBe("8px");
   });
 
   it("keeps disabled Matrix 摘星 readable without making its controls active", () => {

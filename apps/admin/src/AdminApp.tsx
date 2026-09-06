@@ -31,6 +31,7 @@ import {
   canRetrySystemStatus,
   focusSystemStatusAfterAction,
   getGithubStatusFacts,
+  getSystemStatusPresentation,
   groupSystemStatusItems,
   loadSystemStatus,
   refreshCrawlerSystemStatus,
@@ -1386,13 +1387,14 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {
-          const healthyCount = group.items.filter((item) => item.ok).length;
+          const abnormalCount = group.items.filter((item) => !item.ok).length;
+          const limitedCount = group.items.filter((item) => getSystemStatusPresentation(item).tone === "limited").length;
           const groupTitleId = `status-group-${group.location.toLowerCase()}`;
           return (
             <section className="statusGroup" key={group.location} aria-labelledby={groupTitleId}>
               <header className="statusGroupHeader">
                 <h3 id={groupTitleId}>{group.location}</h3>
-                <span>{healthyCount}／{group.items.length} 正常</span>
+                <span>{group.items.length} 項 · {limitedCount} 項有限檢查 · {abnormalCount} 項異常</span>
               </header>
               <div className="statusRows">
                 {group.items.map((item) => {
@@ -1400,15 +1402,17 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
                     ? item.detail as Record<string, unknown>
                     : null;
                   const finishedAt = detail?.finishedAt ?? detail?.finished_at;
+                  const presentation = getSystemStatusPresentation(item);
                   return (
-                    <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${item.ok ? "正常" : "異常"}`}>
+                    <article className="statusRow" key={item.id} data-status-id={item.id} tabIndex={-1} aria-label={`${item.name}：${presentation.label}`}>
                       <div className="statusRowMain">
                         <div className="statusRowTitle">
                           <div className="statusIdentity"><b>{item.name}</b><span>{item.group}</span></div>
-                          <div className="statusState"><span>{item.location === "GitHub" ? "API 連線" : "狀態"}</span><b className={item.ok ? "statusBadge good" : "statusBadge bad"}>{item.ok ? "正常" : "異常"}</b></div>
+                          <div className="statusState"><span>{item.location === "GitHub" ? "API 連線" : "狀態"}</span><b className={`statusBadge ${presentation.tone}`}>{presentation.label}</b></div>
                         </div>
                         <dl className="statusFacts">
                           <div><dt>用途</dt><dd>{item.description}</dd></div>
+                          <div><dt>檢查範圍</dt><dd>{presentation.scope}</dd></div>
                           <div><dt>Endpoint</dt><dd className="statusEndpoint">{item.endpoint}</dd></div>
                           <div><dt>檢查時間</dt><dd>{formatAdminDateTime(item.checkedAt)}</dd></div>
                           <div><dt>回應時間</dt><dd>{item.responseMs} ms</dd></div>
@@ -1420,7 +1424,7 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
                           {item.id === "appdeploy-watchdog-heartbeat" && (
                             <>
                               <div><dt>心跳完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
-                              <div><dt>實體排程</dt><dd>每 6 分鐘</dd></div>
+                              <div><dt>實體排程</dt><dd>每 10 分鐘</dd></div>
                               <div><dt>Logical 排程</dt><dd>6×50、10×60、30×18</dd></div>
                             </>
                           )}

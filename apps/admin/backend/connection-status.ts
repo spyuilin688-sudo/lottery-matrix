@@ -1,4 +1,4 @@
-import { apiStatusInventory, type ApiStatusDefinition } from './api-status-inventory';
+import { apiStatusInventory, type ApiCheckEvidence, type ApiStatusDefinition } from './api-status-inventory';
 import type { SupabaseConfig } from './supabase';
 import type { RailwayLatestAnalysis, WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
@@ -18,6 +18,7 @@ type Dependencies = {
 export type ConnectionStatusItem = ApiStatusDefinition & {
   description: string;
   ok: boolean;
+  checkEvidence?: ApiCheckEvidence;
   checkedAt: string;
   responseMs: number;
   retryable?: boolean;
@@ -48,7 +49,7 @@ const watchdogFreshnessMs = 18 * 60 * 1000;
 const watchdogAllowedFutureSkewMs = 2 * 60 * 1000;
 const defaultRequestTimeoutMs = 10_000;
 const watchdogScheduleDetail = {
-  physicalCronIntervalMinutes: 6,
+  physicalCronIntervalMinutes: 10,
   freshnessThresholdMinutes: 18,
   logicalPhases: [
     { intervalMinutes: 6, checks: 50 },
@@ -158,7 +159,11 @@ export function createConnectionStatus(dependencies: Dependencies) {
   };
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
-    const base = { ...definition, description: descriptionFor(definition), checkedAt: now().toISOString(), responseMs: 0, ...(retryableIds.has(definition.id) ? { retryable: true } : {}) };
+    const checkEvidence: ApiCheckEvidence = definition.endpoint.startsWith('/functions/v1/') ? 'options'
+      : definition.checkMode === 'openapi' ? 'registered'
+      : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
+      : definition.id === 'appdeploy-watchdog-heartbeat' ? 'reported' : 'live';
+    const base = { ...definition, checkEvidence, description: descriptionFor(definition), checkedAt: now().toISOString(), responseMs: 0, ...(retryableIds.has(definition.id) ? { retryable: true } : {}) };
     const finish = (ok: boolean, detail?: unknown, error?: string): ConnectionStatusItem => ({
       ...base,
       ok,
@@ -259,7 +264,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
           id: `cron-${jobName}`,
           name: `${lottery}資料更新排程`,
           description: '顯示各彩種自動更新資料的執行狀態。',
-          group: '排程', location: 'Supabase', endpoint: '/rest/v1/system_job_status', checkMode: 'live', ok, checkedAt, responseMs: 0, detail,
+          group: '排程', location: 'Supabase', endpoint: '/rest/v1/system_job_status', checkMode: 'live', checkEvidence: 'reported', ok, checkedAt, responseMs: 0, detail,
           ...(ok ? {} : { error: detail ? `排程狀態：${detail.status}` : '尚無執行紀錄' }),
         } satisfies ConnectionStatusItem;
       });

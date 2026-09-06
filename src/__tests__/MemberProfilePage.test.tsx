@@ -541,7 +541,8 @@ describe("ProfilePage member API", () => {
     const nicknameFrame = await screen.findByText(`LINE 暱稱：${nickname}`);
     expect(screen.queryByText(/LINE ID：/)).not.toBeInTheDocument();
     expect(nicknameFrame).toHaveAttribute("data-name-fit", "compact");
-    expect(getComputedStyle(nicknameFrame).fontSize).toBe("10px");
+    // Nickname text scales with the artwork container; jsdom preserves cqw units.
+    expect(getComputedStyle(nicknameFrame).fontSize).toBe("2.8cqw");
     expect(getComputedStyle(nicknameFrame).overflow).toBe("hidden");
     expect(getComputedStyle(nicknameFrame).textOverflow).toBe("ellipsis");
     expect(getComputedStyle(nicknameFrame).whiteSpace).toBe("nowrap");

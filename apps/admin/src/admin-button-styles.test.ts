@@ -116,7 +116,7 @@ describe('admin interface styles', () => {
     for (const label of ['用途', 'Endpoint', '狀態', '檢查時間', '回應時間', '心跳完成時間', '實體排程', 'Logical 排程']) {
       expect(appSource).toContain(label);
     }
-    expect(appSource).toContain('每 6 分鐘');
+    expect(appSource).toContain('每 10 分鐘');
     expect(appSource).toContain('6×50、10×60、30×18');
     expect(appSource).toContain('detail?.completedAt');
   });
@@ -126,6 +126,15 @@ describe('admin interface styles', () => {
     expect(appSource).toContain('getGithubStatusFacts(item).map');
     expect(appSource).not.toContain('dispatchGithub');
     expect(appSource).not.toContain('retryGithub');
+  });
+
+  it('renders limited evidence neutrally and includes the check scope in each row', () => {
+    expect(appSource).toContain('const presentation = getSystemStatusPresentation(item)');
+    expect(appSource).toContain('className={`statusBadge ${presentation.tone}`}');
+    expect(appSource).toContain('檢查範圍</dt><dd>{presentation.scope}');
+    expect(appSource).toContain('項有限檢查');
+    expect(rule(statusCss, '.statusState .statusBadge.limited')).toContain('color: #c4c6cc;');
+    expect(rule(statusCss, '.statusRowTitle')).toContain('flex-wrap: wrap;');
   });
 
   it('keeps retry and permission-gated crawler refresh actions identifiable', () => {

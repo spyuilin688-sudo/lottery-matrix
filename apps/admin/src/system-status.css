@@ -17,13 +17,14 @@
 .statusRows { display: grid; gap: 1px; background: #2a2d33; }
 .statusRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px 12px; background: #111419; }
 .statusRowMain { min-width: 0; }
-.statusRowTitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.statusRowTitle { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .statusIdentity { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
 .statusRowTitle b { color: #ece7d8; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 .statusIdentity span,
 .statusState > span { color: #888d96; font-size: 11px; }
 .statusState { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
 .statusState .statusBadge { font-weight: 700; }
+.statusState .statusBadge.limited { color: #c4c6cc; background: #24272d; }
 .statusFacts { display: grid; margin: 6px 0 0; }
 .statusFacts > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; padding: 4px 0; border-top: 1px solid #24272d; }
 .statusFacts dt { color: #888d96; font-size: 11px; line-height: 1.45; }

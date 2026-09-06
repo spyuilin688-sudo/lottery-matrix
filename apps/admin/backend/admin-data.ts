@@ -47,7 +47,7 @@ export class AdminDataError extends Error {
 
 const definitions: Record<string, TableDefinition> = {
   users: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=registered_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       authUserId: row.auth_user_id,
@@ -66,7 +66,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast&limit=200',
+    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
@@ -90,7 +90,7 @@ const definitions: Record<string, TableDefinition> = {
     },
   },
   loginRecords: {
-    path: `/rest/v1/admin_login_records?select=id,admin_id,account,login_at,logout_at,online_minutes,ip,device,admin_account:admin_accounts!inner(role)&admin_account.role=neq.${encodeURIComponent('超級管理員')}&order=login_at.desc&limit=200`,
+    path: `/rest/v1/admin_login_records?select=id,admin_id,account,login_at,logout_at,online_minutes,ip,device,admin_account:admin_accounts!inner(role)&admin_account.role=neq.${encodeURIComponent('超級管理員')}&order=login_at.desc,id.asc`,
     map: (row) => ({
       id: String(row.id),
       adminId: row.admin_id,
@@ -103,7 +103,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptionRecords: {
-    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status&order=paid_at.desc.nullslast&limit=200',
+    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status&order=paid_at.desc.nullslast,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
@@ -114,7 +114,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   auditLogs: {
-    path: '/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device&order=operation_time.desc&limit=200',
+    path: '/rest/v1/audit_logs?select=id,operation_time,admin_id,admin,operation_type,target_table,target_id,content,before_data,after_data,ip,device&order=operation_time.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       operationTime: row.operation_time,
@@ -131,7 +131,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   admins: {
-    path: '/rest/v1/admin_accounts?select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at&order=created_at.asc&limit=200',
+    path: '/rest/v1/admin_accounts?select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at&order=created_at.asc,id.asc',
     map: (row) => ({
       id: String(row.id),
       account: row.account,
@@ -149,7 +149,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   activationCodes: {
-    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(line_display_name)&order=created_at.desc&limit=200',
+    path: '/rest/v1/activation_codes?select=id,batch_id,code,duration_type,created_at,expires_at,redeemed_at,status,redeemed_member:members!activation_codes_redeemed_by_member_id_fkey(line_display_name)&order=created_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       batchId: row.batch_id,
@@ -163,7 +163,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   plans: {
-    path: '/rest/v1/plans?select=id,name,price,duration_days&order=duration_days.asc',
+    path: '/rest/v1/plans?select=id,name,price,duration_days&order=duration_days.asc,id.asc',
     map: (row) => ({
       id: String(row.id),
       name: row.name,
@@ -172,7 +172,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   transferRequests: {
-    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(line_display_name)&order=submitted_at.desc&limit=200',
+    path: '/rest/v1/transfer_requests?select=id,member_id,plan_id,amount,transferred_at,account_last_five,submitted_at,status,plan:plans(name),member:members(line_display_name)&order=submitted_at.desc,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
@@ -194,13 +194,26 @@ export function getAdminTableDefinition(table: string): TableDefinition {
   return definition;
 }
 
+const adminReadPageSize = 1000;
+
+async function listAllRows(api: Requester, path: string) {
+  const rows: Row[] = [];
+  for (;;) {
+    const page = await api.request<Row[]>(`${path}&limit=${adminReadPageSize}&offset=${rows.length}`);
+    // A server row cap can return a short page before the result ends.
+    // Advance by the actual count and stop only on an empty page.
+    if (page.length === 0) return rows;
+    rows.push(...page);
+  }
+}
+
 export async function listAdminTable(table: string, api: Requester, currentDate = new Date()) {
   const definition = getAdminTableDefinition(table);
-  const rows = await api.request<Row[]>(definition.path);
+  const rows = await listAllRows(api, definition.path);
   const items = rows.map(definition.map);
   if (table !== 'users' && table !== 'subscriptions') return { items };
   const since = new Date(currentDate.getTime() - 3 * 86_400_000).toISOString();
-  const sessions = await api.request<Row[]>(`/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&limit=10000`);
+  const sessions = await listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc`);
   const secondsByMember = new Map<string, number>();
   for (const session of sessions) {
     const memberId = String(session.member_id ?? '');
@@ -235,7 +248,7 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     ? ''
     : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
   const [members, paymentRows, visitorStats] = await Promise.all([
-    api.request<Row[]>('/rest/v1/members?select=plan_expires_at,current_plan:plans!members_current_plan_id_fkey(duration_days)&limit=10000'),
+    listAllRows(api, '/rest/v1/members?select=plan_expires_at,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
     listDashboardPayments(api, resetFilter),
     api.request<{ todayVisitors: number; monthVisitors: number; totalVisitors: number }>('/rest/v1/rpc/admin_visitor_stats', { method: 'POST', body: '{}' }).catch(() => null),
   ]);
