@@ -1807,6 +1807,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-status-screen .road-result-row > strong {
   color: #f4ce67;
   font-size: 14px;
+  white-space: nowrap;
 }
 .matrix-status-screen .road-results .tag {
   display: inline-flex;
@@ -1845,12 +1846,13 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .matrix-status-screen .matrix-status-locked-cell {
   min-width: 0;
+  grid-column: 1 / 5;
   justify-self: stretch;
   color: #b7b0a6;
   font-size: clamp(6.5px, 1.9vw, 8px);
   line-height: 1.15;
   overflow-wrap: normal;
-  white-space: normal;
+  white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
   .matrix-status-screen .status-block > button > svg,
