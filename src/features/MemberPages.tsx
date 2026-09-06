@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useId, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { isActivationRedemptionError, redeemActivationCode, type ActivationRedemptionErrorCode } from "../activation/redeemActivationCode";
 import { bootstrapMember, fetchMemberPaymentHistory, fetchMemberProfile, fetchMemberReferralSummary, fetchPendingTransferRequest, submitMemberReferralCode, submitTransferRequest, type MemberPaymentHistoryItem, type MemberProfileResponse, type MemberReferralSummary, type MemberTransferRequest, type ManualTransferPlanCode } from "../member-api";
@@ -11,6 +11,32 @@ import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
+
+
+/** Keep the approved raster artwork intact; mask sample text and the sample photo.
+ *  All visible member data and interactive labels are rendered by ProfilePage.
+ */
+function MembershipArtwork() {
+  const maskId = useId();
+  return (
+    <svg className="membership-reference-art" viewBox="0 0 1563 1006" aria-hidden="true" focusable="false">
+      <defs>
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1006">
+          <rect width="1563" height="1006" fill="white" />
+          <circle cx="225" cy="216" r="111" fill="black" />
+          <rect x="388" y="132" width="490" height="81" fill="black" />
+          <rect x="388" y="235" width="516" height="57" fill="black" />
+          <rect x="1280" y="180" width="145" height="67" fill="black" />
+          <rect x="145" y="423" width="410" height="84" fill="black" />
+          <rect x="320" y="528" width="473" height="207" fill="black" />
+          <rect x="906" y="528" width="430" height="207" fill="black" />
+          <rect x="530" y="793" width="540" height="76" fill="black" />
+        </mask>
+      </defs>
+      <image href="/assets/lottery/membership/membership-ab-reference.png" width="1563" height="1006" mask={`url(#${maskId})`} />
+    </svg>
+  );
+}
 
 export type TaipeiCalendarDate = { year: number; month: number; day: number };
 
@@ -288,6 +314,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
       <div className="membership-card-stack">
+        <MembershipArtwork />
         <section className="panel membership-card profile-card">
           <div className="profile-avatar">
             <img
@@ -302,10 +329,10 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
               data-name-fit={lineNickname && Array.from(lineNickname).length > 12 ? "compact" : "regular"}
             >LINE 暱稱：{lineNickname ?? ""}</p>
           </div>
-          <div className="profile-watermark" aria-hidden="true">M</div>
           {authState !== "initializing" ? <button
             type="button"
             className="profile-logout"
+            data-auth-state={authState}
             onClick={() => void handleAuthAction()}
             disabled={authRetrying || authState === "signing-in" || authState === "signing-out"}
             aria-busy={authRetrying || authState === "signing-in" || authState === "signing-out"}
@@ -320,7 +347,6 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
         <section className="panel membership-card subscription-status-card">
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-content">
-            <img className="subscription-crown" src="/assets/lottery/membership/membership-emblem.png" alt="" aria-hidden="true" />
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
             <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>

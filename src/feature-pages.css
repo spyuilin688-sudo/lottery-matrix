@@ -998,80 +998,76 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .notification-modal .notification-status-settings .notification-choice input { width: 16px; height: 16px; }
 .notification-modal:has(.notification-status-settings) .notification-modal-done { min-height: 48px; margin-top: 8px; }
 
-/* Approved A+B membership cards: sole owner of the two profile surfaces. */
+/* Approved A+B artwork stays at its original aspect ratio. Live data is HTML. */
 .membership-card-stack {
-  display: grid;
+  position: relative;
+  container-type: inline-size;
   box-sizing: border-box;
   min-width: 0;
-  padding: 10px 8px 15px;
-  gap: 1px;
+  aspect-ratio: 1563 / 1006;
   overflow: hidden;
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(13, 24, 29, .45), transparent 28%),
-    var(--lottery-neutral-950);
+  background: #030a0d;
+}
+.membership-reference-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 .profile-screen .panel.membership-card {
-  position: relative;
-  isolation: isolate;
+  position: absolute;
   box-sizing: border-box;
+  left: 0;
+  width: 100%;
   min-width: 0;
+  min-height: 0;
   margin: 0;
-  padding: 0 6px;
-  border: 8px solid transparent;
+  padding: 0;
+  border: 0;
   border-radius: 0;
-  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 16px / 0 stretch;
   background: transparent;
   box-shadow: none;
 }
 .profile-card {
-  display: grid;
-  min-height: 76px;
-  overflow: hidden;
-  grid-template-columns: 56px minmax(0, 1fr) 58px;
-  align-items: center;
-  gap: 11px;
+  top: 0;
+  height: 24.76cqw;
 }
 .profile-avatar {
-  z-index: 1;
-  display: grid;
-  width: 56px;
-  height: 56px;
-  place-items: center;
+  position: absolute;
+  left: 7.294cqw;
+  top: 6.718cqw;
+  width: 14.203cqw;
+  height: 14.203cqw;
+  overflow: hidden;
   border: 0;
   border-radius: 50%;
-  background: url("/assets/lottery/membership/membership-emblem.png") center / 115% no-repeat;
+  background: #030a0d;
 }
 .profile-avatar img {
   display: block;
-  width: 78%;
-  height: 78%;
+  width: 100%;
+  height: 100%;
   border-radius: inherit;
   object-fit: cover;
 }
-.profile-watermark {
-  position: absolute;
-  z-index: -1;
-  inset: -9px 34px auto auto;
-  color: var(--lottery-label);
-  opacity: .09;
-  font-size: 118px;
-  font-weight: 800;
-  line-height: 1;
-  pointer-events: none;
-}
 .profile-copy {
-  z-index: 1;
+  position: absolute;
+  left: 25.21cqw;
+  top: 8.89cqw;
+  width: 32.7cqw;
   min-width: 0;
 }
 .profile-card .profile-copy h2 {
-  margin: 0 0 3px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--lottery-border-default);
-  color: var(--lottery-text-primary);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 18px;
+  margin: 0 0 1.15cqw;
+  padding: 0;
+  border: 0;
+  color: #fff3d6;
+  font-size: 4.1cqw;
+  font-weight: 750;
+  line-height: 5.12cqw;
 }
 .profile-card .profile-copy p {
   display: block;
@@ -1081,195 +1077,146 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 0 solid transparent;
+  border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--lottery-text-secondary);
-  font-size: 10px;
+  color: #b8b9b8;
+  font-size: 2.72cqw;
   font-weight: 400;
-  line-height: 14px;
+  line-height: 3.52cqw;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 10px; }
+.profile-card .profile-nickname[data-name-fit="compact"] { font-size: 2.55cqw; }
 .profile-logout {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  left: 78.44cqw;
+  top: 13.76cqw;
+  transform: translateY(-50%);
   display: grid;
-  align-self: center;
-  width: 58px;
+  box-sizing: border-box;
+  width: 15.48cqw;
   min-width: 0;
   min-height: 44px;
-  height: 44px;
+  height: 12.3cqw;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #f1c66b;
+  font-size: 3.5cqw;
+  line-height: 1;
+  cursor: pointer;
+}
+.profile-logout:not([data-auth-state="authenticated"]) { font-size: 2.75cqw; }
+.profile-logout > span { white-space: nowrap; }
+.profile-logout:disabled { cursor: wait; opacity: .56; }
+.subscription-status-card {
+  top: 24.76cqw;
+  height: 35.83cqw;
+}
+.subscription-status-card > .section-title {
+  position: absolute;
+  left: 9.85cqw;
+  top: 2.8cqw;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  color: #fff3d6;
+  font-size: 4.05cqw;
+  font-weight: 750;
+  line-height: 5.4cqw;
+}
+.subscription-status-card > .section-title > span { display: none; }
+.subscription-status-card > .section-title::before,
+.subscription-status-card > .section-title::after { display: none; }
+.subscription-status-content {
+  position: absolute;
+  inset: 9.58cqw 0 auto;
+  min-width: 0;
+  margin: 0;
+}
+.subscription-status-content > div {
+  position: absolute;
+  top: 0;
+  min-width: 0;
+}
+.subscription-status-content .subscription-plan {
+  left: 21.43cqw;
+  width: 29.4cqw;
+}
+.subscription-status-content .subscription-expiry {
+  left: 58.86cqw;
+  width: 29cqw;
+  padding: 0;
+  border: 0;
+}
+.subscription-status-content span {
+  display: block;
+  color: #b8b9b8;
+  font-size: 2.75cqw;
+  line-height: 3.55cqw;
+}
+.subscription-status-content strong {
+  display: block;
+  margin-top: .45cqw;
+  color: #f1c66b;
+  font-size: 3.8cqw;
+  font-weight: 750;
+  line-height: 4.8cqw;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.subscription-status-content p {
+  margin: .5cqw 0 0;
+  color: #b8b9b8;
+  font-size: 2.58cqw;
+  line-height: 3.5cqw;
+}
+.subscription-entry {
+  position: absolute;
+  left: 4.73cqw;
+  top: 28.28cqw;
+  transform: translateY(-50%);
+  display: grid;
+  box-sizing: border-box;
+  width: 90.53cqw;
+  min-height: 44px;
+  height: 12.3cqw;
+  margin: 0;
   padding: 0;
   place-items: center;
   border: 0;
   background: transparent;
-  color: var(--lottery-border-selected);
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-}
-.profile-logout::before {
-  position: absolute;
-  z-index: -1;
-  inset: 11px 0;
-  border: 1px solid var(--lottery-border-selected);
-  border-radius: 999px;
-  background: var(--lottery-neutral-950);
-  content: "";
-}
-.profile-logout > span {
-  max-width: 52px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.profile-logout:disabled {
-  cursor: wait;
-  opacity: .56;
-}
-.subscription-status-card > .section-title {
-  min-width: 0;
-  margin: 0 0 2px 6px;
-  gap: 9px;
-  color: var(--lottery-text-primary);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 19px;
-}
-.subscription-status-card > .section-title::after {
-  content: "";
-  flex: 1;
-  border-top: 1px solid var(--lottery-border-default);
-}
-.subscription-status-content {
-  display: grid;
-  min-width: 0;
-  margin: 0;
-  grid-template-columns: 42px minmax(0, .8fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-}
-.subscription-crown {
-  display: block;
-  width: 42px;
-  height: 42px;
-  margin-left: 2px;
-  object-fit: contain;
-}
-.subscription-status-content > div { min-width: 0; }
-.subscription-status-content .subscription-expiry {
-  align-self: stretch;
-  padding-left: 20px;
-  border-left: 1px solid var(--lottery-label);
-}
-.subscription-status-content span {
-  display: block;
-  color: var(--lottery-text-secondary);
-  font-size: 10px;
-  line-height: 13px;
-}
-.subscription-status-content strong {
-  display: block;
-  margin-top: 1px;
-  color: var(--lottery-border-selected);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-}
-.subscription-status-content p {
-  margin: 1px 0 0;
-  color: var(--lottery-text-secondary);
-  font-size: 9px;
-  line-height: 12px;
-}
-.subscription-entry {
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  box-sizing: border-box;
-  width: calc(100% + 12px);
-  min-height: 44px;
-  height: 44px;
-  margin: 0 -6px;
-  padding: 0 9px;
-  grid-template-columns: 1fr 16px;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--lottery-text-primary);
-  font-size: 13px;
+  color: #fff3d6;
+  font-size: 3.18cqw;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 1.4;
   cursor: pointer;
 }
-.subscription-entry::before {
-  position: absolute;
-  z-index: -1;
-  inset: 7px 0;
-  border: 8px solid transparent;
-  border-image: url("/assets/lottery/membership/membership-frame.png") 100 fill / 14px / 0 stretch;
-  content: "";
-}
-.subscription-entry svg {
-  width: 16px;
-  height: 16px;
-  justify-self: end;
-  color: var(--lottery-border-selected);
-}
+.subscription-entry svg { display: none; }
 .profile-logout:focus-visible,
 .subscription-entry:focus-visible {
-  outline: 2px solid var(--lottery-border-selected);
-  outline-offset: 2px;
+  outline: 2px solid #f1c66b;
+  outline-offset: -2px;
 }
 .profile-logout:active,
 .subscription-entry:active { opacity: .8; }
 @media (hover: hover) {
-  .profile-logout:not(:disabled):hover::before,
-  .subscription-entry:hover::before { filter: brightness(1.08); }
+  .profile-logout:not(:disabled):hover,
+  .subscription-entry:hover { color: #fff5d8; }
 }
 @media (max-width: 360px) {
-  .membership-card-stack {
-    padding: 8px 6px 10px;
-    gap: 1px;
-    border-radius: 20px;
-  }
-  .profile-card {
-    min-height: 72px;
-    grid-template-columns: 52px minmax(0, 1fr) 54px;
-    gap: 6px;
-  }
-  .profile-avatar { width: 52px; height: 52px; }
-  .profile-logout { width: 54px; font-size: 11px; }
-  .profile-card .profile-copy h2 { font-size: 14px; }
-  .subscription-status-card > .section-title { font-size: 14px; line-height: 18px; }
-  .subscription-status-content {
-    grid-template-columns: 38px minmax(0, 1.1fr) minmax(0, 1fr);
-    gap: 5px;
-  }
-  .subscription-crown { width: 38px; height: 38px; }
-  .subscription-status-content .subscription-expiry { padding-left: 6px; }
-  .subscription-status-content strong { font-size: 13px; }
-  .subscription-status-content p { font-size: 8px; }
+  .membership-card-stack { border-radius: 20px; }
 }
-
 @media (forced-colors: active) {
   .membership-card-stack { background: Canvas; }
-  .profile-screen .panel.membership-card {
-    padding: 12px;
-    border: 1px solid CanvasText;
-    border-image: none;
-    background: Canvas;
-  }
-  .profile-logout::before,
-  .subscription-entry::before {
-    border: 1px solid ButtonText;
-    border-image: none;
-    background: Canvas;
-  }
-  .profile-watermark { display: none; }
+  .membership-reference-art { display: none; }
+  .profile-screen .panel.membership-card { outline: 1px solid CanvasText; }
+  .profile-logout,
+  .subscription-entry { outline: 1px solid ButtonText; }
 }
 
 .profile-mark { display: grid; width: 58px; height: 58px; place-items: center; border: 1px solid #aa751b; border-radius: 50%; color: #e6af2b; }
