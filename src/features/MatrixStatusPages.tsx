@@ -41,7 +41,6 @@ export function MatrixStatusTriggerCard({
     <section className="matrix-status-trigger-group" data-testid="matrix-status-trigger-group">
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
-          {card.hitType === "one-code" ? <small>單碼結果</small> : null}
           <strong className="numeric-text">
             <span className="matrix-status-prediction-label">預測：</span>
             {card.result.map((number, index) => (
