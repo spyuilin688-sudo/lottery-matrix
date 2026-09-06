@@ -43,6 +43,7 @@ for (const width of MOBILE_WIDTHS) {
       const body = root.querySelector<HTMLElement>(":scope > .feature-body")!;
       const card = root.querySelector<HTMLElement>('.plan-card[data-current="true"]')!;
       const checkoutElement = root.querySelector<HTMLElement>(".pro-plans-checkout")!;
+      const paymentElement = root.querySelector<HTMLElement>(".confirm-payment")!;
       const cards = Array.from(root.querySelectorAll<HTMLElement>(".plan-card"));
       const cardIndex = cards.indexOf(card);
       const previousCardRect = cards[cardIndex - 1]!.getBoundingClientRect();
@@ -50,11 +51,31 @@ for (const width of MOBILE_WIDTHS) {
       const bodyRect = body.getBoundingClientRect();
       const cardRect = card.getBoundingClientRect();
       const checkoutRect = checkoutElement.getBoundingClientRect();
+      const hasOuterBoxShadow = (element: HTMLElement) => {
+        const value = getComputedStyle(element).boxShadow;
+        if (value === "none") return false;
+
+        const shadows: string[] = [];
+        let depth = 0;
+        let start = 0;
+        for (let index = 0; index < value.length; index += 1) {
+          if (value[index] === "(") depth += 1;
+          if (value[index] === ")") depth -= 1;
+          if (value[index] === "," && depth === 0) {
+            shadows.push(value.slice(start, index));
+            start = index + 1;
+          }
+        }
+        shadows.push(value.slice(start));
+        return shadows.some((shadow) => !/\\binset\\b/.test(shadow));
+      };
       return {
         cardLeft: Math.round(cardRect.left - bodyRect.left),
         cardRight: Math.round(bodyRect.right - cardRect.right),
         checkoutLeft: Math.round(checkoutRect.left - bodyRect.left),
         checkoutRight: Math.round(bodyRect.right - checkoutRect.right),
+        planOuterShadow: hasOuterBoxShadow(card),
+        paymentOuterShadow: hasOuterBoxShadow(paymentElement),
         previousCardPeek: Math.max(0, Math.round(previousCardRect.right - bodyRect.left)),
         nextCardPeek: Math.max(0, Math.round(bodyRect.right - nextCardRect.left)),
         overflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -64,6 +85,8 @@ for (const width of MOBILE_WIDTHS) {
       cardRight: 19,
       checkoutLeft: 16,
       checkoutRight: 16,
+      planOuterShadow: false,
+      paymentOuterShadow: false,
       previousCardPeek: 0,
       nextCardPeek: 0,
       overflow: 0,
