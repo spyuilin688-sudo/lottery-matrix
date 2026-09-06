@@ -316,6 +316,29 @@ describe('independent Matrix watchdog planning', () => {
 });
 
 describe('independent Matrix watchdog execution', () => {
+  it('releases the GitHub dispatch lease so the next checkpoint can retry', async () => {
+    const releaseLease = vi.fn(async () => undefined);
+    const watchdog = createIndependentWatchdog({
+      loadSnapshot: async () => [healthy('天天樂', '11990', '2026-09-05')],
+      claimLease: async () => true,
+      releaseLease,
+      recoverRailway: vi.fn(async () => ({ status: 'accepted' })),
+      dispatchFantasy5: vi.fn(async () => 'dispatched'),
+    });
+
+    await expect(watchdog.run(
+      new Date('2026-09-06T01:39:00.000Z'),
+      'invocation-fantasy5',
+    )).resolves.toMatchObject({
+      status: 'ok',
+      actions: [{ outcome: 'dispatched' }],
+    });
+    expect(releaseLease).toHaveBeenCalledWith(
+      'github:天天樂',
+      'invocation-fantasy5',
+    );
+  });
+
   it('keeps GitHub optional until the server-only Actions token is configured', async () => {
     const fetcher = vi.fn();
     const dispatch = createFantasy5GithubDispatcher(async () => null, fetcher as typeof fetch);
