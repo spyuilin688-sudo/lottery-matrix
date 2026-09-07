@@ -65,7 +65,9 @@ function observeControllerChange(serviceWorker: ServiceWorkerContainer) {
   };
 }
 
-export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistration> {
+export async function registerPushServiceWorker(
+  { update = true }: { update?: boolean } = {},
+): Promise<ServiceWorkerRegistration> {
   const serviceWorker = serviceWorkerContainer();
   if (!serviceWorker) throw new Error('PUSH_SERVICE_WORKER_UNSUPPORTED');
   return withRegistrationTimeout((async () => {
@@ -73,6 +75,9 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
       ? await serviceWorker.getRegistration(SERVICE_WORKER_PATH)
       : undefined;
     if (!existing) return await serviceWorker.register(SERVICE_WORKER_PATH);
+    // Push operations can use an activated worker without a network update.
+    // Startup still waits for updates needed by the LINE return handshake.
+    if (!update && existing.active?.state === 'activated') return existing;
     if (typeof existing.update !== 'function') return existing;
 
     const previousController = serviceWorker.controller;
@@ -91,7 +96,7 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
 
 async function getPushContext(): Promise<PushContext | null> {
   try {
-    const registration = await registerPushServiceWorker();
+    const registration = await registerPushServiceWorker({ update: false });
     const pushManager = registration?.pushManager;
     if (!pushManager || typeof pushManager.getSubscription !== 'function' || typeof pushManager.subscribe !== 'function') return null;
     return { pushManager };
@@ -156,7 +161,7 @@ export function enablePushNotifications(publicKey: string, authenticated = false
 
     let registration: ServiceWorkerRegistration;
     try {
-      registration = await registerPushServiceWorker();
+      registration = await registerPushServiceWorker({ update: false });
     } catch {
       return failure(resolvedPermission, false, 'service-worker-registration');
     }
