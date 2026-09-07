@@ -43,7 +43,7 @@ export function FeaturePageRouter({
 }) {
   if (screen === "matrix-core") return <MatrixExplorePage onNavigate={onNavigate} />;
   if (screen === "explore") return <MatrixExplorePage onNavigate={onNavigate} />;
-  if (screen === "tianyan") return <MatrixExplorePage onNavigate={onNavigate} title="Matrix 天衍" roadTypes={["複合版路"]} />;
+  if (screen === "tianyan") return <MatrixExplorePage key="tianyan" onNavigate={onNavigate} title="Matrix 天衍" roadTypes={["複合版路"]} />;
   if (screen === "tiangong") return <MatrixTiangongPage onNavigate={onNavigate} />;
   if (screen === "tongxing") return <TongXingPage onNavigate={onNavigate} />;
   if (screen === "history") return <DrawHistoryPage onNavigate={onNavigate} backTarget={historyReturnScreen} />;
