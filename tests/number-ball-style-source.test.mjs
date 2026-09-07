@@ -96,18 +96,3 @@ test("近10期與歷史開獎六合彩使用各自正式響應規則", async () 
     /\.number-ball-component\[data-lottery="六合彩"\] \.number-ball-value\s*\{[^}]*position:\s*absolute;[^}]*top:\s*50%;[^}]*left:\s*50%;[^}]*transform:\s*translate\(-50%, -50%\) translate\(var\(--number-optical-x\), var\(--number-optical-y\)\);/s,
   );
 });
-
-test("今彩539彩球使用獨立半霧面處理，不改球體幾何", async () => {
-  const formal = await readFile(new URL("src/number-ball.css", root), "utf8");
-  const rules = ruleBodies(
-    formal,
-    /^\.number-ball-component\[data-lottery="今彩539"\] \.number-ball-asset$/,
-  );
-
-  assert.equal(rules.length, 1);
-  assert.match(
-    rules[0],
-    /filter:\s*saturate\(\.86\)\s*brightness\(\.96\)\s*contrast\(\.88\);/,
-  );
-  assert.doesNotMatch(rules[0], /(?:width|height|transform|--number-ball-size)\s*:/);
-});

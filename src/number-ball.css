@@ -49,11 +49,6 @@
   --number-ball-asset-y: -1%;
 }
 
-/* Semi-matte treatment: soften the glossy highlight without changing geometry. */
-.number-ball-component[data-lottery="今彩539"] .number-ball-asset {
-  filter: saturate(.86) brightness(.96) contrast(.88);
-}
-
 .number-ball-component[data-lottery="天天樂"] {
   --number-ball-asset-scale: 1.347;
   --number-ball-asset-x: 0.7%;
