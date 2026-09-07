@@ -246,14 +246,14 @@ test('重複號碼統計依次數排序，同碼及號碼篩選可切換', async
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(5);
 });
 
-test('驗證順序 B、C、A，A 組只顯示兩列', () => {
+test('驗證順序 C、B、A，A 組只顯示兩列', () => {
   const value={period:'100',position:1,number:'01',actual_number:'01',calculated_number:'01',matched:true};
   render(<TiangongValidationProcess loading={false} validation={{itemId:'groups',evidence:{rows:([
     {group:'C',source:{...value,period:'C1'}},
     {group:'A',source:{...value,period:'A1'}},
     {group:'B',source:{...value,period:'B1'}},
   ] as const).map(row=>({...row,role:'validation',stage1:{...value,period:row.group+'2'},stage2:{...value,period:row.group+'3'}})),d_exclusion:{status:'breaks_at_stage1'}}}} />);
-  expect([...document.querySelectorAll('.explore-validation-issue')].map(x=>x.textContent)).toEqual(['B1','B2','B3','C1','C2','C3','A1','A2']);
+  expect([...document.querySelectorAll('.explore-validation-issue')].map(x=>x.textContent)).toEqual(['C1','C2','C3','B1','B2','B3','A1','A2']);
 });
 test('同碼依號碼、預測位置、間距升冪排列', async () => {
   const rows=[['a','02',7,2],['b','01',2,8],['c','01',1,9],['d','01',2,3],['e','02',1,9]] as const;

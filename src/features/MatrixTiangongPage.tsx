@@ -16,7 +16,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
   const { rows, d_exclusion: d, stage1_operation: first, stage2_operation: second } = validation.evidence;
-  const groups = [...rows].sort((a, b) => ["B", "C", "A"].indexOf(a.group) - ["B", "C", "A"].indexOf(b.group));
+  const groups = [...rows].sort((a, b) => ["C", "B", "A"].indexOf(a.group) - ["C", "B", "A"].indexOf(b.group));
   const prediction = rows.find((row) => row.group === "A");
   const number = predictionNumber ?? prediction?.stage2.calculated_number;
   const position = predictedPosition ?? prediction?.stage2.position;
