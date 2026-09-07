@@ -2,3 +2,7 @@
 @import "./homepage/lottery-switcher.css";
 @import "./homepage/visual-language.css";
 @import "./homepage/logo-spacing.css";
+
+.home-screen .latest-draw-card .draw-issue {
+  gap: 0;
+}
