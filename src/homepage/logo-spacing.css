@@ -1,0 +1,15 @@
+/* Isolated homepage Logo spacing patch: keep the existing base layout intact. */
+.home-screen .lottery-screen > .brand-header {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.home-screen .brand-header {
+  padding-top: clamp(8px, 1dvh, 12px);
+  align-items: center;
+}
+
+.home-screen .home-logo-image {
+  width: 87.584%;
+  height: auto;
+}
