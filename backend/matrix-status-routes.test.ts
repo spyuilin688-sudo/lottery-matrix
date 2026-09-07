@@ -80,8 +80,8 @@ describe('Matrix status route', () => {
     expect(card.roads).toHaveLength(3);
     expect(card.roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2]);
     expect(card.roads.filter((road) => road.locked === true)).toEqual([
-      expect.objectContaining({ result: ['08'], explorePeriods: 13, locked: true }),
       expect.objectContaining({ result: ['08'], explorePeriods: 7, locked: true }),
+      expect.objectContaining({ result: ['08'], explorePeriods: 13, locked: true }),
     ]);
     expect(card.roads.find((road) => road.locked === true)).not.toHaveProperty('algorithmType');
     expect(authCalls).toBe(0);
