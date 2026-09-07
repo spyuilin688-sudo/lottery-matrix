@@ -1227,3 +1227,13 @@
 .matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-title {
   min-height: 22px;
 }
+
+/* Tianyan and Tian Gong use the Explore same-code button dimensions. */
+.matrix-explore-main-screen:is(.matrix-tianyan-screen, .matrix-tiangong-screen) .repeat-stats-heading button {
+  box-sizing: border-box;
+  min-height: 22px;
+  height: 22px;
+  padding: 1px .5rem;
+  font-size: 11px;
+  width: auto;
+}

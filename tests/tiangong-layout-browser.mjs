@@ -30,10 +30,19 @@ try{
   if(Math.abs(inset-13)>1)throw new Error('Wrong result panel inset: '+inset);
   const statsInset=await page.locator('.repeat-stats-panel').evaluate(x=>x.getBoundingClientRect().left);
   if(Math.abs(statsInset-16)>1)throw new Error('Wrong stats inset: '+statsInset);
+  const sameSizes=await page.evaluate(()=>{
+    const screen=document.querySelector('.matrix-tiangong-screen');
+    const button=screen.querySelector('.repeat-stats-heading button');
+    const dimensions=()=>{const r=button.getBoundingClientRect();return [r.width,r.height]};
+    const gong=dimensions();screen.classList.remove('matrix-tiangong-screen');const explore=dimensions();
+    screen.classList.add('matrix-tianyan-screen');const yan=dimensions();screen.classList.remove('matrix-tianyan-screen');screen.classList.add('matrix-tiangong-screen');
+    return [gong,yan].every(size=>size.every((v,i)=>Math.abs(v-explore[i])<1));
+  });
+  if(!sameSizes)throw new Error('Same-code dimensions differ from Explore');
   const gap=await page.locator('.tiangong-directions').first().evaluate(x=>getComputedStyle(x).gap);
   if(gap!=='1.5px')throw new Error('Wrong displacement gap: '+gap);
   await page.locator('.tiangong-result-row').first().click();await page.getByRole('region',{name:'天工驗證過程'}).waitFor();
-  if(await page.locator('.explore-validation-issue').count()!==3)throw new Error('Wrong validation rows');
+  if(await page.locator('.explore-validation-issue').count()!==2)throw new Error('Wrong validation rows');
   const summary=page.getByLabel('版路摘要');
   if(await summary.locator('.tianyan-validation-summary-row').count()!==2)throw new Error('Wrong summary row count');
   const summaryFits=await summary.evaluate(x=>[...x.children].every(row=>row.getBoundingClientRect().right<=x.getBoundingClientRect().right+1));

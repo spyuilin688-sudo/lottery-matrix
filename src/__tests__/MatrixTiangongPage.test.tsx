@@ -78,7 +78,7 @@ test('天工固定顯示二段式設定，且不再提供模式與命中條件�
 
 test('依附件演算法支援的篩選條件提交請求', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '八十期' }));
+  expect(screen.queryByRole('button', { name: '八十期' })).toBeNull();
   fireEvent.click(screen.getAllByRole('button', { name: '由左至右' })[0]);
   const secondStageTitle = screen.getByRole('heading', { name: '第二段 探索設定' });
   const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
@@ -88,7 +88,7 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
 
   expect(await screen.findByRole('button', {name:/展開版路/})).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
-    lottery: '今彩539', periodRange: 80,
+    lottery: '今彩539', periodRange: 50,
     mode: 'two-stage', hitCondition: '準2進3',
     exploreDirections: ['固定', '依序遞增'],
     firstStageDirections: ['固定'], firstRoadTypes: ['加減'],
@@ -244,4 +244,23 @@ test('重複號碼統計依次數排序，同碼及號碼篩選可切換', async
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(4);
   fireEvent.click(screen.getByRole('button',{name:'同碼'}));
   expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(5);
+});
+
+test('驗證順序 B、C、A，A 組只顯示兩列', () => {
+  const value={period:'100',position:1,number:'01',actual_number:'01',calculated_number:'01',matched:true};
+  render(<TiangongValidationProcess loading={false} validation={{itemId:'groups',evidence:{rows:([
+    {group:'C',source:{...value,period:'C1'}},
+    {group:'A',source:{...value,period:'A1'}},
+    {group:'B',source:{...value,period:'B1'}},
+  ] as const).map(row=>({...row,role:'validation',stage1:{...value,period:row.group+'2'},stage2:{...value,period:row.group+'3'}})),d_exclusion:{status:'breaks_at_stage1'}}}} />);
+  expect([...document.querySelectorAll('.explore-validation-issue')].map(x=>x.textContent)).toEqual(['B1','B2','B3','C1','C2','C3','A1','A2']);
+});
+test('同碼依號碼、預測位置、間距升冪排列', async () => {
+  const rows=[['a','02',7,2],['b','01',2,8],['c','01',1,9],['d','01',2,3],['e','02',1,9]] as const;
+  matrixApi.fetchTiangongList.mockResolvedValue({...envelope,items:rows.map(([id,predictionNumber,predictedPosition,interval])=>({...envelope.items[0],id,predictionNumber,predictedPosition,interval}))});
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button',{name:'開始天工'}));
+  await screen.findByRole('button',{name:'展開版路 a'});
+  fireEvent.click(screen.getByRole('button',{name:'同碼'}));
+  expect([...document.querySelectorAll('.tiangong-result-row')].map(x=>x.getAttribute('aria-label'))).toEqual(['展開版路 c','展開版路 d','展開版路 b','展開版路 e','展開版路 a']);
 });

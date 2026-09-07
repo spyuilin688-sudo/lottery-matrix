@@ -16,7 +16,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
   const { rows, d_exclusion: d, stage1_operation: first, stage2_operation: second } = validation.evidence;
-  const groups = rows;
+  const groups = [...rows].sort((a, b) => ["B", "C", "A"].indexOf(a.group) - ["B", "C", "A"].indexOf(b.group));
   const prediction = rows.find((row) => row.group === "A");
   const number = predictionNumber ?? prediction?.stage2.calculated_number;
   const position = predictedPosition ?? prediction?.stage2.position;
@@ -59,7 +59,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       const displayRows = [
         { value: group.source, expression: formula(group.source.number, group.source.position, group.stage1, first) },
         { value: group.stage1, expression: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage1.position, group.stage2, second) },
-        { value: group.stage2, expression: <>［ <strong className="explore-validation-result-number">{group.stage2.calculated_number ?? "—"}</strong> ］</> },
+        ...(group.group === "A" ? [] : [{ value: group.stage2, expression: <>［ <strong className="explore-validation-result-number">{group.stage2.calculated_number ?? "—"}</strong> ］</> }]),
       ];
       return <div className="explore-validation-group" data-lottery={lottery} data-wide-numbers={lottery === "六合彩" || lottery === "大樂透" ? "true" : "false"} key={index}>
         <div className="explore-validation-issues explore-validation-numeric-text">
@@ -99,7 +99,6 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   type Direction = "固定" | "依序遞增" | "依序遞減";
   type Road = "加減版路" | "合值版路";
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [period, setPeriod] = useState<"五十期" | "八十期">("五十期");
   const [searchPositions, setSearchPositions] = useState<Direction[]>(["固定"]);
   const [firstPositions, setFirstPositions] = useState<Direction[]>(["固定"]);
   const [firstRoads, setFirstRoads] = useState<Road[]>(["加減版路"]);
@@ -119,7 +118,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const sameAllowed = (response?.items ?? []).filter((row) => !sameCode || (numberCounts.get(row.predictionNumber) ?? 0) > 1);
   const duplicateStats = [...numberCounts].filter(([,count]) => !sameCode || count > 1).sort((a,b) => b[1]-a[1] || Number(a[0])-Number(b[0])).slice(0,18);
   const visibleItems = sameAllowed.filter((row) => !selectedNumber || row.predictionNumber === selectedNumber);
-  if (sameCode) visibleItems.sort((a,b) => Number(a.predictionNumber)-Number(b.predictionNumber));
+  if (sameCode) visibleItems.sort((a,b) => Number(a.predictionNumber)-Number(b.predictionNumber) || a.predictedPosition-b.predictedPosition || a.interval-b.interval);
   const cacheGeneration = useRef(0);
   useEffect(() => {
     const clearResults = () => {
@@ -164,7 +163,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     try {
       const next = await fetchTiangongList({
         lottery,
-        periodRange: period === "五十期" ? 50 : 80,
+        periodRange: 50,
         mode: "two-stage",
         hitCondition: "準2進3",
         exploreDirections: searchPositions,
@@ -210,7 +209,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         <SectionTitle>探索設定</SectionTitle>
         <div className="setting-grid">
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
-          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented two">{(["五十期", "八十期"] as const).map((value) => <button type="button" data-selected={period === value} onClick={() => setPeriod(value)} key={value}>{value}</button>)}</div></label>
+          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><button type="button" data-selected="true">五十期</button></div></label>
           <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
         </div>
       </section>
