@@ -56,13 +56,26 @@
 .statusState .statusBadge.good { color: #a3dfb5; background: #15311e; }
 .statusState .statusBadge.bad { color: #ffb4b4; background: #371919; }
 
-.railwayOperations { padding: 8px 10px; border: 1px solid #343943; border-radius: 8px; background: #111419; }
-.railwayOperations h3 { margin: 0 0 8px; color: #e1c170; font-size: 13px; }
-.railwayOperationControls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.railwayOperationControls label { color: #c4c6cc; font-size: 12px; }
-.railwayOperationControls select { width: auto; min-width: 90px; min-height: 32px; }
-.railwayOperationControls button { width: auto; min-height: 32px; cursor: pointer; }
-.railwayOperationControls button:disabled, .railwayOperationControls select:disabled { cursor: not-allowed; opacity: .55; }
-.railwayOperationControls button:focus-visible, .railwayOperationControls select:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
-.railwayOperationFeedback { min-height: 24px; color: #c4c6cc; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.railwayOperationFeedback p { margin: 6px 0 0; }
+.railwayOperations { min-width: 0; padding: 10px; border: 1px solid #343943; border-radius: 10px; background: #111419; }
+.railwayOperationHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding-bottom: 8px; }
+.railwayOperations h3 { margin: 0; color: #e1c170; font-size: 13px; line-height: 1.5; }
+.railwayOperationHeader p { margin: 2px 0 0; color: #989ca5; font-size: 12px; line-height: 1.5; }
+.railwayOperationControls { display: flex; align-items: center; gap: 8px; }
+.railwayOperationControls label { color: #a8adb7; font-size: 12px; white-space: nowrap; }
+.railwayOperationControls select { width: 104px; min-width: 0; height: 28px; min-height: 0; padding: 3px 6px; font-size: 12px; line-height: 20px; cursor: pointer; }
+.railwayOperationRows { display: grid; }
+.railwayOperationRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid #292c32; }
+.railwayOperationRow b { color: #d7d9de; font-size: 12px; }
+.railwayOperationRow p { margin: 3px 0 0; color: #a8adb7; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.railwayOperationRow button { width: auto; min-width: 68px; height: 28px; min-height: 0; padding: 3px 8px; cursor: pointer; }
+.railwayOperationRow button:hover:not(:disabled) { background: #292419; border-color: #8c6d28; }
+.railwayOperationRow button:active:not(:disabled) { background: #352e1d; }
+.railwayOperationRow button:disabled, .railwayOperationControls select:disabled { cursor: not-allowed; opacity: .55; }
+.railwayOperationRow button:focus-visible, .railwayOperationControls select:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
+.railwayOperationHint { margin: 0; padding-top: 6px; border-top: 1px solid #292c32; color: #a8b3c0; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.railwayOperationFeedback { min-height: 18px; color: #c4c6cc; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.railwayOperationFeedback p { margin: 4px 0 0; }
+@media (max-width: 480px) {
+  .railwayOperationHeader { gap: 6px; }
+  .railwayOperationRow { gap: 8px; }
+}

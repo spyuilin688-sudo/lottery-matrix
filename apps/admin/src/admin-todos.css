@@ -1,8 +1,8 @@
 .adminTodos {
-  width: min(760px, 100%);
+  width: min(680px, 100%);
   min-width: 0;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .adminTodosComposer,
@@ -14,25 +14,25 @@
   background: #111419;
 }
 
-.adminTodosComposer { padding: 12px; }
+.adminTodosComposer { padding: 10px; }
 .adminTodosHeadingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.adminTodosHeadingRow h1 { margin: 0; color: #ece7d8; font-size: 17px; }
+.adminTodosHeadingRow h1 { margin: 0; color: #ece7d8; font-size: 15px; }
 .adminTodosHeadingRow p { margin: 3px 0 0; color: #8d919a; font-size: 12px; line-height: 1.5; }
 .adminTodosHeadingRow > span { flex: 0 0 auto; color: #cbb675; font-size: 12px; }
-.adminTodos form { display: grid; min-width: 0; gap: 6px; margin-top: 10px; }
+.adminTodos form { display: grid; min-width: 0; gap: 6px; margin-top: 8px; }
 .adminTodos label { color: #b7bac1; font-size: 12px; font-weight: 700; }
 .adminTodos textarea {
   width: 100%;
   min-width: 0;
-  min-height: 60px;
+  min-height: 52px;
   resize: none;
-  padding: 9px 10px;
+  padding: 6px 8px;
   border: 1px solid #343840;
   border-radius: 9px;
   background: #0b0d11;
   color: #ece7d8;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .adminTodos textarea[aria-invalid="true"] { border-color: #a95757; }
@@ -46,11 +46,14 @@
 .adminTodosEditFooter p { flex: 1 1 auto; min-width: 0; min-height: 18px; margin: 0; color: #777b84; font-size: 11px; overflow-wrap: anywhere; }
 .adminTodosFormFooter > span { flex: 0 0 auto; color: #8d919a; font-size: 11px; font-variant-numeric: tabular-nums; }
 .adminTodosInlineError { color: #efabab !important; }
-.primary.adminTodosPrimaryButton { width: auto; min-width: 76px; }
+.primary.adminTodosPrimaryButton { width: auto; min-width: 58px; }
 
 .adminTodos button {
-  min-height: 32px;
-  padding: 5px 9px;
+  width: auto;
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 20px;
   border: 1px solid #363a42;
   border-radius: 8px;
   background: #171a20;
@@ -63,16 +66,21 @@
 .adminTodos button.primary { border-color: #b48a35; background: linear-gradient(180deg, #d4ad55, #a77924); color: #111; font-weight: 800; }
 
 .adminTodosFeedback { min-height: 18px; color: #8ed7a3; font-size: 12px; }
-.adminTodosState { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 12px; color: #8d919a; font-size: 13px; }
+.adminTodosState { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; color: #8d919a; font-size: 13px; }
 .adminTodosStateError { border-color: #673b3b; color: #efb3b3; }
-.adminTodosList { display: grid; min-width: 0; gap: 8px; }
-.adminTodoCard { display: grid; gap: 8px; padding: 11px 12px; }
-.adminTodoMeta { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.adminTodosList { display: grid; min-width: 0; gap: 0; border: 1px solid #292c32; border-radius: 10px; overflow: hidden; background: #111419; }
+.adminTodoCard { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 9px 10px; border: 0; border-bottom: 1px solid #292c32; border-radius: 0; }
+.adminTodoCard:last-child { border-bottom: 0; }
+.adminTodoCard > .adminTodoMeta, .adminTodoCard > .adminTodoContent { grid-column: 1; }
+.adminTodoCard > .adminTodoActions { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.adminTodoCardEditing { grid-template-columns: minmax(0, 1fr); }
+.adminTodoCardEditing form { margin-top: 2px; }
+.adminTodoMeta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 10px; }
 .adminTodoMeta strong { min-width: 0; color: #d8b65e; font-size: 12px; overflow-wrap: anywhere; }
 .adminTodoMeta time { flex: 0 0 auto; color: #777b84; font-size: 11px; font-variant-numeric: tabular-nums; }
-.adminTodoContent { margin: 0; color: #d7d9de; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.adminTodoContent { margin: 0; color: #d7d9de; font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .adminTodoActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
-.adminTodoActions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 66px; }
+.adminTodoActions button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 52px; }
 .adminTodoActions .adminTodoDelete { border-color: #663d3d; color: #e8a0a0; }
 .adminTodoActions .adminTodoDelete:hover:not(:disabled) { border-color: #8c4f4f; background: #281616; }
 .adminTodosVisuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -83,7 +91,9 @@
   .adminTodoCard { padding: 10px; }
   .adminTodosFormFooter { display: grid; grid-template-columns:minmax(0, 1fr) auto auto; }
   .adminTodosFormFooter .adminTodosPrimaryButton { grid-column: auto; width: auto; }
-  .adminTodoMeta { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .adminTodoCard { grid-template-columns: minmax(0, 1fr); }
+  .adminTodoCard > .adminTodoActions { grid-column: 1; grid-row: auto; }
+  .adminTodoMeta { flex-wrap: wrap; gap: 3px 8px; }
   .adminTodosEditFooter { align-items: stretch; flex-direction: column; }
   .adminTodoActions { width: 100%; }
   .adminTodoActions button { flex: 0 0 auto; min-width: 58px; }

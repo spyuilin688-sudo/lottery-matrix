@@ -64,15 +64,26 @@ export function RailwayOperations({ client, canEdit, confirm, disabled = false, 
   };
   return (
     <section className='railwayOperations' aria-labelledby='railway-operations-title'>
-      <h3 id='railway-operations-title'>Railway 操作</h3>
-      <div className='railwayOperationControls'>
-        <label htmlFor='railway-operation-lottery'>操作彩種</label>
-        <select id='railway-operation-lottery' value={lottery} disabled={disabled || Boolean(pending) || !canEdit} onChange={event => setLottery(event.target.value as Lottery)}>
-          {Object.keys(targets).map(value => <option key={value} value={value}>{value}</option>)}
-        </select>
-        <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-busy={pending === 'refresh'} onClick={() => run('refresh')}>手動更新</button>
-        <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-busy={pending === 'recover'} onClick={() => run('recover')}>復原</button>
+      <div className='railwayOperationHeader'>
+        <div><h3 id='railway-operations-title'>Railway 操作</h3><p>針對單一彩種更新資料或復原分析工作。</p></div>
+        <div className='railwayOperationControls'>
+          <label htmlFor='railway-operation-lottery'>操作彩種</label>
+          <select id='railway-operation-lottery' value={lottery} disabled={disabled || Boolean(pending) || !canEdit} onChange={event => setLottery(event.target.value as Lottery)}>
+            {Object.keys(targets).map(value => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </div>
       </div>
+      <div className='railwayOperationRows'>
+        <div className='railwayOperationRow'>
+          <div><b>更新開獎資料</b><p id='railway-refresh-help'>最新期數未同步時使用；重新取得所選彩種的開獎資料，成功後顯示回傳期數。</p></div>
+          <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-describedby='railway-refresh-help' aria-busy={pending === 'refresh'} onClick={() => run('refresh')}>手動更新</button>
+        </div>
+        <div className='railwayOperationRow'>
+          <div><b>復原資料與分析</b><p id='railway-recover-help'>資料缺漏或分析中斷時使用；依目前狀態補抓資料或續做分析。天天樂僅復原分析。</p></div>
+          <button type='button' className='compactButton' disabled={disabled || Boolean(pending) || !canEdit} aria-describedby='railway-recover-help' aria-busy={pending === 'recover'} onClick={() => run('recover')}>復原</button>
+        </div>
+      </div>
+      <p className='railwayOperationHint'>復原為背景工作，「已受理」不代表完成；請稍後按上方「重新檢查」查看狀態。已有工作執行時不重複啟動；未取得回應時，先檢查再決定是否重試。</p>
       {!canEdit && <p className='statusScope'>目前帳號沒有編輯權限</p>}
       <div className='railwayOperationFeedback' aria-live='polite'>
         {pending && <p>正在處理{lottery}{pending === 'refresh' ? '手動更新' : '復原'}…</p>}
