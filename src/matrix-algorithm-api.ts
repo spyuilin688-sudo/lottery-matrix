@@ -298,9 +298,14 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   request: unknown,
 ): Promise<T> {
   const client = getSupabaseClient();
-  const scope = await readAlgorithmCacheScope(client);
+  // Only exploration RPCs support visitors; their existing database rules
+  // continue to decide access to the requested period and range.
+  const sessionOptions = {
+    allowGuest: name === 'matrix_explore_list' || name === 'matrix_explore_validation',
+  };
+  const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const assertCurrentSession = async () => {
-    if (await readAlgorithmCacheScope(client) !== scope) {
+    if (await readAlgorithmCacheScope(client, sessionOptions) !== scope) {
       throw new MatrixApiError('AUTH_REQUIRED', 401);
     }
   };
