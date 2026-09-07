@@ -156,10 +156,33 @@ describe('authenticated algorithm cache', () => {
   });
 
   it('cannot serve a cached authenticated result after logout', async () => {
-    rpc.mockResolvedValue({ data: { lottery: '今彩539', total: 1 }, error: null });
+    rpc.mockResolvedValueOnce({ data: { lottery: '今彩539', total: 1 }, error: null })
+      .mockResolvedValueOnce({ data: { lottery: '今彩539', total: 0 }, error: null });
     await fetchExploreList(accountRequest);
     getSession.mockResolvedValue({ data: { session: null }, error: null });
-    await expect(fetchExploreList(accountRequest)).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+    expect((await fetchExploreList(accountRequest)).total).toBe(0);
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('cannot serve a cached guest result after login', async () => {
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    rpc.mockResolvedValueOnce({ data: { lottery: '今彩539', total: 0 }, error: null })
+      .mockResolvedValueOnce({ data: { lottery: '今彩539', total: 2 }, error: null });
+    expect((await fetchExploreList(accountRequest)).total).toBe(0);
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'account-a' }, access_token: 'session-a' } }, error: null });
+    expect((await fetchExploreList(accountRequest)).total).toBe(2);
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects an authenticated response that finishes after logout', async () => {
+    let finish!: (value: unknown) => void;
+    rpc.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const pending = fetchExploreList(accountRequest);
+    await vi.waitFor(() => expect(rpc).toHaveBeenCalledTimes(1));
+    updateAlgorithmCacheSession(null);
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    finish({ data: { lottery: '今彩539', total: 1 }, error: null });
+    await expect(pending).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   });
 
   it('rejects an old account response when the session switches during the request', async () => {

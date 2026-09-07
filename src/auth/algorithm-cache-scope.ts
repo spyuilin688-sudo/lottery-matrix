@@ -35,7 +35,10 @@ export function updateAlgorithmCacheSession(session: Session | null) {
   }
 }
 
-export async function readAlgorithmCacheScope(client: SupabaseClient): Promise<number> {
+export async function readAlgorithmCacheScope(
+  client: SupabaseClient,
+  options: { allowGuest?: boolean } = {},
+): Promise<number> {
   const startedGeneration = generation;
   const startedIdentity = identity;
   const { data, error } = await client.auth.getSession();
@@ -47,6 +50,6 @@ export async function readAlgorithmCacheScope(client: SupabaseClient): Promise<n
   }
   if (error) throw new MatrixApiError('AUTH_REQUIRED', 401);
   updateAlgorithmCacheSession(data.session);
-  if (!identity) throw new MatrixApiError('AUTH_REQUIRED', 401);
+  if (!identity && !options.allowGuest) throw new MatrixApiError('AUTH_REQUIRED', 401);
   return generation;
 }

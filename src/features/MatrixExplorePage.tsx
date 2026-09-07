@@ -198,6 +198,8 @@ export function MatrixExplorePage({
     resultPage * resultsPerPage,
   );
   const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
+  const hasCompletedResults = !exploreLoading && !exploreError
+    && Boolean(title === "Matrix 探索" ? exploreResponse : tianyanResponse);
   const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
   const exploreDateOffset = exploreDate === "前日 (上2期)" ? 2 : exploreDate === "昨日 (上1期)" ? 1 : 0;
 
@@ -209,6 +211,8 @@ export function MatrixExplorePage({
     const generation = cacheGeneration.current;
     setExploreLoading(true);
     setExploreError(null);
+    setExploreResponse(null);
+    setTianyanResponse(null);
     try {
       if (title === "Matrix 天衍") {
         const response = await fetchTianyanList({
@@ -251,7 +255,7 @@ export function MatrixExplorePage({
           : code === "FORBIDDEN"
             ? "目前會員權限無法使用此設定"
             : code === "AUTH_REQUIRED"
-              ? "請先登入後再使用 Matrix 天衍"
+              ? `請先登入後再使用 ${title}`
               : "Matrix API 讀取失敗",
       );
     } finally {
@@ -547,9 +551,9 @@ export function MatrixExplorePage({
               >
                 <span>連準篩選</span><ChevronDownIcon data-open={filterOpen} aria-hidden="true" />
               </button>
-              <strong className="result-count">
+              {hasCompletedResults ? <strong className="result-count">
                 <span>探索到&nbsp;</span><span className="numeric-text">{resultCount}</span><span>&nbsp;組符合條件版路</span>
-              </strong>
+              </strong> : null}
             </header>
             {filterOpen ? (
               <div
@@ -638,7 +642,7 @@ export function MatrixExplorePage({
                   ) : null}
                 </article>
               ))}
-              {visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+              {hasCompletedResults && visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
               {visibleResults.length > 0 && resultPageCount > 1 ? (
                 <nav className="history-pagination explore-results-pagination" aria-label="探索結果分頁">
                   <button
