@@ -1,6 +1,6 @@
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head,
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row {
-  grid-template-columns: .8fr 2.55fr 1fr .55fr 1.35fr;
+  grid-template-columns: .8fr 2.35fr 1fr .65fr 1.45fr;
 }
 .matrix-tiangong-screen .tiangong-interval,
 .matrix-tiangong-screen .tiangong-directions,
@@ -50,3 +50,7 @@
 .matrix-explore-main-screen.matrix-tiangong-screen .repeat-stats-heading button[data-selected="true"],
 .matrix-explore-main-screen.matrix-tiangong-screen .result-summary > button[data-selected="true"] { border-color: var(--lottery-gold-500, #c49145); color: var(--lottery-gold-500, #c49145); background: rgba(196,145,69,.06); box-shadow: none; }
 .matrix-explore-main-screen.matrix-tiangong-screen .result-summary > button[data-selected="true"] b { color: inherit; }
+
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row > .tiangong-directions { font-size: .625rem; }
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options { grid-template-columns: minmax(0, 1fr); }
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > button { width: 100%; }
