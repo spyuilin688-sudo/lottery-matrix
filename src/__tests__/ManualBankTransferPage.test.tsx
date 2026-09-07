@@ -2,9 +2,10 @@
 
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memberApi = vi.hoisted(() => ({
+  fetchMemberProfile: vi.fn(),
   fetchPendingTransferRequest: vi.fn(),
   fetchMemberPaymentHistory: vi.fn(),
   submitTransferRequest: vi.fn(),
@@ -23,10 +24,17 @@ vi.mock('../dialog/AppDialog', () => ({
 }));
 
 import { ManualTransferPage, PaymentHistoryPage, ProPlansPage } from '../FeaturePages';
+import { SubscriptionManagementPage } from '../features/MemberPages';
 
 describe('Matrix Pro manual bank transfer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-07T00:00:00Z'));
+    memberApi.fetchMemberProfile.mockResolvedValue({
+      lineUserId: 'member', planName: '年費方案',
+      planExpiresAt: '2027-11-04T23:20:01.683Z', isLifetime: false,
+    });
     selection.readManualTransferPlan.mockReturnValue('month');
     memberApi.fetchPendingTransferRequest.mockResolvedValue(null);
     memberApi.fetchMemberPaymentHistory.mockResolvedValue([]);
@@ -38,6 +46,68 @@ describe('Matrix Pro manual bank transfer', () => {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('shows actual member information in subscription management', async () => {
+    render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText('2027/11/05')).toBeInTheDocument();
+    expect(screen.getByText('年費方案')).toBeInTheDocument();
+    expect(screen.queryByText('2027/07/23')).not.toBeInTheDocument();
+  });
+
+  it('shows lifetime membership without a fabricated expiry', async () => {
+    memberApi.fetchMemberProfile.mockResolvedValue({ planName: null, planExpiresAt: null, isLifetime: true });
+    render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText('永久會員')).toBeInTheDocument();
+    expect(screen.getByText('無到期日')).toBeInTheDocument();
+  });
+
+  it('previews renewal from the actual future member expiry in Taipei time', async () => {
+    render(<ProPlansPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText('2027/12/05')).toBeInTheDocument();
+    expect(screen.queryByText('2027/08/22')).not.toBeInTheDocument();
+  });
+
+  it.each([[2, '2028/02/03'], [3, '2028/11/04']])(
+    'updates the renewal preview when the carousel selects position %s', async (position, expectedDate) => {
+      render(<ProPlansPage onNavigate={vi.fn()} />);
+      await screen.findByText('2027/12/05');
+      const carousel = screen.getByLabelText('Matrix Pro 會員方案');
+      Object.defineProperty(carousel, 'clientWidth', { configurable: true, value: 100 });
+      Object.defineProperty(carousel, 'scrollLeft', { configurable: true, value: Number(position) * 100 });
+      Array.from(carousel.children).forEach((card, index) => {
+        Object.defineProperty(card, 'offsetLeft', { configurable: true, value: index * 100 });
+        Object.defineProperty(card, 'clientWidth', { configurable: true, value: 100 });
+      });
+      fireEvent.scroll(carousel);
+      expect(await screen.findByText(String(expectedDate))).toBeInTheDocument();
+    },
+  );
+
+  it('does not fabricate dates while membership is loading or when its expiry is invalid', async () => {
+    let resolveProfile!: (value: unknown) => void;
+    memberApi.fetchMemberProfile.mockReturnValue(new Promise((resolve) => { resolveProfile = resolve; }));
+    render(<ProPlansPage onNavigate={vi.fn()} />);
+    expect(screen.getByText('讀取中')).toBeInTheDocument();
+    resolveProfile({ planExpiresAt: 'invalid-date', isLifetime: false });
+    expect(await screen.findByText('暫時無法計算')).toBeInTheDocument();
+  });
+
+  it.each([null, '2026-01-01T00:00:00Z'])(
+    'previews 30 days from today for missing or expired membership (%s)', async (planExpiresAt) => {
+      memberApi.fetchMemberProfile.mockResolvedValue({ planExpiresAt, isLifetime: false });
+      render(<ProPlansPage onNavigate={vi.fn()} />);
+      expect(await screen.findByText('2026/10/07')).toBeInTheDocument();
+    },
+  );
+
+  it('does not invent a renewal date when profile loading fails', async () => {
+    memberApi.fetchMemberProfile.mockRejectedValue(new Error('network unavailable'));
+    render(<ProPlansPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText('暫時無法計算')).toBeInTheDocument();
+    expect(screen.queryByText('2027/08/22')).not.toBeInTheDocument();
   });
 
   it('only opens bank details after plan payment confirmation', async () => {
