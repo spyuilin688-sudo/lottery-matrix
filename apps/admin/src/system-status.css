@@ -55,3 +55,14 @@
 .statusDetails .statusFacts { margin-top: 0; }
 .statusState .statusBadge.good { color: #a3dfb5; background: #15311e; }
 .statusState .statusBadge.bad { color: #ffb4b4; background: #371919; }
+
+.railwayOperations { padding: 8px 10px; border: 1px solid #343943; border-radius: 8px; background: #111419; }
+.railwayOperations h3 { margin: 0 0 8px; color: #e1c170; font-size: 13px; }
+.railwayOperationControls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.railwayOperationControls label { color: #c4c6cc; font-size: 12px; }
+.railwayOperationControls select { width: auto; min-width: 90px; min-height: 32px; }
+.railwayOperationControls button { width: auto; min-height: 32px; cursor: pointer; }
+.railwayOperationControls button:disabled, .railwayOperationControls select:disabled { cursor: not-allowed; opacity: .55; }
+.railwayOperationControls button:focus-visible, .railwayOperationControls select:focus-visible { outline: 2px solid #e7c46d; outline-offset: 2px; }
+.railwayOperationFeedback { min-height: 24px; color: #c4c6cc; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.railwayOperationFeedback p { margin: 6px 0 0; }

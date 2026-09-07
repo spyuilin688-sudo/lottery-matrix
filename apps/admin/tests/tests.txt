@@ -1,5 +1,28 @@
 # Tests
 
+## Test 9 - Railway 彩種操作與取消
+Viewport: mobile (375x667)
+Covers: Railway manual refresh, selected lottery, confirmation cancellation, POST /api/system-status/:id/refresh
+Description: 使用既有授權且有編輯權限的管理員工作階段；不建立帳號或更動權限。
+Steps:
+1. 開啟系統設定，於 Railway 操作選擇今彩539。
+2. 點擊手動更新，確認對話框顯示今彩539，先按取消，確認未送出更新。
+3. 再次點擊手動更新並確認；等待結果，期間不可重複送出或切換彩種。
+Expected: 回應成功時顯示伺服器回傳期數；失敗則有可見原因，不顯示成功。375px 畫面選單及兩個操作按鈕可用且無水平溢出。沒有編輯權限的既有帳號不可操作。
+
+## Test 10 - Railway 復原失敗回饋
+Viewport: desktop (1280x800)
+Covers: POST /api/system-status/:id/recover, visible error, no automatic retry
+Description: 使用已有編輯權限管理員工作階段，透過 QA Faults 驗證錯誤，不模擬成功或新增資料。
+QA Faults:
+```json
+[{"method":"POST","path":"/api/system-status/cron-matrix-539-refresh-v2/recover","status":503,"body_json":{"error":"復原回應逾時"}}]
+```
+Steps:
+1. 進入系統設定，選擇今彩539，點擊復原並確認。
+2. 查看結果與操作是否恢復可用。
+Expected: 顯示錯誤與先檢查狀態再決定重試的說明；不顯示完成、不自動重送。確認對話框沿用既有焦點、Escape 取消與焦點返回行為。
+
 ## Test 1 - 未登入時不可讀取營運統計 [sanity]
 Viewport: mobile (375x667)
 Covers: GET /api/dashboard, existing admin session guard

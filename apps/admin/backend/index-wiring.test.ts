@@ -152,6 +152,51 @@ vi.mock('./watchdog-status', () => ({
 
 import { handler, matrixIndependentWatchdog } from './index';
 const routes = handler as unknown as Record<string, unknown[]>;
+
+describe('manual Railway recovery route', () => {
+  const route = 'POST /api/system-status/:id/recover';
+  const execute = async (id = 'cron-matrix-539-refresh-v2') => {
+    const ctx = sessionContext({ id });
+    for (const middleware of routes[route] as Array<(ctx: unknown) => Promise<unknown>>) {
+      const result = await middleware(ctx);
+      if (result) return result;
+    }
+  };
+  it('exposes an authenticated recovery route', () => {
+    expect(routes).toHaveProperty(route);
+  });
+  it('claims the same watchdog lease and reports acceptance, without declaring completion', async () => {
+    wiring.workerRecoverLottery.mockClear();
+    wiring.watchdogLeaseClaim.mockClear();
+    await expect(execute()).resolves.toMatchObject({ body: { recovery: { lottery: '今彩539', status: 'accepted' } } });
+    expect(wiring.watchdogLeaseClaim).toHaveBeenCalledWith('railway:今彩539', expect.any(String));
+    const owner = wiring.watchdogLeaseClaim.mock.calls[0][1];
+    expect(wiring.workerRecoverLottery).toHaveBeenCalledExactlyOnceWith('今彩539', owner);
+  });
+  it('does not enqueue when another recovery holds the lease', async () => {
+    wiring.workerRecoverLottery.mockClear();
+    wiring.watchdogLeaseClaim.mockResolvedValueOnce(false);
+    await expect(execute()).resolves.toMatchObject({ body: { recovery: { status: 'already-running' } } });
+    expect(wiring.workerRecoverLottery).not.toHaveBeenCalled();
+  });
+  it('rejects invalid targets before acquiring a lease', async () => {
+    wiring.watchdogLeaseClaim.mockClear();
+    await expect(execute('railway-health')).resolves.toMatchObject({ status: 400 });
+    expect(wiring.watchdogLeaseClaim).not.toHaveBeenCalled();
+  });
+  it('rejects missing edit permission before starting work', async () => {
+    wiring.workerRecoverLottery.mockClear();
+    wiring.requirePermission.mockImplementationOnce(() => { throw Object.assign(new Error('Forbidden'), { statusCode: 403 }); });
+    await expect(execute()).resolves.toMatchObject({ status: 403 });
+    expect(wiring.workerRecoverLottery).not.toHaveBeenCalled();
+  });
+  it('retains the lease on an ambiguous Railway timeout', async () => {
+    wiring.watchdogLeaseRelease.mockClear();
+    wiring.workerRecoverLottery.mockRejectedValueOnce(Object.assign(new Error('復原回應逾時'), { statusCode: 503 }));
+    await expect(execute()).resolves.toMatchObject({ status: 503 });
+    expect(wiring.watchdogLeaseRelease).not.toHaveBeenCalled();
+  });
+});
 const sessionContext = (params: Record<string, string> = {}) => ({
   params,
   event: { headers: { cookie: 'admin_session=test', 'user-agent': 'test-agent' }, requestContext: { http: { sourceIp: '127.0.0.1' } } },
