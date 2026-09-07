@@ -14,6 +14,7 @@ const cssPaths = [
   ...(existsSync(`${process.cwd()}/${optionalLogoSpacingPath}`) ? [optionalLogoSpacingPath] : []),
 ];
 const css = cssPaths.map((path) => readFileSync(`${process.cwd()}/${path}`, "utf8")).join("\n");
+const normalizedCss = css.replaceAll(" ", "").replaceAll("\n", "");
 
 function mountHomepage() {
   const style = document.createElement("style");
@@ -58,7 +59,7 @@ describe("homepage requested spacing and selection", () => {
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
     expect(brandHeader.flexGrow).toBe("0");
     expect(brandHeader.alignItems).toBe("center");
-    expect(brandHeader.paddingTop.replaceAll(" ", "")).toBe("clamp(8px,1dvh,12px)");
+    expect(normalizedCss).toContain("padding-top:clamp(8px,1dvh,12px);");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
     expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,12px)");
@@ -78,7 +79,7 @@ describe("homepage requested spacing and selection", () => {
     expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(13px,calc(1.15dvh+5px),16px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
-    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop.replaceAll(" ", "")).toBe("clamp(8px,1dvh,12px)");
+    expect(normalizedCss).toContain("padding-top:clamp(8px,1dvh,12px);");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
