@@ -20,8 +20,8 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns zero top spacing and logo is reduced by 8 percent', () => {
-  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*0;/);
+test('homepage brand header owns a bounded responsive top gap and logo is reduced by 8 percent', () => {
+  assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*clamp\(8px,\s*1dvh,\s*12px\);/);
   assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*87\.584%;/);
 });
 
@@ -37,7 +37,7 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
-test('home logo receives the remaining height above the bottom anchored sections', () => {
+test('home logo stays in normal flow above the bottom anchored sections', () => {
   assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*minmax\(min-content, 1fr\) auto;/);
   assertBlock(css, '.home-screen .home-layout', /align-content:\s*stretch;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
@@ -48,7 +48,7 @@ test('home logo receives the remaining height above the bottom anchored sections
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
   assertBlock(css, '.home-screen .lottery-screen', /height:\s*100%;/);
-  assertBlock(css, '.home-screen .lottery-screen > .brand-header', /flex:\s*1 1 0%;/);
+  assertLastBlock(css, '.home-screen .lottery-screen > .brand-header', /flex:\s*0 0 auto;/);
 });
 
 test('wide viewport homepage keeps content in normal top flow instead of stretching it downward', () => {
