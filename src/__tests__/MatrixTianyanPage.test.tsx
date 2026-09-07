@@ -54,7 +54,7 @@ test('天衍移除近10期開獎號碼', () => {
 
 test('天衍修改彩種但未開始探索時，原結果及補充排版使用的彩種保持不變', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
   const region = await screen.findByRole('region', { name: '天衍驗證過程' });
   const before = region.innerHTML;
@@ -66,7 +66,7 @@ test('天衍修改彩種但未開始探索時，原結果及補充排版使用�
 
 test('天衍連準篩選固定為指定五項', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   expect(await screen.findByText('14.27')).toBeTruthy();
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledWith({
     lottery: '今彩539', exploreDateOffset: 0,
@@ -83,7 +83,7 @@ test('天衍連準篩選固定為指定五項', async () => {
 
 test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩選', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
 
   const stat = await screen.findByRole('button', { name: '篩選預測號碼 14，3次' });
   fireEvent.click(stat);
@@ -100,7 +100,7 @@ test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩
 
 test('天衍同碼篩選比照 Matrix 探索送出相同篩選規則', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   await screen.findByText('14.27');
 
   fireEvent.click(screen.getByRole('button', { name: '同碼' }));
@@ -115,14 +115,14 @@ test('天衍同碼篩選比照 Matrix 探索送出相同篩選規則', async () 
 
 test('天衍結果依兩條規則分類並保留 Matrix 探索欄位呈現', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   expect(await screen.findByText('加減合值')).toBeTruthy();
   expect(screen.getByText('順球')).toBeTruthy();
 });
 
 test('天衍驗證右欄第一列與第二列分別顯示兩條公式', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
   const region = await screen.findByRole('region', { name: '天衍驗證過程' });
   const group = region.querySelector('.explore-validation-group');
@@ -137,7 +137,7 @@ test('天衍驗證右欄第一列與第二列分別顯示兩條公式', async ()
 
 test('天衍版路摘要以兩列呈現鎖定條件與兩條規則', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const region = await screen.findByRole('region', { name: '天衍驗證過程' });
@@ -164,7 +164,7 @@ test('天衍兩組共同值的版路摘要可呈現四列', async () => {
     },
   });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   fireEvent.click(await screen.findByRole('button', { name: /展開版路/ }));
 
   const region = await screen.findByRole('region', { name: '天衍驗證過程' });
@@ -179,7 +179,7 @@ test('天衍兩組共同值的版路摘要可呈現四列', async () => {
 test('未登入時維持既有登入提示', async () => {
   matrixApi.fetchTianyanList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天衍');
 });
 
@@ -193,7 +193,7 @@ test('天衍維持複合版路與準5+鎖定2碼，沒有準4+入口', () => {
 
 test('天衍只有展開結果時才讀取驗證資料', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   expect(await screen.findByText('14.27')).toBeTruthy();
   expect(matrixApi.fetchTianyanValidation).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: /展開版路/ }));

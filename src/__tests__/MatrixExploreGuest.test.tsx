@@ -112,12 +112,12 @@ test('天衍將會員最高預設與手動變更送至實際 RPC', async () => {
   sdk.getSession.mockResolvedValue({ data: { session }, error: null });
   sdk.rpc.mockResolvedValue({ data: { ...response, kind: 'tianyan', items: [], total: 0 }, error: null });
   await act(async () => { render(<MatrixExplorePage title="Matrix 天衍" onNavigate={vi.fn()} />); });
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 13, exploreRange: '完整範圍' }) }));
   await screen.findByText('無符合設定條件');
   fireEvent.click(screen.getByText('二期'));
   fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
   fireEvent.click(screen.getByText('標準範圍'));
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 2, exploreRange: '標準範圍' }) }));
 });

@@ -32,9 +32,10 @@ beforeEach(() => {
   matrixApi.fetchTiangongValidation.mockReset().mockResolvedValue({
     ...envelope, itemId: 'tg-api-1',
     validation: { itemId: 'tg-api-1', evidence: {
+      stage1_operation: { type: 'add_sub', residue: 4 }, stage2_operation: { type: 'sum', value: 28 },
       rows: [{
         group: 'C', role: 'validation',
-        source: { period: '114000100', position: 2, number: '08' },
+        source: { period: '114000100', position: 2, number: '08', numbers: [1,8,12,20,30] },
         stage1: { period: '114000109', position: 3, calculated_number: '12', actual_number: '12', matched: true },
         stage2: { period: '114000114', position: 4, calculated_number: '16', actual_number: '16', matched: true },
       }],
@@ -83,7 +84,7 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
   const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section');
   expect(firstStageCard?.contains(secondStageTitle)).toBe(true);
   expect(screen.getAllByRole('group', { name: '探索球位' })).toHaveLength(3);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
 
   expect(await screen.findByText('12')).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
@@ -97,8 +98,8 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
 
 test('API 結果取代固定範例，展開時才讀取驗證', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
-  expect(await screen.findByText('加減＋合值')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  expect(await screen.findByText('加減合值')).toBeTruthy();
   expect(screen.getByText('2')).toBeTruthy();
   expect(screen.getByText('3')).toBeTruthy();
   expect(screen.queryByText('08.37')).toBeNull();
@@ -108,17 +109,19 @@ test('API 結果取代固定範例，展開時才讀取驗證', async () => {
     expect.objectContaining({ drawPeriod: '114000123', analysisVersion: '114000123:v1' }),
     'tg-api-1',
   );
-  expect(await screen.findByText(/來源 114000100 第2位：08/)).toBeTruthy();
-  expect(screen.getByText(/第一段 114000109 第3位：12／12/)).toBeTruthy();
-  expect(screen.getByText(/第二段 114000114 第4位：16／16/)).toBeTruthy();
-  expect(screen.getByText(/D 來源 114000091 第1位：05/)).toBeTruthy();
-  expect(screen.getByText(/第二段 114000101 第3位：14／15/)).toBeTruthy();
+  expect(await screen.findByText('114100')).toBeTruthy();
+  expect(screen.getByText('114109')).toBeTruthy();
+  expect(screen.getByText('114114')).toBeTruthy();
+  expect(screen.getByText('114091')).toBeTruthy();
+  expect(screen.getByText('114101')).toBeTruthy();
+  expect(document.querySelectorAll('.tiangong-validation-row')).toHaveLength(6);
+  expect(document.querySelectorAll('.tiangong-validation-row > *')).toHaveLength(18);
 });
 
 test('未完成分析時只顯示狀態，不回退固定資料', async () => {
   matrixApi.fetchTiangongList.mockRejectedValue({ code: 'ANALYSIS_NOT_READY' });
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   expect((await screen.findByRole('alert')).textContent).toBe('分析中，請稍後再試');
   expect(screen.queryByText('08.37')).toBeNull();
 });
@@ -126,7 +129,7 @@ test('未完成分析時只顯示狀態，不回退固定資料', async () => {
 test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
   matrixApi.fetchTiangongList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
 
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天工');
 });
@@ -135,14 +138,14 @@ test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
 test('切換帳號清除已顯示的分析快取並忽略先前未完成請求', async () => {
   updateAlgorithmCacheSession({ access_token: 'account-a', user: { id: 'a' } } as Session);
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
   act(() => updateAlgorithmCacheSession(null));
   expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
   act(() => updateAlgorithmCacheSession({ access_token: 'account-b', user: { id: 'b' } } as Session));
   let resolve!: (value: typeof envelope) => void;
   matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   act(() => updateAlgorithmCacheSession(null));
   await act(async () => { resolve(envelope); });
   expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
@@ -151,13 +154,13 @@ test('切換帳號清除已顯示的分析快取並忽略先前未完成請求',
 
 test('開獎資料更正清除畫面分析快取並忽略晚到的舊分析', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
   act(() => invalidateMatrixData());
   expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
   let resolve!: (value: typeof envelope) => void;
   matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   act(() => invalidateMatrixData());
   await act(async () => { resolve(envelope); });
   expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
@@ -178,4 +181,20 @@ test.each([
   const region = screen.getByRole('region', { name: '天工驗證過程' });
   expect(within(region).getByText('D 組檢查：' + explanation)).toBeTruthy();
   expect(region.textContent).not.toContain(status);
+});
+
+
+test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async () => {
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  const row = await screen.findByRole('button', { name: /展開版路/ });
+  expect(screen.getByRole('heading', { name: '天工結果區' })).toBeTruthy();
+  expect([...document.querySelectorAll('.tiangong-results-head > span')].map(x => x.textContent)).toEqual(['間距','位移走向','預測位置','預測','版路類型']);
+  expect(row.classList.contains('road-result-row')).toBe(true);
+  expect(row.querySelector('.tiangong-interval')?.textContent).toBe('間距2');
+  expect(row.querySelector('.tiangong-directions')?.textContent).toBe('固定|固定|固定');
+  expect(row.querySelector('.tiangong-position')?.textContent).toBe('第3顆');
+  fireEvent.click(within(row).getByText('12'));
+  expect(await screen.findByText('08+4=12')).toBeTruthy();
+  expect(screen.getByText('12合值28=16')).toBeTruthy();
 });

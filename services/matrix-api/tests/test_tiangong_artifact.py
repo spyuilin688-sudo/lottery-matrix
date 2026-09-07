@@ -66,7 +66,8 @@ def test_maps_attachment_response_and_uses_draw_order_history() -> None:
         "exploreDirection": "固定", "firstStageDirection": "依序遞增", "firstRoadType": "加減",
         "secondStageDirection": "依序遞減", "secondRoadType": "合值",
     }]
-    assert artifact["validationById"]["item-1"] == {"itemId": "item-1", "evidence": _evidence()}
+    assert artifact["validationById"]["item-1"]["evidence"]["stage1_operation"]["type"] == "add_sub"
+    assert artifact["numberOrder"] == "依號碼由小到大排序"
 
 
 def test_preserves_attachment_result_order_and_keeps_evidence_detached() -> None:
@@ -89,16 +90,12 @@ def test_returns_an_empty_artifact_when_history_cannot_complete_d_exclusion() ->
     assert artifact["validationById"] == {}
 
 
-def test_rejects_sorted_numbers_as_a_substitute_for_actual_draw_order() -> None:
+def test_accepts_sorted_history_without_draw_order() -> None:
     history = _history()
-    history[20] = {
-        **history[20],
-        "drawOrderNumbers": None,
-        "numbers": ["01", "02", "03", "04", "05"],
-    }
-
-    with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
-        build_tiangong_artifact("今彩539", "114000123", history)
+    history[20]["drawOrderNumbers"] = None
+    received = []
+    build_tiangong_artifact("今彩539", "114000123", history, lambda request: (received.append(request) or {"results": [], "evidence": {}}))
+    assert received[0]["draws"][0]["numbers"] == [1,2,3,4,5]
 
 
 def test_marksix_tiangong_ignores_unverified_pre_1991_order_rows() -> None:
@@ -130,8 +127,8 @@ def test_marksix_tiangong_ignores_unverified_pre_1991_order_rows() -> None:
 
     build_tiangong_artifact("六合彩", "091119", history, calculator)
 
-    assert len(received[0]["draws"]) == 119
-    assert received[0]["draws"][0]["period"] == "091001"
+    assert len(received[0]["draws"]) == 120
+    assert received[0]["draws"][0]["period"] == "090001"
 
 
 def test_fantasy5_uses_sorted_numbers_without_requesting_draw_order() -> None:

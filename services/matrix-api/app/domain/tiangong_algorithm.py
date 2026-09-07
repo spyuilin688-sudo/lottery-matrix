@@ -14,7 +14,7 @@
 - 版路：循環加減、直接合值；+0 是合法加減規則。
 - 去重：只有完整規則與預測結果全部相同才去重。
 
-輸入的 ``draws`` 必須依實際開獎順序由舊到新排列，``target_period``
+輸入的 ``draws`` 必須依期數由舊到新排列；正碼統一由小到大排序，特別號保留最後，``target_period``
 是緊接在最後一筆歷史資料之後、尚未開獎的下一期。
 
 本檔只使用 Python 標準函式庫，可作為模組匯入，也可直接以 CLI 執行：
@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-ALGORITHM_VERSION = "tiangong-two-stage-near-2-to-3-v2.0.0"
+ALGORITHM_VERSION = "tiangong-two-stage-near-2-to-3-v2.1.0-sorted"
 
 RuleKind = Literal["add_sub", "sum"]
 PatternKind = Literal["fixed", "increasing", "decreasing"]
@@ -161,6 +161,12 @@ class ParsedRequest:
 # ---------------------------------------------------------------------------
 # 公開規則函式
 # ---------------------------------------------------------------------------
+
+
+def is_valid_sorted_prediction(number: int, position: int, maximum: int, main_count: int) -> bool:
+    if main_count == 6 and position == 7:
+        return 1 <= number <= maximum
+    return 1 <= position <= main_count and position <= number <= maximum - main_count + position
 
 
 def normalize_number(value: int, max_number: int) -> int:
@@ -410,6 +416,7 @@ def _parse_request(payload: Mapping[str, Any]) -> ParsedRequest:
                 )
             numbers.append(number)
 
+        numbers = sorted(numbers[:6]) + numbers[6:] if ball_count == 7 else sorted(numbers)
         draw_date_raw = raw_draw.get("drawDate", raw_draw.get("draw_date"))
         draw_date = None if draw_date_raw is None else str(draw_date_raw).strip() or None
         draws.append(Draw(period=period, numbers=tuple(numbers), draw_date=draw_date))
@@ -708,7 +715,7 @@ def _route_label(stage1_rule: Rule, stage2_rule: Rule) -> str:
     second = ROUTE_LABELS[stage2_rule.kind]
     if first == second:
         return f"{first}版路"
-    return f"{first}＋{second}"
+    return f"{first}{second}"
 
 
 def _format_number(value: int | None) -> str | None:
@@ -958,7 +965,10 @@ def calculate_tiangong(payload: Mapping[str, Any]) -> dict[str, Any]:
                                         stage2_rule,
                                         request.max_number,
                                     )
-                                    if predicted_number is None:
+                                    if predicted_number is None or not is_valid_sorted_prediction(
+                                        predicted_number, stage2_path.positions[2], request.max_number,
+                                        6 if request.ball_count == 7 else 5,
+                                    ):
                                         continue
                                     metrics["stage2_passed_count"] += 1
 
@@ -1133,7 +1143,7 @@ def calculate_tiangong(payload: Mapping[str, Any]) -> dict[str, Any]:
         "metrics": metrics,
         "input_contract": {
             "draw_order": "oldest_to_newest",
-            "numbers_reordered": False,
+            "numbers_reordered": True,
             "period_distance_basis": "draw_array_index",
             "target_is_next_draw_after_history": True,
             "reference_offset_search": False,
