@@ -140,7 +140,7 @@ describe('admin interface styles', () => {
   });
 
   it('keeps retry and permission-gated crawler refresh actions identifiable', () => {
-    expect(appSource).toContain('<SystemSettings canEdit={can("edit")} />');
+    expect(appSource).toContain('<SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />');
     expect(appSource).toContain('canRefreshCrawler(item, canEdit)');
     expect(appSource).toContain('refreshCrawlerSystemStatus(api, item.id)');
     expect(appSource).toContain('重新呼叫 Railway');
