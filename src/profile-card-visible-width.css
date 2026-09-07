@@ -1,0 +1,5 @@
+/* Align the visible raster frame with the 16px profile card grid below it. */
+.profile-screen .membership-card-stack {
+  width: calc(100% + 20px);
+  margin-inline: -10px;
+}
