@@ -112,10 +112,10 @@ test('API 結果取代固定範例，展開時才讀取驗證', async () => {
   expect(await screen.findByText('114100')).toBeTruthy();
   expect(screen.getByText('114109')).toBeTruthy();
   expect(screen.getByText('114114')).toBeTruthy();
-  expect(screen.getByText('114091')).toBeTruthy();
-  expect(screen.getByText('114101')).toBeTruthy();
-  expect(document.querySelectorAll('.explore-validation-issue')).toHaveLength(6);
-  expect(document.querySelectorAll('.explore-validation-issue, .explore-validation-number-row, .explore-validation-formula-row')).toHaveLength(18);
+  expect(screen.queryByText('114091')).toBeNull();
+  expect(screen.queryByText('114101')).toBeNull();
+  expect(document.querySelectorAll('.explore-validation-issue')).toHaveLength(3);
+  expect(document.querySelectorAll('.explore-validation-issue, .explore-validation-number-row, .explore-validation-formula-row')).toHaveLength(9);
 });
 
 test('未完成分析時只顯示狀態，不回退固定資料', async () => {
@@ -173,13 +173,13 @@ test.each([
   ['extends_to_near_3_to_4', 'D 組兩段皆符合，已延伸為準3進4，不符合本次準2進3條件。'],
   ['unverifiable', '較早期的開獎資料不足，無法確認 D 組是否符合。'],
   ['future_status', '目前無法解讀 D 組檢查結果，請重新探索。'],
-])('D 組檢查 %s 顯示中文原因，不洩漏內部代碼', (status, explanation) => {
+])('D 組檢查 %s 不顯示檢查說明', (status, explanation) => {
   render(<TiangongValidationProcess loading={false} validation={{
     itemId: 'status-copy',
     evidence: { rows: [], d_exclusion: { status } },
   }} />);
   const region = screen.getByRole('region', { name: '天工驗證過程' });
-  expect(within(region).getByText('D 組檢查：' + explanation)).toBeTruthy();
+  expect(within(region).queryByText('D 組檢查：' + explanation)).toBeNull();
   expect(region.textContent).not.toContain(status);
 });
 
@@ -198,3 +198,12 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   expect(await screen.findByText('08+4=12')).toBeTruthy();
   expect(screen.getByText('12合值28=16')).toBeTruthy();
 });
+
+ test.each([1,2,3,4,5,6,7])('本期預測卡顯示號碼與球位 %s', (position) => {
+  render(<TiangongValidationProcess loading={false} predictionNumber="28" predictedPosition={position} validation={{itemId:'test', evidence:{rows:[], d_exclusion:{status:'breaks_at_stage1'}}}} />);
+  const card = screen.getByText('本期預測').closest('footer')!;
+  expect(card.className).toBe('explore-validation-prediction');
+  expect(card.textContent).toContain('28');
+  expect(card.textContent).toContain(position === 7 ? '特別號' : `第${['一','二','三','四','五','六'][position-1]}顆`);
+  expect(screen.queryByText(/D 組檢查/)).toBeNull();
+ });

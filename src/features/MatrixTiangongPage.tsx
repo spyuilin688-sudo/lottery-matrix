@@ -5,34 +5,21 @@ import { Fragment } from "react";
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDownIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, MagnifyingGlassIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { fetchTiangongList, fetchTiangongValidation, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES } from "./shared";
 
-function describeDGroupCheck(status: string): string {
-  switch (status) {
-    case "breaks_at_stage1":
-      return "D 組第一段計算與開獎號碼不符，此版路可保留。";
-    case "breaks_at_stage2":
-      return "D 組第二段計算與開獎號碼不符，此版路可保留。";
-    case "path_not_extendable":
-      return "球位無法延伸至 D 組，此版路可保留。";
-    case "extends_to_near_3_to_4":
-      return "D 組兩段皆符合，已延伸為準3進4，不符合本次準2進3條件。";
-    case "unverifiable":
-      return "較早期的開獎資料不足，無法確認 D 組是否符合。";
-    default:
-      return "目前無法解讀 D 組檢查結果，請重新探索。";
-  }
-}
-
-export function TiangongValidationProcess({ validation, loading, lottery = "今彩539" }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId }) {
+export function TiangongValidationProcess({ validation, loading, lottery = "今彩539", predictionNumber, predictedPosition }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId; predictionNumber?: string; predictedPosition?: number }) {
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
   const { rows, d_exclusion: d, stage1_operation: first, stage2_operation: second } = validation.evidence;
-  const groups = [...rows, ...(d.source && d.stage1 ? [{ group: "D", source: d.source, stage1: d.stage1, stage2: d.stage2 }] : [])];
+  const groups = rows;
+  const prediction = rows.find((row) => row.group === "A");
+  const number = predictionNumber ?? prediction?.stage2.calculated_number;
+  const position = predictedPosition ?? prediction?.stage2.position;
+  const positionLabel = position === 7 ? "特別號" : position ? `第${["一", "二", "三", "四", "五", "六"][position - 1]}顆` : "";
   const formula = (base: string, stage: NonNullable<typeof d.stage1>, operation: typeof first) => {
     if (!operation) return "—";
     return operation.type === "sum"
@@ -72,7 +59,15 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       </div>;
     })}
     </div>
-    <p className="empty-result">D 組檢查：{describeDGroupCheck(d.status)}</p>
+    {number && positionLabel ? <footer className="explore-validation-prediction">
+      <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
+      <span className="explore-validation-prediction-content">
+        <strong>本期預測</strong>
+        <b className="explore-validation-numeric-text">{number}</b>
+        <span>{positionLabel}</span>
+      </span>
+      <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
+    </footer> : null}
   </section>;
 }
 
@@ -214,7 +209,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
               <strong className="numeric-text">{item.predictionNumber}</strong>
               <span className="road-type-toggle"><span>{item.firstRoadType === item.secondRoadType ? `${item.firstRoadType}版路` : `${item.firstRoadType}${item.secondRoadType}`}</span><ChevronDownIcon data-open={expandedId === item.id} /></span>
             </button>
-            {expandedId === item.id && response ? <TiangongValidationProcess lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
+            {expandedId === item.id && response ? <TiangongValidationProcess predictionNumber={item.predictionNumber} predictedPosition={item.predictedPosition} lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
           </article>)}
           {!loading && response && response.items.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
         </div></section> : null}
