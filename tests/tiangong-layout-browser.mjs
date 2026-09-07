@@ -32,6 +32,10 @@ try{
   if(gap!=='1.5px')throw new Error('Wrong displacement gap: '+gap);
   await page.locator('.tiangong-result-row').first().click();await page.getByRole('region',{name:'天工驗證過程'}).waitFor();
   if(await page.locator('.explore-validation-issue').count()!==3)throw new Error('Wrong validation rows');
+  const validationErrors=await page.locator('.explore-validation-group > div').evaluateAll(cards=>cards.flatMap(card=>[...card.children].filter(row=>row.scrollWidth>row.clientWidth+1).map(row=>({text:row.textContent,width:row.clientWidth,scroll:row.scrollWidth}))));
+  if(validationErrors.length)throw new Error(`Validation overflow at ${width}: ${JSON.stringify(validationErrors)}`);
+  const issueStyle=await page.locator('.explore-validation-issue').first().evaluate(x=>({size:getComputedStyle(x).fontSize,color:getComputedStyle(x).color,border:getComputedStyle(x.parentElement).borderTopWidth}));
+  if(issueStyle.size!=='9px'||issueStyle.border!=='1px')throw new Error('Wrong exploration issue style: '+JSON.stringify(issueStyle));
   console.log(`Passed ${width}px: 27 directions, no cell overflow, full-row disclosure, 3-column validation`);
  }
 }finally{await browser?.close();await server.close();await rm(dir,{recursive:true,force:true});}
