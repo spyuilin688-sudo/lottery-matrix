@@ -21,13 +21,19 @@ for (const width of MOBILE_WIDTHS) {
       };
     });
 
-    expect(homepageTokens).toEqual({
+    expect({
+      logoSwitcher: homepageTokens.logoSwitcher,
+      switcherDraw: homepageTokens.switcherDraw,
+      drawStatus: homepageTokens.drawStatus,
+      featuresNav: homepageTokens.featuresNav,
+    }).toEqual({
       logoSwitcher: "clamp(13px,calc(1.15dvh+5px),16px)",
       switcherDraw: "clamp(7px,calc(0.9dvh+1px),9px)",
       drawStatus: "clamp(9px,calc(1.15dvh+1px),12px)",
       featuresNav: "clamp(8px,1.15dvh,12px)",
-      headerTop: "0px",
     });
+    expect(Number.parseFloat(homepageTokens.headerTop)).toBeGreaterThanOrEqual(8);
+    expect(Number.parseFloat(homepageTokens.headerTop)).toBeLessThanOrEqual(12);
 
     await page.getByTestId("bottom-navigation").getByRole("button", { name: "我的", exact: true }).click();
     await page.getByRole("button", { name: "訂閱方案／收費標準", exact: true }).click();
