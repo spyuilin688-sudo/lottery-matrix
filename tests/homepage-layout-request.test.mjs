@@ -7,7 +7,9 @@ const css = await Promise.all([
   "src/homepage/base.css",
   "src/homepage/lottery-switcher.css",
   "src/homepage/visual-language.css",
+  "src/homepage/logo-spacing.css",
 ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8"))).then((parts) => parts.join("\n"));
+const normalizedCss = css.replaceAll(" ", "").replaceAll("\n", "");
 
 function renderHomepageStyles() {
   const dom = new JSDOM(`<!doctype html><style>${css}</style>
@@ -36,18 +38,19 @@ function renderHomepageStyles() {
   return dom.window;
 }
 
-test("homepage keeps surplus height above the logo and preserves the requested section rhythm", () => {
+test("homepage keeps the logo in normal flow with a bounded responsive top gap and preserves the requested section rhythm", () => {
   const window = renderHomepageStyles();
   const style = (selector) => window.getComputedStyle(window.document.querySelector(selector));
   const layout = style(".home-layout");
   const lotteryScreen = style(".lottery-screen");
   const bottomGroup = style(".home-bottom-group");
+  const brandHeader = style(".brand-header");
 
   assert.equal(layout.gridTemplateRows, "minmax(min-content, 1fr) auto");
   assert.equal(lotteryScreen.height, "100%");
-  assert.equal(style(".brand-header").flexGrow, "1");
-  assert.equal(style(".brand-header").alignItems, "flex-end");
-  assert.equal(style(".brand-header").paddingTop, "0px");
+  assert.equal(brandHeader.flexGrow, "0");
+  assert.equal(brandHeader.alignItems, "center");
+  assert.ok(normalizedCss.includes("padding-top:clamp(8px,1dvh,12px);"));
   assert.equal(style(".home-logo-image").height, "auto");
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "10px");
