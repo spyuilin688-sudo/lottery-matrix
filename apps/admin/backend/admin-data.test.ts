@@ -50,6 +50,8 @@ describe('listAdminTable', () => {
         planName: '月費方案',
         lastOnlineAt: '2026-08-21T10:30:00Z',
         recentOnlineMinutes: 45,
+        recentIp: null,
+        estimatedRegion: null,
       }],
     });
   });
