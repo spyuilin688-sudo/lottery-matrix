@@ -61,3 +61,9 @@ Runtime ownership（Model B）：src/admin.css 擁有基本排版，src/admin-op
 每項服務以獨立邊框分隔，間距 8px。名稱、用途、檢查範圍及錯誤訊息常駐；API 位址、時間、回應代碼及排程明細使用原生 details，預設收合，鍵盤可操作。文案由 src/system-status.ts 與 backend/api-status-inventory.ts 擁有，技術詞改成具體用途，既有功能與操作權限保持一致。
 
 Railway 操作由 src/RailwayOperations.tsx 與 src/system-status.css 擁有，使用既有原生彩種選單、compactButton 與 AdminApp 確認對話框。手動更新與復原沿用管理員 edit 權限，一次選定一個彩種，送出期間鎖定操作，失敗不自動重送。復原回應 accepted 只顯示已受理，不能描述成已完成；already-running 顯示未重複啟動。操作回饋使用持續可見的 status／alert 區域。
+
+### 代辦、通知與 Railway 操作密度
+
+代辦工作區最大 680px；新增欄位兩行，留言以單一清單的分隔列呈現，桌面操作靠右、窄版移至內容下方。通知工作區最大 960px；卡片共用標題，收件對象與固定內容桌面雙欄、手機單欄；頭像 32px，發送說明與按鈕並列。共用卡片之間 8px，這三個工作區的動作為 28px 高、12px 字級、依內容寬度。
+
+Railway 原生彩種選單固定 104px 寬、28px 高、12px 字級；兩種操作各自一列，常駐用途及適用時機，按鈕靠右。復原說明明列天天樂僅分析、背景受理不等於完成，以及重新檢查與避免重複送出的方式。保留既有確認、權限、狀態回饋與 API 行為。

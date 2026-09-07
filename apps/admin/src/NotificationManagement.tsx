@@ -29,7 +29,7 @@ function memberName(member: PushMember) {
 function MemberAvatar({ member }: { member: PushMember }) {
   const name = memberName(member);
   if (member.pictureUrl) {
-    return <img className="notificationAvatar" src={member.pictureUrl} width="56" height="56" alt={`${name} 的 LINE 頭貼`} />;
+    return <img className="notificationAvatar" src={member.pictureUrl} width="32" height="32" alt={`${name} 的 LINE 頭貼`} />;
   }
   return <span className="notificationAvatar notificationAvatarFallback" aria-hidden="true">{name.slice(0, 1)}</span>;
 }
@@ -151,8 +151,8 @@ export function NotificationManagement({ client, canEdit }: Props) {
   return (
     <div className="notificationManagement">
       <section className="panel notificationComposer" aria-labelledby="test-push-title">
+        <div className="notificationComposerHeading"><h2 id="test-push-title">單一會員測試推播</h2><span>選擇對象後，確認內容再發送</span></div>
         <div className="notificationMemberColumn">
-          <h2 id="test-push-title">單一會員測試推播</h2>
           <label className="notificationMemberSelect">
             選擇會員
             <select
@@ -199,7 +199,7 @@ export function NotificationManagement({ client, canEdit }: Props) {
         </div>
 
         <div className="notificationMessageColumn">
-          <h2>固定通知內容</h2>
+          <h3>固定通知內容</h3>
           <dl className="notificationFixedCopy">
             <div><dt>標題</dt><dd>{TEST_PUSH_TITLE}</dd></div>
             <div><dt>內容</dt><dd>{TEST_PUSH_BODY}</dd></div>

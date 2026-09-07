@@ -203,7 +203,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
           <label htmlFor="admin-todo-content">新增代辦</label>
           <textarea
             id="admin-todo-content"
-            rows={3}
+            rows={2}
             maxLength={100}
             value={draft}
             onBlur={() => setDraftTouched(true)}
@@ -252,7 +252,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
             const editBusy = busy?.kind === 'edit' && busy.id === item.id;
             const deleteBusy = (busy?.kind === 'delete' || busy?.kind === 'confirm') && busy.id === item.id;
             return (
-              <article className="adminTodoCard" key={item.id}>
+              <article className={`adminTodoCard${editing ? ' adminTodoCardEditing' : ''}`} key={item.id}>
                 <div className="adminTodoMeta">
                   <strong>{item.authorName}</strong>
                   <time dateTime={item.createdAt}>{formatAdminDateTime(item.createdAt)}</time>
@@ -263,7 +263,7 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                     <textarea
                       autoFocus
                       id={`admin-todo-edit-${item.id}`}
-                      rows={3}
+                      rows={2}
                       maxLength={100}
                       value={editDraft}
                       onChange={(event) => { setEditDraft(event.target.value); setEditError(''); }}
