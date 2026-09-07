@@ -12,6 +12,7 @@
 
 .managementToolbar input,
 .managementToolbar select,
+.railwayOperationControls select,
 .operationDialog input,
 .operationDialog select {
   width: 100%;
