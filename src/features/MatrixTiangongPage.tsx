@@ -21,28 +21,31 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
   const number = predictionNumber ?? prediction?.stage2.calculated_number;
   const position = predictedPosition ?? prediction?.stage2.position;
   const positionLabel = position === 7 ? "特別號" : position ? `第${["一", "二", "三", "四", "五", "六"][position - 1]}顆` : "";
-  const formula = (base: string, stage: NonNullable<typeof d.stage1>, operation: typeof first) => {
+  const formula = (base: string, sourcePosition: number, stage: NonNullable<typeof d.stage1>, operation: typeof first) => {
     if (!operation) return "—";
-    return operation.type === "sum"
-      ? `${base}合值${operation.value}=${stage.calculated_number ?? "—"}`
-      : `${base}+${operation.residue ?? 0}=${stage.calculated_number ?? "—"}`;
+    return <span className="explore-validation-formula-expression">
+      {sourcePosition === 7 ? <span>特別號</span> : <><span>第</span><span>{sourcePosition}</span><span>顆</span></>}
+      <span>{base}</span>
+      {operation.type === "sum" ? <><span>合值</span><span>{operation.value}</span></> : <span>+{operation.residue ?? 0}</span>}
+      <span>=</span><span>{stage.calculated_number ?? "—"}</span>
+    </span>;
   };
   const summaryDirection = (direction: TiangongApiRow["exploreDirection"]) => direction === "固定" ? "固定" : direction === "依序遞增" ? "由左至右" : "由右至左";
   const summaryPosition = (value: number) => value === 7 ? <span>特別號</span> : <span>第 <i className="validation-summary-position">{value}</i> 顆</span>;
-  const summaryFormula = (operation: typeof first) => <i className="validation-summary-formula">{operation?.type === "sum" ? `合值 ${operation.value}` : operation ? `+${operation.residue ?? 0}` : "—"}</i>;
+  const summaryFormula = (operation: typeof first) => <span className="tiangong-summary-formula">{operation?.type === "sum" ? <><span>合值</span><i className="validation-summary-formula">{operation.value}</i></> : <i className="validation-summary-formula">{operation ? `+${operation.residue ?? 0}` : "—"}</i>}</span>;
   const separator = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
   return <section className="road-validation-process explore-validation-card tiangong-validation-process" aria-label="天工驗證過程">
     {prediction && item ? <header className="explore-validation-summary-card tiangong-summary-card">
       <ExploreValidationSummary layout="tianyan">
         <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
           <span className="tianyan-validation-summary-row">
-            <span>開 <i className="validation-summary-primary">{prediction.source.number}</i> {summaryPosition(prediction.source.position)}</span>
+            <span><span className="tiangong-summary-prefix">開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.source.position)}</span>
             {separator}<span>{summaryDirection(item.exploreDirection)}</span>
             {separator}{summaryFormula(first)}
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage1_distance ?? "—"}</i> 期開</span>
           </span>
           <span className="tianyan-validation-summary-row">
-            <span>{summaryDirection(item.firstStageDirection)} {summaryPosition(prediction.stage1.position)}</span>
+            <span><span className="tiangong-summary-prefix" aria-hidden="true" style={{visibility:"hidden"}}>開 <i className="validation-summary-primary">{prediction.source.number}</i> </span>{summaryPosition(prediction.stage1.position)}</span>
             {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
             {separator}{summaryFormula(second)}
             {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage2_distance ?? "—"}</i> 期開</span>
@@ -54,9 +57,9 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
     <div className="explore-validation-groups">
     {groups.map((group, index) => {
       const displayRows = [
-        { value: group.source, expression: null, position: group.source.position },
-        { value: group.stage1, expression: formula(group.source.number, group.stage1, first), position: group.source.position },
-        ...(group.stage2 ? [{ value: group.stage2, expression: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage2, second), position: group.stage1.position }] : []),
+        { value: group.source, expression: formula(group.source.number, group.source.position, group.stage1, first) },
+        { value: group.stage1, expression: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage1.position, group.stage2, second) },
+        { value: group.stage2, expression: <>［ <strong className="explore-validation-result-number">{group.stage2.calculated_number ?? "—"}</strong> ］</> },
       ];
       return <div className="explore-validation-group" data-lottery={lottery} data-wide-numbers={lottery === "六合彩" || lottery === "大樂透" ? "true" : "false"} key={index}>
         <div className="explore-validation-issues explore-validation-numeric-text">
@@ -73,12 +76,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
           </div>)}
         </div>
         <div className="explore-validation-formulas">
-          {displayRows.map(({ expression, position }, i) => <span className="explore-validation-formula-row" key={i}>
-            {expression ? <span className="explore-validation-formula-expression">
-              <span className="explore-validation-formula-position">{position === 7 ? "特別號" : <><span>第</span><span>{position}</span><span>顆</span></>}</span>
-              <span>{expression}</span>
-            </span> : null}
-          </span>)}
+          {displayRows.map(({ expression }, i) => <span className="explore-validation-formula-row" key={i}>{expression}</span>)}
         </div>
       </div>;
     })}
@@ -88,7 +86,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       <span className="explore-validation-prediction-content">
         <strong>本期預測</strong>
         <b className="explore-validation-numeric-text">{number}</b>
-        <span>{positionLabel}</span>
+        <strong>{positionLabel}</strong>
       </span>
       <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
     </footer> : null}
@@ -107,6 +105,8 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [firstRoads, setFirstRoads] = useState<Road[]>(["加減版路"]);
   const [secondPositions, setSecondPositions] = useState<Direction[]>(["固定"]);
   const [secondRoads, setSecondRoads] = useState<Road[]>(["加減版路"]);
+  const [sameCode, setSameCode] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const [response, setResponse] = useState<TiangongListResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -114,11 +114,19 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validationById, setValidationById] = useState<Record<string, TiangongValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
+  const numberCounts = new Map<string, number>();
+  for (const row of response?.items ?? []) numberCounts.set(row.predictionNumber, (numberCounts.get(row.predictionNumber) ?? 0) + 1);
+  const sameAllowed = (response?.items ?? []).filter((row) => !sameCode || (numberCounts.get(row.predictionNumber) ?? 0) > 1);
+  const duplicateStats = [...numberCounts].filter(([,count]) => !sameCode || count > 1).sort((a,b) => b[1]-a[1] || Number(a[0])-Number(b[0])).slice(0,18);
+  const visibleItems = sameAllowed.filter((row) => !selectedNumber || row.predictionNumber === selectedNumber);
+  if (sameCode) visibleItems.sort((a,b) => Number(a.predictionNumber)-Number(b.predictionNumber));
   const cacheGeneration = useRef(0);
   useEffect(() => {
     const clearResults = () => {
       cacheGeneration.current += 1;
       setResponse(null);
+      setSameCode(false);
+      setSelectedNumber(null);
       setValidationById({});
       setExpandedId(null);
       setValidationLoadingId(null);
@@ -150,6 +158,8 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     const generation = cacheGeneration.current;
     setSearched(true);
     setLoading(true);
+    setResponse(null);
+    setSelectedNumber(null);
     setRequestError(null);
     try {
       const next = await fetchTiangongList({
@@ -221,11 +231,19 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       </section>
       <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始天工</span></button>
-      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
+      {searched ? <section className="panel repeat-stats-panel">
+        <header className="repeat-stats-heading">
+          <SectionTitle>重複號碼統計</SectionTitle>
+          <button type="button" aria-pressed={sameCode} data-selected={sameCode} onClick={() => {setSameCode(!sameCode);setExpandedId(null);}}>同碼</button>
+          <span>點選進行版路篩選</span>
+        </header>
+        <div className="result-summary">{duplicateStats.map(([number,count]) => <button type="button" key={number} aria-label={`篩選預測號碼 ${number}，${count}次`} aria-pressed={selectedNumber === number} data-selected={selectedNumber === number} onClick={() => {setSelectedNumber(selectedNumber === number ? null : number);setExpandedId(null);}}><b>{number}</b><small>{count}次</small></button>)}</div>
+      </section> : null}
+      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{visibleItems.length}</span>&nbsp;組符合條件版路</strong></header>
         {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
         {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
         <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>
-          {(response?.items ?? []).map((item) => <article key={item.id}>
+          {visibleItems.map((item, index) => <article key={item.id} data-number-group-start={sameCode && index > 0 && visibleItems[index - 1].predictionNumber !== item.predictionNumber ? "true" : undefined}>
             <button type="button" className="road-result-row tiangong-result-row" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}>
               <span className="tiangong-interval"><span>間距</span><span className="numeric-text">{item.interval}</span></span>
               <span className="tiangong-directions">{[item.exploreDirection, item.firstStageDirection, item.secondStageDirection].map((direction, index) => <Fragment key={index}>{index ? <span>|</span> : null}<span>{directionLabel[direction]}</span></Fragment>)}</span>
@@ -235,7 +253,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
             </button>
             {expandedId === item.id && response ? <TiangongValidationProcess item={item} predictionNumber={item.predictionNumber} predictedPosition={item.predictedPosition} lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
           </article>)}
-          {!loading && response && response.items.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+          {!loading && response && visibleItems.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
         </div></section> : null}
     </FeatureShell>
   );
