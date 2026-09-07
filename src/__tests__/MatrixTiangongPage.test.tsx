@@ -207,3 +207,14 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   expect(card.textContent).toContain(position === 7 ? '特別號' : `第${['一','二','三','四','五','六'][position-1]}顆`);
   expect(screen.queryByText(/D 組檢查/)).toBeNull();
  });
+
+test('天工摘要依兩段資料顯示兩列且沒有連準標籤', () => {
+  const value = {period:'115000100', position:4, number:'28', calculated_number:'21', actual_number:'21', matched:true};
+  render(<TiangongValidationProcess loading={false} item={{...envelope.items[0], exploreDirection:'依序遞減', secondStageDirection:'依序遞增'}} predictedPosition={3} validation={{itemId:'summary', evidence:{stage1_distance:14,stage2_distance:5,stage1_operation:{type:'add_sub',residue:32},stage2_operation:{type:'sum',value:39},rows:[{group:'A',role:'prediction',source:value,stage1:{...value,position:3},stage2:{...value,position:3}}],d_exclusion:{status:'breaks_at_stage1'}}}} />);
+  const summary = screen.getByLabelText('版路摘要');
+  const rows = summary.querySelectorAll('.tianyan-validation-summary-row');
+  expect(rows).toHaveLength(2);
+  expect(rows[0].textContent).toBe('開 28 第 4 顆｜由右至左｜+32｜下 14 期開');
+  expect(rows[1].textContent).toBe('固定 第 3 顆｜由左至右｜合值 39｜下 5 期開｜第三顆');
+  expect(summary.closest('header')?.querySelector('.explore-validation-consecutive-tag')).toBeNull();
+});
