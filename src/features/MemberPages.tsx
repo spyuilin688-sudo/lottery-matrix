@@ -453,11 +453,29 @@ function LegalInfoSection({ title, children }: { title: string; children: ReactN
   );
 }
 
+function useSubscriptionProfile() {
+  const [profile, setProfile] = useState<MemberProfileResponse | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetchMemberProfile().then((value) => {
+      if (!cancelled) setProfile(value);
+    }).catch(() => {
+      if (!cancelled) setError(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  return { profile, error };
+}
+
 export function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigate }) {
+  const { profile, error } = useSubscriptionProfile();
+  const placeholder = error ? "會員資料載入失敗" : "讀取中";
+  const expiry = profile?.isLifetime ? "無到期日" : memberExpiryInTaipei(profile?.planExpiresAt ?? null)?.date ?? "無訂閱到期日";
   return (
     <ProfileDetailShell title="管理訂閱" onNavigate={onNavigate}>
-      <DetailCard title="目前方案"><p>Matrix Pro 年方案</p></DetailCard>
-      <DetailCard title="訂閱到期日"><p>2027/07/23</p></DetailCard>
+      <DetailCard title="目前方案"><p>{profile ? profile.isLifetime ? "永久會員" : profile.planName ?? "未訂閱" : placeholder}</p></DetailCard>
+      <DetailCard title="訂閱到期日"><p>{profile ? expiry : placeholder}</p></DetailCard>
       <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>
     </ProfileDetailShell>
   );
@@ -502,6 +520,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
+  const { profile: renewalProfile, error: renewalProfileError } = useSubscriptionProfile();
   const plans = [
     { code: "month", name: "月費方案", price: "$2,880", days: 30, icons: [], features: ["Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
     { code: "quarter", name: "季費方案", price: "$5,580", days: 90, icons: [{ src: "/assets/matrix-explore/tianyan.jpg", alt: "天衍" }], features: ["Matrix 天衍 - 使用權限", "Matrix 狀態 - 進階資訊", "Matrix 狀態 - 自訂觸發條件", "Matrix 探索 - 十三期", "Matrix 探索 - 完整範圍", "Matrix Pro - 專屬推播通知"] },
@@ -546,10 +565,13 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     }, 140);
   };
   const renewedDate = useMemo(() => {
-    const date = new Date("2027-07-23T00:00:00");
-    date.setDate(date.getDate() + selected.days);
-    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
-  }, [selected.days]);
+    if (renewalProfileError) return "暫時無法計算";
+    if (!renewalProfile) return "讀取中";
+    const expiry = renewalProfile.planExpiresAt ? Date.parse(renewalProfile.planExpiresAt) : 0;
+    if (!Number.isFinite(expiry)) return "暫時無法計算";
+    const renewedAt = Math.max(Date.now(), expiry) + selected.days * 86_400_000;
+    return memberExpiryInTaipei(new Date(renewedAt).toISOString())?.date ?? "暫時無法計算";
+  }, [selected.days, renewalProfile, renewalProfileError]);
   const handlePayment = async () => {
     if (!await appDialog.confirm({ title: `確認以${selected.name}進行付款？`, confirmLabel: "確認付款" })) return;
     saveManualTransferPlan(selected.code);
