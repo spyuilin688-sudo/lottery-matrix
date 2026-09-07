@@ -1,16 +1,19 @@
 // @vitest-environment jsdom
 
 // @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 declare const process: { cwd(): string };
 
-const css = [
+const optionalLogoSpacingPath = "src/homepage/logo-spacing.css";
+const cssPaths = [
   "src/homepage/base.css",
   "src/homepage/lottery-switcher.css",
   "src/homepage/visual-language.css",
-].map((path) => readFileSync(`${process.cwd()}/${path}`, "utf8")).join("\n");
+  ...(existsSync(`${process.cwd()}/${optionalLogoSpacingPath}`) ? [optionalLogoSpacingPath] : []),
+];
+const css = cssPaths.map((path) => readFileSync(`${process.cwd()}/${path}`, "utf8")).join("\n");
 
 function mountHomepage() {
   const style = document.createElement("style");
@@ -47,13 +50,15 @@ afterEach(() => {
 });
 
 describe("homepage requested spacing and selection", () => {
-  it("keeps surplus height above the logo without changing its visual gap", () => {
+  it("keeps the logo in normal flow with a bounded responsive top gap", () => {
     mountHomepage();
 
+    const brandHeader = getComputedStyle(document.querySelector(".brand-header")!);
     expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("minmax(min-content, 1fr) auto");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
-    expect(getComputedStyle(document.querySelector(".brand-header")!).flexGrow).toBe("1");
-    expect(getComputedStyle(document.querySelector(".brand-header")!).alignItems).toBe("flex-end");
+    expect(brandHeader.flexGrow).toBe("0");
+    expect(brandHeader.alignItems).toBe("center");
+    expect(brandHeader.paddingTop.replaceAll(" ", "")).toBe("clamp(8px,1dvh,12px)");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
     expect(getComputedStyle(document.querySelector(".home-layout")!).getPropertyValue("--home-gap-features-nav").replaceAll(" ", "")).toBe("clamp(8px,1.15dvh,12px)");
@@ -73,7 +78,7 @@ describe("homepage requested spacing and selection", () => {
     expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(13px,calc(1.15dvh+5px),16px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
-    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop).toBe("0px");
+    expect(getComputedStyle(document.querySelector(".brand-header")!).paddingTop.replaceAll(" ", "")).toBe("clamp(8px,1dvh,12px)");
     expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
