@@ -2,16 +2,17 @@ import "../explore-result-preview.css";
 import "../matrix-tiangong-results.css";
 import { displayValidationPeriod } from "./MatrixValidation";
 import { Fragment } from "react";
+import { ExploreValidationSummary } from "../ExploreValidationSummary";
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
-import { fetchTiangongList, fetchTiangongValidation, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
+import { fetchTiangongList, fetchTiangongValidation, type TiangongApiRow, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES } from "./shared";
 
-export function TiangongValidationProcess({ validation, loading, lottery = "今彩539", predictionNumber, predictedPosition }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId; predictionNumber?: string; predictedPosition?: number }) {
+export function TiangongValidationProcess({ validation, loading, lottery = "今彩539", predictionNumber, predictedPosition, item }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId; predictionNumber?: string; predictedPosition?: number; item?: TiangongApiRow }) {
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
   const { rows, d_exclusion: d, stage1_operation: first, stage2_operation: second } = validation.evidence;
@@ -26,7 +27,30 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       ? `${base}合值${operation.value}=${stage.calculated_number ?? "—"}`
       : `${base}+${operation.residue ?? 0}=${stage.calculated_number ?? "—"}`;
   };
+  const summaryDirection = (direction: TiangongApiRow["exploreDirection"]) => direction === "固定" ? "固定" : direction === "依序遞增" ? "由左至右" : "由右至左";
+  const summaryPosition = (value: number) => value === 7 ? <span>特別號</span> : <span>第 <i className="validation-summary-position">{value}</i> 顆</span>;
+  const summaryFormula = (operation: typeof first) => <i className="validation-summary-formula">{operation?.type === "sum" ? `合值 ${operation.value}` : operation ? `+${operation.residue ?? 0}` : "—"}</i>;
+  const separator = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
   return <section className="road-validation-process explore-validation-card tiangong-validation-process" aria-label="天工驗證過程">
+    {prediction && item ? <header className="explore-validation-summary-card tiangong-summary-card">
+      <ExploreValidationSummary layout="tianyan">
+        <span className="tianyan-validation-summary-lines" aria-label="版路摘要">
+          <span className="tianyan-validation-summary-row">
+            <span>開 <i className="validation-summary-primary">{prediction.source.number}</i> {summaryPosition(prediction.source.position)}</span>
+            {separator}<span>{summaryDirection(item.exploreDirection)}</span>
+            {separator}{summaryFormula(first)}
+            {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage1_distance ?? "—"}</i> 期開</span>
+          </span>
+          <span className="tianyan-validation-summary-row">
+            <span>{summaryDirection(item.firstStageDirection)} {summaryPosition(prediction.stage1.position)}</span>
+            {separator}<span>{summaryDirection(item.secondStageDirection)}</span>
+            {separator}{summaryFormula(second)}
+            {separator}<span>下 <i className="validation-summary-future">{validation.evidence.stage2_distance ?? "—"}</i> 期開</span>
+            {separator}<span>{positionLabel}</span>
+          </span>
+        </span>
+      </ExploreValidationSummary>
+    </header> : null}
     <div className="explore-validation-groups">
     {groups.map((group, index) => {
       const displayRows = [
@@ -209,7 +233,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
               <strong className="numeric-text">{item.predictionNumber}</strong>
               <span className="road-type-toggle"><span>{item.firstRoadType === item.secondRoadType ? `${item.firstRoadType}版路` : `${item.firstRoadType}${item.secondRoadType}`}</span><ChevronDownIcon data-open={expandedId === item.id} /></span>
             </button>
-            {expandedId === item.id && response ? <TiangongValidationProcess predictionNumber={item.predictionNumber} predictedPosition={item.predictedPosition} lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
+            {expandedId === item.id && response ? <TiangongValidationProcess item={item} predictionNumber={item.predictionNumber} predictedPosition={item.predictedPosition} lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
           </article>)}
           {!loading && response && response.items.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
         </div></section> : null}

@@ -50,6 +50,8 @@ def build_tiangong_artifact(lottery: str, draw_period: str, history: list[dict[s
             for key in ("source", "stage1", "stage2"):
                 if isinstance(row.get(key), dict):
                     row[key]["numbers"] = numbers_by_period.get(row[key]["period"], [])
+        detail["stage1_distance"] = result.get("stage1_distance")
+        detail["stage2_distance"] = result.get("stage2_distance")
         detail["stage1_operation"] = first
         detail["stage2_operation"] = second
         validations[identifier] = {"itemId": identifier, "evidence": detail}

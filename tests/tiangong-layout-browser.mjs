@@ -7,7 +7,7 @@ const dir=await mkdtemp(resolve('.tiangong-preview-')),name=dir.split('/').at(-1
 const directions=['依序遞增','依序遞減','固定'];
 const items=directions.flatMap(a=>directions.flatMap(b=>directions.map(c=>({id:`${a}-${b}-${c}`,interval:39,predictedPosition:3,predictionNumber:'28',exploreDirection:a,firstStageDirection:b,secondStageDirection:c,firstRoadType:'合值',secondRoadType:'加減'}))));
 const value={period:'115000085',position:3,numbers:[1,3,8,19,28,49,6],number:'08',actual_number:'08',calculated_number:'08',matched:true};
-const validation={itemId:items[0].id,evidence:{stage1_operation:{type:'sum',value:16},stage2_operation:{type:'add_sub',residue:0},rows:[{group:'C',source:value,stage1:value,stage2:value}],d_exclusion:{status:'path_not_extendable'}}};
+const validation={itemId:items[0].id,evidence:{stage1_distance:14,stage2_distance:5,stage1_operation:{type:'sum',value:16},stage2_operation:{type:'add_sub',residue:0},rows:[{group:'A',source:value,stage1:value,stage2:value}],d_exclusion:{status:'path_not_extendable'}}};
 await writeFile(resolve(dir,'mock.ts'),`export async function fetchTiangongList(){return ${JSON.stringify({lottery:'大樂透',analysisVersion:'test',drawPeriod:'115000085',total:27,items})};} export async function fetchTiangongValidation(){return {validation:${JSON.stringify(validation)}};}`);
 const imports=(await readFile('src/main.tsx','utf8')).split('\n').filter(x=>x.startsWith('import ')&&x.includes('.css')&&!x.includes('@fontsource')).join('\n').replaceAll('"./','"/src/');
 await writeFile(resolve(dir,'index.html'),`<div id="root"></div><script type="module" src="/${name}/entry.tsx"></script>`);
@@ -32,6 +32,10 @@ try{
   if(gap!=='1.5px')throw new Error('Wrong displacement gap: '+gap);
   await page.locator('.tiangong-result-row').first().click();await page.getByRole('region',{name:'天工驗證過程'}).waitFor();
   if(await page.locator('.explore-validation-issue').count()!==3)throw new Error('Wrong validation rows');
+  const summary=page.getByLabel('版路摘要');
+  if(await summary.locator('.tianyan-validation-summary-row').count()!==2)throw new Error('Wrong summary row count');
+  const summaryFits=await summary.evaluate(x=>[...x.children].every(row=>row.getBoundingClientRect().right<=x.getBoundingClientRect().right+1));
+  if(!summaryFits)throw new Error('Summary overflow');
   const validationErrors=await page.locator('.explore-validation-group > div').evaluateAll(cards=>cards.flatMap(card=>[...card.children].filter(row=>row.scrollWidth>row.clientWidth+1).map(row=>({text:row.textContent,width:row.clientWidth,scroll:row.scrollWidth}))));
   if(validationErrors.length)throw new Error(`Validation overflow at ${width}: ${JSON.stringify(validationErrors)}`);
   const issueStyle=await page.locator('.explore-validation-issue').first().evaluate(x=>({size:getComputedStyle(x).fontSize,color:getComputedStyle(x).color,border:getComputedStyle(x.parentElement).borderTopWidth}));

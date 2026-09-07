@@ -37,3 +37,6 @@
 .matrix-tiangong-screen .explore-validation-group > :is(.explore-validation-issues, .explore-validation-numbers-card, .explore-validation-formulas) {
   background: var(--explore-validation-group-background);
 }
+
+.matrix-tiangong-screen .tiangong-summary-card { grid-template-columns: minmax(0, 1fr); }
+.matrix-tiangong-screen .tiangong-summary-card > .explore-validation-summary { grid-column: 1 / -1; padding: 4px; white-space: normal; }
