@@ -1,3 +1,4 @@
+import "../explore-result-preview.css";
 import "../matrix-tiangong-results.css";
 import { displayValidationPeriod } from "./MatrixValidation";
 import { Fragment } from "react";

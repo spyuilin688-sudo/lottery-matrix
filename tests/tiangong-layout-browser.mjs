@@ -11,7 +11,7 @@ const validation={itemId:items[0].id,evidence:{stage1_operation:{type:'sum',valu
 await writeFile(resolve(dir,'mock.ts'),`export async function fetchTiangongList(){return ${JSON.stringify({lottery:'大樂透',analysisVersion:'test',drawPeriod:'115000085',total:27,items})};} export async function fetchTiangongValidation(){return {validation:${JSON.stringify(validation)}};}`);
 const imports=(await readFile('src/main.tsx','utf8')).split('\n').filter(x=>x.startsWith('import ')&&x.includes('.css')&&!x.includes('@fontsource')).join('\n').replaceAll('"./','"/src/');
 await writeFile(resolve(dir,'index.html'),`<div id="root"></div><script type="module" src="/${name}/entry.tsx"></script>`);
-await writeFile(resolve(dir,'entry.tsx'),`${imports}\nimport React from 'react';import{createRoot}from'react-dom/client';import{MatrixTiangongPage}from'/src/features/MatrixTiangongPage';createRoot(document.getElementById('root')).render(<MatrixTiangongPage onNavigate={()=>{}}/>);`);
+await writeFile(resolve(dir,'entry.tsx'),`import "/src/feature-pages.css";\n${imports}\nimport React from 'react';import{createRoot}from'react-dom/client';import{MatrixTiangongPage}from'/src/features/MatrixTiangongPage';createRoot(document.getElementById('root')).render(<MatrixTiangongPage onNavigate={()=>{}}/>);`);
 let browser;const server=await createServer({configFile:false,plugins:[{name:'fixture',enforce:'pre',transform(code,id){if(id.endsWith('/src/features/MatrixTiangongPage.tsx'))return code.replace('from "../matrix-algorithm-api"',`from "/${name}/mock.ts"`);}},react()],server:{host:'127.0.0.1',port:4179}});
 try{
  await server.listen();browser=await chromium.launch({headless:true});const page=await browser.newPage();
