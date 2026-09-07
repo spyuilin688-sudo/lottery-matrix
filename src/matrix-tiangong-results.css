@@ -13,17 +13,27 @@
 }
 .matrix-tiangong-screen .tiangong-interval { gap: 1px; }
 .matrix-tiangong-screen .tiangong-result-row .road-type-toggle { white-space: nowrap; }
-.matrix-tiangong-screen .tiangong-validation-process { overflow-x: auto; }
-.matrix-tiangong-screen .tiangong-validation-group { margin: 8px 0; }
-.matrix-tiangong-screen .tiangong-validation-row {
-  display: grid;
-  grid-template-columns: 52px minmax(150px, 1fr) max-content;
-  gap: 4px;
-  align-items: center;
-  min-width: max-content;
-  white-space: nowrap;
-  padding-block: 4px;
-  font-size: 11px;
+
+.matrix-explore-main-screen.matrix-tiangong-screen .feature-body { padding-inline: 13px; }
+.matrix-explore-main-screen.matrix-tiangong-screen .feature-body > .result-panel { width: 100%; margin-inline: 0; }
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head,
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row {
+  padding-inline: 0;
+  column-gap: 2px;
 }
-.matrix-tiangong-screen .tiangong-validation-numbers { display: flex; justify-content: center; gap: 4px; }
-.matrix-tiangong-screen .tiangong-validation-formula { color: #d3b66b; }
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head > span {
+  margin: 0;
+  padding: 0;
+  width: auto;
+  justify-self: stretch;
+  text-align: center;
+}
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head + article { border-top: 0; }
+.matrix-tiangong-screen .tiangong-validation-process { overflow-x: auto; }
+.matrix-tiangong-screen .explore-validation-group:nth-child(odd) { --explore-validation-group-background: #152A42; }
+.matrix-tiangong-screen .explore-validation-group:nth-child(even) { --explore-validation-group-background: #0E1D30; }
+.matrix-tiangong-screen .explore-validation-groups,
+.matrix-tiangong-screen .explore-validation-group { background: #02070C; }
+.matrix-tiangong-screen .explore-validation-group > :is(.explore-validation-issues, .explore-validation-numbers-card, .explore-validation-formulas) {
+  background: var(--explore-validation-group-background);
+}
