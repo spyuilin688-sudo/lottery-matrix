@@ -114,8 +114,8 @@ test('API 結果取代固定範例，展開時才讀取驗證', async () => {
   expect(screen.getByText('114114')).toBeTruthy();
   expect(screen.getByText('114091')).toBeTruthy();
   expect(screen.getByText('114101')).toBeTruthy();
-  expect(document.querySelectorAll('.tiangong-validation-row')).toHaveLength(6);
-  expect(document.querySelectorAll('.tiangong-validation-row > *')).toHaveLength(18);
+  expect(document.querySelectorAll('.explore-validation-issue')).toHaveLength(6);
+  expect(document.querySelectorAll('.explore-validation-issue, .explore-validation-number-row, .explore-validation-formula-row')).toHaveLength(18);
 });
 
 test('未完成分析時只顯示狀態，不回退固定資料', async () => {

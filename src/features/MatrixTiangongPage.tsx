@@ -38,17 +38,39 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
       ? `${base}合值${operation.value}=${stage.calculated_number ?? "—"}`
       : `${base}+${operation.residue ?? 0}=${stage.calculated_number ?? "—"}`;
   };
-  return <section className="road-validation-process tiangong-validation-process" aria-label="天工驗證過程">
-    {groups.map((group, index) => <div className="tiangong-validation-group" key={index}>
-      {[{ value: group.source, formula: "" },
-        { value: group.stage1, formula: formula(group.source.number, group.stage1, first) },
-        ...(group.stage2 ? [{ value: group.stage2, formula: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage2, second) }] : []),
-      ].map(({ value, formula: expression }, rowIndex) => <div className="tiangong-validation-row" key={rowIndex}>
-        <strong className="numeric-text">{displayValidationPeriod(lottery, value.period)}</strong>
-        <span className="tiangong-validation-numbers numeric-text">{value.numbers?.length ? value.numbers.map((number, i) => <Fragment key={i}>{i === 6 ? <span>+</span> : null}<span>{String(number).padStart(2, "0")}</span></Fragment>) : "—"}</span>
-        <span className="tiangong-validation-formula numeric-text">{expression}</span>
-      </div>)}
-    </div>)}
+  return <section className="road-validation-process explore-validation-card tiangong-validation-process" aria-label="天工驗證過程">
+    <div className="explore-validation-groups">
+    {groups.map((group, index) => {
+      const displayRows = [
+        { value: group.source, expression: null, position: group.source.position },
+        { value: group.stage1, expression: formula(group.source.number, group.stage1, first), position: group.source.position },
+        ...(group.stage2 ? [{ value: group.stage2, expression: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage2, second), position: group.stage1.position }] : []),
+      ];
+      return <div className="explore-validation-group" data-lottery={lottery} data-wide-numbers={lottery === "六合彩" || lottery === "大樂透" ? "true" : "false"} key={index}>
+        <div className="explore-validation-issues explore-validation-numeric-text">
+          {displayRows.map(({ value }, i) => <span className="explore-validation-issue" key={i}>{displayValidationPeriod(lottery, value.period)}</span>)}
+        </div>
+        <div className="explore-validation-numbers-card">
+          {displayRows.map(({ value }, i) => <div className="explore-validation-draw-row explore-validation-number-row" key={i}>
+            <span className="explore-validation-numbers explore-validation-numeric-text">
+              {value.numbers?.length ? value.numbers.map((number, n) => {
+                const ball = <i className={`explore-validation-number${n + 1 === value.position ? ` explore-validation-number--${i === 0 ? "hit" : i === 1 ? "source" : "step"}` : ""}`}>{String(number).padStart(2, "0")}</i>;
+                return n === 6 ? <span className="explore-validation-special-number" key={n}><i className="explore-validation-special-separator">+</i>{ball}</span> : <Fragment key={n}>{ball}</Fragment>;
+              }) : "—"}
+            </span>
+          </div>)}
+        </div>
+        <div className="explore-validation-formulas">
+          {displayRows.map(({ expression, position }, i) => <span className="explore-validation-formula-row" key={i}>
+            {expression ? <span className="explore-validation-formula-expression">
+              <span className="explore-validation-formula-position">{position === 7 ? "特別號" : <><span>第</span><span>{position}</span><span>顆</span></>}</span>
+              <span>{expression}</span>
+            </span> : null}
+          </span>)}
+        </div>
+      </div>;
+    })}
+    </div>
     <p className="empty-result">D 組檢查：{describeDGroupCheck(d.status)}</p>
   </section>;
 }

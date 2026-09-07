@@ -20,10 +20,18 @@ try{
   await page.getByRole('button',{name:'開始天工'}).click();await page.locator('.tiangong-result-row').first().waitFor();
   const errors=await page.locator('.tiangong-result-row').evaluateAll(rows=>rows.flatMap(row=>[...row.children].filter(cell=>cell.scrollWidth>cell.clientWidth+1).map(cell=>({text:cell.textContent,width:cell.clientWidth,scroll:cell.scrollWidth}))));
   if(errors.length)throw new Error(`Cell overflow at ${width}: ${JSON.stringify(errors.slice(0,5))}`);
+  const aligned=await page.evaluate(()=>{
+    const head=[...document.querySelector('.tiangong-results-head').children];
+    const row=[...document.querySelector('.tiangong-result-row').children];
+    return head.every((cell,i)=>Math.abs(cell.getBoundingClientRect().x-row[i].getBoundingClientRect().x)<1 && Math.abs(cell.getBoundingClientRect().width-row[i].getBoundingClientRect().width)<1);
+  });
+  if(!aligned)throw new Error('Header and result columns misaligned');
+  const inset=await page.locator('.result-panel').evaluate(x=>x.getBoundingClientRect().left);
+  if(Math.abs(inset-13)>1)throw new Error('Wrong result panel inset: '+inset);
   const gap=await page.locator('.tiangong-directions').first().evaluate(x=>getComputedStyle(x).gap);
   if(gap!=='1.5px')throw new Error('Wrong displacement gap: '+gap);
   await page.locator('.tiangong-result-row').first().click();await page.getByRole('region',{name:'天工驗證過程'}).waitFor();
-  if(await page.locator('.tiangong-validation-row').count()!==3)throw new Error('Wrong validation rows');
+  if(await page.locator('.explore-validation-issue').count()!==3)throw new Error('Wrong validation rows');
   console.log(`Passed ${width}px: 27 directions, no cell overflow, full-row disclosure, 3-column validation`);
  }
 }finally{await browser?.close();await server.close();await rm(dir,{recursive:true,force:true});}
