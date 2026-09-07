@@ -104,3 +104,20 @@ test.each(['加減版路', '合值版路', '拖牌版路'])('二期鎖定1碼的
   expect(screen.getByRole('button', { name: '準4進5' }).getAttribute('aria-pressed')).toBe('true');
   expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2, ruleCount: 1, selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'] }) });
 });
+
+test('天衍將會員最高預設與手動變更送至實際 RPC', async () => {
+  sdk.profile.mockResolvedValue({ exploreEntitlements: { canUseSeven: true, canUseThirteen: true, canUseFullRange: true } });
+  const session = { user: { id: 'member' }, access_token: 'test-session' };
+  updateAlgorithmCacheSession(session as any);
+  sdk.getSession.mockResolvedValue({ data: { session }, error: null });
+  sdk.rpc.mockResolvedValue({ data: { ...response, kind: 'tianyan', items: [], total: 0 }, error: null });
+  await act(async () => { render(<MatrixExplorePage title="Matrix 天衍" onNavigate={vi.fn()} />); });
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 13, exploreRange: '完整範圍' }) }));
+  await screen.findByText('無符合設定條件');
+  fireEvent.click(screen.getByText('二期'));
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  fireEvent.click(screen.getByText('標準範圍'));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 2, exploreRange: '標準範圍' }) }));
+});

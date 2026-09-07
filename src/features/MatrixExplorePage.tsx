@@ -217,6 +217,9 @@ export function MatrixExplorePage({
       if (title === "Matrix 天衍") {
         const response = await fetchTianyanList({
           lottery,
+          explorePeriods: selectedExplorePeriods,
+          exploreRange,
+          numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
           exploreDateOffset,
           selectedStreaks: nextFilters,
           sameCode: nextSameCode,

@@ -346,6 +346,9 @@ export function fetchExploreValidation(
 }
 
 export function fetchTianyanList(request: {
+  explorePeriods?: 2 | 7 | 13;
+  exploreRange?: "標準範圍" | "完整範圍";
+  numberOrder?: "依號碼由小到大排序" | "依實際開獎順序排序";
   lottery: NumberBallLottery;
   drawPeriod?: string;
   exploreDateOffset?: 0 | 1 | 2;
