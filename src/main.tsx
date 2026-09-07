@@ -14,6 +14,7 @@ import "./tongxing-compact.css";
 import "./matrix-explore-spacing.css";
 import "./matrix-explore-result-13px.css";
 import "./feature-page-adjustments.css";
+import "./profile-card-visible-width.css";
 import "./notification-visual-refinement.css";
 import "./number-reference-visual-refinement.css";
 import "./line-pwa-return-fallback.css";
