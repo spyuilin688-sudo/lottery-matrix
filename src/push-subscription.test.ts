@@ -101,7 +101,47 @@ async function expectFixedFailure(
 }
 
 describe('PWA push subscriptions', () => {
+  it('enables push with an activated worker even when checking for an update would fail', async () => {
+    requestPermission.mockResolvedValue('granted');
+    getRegistration.mockResolvedValue({
+      active: { state: 'activated' },
+      installing: null,
+      waiting: null,
+      pushManager: { subscribe, getSubscription },
+      update: updateRegistration,
+    });
+    updateRegistration.mockRejectedValue(new TypeError('Failed to fetch worker update'));
+
+    await expect(enablePushNotifications('BElong-key', true)).resolves.toEqual({
+      supported: true, permission: 'granted', enabled: true,
+    });
+    expect(memberApi.savePushSubscription).toHaveBeenCalledWith({
+      endpoint: 'https://push.test/device', p256dh: 'p256dh-value', auth: 'auth-value',
+    });
+    expect(updateRegistration).not.toHaveBeenCalled();
+  });
+
+  it('reads current push status without requiring an update of an activated worker', async () => {
+    installSupportedPushApi('granted');
+    memberApi.fetchPushSubscriptionStatus.mockResolvedValue({ enabled: true });
+    getRegistration.mockResolvedValue({
+      active: { state: 'activated' },
+      pushManager: { subscribe, getSubscription },
+      update: updateRegistration,
+    });
+    updateRegistration.mockRejectedValue(new TypeError('Failed to fetch worker update'));
+
+    await expect(getPushStatus()).resolves.toEqual({
+      supported: true, permission: 'granted', enabled: true,
+    });
+  });
+
   it('checks an existing service worker registration for an update', async () => {
+    getRegistration.mockResolvedValue({
+      active: { state: 'activated' },
+      update: updateRegistration,
+      pushManager: { subscribe, getSubscription },
+    });
     await expect(registerPushServiceWorker()).resolves.toBeDefined();
 
     expect(updateRegistration).toHaveBeenCalledTimes(1);
