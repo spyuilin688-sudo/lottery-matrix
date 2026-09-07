@@ -23,6 +23,7 @@ import "./admin.css";
 import "./profile-name.css";
 import "./admin-operations.css";
 import "./system-status.css";
+import { RailwayOperations } from './RailwayOperations';
 import { saveOwnAdminName } from "./admin-profile";
 import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
@@ -665,7 +666,7 @@ function AdminApp() {
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
-          {active === "系統設定" && <SystemSettings canEdit={can("edit")} />}{" "}
+          {active === "系統設定" && <SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
             <AdminTodos
@@ -1316,12 +1317,13 @@ function Revenue({
     </>
   );
 }
-function SystemSettings({ canEdit }: { canEdit: boolean }) {
+function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (request: Omit<ConfirmationRequest, 'resolve'>) => Promise<boolean> }) {
   const [items, setItems] = useState<SystemStatusItem[]>([]);
   const [checkedAt, setCheckedAt] = useState("");
   const [checking, setChecking] = useState(false);
   const [retryingId, setRetryingId] = useState("");
   const [refreshingId, setRefreshingId] = useState("");
+  const [operating, setOperating] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [statusNotice, setStatusNotice] = useState("");
   const [focusRequest, setFocusRequest] = useState<{ id: string; outcome: Exclude<SystemStatusActionOutcome, "failure"> } | null>(null);
@@ -1394,7 +1396,7 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
     focusSystemStatusAfterAction(statusSectionRef.current, focusRequest.id, focusRequest.outcome);
     setFocusRequest(null);
   }, [focusRequest, items]);
-  const actionPending = checking || Boolean(retryingId) || Boolean(refreshingId);
+  const actionPending = operating || checking || Boolean(retryingId) || Boolean(refreshingId);
   return (
     <section ref={statusSectionRef} className="systemStatusSection" aria-labelledby="system-status-title" tabIndex={-1}>
       <header className="systemStatusHeader">
@@ -1403,6 +1405,7 @@ function SystemSettings({ canEdit }: { canEdit: boolean }) {
       </header>
       {statusError && <div className="error" role="alert">{statusError}</div>}
       {statusNotice && <div className="systemStatusNotice" role="status">{statusNotice}</div>}
+      <RailwayOperations client={api} canEdit={canEdit} confirm={confirm} disabled={checking || Boolean(retryingId) || Boolean(refreshingId)} onBusyChange={value => { requestInFlight.current = value; setOperating(value); }} />
       {items.length === 0 && <div className="statusEmpty">{checking ? "正在檢查服務狀態…" : "目前沒有服務狀態"}</div>}
       <div className="statusGroups">
         {groupSystemStatusItems(items).map((group) => {

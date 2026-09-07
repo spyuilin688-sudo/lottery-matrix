@@ -391,6 +391,36 @@ const routes: Record<string, unknown> = {
     }
   }],
 
+  'POST /api/system-status/:id/recover': [sessionGuard, guard('edit'), async (ctx: Context) => {
+    const lottery = crawlerLotteryByStatusId[ctx.params.id];
+    if (!lottery) return error('此項目不支援復原', 400);
+    try {
+      const admin = await getAdmin(ctx);
+      const owner = crypto.randomUUID();
+      const acquired = await watchdogLeases.claim(`railway:${lottery}`, owner);
+      if (!acquired) return json({ recovery: { lottery, status: 'already-running' } });
+      // Railway owns completion and lease release. On an ambiguous timeout, keep
+      // the existing lease until expiry instead of permitting duplicate work.
+      const recovery = await workerApi.recoverLottery(lottery, owner);
+      if (shouldRecordAdminActivity(admin)) {
+        try {
+          const actor = actorOf(admin);
+          await supabase.insertRows('audit_logs', [{
+            admin_id: actor.id, admin: actor.name || actor.account,
+            operation_type: '手動復原', target_table: 'system_job_status',
+            target_id: lottery, content: `復原${lottery}資料或分析`,
+            before_data: null, after_data: recovery, ...requestMetadata(ctx),
+          }]);
+        } catch {
+          // An audit failure must not make an accepted recovery look rejected.
+        }
+      }
+      return json({ recovery });
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
   'GET /api/data/:table': [sessionGuard, guard('view'), async (ctx: Context) => {
     try {
       const admin = await getAdmin(ctx);
