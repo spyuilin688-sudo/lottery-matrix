@@ -237,9 +237,10 @@ export type TiangongListResponse = {
   analysisVersion: string; status: 'complete'; items: TiangongApiRow[]; total: number;
 };
 
-export type TiangongEvidenceStage = { period: string; position: number; calculated_number: string | null; actual_number: string | null; matched: boolean | null };
-export type TiangongEvidenceSource = { period: string; position: number; number: string };
-export type TiangongValidation = { itemId: string; evidence: { rows: Array<{ group: 'A' | 'B' | 'C'; role: 'validation' | 'prediction'; source: TiangongEvidenceSource; stage1: TiangongEvidenceStage; stage2: TiangongEvidenceStage }>; d_exclusion: { status: string; source?: TiangongEvidenceSource; stage1?: TiangongEvidenceStage; stage2?: TiangongEvidenceStage | null; [key: string]: unknown } } };
+export type TiangongEvidenceStage = { numbers?: number[]; period: string; position: number; calculated_number: string | null; actual_number: string | null; matched: boolean | null };
+export type TiangongEvidenceSource = { numbers?: number[]; period: string; position: number; number: string };
+export type TiangongOperation = { type: "add_sub" | "sum"; value?: number; residue?: number };
+export type TiangongValidation = { itemId: string; evidence: { stage1_operation?: TiangongOperation; stage2_operation?: TiangongOperation; rows: Array<{ group: 'A' | 'B' | 'C'; role: 'validation' | 'prediction'; source: TiangongEvidenceSource; stage1: TiangongEvidenceStage; stage2: TiangongEvidenceStage }>; d_exclusion: { status: string; source?: TiangongEvidenceSource; stage1?: TiangongEvidenceStage; stage2?: TiangongEvidenceStage | null; [key: string]: unknown } } };
 
 export type TiangongValidationResponse = {
   kind: 'tiangong'; lottery: NumberBallLottery; drawPeriod: string;

@@ -1,3 +1,6 @@
+import "../matrix-tiangong-results.css";
+import { displayValidationPeriod } from "./MatrixValidation";
+import { Fragment } from "react";
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useRef, useState } from "react";
@@ -24,26 +27,33 @@ function describeDGroupCheck(status: string): string {
   }
 }
 
-export function TiangongValidationProcess({ validation, loading }: { validation?: TiangongValidation; loading: boolean }) {
+export function TiangongValidationProcess({ validation, loading, lottery = "今彩539" }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId }) {
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
   if (!validation) return <p className="empty-result">無驗證資料</p>;
-  const { rows, d_exclusion: d } = validation.evidence;
-  const stage = (label: string, value: TiangongValidation["evidence"]["rows"][number]["stage1"]) => `${label} ${value.period} 第${value.position}位：${value.calculated_number ?? "—"}／${value.actual_number ?? "—"}`;
-  return (
-    <section className="road-validation-process" aria-label="天工驗證過程">
-      {rows.length === 0 ? <p className="empty-result">無驗證資料</p> : null}
-      {rows.map((row, index) => (
-        <div className="validation-period-block" key={`${validation.itemId}-${index}`}>
-          <div className="validation-period-row">
-            <strong>{row.group}</strong><span>{`來源 ${row.source.period} 第${row.source.position}位：${row.source.number}｜${stage("第一段", row.stage1)}｜${stage("第二段", row.stage2)}`}</span>
-          </div>
-        </div>
-      ))}
-      {d.source && d.stage1 ? <div className="validation-period-block"><div className="validation-period-row"><strong>D</strong><span>{`D 來源 ${d.source.period} 第${d.source.position}位：${d.source.number}｜${stage("第一段", d.stage1)}${d.stage2 ? `｜${stage("第二段", d.stage2)}` : ""}`}</span></div></div> : null}
-      <p className="empty-result">D 組檢查：{describeDGroupCheck(d.status)}</p>
-    </section>
-  );
+  const { rows, d_exclusion: d, stage1_operation: first, stage2_operation: second } = validation.evidence;
+  const groups = [...rows, ...(d.source && d.stage1 ? [{ group: "D", source: d.source, stage1: d.stage1, stage2: d.stage2 }] : [])];
+  const formula = (base: string, stage: NonNullable<typeof d.stage1>, operation: typeof first) => {
+    if (!operation) return "—";
+    return operation.type === "sum"
+      ? `${base}合值${operation.value}=${stage.calculated_number ?? "—"}`
+      : `${base}+${operation.residue ?? 0}=${stage.calculated_number ?? "—"}`;
+  };
+  return <section className="road-validation-process tiangong-validation-process" aria-label="天工驗證過程">
+    {groups.map((group, index) => <div className="tiangong-validation-group" key={index}>
+      {[{ value: group.source, formula: "" },
+        { value: group.stage1, formula: formula(group.source.number, group.stage1, first) },
+        ...(group.stage2 ? [{ value: group.stage2, formula: formula(group.stage1.actual_number ?? group.stage1.calculated_number ?? "—", group.stage2, second) }] : []),
+      ].map(({ value, formula: expression }, rowIndex) => <div className="tiangong-validation-row" key={rowIndex}>
+        <strong className="numeric-text">{displayValidationPeriod(lottery, value.period)}</strong>
+        <span className="tiangong-validation-numbers numeric-text">{value.numbers?.length ? value.numbers.map((number, i) => <Fragment key={i}>{i === 6 ? <span>+</span> : null}<span>{String(number).padStart(2, "0")}</span></Fragment>) : "—"}</span>
+        <span className="tiangong-validation-formula numeric-text">{expression}</span>
+      </div>)}
+    </div>)}
+    <p className="empty-result">D 組檢查：{describeDGroupCheck(d.status)}</p>
+  </section>;
 }
+
+const directionLabel = { "固定": "固定", "依序遞增": "左至右", "依序遞減": "右至左" };
 
 export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   type Direction = "固定" | "依序遞增" | "依序遞減";
@@ -168,12 +178,21 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
             </div>
         </div>
       </section>
-      <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始探索</span></button>
-      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>探索結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
+      <button type="button" disabled={loading} className="primary-action branded-explore-action" onClick={() => void startExplore()}><MagnifyingGlassIcon /><span>開始天工</span></button>
+      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{response?.total ?? 0}</span>&nbsp;組符合條件版路</strong></header>
         {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
         {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
-        <div className="road-results tiangong-results"><div className="tiangong-results-head" aria-hidden="true"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>
-          {(response?.items ?? []).map((item) => <article key={item.id}><div className="tiangong-result-row"><span className="numeric-text">{item.interval}</span><span className="numeric-text">{item.predictedPosition}</span><strong className="numeric-text">{item.predictionNumber}</strong><button type="button" className="road-type-toggle" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}><span>{item.roadType}</span><ChevronDownIcon data-open={expandedId === item.id} /></button></div>{expandedId === item.id && response ? <TiangongValidationProcess validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}</article>)}
+        <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>
+          {(response?.items ?? []).map((item) => <article key={item.id}>
+            <button type="button" className="road-result-row tiangong-result-row" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}>
+              <span className="tiangong-interval"><span>間距</span><span className="numeric-text">{item.interval}</span></span>
+              <span className="tiangong-directions">{[item.exploreDirection, item.firstStageDirection, item.secondStageDirection].map((direction, index) => <Fragment key={index}>{index ? <span>|</span> : null}<span>{directionLabel[direction]}</span></Fragment>)}</span>
+              <span className="tiangong-position">{item.predictedPosition === 7 ? "特別號" : <><span>第</span><span className="numeric-text">{item.predictedPosition}</span><span>顆</span></>}</span>
+              <strong className="numeric-text">{item.predictionNumber}</strong>
+              <span className="road-type-toggle"><span>{item.firstRoadType === item.secondRoadType ? `${item.firstRoadType}版路` : `${item.firstRoadType}${item.secondRoadType}`}</span><ChevronDownIcon data-open={expandedId === item.id} /></span>
+            </button>
+            {expandedId === item.id && response ? <TiangongValidationProcess lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
+          </article>)}
           {!loading && response && response.items.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
         </div></section> : null}
     </FeatureShell>

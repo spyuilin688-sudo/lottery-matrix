@@ -1,0 +1,29 @@
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-results-head,
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row {
+  grid-template-columns: .8fr 2.55fr 1fr .55fr 1.35fr;
+}
+.matrix-tiangong-screen .tiangong-interval,
+.matrix-tiangong-screen .tiangong-directions,
+.matrix-tiangong-screen .tiangong-position {
+  display: inline-flex;
+  justify-content: center;
+  align-items: baseline;
+  white-space: nowrap;
+  gap: 1.5px;
+}
+.matrix-tiangong-screen .tiangong-interval { gap: 1px; }
+.matrix-tiangong-screen .tiangong-result-row .road-type-toggle { white-space: nowrap; }
+.matrix-tiangong-screen .tiangong-validation-process { overflow-x: auto; }
+.matrix-tiangong-screen .tiangong-validation-group { margin: 8px 0; }
+.matrix-tiangong-screen .tiangong-validation-row {
+  display: grid;
+  grid-template-columns: 52px minmax(150px, 1fr) max-content;
+  gap: 4px;
+  align-items: center;
+  min-width: max-content;
+  white-space: nowrap;
+  padding-block: 4px;
+  font-size: 11px;
+}
+.matrix-tiangong-screen .tiangong-validation-numbers { display: flex; justify-content: center; gap: 4px; }
+.matrix-tiangong-screen .tiangong-validation-formula { color: #d3b66b; }

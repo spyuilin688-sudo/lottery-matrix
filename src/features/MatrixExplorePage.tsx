@@ -489,7 +489,7 @@ export function MatrixExplorePage({
       </section>
 
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
-        <MagnifyingGlassIcon /><span>開始探索</span>
+        <MagnifyingGlassIcon /><span>{title === "Matrix 天衍" ? "開始天衍" : "開始探索"}</span>
       </button>
 
       {title === "Matrix 探索" ? (
@@ -544,7 +544,7 @@ export function MatrixExplorePage({
 
           <section className="panel result-panel">
             <header className="result-title">
-              <SectionTitle>探索結果區</SectionTitle>
+              <SectionTitle>{title === "Matrix 天衍" ? "天衍結果區" : "探索結果區"}</SectionTitle>
               <button
                 type="button"
                 className="consecutive-filter-button"
