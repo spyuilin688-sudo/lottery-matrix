@@ -1,3 +1,4 @@
+import { memberConnectionSummaries } from './member-login-history';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
 };
@@ -212,6 +213,7 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
   const rows = await listAllRows(api, definition.path);
   const items = rows.map(definition.map);
   if (table !== 'users' && table !== 'subscriptions') return { items };
+  const connections = await memberConnectionSummaries(items.map(item => String(item.authUserId ?? '')), api);
   const since = new Date(currentDate.getTime() - 3 * 86_400_000).toISOString();
   const sessions = await listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc`);
   const secondsByMember = new Map<string, number>();
@@ -220,7 +222,7 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
     if (!memberId) continue;
     secondsByMember.set(memberId, (secondsByMember.get(memberId) ?? 0) + Math.max(0, Number(session.online_seconds ?? 0)));
   }
-  return { items: items.map((item) => ({ ...item, recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) })) };
+  return { items: items.map((item) => ({ ...item, ...(connections.get(String(item.authUserId)) ?? { recentIp: null, estimatedRegion: null }), recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) })) };
 }
 
 const dashboardPaymentPageSize = 1000;

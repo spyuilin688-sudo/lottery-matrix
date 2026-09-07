@@ -20,6 +20,7 @@ import {
   Pencil,
 } from "lucide-react";
 import "./admin.css";
+import { UserInfoDialog } from "./UserInfoDialog";
 import "./profile-name.css";
 import "./admin-operations.css";
 import "./system-status.css";
@@ -152,6 +153,8 @@ const labels: Record<string, string[]> = {
   ],
 };
 const zh: Record<string, string> = {
+  recentIp: "最近連線IP",
+  estimatedRegion: "推估地區",
   authUserId: "驗證用戶ID",
   lineDisplayName: "LINE名稱",
   registeredAt: "註冊時間",
@@ -903,9 +906,10 @@ function UserManager({
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
+  const [userInfo, setUserInfo] = useState<Row | null>(null);
   const filtered = filterRows(rows, keyword, status);
   const paged = paginateRows(filtered, page);
-  const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "authUserId"];
+  const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
     ? statusText(row[field])
@@ -923,16 +927,17 @@ function UserManager({
       </div>
       <div className="managementList tableWrap">
         <table>
-          <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>操作</th></tr></thead>
+          <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>用戶資訊</th></tr></thead>
           <tbody>{paged.items.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
-              {fields.map((field) => <td key={field}>{showValue(field, row)}</td>)}
-              <td>{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</td>
+              {fields.map((field) => <td key={field}>{field === "status" ? <span className="memberStatusCell">{showValue(field, row)}{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</span> : showValue(field, row)}</td>)}
+              <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
           ))}</tbody>
         </table>
       </div>
       <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} />
+      {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} onClose={() => setUserInfo(null)} />}
     </>
   );
 }
@@ -1021,7 +1026,7 @@ function SubscriptionManager({
           </div>
         </div>
       )}
-      {userInfo && <UserInfoDialog row={userInfo} onClose={() => setUserInfo(null)} />}
+      {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
       <div className="panel transferPanel" id="transfer-requests">
         <h2>轉帳申請</h2>
         <AdminTransferPush client={api} isSuper={isSuper} />
@@ -1043,27 +1048,6 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
       <button disabled={page <= 1} onClick={() => onPage(page - 1)}>上一頁</button>
       <span>第 {page}／{totalPages} 頁</span>
       <button disabled={page >= totalPages} onClick={() => onPage(page + 1)}>下一頁</button>
-    </div>
-  );
-}
-
-function UserInfoDialog({ row, onClose }: { row: Row; onClose: () => void }) {
-  const statusText = ["disabled", "停用", "inactive"].includes(String(row.status)) ? "停用" : "啟用";
-  const values: Array<[string, string]> = [
-    ["LINE名稱", text(row.lineDisplayName)],
-    ["註冊時間", formatAdminDateTime(row.registeredAt)],
-    ["最後上線時間", formatAdminDateTime(row.lastOnlineAt)],
-    ["近3日在線時間", `${Number(row.recentOnlineMinutes || 0)} 分鐘`],
-    ["狀態", statusText],
-    ["驗證用戶ID", text(row.authUserId)],
-  ];
-  return (
-    <div className="modalBackdrop" role="presentation">
-      <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="user-info-title">
-        <h2 id="user-info-title">用戶資訊</h2>
-        <div className="userInfoRows">{values.map(([label, value]) => <div key={label}><span>{label}</span><b>{value}</b></div>)}</div>
-        <div className="formActions"><button className="primary" onClick={onClose}>關閉</button></div>
-      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { listMemberLoginHistory } from './member-login-history';
 import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
 import {
   AdminAccessError,
@@ -419,6 +420,15 @@ const routes: Record<string, unknown> = {
     } catch (cause) {
       return fail(cause);
     }
+  }],
+
+  'GET /api/members/:id/login-records': [sessionGuard, guard('view'), async (ctx: Context) => {
+    try {
+      const module = ctx.query?.module;
+      if (module !== 'users' && module !== 'subscriptions') return error('資料模組不正確', 400);
+      requireModulePermission(await getAdmin(ctx), module, 'view');
+      return json(await listMemberLoginHistory(ctx.params.id, ctx.query?.page, supabase));
+    } catch (cause) { return fail(cause); }
   }],
 
   'GET /api/data/:table': [sessionGuard, guard('view'), async (ctx: Context) => {
