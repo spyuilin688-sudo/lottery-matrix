@@ -82,7 +82,7 @@ const HOME_ASSET_BASE = "/assets/lottery/functions";
 const STATUS_ASSET_BASE = "/assets/lottery/status";
 
 const HOME_ASSETS = {
-  logo: "/assets/lottery/functions/matrixya.png",
+  logo: "/assets/lottery/functions/MatrixLogo.png",
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
   matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,
   tongxing: `${HOME_ASSET_BASE}/同星.png`,
