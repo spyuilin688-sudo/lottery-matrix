@@ -2,13 +2,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
-import { fetchExploreValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
+import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
 import { resetReadCacheForTests } from '../read-cache';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
-const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn() }));
+const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
-vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: async () => null }));
+vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
 vi.mock('../features/shared', () => ({
   FeatureShell: ({ children }: any) => <main>{children}</main>,
   SectionTitle: ({ children }: any) => <h2>{children}</h2>,
@@ -24,6 +24,7 @@ beforeEach(() => {
   updateAlgorithmCacheSession(null);
   sdk.getSession.mockReset().mockResolvedValue({ data: { session: null }, error: null });
   sdk.rpc.mockReset().mockResolvedValue({ data: response, error: null });
+  sdk.profile.mockReset().mockResolvedValue(null);
 });
 afterEach(cleanup);
 
@@ -79,4 +80,27 @@ test('天衍與天工仍要求登入', async () => {
   await expect(fetchTianyanList({ lottery: '今彩539', selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   await expect(fetchTiangongList({ lottery: '今彩539', periodRange: 50, mode: 'two-stage', hitCondition: '準2進3', exploreDirections: ['固定'], firstStageDirections: ['固定'], firstRoadTypes: ['加減'] })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   expect(sdk.rpc).not.toHaveBeenCalled();
+});
+
+test('訪客選擇七期時須登入，且不送出探索請求', async () => {
+  await expect(fetchExploreList({ lottery: '今彩539', numberOrder: '依號碼由小到大排序', explorePeriods: 7, exploreDateOffset: 0, exploreRange: '標準範圍', ruleCount: 1, roadTypes: ['加減'], selectedStreaks: ['準5進6'], sameCode: false })).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
+  expect(sdk.rpc).not.toHaveBeenCalled();
+});
+
+test.each(['Matrix 探索', 'Matrix 天衍'] as const)('%s 進頁選取會員實際最高期數及範圍', async (title) => {
+  sdk.profile.mockResolvedValue({ lineUserId: 'line-member', planName: null, isLifetime: false, exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: true } });
+  await act(async () => { render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />); });
+  expect(screen.getByText('七期').getAttribute('data-selected')).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  expect(screen.getByText('完整範圍').closest('button')?.getAttribute('data-selected')).toBe('true');
+});
+
+test.each(['加減版路', '合值版路', '拖牌版路'])('二期鎖定1碼的%s預設勾選準4進5', async (road) => {
+  await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
+  fireEvent.click(screen.getByText(road));
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  await screen.findByText('22.26');
+  fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
+  expect(screen.getByRole('button', { name: '準4進5' }).getAttribute('aria-pressed')).toBe('true');
+  expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2, ruleCount: 1, selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'] }) });
 });

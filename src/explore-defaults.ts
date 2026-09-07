@@ -2,6 +2,12 @@ type ExploreMemberEntitlement = {
   planName: string | null;
   isLifetime: boolean;
   planExpiresAt?: string | null;
+  lineUserId?: string | null;
+  exploreEntitlements?: {
+    canUseSeven: boolean;
+    canUseThirteen: boolean;
+    canUseFullRange: boolean;
+  };
 };
 
 export type ExploreEntryDefaults = {
@@ -22,6 +28,11 @@ export function getExploreEntryDefaults(
   member: ExploreMemberEntitlement | null,
   now = new Date(),
 ): ExploreEntryDefaults {
+  const access = member?.exploreEntitlements;
+  if (access) return {
+    period: access.canUseThirteen ? "十三期" : access.canUseSeven ? "七期" : "二期",
+    range: access.canUseFullRange ? "完整範圍" : "標準範圍",
+  };
   const expiry = member?.planExpiresAt ? Date.parse(member.planExpiresAt) : Number.POSITIVE_INFINITY;
   const hasActivePaidPlan = Boolean(
     member?.planName
@@ -33,7 +44,7 @@ export function getExploreEntryDefaults(
 
   const weekday = weekdayInTaipei(now);
   return {
-    period: weekday === "Tue" || weekday === "Fri" ? "七期" : "二期",
+    period: member?.lineUserId && (weekday === "Tue" || weekday === "Fri") ? "七期" : "二期",
     range: "標準範圍",
   };
 }

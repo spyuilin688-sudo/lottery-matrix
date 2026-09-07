@@ -15,6 +15,11 @@ export type MemberProfileResponse = {
   planName: string | null;
   planExpiresAt: string | null;
   isLifetime: boolean;
+  exploreEntitlements?: {
+    canUseSeven: boolean;
+    canUseThirteen: boolean;
+    canUseFullRange: boolean;
+  };
 };
 
 export type MemberReferralSummary = {

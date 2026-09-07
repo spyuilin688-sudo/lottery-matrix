@@ -301,7 +301,8 @@ async function cachedMatrixResultRpc<T extends { lottery: NumberBallLottery; ana
   // Only exploration RPCs support visitors; their existing database rules
   // continue to decide access to the requested period and range.
   const sessionOptions = {
-    allowGuest: name === 'matrix_explore_list' || name === 'matrix_explore_validation',
+    allowGuest: (name === 'matrix_explore_list' || name === 'matrix_explore_validation')
+      && (request as { explorePeriods?: number }).explorePeriods === 2,
   };
   const scope = await readAlgorithmCacheScope(client, sessionOptions);
   const assertCurrentSession = async () => {
