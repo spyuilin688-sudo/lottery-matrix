@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
+import { anonymousMatrixMember, resolveMatrixEntitlements, type MemberContext } from './matrix-entitlements';
 
 const base: MemberContext = {
   authUserId: 'auth-1',
@@ -12,6 +12,9 @@ const base: MemberContext = {
 const atTaipeiNoon = (date: string) => new Date(`${date}T04:00:00Z`);
 
 describe('Matrix entitlements', () => {
+  it.each(['2026-08-18', '2026-08-21'])('visitors cannot use seven periods on %s', (date) => {
+    expect(resolveMatrixEntitlements(anonymousMatrixMember, atTaipeiNoon(date)).canUseSeven).toBe(false);
+  });
   it('opens seven periods on Tuesday and Friday for free members', () => {
     expect(resolveMatrixEntitlements(base, atTaipeiNoon('2026-08-18')).canUseSeven).toBe(true);
     expect(resolveMatrixEntitlements(base, atTaipeiNoon('2026-08-19')).canUseSeven).toBe(false);

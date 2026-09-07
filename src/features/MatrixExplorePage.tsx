@@ -59,8 +59,8 @@ export function MatrixExplorePage({
     }
     const isTrailer = roadValue === "拖牌版路";
     if (hitValue === "準4+（鎖定1碼）") {
-      return isTrailer
-        ? ["準5進6", "準6進7", "準7進8"]
+      return title === "Matrix 探索" && period === "二期"
+        ? ["準4進5", "準5進6", "準6進7", "準7進8"]
         : ["準5進6", "準6進7", "準7進8"];
     }
     if (title === "Matrix 探索" && period === "二期") {
@@ -139,7 +139,7 @@ export function MatrixExplorePage({
   }, [expandedRoad]);
 
   useEffect(() => {
-    if (title !== "Matrix 探索") return;
+    if (title !== "Matrix 探索" && title !== "Matrix 天衍") return;
     let active = true;
     void bootstrapMember()
       .then(() => fetchMemberProfile())

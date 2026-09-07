@@ -63,7 +63,7 @@ export function resolveMatrixEntitlements(
   return {
     canUseSeven: paid
       || referrals >= 15
-      || isTuesdayOrFriday
+      || (Boolean(member.authUserId && member.memberId) && isTuesdayOrFriday)
       || (referrals >= 10 && isMondayOrThursday),
     canUseThirteen: paid,
     canUseFullRange: paid || referrals >= 50 || (referrals >= 30 && isTuesdayOrFriday),

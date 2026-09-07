@@ -728,7 +728,7 @@ test('探索結果使用 API 資料而不是固定範例', async () => {
     exploreDateOffset: 0,
     ruleCount: 1,
     roadTypes: ['加減'],
-    selectedStreaks: ['準5進6', '準6進7', '準7進8'],
+    selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
     sameCode: false,
   }));
 });
@@ -744,7 +744,7 @@ test('探索頁使用單列收合連準篩選並套用兩種命中條件預設�
   const filter = screen.getByRole('group', { name: '準4+（鎖定1碼）連準篩選' });
   const options = [...filter.querySelectorAll('button')];
   expect(options.map((button) => button.textContent)).toEqual(['準4進5', '準5進6', '準6進7', '準7進8']);
-  expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'true', 'true']);
+  expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'true', 'true', 'true']);
   expect(screen.queryByRole('dialog', { name: '連準篩選' })).toBeNull();
 
   fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
@@ -761,7 +761,7 @@ test('拖牌版路依命中條件使用例外預設連準', async () => {
 
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
     roadTypes: ['拖牌'],
-    selectedStreaks: ['準5進6', '準6進7', '準7進8'],
+    selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
   })));
 
   fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
@@ -790,7 +790,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
   fireEvent.click(screen.getByRole('button', { name: '準6進7' }));
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
-    expect.objectContaining({ selectedStreaks: ['準5進6', '準7進8'] }),
+    expect.objectContaining({ selectedStreaks: ['準4進5', '準5進6', '準7進8'] }),
   ));
 
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
@@ -798,7 +798,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({
       sameCode: false,
-      selectedStreaks: ['準5進6', '準6進7', '準7進8'],
+      selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
     }),
   ));
   expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
@@ -931,19 +931,21 @@ test('點擊重複號碼小卡會傳送號碼篩選，再點一次取消', async
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
-  const numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
+  let numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('false');
 
   fireEvent.click(numberCard);
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.objectContaining({ predictionNumber: '22' }),
   ));
+  numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('true');
 
   fireEvent.click(numberCard);
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(
     expect.not.objectContaining({ predictionNumber: expect.anything() }),
   ));
+  numberCard = await screen.findByRole('button', { name: '篩選預測號碼 22，1次' });
   expect(numberCard.getAttribute('aria-pressed')).toBe('false');
 });
 
