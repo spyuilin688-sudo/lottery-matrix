@@ -86,7 +86,7 @@ test('依附件演算法支援的篩選條件提交請求', async () => {
   expect(screen.getAllByRole('group', { name: '探索球位' })).toHaveLength(3);
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
 
-  expect(await screen.findByText('12')).toBeTruthy();
+  expect(await screen.findByRole('button', {name:/展開版路/})).toBeTruthy();
   expect(matrixApi.fetchTiangongList).toHaveBeenCalledWith(expect.objectContaining({
     lottery: '今彩539', periodRange: 80,
     mode: 'two-stage', hitCondition: '準2進3',
@@ -195,8 +195,11 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   expect(row.querySelector('.tiangong-directions')?.textContent).toBe('固定|固定|固定');
   expect(row.querySelector('.tiangong-position')?.textContent).toBe('第3顆');
   fireEvent.click(within(row).getByText('12'));
-  expect(await screen.findByText('08+4=12')).toBeTruthy();
-  expect(screen.getByText('12合值28=16')).toBeTruthy();
+  await screen.findByText('114100');
+  const formulas = document.querySelectorAll('.explore-validation-formula-row');
+  expect(formulas[0].textContent).toBe('第2顆08+4=12');
+  expect(formulas[1].textContent).toBe('第3顆12合值28=16');
+  expect(formulas[2].textContent).toBe('［ 16 ］');
 });
 
  test.each([1,2,3,4,5,6,7])('本期預測卡顯示號碼與球位 %s', (position) => {
@@ -215,6 +218,30 @@ test('天工摘要依兩段資料顯示兩列且沒有連準標籤', () => {
   const rows = summary.querySelectorAll('.tianyan-validation-summary-row');
   expect(rows).toHaveLength(2);
   expect(rows[0].textContent).toBe('開 28 第 4 顆｜由右至左｜+32｜下 14 期開');
-  expect(rows[1].textContent).toBe('固定 第 3 顆｜由左至右｜合值 39｜下 5 期開｜第三顆');
+  expect(rows[1].textContent).toBe('開 28 第 3 顆｜由左至右｜合值39｜下 5 期開｜第三顆');
   expect(summary.closest('header')?.querySelector('.explore-validation-consecutive-tag')).toBeNull();
+});
+
+test('重複號碼統計依次數排序，同碼及號碼篩選可切換', async () => {
+  matrixApi.fetchTiangongList.mockResolvedValue({...envelope,total:4,items:[
+    {...envelope.items[0],id:'a',predictionNumber:'28'},
+    {...envelope.items[0],id:'b',predictionNumber:'03'},
+    {...envelope.items[0],id:'c',predictionNumber:'28'},
+    {...envelope.items[0],id:'d',predictionNumber:'03'},
+    {...envelope.items[0],id:'e',predictionNumber:'10'},
+  ]});
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button',{name:'開始天工'}));
+  await screen.findByRole('button',{name:'篩選預測號碼 03，2次'});
+  expect([...document.querySelectorAll('.result-summary b')].map(x=>x.textContent)).toEqual(['03','28','10']);
+  fireEvent.click(screen.getByRole('button',{name:'同碼'}));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(4);
+  expect(screen.queryByRole('button',{name:'篩選預測號碼 10，1次'})).toBeNull();
+  fireEvent.click(screen.getByRole('button',{name:'篩選預測號碼 28，2次'}));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(2);
+  expect(document.querySelectorAll('.result-summary button')).toHaveLength(2);
+  fireEvent.click(screen.getByRole('button',{name:'篩選預測號碼 28，2次'}));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(4);
+  fireEvent.click(screen.getByRole('button',{name:'同碼'}));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(5);
 });

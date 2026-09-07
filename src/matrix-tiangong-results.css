@@ -40,3 +40,13 @@
 
 .matrix-tiangong-screen .tiangong-summary-card { grid-template-columns: minmax(0, 1fr); }
 .matrix-tiangong-screen .tiangong-summary-card > .explore-validation-summary { grid-column: 1 / -1; padding: 4px; white-space: normal; }
+
+.matrix-tiangong-screen .tiangong-summary-card .tianyan-validation-summary-row { justify-content: flex-start; width: max-content; }
+.matrix-tiangong-screen .tiangong-summary-formula { display: inline-flex; gap: 1px; align-items: baseline; }
+.matrix-tiangong-screen .tiangong-validation-process .explore-validation-formula-expression { gap: 1px; }
+.matrix-explore-main-screen.matrix-tiangong-screen .feature-body > .repeat-stats-panel { width: calc(100% - 6px); margin-inline: 3px; padding-top: 6px; }
+.matrix-tiangong-screen .repeat-stats-heading { min-height: 22px; }
+.matrix-tiangong-screen .repeat-stats-heading button { min-height: 22px; height: 22px; padding-block: 1px; }
+.matrix-explore-main-screen.matrix-tiangong-screen .repeat-stats-heading button[data-selected="true"],
+.matrix-explore-main-screen.matrix-tiangong-screen .result-summary > button[data-selected="true"] { border-color: var(--lottery-gold-500, #c49145); color: var(--lottery-gold-500, #c49145); background: rgba(196,145,69,.06); box-shadow: none; }
+.matrix-explore-main-screen.matrix-tiangong-screen .result-summary > button[data-selected="true"] b { color: inherit; }

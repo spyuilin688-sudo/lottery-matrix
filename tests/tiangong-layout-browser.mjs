@@ -28,6 +28,8 @@ try{
   if(!aligned)throw new Error('Header and result columns misaligned');
   const inset=await page.locator('.result-panel').evaluate(x=>x.getBoundingClientRect().left);
   if(Math.abs(inset-13)>1)throw new Error('Wrong result panel inset: '+inset);
+  const statsInset=await page.locator('.repeat-stats-panel').evaluate(x=>x.getBoundingClientRect().left);
+  if(Math.abs(statsInset-16)>1)throw new Error('Wrong stats inset: '+statsInset);
   const gap=await page.locator('.tiangong-directions').first().evaluate(x=>getComputedStyle(x).gap);
   if(gap!=='1.5px')throw new Error('Wrong displacement gap: '+gap);
   await page.locator('.tiangong-result-row').first().click();await page.getByRole('region',{name:'天工驗證過程'}).waitFor();
@@ -36,6 +38,15 @@ try{
   if(await summary.locator('.tianyan-validation-summary-row').count()!==2)throw new Error('Wrong summary row count');
   const summaryFits=await summary.evaluate(x=>[...x.children].every(row=>row.getBoundingClientRect().right<=x.getBoundingClientRect().right+1));
   if(!summaryFits)throw new Error('Summary overflow');
+  const alignedSummary=await summary.evaluate(x=>{
+    const rows=[...x.querySelectorAll('.tianyan-validation-summary-row')];
+    return Math.abs(rows[0].querySelector('.validation-summary-position').getBoundingClientRect().left-rows[1].querySelector('.validation-summary-position').getBoundingClientRect().left)<1;
+  });
+  if(!alignedSummary)throw new Error('Summary positions not aligned');
+  const formulaGap=await page.locator('.explore-validation-formula-expression').first().evaluate(x=>getComputedStyle(x).gap);
+  if(formulaGap!=='1px')throw new Error('Wrong formula gap');
+  const predictionStyles=await page.locator('.explore-validation-prediction-content strong').evaluateAll(xs=>xs.map(x=>{const s=getComputedStyle(x);return s.fontSize+s.color;}));
+  if(predictionStyles.length!==2||predictionStyles[0]!==predictionStyles[1])throw new Error('Prediction label styles differ');
   const validationErrors=await page.locator('.explore-validation-group > div').evaluateAll(cards=>cards.flatMap(card=>[...card.children].filter(row=>row.scrollWidth>row.clientWidth+1).map(row=>({text:row.textContent,width:row.clientWidth,scroll:row.scrollWidth}))));
   if(validationErrors.length)throw new Error(`Validation overflow at ${width}: ${JSON.stringify(validationErrors)}`);
   const issueStyle=await page.locator('.explore-validation-issue').first().evaluate(x=>({size:getComputedStyle(x).fontSize,color:getComputedStyle(x).color,border:getComputedStyle(x.parentElement).borderTopWidth}));
