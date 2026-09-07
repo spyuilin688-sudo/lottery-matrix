@@ -174,6 +174,34 @@ describe('installed PWA LINE login return', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('imports a detached native callback even when foreground activation is refused', async () => {
+    const { parent, popup, auth, start, client } = setup();
+    const returnedTab = browserWindow();
+    connectBrowserChannels(parent, popup, returnedTab);
+    parent.focus.mockImplementation(() => { throw new DOMException('blocked', 'InvalidAccessError'); });
+    const serviceWorker = Object.assign(new EventTarget(), {
+      ready: Promise.resolve({ active: { postMessage: (data: { attemptId: string }) => {
+        queueMicrotask(() => serviceWorker.dispatchEvent(new MessageEvent('message', {
+          data: { type: 'matrix-line-pwa-focus-result', attemptId: data.attemptId, ok: false },
+        })));
+      } } }),
+    });
+    Object.assign(returnedTab, { navigator: { serviceWorker } });
+    const login = start();
+    const id = JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id;
+    returnedTab.location.search = `?matrix_line_return=${id}`;
+    returnedTab.location.hash = '#access_token=callback-token&refresh_token=callback-refresh';
+    // The OS refuses to close this native-created tab. Session delivery must
+    // still succeed, without claiming that the native PWA became foreground.
+    const finish = finishLineLoginPopup(() => client, returnedTab as unknown as Window);
+    await vi.advanceTimersByTimeAsync(0);
+    await expect(login).resolves.toBe('pwa');
+    await expect(finish).resolves.toBe(false);
+    expect(auth.setSession).toHaveBeenCalledExactlyOnceWith(session);
+    expect(parent.close).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('does not broadcast or close a normal tab that has no OAuth callback', async () => {
     const { parent, popup, auth, start, client } = setup();
     const otherTab = browserWindow();
@@ -330,7 +358,6 @@ describe('installed PWA LINE login return', () => {
       provider: 'custom:line', options: {
         redirectTo: `${origin}/?matrix_line_return=${JSON.parse(popup.sessionStorage.getItem('matrix-line-login-popup')!).id}`,
         skipBrowserRedirect: true,
-        queryParams: { disable_auto_login: 'true' },
       },
     });
     expect(popup.location.replace).toHaveBeenCalledWith('https://auth.example/authorize');

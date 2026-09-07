@@ -171,9 +171,8 @@ export function signInWithLinePopup(
       provider: 'custom:line', options: {
         redirectTo: callbackUrl.href,
         skipBrowserRedirect: true,
-        // Native LINE auto-login can return into a detached Chrome task, which
-        // loses the script-owned popup and prevents it from closing back to PWA.
-        queryParams: { disable_auto_login: 'true' },
+        // Allow native LINE auto-login. The attempt-bound return channel below
+        // also accepts callbacks opened in a separate tab by the LINE app.
       },
     })]).then(([, { data, error }]) => {
       if (settled) return;
