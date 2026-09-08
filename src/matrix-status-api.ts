@@ -81,6 +81,11 @@ function statusRpcError(error: { message?: string } | null): never {
 
 async function statusRpc<T>(name: string, args?: Record<string, unknown>) {
   const client = getSupabaseClient();
+  // Custom settings RPCs are authenticated-only; a guest is a login state,
+  // not an opaque PostgREST permission error.
+  const session = await client.auth.getSession();
+  if (session.error) statusRpcError(session.error);
+  if (!session.data.session) throw new MatrixApiError('AUTH_REQUIRED', 401);
   const { data, error } = args ? await client.rpc(name, args) : await client.rpc(name);
   if (error) statusRpcError(error);
   return data as T;

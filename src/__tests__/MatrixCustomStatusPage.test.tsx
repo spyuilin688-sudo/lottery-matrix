@@ -109,7 +109,7 @@ test('單一連準摘要只顯示一次',async()=>{
  expect(within(row()).getByText('準5進6',{selector:'output'})).toBeTruthy();
 });
 test('舊資料最低數量無損轉為最多不限',async()=>{
- api.listCustomStatusSettings.mockResolvedValueOnce({items:[{config:{lottery:'今彩539',status:'ACTIVE',explorePeriods:13,exploreRange:'完整範圍',oneCodeGroups:[{id:'legacy',rows:[{consecutive:'準6進7',roadType:'合值',numberOrder:'依號碼由小到大排序',sameCodeQuantity:3}]}],twoCodeGroups:[]},evaluation:{}}]});
+ api.listCustomStatusSettings.mockResolvedValueOnce({items:[{config:{lottery:'今彩539',status:'ACTIVE',explorePeriods:13,exploreRange:'完整範圍',oneCodeGroups:[{id:'legacy',rows:[{consecutive:'準6進7',roadType:'合值',numberOrder:'依號碼由小到大排序',sameCodeQuantity:3}]}],twoCodeGroups:[]},evaluation:{}}],entitlements:{canCustomizeStatus:true,canUseCompositeCustomRoad:false}});
  render(<MatrixCustomStatusPage onNavigate={vi.fn()}/>);await screen.findByText('已自訂');
  expect(field('連準起點')).toHaveProperty('value','6');expect(field('連準終點')).toHaveProperty('value','6');
  expect(field('最少')).toHaveProperty('value','3');expect(field('最多')).toHaveProperty('value','');
@@ -155,4 +155,25 @@ test('降級後可取消既有複合版路，但不可新增未授權複合版�
  fireEvent.click(screen.getByRole('button',{name:'儲存設定'}));
  await waitFor(()=>expect(api.saveCustomStatusSetting).toHaveBeenCalledTimes(1));
  expect(api.saveCustomStatusSetting.mock.calls[0][0].oneCodeGroups[0].rows[0].roadTypes).toEqual(['加減']);
+});
+
+test('未登入時提供登入入口，不顯示可編輯條件', async () => {
+ api.listCustomStatusSettings.mockRejectedValueOnce(Object.assign(new Error('AUTH_REQUIRED'), {code:'AUTH_REQUIRED'}));
+ const navigate=vi.fn(); render(<MatrixCustomStatusPage onNavigate={navigate}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'前往登入'}));
+ expect(navigate).toHaveBeenCalledWith('profile');
+ expect(screen.queryByRole('article',{name:/條件群組/})).toBeNull();
+});
+test('不符合方案權限時提供方案入口，不顯示可編輯條件', async () => {
+ api.listCustomStatusSettings.mockResolvedValueOnce({items:[],entitlements:{canCustomizeStatus:false,canUseCompositeCustomRoad:false}});
+ const navigate=vi.fn(); render(<MatrixCustomStatusPage onNavigate={navigate}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'查看 Matrix Pro 方案'}));
+ expect(navigate).toHaveBeenCalledWith('pro-plans');
+ expect(screen.queryByRole('button',{name:'儲存設定'})).toBeNull();
+});
+test('讀取失敗可重試並恢复原本可用條件', async () => {
+ api.listCustomStatusSettings.mockRejectedValueOnce(new Error('offline'));
+ render(<MatrixCustomStatusPage onNavigate={vi.fn()}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'重新載入自訂設定'}));
+ expect(await screen.findByText('使用預設條件')).toBeTruthy();
 });

@@ -291,6 +291,8 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
   const [compositeEnabled, setCompositeEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [accessFailure, setAccessFailure] = useState<"AUTH_REQUIRED" | "FORBIDDEN" | null>(null);
+  const [reloadRevision, setReloadRevision] = useState(0);
   const [feedback, setFeedback] = useState<Record<string, { message: string; error?: boolean; path?: string }>>({});
   const [pending, setPending] = useState<Record<string, "save" | "reset">>({});
   const pendingSlots = useRef(new Set<string>());
@@ -302,12 +304,27 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
   const usingDefaults = !drafts[slot] && !configs[slot];
   const busy = Boolean(pending[slot]);
   const notice = feedback[slot];
+  const accessMessage = accessFailure === "AUTH_REQUIRED"
+    ? "請先登入後再使用自訂觸發條件"
+    : "目前 Matrix Pro 方案不符合自訂觸發條件的使用權限";
+  const recordAccessFailure = (cause: unknown) => {
+    const code = (cause as { code?: string })?.code;
+    if (code === "AUTH_REQUIRED" || code === "FORBIDDEN") setAccessFailure(code);
+  };
 
   useEffect(() => {
     mounted.current = true;
     let active = true;
+    setLoaded(false);
+    setLoadFailed(false);
+    setAccessFailure(null);
     void listCustomStatusSettings().then(response => {
       if (!active) return;
+      if (!response.entitlements?.canCustomizeStatus) {
+        setAccessFailure("FORBIDDEN");
+        setLoaded(true);
+        return;
+      }
       const items: Record<string, CustomStatusConfig> = {};
       for (const item of response.items) {
         const normalized = normalizeCustomStatusConfig(item.config);
@@ -317,11 +334,11 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
       setConfigs(items);
       setCompositeEnabled(Boolean(response.entitlements?.canUseCompositeCustomRoad));
       setLoaded(true);
-    }).catch(() => {
-      if (active) { setLoadFailed(true); setLoaded(true); }
+    }).catch((cause: unknown) => {
+      if (active) { recordAccessFailure(cause); setLoadFailed(true); setLoaded(true); }
     });
     return () => { active = false; mounted.current = false; };
-  }, []);
+  }, [reloadRevision]);
 
   useEffect(() => {
     if (notice?.path) {
@@ -380,7 +397,7 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     if (mounted.current) setPending(current => { const next = { ...current }; delete next[slot]; return next; });
   };
   const save = async () => {
-    if (busy || loadFailed || !loaded || usingDefaults) return;
+    if (busy || loadFailed || accessFailure || !loaded || usingDefaults) return;
     const invalid = validate();
     if (invalid) { setFeedback(current => ({ ...current, [slot]: { ...invalid, error: true } })); return; }
     if (!begin("save")) return;
@@ -395,12 +412,15 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
         setDrafts(current => { const next = { ...current }; delete next[slot]; return next; });
         setFeedback(current => ({ ...current, [slot]: { message: "設定已儲存並套用至首頁" } }));
       }
-    } catch {
-      if (mounted.current) setFeedback(current => ({ ...current, [slot]: { error: true, message: "目前方案或設定內容無法儲存" } }));
+    } catch (cause) {
+      if (mounted.current) {
+        recordAccessFailure(cause);
+        setFeedback(current => ({ ...current, [slot]: { error: true, message: "設定尚未儲存，請稍後重試" } }));
+      }
     } finally { finish(); }
   };
   const reset = async () => {
-    if (loadFailed || !loaded || !begin("reset")) return;
+    if (loadFailed || accessFailure || !loaded || !begin("reset")) return;
     const revision = revisions.current[slot] ?? 0;
     try {
       await resetCustomStatusSetting(lottery, status);
@@ -410,8 +430,11 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
         setDrafts(current => { const next = { ...current }; delete next[slot]; return next; });
         setFeedback(current => ({ ...current, [slot]: { message: "已恢復預設條件" } }));
       }
-    } catch {
-      if (mounted.current) setFeedback(current => ({ ...current, [slot]: { error: true, message: "重置設定失敗" } }));
+    } catch (cause) {
+      if (mounted.current) {
+        recordAccessFailure(cause);
+        setFeedback(current => ({ ...current, [slot]: { error: true, message: "重置設定失敗" } }));
+      }
     } finally { finish(); }
   };
 
@@ -423,8 +446,10 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
       <span>探索範圍：<strong>完整範圍</strong></span>
     </section>
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
-    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
-      ? <p className="custom-status-message" role="alert">自訂設定讀取失敗</p>
+    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : accessFailure
+      ? <section className="panel custom-status-access-notice"><p className="custom-status-message" role="alert">{accessMessage}</p><div className="custom-status-actions"><button type="button" onClick={() => onNavigate(accessFailure === "AUTH_REQUIRED" ? "profile" : "pro-plans")}>{accessFailure === "AUTH_REQUIRED" ? "前往登入" : "查看 Matrix Pro 方案"}</button></div></section>
+      : loadFailed
+      ? <section className="panel"><p className="custom-status-message" role="alert">自訂設定讀取失敗</p><div className="custom-status-actions"><button type="button" aria-label="重新載入自訂設定" onClick={() => setReloadRevision(current => current + 1)}>重新載入</button></div></section>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
         <CustomConditionSection key={slot + "|one"} hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
           modeLabel={usingDefaults ? "使用預設條件" : "已自訂"}

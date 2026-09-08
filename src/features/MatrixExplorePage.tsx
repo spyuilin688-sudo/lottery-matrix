@@ -110,6 +110,7 @@ export function MatrixExplorePage({
   const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
   const cacheGeneration = useRef(0);
+  const queryRevision = useRef(0);
   useEffect(() => {
     const clearResults = () => {
       cacheGeneration.current += 1;
@@ -212,6 +213,8 @@ export function MatrixExplorePage({
     nextPredictionNumber = selectedPredictionNumber,
   ) => {
     const generation = cacheGeneration.current;
+    const revision = ++queryRevision.current;
+    const isCurrent = () => generation === cacheGeneration.current && revision === queryRevision.current;
     setExploreLoading(true);
     setExploreError(null);
     setExploreResponse(null);
@@ -228,7 +231,7 @@ export function MatrixExplorePage({
           sameCode: nextSameCode,
           ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
         });
-        if (generation !== cacheGeneration.current) return;
+        if (!isCurrent()) return;
         setTianyanResponse(response);
         setTianyanValidationById({});
         setExpandedRoad(null);
@@ -248,12 +251,12 @@ export function MatrixExplorePage({
         sameCode: nextSameCode,
         ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
       });
-      if (generation !== cacheGeneration.current) return;
+      if (!isCurrent()) return;
       setExploreResponse(response);
       setValidationById({});
       setExpandedRoad(null);
     } catch (cause) {
-      if (generation !== cacheGeneration.current) return;
+      if (!isCurrent()) return;
       const code = String((cause as { code?: unknown })?.code ?? "");
       const message =
         code === "ANALYSIS_NOT_READY"
@@ -273,7 +276,7 @@ export function MatrixExplorePage({
         });
       }
     } finally {
-      if (generation === cacheGeneration.current) setExploreLoading(false);
+      if (isCurrent()) setExploreLoading(false);
     }
   };
 
@@ -334,6 +337,7 @@ export function MatrixExplorePage({
 
   const toggleRoad = (itemId: string) => {
     const generation = cacheGeneration.current;
+    const revision = queryRevision.current;
     if (expandedRoad === itemId) {
       pendingRoadScrollRef.current = null;
       setExpandedRoad(null);
@@ -350,13 +354,13 @@ export function MatrixExplorePage({
         drawPeriod: tianyanResponse.drawPeriod,
         analysisVersion: tianyanResponse.analysisVersion,
       }, itemId).then((response) => {
-        if (generation !== cacheGeneration.current) return;
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setTianyanValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
       }).catch(() => {
-        if (generation !== cacheGeneration.current) return;
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setExploreError("Matrix API 讀取失敗");
       }).finally(() => {
-        if (generation !== cacheGeneration.current) return;
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
         setValidationLoadingId((current) => current === cacheKey ? null : current);
       });
       return;
@@ -373,13 +377,13 @@ export function MatrixExplorePage({
       explorePeriods: selectedExplorePeriods,
       exploreRange: exploreRange as "標準範圍" | "完整範圍",
     }).then((response) => {
-      if (generation !== cacheGeneration.current) return;
+      if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
     }).catch(() => {
-      if (generation !== cacheGeneration.current) return;
+      if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setExploreError("Matrix API 讀取失敗");
     }).finally(() => {
-      if (generation !== cacheGeneration.current) return;
+      if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
       setValidationLoadingId((current) => current === cacheKey ? null : current);
     });
   };

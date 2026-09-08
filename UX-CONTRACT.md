@@ -206,3 +206,9 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 The existing four-lottery, sorted/draw tabs and download confirmation remain the card-page flow. New clients request the PNG manifest explicitly. Its period and both URLs describe the latest complete published generation; an ungenerated newer draw never relabels the older image. Preview and confirmed download use the same immutable PNG bytes, with no browser rasterization or document-wide observer. Download failure remains inline and retryable. The prior SVG manifest/routes remain available to installed older PWA clients during rollout.
 
 Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled CJK and Arial-compatible font subsets make generated PNG text deterministic across worker hosts. Publication waits ten minutes after the publisher first observes a complete snapshot, then runs on the next available worker tick; this does not promise an exact ten-minute completion time. A missing period, invalid numbers, failed upload, or lost lease retains the previous complete card. Card-ready notifications require the matching published period.
+
+## 2026-09-08：查詢與設定回應
+
+- Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。
+- 自訂觸發條件依伺服器 `canCustomizeStatus` 決定是否顯示編輯器；未登入提供「前往登入」，方案不足提供「查看 Matrix Pro 方案」，載入失敗提供重新載入。沿用 `custom-status-message`、`custom-status-actions` 與現有卡片，不新增彈窗或改變方案條件。
+- 通知設定儲存失敗在頁內持續顯示提示及「重試儲存」，保留最新編輯；只有伺服器確認最新設定後才清除提示。重試期間防止重複提交，離頁後不更新畫面。

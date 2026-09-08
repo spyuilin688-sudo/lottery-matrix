@@ -84,6 +84,8 @@ components:
 
 介面以現行 Inter／system stack 為基礎；Roboto Latin 500／700 由 `@fontsource/roboto` 明確匯入，供數字、球號與部分品牌資料使用。這兩個 import 只提供 Latin subset，繁體中文字形則落到 system TC fallback stack：`system-ui`、Noto Sans TC、PingFang TC 或 Microsoft JhengHei。資料數字可使用 tabular figures；控制文字維持繁體中文的自然語序，不使用全大寫英文模擬科技感。字級、字重與行高仍由現有 CSS 元件規則擁有，本文件不新增 typography token。
 
+2026-09-08：探索、天工、天衍、狀態的驗證過程下方「本期預測」數字統一呈現粗體。共用來源為 `src/explore-result-preview.css` 的 `.explore-validation-prediction b`，沿用 18px／800 與既有等寬字型；僅此數字允許 `font-synthesis: weight`，在裝置缺少粗體字型時仍可顯示粗體。
+
 ## Layout
 
 版面以 320–430px 的流動手機畫布與 mobile-first PWA 為準；390px 保留為主要視覺基準，而不是固定寬度。頁面左右留白、區段間距、卡片圓角與底部導覽高度都由 runtime token 控制：
@@ -121,6 +123,8 @@ components:
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
+2026-09-08 首頁五大功能採使用者確認的 A 方案：金框不透明度由 56% 提高至 85%，沿用 1px 線條、原有卡片尺寸與 4px 卡片間距。`src/homepage/visual-language.css` 的 `.home-screen .home-shortcut` 擁有此顏色變體，沿用 `--lottery-gold-500` 與共用八角描邊；其他首頁區塊不套用此變體。
+
 Matrix 探索、天衍與狀態頁的驗證過程，依鎖定條件整組交替使用 `#152A42`、`#0E1D30`。左、中、右三欄共用同組底色，欄間與組間間距皆透出頁面黑色背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。
 
 ### Home Mark Six numbers — 2026-09-06
@@ -139,7 +143,7 @@ Matrix 探索、天衍與狀態頁的驗證過程，依鎖定條件整組交替�
 
 ### Contact support and referral layout — 2026-09-06
 
-聯絡客服、問題回報、商務合作維持三張卡片，標題保留金色與 15px；信箱與電話使用 14px 淺灰白 `#c9c2b8` 及底線，hover 使用 `#f1ece3`，與標題金色區分。三張卡片的信箱前顯示「信箱：」，客服電話前顯示「電話：」；兩種標籤皆在連結外、不加底線，只有信箱地址與電話號碼保留底線。標籤與連結使用兩欄排列，標籤保持完整，長信箱在右欄換行。電話列與信箱間距 8px。電話沿用 `ContactSupportPhonePortal`，不重複新增；`src/feature-pages.css` 擁有此頁聯絡資訊樣式。
+聯絡客服、問題回報、商務合作維持三張卡片，標題保留金色與 15px；信箱使用 14px 淺灰白 `#c9c2b8` 及底線，hover 使用 `#f1ece3`，與標題金色區分。三張卡片的信箱前顯示「信箱：」，標籤在連結外、不加底線，只有信箱地址保留底線。標籤與連結使用兩欄排列，標籤保持完整，長信箱在右欄換行。2026-09-08 依使用者要求移除客服電話列、撥號連結與電話列專用間距；`src/feature-pages.css` 擁有此頁聯絡資訊樣式。
 
 推薦成功人數在「我的推薦碼」同列靠右。推薦碼標籤獨立一行，下行使用完整推薦碼與右側複製按鈕；窄螢幕允許長碼換行，不截斷內容。三個推薦說明標題左側與輸入框對齊，啟動碼使用說明保留原縮排。「確認」字級為 16px，按鈕沿用 34px 高度；推薦摘要與排列由 `src/feature-pages.css` 擁有，精簡控制尺寸由 `src/activation-code-layout.css` 擁有。資料、文字、登入狀態、確認、複製與展開流程維持原邏輯。
 
