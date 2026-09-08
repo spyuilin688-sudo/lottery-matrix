@@ -36,13 +36,13 @@ const WORK: ClaimedNotificationWork = {
 
 const SUB_A: PushSubscription = {
   id: "sub-a",
-  endpoint: "https://push.example/a",
+  endpoint: "https://fcm.googleapis.com/fcm/send/a",
   p256dh: "p-a",
   authKey: "a-a",
 };
 const SUB_B: PushSubscription = {
   id: "sub-b",
-  endpoint: "https://push.example/b",
+  endpoint: "https://fcm.googleapis.com/fcm/send/b",
   p256dh: "p-b",
   authKey: "a-b",
 };
@@ -274,3 +274,4 @@ Deno.test("delivery log failure leaves claimed outbox recoverable instead of fal
   assertEquals(test.observations.retried, []);
   assertEquals(test.observations.failed, []);
 });
+

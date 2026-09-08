@@ -32,7 +32,7 @@ async function assertRejects(
 
 const SUBSCRIPTION: PushSubscription = {
   id: "subscription-a",
-  endpoint: "https://push.example/a",
+  endpoint: "https://fcm.googleapis.com/fcm/send/a",
   p256dh: "p256dh-a",
   authKey: "auth-a",
 };
@@ -205,4 +205,55 @@ Deno.test("delivery log failure rejects after successful push without reclassify
     { subscriptionId: "subscription-a", at: "2026-09-03T08:50:00.000Z" },
   ]);
   assertEquals(test.observations.failures, []);
+});
+
+for (const endpoint of [
+  'https://127.0.0.1/a','https://169.254.169.254/a','https://[::1]/a',
+  'http://fcm.googleapis.com/a','https://attacker.example/a',
+  'https://fcm.googleapis.com.attacker.example/a','https://user@fcm.googleapis.com/a',
+  'https://fcm.googleapis.com:443/a','https://fcm.googleapis.com/a#fragment',
+  'https://%66cm.googleapis.com/a','https://fcm.googleapis.com\\@attacker.example/a',
+]) {
+  Deno.test(`shared delivery blocks an unsafe endpoint before sending: ${endpoint}`, async () => {
+    const fixture = setup();
+    const result = await deliverPushToSubscription(fixture.dependencies, {
+      userId:'user-1',subscription:{...SUBSCRIPTION,endpoint},payload:PAYLOAD,adminAccount:'system:notification-dispatch',
+    });
+    assertEquals(result.delivered,false);
+    assertEquals(result.permanentFailure,true);
+    assertEquals(result.failureReason,'INVALID_PUSH_SUBSCRIPTION');
+    assertEquals(fixture.observations.sent,[]);
+    assertEquals(fixture.observations.failures[0].disable,true);
+  });
+}
+
+Deno.test("shared delivery supports browser providers and rejects malformed destinations", async () => {
+  for (const endpoint of [
+    "https://updates.push.services.mozilla.com/wpush/v2/test",
+    "https://web.push.apple.com/test",
+    "https://wns2.notify.windows.com/test",
+  ]) {
+    const fixture = setup();
+    const result = await deliverPushToSubscription(fixture.dependencies, {
+      userId: "user-1", subscription: { ...SUBSCRIPTION, endpoint },
+      payload: PAYLOAD, adminAccount: "system:notification-dispatch",
+    });
+    assertEquals(result.delivered, true);
+    assertEquals(fixture.observations.sent.length, 1);
+  }
+  for (const endpoint of [
+    "https://fcm.googleapis.com:8443/a",
+    "https://fcm.googleapis.com@attacker.example/a",
+    "https://fcm.googleapis.com/a\n",
+    "https://fcm.googleapis.com/" + "a".repeat(4096),
+  ]) {
+    const fixture = setup();
+    const result = await deliverPushToSubscription(fixture.dependencies, {
+      userId: "user-1", subscription: { ...SUBSCRIPTION, endpoint },
+      payload: PAYLOAD, adminAccount: "system:notification-dispatch",
+    });
+    assertEquals(result.permanentFailure, true);
+    assertEquals(result.failureReason, "INVALID_PUSH_SUBSCRIPTION");
+    assertEquals(fixture.observations.sent, []);
+  }
 });
