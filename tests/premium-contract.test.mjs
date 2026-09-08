@@ -206,7 +206,7 @@ test("routes every reachable confirmation through the shared accessible dialog o
   assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 1);
   assert.equal(profileSource.match(/confirmDialog\(/g)?.length, 1);
   assert.match(notebookSource, /appDialog\.alert\(/);
-  assert.match(featurePages, /if \(screen === "notebook"\) return <MatrixNotebookPage /);
+  assert.match(featurePages, /if \(screen === "notebook"\) return <LinePageGuard [^\n]*<MatrixNotebookPage /);
   assert.match(dialogSource, /@radix-ui\/react-dialog/);
   assert.match(dialogSource, /returnFocus/);
   assert.match(dialogContract, /AppDialogProvider/);
