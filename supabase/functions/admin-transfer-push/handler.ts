@@ -42,6 +42,7 @@ function allowedEndpoint(endpoint: string) {
 
 export function createAdminTransferPushHandler(dependencies: Dependencies) {
   return async (request: Request): Promise<Response> => {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { Allow: 'POST, OPTIONS' } });
     if (request.method !== 'POST') return json({ error: { code: 'METHOD_NOT_ALLOWED' } }, 405);
     const token = request.headers.get('x-matrix-dispatch-token') ?? '';
     if (!token) return json({ error: { code: 'AUTH_REQUIRED' } }, 401);

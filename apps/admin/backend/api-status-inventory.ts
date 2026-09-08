@@ -1,6 +1,6 @@
 export type ApiLocation = 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
 export type ApiCheckEvidence = 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
-export type ApiCheckMode = 'live' | 'openapi' | 'service';
+export type ApiCheckMode = 'live' | 'registry' | 'service';
 
 export type ApiStatusDefinition = {
   id: string;
@@ -59,7 +59,7 @@ const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
     group,
     location: 'Supabase',
     endpoint: `/rest/v1/rpc/${rpc}`,
-    checkMode: 'openapi',
+    checkMode: 'registry',
     description,
   }),
 );
@@ -74,6 +74,7 @@ export const apiStatusInventory: readonly ApiStatusDefinition[] = [
   { id: 'notification-dispatch-function', name: '派送通知', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-dispatch', checkMode: 'live', description: '處理待派送的通知事件。' },
   { id: 'notification-pilio-function', name: 'Pilio 開獎通知', group: '通知', location: 'Supabase', endpoint: '/functions/v1/notification-pilio', checkMode: 'live', description: '讀取 Pilio 開獎結果，建立並派送通知。' },
   { id: 'send-test-push-function', name: '會員測試通知', group: '通知', location: 'Supabase', endpoint: '/functions/v1/send-test-push', checkMode: 'live', description: '供管理後台向選定會員發送測試通知。' },
+  { id: 'admin-transfer-push-function', name: '管理員匯款通知', group: '通知', location: 'Supabase', endpoint: '/functions/v1/admin-transfer-push', checkMode: 'live', description: '向已啟用手機通知的管理員派送新的轉帳申請通知。' },
   { id: 'line-logout-function', name: 'LINE 登出', group: '會員', location: 'Supabase', endpoint: '/functions/v1/line-logout', checkMode: 'live', description: '處理會員登出。' },
   ...supabaseRpcInventory,
   { id: 'github-fantasy5-workflow', name: '天天樂 GitHub Actions 爬蟲', group: '排程', location: 'GitHub', endpoint: '/repos/spyuilin688-sudo/lottery-matrix/actions/workflows/fantasy5-crawler.yml', checkMode: 'live', description: '查看天天樂爬蟲排程與最近一次執行結果。' },

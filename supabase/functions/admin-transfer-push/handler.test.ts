@@ -27,6 +27,16 @@ function request(token: string | null = 'dispatch-secret', method = 'POST') {
 }
 
 describe('admin transfer push dispatch', () => {
+  it('answers a read-only OPTIONS probe without claiming or sending any jobs', async () => {
+    const f = fixture();
+    const response = await f.handler(request(null, 'OPTIONS'));
+    expect(response.status).toBe(204);
+    expect(response.headers.get('Allow')).toBe('POST, OPTIONS');
+    expect(await response.text()).toBe('');
+    expect(f.events).toEqual([]);
+    expect(f.finished).toEqual([]);
+    expect(f.payloads).toEqual([]);
+  });
   it.each([null, 'denied', 'dispatch-secreu'])('denies token %s without claiming', async token => {
     const f = fixture();
     expect((await f.handler(request(token))).status).toBe(token ? 403 : 401);
