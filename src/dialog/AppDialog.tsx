@@ -36,10 +36,13 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
   const queueRef = useRef<DialogRequest[]>([]);
   const mountedRef = useRef(true);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    requestRef.current?.resolve(false);
-    queueRef.current.splice(0).forEach((item) => item.resolve(false));
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      requestRef.current?.resolve(false);
+      queueRef.current.splice(0).forEach((item) => item.resolve(false));
+    };
   }, []);
 
   const showNext = useCallback(() => {

@@ -9,12 +9,14 @@ import Prototype, { type LotteryId } from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
 import { invalidateMatrixData } from '../matrix-data-revision';
+import { AppDialogProvider } from '../dialog/AppDialog';
+import { FIRST_VISIT_GUIDE_SEEN_KEY } from '../onboarding/FirstVisitGuide';
 
 vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} });
 const response = (lottery: LotteryId, status = 'ACTIVE') => ({ lottery, summary: { status, count: 1, message: '' } });
-const mount = () => render(<MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider>);
+const mount = () => render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 const flush = () => act(async () => { await vi.advanceTimersByTimeAsync(0); });
-beforeEach(() => { vi.useFakeTimers(); api.fetchMatrixStatus.mockReset().mockImplementation(async (lottery: LotteryId) => response(lottery)); });
+beforeEach(() => { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); vi.useFakeTimers(); api.fetchMatrixStatus.mockReset().mockImplementation(async (lottery: LotteryId) => response(lottery)); });
 afterEach(() => { vi.useRealTimers(); });
 
 test('讀取失敗不可顯示成沉寂；下一次更新可恢復', async () => {

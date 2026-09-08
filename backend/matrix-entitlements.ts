@@ -12,6 +12,7 @@ export type MemberContext = {
   plan: MatrixPlan;
   active: boolean;
   referralSuccessCount: number;
+  lineTrialStartedAt?: string | null;
 };
 
 export const anonymousMatrixMember: MemberContext = {
@@ -59,6 +60,10 @@ export function resolveMatrixEntitlements(
     || member.plan === 'lifetime'
   );
   const customizable = paid && member.plan !== 'trial';
+  const trialStart = Date.parse(member.lineTrialStartedAt ?? '');
+  const trialElapsed = now.getTime() - trialStart;
+  const hasRegistrationTrial = Boolean(member.authUserId && member.memberId)
+    && Number.isFinite(trialStart) && trialElapsed >= 0;
 
   return {
     canUseSeven: paid
@@ -67,8 +72,8 @@ export function resolveMatrixEntitlements(
       || (referrals >= 10 && isMondayOrThursday),
     canUseThirteen: paid,
     canUseFullRange: paid || referrals >= 50 || (referrals >= 30 && isTuesdayOrFriday),
-    canUseTianyan: quarterlyOrAbove,
-    canUseTiangong: yearlyOrLifetime,
+    canUseTianyan: quarterlyOrAbove || (hasRegistrationTrial && trialElapsed < 48 * 60 * 60 * 1000),
+    canUseTiangong: yearlyOrLifetime || (hasRegistrationTrial && trialElapsed < 24 * 60 * 60 * 1000),
     canViewFullStatus: paid,
     canCustomizeStatus: customizable,
     canUseCompositeCustomRoad: quarterlyOrAbove,

@@ -13,6 +13,7 @@ type MemberRow = {
   is_lifetime?: unknown;
   plan_expires_at?: unknown;
   referral_code?: unknown;
+  line_trial_started_at?: unknown;
   current_plan?: { name?: unknown } | null;
 };
 
@@ -81,7 +82,7 @@ export function createMemberAuth(
       const memberPath = new URL('/rest/v1/members', config.url);
       memberPath.searchParams.set(
         'select',
-        'id,auth_user_id,status,is_lifetime,plan_expires_at,referral_code,current_plan:plans!members_current_plan_id_fkey(name)',
+        'id,auth_user_id,status,is_lifetime,plan_expires_at,referral_code,line_trial_started_at,current_plan:plans!members_current_plan_id_fkey(name)',
       );
       memberPath.searchParams.set('auth_user_id', `eq.${authUserId}`);
       memberPath.searchParams.set('limit', '1');
@@ -119,6 +120,8 @@ export function createMemberAuth(
         plan,
         active: isActive(member, plan, now()),
         referralSuccessCount,
+        ...(typeof member.line_trial_started_at === 'string'
+          ? { lineTrialStartedAt: member.line_trial_started_at } : {}),
       };
     },
   };

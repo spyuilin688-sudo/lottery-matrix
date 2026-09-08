@@ -10,6 +10,7 @@ import Prototype from '../Prototype';
 import { AppDialogProvider } from '../dialog/AppDialog';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
+import { FIRST_VISIT_GUIDE_SEEN_KEY } from '../onboarding/FirstVisitGuide';
 
 vi.stubGlobal('ResizeObserver', class {
   observe() {}
@@ -18,6 +19,7 @@ vi.stubGlobal('ResizeObserver', class {
 });
 
 test('first navigation renders real feature pages immediately without waiting for a page import', () => {
+  window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
   render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 
   fireEvent.click(screen.getByRole('button', { name: '我的' }));
