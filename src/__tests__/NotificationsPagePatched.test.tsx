@@ -683,28 +683,46 @@ describe("NotificationsPagePatched", () => {
 });
 
 it("儲存失敗顯示提示，保留編輯並可立即重試", async () => {
-  memberApi.saveNotificationSettings.mockRejectedValue(new Error("offline"));
-  render(<NotificationsPagePatched onNavigate={vi.fn()} />);
-  await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalled());
-  fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
-  expect(await screen.findByText("通知設定尚未儲存，請重試")).toBeVisible();
-  const latest = memberApi.saveNotificationSettings.mock.calls.at(-1)![0];
-  memberApi.saveNotificationSettings.mockResolvedValue(latest);
-  fireEvent.click(screen.getByRole("button", { name: "重試儲存通知設定" }));
-  await waitFor(() => expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull());
-  expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(latest);
+  vi.useFakeTimers();
+  try {
+    memberApi.saveNotificationSettings.mockRejectedValue(new Error("offline"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole("button", { name: "全部關閉" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(25); });
+    expect(screen.getByText("通知設定尚未儲存，請重試")).toBeVisible();
+    const latest = memberApi.saveNotificationSettings.mock.calls.at(-1)![0];
+    memberApi.saveNotificationSettings.mockResolvedValue(latest);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "重試儲存通知設定" }));
+    });
+    expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull();
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(2);
+    expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(latest);
+  } finally {
+    cleanup();
+    vi.useRealTimers();
+  }
 });
 
 it("失敗後切回原設定仍確認儲存最新選擇，確認前保留提示", async () => {
-  memberApi.saveNotificationSettings.mockRejectedValueOnce(new Error("response lost"));
-  render(<NotificationsPagePatched onNavigate={vi.fn()} />);
-  await waitFor(() => expect(memberApi.fetchNotificationSettings).toHaveBeenCalled());
-  const toggle = screen.getByRole("button", { name: "關閉選號提醒" });
-  fireEvent.click(toggle);
-  await screen.findByText("通知設定尚未儲存，請重試");
-  fireEvent.click(screen.getByRole("button", { name: "開啟選號提醒" }));
-  fireEvent.click(screen.getByRole("button", { name: "重試儲存通知設定" }));
-  await waitFor(() => expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(2));
-  expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(storedSettings);
-  await waitFor(() => expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull());
+  vi.useFakeTimers();
+  try {
+    memberApi.saveNotificationSettings.mockRejectedValueOnce(new Error("response lost"));
+    render(<NotificationsPagePatched onNavigate={vi.fn()} />);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole("button", { name: "關閉選號提醒" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(25); });
+    expect(screen.getByText("通知設定尚未儲存，請重試")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "開啟選號提醒" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "重試儲存通知設定" }));
+    });
+    expect(memberApi.saveNotificationSettings).toHaveBeenCalledTimes(2);
+    expect(memberApi.saveNotificationSettings).toHaveBeenLastCalledWith(storedSettings);
+    expect(screen.queryByText("通知設定尚未儲存，請重試")).toBeNull();
+  } finally {
+    cleanup();
+    vi.useRealTimers();
+  }
 });
