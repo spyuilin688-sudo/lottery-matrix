@@ -27,13 +27,13 @@ function finalDeclaration(source, selector, property) {
   return value;
 }
 
-test("homepage status frame owns 16px inset, 1.5px vertical padding and card gaps", () => {
+test("homepage status frame owns 16px inset, 1.5px top padding and card gaps", () => {
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "width"), "calc(100% - 32px)");
-  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding-block"), "1.5px");
+  assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "padding-block-start"), "1.5px");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-section", "border"), "0");
   assert.equal(finalDeclaration(homeCss, ".home-screen .matrix-status-card-grid", "gap"), "1.5px");
   assert.match(homeCss, /--home-gap-draw-status:\s*clamp\(9px,\s*calc\(1\.15dvh\s*\+\s*1px\),\s*12px\);/);
-  assert.match(homeCss, /--home-gap-status-core:\s*clamp\(10px,\s*1\.35dvh,\s*13px\);/);
+  assert.match(homeCss, /--home-gap-status-core:\s*clamp\(9px,\s*1\.35dvh,\s*12px\);/);
 });
 
 test("homepage status logos are 80 percent larger and shift left 6px without a max-width lock", () => {
@@ -42,8 +42,8 @@ test("homepage status logos are 80 percent larger and shift left 6px without a m
   assert.notEqual(finalDeclaration(homeCss, ".home-screen .matrix-status-lottery-logo", "max-width"), "56px");
 });
 
-test("homepage logo is reduced by 8 percent and five features keep their current responsive gaps", () => {
-  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "87.584%");
+test("homepage logo is enlarged by 5 percent and five features keep their current responsive gaps", () => {
+  assert.equal(finalDeclaration(homeCss, ".home-screen .home-logo-image", "width"), "91.9632%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "width"), "100%");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "column-gap"), "var(--home-feature-gap)");
   assert.equal(finalDeclaration(homeCss, ".home-screen .home-shortcut-row", "padding-inline"), "var(--home-feature-inline)");

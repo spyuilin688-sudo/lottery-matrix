@@ -1,0 +1,30 @@
+name: Home logo and Core spacing checks
+on:
+  push:
+    branches: ['work/home-logo-core-*']
+permissions:
+  contents: read
+jobs:
+  home-logo-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Focused layout contracts
+        run: node --test tests/homepage-logo-layout.test.mjs tests/home-layout-contract.test.mjs tests/homepage-approved-optimization.test.mjs tests/home-nextdraw-spacing.test.mjs tests/homepage-density-and-guide-native-scroll.test.mjs tests/ui-visual-language-refinement.test.mjs tests/homepage-layout-request.test.mjs tests/homepage-status-layout.test.mjs
+      - name: Homepage computed styles
+        run: npx vitest run src/__tests__/homepage-layout-request.test.ts
+      - run: npx playwright install --with-deps chromium
+      - name: Measure responsive logo and actual card gap
+        run: npx playwright test tests/home-logo-core-responsive.spec.ts --workers=1 --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-logo-core-results
+          path: test-results/
+          retention-days: 7

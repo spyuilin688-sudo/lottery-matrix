@@ -29,5 +29,5 @@ test('homepage brand header keeps flex layout with the final responsive logo gap
 
   assert.match(css, /\.home-screen \.brand-header\s*\{[^}]*display:\s*flex;/s);
   assert.match(brandHeader, /padding-top:\s*clamp\(8px,\s*1dvh,\s*12px\);/);
-  assert.match(logo, /width:\s*87\.584%;/);
+  assert.match(logo, /width:\s*91\.9632%;/);
 });

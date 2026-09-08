@@ -20,9 +20,9 @@ function assertLastBlock(source, selector, pattern) {
   assert.match(body, pattern, `${selector} final rule missing ${pattern}`);
 }
 
-test('homepage brand header owns a bounded responsive top gap and logo is reduced by 8 percent', () => {
+test('homepage brand header owns a bounded responsive top gap and logo is enlarged by 5 percent', () => {
   assertLastBlock(css, '.home-screen .brand-header', /padding-top:\s*clamp\(8px,\s*1dvh,\s*12px\);/);
-  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*87\.584%;/);
+  assertLastBlock(css, '.home-screen .home-logo-image', /width:\s*91\.9632%;/);
 });
 
 test('homepage surfaces keep their independent responsive inline insets', () => {
