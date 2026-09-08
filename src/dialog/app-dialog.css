@@ -118,8 +118,47 @@
 }
 
 .app-dialog-button:focus-visible {
-  outline: 2px solid var(--lottery-white-1000);
-  outline-offset: 3px;
+  outline: 1px solid var(--dialog-accent-bright);
+  outline-offset: 2px;
+}
+
+.app-dialog-content[data-variant="registration-guide"] {
+  width: 268px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 8px;
+  padding: 12px;
+  text-align: left;
+}
+
+.app-dialog-content[data-variant="registration-guide"] .app-dialog-icon {
+  width: 28px;
+  border-width: 1px;
+  box-shadow: none;
+  font-size: 18px;
+}
+
+.app-dialog-content[data-variant="registration-guide"] .app-dialog-title {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.app-dialog-content[data-variant="registration-guide"] .app-dialog-description {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--lottery-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.app-dialog-content[data-variant="registration-guide"] .app-dialog-actions {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.app-dialog-content[data-variant="registration-guide"] .app-dialog-button {
+  font-size: 14px;
 }
 
 @media (max-width: 350px) {

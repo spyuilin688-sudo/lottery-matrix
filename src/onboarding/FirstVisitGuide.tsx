@@ -28,6 +28,7 @@ export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onN
       try { window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1'); } catch { /* Optional persistence. */ }
 
       void confirm({
+        variant: 'registration-guide',
         title: '免費註冊會員',
         description: '點擊下方「我的」，再點擊「LINE 登入」即可免費註冊會員。新註冊 LINE 會員可使用 Pro 演算法：天衍 2 天、天工 1 天。點擊首頁下方的 Matrix Core，即可進入探索。',
         confirmLabel: '免費註冊',
