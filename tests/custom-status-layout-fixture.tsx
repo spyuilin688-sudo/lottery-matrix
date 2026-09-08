@@ -1,6 +1,7 @@
 // Browser regression fixture: real page and styles; RPCs are intercepted by the spec.
+import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MatrixCustomStatusPage } from '../src/features/MatrixStatusPages';
+import { MatrixCustomStatusPage, MatrixStatusPage } from '../src/features/MatrixStatusPages';
 import { AppDialogProvider } from '../src/dialog/AppDialog';
 import { MobileDeviceProvider } from '../src/mobile/Device';
 import { KeyboardProvider } from '../src/mobile/Keyboard';
@@ -23,10 +24,10 @@ import "../src/notification-visual-refinement.css";
 import "../src/number-reference-visual-refinement.css";
 import "../src/line-pwa-return-fallback.css";
 
-// This fixture represents an authenticated member. Production session checks
-// remain active; the spec intercepts every custom-settings RPC response.
+// Test-only sessions; production session checks and RPC handling stay active.
+const fixtureParams = new URLSearchParams(window.location.search);
 getSupabaseClient().auth.getSession = async () => ({
-  data: { session: {
+  data: { session: fixtureParams.has('guest') ? null : {
     access_token: 'custom-status-layout-fixture', refresh_token: 'fixture-only',
     token_type: 'bearer', expires_in: 3600,
     user: { id: '00000000-0000-4000-8000-000000000446', aud: 'authenticated',
@@ -35,10 +36,17 @@ getSupabaseClient().auth.getSession = async () => ({
   error: null,
 });
 
+function FixturePage() {
+  const [screen, setScreen] = useState(fixtureParams.has('entry') ? 'status' : 'status-settings');
+  return screen === 'status-settings'
+    ? <MatrixCustomStatusPage onNavigate={setScreen} />
+    : <MatrixStatusPage onNavigate={setScreen} />;
+}
+
 createRoot(document.getElementById('root')!).render(
   <AppDialogProvider><div className="app-mobile-canvas">
     <MobileDeviceProvider><KeyboardProvider><MobileScroll className="app-screen">
-      <MatrixCustomStatusPage onNavigate={() => {}} />
+      <FixturePage />
     </MobileScroll></KeyboardProvider></MobileDeviceProvider>
   </div></AppDialogProvider>,
 );

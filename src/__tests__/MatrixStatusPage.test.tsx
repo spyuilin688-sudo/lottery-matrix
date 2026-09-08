@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as renderWithoutDialog, screen, waitFor, within } from '@testing-library/react';
 // @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
 import { readFileSync } from 'node:fs';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixStatusPage } from '../FeaturePages';
+import { AppDialogProvider } from '../dialog/AppDialog';
+const render = (ui: Parameters<typeof renderWithoutDialog>[0]) => renderWithoutDialog(<AppDialogProvider>{ui}</AppDialogProvider>);
 
 vi.mock('../Prototype', () => ({
   LotterySwitcher: ({ selected, onChange, className }: {
@@ -49,6 +51,7 @@ vi.mock('../matrix-algorithm-api', () => algorithmApi);
 
 beforeEach(() => {
   cleanup();
+  statusApi.listCustomStatusSettings.mockReset().mockResolvedValue({items:[],entitlements:{canCustomizeStatus:true,canUseCompositeCustomRoad:false}});
   statusApi.fetchMatrixStatus.mockReset().mockResolvedValue({
     kind: 'status', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1:status',
     summary: { status: 'RESONANCE', count: 2, message: '具備強烈共振效應' },
@@ -185,7 +188,7 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
   fireEvent.click(trigger, { detail: 1 });
   expect(navigate).not.toHaveBeenCalled();
   fireEvent.click(trigger, { detail: 1 });
-  expect(navigate).toHaveBeenCalledWith('status-settings');
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('status-settings'));
 });
 
 test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層', async () => {
@@ -212,4 +215,73 @@ test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層'
 
   unmount();
   mobilePage.remove();
+});
+
+for (const [code, message] of [
+  ['AUTH_REQUIRED', '請先登入後再使用自訂觸發條件'],
+  ['FORBIDDEN', '目前 Matrix Pro 方案不符合自訂觸發條件的使用權限'],
+] as const) {
+  test(`自訂入口遇到 ${code} 留在狀態頁並跳出提醒`, async () => {
+    statusApi.listCustomStatusSettings.mockRejectedValueOnce(Object.assign(new Error(code), {code}));
+    const navigate = vi.fn();
+    render(<MatrixStatusPage onNavigate={navigate} />);
+    const trigger = screen.getByRole('button', {name:'自訂觸發條件，連續點擊兩下開啟'});
+    trigger.focus();
+    fireEvent.click(trigger, {detail:1}); fireEvent.click(trigger, {detail:1});
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(message);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(document.querySelector('.custom-status-access-notice')).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', {name:'知道了'}));
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(navigate).not.toHaveBeenCalled();
+  });
+}
+
+test('自訂入口依伺服器權限攔截，不因已登入就開放編輯', async () => {
+  statusApi.listCustomStatusSettings.mockResolvedValueOnce({items:[],entitlements:{canCustomizeStatus:false}});
+  const navigate=vi.fn(); render(<MatrixStatusPage onNavigate={navigate}/>);
+  fireEvent.click(screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'}));
+  expect(await screen.findByRole('dialog')).toHaveTextContent('目前 Matrix Pro 方案不符合自訂觸發條件的使用權限');
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+test('自訂入口檢查完成前不換頁、不重複請求，通過後才進入', async () => {
+  let finish!: (value:unknown)=>void;
+  statusApi.listCustomStatusSettings.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
+  const navigate=vi.fn(); render(<MatrixStatusPage onNavigate={navigate}/>);
+  const trigger=screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
+  fireEvent.click(trigger); fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-busy','true');
+  expect(trigger).toHaveAttribute('aria-disabled','true');
+  expect(trigger).not.toBeDisabled();
+  expect(navigate).not.toHaveBeenCalled();
+  expect(statusApi.listCustomStatusSettings).toHaveBeenCalledTimes(1);
+  await act(async()=>finish({items:[],entitlements:{canCustomizeStatus:true}}));
+  expect(navigate).toHaveBeenCalledTimes(1);
+  expect(navigate).toHaveBeenCalledWith('status-settings');
+});
+
+test('離開狀態頁後遲到的入口檢查結果不再換頁', async () => {
+  let finish!: (value:unknown)=>void;
+  statusApi.listCustomStatusSettings.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
+  const navigate=vi.fn(); const {unmount}=render(<MatrixStatusPage onNavigate={navigate}/>);
+  fireEvent.click(screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'}));
+  unmount();
+  await act(async()=>finish({items:[],entitlements:{canCustomizeStatus:true}}));
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+test('入口讀取失敗留在原頁，關閉提醒後可以重試', async () => {
+  statusApi.listCustomStatusSettings.mockRejectedValueOnce(new Error('offline'));
+  const navigate=vi.fn(); render(<MatrixStatusPage onNavigate={navigate}/>);
+  fireEvent.click(screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'}));
+  const dialog=await screen.findByRole('dialog');
+  expect(dialog).toHaveTextContent('自訂設定讀取失敗');
+  expect(navigate).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole('button',{name:'知道了'}));
+  const trigger=screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
+  await waitFor(()=>expect(trigger).not.toBeDisabled());
+  fireEvent.click(trigger);
+  await waitFor(()=>expect(navigate).toHaveBeenCalledWith('status-settings'));
 });
