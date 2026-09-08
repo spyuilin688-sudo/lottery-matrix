@@ -13,6 +13,11 @@
   margin-block-start: var(--home-gap-status-core);
 }
 
+/* Approved five-feature variant: brighten the existing 1px gold frame. */
+.home-screen .home-shortcut {
+  --home-frame-color: color-mix(in srgb, var(--lottery-gold-500) 85%, transparent);
+}
+
 .lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
 .matrix-custom-status-screen .custom-status-tabs > button,
 .home-screen .latest-draw-card,
