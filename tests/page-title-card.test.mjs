@@ -45,19 +45,15 @@ test("integrated title artwork uses current sixteen-pixel side margins and propo
   assert.doesNotMatch(brandHeaderStyles, /^\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/ms);
 });
 
-test("Matrix explore title owns Tianyan and Tiangong controls", () => {
+test("Matrix settings heading owns the other two page controls", () => {
   const start = featurePages.indexOf("function MatrixPageSwitcher");
   const end = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", start);
   const switcher = featurePages.slice(start, end);
-  assert.match(featurePages, /\{ screen: "explore", label: "Matrix 探索", image: "[^"]*Matrix探索-icon\.png" \}/);
-  assert.match(featurePages, /\{ screen: "tianyan", label: "Matrix 天衍", image: "[^"]*Matrix天衍-icon\.png" \}/);
-  assert.match(featurePages, /\{ screen: "tiangong", label: "Matrix 天工", image: "[^"]*Matrix天工-icon\.png" \}/);
-  assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
-  assert.match(featurePages, /headerAction=\{<MatrixPageSwitcher current=\{title === "Matrix 天衍" \? "tianyan" : "explore"\}/);
-  assert.match(styles, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
-  assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
-  assert.doesNotMatch(exploreSpacingStyles, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher\s*\{[^}]*(?:gap:\s*4px|width:\s*auto|height:\s*auto)/s);
-  assert.doesNotMatch(styles, /\.matrix-title-banner-actions \.matrix-page-switcher button\s*\{[^}]*opacity:\s*0;/s);
+  for (const name of ["探索", "天衍", "天工"]) assert.ok(switcher.length > 0 && featurePages.includes(`Matrix${name}-icon.png`));
+  assert.match(switcher, /item\.screen !== current/);
+  assert.match(featurePages, /className="matrix-settings-heading">\s*<SectionTitle>探索設定<\/SectionTitle>\s*<MatrixPageSwitcher/s);
+  assert.doesNotMatch(featurePages, /headerAction=\{<MatrixPageSwitcher/);
+  assert.match(styles, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
 });
 
 test("status and profile flows use supplied artwork while status settings stays in bottom navigation", () => {

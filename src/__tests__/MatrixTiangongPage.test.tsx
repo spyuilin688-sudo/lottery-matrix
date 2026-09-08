@@ -264,3 +264,48 @@ test('同碼依號碼、預測位置、間距升冪排列', async () => {
   fireEvent.click(screen.getByRole('button',{name:'同碼'}));
   expect([...document.querySelectorAll('.tiangong-result-row')].map(x=>x.getAttribute('aria-label'))).toEqual(['展開版路 c','展開版路 d','展開版路 b','展開版路 e','展開版路 a']);
 });
+
+test('天工每頁15筆，篩選與重新探索都回到第一頁', async () => {
+  const items = Array.from({ length: 16 }, (_, i) => ({ ...envelope.items[0], id: `tg-page-${i + 1}`, predictionNumber: i === 15 ? '03' : '12' }));
+  matrixApi.fetchTiangongList.mockResolvedValue({ ...envelope, total: 16, items });
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  await screen.findByRole('button', { name: '展開版路 tg-page-1' });
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
+  expect(screen.getByRole('button', { name: '天工結果上一頁' }).hasAttribute('disabled')).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(1);
+  expect(screen.getByRole('button', { name: '展開版路 tg-page-16' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '天工結果下一頁' }).hasAttribute('disabled')).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，15次' }));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
+  expect(screen.queryByRole('navigation', { name: '天工結果分頁' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，15次' }));
+  fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
+  fireEvent.click(screen.getByRole('button', { name: '同碼' }));
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
+  expect(screen.queryByRole('navigation', { name: '天工結果分頁' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '同碼' }));
+  fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  await screen.findByRole('button', { name: '展開版路 tg-page-1' });
+  expect(document.querySelectorAll('.tiangong-result-row')).toHaveLength(15);
+  expect(screen.getByRole('button', { name: '天工結果上一頁' }).hasAttribute('disabled')).toBe(true);
+});
+
+test('點擊天工號碼小卡後，完整結果先依預測位置再依間距排序才分頁', async () => {
+  const positions = [7, 3, 1, 2, 6, 4];
+  const items = positions.flatMap(predictedPosition => [9, 2, 5].map(interval => ({
+    ...envelope.items[0], id: `position-${predictedPosition}-gap-${interval}`, predictedPosition, interval,
+  })));
+  matrixApi.fetchTiangongList.mockResolvedValue({ ...envelope, total: items.length, items });
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  await screen.findByRole('button', { name: '篩選預測號碼 12，18次' });
+  fireEvent.click(screen.getByRole('button', { name: '篩選預測號碼 12，18次' }));
+  const labels = () => [...document.querySelectorAll('.tiangong-result-row')].map(row => row.getAttribute('aria-label'));
+  expect(labels()).toEqual([1, 2, 3, 4, 6].flatMap(position => [2, 5, 9].map(gap => `展開版路 position-${position}-gap-${gap}`)));
+  fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
+  expect(labels()).toEqual([2, 5, 9].map(gap => `展開版路 position-7-gap-${gap}`));
+  expect(screen.getByRole('button', { name: '篩選預測號碼 12，18次' }).getAttribute('aria-pressed')).toBe('true');
+});

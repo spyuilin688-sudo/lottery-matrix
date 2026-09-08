@@ -73,14 +73,6 @@ test("Matrix Explore restores the three original date selections and keeps them 
   assert.match(featureSource, /fetchTianyanList\(\{\s*lottery,\s*exploreDateOffset,\s*selectedStreaks: nextFilters,\s*sameCode: nextSameCode,\s*\.\.\.\(nextPredictionNumber \? \{ predictionNumber: nextPredictionNumber \} : \{\}\),\s*\}\)/s);
   assert.match(featureSource, /exploreDateOffset,/);
 
-  const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher");
-  assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
-  assert.match(switcher, /opacity:\s*\.96/);
-  const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher button");
-  assert.match(switcherButton, /border:\s*0/);
-  assert.match(switcherButton, /clip-path:\s*polygon/);
-  assert.match(css, /\.matrix-explore-main-screen \.matrix-title-banner-actions \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
-
   assert.match(css, /\.matrix-explore-main-screen \.history-panel-order\s*\{[^}]*display:\s*inline;[^}]*white-space:\s*nowrap;/s);
 
   const advanced = ruleBlock(css, "\\.matrix-explore-main-screen \\.advanced-row");
@@ -97,4 +89,15 @@ test("Matrix Explore restores the three original date selections and keeps them 
   assert.doesNotMatch(action, /background\s*:/);
 
   assert.match(featureCss, /\.branded-explore-action\s*\{[\s\S]*?radial-gradient/s);
+});
+
+
+test("Matrix settings switcher retains its existing artwork scale", () => {
+  const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher");
+  assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
+  assert.match(switcher, /opacity:\s*\.96/);
+  const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher button");
+  assert.match(switcherButton, /border:\s*0/);
+  assert.match(switcherButton, /clip-path:\s*polygon/);
+  assert.match(css, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
 });

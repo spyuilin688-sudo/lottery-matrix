@@ -38,19 +38,13 @@ test("single-number marking remains independent from the selected row", async ()
   assert.doesNotMatch(body, /setMarkedRows/);
 });
 
-test("Matrix switcher exposes all three pages in one vertical scroll-snap control", async () => {
-  const [source, css] = await Promise.all([
-    readFeaturePagesSource(),
-    read("src/feature-pages.css"),
-  ]);
+test("Matrix switcher exposes the other two pages as horizontal click targets", async () => {
+  const source = await readFeaturePagesSource();
+  const css = await read("src/feature-pages.css");
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
-  assert.match(switcher, /MATRIX_LOOP_ITEMS\.map/);
-  assert.match(switcher, /onScroll/);
-  assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);
-  assert.match(source, /current="tiangong"/);
-  assert.match(css, /\.matrix-page-switcher\s*\{[\s\S]*?width:\s*2\.34rem;[\s\S]*?flex-direction:\s*column/);
-  assert.match(css, /scrollbar-width:\s*none/);
-  assert.match(source, /const MATRIX_LOOP_ITEMS = \[MATRIX_PAGE_ITEMS\[2\], \.\.\.MATRIX_PAGE_ITEMS, MATRIX_PAGE_ITEMS\[0\]\]/);
-  assert.match(css, /scroll-snap-type:\s*y mandatory/);
-  assert.match(css, /touch-action:\s*pan-y/);
+  assert.match(switcher, /MATRIX_PAGE_ITEMS\.filter\(\(item\) => item\.screen !== current\)/);
+  assert.match(switcher, /onClick=\{\(\) => onNavigate\(item\.screen\)\}/);
+  assert.doesNotMatch(switcher, /onScroll|scrollTo|MATRIX_LOOP_ITEMS/);
+  assert.match(css, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
+  assert.match(css, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
 });

@@ -8,13 +8,11 @@ const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url
 const reference = readFileSync(new URL("../src/number-reference-visual-refinement.css", import.meta.url), "utf8");
 const home = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
 
-test("Matrix 三圖示放大 30%、隱藏捲動條並以頭尾複本循環", () => {
-  assert.match(pages, /const MATRIX_LOOP_ITEMS = \[MATRIX_PAGE_ITEMS\[2\], \.\.\.MATRIX_PAGE_ITEMS, MATRIX_PAGE_ITEMS\[0\]\]/);
-  assert.match(pages, /data-loop-clone/);
-  assert.match(pages, /rawIndex === 0/);
-  assert.match(pages, /rawIndex === MATRIX_LOOP_ITEMS\.length - 1/);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*scrollbar-width:\s*none;/s);
-  assert.match(feature, /\.matrix-page-switcher::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
+test("Matrix 切換器只顯示另外兩頁，移除循環複本與捲動切換", () => {
+  const switcher = pages.slice(pages.indexOf("function MatrixPageSwitcher"), pages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
+  assert.match(switcher, /item\.screen !== current/);
+  assert.doesNotMatch(switcher, /MATRIX_LOOP_ITEMS|data-loop-clone|onScroll|scrollTo/);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
 });
 
 test("號碼對照單整列與單格標記彼此獨立且分隔線清楚", () => {

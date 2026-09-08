@@ -1,7 +1,8 @@
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 import { type LotteryId } from "../Prototype";
 import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
 import { bootstrapMember, fetchMemberProfile } from "../member-api";
@@ -191,7 +192,7 @@ export function MatrixExplorePage({
     ? exploreResponse?.duplicateStats ?? []
     : tianyanResponse?.duplicateStats ?? [];
 
-  const resultsPerPage = 15;
+  const resultsPerPage = MATRIX_RESULTS_PER_PAGE;
   const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
   const paginatedResults = visibleResults.slice(
     (resultPage - 1) * resultsPerPage,
@@ -379,10 +380,12 @@ export function MatrixExplorePage({
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
-      headerAction={<MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />}
     >
       <section className="panel explore-settings">
-        <SectionTitle>探索設定</SectionTitle>
+        <header className="matrix-settings-heading">
+          <SectionTitle>探索設定</SectionTitle>
+          <MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />
+        </header>
         <div className="setting-grid">
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span>
             <div className="select-box native-select">
@@ -647,31 +650,10 @@ export function MatrixExplorePage({
               ))}
               {hasCompletedResults && visibleResults.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
               {visibleResults.length > 0 && resultPageCount > 1 ? (
-                <nav className="history-pagination explore-results-pagination" aria-label="探索結果分頁">
-                  <button
-                    type="button"
-                    aria-label="探索結果上一頁"
-                    disabled={resultPage === 1}
-                    onClick={() => {
-                      setExpandedRoad(null);
-                      setResultPage((current) => Math.max(1, current - 1));
-                    }}
-                  >
-                    <ChevronLeftIcon aria-hidden="true" />
-                  </button>
-                  <span>{resultPage} / {resultPageCount}</span>
-                  <button
-                    type="button"
-                    aria-label="探索結果下一頁"
-                    disabled={resultPage === resultPageCount}
-                    onClick={() => {
-                      setExpandedRoad(null);
-                      setResultPage((current) => Math.min(resultPageCount, current + 1));
-                    }}
-                  >
-                    <ChevronRightIcon aria-hidden="true" />
-                  </button>
-                </nav>
+                <MatrixResultsPagination page={resultPage} pageCount={resultPageCount} onPageChange={(page) => {
+                  setExpandedRoad(null);
+                  setResultPage(page);
+                }} />
               ) : null}
             </div>
           </section>
