@@ -18,7 +18,14 @@ test('上方保留四狀態與彩種，下方以可編輯的一碼兩碼模板�
  await openPage();
  expect(screen.getByTestId('lottery-switcher').classList.contains('lottery-switcher--home-style')).toBe(true);
  expect(within(screen.getByRole('tablist',{name:'選擇狀態'})).getAllByRole('tab')).toHaveLength(4);
- expect(screen.getByText('13期')).toBeTruthy();expect(screen.getByText('完整範圍')).toBeTruthy();
+ const summary=screen.getByRole('region',{name:'探索條件'});
+ expect(summary.textContent).toBe('探索期數：十三期|探索範圍：完整範圍');
+ expect(within(summary).queryByRole('heading')).toBeNull();
+ expect(screen.getByTestId('lottery-switcher').nextElementSibling).toBe(summary);
+ expect(summary.nextElementSibling).toBe(screen.getByRole('tablist',{name:'選擇狀態'}));
+ const mode=screen.getByText('使用預設條件');
+ expect(mode.getAttribute('role')).toBe('status');
+ expect(mode.parentElement?.contains(screen.getByRole('heading',{name:'一碼條件'}))).toBe(true);
  expect(field('連準起點')).toHaveProperty('value','5');expect(field('連準終點')).toHaveProperty('value','6');
  expect(field('最少')).toHaveProperty('value','2');expect(field('最多')).toHaveProperty('value','4');
  expect(within(row()).getByRole('checkbox',{name:'加減'})).toHaveProperty('checked',true);

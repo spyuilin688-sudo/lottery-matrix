@@ -1868,64 +1868,54 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 
 /* Matrix custom status settings. Tab geometry is owned by homepage/lottery-switcher.css. */
 .matrix-custom-status-screen .custom-status-explore {
-  min-width: 0;
-  margin: 0 0 10px;
-  padding: 10px;
-  border: 1px solid var(--lottery-card-outline);
-  border-radius: 8px;
-  background: var(--lottery-neutral-900);
+  display: grid; min-width: 0; grid-template-columns: minmax(0,1fr) 12px minmax(0,1fr);
+  align-items: center; margin: 0; padding: 6px 0;
+  color: var(--lottery-text-secondary); font-size: 12px; line-height: 1.5; text-align: center;
 }
-.matrix-custom-status-screen .custom-status-explore > header {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px;
-  margin-bottom: 8px;
+.matrix-custom-status-screen .custom-status-explore > span { min-width: 0; white-space: nowrap; }
+.matrix-custom-status-screen .custom-status-explore strong { color: var(--lottery-text-primary); font-weight: 600; }
+.matrix-custom-status-screen .custom-status-explore-divider { color: var(--lottery-gold-500); }
+.matrix-custom-status-screen .custom-status-section-heading {
+  display: flex; min-height: 20px; margin-bottom: 4px; align-items: center; justify-content: space-between; gap: 8px;
 }
-.matrix-custom-status-screen .custom-status-explore h2,
 .matrix-custom-status-screen .custom-status-section-title {
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--lottery-gold-300);
   font-size: 13px;
   line-height: 1.4;
 }
-.matrix-custom-status-screen .custom-status-explore h2 { margin: 0; }
-.matrix-custom-status-screen .custom-status-explore dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0; gap: 10px; }
-.matrix-custom-status-screen .custom-status-explore dl > div {
-  display: grid; min-width: 0; gap: 3px; font-size: 12px; line-height: 1.4;
-}
-.matrix-custom-status-screen .custom-status-explore dl > div + div { padding-left: 10px; border-left: 1px solid var(--lottery-card-outline); }
-.matrix-custom-status-screen .custom-status-explore dt { color: var(--lottery-text-secondary); }
-.matrix-custom-status-screen .custom-status-explore dd { margin: 0; color: var(--lottery-text-primary); font-size: 13px; font-weight: 600; }
 .matrix-custom-status-screen .custom-status-editor { min-width: 0; }
 .matrix-custom-status-screen .custom-status-default-mode {
   margin: 0; color: var(--lottery-gold-500); font-size: 11px; line-height: 1.4;
 }
-.matrix-custom-status-screen .custom-status-hit-section { min-width: 0; margin-bottom: 12px; }
+.matrix-custom-status-screen .custom-status-hit-section { min-width: 0; margin-bottom: 10px; }
 .matrix-custom-status-screen .custom-status-hit-section + .custom-status-hit-section {
-  padding-top: 4px;
+  padding-top: 0;
 }
-.matrix-custom-status-screen .custom-status-groups { display: grid; min-width: 0; gap: 8px; }
+.matrix-custom-status-screen .custom-status-groups { display: grid; min-width: 0; gap: 4px; }
 .matrix-custom-status-screen .custom-status-group {
-  min-width: 0; padding: 10px; border: 1px solid var(--lottery-card-outline); border-radius: 8px; background: var(--lottery-neutral-900);
+  min-width: 0; padding: 8px; border: 1px solid var(--lottery-card-outline); border-radius: 8px; background: var(--lottery-neutral-900);
 }
 .matrix-custom-status-screen .custom-status-group > header {
-  display: flex; min-height: 28px; margin-bottom: 8px; padding-bottom: 6px;
+  display: flex; min-height: 24px; margin-bottom: 4px; padding-bottom: 4px;
   align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--lottery-card-outline);
 }
 .matrix-custom-status-screen .custom-status-group h3 { margin: 0; color: var(--lottery-gold-300); font-size: 12px; }
 .matrix-custom-status-screen .custom-status-condition-row {
-  display: grid; min-width: 0; margin: 0; padding: 0; border: 0; gap: 6px;
+  display: grid; min-width: 0; margin: 0; padding: 0; border: 0; gap: 4px;
 }
 .matrix-custom-status-screen .custom-status-condition-row legend {
-  padding: 0 0 8px; color: #aaa7a2; font-size: 11px;
+  padding: 0 0 4px; color: var(--lottery-text-secondary); font-size: 11px;
 }
 .matrix-custom-status-screen .custom-status-field {
-  display: grid; min-width: 0; grid-template-columns: 4rem minmax(0,1fr); gap: 8px; align-items: center;
+  display: grid; min-width: 0; grid-template-columns: 4rem minmax(0,1fr); gap: 6px; align-items: center;
 }
 .matrix-custom-status-screen .custom-status-field-label {
   color: var(--lottery-text-secondary); font-size: 12px; line-height: 1.4;
 }
 .matrix-custom-status-screen .custom-status-condition-row select,
 .matrix-custom-status-screen .custom-status-condition-row input[type="number"] {
-  box-sizing: border-box; width: 100%; min-width: 0; height: 32px; padding: 0 6px;
+  box-sizing: border-box; width: 100%; min-width: 0; height: 28px; padding: 0 6px;
   border: 1px solid var(--lottery-border-default); border-radius: 6px;
   color: var(--lottery-text-primary); background: var(--lottery-neutral-950); color-scheme: dark;
   font: inherit; font-size: 12px; line-height: 1.4;
@@ -1947,7 +1937,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   display: grid; min-width: 0; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px;
 }
 .matrix-custom-status-screen .custom-status-road-options label {
-  display: flex; min-width: 0; min-height: 32px; padding: 0 2px;
+  display: flex; min-width: 0; min-height: 28px; padding: 0 2px;
   align-items: center; justify-content: center; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .matrix-custom-status-screen .custom-status-road-options input {
@@ -1967,22 +1957,22 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-custom-status-screen .custom-status-or::after,
 .matrix-custom-status-screen .custom-status-and::before,
 .matrix-custom-status-screen .custom-status-and::after { content: ""; height: 1px; flex: 1; background: rgba(196,145,69,.25); }
-.matrix-custom-status-screen .custom-status-and { margin: 12px 0; }
+.matrix-custom-status-screen .custom-status-and { margin: 6px 0; }
 .matrix-custom-status-screen .custom-status-remove,
 .matrix-custom-status-screen .custom-status-remove-row {
-  display: inline-flex; min-height: 28px; align-items: center; justify-content: center; gap: 4px;
-  padding: 4px 6px; border: 1px solid transparent; border-radius: 5px; color: #aaa7a2; background: transparent; font-size: 11px;
+  display: inline-flex; min-height: 24px; align-items: center; justify-content: center; gap: 4px;
+  padding: 2px 4px; border: 1px solid transparent; border-radius: 5px; color: var(--lottery-text-secondary); background: transparent; font-size: 11px;
 }
-.matrix-custom-status-screen .custom-status-remove { min-width: 28px; }
+.matrix-custom-status-screen .custom-status-remove { min-width: 24px; }
 .matrix-custom-status-screen .custom-status-remove-row { justify-self: end; }
 .matrix-custom-status-screen .custom-status-add-button {
-  display: inline-flex; width: 100%; min-height: 32px; padding: 5px 6px; align-items: center; justify-content: center; gap: 4px;
+  display: inline-flex; width: 100%; min-height: 28px; padding: 3px 6px; align-items: center; justify-content: center; gap: 4px;
   appearance: none; border: 1px solid rgba(196,145,69,.55); border-radius: 6px;
   background: #030a0f; color: var(--lottery-gold-500); font-size: 11px;
 }
-.matrix-custom-status-screen .custom-status-add-row { margin-top: 8px; border-style: dashed; background: transparent; }
-.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: 8px; display: grid; padding: 8px 0; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(2,7,11,.92); }
-.matrix-custom-status-screen .custom-status-actions button { min-height: 42px; border: 1px solid #c69b42; border-radius: 7px; color: #efcb74; background: #050c11; font-size: 11px; font-weight: 700; }
+.matrix-custom-status-screen .custom-status-add-row { margin-top: 6px; min-height: 26px; border-color: transparent; background: transparent; }
+.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: 8px; display: grid; padding: 6px 0; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(2,7,11,.92); }
+.matrix-custom-status-screen .custom-status-actions button { min-height: 34px; border: 1px solid #c69b42; border-radius: 7px; color: #efcb74; background: #050c11; font-size: 11px; font-weight: 700; }
 .matrix-custom-status-screen .custom-status-actions button:last-child { color: #17130b; background: linear-gradient(135deg,#e6b94d,#f4d77f); }
 .matrix-custom-status-screen .custom-status-message { color: #f0c86c; text-align: center; font-size: 11px; }
 .matrix-custom-status-screen .custom-status-editor button:not(:disabled),
@@ -1996,10 +1986,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-custom-status-screen .custom-status-editor :is(button,input,select):disabled { opacity: .55; cursor: default; }
 .matrix-custom-status-screen .custom-status-road-options input:disabled { opacity: 0; }
 .matrix-custom-status-screen .custom-status-editor [aria-invalid="true"] { border-color: #efb064; outline: 1px solid #efb064; }
-@media (max-width: 340px) {
-  .matrix-custom-status-screen .custom-status-field { grid-template-columns: 4rem minmax(0,1fr); gap: 6px; }
-  .matrix-custom-status-screen .custom-status-group { padding: 8px; }
-}
 .matrix-guide-screen .guide-intro { min-height: 82px; }
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
 

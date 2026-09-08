@@ -6,10 +6,10 @@ const streakLabel = (n: number) => "準" + n + "進" + (n + 1);
 type Props = {
   hitType: "one" | "two"; groups: CustomConditionGroup[];
   setGroups: Dispatch<SetStateAction<CustomConditionGroup[]>>;
-  compositeEnabled: boolean; disabled: boolean; errorPath?: string;
+  compositeEnabled: boolean; disabled: boolean; errorPath?: string; modeLabel?: string;
 };
 
-export function CustomConditionSection({ hitType, groups, setGroups, compositeEnabled, disabled, errorPath }: Props) {
+export function CustomConditionSection({ hitType, groups, setGroups, compositeEnabled, disabled, errorPath, modeLabel }: Props) {
   const title = hitType === "one" ? "一碼條件" : "兩碼條件";
   const root = hitType === "one" ? "oneCodeGroups" : "twoCodeGroups";
   const streaks = hitType === "one" ? oneCodeStreaks : twoCodeStreaks;
@@ -23,7 +23,10 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
     "aria-describedby": errorPath === path ? "custom-status-error" : undefined,
   });
   return <section className="custom-status-hit-section" aria-label={title}>
-    <h2 className="custom-status-section-title">{title}</h2>
+    <header className="custom-status-section-heading">
+      <h2 className="custom-status-section-title">{title}</h2>
+      {modeLabel ? <p className="custom-status-default-mode" role="status">{modeLabel}</p> : null}
+    </header>
     <div className="custom-status-groups">
       {groups.map((group, groupIndex) => <Fragment key={group.id}>
         {groupIndex > 0 ? <p className="custom-status-or">或</p> : null}
