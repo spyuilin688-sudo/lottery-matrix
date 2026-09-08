@@ -11,6 +11,7 @@ export type AppDialogOptions = {
   cancelLabel?: string;
   tone?: AppDialogTone;
   icon?: "logout";
+  variant?: "registration-guide";
 };
 
 type DialogRequest = AppDialogOptions & {
@@ -105,6 +106,7 @@ export function AppDialogProvider({ children }: { children: ReactNode }) {
             <Dialog.Content
               className="app-dialog-content"
               data-tone={request.tone ?? "warning"}
+              data-variant={request.variant}
             >
               <div className="app-dialog-icon" aria-hidden="true">
                 {request.icon === "logout"

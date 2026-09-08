@@ -145,6 +145,8 @@ Matrix 探索、天衍與狀態頁的驗證過程，依鎖定條件整組交替�
 
 ### Forms and overlays
 
+2026-09-08 依使用者截圖縮減註冊引導與自訂條件介面：註冊引導使用共用 AppDialog 的 `registration-guide` 變體，寬 268px、28px 圖示與 15px 標題同列、12px 靠左正文；按鈕保留 44px 觸控高度。共用彈窗焦點使用該語意色的 1px 細框，取代白色粗框。自訂條件的探索期數與範圍並排，預設／自訂狀態與標題同列；版路複選沿用 `.segmented-static` 金色選取樣式，原生 checkbox 覆蓋整格且保留鍵盤操作。欄位高 32px、列距 6px；範圍端點直接並排，重複摘要與端點標籤僅保留供輔助技術讀取。原有條件、文案、儲存與重置流程不變。
+
 2026-09-08 自訂觸發條件：標題、彩種列與四狀態列保留原樣；下方採探索條件、一碼條件、兩碼條件。每個預設規則為獨立8px圓角細金框群組卡，沿用深藍／金色；欄位以標籤與輸入兩欄排列，連準與同碼範圍的兩個端點並排，窄螢幕使用minmax(0,1fr)收縮。卡內「＋ 同時符合」、卡間「或」標示關係。src/feature-pages.css的custom-status選擇器擁有樣式，不改全域token與上方三列。
 
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。

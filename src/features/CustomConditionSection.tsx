@@ -56,8 +56,8 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
                     {...validity(path + ".roadTypes")}>
                     {sets.map((set, setIndex) => <Fragment key={setIndex}>
                       {setIndex > 0 ? <span className="custom-status-road-or">或</span> : null}
-                      <div className="custom-status-road-options" role="group" aria-label={"版路組合 " + (setIndex + 1)}>
-                        {ROAD_TYPES.map(road => <label key={road}>
+                      <div className="segmented custom-status-road-options" role="group" aria-label={"版路組合 " + (setIndex + 1)}>
+                        {ROAD_TYPES.map(road => <label className="segmented-static" data-selected={set.includes(road)} key={road}>
                           <input type="checkbox" checked={set.includes(road)}
                             disabled={disabled || (road === "複合" && !compositeEnabled && !set.includes(road))}
                             onChange={event => toggleRoad(setIndex, road, event.target.checked)} />

@@ -415,13 +415,15 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <section className="custom-status-explore" aria-label="探索條件">
-      <h2>探索條件</h2>
+      <header>
+        <h2>探索條件</h2>
+        {loaded && !loadFailed ? <p className="custom-status-default-mode" role="status">{usingDefaults ? "使用預設條件" : "已自訂"}</p> : null}
+      </header>
       <dl><div><dt>探索期數</dt><dd>13期</dd></div><div><dt>探索範圍</dt><dd>完整範圍</dd></div></dl>
     </section>
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
       ? <p className="custom-status-message" role="alert">自訂設定讀取失敗</p>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
-        <p className="custom-status-default-mode" role="status">{usingDefaults ? "使用預設條件" : "已自訂"}</p>
         <CustomConditionSection hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
         <CustomConditionSection hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
