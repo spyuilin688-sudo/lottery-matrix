@@ -32,7 +32,7 @@ function mountProfileSettings() {
       </section>
     </div></main>
     <main class="profile-detail-screen profile-info-screen contact-support-screen"><div class="feature-body">
-      <section class="panel detail-card"><h2>聯絡客服</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div><div class="contact-support-row contact-support-phone-row"><span class="contact-support-label">電話：</span><a href="tel:+886226861828">(02) 2686-1828</a></div></section><section class="panel detail-card"><h2>問題回報</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></section><section class="panel detail-card"><h2>商務合作</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></section>
+      <section class="panel detail-card"><h2>聯絡客服</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></section><section class="panel detail-card"><h2>問題回報</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></section><section class="panel detail-card"><h2>商務合作</h2><div class="contact-support-row"><span class="contact-support-label">信箱：</span><a href="mailto:Matrix1150801@gmail.com">Matrix1150801@gmail.com</a></div></section>
     </div></main>`;
 }
 
@@ -92,7 +92,7 @@ describe("profile referral and contact layout", () => {
     expect(getComputedStyle(contactBody).gap).toBe("8px");
   });
 
-  it("distinguishes contact text from gold headings with eight pixels before the phone", () => {
+  it("distinguishes contact email text from gold headings", () => {
     mountProfileSettings();
     for (const link of document.querySelectorAll(".contact-support-screen a")) {
       const style = getComputedStyle(link);
@@ -101,14 +101,13 @@ describe("profile referral and contact layout", () => {
       expect(style.textDecoration).toBe("underline");
     }
     const labels = document.querySelectorAll(".contact-support-label");
-    expect(labels).toHaveLength(4);
+    expect(labels).toHaveLength(3);
     for (const label of labels) {
       expect(label.closest("a")).toBeNull();
       expect(getComputedStyle(label).textDecoration).toBe("none");
       expect(getComputedStyle(label.parentElement!).display).toBe("grid");
     }
     expect(getComputedStyle(document.querySelector(".contact-support-screen h2")!).fontSize).toBe("15px");
-    expect(getComputedStyle(document.querySelector(".contact-support-phone-row")!).marginTop).toBe("8px");
   });
 
   it("aligns the three referral rule labels with the input without moving activation instructions", () => {
