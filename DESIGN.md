@@ -180,3 +180,8 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 ### Matrix status validation — 2026-09-07
 
 狀態頁四彩種的四張狀態卡，收合與展開時外框距頁面左右各 13px；標題與彩種切換維持既有位置。狀態頁驗證過程共用探索的字型大小、內外距與交錯背景樣式，驗證內容距狀態外框內緣左右各 6px。`src/feature-pages.css` 擁有狀態卡外距；`src/explore-result-preview.css` 與 `src/matrix-explore-result-refinements.css` 共用驗證呈現。
+
+
+## Matrix 筆記本 — 2026-09-08
+
+筆記本列表、編輯、紀錄與設定頁統一沿用頁面左右 16px、標題卡下方 8px。`src/feature-pages.css` 是筆記本版面的樣式來源；圖示使用同一個 42px 尺寸，工具列各區與模式按鈕間距 8px。中間操作欄採可收縮寬度，刪除位於新增筆記上方，兩者字級 11px、正常字級下高度 26px。筆記摘要上下內距 5px，點選後進入獨立編輯頁。寫入筆記沿用 `primary-action branded-explore-action`，字級 14px、正常字級下高度 36px，允許放大文字時增加高度。不要再增加重複標題或卡片尾端的筆記刪除入口。

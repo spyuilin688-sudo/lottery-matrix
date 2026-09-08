@@ -29,6 +29,7 @@ import {
   DisclaimerPage,
 } from "./MemberPages";
 import { MatrixCustomStatusPage, MatrixStatusPage } from "./MatrixStatusPages";
+import { LinePageGuard } from "../auth/LinePageGuard";
 
 export function FeaturePageRouter({
   screen,
@@ -52,7 +53,7 @@ export function FeaturePageRouter({
   if (screen === "matrix-card") return <MatrixCardPage onNavigate={onNavigate} />;
   if (screen === "guide") return <MatrixGuidePage onNavigate={onNavigate} />;
   if (screen === "notes") return <NotesPage onNavigate={onNavigate} />;
-  if (screen === "notebook") return <MatrixNotebookPage onNavigate={onNavigate} />;
+  if (screen === "notebook") return <LinePageGuard key={screen} title="Matrix 筆記本" onNavigate={onNavigate}><MatrixNotebookPage onNavigate={onNavigate} /></LinePageGuard>;
   if (screen === "notifications") return <NotificationsPage onNavigate={onNavigate} />;
   if (screen === "profile") return <ProfilePage onNavigate={onNavigate} />;
   if (screen === "subscription-management") return <SubscriptionManagementPage onNavigate={onNavigate} />;
@@ -70,6 +71,6 @@ export function FeaturePageRouter({
   if (screen === "member-terms") return <MemberTermsPage onNavigate={onNavigate} />;
   if (screen === "privacy-policy") return <PrivacyPolicyPage onNavigate={onNavigate} />;
   if (screen === "disclaimer") return <DisclaimerPage onNavigate={onNavigate} />;
-  if (screen === "status-settings") return <MatrixCustomStatusPage onNavigate={onNavigate} />;
+  if (screen === "status-settings") return <LinePageGuard key={screen} title="自訂觸發條件" onNavigate={onNavigate}><MatrixCustomStatusPage onNavigate={onNavigate} /></LinePageGuard>;
   return <MatrixStatusPage onNavigate={onNavigate} initialLottery={statusLottery} />;
 }

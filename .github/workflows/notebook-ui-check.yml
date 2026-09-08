@@ -1,0 +1,34 @@
+name: Notebook UI checks
+on:
+  push:
+    branches: [work/notebook-line-access-20260908]
+  pull_request:
+    paths:
+      - src/features/NotebookPages.tsx
+      - src/auth/LinePageGuard.tsx
+      - tests/notebook-responsive*
+      - .github/workflows/notebook-ui-check.yml
+permissions:
+  contents: read
+jobs:
+  notebook-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Focused behavior checks
+        run: npx vitest run src/__tests__/LineProtectedPages.test.tsx src/__tests__/MatrixNotebookPage.test.tsx src/__tests__/MatrixCustomStatusPage.test.tsx src/FeaturePageLoadBoundary.test.tsx src/dialog/AppDialog.test.tsx src/__tests__/scroll-and-textarea-contract.test.ts
+      - run: npx playwright install --with-deps chromium
+      - name: Responsive notebook measurements
+        run: npx playwright test tests/notebook-responsive.spec.ts --workers=1 --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notebook-ui-results
+          path: test-results/
+          retention-days: 7

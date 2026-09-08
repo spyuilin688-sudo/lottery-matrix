@@ -84,6 +84,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const appDialog = useAppDialog();
   const [view, setView] = useState<NotebookView>("list");
   const [notebookMode, setNotebookMode] = useState<"筆記" | "紀錄">("筆記");
+  const [deletingNotes, setDeletingNotes] = useState(false);
   const [notes, setNotes] = useState<NotebookNote[]>(() => {
     if (typeof window === "undefined") return [];
     try { return JSON.parse(window.localStorage.getItem("matrix-notebook-entries") || "[]") as NotebookNote[]; } catch { return []; }
@@ -214,6 +215,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   }, [settingsDirty]);
 
   const startNote = (entry?: NotebookNote) => {
+    setDeletingNotes(false);
     setEditingNoteId(entry?.id ?? null);
     setNoteTitle(entry?.title ?? "");
     setNoteContent(entry?.content ?? "");
@@ -233,8 +235,10 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     else setNotes((current) => [{ id: `note-${Date.now()}`, title: noteTitle, content: noteContent, updatedAt: now }, ...current]);
     setView("list");
   };
-  const deleteNote = async (id: string) => {
-    if (await appDialog.confirm({ title: "確認刪除？", description: "刪除後將移除此筆記。", confirmLabel: "刪除", tone: "danger" })) setNotes((current) => current.filter((entry) => entry.id !== id));
+  const deleteNote = async (entry: NotebookNote) => {
+    if (!await appDialog.confirm({ title: "確認刪除？", description: `刪除後將移除「${entry.title.trim() || "未命名筆記"}」。`, confirmLabel: "刪除", tone: "danger" })) return;
+    setNotes((current) => current.filter((note) => note.id !== entry.id));
+    setDeletingNotes(false);
   };
   const deleteRecord = async (id: string) => {
     if (await appDialog.confirm({ title: "確認刪除？", description: "刪除後將移除此紀錄。", confirmLabel: "刪除", tone: "danger" })) setRecords((current) => current.filter((item) => item.id !== id));
@@ -448,20 +452,19 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <FeatureShell title="Matrix 筆記本" onNavigate={navigateFromNotebook} active="快捷" className="matrix-notebook-screen">
       {view === "list" ? <>
-        <section className="notebook-heading notebook-heading-v2">
+        <section className="notebook-heading" aria-label="筆記本工具列">
           <img src="/assets/quick/matrix-notebook.png" alt="" />
-          <div className="notebook-heading-content">
-            <div className="notebook-title-row">
-              <h2>Matrix 筆記本</h2>
-              <div className="notebook-mode-switch" aria-label="筆記本模式">
-                <button type="button" data-selected={notebookMode === "筆記"} onClick={() => setNotebookMode("筆記")} aria-label="切換至筆記模式"><img src="/assets/quick/notebook-mode-note.png" alt="" /><span>筆記</span></button>
-                <button type="button" data-selected={notebookMode === "紀錄"} onClick={() => setNotebookMode("紀錄")} aria-label="切換至紀錄模式"><img src="/assets/quick/notebook-mode-record.png" alt="" /><span>紀錄</span></button>
-              </div>
-            </div>
-            <span>{notebookMode === "筆記" ? `${notes.length} 筆筆記` : `${records.length} 筆紀錄`}</span>
+          {notebookMode === "筆記" ? <div className="notebook-note-actions">
+            <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => setDeletingNotes((current) => !current)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
+            <button type="button" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增筆記</button>
+          </div> : <span className="notebook-entry-count">{records.length} 筆紀錄</span>}
+          <div className="notebook-mode-switch" aria-label="筆記本模式">
+            <button type="button" data-selected={notebookMode === "筆記"} onClick={() => { setNotebookMode("筆記"); setDeletingNotes(false); }} aria-label="切換至筆記模式"><img src="/assets/quick/notebook-mode-note.png" alt="" /><span>筆記</span></button>
+            <button type="button" data-selected={notebookMode === "紀錄"} onClick={() => { setNotebookMode("紀錄"); setDeletingNotes(false); }} aria-label="切換至紀錄模式"><img src="/assets/quick/notebook-mode-record.png" alt="" /><span>紀錄</span></button>
           </div>
-          <div className="notebook-create-actions" data-mode={notebookMode}>{notebookMode === "紀錄" ? <div className="record-lottery-filters" aria-label="彩種分類">{LOTTERIES.map((item) => <button type="button" data-selected={recordLotteryFilters.includes(item)} onClick={() => setRecordLotteryFilters((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} key={item}>{item}</button>)}</div> : null}{notebookMode === "筆記" ? <button type="button" onClick={() => startNote()}><PlusIcon />新增筆記</button> : <button type="button" onClick={startRecord}><PlusIcon />新增紀錄</button>}</div>
+          {notebookMode === "筆記" ? <span className="notebook-list-count notebook-entry-count">{notes.length} 筆筆記</span> : <div className="notebook-create-actions" data-mode="紀錄"><div className="record-lottery-filters" aria-label="彩種分類">{LOTTERIES.map((item) => <button type="button" data-selected={recordLotteryFilters.includes(item)} onClick={() => setRecordLotteryFilters((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} key={item}>{item}</button>)}</div><button type="button" onClick={startRecord}><PlusIcon />新增紀錄</button></div>}
         </section>
+        {deletingNotes ? <p className="notebook-delete-hint" role="status">請選擇要刪除的筆記</p> : null}
         {notebookMode === "紀錄" ? <section className="record-stats panel">
           <header><div>{(["本日", "本週", "自訂"] as const).map((period) => <button type="button" data-selected={statsPeriod === period} onClick={() => setStatsPeriod(period)} key={period}>{period}</button>)}</div><button type="button" onClick={openSettings}><GearIcon />設定</button></header>{statsPeriod === "自訂" ? <div className="record-custom-range"><input type="date" value={customStartDate} onChange={(event) => setCustomStartDate(event.target.value)} /><span>至</span><input type="date" value={customEndDate} onChange={(event) => setCustomEndDate(event.target.value)} /></div> : null}
           <div className="record-stats-grid">
@@ -469,9 +472,8 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
         </section> : null}
         <section className="notebook-entry-list" aria-label={notebookMode === "筆記" ? "筆記列表" : "紀錄列表"}>
-          {notebookMode === "筆記" ? notes.map((entry) => <article className="panel notebook-entry" key={entry.id}>
-            <button type="button" className="notebook-entry-open" onClick={() => startNote(entry)}><span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatTime(entry.updatedAt)}</small></span><ChevronRightIcon /></button>
-            <button type="button" className="notebook-entry-delete" onClick={() => deleteNote(entry.id)} aria-label="刪除筆記"><TrashIcon /></button>
+          {notebookMode === "筆記" ? notes.map((entry) => <article className="panel notebook-entry" data-deleting={deletingNotes} key={entry.id}>
+            <button type="button" className="notebook-entry-open" aria-label={`${deletingNotes ? "刪除" : "展開"}筆記：${entry.title.trim() || "未命名筆記"}`} onClick={() => deletingNotes ? void deleteNote(entry) : startNote(entry)}><span><strong>{entry.title.trim() || "未命名筆記"}</strong><small>{formatTime(entry.updatedAt)}</small></span><ChevronRightIcon aria-hidden="true" /></button>
           </article>) : visibleRecords.map((record) => {
             const expanded = expandedRecordIds.includes(record.id);
             return <article className="panel notebook-record-card" key={record.id}>
@@ -490,7 +492,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
         <header><button type="button" onClick={returnFromNote}><ChevronLeftIcon />返回列表</button></header>
         <input aria-label="筆記標題" placeholder="標題" value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} />
         <textarea className="resize-none" aria-label="筆記內容" placeholder="輸入筆記內容" value={noteContent} onChange={(event) => setNoteContent(event.target.value)} />
-        <button type="button" className="notebook-write-button" onClick={saveNote}>寫入筆記</button>
+        <button type="button" className="primary-action branded-explore-action notebook-write-button" onClick={saveNote}><span>寫入筆記</span></button>
       </section> : null}
 
       {view === "record" ? <section className="record-editor">

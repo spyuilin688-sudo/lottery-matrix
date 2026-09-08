@@ -210,3 +210,10 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 - Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。
 - 自訂觸發條件依伺服器 `canCustomizeStatus` 決定是否顯示編輯器；未登入提供「前往登入」，方案不足提供「查看 Matrix Pro 方案」，載入失敗提供重新載入。沿用 `custom-status-message`、`custom-status-actions` 與現有卡片，不新增彈窗或改變方案條件。
 - 通知設定儲存失敗在頁內持續顯示提示及「重試儲存」，保留最新編輯；只有伺服器確認最新設定後才清除提示。重試期間防止重複提交，離頁後不更新畫面。
+
+
+## Notebook and custom-condition entry — 2026-09-08
+
+- The shared feature router checks the current Supabase session for a LINE identity before mounting `notebook` or `status-settings`. While checking, reuse the bounded feature loading/recovery UI. Guests see the existing app dialog asking for LINE login and return home; session-read failures have a separate retry-later prompt. Sign-out removes page access, and stale session reads must not restore it. Existing server and entitlement checks remain authoritative.
+- Notebook deletion starts with the toolbar delete action, then selection of one note, then the existing destructive confirmation. Cancel preserves data. Opening a note uses the separate editor; saving and leaving unsaved content retain their confirmations.
+- Notebook pages use 16px side insets, 8px title-card/editor spacing and toolbar gaps. The editor has 8px top padding and an 8px gap below its return row. Title padding is 5px on top/left/bottom; content padding is 5px on top/left/right. Text size remains unchanged on the compact add/delete and branded write actions.
