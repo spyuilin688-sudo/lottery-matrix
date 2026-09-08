@@ -31,6 +31,7 @@ export type MemberReferralSummary = {
 
 export type ManualTransferPlanCode = 'month' | 'quarter' | 'year';
 export type TransferRequestStatus = 'pending' | 'confirmed' | 'rejected';
+export type PaymentStatus = TransferRequestStatus | 'refunded' | 'chargeback' | 'cancelled';
 
 export type MemberTransferRequest = {
   id: string;
@@ -48,7 +49,7 @@ export type MemberPaymentHistoryItem = {
   accountLastFive?: string;
   submittedAt: string;
   paidAt?: string | null;
-  status: TransferRequestStatus;
+  status: PaymentStatus;
 };
 
 export type MemberPushSubscriptionInput = {

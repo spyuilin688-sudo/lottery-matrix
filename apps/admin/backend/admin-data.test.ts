@@ -75,6 +75,25 @@ describe('listAdminTable', () => {
     expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
   });
 
+  it('maps payment member, plan, and reversal metadata for the administrative history', async () => {
+    const api = { request: fixtureRequest(async () => [{
+      id: 'payment-1', member_id: 'member-1', plan_id: 'plan-1', amount: 2880,
+      paid_at: '2026-09-01T00:00:00Z', status: 'refunded', reversed_at: '2026-09-08T00:00:00Z',
+      reversal_reason: '銀行退款已完成', reversed_by_name: '管理員',
+      plan: { name: '月費方案' }, member: { line_display_name: '小明' },
+    }]) };
+
+    const result = await listAdminTable('subscriptionRecords', api);
+
+    expect(result.items[0]).toMatchObject({
+      id: 'payment-1', memberId: 'member-1', lineDisplayName: '小明',
+      planId: 'plan-1', planName: '月費方案', status: 'refunded',
+      reversedAt: '2026-09-08T00:00:00Z', reversalReason: '銀行退款已完成', reversedByName: '管理員',
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('member:members(line_display_name)'));
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('plan:plans(name)'));
+  });
+
   it('maps the activation-code redeemer LINE nickname without exposing the member ID', async () => {
     const api = { request: fixtureRequest(async () => [{
       id: 'code-1', batch_id: 'batch-1', code: 'ABCD-EFGH-IJKL-MNOP', duration_type: '30_days',
@@ -122,9 +141,9 @@ describe('listAdminTable', () => {
 describe('getDashboard', () => {
   it('derives plan counts and confirmed revenue only from real Supabase columns', async () => {
     const api = { request: fixtureRequest(async (path: string) => path.includes('/rpc/admin_visitor_stats') ? { todayVisitors: 2, monthVisitors: 7, totalVisitors: 10 } : path.includes('/members?') ? [
-      { plan_expires_at: '2026-08-25T00:00:00Z', current_plan: { duration_days: 30 } },
-      { plan_expires_at: '2026-10-01T00:00:00Z', current_plan: { duration_days: 90 } },
-      { plan_expires_at: null, current_plan: { duration_days: 365 } },
+      { plan_expires_at: '2026-08-25T00:00:00Z', status: 'active', current_plan: { duration_days: 30 } },
+      { plan_expires_at: '2026-10-01T00:00:00Z', status: 'active', current_plan: { duration_days: 90 } },
+      { plan_expires_at: '2027-08-21T00:00:00Z', status: 'active', current_plan: { duration_days: 365 } },
     ] : [
       { amount: 100, paid_at: '2026-08-21T01:00:00Z', status: 'confirmed' },
       { amount: 50, paid_at: '2026-08-01T01:00:00Z', status: 'confirmed' },
@@ -134,6 +153,31 @@ describe('getDashboard', () => {
       totalUsers: 3, monthlyPro: 1, quarterlyPro: 1, yearlyPro: 1, expiring: 1,
       todayRevenue: 100, monthRevenue: 150, quarterRevenue: 150, yearRevenue: 150, cumulativeRevenue: 150,
     });
+  });
+
+  it('counts only enabled 30, 90, and 365-day plans with a finite future expiry', async () => {
+    const currentDate = new Date('2026-09-08T12:00:00Z');
+    const api = { request: fixtureRequest(async (path: string) => path.includes('/members?') ? [
+      { plan_expires_at: '2026-09-09T12:00:00Z', status: 'active', current_plan: { duration_days: 30 } },
+      { plan_expires_at: '2026-12-08T12:00:00Z', status: null, current_plan: { duration_days: 90 } },
+      { plan_expires_at: '2027-09-08T12:00:00Z', status: '啟用', current_plan: { duration_days: 365 } },
+      { plan_expires_at: '2026-09-08T11:59:59Z', status: 'active', current_plan: { duration_days: 30 } },
+      { plan_expires_at: '2026-09-08T12:00:00Z', status: 'active', current_plan: { duration_days: 90 } },
+      { plan_expires_at: '2027-09-08T12:00:00Z', status: '停用', current_plan: { duration_days: 365 } },
+      { plan_expires_at: '2027-09-08T12:00:00Z', status: 'disabled', current_plan: { duration_days: 30 } },
+      { plan_expires_at: '2027-09-08T12:00:00Z', status: 'inactive', current_plan: { duration_days: 90 } },
+      { plan_expires_at: 'not-a-date', status: 'active', current_plan: { duration_days: 365 } },
+      { plan_expires_at: null, is_lifetime: true, status: 'active', current_plan: { duration_days: 30 } },
+      { plan_expires_at: '2027-09-08T12:00:00Z', status: 'active', current_plan: null },
+    ] : []) };
+
+    await expect(getDashboard(api, currentDate)).resolves.toMatchObject({
+      totalUsers: 11,
+      monthlyPro: 1,
+      quarterlyPro: 1,
+      yearlyPro: 1,
+    });
+    expect(api.request).toHaveBeenCalledWith(expect.stringContaining('select=plan_expires_at,status,'));
   });
 });
 

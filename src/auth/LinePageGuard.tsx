@@ -7,7 +7,7 @@ import type { Navigate, ScreenId } from '../features/navigation';
 import { FeaturePageLoadState } from '../FeaturePageLoadBoundary';
 import { FeatureShell } from '../features/shared';
 
-function hasLineSession(session: Session | null) {
+export function hasLineSession(session: Session | null) {
   return Boolean(session?.access_token && session.user && (
     session.user.app_metadata?.provider === 'custom:line'
     || session.user.identities?.some((identity) => identity.provider === 'custom:line')

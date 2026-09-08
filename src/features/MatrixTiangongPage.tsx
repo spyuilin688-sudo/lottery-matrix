@@ -230,7 +230,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         </header>
         <div className="setting-grid">
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
-          <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><button type="button" data-selected="true">五十期</button></div></label>
+          <label><span id="tiangong-period-label"><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><output className="segmented-static" data-selected="true" aria-labelledby="tiangong-period-label">五十期</output></div></label>
           <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
         </div>
       </section>

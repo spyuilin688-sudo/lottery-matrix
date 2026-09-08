@@ -487,6 +487,13 @@ export const transferStatusLabels = {
   rejected: "已退回",
 } as const;
 
+export const paymentStatusLabels = {
+  ...transferStatusLabels,
+  refunded: "已退款",
+  chargeback: "已刷退",
+  cancelled: "交易已取消",
+} as const;
+
 export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
   const [history, setHistory] = useState<MemberPaymentHistoryItem[] | null>(null);
   const [historyError, setHistoryError] = useState(false);
@@ -508,7 +515,7 @@ export function PaymentHistoryPage({ onNavigate }: { onNavigate: Navigate }) {
                 <strong>{item.planName}</strong>
                 <span>{`NT$${item.amount.toLocaleString("en-US")}`}</span>
                 <time>{new Date(item.submittedAt).toLocaleString("zh-TW")}</time>
-                <b data-status={item.status}>{transferStatusLabels[item.status]}</b>
+                <b data-status={item.status}>{paymentStatusLabels[item.status]}</b>
               </article>
             ))}
           </div>

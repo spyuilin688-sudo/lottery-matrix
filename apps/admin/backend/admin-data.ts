@@ -104,14 +104,20 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptionRecords: {
-    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status&order=paid_at.desc.nullslast,id.asc',
+    path: '/rest/v1/payments?select=id,member_id,plan_id,amount,paid_at,status,reversed_at,reversal_reason,reversed_by,reversed_by_name,plan:plans(name),member:members(line_display_name)&order=paid_at.desc.nullslast,id.asc',
     map: (row) => ({
       id: String(row.id),
       memberId: row.member_id,
+      lineDisplayName: (row.member as Row | null)?.line_display_name ?? null,
       planId: row.plan_id,
+      planName: (row.plan as Row | null)?.name ?? null,
       amount: row.amount,
       paidAt: row.paid_at,
       status: row.status,
+      reversedAt: row.reversed_at,
+      reversalReason: row.reversal_reason,
+      reversedBy: row.reversed_by,
+      reversedByName: row.reversed_by_name,
     }),
   },
   auditLogs: {
@@ -250,7 +256,7 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     ? ''
     : `&paid_at=gte.${encodeURIComponent(new Date(resetTime).toISOString())}`;
   const [members, paymentRows, visitorStats] = await Promise.all([
-    listAllRows(api, '/rest/v1/members?select=plan_expires_at,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
+    listAllRows(api, '/rest/v1/members?select=plan_expires_at,status,current_plan:plans!members_current_plan_id_fkey(duration_days)&order=id.asc'),
     listDashboardPayments(api, resetFilter),
     api.request<{ todayVisitors: number; monthVisitors: number; totalVisitors: number }>('/rest/v1/rpc/admin_visitor_stats', { method: 'POST', body: '{}' }).catch(() => null),
   ]);
@@ -263,6 +269,13 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
       paidAt: String(row.paid_at),
     }));
   const duration = (member: Row) => Number((member.current_plan as Row | null)?.duration_days ?? 0);
+  const hasCurrentFixedDurationPlan = (member: Row) => {
+    if (typeof member.plan_expires_at !== 'string') return false;
+    const expiresAt = new Date(member.plan_expires_at).getTime();
+    return Number.isFinite(expiresAt)
+      && expiresAt > currentDate.getTime()
+      && !['停用', 'disabled', 'inactive'].includes(String(member.status ?? ''));
+  };
   const today = currentDate.toISOString().slice(0, 10);
   const month = today.slice(0, 7);
   const year = today.slice(0, 4);
@@ -281,9 +294,9 @@ export async function getDashboard(api: Requester, currentDate = new Date()) {
     monthVisitors: visitorStats?.monthVisitors ?? null,
     totalVisitors: visitorStats?.totalVisitors ?? null,
     totalUsers: members.length,
-    monthlyPro: members.filter((member) => duration(member) === 30).length,
-    quarterlyPro: members.filter((member) => duration(member) === 90).length,
-    yearlyPro: members.filter((member) => duration(member) === 365).length,
+    monthlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 30).length,
+    quarterlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 90).length,
+    yearlyPro: members.filter((member) => hasCurrentFixedDurationPlan(member) && duration(member) === 365).length,
     expiring: expiresWithinSevenDays,
     todayRevenue: sum((payment) => payment.paidAt.startsWith(today)),
     monthRevenue: sum((payment) => payment.paidAt.startsWith(month)),
@@ -302,6 +315,8 @@ const adminStatuses = ['啟用', '停用'];
 const durationTypes = ['7_days', '15_days', '30_days', '60_days', '90_days', '365_days', 'lifetime'];
 const activationCodeQuantities = [1, 3, 5, 10, 20];
 const operatorActivationCodeDurations = ['7_days', '15_days'];
+const paymentReversalStatuses = ['refunded', 'chargeback', 'cancelled'];
+export const paymentReversalReasonMaxLength = 500;
 
 function validateAdminInput(input: AdminAccountInput) {
   if (!input.account.trim() || !input.name.trim()) throw new AdminDataError('管理員帳號與名稱必填');
@@ -492,6 +507,32 @@ export function createAdminData(transport: WriteTransport) {
     });
   }
 
+  async function recordPaymentReversal(
+    id: string,
+    status: string,
+    reason: string,
+    actor: AdminActor,
+  ) {
+    const paymentId = id.trim();
+    const reversalReason = reason.trim();
+    if (!paymentId) throw new AdminDataError('付款紀錄必填');
+    if (!paymentReversalStatuses.includes(status)) throw new AdminDataError('沖銷狀態不正確');
+    if (!reversalReason) throw new AdminDataError('沖銷原因必填');
+    if (Array.from(reversalReason).length > paymentReversalReasonMaxLength) {
+      throw new AdminDataError(`沖銷原因不可超過 ${paymentReversalReasonMaxLength} 字`);
+    }
+    return transport.supabaseRequest<Row>('rpc/admin_record_payment_reversal', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_payment_id: paymentId,
+        p_status: status,
+        p_reason: reversalReason,
+        p_actor_id: actor.id,
+        p_actor_name: actor.name || actor.account,
+      }),
+    });
+  }
+
   async function resetRevenue(actor: AdminActor) {
     if (actor.role !== '超級管理員') {
       throw new AdminDataError('僅超級管理員可重設收入', 403);
@@ -582,6 +623,7 @@ export function createAdminData(transport: WriteTransport) {
     updateMemberStatus,
     updateSubscription,
     reviewTransferRequest,
+    recordPaymentReversal,
     resetRevenue,
     deleteAdminAccount,
     deleteActivationCode,

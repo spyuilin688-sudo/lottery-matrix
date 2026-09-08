@@ -19,10 +19,6 @@ for (const width of [320, 360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(() => {
       localStorage.clear();
-      localStorage.setItem('matrix-notebook-entries', JSON.stringify([
-        { id: 'first', title: '第一張筆記', content: '保留原有內容', updatedAt: '2026-09-08T10:00:00Z' },
-        { id: 'long', title: '長標題'.repeat(30), content: '長內容'.repeat(100), updatedAt: '2026-09-08T11:00:00Z' },
-      ]));
     });
     await page.goto('/tests/notebook-responsive-fixture.html');
     await expect(page.getByRole('region', { name: '筆記列表' })).toBeVisible();

@@ -300,7 +300,8 @@
   align-items: center;
 }
 
-.matrix-explore-main-screen .segmented button {
+.matrix-explore-main-screen .segmented button,
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > .segmented-static {
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -322,7 +323,8 @@
   white-space: nowrap;
 }
 
-.matrix-explore-main-screen .segmented button[data-selected="true"] {
+.matrix-explore-main-screen .segmented button[data-selected="true"],
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > .segmented-static[data-selected="true"] {
   border-color: #c89622;
   background: linear-gradient(145deg, rgba(124, 85, 12, .25), rgba(31, 25, 13, .74));
   color: #f2cf67;

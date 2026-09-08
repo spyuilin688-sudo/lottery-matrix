@@ -53,4 +53,4 @@
 
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-result-row > .tiangong-directions { font-size: .625rem; }
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options { grid-template-columns: minmax(0, 1fr); }
-.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > button { width: 100%; }
+.matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > .segmented-static { width: 100%; }

@@ -53,11 +53,18 @@ beforeEach(() => {
 test('天工固定顯示二段式設定，且不再提供模式與命中條件選項', () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   const generalCard = screen.getByRole('heading', { name: '探索設定' }).closest('section') as HTMLElement;
+  const periodSetting = screen.getByText('探索期數').closest('label') as HTMLElement;
+  const fixedPeriod = within(periodSetting).getByLabelText('探索期數');
   const stageSection = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('section') as HTMLElement;
   const firstStageCard = screen.getByRole('heading', { name: '第一段 探索設定' }).closest('.tiangong-stage-block') as HTMLElement;
   const firstPosition = within(firstStageCard).getByRole('group', { name: '探索球位' });
   const firstRoad = within(firstStageCard).getByRole('group', { name: '版路類型' });
   expect(document.querySelector('.matrix-tiangong-screen')?.classList.contains('matrix-explore-layout')).toBe(true);
+  expect(fixedPeriod.tagName).toBe('OUTPUT');
+  expect(fixedPeriod.textContent).toBe('五十期');
+  expect(fixedPeriod.classList.contains('segmented-static')).toBe(true);
+  expect(within(periodSetting).queryByRole('button')).toBeNull();
+  expect(periodSetting.querySelector('button, a, input, select, textarea, [tabindex]')).toBeNull();
   expect(generalCard).not.toBe(stageSection);
   expect(generalCard.contains(firstPosition)).toBe(false);
   expect(generalCard.contains(firstRoad)).toBe(false);
@@ -145,11 +152,12 @@ test('天工載入中不顯示零組，成功空回應才顯示零組', async ()
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   const start = screen.getByRole('button', { name: '開始天工' });
   fireEvent.click(start);
-  expect(screen.getByRole('status').textContent).toBe('分析結果載入中');
+  const resultPanel = screen.getByRole('heading', { name: '天工結果區' }).closest('section') as HTMLElement;
+  expect(within(resultPanel).getByRole('status').textContent).toBe('分析結果載入中');
   expect(document.querySelector('.result-count')).toBeNull();
   expect((start as HTMLButtonElement).disabled).toBe(true);
   await act(async () => finish({ ...envelope, items: [], total: 0 }));
-  expect(screen.queryByRole('status')).toBeNull();
+  expect(within(resultPanel).queryByRole('status')).toBeNull();
   expect(document.querySelector('.result-count')?.textContent?.replace(/\s/g, '')).toBe('探索到0組符合條件版路');
 });
 

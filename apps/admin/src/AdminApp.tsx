@@ -45,6 +45,7 @@ import {
 import { NotificationManagement } from "./NotificationManagement";
 import { AdminTransferPush } from "./AdminTransferPush";
 import { AdminTodos } from "./AdminTodos";
+import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
@@ -203,6 +204,19 @@ const text = (v: unknown) =>
 const dateFields = new Set(["registeredAt", "planStartedAt", "planExpiresAt", "loginAt", "logoutAt", "operationTime", "paidAt", "createdAt", "redeemedAt", "expiresAt", "lastLoginAt", "lastOnlineAt"]);
 const displayValue = (field: string, value: unknown) => dateFields.has(field) ? formatAdminDateTime(value) : text(value);
 const redeemedActivationCode = (row: Row) => row.status === "used" || Boolean(row.redeemedAt || row.redeemedByLineDisplayName);
+const paymentRecord = (row: Row): PaymentRecord => ({
+  id: row.id,
+  memberId: String(row.memberId ?? ""),
+  lineDisplayName: typeof row.lineDisplayName === "string" ? row.lineDisplayName : null,
+  planId: typeof row.planId === "string" ? row.planId : null,
+  planName: typeof row.planName === "string" ? row.planName : null,
+  amount: Number(row.amount ?? 0),
+  paidAt: typeof row.paidAt === "string" ? row.paidAt : null,
+  status: String(row.status ?? ""),
+  reversedAt: typeof row.reversedAt === "string" ? row.reversedAt : null,
+  reversalReason: typeof row.reversalReason === "string" ? row.reversalReason : null,
+  reversedByName: typeof row.reversedByName === "string" ? row.reversedByName : null,
+});
 
 async function writeClipboardText(value: string) {
   try {
@@ -250,6 +264,8 @@ function AdminApp() {
   const [rows, setRows] = useState<Row[]>([]);
   const [plans, setPlans] = useState<Row[]>([]);
   const [transfers, setTransfers] = useState<Row[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[] | null>(null);
+  const [paymentLoadError, setPaymentLoadError] = useState("");
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -265,6 +281,13 @@ function AdminApp() {
   const [selectedActivationCodeIds, setSelectedActivationCodeIds] = useState<Set<string>>(new Set());
   const [activationCopyFeedback, setActivationCopyFeedback] = useState("");
   const activationCopyFeedbackTimer = useRef<number | null>(null);
+  const paymentLoadVersion = useRef(0);
+  const activeRef = useRef(active);
+  const signedRef = useRef(signed);
+  const adminIdRef = useRef(String(admin?.id ?? ""));
+  activeRef.current = active;
+  signedRef.current = signed;
+  adminIdRef.current = String(admin?.id ?? "");
   const requestConfirmation = (request: Omit<ConfirmationRequest, "resolve">) =>
     new Promise<boolean>((resolve) => setConfirmation({ ...request, resolve }));
   const finishConfirmation = (confirmed: boolean) => {
@@ -282,7 +305,18 @@ function AdminApp() {
       (admin?.modulePermissions as Record<string, Record<string, boolean>> | undefined)?.[module]?.[action]
       ?? admin?.role === "超級管理員",
     ) && can(operation);
-  const load = async (name = active) => {
+  const isCurrentPaymentLoad = (version: number, expectedAdminId: string) => (
+    version === paymentLoadVersion.current
+    && signedRef.current
+    && activeRef.current === "訂閱管理"
+    && adminIdRef.current === expectedAdminId
+  );
+  const load = async (name = active, expectedAdminId = String(admin?.id ?? "")) => {
+    const paymentRequestVersion = name === "訂閱管理" ? ++paymentLoadVersion.current : null;
+    if (paymentRequestVersion !== null) {
+      setPayments(null);
+      setPaymentLoadError("");
+    }
     setBusy(true);
     setError("");
     try {
@@ -298,14 +332,22 @@ function AdminApp() {
         const r = await api.get("/api/data/admins");
         setRows(r.data.items || []);
       } else if (name === "訂閱管理") {
-        const [subscriptionsResult, plansResult, transfersResult] = await Promise.all([
+        const [subscriptionsResult, plansResult, transfersResult, paymentRead] = await Promise.all([
           api.get("/api/data/subscriptions"),
           api.get("/api/data/plans"),
           api.get("/api/data/transferRequests"),
+          api.get("/api/data/subscriptionRecords").then(
+            (result: { data: { items?: Row[] } }) => ({ ok: true as const, result }),
+            () => ({ ok: false as const }),
+          ),
         ]);
         setRows(subscriptionsResult.data.items || []);
         setPlans(plansResult.data.items || []);
         setTransfers(transfersResult.data.items || []);
+        if (paymentRequestVersion !== null && isCurrentPaymentLoad(paymentRequestVersion, expectedAdminId)) {
+          if (paymentRead.ok) setPayments((paymentRead.result.data.items || []).map(paymentRecord));
+          else setPaymentLoadError("付款紀錄載入失敗，請重新載入");
+        }
       } else if (name === "系統設定" || name === "通知管理" || name === "代辦事項") {
         setRows([]);
       } else {
@@ -316,6 +358,13 @@ function AdminApp() {
         }
       }
     } catch (e) {
+      if (
+        paymentRequestVersion !== null
+        && isCurrentPaymentLoad(paymentRequestVersion, expectedAdminId)
+      ) {
+        setPayments(null);
+        setPaymentLoadError("付款紀錄載入失敗，請重新載入");
+      }
       setError(e instanceof Error ? e.message : "資料讀取失敗");
     } finally {
       setBusy(false);
@@ -326,12 +375,18 @@ function AdminApp() {
     if (showError) setError("");
     try {
       const r = await api.get("/api/bootstrap");
+      const initialAdminId = String(r.data.admin?.id ?? "");
       setAdmin(r.data.admin);
       setSigned(true);
       const initial = window.location.hash === "#transfer-requests" && r.data.admin?.role === "超級管理員" ? "訂閱管理" : "營運概覽";
+      signedRef.current = true;
+      adminIdRef.current = initialAdminId;
+      activeRef.current = initial;
       setActive(initial);
-      await load(initial);
+      await load(initial, initialAdminId);
     } catch (e) {
+      signedRef.current = false;
+      adminIdRef.current = "";
       setSigned(false);
       setAdmin(null);
       if (showError) setError(e instanceof Error ? e.message : "無法載入後台");
@@ -347,6 +402,12 @@ function AdminApp() {
     setActivationCopyFeedback("");
   };
   const choose = (name: string) => {
+    paymentLoadVersion.current += 1;
+    activeRef.current = name;
+    if (name !== "訂閱管理") {
+      setPayments(null);
+      setPaymentLoadError("");
+    }
     clearActivationSelection();
     setActive(name);
     setDrawer(false);
@@ -390,8 +451,42 @@ function AdminApp() {
   };
   const signOut = async () => {
     await api.post("/api/admin-logout");
+    paymentLoadVersion.current += 1;
+    signedRef.current = false;
+    adminIdRef.current = "";
+    setPayments(null);
+    setPaymentLoadError("");
     setSigned(false);
     setAdmin(null);
+  };
+  const refreshPayments = async () => {
+    const requestVersion = ++paymentLoadVersion.current;
+    const expectedAdminId = String(admin?.id ?? "");
+    setPayments(null);
+    setPaymentLoadError("");
+    let result;
+    try {
+      result = await api.get("/api/data/subscriptionRecords");
+    } catch (cause) {
+      if (
+        requestVersion === paymentLoadVersion.current
+        && signedRef.current
+        && activeRef.current === "訂閱管理"
+        && adminIdRef.current === expectedAdminId
+      ) {
+        setPaymentLoadError("付款紀錄載入失敗，請重新載入");
+      }
+      throw cause;
+    }
+    if (
+      requestVersion !== paymentLoadVersion.current
+      || !signedRef.current
+      || activeRef.current !== "訂閱管理"
+      || adminIdRef.current !== expectedAdminId
+    ) {
+      throw new Error("付款紀錄重新載入已取消");
+    }
+    setPayments((result.data.items || []).map(paymentRecord));
   };
   const openProfileName = () => {
     setProfileName(String(admin?.name || ""));
@@ -711,8 +806,13 @@ function AdminApp() {
               rows={rows}
               plans={plans}
               transfers={transfers}
+              payments={payments}
+              paymentLoadError={paymentLoadError}
               isSuper={isSuper}
               canEdit={moduleCan("subscriptions", "edit", "edit")}
+              confirm={requestConfirmation}
+              onPaymentReversal={(id, status, reason) => api.put(`/api/payments/${id}/reversal`, { status, reason })}
+              onPaymentRefresh={refreshPayments}
               onSubscription={async (id, payload) => {
                 return runConfirmed(
                   () => requestConfirmation({ title: "確認修改訂閱", message: `會員 ${id} 的訂閱資料將更新。`, confirmLabel: "確認修改" }),
@@ -952,16 +1052,26 @@ function SubscriptionManager({
   rows,
   plans,
   transfers,
+  payments,
+  paymentLoadError,
   isSuper,
   canEdit,
+  confirm,
+  onPaymentReversal,
+  onPaymentRefresh,
   onSubscription,
   onTransfer,
 }: {
   rows: Row[];
   plans: Row[];
   transfers: Row[];
+  payments: PaymentRecord[] | null;
+  paymentLoadError: string;
   isSuper: boolean;
   canEdit: boolean;
+  confirm: (request: Omit<ConfirmationRequest, "resolve">) => Promise<boolean>;
+  onPaymentReversal: (id: string, status: PaymentReversalStatus, reason: string) => Promise<unknown>;
+  onPaymentRefresh: () => Promise<unknown>;
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
@@ -1027,6 +1137,14 @@ function SubscriptionManager({
         </div>
       )}
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} module="subscriptions" onClose={() => setUserInfo(null)} />}
+      <PaymentReversalPanel
+        payments={payments}
+        loadError={paymentLoadError}
+        canEdit={canEdit}
+        confirm={confirm}
+        onRecord={onPaymentReversal}
+        onRefresh={onPaymentRefresh}
+      />
       <div className="panel transferPanel" id="transfer-requests">
         <h2>轉帳申請</h2>
         <AdminTransferPush client={api} isSuper={isSuper} />
