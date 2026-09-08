@@ -92,16 +92,19 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
   const login = async (account: string, password: string) => {
     const normalized = normalizeAccount(account);
     if (!normalized || !password) throw new AdminCredentialError('管理員帳號或密碼錯誤');
-    const rows = await transport.selectRows<Row>('admin_accounts', `select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at,password_salt,password_hash&account=ilike.${encodeURIComponent(normalized)}&limit=2`);
+    const rows = await transport.selectRows<Row>('admin_accounts', `select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at,password_salt,password_hash,credential_version&account=ilike.${encodeURIComponent(normalized)}&limit=2`);
     const row = rows.find((item) => normalizeAccount(String(item.account ?? '')) === normalized);
     const salt = typeof row?.password_salt === 'string' ? row.password_salt : '';
     const storedHash = typeof row?.password_hash === 'string' ? row.password_hash : '';
     if (!row || !salt || !storedHash) throw new AdminCredentialError('管理員帳號或密碼錯誤');
     if (!equalBase64(await derivePasswordHash(password, base64ToBytes(salt)), storedHash)) throw new AdminCredentialError('管理員帳號或密碼錯誤');
     if (row.status !== '啟用') throw new AdminCredentialError('管理員帳號已停用', 403);
+    if (!Number.isSafeInteger(row.credential_version) || Number(row.credential_version) < 0) throw new AdminCredentialError('管理員登入已失效');
     const loginTime = now();
     const token = randomBase64Url(32);
-    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
+    await transport.insertRows('admin_sessions', [{ token_hash: await digestHex(token), admin_id: row.id, credential_version: row.credential_version, expires_at: new Date(loginTime.getTime() + sessionSeconds * 1000).toISOString() }]);
+    // A password change may have committed while PBKDF2 or the insert was in flight.
+    const admin = await getAdminFromHeaders({ cookie: `${cookieName}=${token}` });
     // Expiry is inclusive, matching session validation. Maintenance must not
     // prevent a valid login, and runs here rather than on every authenticated request.
     let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
@@ -114,21 +117,23 @@ export function createAdminCredentialAuth(transport: Transport, now = () => new 
     finally {
       if (cleanupTimer !== undefined) clearTimeout(cleanupTimer);
     }
-    return { admin: mapAdmin(row), token };
+    return { admin, token };
   };
   const getAdminFromHeaders = async (headers?: Record<string, string | undefined>) => {
     const token = cookieToken(headers);
     if (!token) throw new AdminCredentialError('管理員登入已失效');
     const tokenHash = await digestHex(token);
-    const sessions = await transport.selectRows<Row>('admin_sessions', `select=admin_id,expires_at&token_hash=eq.${encodeURIComponent(tokenHash)}&limit=1`);
+    const sessions = await transport.selectRows<Row>('admin_sessions', `select=admin_id,expires_at,credential_version&token_hash=eq.${encodeURIComponent(tokenHash)}&limit=1`);
     const session = sessions[0];
     const expiresAt = typeof session?.expires_at === 'string' ? new Date(session.expires_at) : null;
     if (!session || !expiresAt || !Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= now().getTime()) {
       if (session) await transport.deleteRows('admin_sessions', `token_hash=eq.${encodeURIComponent(tokenHash)}`);
       throw new AdminCredentialError('管理員登入已失效');
     }
-    const admins = await transport.selectRows<Row>('admin_accounts', `select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at&id=eq.${encodeURIComponent(String(session.admin_id))}&limit=1`);
+    const admins = await transport.selectRows<Row>('admin_accounts', `select=id,account,name,role,status,can_view,can_add,can_edit,can_delete,last_login_at,created_at,credential_version&id=eq.${encodeURIComponent(String(session.admin_id))}&limit=1`);
     if (!admins[0]) throw new AdminCredentialError('管理員登入已失效');
+    if (!Number.isSafeInteger(session.credential_version) || Number(session.credential_version) < 0
+      || session.credential_version !== admins[0].credential_version) throw new AdminCredentialError('管理員登入已失效');
     if (admins[0].status !== '啟用') throw new AdminCredentialError('管理員帳號已停用', 403);
     return mapAdmin(admins[0]);
   };

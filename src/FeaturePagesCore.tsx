@@ -335,6 +335,8 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const [appliedLottery, setAppliedLottery] = useState<LotteryId>(lottery);
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
+  const queryRevision = useRef(0);
+  useEffect(() => () => { queryRevision.current += 1; }, []);
   const [resultLoadState, setResultLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const [settingsExpanded, setSettingsExpanded] = useState(true);
   const [settingsFloating, setSettingsFloating] = useState(false);
@@ -348,6 +350,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     const hasInvalidValue = values.some((value) => value !== "" && !/^(0[1-9]|[1-4][0-9])$/.test(value));
     if (hasInvalidValue) { setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : "")); return; }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
+    const revision = ++queryRevision.current;
     setSettingsExpanded(false);
     setSettingsFloating(false);
     setAppliedValues(normalizedValues);
@@ -357,14 +360,18 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     setResultLoadState("loading");
     try {
       const response = await fetchTongXing({ lottery, numberOrder: order as MatrixNumberOrder, numbers: normalizedValues, futureOffset: periodOffset });
+      if (revision !== queryRevision.current) return;
       setResultGroups(response.groups);
       setResultLoadState(response.groups.length > 0 ? "success" : "empty");
     } catch {
+      if (revision !== queryRevision.current) return;
       setResultGroups([]);
       setResultLoadState("error");
     }
     setSearched(true);
-    requestAnimationFrame(() => requestAnimationFrame(() => resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (revision === queryRevision.current) resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }));
   };
 
   const toggleSettingsPanel = () => {

@@ -5,7 +5,7 @@ const makeTransport = () => {
   const admins: Record<string, unknown>[] = [];
   const sessions: Record<string, unknown>[] = [];
   return { admins, sessions, transport: {
-    selectRows: vi.fn(async (table: string, query: string) => table === 'admin_accounts' ? (query.includes('id=eq.') ? admins.filter((row) => query.includes(String(row.id))) : admins) : table === 'admin_sessions' ? sessions.filter((row) => query.includes(String(row.token_hash))) : []),
+    selectRows: vi.fn(async (table: string, query: string) => table === 'admin_accounts' ? (query.includes('id=eq.') ? admins.filter((row) => query.includes(String(row.id))) : admins).map(row => ({ credential_version: 0, ...row })) : table === 'admin_sessions' ? sessions.filter((row) => query.includes(String(row.token_hash))) : []),
     insertRows: vi.fn(async (table: string, rows: unknown[]) => { if (table === 'admin_sessions') sessions.push(...rows as Record<string, unknown>[]); return rows; }),
     updateRows: vi.fn(async (table: string, query: string, record: unknown) => { if (table !== 'admin_accounts') return []; const row = admins.find((item) => query.includes(String(item.id))); if (!row) return []; Object.assign(row, record); return [row]; }),
     deleteRows: vi.fn(async (table: string, query: string) => {
@@ -142,3 +142,35 @@ describe('expired session maintenance', () => {
     expect(state.transport.deleteRows).not.toHaveBeenCalled();
   });
 });
+
+ describe('credential version revocation', () => {
+  it('rejects a session after a password version change and accepts a new login', async () => {
+    const state = makeTransport();
+    const auth = createAdminCredentialAuth(state.transport);
+    state.admins.push({id:'a1',account:'admin001',status:'啟用',credential_version:0,...await auth.passwordFields('old',true)});
+    const oldLogin = await auth.login('admin001','old');
+    await auth.setPassword('a1','new');
+    // The SQL trigger increments this atomically; leave a late old session to test fail-closed validation.
+    state.admins[0].credential_version = 1;
+    await expect(auth.getAdminFromHeaders({cookie:`matrix_admin_session=${oldLogin.token}`})).rejects.toThrow('管理員登入已失效');
+    const fresh = await auth.login('admin001','new');
+    await expect(auth.getAdminFromHeaders({cookie:`matrix_admin_session=${fresh.token}`})).resolves.toMatchObject({id:'a1'});
+    await expect(auth.login('admin001','old')).rejects.toThrow();
+  });
+  it('rejects an old-password login delayed until after credentials change', async () => {
+    const state = makeTransport();
+    const auth = createAdminCredentialAuth(state.transport);
+    state.admins.push({id:'a1',account:'admin001',status:'啟用',credential_version:0,...await auth.passwordFields('old',true)});
+    let release!:()=>void; let reached!:()=>void;
+    const started = new Promise<void>(resolve => {reached=resolve;});
+    const gate = new Promise<void>(resolve => {release=resolve;});
+    state.transport.insertRows.mockImplementationOnce(async (_table,rows) => {
+      reached(); await gate; state.sessions.push(...rows as Record<string,unknown>[]); return rows;
+    });
+    const login = auth.login('admin001','old');
+    const rejected = expect(login).rejects.toThrow('管理員登入已失效');
+    await started;
+    Object.assign(state.admins[0], await auth.passwordFields('new',true), {credential_version:1});
+    release(); await rejected;
+  });
+ });

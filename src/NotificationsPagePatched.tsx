@@ -129,6 +129,8 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
   const [notificationSettingsLoadUiState, setNotificationSettingsLoadUiState] = useState<NotificationSettingsLoadState>("loading");
   const [notificationSettingsControlsBlocked, setNotificationSettingsControlsBlocked] = useState(false);
   const [notificationSettingsReloadRevision, setNotificationSettingsReloadRevision] = useState(0);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
   const pendingLoadEdits = useRef<NotificationSettingsEdit[]>([]);
   const lastSavedSettings = useRef("");
   const latestNotificationSettings = useRef(notificationSettings);
@@ -154,17 +156,27 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     if (serialized === lastSavedSettings.current) return;
 
     saveInFlight.current = true;
+    if (componentActive.current) setSaveBusy(true);
     let failed = false;
     void saveNotificationSettings(snapshot)
       .then(() => {
         lastSavedSettings.current = serialized;
         retryDelay.current = SAVE_RETRY_INITIAL_MS;
       })
-      .catch(() => { failed = true; })
+      .catch(() => {
+        failed = true;
+        // A lost response may still have committed. Reconfirm the latest draft,
+        // even if the user has since restored the previously saved values.
+        lastSavedSettings.current = "";
+      })
       .finally(() => {
         saveInFlight.current = false;
         const dirty = JSON.stringify(latestNotificationSettings.current) !== lastSavedSettings.current;
         if (componentActive.current) {
+          setSaveBusy(false);
+          // Keep the warning until the latest draft is acknowledged by the server.
+          if (failed && dirty) setSaveFailed(true);
+          if (!dirty) setSaveFailed(false);
           if (!dirty) return;
           if (failed) {
             const delayMs = retryDelay.current;
@@ -462,6 +474,11 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
       </header>
       <div className="feature-body">
         <div className="notification-content">
+          {saveFailed ? <div className="notification-settings-save-error panel" role="status"><p>通知設定尚未儲存，請重試</p><button type="button" className="title-card-compact-action" aria-label="重試儲存通知設定" disabled={saveBusy} aria-busy={saveBusy} onClick={() => {
+            if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+            saveTimer.current = null;
+            flushLatestSaveRef.current();
+          }}>{saveBusy ? "儲存中…" : "重試儲存"}</button></div> : null}
           {notificationSettingsLoadUiState === "failed" ? <div className="notification-settings-load-error panel" role="alert"><span>通知設定載入失敗</span><button type="button" className="title-card-compact-action" aria-label="重新載入通知設定" onClick={() => { notificationSettingsLoadState.current = "loading"; setNotificationSettingsControlsBlocked(true); setNotificationSettingsLoadUiState("loading"); setNotificationSettingsReloadRevision((current) => current + 1); }}>重新載入</button></div> : null}
           <div className="notification-bulk-actions" role="group" aria-label="批次通知設定">
             <button type="button" className="notification-bulk-enable primary-action branded-explore-action" disabled={notificationSettingsControlsBlocked} onClick={() => setAvailableNotifications(true)}><span>全部開啟</span></button>
