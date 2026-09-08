@@ -30,7 +30,7 @@ test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發�
   const navigate = vi.fn();
   const { container } = render(<FeaturePageRouter screen={route} onNavigate={navigate} />);
   expect(container.querySelector('.matrix-notebook-screen, .matrix-custom-status-screen')).toBeNull();
-  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent(`請先使用 LINE 登入後再進入「${title}」。`);
+  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent(`請先登入後再使用 ${title}`);
   expect(navigate).not.toHaveBeenCalled();
   expect(settings.listCustomStatusSettings).not.toHaveBeenCalled();
   expect(window.localStorage.getItem('matrix-notebook-entries')).toBeNull();
@@ -102,7 +102,7 @@ test('the first tap on the custom-condition icon prompts a guest without navigat
   const navigate = vi.fn();
   render(<div className="mobile-page"><MatrixStatusPage onNavigate={navigate} /></div>);
   fireEvent.click(await screen.findByRole('button', { name: '自訂觸發條件，連續點擊兩下開啟' }));
-  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('LINE');
+  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('請先登入後再使用 自訂觸發條件');
   expect(navigate).not.toHaveBeenCalled();
 });
 

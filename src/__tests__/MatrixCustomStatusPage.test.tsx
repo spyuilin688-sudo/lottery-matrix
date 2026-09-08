@@ -162,7 +162,7 @@ test('降級後可取消既有複合版路，但不可新增未授權複合版�
 test('自訂頁再次驗證為未登入時返回狀態頁，不顯示登入卡片', async () => {
  api.listCustomStatusSettings.mockRejectedValueOnce(Object.assign(new Error('AUTH_REQUIRED'), {code:'AUTH_REQUIRED'}));
  const navigate=vi.fn(); render(<MatrixCustomStatusPage onNavigate={navigate}/>);
- expect((await screen.findByRole('dialog')).textContent).toContain('請先登入後再使用自訂觸發條件');
+ expect((await screen.findByRole('dialog')).textContent).toContain('請先登入後再使用 自訂觸發條件');
  expect(navigate).toHaveBeenCalledWith('status');
  expect(screen.queryByRole('button',{name:'前往登入'})).toBeNull();
  expect(screen.queryByRole('tablist')).toBeNull();

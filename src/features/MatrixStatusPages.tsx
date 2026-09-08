@@ -137,7 +137,7 @@ function customStatusAccessNotice(code: string) {
   return {
     title: code === "AUTH_REQUIRED" ? "請先登入" : "無法使用自訂觸發條件",
     description: code === "AUTH_REQUIRED"
-      ? "請先登入後再使用自訂觸發條件"
+      ? "請先登入後再使用 自訂觸發條件"
       : "目前 Matrix Pro 方案不符合自訂觸發條件的使用權限",
   };
 }
