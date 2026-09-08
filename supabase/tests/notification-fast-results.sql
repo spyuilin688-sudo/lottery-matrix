@@ -8,7 +8,7 @@ declare
 begin
   v_body := private.notification_render_payload('lottery_result','test',
     '{"lottery":"今彩539","period":"115000216","drawDate":"2026-09-05","numbers":["03","08","10","28","38"]}'::jsonb)->>'body';
-  assert v_body = '09/05(六) 今彩539 開獎號碼：03-08-10-28-38', 'result uses the actual draw date, weekday and padded hyphenated numbers';
+  assert v_body = '09/05(六) 03-08-10-28-38', 'result uses the actual draw date, weekday and padded hyphenated numbers';
   assert private.notification_render_payload('bet_reminder','test','{}')->>'body'
     = '選號時間到了，記得完成你的選號。', 'reminder copy';
   assert private.notification_render_payload('matrix_card','test',
@@ -22,7 +22,7 @@ begin
   ) as copies(state,copy) loop
     assert private.notification_render_payload('matrix_status','test',
       jsonb_build_object('lottery','今彩539','drawDate','2026-09-05','statusLabel',v_state))->>'body'
-      = '09/05(六) 今彩539 ' || v_copy, 'status maps to its approved copy';
+      = v_copy, 'status maps to its approved copy';
   end loop;
   begin
     perform private.notification_render_payload('matrix_card','test',
