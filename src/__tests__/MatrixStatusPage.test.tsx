@@ -29,6 +29,12 @@ vi.mock('../auth/line-auth', () => ({
   signInWithLine: vi.fn(),
   signOutFromMatrix: vi.fn(),
 }));
+vi.mock('../lib/supabase', () => ({
+  getSupabaseClient: () => ({ auth: {
+    getSession: async () => ({ data: { session: { access_token: 'test', user: { app_metadata: { provider: 'custom:line' } } } }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+  } }),
+}));
 
 declare const process: { cwd(): string };
 
@@ -252,7 +258,7 @@ test('自訂入口檢查完成前不換頁、不重複請求，通過後才進�
   const navigate=vi.fn(); render(<MatrixStatusPage onNavigate={navigate}/>);
   const trigger=screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
   fireEvent.click(trigger); fireEvent.click(trigger);
-  expect(trigger).toHaveAttribute('aria-busy','true');
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-busy','true'));
   expect(trigger).toHaveAttribute('aria-disabled','true');
   expect(trigger).not.toBeDisabled();
   expect(navigate).not.toHaveBeenCalled();
@@ -267,6 +273,7 @@ test('離開狀態頁後遲到的入口檢查結果不再換頁', async () => {
   statusApi.listCustomStatusSettings.mockReturnValueOnce(new Promise(resolve=>{finish=resolve;}));
   const navigate=vi.fn(); const {unmount}=render(<MatrixStatusPage onNavigate={navigate}/>);
   fireEvent.click(screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'}));
+  await waitFor(() => expect(statusApi.listCustomStatusSettings).toHaveBeenCalled());
   unmount();
   await act(async()=>finish({items:[],entitlements:{canCustomizeStatus:true}}));
   expect(navigate).not.toHaveBeenCalled();

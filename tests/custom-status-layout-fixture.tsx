@@ -31,10 +31,13 @@ getSupabaseClient().auth.getSession = async () => ({
     access_token: 'custom-status-layout-fixture', refresh_token: 'fixture-only',
     token_type: 'bearer', expires_in: 3600,
     user: { id: '00000000-0000-4000-8000-000000000446', aud: 'authenticated',
-      app_metadata: {}, user_metadata: {}, created_at: '2026-09-08T00:00:00Z' },
+      app_metadata: { provider: 'custom:line' }, user_metadata: {}, created_at: '2026-09-08T00:00:00Z' },
   } },
   error: null,
 });
+getSupabaseClient().auth.onAuthStateChange = () => ({ data: { subscription: {
+  id: 'custom-status-fixture', callback: () => {}, unsubscribe() {},
+} } });
 
 function FixturePage() {
   const [screen, setScreen] = useState(fixtureParams.has('entry') ? 'status' : 'status-settings');

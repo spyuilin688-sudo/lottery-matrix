@@ -212,3 +212,10 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 - Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。
 - 依 2026-09-08 使用者最新修正，自訂觸發條件在狀態頁入口先查驗登入與伺服器 `canCustomizeStatus`，通過才換頁；檢查期間顯示設定讀取中並防止重複請求。未登入、方案不符或讀取失敗使用共用 `AppDialog`，關閉後留在原狀態頁並可重試。移除自訂頁內登入／方案提示卡；若進頁後再次驗證或儲存／重置時失去權限，隱藏自訂頁並返回狀態頁顯示同一提醒。保留正式 RPC 驗證及既有方案條件。
 - 通知設定儲存失敗在頁內持續顯示提示及「重試儲存」，保留最新編輯；只有伺服器確認最新設定後才清除提示。重試期間防止重複提交，離頁後不更新畫面。
+
+
+## Notebook and custom-condition entry — 2026-09-08
+
+- Check LINE login at the entry click, before changing the screen or shortcut state. Guests see the existing login dialog and remain on their originating page when it closes; never redirect them home. This applies to normal navigation, opening a saved shortcut, selecting a shortcut, and the first tap on the custom-condition icon. Logged-in custom-condition entry retains its existing double-tap behavior. The shared feature router additionally prevents protected content from mounting without a LINE session. Session-read failures have a separate retry-later prompt. Sign-out removes page access, and stale session reads must not restore it. Existing server and entitlement checks remain authoritative.
+- Notebook deletion starts with the toolbar delete action, then selection of one note, then the existing destructive confirmation. Cancel preserves data. Opening a note uses the separate editor; saving and leaving unsaved content retain their confirmations.
+- Notebook pages use 16px side insets, 8px title-card/editor spacing and toolbar gaps. The editor has 8px top padding and an 8px gap below its return row. Title padding is 5px on top/left/bottom; content padding is 5px on top/left/right. Text size remains unchanged on the compact add/delete and branded write actions.

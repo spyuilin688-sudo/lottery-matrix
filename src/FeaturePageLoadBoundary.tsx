@@ -14,7 +14,7 @@ function reloadCurrentPage() {
   window.location.reload();
 }
 
-function FeaturePageLoadState({
+export function FeaturePageLoadState({
   failed = false,
   onHome,
   reloadPage = reloadCurrentPage,

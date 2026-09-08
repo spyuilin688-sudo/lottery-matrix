@@ -138,11 +138,12 @@ for (const width of [320, 360, 390, 430]) {
       });
       await page.goto(`/tests/custom-status-layout-fixture.html?entry=1${reason === 'guest' ? '&guest=1' : ''}`);
       const trigger=page.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
-      await trigger.dblclick();
+      if (reason === 'guest') await trigger.click();
+      else await trigger.dblclick();
       const dialog=page.getByRole('dialog');
       await expect(dialog).toBeVisible();
       await expect(dialog).toContainText(reason === 'guest'
-        ? '請先登入後再使用自訂觸發條件' : '目前 Matrix Pro 方案不符合自訂觸發條件的使用權限');
+        ? '請先使用 LINE 登入' : '目前 Matrix Pro 方案不符合自訂觸發條件的使用權限');
       await expect(page.locator('.matrix-status-screen')).toBeVisible();
       await expect(page.locator('.matrix-custom-status-screen')).toHaveCount(0);
       await expect(page.locator('.custom-status-access-notice')).toHaveCount(0);
