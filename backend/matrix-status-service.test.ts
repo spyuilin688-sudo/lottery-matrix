@@ -135,8 +135,8 @@ describe('Matrix status artifact orchestration', () => {
       oneCodeGroups: [{ id: 'two-roads', rows: [{ consecutive: '準7進8', roadType: '加減', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 2 }] }],
     });
     const result = buildMatrixStatusArtifact(explore([row(), row({ id: 'road-2', lockedPosition: 2 })]), null, [config], entitlements);
-    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:two-roads')).toEqual(expect.objectContaining({
-      id: 'custom:ACTIVE:two-roads', ruleId: 'CUSTOM:ACTIVE:two-roads', sameCodeRoadCount: 2,
+    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:two-roads:08')).toEqual(expect.objectContaining({
+      id: 'custom:ACTIVE:two-roads:08', ruleId: 'CUSTOM:ACTIVE:two-roads', sameCodeRoadCount: 2,
       roads: [expect.objectContaining({ id: 'road-1:08' }), expect.objectContaining({ id: 'road-2:08' })],
     }));
   });
@@ -153,7 +153,7 @@ describe('Matrix status artifact orchestration', () => {
       row({ id: 'add', algorithmType: '加減' }),
     ]), null, [active, custom('CRITICAL')], entitlements);
     expect(result.cards.map((card) => card.status)).toEqual(['CRITICAL', 'RESONANCE', 'FOCUS', 'ACTIVE']);
-    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:ordered-roads')?.roads.map((road) => road.algorithmType)).toEqual(['加減', '拖牌']);
+    expect(result.cards.find((card) => card.id === 'custom:ACTIVE:ordered-roads:08')?.roads.map((road) => road.algorithmType)).toEqual(['加減', '拖牌']);
   });
 
   it('counts two composite rule contributions even when they predict the same code', () => {
@@ -172,7 +172,7 @@ describe('Matrix status artifact orchestration', () => {
     const result = buildMatrixStatusArtifact(explore([]), tianyan, [config], entitlements);
     expect(result.summary).toMatchObject({ status: 'FOCUS', count: 1 });
     expect(result.customTriggers).toEqual([{ status: 'FOCUS', groupId: 'two' }]);
-    expect(result.cards).toEqual([expect.objectContaining({ id: 'custom:FOCUS:two', status: 'FOCUS', roads: [expect.objectContaining({ algorithmType: '複合' })] })]);
+    expect(result.cards).toEqual([expect.objectContaining({ id: 'custom:FOCUS:two:08', status: 'FOCUS', roads: [expect.objectContaining({ algorithmType: '複合' })] })]);
   });
 
   it('preserves two, seven, and thirteen-period Tianyan access tiers during projection', () => {
@@ -195,7 +195,7 @@ describe('Matrix status artifact orchestration', () => {
       canUseSeven: false,
       canUseThirteen: false,
     });
-    const roads = result.cards.find((card) => card.id === 'custom:FOCUS:tiered-composite')?.roads ?? [];
+    const roads = result.cards.find((card) => card.id === 'custom:FOCUS:tiered-composite:08,09')?.roads ?? [];
 
     expect(roads.map((road) => ({ explorePeriods: road.explorePeriods, locked: road.locked }))).toEqual([
       { explorePeriods: 2, locked: false },

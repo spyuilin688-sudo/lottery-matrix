@@ -3,10 +3,18 @@ import { createMatrixCustomStatusRoutes } from './matrix-custom-status-routes';
 import type { MemberContext } from './matrix-entitlements';
 import type { CustomStatusConfig } from './matrix-custom-status';
 
-const saved: CustomStatusConfig = {
+const saved = {
   lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13, exploreRange: '完整範圍',
   oneCodeGroups: [{ id: 'one', rows: [{ consecutive: '準4進5', roadType: '加減', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 2 }] }],
   twoCodeGroups: [],
+};
+
+const upgraded: CustomStatusConfig = {
+  schemaVersion: 2, lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13, exploreRange: '完整範圍',
+  oneCodeGroups: [{ id: 'one', rows: [{
+    consecutiveMin: 4, consecutiveMax: 4, roadTypes: ['加減'], roadRelation: 'any',
+    numberOrder: '依號碼由小到大排序', sameCodeMin: 2, sameCodeMax: null,
+  }] }], twoCodeGroups: [],
 };
 
 function member(plan: MemberContext['plan'] = 'monthly', active = true): MemberContext {
@@ -26,14 +34,14 @@ describe('Matrix custom status routes', () => {
     const { routes: api } = routes(member('monthly'));
     await expect(api.list({ authorization: 'Bearer token', body: {} })).resolves.toMatchObject({
       status: 200,
-      body: { items: [{ config: saved, evaluation: { mode: 'custom' } }] },
+      body: { items: [{ config: upgraded, evaluation: { mode: 'custom' } }] },
     });
   });
 
   it('lets monthly-or-above members save and replaces only the selected slot', async () => {
     const { routes: api, store } = routes(member('monthly'));
-    await expect(api.save({ authorization: 'Bearer token', body: saved })).resolves.toMatchObject({ status: 200, body: { item: saved } });
-    expect(store.save).toHaveBeenCalledWith('member-1', saved);
+    await expect(api.save({ authorization: 'Bearer token', body: saved })).resolves.toMatchObject({ status: 200, body: { item: upgraded } });
+    expect(store.save).toHaveBeenCalledWith('member-1', upgraded);
   });
 
   it('rejects custom saves for free, trial and expired members', async () => {

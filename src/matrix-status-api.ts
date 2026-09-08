@@ -2,28 +2,13 @@ import type { LotteryId } from './Prototype';
 import { getSupabaseClient } from './lib/supabase';
 import { MatrixApiError } from './matrix-api-client';
 import type { ExploreValidationResponse } from './matrix-algorithm-api';
+import type { CustomStatusConfig } from '../shared/matrix-status-config';
+export type { CustomConditionRow, CustomConditionGroup, CustomStatusConfig } from '../shared/matrix-status-config';
 
 export type MatrixStatusCode = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type CustomMatrixStatusCode = Exclude<MatrixStatusCode, 'DORMANT'>;
 export type CustomRoadType = '加減' | '合值' | '拖牌' | '複合';
 export type CustomNumberOrder = '依號碼由小到大排序' | '依實際開獎順序排序';
-
-export type CustomConditionRow = {
-  consecutive: string;
-  roadType: CustomRoadType;
-  numberOrder: CustomNumberOrder;
-  sameCodeQuantity: number;
-};
-
-export type CustomConditionGroup = { id: string; rows: CustomConditionRow[] };
-export type CustomStatusConfig = {
-  lottery: LotteryId;
-  status: CustomMatrixStatusCode;
-  explorePeriods: 13;
-  exploreRange: '完整範圍';
-  oneCodeGroups: CustomConditionGroup[];
-  twoCodeGroups: CustomConditionGroup[];
-};
 
 export type MatrixStatusRoadDetail = {
   id: string;

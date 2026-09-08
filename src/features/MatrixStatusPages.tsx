@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChevronDownIcon, ChevronRightIcon, GearIcon, PlusIcon, ReaderIcon, ReloadIcon, TrashIcon } from "@radix-ui/react-icons";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon, GearIcon, ReaderIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "../Prototype";
 import { QUICK_SETTINGS_DOUBLE_TAP_MS } from "../BottomNavigation";
 import { type ExploreValidation } from "../matrix-algorithm-api";
@@ -8,6 +8,8 @@ import { useDoubleClickAction } from "../useDoubleClickAction";
 import { ExploreValidationProcess } from "./MatrixValidation";
 import { Navigate } from "./navigation";
 import { FeatureShell, MobilePagePortal } from "./shared";
+import { createDefaultCustomStatusConfig, normalizeCustomStatusConfig, validateCustomConfigRows } from "../../shared/matrix-status-config";
+import { CustomConditionSection } from "./CustomConditionSection";
 
 export const MATRIX_STATUS_LABELS: Record<CustomMatrixStatusCode, string> = {
   ACTIVE: "啟動",
@@ -279,220 +281,156 @@ export const CUSTOM_STATUS_OPTIONS: Array<[CustomMatrixStatusCode, string, strin
   ["RESONANCE", "共振", "purple"], ["CRITICAL", "臨界", "orange"],
 ];
 
-export const ONE_CODE_STREAKS = ["準4進5", "準5進6", "準6進7", "準7進8"];
-
-export const TWO_CODE_STREAKS = ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"];
-
-export type Chapter15DefaultRule = {
-  consecutive: string;
-  roadType: string;
-  numberOrder: "順球";
-  quantity: string;
-};
-
-export const CHAPTER_15_DEFAULT_RULES: Record<CustomMatrixStatusCode, { one: Chapter15DefaultRule[]; two: Chapter15DefaultRule[] }> = {
-  ACTIVE: {
-    one: [
-      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "2～4組" },
-    ],
-    two: [
-      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "3～5組" },
-    ],
-  },
-  FOCUS: {
-    one: [
-      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "5～6組" },
-      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "3～4組" },
-      { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "1組" },
-    ],
-    two: [
-      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "6～7組" },
-      { consecutive: "準11進12＋準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組以上＋1組" },
-      { consecutive: "準7進8～準11進12＋準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "3組以上＋6～7組" },
-    ],
-  },
-  RESONANCE: {
-    one: [
-      { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組" },
-      { consecutive: "準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "7組以上" },
-      { consecutive: "準5進6～準6進7", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "5組以上" },
-      { consecutive: "拖牌準7進8＋加減準5進6～準6進7", roadType: "拖牌＋加減", numberOrder: "順球", quantity: "各1組以上" },
-      { consecutive: "拖牌準7進8＋合值準5進6～準6進7", roadType: "拖牌＋合值", numberOrder: "順球", quantity: "各1組以上" },
-    ],
-    two: [
-      { consecutive: "準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "8組以上" },
-      { consecutive: "準11進12＋準7進8～準9進10", roadType: "加減＋合值", numberOrder: "順球", quantity: "1組以上＋2組以上" },
-      { consecutive: "準7進8～準11進12＋準5進6～準6進7", roadType: "加減＋合值", numberOrder: "順球", quantity: "6組以上＋8組以上" },
-      { consecutive: "拖牌準7進8～準9進10＋加減準5進6～準6進7", roadType: "拖牌＋加減", numberOrder: "順球", quantity: "1組以上＋6組以上" },
-      { consecutive: "拖牌準7進8～準9進10＋合值準5進6～準6進7", roadType: "拖牌＋合值", numberOrder: "順球", quantity: "1組以上＋6組以上" },
-    ],
-  },
-  CRITICAL: {
-    one: [
-      { consecutive: "準7進8", roadType: "加減＋合值", numberOrder: "順球", quantity: "2組以上" },
-      { consecutive: "準7進8", roadType: "加減＋拖牌，或合值＋拖牌（各至少1組）", numberOrder: "順球", quantity: "2組以上" },
-      { consecutive: "準7進8", roadType: "拖牌", numberOrder: "順球", quantity: "2組以上" },
-    ],
-    two: [
-      { consecutive: "準11進12", roadType: "加減＋合值", numberOrder: "順球", quantity: "2組以上" },
-    ],
-  },
-};
-
-export function defaultCustomRow(hitType: "one" | "two"): CustomConditionRow {
-  return {
-    consecutive: hitType === "one" ? "準4進5" : "準5進6",
-    roadType: "加減",
-    numberOrder: "依號碼由小到大排序",
-    sameCodeQuantity: 1,
-  };
-}
-
-export function duplicateCustomRows(groups: CustomConditionGroup[]) {
-  return groups.some((group) => {
-    const keys = group.rows.map((row) => [row.consecutive, row.roadType, row.numberOrder, row.sameCodeQuantity].join("|"));
-    return new Set(keys).size !== keys.length;
-  });
-}
-
-export function Chapter15DefaultTable({ statusLabel, hitLabel, rules }: {
-  statusLabel: string;
-  hitLabel: string;
-  rules: Chapter15DefaultRule[];
-}) {
-  return <table className="custom-status-default-table" aria-label={`${statusLabel}預設觸發條件（${hitLabel}）`}>
-    <thead><tr><th>連準次數</th><th>版路類型</th><th>號碼順序</th><th>數量</th></tr></thead>
-    <tbody>{rules.map((rule, index) => <tr key={`${rule.consecutive}-${rule.roadType}-${rule.quantity}-${index}`}>
-      <td>{rule.consecutive}</td><td>{rule.roadType}</td><td>{rule.numberOrder}</td><td>{rule.quantity}</td>
-    </tr>)}</tbody>
-  </table>;
-}
-
-export function CustomConditionSection({
-  title, hitType, groups, setGroups, compositeEnabled, usingDefaults, defaultRules, statusLabel,
-}: {
-  title: string;
-  hitType: "one" | "two";
-  groups: CustomConditionGroup[];
-  setGroups: React.Dispatch<React.SetStateAction<CustomConditionGroup[]>>;
-  compositeEnabled: boolean;
-  usingDefaults: boolean;
-  defaultRules: Chapter15DefaultRule[];
-  statusLabel: string;
-}) {
-  const [expanded, setExpanded] = useState(true);
-  const streaks = hitType === "one" ? ONE_CODE_STREAKS : TWO_CODE_STREAKS;
-  const updateRow = (groupIndex: number, rowIndex: number, patch: Partial<CustomConditionRow>) => {
-    setGroups((current) => current.map((group, index) => index === groupIndex
-      ? { ...group, rows: group.rows.map((row, itemIndex) => itemIndex === rowIndex ? { ...row, ...patch } : row) }
-      : group));
-  };
-  const removeRow = (groupIndex: number, rowIndex: number) => setGroups((current) => current.map((group, index) => index === groupIndex
-    ? { ...group, rows: group.rows.filter((_, itemIndex) => itemIndex !== rowIndex) }
-    : group));
-  return <section className="custom-status-hit-section">
-    <button type="button" className="custom-status-hit-header" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
-      <strong>{title}</strong><span>{usingDefaults ? `預設觸發條件（${defaultRules.length} 則）` : `觸發條件組合（${groups.length} 組）`}</span><ChevronDownIcon data-open={expanded} />
-    </button>
-    {expanded ? <div className="custom-status-groups">
-      {usingDefaults ? <Chapter15DefaultTable statusLabel={statusLabel} hitLabel={title} rules={defaultRules} /> : null}
-      {groups.map((group, groupIndex) => <article className="custom-status-group" key={group.id}>
-        <header><strong>組合 {groupIndex + 1}</strong><button type="button" aria-label={`刪除組合 ${groupIndex + 1}`} onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}><TrashIcon /></button></header>
-        {group.rows.map((condition, rowIndex) => <div className="custom-status-condition-row" key={`${group.id}-${rowIndex}`}>
-          <label>連準次數<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 連準次數`} value={condition.consecutive} onChange={(event) => updateRow(groupIndex, rowIndex, { consecutive: event.target.value })}>{streaks.map((streak) => <option key={streak}>{streak}</option>)}</select></label>
-          <label>版路類型<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 版路類型`} value={condition.roadType} onChange={(event) => updateRow(groupIndex, rowIndex, { roadType: event.target.value as CustomConditionRow['roadType'] })}>{["加減", "合值", "拖牌", "複合"].map((road) => <option key={road} value={road} disabled={road === "複合" && !compositeEnabled}>{road}{road === "複合" && !compositeEnabled ? "（季費以上）" : ""}</option>)}</select></label>
-          <label>號碼順序<select aria-label={`組合 ${groupIndex + 1} 條件 ${rowIndex + 1} 號碼順序`} value={condition.numberOrder} onChange={(event) => updateRow(groupIndex, rowIndex, { numberOrder: event.target.value as CustomConditionRow['numberOrder'] })}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select></label>
-          <label>同碼數量<input aria-label="同碼數量" type="number" min={1} max={99} value={condition.sameCodeQuantity} onChange={(event) => updateRow(groupIndex, rowIndex, { sameCodeQuantity: Math.min(99, Math.max(1, Number(event.target.value) || 1)) })} /></label>
-          {group.rows.length > 1 ? <button type="button" aria-label={`組合 ${groupIndex + 1} 刪除條件 ${rowIndex + 1}`} onClick={() => removeRow(groupIndex, rowIndex)}><TrashIcon /></button> : null}
-        </div>)}
-        <button type="button" className="custom-status-add-button" aria-label={`組合 ${groupIndex + 1} 新增條件`} disabled={group.rows.length >= 10} onClick={() => setGroups((current) => current.map((item) => item.id === group.id ? { ...item, rows: [...item.rows, defaultCustomRow(hitType)] } : item))}><PlusIcon />新增條件（最多 10 條）</button>
-      </article>)}
-      <button type="button" className="custom-status-add-button" aria-label={`新增${hitType === "one" ? "一碼" : "二碼"}觸發條件組合`} disabled={groups.length >= 20} onClick={() => setGroups((current) => [...current, { id: `${hitType}-${Date.now()}-${current.length}`, rows: [defaultCustomRow(hitType)] }])}><PlusIcon />新增觸發條件組合（最多 20 組）</button>
-    </div> : null}
-  </section>;
-}
-
 export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
   const [status, setStatus] = useState<CustomMatrixStatusCode>("ACTIVE");
-  const [configs, setConfigs] = useState<CustomStatusConfig[]>([]);
-  const [oneCodeGroups, setOneCodeGroups] = useState<CustomConditionGroup[]>([]);
-  const [twoCodeGroups, setTwoCodeGroups] = useState<CustomConditionGroup[]>([]);
+  const [configs, setConfigs] = useState<Record<string, CustomStatusConfig>>({});
+  const [drafts, setDrafts] = useState<Record<string, CustomStatusConfig>>({});
   const [compositeEnabled, setCompositeEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [message, setMessage] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
-  const selectedSlotRef = useRef({ lottery, status });
-  selectedSlotRef.current = { lottery, status };
+  const [feedback, setFeedback] = useState<Record<string, { message: string; error?: boolean; path?: string }>>({});
+  const [pending, setPending] = useState<Record<string, "save" | "reset">>({});
+  const pendingSlots = useRef(new Set<string>());
+  const revisions = useRef<Record<string, number>>({});
+  const mounted = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const slot = lottery + "|" + status;
+  const config = drafts[slot] ?? configs[slot] ?? createDefaultCustomStatusConfig(lottery, status);
+  const usingDefaults = !drafts[slot] && !configs[slot];
+  const busy = Boolean(pending[slot]);
+  const notice = feedback[slot];
 
   useEffect(() => {
+    mounted.current = true;
     let active = true;
-    void listCustomStatusSettings().then((response) => {
+    void listCustomStatusSettings().then(response => {
       if (!active) return;
-      setConfigs(response.items.map((item) => item.config));
+      const items: Record<string, CustomStatusConfig> = {};
+      for (const item of response.items) {
+        const normalized = normalizeCustomStatusConfig(item.config);
+        if (!validateCustomConfigRows(normalized).ok) throw new Error("INVALID_REQUEST");
+        items[normalized.lottery + "|" + normalized.status] = normalized;
+      }
+      setConfigs(items);
       setCompositeEnabled(Boolean(response.entitlements?.canUseCompositeCustomRoad));
-      setLoadFailed(false);
       setLoaded(true);
-    }).catch(() => { if (active) { setLoadFailed(true); setMessage("自訂設定讀取失敗"); setLoaded(true); } });
-    return () => { active = false; };
+    }).catch(() => {
+      if (active) { setLoadFailed(true); setLoaded(true); }
+    });
+    return () => { active = false; mounted.current = false; };
   }, []);
 
-  useLayoutEffect(() => {
-    if (!loaded) return;
-    const selected = configs.find((config) => config.lottery === lottery && config.status === status);
-    setOneCodeGroups(selected?.oneCodeGroups ?? []);
-    setTwoCodeGroups(selected?.twoCodeGroups ?? []);
-    setMessage("");
-  }, [loaded, lottery, status]);
-
-  const save = async () => {
-    if (duplicateCustomRows([...oneCodeGroups, ...twoCodeGroups])) {
-      setMessage("同一組合不能有完全相同的條件");
-      return;
+  useEffect(() => {
+    if (notice?.path) {
+      const field = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field-path]") ?? [])
+        .find(element => element.dataset.fieldPath === notice.path);
+      field?.focus();
     }
-    const requestedSlot = { lottery, status };
-    const value: CustomStatusConfig = { ...requestedSlot, explorePeriods: 13, exploreRange: "完整範圍", oneCodeGroups, twoCodeGroups };
+  }, [notice]);
+
+  const editGroups = (root: "oneCodeGroups" | "twoCodeGroups"): React.Dispatch<React.SetStateAction<CustomConditionGroup[]>> => change => {
+    revisions.current[slot] = (revisions.current[slot] ?? 0) + 1;
+    setDrafts(current => {
+      const previous = current[slot] ?? configs[slot] ?? createDefaultCustomStatusConfig(lottery, status);
+      const groups = typeof change === "function" ? change(previous[root]) : change;
+      return { ...current, [slot]: { ...previous, [root]: groups } };
+    });
+    setFeedback(current => { const next = { ...current }; delete next[slot]; return next; });
+  };
+
+  const validate = () => {
+    for (const root of ["oneCodeGroups", "twoCodeGroups"] as const) {
+      for (const [groupIndex, group] of config[root].entries()) {
+        for (const [rowIndex, row] of group.rows.entries()) {
+          const path = root + "." + groupIndex + ".rows." + rowIndex;
+          if (row.consecutiveMin > row.consecutiveMax) return { message: "連準起點不可大於終點", path: path + ".consecutiveMin" };
+          if (row.sameCodeMax !== null && row.sameCodeMin > row.sameCodeMax) return { message: "同碼條數的最少不可大於最多", path: path + ".sameCodeMin" };
+        }
+      }
+    }
+    const result = validateCustomConfigRows(config);
+    if (result.ok) return null;
+    const messages: Record<string, string> = {
+      INVALID_CONSECUTIVE: "請選擇有效的連準範圍",
+      INVALID_ROAD_TYPE: "請至少選擇一種版路",
+      INVALID_ROAD_ALTERNATIVES: "每種版路組合須有版路，且不可重複",
+      INVALID_SAME_CODE_QUANTITY: "同碼條數須為1至99的整數，最多可不限",
+      DUPLICATE_ROW: "同一群組不能有完全相同的條件",
+    };
+    let path = result.path;
+    if (result.code === "INVALID_ROAD_ALTERNATIVES") path = path.replace(/roadTypeAlternatives$/, "roadTypes");
+    if (result.code === "DUPLICATE_ROW") path += ".consecutiveMin";
+    return { message: messages[result.code] ?? "條件內容有誤，請檢查設定", path };
+  };
+
+  const begin = (action: "save" | "reset") => {
+    if (pendingSlots.current.has(slot)) return false;
+    pendingSlots.current.add(slot);
+    setPending(current => ({ ...current, [slot]: action }));
+    setFeedback(current => { const next = { ...current }; delete next[slot]; return next; });
+    return true;
+  };
+  const finish = () => {
+    pendingSlots.current.delete(slot);
+    if (mounted.current) setPending(current => { const next = { ...current }; delete next[slot]; return next; });
+  };
+  const save = async () => {
+    if (busy || loadFailed || !loaded || usingDefaults) return;
+    const invalid = validate();
+    if (invalid) { setFeedback(current => ({ ...current, [slot]: { ...invalid, error: true } })); return; }
+    if (!begin("save")) return;
+    const revision = revisions.current[slot] ?? 0;
     try {
-      const response = await saveCustomStatusSetting(value);
-      setConfigs((current) => [...current.filter((item) => item.lottery !== requestedSlot.lottery || item.status !== requestedSlot.status), response.item]);
-      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
-        setMessage("設定已儲存並套用至首頁");
+      const response = await saveCustomStatusSetting(config);
+      const saved = normalizeCustomStatusConfig(response.item);
+      if (saved.lottery !== lottery || saved.status !== status || !validateCustomConfigRows(saved).ok) throw new Error("INVALID_RESPONSE");
+      if (!mounted.current) return;
+      setConfigs(current => ({ ...current, [slot]: saved }));
+      if (revision === (revisions.current[slot] ?? 0)) {
+        setDrafts(current => { const next = { ...current }; delete next[slot]; return next; });
+        setFeedback(current => ({ ...current, [slot]: { message: "設定已儲存並套用至首頁" } }));
       }
     } catch {
-      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
-        setMessage("目前方案或設定內容無法儲存");
-      }
-    }
+      if (mounted.current) setFeedback(current => ({ ...current, [slot]: { error: true, message: "目前方案或設定內容無法儲存" } }));
+    } finally { finish(); }
   };
   const reset = async () => {
-    const requestedSlot = { lottery, status };
+    if (loadFailed || !loaded || !begin("reset")) return;
+    const revision = revisions.current[slot] ?? 0;
     try {
-      await resetCustomStatusSetting(requestedSlot.lottery, requestedSlot.status);
-      setConfigs((current) => current.filter((item) => item.lottery !== requestedSlot.lottery || item.status !== requestedSlot.status));
-      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) {
-        setOneCodeGroups([]); setTwoCodeGroups([]);
-        setMessage("已恢復第15章預設");
+      await resetCustomStatusSetting(lottery, status);
+      if (!mounted.current) return;
+      setConfigs(current => { const next = { ...current }; delete next[slot]; return next; });
+      if (revision === (revisions.current[slot] ?? 0)) {
+        setDrafts(current => { const next = { ...current }; delete next[slot]; return next; });
+        setFeedback(current => ({ ...current, [slot]: { message: "已恢復預設條件" } }));
       }
     } catch {
-      if (selectedSlotRef.current.lottery === requestedSlot.lottery && selectedSlotRef.current.status === requestedSlot.status) setMessage("重置設定失敗");
-    }
+      if (mounted.current) setFeedback(current => ({ ...current, [slot]: { error: true, message: "重置設定失敗" } }));
+    } finally { finish(); }
   };
-
-  const selectedConfig = configs.find((config) => config.lottery === lottery && config.status === status);
-  const usingDefaults = !loadFailed && !selectedConfig && oneCodeGroups.length === 0 && twoCodeGroups.length === 0;
-  const statusLabel = CUSTOM_STATUS_OPTIONS.find(([code]) => code === status)?.[1] ?? status;
-  const defaultRules = CHAPTER_15_DEFAULT_RULES[status];
 
   return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
     <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
-    <p className="custom-status-fixed-rule">探索期數均為十三期，探索範圍均為完整範圍。</p>
-    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : <>
-      {usingDefaults ? <p className="custom-status-default-mode">目前使用第15章預設觸發條件</p> : null}
-      <CustomConditionSection title="準4+（鎖定1碼）" hitType="one" groups={oneCodeGroups} setGroups={setOneCodeGroups} compositeEnabled={compositeEnabled} usingDefaults={usingDefaults} defaultRules={defaultRules.one} statusLabel={statusLabel} />
-      <CustomConditionSection title="準5+（鎖定2碼）" hitType="two" groups={twoCodeGroups} setGroups={setTwoCodeGroups} compositeEnabled={compositeEnabled} usingDefaults={usingDefaults} defaultRules={defaultRules.two} statusLabel={statusLabel} />
-      {message ? <p role="alert" className="custom-status-message">{message}</p> : null}
-      <div className="custom-status-actions"><button type="button" aria-label="重置設定" onClick={() => void reset()}><ReloadIcon />重置設定</button><button type="button" aria-label="儲存設定" onClick={() => void save()}><ReaderIcon />儲存設定</button></div>
-    </>}
+    <section className="custom-status-explore" aria-label="探索條件">
+      <h2>探索條件</h2>
+      <dl><div><dt>探索期數</dt><dd>13期</dd></div><div><dt>探索範圍</dt><dd>完整範圍</dd></div></dl>
+    </section>
+    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
+      ? <p className="custom-status-message" role="alert">自訂設定讀取失敗</p>
+      : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
+        <p className="custom-status-default-mode" role="status">{usingDefaults ? "使用預設條件" : "已自訂"}</p>
+        <CustomConditionSection hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
+          compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
+        <CustomConditionSection hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
+          compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
+        {notice ? <p id="custom-status-error" role={notice.error ? "alert" : "status"} className="custom-status-message">{notice.message}</p> : null}
+        <div className="custom-status-actions">
+          <button type="button" aria-label="重置設定" disabled={busy} aria-busy={pending[slot] === "reset"} onClick={() => void reset()}><ReloadIcon />重置設定</button>
+          <button type="submit" aria-label="儲存設定" disabled={busy || usingDefaults} aria-busy={pending[slot] === "save"}><ReaderIcon />儲存設定</button>
+        </div>
+      </form>}
   </FeatureShell>;
 }

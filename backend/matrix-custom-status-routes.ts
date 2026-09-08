@@ -1,6 +1,7 @@
 import type { MatrixLottery } from './matrix-algorithm-shared';
 import {
   resolveStatusEvaluationMode,
+  normalizeCustomStatusConfig,
   validateCustomStatusConfig,
   type CustomStatus,
   type CustomStatusConfig,
@@ -44,7 +45,7 @@ export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
       try {
         const member = await dependencies.requireMember(input.authorization);
         const entitlements = resolveMatrixEntitlements(member, now());
-        const configs = await dependencies.store.list(member.memberId);
+        const configs = (await dependencies.store.list(member.memberId)).map(normalizeCustomStatusConfig);
         return {
           status: 200,
           body: {
@@ -68,9 +69,10 @@ export function createMatrixCustomStatusRoutes(dependencies: Dependencies) {
         const member = await dependencies.requireMember(input.authorization);
         const entitlements = resolveMatrixEntitlements(member, now());
         if (!entitlements.canCustomizeStatus) throw new Error('FORBIDDEN');
-        const config = record(input.body) as CustomStatusConfig;
-        const validation = validateCustomStatusConfig(config, entitlements);
+        const value = record(input.body);
+        const validation = validateCustomStatusConfig(value, entitlements);
         if (validation.ok === false) throw new Error(validation.code);
+        const config = normalizeCustomStatusConfig(value);
         return { status: 200, body: { item: await dependencies.store.save(member.memberId, config) } };
       } catch (cause) {
         return failure(cause);

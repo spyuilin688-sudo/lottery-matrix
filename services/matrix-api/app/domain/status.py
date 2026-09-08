@@ -1,5 +1,9 @@
 from collections import defaultdict
-from collections.abc import Callable
+import json
+from pathlib import Path
+
+
+RULES = json.loads(Path(__file__).with_name("status-rules.json").read_text(encoding="utf-8"))
 
 
 PRIORITY = ["CRITICAL", "RESONANCE", "FOCUS", "ACTIVE", "DORMANT"]
@@ -73,152 +77,47 @@ def _group_roads(roads: list[dict]) -> list[dict]:
     ]
 
 
-def _matching(
-    roads: list[dict],
-    types: set[str],
-    minimum: int,
-    maximum: int,
-) -> list[dict]:
-    return _displayed_roads([
-        road
-        for road in roads
-        if road["algorithmType"] in types
-        and minimum <= road["streak"] <= maximum
-    ])
-
-
-def _mixed(
-    roads: list[dict],
-    primary: str,
-    minimum: int,
-    maximum: int,
-) -> list[dict]:
-    matched = _matching(roads, {primary, "拖牌"}, minimum, maximum)
-    if (
-        any(road["algorithmType"] == primary for road in matched)
-        and any(road["algorithmType"] == "拖牌" for road in matched)
-    ):
-        return matched
-    return []
-
-
-def _qualified_mixed(
-    roads: list[dict],
-    minimum: int,
-    maximum: int,
-    qualifies: Callable[[int], bool],
-) -> list[dict]:
+def _matching_row(roads: list[dict], row: dict) -> list[dict]:
     witnesses: list[dict] = []
-    for primary in ("加減", "合值"):
-        matched = _mixed(roads, primary, minimum, maximum)
-        if qualifies(len(matched)):
-            witnesses.extend(matched)
+    for types in row.get("roadTypeAlternatives", [row["roadTypes"]]):
+        matched = _displayed_roads([
+            road for road in roads
+            if road["algorithmType"] in types
+            and row["consecutiveMin"] <= road["streak"] <= row["consecutiveMax"]
+            and road.get("numberOrder", "依號碼由小到大排序") == row["numberOrder"]
+        ])
+        if row["roadRelation"] == "all" and not all(
+            any(road["algorithmType"] == road_type for road in matched)
+            for road_type in types
+        ):
+            continue
+        if len(matched) < row["sameCodeMin"]:
+            continue
+        if row["sameCodeMax"] is not None and len(matched) > row["sameCodeMax"]:
+            continue
+        witnesses.extend(matched)
     return _displayed_roads(witnesses)
 
 
-def _trigger(rule_id: str, status: str, roads: list[dict]) -> dict:
-    return {"ruleId": rule_id, "status": status, "roads": _displayed_roads(roads)}
-
-
-def _first_a(group: dict) -> list[dict]:
-    high = _matching(group["roads"], {"加減", "合值"}, 7, 7)
-    low = _matching(group["roads"], {"加減", "合值"}, 5, 6)
-    triggers: list[dict] = []
-    if len(high) == 1:
-        triggers.append(_trigger("RESONANCE-1", "RESONANCE", high))
-    elif len(high) >= 2:
-        triggers.append(_trigger("CRITICAL-1", "CRITICAL", high))
-    if 2 <= len(low) <= 4:
-        triggers.append(_trigger("ACTIVE-1", "ACTIVE", low))
-    elif 5 <= len(low) <= 6:
-        triggers.append(_trigger("FOCUS-1", "FOCUS", low))
-    elif len(low) >= 7:
-        triggers.append(_trigger("RESONANCE-2", "RESONANCE", low))
-    return triggers
-
-
-def _first_b(group: dict) -> list[dict]:
-    critical = _qualified_mixed(group["roads"], 7, 7, lambda count: count >= 2)
-    focus = _qualified_mixed(group["roads"], 5, 6, lambda count: 3 <= count <= 4)
-    resonance = _qualified_mixed(group["roads"], 5, 6, lambda count: count >= 5)
-    return [
-        *([_trigger("CRITICAL-2", "CRITICAL", critical)] if critical else []),
-        *([_trigger("FOCUS-2", "FOCUS", focus)] if focus else []),
-        *([_trigger("RESONANCE-3", "RESONANCE", resonance)] if resonance else []),
-    ]
-
-
-def _first_c(group: dict) -> list[dict]:
-    high = _matching(group["roads"], {"拖牌"}, 7, 7)
-    if len(high) == 1:
-        return [_trigger("FOCUS-3", "FOCUS", high)]
-    if len(high) >= 2:
-        return [_trigger("CRITICAL-3", "CRITICAL", high)]
-    return []
-
-
-def _first_special(group: dict) -> list[dict]:
-    drag = _matching(group["roads"], {"拖牌"}, 7, 7)
-    if not drag:
+def _matching_group(roads: list[dict], rows: list[dict]) -> list[dict]:
+    evidence = [_matching_row(roads, row) for row in rows]
+    if not evidence or not all(evidence):
         return []
-    add = _matching(group["roads"], {"加減"}, 5, 6)
-    value_sum = _matching(group["roads"], {"合值"}, 5, 6)
-    return [
-        *([_trigger("RESONANCE-4", "RESONANCE", drag + add)] if add else []),
-        *([_trigger("RESONANCE-5", "RESONANCE", drag + value_sum)] if value_sum else []),
-    ]
-
-
-def _second_d(group: dict) -> list[dict]:
-    types = {"加減", "合值"}
-    high = _matching(group["roads"], types, 11, 11)
-    middle = _matching(group["roads"], types, 7, 9)
-    broad_high = _matching(group["roads"], types, 7, 11)
-    low = _matching(group["roads"], types, 5, 6)
-    triggers: list[dict] = []
-    if len(high) >= 2:
-        triggers.append(_trigger("CRITICAL-4", "CRITICAL", high))
-    if 3 <= len(middle) <= 5:
-        triggers.append(_trigger("ACTIVE-2", "ACTIVE", middle))
-    elif 6 <= len(middle) <= 7:
-        triggers.append(_trigger("FOCUS-4", "FOCUS", middle))
-    elif len(middle) >= 8:
-        triggers.append(_trigger("RESONANCE-6", "RESONANCE", middle))
-    if high and len(middle) == 1:
-        triggers.append(_trigger("FOCUS-5", "FOCUS", high + middle))
-    if high and len(middle) >= 2:
-        triggers.append(_trigger("RESONANCE-7", "RESONANCE", high + middle))
-    if len(broad_high) >= 3 and 6 <= len(low) <= 7:
-        triggers.append(_trigger("FOCUS-6", "FOCUS", broad_high + low))
-    if len(broad_high) >= 6 and len(low) >= 8:
-        triggers.append(_trigger("RESONANCE-8", "RESONANCE", broad_high + low))
-    return triggers
-
-
-def _second_special(group: dict) -> list[dict]:
-    drag = _matching(group["roads"], {"拖牌"}, 7, 9)
-    if not drag:
-        return []
-    add = _matching(group["roads"], {"加減"}, 5, 6)
-    value_sum = _matching(group["roads"], {"合值"}, 5, 6)
-    return [
-        *([_trigger("RESONANCE-9", "RESONANCE", drag + add)] if len(add) >= 6 else []),
-        *([_trigger("RESONANCE-10", "RESONANCE", drag + value_sum)] if len(value_sum) >= 6 else []),
-    ]
+    return _displayed_roads([road for matched in evidence for road in matched])
 
 
 def evaluate_chapter15(source: dict) -> dict:
     cards: list[dict] = []
     for group in _group_roads(source["roads"]):
-        if group["hitType"] == "one-code":
-            triggers = (
-                _first_a(group)
-                + _first_b(group)
-                + _first_c(group)
-                + _first_special(group)
-            )
-        else:
-            triggers = _second_d(group) + _second_special(group)
+        triggers = []
+        for rule in RULES:
+            if rule["hitType"] != group["hitType"]:
+                continue
+            witnesses = _matching_group(group["roads"], rule["rows"])
+            if witnesses:
+                triggers.append({
+                    "ruleId": rule["ruleId"], "status": rule["status"], "roads": witnesses,
+                })
         for matched in triggers:
             witnesses = _displayed_roads(matched["roads"])
             rule_id = matched["ruleId"]

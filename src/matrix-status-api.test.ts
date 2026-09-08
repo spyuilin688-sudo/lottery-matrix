@@ -38,6 +38,7 @@ describe('Matrix status Supabase RPC', () => {
 
   it('lists, saves and resets the authenticated member settings', async () => {
     const config = {
+      schemaVersion: 2,
       lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13,
       exploreRange: '完整範圍', oneCodeGroups: [], twoCodeGroups: [],
     } satisfies import('./matrix-status-api').CustomStatusConfig;
