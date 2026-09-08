@@ -19,7 +19,6 @@ function ConditionGroupPanel({ title, number, group, initiallyOpen, disabled, on
   return <article className="custom-status-group" aria-label={title + " 條件群組 " + number}>
     <details open={open} onToggle={event => setOpen(event.currentTarget.open)}>
       <summary className="custom-status-group-toggle">
-        <h3>條件群組 {number}</h3>
         <span className="custom-status-group-preview">{group.rows.length === 1
           ? <><span>{streak}</span><span>同碼 {quantity}</span></>
           : <span>{group.rows.length} 項條件同時符合</span>}</span>
@@ -34,10 +33,10 @@ function ConditionGroupPanel({ title, number, group, initiallyOpen, disabled, on
 type Props = {
   hitType: "one" | "two"; groups: CustomConditionGroup[];
   setGroups: Dispatch<SetStateAction<CustomConditionGroup[]>>;
-  compositeEnabled: boolean; disabled: boolean; errorPath?: string; modeLabel?: string;
+  compositeEnabled: boolean; disabled: boolean; errorPath?: string;
 };
 
-export function CustomConditionSection({ hitType, groups, setGroups, compositeEnabled, disabled, errorPath, modeLabel }: Props) {
+export function CustomConditionSection({ hitType, groups, setGroups, compositeEnabled, disabled, errorPath }: Props) {
   const [newGroupId, setNewGroupId] = useState<string>();
   const title = hitType === "one" ? "一碼條件" : "兩碼條件";
   const root = hitType === "one" ? "oneCodeGroups" : "twoCodeGroups";
@@ -54,7 +53,6 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
   return <section className="custom-status-hit-section" aria-label={title}>
     <header className="custom-status-section-heading">
       <h2 className="custom-status-section-title">{title}</h2>
-      {modeLabel ? <p className="custom-status-default-mode" role="status">{modeLabel}</p> : null}
     </header>
     <div className="custom-status-groups">
       {groups.map((group, groupIndex) => <Fragment key={group.id}>

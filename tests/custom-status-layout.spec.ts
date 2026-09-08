@@ -28,16 +28,28 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.getByText('使用預設條件', { exact: true })).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const summary = page.getByRole('region', { name: '探索條件' });
-    await expect(summary).toHaveText('探索期數：十三期|探索範圍：完整範圍');
+    await expect(summary).toHaveText('探索期數：十三期|探索範圍：完整範圍|使用預設條件');
     const metrics = await summary.evaluate(element => {
       const rect = element.getBoundingClientRect();
-      const [left, separator, right] = Array.from(element.children).map(child => child.getBoundingClientRect());
+      const [left, separator, middle, secondSeparator, right] = Array.from(element.children).map(child => child.getBoundingClientRect());
+      const tabs = element.previousElementSibling!;
+      const buttons = Array.from(tabs.children);
       return {
         afterTabs: element.previousElementSibling?.getAttribute('role') === 'tablist',
         afterLottery: element.previousElementSibling?.previousElementSibling?.classList.contains('matrix-status-lottery-switcher'),
         colors: Array.from(element.querySelectorAll('span,strong')).map(child => getComputedStyle(child).color),
         color: getComputedStyle(element).color,
-        centerError: Math.abs(separator.x + separator.width / 2 - rect.x - rect.width / 2),
+        fonts: Array.from(element.querySelectorAll('span,strong')).map(child => [getComputedStyle(child).fontSize,getComputedStyle(child).fontWeight,getComputedStyle(child).fontFamily].join('|')),
+        centerError: Math.max(
+          Math.abs(separator.x + separator.width / 2 - (left.right + middle.left) / 2),
+          Math.abs(secondSeparator.x + secondSeparator.width / 2 - (middle.right + right.left) / 2),
+          Math.abs(separator.y + separator.height / 2 - rect.y - rect.height / 2),
+          Math.abs(secondSeparator.y + secondSeparator.height / 2 - rect.y - rect.height / 2),
+        ),
+        tabGap: rect.top - tabs.getBoundingClientRect().bottom,
+        expectedTabHeight: tabs.getBoundingClientRect().width * 214 / 1532 - 6,
+        tabs: buttons.map(button => ({height:button.getBoundingClientRect().height,radius:getComputedStyle(button).borderRadius,clip:getComputedStyle(button).clipPath})),
+        tabFonts: buttons.map(button => [getComputedStyle(button.querySelector('strong')!).fontSize,getComputedStyle(button.querySelector('small')!).fontSize]),
         sameLine: Math.abs(left.y - right.y) < 1 && left.height < 24 && right.height < 24,
         height: rect.height,
         overflow: Array.from(element.children).some(child => child.scrollWidth > child.clientWidth + 1),
@@ -45,8 +57,12 @@ for (const width of [320, 360, 390, 430]) {
     });
     expect(metrics.afterTabs).toBe(true);
     expect(metrics.afterLottery).toBe(true);
-    expect(metrics.color).toBe('rgb(245, 242, 234)');
+    expect(metrics.color).toBe('rgb(170, 167, 162)');
     expect(metrics.colors.every(color => color === metrics.color)).toBe(true);
+    expect(new Set(metrics.fonts).size).toBe(1);
+    expect(metrics.tabGap).toBeCloseTo(8, 1);
+    expect(metrics.tabs.every(tab => Math.abs(tab.height - metrics.expectedTabHeight) < 0.1 && tab.radius === '8px' && tab.clip === 'none')).toBe(true);
+    expect(metrics.tabFonts.every(([large, small]) => large === '13px' && small === '7px')).toBe(true);
     expect(metrics.centerError).toBeLessThan(1);
     expect(metrics.sameLine).toBe(true);
     expect(metrics.height).toBeLessThanOrEqual(32);
@@ -55,13 +71,16 @@ for (const width of [320, 360, 390, 430]) {
     await page.getByRole('tab', { name: /共振/ }).click();
     const group = page.getByRole('article', { name: '一碼條件 條件群組 1', exact: true });
     const toggle = group.locator('summary');
+    await expect(page.locator('.custom-status-group h3')).toHaveCount(0);
     await expect(group.locator('details')).not.toHaveAttribute('open');
     await expect(group.getByRole('combobox', { name: '號碼排序' })).not.toBeVisible();
-    expect((await group.boundingBox())!.height).toBeLessThanOrEqual(72);
+    expect((await group.boundingBox())!.height).toBeLessThanOrEqual(36);
     const actions = page.locator('.custom-status-actions');
     const navigation = page.getByTestId('bottom-navigation');
     const actionBox = (await actions.boundingBox())!;
     expect(actionBox.y + actionBox.height).toBeLessThanOrEqual((await navigation.boundingBox())!.y - 4);
+    const actionSizes = await actions.locator('button').evaluateAll(buttons => buttons.map(button => ({width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height})));
+    expect(actionSizes.every(button => button.height === 28 && button.width < 110)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-collapsed.png`), animations: 'disabled' });
     await toggle.focus();
     await page.keyboard.press('Enter');
@@ -76,9 +95,9 @@ for (const width of [320, 360, 390, 430]) {
       roadWidth: element.querySelector('.custom-status-road-options')!.getBoundingClientRect().width,
       bodyWidth: element.querySelector('.custom-status-group-body')!.getBoundingClientRect().width,
     }));
-    expect(cardMetrics.height).toBeLessThanOrEqual(330);
-    expect(cardMetrics.fields.every(height => height >= 30 && height <= 31)).toBe(true);
-    expect(cardMetrics.roadButtons.every(height => height >= 30 && height <= 31)).toBe(true);
+    expect(cardMetrics.height).toBeLessThanOrEqual(270);
+    expect(cardMetrics.fields.every(height => height >= 24 && height <= 25)).toBe(true);
+    expect(cardMetrics.roadButtons.every(height => height >= 24 && height <= 25)).toBe(true);
     expect(cardMetrics.overflow).toBe(false);
     expect(new Set(cardMetrics.labels).size).toBe(1);
     expect(cardMetrics.fieldFont).toBe('13px');
@@ -86,7 +105,7 @@ for (const width of [320, 360, 390, 430]) {
     await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-expanded.png`), animations: 'disabled' });
     const order = group.getByRole('combobox', { name: '號碼排序' });
     await order.selectOption('依實際開獎順序排序');
-    await expect(page.getByText('已自訂', { exact: true })).toBeVisible();
+    await expect(page.getByText('使用自訂條件', { exact: true })).toBeVisible();
     const minimum = group.getByRole('spinbutton', { name: '最少', exact: true });
     await minimum.fill('2');
     await toggle.click();
@@ -119,7 +138,7 @@ for (const width of [320, 360, 390, 430]) {
       context.font = style.font;
       return context.measureText(select.selectedOptions[0].text).width + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + 20 <= select.clientWidth;
     })).toBe(true);
-    console.log(`Custom status ${width}px: collapsed <=72px; open ${cardMetrics.height}px; 13px type / 30px fields; keyboard, error focus, draft, save and add/delete passed`);
+    console.log(`Custom status ${width}px: collapsed <=36px; open ${cardMetrics.height}px; 13px type / 24px fields; keyboard, error focus, draft, save and add/delete passed`);
   });
 }
 

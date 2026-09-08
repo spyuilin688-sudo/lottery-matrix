@@ -24,10 +24,10 @@ test("彩種按鈕的選取範圍跟隨共用切角外框", () => {
   assert.match(lotterySwitcher, /\.lottery-card::after\s*\{[^}]*clip-path:\s*inherit;[^}]*border-radius:\s*0;[^}]*background:\s*var\(--home-octagon-frame\);/s);
 });
 
-test("自訂觸發四狀態與上方彩種切換同步長寬高間距及切角", () => {
-  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532 \/ 214;[^}]*padding-block:\s*0;[^}]*padding-inline:\s*4px;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
-  assert.match(lotterySwitcher, /\.lottery-card,[\s\S]*?\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*clip-path:\s*polygon\(/s);
-  assert.match(lotterySwitcher, /\.custom-status-tabs > button::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+test("自訂觸發四狀態維持流動寬度並縮減高度與使用圓角", () => {
+  assert.match(lotterySwitcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*width:\s*100%;[^}]*height:\s*calc\([^;]+-\s*6px\);[^}]*padding-block:\s*0;[^}]*padding-inline:\s*4px;[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);[^}]*gap:\s*6px;/s);
+  assert.match(lotterySwitcher, /\.custom-status-tabs > button\s*\{[^}]*height:\s*100%;[^}]*border-radius:\s*8px;/s);
+  assert.match(lotterySwitcher, /\.custom-status-tabs > button::after\s*\{[^}]*border-radius:\s*5px;/s);
   assert.doesNotMatch(feature, /\.custom-status-tabs\s*\{[^}]*padding-inline:\s*4px;/s);
   assert.doesNotMatch(feature, /\.custom-status-tabs button\s*\{[^}]*border-radius:\s*8px;/s);
 });
