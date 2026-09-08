@@ -1,7 +1,6 @@
 /* Shared lottery and Matrix status option geometry. */
 
-.lottery-switcher--home-style,
-.matrix-custom-status-screen .custom-status-tabs {
+.lottery-switcher--home-style {
   --matrix-option-cut: clamp(4px, 1.54vw, 6px);
 }
 
@@ -131,16 +130,15 @@
   display: grid;
   box-sizing: border-box;
   width: 100%;
-  aspect-ratio: 1532 / 214;
-  margin: 0 0 10px;
+  height: calc((min(100vw, var(--app-layout-max)) - 2 * var(--layout-page-inline)) * 214 / 1532 - 6px);
+  margin: 0 0 8px;
   padding-block: 0;
   padding-inline: 4px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
-.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card,
-.matrix-custom-status-screen .custom-status-tabs > button {
+.lottery-switcher--home-style > .lottery-switcher-hit-grid > .lottery-card {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -160,6 +158,11 @@
 }
 
 .matrix-custom-status-screen .custom-status-tabs > button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   appearance: none;
   position: relative;
   isolation: isolate;
@@ -169,7 +172,8 @@
   justify-content: center;
   --home-frame-color: #39434b;
   --home-frame-inner-color: color-mix(in srgb, var(--home-frame-color) 48%, transparent);
-  border: 0;
+  border: 1px solid var(--home-frame-color);
+  border-radius: 8px;
   background: #061017;
   color: #afb6bc;
   box-shadow: inset 0 0 6px rgba(57, 67, 75, .18);
@@ -179,10 +183,10 @@
 .matrix-custom-status-screen .custom-status-tabs > button::after {
   position: absolute;
   z-index: 2;
-  inset: 0;
+  inset: 2px;
   display: block;
-  clip-path: inherit;
-  background: var(--home-octagon-frame);
+  border: 1px solid var(--home-frame-inner-color);
+  border-radius: 5px;
   content: "";
   pointer-events: none;
 }

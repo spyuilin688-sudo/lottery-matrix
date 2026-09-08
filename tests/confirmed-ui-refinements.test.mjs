@@ -29,14 +29,14 @@ test("自訂觸發條件沿用首頁彩種切換並使用 8px 下間距", () => 
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
   assert.match(feature, /\.feature-body\s*\{[^}]*padding-inline:\s*var\(--layout-page-inline\);/s);
   assert.doesNotMatch(feature, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*(?:margin-left|margin-right|margin-inline):\s*-/s);
-  assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*aspect-ratio:\s*1532\s*\/\s*214;[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);
+  assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*height:\s*calc\([^;]+-\s*6px\);[^}]*padding-inline:\s*4px;[^}]*gap:\s*6px;/s);
   assert.match(switcher, /\.matrix-custom-status-screen \.custom-status-tabs > button\s*\{[^}]*padding:\s*0;/s);
 });
 
 test("自訂觸發條件卡及操作按鍵使用確認後的小字與金色新增按鍵", () => {
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-hit-header strong\s*\{[^}]*font-size:\s*12px;/s);
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-add-button\s*\{[^}]*border:\s*1px solid rgba\(196, 145, 69, \.55\);[^}]*background:\s*#030a0f;[^}]*color:\s*var\(--lottery-gold-500\);[^}]*font-size:\s*11px;/s);
-  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-actions button\s*\{[^}]*font-size:\s*11px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-section-title\s*\{[^}]*font-size:\s*14px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-add-button\s*\{[^}]*border:\s*1px solid rgba\(196,145,69,\.55\);[^}]*background:\s*#030a0f;[^}]*color:\s*var\(--lottery-gold-500\);[^}]*font-size:\s*12px;/s);
+  assert.match(feature, /\.matrix-custom-status-screen \.custom-status-actions button\s*\{[^}]*font-size:\s*12px;/s);
 });
 
 test("Matrix 指南移除標題下方重複卡片", () => {

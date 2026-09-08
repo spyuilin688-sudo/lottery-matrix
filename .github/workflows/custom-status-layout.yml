@@ -1,6 +1,8 @@
 name: Custom status mobile layout
 
 on:
+  push:
+    branches: ['work/custom-status-compact-*']
   pull_request:
     branches: [main]
     paths:
@@ -24,6 +26,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Focused custom status behavior
+        run: npx vitest run src/__tests__/MatrixCustomStatusPage.test.tsx src/__tests__/LineProtectedPages.test.tsx src/__tests__/MatrixStatusPage.test.tsx
+      - name: Focused custom status style ownership
+        run: node --test --test-name-pattern="自訂觸發|custom status tabs" tests/home-switcher-status-frame-final.test.mjs tests/confirmed-ui-refinements.test.mjs tests/status-reference-notification-quick-regression.test.mjs
       - run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright install --with-deps chromium
       - name: Verify custom status mobile layout and editing
         run: PLAYWRIGHT_BROWSERS_PATH=.sites-runtime/playwright npx playwright test tests/custom-status-layout.spec.ts --reporter=line

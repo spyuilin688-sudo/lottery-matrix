@@ -506,12 +506,15 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
       <span>探索期數：<strong>十三期</strong></span>
       <span className="custom-status-explore-divider" aria-hidden="true">|</span>
       <span>探索範圍：<strong>完整範圍</strong></span>
+      {loaded && !loadFailed ? <>
+        <span className="custom-status-explore-divider" aria-hidden="true">|</span>
+        <span role="status">{usingDefaults ? "使用預設條件" : "使用自訂條件"}</span>
+      </> : null}
     </section>
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
       ? <section className="panel"><p className="custom-status-message" role="alert">自訂設定讀取失敗</p><div className="custom-status-actions"><button type="button" aria-label="重新載入自訂設定" onClick={() => setReloadRevision(current => current + 1)}>重新載入</button></div></section>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
         <CustomConditionSection key={slot + "|one"} hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
-          modeLabel={usingDefaults ? "使用預設條件" : "已自訂"}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
         <CustomConditionSection key={slot + "|two"} hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
