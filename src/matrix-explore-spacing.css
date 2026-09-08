@@ -58,15 +58,15 @@
   object-fit: fill;
 }
 
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher {
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher {
   --matrix-switcher-size: calc(2.34rem * .85);
   --matrix-switcher-cut: clamp(3px, 1vw, 5px);
-  width: var(--matrix-switcher-size);
+  width: auto;
   height: var(--matrix-switcher-size);
   opacity: .96;
 }
 
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button {
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button {
   box-sizing: border-box;
   position: relative;
   isolation: isolate;
@@ -91,12 +91,12 @@
   overflow: hidden;
 }
 
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::before,
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher button::after {
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button::before,
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button::after {
   display: none;
 }
 
-.matrix-explore-main-screen .matrix-title-banner-actions .matrix-page-switcher img {
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher img {
   position: relative;
   z-index: 2;
   width: 100%;

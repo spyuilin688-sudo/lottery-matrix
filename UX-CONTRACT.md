@@ -92,6 +92,8 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 ## Navigation, async and recovery
 
+2026-09-08：三頁共用 `MatrixPageSwitcher`，移至第一張「探索設定」卡片標題同列右側。探索顯示天衍／天工，天衍顯示探索／天工，天工顯示探索／天衍；點擊呼叫既有頁面導覽，不再依上下捲動切換。探索、天衍、天工結果共用 `MatrixResultsPagination`，每頁 15 筆。天工點擊「重複號碼統計」的號碼小卡後，先依預測位置、再依間距升冪排序完整篩選結果，再分頁；切換篩選或重新探索回到第一頁。依據為本次使用者要求。
+
 2026-09-06: The user explicitly rejected loading feature-page code only when navigating. `Prototype` and `features/router` therefore import feature pages statically so their code loads at application startup. This supersedes the page-lazy-loading choice in the earlier P3 performance plan. The production import-graph test must keep every routed page in the startup graph; the earlier deferred-page and 500 KB chunk assertions no longer define this loading contract. The card exporter still loads only after download confirmation. Data requests, page markup, CSS, authentication and navigation targets retain their existing behavior. The shared `FeaturePageLoadBoundary` remains available for page render errors with user-initiated `重新載入` and `返回首頁`; navigation clears failure state without remounting a healthy shared page.
 
 2026-09-05：營運概覽新增本日瀏覽人數、本月瀏覽人數、總瀏覽人數，沿用既有 Cards 與手機排列。匿名識別雜湊保留 90 天，清除後再次造訪重新累加總瀏覽人數；彙總人數保留。日期沿用 Asia/Taipei。

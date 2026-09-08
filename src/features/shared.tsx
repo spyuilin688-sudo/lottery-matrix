@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId, type DrawOrder } from "../Prototype";
@@ -59,8 +59,6 @@ export const MATRIX_PAGE_ITEMS = [
   { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
 ] as const;
 
-export const MATRIX_LOOP_ITEMS = [MATRIX_PAGE_ITEMS[2], ...MATRIX_PAGE_ITEMS, MATRIX_PAGE_ITEMS[0]] as const;
-
 export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
   "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
@@ -82,49 +80,13 @@ export function MatrixPageSwitcher({ current, onNavigate }: {
   current: "explore" | "tianyan" | "tiangong";
   onNavigate: Navigate;
 }) {
-  const switcherRef = useRef<HTMLElement>(null);
-  const scrollSettleRef = useRef<number | null>(null);
-  const currentIndex = MATRIX_PAGE_ITEMS.findIndex((item) => item.screen === current) + 1;
-
-  useEffect(() => {
-    const switcher = switcherRef.current;
-    if (!switcher) return;
-    switcher.scrollTo({ top: currentIndex * switcher.clientHeight, behavior: "auto" });
-  }, [currentIndex]);
-
-  useEffect(() => () => {
-    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current);
-  }, []);
-
-  const settleScrolledPage = () => {
-    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current);
-    scrollSettleRef.current = window.setTimeout(() => {
-      const switcher = switcherRef.current;
-      if (!switcher || switcher.clientHeight === 0) return;
-      const rawIndex = Math.max(0, Math.min(MATRIX_LOOP_ITEMS.length - 1, Math.round(switcher.scrollTop / switcher.clientHeight)));
-      const normalizedIndex = rawIndex === 0
-        ? MATRIX_LOOP_ITEMS.length - 2
-        : rawIndex === MATRIX_LOOP_ITEMS.length - 1
-          ? 1
-          : rawIndex;
-      if (normalizedIndex !== rawIndex) {
-        switcher.scrollTo({ top: normalizedIndex * switcher.clientHeight, behavior: "auto" });
-      }
-      const target = MATRIX_LOOP_ITEMS[rawIndex].screen;
-      if (target !== current) onNavigate(target);
-    }, 120);
-  };
-
   return (
-    <nav ref={switcherRef} className="matrix-page-switcher" aria-label="Matrix Core 功能切換" onScroll={settleScrolledPage}>
-      {MATRIX_LOOP_ITEMS.map((item, index) => {
-        const isLoopClone = index === 0 || index === MATRIX_LOOP_ITEMS.length - 1;
-        return (
-          <button type="button" aria-label={item.label} aria-hidden={isLoopClone || undefined} tabIndex={isLoopClone ? -1 : 0} aria-current={!isLoopClone && item.screen === current ? "page" : undefined} data-loop-clone={isLoopClone || undefined} data-selected={!isLoopClone && item.screen === current} onClick={() => onNavigate(item.screen)} key={`${item.screen}-${index}`}>
-            <img src={item.image} alt="" draggable={false} />
-          </button>
-        );
-      })}
+    <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
+      {MATRIX_PAGE_ITEMS.filter((item) => item.screen !== current).map((item) => (
+        <button type="button" aria-label={item.label} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
+          <img src={item.image} alt="" draggable={false} />
+        </button>
+      ))}
     </nav>
   );
 }

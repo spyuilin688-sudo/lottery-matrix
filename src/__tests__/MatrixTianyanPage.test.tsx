@@ -47,6 +47,21 @@ beforeEach(() => {
   globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;
 });
 
+test('天衍結果每頁15筆，下一頁顯示剩餘結果並可返回', async () => {
+  const items = Array.from({ length: 16 }, (_, i) => ({ ...envelope.items[0], id: `ty-page-${i + 1}` }));
+  matrixApi.fetchTianyanList.mockResolvedValue({ ...envelope, total: 16, items });
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
+  await screen.findByRole('button', { name: '展開版路 ty-page-1' });
+  expect(screen.getAllByRole('button', { name: /展開版路 ty-page-/ })).toHaveLength(15);
+  expect(screen.getByRole('button', { name: '探索結果上一頁' }).hasAttribute('disabled')).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '探索結果下一頁' }));
+  expect(screen.getAllByRole('button', { name: /展開版路 ty-page-/ }).map(button => button.getAttribute('aria-label'))).toEqual(['展開版路 ty-page-16']);
+  expect(screen.getByRole('button', { name: '探索結果下一頁' }).hasAttribute('disabled')).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '探索結果上一頁' }));
+  expect(screen.getAllByRole('button', { name: /展開版路 ty-page-/ })).toHaveLength(15);
+});
+
 test('天衍移除近10期開獎號碼', () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   expect(screen.queryByText('近10期開獎號碼')).toBeNull();

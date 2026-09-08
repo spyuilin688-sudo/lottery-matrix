@@ -35,9 +35,9 @@ test("首頁快捷設定由左下角向右與向上各移動 4px，指南文案�
   assert.match(pages, /左下角設定按鈕/);
 });
 
-test("首頁狀態圖示與探索滑動圖示使用指定位置尺寸", () => {
+test("首頁狀態圖示維持位置，探索切換圖示移至設定標題同列", () => {
   assert.match(base, /\.home-screen \.matrix-status-lottery-logo\s*\{[^}]*left:\s*calc\(83\.5% - 24px\);/s);
-  assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;/s);
+  assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
   assert.doesNotMatch(feature, /status-title-trigger/);
   assert.match(pages, /matrix-status-settings-entry/);
   assert.doesNotMatch(exploreSpacing, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);

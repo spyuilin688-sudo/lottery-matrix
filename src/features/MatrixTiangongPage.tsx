@@ -11,6 +11,7 @@ import { type LotteryId } from "../Prototype";
 import { fetchTiangongList, fetchTiangongValidation, type TiangongApiRow, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES } from "./shared";
+import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 
 export function TiangongValidationProcess({ validation, loading, lottery = "今彩539", predictionNumber, predictedPosition, item }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId; predictionNumber?: string; predictedPosition?: number; item?: TiangongApiRow }) {
   if (loading) return <p className="empty-result">驗證資料載入中</p>;
@@ -106,6 +107,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const [secondRoads, setSecondRoads] = useState<Road[]>(["加減版路"]);
   const [sameCode, setSameCode] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [resultPage, setResultPage] = useState(1);
   const [searched, setSearched] = useState(false);
   const [response, setResponse] = useState<TiangongListResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -118,7 +120,10 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   const sameAllowed = (response?.items ?? []).filter((row) => !sameCode || (numberCounts.get(row.predictionNumber) ?? 0) > 1);
   const duplicateStats = [...numberCounts].filter(([,count]) => !sameCode || count > 1).sort((a,b) => b[1]-a[1] || Number(a[0])-Number(b[0])).slice(0,18);
   const visibleItems = sameAllowed.filter((row) => !selectedNumber || row.predictionNumber === selectedNumber);
-  if (sameCode) visibleItems.sort((a,b) => Number(a.predictionNumber)-Number(b.predictionNumber) || a.predictedPosition-b.predictedPosition || a.interval-b.interval);
+  if (selectedNumber) visibleItems.sort((a,b) => a.predictedPosition-b.predictedPosition || a.interval-b.interval);
+  else if (sameCode) visibleItems.sort((a,b) => Number(a.predictionNumber)-Number(b.predictionNumber) || a.predictedPosition-b.predictedPosition || a.interval-b.interval);
+  const resultPageCount = Math.max(1, Math.ceil(visibleItems.length / MATRIX_RESULTS_PER_PAGE));
+  const paginatedItems = visibleItems.slice((resultPage - 1) * MATRIX_RESULTS_PER_PAGE, resultPage * MATRIX_RESULTS_PER_PAGE);
   const cacheGeneration = useRef(0);
   useEffect(() => {
     const clearResults = () => {
@@ -126,6 +131,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       setResponse(null);
       setSameCode(false);
       setSelectedNumber(null);
+      setResultPage(1);
       setValidationById({});
       setExpandedId(null);
       setValidationLoadingId(null);
@@ -159,6 +165,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     setLoading(true);
     setResponse(null);
     setSelectedNumber(null);
+    setResultPage(1);
     setRequestError(null);
     try {
       const next = await fetchTiangongList({
@@ -204,9 +211,12 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       });
   };
   return (
-    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen" headerAction={<MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />}>
+    <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
       <section className="panel explore-settings tiangong-settings tiangong-general-settings">
-        <SectionTitle>探索設定</SectionTitle>
+        <header className="matrix-settings-heading">
+          <SectionTitle>探索設定</SectionTitle>
+          <MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />
+        </header>
         <div className="setting-grid">
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
           <label><span><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><button type="button" data-selected="true">五十期</button></div></label>
@@ -233,16 +243,16 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       {searched ? <section className="panel repeat-stats-panel">
         <header className="repeat-stats-heading">
           <SectionTitle>重複號碼統計</SectionTitle>
-          <button type="button" aria-pressed={sameCode} data-selected={sameCode} onClick={() => {setSameCode(!sameCode);setExpandedId(null);}}>同碼</button>
+          <button type="button" aria-pressed={sameCode} data-selected={sameCode} onClick={() => {setSameCode(!sameCode);setExpandedId(null);setResultPage(1);}}>同碼</button>
           <span>點選進行版路篩選</span>
         </header>
-        <div className="result-summary">{duplicateStats.map(([number,count]) => <button type="button" key={number} aria-label={`篩選預測號碼 ${number}，${count}次`} aria-pressed={selectedNumber === number} data-selected={selectedNumber === number} onClick={() => {setSelectedNumber(selectedNumber === number ? null : number);setExpandedId(null);}}><b>{number}</b><small>{count}次</small></button>)}</div>
+        <div className="result-summary">{duplicateStats.map(([number,count]) => <button type="button" key={number} aria-label={`篩選預測號碼 ${number}，${count}次`} aria-pressed={selectedNumber === number} data-selected={selectedNumber === number} onClick={() => {setSelectedNumber(selectedNumber === number ? null : number);setExpandedId(null);setResultPage(1);}}><b>{number}</b><small>{count}次</small></button>)}</div>
       </section> : null}
       {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{visibleItems.length}</span>&nbsp;組符合條件版路</strong></header>
         {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
         {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
         <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>
-          {visibleItems.map((item, index) => <article key={item.id} data-number-group-start={sameCode && index > 0 && visibleItems[index - 1].predictionNumber !== item.predictionNumber ? "true" : undefined}>
+          {paginatedItems.map((item, index) => <article key={item.id} data-number-group-start={sameCode && index > 0 && paginatedItems[index - 1].predictionNumber !== item.predictionNumber ? "true" : undefined}>
             <button type="button" className="road-result-row tiangong-result-row" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}>
               <span className="tiangong-interval"><span>間距</span><span className="numeric-text">{item.interval}</span></span>
               <span className="tiangong-directions">{[item.exploreDirection, item.firstStageDirection, item.secondStageDirection].map((direction, index) => <Fragment key={index}>{index ? <span>|</span> : null}<span>{directionLabel[direction]}</span></Fragment>)}</span>
@@ -253,6 +263,10 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
             {expandedId === item.id && response ? <TiangongValidationProcess item={item} predictionNumber={item.predictionNumber} predictedPosition={item.predictedPosition} lottery={response.lottery} validation={validationById[`${response.analysisVersion}:${item.id}`]} loading={validationLoadingId === `${response.analysisVersion}:${item.id}`} /> : null}
           </article>)}
           {!loading && response && visibleItems.length === 0 ? <p className="empty-result">無符合設定條件</p> : null}
+          <MatrixResultsPagination page={resultPage} pageCount={resultPageCount} label="天工結果" onPageChange={(page) => {
+            setExpandedId(null);
+            setResultPage(page);
+          }} />
         </div></section> : null}
     </FeatureShell>
   );
