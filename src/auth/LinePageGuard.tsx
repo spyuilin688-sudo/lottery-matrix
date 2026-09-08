@@ -39,7 +39,7 @@ export function useLinePageEntry() {
       if (controller.signal.aborted) return;
       if (error && !authEventObserved) throw error;
       if (hasLineSession(authEventObserved ? latestSession : data.session)) enter();
-      else void alert({ title: '請先登入', description: `請先使用 LINE 登入後再進入「${title}」。` });
+      else void alert({ title: '請先登入', description: `請先登入後再使用 ${title}` });
     }).catch(() => {
       if (!controller.signal.aborted) void alert({ title: '登入狀態確認失敗', description: '請稍後再試一次。' });
     }).finally(() => {
@@ -74,7 +74,7 @@ export function LinePageGuard({ title, onNavigate, children }: {
         description: '請稍後再試一次。',
       } : {
         title: '請先登入',
-        description: `請先使用 LINE 登入後再進入「${title}」。`,
+        description: `請先登入後再使用 ${title}`,
       });
     };
     const acceptSession = (session: Session | null) => {
@@ -105,6 +105,6 @@ export function LinePageGuard({ title, onNavigate, children }: {
   if (access === 'allowed') return children;
   if (access === 'checking') return <FeaturePageLoadState onHome={() => onNavigate('home')} />;
   return <FeatureShell title={title} onNavigate={onNavigate} active={title === 'Matrix 筆記本' ? '快捷' : '首頁'}>
-    <p className="empty-result">請先使用 LINE 登入。</p>
+    <p className="empty-result">請先登入後再使用 {title}</p>
   </FeatureShell>;
 }

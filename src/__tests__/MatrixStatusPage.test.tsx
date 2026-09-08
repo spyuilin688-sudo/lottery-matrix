@@ -224,7 +224,7 @@ test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層'
 });
 
 for (const [code, message] of [
-  ['AUTH_REQUIRED', '請先登入後再使用自訂觸發條件'],
+  ['AUTH_REQUIRED', '請先登入後再使用 自訂觸發條件'],
   ['FORBIDDEN', '目前 Matrix Pro 方案不符合自訂觸發條件的使用權限'],
 ] as const) {
   test(`自訂入口遇到 ${code} 留在狀態頁並跳出提醒`, async () => {

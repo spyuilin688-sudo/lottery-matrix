@@ -46,7 +46,7 @@ test('guest clicks custom conditions and stays on the originating page after dis
   fireEvent.click(screen.getByRole('button', { name: '自訂觸發條件入口' }));
   expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
   const dialog = await screen.findByRole('dialog', { name: '請先登入' });
-  expect(dialog).toHaveTextContent('請先使用 LINE 登入');
+  expect(dialog).toHaveTextContent('請先登入後再使用 自訂觸發條件');
   expect(screen.queryByRole('heading', { name: 'status-settings' })).toBeNull();
   fireEvent.click(within(dialog).getByRole('button'));
   expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
@@ -59,7 +59,7 @@ test('guest opens a saved notebook shortcut and stays on the current page', asyn
   openProfile();
   fireEvent.click(screen.getByRole('button', { name: '開啟快捷' }));
   expect(screen.getByRole('heading', { name: 'profile' })).toBeVisible();
-  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('Matrix 筆記本');
+  expect(await screen.findByRole('dialog', { name: '請先登入' })).toHaveTextContent('請先登入後再使用 Matrix 筆記本');
   expect(screen.queryByRole('heading', { name: 'notebook' })).toBeNull();
 });
 
