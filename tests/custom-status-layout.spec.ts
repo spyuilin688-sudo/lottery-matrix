@@ -1,4 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+async function mockStatus(page: Page) {
+  await page.route('https://**/functions/v1/matrix-status', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({
+      kind: 'status', lottery: '今彩539', drawPeriod: '115217', analysisVersion: 'fixture:status',
+      summary: {status: 'DORMANT', count: 0, message: '本期尚無符合條件的狀態。'},
+      counts: {ACTIVE: 0, FOCUS: 0, RESONANCE: 0, CRITICAL: 0}, cards: [], customTriggers: [], detailLocked: true,
+    }),
+  }));
+}
 
 for (const width of [320, 360, 390, 430]) {
   test(`自訂條件在 ${width}px 保持單列中央分隔與群組收合編輯`, async ({ page }, testInfo) => {
@@ -11,7 +21,10 @@ for (const width of [320, 360, 390, 430]) {
           ? { item: route.request().postDataJSON().p_config } : {};
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     });
-    await page.goto('/tests/custom-status-layout-fixture.html');
+    await mockStatus(page);
+    await page.goto('/tests/custom-status-layout-fixture.html?entry=1');
+    await expect(page.locator('.matrix-custom-status-screen')).toHaveCount(0);
+    await page.getByRole('button', {name: '自訂觸發條件，連續點擊兩下開啟'}).dblclick();
     await expect(page.getByText('使用預設條件', { exact: true })).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const summary = page.getByRole('region', { name: '探索條件' });
@@ -20,12 +33,19 @@ for (const width of [320, 360, 390, 430]) {
       const rect = element.getBoundingClientRect();
       const [left, separator, right] = Array.from(element.children).map(child => child.getBoundingClientRect());
       return {
+        afterTabs: element.previousElementSibling?.getAttribute('role') === 'tablist',
+        afterLottery: element.previousElementSibling?.previousElementSibling?.classList.contains('matrix-status-lottery-switcher'),
+        colors: Array.from(element.querySelectorAll('span,strong')).map(child => getComputedStyle(child).color),
+        color: getComputedStyle(element).color,
         centerError: Math.abs(separator.x + separator.width / 2 - rect.x - rect.width / 2),
         sameLine: Math.abs(left.y - right.y) < 1 && left.height < 24 && right.height < 24,
         height: rect.height,
         overflow: Array.from(element.children).some(child => child.scrollWidth > child.clientWidth + 1),
       };
     });
+    expect(metrics.afterTabs).toBe(true);
+    expect(metrics.afterLottery).toBe(true);
+    expect(metrics.colors.every(color => color === metrics.color)).toBe(true);
     expect(metrics.centerError).toBeLessThan(1);
     expect(metrics.sameLine).toBe(true);
     expect(metrics.height).toBeLessThanOrEqual(32);
@@ -100,4 +120,37 @@ for (const width of [320, 360, 390, 430]) {
     })).toBe(true);
     console.log(`Custom status ${width}px: collapsed <=72px; open ${cardMetrics.height}px; 13px type / 30px fields; keyboard, error focus, draft, save and add/delete passed`);
   });
+}
+
+for (const width of [320, 360, 390, 430]) {
+  for (const reason of ['guest', 'forbidden'] as const) {
+    test(`${width}px ${reason} 在入口跳出提醒，沒有進入自訂頁或顯示權限卡`, async ({page}, testInfo) => {
+      await page.setViewportSize({width, height:844});
+      await mockStatus(page);
+      await page.route('https://**/rest/v1/rpc/matrix_custom_status_list', route => route.fulfill({
+        status: 200, contentType:'application/json',
+        body:JSON.stringify({items:[],entitlements:{canCustomizeStatus:false}}),
+      }));
+      await page.goto(`/tests/custom-status-layout-fixture.html?entry=1${reason === 'guest' ? '&guest=1' : ''}`);
+      const trigger=page.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
+      await trigger.dblclick();
+      const dialog=page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText(reason === 'guest'
+        ? '請先登入後再使用自訂觸發條件' : '目前 Matrix Pro 方案不符合自訂觸發條件的使用權限');
+      await expect(page.locator('.matrix-status-screen')).toBeVisible();
+      await expect(page.locator('.matrix-custom-status-screen')).toHaveCount(0);
+      await expect(page.locator('.custom-status-access-notice')).toHaveCount(0);
+      const box=(await dialog.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x+box.width).toBeLessThanOrEqual(width);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y+box.height).toBeLessThanOrEqual(844);
+      await page.screenshot({path:testInfo.outputPath(`custom-status-${width}-${reason}-entry.png`),animations:'disabled'});
+      await dialog.getByRole('button',{name:'知道了'}).click();
+      await expect(dialog).not.toBeVisible();
+      await expect(trigger).toBeFocused();
+      await expect(page.locator('.matrix-custom-status-screen')).toHaveCount(0);
+    });
+  }
 }

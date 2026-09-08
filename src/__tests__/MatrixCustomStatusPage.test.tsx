@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as renderWithoutDialog, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixCustomStatusPage } from '../FeaturePages';
+import { AppDialogProvider } from '../dialog/AppDialog';
+const render = (ui: Parameters<typeof renderWithoutDialog>[0]) => renderWithoutDialog(<AppDialogProvider>{ui}</AppDialogProvider>);
 const api = vi.hoisted(() => ({ fetchMatrixStatus: vi.fn(), listCustomStatusSettings: vi.fn(), saveCustomStatusSetting: vi.fn(), resetCustomStatusSetting: vi.fn() }));
 vi.mock('../matrix-status-api', () => api);
 beforeEach(() => {
@@ -61,8 +63,8 @@ test('上方保留四狀態與彩種，下方以可編輯的一碼兩碼模板�
  const summary=screen.getByRole('region',{name:'探索條件'});
  expect(summary.textContent).toBe('探索期數：十三期|探索範圍：完整範圍');
  expect(within(summary).queryByRole('heading')).toBeNull();
- expect(screen.getByTestId('lottery-switcher').nextElementSibling).toBe(summary);
- expect(summary.nextElementSibling).toBe(screen.getByRole('tablist',{name:'選擇狀態'}));
+ expect(screen.getByTestId('lottery-switcher').nextElementSibling).toBe(screen.getByRole('tablist',{name:'選擇狀態'}));
+ expect(screen.getByRole('tablist',{name:'選擇狀態'}).nextElementSibling).toBe(summary);
  const mode=screen.getByText('使用預設條件');
  expect(mode.getAttribute('role')).toBe('status');
  expect(mode.parentElement?.contains(screen.getByRole('heading',{name:'一碼條件'}))).toBe(true);
@@ -157,18 +159,22 @@ test('降級後可取消既有複合版路，但不可新增未授權複合版�
  expect(api.saveCustomStatusSetting.mock.calls[0][0].oneCodeGroups[0].rows[0].roadTypes).toEqual(['加減']);
 });
 
-test('未登入時提供登入入口，不顯示可編輯條件', async () => {
+test('自訂頁再次驗證為未登入時返回狀態頁，不顯示登入卡片', async () => {
  api.listCustomStatusSettings.mockRejectedValueOnce(Object.assign(new Error('AUTH_REQUIRED'), {code:'AUTH_REQUIRED'}));
  const navigate=vi.fn(); render(<MatrixCustomStatusPage onNavigate={navigate}/>);
- fireEvent.click(await screen.findByRole('button',{name:'前往登入'}));
- expect(navigate).toHaveBeenCalledWith('profile');
+ expect((await screen.findByRole('dialog')).textContent).toContain('請先登入後再使用自訂觸發條件');
+ expect(navigate).toHaveBeenCalledWith('status');
+ expect(screen.queryByRole('button',{name:'前往登入'})).toBeNull();
+ expect(screen.queryByRole('tablist')).toBeNull();
  expect(screen.queryByRole('article',{name:/條件群組/})).toBeNull();
 });
-test('不符合方案權限時提供方案入口，不顯示可編輯條件', async () => {
+test('自訂頁再次驗證為方案不符時返回狀態頁，不顯示方案卡片', async () => {
  api.listCustomStatusSettings.mockResolvedValueOnce({items:[],entitlements:{canCustomizeStatus:false,canUseCompositeCustomRoad:false}});
  const navigate=vi.fn(); render(<MatrixCustomStatusPage onNavigate={navigate}/>);
- fireEvent.click(await screen.findByRole('button',{name:'查看 Matrix Pro 方案'}));
- expect(navigate).toHaveBeenCalledWith('pro-plans');
+ expect((await screen.findByRole('dialog')).textContent).toContain('目前 Matrix Pro 方案不符合自訂觸發條件的使用權限');
+ expect(navigate).toHaveBeenCalledWith('status');
+ expect(screen.queryByRole('button',{name:'查看 Matrix Pro 方案'})).toBeNull();
+ expect(screen.queryByRole('tablist')).toBeNull();
  expect(screen.queryByRole('button',{name:'儲存設定'})).toBeNull();
 });
 test('讀取失敗可重試並恢复原本可用條件', async () => {

@@ -10,6 +10,7 @@ import { Navigate } from "./navigation";
 import { FeatureShell, MobilePagePortal } from "./shared";
 import { createDefaultCustomStatusConfig, normalizeCustomStatusConfig, validateCustomConfigRows } from "../../shared/matrix-status-config";
 import { CustomConditionSection } from "./CustomConditionSection";
+import { useAppDialog } from "../dialog/AppDialog";
 
 export const MATRIX_STATUS_LABELS: Record<CustomMatrixStatusCode, string> = {
   ACTIVE: "啟動",
@@ -131,6 +132,15 @@ export function MatrixStatusTriggerCard({
   );
 }
 
+function customStatusAccessNotice(code: string) {
+  return {
+    title: code === "AUTH_REQUIRED" ? "請先登入" : "無法使用自訂觸發條件",
+    description: code === "AUTH_REQUIRED"
+      ? "請先登入後再使用自訂觸發條件"
+      : "目前 Matrix Pro 方案不符合自訂觸發條件的使用權限",
+  };
+}
+
 export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: { onNavigate: Navigate; initialLottery?: LotteryId }) {
   const [lottery, setLottery] = useState<LotteryId>(initialLottery);
   const [open, setOpen] = useState<MatrixStatusResponse["summary"]["status"] | "">("");
@@ -141,8 +151,41 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
   const [validationErrorId, setValidationErrorId] = useState<string | null>(null);
   const validationRevision = useRef(0);
+  const { alert } = useAppDialog();
+  const [checkingSettings, setCheckingSettings] = useState(false);
+  const openingSettings = useRef(false);
+  const entryMounted = useRef(false);
+  useEffect(() => {
+    entryMounted.current = true;
+    return () => { entryMounted.current = false; };
+  }, []);
+  const openStatusSettings = async () => {
+    if (openingSettings.current) return;
+    openingSettings.current = true;
+    setCheckingSettings(true);
+    try {
+      const response = await listCustomStatusSettings();
+      if (!entryMounted.current) return;
+      if (response.entitlements?.canCustomizeStatus) {
+        onNavigate("status-settings");
+      } else {
+        setCheckingSettings(false);
+        await alert(customStatusAccessNotice("FORBIDDEN"));
+      }
+    } catch (cause) {
+      if (!entryMounted.current) return;
+      setCheckingSettings(false);
+      const code = String((cause as { code?: unknown })?.code ?? "");
+      await alert(code === "AUTH_REQUIRED" || code === "FORBIDDEN"
+        ? customStatusAccessNotice(code)
+        : { title: "自訂設定讀取失敗", description: "請稍後再試" });
+    } finally {
+      openingSettings.current = false;
+      if (entryMounted.current) setCheckingSettings(false);
+    }
+  };
   const handleStatusSettingsClick = useDoubleClickAction<HTMLButtonElement>(
-    () => onNavigate("status-settings"),
+    () => void openStatusSettings(),
     QUICK_SETTINGS_DOUBLE_TAP_MS,
   );
   const statuses = [
@@ -215,6 +258,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
       <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
       {!result && !requestError ? <p role="status" className="matrix-api-state">資料載入中</p> : null}
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
+      {checkingSettings ? <p role="status" className="matrix-api-state">設定讀取中</p> : null}
       {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
       <div className="status-list" aria-busy={!result && !requestError}>
         {statuses.map(([title, titleEn, description, tone]) => {
@@ -268,7 +312,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
         })}
       </div>
       <MobilePagePortal active>
-        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
+        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} disabled={checkingSettings} onClick={handleStatusSettingsClick}>
           <span className="bottom-navigation-quick-settings-visual">
             <GearIcon aria-hidden="true" />
           </span>
@@ -304,9 +348,14 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
   const usingDefaults = !drafts[slot] && !configs[slot];
   const busy = Boolean(pending[slot]);
   const notice = feedback[slot];
-  const accessMessage = accessFailure === "AUTH_REQUIRED"
-    ? "請先登入後再使用自訂觸發條件"
-    : "目前 Matrix Pro 方案不符合自訂觸發條件的使用權限";
+  const { alert } = useAppDialog();
+  const reportedAccessFailure = useRef<string | null>(null);
+  useEffect(() => {
+    if (!accessFailure || reportedAccessFailure.current === accessFailure) return;
+    reportedAccessFailure.current = accessFailure;
+    onNavigate("status");
+    void alert(customStatusAccessNotice(accessFailure));
+  }, [accessFailure, alert, onNavigate]);
   const recordAccessFailure = (cause: unknown) => {
     const code = (cause as { code?: string })?.code;
     if (code === "AUTH_REQUIRED" || code === "FORBIDDEN") setAccessFailure(code);
@@ -438,17 +487,17 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     } finally { finish(); }
   };
 
+  if (accessFailure) return null;
+
   return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
+    <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <section className="custom-status-explore" aria-label="探索條件">
       <span>探索期數：<strong>十三期</strong></span>
       <span className="custom-status-explore-divider" aria-hidden="true">|</span>
       <span>探索範圍：<strong>完整範圍</strong></span>
     </section>
-    <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
-    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : accessFailure
-      ? <section className="panel custom-status-access-notice"><p className="custom-status-message" role="alert">{accessMessage}</p><div className="custom-status-actions"><button type="button" onClick={() => onNavigate(accessFailure === "AUTH_REQUIRED" ? "profile" : "pro-plans")}>{accessFailure === "AUTH_REQUIRED" ? "前往登入" : "查看 Matrix Pro 方案"}</button></div></section>
-      : loadFailed
+    {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
       ? <section className="panel"><p className="custom-status-message" role="alert">自訂設定讀取失敗</p><div className="custom-status-actions"><button type="button" aria-label="重新載入自訂設定" onClick={() => setReloadRevision(current => current + 1)}>重新載入</button></div></section>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
         <CustomConditionSection key={slot + "|one"} hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
