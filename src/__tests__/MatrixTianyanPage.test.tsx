@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render } from '../../test/render-with-dialog';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../FeaturePages';
 
@@ -195,7 +196,26 @@ test('未登入時維持既有登入提示', async () => {
   matrixApi.fetchTianyanList.mockRejectedValue({ code: 'AUTH_REQUIRED' });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
+  const dialog = await screen.findByRole('dialog', { name: '請先登入' });
+  expect(dialog.textContent).toContain('請先登入後再使用 Matrix 天衍');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天衍');
+});
+
+test('天衍方案不符以共用視窗提示，關閉後保留設定且可重新操作', async () => {
+  matrixApi.fetchTianyanList.mockRejectedValueOnce({ code: 'FORBIDDEN' });
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衍" roadTypes={['複合版路']} />);
+  const start = screen.getByRole('button', { name: '開始天衍' });
+  start.focus();
+  fireEvent.click(start);
+  const dialog = await screen.findByRole('dialog', { name: '無法使用 Matrix 天衍' });
+  expect(dialog.textContent).toContain('目前 Matrix Pro 方案不符合天衍的使用條件');
+  expect(document.querySelector('.result-count')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(document.activeElement).toBe(start);
+  fireEvent.click(start);
+  expect(await screen.findByRole('button', { name: /展開版路/ })).toBeTruthy();
 });
 
 

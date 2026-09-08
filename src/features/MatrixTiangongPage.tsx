@@ -4,6 +4,7 @@ import { displayValidationPeriod } from "./MatrixValidation";
 import { Fragment } from "react";
 import { ExploreValidationSummary } from "../ExploreValidationSummary";
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
+import { useAppDialog } from "../dialog/AppDialog";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
@@ -97,6 +98,7 @@ export function TiangongValidationProcess({ validation, loading, lottery = "今�
 const directionLabel = { "固定": "固定", "依序遞增": "左至右", "依序遞減": "右至左" };
 
 export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
+  const appDialog = useAppDialog();
   type Direction = "固定" | "依序遞增" | "依序遞減";
   type Road = "加減版路" | "合值版路";
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
@@ -186,7 +188,16 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     } catch (cause) {
       if (generation !== cacheGeneration.current) return;
       const code = String((cause as { code?: unknown })?.code ?? "");
-      setRequestError(code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : code === "FORBIDDEN" ? "目前會員權限無法使用 Matrix 天工" : code === "AUTH_REQUIRED" ? "請先登入後再使用 Matrix 天工" : "Matrix API 讀取失敗");
+      const message = code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試"
+        : code === "FORBIDDEN" ? "目前 Matrix Pro 方案不符合天工的使用條件"
+        : code === "AUTH_REQUIRED" ? "請先登入後再使用 Matrix 天工" : "Matrix API 讀取失敗";
+      setRequestError(message);
+      if (code === "FORBIDDEN" || code === "AUTH_REQUIRED") {
+        void appDialog.alert({
+          title: code === "AUTH_REQUIRED" ? "請先登入" : "無法使用 Matrix 天工",
+          description: message,
+        });
+      }
     } finally {
       if (generation === cacheGeneration.current) setLoading(false);
     }
@@ -248,7 +259,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
         </header>
         <div className="result-summary">{duplicateStats.map(([number,count]) => <button type="button" key={number} aria-label={`篩選預測號碼 ${number}，${count}次`} aria-pressed={selectedNumber === number} data-selected={selectedNumber === number} onClick={() => {setSelectedNumber(selectedNumber === number ? null : number);setExpandedId(null);setResultPage(1);}}><b>{number}</b><small>{count}次</small></button>)}</div>
       </section> : null}
-      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle><strong className="result-count">探索到&nbsp;<span className="numeric-text">{visibleItems.length}</span>&nbsp;組符合條件版路</strong></header>
+      {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle>{!loading && !requestError && response ? <strong className="result-count">探索到&nbsp;<span className="numeric-text">{visibleItems.length}</span>&nbsp;組符合條件版路</strong> : null}</header>
         {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
         {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
         <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span>預測位置</span><span>預測</span><span>版路類型</span></div>

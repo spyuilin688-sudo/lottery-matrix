@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+import { render } from '../../test/render-with-dialog';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTiangongList } from '../matrix-algorithm-api';
 import { resetReadCacheForTests } from '../read-cache';
@@ -50,6 +51,8 @@ test('訪客可以讀取二期探索驗證過程', async () => {
 test('登入提示使用探索名稱且不顯示空結果', async () => {
   sdk.getSession.mockResolvedValue({ data: { session: null }, error: new Error('session unavailable') });
   await start();
+  expect((await screen.findByRole('dialog', { name: '請先登入' })).textContent).toContain('請先登入後再使用 Matrix 探索');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 探索');
   expect(screen.queryByText('無符合設定條件')).toBeNull();
   expect(document.querySelector('.result-count')).toBeNull();
@@ -71,6 +74,8 @@ test('載入中不顯示零筆或空結果，成功空回應才顯示', async ()
 test('訪客讀取仍遵守 RPC 的會員權限拒絕', async () => {
   sdk.rpc.mockResolvedValue({ data: null, error: { message: 'FORBIDDEN' } });
   await start();
+  expect((await screen.findByRole('dialog', { name: '無法使用 Matrix 探索' })).textContent).toContain('目前會員權限無法使用此設定');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
   expect((await screen.findByRole('alert')).textContent).toBe('目前會員權限無法使用此設定');
   expect(screen.queryByText('無符合設定條件')).toBeNull();
   expect(document.querySelector('.result-count')).toBeNull();

@@ -213,9 +213,10 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
   return (
     <FeatureShell title="Matrix 狀態" onNavigate={onNavigate} className="matrix-status-screen">
       <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
+      {!result && !requestError ? <p role="status" className="matrix-api-state">資料載入中</p> : null}
       {requestError ? <p role="alert" className="matrix-api-state">{requestError}</p> : null}
       {result?.summary.status === "DORMANT" ? <p className="matrix-api-state">{result.summary.message}</p> : null}
-      <div className="status-list">
+      <div className="status-list" aria-busy={!result && !requestError}>
         {statuses.map(([title, titleEn, description, tone]) => {
           const cards = result?.cards.filter((card) => card.status === titleEn) ?? [];
           const count = result?.counts[titleEn] ?? 0;
@@ -225,6 +226,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
             <section className="status-block" data-tone={tone} data-status={titleEn} data-expanded={expanded} key={title}>
               <button
                 type="button"
+                disabled={!result}
                 aria-expanded={expanded}
                 aria-controls={detailId}
                 onClick={() => {
@@ -236,7 +238,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
                   <strong>•{title}</strong>
                   <small>{description}</small>
                 </span>
-                <em className="matrix-status-category-count">{count} 組</em>
+                <em className="matrix-status-category-count">{result ? `${count} 組` : requestError ? "—" : "載入中"}</em>
                 <ChevronRightIcon data-open={expanded} aria-hidden="true" />
               </button>
               {expanded ? (

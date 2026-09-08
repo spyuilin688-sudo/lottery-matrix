@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+import { render } from '../../test/render-with-dialog';
 
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { MatrixTiangongPage } from '../FeaturePages';
 

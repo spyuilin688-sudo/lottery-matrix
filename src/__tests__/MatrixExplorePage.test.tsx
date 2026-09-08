@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { render } from '../../test/render-with-dialog';
 import { invalidateMatrixData } from "../matrix-data-revision";
 import type { Session } from '@supabase/supabase-js';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage, TongXingPage } from '../FeaturePages';
 import { resetReadCacheForTests } from '../read-cache';

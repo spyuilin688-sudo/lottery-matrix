@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render } from '../../test/render-with-dialog';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 import { MatrixTiangongPage } from '../features/MatrixTiangongPage';

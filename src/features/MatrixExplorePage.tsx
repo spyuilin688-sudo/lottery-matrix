@@ -7,6 +7,7 @@ import { type LotteryId } from "../Prototype";
 import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
 import { bootstrapMember, fetchMemberProfile } from "../member-api";
 import { getExploreEntryDefaults } from "../explore-defaults";
+import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
 import { ExploreValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
@@ -20,6 +21,7 @@ export function MatrixExplorePage({
   title?: "Matrix 探索" | "Matrix 天衍" | "Matrix 天工";
   roadTypes?: string[];
 }) {
+  const appDialog = useAppDialog();
   type ConsecutiveOption =
     | "準4進5"
     | "準5進6"
@@ -253,15 +255,23 @@ export function MatrixExplorePage({
     } catch (cause) {
       if (generation !== cacheGeneration.current) return;
       const code = String((cause as { code?: unknown })?.code ?? "");
-      setExploreError(
+      const message =
         code === "ANALYSIS_NOT_READY"
           ? "分析中，請稍後再試"
           : code === "FORBIDDEN"
-            ? "目前會員權限無法使用此設定"
+            ? title === "Matrix 天衍"
+              ? "目前 Matrix Pro 方案不符合天衍的使用條件"
+              : "目前會員權限無法使用此設定"
             : code === "AUTH_REQUIRED"
               ? `請先登入後再使用 ${title}`
-              : "Matrix API 讀取失敗",
-      );
+              : "Matrix API 讀取失敗";
+      setExploreError(message);
+      if (code === "FORBIDDEN" || code === "AUTH_REQUIRED") {
+        void appDialog.alert({
+          title: code === "AUTH_REQUIRED" ? "請先登入" : `無法使用 ${title}`,
+          description: message,
+        });
+      }
     } finally {
       if (generation === cacheGeneration.current) setExploreLoading(false);
     }

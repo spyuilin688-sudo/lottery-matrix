@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 // @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
 import { readFileSync } from 'node:fs';
 import { beforeEach, expect, test, vi } from 'vitest';
@@ -76,6 +76,37 @@ beforeEach(() => {
     kind: 'status-validation', lottery: '今彩539', drawPeriod: '114000123', analysisVersion: 'v1',
     status: 'complete', itemId: 'source-road', validation: { itemId: 'source-road', ruleSets: [] },
   });
+});
+
+test('狀態尚未回傳時顯示載入中，不把未知數量當成零或空結果', async () => {
+  let finish!: (value: unknown) => void;
+  statusApi.fetchMatrixStatus.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  expect(screen.getByRole('status')).toHaveTextContent('資料載入中');
+  expect(screen.queryByText('0 組')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /•啟動/ }));
+  expect(screen.queryByText('尚無成立觸發')).toBeNull();
+  await act(async () => finish({
+    kind: 'status', lottery: '今彩539', drawPeriod: '115217', analysisVersion: 'v12:status',
+    summary: { status: 'DORMANT', count: 0, message: '本期尚無符合條件的狀態。' },
+    counts: { ACTIVE: 0, FOCUS: 0, RESONANCE: 0, CRITICAL: 0 }, cards: [], customTriggers: [], detailLocked: true,
+  }));
+  expect(screen.queryByRole('status')).toBeNull();
+  expect(screen.getAllByText('0 組')).toHaveLength(4);
+  fireEvent.click(screen.getByRole('button', { name: /•啟動/ }));
+  expect(screen.getByText('尚無成立觸發')).toBeTruthy();
+});
+
+test('狀態讀取失敗不顯示零組，切換彩種後重新載入', async () => {
+  statusApi.fetchMatrixStatus.mockRejectedValueOnce(new Error('offline'));
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Matrix 狀態讀取失敗');
+  expect(screen.queryByText('0 組')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /•啟動/ }));
+  expect(screen.queryByText('尚無成立觸發')).toBeNull();
+  fireEvent.click(screen.getByRole('radio', { name: '天天樂' }));
+  expect(await screen.findByText('2 組')).toBeTruthy();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索結果表頭', async () => {
