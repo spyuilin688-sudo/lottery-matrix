@@ -10,6 +10,7 @@ import { Navigate } from "./navigation";
 import { FeatureShell, MobilePagePortal } from "./shared";
 import { createDefaultCustomStatusConfig, normalizeCustomStatusConfig, validateCustomConfigRows } from "../../shared/matrix-status-config";
 import { CustomConditionSection } from "./CustomConditionSection";
+import { useLinePageEntry } from "../auth/LinePageGuard";
 
 export const MATRIX_STATUS_LABELS: Record<CustomMatrixStatusCode, string> = {
   ACTIVE: "啟動",
@@ -132,6 +133,7 @@ export function MatrixStatusTriggerCard({
 }
 
 export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: { onNavigate: Navigate; initialLottery?: LotteryId }) {
+  const enterPage = useLinePageEntry();
   const [lottery, setLottery] = useState<LotteryId>(initialLottery);
   const [open, setOpen] = useState<MatrixStatusResponse["summary"]["status"] | "">("");
   const [result, setResult] = useState<MatrixStatusResponse | null>(null);
@@ -141,8 +143,12 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
   const [validationErrorId, setValidationErrorId] = useState<string | null>(null);
   const validationRevision = useRef(0);
+  const statusSettingsActivated = useRef(false);
   const handleStatusSettingsClick = useDoubleClickAction<HTMLButtonElement>(
-    () => onNavigate("status-settings"),
+    () => {
+      statusSettingsActivated.current = true;
+      enterPage("status-settings", () => onNavigate("status-settings"));
+    },
     QUICK_SETTINGS_DOUBLE_TAP_MS,
   );
   const statuses = [
@@ -268,7 +274,11 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
         })}
       </div>
       <MobilePagePortal active>
-        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={handleStatusSettingsClick}>
+        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" onClick={(event) => {
+          statusSettingsActivated.current = false;
+          handleStatusSettingsClick(event);
+          if (!statusSettingsActivated.current) enterPage("status-settings", () => {});
+        }}>
           <span className="bottom-navigation-quick-settings-visual">
             <GearIcon aria-hidden="true" />
           </span>
@@ -344,6 +354,8 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     if (notice?.path) {
       const field = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field-path]") ?? [])
         .find(element => element.dataset.fieldPath === notice.path);
+      const panel = field?.closest("details");
+      if (panel) panel.open = true;
       field?.focus();
     }
   }, [notice]);
@@ -438,22 +450,21 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
 
   return <FeatureShell title="Matrix 自訂觸發狀態" onNavigate={onNavigate} backTarget="status" className="matrix-custom-status-screen">
     <LotterySwitcher selected={lottery} onChange={setLottery} className="lottery-switcher--home-style matrix-status-lottery-switcher" />
-    <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     <section className="custom-status-explore" aria-label="探索條件">
-      <header>
-        <h2>探索條件</h2>
-        {loaded && !loadFailed && !accessFailure ? <p className="custom-status-default-mode" role="status">{usingDefaults ? "使用預設條件" : "已自訂"}</p> : null}
-      </header>
-      <dl><div><dt>探索期數</dt><dd>13期</dd></div><div><dt>探索範圍</dt><dd>完整範圍</dd></div></dl>
+      <span>探索期數：<strong>十三期</strong></span>
+      <span className="custom-status-explore-divider" aria-hidden="true">|</span>
+      <span>探索範圍：<strong>完整範圍</strong></span>
     </section>
+    <div className="custom-status-tabs" role="tablist" aria-label="選擇狀態">{CUSTOM_STATUS_OPTIONS.map(([code, label, tone]) => <button type="button" role="tab" aria-selected={status === code} data-tone={tone} onClick={() => setStatus(code)} key={code}><strong>{label}</strong><small>{code}</small></button>)}</div>
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : accessFailure
       ? <section className="panel custom-status-access-notice"><p className="custom-status-message" role="alert">{accessMessage}</p><div className="custom-status-actions"><button type="button" onClick={() => onNavigate(accessFailure === "AUTH_REQUIRED" ? "profile" : "pro-plans")}>{accessFailure === "AUTH_REQUIRED" ? "前往登入" : "查看 Matrix Pro 方案"}</button></div></section>
       : loadFailed
       ? <section className="panel"><p className="custom-status-message" role="alert">自訂設定讀取失敗</p><div className="custom-status-actions"><button type="button" aria-label="重新載入自訂設定" onClick={() => setReloadRevision(current => current + 1)}>重新載入</button></div></section>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
-        <CustomConditionSection hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
+        <CustomConditionSection key={slot + "|one"} hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
+          modeLabel={usingDefaults ? "使用預設條件" : "已自訂"}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
-        <CustomConditionSection hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
+        <CustomConditionSection key={slot + "|two"} hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
         {notice ? <p id="custom-status-error" role={notice.error ? "alert" : "status"} className="custom-status-message">{notice.message}</p> : null}
         <div className="custom-status-actions">

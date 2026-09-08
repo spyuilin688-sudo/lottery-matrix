@@ -94,6 +94,8 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 ## Navigation, async and recovery
 
+2026-09-08：依使用者截圖要求，自訂觸發條件頁的探索摘要改為彩種下方單列「探索期數：十三期 | 探索範圍：完整範圍」，分隔符水平置中；原預設／自訂狀態保留於一碼條件標題右側。後續依使用者要求一併整理字型、位置與結構，群組以原生 details/summary 預設收合，各組可獨立展開；收合仍提供條件摘要。新增群組直接展開，收合不清除草稿；儲存遇到欄位錯誤先展開所在群組再聚焦。切換彩種或狀態恢復該頁群組初始收合，草稿仍依原有方式保留。刪除按鍵獨立，版路整列、其餘欄位對齊；底部重置與儲存列位於導覽列上方，留出8px間隔；現有選項、群組關係、儲存與重置規則不變。
+
 2026-09-08：Matrix 狀態在資料回傳前顯示「資料載入中」及分類的「載入中」，讀取失敗時數量顯示「—」，成功完成後才顯示組數並開放展開。天工僅在探索成功後顯示結果組數。探索、天衍與天工收到 `AUTH_REQUIRED` 或 `FORBIDDEN` 時使用共用 `AppDialog` 提醒，關閉後保留頁面錯誤文字並可重試；天衍與天工方案不符文案為「目前 Matrix Pro 方案不符合天衍／天工的使用條件」。沿用共用視窗尺寸與觸控高度，不更動會員資格及試用規則。
 
 2026-09-08：三頁共用 `MatrixPageSwitcher`，移至第一張「探索設定」卡片標題同列右側。探索顯示天衍／天工，天衍顯示探索／天工，天工顯示探索／天衍；點擊呼叫既有頁面導覽，不再依上下捲動切換。探索、天衍、天工結果共用 `MatrixResultsPagination`，每頁 15 筆。天工點擊「重複號碼統計」的號碼小卡後，先依預測位置、再依間距升冪排序完整篩選結果，再分頁；切換篩選或重新探索回到第一頁。依據為本次使用者要求。
@@ -214,6 +216,6 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 
 ## Notebook and custom-condition entry — 2026-09-08
 
-- The shared feature router checks the current Supabase session for a LINE identity before mounting `notebook` or `status-settings`. While checking, reuse the bounded feature loading/recovery UI. Guests see the existing app dialog asking for LINE login and return home; session-read failures have a separate retry-later prompt. Sign-out removes page access, and stale session reads must not restore it. Existing server and entitlement checks remain authoritative.
+- Check LINE login at the entry click, before changing the screen or shortcut state. Guests see the existing login dialog and remain on their originating page when it closes; never redirect them home. This applies to normal navigation, opening a saved shortcut, selecting a shortcut, and the first tap on the custom-condition icon. Logged-in custom-condition entry retains its existing double-tap behavior. The shared feature router additionally prevents protected content from mounting without a LINE session. Session-read failures have a separate retry-later prompt. Sign-out removes page access, and stale session reads must not restore it. Existing server and entitlement checks remain authoritative.
 - Notebook deletion starts with the toolbar delete action, then selection of one note, then the existing destructive confirmation. Cancel preserves data. Opening a note uses the separate editor; saving and leaving unsaved content retain their confirmations.
 - Notebook pages use 16px side insets, 8px title-card/editor spacing and toolbar gaps. The editor has 8px top padding and an 8px gap below its return row. Title padding is 5px on top/left/bottom; content padding is 5px on top/left/right. Text size remains unchanged on the compact add/delete and branded write actions.

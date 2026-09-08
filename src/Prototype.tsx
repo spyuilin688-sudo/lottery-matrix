@@ -25,6 +25,7 @@ import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-ap
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { withDeadline } from "./lib/api-resilience";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
+import { useLinePageEntry } from "./auth/LinePageGuard";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -395,6 +396,7 @@ export function BrandLoading({ visible, onComplete, className = "" }: BrandLoadi
 
 export type PrototypeProps = { isLoading?: boolean };
 export default function Prototype({ isLoading = false }: PrototypeProps) {
+  const enterPage = useLinePageEntry();
   const [startupVisible, setStartupVisible] = useState(isLoading);
   const [selected, setSelected] = useState<LotteryId>("今彩539");
   const [order, setOrder] = useState<DrawOrder>("順球");
@@ -480,10 +482,10 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   useEffect(() => { if (!startupVisible) return; const fallback = window.setTimeout(() => setStartupVisible(false), 6500); return () => window.clearTimeout(fallback); }, [startupVisible]);
   useEffect(() => { const activeElement = document.activeElement; if (activeElement instanceof HTMLElement) activeElement.blur(); const deviceScreen = document.querySelector<HTMLElement>(".device-screen"); const mobileScroll = document.querySelector<HTMLElement>(".mobile-scroll"); if (deviceScreen) deviceScreen.scrollTop = 0; if (mobileScroll) mobileScroll.scrollTop = 0; }, [screen]);
 
-  const navigate = (next: ScreenId) => { if (next === "history") setHistoryReturnScreen(screen); setQuickActive(false); setScreen(next); };
-  const closeQuick = () => { if (!quickActive) return; setQuickActive(false); setScreen(quickReturnScreen); };
-  const openQuick = () => { if (quickActive) { setQuickActive(false); setScreen(quickReturnScreen); return; } if (!quickTarget) { setQuickSettingsOpen(true); return; } setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); };
-  const selectQuickTarget = (next: ScreenId) => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); };
+  const navigate = (next: ScreenId) => enterPage(next, () => { if (next === "history") setHistoryReturnScreen(screen); setQuickActive(false); setScreen(next); });
+  const closeQuick = () => { if (!quickActive) return; enterPage(quickReturnScreen, () => { setQuickActive(false); setScreen(quickReturnScreen); }); };
+  const openQuick = () => { if (quickActive) { closeQuick(); return; } if (!quickTarget) { setQuickSettingsOpen(true); return; } enterPage(quickTarget, () => { setQuickReturnScreen(screen); if (quickTarget === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(quickTarget); }); };
+  const selectQuickTarget = (next: ScreenId) => enterPage(next, () => { setQuickTarget(next); window.localStorage.setItem("matrix-quick-target", next); setQuickSettingsOpen(false); setQuickReturnScreen(screen); if (next === "history") setHistoryReturnScreen(screen); setQuickActive(true); setScreen(next); });
 
   const quickSettings = quickSettingsOpen
     ? (

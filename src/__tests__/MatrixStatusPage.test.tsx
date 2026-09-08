@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { render } from '../../test/render-with-dialog';
 // @ts-expect-error Vitest runs on Node; app compilation intentionally omits global Node types.
 import { readFileSync } from 'node:fs';
 import { beforeEach, expect, test, vi } from 'vitest';
@@ -26,6 +27,12 @@ vi.mock('../Prototype', () => ({
 vi.mock('../auth/line-auth', () => ({
   signInWithLine: vi.fn(),
   signOutFromMatrix: vi.fn(),
+}));
+vi.mock('../lib/supabase', () => ({
+  getSupabaseClient: () => ({ auth: {
+    getSession: async () => ({ data: { session: { access_token: 'test', user: { app_metadata: { provider: 'custom:line' } } } }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+  } }),
 }));
 
 declare const process: { cwd(): string };
@@ -185,7 +192,7 @@ test('切換彩種重新讀取狀態，且自訂觸發條件需連續點擊兩�
   fireEvent.click(trigger, { detail: 1 });
   expect(navigate).not.toHaveBeenCalled();
   fireEvent.click(trigger, { detail: 1 });
-  expect(navigate).toHaveBeenCalledWith('status-settings');
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('status-settings'));
 });
 
 test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層', async () => {
