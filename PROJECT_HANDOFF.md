@@ -1,118 +1,86 @@
-# 樂彩 Matrix Work 專案交接
+# 樂彩 Matrix 專案交接
 
-## 1. 目前實際專案名稱與路徑
+更新日期：2026-09-08。內容依目前原始碼、套件與已核對的正式部署整理。
 
-- 產品名稱：`樂彩 Matrix`
-- `package.json` 套件名稱：`lottery-matrix-appdeploy-preview`
-- 本次唯一打包來源：`/workspace/scratch/dae79cc2c061/lottery-matrix-v26-work`
-- ZIP 內專案根目錄：`lottery-matrix-work`
-- 技術：React 19、TypeScript、Vite 6
-- 目前線上預覽：<https://lottery-matrix-work.spyuilin688.chatgpt.site>
+## 專案與版本
 
-本 ZIP 是從上述 Work 工作區實際專案直接建立。未使用其他 ZIP、舊版備份、空白專案或 AppDeploy 外層空白來源替代。
+- 產品：樂彩 Matrix，React／TypeScript／Vite 手機優先 PWA。
+- GitHub：`spyuilin688-sudo/lottery-matrix`，正式分支 `main`。
+- `package.json` 名稱：`lottery-switch-component`。
+- React `19.2.7`、TypeScript `7.0.2`、Vite `8.1.3`；依賴版本以 `package.json` 與 `package-lock.json` 為準。
+- 工作目錄使用 `git rev-parse --show-toplevel` 確認；開工前核對 remote main、`git status` 與 `AGENTS.md`，保留其他對話的修改。
+- 舊 ZIP、暫存 Work 路徑及歷史預覽版本可由 Git 歷史查閱；目前建置使用本次核對的 GitHub 原始碼。
 
-## 2. 目前最新完成內容
+## 正式服務與資料流
 
-1. 正式 React 入口為 `src/App.tsx`，會載入 `MobileRuntime` 與 `Prototype`，不是空白 App。
-2. 首頁與功能頁已使用共用的樂彩 Matrix 頁首 Logo 素材。
-3. 全介面底部導覽由單一 `BottomNavigation` 共用元件輸出。
-4. 底部導覽固定為：`首頁｜快捷｜通知｜我的`。
-5. 底部導覽保留既有 route、Active 判斷及快捷長按 3 秒邏輯。
-6. 底部導覽現有樣式包含四欄等寬、六角圖示、金色 Active 狀態、中央品牌節點及 Safe Area 計算。
-7. 通知頁的 `Matrix 牌單`、`Matrix 摘星`、`系統通知` 已各自引用目前專案內的實體圖片。
-8. 已逐一核對目前原始碼內的 `/assets/...` 與 `/resources/...` 靜態素材引用，所引用檔案均存在於 `public/`。
-9. 2026-08-09 已執行正式 Build，TypeScript 與 Vite 均成功。
+| 項目 | 目前位置與用途 |
+| --- | --- |
+| PWA | Cloudflare Pages，https://matrixlottery.idv.tw/ |
+| 管理後台 | AppDeploy `matrix-sanqwn`，https://matrix-sanqwn.v2.appdeploy.ai/；程式鏡像位於 `apps/admin/` |
+| 公開資料 API | Railway，`https://heartfelt-generosity-production-9f2b.up.railway.app`；latest、history、cards、同星與號碼對照單相容 API |
+| 爬蟲與背景分析 | Railway Python 服務，來源位於 `services/matrix-api/`；天天樂爬蟲由 `.github/workflows/fantasy5-crawler.yml` 執行，Railway 分析其已存資料 |
+| 會員、登入、通知、開獎及演算結果 | Supabase 專案 `wcimzbbapfrdotjsfyxa`；PWA 的探索、天衍、天工使用 Supabase RPC |
 
-## 3. 尚未完成內容
+API 執行方式見 [services/matrix-api/README.md](services/matrix-api/README.md)。Repository 中的 `railway*.json` 是否生效，須比對正式服務綁定。
 
-- 目前工作區沒有獨立、明確的後續待辦清單；後續修改範圍須以新 Work 對話收到的指令為準。
-- 目前實際來源沒有 Web App Manifest，也沒有 Service Worker；不得宣稱這兩項已完成或自行建立替代檔案。
+2026-09-08 核對 Railway `divine-simplicity` 的 production 環境，畫面列出三個服務：
 
-## 4. 最新修改內容
+| 服務 | 實際啟動命令 | 正式設定 |
+| --- | --- | --- |
+| `lottery-matrix` | `uv run python -u -m app.worker_all` | 綁定 `/services/matrix-api/railway.json`，cron 為 `3/5 * * * *` |
+| `fantasy5-analysis` | `uv run python -u -m app.analysis_worker --lottery 天天樂` | 已設定定時執行，最近執行成功 |
+| `heartfelt-generosity` | `uv run python -u -m app.api_server` | 常駐 API，沒有 cron，healthcheck 為 `/health` |
 
-目前實際來源中，最近一組已落入程式的介面修改為：
+此 production 環境未列出六合彩或大樂透的獨立 Worker；另一已核對專案 `lucky-reflection` 僅顯示一個 offline 服務。因此本次沒有依據停用或合併正式排程，也未改寫 `railway*.json`。
 
-1. 首頁及功能頁頁首統一引用最新正式 Logo 素材。
-2. 底部導覽統一由 `src/BottomNavigation.tsx` 輸出。
-3. 底部導覽的黑金面板、六角圖示、Active 狀態、Safe Area 與品牌節點樣式位於 `src/prototype.css`，共用色彩位於 `src/design-tokens.css`。
-4. 首頁由 `src/Prototype.tsx` 使用共用底部導覽。
-5. 功能頁由 `src/FeaturePages.tsx` 使用共用底部導覽。
-6. 通知頁的 `Matrix 牌單`、`Matrix 摘星`、`系統通知` 指向目前 `public/resources/` 內的圖片。
+`.github/workflows/matrix-analysis.yml` 僅接受手動 `workflow_dispatch` 與既有路徑篩選的 `push`，用於復原分析；沒有 GitHub 定時觸發。其 `--scheduled` 是 Worker 執行模式，與 GitHub `schedule` 事件不同。
 
-## 5. 共用頁首 Logo 使用的實際素材
+## 入口與共用介面
 
-- 實際素材：`public/assets/lottery/brand-logo-transparent.png`
-- 原始尺寸：`1913 × 383`
-- 格式：PNG、RGBA
-- SHA-256：`6f992dfc7de9f4f693f08007a54c7e4371bab77023bac1d6131309e82cd111da`
-- 首頁引用：`src/Prototype.tsx`
-- 功能頁共用頁首引用：`src/FeaturePages.tsx`
-- 頁首主要樣式：`src/prototype.css`、`src/feature-pages.css`
+- `src/main.tsx` → `src/App.tsx` → `src/Prototype.tsx`；Mobile Runtime 位於 `src/mobile/`。
+- 功能頁由 `src/FeaturePages.tsx` 及 `src/features/` 組成。
+- 共用底部導覽為 `src/BottomNavigation.tsx`：首頁、快捷、通知、我的。
+- 快捷設定入口為首頁左下角設定按鈕連續點擊兩下，判定間隔為 `800ms`；點擊底部「快捷」開啟已設定功能。
+- 共用 Logo 為 `public/assets/lottery/brand-logo-transparent.png`；樣式與行為依 `DESIGN.md`、`UX-CONTRACT.md` 及對應原始碼核對。
+- 首次首頁引導位於 `src/onboarding/FirstVisitGuide.tsx`，說明免費 LINE 註冊與 Matrix Core 探索入口。
+- 新建且具有已驗證 LINE 身分的會員，依伺服器註冊時間取得天衍 48 小時、天工 24 小時；重複登入不重新計時，既有會員不回填。
 
-## 6. 共用底部導覽元件與樣式
+## PWA
 
-- 共用元件：`src/BottomNavigation.tsx`
-- 首頁掛載位置：`src/Prototype.tsx`
-- 功能頁掛載位置：`src/FeaturePages.tsx`
-- 主要樣式：`src/prototype.css`
-- 共用 Design Token：`src/design-tokens.css`
-- 固定入口：`首頁｜快捷｜通知｜我的`
-- 快捷長按時間：`3000ms`
-- Safe Area：`env(safe-area-inset-bottom)` 與目前 mobile runtime safe-area 變數共同計算
+- Manifest：`public/manifest.webmanifest`，由 `index.html` 引用；包含圖示、`start_url`、`scope`、`display: fullscreen` 與既有啟動設定。
+- Service Worker：`public/push-service-worker.js`；`src/pwa-lifecycle.tsx` 與 `src/push-subscription.ts` 使用同一路徑註冊。
+- `scripts/pwa-build-version.mjs` 將建置指紋寫入 Service Worker；安裝及更新互動由既有 PWA lifecycle 管理。
+- LINE OAuth 與實體手機返回 PWA 的限制見 `docs/LINE_LOGIN_SETUP.md` 與 `UX-CONTRACT.md`；桌面或程式測試不代表 Android／iOS 實機驗證。
 
-## 7. 通知頁圖示素材及引用位置
+## 安裝、執行與建置
 
-通知頁定義位於 `src/FeaturePages.tsx` 的通知設定列資料。
+在專案根目錄執行：
 
-| 通知項目 | 實際引用 | 實體檔案 | SHA-256 |
-| --- | --- | --- | --- |
-| Matrix 牌單 | `/resources/notify-card.png` | `public/resources/notify-card.png` | `a98a56bfc262466736613ecd36398dabcfa58f11fc979da693b9a12ce1c533bd` |
-| Matrix 摘星 | `/resources/notify-collision.png` | `public/resources/notify-collision.png` | `1972862d2182bef8c64c29aa8f27747583f404ead85ec2adc6d095f9e4b11456` |
-| 系統通知 | `/resources/notify-system.png` | `public/resources/notify-system.png` | `1fd77f75a526ba2d069246c1d43890cccd84dedc1840059d5b47af8e30a73f20` |
-
-其他通知圖示也位於 `public/resources/notify-*.png`，並已包含於本 ZIP。
-
-## 8. 目前線上預覽網址
-
-<https://lottery-matrix-work.spyuilin688.chatgpt.site>
-
-## 9. 安裝、啟動及 Build 指令
-
-```bash
-npm install
+```sh
+npm run install:ci
 npm run dev
-npm run build
-npm run preview
 ```
 
-`package.json` 目前實際 scripts：
+| 指令 | 用途 |
+| --- | --- |
+| `npm run check:runtime` | 驗證受保護的 Mobile Runtime 檔案 |
+| `npm run build:pages` | Runtime／TypeScript 檢查、Vite 建置與 PWA 版本標記；Cloudflare Pages 使用 `dist/` |
+| `npm run build` | 以上建置加上既有 Sites 封裝，產生 `dist/client`、`dist/server` 等內容 |
+| `npm run build:verified` | 有界執行 build 並檢查 Sites 產物 |
+| `npm run validate:artifact` | 檢查已存在的 Sites 產物 |
 
-- `dev`：`vite`
-- `build`：`tsc && vite build`
-- `preview`：`vite preview`
+`worker/`、`.openai/hosting.json` 與相關 scripts 保留既有 Sites 封裝。`app/`、`db/`、`drizzle/`、`examples/` 為相容／示例內容，不是目前 Vite 主應用程式入口。
 
-## 10. 已知問題與注意事項
+## 測試與產物
 
-1. 2026-08-09 Build 成功，但 Vite 顯示現有主要 JavaScript chunk 壓縮後大於 500 kB 的警告；本次未修改程式處理。
-2. 目前沒有 `manifest.webmanifest`、其他 Web App Manifest 或 Service Worker 實作。
-3. `public/resources/lottery-matrix` 是目前專案內原本保留的 AppDeploy 歷史 ZIP 資源；本次僅因完整保留目前 `public/` 而收入 ZIP，沒有將它作為打包來源。一般 Work 開發與 Build 不需執行 `scripts/import-lottery-zip.mjs` 或 `scripts/apply-document-update.mjs`。
-4. `scripts/` 內兩個 `.mjs` 檔案與 `APPDEPLOY_RESOURCE_NOTE.txt`、`scripts/APPDEPLOY_MIGRATION_HISTORY.md` 為既有歷史／遷移資料，本次未執行、未修改產品 UI。
-5. 本次對話另外上傳的圖片位於專案外部，沒有被目前 React 原始碼直接引用；依「唯一打包來源」規則未自行加入專案或改寫素材引用。
+- 遵循 `AGENTS.md`，僅執行明確指定、與修改直接相關的測試檔案；未獲當次明確授權不執行全量測試。
+- Workflow 的限定檢查：`node --test tests/matrix-analysis-workflow.test.mjs`。
+- `test-results/`、`node_modules/`、`dist/` 與既有暫存目錄不納入 Git；取消追蹤不要求刪除本機測試資料。
+- API／後台查核與尚存缺口見 [docs/project-audit-2026-09-08.md](docs/project-audit-2026-09-08.md)，須以新一次檢查更新判定。
 
-## 本次打包規則
+## 既有六合彩歷史日期補入規則
 
-- 已包含：完整 `src/`、`public/`、`scripts/`、`tests/`、設定檔、套件鎖定檔、所有目前專案內素材、`PROJECT_HANDOFF.md`、`FILE_MANIFEST.txt`。
-- 已排除：`node_modules/`、`dist/`、快取、日誌、系統暫存檔。
-- 未修改：既有 React／TypeScript 程式碼、CSS、文案、功能、路由、版面及圖片素材。
-
-## 11. 六合彩歷史日期補入規則（2026-08-14）
-
-- 爬蟲 AppDeploy：`app-snsxet`
-- NFD 保留正式期數與號碼。
-- sc888 六合彩頁面：`https://sc888.net/index.php?s=/LotterySix/index`
-- sc888 只提供歷史開獎日期。
-- 只有期數、6 個一般號碼及特別號與 NFD 完全一致時，才補入 `drawDate`。
-- 期數或 7 個號碼任一不一致時，`drawDate` 維持空白。
-- sc888 不得修改 NFD 的期數、`sortedNumbers` 或 `drawOrderNumbers`。
-- 前端 `src/lottery-api.ts` 已由 `app-snsxet` 讀取 `drawDate`，不需修改前端資料流程。
-- AppDeploy 版本：`1786673435106`，8 項端對端測試通過。\n- 2026-08-14 實際同步結果：sc888 找到 100 筆、與 NFD 精確一致 38 筆、補入空白歷史日期 12 筆、號碼不一致 0 筆。
+- 歷史 NFD 資料的正式期數與號碼保留。
+- sc888 只補日期；只有期數、6 個一般號碼及特別號與 NFD 完全一致時，才補入缺少的 `drawDate`。
+- 任一號碼或期數不一致，日期維持空白；不得修改 NFD 的期數、`sortedNumbers` 或 `drawOrderNumbers`。
+- 目前前端資料來源以 `src/runtime-api-config.ts`、`src/lottery-api.ts` 為準；過去 `app-snsxet` 的版本與同步筆數是歷史紀錄。
