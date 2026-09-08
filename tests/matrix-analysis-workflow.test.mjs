@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 const workflow = readFileSync(
@@ -8,7 +10,7 @@ const workflow = readFileSync(
   'utf8',
 );
 
-test('Matrix workflow triggers its one-shot recovery only when this workflow changes on main', () => {
+test('Matrix workflow keeps manual recovery and the existing main push path filters', () => {
   assert.match(workflow, /^on:\n  workflow_dispatch:\n/m);
   assert.match(
     workflow,
@@ -16,14 +18,49 @@ test('Matrix workflow triggers its one-shot recovery only when this workflow cha
   );
   assert.match(workflow, /^    timeout-minutes: 120$/m);
   assert.match(workflow, /^      max-parallel: 1$/m);
+  assert.match(workflow, /^      - services\/matrix-api\/\*\*$/m);
+  assert.doesNotMatch(workflow, /^  schedule:/m);
 });
 
-test('Matrix workflow runs only Railway-owned lotteries in scheduled mode', () => {
-  assert.match(
-    workflow,
-    /if \[\[ "\$EVENT_NAME" == "push" \|\| "\$EVENT_NAME" == "workflow_dispatch" \|\| "\$EVENT_SCHEDULE" == "\*\/15 \* \* \* \*" \]\]; then\n            should_run=true/,
-  );
+test('Matrix event gate accepts declared triggers and rejects stale cron events', () => {
+  const gate = workflow.match(/      - name: Gate lottery for event\n([\s\S]*?)(?=\n      - name:)/)?.[1];
+  const indentedScript = gate?.match(/        run: \|\n([\s\S]*)$/)?.[1];
+  assert.ok(indentedScript);
+  const script = indentedScript.split('\n')
+    .map((line) => line.startsWith('          ') ? line.slice(10) : line).join('\n');
 
+  const directory = mkdtempSync(join(tmpdir(), 'matrix-event-gate-'));
+  const output = join(directory, 'output');
+  try {
+    for (const [eventName, eventSchedule, expected] of [
+      ['push', '', 'true'],
+      ['workflow_dispatch', '', 'true'],
+      ['schedule', '*/15 * * * *', 'false'],
+      ['schedule', '50 12 * * 1-6', 'false'],
+      ['schedule', '50 13 * * *', 'false'],
+      ['pull_request', '', 'false'],
+    ]) {
+      writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script], {
+        env: {
+          ...process.env,
+          EVENT_NAME: eventName,
+          EVENT_SCHEDULE: eventSchedule,
+          LOTTERY_ID: eventSchedule === '50 13 * * *' ? 'marksix' : 'daily539',
+          GITHUB_OUTPUT: output,
+        },
+        encoding: 'utf8',
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(readFileSync(output, 'utf8').trim(), `should_run=${expected}`, `${eventName}: ${eventSchedule}`);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+  assert.doesNotMatch(gate, /EVENT_SCHEDULE|LOTTERY_ID/);
+});
+
+test('Matrix workflow runs only Railway-owned lotteries in scheduled worker mode', () => {
   for (const [id, lottery] of [
     ['daily539', '今彩539'],
     ['marksix', '六合彩'],

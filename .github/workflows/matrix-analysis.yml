@@ -111,15 +111,9 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          EVENT_SCHEDULE: ${{ github.event.schedule }}
-          LOTTERY_ID: ${{ matrix.id }}
         run: |
           should_run=false
-          if [[ "$EVENT_NAME" == "push" || "$EVENT_NAME" == "workflow_dispatch" || "$EVENT_SCHEDULE" == "*/15 * * * *" ]]; then
-            should_run=true
-          elif [[ "$EVENT_SCHEDULE" == "50 12 * * 1-6" && ( "$LOTTERY_ID" == "daily539" || "$LOTTERY_ID" == "lotto649" ) ]]; then
-            should_run=true
-          elif [[ "$EVENT_SCHEDULE" == "50 13 * * *" && "$LOTTERY_ID" == "marksix" ]]; then
+          if [[ "$EVENT_NAME" == "push" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
             should_run=true
           fi
           echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
