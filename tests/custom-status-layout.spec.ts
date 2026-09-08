@@ -37,7 +37,11 @@ for (const width of [320, 360, 390, 430]) {
     await expect(group.locator('details')).not.toHaveAttribute('open');
     await expect(group.getByRole('combobox', { name: '號碼排序' })).not.toBeVisible();
     expect((await group.boundingBox())!.height).toBeLessThanOrEqual(72);
-    await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-collapsed.png`) });
+    const actions = page.locator('.custom-status-actions');
+    const navigation = page.getByTestId('bottom-navigation');
+    const actionBox = (await actions.boundingBox())!;
+    expect(actionBox.y + actionBox.height).toBeLessThanOrEqual((await navigation.boundingBox())!.y - 4);
+    await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-collapsed.png`), animations: 'disabled' });
     await toggle.focus();
     await page.keyboard.press('Enter');
     await expect(group.getByRole('combobox', { name: '號碼排序' })).toBeVisible();
@@ -58,7 +62,7 @@ for (const width of [320, 360, 390, 430]) {
     expect(new Set(cardMetrics.labels).size).toBe(1);
     expect(cardMetrics.fieldFont).toBe('13px');
     expect(Math.abs(cardMetrics.roadWidth - cardMetrics.bodyWidth)).toBeLessThan(1);
-    await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-expanded.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`custom-status-${width}-expanded.png`), animations: 'disabled' });
     const order = group.getByRole('combobox', { name: '號碼排序' });
     await order.selectOption('依實際開獎順序排序');
     await expect(page.getByText('已自訂', { exact: true })).toBeVisible();

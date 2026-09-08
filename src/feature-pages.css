@@ -1999,7 +1999,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   background: #030a0f; color: var(--lottery-gold-500); font-size: 12px; font-weight: 500;
 }
 .matrix-custom-status-screen .custom-status-add-row { margin-top: 8px; min-height: 28px; border-color: transparent; background: transparent; }
-.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: 8px; display: grid; padding: 6px 0; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(2,7,11,.92); }
+.matrix-custom-status-screen .custom-status-actions { position: sticky; bottom: calc(var(--layout-bottom-nav-clearance) + 8px); z-index: 1; display: grid; padding: 6px 0; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--lottery-neutral-950); }
 .matrix-custom-status-screen .custom-status-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; border: 1px solid #c69b42; border-radius: 7px; color: #efcb74; background: #050c11; font-size: 12px; font-weight: 600; }
 .matrix-custom-status-screen .custom-status-actions button:last-child { color: #17130b; background: linear-gradient(135deg,#e6b94d,#f4d77f); }
 .matrix-custom-status-screen .custom-status-message { color: #f0c86c; text-align: center; font-size: 11px; }
