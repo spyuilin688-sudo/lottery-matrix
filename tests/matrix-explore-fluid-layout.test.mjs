@@ -115,7 +115,7 @@ test("Matrix Explore statistics and results use compact target density", () => {
   assert.match(css, /\.matrix-explore-main-screen \.feature-brand-header,\s*\.matrix-explore-main-screen \.feature-body > :not\(\.result-panel\)\s*\{[^}]*width:\s*100%;/s);
   assert.match(css, /\.matrix-explore-main-screen \.explore-settings,[\s\S]*?\.matrix-explore-main-screen \.result-panel\s*\{[^}]*width:\s*var\(--matrix-explore-result-panel-width, 100%\);/s);
   assert.match(css, /--road-validation-inline-padding:\s*4px;/);
-  assert.match(featureSource, /className="road-validation-process" aria-label="天工驗證過程"/);
+  assert.match(featureSource, /className="road-validation-process(?:\s+[^"\s]+)*"\s+aria-label="天工驗證過程"/);
   assert.doesNotMatch(css, /margin(?:-[a-z]+)?\s*:\s*-/);
 
   const statsHeading = ruleBlock(css, "\\.matrix-explore-main-screen \\.repeat-stats-heading");

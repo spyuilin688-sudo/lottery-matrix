@@ -79,8 +79,12 @@ describe('Matrix status route', () => {
     expect(card).toMatchObject({ sameCodeRoadCount: null, sameCodeRoadCountLocked: true });
     expect(card.roads).toHaveLength(3);
     expect(card.roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2]);
-    expect(card.roads.filter((road) => road.locked === true).map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([7, 13]);
-    expect(card.roads.find((road) => road.locked === true)).not.toHaveProperty('algorithmType');
+    const lockedRoads = card.roads.filter((road) => road.locked === true);
+    expect(lockedRoads.map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([7, 13]);
+    for (const road of lockedRoads) {
+      expect(road).toMatchObject({ result: ['08'], locked: true });
+      expect(road).not.toHaveProperty('algorithmType');
+    }
     expect(authCalls).toBe(0);
   });
 
