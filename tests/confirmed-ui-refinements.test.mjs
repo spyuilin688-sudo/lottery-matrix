@@ -44,13 +44,11 @@ test("Matrix 指南移除標題下方重複卡片", () => {
   assert.match(source, /<nav[^>]*className="guide-category-strip"/);
 });
 
-test("Matrix 探索、天衍、天工共用 2.34rem 垂直循環切換器", () => {
-  assert.doesNotMatch(prototype, /\.matrix-explore-main-screen \.matrix-page-switcher\s*\{\s*display:\s*none/);
-  assert.match(feature, /\.matrix-explore-screen \.matrix-title-banner-actions\s*\{[^}]*top:\s*50%;[^}]*left:\s*calc\(83% \+ 3px\);[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*transform:\s*translateY\(-50%\);/s);
-  assert.doesNotMatch(explore, /\.matrix-explore-main-screen \.matrix-title-banner-actions\s*\{/);
-  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex-direction:\s*column;[^}]*scroll-snap-type:\s*y mandatory;[^}]*touch-action:\s*pan-y;/s);
-  assert.match(feature, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*scroll-snap-align:\s*center;/s);
-  assert.doesNotMatch(feature, /\.setting-grid \.matrix-explore-setting-icon\s*\{[^}]*36px/);
+test("Matrix 探索、天衍、天工共用設定標題同列的點擊切換器", () => {
+  assert.doesNotMatch(source, /headerAction=\{<MatrixPageSwitcher/);
+  assert.match(feature, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
+  assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
+  assert.match(explore, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher\s*\{[^}]*--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/s);
 });
 
 test("六合彩三色球號在首頁、近10期與歷史紀錄共用白色球心定位", () => {
