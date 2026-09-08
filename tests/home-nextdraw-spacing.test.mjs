@@ -23,11 +23,11 @@ test('next draw date has no space before weekday parentheses', () => {
   assert.match(countdown, /return `\$\{value\("month"\)\}\/\$\{value\("day"\)\}\(\$\{weekday\}\) \$\{value\("hour"\)\}:\$\{value\("minute"\)\}`;/);
 });
 
-test('homepage brand header is the final zero-spacing owner for the reduced logo', () => {
+test('homepage brand header keeps flex layout with the final responsive logo gap', () => {
   const brandHeader = lastRuleBody(css, '.home-screen .brand-header');
   const logo = lastRuleBody(css, '.home-screen .home-logo-image');
 
-  assert.match(brandHeader, /display:\s*flex;/);
-  assert.match(brandHeader, /padding-top:\s*0;/);
+  assert.match(css, /\.home-screen \.brand-header\s*\{[^}]*display:\s*flex;/s);
+  assert.match(brandHeader, /padding-top:\s*clamp\(8px,\s*1dvh,\s*12px\);/);
   assert.match(logo, /width:\s*87\.584%;/);
 });

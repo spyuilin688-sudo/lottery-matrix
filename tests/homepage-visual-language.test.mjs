@@ -7,10 +7,13 @@ const visualLanguage = readFileSync("src/homepage/visual-language.css", "utf8");
 const homepageEntry = readFileSync("src/homepage-repair.css", "utf8");
 
 test("loads the visual-language layer as a separate CSS import", () => {
-  assert.equal(
-    homepageEntry,
-    '@import "./homepage/base.css";\n@import "./homepage/lottery-switcher.css";\n@import "./homepage/visual-language.css";\n',
-  );
+  const imports = [...homepageEntry.matchAll(/^@import\s+"([^"]+)";/gm)].map((match) => match[1]);
+  assert.deepEqual(imports, [
+    "./homepage/base.css",
+    "./homepage/lottery-switcher.css",
+    "./homepage/visual-language.css",
+    "./homepage/logo-spacing.css",
+  ]);
 });
 
 test("visual-language layer does not override homepage spacing geometry", () => {
