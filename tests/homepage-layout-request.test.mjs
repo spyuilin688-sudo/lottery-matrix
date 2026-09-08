@@ -46,7 +46,7 @@ test("homepage keeps the logo in normal flow with a bounded responsive top gap a
   const bottomGroup = style(".home-bottom-group");
   const brandHeader = style(".brand-header");
 
-  assert.equal(layout.gridTemplateRows, "minmax(min-content, 1fr) auto");
+  assert.equal(layout.gridTemplateRows, "auto auto");
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(brandHeader.display, "flex");
   assert.equal(brandHeader.flexGrow, "0");

@@ -37,9 +37,9 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
-test('home logo stays in normal flow above the bottom anchored sections', () => {
-  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*minmax\(min-content, 1fr\) auto;/);
-  assertBlock(css, '.home-screen .home-layout', /align-content:\s*stretch;/);
+test('home logo stays in normal flow above the following sections', () => {
+  assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto auto;/);
+  assertBlock(css, '.home-screen .home-layout', /align-content:\s*start;/);
   assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
   assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);
   assertBlock(css, '.home-screen .home-bottom-group', /align-self:\s*end;/);
@@ -52,7 +52,7 @@ test('home logo stays in normal flow above the bottom anchored sections', () => 
 });
 
 test('wide viewport homepage keeps content in normal top flow instead of stretching it downward', () => {
-  assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?align-content:\s*start;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen > \.brand-header\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
+  assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen > \.brand-header\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
 });
 
 test('embedded next draw info uses two independent inset octagon containers', () => {

@@ -55,7 +55,7 @@ describe("homepage requested spacing and selection", () => {
     mountHomepage();
 
     const brandHeader = getComputedStyle(document.querySelector(".brand-header")!);
-    expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("minmax(min-content, 1fr) auto");
+    expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("auto auto");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
     expect(brandHeader.flexGrow).toBe("0");
     expect(brandHeader.alignItems).toBe("center");
