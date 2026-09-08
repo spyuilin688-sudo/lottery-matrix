@@ -193,6 +193,75 @@ describe('authorized Supabase writes', () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it('records a completed payment reversal through the atomic RPC with the session actor', async () => {
+    const rpc = vi.fn(async () => ({
+      id: 'payment-1',
+      status: 'refunded',
+      reversalReason: '銀行退款已完成',
+    }));
+    const data = createAdminData({
+      supabaseRequest: rpc,
+      insertRows: vi.fn(),
+      selectRows: vi.fn(),
+      updateRows: vi.fn(),
+      deleteRows: vi.fn(),
+    });
+
+    await expect(data.recordPaymentReversal(
+      'payment-1',
+      'refunded',
+      '  銀行退款已完成  ',
+      actor,
+    )).resolves.toMatchObject({ id: 'payment-1', status: 'refunded' });
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_record_payment_reversal', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_payment_id: 'payment-1',
+        p_status: 'refunded',
+        p_reason: '銀行退款已完成',
+        p_actor_id: 'admin-1',
+        p_actor_name: '管理員',
+      }),
+    });
+  });
+
+  it.each([
+    ['', 'refunded', '已完成退款'],
+    ['payment-1', 'confirmed', '已完成退款'],
+    ['payment-1', 'refunded', '   '],
+    ['payment-1', 'refunded', '理'.repeat(501)],
+  ])('rejects invalid reversal input before calling Supabase', async (id, status, reason) => {
+    const rpc = vi.fn();
+    const data = createAdminData({
+      supabaseRequest: rpc,
+      insertRows: vi.fn(),
+      selectRows: vi.fn(),
+      updateRows: vi.fn(),
+      deleteRows: vi.fn(),
+    });
+
+    await expect(data.recordPaymentReversal(id, status, reason, actor))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('uses the same Unicode character limit as PostgreSQL for reversal reasons', async () => {
+    const rpc = vi.fn(async () => ({ id: 'payment-1', status: 'refunded' }));
+    const data = createAdminData({
+      supabaseRequest: rpc,
+      insertRows: vi.fn(),
+      selectRows: vi.fn(),
+      updateRows: vi.fn(),
+      deleteRows: vi.fn(),
+    });
+
+    await expect(data.recordPaymentReversal('payment-1', 'refunded', '😀'.repeat(500), actor))
+      .resolves.toMatchObject({ status: 'refunded' });
+    await expect(data.recordPaymentReversal('payment-1', 'refunded', '😀'.repeat(501), actor))
+      .rejects.toMatchObject({ statusCode: 400 });
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it('deletes the selected activation code and records the deleted value', async () => {
     const deleteRows = vi.fn();
     const insertRows = vi.fn();

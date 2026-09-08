@@ -13,7 +13,7 @@ const activation = vi.hoisted(() => ({ redeem: vi.fn() }));
 const memberReferral = vi.hoisted(() => ({ fetchSummary: vi.fn(), submit: vi.fn() }));
 
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth: {
-  getSession: async () => ({ data: { session: { access_token: 'member-session' } }, error: null }),
+  getSession: async () => ({ data: { session: { access_token: 'member-session', user: { id: 'feature-actions-member', app_metadata: { provider: 'custom:line' }, identities: [] } } }, error: null }),
   onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
 } }) }));
 
@@ -41,9 +41,9 @@ vi.mock("../member-api", async (importOriginal) => ({
 import { FeaturePageRouter, MatrixCardPage, MatrixNotebookPage, NotesPage } from "../FeaturePages";
 import { AppDialogProvider } from "../dialog/AppDialog";
 
-function openNotebookSettings() {
+async function openNotebookSettings() {
   render(<AppDialogProvider><MatrixNotebookPage onNavigate={vi.fn()} /></AppDialogProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "切換至紀錄模式" }));
+  fireEvent.click(await screen.findByRole("button", { name: "切換至紀錄模式" }));
   fireEvent.click(screen.getByRole("button", { name: "設定" }));
   fireEvent.click(screen.getByRole("button", { name: "編輯" }));
 }
@@ -271,8 +271,8 @@ describe("existing feature actions", () => {
 });
 
 describe("notebook tag ordering", () => {
-  it("clicking a reorder control moves down once, or up once when already last", () => {
-    openNotebookSettings();
+  it("clicking a reorder control moves down once, or up once when already last", async () => {
+    await openNotebookSettings();
 
     fireEvent.click(screen.getByRole("button", { name: reorderLabel("單號", 1) }));
     expect(tagOrder()).toEqual(["二星", "單號", "三星", "四星"]);
@@ -282,7 +282,7 @@ describe("notebook tag ordering", () => {
   });
 
   it("ArrowUp and ArrowDown stay bounded, retain focus, and keep the position label accurate", async () => {
-    openNotebookSettings();
+    await openNotebookSettings();
     const first = screen.getByRole("button", { name: reorderLabel("單號", 1) });
     first.focus();
 
@@ -313,7 +313,7 @@ describe("notebook tag ordering", () => {
   });
 
   it("retains pointer drag reordering, suppresses its follow-on click, and focuses the moved tag", async () => {
-    openNotebookSettings();
+    await openNotebookSettings();
     const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
     Object.defineProperty(document, "elementFromPoint", {
       configurable: true,
@@ -333,8 +333,8 @@ describe("notebook tag ordering", () => {
     expect(await screen.findByRole("button", { name: reorderLabel("單號", 3) })).toHaveFocus();
   });
 
-  it("does not reinterpret a drag back to its origin or a cancelled drag as a click reorder", () => {
-    openNotebookSettings();
+  it("does not reinterpret a drag back to its origin or a cancelled drag as a click reorder", async () => {
+    await openNotebookSettings();
     const cards = Array.from(document.querySelectorAll<HTMLElement>(".tag-setting-card"));
     const elementFromPoint = vi.fn()
       .mockReturnValueOnce(cards[2])
@@ -364,7 +364,7 @@ describe("notebook tag ordering", () => {
   });
 
   it("keeps a custom tag name input mounted and focused across consecutive edits", async () => {
-    openNotebookSettings();
+    await openNotebookSettings();
     fireEvent.change(screen.getByPlaceholderText("新增自訂玩法"), { target: { value: "測" } });
     fireEvent.click(screen.getByRole("button", { name: "新增" }));
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "新增" }));

@@ -612,6 +612,7 @@ describe('admin core mutation operation permissions', () => {
     ['PUT /api/members/:id/status', 'users', 'edit'],
     ['PUT /api/subscriptions/:id', 'subscriptions', 'edit'],
     ['PUT /api/transfer-requests/:id', 'subscriptions', 'edit'],
+    ['PUT /api/payments/:id/reversal', 'subscriptions', 'edit'],
     ['POST /api/activation-codes/batch', 'activationCodes', 'add'],
     ['DELETE /api/activation-codes/:id', 'activationCodes', 'delete'],
   ] as const;
@@ -641,5 +642,58 @@ describe('admin core mutation operation permissions', () => {
       wiring.requirePermission.mockReset();
       expect(result).toEqual({ error: '權限不足', status: 403 });
     }
+  });
+});
+
+describe('payment reversal route wiring', () => {
+  it('uses only reversal fields from the body and the authenticated session actor', async () => {
+    wiring.supabaseRequest.mockClear();
+    wiring.supabaseRequest.mockResolvedValueOnce({ id: 'payment-1', status: 'chargeback' });
+    const route = 'PUT /api/payments/:id/reversal';
+    const context = await authenticate(route, sessionContext({ id: 'payment-1' }));
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(routeHandler({
+      ...context,
+      body: {
+        status: 'chargeback',
+        reason: '收單行刷退完成',
+        actorId: 'attacker',
+        actorName: '偽造管理員',
+      },
+    })).resolves.toMatchObject({ body: { id: 'payment-1', status: 'chargeback' } });
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_record_payment_reversal', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_payment_id: 'payment-1',
+        p_status: 'chargeback',
+        p_reason: '收單行刷退完成',
+        p_actor_id: wiring.admin.id,
+        p_actor_name: wiring.admin.name,
+      }),
+    });
+  });
+
+  it('maps subscriptionRecords reads to subscription view permission', async () => {
+    wiring.requireModulePermission.mockClear();
+    const route = 'GET /api/data/:table';
+    const context = await authenticate(route, sessionContext({ table: 'subscriptionRecords' }));
+    const routeHandler = routes[route][2] as (input: typeof context) => Promise<unknown>;
+
+    await routeHandler(context);
+    expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, 'subscriptions', 'view');
+  });
+
+  it('rejects non-string reversal fields instead of coercing attacker-controlled values', async () => {
+    wiring.supabaseRequest.mockClear();
+    const route = 'PUT /api/payments/:id/reversal';
+    const context = await authenticate(route, sessionContext({ id: 'payment-1' }));
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(routeHandler({
+      ...context,
+      body: { status: 'refunded', reason: { value: '偽造理由' } },
+    })).resolves.toMatchObject({ status: 400 });
+    expect(wiring.supabaseRequest).not.toHaveBeenCalled();
   });
 });

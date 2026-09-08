@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, Cross2Icon, GearIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
-import { useAppDialog } from "../dialog/AppDialog";
+import { AppDialogProvider, useAppDialog, type AppDialogOptions } from "../dialog/AppDialog";
+import { useNotebookOwner, type NotebookOwner } from "./notebook-owner";
+import { readNotebookData, writeNotebookData, type NotebookData } from "./notebook-storage";
 import { LOTTERIES, FeatureShell, BrandHeader, SectionTitle, LotteryLogoTabs } from "./shared";
 import { Navigate } from "./navigation";
 
@@ -81,27 +83,58 @@ export function combinations(total: number, choose: number) {
 }
 
 export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
+  const identity = useNotebookOwner();
+  if (identity.status === "ready") {
+    // Keep the shared dialog implementation, but cancel its account-specific queue on account change.
+    return <AppDialogProvider key={identity.owner.revision}><OwnedNotebookPage owner={identity.owner} onNavigate={onNavigate} /></AppDialogProvider>;
+  }
+  return <FeatureShell title="Matrix 筆記本" onNavigate={onNavigate} active="快捷">
+    {identity.status === "error" ? <div className="panel" role="alert"><p>登入狀態確認失敗，請重試。</p><button type="button" className="title-card-compact-action" onClick={identity.retry}>重試確認登入</button></div>
+      : <p className="empty-result" role="status">{identity.status === "checking" ? "筆記本讀取中…" : "請先登入後再使用 Matrix 筆記本"}</p>}
+  </FeatureShell>;
+}
+
+type FailedNotebookAction = { kind: "note" | "record" | "settings" }
+  | { kind: "delete-note" | "delete-record"; id: string };
+
+function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavigate: Navigate }) {
   const appDialog = useAppDialog();
+  const [loaded, setLoaded] = useState(() => readNotebookData(owner.userId, DEFAULT_RECORD_SETTINGS()));
+  const [failedAction, setFailedAction] = useState<FailedNotebookAction | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const confirmationPending = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const isActive = () => owner.active && mounted.current;
+  const confirmCurrent = async (options: AppDialogOptions) => {
+    if (!isActive() || confirmationPending.current) return false;
+    confirmationPending.current = true;
+    setConfirmBusy(true);
+    try { return await appDialog.confirm(options) && isActive(); }
+    finally {
+      confirmationPending.current = false;
+      if (isActive()) setConfirmBusy(false);
+    }
+  };
+  const emptyData = useMemo<NotebookData>(() => ({ notes: [], records: [], settings: DEFAULT_RECORD_SETTINGS() }), []);
+  const { notes, records, settings } = loaded.status === "ready" ? loaded.data : emptyData;
+  const persist = (patch: Partial<NotebookData>, action: FailedNotebookAction) => {
+    if (!isActive() || loaded.status !== "ready") return false;
+    const data = { ...loaded.data, ...patch };
+    if (!writeNotebookData(owner.userId, data)) {
+      setFailedAction(action);
+      return false;
+    }
+    setLoaded({ status: "ready", data });
+    setFailedAction(null);
+    return true;
+  };
   const [view, setView] = useState<NotebookView>("list");
   const [notebookMode, setNotebookMode] = useState<"筆記" | "紀錄">("筆記");
   const [deletingNotes, setDeletingNotes] = useState(false);
-  const [notes, setNotes] = useState<NotebookNote[]>(() => {
-    if (typeof window === "undefined") return [];
-    try { return JSON.parse(window.localStorage.getItem("matrix-notebook-entries") || "[]") as NotebookNote[]; } catch { return []; }
-  });
-  const [records, setRecords] = useState<NotebookRecord[]>(() => {
-    if (typeof window === "undefined") return [];
-    try { return JSON.parse(window.localStorage.getItem("matrix-notebook-records") || "[]") as NotebookRecord[]; } catch { return []; }
-  });
-  const [settings, setSettings] = useState<Record<LotteryId, LotteryRecordSettings>>(() => {
-    if (typeof window === "undefined") return DEFAULT_RECORD_SETTINGS();
-    try {
-      const stored = JSON.parse(window.localStorage.getItem("matrix-notebook-record-settings") || "null") as Record<LotteryId, LotteryRecordSettings> | null;
-      if (!stored) return DEFAULT_RECORD_SETTINGS();
-      const defaults = DEFAULT_RECORD_SETTINGS();
-      return Object.fromEntries(LOTTERIES.map((item) => [item, { tags: [...defaults[item].tags, ...(stored[item]?.tags ?? []).filter((play) => !["單號", "二星", "三星", "四星", "自訂"].includes(play.name)).map((play) => ({ ...play, defaultBets: Math.min(9999999, Math.max(1, Number(play.defaultBets) || 1)), costPerBet: Math.min(9999999, Math.max(1, Number(play.costPerBet) || 1)), fixedCost: Math.min(9999999, Math.max(1, Number(play.fixedCost) || 1)), prizePerBet: Math.min(9999999, Math.max(1, Number(play.prizePerBet) || 1)) }))] }])) as Record<LotteryId, LotteryRecordSettings>;
-    } catch { return DEFAULT_RECORD_SETTINGS(); }
-  });
   const [settingsDraft, setSettingsDraft] = useState<Record<LotteryId, LotteryRecordSettings>>(() => DEFAULT_RECORD_SETTINGS());
   const [settingsBaseline, setSettingsBaseline] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -126,17 +159,12 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
   const [settingsLottery, setSettingsLottery] = useState<LotteryId>("今彩539");
   const [settingsEditMode, setSettingsEditMode] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const importRef = useRef<HTMLInputElement | null>(null);
   const draggedTagIndex = useRef<number | null>(null);
   const draggedTagTargetIndex = useRef<number | null>(null);
   const draggedTagStartPosition = useRef<{ x: number; y: number } | null>(null);
   const draggedTagDidMove = useRef(false);
   const skipTagReorderClick = useRef(false);
   const editingTagName = useRef("");
-
-  useEffect(() => { window.localStorage.setItem("matrix-notebook-entries", JSON.stringify(notes)); }, [notes]);
-  useEffect(() => { window.localStorage.setItem("matrix-notebook-records", JSON.stringify(records)); }, [records]);
-  useEffect(() => { window.localStorage.setItem("matrix-notebook-record-settings", JSON.stringify(settings)); }, [settings]);
 
   const maxNumber = lottery === "今彩539" || lottery === "天天樂" ? 39 : 49;
   const currentTags = settings[lottery].tags.filter((tag) => tag.name !== "自訂");
@@ -203,65 +231,75 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     prize: visibleRecords.reduce((sum, record) => sum + record.actualPrize, 0),
   }), [visibleRecords]);
   const settingsDirty = view === "settings" && JSON.stringify(settingsDraft) !== settingsBaseline;
+  const noteDirty = view === "note" && (noteTitle !== noteBaseline.title || noteContent !== noteBaseline.content);
+  const unsaved = settingsDirty || noteDirty || failedAction !== null;
 
   useEffect(() => {
-    if (!settingsDirty) return;
+    if (!unsaved) return;
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => window.removeEventListener("beforeunload", warnBeforeUnload);
-  }, [settingsDirty]);
+  }, [unsaved]);
 
-  const startNote = (entry?: NotebookNote) => {
+  const cancelNoteDeletion = () => {
     setDeletingNotes(false);
+    if (failedAction?.kind === "delete-note") setFailedAction(null);
+  };
+  const startNote = (entry?: NotebookNote) => {
+    cancelNoteDeletion();
     setEditingNoteId(entry?.id ?? null);
     setNoteTitle(entry?.title ?? "");
     setNoteContent(entry?.content ?? "");
     setNoteBaseline({ title: entry?.title ?? "", content: entry?.content ?? "" });
     setView("note");
   };
-  const returnFromNote = async () => {
-    const changed = noteTitle !== noteBaseline.title || noteContent !== noteBaseline.content;
-    if (changed && !await appDialog.confirm({ title: "內容尚未儲存", description: "確定返回列表？目前修改將不會保留。", confirmLabel: "直接離開" })) return;
-    setView("list");
+  const leaveWithDraft = async (action: () => void) => {
+    if (unsaved && !await confirmCurrent({ title: settingsDirty ? "設定尚未儲存" : "內容尚未儲存", description: "確定離開？目前修改將不會保留。", confirmLabel: "直接離開" })) return;
+    if (!isActive()) return;
+    setFailedAction(null);
+    action();
+  };
+  const returnFromNote = () => leaveWithDraft(() => setView("list"));
+  const commitNote = () => {
+    if (!noteTitle.trim() && !noteContent.trim()) return;
+    const now = new Date().toISOString();
+    const next = editingNoteId
+      ? notes.map((entry) => entry.id === editingNoteId ? { ...entry, title: noteTitle, content: noteContent, updatedAt: now } : entry)
+      : [{ id: `note-${crypto.randomUUID()}`, title: noteTitle, content: noteContent, updatedAt: now }, ...notes];
+    if (persist({ notes: next }, { kind: "note" })) setView("list");
   };
   const saveNote = async () => {
     if (!noteTitle.trim() && !noteContent.trim()) return;
-    if (!await appDialog.confirm({ title: "確認寫入筆記？", description: "確認後將寫入目前內容。", confirmLabel: "確認寫入" })) return;
-    const now = new Date().toISOString();
-    if (editingNoteId) setNotes((current) => current.map((entry) => entry.id === editingNoteId ? { ...entry, title: noteTitle, content: noteContent, updatedAt: now } : entry));
-    else setNotes((current) => [{ id: `note-${Date.now()}`, title: noteTitle, content: noteContent, updatedAt: now }, ...current]);
-    setView("list");
+    if (!await confirmCurrent({ title: "確認寫入筆記？", description: "確認後將寫入目前內容。", confirmLabel: "確認寫入" })) return;
+    commitNote();
+  };
+  const commitDeleteNote = (id: string) => {
+    if (persist({ notes: notes.filter((note) => note.id !== id) }, { kind: "delete-note", id })) setDeletingNotes(false);
   };
   const deleteNote = async (entry: NotebookNote) => {
-    if (!await appDialog.confirm({ title: "確認刪除？", description: `刪除後將移除「${entry.title.trim() || "未命名筆記"}」。`, confirmLabel: "刪除", tone: "danger" })) return;
-    setNotes((current) => current.filter((note) => note.id !== entry.id));
-    setDeletingNotes(false);
+    if (!await confirmCurrent({ title: "確認刪除？", description: `刪除後將移除「${entry.title.trim() || "未命名筆記"}」。`, confirmLabel: "刪除", tone: "danger" })) return;
+    commitDeleteNote(entry.id);
   };
+  const commitDeleteRecord = (id: string) => persist({ records: records.filter((record) => record.id !== id) }, { kind: "delete-record", id });
   const deleteRecord = async (id: string) => {
-    if (await appDialog.confirm({ title: "確認刪除？", description: "刪除後將移除此紀錄。", confirmLabel: "刪除", tone: "danger" })) setRecords((current) => current.filter((item) => item.id !== id));
+    if (await confirmCurrent({ title: "確認刪除？", description: "刪除後將移除此紀錄。", confirmLabel: "刪除", tone: "danger" })) commitDeleteRecord(id);
   };
   const startRecord = () => {
     setLottery("今彩539"); setRecordDate(new Date().toISOString().slice(0, 10)); setMode("單號"); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSelectedTags([]); setPlayDrafts({}); setSpecialNumber(""); setView("record");
   };
-  const openSettings = () => {
+  const openSettings = () => leaveWithDraft(() => {
     const draft = structuredClone(settings);
     setSettingsDraft(draft);
     setSettingsBaseline(JSON.stringify(draft));
     setSettingsEditMode(false);
     setNewTagName("");
     setView("settings");
-  };
-  const leaveSettings = async (action: () => void) => {
-    if (settingsDirty && !await appDialog.confirm({ title: "設定尚未儲存", description: "確定離開？目前修改將不會保留。", confirmLabel: "直接離開" })) return;
-    action();
-  };
-  const navigateFromNotebook: Navigate = (screen) => {
-    if (view === "settings") leaveSettings(() => onNavigate(screen));
-    else onNavigate(screen);
-  };
+  });
+  const leaveSettings = leaveWithDraft;
+  const navigateFromNotebook: Navigate = (screen) => { void leaveWithDraft(() => onNavigate(screen)); };
   const saveRecord = () => {
     const numbers = mode === "立柱" ? parsedColumns.flat() : parsedNumbers;
     if (mode === "立柱" && new Set(numbers).size !== numbers.length) return;
@@ -271,12 +309,12 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       lottery, plays: selectedPlayRows, quantity: 1,
       createdDate: created.toLocaleDateString("zh-TW"), createdTime: created.toLocaleTimeString("zh-TW", { hour12: false }),
     };
-    setRecords((current) => [{
-      id: `record-${Date.now()}`, lottery, date: recordDate, mode, numbers: specialNumber ? [...numbers, specialNumber] : numbers, columns: parsedColumns,
+    const next: NotebookRecord[] = [{
+      id: `record-${crypto.randomUUID()}`, lottery, date: recordDate, mode, numbers: specialNumber ? [...numbers, specialNumber] : numbers, columns: parsedColumns,
       tags: selectedTags, quantity: 1, bets: computedBets, cost: computedCost, estimatedPrize,
       actualPrize: 0, status: "等待開獎", unlocked: false, snapshot,
-    }, ...current]);
-    setView("list");
+    }, ...records];
+    if (persist({ records: next }, { kind: "record" })) setView("list");
   };
   const updateTag = (index: number, patch: Partial<TagSetting>) => setSettingsDraft((current) => ({
     ...current,
@@ -298,6 +336,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       return { ...current, [settingsLottery]: { tags } };
     });
     queueMicrotask(() => {
+      if (!isActive()) return;
       document.querySelector<HTMLButtonElement>(`[data-tag-setting-index="${to}"] .tag-drag-handle`)
         ?.focus();
     });
@@ -355,7 +394,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     draggedTagDidMove.current = false;
     if (didMove) suppressTagReorderFollowOnClick();
     if (from === null || to === null || from === to) return;
-    if (!await appDialog.confirm({ title: "確認變更玩法順序？", confirmLabel: "確認變更" })) return;
+    if (!await confirmCurrent({ title: "確認變更玩法順序？", confirmLabel: "確認變更" })) return;
     reorderSettingsTag(from, to);
   };
   const cancelTagDrag = () => {
@@ -370,7 +409,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     if (!newTagName.trim()) return;
     const name = newTagName.trim();
     if (settingsDraft[settingsLottery].tags.some((play) => play.name === name)) return;
-    if (!await appDialog.confirm({ title: `確認新增「${name}」玩法？`, confirmLabel: "新增" })) return;
+    if (!await confirmCurrent({ title: `確認新增「${name}」玩法？`, confirmLabel: "新增" })) return;
     setSettingsDraft((current) => ({
       ...current,
       [settingsLottery]: {
@@ -387,22 +426,33 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
     setNewTagName("");
   };
   const deleteSettingsTag = async (index: number, name: string) => {
-    if (!await appDialog.confirm({ title: `確認刪除「${name}」玩法？`, description: "刪除後將移除此玩法。", confirmLabel: "刪除", tone: "danger" })) return;
+    if (!await confirmCurrent({ title: `確認刪除「${name}」玩法？`, description: "刪除後將移除此玩法。", confirmLabel: "刪除", tone: "danger" })) return;
     setSettingsDraft((current) => ({
       ...current,
       [settingsLottery]: { tags: current[settingsLottery].tags.filter((_, tagIndex) => tagIndex !== index) },
     }));
   };
   const resetSettings = async () => {
-    if (!await appDialog.confirm({ title: "確認重置設定？", description: "目前彩種的玩法設定將恢復預設值。", confirmLabel: "重置", tone: "danger" })) return;
+    if (!await confirmCurrent({ title: "確認重置設定？", description: "目前彩種的玩法設定將恢復預設值。", confirmLabel: "重置", tone: "danger" })) return;
     setSettingsDraft((current) => ({ ...current, [settingsLottery]: DEFAULT_RECORD_SETTINGS()[settingsLottery] }));
   };
-  const saveSettings = async () => {
-    if (!await appDialog.confirm({ title: "確認儲存設定？", confirmLabel: "儲存" })) return;
+  const commitSettings = () => {
     const savedSettings = structuredClone(settingsDraft);
-    setSettings(savedSettings);
+    if (!persist({ settings: savedSettings }, { kind: "settings" })) return;
     setSettingsBaseline(JSON.stringify(savedSettings));
     setSettingsEditMode(false);
+  };
+  const saveSettings = async () => {
+    if (!await confirmCurrent({ title: "確認儲存設定？", confirmLabel: "儲存" })) return;
+    commitSettings();
+  };
+  const retrySave = () => {
+    if (!failedAction || confirmationPending.current) return;
+    if (failedAction.kind === "note") commitNote();
+    else if (failedAction.kind === "record") saveRecord();
+    else if (failedAction.kind === "settings") commitSettings();
+    else if (failedAction.kind === "delete-note") commitDeleteNote(failedAction.id);
+    else if (failedAction.kind === "delete-record") commitDeleteRecord(failedAction.id);
   };
   const togglePlay = (name: string) => {
     setSelectedTags((current) => current.includes(name) ? current.filter((play) => play !== name) : [...current, name]);
@@ -432,35 +482,25 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
       return values.join(" ");
     }));
   };
-  const exportBackup = () => {
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ notes, records, settings }, null, 2)], { type: "application/json" }));
-    const link = document.createElement("a"); link.href = url; link.download = "matrix-notebook-backup.json"; link.click(); URL.revokeObjectURL(url);
-  };
-  const importBackup = (file?: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const data = JSON.parse(String(reader.result)) as { notes?: NotebookNote[]; records?: NotebookRecord[]; settings?: Record<LotteryId, LotteryRecordSettings> };
-        if (data.notes) setNotes(data.notes); if (data.records) setRecords(data.records); if (data.settings) setSettings(data.settings);
-      } catch { await appDialog.alert({ title: "匯入備份失敗", description: "請確認備份檔案格式後再試一次。", tone: "danger" }); }
-    };
-    reader.readAsText(file);
-  };
   const formatTime = (value: string) => new Intl.DateTimeFormat("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
+
+  if (loaded.status === "error") return <FeatureShell title="Matrix 筆記本" onNavigate={onNavigate} active="快捷" className="matrix-notebook-screen">
+    <div className="panel" role="alert"><p>筆記本讀取失敗，請重試。讀取成功前無法編輯。</p><button type="button" className="title-card-compact-action" aria-label="重試讀取筆記本" onClick={() => { if (isActive()) setLoaded(readNotebookData(owner.userId, DEFAULT_RECORD_SETTINGS())); }}>重試讀取</button></div>
+  </FeatureShell>;
 
   return (
     <FeatureShell title="Matrix 筆記本" onNavigate={navigateFromNotebook} active="快捷" className="matrix-notebook-screen">
+      {failedAction ? <div className="panel" role="alert"><p>筆記本尚未儲存，請重試。請勿關閉頁面，以免遺失目前修改。</p><button type="button" className="title-card-compact-action" aria-label="重試儲存筆記本" disabled={confirmBusy} onClick={retrySave}>重試儲存</button></div> : null}
       {view === "list" ? <>
         <section className="notebook-heading" aria-label="筆記本工具列">
           <img src="/assets/quick/matrix-notebook.png" alt="" />
           {notebookMode === "筆記" ? <div className="notebook-note-actions">
-            <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => setDeletingNotes((current) => !current)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
+            <button type="button" className="notebook-delete-action" aria-pressed={deletingNotes} disabled={notes.length === 0} onClick={() => deletingNotes ? cancelNoteDeletion() : setDeletingNotes(true)}>{deletingNotes ? "取消刪除" : "刪除"}</button>
             <button type="button" onClick={() => startNote()}><PlusIcon aria-hidden="true" />新增筆記</button>
           </div> : <span className="notebook-entry-count">{records.length} 筆紀錄</span>}
           <div className="notebook-mode-switch" aria-label="筆記本模式">
-            <button type="button" data-selected={notebookMode === "筆記"} onClick={() => { setNotebookMode("筆記"); setDeletingNotes(false); }} aria-label="切換至筆記模式"><img src="/assets/quick/notebook-mode-note.png" alt="" /><span>筆記</span></button>
-            <button type="button" data-selected={notebookMode === "紀錄"} onClick={() => { setNotebookMode("紀錄"); setDeletingNotes(false); }} aria-label="切換至紀錄模式"><img src="/assets/quick/notebook-mode-record.png" alt="" /><span>紀錄</span></button>
+            <button type="button" data-selected={notebookMode === "筆記"} onClick={() => { setNotebookMode("筆記"); cancelNoteDeletion(); }} aria-label="切換至筆記模式"><img src="/assets/quick/notebook-mode-note.png" alt="" /><span>筆記</span></button>
+            <button type="button" data-selected={notebookMode === "紀錄"} onClick={() => { setNotebookMode("紀錄"); cancelNoteDeletion(); }} aria-label="切換至紀錄模式"><img src="/assets/quick/notebook-mode-record.png" alt="" /><span>紀錄</span></button>
           </div>
           {notebookMode === "筆記" ? <span className="notebook-list-count notebook-entry-count">{notes.length} 筆筆記</span> : <div className="notebook-create-actions" data-mode="紀錄"><div className="record-lottery-filters" aria-label="彩種分類">{LOTTERIES.map((item) => <button type="button" data-selected={recordLotteryFilters.includes(item)} onClick={() => setRecordLotteryFilters((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item])} key={item}>{item}</button>)}</div><button type="button" onClick={startRecord}><PlusIcon />新增紀錄</button></div>}
         </section>
@@ -492,11 +532,11 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
         <header><button type="button" onClick={returnFromNote}><ChevronLeftIcon />返回列表</button></header>
         <input aria-label="筆記標題" placeholder="標題" value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} />
         <textarea className="resize-none" aria-label="筆記內容" placeholder="輸入筆記內容" value={noteContent} onChange={(event) => setNoteContent(event.target.value)} />
-        <button type="button" className="primary-action branded-explore-action notebook-write-button" onClick={saveNote}><span>寫入筆記</span></button>
+        <button type="button" className="primary-action branded-explore-action notebook-write-button" disabled={confirmBusy} aria-busy={confirmBusy} onClick={saveNote}><span>寫入筆記</span></button>
       </section> : null}
 
       {view === "record" ? <section className="record-editor">
-        <header className="record-page-header"><button type="button" onClick={() => setView("list")}><ChevronLeftIcon />返回列表</button><button type="button" onClick={openSettings}><GearIcon />設定</button></header>
+        <header className="record-page-header"><button type="button" onClick={() => leaveWithDraft(() => setView("list"))}><ChevronLeftIcon />返回列表</button><button type="button" onClick={openSettings}><GearIcon />設定</button></header>
         <section className="panel record-form-section"><h3>彩種</h3><div className="record-lottery-tabs">{LOTTERIES.map((item) => <button type="button" data-selected={lottery === item} onClick={() => { setLottery(item); setSettingsLottery(item); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSpecialNumber(""); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div></section>
         <section className="panel record-form-section record-date-section"><button type="button" className="record-date-toggle" aria-expanded={dateInfoOpen} onClick={() => setDateInfoOpen(!dateInfoOpen)}><h3>日期</h3><ChevronDownIcon data-open={dateInfoOpen} /></button>{dateInfoOpen ? <div className="record-week-row">{weekDates.map((date) => <button type="button" data-selected={recordDate === date.value} onClick={() => setRecordDate(date.value)} key={date.value}><span>{date.label}</span><strong>{date.day}</strong></button>)}</div> : null}</section>
         <section className="panel record-form-section"><h3>輸入模式</h3><div className="record-mode-tabs">{(["單號", "連碰", "立柱"] as const).map((item) => <button type="button" data-selected={mode === item} onClick={() => { setMode(item); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSpecialNumber(""); setSelectedTags([]); setPlayDrafts({}); }} key={item}>{item}</button>)}</div>
@@ -514,7 +554,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
         {settingsDraft[settingsLottery].tags.map((tag, index, tags) => <section className="panel tag-setting-card" data-tag-setting-index={index} key={index}>
           <header data-editing={settingsEditMode}>
             {settingsEditMode ? <button type="button" className="tag-drag-handle" aria-label={`調整${tag.name}順序，目前第${index + 1}項，共${tags.length}項；點擊${index === tags.length - 1 ? "上移" : "下移"}，方向鍵可調整`} onClick={() => clickSettingsTagReorder(index)} onKeyDown={(event) => keySettingsTagReorder(event, index)} onPointerDown={(event) => beginTagDrag(event, index)} onPointerMove={moveTagDrag} onPointerUp={endTagDrag} onPointerCancel={cancelTagDrag}><span aria-hidden="true">⠿</span></button> : null}
-            {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={async () => { if (tag.name !== editingTagName.current && !await appDialog.confirm({ title: `確認修改玩法名稱？`, description: `將「${editingTagName.current}」修改為「${tag.name}」。`, confirmLabel: "修改" })) updateTag(index, { name: editingTagName.current }); }} />}
+            {["單號", "二星", "三星", "四星"].includes(tag.name) || !settingsEditMode ? <strong>{tag.name}</strong> : <input aria-label="玩法名稱" value={tag.name} onFocus={() => { editingTagName.current = tag.name; }} onChange={(event) => updateTag(index, { name: event.target.value })} onBlur={async () => { if (tag.name !== editingTagName.current && !await confirmCurrent({ title: `確認修改玩法名稱？`, description: `將「${editingTagName.current}」修改為「${tag.name}」。`, confirmLabel: "修改" }) && isActive()) updateTag(index, { name: editingTagName.current }); }} />}
             {settingsEditMode ? <button type="button" className="tag-delete-button" aria-label={`刪除${tag.name}`} onClick={() => deleteSettingsTag(index, tag.name)}><TrashIcon /></button> : null}
           </header>
           <div className="tag-setting-fields">
@@ -532,7 +572,7 @@ export function MatrixNotebookPage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
         </section>)}
         <section className="panel custom-tag-add"><input placeholder="新增自訂玩法" value={newTagName} onChange={(event) => setNewTagName(event.target.value)} /><button type="button" onClick={addSettingsTag}>新增</button></section>
-        <section className="panel record-data-actions"><button type="button" onClick={resetSettings}>重置設定</button><button type="button" onClick={saveSettings}>儲存設定</button></section>
+        <section className="panel record-data-actions"><button type="button" onClick={resetSettings}>重置設定</button><button type="button" disabled={confirmBusy} aria-busy={confirmBusy} onClick={saveSettings}>儲存設定</button></section>
       </section> : null}
       {numberPicker && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop record-picker-backdrop" role="presentation" onClick={() => setNumberPicker(null)}><section className="filter-sheet record-number-picker" role="dialog" aria-modal="true" aria-labelledby="record-number-picker-title" onClick={(event) => event.stopPropagation()}><header><h2 id="record-number-picker-title">選取號碼</h2><button type="button" onClick={() => setNumberPicker(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="record-number-grid">{Array.from({ length: maxNumber }, (_, index) => String(index + 1).padStart(2, "0")).map((number) => { const selected = numberPicker.type === "special" ? specialNumber === number : numberPicker.type === "numbers" ? parsedNumbers.includes(number) : parsedColumns[numberPicker.column ?? 0]?.includes(number); return <button type="button" data-selected={selected} onClick={() => togglePickedNumber(number)} key={number}>{number}</button>; })}</div><button type="button" className="record-picker-done" onClick={() => setNumberPicker(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
     </FeatureShell>

@@ -13,15 +13,19 @@ import { FeaturePageRouter } from '../features/router';
 import { MatrixStatusPage } from '../features/MatrixStatusPages';
 
 const lineSession = { access_token: 'test-session', user: { id: 'line-user', app_metadata: { provider: 'custom:line' }, identities: [] } };
-let emitAuth: (event: string, session: unknown) => void;
+const authListeners = new Set<(event: string, session: unknown) => void>();
+const emitAuth = (event: string, session: unknown) => {
+  for (const listener of authListeners) listener(event, session);
+};
 
 beforeEach(() => {
   window.localStorage.clear();
+  authListeners.clear();
   vi.clearAllMocks();
   auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   auth.onAuthStateChange.mockImplementation((callback) => {
-    emitAuth = callback;
-    return { data: { subscription: { unsubscribe: vi.fn() } } };
+    authListeners.add(callback);
+    return { data: { subscription: { unsubscribe: () => authListeners.delete(callback) } } };
   });
   settings.listCustomStatusSettings.mockResolvedValue({ items: [], entitlements: { canCustomizeStatus: true } });
 });

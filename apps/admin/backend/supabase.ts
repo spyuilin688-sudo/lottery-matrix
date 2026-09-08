@@ -20,6 +20,53 @@ export class BackendIntegrationError extends Error {
   }
 }
 
+class SupabaseDomainError extends Error {
+  statusCode = 400;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'SupabaseDomainError';
+  }
+}
+
+const paymentReversalDomainErrors = new Map<string, {
+  httpStatus: number;
+  messages: readonly string[];
+}>([
+  ['22023', {
+    httpStatus: 400,
+    messages: [
+      'PAYMENT_ID_REQUIRED',
+      'INVALID_PAYMENT_REVERSAL_STATUS',
+      'PAYMENT_REVERSAL_REASON_REQUIRED',
+      'PAYMENT_REVERSAL_REASON_TOO_LONG',
+      'PAYMENT_REVERSAL_ACTOR_REQUIRED',
+    ],
+  }],
+  ['P0002', { httpStatus: 500, messages: ['ADMIN_ACTOR_NOT_FOUND', 'PAYMENT_NOT_FOUND'] }],
+  ['P0001', { httpStatus: 400, messages: ['PAYMENT_REVERSAL_CONFLICT', 'PAYMENT_NOT_CONFIRMED'] }],
+]);
+
+async function readPaymentReversalDomainError(path: string, response: Response) {
+  if (
+    path.replace(/^\/+/, '').split('?')[0] !== 'rest/v1/rpc/admin_record_payment_reversal'
+  ) return null;
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return null;
+  }
+  if (!body || typeof body !== 'object') return null;
+  const { code, message } = body as { code?: unknown; message?: unknown };
+  if (typeof code !== 'string' || typeof message !== 'string') return null;
+  const domain = paymentReversalDomainErrors.get(code);
+  return domain?.httpStatus === response.status && domain.messages.includes(message)
+    ? new SupabaseDomainError(message)
+    : null;
+}
+
 export async function getSupabaseConfig(secretReader: SecretReader): Promise<SupabaseConfig> {
   const names = await secretReader.listSecretNames();
   const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
@@ -77,6 +124,8 @@ export function createSupabaseTransport(
       }
 
       if (!response.ok) {
+        const domainError = await readPaymentReversalDomainError(path, response);
+        if (domainError) throw domainError;
         throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
       }
       // PostgREST minimal writes can return 201 with an empty body, not only 204.

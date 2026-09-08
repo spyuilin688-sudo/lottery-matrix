@@ -176,4 +176,18 @@ describe('Matrix Pro manual bank transfer', () => {
     expect(screen.getByText('已確認')).toBeInTheDocument();
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
+
+  it('prefers completed payment reversal statuses in member payment history', async () => {
+    memberApi.fetchMemberPaymentHistory.mockResolvedValue([
+      { id: 'payment-1', planName: '月費方案', amount: 2880, submittedAt: '2026-09-01T00:00:00Z', status: 'refunded' },
+      { id: 'payment-2', planName: '季費方案', amount: 4580, submittedAt: '2026-09-02T00:00:00Z', status: 'chargeback' },
+      { id: 'payment-3', planName: '年費方案', amount: 12880, submittedAt: '2026-09-03T00:00:00Z', status: 'cancelled' },
+    ]);
+
+    render(<PaymentHistoryPage onNavigate={vi.fn()} />);
+
+    expect(await screen.findByText('已退款')).toBeInTheDocument();
+    expect(screen.getByText('已刷退')).toBeInTheDocument();
+    expect(screen.getByText('交易已取消')).toBeInTheDocument();
+  });
 });

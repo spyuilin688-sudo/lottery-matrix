@@ -7,6 +7,7 @@ const mainSource = readFileSync("src/main.tsx", "utf8");
 const appSource = readFileSync("src/App.tsx", "utf8");
 const prototypeSource = readFileSync("src/Prototype.tsx", "utf8");
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
+const tiangongCss = readFileSync("src/matrix-tiangong-results.css", "utf8");
 
 function assertRule(selectorPattern, declarations) {
   const bodies = ruleBodies(css, selectorPattern);
@@ -54,4 +55,22 @@ test("Matrix Explore controls keep the current scoped responsive dimensions", ()
     /min-height:\s*clamp\(36px, 10vw, 40px\);/,
     /height:\s*auto;/,
   ]);
+});
+
+test("Tiangong fixed period keeps the compact full-width control geometry", () => {
+  const staticPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static$/;
+  const compactBodies = ruleBodies(css, staticPeriodSelector);
+  assert.ok(compactBodies.some((body) => [
+    /height:\s*24px;/,
+    /min-height:\s*24px;/,
+    /font-size:\s*\.75rem;/,
+    /padding:\s*\.125rem \.25rem;/,
+  ].every((declaration) => declaration.test(body))));
+  assert.ok(ruleBodies(tiangongCss, staticPeriodSelector).some((body) => /width:\s*100%;/.test(body)));
+  const selectedPeriodSelector = /^\.matrix-explore-main-screen\.matrix-tiangong-screen \.tiangong-period-options > \.segmented-static\[data-selected="true"\]$/;
+  assert.ok(ruleBodies(css, selectedPeriodSelector).some((body) => [
+    /border-color:\s*#c89622;/,
+    /background:\s*linear-gradient\(/,
+    /color:\s*#f2cf67;/,
+  ].every((declaration) => declaration.test(body))), 'The static selected owner must outrank the compact base colors');
 });

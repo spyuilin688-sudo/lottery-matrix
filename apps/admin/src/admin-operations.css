@@ -203,6 +203,42 @@ header > div:nth-child(2) b { font-size: 16px; letter-spacing: .02em; }
 .transferRow > div:first-child span { overflow-wrap: anywhere; }
 .transferPanel .transferRow:first-of-type { border-top: 0; }
 
+.paymentReversalPanel { margin-top: 8px; padding: 8px 10px; }
+.paymentReversalPanel h2 { margin: 0 0 4px; }
+.paymentReversalHelp { margin: 0 0 6px; font-size: 12px; }
+.paymentReversalNotice,
+.paymentReversalError { margin: 6px 0; padding: 7px 8px; border-radius: 7px; font-size: 12px; }
+.paymentReversalNotice { border: 1px solid #34583d; background: #14271a; color: #a3dfb5; }
+.paymentReversalError { border: 1px solid #7b3d3d; background: #281616; color: #efb3b3; }
+.paymentReversalLoading { margin: 0; padding: 12px; color: #888d96; font-size: 12px; text-align: center; }
+.paymentReversalLoadError { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.paymentReversalLoadError button { width: auto; min-height: 30px; padding: 4px 8px; border: 1px solid #7b3d3d; border-radius: 7px; background: #171a20; color: #efb3b3; white-space: nowrap; }
+.paymentReversalList { display: grid; gap: 0; }
+.paymentReversalRow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid #24272d; }
+.paymentReversalFacts { display: grid; min-width: 0; gap: 2px; }
+.paymentReversalFacts strong { font-size: 13px; }
+.paymentReversalFacts span,
+.paymentReversalCount { color: #888d96; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.paymentReversalState { padding: 3px 7px; border-radius: 999px; background: #252a31; color: #c4c6cc; font-size: 11px; white-space: nowrap; }
+.paymentReversalState:is([data-status="refunded"],[data-status="chargeback"],[data-status="cancelled"]) { background: #371919; color: #efabab; }
+.paymentReversalOpen { width: auto; height: 30px; padding: 0 9px; border: 1px solid #6f3737; border-radius: 8px; background: #241616; color: #efabab; white-space: nowrap; }
+.paymentReversalForm { grid-column: 1 / -1; display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 6px 8px; align-items: end; padding: 8px; border: 1px solid #343840; border-radius: 8px; background: #0d1014; }
+.paymentReversalForm label { display: grid; gap: 4px; color: #989ca5; font-size: 12px; }
+.paymentReversalForm select,
+.paymentReversalForm textarea { width: 100%; min-height: 34px; padding: 6px 8px; border: 1px solid #343840; border-radius: 8px; background: #0b0d11; color: #eee; font: inherit; }
+.paymentReversalForm textarea { min-height: 58px; max-height: 160px; overflow-y: auto; resize: none; }
+.paymentReversalForm .paymentReversalCount { align-self: center; white-space: nowrap; }
+.paymentReversalForm .paymentReversalError,
+.paymentReversalForm .transferActions { grid-column: 1 / -1; }
+.paymentReversalForm .transferActions { justify-content: flex-end; }
+
+@media (max-width: 760px) {
+  .paymentReversalRow { grid-template-columns: minmax(0, 1fr) auto; }
+  .paymentReversalOpen { grid-column: 2; }
+  .paymentReversalForm { grid-template-columns: 1fr auto; }
+  .paymentReversalForm label { grid-column: 1 / -1; }
+}
+
 .nameDialog { padding: 14px; }
 .nameDialog h2 { margin-bottom: 10px; font-size: 17px; }
 .nameDialog input { padding: 6px 8px; }

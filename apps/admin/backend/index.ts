@@ -439,6 +439,7 @@ const routes: Record<string, unknown> = {
         subscriptions: 'subscriptions',
         plans: 'subscriptions',
         transferRequests: 'subscriptions',
+        subscriptionRecords: 'subscriptions',
         activationCodes: 'activationCodes',
         admins: 'admins',
       };
@@ -502,6 +503,21 @@ const routes: Record<string, unknown> = {
       return json(await adminData.reviewTransferRequest(
         ctx.params.id,
         String(bodyOf(ctx).decision ?? ''),
+        actorOf(admin),
+      ));
+    } catch (cause) {
+      return fail(cause);
+    }
+  }],
+
+  'PUT /api/payments/:id/reversal': [sessionGuard, moduleGuard('subscriptions', 'edit', 'edit'), async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const body = bodyOf(ctx);
+      return json(await adminData.recordPaymentReversal(
+        ctx.params.id,
+        typeof body.status === 'string' ? body.status : '',
+        typeof body.reason === 'string' ? body.reason : '',
         actorOf(admin),
       ));
     } catch (cause) {

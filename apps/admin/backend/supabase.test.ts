@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
+import { createAdminData } from './admin-data';
 
 const secretReader = (values: Record<string, string>) => ({
   listSecretNames: vi.fn(async () => Object.keys(values)),
@@ -18,6 +19,61 @@ describe('getSupabaseConfig', () => {
 });
 
 describe('createSupabaseTransport', () => {
+  it('propagates an exact payment-reversal domain error through the real transport and admin service', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      code: 'P0001',
+      message: 'PAYMENT_REVERSAL_CONFLICT',
+    }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    }));
+    const transport = createSupabaseTransport({
+      url: 'https://example.supabase.co',
+      serviceRoleKey: 'test-key',
+    }, fetcher);
+    const data = createAdminData(transport);
+
+    await expect(data.recordPaymentReversal(
+      'payment-1',
+      'refunded',
+      '銀行退款已完成',
+      { id: 'admin-1', account: 'owner@example.com', name: '管理員' },
+    )).rejects.toMatchObject({
+      message: 'PAYMENT_REVERSAL_CONFLICT',
+      statusCode: 400,
+    });
+  });
+
+  it.each(['ADMIN_ACTOR_NOT_FOUND', 'PAYMENT_NOT_FOUND'])(
+    'propagates the exact P0002/%s reversal domain error returned by PostgREST as HTTP 500',
+    async (message) => {
+      const transport = createSupabaseTransport(
+        { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+        async () => new Response(JSON.stringify({ code: 'P0002', message }), { status: 500 }),
+      );
+
+      await expect(transport.supabaseRequest('rpc/admin_record_payment_reversal'))
+        .rejects.toMatchObject({ message, statusCode: 400 });
+    },
+  );
+
+  it.each([
+    ['/rest/v1/rpc/admin_update_subscription', { code: 'P0001', message: 'PAYMENT_REVERSAL_CONFLICT' }],
+    ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'P0001', message: 'UNKNOWN_DATABASE_DETAIL' }],
+    ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'XX000', message: 'PAYMENT_REVERSAL_CONFLICT' }],
+    ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'constructor', message: 'PAYMENT_REVERSAL_CONFLICT' }],
+    ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'P0002', message: 'PAYMENT_NOT_FOUND' }],
+  ])('keeps non-allowlisted database errors redacted for %s', async (path, body) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify(body), { status: 400 }),
+    );
+
+    const failure = await transport.request(path).catch((error) => error);
+    expect(failure).toMatchObject({ code: 'UNAVAILABLE', statusCode: 503 });
+    expect(String(failure.message)).not.toContain(body.message);
+  });
+
   it.each([200, 201, 204])('accepts an empty successful minimal-write response (%s)', async (status) => {
     const fetcher = vi.fn(async () => new Response(null, { status }));
     const transport = createSupabaseTransport({ url: 'https://example.supabase.co', serviceRoleKey: 'test-key' }, fetcher);

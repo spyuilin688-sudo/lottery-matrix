@@ -12,6 +12,8 @@ const app = vi.hoisted(() => {
       role: '超級管理員',
       permissions: { view: true, add: true, edit: true, delete: true },
     } as Record<string, unknown>,
+    failPaymentRead: false,
+    nextSubscriptionRead: null as Promise<{ data: { items: Array<{ id: string; status: string }> } }> | null,
   };
   const otherAdmin = {
     id: 'admin-2',
@@ -43,7 +45,21 @@ const app = vi.hoisted(() => {
     if (url === '/api/dashboard') return { data: dashboard };
     if (url === '/api/data/admins') return { data: { items: [otherAdmin] } };
     if (url === '/api/data/users') return { data: { items: [{ id: 'member-1', status: 'active' }] } };
-    if (url === '/api/data/subscriptions') return { data: { items: [{ id: 'member-1', status: 'active' }] } };
+    if (url === '/api/data/subscriptions') {
+      if (state.nextSubscriptionRead) {
+        const pending = state.nextSubscriptionRead;
+        state.nextSubscriptionRead = null;
+        return pending;
+      }
+      return { data: { items: [{ id: 'member-1', status: 'active' }] } };
+    }
+    if (url === '/api/data/subscriptionRecords') {
+      if (state.failPaymentRead) throw new Error('payment offline');
+      return { data: { items: [{
+      id: 'payment-1', memberId: 'member-1', lineDisplayName: '王小明', planId: 'plan-1',
+      planName: '月費方案', amount: 2880, paidAt: '2026-09-01T02:00:00Z', status: 'confirmed',
+      }] } };
+    }
     if (url === '/api/data/plans' || url === '/api/data/transferRequests') return { data: { items: [] } };
     if (url === '/api/data/activationCodes') return { data: { items: [
       { id: 'code-1', code: 'ABCD-EFGH-IJKL-MNOP', status: 'unused', redeemedAt: null, redeemedByLineDisplayName: null },
@@ -89,6 +105,8 @@ describe('administrator operation permission editing', () => {
       role: '超級管理員',
       permissions: { view: true, add: true, edit: true, delete: true },
     };
+    app.state.failPaymentRead = false;
+    app.state.nextSubscriptionRead = null;
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn(async () => undefined) },
@@ -125,6 +143,70 @@ describe('administrator operation permission editing', () => {
       await settle();
       expect(container.querySelector('#transfer-requests')).not.toBeNull();
     } finally { window.history.replaceState(null, '', '/'); }
+  });
+
+  it('loads payment history and records a confirmed reversal through the shared dialog', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+
+    expect(app.api.get).toHaveBeenCalledWith('/api/data/subscriptionRecords');
+    const open = container.querySelector<HTMLButtonElement>('[aria-label="記錄沖銷 payment-1"]');
+    expect(open).not.toBeNull();
+    await act(async () => open?.click());
+    const reason = container.querySelector<HTMLTextAreaElement>('[aria-label="沖銷原因"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(reason, '銀行退款已完成');
+      reason?.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => buttonWithText(container, '記錄已完成沖銷')?.click());
+    const dialog = container.querySelector<HTMLElement>('[role="alertdialog"]');
+    expect(dialog?.textContent).toContain('此操作只記錄外部已完成的款項沖銷');
+    await act(async () => buttonWithText(dialog as HTMLElement, '記錄已退款')?.click());
+    await settle();
+
+    expect(app.api.put).toHaveBeenCalledWith('/api/payments/payment-1/reversal', {
+      status: 'refunded', reason: '銀行退款已完成',
+    });
+  });
+
+  it('shows a payment read error instead of false empty or stale actions and recovers inline', async () => {
+    app.state.failPaymentRead = true;
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('付款紀錄載入失敗');
+    expect(container.textContent).not.toContain('目前沒有付款紀錄');
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).toBeNull();
+
+    app.state.failPaymentRead = false;
+    await act(async () => buttonWithText(container, '重新載入付款紀錄')?.click());
+    await settle();
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull();
+  });
+
+  it('does not let an old subscription failure erase newer payment rows after navigation and re-entry', async () => {
+    let rejectOldRead!: (reason: Error) => void;
+    app.state.nextSubscriptionRead = new Promise((_resolve, reject) => { rejectOldRead = reject; });
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+    await act(async () => buttonWithText(container, '營運概覽')?.click());
+    await settle();
+    await act(async () => buttonWithText(container, '訂閱管理')?.click());
+    await settle();
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull();
+
+    await act(async () => rejectOldRead(new Error('old subscriptions read failed')));
+    await settle();
+
+    expect(container.querySelector('[aria-label="記錄沖銷 payment-1"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('付款紀錄載入失敗');
   });
 
   it('lets a super administrator edit and save all four permissions for another administrator', async () => {
