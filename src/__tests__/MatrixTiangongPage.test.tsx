@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { render } from '../../test/render-with-dialog';
 import { invalidateMatrixData } from "../matrix-data-revision";
 import type { Session } from '@supabase/supabase-js';
 import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { MatrixTiangongPage } from '../FeaturePages';
 import { TiangongValidationProcess } from '../features/MatrixTiangongPage';
@@ -131,7 +132,38 @@ test('未登入時顯示登入要求，而非泛用 API 錯誤', async () => {
   render(<MatrixTiangongPage onNavigate={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
 
+  const dialog = await screen.findByRole('dialog', { name: '請先登入' });
+  expect(dialog.textContent).toContain('請先登入後再使用 Matrix 天工');
+  expect(document.querySelector('.result-count')).toBeNull();
+  fireEvent.click(within(dialog).getByRole('button', { name: '知道了' }));
   expect((await screen.findByRole('alert')).textContent).toBe('請先登入後再使用 Matrix 天工');
+});
+
+test('天工載入中不顯示零組，成功空回應才顯示零組', async () => {
+  let finish!: (value: unknown) => void;
+  matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  const start = screen.getByRole('button', { name: '開始天工' });
+  fireEvent.click(start);
+  expect(screen.getByRole('status').textContent).toBe('分析結果載入中');
+  expect(document.querySelector('.result-count')).toBeNull();
+  expect((start as HTMLButtonElement).disabled).toBe(true);
+  await act(async () => finish({ ...envelope, items: [], total: 0 }));
+  expect(screen.queryByRole('status')).toBeNull();
+  expect(document.querySelector('.result-count')?.textContent?.replace(/\s/g, '')).toBe('探索到0組符合條件版路');
+});
+
+test.each(['FORBIDDEN', 'ANALYSIS_NOT_READY', 'API_ERROR'])('天工 %s 不顯示完成結果數量', async code => {
+  matrixApi.fetchTiangongList.mockRejectedValueOnce({ code });
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  if (code === 'FORBIDDEN') {
+    const dialog = await screen.findByRole('dialog', { name: '無法使用 Matrix 天工' });
+    expect(dialog.textContent).toContain('目前 Matrix Pro 方案不符合天工的使用條件');
+    fireEvent.click(within(dialog).getByRole('button', { name: '知道了' }));
+  }
+  await screen.findByRole('alert');
+  expect(document.querySelector('.result-count')).toBeNull();
 });
 
 
