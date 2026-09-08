@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { fetchNumberReference, type MatrixNumberOrder, type NumberReferenceItem } from "../lottery-api";
@@ -20,6 +20,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [queryFloating, setQueryFloating] = useState(false);
   const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
+  const queryRevision = useRef(0);
+  useEffect(() => () => { queryRevision.current += 1; }, []);
   const [referenceItems, setReferenceItems] = useState<NumberReferenceItem[] | null>(null);
   const [referenceLoadState, setReferenceLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
@@ -27,6 +29,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const displayedHistory = referenceItems ?? fallbackHistory;
   const historyOrder = getHistoryOrder(appliedOrder);
   const resetReference = () => {
+    queryRevision.current += 1;
+    setReferenceLoadState("idle");
     setInputs(["", "", ""]);
     setReferenceItems(null);
     setMarkedRows(new Set());
@@ -59,6 +63,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   };
 
   const startReferenceSearch = async () => {
+    const revision = ++queryRevision.current;
     const normalized = inputs.map(normalizeLookupNumber);
     const unique = normalized.filter((value, index) => value && normalized.indexOf(value) === index);
     const historyRange = Number(range.replace(/\D/g, "")) as 1000 | 3000 | 5000;
@@ -74,15 +79,18 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         historyRange,
         numbers: unique,
       });
+      if (revision !== queryRevision.current) return;
       setReferenceItems(response.items);
       setReferenceLoadState(response.items.length > 0 ? "success" : "empty");
     } catch {
+      if (revision !== queryRevision.current) return;
       setReferenceItems([]);
       setReferenceLoadState("error");
     }
     setQueryExpanded(false);
     setQueryFloating(false);
     requestAnimationFrame(() => {
+      if (revision !== queryRevision.current) return;
       resultsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     });
   };

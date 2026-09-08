@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();
 const invoke = vi.fn();
-vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc, functions: { invoke } }) }));
+const getSession = vi.fn();
+vi.mock('./lib/supabase', () => ({ getSupabaseClient: () => ({ rpc, functions: { invoke }, auth: { getSession } }) }));
 
 import {
   fetchMatrixStatus,
@@ -13,6 +14,7 @@ import {
 } from './matrix-status-api';
 
 beforeEach(() => {
+  getSession.mockReset().mockResolvedValue({data:{session:{user:{id:"member"}}},error:null});
   rpc.mockReset().mockResolvedValue({ data: {}, error: null });
   invoke.mockReset().mockResolvedValue({ data: {}, error: null });
 });
@@ -54,3 +56,9 @@ describe('Matrix status Supabase RPC', () => {
     ]);
   });
 });
+
+ it('classifies guest custom settings as login required without invoking RPC', async () => {
+  getSession.mockResolvedValue({data:{session:null},error:null});
+  await expect(listCustomStatusSettings()).rejects.toMatchObject({code:'AUTH_REQUIRED',status:401});
+  expect(rpc).not.toHaveBeenCalled();
+ });
