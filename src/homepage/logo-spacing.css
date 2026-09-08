@@ -1,4 +1,4 @@
-/* Isolated homepage Logo spacing patch: keep the existing base layout intact. */
+/* Homepage logo size and header spacing are owned here. */
 .home-screen .lottery-screen > .brand-header {
   flex: 0 0 auto;
   min-height: 0;
@@ -10,6 +10,5 @@
 }
 
 .home-screen .home-logo-image {
-  width: 87.584%;
-  height: auto;
+  width: 91.9632%;
 }

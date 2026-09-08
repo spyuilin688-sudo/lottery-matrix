@@ -46,7 +46,7 @@ test("homepage keeps the logo in normal flow with a bounded responsive top gap a
   const bottomGroup = style(".home-bottom-group");
   const brandHeader = style(".brand-header");
 
-  assert.equal(layout.gridTemplateRows, "minmax(min-content, 1fr) auto");
+  assert.equal(layout.gridTemplateRows, "auto auto");
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(brandHeader.display, "flex");
   assert.equal(brandHeader.flexGrow, "0");
@@ -56,7 +56,7 @@ test("homepage keeps the logo in normal flow with a bounded responsive top gap a
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
   assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "10px");
   assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "4px");
-  assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(10px,1.35dvh,13px)");
+  assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(9px,1.35dvh,12px)");
   assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "clamp(14px,1.75dvh,17px)");
   assert.equal(layout.getPropertyValue("--home-gap-features-nav").replaceAll(" ", ""), "clamp(8px,1.15dvh,12px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", ""), "clamp(13px,calc(1.15dvh+5px),16px)");

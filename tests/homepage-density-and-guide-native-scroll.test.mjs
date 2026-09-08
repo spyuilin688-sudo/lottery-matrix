@@ -2,16 +2,17 @@ import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs"
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { readLocalCss } from "./helpers/read-local-css.mjs";
 
-const homeCss = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
+const homeCss = readLocalCss("src/homepage-repair.css");
 const guideCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 const guideSource = readFeaturePagesSource();
 const matrixGuideStart = guideSource.indexOf("export function MatrixGuidePage");
 const matrixGuideEnd = guideSource.indexOf("export function MatrixNotebookPage", matrixGuideStart);
 const matrixGuideSource = guideSource.slice(matrixGuideStart, matrixGuideEnd);
 
-test("首頁 Logo 等比例縮小 8%", () => {
-  assert.match(homeCss, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*87\.584%;/s);
+test("首頁 Logo 等比例放大 5%", () => {
+  assert.match(homeCss, /\.home-screen \.home-logo-image\s*\{[^}]*width:\s*91\.9632%;/s);
 });
 
 test("順球與落球上移 2px且總高度縮減 3px", () => {

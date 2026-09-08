@@ -7,7 +7,7 @@ const css = readLocalCss("src/homepage-repair.css");
 test("狀態區隱藏共同外框並保留 16px 外距、1.5px 內距與 1.5px 卡片間距", () => {
   assert.match(
     css,
-    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding-block:\s*1\.5px;[^}]*padding-inline:\s*0;/s,
+    /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);[^}]*padding-block-start:\s*1\.5px;[^}]*padding-inline:\s*0;/s,
   );
   assert.match(
     css,

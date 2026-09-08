@@ -20,7 +20,7 @@
   --home-feature-inline: 10px;
   --home-feature-gap: 4px;
   --home-feature-card-aspect: 386 / 496;
-  --home-gap-status-core: clamp(10px, 1.35dvh, 13px);
+  --home-gap-status-core: clamp(9px, 1.35dvh, 12px);
   --home-gap-core-features: clamp(14px, 1.75dvh, 17px);
   --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
   box-sizing: border-box;
@@ -29,8 +29,8 @@
   height: 100%;
   min-height: 0;
   margin: 0 auto;
-  grid-template-rows: minmax(min-content, 1fr) auto;
-  align-content: stretch;
+  grid-template-rows: auto auto;
+  align-content: start;
   padding-top: var(--layout-safe-area-top);
   padding-bottom: calc(var(--layout-bottom-nav-clearance) + var(--home-gap-features-nav));
   background: var(--lottery-neutral-950);
@@ -146,9 +146,6 @@
 }
 
 .home-screen .home-logo-image {
-  width: 87.584%;
-  height: auto;
-  max-height: 100%;
   object-position: center bottom;
 }
 
@@ -496,7 +493,7 @@
   display: flex;
   box-sizing: border-box;
   width: calc(100% - 32px);
-  padding-block: 1.5px;
+  padding-block-start: 1.5px;
   padding-inline: 0;
   justify-content: center;
   border: 1px solid rgba(229, 179, 77, .56);
@@ -740,8 +737,6 @@
 @media (min-width: 768px) {
   .home-screen .home-layout {
     height: auto;
-    grid-template-rows: auto auto;
-    align-content: start;
   }
 
   .home-screen .lottery-screen {
