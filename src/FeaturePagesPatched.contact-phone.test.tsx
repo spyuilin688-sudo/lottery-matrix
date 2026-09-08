@@ -31,13 +31,14 @@ describe("contact support phone", () => {
     document.body.innerHTML = "";
   });
 
-  it("shows the phone label outside the tappable telephone link", () => {
-    render(<FeaturePageRouter screen="merchant-info" onNavigate={() => undefined} />);
+  it.each(["merchant-info", "problem-report", "business-cooperation"] as const)(
+    "does not show a phone number or dialing link on %s",
+    (contactScreen) => {
+      render(<FeaturePageRouter screen={contactScreen} onNavigate={() => undefined} />);
 
-    const phoneLink = screen.getByRole("link", { name: "(02) 2686-1828" });
-    expect(phoneLink.getAttribute("href")).toBe("tel:+886226861828");
-    const label = screen.getByText("電話：");
-    expect(label.closest("a")).toBeNull();
-    expect(label.nextElementSibling).toBe(phoneLink);
-  });
+      expect(screen.queryByText("電話：")).toBeNull();
+      expect(screen.queryByText("(02) 2686-1828")).toBeNull();
+      expect(document.querySelector('a[href^="tel:"]')).toBeNull();
+    },
+  );
 });

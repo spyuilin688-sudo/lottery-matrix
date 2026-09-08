@@ -1,5 +1,3 @@
-import { useLayoutEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   FeaturePageRouter as CoreFeaturePageRouter,
   QuickNavigationProvider,
@@ -19,34 +17,6 @@ type BottomNavCallbacks = {
   onQuickConfigure?: () => void;
   quickActive?: boolean;
 };
-
-function ContactSupportPhonePortal({ active }: { active: boolean }) {
-  const [host, setHost] = useState<HTMLElement | null>(null);
-
-  useLayoutEffect(() => {
-    if (!active) {
-      setHost(null);
-      return;
-    }
-
-    const nextHost = document.querySelector<HTMLElement>(
-      ".contact-support-screen .feature-body > .detail-card:first-of-type",
-    );
-    setHost(nextHost);
-
-    return () => setHost(null);
-  }, [active]);
-
-  if (!host) return null;
-
-  return createPortal(
-    <div className="contact-support-row contact-support-phone-row">
-      <span className="contact-support-label">電話：</span>
-      <a href="tel:+886226861828">(02) 2686-1828</a>
-    </div>,
-    host,
-  );
-}
 
 export function FeaturePageRouter({
   screen,
@@ -73,10 +43,6 @@ export function FeaturePageRouter({
     );
   }
 
-  const contactSupportActive = screen === "merchant-info"
-    || screen === "problem-report"
-    || screen === "business-cooperation";
-
   return (
     <FeaturePageLoadBoundary resetKey={screen} onHome={() => onNavigate("home")}>
       <CoreFeaturePageRouter
@@ -88,7 +54,6 @@ export function FeaturePageRouter({
         onQuickConfigure={onQuickConfigure}
         quickActive={quickActive}
       />
-      <ContactSupportPhonePortal active={contactSupportActive} />
       <TianyanExpandedLayoutPatch active={screen === "tianyan"} />
     </FeaturePageLoadBoundary>
   );
