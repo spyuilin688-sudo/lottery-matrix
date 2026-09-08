@@ -12,6 +12,8 @@ vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data:
 import Prototype, { type LotteryId } from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
+import { AppDialogProvider } from '../dialog/AppDialog';
+import { FIRST_VISIT_GUIDE_SEEN_KEY } from '../onboarding/FirstVisitGuide';
 
 vi.stubGlobal('ResizeObserver', class {
   observe() {}
@@ -27,6 +29,7 @@ const statusByLottery: Record<LotteryId, 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRI
 };
 
 beforeEach(() => {
+  window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
   statusApi.fetchMatrixStatus.mockReset().mockImplementation(async (lottery: LotteryId) => ({
     kind: 'status',
     lottery,
@@ -42,11 +45,11 @@ beforeEach(() => {
 
 test('首頁四個固定彩種各自讀取狀態，且點擊後開啟相同彩種資訊', async () => {
   render(
-    <MobileDeviceProvider>
+    <AppDialogProvider><MobileDeviceProvider>
       <KeyboardProvider>
         <Prototype />
       </KeyboardProvider>
-    </MobileDeviceProvider>,
+    </MobileDeviceProvider></AppDialogProvider>,
   );
 
   await waitFor(() => {

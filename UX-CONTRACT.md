@@ -159,6 +159,24 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - No existing application-page geometry, shortcuts, provider scopes or Supabase
   allowlist changes.
 
+## First-visit registration guide and LINE trials — 2026-09-08
+
+- After the existing startup screen, first-time visitors to the origin root see
+  the canonical `AppDialog` explaining free registration through `我的` →
+  `LINE 登入`, Pro algorithms, and the home-page `Matrix Core` exploration entry.
+- `免費註冊` opens the existing profile page. `知道了` and Escape dismiss the
+  guide. The shared modal retains its existing focus, keyboard and visual rules.
+- The `matrix-first-visit-guide-seen` browser key suppresses future displays on
+  the same browser. Storage failure falls back to the current mount's memory;
+  React StrictMode must not enqueue duplicate dialogs. OAuth callbacks and
+  non-root pages do not open this guide.
+- A new member with a verified LINE identity receives Tianyan for 48 elapsed
+  hours and Tiangong for 24 elapsed hours, starting at server-side member
+  creation. Repeated login does not restart the period. Existing members are
+  not backfilled. Disabled members cannot use either trial.
+- These trials grant those two algorithms only. Existing subscription,
+  referral, status and separate exploration entitlements keep their rules.
+
 ## Referral page login state — 2026-09-06
 
 - Signed-out visitors see `請先以 LINE 登入`; do not call the member referral API

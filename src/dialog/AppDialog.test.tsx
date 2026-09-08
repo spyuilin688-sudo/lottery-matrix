@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode, useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { AppDialogProvider, useAppDialog } from "./AppDialog";
 
@@ -34,6 +34,14 @@ function ConfirmHarness() {
 function LogoutHarness() {
   const dialog = useAppDialog();
   return <button type="button" onClick={() => void dialog.confirm({ title: "確認登出？", icon: "logout" })}>開啟登出確認</button>;
+}
+
+function QueuedHarness() {
+  const { confirm } = useAppDialog();
+  return <button type="button" onClick={() => {
+    void confirm({ title: "第一個視窗" });
+    void confirm({ title: "第二個視窗" });
+  }}>開啟兩個視窗</button>;
 }
 
 describe("AppDialog", () => {
@@ -78,5 +86,15 @@ describe("AppDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "開啟登出確認" }));
 
     expect(screen.getByRole("dialog", { name: "確認登出？" }).querySelector('[data-dialog-icon="logout"]')).toBeTruthy();
+  });
+
+  it("StrictMode 下關閉目前視窗後仍會開啟佇列視窗且不重複", async () => {
+    render(<StrictMode><AppDialogProvider><QueuedHarness /></AppDialogProvider></StrictMode>);
+    fireEvent.click(screen.getByRole('button', { name: '開啟兩個視窗' }));
+    expect(screen.getByRole('dialog', { name: '第一個視窗' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '確認' }));
+    expect(await screen.findByRole('dialog', { name: '第二個視窗' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '確認' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });

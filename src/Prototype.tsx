@@ -24,6 +24,7 @@ import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown
 import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { withDeadline } from "./lib/api-resilience";
+import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
 
 export type LotteryId = "今彩539" | "天天樂" | "六合彩" | "大樂透";
 export type DrawOrder = "順球" | "落球";
@@ -504,10 +505,12 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     : null;
 
   if (screen !== "home") {
-    return <QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageLoadBoundary resetKey={screen} onHome={() => navigate("home")}><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} /></FeaturePageLoadBoundary>{quickSettings}</MobileScroll></QuickNavigationProvider>;
+    return <><FirstVisitGuide enabled={false} onNavigate={navigate} /><QuickNavigationProvider onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} onQuickBack={closeQuick} currentScreen={screen} quickTarget={quickTarget} quickActive={quickActive}><MobileScroll className="app-screen"><FeaturePageLoadBoundary resetKey={screen} onHome={() => navigate("home")}><FeaturePageRouter screen={screen} onNavigate={navigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} quickActive={quickActive} /></FeaturePageLoadBoundary>{quickSettings}</MobileScroll></QuickNavigationProvider></>;
   }
 
   return (
+    <>
+    <FirstVisitGuide enabled={!startupVisible} onNavigate={navigate} />
     <MobileScroll className="app-screen home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
       <div className="home-layout">
@@ -525,5 +528,6 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
       </div>
       {quickSettings}
     </MobileScroll>
+    </>
   );
 }

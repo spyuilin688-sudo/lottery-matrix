@@ -20,6 +20,8 @@ vi.mock('../matrix-status-api', () => ({ fetchMatrixStatus: async () => { throw 
 import Prototype from '../Prototype';
 import { MobileDeviceProvider } from '../mobile/Device';
 import { KeyboardProvider } from '../mobile/Keyboard';
+import { AppDialogProvider } from '../dialog/AppDialog';
+import { FIRST_VISIT_GUIDE_SEEN_KEY } from '../onboarding/FirstVisitGuide';
 
 vi.stubGlobal('ResizeObserver', class {
   observe() {}
@@ -28,7 +30,8 @@ vi.stubGlobal('ResizeObserver', class {
 });
 
 function openProfile() {
-  render(<MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider>);
+  window.localStorage.setItem(FIRST_VISIT_GUIDE_SEEN_KEY, '1');
+  render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
   fireEvent.click(screen.getByRole('button', { name: '我的' }));
 }
 
