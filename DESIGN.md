@@ -145,6 +145,8 @@ Matrix 探索、天衍與狀態頁的驗證過程，依鎖定條件整組交替�
 
 ### Forms and overlays
 
+2026-09-08 自訂觸發條件：標題、彩種列與四狀態列保留原樣；下方採探索條件、一碼條件、兩碼條件。每個預設規則為獨立8px圓角細金框群組卡，沿用深藍／金色；欄位以標籤與輸入兩欄排列，連準與同碼範圍的兩個端點並排，窄螢幕使用minmax(0,1fr)收縮。卡內「＋ 同時符合」、卡間「或」標示關係。src/feature-pages.css的custom-status選擇器擁有樣式，不改全域token與上方三列。
+
 Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封閉控制可沿用產品表面，但開啟的 popup／calendar 外觀與互動由支援平台擁有。產品表單使用 app-owned validation、`noValidate`、欄位關聯、first-error focus、busy 與可恢復錯誤。既有原生 `window.confirm()` 是已知債務，不視為正式 app-owned dialog。
 
 ### Iconography

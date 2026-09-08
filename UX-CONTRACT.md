@@ -46,6 +46,8 @@
 
 ## Form behavior
 
+2026-09-08 自訂觸發條件採共用22條預設模板；初入顯示「使用預設條件」，修改後顯示「已自訂」。一碼與兩碼各自呈現條件群組；同卡條件為AND、不同卡為OR，AND只使用同一組預測號碼。連準起終點與同碼最少最多皆包含邊界；最多空白為不限。版路使用原生複選與any/all關係；三條既有替代版路規則保留各組合獨立計數，在一張卡中以「或」呈現版路組合。舊設定最低數量保留為最少，最多不限。範圍無效時標記並聚焦欄位；讀取失敗不展示假預設，儲存失敗保留輸入；各彩種／狀態草稿與延遲回應互不覆蓋。重置僅清除目前彩種／狀態設定。依據為本對話使用者完整規格；模板來源services/matrix-api/app/domain/status-rules.json，資料契約shared/matrix-status-config.ts。
+
 Product forms set `noValidate` and own validation instead of invoking browser validation bubbles. Every field keeps a visible label association; invalid fields use `aria-invalid` and `aria-describedby` that points to existing help or error text. Submission focuses or scrolls to the first invalid field, preserves entered values, disables duplicate submission with a perceivable busy state, and keeps control geometry stable. A request failure remains inline and recoverable; editing clears only the stale error that no longer applies.
 
 Native Select/Listbox and Date are intentional for the supported mobile PWA. The browser or operating system owns the opened popup language, geometry, option/calendar interaction and collision behavior. Closed fields still use product labels, focus treatment and error association. If product-owned popup geometry or calendar copy becomes a requirement, replace the owner through a separately approved accessible primitive instead of hand-building ARIA behavior.

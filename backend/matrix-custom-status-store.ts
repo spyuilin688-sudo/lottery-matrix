@@ -1,4 +1,4 @@
-import type { CustomStatus, CustomStatusConfig, MatrixLottery } from './matrix-custom-status.ts';
+import { normalizeCustomStatusConfig, type CustomStatus, type CustomStatusConfig, type MatrixLottery } from './matrix-custom-status.ts';
 
 type SupabaseStoreConfig = { url: string; serviceRoleKey: string };
 type StoredConfig = { lottery?: unknown; status?: unknown; config?: unknown };
@@ -38,10 +38,11 @@ export function createCustomStatusStore(
       path.searchParams.set('member_id', `eq.${memberId}`);
       path.searchParams.set('order', 'lottery.asc,status.asc');
       const rows = await request(path, { method: 'GET' }, 'SUPABASE_CUSTOM_STATUS_READ_FAILED') as StoredConfig[];
-      return rows.map((row) => row.config as CustomStatusConfig);
+      return rows.map((row) => normalizeCustomStatusConfig(row.config));
     },
 
     async save(memberId: string, configValue: CustomStatusConfig): Promise<CustomStatusConfig> {
+      configValue = normalizeCustomStatusConfig(configValue);
       const path = await endpoint();
       path.searchParams.set('on_conflict', 'member_id,lottery,status');
       const rows = await request(path, {
@@ -58,7 +59,7 @@ export function createCustomStatusStore(
           updated_at: now().toISOString(),
         }),
       }, 'SUPABASE_CUSTOM_STATUS_SAVE_FAILED') as StoredConfig[];
-      return (rows[0]?.config ?? configValue) as CustomStatusConfig;
+      return normalizeCustomStatusConfig(rows[0]?.config ?? configValue);
     },
 
     async reset(memberId: string, lottery: MatrixLottery, status: CustomStatus): Promise<void> {

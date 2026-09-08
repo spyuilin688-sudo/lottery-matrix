@@ -1,4 +1,4 @@
-import type { MatrixLottery, MatrixNumberOrder } from './matrix-custom-status.ts';
+import { chapter15Rules, type CustomConditionRow, type MatrixLottery, type MatrixNumberOrder } from '../shared/matrix-status-config.ts';
 
 export type MatrixStatus = 'ACTIVE' | 'FOCUS' | 'RESONANCE' | 'CRITICAL' | 'DORMANT';
 export type StatusRoadType = '加減' | '合值' | '拖牌' | '複合';
@@ -93,7 +93,7 @@ const messages: Record<MatrixStatus, string> = {
 };
 const typeOrder: Record<StatusRoadType, number> = { 加減: 0, 合值: 1, 拖牌: 2, 複合: 3 };
 
-function normalizeResult(values: string[]) {
+export function normalizeResult(values: string[]) {
   return values
     .map((number) => String(number).padStart(2, '0'))
     .sort((left, right) => Number(left) - Number(right) || left.localeCompare(right));
@@ -124,7 +124,7 @@ function sortRoads(roads: StatusRoad[]) {
   ));
 }
 
-function uniqueRoads(roads: StatusRoad[]) {
+export function uniqueRoads(roads: StatusRoad[]) {
   const seen = new Set<string>();
   return sortRoads(roads).filter((road) => {
     const key = roadKey(road);
@@ -134,7 +134,7 @@ function uniqueRoads(roads: StatusRoad[]) {
   });
 }
 
-function groupRoads(roads: StatusRoad[]): RoadGroup[] {
+export function groupRoads(roads: StatusRoad[]): RoadGroup[] {
   const groups = new Map<string, RoadGroup>();
   for (const road of roads) {
     const result = normalizeResult(road.result);
@@ -146,128 +146,27 @@ function groupRoads(roads: StatusRoad[]): RoadGroup[] {
   return [...groups.values()].map((group) => ({ ...group, roads: uniqueRoads(group.roads) }));
 }
 
-function matchingRoads(
-  roads: StatusRoad[],
-  types: StatusRoadType[],
-  minimumStreak: number,
-  maximumStreak: number,
-) {
-  return uniqueRoads(roads.filter((road) => (
-    types.includes(road.algorithmType)
-    && road.streak >= minimumStreak
-    && road.streak <= maximumStreak
-  )));
-}
-
-function mixedRoads(
-  roads: StatusRoad[],
-  primary: '加減' | '合值',
-  minimumStreak: number,
-  maximumStreak: number,
-) {
-  const matched = matchingRoads(roads, [primary, '拖牌'], minimumStreak, maximumStreak);
-  return matched.some((road) => road.algorithmType === primary)
-    && matched.some((road) => road.algorithmType === '拖牌')
-    ? matched
-    : [];
-}
-
-function qualifiedMixedRoads(
-  roads: StatusRoad[],
-  minimumStreak: number,
-  maximumStreak: number,
-  qualifies: (count: number) => boolean,
-) {
-  return uniqueRoads((['加減', '合值'] as const).flatMap((primary) => {
-    const matched = mixedRoads(roads, primary, minimumStreak, maximumStreak);
-    return qualifies(matched.length) ? matched : [];
-  }));
-}
-
-function trigger(
-  ruleId: MatrixStatusRuleId,
-  status: Trigger['status'],
-  roads: StatusRoad[],
-): Trigger {
-  return { ruleId, status, roads: uniqueRoads(roads) };
-}
-
-function firstA(group: RoadGroup): Trigger[] {
-  const high = matchingRoads(group.roads, ['加減', '合值'], 7, 7);
-  const low = matchingRoads(group.roads, ['加減', '合值'], 5, 6);
-  const triggers: Trigger[] = [];
-  if (high.length === 1) triggers.push(trigger('RESONANCE-1', 'RESONANCE', high));
-  else if (high.length >= 2) triggers.push(trigger('CRITICAL-1', 'CRITICAL', high));
-  if (low.length >= 2 && low.length <= 4) triggers.push(trigger('ACTIVE-1', 'ACTIVE', low));
-  else if (low.length >= 5 && low.length <= 6) triggers.push(trigger('FOCUS-1', 'FOCUS', low));
-  else if (low.length >= 7) triggers.push(trigger('RESONANCE-2', 'RESONANCE', low));
-  return triggers;
-}
-
-function firstB(group: RoadGroup): Trigger[] {
-  const critical = qualifiedMixedRoads(group.roads, 7, 7, (count) => count >= 2);
-  const focus = qualifiedMixedRoads(group.roads, 5, 6, (count) => count >= 3 && count <= 4);
-  const resonance = qualifiedMixedRoads(group.roads, 5, 6, (count) => count >= 5);
-  return [
-    ...(critical.length > 0 ? [trigger('CRITICAL-2', 'CRITICAL', critical)] : []),
-    ...(focus.length > 0 ? [trigger('FOCUS-2', 'FOCUS', focus)] : []),
-    ...(resonance.length > 0 ? [trigger('RESONANCE-3', 'RESONANCE', resonance)] : []),
-  ];
-}
-
-function firstC(group: RoadGroup): Trigger[] {
-  const high = matchingRoads(group.roads, ['拖牌'], 7, 7);
-  if (high.length === 1) return [trigger('FOCUS-3', 'FOCUS', high)];
-  if (high.length >= 2) return [trigger('CRITICAL-3', 'CRITICAL', high)];
-  return [];
-}
-
-function firstSpecial(group: RoadGroup): Trigger[] {
-  const drag = matchingRoads(group.roads, ['拖牌'], 7, 7);
-  if (drag.length < 1) return [];
-  const add = matchingRoads(group.roads, ['加減'], 5, 6);
-  const sum = matchingRoads(group.roads, ['合值'], 5, 6);
-  return [
-    ...(add.length > 0 ? [trigger('RESONANCE-4', 'RESONANCE', [...drag, ...add])] : []),
-    ...(sum.length > 0 ? [trigger('RESONANCE-5', 'RESONANCE', [...drag, ...sum])] : []),
-  ];
-}
-
-function secondD(group: RoadGroup): Trigger[] {
-  const types: StatusRoadType[] = ['加減', '合值'];
-  const high = matchingRoads(group.roads, types, 11, 11);
-  const middle = matchingRoads(group.roads, types, 7, 9);
-  const broadHigh = matchingRoads(group.roads, types, 7, 11);
-  const low = matchingRoads(group.roads, types, 5, 6);
-  const triggers: Trigger[] = [];
-  if (high.length >= 2) triggers.push(trigger('CRITICAL-4', 'CRITICAL', high));
-  if (middle.length >= 3 && middle.length <= 5) triggers.push(trigger('ACTIVE-2', 'ACTIVE', middle));
-  else if (middle.length >= 6 && middle.length <= 7) triggers.push(trigger('FOCUS-4', 'FOCUS', middle));
-  else if (middle.length >= 8) triggers.push(trigger('RESONANCE-6', 'RESONANCE', middle));
-  if (high.length >= 1 && middle.length === 1) {
-    triggers.push(trigger('FOCUS-5', 'FOCUS', [...high, ...middle]));
+/** One row counts all selected roads within the numeric interval for one result. */
+export function matchingConditionRoads(roads: StatusRoad[], row: CustomConditionRow): StatusRoad[] {
+  const alternatives = row.roadTypeAlternatives ?? [row.roadTypes];
+  const witnesses: StatusRoad[] = [];
+  for (const types of alternatives) {
+    const matched = uniqueRoads(roads.filter((road) => (
+      types.includes(road.algorithmType)
+      && road.streak >= row.consecutiveMin && road.streak <= row.consecutiveMax
+      && (road.numberOrder ?? '依號碼由小到大排序') === row.numberOrder
+    )));
+    if (row.roadRelation === 'all' && !types.every((type) => matched.some((road) => road.algorithmType === type))) continue;
+    if (matched.length < row.sameCodeMin || (row.sameCodeMax !== null && matched.length > row.sameCodeMax)) continue;
+    witnesses.push(...matched);
   }
-  if (high.length >= 1 && middle.length >= 2) {
-    triggers.push(trigger('RESONANCE-7', 'RESONANCE', [...high, ...middle]));
-  }
-  if (broadHigh.length >= 3 && low.length >= 6 && low.length <= 7) {
-    triggers.push(trigger('FOCUS-6', 'FOCUS', [...broadHigh, ...low]));
-  }
-  if (broadHigh.length >= 6 && low.length >= 8) {
-    triggers.push(trigger('RESONANCE-8', 'RESONANCE', [...broadHigh, ...low]));
-  }
-  return triggers;
+  return uniqueRoads(witnesses);
 }
 
-function secondSpecial(group: RoadGroup): Trigger[] {
-  const drag = matchingRoads(group.roads, ['拖牌'], 7, 9);
-  if (drag.length < 1) return [];
-  const add = matchingRoads(group.roads, ['加減'], 5, 6);
-  const sum = matchingRoads(group.roads, ['合值'], 5, 6);
-  return [
-    ...(add.length >= 6 ? [trigger('RESONANCE-9', 'RESONANCE', [...drag, ...add])] : []),
-    ...(sum.length >= 6 ? [trigger('RESONANCE-10', 'RESONANCE', [...drag, ...sum])] : []),
-  ];
+export function matchingGroupRoads(roads: StatusRoad[], rows: CustomConditionRow[]): StatusRoad[] {
+  if (!rows.length) return [];
+  const evidence = rows.map((row) => matchingConditionRoads(roads, row));
+  return evidence.every((matched) => matched.length > 0) ? uniqueRoads(evidence.flat()) : [];
 }
 
 function cardId(group: RoadGroup, ruleId: MatrixStatusRuleId) {
@@ -277,9 +176,13 @@ function cardId(group: RoadGroup, ruleId: MatrixStatusRuleId) {
 export function evaluateChapter15(source: StatusSource): Chapter15Result {
   const cards: StatusTriggerCard[] = [];
   for (const group of groupRoads(source.roads)) {
-    const triggers = group.hitType === 'one-code'
-      ? [...firstA(group), ...firstB(group), ...firstC(group), ...firstSpecial(group)]
-      : [...secondD(group), ...secondSpecial(group)];
+    const triggers: Trigger[] = chapter15Rules
+      .filter((rule) => rule.hitType === group.hitType)
+      .map((rule) => ({
+        ruleId: rule.ruleId as MatrixStatusRuleId, status: rule.status,
+        roads: matchingGroupRoads(group.roads, rule.rows),
+      }))
+      .filter((trigger) => trigger.roads.length > 0);
     for (const matched of triggers) {
       const witnesses = uniqueRoads(matched.roads);
       cards.push({

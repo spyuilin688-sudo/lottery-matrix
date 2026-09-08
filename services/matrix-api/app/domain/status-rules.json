@@ -1,0 +1,539 @@
+[
+  {
+    "ruleId": "ACTIVE-1",
+    "status": "ACTIVE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": 4
+      }
+    ]
+  },
+  {
+    "ruleId": "ACTIVE-2",
+    "status": "ACTIVE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 3,
+        "sameCodeMax": 5
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-1",
+    "status": "FOCUS",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 5,
+        "sameCodeMax": 6
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-2",
+    "status": "FOCUS",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值",
+          "拖牌"
+        ],
+        "roadRelation": "all",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 3,
+        "sameCodeMax": 4,
+        "roadTypeAlternatives": [
+          [
+            "加減",
+            "拖牌"
+          ],
+          [
+            "合值",
+            "拖牌"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-3",
+    "status": "FOCUS",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": 1
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-4",
+    "status": "FOCUS",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 6,
+        "sameCodeMax": 7
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-5",
+    "status": "FOCUS",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 11,
+        "consecutiveMax": 11,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": 1
+      }
+    ]
+  },
+  {
+    "ruleId": "FOCUS-6",
+    "status": "FOCUS",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 11,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 3,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 6,
+        "sameCodeMax": 7
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-1",
+    "status": "RESONANCE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": 1
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-2",
+    "status": "RESONANCE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 7,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-3",
+    "status": "RESONANCE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值",
+          "拖牌"
+        ],
+        "roadRelation": "all",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 5,
+        "sameCodeMax": null,
+        "roadTypeAlternatives": [
+          [
+            "加減",
+            "拖牌"
+          ],
+          [
+            "合值",
+            "拖牌"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-4",
+    "status": "RESONANCE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-5",
+    "status": "RESONANCE",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-6",
+    "status": "RESONANCE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 8,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-7",
+    "status": "RESONANCE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 11,
+        "consecutiveMax": 11,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-8",
+    "status": "RESONANCE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 11,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 6,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 8,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-9",
+    "status": "RESONANCE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "加減"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 6,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "RESONANCE-10",
+    "status": "RESONANCE",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 9,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 1,
+        "sameCodeMax": null
+      },
+      {
+        "consecutiveMin": 5,
+        "consecutiveMax": 6,
+        "roadTypes": [
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 6,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "CRITICAL-1",
+    "status": "CRITICAL",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "CRITICAL-2",
+    "status": "CRITICAL",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "加減",
+          "合值",
+          "拖牌"
+        ],
+        "roadRelation": "all",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": null,
+        "roadTypeAlternatives": [
+          [
+            "加減",
+            "拖牌"
+          ],
+          [
+            "合值",
+            "拖牌"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "ruleId": "CRITICAL-3",
+    "status": "CRITICAL",
+    "hitType": "one-code",
+    "rows": [
+      {
+        "consecutiveMin": 7,
+        "consecutiveMax": 7,
+        "roadTypes": [
+          "拖牌"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": null
+      }
+    ]
+  },
+  {
+    "ruleId": "CRITICAL-4",
+    "status": "CRITICAL",
+    "hitType": "two-code",
+    "rows": [
+      {
+        "consecutiveMin": 11,
+        "consecutiveMax": 11,
+        "roadTypes": [
+          "加減",
+          "合值"
+        ],
+        "roadRelation": "any",
+        "numberOrder": "依號碼由小到大排序",
+        "sameCodeMin": 2,
+        "sameCodeMax": null
+      }
+    ]
+  }
+]

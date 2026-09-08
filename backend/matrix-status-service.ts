@@ -1,9 +1,9 @@
 import {
-  evaluateCustomStatus,
+  evaluateCustomStatusRoads,
+  normalizeCustomStatusConfig,
+  type CustomGroupResult,
   resolveStatusEvaluationMode,
-  type CustomConditionGroup,
   type CustomConditionMatch,
-  type CustomConditionRow,
   type CustomStatusConfig,
 } from './matrix-custom-status.ts';
 import type { MatrixEntitlements } from './matrix-entitlements.ts';
@@ -75,9 +75,6 @@ const messages: Record<MatrixStatus, string> = {
   DORMANT: '本期尚無符合條件的狀態。',
 };
 
-type MatchSeed = Omit<CustomConditionMatch, 'sameCodeQuantity'> & { road: StatusRoad };
-type CountedMatch = MatchSeed & Pick<CustomConditionMatch, 'sameCodeQuantity'>;
-
 function normalizedResult(values: string[]) {
   return values.map((value) => String(value).padStart(2, '0'));
 }
@@ -139,100 +136,18 @@ function chapterRoads(items: ExploreArtifactRow[]): StatusRoad[] {
   return roads;
 }
 
-function exploreMatchSeeds(items: ExploreArtifactRow[]): MatchSeed[] {
-  const seeds: MatchSeed[] = [];
-  for (const item of items) {
-    const results = normalizedResult(item.predictionNumbers);
-    if (results.length === 0) continue;
-    const common = {
-      consecutive: item.consecutive as CustomConditionMatch['consecutive'],
-      roadType: item.algorithmType,
-      numberOrder: item.numberOrder,
-      lockedCodeContributions: item.ruleCount,
-    } as const;
-    if (item.ruleCount === 1) {
-      for (const result of results) seeds.push({
-        ...common,
-        hitType: 'one-code',
-        result: [result],
-        road: {
-          id: `${item.id}:${result}`, hitType: 'one-code', result: [result], algorithmType: item.algorithmType,
-          numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
-          validationItemId: item.id,
-          referenceOffset: item.referenceOffset,
-          referencePosition: item.referencePosition,
-        },
-      });
-    } else {
-      seeds.push({
-        ...common,
-        hitType: 'two-code',
-        result: results,
-        road: {
-          id: item.id, hitType: 'two-code', result: results, algorithmType: item.algorithmType,
-          numberOrder: item.numberOrder, streak: item.highestStreak, predictionDistance: item.predictionDistance,
-          position: item.lockedPosition, lockedNumber: item.number, explorePeriods: item.explorePeriods,
-          validationItemId: item.id,
-          referenceOffset: item.referenceOffset,
-          referencePosition: item.referencePosition,
-        },
-      });
-    }
-  }
-  return seeds;
-}
-
-function tianyanMatchSeeds(artifact: TianyanArtifact | null): MatchSeed[] {
+function tianyanRoads(artifact: TianyanArtifact | null): StatusRoad[] {
   if (!artifact) return [];
-  return artifact.items
-    .filter((item) => (
-      item.exploreDateOffset === 0
-      && (item.lockedSourceIndex === undefined
-        ? item.explorePeriods === 13
-        : item.lockedSourceIndex < 13)
-    ))
-    .map((item) => ({
-    hitType: 'two-code',
-    consecutive: item.consecutive,
-    roadType: '複合',
-    numberOrder: item.numberOrder,
-    lockedCodeContributions: 2,
-    result: normalizedResult(item.predictionNumbers),
-    road: {
-      id: item.id,
-      hitType: 'two-code',
-      result: normalizedResult(item.predictionNumbers),
-      algorithmType: '複合',
-      numberOrder: item.numberOrder,
-      streak: item.highestStreak,
-      predictionDistance: item.predictionDistance,
-      position: item.lockedPosition,
-      lockedNumber: item.number,
-      explorePeriods: item.explorePeriods,
-      validationItemId: item.id,
-    },
+  return artifact.items.filter((item) => (
+    item.exploreDateOffset === 0
+    && (item.lockedSourceIndex === undefined ? item.explorePeriods === 13 : item.lockedSourceIndex < 13)
+    && item.predictionNumbers.length > 0
+  )).map((item) => ({
+    id: item.id, hitType: 'two-code', result: normalizedResult(item.predictionNumbers),
+    algorithmType: '複合', numberOrder: item.numberOrder, streak: item.highestStreak,
+    predictionDistance: item.predictionDistance, position: item.lockedPosition,
+    lockedNumber: item.number, explorePeriods: item.explorePeriods, validationItemId: item.id,
   }));
-}
-
-function matchKey(match: MatchSeed) {
-  return [match.hitType, match.consecutive, match.roadType, match.numberOrder, match.result.join(',')].join('|');
-}
-
-function customMatches(exploreRows: ExploreArtifactRow[], tianyan: TianyanArtifact | null) {
-  const seeds = [...exploreMatchSeeds(exploreRows), ...tianyanMatchSeeds(tianyan)];
-  const counts = new Map<string, number>();
-  for (const seed of seeds) counts.set(matchKey(seed), (counts.get(matchKey(seed)) ?? 0) + 1);
-  return seeds.map((seed) => ({ ...seed, sameCodeQuantity: counts.get(matchKey(seed)) ?? 1 }));
-}
-
-function rowMatches(row: CustomConditionRow, hitType: CustomConditionMatch['hitType'], match: CountedMatch) {
-  return match.hitType === hitType
-    && match.lockedCodeContributions === (hitType === 'one-code' ? 1 : 2)
-    && match.consecutive === row.consecutive
-    && match.roadType === row.roadType
-    && match.numberOrder === row.numberOrder
-    && match.sameCodeQuantity >= row.sameCodeQuantity;
 }
 
 function sortedStatusRoads(roads: StatusRoad[]) {
@@ -286,18 +201,12 @@ function visibleStatusCards(
   });
 }
 
-function customCard(status: CustomStatusConfig['status'], group: CustomConditionGroup, hitType: CustomConditionMatch['hitType'], matches: CountedMatch[]): StatusTriggerCard {
-  const witnesses = group.rows.flatMap((row) => matches.filter((match) => rowMatches(row, hitType, match)));
-  const roads = sortedStatusRoads([...new Map(witnesses.map((match) => [match.road.id, match.road])).values()]);
-  const result = [...new Set(witnesses.flatMap((match) => match.result))];
+function customCard(status: CustomStatusConfig['status'], match: CustomGroupResult): StatusTriggerCard {
   return {
-    id: `custom:${status}:${group.id}`,
-    ruleId: ['CUSTOM', status, group.id].join(':'),
-    status,
-    hitType,
-    result,
-    sameCodeRoadCount: roads.length,
-    roads,
+    id: `custom:${status}:${match.groupId}:${match.result.join(',')}`,
+    ruleId: `CUSTOM:${status}:${match.groupId}`,
+    status, hitType: match.hitType, result: match.result,
+    sameCodeRoadCount: match.roads.length, roads: match.roads,
   };
 }
 
@@ -327,23 +236,20 @@ export function buildMatrixStatusArtifact(
   });
   let cards: StatusTriggerCard[] = [...chapter.cards];
   const counts = { ...chapter.counts };
-  const matches = customMatches(exploreRows, tianyan);
+  const customRoads = [...chapterRoads(exploreRows.filter((row) => row.ruleCount === 1 || row.ruleCount === 2)), ...tianyanRoads(tianyan)];
   const customTriggers: Array<{ status: CustomStatusConfig['status']; groupId: string }> = [];
   const customSettings = configs
     .filter((config) => config.lottery === explore.lottery)
+    .map(normalizeCustomStatusConfig)
     .map((config) => {
       const evaluation = resolveStatusEvaluationMode(config, entitlements);
       if (evaluation.mode === 'custom') {
         const activeConfig = withoutExcludedGroups(config, evaluation.excludedGroupIds);
-        const result = evaluateCustomStatus(activeConfig, matches);
+        const result = evaluateCustomStatusRoads(activeConfig, customRoads);
         cards = cards.filter((card) => card.status !== config.status);
-        counts[config.status] = result.matchedGroupIds.length;
+        counts[config.status] = result.matchedGroups.length;
         customTriggers.push(...result.matchedGroupIds.map((groupId) => ({ status: config.status, groupId })));
-        const matched = new Set(result.matchedGroupIds);
-        cards.push(
-          ...activeConfig.oneCodeGroups.filter((group) => matched.has(group.id)).map((group) => customCard(config.status, group, 'one-code', matches)),
-          ...activeConfig.twoCodeGroups.filter((group) => matched.has(group.id)).map((group) => customCard(config.status, group, 'two-code', matches)),
-        );
+        cards.push(...result.matchedGroups.map((match) => customCard(config.status, match)));
       }
       return { config, evaluation };
     });

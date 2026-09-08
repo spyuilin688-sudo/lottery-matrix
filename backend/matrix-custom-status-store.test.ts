@@ -3,10 +3,18 @@ import { createCustomStatusStore } from './matrix-custom-status-store';
 import type { CustomStatusConfig } from './matrix-custom-status';
 
 const supabase = { url: 'https://project.supabase.co', serviceRoleKey: 'service-key' };
-const saved: CustomStatusConfig = {
+const saved = {
   lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13, exploreRange: '完整範圍',
   oneCodeGroups: [{ id: 'one', rows: [{ consecutive: '準4進5', roadType: '加減', numberOrder: '依號碼由小到大排序', sameCodeQuantity: 2 }] }],
   twoCodeGroups: [],
+};
+
+const upgraded: CustomStatusConfig = {
+  schemaVersion: 2, lottery: '今彩539', status: 'ACTIVE', explorePeriods: 13, exploreRange: '完整範圍',
+  oneCodeGroups: [{ id: 'one', rows: [{
+    consecutiveMin: 4, consecutiveMax: 4, roadTypes: ['加減'], roadRelation: 'any',
+    numberOrder: '依號碼由小到大排序', sameCodeMin: 2, sameCodeMax: null,
+  }] }], twoCodeGroups: [],
 };
 
 function response(body: unknown, status = 200) {
@@ -17,7 +25,7 @@ describe('Supabase custom status store', () => {
   it('reads only the selected member records', async () => {
     const fetcher = vi.fn(async () => response([{ lottery: '今彩539', status: 'ACTIVE', config: saved }]));
     const store = createCustomStatusStore(() => supabase, fetcher as typeof fetch);
-    await expect(store.list('member-1')).resolves.toEqual([saved]);
+    await expect(store.list('member-1')).resolves.toEqual([upgraded]);
     const [url, init] = fetcher.mock.calls[0];
     expect(String(url)).toContain('member_id=eq.member-1');
     expect(init?.headers).toMatchObject({ apikey: 'service-key', Authorization: 'Bearer service-key' });
@@ -26,11 +34,11 @@ describe('Supabase custom status store', () => {
   it('upserts by member, lottery and status without deleting other independent settings', async () => {
     const fetcher = vi.fn(async () => response([{ config: saved }], 201));
     const store = createCustomStatusStore(() => supabase, fetcher as typeof fetch);
-    await expect(store.save('member-1', saved)).resolves.toEqual(saved);
+    await expect(store.save('member-1', saved as unknown as CustomStatusConfig)).resolves.toEqual(upgraded);
     const [, init] = fetcher.mock.calls[0];
     expect(init?.method).toBe('POST');
     expect(init?.headers).toMatchObject({ Prefer: 'resolution=merge-duplicates,return=representation' });
-    expect(JSON.parse(String(init?.body))).toMatchObject({ member_id: 'member-1', lottery: '今彩539', status: 'ACTIVE', config: saved, updated_at: expect.any(String) });
+    expect(JSON.parse(String(init?.body))).toMatchObject({ member_id: 'member-1', lottery: '今彩539', status: 'ACTIVE', config: upgraded, updated_at: expect.any(String) });
   });
 
   it('resets only the selected lottery and status back to Chapter 15', async () => {
@@ -46,6 +54,6 @@ describe('Supabase custom status store', () => {
 
   it('rejects failed Supabase writes', async () => {
     const store = createCustomStatusStore(() => supabase, async () => response({ message: 'failure' }, 500));
-    await expect(store.save('member-1', saved)).rejects.toThrow('SUPABASE_CUSTOM_STATUS_SAVE_FAILED');
+    await expect(store.save('member-1', saved as unknown as CustomStatusConfig)).rejects.toThrow('SUPABASE_CUSTOM_STATUS_SAVE_FAILED');
   });
 });

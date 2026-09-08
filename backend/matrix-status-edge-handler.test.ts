@@ -15,7 +15,7 @@ const explore = {
     number: '01',
     lockedPosition: 1,
     predictionDistance: index + 1,
-    consecutive: '準4進5',
+    consecutive: '準5進6',
     highestStreak: 5,
     predictionNumbers: ['06'],
     algorithmType: '加減',
@@ -92,7 +92,7 @@ describe('Matrix status Edge Function', () => {
       oneCodeGroups: [{
         id: 'focus-group',
         rows: [{
-          consecutive: '準4進5',
+          consecutive: '準5進6',
           roadType: '加減',
           numberOrder: '依號碼由小到大排序',
           sameCodeQuantity: 3,
@@ -115,7 +115,7 @@ describe('Matrix status Edge Function', () => {
     expect(deps.requireMember).toHaveBeenCalledWith('Bearer member-token');
     expect(body.detailLocked).toBe(false);
     expect(body.customTriggers).toContainEqual({ status: 'FOCUS', groupId: 'focus-group' });
-    expect(body.cards).toContainEqual(expect.objectContaining({ id: 'custom:FOCUS:focus-group' }));
+    expect(body.cards).toContainEqual(expect.objectContaining({ id: 'custom:FOCUS:focus-group:06' }));
   });
 
   it('rejects unsupported methods without reading analysis data', async () => {
