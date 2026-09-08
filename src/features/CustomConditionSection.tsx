@@ -1,8 +1,36 @@
-import { Fragment, type Dispatch, type SetStateAction } from "react";
-import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
+import { Fragment, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { ChevronDownIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons";
 import { customRoadTypes as ROAD_TYPES, defaultCustomRow, oneCodeStreaks, twoCodeStreaks, type CustomConditionGroup, type CustomConditionRow, type CustomRoadType } from "../../shared/matrix-status-config";
 
 const streakLabel = (n: number) => "準" + n + "進" + (n + 1);
+
+function ConditionGroupPanel({ title, number, group, initiallyOpen, disabled, onRemove, children }: {
+  title: string; number: number; group: CustomConditionGroup; initiallyOpen: boolean;
+  disabled: boolean; onRemove(): void; children: ReactNode;
+}) {
+  const [open, setOpen] = useState(initiallyOpen);
+  const condition = group.rows[0];
+  const streak = condition && (condition.consecutiveMin === condition.consecutiveMax
+    ? streakLabel(condition.consecutiveMin)
+    : streakLabel(condition.consecutiveMin) + "～" + streakLabel(condition.consecutiveMax));
+  const quantity = condition && (Number.isFinite(condition.sameCodeMin) ? condition.sameCodeMin : "—")
+    + (condition?.sameCodeMin === condition?.sameCodeMax ? "" : "～" + (condition?.sameCodeMax ?? "不限"));
+
+  return <article className="custom-status-group" aria-label={title + " 條件群組 " + number}>
+    <details open={open} onToggle={event => setOpen(event.currentTarget.open)}>
+      <summary className="custom-status-group-toggle">
+        <h3>條件群組 {number}</h3>
+        <span className="custom-status-group-preview">{group.rows.length === 1
+          ? <><span>{streak}</span><span>同碼 {quantity}</span></>
+          : <span>{group.rows.length} 項條件同時符合</span>}</span>
+        <ChevronDownIcon aria-hidden="true" />
+      </summary>
+      <div className="custom-status-group-body">{children}</div>
+    </details>
+    <button type="button" disabled={disabled} className="custom-status-remove"
+      aria-label={title + " 刪除條件群組 " + number} onClick={onRemove}><TrashIcon aria-hidden="true" /></button>
+  </article>;
+}
 type Props = {
   hitType: "one" | "two"; groups: CustomConditionGroup[];
   setGroups: Dispatch<SetStateAction<CustomConditionGroup[]>>;
@@ -10,6 +38,7 @@ type Props = {
 };
 
 export function CustomConditionSection({ hitType, groups, setGroups, compositeEnabled, disabled, errorPath, modeLabel }: Props) {
+  const [newGroupId, setNewGroupId] = useState<string>();
   const title = hitType === "one" ? "一碼條件" : "兩碼條件";
   const root = hitType === "one" ? "oneCodeGroups" : "twoCodeGroups";
   const streaks = hitType === "one" ? oneCodeStreaks : twoCodeStreaks;
@@ -30,13 +59,9 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
     <div className="custom-status-groups">
       {groups.map((group, groupIndex) => <Fragment key={group.id}>
         {groupIndex > 0 ? <p className="custom-status-or">或</p> : null}
-        <article className="custom-status-group" aria-label={title + " 條件群組 " + (groupIndex + 1)}>
-          <header>
-            <h3>條件群組 {groupIndex + 1}</h3>
-            <button type="button" disabled={disabled} className="custom-status-remove"
-              aria-label={title + " 刪除條件群組 " + (groupIndex + 1)}
-              onClick={() => setGroups(current => current.filter(item => item.id !== group.id))}><TrashIcon /></button>
-          </header>
+        <ConditionGroupPanel title={title} number={groupIndex + 1} group={group}
+          initiallyOpen={group.id === newGroupId} disabled={disabled}
+          onRemove={() => setGroups(current => current.filter(item => item.id !== group.id))}>
           {group.rows.map((condition, rowIndex) => {
             const prefix = hitType + "-" + group.id + "-" + rowIndex;
             const path = root + "." + groupIndex + ".rows." + rowIndex;
@@ -53,7 +78,7 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
               {rowIndex > 0 ? <p className="custom-status-and">＋ 同時符合</p> : null}
               <fieldset className="custom-status-condition-row" aria-label={"條件 " + (rowIndex + 1)} disabled={disabled}>
                 {group.rows.length > 1 ? <legend>條件 {rowIndex + 1}</legend> : null}
-                <div className="custom-status-field">
+                <div className="custom-status-field custom-status-field--roads">
                   <span id={prefix + "-roads-label"} className="custom-status-field-label">版路</span>
                   <div className="custom-status-road-sets" role="group" aria-labelledby={prefix + "-roads-label"} tabIndex={-1}
                     {...validity(path + ".roadTypes")}>
@@ -134,11 +159,15 @@ export function CustomConditionSection({ hitType, groups, setGroups, compositeEn
             aria-label={title + " 條件群組 " + (groupIndex + 1) + " 新增同時符合條件"}
             onClick={() => setGroups(current => current.map(item => item.id === group.id
               ? { ...item, rows: [...item.rows, defaultCustomRow(hitType)] } : item))}><PlusIcon />新增同時符合條件</button>
-        </article>
+        </ConditionGroupPanel>
       </Fragment>)}
       <button type="button" className="custom-status-add-button" disabled={disabled || groups.length >= 20}
         aria-label={"新增" + (hitType === "one" ? "一碼" : "兩碼") + "條件群組"}
-        onClick={() => setGroups(current => [...current, { id: hitType + "-" + crypto.randomUUID(), rows: [defaultCustomRow(hitType)] }])}><PlusIcon />新增條件群組</button>
+        onClick={() => {
+          const id = hitType + "-" + crypto.randomUUID();
+          setNewGroupId(id);
+          setGroups(current => [...current, { id, rows: [defaultCustomRow(hitType)] }]);
+        }}><PlusIcon />新增條件群組</button>
     </div>
   </section>;
 }

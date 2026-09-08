@@ -327,6 +327,8 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     if (notice?.path) {
       const field = Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-field-path]") ?? [])
         .find(element => element.dataset.fieldPath === notice.path);
+      const panel = field?.closest("details");
+      if (panel) panel.open = true;
       field?.focus();
     }
   }, [notice]);
@@ -424,10 +426,10 @@ export function MatrixCustomStatusPage({ onNavigate }: { onNavigate: Navigate })
     {!loaded ? <p className="matrix-api-state">設定讀取中</p> : loadFailed
       ? <p className="custom-status-message" role="alert">自訂設定讀取失敗</p>
       : <form className="custom-status-editor" ref={formRef} noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
-        <CustomConditionSection hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
+        <CustomConditionSection key={slot + "|one"} hitType="one" groups={config.oneCodeGroups} setGroups={editGroups("oneCodeGroups")}
           modeLabel={usingDefaults ? "使用預設條件" : "已自訂"}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
-        <CustomConditionSection hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
+        <CustomConditionSection key={slot + "|two"} hitType="two" groups={config.twoCodeGroups} setGroups={editGroups("twoCodeGroups")}
           compositeEnabled={compositeEnabled} disabled={busy} errorPath={notice?.path} />
         {notice ? <p id="custom-status-error" role={notice.error ? "alert" : "status"} className="custom-status-message">{notice.message}</p> : null}
         <div className="custom-status-actions">

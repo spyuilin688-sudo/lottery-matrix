@@ -11,8 +11,48 @@ beforeEach(() => {
 });
 async function openPage(){render(<MatrixCustomStatusPage onNavigate={vi.fn()}/>);await screen.findByText('使用預設條件');}
 const group=(kind='一碼',n=1)=>screen.getByRole('article',{name:kind+'條件 條件群組 '+n});
-const row=(kind='一碼',n=1,r=1)=>within(group(kind,n)).getByRole('group',{name:'條件 '+r});
+const expand=(kind='一碼',n=1)=>{
+ const article=group(kind,n),panel=article.querySelector('details');
+ if(panel&&!panel.open)fireEvent.click(panel.querySelector('summary')!);
+ return article;
+};
+const row=(kind='一碼',n=1,r=1)=>within(expand(kind,n)).getByRole('group',{name:'條件 '+r});
 const field=(name:string,kind='一碼',n=1,r=1)=>within(row(kind,n,r)).getByLabelText(name);
+
+test('群組預設收合並保留摘要，展開編輯後再次收合不丟失輸入',async()=>{
+ await openPage();
+ const panel=group().querySelector('details');
+ expect(panel).not.toBeNull();expect(panel!.open).toBe(false);
+ expect(panel!.querySelector('summary')!.textContent).toContain('準5進6～準6進7');
+ expect(panel!.querySelector('summary')!.textContent).toContain('同碼 2～4');
+ fireEvent.change(field('最少'),{target:{value:'3'}});
+ fireEvent.click(panel!.querySelector('summary')!);expect(panel!.open).toBe(false);
+ expect(panel!.querySelector('summary')!.textContent).toContain('同碼 3～4');
+ expect(field('最少')).toHaveProperty('value','3');
+ fireEvent.click(screen.getByRole('button',{name:'儲存設定'}));
+ await waitFor(()=>expect(api.saveCustomStatusSetting).toHaveBeenCalledTimes(1));
+ expect(api.saveCustomStatusSetting.mock.calls[0][0].oneCodeGroups[0].rows[0].sameCodeMin).toBe(3);
+});
+
+test('新增群組直接展開，刪除群組不切換其他群組的收合狀態',async()=>{
+ await openPage();fireEvent.click(screen.getByRole('button',{name:'新增一碼條件群組'}));
+ expect(group('一碼',2).querySelector('details')).toHaveProperty('open',true);
+ expect(group().querySelector('details')).toHaveProperty('open',false);
+ fireEvent.click(within(group('一碼',2)).getByRole('button',{name:'一碼條件 刪除條件群組 2'}));
+ expect(group().querySelector('details')).toHaveProperty('open',false);
+});
+
+test('收合的錯誤欄位在儲存時自動展開並取得焦點',async()=>{
+ await openPage();const minimum=field('最少');
+ fireEvent.change(minimum,{target:{value:'5'}});
+ const panel=group().querySelector('details')!;
+ expect(panel).not.toBeNull();fireEvent.click(panel.querySelector('summary')!);
+ expect(panel.open).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'儲存設定'}));
+ await screen.findByRole('alert');
+ expect(panel.open).toBe(true);expect(document.activeElement).toBe(minimum);
+ expect(api.saveCustomStatusSetting).not.toHaveBeenCalled();
+});
 
 test('上方保留四狀態與彩種，下方以可編輯的一碼兩碼模板呈現',async()=>{
  await openPage();
@@ -52,7 +92,7 @@ test('編輯模板轉已自訂，提交範圍、複選版路及另一類型完�
 });
 test('複合AND留在同卡，新增群組為OR',async()=>{
  await openPage();fireEvent.click(screen.getByRole('tab',{name:/聚合/}));
- expect(within(group('兩碼',2)).getAllByRole('group',{name:/^條件 /})).toHaveLength(2);
+ expect(within(expand('兩碼',2)).getAllByRole('group',{name:/^條件 /})).toHaveLength(2);
  expect(within(group('兩碼',2)).getByText('＋ 同時符合')).toBeTruthy();
  expect(field('最多','兩碼',2,2)).toHaveProperty('value','1');
  fireEvent.click(screen.getByRole('button',{name:'新增兩碼條件群組'}));expect(group('兩碼',4)).toBeTruthy();
