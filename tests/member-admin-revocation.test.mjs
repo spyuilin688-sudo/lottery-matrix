@@ -60,7 +60,7 @@ before(async () => {
     insert into activation_codes(batch_id,code,duration_type,created_at,expires_at) values
       ('20000000-0000-0000-0000-000000000001','AAAA-BBBB-CCCC-DDDD','30_days',now(),now()+interval '1 month');
   `);
-  await db.exec(await migration('20260908143000_member_admin_revocation'));
+  await db.exec(await migration('20260908153522_member_admin_revocation'));
 });
 after(async () => { await db.close(); });
 
@@ -144,3 +144,4 @@ test('last-super-admin protection rolls back password and session changes togeth
   assert.equal((await query('select credential_version from admin_accounts where id=$1',[other]))[0].credential_version,1);
   assert.equal((await query("select count(*)::int as count from admin_sessions where token_hash='super-fresh'"))[0].count,1);
 });
+

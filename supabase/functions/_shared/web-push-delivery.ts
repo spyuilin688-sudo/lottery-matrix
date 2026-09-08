@@ -56,6 +56,25 @@ function expiredEndpoint(cause: unknown) {
   return statusCode === 404 || statusCode === 410;
 }
 
+function allowedEndpoint(endpoint: unknown): boolean {
+  if (
+    typeof endpoint !== "string" || endpoint.length > 4096 ||
+    /[\s\\#\u0000-\u001f\u007f]/.test(endpoint)
+  ) return false;
+
+  try {
+    const url = new URL(endpoint);
+    const authority = /^https:\/\/([^/?#]+)/.exec(endpoint)?.[1];
+    // Compare the raw authority to reject credentials, ports and encoded hosts.
+    if (!authority || authority.toLowerCase() !== url.hostname) return false;
+    return url.protocol === "https:" && !url.username && !url.password &&
+      !url.port &&
+      /^(fcm\.googleapis\.com|([a-z0-9-]+\.)*push\.services\.mozilla\.com|([a-z0-9-]+\.)*web\.push\.apple\.com|([a-z0-9-]+\.)*notify\.windows\.com)$/.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function deliverPushToSubscription(
   dependencies: DeliveryDependencies,
   input: {
@@ -66,10 +85,12 @@ export async function deliverPushToSubscription(
   },
 ): Promise<PushDeliveryResult> {
   const sentAt = (dependencies.now ?? (() => new Date()))().toISOString();
+  const invalidEndpoint = !allowedEndpoint(input.subscription.endpoint);
   let delivered = false;
   let sendFailure: unknown;
 
   try {
+    if (invalidEndpoint) throw new Error("INVALID_PUSH_SUBSCRIPTION");
     await dependencies.sendPush(input.subscription, input.payload);
     delivered = true;
   } catch (cause) {
@@ -96,7 +117,7 @@ export async function deliverPushToSubscription(
     };
   }
 
-  const permanentFailure = expiredEndpoint(sendFailure);
+  const permanentFailure = invalidEndpoint || expiredEndpoint(sendFailure);
   const reason = failureReason(sendFailure);
   await dependencies.markFailure(
     input.subscription.id,

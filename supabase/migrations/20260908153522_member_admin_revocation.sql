@@ -83,3 +83,4 @@ revoke select on public.admin_profiles from public, anon, authenticated, service
 revoke execute on function public.is_admin() from public, anon, authenticated, service_role;
 revoke execute on function public.admin_dashboard_stats() from public, anon, authenticated, service_role;
 commit;
+

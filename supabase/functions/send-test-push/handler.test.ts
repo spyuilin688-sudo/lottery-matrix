@@ -16,13 +16,13 @@ function assertEquals(actual: unknown, expected: unknown) {
 const SERVICE_ROLE_KEY = "test-service-role-key";
 const SUBSCRIPTION_A: PushSubscription = {
   id: "subscription-a",
-  endpoint: "https://push.example/a",
+  endpoint: "https://fcm.googleapis.com/fcm/send/a",
   p256dh: "p256dh-a",
   authKey: "auth-a",
 };
 const SUBSCRIPTION_B: PushSubscription = {
   id: "subscription-b",
-  endpoint: "https://push.example/b",
+  endpoint: "https://fcm.googleapis.com/fcm/send/b",
   p256dh: "p256dh-b",
   authKey: "auth-b",
 };
@@ -251,3 +251,4 @@ Deno.test("已成功送出不因 log 寫入錯誤被誤標為推播失敗", asyn
   assertEquals(setup.observations.successes.length, 1);
   assertEquals(setup.observations.failures, []);
 });
+
