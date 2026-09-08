@@ -253,6 +253,8 @@ test('自訂入口檢查完成前不換頁、不重複請求，通過後才進�
   const trigger=screen.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
   fireEvent.click(trigger); fireEvent.click(trigger);
   expect(trigger).toHaveAttribute('aria-busy','true');
+  expect(trigger).toHaveAttribute('aria-disabled','true');
+  expect(trigger).not.toBeDisabled();
   expect(navigate).not.toHaveBeenCalled();
   expect(statusApi.listCustomStatusSettings).toHaveBeenCalledTimes(1);
   await act(async()=>finish({items:[],entitlements:{canCustomizeStatus:true}}));

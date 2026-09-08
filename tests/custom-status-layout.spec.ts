@@ -45,6 +45,7 @@ for (const width of [320, 360, 390, 430]) {
     });
     expect(metrics.afterTabs).toBe(true);
     expect(metrics.afterLottery).toBe(true);
+    expect(metrics.color).toBe('rgb(245, 242, 234)');
     expect(metrics.colors.every(color => color === metrics.color)).toBe(true);
     expect(metrics.centerError).toBeLessThan(1);
     expect(metrics.sameLine).toBe(true);
@@ -127,10 +128,14 @@ for (const width of [320, 360, 390, 430]) {
     test(`${width}px ${reason} 在入口跳出提醒，沒有進入自訂頁或顯示權限卡`, async ({page}, testInfo) => {
       await page.setViewportSize({width, height:844});
       await mockStatus(page);
-      await page.route('https://**/rest/v1/rpc/matrix_custom_status_list', route => route.fulfill({
-        status: 200, contentType:'application/json',
-        body:JSON.stringify({items:[],entitlements:{canCustomizeStatus:false}}),
-      }));
+      await page.route('https://**/rest/v1/rpc/matrix_custom_status_list', async route => {
+        // Exercise a real pending state before showing the denial dialog.
+        await new Promise(resolve => setTimeout(resolve, 350));
+        await route.fulfill({
+          status: 200, contentType:'application/json',
+          body:JSON.stringify({items:[],entitlements:{canCustomizeStatus:false}}),
+        });
+      });
       await page.goto(`/tests/custom-status-layout-fixture.html?entry=1${reason === 'guest' ? '&guest=1' : ''}`);
       const trigger=page.getByRole('button',{name:'自訂觸發條件，連續點擊兩下開啟'});
       await trigger.dblclick();

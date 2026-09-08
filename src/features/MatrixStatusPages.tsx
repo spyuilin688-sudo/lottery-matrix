@@ -312,7 +312,7 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
         })}
       </div>
       <MobilePagePortal active>
-        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} disabled={checkingSettings} onClick={handleStatusSettingsClick}>
+        <button type="button" className="bottom-navigation-quick-settings matrix-status-settings-entry" aria-label="自訂觸發條件，連續點擊兩下開啟" aria-busy={checkingSettings} aria-disabled={checkingSettings} onClick={handleStatusSettingsClick}>
           <span className="bottom-navigation-quick-settings-visual">
             <GearIcon aria-hidden="true" />
           </span>
