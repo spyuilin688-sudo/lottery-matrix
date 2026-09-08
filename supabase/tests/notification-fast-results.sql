@@ -13,7 +13,7 @@ begin
     = '選號時間到了，記得完成你的選號。', 'reminder copy';
   assert private.notification_render_payload('matrix_card','test',
     '{"lottery":"今彩539","drawDate":"2026-09-05"}')->>'body'
-    = '09/05(六) 今彩539 最新的牌單已更新囉！', 'card uses draw date';
+    = '09/05(六) 最新的牌單已經更新囉！', 'card uses draw date';
   for v_state,v_copy in select * from (values
     ('臨界','發現了極為罕見的版路！'),
     ('共振','發現了具備強烈共振效應的版路！'),
