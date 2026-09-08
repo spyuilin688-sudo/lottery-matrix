@@ -70,8 +70,13 @@ test("Matrix Explore restores the three original date selections and keeps them 
   assert.match(featureSource, /type ExploreDate = "本日 \(最新\)" \| "昨日 \(上1期\)" \| "前日 \(上2期\)";/);
   assert.match(featureSource, /\["本日 \(最新\)", "昨日 \(上1期\)", "前日 \(上2期\)"\] as const\)\.map/);
   assert.match(featureSource, /exploreDateOffset = exploreDate === "前日 \(上2期\)" \? 2 : exploreDate === "昨日 \(上1期\)" \? 1 : 0/);
-  assert.match(featureSource, /fetchTianyanList\(\{\s*lottery,\s*exploreDateOffset,\s*selectedStreaks: nextFilters,\s*sameCode: nextSameCode,\s*\.\.\.\(nextPredictionNumber \? \{ predictionNumber: nextPredictionNumber \} : \{\}\),\s*\}\)/s);
-  assert.match(featureSource, /exploreDateOffset,/);
+  const tianyanRequest = featureSource.match(/fetchTianyanList\(\{([\s\S]*?)\n\s*\}\)/)?.[1];
+  assert.ok(tianyanRequest, "Expected the Tianyan list request");
+  assert.match(tianyanRequest, /\blottery,/);
+  assert.match(tianyanRequest, /\bexploreDateOffset,/);
+  assert.match(tianyanRequest, /\bselectedStreaks:\s*nextFilters,/);
+  assert.match(tianyanRequest, /\bsameCode:\s*nextSameCode,/);
+  assert.match(tianyanRequest, /\.\.\.\(nextPredictionNumber \? \{ predictionNumber: nextPredictionNumber \} : \{\}\)/);
 
   const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-title-banner-actions \\.matrix-page-switcher");
   assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);

@@ -1,4 +1,3 @@
-import { readFeaturePagesSource } from "./helpers/read-feature-pages-source.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -7,10 +6,7 @@ import { ruleBodies } from "./helpers/css-rules.mjs";
 
 const css = readFileSync("src/matrix-explore-spacing.css", "utf8");
 const main = readFileSync("src/main.tsx", "utf8");
-const source = readFeaturePagesSource();
-const exploreStart = source.indexOf("export function MatrixExplorePage");
-const exploreEnd = source.indexOf("function MatrixTiangongPage");
-const exploreSource = source.slice(exploreStart, exploreEnd);
+const exploreSource = readFileSync("src/features/MatrixExplorePage.tsx", "utf8");
 
 function oneRule(sourceText, selectorPattern) {
   const bodies = ruleBodies(sourceText, selectorPattern);
@@ -31,7 +27,7 @@ test("Matrix Explore canonical scoped stylesheet remains the final loaded layout
 });
 
 test("Matrix Explore DOM keeps icon and field title in the same horizontal label group", () => {
-  assert.ok(exploreStart >= 0 && exploreEnd > exploreStart);
+  assert.match(exploreSource, /export function MatrixExplorePage/);
   assert.match(exploreSource, /<label><span><SettingLabelIcon type="lottery" \/><b>彩球類型<\/b><\/span>/s);
   assert.match(exploreSource, /<label><span><SettingLabelIcon type="period" \/>探索期數<\/span>/s);
   assert.match(exploreSource, /<label><span><SettingLabelIcon type="road" \/>版路類型<\/span>/s);

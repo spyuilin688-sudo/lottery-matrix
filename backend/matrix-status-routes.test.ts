@@ -56,7 +56,7 @@ describe('Matrix status route', () => {
     });
   });
 
-  it('shows anonymous two- and seven-period road details on Friday without member auth', async () => {
+  it('shows only anonymous two-period road details on Friday without member auth', async () => {
     let authCalls = 0;
     const api = createMatrixStatusRoutes({
       requireMember: async () => { authCalls += 1; throw new Error('should not authenticate'); },
@@ -78,12 +78,24 @@ describe('Matrix status route', () => {
     }>)[0];
     expect(card).toMatchObject({ sameCodeRoadCount: null, sameCodeRoadCountLocked: true });
     expect(card.roads).toHaveLength(3);
-    expect(card.roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2, 7]);
-    expect(card.roads.filter((road) => road.locked === true)).toEqual([
-      expect.objectContaining({ result: ['08'], explorePeriods: 13, locked: true }),
-    ]);
-    expect(card.roads.find((road) => road.locked === true)).not.toHaveProperty('algorithmType');
+    expect(card.roads.filter((road) => road.locked === false).map((road) => road.explorePeriods)).toEqual([2]);
+    const lockedRoads = card.roads.filter((road) => road.locked === true);
+    expect(lockedRoads.map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([7, 13]);
+    for (const road of lockedRoads) {
+      expect(road).toMatchObject({ result: ['08'], locked: true });
+      expect(road).not.toHaveProperty('algorithmType');
+    }
     expect(authCalls).toBe(0);
+  });
+
+  it('shows seven-period road details to a LINE-authenticated free member on Friday', async () => {
+    const response = await routes(member('free', false)).get({
+      authorization: 'Bearer token',
+      body: { lottery: '今彩539' },
+    });
+    const roads = (response.body.cards as Array<{ roads: Array<Record<string, unknown>> }>)[0]?.roads ?? [];
+    expect(roads.filter((road) => road.locked === false).map((road) => road.explorePeriods).sort((left, right) => Number(left) - Number(right))).toEqual([2, 7]);
+    expect(roads.filter((road) => road.locked === true).map((road) => road.explorePeriods)).toEqual([13]);
   });
 
   it('shows only anonymous two-period road details outside Tuesday and Friday', async () => {
@@ -117,8 +129,9 @@ describe('Matrix status route', () => {
     expect(card.roads.every((road) => road.locked === false && typeof road.validationItemId === 'string')).toBe(true);
   });
 
-  it('returns validation only when the requested status road is visible to the caller', async () => {
+  it('returns seven-period validation to a LINE-authenticated free member on Friday', async () => {
     const response = await routes(member('free', false)).validation({
+      authorization: 'Bearer token',
       body: {
         lottery: '今彩539', drawPeriod: artifact.drawPeriod,
         analysisVersion: 'v1', itemId: 'road-7',
@@ -133,6 +146,15 @@ describe('Matrix status route', () => {
         validation: { itemId: 'road-7', ruleSets: [] },
       },
     });
+  });
+
+  it('does not disclose seven-period validation to an anonymous caller on Friday', async () => {
+    await expect(routes(member('free', false)).validation({
+      body: {
+        lottery: '今彩539', drawPeriod: artifact.drawPeriod,
+        analysisVersion: 'v1', itemId: 'road-7',
+      },
+    })).resolves.toMatchObject({ status: 403, body: { error: { code: 'FORBIDDEN' } } });
   });
 
   it('does not disclose validation for a locked or guessed status road', async () => {
