@@ -1870,11 +1870,11 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-custom-status-screen .custom-status-explore {
   display: grid; min-width: 0; grid-template-columns: minmax(0,1fr) 12px minmax(0,1fr);
   align-items: center; margin: 0; padding: 6px 0;
-  color: var(--lottery-text-secondary); font-size: 12px; line-height: 1.5; text-align: center;
+  color: var(--lottery-text-primary); font-size: 12px; line-height: 1.5; text-align: center;
 }
 .matrix-custom-status-screen .custom-status-explore > span { min-width: 0; white-space: nowrap; }
-.matrix-custom-status-screen .custom-status-explore strong { color: var(--lottery-text-primary); font-weight: 600; }
-.matrix-custom-status-screen .custom-status-explore-divider { color: var(--lottery-gold-500); }
+.matrix-custom-status-screen .custom-status-explore strong { color: inherit; font-weight: 600; }
+.matrix-custom-status-screen .custom-status-explore-divider { color: inherit; }
 .matrix-custom-status-screen .custom-status-section-heading {
   display: flex; min-height: 24px; margin-bottom: 6px; align-items: center; justify-content: space-between; gap: 8px;
 }

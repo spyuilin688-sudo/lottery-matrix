@@ -23,7 +23,7 @@ beforeEach(() => {
     emitAuth = callback;
     return { data: { subscription: { unsubscribe: vi.fn() } } };
   });
-  settings.listCustomStatusSettings.mockResolvedValue([]);
+  settings.listCustomStatusSettings.mockResolvedValue({ items: [], entitlements: { canCustomizeStatus: true } });
 });
 
 test.each([['notebook', 'Matrix 筆記本'], ['status-settings', '自訂觸發條件']] as const)('guest cannot mount %s and receives a LINE login dialog', async (route, title) => {
