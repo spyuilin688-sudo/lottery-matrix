@@ -64,7 +64,7 @@ Files: src/matrix-status-api.ts、src/features/MatrixStatusPages.tsx、src/featu
 
 ### 上線順序
 
-1. 先套用`supabase/migrations/20260908030744_matrix_custom_status_v2.sql`，接受舊與v2 payload，保留既有會員資料。
+1. 先套用`supabase/migrations/20260908040432_matrix_custom_status_v2.sql`，接受舊與v2 payload，保留既有會員資料。
 2. 更新Matrix status Edge Function及Python服務，包含新的共用契約與`status-rules.json`；確認正式Deno打包及22條模板能載入。
 3. 再部署前端群組編輯介面，確認儲存／重置及首頁套用。
 
@@ -75,3 +75,12 @@ node_modules/.bin/vitest run shared/matrix-status-config.test.ts backend/matrix-
 cd services/matrix-api
 python -m pytest tests/test_status.py
 ```
+
+
+## 2026-09-08 正式環境更新
+
+- Supabase migration 已套用，實際版本為20260908040432；檔名同步對齊migration history。
+- 正式資料庫接受全部22條預設模板；原有1筆會員設定的內容摘要前後一致。匿名角色無儲存權限，會員角色保留原存取方式。
+- Matrix status Edge Function 已部署為version 14，13個部署來源檔案逐一比對一致，包含共用JSON模板。
+- Railway對合併提交5f74b42回報3個服務部署成功。
+- 這次發佈提交使用GitHub專用的[skip actions]，遵守AGENTS.md只跑相關測試的要求，並觸發Cloudflare Pages更新。
