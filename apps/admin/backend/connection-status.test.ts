@@ -3,7 +3,7 @@ import { createConnectionStatus } from './connection-status';
 import type { WorkerStatus } from './worker-api';
 import type { WatchdogStatus } from './watchdog-status';
 
-const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const healthyWorkerStatus: WorkerStatus = {
   ok: true,
   health: {
@@ -29,7 +29,7 @@ describe('connection status', () => {
         const body = JSON.parse(url.searchParams.get('p_request')!);
         return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: 'v1', total: 0, items: [] });
       }
-      return response({ paths: { '/rpc/member_profile': { post: {} } } });
+      return response([{ rpc_name: 'member_profile' }]);
     });
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
@@ -46,8 +46,8 @@ describe('connection status', () => {
   });
 
   it('returns every current API with its location and endpoint plus the four jobs', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
-      ? response({ paths: { '/rpc/redeem_activation_code': { post: {} } } })
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry'
+      ? response([{ rpc_name: 'redeem_activation_code' }])
       : response({ ok: true }));
     const supabase = {
       selectRows: vi.fn(async (table: string) => table === 'system_job_status' ? [{
@@ -75,10 +75,10 @@ describe('connection status', () => {
       ok: true,
       location: 'Supabase',
       endpoint: '/rest/v1/rpc/redeem_activation_code',
-      checkMode: 'openapi',
+      checkMode: 'registry',
       checkEvidence: 'registered',
     });
-    expect(result.items).toHaveLength(61);
+    expect(result.items).toHaveLength(62);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -88,7 +88,7 @@ describe('connection status', () => {
       'matrix-algorithm-cases-api',
     ]));
     expect(fetcher).toHaveBeenCalledWith(
-      'https://matrix-sanqwn.v2.appdeploy.ai/api/_healthcheck',
+      'https://api-v2.appdeploy.ai/app/matrix-sanqwn/api/_healthcheck',
       expect.objectContaining({ cache: 'no-store' }),
     );
     expect(fetcher.mock.calls.map(([input]) => String(input))).not.toEqual(
@@ -133,7 +133,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(61);
+    expect(result.items).toHaveLength(62);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
@@ -194,7 +194,7 @@ describe('connection status', () => {
     expect(fetcher.mock.calls.every(([, init]) =>
       init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS')).toBe(true);
     expect(fetcher.mock.calls.some(([input]) =>
-      String(input).includes('/redeem_activation_code'))).toBe(false);
+      new URL(String(input)).pathname.endsWith('/redeem_activation_code'))).toBe(false);
     expect(fetcher.mock.calls.some(([input]) =>
       String(input).includes('/jobs/recover'))).toBe(false);
     expect(JSON.stringify(result)).not.toMatch(/raw-service-secret|serviceRoleKey|workerToken|Authorization/);
@@ -278,7 +278,7 @@ describe('connection status', () => {
   });
 
   it('reports missing GitHub configuration without sending a request or leaking loader errors', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry'
       ? response({ paths: {} })
       : response({ ok: true }));
     const status = createConnectionStatus({
@@ -301,7 +301,7 @@ describe('connection status', () => {
   it('retains the failed function HTTP status without blaming all Supabase APIs', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/notification-pilio')
       ? response({ error: 'METHOD_NOT_ALLOWED' }, 405)
-      : String(input).endsWith('/rest/v1/') ? response({ paths: {} }) : response({ ok: true }));
+      : new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry' ? response({ paths: {} }) : response({ ok: true }));
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
       loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'service-secret' }),
@@ -315,7 +315,7 @@ describe('connection status', () => {
   });
 
   it('checks all Edge Functions with OPTIONS only', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry'
       ? response({ paths: {} })
       : response({ ok: true }));
     const status = createConnectionStatus({
@@ -327,7 +327,7 @@ describe('connection status', () => {
 
     const result = await status.get();
     expect(result.items.filter((item) => item.endpoint.startsWith('/functions/v1/'))).toEqual(
-      Array.from({ length: 6 }, () => expect.objectContaining({ ok: true, checkEvidence: 'options' })),
+      Array.from({ length: 7 }, () => expect.objectContaining({ ok: true, checkEvidence: 'options' })),
     );
     const functionCalls = fetcher.mock.calls.filter(([input]) =>
       String(input).includes('/functions/v1/'));
@@ -337,6 +337,7 @@ describe('connection status', () => {
       'https://db.test/functions/v1/notification-dispatch',
       'https://db.test/functions/v1/notification-pilio',
       'https://db.test/functions/v1/send-test-push',
+      'https://db.test/functions/v1/admin-transfer-push',
       'https://db.test/functions/v1/line-logout',
     ]);
     expect(functionCalls.every(([, init]) => init?.method === 'OPTIONS')).toBe(true);
@@ -348,12 +349,9 @@ describe('connection status', () => {
     expect(functionCalls.every(([, init]) => init?.body === undefined)).toBe(true);
   });
 
-  it('uses one OpenAPI document to confirm write RPC presence without invoking write RPCs', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => String(input).endsWith('/rest/v1/')
-      ? response({ paths: {
-        '/rpc/claim_matrix_watchdog_lease': { post: {} },
-        '/rpc/notification_dispatch_mark_sent': { post: {} },
-      } })
+  it('uses one catalog query to confirm write RPC presence without invoking write RPCs', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry'
+      ? response([{ rpc_name: 'claim_matrix_watchdog_lease' }, { rpc_name: 'notification_dispatch_mark_sent' }])
       : response({ ok: true }));
     const status = createConnectionStatus({
       supabase: { selectRows: vi.fn(async () => []) },
@@ -365,8 +363,8 @@ describe('connection status', () => {
     const result = await status.get();
     expect(result.items.find((item) => item.id === 'supabase-rpc-claim_matrix_watchdog_lease')).toMatchObject({ ok: true });
     expect(result.items.find((item) => item.id === 'supabase-rpc-notification_dispatch_mark_sent')).toMatchObject({ ok: true });
-    expect(fetcher.mock.calls.filter(([input]) => String(input).endsWith('/rest/v1/'))).toHaveLength(1);
-    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('/rest/v1/rpc/')).every(([input]) => new URL(String(input)).pathname === '/rest/v1/rpc/matrix_explore_list')).toBe(true);
+    expect(fetcher.mock.calls.filter(([input]) => new URL(String(input)).pathname === '/rest/v1/rpc/admin_api_registry')).toHaveLength(1);
+    expect(fetcher.mock.calls.filter(([input]) => String(input).includes('/rest/v1/rpc/')).every(([input]) => ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/admin_api_registry'].includes(new URL(String(input)).pathname))).toBe(true);
   });
 
   it('inherits Railway recovery status without posting to recovery', async () => {

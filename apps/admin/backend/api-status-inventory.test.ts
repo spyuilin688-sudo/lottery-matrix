@@ -19,12 +19,12 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(57);
+    expect(apiStatusInventory).toHaveLength(58);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });
 
-  it('covers the six deployed Edge Functions', () => {
+  it('covers the monitored Edge Functions including admin transfer push', () => {
     expect(apiStatusInventory
       .filter((item) => item.endpoint.startsWith('/functions/v1/'))
       .map((item) => item.endpoint))
@@ -34,6 +34,7 @@ describe('api status inventory', () => {
         '/functions/v1/notification-dispatch',
         '/functions/v1/notification-pilio',
         '/functions/v1/send-test-push',
+        '/functions/v1/admin-transfer-push',
         '/functions/v1/line-logout',
       ]);
   });
@@ -61,7 +62,7 @@ describe('api status inventory', () => {
       item.endpoint === `/rest/v1/rpc/${rpc}`)))
       .toEqual(rpcNames.map((rpc) => expect.objectContaining({
         id: `supabase-rpc-${rpc}`,
-        checkMode: 'openapi',
+        checkMode: 'registry',
       })));
   });
 

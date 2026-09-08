@@ -5,7 +5,7 @@ export type SystemStatusItem = {
   group: string;
   location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
   endpoint: string;
-  checkMode: 'live' | 'openapi' | 'service';
+  checkMode: 'live' | 'openapi' | 'registry' | 'service';
   checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
   ok: boolean;
   checkedAt: string;
@@ -49,7 +49,7 @@ const statusLocationOrder: SystemStatusItem['location'][] = [
 export function getSystemStatusPresentation(item: SystemStatusItem) {
   const evidence = item.checkEvidence ?? (
     item.endpoint.startsWith('/functions/v1/') ? 'options'
-      : item.checkMode === 'openapi' ? 'registered'
+      : item.checkMode === 'openapi' || item.checkMode === 'registry' ? 'registered'
         : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
           : item.id === 'appdeploy-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
   );

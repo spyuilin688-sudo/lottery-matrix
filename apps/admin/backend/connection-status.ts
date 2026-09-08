@@ -37,7 +37,8 @@ export class ConnectionStatusError extends Error {
   }
 }
 
-const adminUrl = 'https://matrix-sanqwn.v2.appdeploy.ai';
+// The public app host serves the SPA for unknown paths; probe the backend gateway.
+const adminUrl = 'https://api-v2.appdeploy.ai/app/matrix-sanqwn';
 const jobDefinitions = [
   ['matrix-539-refresh-v2', '今彩539'],
   ['matrix-fantasy5-refresh-v2', '天天樂'],
@@ -88,7 +89,7 @@ const safeErrorFor = (definition: ApiStatusDefinition, workerStatus?: WorkerStat
   }
   if (definition.location === 'Railway') return 'Railway Worker API 暫時無法使用';
   if (definition.location === 'GitHub') return 'GitHub Actions API 暫時無法使用';
-  if (definition.checkMode === 'openapi') return '無法確認資料庫內是否有此 API';
+  if (definition.checkMode === 'registry') return '無法確認資料庫內是否有此 API';
   return `${definition.location} API 暫時無法使用`;
 };
 const safeWatchdogDetail = (status: WatchdogStatus) => ({
@@ -149,21 +150,28 @@ export function createConnectionStatus(dependencies: Dependencies) {
   const createSharedChecks = () => {
     const config = memoizePromise(() => withDeadline(dependencies.loadConfig));
     const worker = memoizePromise(() => withDeadline(dependencies.getWorkerStatus));
-    const openApiPaths = memoizePromise(async () => {
+    const registeredRpcs = memoizePromise(async () => {
       const current = await config();
-      const response = await fetchWithDeadline(`${current.url}/rest/v1/`, { cache: 'no-store', redirect: 'error', headers: { apikey: current.serviceRoleKey } });
-      if (!response.ok) throw new Error('OPENAPI_UNAVAILABLE');
-      const document = await readJsonWithDeadline<{ paths?: unknown }>(response);
-      if (!document.paths || typeof document.paths !== 'object' || Array.isArray(document.paths)) throw new Error('OPENAPI_INVALID');
-      return new Set(Object.keys(document.paths));
+      const names = apiStatusInventory.filter(item => item.checkMode === 'registry' && !queryCheckIds.has(item.id))
+        .map(item => item.endpoint.slice('/rest/v1/rpc/'.length));
+      const url = new URL(`${current.url}/rest/v1/rpc/admin_api_registry`);
+      url.searchParams.set('select', 'rpc_name');
+      url.searchParams.set('rpc_name', `in.(${names.join(',')})`);
+      // OpenAPI is filtered by EXECUTE privileges and hides member-only RPCs.
+      // This stable, service-only catalog query never invokes the listed functions.
+      const response = await fetchWithDeadline(url.toString(), { method: 'GET', cache: 'no-store', redirect: 'error', headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` } });
+      if (!response.ok) throw new Error('RPC_REGISTRY_UNAVAILABLE');
+      const rows = await readJsonWithDeadline<unknown>(response);
+      if (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object' || typeof row.rpc_name !== 'string')) throw new Error('RPC_REGISTRY_INVALID');
+      return new Set(rows.map(row => row.rpc_name as string));
     });
     const query = createApiQueryChecks({ loadWorkerUrl: () => withDeadline(async () => dependencies.loadWorkerUrl?.()), loadSupabaseConfig: config, fetcher, timeoutMs: requestTimeoutMs });
-    return { config, worker, openApiPaths, query };
+    return { config, worker, registeredRpcs, query };
   };
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
     const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query' : definition.endpoint.startsWith('/functions/v1/') ? 'options'
-      : definition.checkMode === 'openapi' ? 'registered'
+      : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
       : definition.id === 'appdeploy-watchdog-heartbeat' ? 'reported' : 'live';
     const base = { ...definition, checkEvidence, description: descriptionFor(definition), checkedAt: now().toISOString(), responseMs: 0, ...(retryableIds.has(definition.id) ? { retryable: true } : {}) };
@@ -183,6 +191,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
       } else if (definition.id === 'admin-api') {
         const response = await fetchWithDeadline(`${adminUrl}${definition.endpoint}`, { cache: 'no-store', redirect: 'error' });
         if (!response.ok) throw new Error('ADMIN_API_UNAVAILABLE');
+        if (response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') throw new Error('ADMIN_API_INVALID');
+        const health = await readJsonWithDeadline<unknown>(response);
+        if (!health || typeof health !== 'object' || Array.isArray(health) || !('message' in health) || health.message !== 'Success') throw new Error('ADMIN_API_INVALID');
         detail = { status: response.status };
       } else if (definition.id === 'appdeploy-watchdog-heartbeat') {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
@@ -217,9 +228,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
           return finish(false, { status: response.status }, message);
         }
         detail = { status: response.status };
-      } else if (definition.checkMode === 'openapi') {
-        const paths = await shared.openApiPaths();
-        if (!paths.has(definition.endpoint.replace('/rest/v1', ''))) throw new Error('RPC_NOT_REGISTERED');
+      } else if (definition.checkMode === 'registry') {
+        const names = await shared.registeredRpcs();
+        if (!names.has(definition.endpoint.slice('/rest/v1/rpc/'.length))) throw new Error('RPC_NOT_REGISTERED');
         detail = { registered: true };
       } else if (definition.location === 'GitHub') {
         const token = await withDeadline(async () => dependencies.loadGithubToken?.());

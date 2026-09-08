@@ -210,7 +210,8 @@ describe('system status evidence presentation', () => {
     expect(getSystemStatusPresentation({ ...item, checkEvidence, ok: false }).scope).not.toMatch(/檢查已通過|執行紀錄正常|主機與排程查詢有回應|此 API 有回應|已在資料庫找到/);
   });
 
-  it('preserves limited evidence for older backend payloads', () => {
+  it('preserves limited evidence for registry and older backend payloads', () => {
+    expect(getSystemStatusPresentation({ ...item, checkMode: 'registry' })).toMatchObject({ label: 'API 已建立', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' });
     expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: '連線正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
