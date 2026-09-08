@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20260908174246_record_payment_reversal.sql', import.meta.url),
+  new URL('../supabase/migrations/20260908210936_record_payment_reversal.sql', import.meta.url),
   'utf8',
 );
 

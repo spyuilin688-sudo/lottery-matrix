@@ -1,135 +1,36 @@
 # Tests
 
-## Test 9 - Railway 彩種操作與取消
-Viewport: mobile (375x667)
-Covers: Railway manual refresh, selected lottery, confirmation cancellation, POST /api/system-status/:id/refresh
-Description: 使用既有授權且有編輯權限的管理員工作階段；不建立帳號或更動權限。
-Steps:
-1. 開啟系統設定，於 Railway 操作選擇今彩539；確認選單約 104px 寬、28px 高，兩個操作各有用途說明，復原明列天天樂僅分析與已受理不等於完成。
-2. 點擊手動更新，確認對話框顯示今彩539，先按取消，確認未送出更新。
-3. 再次點擊手動更新並確認；等待結果，期間不可重複送出或切換彩種。
-Expected: 回應成功時顯示伺服器回傳期數；失敗則有可見原因，不顯示成功。375px 畫面選單及兩個操作按鈕可用且無水平溢出。沒有編輯權限的既有帳號不可操作。
-
-## Test 10 - Railway 復原失敗回饋
+## Test 1 - 有效 Pro 統計與付款唯讀資料 [sanity]
 Viewport: desktop (1280x800)
-Covers: POST /api/system-status/:id/recover, visible error, no automatic retry
-Description: 使用已有編輯權限管理員工作階段，透過 QA Faults 驗證錯誤，不模擬成功或新增資料。
+Covers: GET /api/dashboard, active Pro count, GET /api/data/subscriptionRecords, existing admin authentication and subscriptions view permission
+Description: 僅使用既有授權管理員工作階段；缺少工作階段或角色時明確回報未執行，不建立帳號、變更權限或付款。
+Steps:
+1. 以既有管理員工作階段開啟營運概覽，核對 Pro 人數與本次 dashboard 回應；有效 Pro 定義為未停用且訂閱到期時間仍在未來。
+2. 開啟訂閱管理的「付款紀錄與已完成沖銷」，核對伺服器付款列表的會員、方案、金額及狀態，再重新整理確認資料一致。
+3. 另以未登入工作階段開啟後台，確認受保護統計與付款資料不可讀取；有既有無訂閱查看權限工作階段時，同樣確認付款資料拒絕讀取。
+Expected: 統計與付款列表採用伺服器資料，不把空白、無效或已到期訂閱算成有效 Pro；未登入或無查看權限時不顯示私人付款資料。全程不寫入付款或會員資料。
+
+## Test 2 - 沖銷原因驗證及取消後付款不變
+Viewport: mobile (375x667)
+Covers: PaymentReversalPanel, subscriptions edit permission, reason validation, payment reversal confirmation cancellation, no-write persistence
+Description: 使用已有訂閱編輯權限管理員及一筆已確認付款；若條件不足回報未執行。只編輯草稿，禁止確認記錄任何真實付款的沖銷。
+Steps:
+1. 在訂閱管理開啟一筆已確認付款的「記錄沖銷」，原因留白後送出，確認出現原因必填提示。
+2. 填入「介面驗證草稿，請勿記錄」，選擇退款後送出以開啟確認視窗。
+3. 核對視窗顯示付款、金額、結果與原因，及只記錄外部已完成沖銷、不轉移款項、不改訂閱日期的說明；按取消。
+4. 重新整理並核對同一付款仍為已確認。若有既有唯讀管理員工作階段，確認看得到紀錄但沒有記錄沖銷操作。
+Expected: 空白原因阻止送出；取消確認不呼叫付款撤銷 PUT，也不更動資料；重新整理後付款維持已確認。手機畫面無水平溢出，長原因可閱讀，取消後仍可繼續操作。
+
+## Test 3 - 付款紀錄讀取失敗及手動重試
+Viewport: desktop (1280x800)
+Covers: GET /api/data/subscriptionRecords failure, PaymentReversalPanel load error, manual refresh, blocked reversal while records unavailable
+Description: 使用既有授權管理員工作階段，只讀取付款資料。付款撤銷成功、終態與重複請求另由具名路由測試及交易回滾測試驗證，本測試不提交正式付款撤銷。
 QA Faults:
 ```json
-[{"method":"POST","path":"/api/system-status/cron-matrix-539-refresh-v2/recover","status":503,"body_json":{"error":"復原回應逾時"}}]
+[{"method":"GET","path":"/api/data/subscriptionRecords","status":503,"body_json":{"error":"付款紀錄驗證暫時無法讀取"}}]
 ```
 Steps:
-1. 進入系統設定，選擇今彩539，點擊復原並確認。
-2. 查看結果與操作是否恢復可用。
-Expected: 顯示錯誤與先檢查狀態再決定重試的說明；不顯示完成、不自動重送。確認對話框沿用既有焦點、Escape 取消與焦點返回行為。
-
-## Test 1 - 未登入時不可讀取營運統計 [sanity]
-Viewport: mobile (375x667)
-Covers: GET /api/dashboard, existing admin session guard
-Description: 唯讀驗證；不得建立帳號、修改會員、調整權限、重設收入或發送通知。
-Steps:
-1. 開啟後台但不登入。
-2. 嘗試讀取 /api/dashboard。
-Expected: 顯示既有登入畫面，dashboard 不回傳統計資料。
-
-## Test 2 - 營運概覽瀏覽人數
-Viewport: mobile (375x667)
-Covers: GET /api/dashboard, todayVisitors, monthVisitors, totalVisitors, existing member counts
-Description: 僅使用已有授權管理員工作階段進行唯讀驗證；若沒有帳號或工作階段，回報無法執行，不建立資料。
-Steps:
-1. 以已有管理員工作階段開啟營運概覽。
-2. 比對 dashboard 回應與本日瀏覽人數、本月瀏覽人數、總瀏覽人數卡片。
-3. 重新整理營運概覽。
-Expected: 三張卡顯示伺服器人數，總用戶数等原卡片保留；前四張與後四張之間有分隔線，上下間距各 8px，統計卡最小高度 60px；手機畫面沒有橫向溢出或文字碰撞；不修改任何會員或付款資料。
-
-## Test 3 - 統計讀取失敗提示
-Viewport: desktop (1280x800)
-Covers: GET /api/dashboard failure, existing dashboard error state
-Description: 僅驗證讀取與畫面，禁止任何寫入操作。
-QA Faults:
-```json
-[{"method":"GET","path":"/api/dashboard","status":503,"body_json":{"error":"統計讀取失敗"}}]
-```
-Steps:
-1. 使用已有授權管理員工作階段開啟營運概覽；若沒有工作階段則回報無法執行。
-2. 查看讀取失敗提示。
-Expected: 顯示讀取失敗訊息，不把失敗當成新的 0 人統計；不重設收入、不更動會員。
-
-## Test 4 - 啟動碼多選複製、兌換暱稱與刪除限制
-Viewport: desktop (1280x800) and mobile (375x667)
-Covers: GET /api/data/activationCodes, multi-row selection, clipboard output, members.line_display_name, redeemed-code delete permission
-Description: 使用已有授權管理員工作階段進行唯讀驗證；不建立或刪除啟動碼。若目前不足兩組啟動碼，明確回報資料前置條件不足，不建立測試資料。
-Steps:
-1. 以已有營運管理員工作階段開啟「啟動碼管理」。
-2. 確認已兌換碼的「兌換會員」欄顯示 LINE 暱稱，而非會員 UUID。
-3. 點擊「選取」，勾選目前列表中的兩組啟動碼，再點擊「複製」。
-4. 檢查複製成功訊息與剪貼簿內容。
-5. 比較未兌換碼與已兌換碼的刪除操作；再以已有超級管理員工作階段查看已兌換碼。
-Expected: 選取模式顯示逐列核取方塊；複製內容依列表順序以換行分隔，畫面顯示已複製數量；營運管理員可刪除未兌換碼，但已兌換碼按鈕停用並顯示「已兌換，僅超級管理員可刪除」；超級管理員的已兌換碼刪除按鈕可用。全程不確認任何刪除。
-
-## Test 5 - 轉帳申請卡片密度
-Viewport: desktop (1280x800) and mobile (375x667)
-Covers: GET /api/data/transferRequests, compact transfer request layout, responsive action placement
-Description: 使用已有授權管理員工作階段進行唯讀驗證；不確認或拒絕轉帳申請。
-Steps:
-1. 以已有管理員工作階段開啟「訂閱管理」。
-2. 查看「轉帳申請」區塊的標題、申請資訊、狀態與操作位置。
-3. 分別以桌面與手機寬度檢查版面。
-Expected: 搜尋、狀態與筆數維持同一列，筆數欄至少 64px、可依多位數增長，搜尋框主動收縮，搜尋後筆數正確更新；無結果時仍可清除搜尋恢復列表。區塊與每列使用緊湊間距，不出現過大的卡片留白；桌面操作靠右，手機的「確認」與「拒絕」維持同列且文字不直排；畫面沒有水平溢出。全程不點擊確認或拒絕。
-
-## Test 6 - 系統設定服務狀態、明細與異常
-Viewport: desktop (1280x800) and mobile (375x667)
-Covers: GET /api/system-status, compact status badges, readable probe evidence, native details, per-function HTTP errors, backend JSON health, permission-independent RPC registry, admin transfer push OPTIONS
-Description: 只使用已有授權管理員工作階段唯讀檢查；沒有工作階段則回報無法執行，不建立帳號或修改權限。
-Steps:
-1. 開啟系統設定，確認各服務以獨立邊框及 8px 間距分隔。
-2. 查看「API 已建立」「連線正常」「主機正常」及檢查說明；藍色部分檢查不等於已驗證完整功能，標籤約 20px 高。
-3. 展開、收合「檢查明細」，查看 API 位址、時間及回應代碼；收合時用途、檢查範圍與錯誤訊息仍可見。
-4. 點擊「重新檢查」，確認資料更新。卡片、最新開獎、歷史開獎、同星、號碼對照單、探索清單與探索展開資料各自查詢四彩種；全部成功才顯示綠色「查詢正常」。
-5. 查詢失敗時顯示彩種及錯誤；探索無樣本時顯示藍色「缺少測試資料」。會員身分與會修改資料的操作清楚說明限制。查看 Pilio 開獎通知與管理員匯款通知的連線檢查結果。
-6. 查看管理者後臺 API 與提交轉帳申請、兌換啟動碼的明細。後臺 API 必須收到後端健康檢查的 JSON 回應；會員限定的 API 僅顯示登記狀態，不執行正式操作。
-Expected: 狀態文字清楚、小型標籤不擠壓名稱；失敗維持紅色並顯示該 API 的錯誤原因。Pilio 與管理員匯款通知接受不執行通知工作的 OPTIONS 檢查，回應 204；這只代表連線有回應，不代表已派送通知。展開與重新檢查不觸發資料更新、兌換、發送通知或變更排程。
-
-## Test 7 - 後台清單完整性與權限
-Viewport: mobile (375x667)
-Covers: GET /api/data/:table, GET /api/dashboard, pagination and existing session guard
-Description: 使用已有授權管理員工作階段讀取現有資料，不建立大量測試資料。成功登入後的過期 session 清理屬內部維護，1500ms 上限已由單元測試覆蓋，不以正式帳號反覆登入測試。
-Steps:
-1. 開啟用戶管理與訂閱管理，查看清單及本來的搜尋分頁功能。
-2. 若現有資料超過 200 筆，搜尋第 201 筆以後已知存在的資料；資料不足則回報該項前置條件不足。
-3. 開啟營運概覽並重新整理，確認統計可讀取。
-Expected: 既有清單、搜尋與分頁可用；資料足夠時能找到 200 筆以後的紀錄；不修改會員、付款或任何清單資料。
-
-## Test 8 - 超級管理員手機轉帳通知入口與權限
-Viewport: mobile (375x667)
-Covers: GET/POST/DELETE /api/admin-transfer-push, superadmin-only device enrollment, permission boundary, #transfer-requests navigation
-Description: 僅使用既有管理員工作階段檢查；沒有帳號則回報無法執行，不建立帳號或轉帳申請，不發送測試通知、不替使用者允許通知權限。
-Steps:
-1. 以已有超級管理員工作階段開啟訂閱管理，查看轉帳申請的手機通知區塊。
-2. 確認初始狀態來自伺服器，不會自動跳出通知權限要求；不支援的瀏覽器顯示說明。
-3. 若可操作，按啟用並取消通知權限要求。
-4. 開啟後台 #transfer-requests，確認登入後到達訂閱管理。
-5. 使用既有一般管理員工作階段查看相同頁面；無工作階段時確認 API 不提供裝置資料。
-Expected: 超級管理員可見手機通知控制，預設只顯示一行「手機通知」與目前狀態，點擊可展開／收合，展開後才顯示說明及設定按鈕；展開本身不會啟用或停用通知，按鈕高度約 32px、依內容寬度；取消權限不顯示啟用成功；一般管理員不可見控制且不能操作 API；通知連結導向轉帳申請。POST/DELETE 裝置儲存與停用、後端派送及重試已由相關單元與交易回滾測試驗證，正式手機送達需使用者本人啟用後確認。
-
-## Test 11 - 代辦與通知的緊湊操作版面
-Viewport: mobile (375x667)
-Covers: todo draft validation, notification member selection, compact layout, read-only notification preview
-Description: 使用既有管理員工作階段；僅編輯未送出的代辦草稿及選擇會員，不建立資料或發送通知。
-Steps:
-1. 開啟代辦事項，確認空白內容不可建立，輸入「版面檢查草稿」，確認字數及建立按鈕狀態；清空草稿，不送出。
-2. 開啟通知管理，選擇一名既有會員，核對姓名、訂閱狀態、固定通知內容與發送限制，不點擊發送。
-3. 查看發送紀錄的時間、會員、結果及失敗原因。
-Expected: 表單、卡片與約 28px 高的操作按鈕緊湊且可操作；375px 下沒有頁面水平溢出、文字遮擋或滿版大按鈕，長內容可換行。通知成功或錯誤的既有回饋區保留。
-
-
-## Test 12 - 會員資訊與登入紀錄
-Viewport: mobile (375x667)
-Covers: GET /api/members/:id/login-records, users and subscriptions module authorization, pagination, shared modal, empty/error state
-Description: 使用既有授權管理員工作階段，只讀取現有會員；不建立帳號、不修改會員狀態。
-Steps:
-1. 在用戶管理確認欄位依序為 LINE名稱、註冊時間、最後上線時間、近3日在線時間、狀態、最近連線IP、推估地區、用戶資訊。
-2. 打開一位既有會員的用戶資訊，核對四個基本欄位與登入紀錄；若超過五筆，操作下一頁及上一頁。
-3. 關閉視窗，改從訂閱管理打開同一位會員，核對一致的資料與密度。
-4. 按 Escape 或關閉按鈕，確認返回原清單且焦點返回觸發按鈕。
-Expected: 兩張卡片間距 8px、動作高度 28px，視窗不超出手機寬度，IP/ID 可換行；每頁最多五筆，歷史 IP 不明時顯示尚未記錄；空紀錄顯示空狀態。未登入或無來源模組查看權限時，伺服器拒絕讀取。載入失敗顯示可重試的錯誤，不顯示其他會員紀錄。
+1. 進入訂閱管理，等待付款紀錄讀取結果。
+2. 確認付款區塊顯示載入失敗及「重新載入付款紀錄」，沒有把失敗顯示成零筆或成功。
+3. 點擊重新載入，再確認可見錯誤與重試操作；重新整理頁面後核對同樣結果。
+Expected: 注入的讀取失敗不影響其他成功載入的訂閱區塊；付款區塊顯示可見錯誤並可手動重試。付款不可讀取時不能啟動沖銷操作，不自動寫入付款或修改會員資料。沒有既有工作階段時明確回報未執行。
