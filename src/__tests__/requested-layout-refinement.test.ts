@@ -77,17 +77,17 @@ describe("requested responsive layout refinement", () => {
     style.dataset.layoutContract = "matrix";
     document.body.innerHTML = `
       <main class="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tianyan-screen">
-        <header class="matrix-title-banner-actions"><nav class="matrix-page-switcher"></nav></header>
-        <section class="explore-settings"><div class="setting-grid"><label><span></span><div class="select-box"></div></label></div></section>
+        <section class="explore-settings"><header class="matrix-settings-heading"><nav class="matrix-page-switcher"><button></button><button></button></nav></header><div class="setting-grid"><label><span></span><div class="select-box"></div></label></div></section>
       </main>
       <main class="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
         <section class="explore-settings tiangong-settings"><div class="setting-grid"><div class="tiangong-setting-row"><span>探索球位</span><div class="segmented three"><button></button></div></div></div></section>
         <section class="result-panel"><div class="road-results tiangong-results"><div class="tiangong-results-head"><span>間距期數</span><span>預測位置</span><span>預測</span><span>版路類型</span></div></div></section>
       </main>`;
 
-    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).width).toBe("var(--matrix-switcher-size)");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).width).toBe("auto");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher button")!).width).toBe("var(--matrix-switcher-size)");
     expect(readCss("src/matrix-explore-spacing.css")).toMatch(/--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
-    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).overflowY).toBe("auto");
+    expect(getComputedStyle(document.querySelector(".matrix-page-switcher")!).flexDirection).toBe("row");
     expect(getComputedStyle(document.querySelector(".matrix-tianyan-screen .select-box")!).height).toBe("24px");
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row")!).gridTemplateColumns).toBe("var(--tiangong-label-column) minmax(0, 1fr)");
     expect(getComputedStyle(document.querySelector(".matrix-tiangong-screen .tiangong-setting-row button")!).height).toBe("24px");

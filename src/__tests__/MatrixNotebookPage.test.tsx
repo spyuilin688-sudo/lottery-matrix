@@ -4,6 +4,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 import { DEFAULT_RECORD_SETTINGS, MatrixNotebookPage } from '../features/NotebookPages';
+import { QuickNavigationProvider } from '../features/navigation';
 
 const auth = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ auth }) }));
@@ -30,7 +31,7 @@ beforeEach(() => {
   window.localStorage.setItem(keyA, JSON.stringify({ notes, records: [], settings: DEFAULT_RECORD_SETTINGS() }));
   window.localStorage.setItem('matrix-notebook-entries', JSON.stringify(notes));
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 async function openNotebook() {
   const result = render(<div className="mobile-page"><MatrixNotebookPage onNavigate={vi.fn()} /></div>);
@@ -253,6 +254,89 @@ async function startRecordDraft() {
   fireEvent.click(screen.getByRole('button', { name: '完成' }));
   fireEvent.click(within(document.querySelector('.record-tag-options') as HTMLElement).getByRole('button', { name: '單號' }));
 }
+
+test.each([
+  ['2026-09-10T01:30:00+08:00', '2026-09-10'],
+  ['2027-01-01T00:30:00+08:00', '2027-01-01'],
+])('new records and today statistics use the Taipei date at %s', async (instant, expectedDate) => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(instant));
+  await openNotebook();
+  await startRecordDraft();
+  fireEvent.click(screen.getByRole('button', { name: '新增紀錄' }));
+  const saved = JSON.parse(window.localStorage.getItem(keyA)!).records;
+  expect(saved[0].date).toBe(expectedDate);
+  expect(document.querySelectorAll('.notebook-record-card')).toHaveLength(1);
+});
+
+test('the displayed calendar day selects that same day across a year boundary', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2027-01-01T12:00:00+08:00'));
+  await openNotebook();
+  await startRecordDraft();
+  fireEvent.click(screen.getByRole('button', { name: '日期' }));
+  const week = document.querySelector('.record-week-row') as HTMLElement;
+  expect(within(week).getAllByRole('button').map(button => button.textContent)).toEqual(['一28', '二29', '三30', '四31', '五1', '六2', '日3']);
+  fireEvent.click(within(week).getByRole('button', { name: '四31' }));
+  expect(within(week).getByRole('button', { name: '四31' })).toHaveAttribute('data-selected', 'true');
+  fireEvent.click(screen.getByRole('button', { name: '新增紀錄' }));
+  expect(JSON.parse(window.localStorage.getItem(keyA)!).records[0].date).toBe('2026-12-31');
+  expect(document.querySelectorAll('.notebook-record-card')).toHaveLength(0);
+  fireEvent.click(screen.getByRole('button', { name: '本週' }));
+  expect(document.querySelectorAll('.notebook-record-card')).toHaveLength(1);
+});
+
+test('unsaved record numbers warn on unload and cancellation preserves the draft', async () => {
+  await openNotebook();
+  await startRecordDraft();
+  const unload = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(unload);
+  expect(unload.defaultPrevented).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: '返回列表' }));
+  const dialog = await screen.findByRole('dialog', { name: '內容尚未儲存' });
+  await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: '取消' })); });
+  expect(screen.getByRole('button', { name: '07' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: '返回列表' }));
+  fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '直接離開' }));
+  await waitFor(() => expect(document.querySelector('.record-editor')).toBeNull());
+  expect(JSON.parse(window.localStorage.getItem(keyA)!).records).toEqual([]);
+  const cleanUnload = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(cleanUnload);
+  expect(cleanUnload.defaultPrevented).toBe(false);
+});
+
+test.each(['彩種', '模式', '日期', '玩法'])('changing only %s is protected when leaving a new record', async field => {
+  await openNotebook();
+  fireEvent.click(screen.getByRole('button', { name: '切換至紀錄模式' }));
+  fireEvent.click(screen.getByRole('button', { name: '新增紀錄' }));
+  if (field === '彩種') fireEvent.click(screen.getByRole('button', { name: '六合彩' }));
+  if (field === '模式') fireEvent.click(screen.getByRole('button', { name: '立柱' }));
+  if (field === '玩法') fireEvent.click(within(document.querySelector('.record-tag-options') as HTMLElement).getByRole('button', { name: '單號' }));
+  if (field === '日期') {
+    fireEvent.click(screen.getByRole('button', { name: '日期' }));
+    fireEvent.click(document.querySelector('.record-week-row button[data-selected="false"]')!);
+  }
+  fireEvent.click(screen.getByRole('button', { name: '設定' }));
+  expect(await screen.findByRole('dialog', { name: '內容尚未儲存' })).toBeVisible();
+});
+
+test.each(['返回', '快捷'])('shortcut %s respects record leave confirmation', async label => {
+  const closeShortcut = vi.fn();
+  render(<QuickNavigationProvider quickActive onQuickBack={closeShortcut} onQuickOpen={closeShortcut}>
+    <div className="mobile-page"><MatrixNotebookPage onNavigate={vi.fn()} /></div>
+  </QuickNavigationProvider>);
+  await screen.findByRole('button', { name: '新增筆記' });
+  await startRecordDraft();
+  fireEvent.click(screen.getByRole('button', { name: label }));
+  const dialog = await screen.findByRole('dialog', { name: '內容尚未儲存' });
+  expect(closeShortcut).not.toHaveBeenCalled();
+  await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: '取消' })); });
+  expect(screen.getByRole('button', { name: '07' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: label }));
+  await act(async () => { fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '直接離開' })); });
+  expect(closeShortcut).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(window.localStorage.getItem(keyA)!).records).toEqual([]);
+});
 
 function openSettings() {
   fireEvent.click(screen.getByRole('button', { name: '切換至紀錄模式' }));

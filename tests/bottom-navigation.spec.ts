@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { prepareReturningVisitor, prepareLineMember } from './helpers/product-runtime';
 
 test.beforeEach(async ({ page }) => {
+  await prepareReturningVisitor(page);
   await page.goto("/");
   await expect(page.getByTestId("app-mobile-canvas")).toBeVisible();
   await expect(page.getByTestId("bottom-navigation")).toBeVisible();
@@ -61,6 +63,7 @@ test("選取狀態會跟隨首頁、通知與我的頁面", async ({ page }) => 
 });
 
 test("Matrix 狀態右下角設定入口優先於我的點擊區並可進入自訂觸發條件", async ({ page }) => {
+  await prepareLineMember(page);
   await page.goto("/");
   await page.getByTestId("matrix-status-section").getByRole("button").first().click();
 

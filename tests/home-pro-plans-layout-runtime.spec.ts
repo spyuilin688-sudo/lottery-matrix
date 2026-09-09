@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { prepareReturningVisitor } from './helpers/product-runtime';
+
+test.beforeEach(async ({ page }) => prepareReturningVisitor(page));
 
 const MOBILE_WIDTHS = [360, 375, 390] as const;
 const MOBILE_HEIGHT = 844;

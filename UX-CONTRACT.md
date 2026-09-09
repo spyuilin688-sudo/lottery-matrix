@@ -223,6 +223,7 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 - Logout or an account change clears the previous owner's drafts, filters, editor and shared-dialog queue. Late session reads and confirmations cannot restore or write another owner's content. Same-owner token refresh preserves current drafts.
 - Unreadable or invalid owned data blocks editing and saving until an explicit read retry succeeds. No failed read is replaced with writable defaults. Storage failure preserves committed data and the latest in-memory draft, with an inline retry; only a successful write updates the saved baseline or leaves the editor. Failed deletion retains the item, and cancelling deletion mode cancels its retry intent.
 - Existing leave confirmations and a before-unload safeguard protect unsaved or failed edits. Browser closure while storage remains unavailable cannot guarantee draft recovery. Concurrent tabs for the same account retain the existing last-writer behavior.
+- Record dates and 本日／本週 filters use the Taipei calendar. Calendar labels and selected date-only values agree across month and year boundaries. New record drafts include lottery, date, mode, numbers, columns, special number, plays and quantities in the existing leave/unload protection; cancellation retains input and confirmed departure does not save it. An untouched new record does not prompt.
 
 ## Completed payment reversal records — 2026-09-08
 

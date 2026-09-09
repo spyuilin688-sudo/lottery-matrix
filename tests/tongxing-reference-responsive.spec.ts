@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { prepareReturningVisitor } from './helpers/product-runtime';
+
+test.beforeEach(async ({ page }) => prepareReturningVisitor(page));
 
 const pages = [
   { label: "Matrix 同星", screenSelector: ".tongxing-screen" },

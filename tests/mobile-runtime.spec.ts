@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { prepareReturningVisitor, prepareLineMember } from './helpers/product-runtime';
 
 const MOBILE_WIDTHS = [360, 375, 390] as const;
 const MOBILE_HEIGHT = 844;
@@ -94,6 +95,7 @@ async function drag(
 }
 
 test.beforeEach(async ({ page }) => {
+  await prepareReturningVisitor(page);
   await page.goto("/tests/runtime-fixture.html");
 });
 
@@ -194,6 +196,7 @@ for (const width of MOBILE_WIDTHS) {
   });
 
   test(`product textareas and hidden native scrollbars retain geometry at ${width}px`, async ({ page }) => {
+    await prepareLineMember(page);
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
     await page.evaluate(() => window.localStorage.setItem("matrix-quick-target", "notebook"));
     await page.goto("/");
