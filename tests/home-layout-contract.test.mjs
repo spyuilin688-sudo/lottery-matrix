@@ -37,10 +37,16 @@ test('homepage surfaces keep their independent responsive inline insets', () => 
   assertBlock(css, '.home-screen .matrix-status-section', /width:\s*calc\(100% - 32px\);/);
 });
 
-test('home logo stays in normal flow above the following sections', () => {
+test('homepage reserves a logo row above the existing native content scroller', () => {
+  assertBlock(css, '.home-screen', /grid-template-rows:\s*auto minmax\(0, 1fr\);/);
+  assertBlock(css, '.home-screen', /padding-top:\s*var\(--layout-safe-area-top\);/);
+  assertBlock(css, '.home-screen > .home-content', /position:\s*relative;/);
+  assertBlock(css, '.home-screen > .home-content', /min-height:\s*0;/);
+  assertBlock(css, '.home-screen .mobile-scroll', /top:\s*0;/);
+  assertBlock(css, '.home-screen .mobile-scroll', /overflow-y:\s*auto;/);
   assertBlock(css, '.home-screen .home-layout', /grid-template-rows:\s*auto auto;/);
   assertBlock(css, '.home-screen .home-layout', /align-content:\s*start;/);
-  assertBlock(css, '.home-screen .home-layout', /padding-top:\s*var\(--layout-safe-area-top\);/);
+  assertBlock(css, '.home-screen .home-layout', /padding-top:\s*0;/);
   assertBlock(css, '.home-screen .home-layout', /padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/);
   assertBlock(css, '.home-screen .home-bottom-group', /align-self:\s*end;/);
   assert.ok(!blocks(css, '.home-screen .home-bottom-group').some((body) => /padding-bottom:\s*8px;/.test(body)));
@@ -48,11 +54,11 @@ test('home logo stays in normal flow above the following sections', () => {
   assertBlock(css, '.home-screen .home-bottom-group', /min-height:\s*0;/);
   assertBlock(css, '.home-screen .home-bottom-group', /grid-template-rows:\s*auto auto;/);
   assertBlock(css, '.home-screen .lottery-screen', /height:\s*100%;/);
-  assertLastBlock(css, '.home-screen .lottery-screen > .brand-header', /flex:\s*0 0 auto;/);
+  assertLastBlock(css, '.home-screen > .brand-header', /width:\s*min\(100%, 390px\);/);
 });
 
 test('wide viewport homepage keeps content in normal top flow instead of stretching it downward', () => {
-  assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen > \.brand-header\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
+  assert.match(css, /@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.home-screen \.home-layout\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.lottery-screen\s*\{[\s\S]*?height:\s*auto;[\s\S]*?\}[\s\S]*?\.home-screen \.home-bottom-group\s*\{[\s\S]*?align-self:\s*start;[\s\S]*?\}[\s\S]*?\}/);
 });
 
 test('embedded next draw info uses two independent inset octagon containers', () => {

@@ -1,7 +1,8 @@
 /* Homepage logo size and header spacing are owned here. */
-.home-screen .lottery-screen > .brand-header {
-  flex: 0 0 auto;
+.home-screen > .brand-header {
+  width: min(100%, 390px);
   min-height: 0;
+  margin: 0 auto;
 }
 
 .home-screen .brand-header {
