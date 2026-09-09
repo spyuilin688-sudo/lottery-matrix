@@ -76,7 +76,7 @@ describe('production Supabase configuration', () => {
     }
   });
 
-  it('keeps the authenticated session-end request alive when its page is unloaded', async () => {
+  it('sets keepalive on the authenticated session-end request without changing its payload', async () => {
     vi.spyOn(supabaseModule.getSupabaseClient().auth, 'getSession').mockResolvedValue({
       data: { session: lineSession() },
       error: null,
@@ -101,6 +101,31 @@ describe('production Supabase configuration', () => {
     expect(request.headers.get('Authorization')).toBe('Bearer supabase-access-token');
     expect(request.headers.get('apikey')).toBe('sb_publishable_sJuiSZhS6bCOza_RGTMVPg_JFiVv0F8');
     expect(await request.json()).toEqual({ p_session_id: 'ed338d00-cdf8-4f63-b2ab-c71536d4e164' });
+  });
+
+  it('matches a configured project URL after the SDK normalizes its default port', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://override-project.supabase.co:443/');
+    vi.resetModules();
+    try {
+      const configured = await import('./supabase');
+      const requests: Request[] = [];
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+        requests.push(new Request(input, init));
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      });
+
+      const result = await configured.getSupabaseClient().rpc('member_online_end', {
+        p_session_id: 'ed338d00-cdf8-4f63-b2ab-c71536d4e164',
+      });
+
+      expect(result.error).toBeNull();
+      expect(requests).toHaveLength(1);
+      expect(requests[0].url).toBe('https://override-project.supabase.co/rest/v1/rpc/member_online_end');
+      expect(requests[0].keepalive).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 
   it('keeps ordinary reads and session-start writes outside the unload transport', async () => {
