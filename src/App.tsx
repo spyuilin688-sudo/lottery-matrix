@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { installPermissionSettingsRefresh } from "./permission-settings";
 import { MemberSessionBridge } from "./auth/MemberSessionBridge";
 import { MobileDeviceProvider } from "./mobile/Device";
 import { KeyboardProvider } from "./mobile/Keyboard";
@@ -7,6 +9,7 @@ import { ExploreResultPreviewPage } from "./ExploreResultPreviewPage";
 import { PwaLifecycleProvider } from "./pwa-lifecycle";
 
 export default function App() {
+  useEffect(() => installPermissionSettingsRefresh(), []);
   const isExploreResultPreviewPath =
     window.location.pathname === "/explore-result-preview" ||
     window.location.pathname === "/explore-result-preview/";
