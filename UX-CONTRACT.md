@@ -253,3 +253,8 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 - The optional 30-minute quick-state cache is shared by the active and retained feature pages. Blocked/full browser storage preserves usable in-memory form state; it does not guarantee recovery after leaving or reloading.
 - Number Reference keeps the existing page scroller, draw order, special-number styling, manual row/cell marks and scroll-to-results-end behavior. Only visible rows plus overscan and any focused row are mounted; scrolling away and back preserves marks.
 - User and subscription membership lists retain the existing search/status controls and 30-row pagination. The authenticated backend filters nickname, plan name, referral/invitation codes and exact member/account IDs before pagination, returns the exact filtered count, and enriches only returned members. New filters reset the page; stale reads cannot replace the current list; failed reads clear actionable rows and provide retry. Module and operation permissions remain authoritative. Activation-code selection and payment/transfer record flows retain their existing owners.
+
+
+## 首頁固定 Logo — 2026-09-09
+
+依使用者確認，首頁 Logo 位於 `MobileScroll` 外的固定品牌列；首頁內容仍由既有 `.mobile-scroll` 使用原生上下捲動。品牌列依圖片比例保留實際高度，下方捲動區填滿剩餘空間，內容與鍵盤焦點不會滑入 Logo 後方。保留既有 Logo 大小、頂部位置、安全區、卡片間距及固定底部導覽。此行為限首頁，功能頁共用 `MobileScroll` 與 Logo 不變。

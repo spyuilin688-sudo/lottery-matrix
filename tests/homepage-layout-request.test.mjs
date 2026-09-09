@@ -14,9 +14,10 @@ const normalizedCss = css.replaceAll(" ", "").replaceAll("\n", "");
 function renderHomepageStyles() {
   const dom = new JSDOM(`<!doctype html><style>${css}</style>
     <div class="home-screen">
+      <header class="brand-header"><img class="home-logo-image" alt="" /></header>
+      <section class="app-screen home-content"><div class="mobile-scroll"><div class="mobile-scroll-content">
       <div class="home-layout">
         <main class="lottery-screen">
-          <header class="brand-header"><img class="home-logo-image" alt="" /></header>
           <div class="lottery-switcher lottery-switcher--home-style">
             <div class="lottery-switcher-hit-grid">
               <button class="lottery-card" data-selected="true" data-lottery="今彩539"></button>
@@ -33,12 +34,13 @@ function renderHomepageStyles() {
           <nav class="home-shortcut-row"></nav>
         </div>
       </div>
+      </div></div></section>
     </div>`);
 
   return dom.window;
 }
 
-test("homepage keeps the logo in normal flow with a bounded responsive top gap and preserves the requested section rhythm", () => {
+test("homepage reserves the logo above its scroller and preserves the requested section rhythm", () => {
   const window = renderHomepageStyles();
   const style = (selector) => window.getComputedStyle(window.document.querySelector(selector));
   const layout = style(".home-layout");
@@ -49,7 +51,9 @@ test("homepage keeps the logo in normal flow with a bounded responsive top gap a
   assert.equal(layout.gridTemplateRows, "auto auto");
   assert.equal(lotteryScreen.height, "100%");
   assert.equal(brandHeader.display, "flex");
-  assert.equal(brandHeader.flexGrow, "0");
+  assert.equal(style(".home-screen").gridTemplateRows, "auto minmax(0, 1fr)");
+  assert.equal(style(".home-content").minHeight, "0px");
+  assert.equal(style(".mobile-scroll").overflowY, "auto");
   assert.equal(brandHeader.alignItems, "center");
   assert.ok(normalizedCss.includes("padding-top:clamp(8px,1dvh,12px);"));
   assert.equal(style(".home-logo-image").height, "auto");

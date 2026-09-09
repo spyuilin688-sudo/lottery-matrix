@@ -22,9 +22,10 @@ function mountHomepage() {
   document.head.append(style);
   document.body.innerHTML = `
     <div class="home-screen">
+      <header class="brand-header"><img class="home-logo-image" alt="" /></header>
+      <section class="app-screen home-content"><div class="mobile-scroll"><div class="mobile-scroll-content">
       <div class="home-layout">
         <main class="lottery-screen">
-          <header class="brand-header"><img class="home-logo-image" alt="" /></header>
           <div class="lottery-switcher lottery-switcher--home-style">
             <div class="lottery-switcher-hit-grid">
               <button class="lottery-card" data-selected="true" data-lottery="今彩539"></button>
@@ -41,6 +42,7 @@ function mountHomepage() {
           <nav class="home-shortcut-row"><button class="home-shortcut"><img alt="" /></button></nav>
         </div>
       </div>
+      </div></div></section>
     </div>`;
   return style;
 }
@@ -51,13 +53,15 @@ afterEach(() => {
 });
 
 describe("homepage requested spacing and selection", () => {
-  it("keeps the logo in normal flow with a bounded responsive top gap", () => {
+  it("reserves the logo above the content scroller with its bounded responsive top gap", () => {
     mountHomepage();
 
     const brandHeader = getComputedStyle(document.querySelector(".brand-header")!);
     expect(getComputedStyle(document.querySelector(".home-layout")!).gridTemplateRows).toBe("auto auto");
     expect(getComputedStyle(document.querySelector(".lottery-screen")!).height).toBe("100%");
-    expect(brandHeader.flexGrow).toBe("0");
+    expect(getComputedStyle(document.querySelector(".home-screen")!).gridTemplateRows).toBe("auto minmax(0, 1fr)");
+    expect(getComputedStyle(document.querySelector(".home-content")!).minHeight).toBe("0px");
+    expect(getComputedStyle(document.querySelector(".mobile-scroll")!).overflowY).toBe("auto");
     expect(brandHeader.alignItems).toBe("center");
     expect(normalizedCss).toContain("padding-top:clamp(8px,1dvh,12px);");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");

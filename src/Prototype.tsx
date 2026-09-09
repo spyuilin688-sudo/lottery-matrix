@@ -513,23 +513,25 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
   return (
     <>
     <FirstVisitGuide enabled={!startupVisible} onNavigate={navigate} />
-    <MobileScroll className="app-screen home-screen">
+    <section className="home-screen">
       <BrandLoading visible={startupVisible} onComplete={() => setStartupVisible(false)} />
-      <div className="home-layout">
-        <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
-          <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
-          <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
-          <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
-          <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
-        </main>
-        <div className="home-bottom-group">
-          <MatrixCoreBanner onOpen={() => navigate("explore")} />
-          <HomeShortcutRow onNavigate={navigate} />
+      <header className="brand-header home-logo-box"><img className="home-logo-image" src={HOME_ASSETS.logo} alt="樂彩 Matrix" draggable={false} /></header>
+      <MobileScroll className="app-screen home-content">
+        <div className="home-layout">
+          <main className="screen-content lottery-screen" data-testid="lottery-screen" aria-label="首頁彩種切換元件預覽">
+            <LotterySwitcher selected={selected} onChange={setSelected} className="lottery-switcher--home-style home-switcher-box" />
+            <LatestDrawCard lottery={selected} result={drawResult} nextDrawInfo={nextDrawInfo} order={order} onOrderChange={setOrder} onOpenHistory={() => navigate("history")} className="home-draw-box" />
+            <MatrixStatusSection statuses={matrixStatuses} loadStates={matrixStatusLoads} onOpen={(lottery) => { setStatusLottery(lottery); navigate("status"); }} />
+          </main>
+          <div className="home-bottom-group">
+            <MatrixCoreBanner onOpen={() => navigate("explore")} />
+            <HomeShortcutRow onNavigate={navigate} />
+          </div>
+          <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} showQuickSettings />
         </div>
-        <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} showQuickSettings />
-      </div>
-      {quickSettings}
-    </MobileScroll>
+        {quickSettings}
+      </MobileScroll>
+    </section>
     </>
   );
 }
