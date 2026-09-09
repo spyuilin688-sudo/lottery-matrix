@@ -49,13 +49,13 @@ Expected: 空白日期不送出 PUT；取消確認保留草稿且可以繼續編
 ## Test 5 - 訂閱儲存失敗保留日期並允許明確重試
 Viewport: desktop (1280x800)
 Covers: PUT /api/subscriptions/:id failure, retained expiry draft, manual retry, no automatic write retry
-Description: 只操作注入的「期限錯誤測試」列；該列使用非 UUID ID，沒有對應正式會員。沒有授權工作階段或注入列時回報未執行，禁止替換成真實會員。
+Description: 只操作事先建立且禁止登入的隔離會員 f210b6e2-13b6-483a-9907-1fc69a419b5c（名稱「[API驗證] 付款沖銷測試 20260909」）。沒有授權工作階段或此測試會員時明確回報未執行；不建立帳號，也不替換成真實會員。
 QA Faults:
 ```json
-[{"method":"GET","path":"/api/data/subscriptions","status":200,"body_json":{"total":1,"currentPage":1,"totalPages":1,"items":[{"id":"qa-subscription-save","authUserId":"qa-auth-only","lineDisplayName":"期限錯誤測試","status":"disabled","currentPlanId":null,"planName":null,"planStartedAt":null,"planExpiresAt":null,"isLifetime":false,"autoRenew":false}]}},{"method":"PUT","path":"/api/subscriptions/qa-subscription-save","status":503,"body_json":{"error":"simulated_subscription_failure"}}]
+[{"method":"PUT","path":"/api/subscriptions/f210b6e2-13b6-483a-9907-1fc69a419b5c","status":503,"body_json":{"error":"simulated_subscription_failure"}}]
 ```
 Steps:
-1. 在訂閱管理找到「期限錯誤測試」，開啟調整到期日，用原生鍵盤輸入 2026-09-11。
+1. 在訂閱管理找到上述隔離會員，開啟調整到期日，核對視窗內帳號 ID 為 653825f7-75e5-41d3-8f3f-baba6a8c4e7c，再用原生鍵盤輸入 2026-09-11。
 2. 按「確認」再按「確認修改」，等待注入的失敗回應。
 3. 核對原編輯視窗與日期保留、顯示繁體中文錯誤，沒有顯示成功或自動重送。
 4. 再次明確按「確認」及「確認修改」，核對第二次失敗仍保留日期與可操作按鈕，最後取消編輯。
