@@ -34,3 +34,29 @@ Steps:
 2. 確認付款區塊顯示載入失敗及「重新載入付款紀錄」，沒有把失敗顯示成零筆或成功。
 3. 點擊重新載入，再確認可見錯誤與重試操作；重新整理頁面後核對同樣結果。
 Expected: 注入的讀取失敗不影響其他成功載入的訂閱區塊；付款區塊顯示可見錯誤並可手動重試。付款不可讀取時不能啟動沖銷操作，不自動寫入付款或修改會員資料。沒有既有工作階段時明確回報未執行。
+
+## Test 4 - 空白訂閱期限及取消確認保留草稿
+Viewport: mobile (375x667)
+Covers: subscription expiry validation, confirmation cancellation, unchanged server subscription
+Description: 使用既有訂閱編輯權限工作階段，只編輯草稿；沒有工作階段或會員時回報未執行。此測試禁止按下「確認修改」。
+Steps:
+1. 在訂閱管理記錄一位會員原本到期時間，開啟「調整到期日」，用原生鍵盤清空日期後按「確認」。
+2. 核對編輯視窗仍開啟、顯示選擇到期日提示且焦點在日期欄位，沒有開啟確認修改視窗。
+3. 用原生日期鍵盤選擇 2026-09-11，按「確認」；確認日期在確認視窗出現後仍保留，再按確認視窗的「取消」。
+4. 核對草稿日期仍為 2026-09-11，再取消編輯並重新整理。
+Expected: 空白日期不送出 PUT；取消確認保留草稿且可以繼續編輯。重新整理後原有到期時間一致，手機上日期、錯誤及按鈕均可操作。
+
+## Test 5 - 訂閱儲存失敗保留日期並允許明確重試
+Viewport: desktop (1280x800)
+Covers: PUT /api/subscriptions/:id failure, retained expiry draft, manual retry, no automatic write retry
+Description: 只操作注入的「期限錯誤測試」列；該列使用非 UUID ID，沒有對應正式會員。沒有授權工作階段或注入列時回報未執行，禁止替換成真實會員。
+QA Faults:
+```json
+[{"method":"GET","path":"/api/data/subscriptions","status":200,"body_json":{"total":1,"currentPage":1,"totalPages":1,"items":[{"id":"qa-subscription-save","authUserId":"qa-auth-only","lineDisplayName":"期限錯誤測試","status":"disabled","currentPlanId":null,"planName":null,"planStartedAt":null,"planExpiresAt":null,"isLifetime":false,"autoRenew":false}]}},{"method":"PUT","path":"/api/subscriptions/qa-subscription-save","status":503,"body_json":{"error":"simulated_subscription_failure"}}]
+```
+Steps:
+1. 在訂閱管理找到「期限錯誤測試」，開啟調整到期日，用原生鍵盤輸入 2026-09-11。
+2. 按「確認」再按「確認修改」，等待注入的失敗回應。
+3. 核對原編輯視窗與日期保留、顯示繁體中文錯誤，沒有顯示成功或自動重送。
+4. 再次明確按「確認」及「確認修改」，核對第二次失敗仍保留日期與可操作按鈕，最後取消編輯。
+Expected: 兩次明確操作各對應一次請求；失敗不關閉草稿，不自動重送，也不顯示更新成功。取消後可繼續使用列表；不變更正式會員或訂閱。

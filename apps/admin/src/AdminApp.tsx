@@ -823,8 +823,6 @@ function AdminApp() {
                     try {
                       await saveSubscription(api, id, payload);
                       await load("訂閱管理");
-                    } catch (e) {
-                      setError(e instanceof Error ? e.message : "訂閱更新失敗");
                     } finally {
                       setBusy(false);
                     }
@@ -1078,20 +1076,41 @@ function SubscriptionManager({
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const expiryInputRef = useRef<HTMLInputElement>(null);
+  const subscriptionSubmitLock = useRef(false);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
   const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
+    if (subscriptionSubmitLock.current) return;
     setEditing(row);
     setAction(nextAction);
+    setSaveError("");
     setPlanId(String(row.currentPlanId || plans[0]?.id || ""));
     setExpiresAt(String(row.planExpiresAt || "").slice(0, 10));
   };
   const submit = async () => {
-    if (!editing) return;
+    if (!editing || subscriptionSubmitLock.current) return;
+    if (action === "adjustExpiry" && !expiresAt) {
+      setSaveError("請選擇到期日後再確認");
+      expiryInputRef.current?.focus();
+      return;
+    }
     const payload: SubscriptionPayload = { action };
     if (action === "activate" || action === "renew") payload.planId = planId;
     if (action === "adjustExpiry") payload.expiresAt = expiresAt;
-    const saved = await onSubscription(editing.id, payload);
-    if (saved) setEditing(null);
+    subscriptionSubmitLock.current = true;
+    setSubmitting(true);
+    setSaveError("");
+    try {
+      const saved = await onSubscription(editing.id, payload);
+      if (saved) setEditing(null);
+    } catch {
+      setSaveError("訂閱更新失敗，請確認日期與連線後重試");
+    } finally {
+      subscriptionSubmitLock.current = false;
+      setSubmitting(false);
+    }
   };
   const actionText: Record<SubscriptionPayload["action"], string> = {
     activate: "開通", renew: "續訂", cancel: "取消續訂", adjustExpiry: "調整到期日", lifetime: "設為終生",
@@ -1121,13 +1140,14 @@ function SubscriptionManager({
       <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} disabled={loading || Boolean(error)} />
       {editing && (
         <div className="modalBackdrop" role="presentation">
-          <div className="operationDialog" role="dialog" aria-modal="true">
-            <h2>{actionText[action]}</h2>
+          <div className="operationDialog" role="dialog" aria-modal="true" aria-labelledby="subscription-action-title" aria-busy={submitting}>
+            <h2 id="subscription-action-title">{actionText[action]}</h2>
             <p>{text(editing.authUserId)}</p>
-            {(action === "activate" || action === "renew") && <label>方案<select value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
-            {action === "adjustExpiry" && <label>到期日<input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></label>}
+            {(action === "activate" || action === "renew") && <label>方案<select disabled={submitting} value={planId} onChange={(event) => setPlanId(event.target.value)}>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)}／{money(Number(plan.price))}／{text(plan.durationDays)} 天</option>)}</select></label>}
+            {action === "adjustExpiry" && <label>到期日<input ref={expiryInputRef} type="date" disabled={submitting} value={expiresAt} aria-invalid={Boolean(saveError) && !expiresAt} aria-describedby={saveError ? "subscription-save-error" : undefined} onChange={(event) => { setExpiresAt(event.target.value); setSaveError(""); }} /></label>}
             {action === "cancel" && <p>取消後只停止自動續訂，權限保留至到期日。</p>}
-            <div className="formActions"><button onClick={() => setEditing(null)}>取消</button><button className="primary" onClick={submit}>確認</button></div>
+            {saveError && <p className="error" id="subscription-save-error" role="alert">{saveError}</p>}
+            <div className="formActions"><button disabled={submitting} onClick={() => setEditing(null)}>取消</button><button className="primary" disabled={submitting} onClick={submit}>確認</button></div>
           </div>
         </div>
       )}
