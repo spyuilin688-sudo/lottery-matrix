@@ -260,15 +260,12 @@ test('切換彩種時自動展開近10期開獎號碼', () => {
   expect(document.querySelector<HTMLElement>('.history-table')?.hidden).toBe(false);
 });
 
-test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', async () => {
+test('近10期依 API 唯一期號契約只請求並顯示完整 10 期', async () => {
   const uniqueRecords = Array.from({ length: 10 }, (_, index) => ({
     period: String(11974 - index),
     drawDate: `2026-08-${String(20 - index).padStart(2, '0')}`,
     numbers: ['01', '02', '03', '04', '05'],
   }));
-  const duplicateHeavyRecords = uniqueRecords.flatMap((record, index) => (
-    index < 5 ? Array.from({ length: 6 }, () => record) : Array.from({ length: 4 }, () => record)
-  ));
 
   globalThis.fetch = vi.fn().mockImplementation(async (input) => {
     const requestUrl = new URL(String(input));
@@ -279,7 +276,7 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
       });
     }
     const limit = Number(requestUrl.searchParams.get('limit'));
-    return new Response(JSON.stringify({ items: duplicateHeavyRecords.slice(0, limit) }), {
+    return new Response(JSON.stringify({ items: uniqueRecords.slice(0, limit) }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
@@ -291,7 +288,7 @@ test('近10期會預留 API 重複資料的去重空間並顯示完整 10 期', 
     expect(document.querySelectorAll('.history-row:not(.history-head)')).toHaveLength(10);
   });
   expect(globalThis.fetch).toHaveBeenCalledWith(
-    expect.stringContaining('/history/%E4%BB%8A%E5%BD%A9539?limit=50'),
+    expect.stringContaining('/history/%E4%BB%8A%E5%BD%A9539?limit=10'),
     expect.anything(),
   );
 });

@@ -6,7 +6,20 @@ import { AppDialogProvider, useAppDialog, type AppDialogOptions } from "../dialo
 import { useNotebookOwner, type NotebookOwner } from "./notebook-owner";
 import { readNotebookData, writeNotebookData, type NotebookData } from "./notebook-storage";
 import { LOTTERIES, FeatureShell, BrandHeader, SectionTitle, LotteryLogoTabs } from "./shared";
-import { Navigate } from "./navigation";
+import { Navigate, QuickNavigationContext, useQuickNavigation } from "./navigation";
+import { taipeiCalendarDate } from "./MemberPages";
+
+function notebookToday() {
+  const { year, month, day } = taipeiCalendarDate(new Date())!;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// Date-only values use UTC calendar arithmetic; they are not UTC instants.
+function notebookWeekStart(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - (date.getUTCDay() + 6) % 7);
+  return date;
+}
 
 export type NotebookView = "list" | "note" | "record" | "settings";
 
@@ -99,6 +112,7 @@ type FailedNotebookAction = { kind: "note" | "record" | "settings" }
 
 function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavigate: Navigate }) {
   const appDialog = useAppDialog();
+  const quickNavigation = useQuickNavigation();
   const [loaded, setLoaded] = useState(() => readNotebookData(owner.userId, DEFAULT_RECORD_SETTINGS()));
   const [failedAction, setFailedAction] = useState<FailedNotebookAction | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
@@ -142,7 +156,8 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   const [noteContent, setNoteContent] = useState("");
   const [noteBaseline, setNoteBaseline] = useState({ title: "", content: "" });
   const [lottery, setLottery] = useState<LotteryId>("今彩539");
-  const [recordDate, setRecordDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [recordDate, setRecordDate] = useState(notebookToday);
+  const [recordInitialDate, setRecordInitialDate] = useState(recordDate);
   const [mode, setMode] = useState<RecordMode>("單號");
   const [numberText, setNumberText] = useState("");
   const [columnTexts, setColumnTexts] = useState(() => Array.from({ length: 12 }, () => ""));
@@ -153,8 +168,8 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   const [dateInfoOpen, setDateInfoOpen] = useState(false);
   const [expandedRecordIds, setExpandedRecordIds] = useState<string[]>([]);
   const [recordLotteryFilters, setRecordLotteryFilters] = useState<LotteryId[]>([...LOTTERIES]);
-  const [customStartDate, setCustomStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [customStartDate, setCustomStartDate] = useState(notebookToday);
+  const [customEndDate, setCustomEndDate] = useState(notebookToday);
   const [statsPeriod, setStatsPeriod] = useState<"本日" | "本週" | "自訂">("本日");
   const [settingsLottery, setSettingsLottery] = useState<LotteryId>("今彩539");
   const [settingsEditMode, setSettingsEditMode] = useState(false);
@@ -198,30 +213,23 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   const estimatedPrize = selectedPlayRows.reduce((sum, play) => sum + play.playPrize, 0);
 
   const weekDates = useMemo(() => {
-    const selected = new Date(`${recordDate}T00:00:00`);
-    const monday = new Date(selected);
-    const day = monday.getDay();
-    monday.setDate(monday.getDate() - (day === 0 ? 6 : day - 1));
+    const monday = notebookWeekStart(recordDate);
     return Array.from({ length: 7 }, (_, index) => {
       const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-      return { label: ["一", "二", "三", "四", "五", "六", "日"][index], value: date.toISOString().slice(0, 10), day: date.getDate() };
+      date.setUTCDate(monday.getUTCDate() + index);
+      return { label: ["一", "二", "三", "四", "五", "六", "日"][index], value: date.toISOString().slice(0, 10), day: date.getUTCDate() };
     });
   }, [recordDate]);
 
+  const today = notebookToday();
   const visibleRecords = useMemo(() => records.filter((record) => {
-    const date = new Date(`${record.date}T00:00:00`);
-    const today = new Date();
     if (!recordLotteryFilters.includes(record.lottery)) return false;
-    if (statsPeriod === "本日") return record.date === today.toISOString().slice(0, 10);
+    if (statsPeriod === "本日") return record.date === today;
     if (statsPeriod === "自訂") return record.date >= customStartDate && record.date <= customEndDate;
-    const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const day = monday.getDay();
-    monday.setDate(monday.getDate() - (day === 0 ? 6 : day - 1));
-    monday.setHours(0, 0, 0, 0);
-    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23, 59, 59, 999);
-    return date >= monday && date <= sunday;
-  }), [customEndDate, customStartDate, recordLotteryFilters, records, statsPeriod]);
+    const monday = notebookWeekStart(today);
+    const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6);
+    return record.date >= monday.toISOString().slice(0, 10) && record.date <= sunday.toISOString().slice(0, 10);
+  }), [customEndDate, customStartDate, recordLotteryFilters, records, statsPeriod, today]);
   const stats = useMemo(() => ({
     total: visibleRecords.length,
     won: visibleRecords.filter((record) => record.actualPrize > 0).length,
@@ -232,7 +240,10 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   }), [visibleRecords]);
   const settingsDirty = view === "settings" && JSON.stringify(settingsDraft) !== settingsBaseline;
   const noteDirty = view === "note" && (noteTitle !== noteBaseline.title || noteContent !== noteBaseline.content);
-  const unsaved = settingsDirty || noteDirty || failedAction !== null;
+  const recordDirty = view === "record" && (lottery !== "今彩539" || recordDate !== recordInitialDate
+    || mode !== "單號" || numberText !== "" || columnTexts.some(Boolean) || specialNumber !== ""
+    || selectedTags.length > 0 || Object.keys(playDrafts).length > 0);
+  const unsaved = settingsDirty || noteDirty || recordDirty || failedAction !== null;
 
   useEffect(() => {
     if (!unsaved) return;
@@ -288,7 +299,8 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
     if (await confirmCurrent({ title: "確認刪除？", description: "刪除後將移除此紀錄。", confirmLabel: "刪除", tone: "danger" })) commitDeleteRecord(id);
   };
   const startRecord = () => {
-    setLottery("今彩539"); setRecordDate(new Date().toISOString().slice(0, 10)); setMode("單號"); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSelectedTags([]); setPlayDrafts({}); setSpecialNumber(""); setView("record");
+    const date = notebookToday();
+    setLottery("今彩539"); setRecordDate(date); setRecordInitialDate(date); setMode("單號"); setNumberText(""); setColumnTexts(Array.from({ length: 12 }, () => "")); setSelectedTags([]); setPlayDrafts({}); setSpecialNumber(""); setView("record");
   };
   const openSettings = () => leaveWithDraft(() => {
     const draft = structuredClone(settings);
@@ -300,6 +312,7 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   });
   const leaveSettings = leaveWithDraft;
   const navigateFromNotebook: Navigate = (screen) => { void leaveWithDraft(() => onNavigate(screen)); };
+  const guardQuickAction = (action: (() => void) | undefined) => action ? () => { void leaveWithDraft(action); } : undefined;
   const saveRecord = () => {
     const numbers = mode === "立柱" ? parsedColumns.flat() : parsedNumbers;
     if (mode === "立柱" && new Set(numbers).size !== numbers.length) return;
@@ -489,6 +502,11 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
   </FeatureShell>;
 
   return (
+    <QuickNavigationContext.Provider value={{ ...quickNavigation,
+      onQuickBack: guardQuickAction(quickNavigation.onQuickBack),
+      onQuickOpen: guardQuickAction(quickNavigation.onQuickOpen),
+      onQuickConfigure: guardQuickAction(quickNavigation.onQuickConfigure),
+    }}>
     <FeatureShell title="Matrix 筆記本" onNavigate={navigateFromNotebook} active="快捷" className="matrix-notebook-screen">
       {failedAction ? <div className="panel" role="alert"><p>筆記本尚未儲存，請重試。請勿關閉頁面，以免遺失目前修改。</p><button type="button" className="title-card-compact-action" aria-label="重試儲存筆記本" disabled={confirmBusy} onClick={retrySave}>重試儲存</button></div> : null}
       {view === "list" ? <>
@@ -576,6 +594,7 @@ function OwnedNotebookPage({ owner, onNavigate }: { owner: NotebookOwner; onNavi
       </section> : null}
       {numberPicker && document.querySelector<HTMLElement>(".mobile-page") ? createPortal(<div className="filter-sheet-backdrop record-picker-backdrop" role="presentation" onClick={() => setNumberPicker(null)}><section className="filter-sheet record-number-picker" role="dialog" aria-modal="true" aria-labelledby="record-number-picker-title" onClick={(event) => event.stopPropagation()}><header><h2 id="record-number-picker-title">選取號碼</h2><button type="button" onClick={() => setNumberPicker(null)} aria-label="關閉"><Cross2Icon /></button></header><div className="record-number-grid">{Array.from({ length: maxNumber }, (_, index) => String(index + 1).padStart(2, "0")).map((number) => { const selected = numberPicker.type === "special" ? specialNumber === number : numberPicker.type === "numbers" ? parsedNumbers.includes(number) : parsedColumns[numberPicker.column ?? 0]?.includes(number); return <button type="button" data-selected={selected} onClick={() => togglePickedNumber(number)} key={number}>{number}</button>; })}</div><button type="button" className="record-picker-done" onClick={() => setNumberPicker(null)}>完成</button></section></div>, document.querySelector<HTMLElement>(".mobile-page")!) : null}
     </FeatureShell>
+    </QuickNavigationContext.Provider>
   );
 }
 
