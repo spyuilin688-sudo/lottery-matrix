@@ -722,7 +722,8 @@ export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function AboutMatrixPage({ onNavigate }: { onNavigate: Navigate }) {
-  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、直覺且易於使用的開獎資料查詢與分析服務，協助使用者快速查閱公開資訊、整理歷史數據，並透過多項分析功能，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，整合各項分析工具，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、且容易使用的分析工具，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
+  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、{subscriptionPurchaseVisible ? "直覺且易於使用的開獎資料查詢與分析服務" : "直覺且易於使用的開獎資料查詢"}，協助使用者快速查閱公開資訊、整理歷史數據，並透過多項分析功能，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，{subscriptionPurchaseVisible ? "整合各項分析工具" : "整合各項查詢工具"}，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、{subscriptionPurchaseVisible ? "且容易使用的分析工具" : "且容易使用的查詢工具"}，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
 }
 
 export function CollapsibleRuleCard({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
@@ -768,6 +769,7 @@ export function referralErrorCode(error: unknown): ReferralSubmissionErrorCode {
 }
 
 export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const { confirm: confirmDialog } = useAppDialog();
   const [referralCode, setReferralCode] = useState("");
   const [activationCode, setActivationCode] = useState("");
@@ -958,9 +960,9 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
           {referralLoginRequired && <p className="activation-result" role="status">請先以 LINE 登入</p>}
           {!referralLoading && !referralLoginRequired && referralSummary === null && <p className="activation-result error" role="alert">推薦碼資訊暫時無法讀取，請稍後再試</p>}
         </div>
-        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", "輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"]} /></CollapsibleRuleCard>
+        <CollapsibleRuleCard title="推薦成功認定" open={openRules.recognition} onToggle={() => toggleRule("recognition")}><DetailList items={["每個 LINE 帳號，僅能輸入一次推薦碼。", ...(subscriptionPurchaseVisible ? ["輸入推薦碼的帳號，完成訂閱 Matrix Pro 月方案、季方案或年方案任一方案後，該筆推薦即計為「推薦成功」。", "若該筆訂閱後續發生退款、刷退或交易取消，該筆推薦成功將失效，推薦成功人數同步扣除，相關獎勵資格，將依最新推薦成功人數重新計算。"] : [])]} /></CollapsibleRuleCard>
         <CollapsibleRuleCard title="推薦成功獎勵" open={openRules.reward} onToggle={() => toggleRule("reward")}><DetailList items={["推薦成功滿 10 人：Matrix 探索期數 (七期) 開放日：每週二、五開放變為每週一、二、四、五。", "推薦成功滿 15 人：Matrix 探索期數 (七期)：永久開放。", "推薦成功滿 30 人：Matrix 探索範圍 (完整範圍)：由不開放變為每週二、五開放。", "推薦成功滿 50 人：Matrix 探索範圍 (完整範圍)：永久開放。"]} /></CollapsibleRuleCard>
-        <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></CollapsibleRuleCard>
+        {subscriptionPurchaseVisible && <CollapsibleRuleCard title="推薦獎勵補充規則" open={openRules.supplement} onToggle={() => toggleRule("supplement")}><DetailList items={["推薦獎勵不需本人訂閱 Matrix Pro。", "當達成對應的推薦成功人數門檻後，即可使用已解鎖的 Matrix 探索權限。", "若因退款、刷退或交易取消等情況，導致推薦成功人數低於原獎勵門檻：已取得的對應獎勵將同步取消。並依最新的推薦成功人數，重新計算資格與獎勵。", "樂彩 Matrix 保留活動內容、參加資格、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。"]} /></CollapsibleRuleCard>}
       </section>
       <section className="panel activation-code-section" aria-label="啟動碼">
         <div className="activation-card">
@@ -988,7 +990,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
             )}
           </div>
         </div>
-        <CollapsibleRuleCard title="啟動碼使用說明" open={activationInstructionsOpen} onToggle={() => setActivationInstructionsOpen((current) => !current)}><ul><li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li><li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></CollapsibleRuleCard>
+        <CollapsibleRuleCard title="啟動碼使用說明" open={activationInstructionsOpen} onToggle={() => setActivationInstructionsOpen((current) => !current)}><ul>{subscriptionPurchaseVisible && <li>啟動碼以增加 Matrix Pro 訂閱天數為主要功能。</li>}<li>每組啟動碼只能成功使用一次。</li><li>啟動成功後，該組啟動碼立即標記為已使用。</li></ul></CollapsibleRuleCard>
       </section>
     </ProfileDetailShell>
   );
@@ -1029,6 +1031,7 @@ export function PromotionsPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   return (
     <LegalInfoDocument title="服務內容與使用說明" onNavigate={onNavigate}>
       <LegalInfoSection title="一、服務名稱">
@@ -1060,11 +1063,11 @@ export function ServiceInfoPage({ onNavigate }: { onNavigate: Navigate }) {
       <LegalInfoSection title="六、探索結果說明">
         <p>探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。</p>
       </LegalInfoSection>
-      <LegalInfoSection title="七、Matrix Pro 說明">
+      {subscriptionPurchaseVisible && <LegalInfoSection title="七、Matrix Pro 說明">
         <p>Matrix Pro 為樂彩 Matrix 的付費訂閱方案，提供月方案、季方案及年方案。</p>
         <p>使用者可自行選擇是否開啟自動續訂。</p>
         <p>實際方案價格、訂閱期間、功能權限及目前可使用內容，依「Matrix Pro 訂閱方案與收費標準」及帳號顯示為準。</p>
-      </LegalInfoSection>
+      </LegalInfoSection>}
     </LegalInfoDocument>
   );
 }
@@ -1099,8 +1102,9 @@ export function VersionInfoPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const sections: Array<[string, React.ReactNode]> = [
-    ["一、服務範圍", <p>樂彩 Matrix 提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
+    ["一、服務範圍", <p>樂彩 Matrix 提供 {subscriptionPurchaseVisible ? "Matrix 分析" : "Matrix 查詢"}、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。</p>],
     ["二、會員登入", <p>使用者透過 LINE 登入後使用會員功能。</p>],
     ["三、Matrix Pro 訂閱", <><p>Matrix Pro 提供月方案、季方案及年方案。</p><p>使用者可自行選擇是否開啟自動續訂。</p><p>開啟自動續訂後，系統將於目前方案到期時，依原訂閱方案自動續訂並扣款。</p><p>使用者可於方案到期前，先行關閉自動續訂；關閉之後，已付款的 Matrix Pro 仍可使用至到期日，期滿後不再自動續訂。</p></>],
     ["四、訂閱方案", <><ul className="legal-info-plans">{[
@@ -1115,14 +1119,15 @@ export function MemberTermsPage({ onNavigate }: { onNavigate: Navigate }) {
     ["九、個人資料", <p>會員資料的使用方式依「隱私權政策」頁面內容辦理。</p>],
     ["十、其他", <p>樂彩 Matrix 保留服務內容、功能權益、訂閱方案、活動內容、獎勵內容、活動規則、資格認定、發放方式、終止、修改、解釋及最終決定之權利。</p>],
   ];
-  return <LegalInfoDocument title="會員服務條例" onNavigate={onNavigate}>{sections.map(([title, content]) => <LegalInfoSection title={title} key={title}>{content}</LegalInfoSection>)}</LegalInfoDocument>;
+  return <LegalInfoDocument title="會員服務條例" onNavigate={onNavigate}>{sections.filter(([title]) => subscriptionPurchaseVisible || ["一、服務範圍", "六、服務內容", "七、探索結果", "九、個人資料"].includes(title)).map(([title, content]) => <LegalInfoSection title={title} key={title}>{content}</LegalInfoSection>)}</LegalInfoDocument>;
 }
 
 export function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   return (
     <LegalInfoDocument title="隱私權政策" onNavigate={onNavigate}>
-      <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", "Matrix Pro 訂閱狀態", "訂閱到期日", "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
-      <LegalInfoSection title="二、使用目的"><DetailList items={["會員登入與帳號識別", "顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理", "提供使用者已選擇的功能", "推薦活動資格與獎勵管理", "系統通知與服務通知"]} /></LegalInfoSection>
+      <LegalInfoSection title="一、蒐集的資料"><DetailList items={["登入 LINE 所提供的帳號識別資料", ...(subscriptionPurchaseVisible ? ["Matrix Pro 訂閱狀態", "訂閱到期日"] : []), "啟動碼使用紀錄", "推薦碼使用紀錄", "推薦成功人數", "通知設定"]} /></LegalInfoSection>
+      <LegalInfoSection title="二、使用目的"><DetailList items={["會員登入與帳號識別", ...(subscriptionPurchaseVisible ? ["顯示會員及訂閱狀態", "Matrix Pro 啟用、續訂及權限管理"] : []), "提供使用者已選擇的功能", ...(subscriptionPurchaseVisible ? ["推薦活動資格與獎勵管理"] : []), "系統通知與服務通知"]} /></LegalInfoSection>
       <LegalInfoSection title="三、第三方服務"><p>目前已確認使用 LINE 登入。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料使用範圍"><p>蒐集之資料，僅用於本政策所載之使用目的及提供樂彩 Matrix 服務，不會於未經使用者同意或法律另有規定之情況下，提供予第三方。</p></LegalInfoSection>
       <LegalInfoSection title="五、資料安全"><p>樂彩 Matrix 將採取合理之安全措施保護會員資料，避免未經授權之存取、使用、修改或洩漏。</p></LegalInfoSection>
@@ -1132,15 +1137,16 @@ export function PrivacyPolicyPage({ onNavigate }: { onNavigate: Navigate }) {
 }
 
 export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   return (
     <LegalInfoDocument title="聲明與免責事項" onNavigate={onNavigate}>
-      <LegalInfoSection title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、計算及分析工具。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></LegalInfoSection>
-      <LegalInfoSection title="二、資訊用途"><p>服務內呈現的資料、分析結果及探索結果僅供參考，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></LegalInfoSection>
-      <LegalInfoSection title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、功能及分析結果，並自行承擔相關決定所產生的結果。</p></LegalInfoSection>
+      <LegalInfoSection title="一、服務性質"><p>樂彩 Matrix 提供公開的開獎資料查詢、歷史資料整理、比對、{subscriptionPurchaseVisible ? "計算及分析工具" : "計算及查詢工具"}。</p><p>本服務不提供任何中獎、獲利或特定結果之保證。</p></LegalInfoSection>
+      <LegalInfoSection title="二、資訊用途"><p>服務內呈現的資料、{subscriptionPurchaseVisible ? "分析結果及探索結果僅供參考" : "查詢結果及探索結果僅供參考"}，不代表任何中獎、獲利或結果之保證。</p><p>使用者應自行判斷是否採用服務所提供的資訊。</p></LegalInfoSection>
+      <LegalInfoSection title="三、使用者決定"><p>使用者應自行決定如何使用服務內提供的資料、{subscriptionPurchaseVisible ? "功能及分析結果" : "功能及查詢結果"}，並自行承擔相關決定所產生的結果。</p></LegalInfoSection>
       <LegalInfoSection title="四、資料差異"><p>如服務內資料與官方公布資料不同，請以官方公布資料為準。</p></LegalInfoSection>
       <LegalInfoSection title="五、系統與服務"><p>樂彩 Matrix 不保證服務持續不中斷、完全無錯誤，或所有功能於任何時間皆可正常使用。</p><p>如因系統維護、更新、網路異常、第三方服務或其他原因造成服務中斷、延遲或資料顯示異常，將依實際情況處理。</p></LegalInfoSection>
       <LegalInfoSection title="六、第三方服務"><p>本服務使用 LINE 登入、金流服務或其他第三方服務。</p><p>第三方服務之使用方式、資料處理及服務狀態，依各第三方服務提供者之規定辦理。</p></LegalInfoSection>
-      <LegalInfoSection title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、功能、分析結果或第三方服務所產生的影響，應依實際情況及相關法令認定。</p></LegalInfoSection>
+      <LegalInfoSection title="七、責任範圍"><p>因使用或無法使用樂彩 Matrix 所提供的資料、{subscriptionPurchaseVisible ? "功能、分析結果或第三方服務" : "功能、查詢結果或第三方服務"}所產生的影響，應依實際情況及相關法令認定。</p></LegalInfoSection>
       <LegalInfoSection title="八、內容調整"><p>樂彩 Matrix 得依服務實際運作需要調整功能、內容及相關說明。</p><p>如涉及會員權益或重要內容調整，將於服務內公告。</p></LegalInfoSection>
       <LegalInfoSection title="九、最終說明"><p>本聲明與免責事項如與中華民國法令的強制或禁止規定不同，依相關法令辦理。</p><p>樂彩 Matrix 保留服務內容、功能說明、資料呈現、規則內容、修改、解釋及最終決定之權利。</p></LegalInfoSection>
     </LegalInfoDocument>

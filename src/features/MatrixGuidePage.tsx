@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Navigate } from "./navigation";
 import { FeatureShell } from "./shared";
@@ -8,15 +9,16 @@ export const GUIDE_LOOP_GROUPS = ["leading", "canonical", "trailing"] as const;
 export const GUIDE_LOOP_IDLE_MS = 200;
 
 export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   type GuideSection = { title: string; summary: string; blocks: Array<{ title: string; items: string[] }> };
-  const sections: GuideSection[] = [
+  const allSections: GuideSection[] = [
     {
       title: "新手入門",
       summary: "樂彩 Matrix 提供公開的開獎資料查詢、整理、比對、驗證及探索功能，支援今彩539、天天樂、六合彩及大樂透。",
       blocks: [
         { title: "開始使用", items: ["使用 LINE 登入之後進入首頁。", "切換彩種，查看最新開獎資訊、下次開獎時間與 Matrix 狀態。", "依需求使用 Matrix 探索、Matrix 同星、號碼對照單、連碰立柱計算機、Matrix 牌單及 Matrix 指南。"] },
-        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；在首頁連續點擊左下角設定按鈕兩下可變更快捷設定。", "通知：設定各類型的推播通知。", "我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] },
-        { title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] },
+        { title: "基本導覽", items: ["首頁：查看四彩種最新的資訊與主要功能入口。", "Matrix 狀態：查看四彩種目前觸發的狀態與相關資訊。", "快捷：開啟已設定的功能；在首頁連續點擊左下角設定按鈕兩下可變更快捷設定。", "通知：設定各類型的推播通知。", ...(subscriptionPurchaseVisible ? ["我的：查看 Matrix Pro 訂閱、推薦、系統及法律資訊。"] : [])] },
+        ...(subscriptionPurchaseVisible ? [{ title: "Matrix Pro", items: ["Matrix Pro 提供更多探索功能及會員權限。", "功能開放內容依目前會員狀態顯示。"] }] : []),
         { title: "結果說明", items: ["探索結果依歷史資料與所選條件產生，僅供參考，不代表中獎、獲利或任何結果之保證。"] },
       ],
     },
@@ -148,27 +150,32 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         { title: "條件變更後結果沒有更新", items: ["Matrix 探索需按「開始探索」產生結果。", "號碼對照單修改條件後，也需再次按「開始探索」。"] },
         { title: "查看更多開獎紀錄", items: ["近10期開獎號碼，點選查看更多紀錄，可查閱歷史開獎號碼。", "號碼對照單可選擇1000期、3000期或5000期。"] },
         { title: "設定常用功能", items: ["在首頁連續點擊底部左下角設定按鈕兩下後，選擇要指定的功能。"] },
-        { title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 訂閱方案與收費標準」。"] },
+        ...(subscriptionPurchaseVisible ? [{ title: "查看 Matrix Pro 權限", items: ["前往「我的」中的「Matrix Pro 訂閱方案與收費標準」。"] }] : []),
       ],
     },
     {
       title: "關於 樂彩 Matrix",
-      summary: "樂彩 Matrix 提供開獎資料查詢與分析服務，協助查閱公開資訊、整理歷史數據與使用各項分析工具。",
+      summary: subscriptionPurchaseVisible ? "樂彩 Matrix 提供開獎資料查詢與分析服務，協助查閱公開資訊、整理歷史數據與使用各項分析工具。" : "樂彩 Matrix 提供開獎資料查詢服務，協助查閱公開資訊、整理歷史數據與使用各項查詢工具。",
       blocks: [
         { title: "服務內容", items: ["支援今彩539、天天樂、六合彩及大樂透。", "提供 Matrix 分析、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。"] },
         { title: "品牌資訊", items: ["品牌名稱：樂彩 Matrix。", "Copyright © 2026 樂彩 Matrix. All Rights Reserved."] },
       ],
     },
   ];
+  const sections = allSections.map((section, index) => ({ ...section, index }))
+    .filter((section) => subscriptionPurchaseVisible || section.title !== "Matrix Pro");
   const [selected, setSelected] = useState(0);
   const stripRef = useRef<HTMLElement | null>(null);
-  const current = sections[selected];
+  const current = sections.find((section) => section.index === selected) ?? sections[0];
+  useEffect(() => {
+    if (current.index !== selected) setSelected(current.index);
+  }, [current.index, selected]);
 
   const selectGuideCategory = (event: ReactMouseEvent<HTMLElement>) => {
     const card = (event.target as Element).closest<HTMLElement>("[data-guide-index]");
     if (!card || !event.currentTarget.contains(card)) return;
     const index = Number(card.dataset.guideIndex);
-    if (Number.isInteger(index) && index >= 0 && index < sections.length) setSelected(index);
+    if (Number.isInteger(index) && sections.some((section) => section.index === index)) setSelected(index);
   };
 
   const selectCanonicalGuideCategory = (event: ReactMouseEvent<HTMLButtonElement>, index: number) => {
@@ -224,7 +231,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
       resizeObserver.disconnect();
       if (correctionTimer !== null) window.clearTimeout(correctionTimer);
     };
-  }, []);
+  }, [subscriptionPurchaseVisible]);
 
   return (
     <FeatureShell title="Matrix 指南" onNavigate={onNavigate} className="matrix-guide-screen">
@@ -238,21 +245,21 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
           const isClone = group !== "canonical";
           return (
             <div className="guide-category-loop-group" data-guide-group={group} aria-hidden={isClone} key={group}>
-              {sections.map((section, index) => isClone ? (
-                <span className="guide-category-card" data-guide-index={index} data-selected={selected === index} key={`${group}-${section.title}`}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+              {sections.map((section) => isClone ? (
+                <span className="guide-category-card" data-guide-index={section.index} data-selected={selected === section.index} key={`${group}-${section.title}`}>
+                  <span>{String(section.index + 1).padStart(2, "0")}</span>{section.title}
                 </span>
               ) : (
                 <button
                   className="guide-category-card"
                   type="button"
-                  data-guide-index={index}
-                  data-selected={selected === index}
-                  onClick={(event) => selectCanonicalGuideCategory(event, index)}
-                  aria-pressed={selected === index}
+                  data-guide-index={section.index}
+                  data-selected={selected === section.index}
+                  onClick={(event) => selectCanonicalGuideCategory(event, section.index)}
+                  aria-pressed={selected === section.index}
                   key={`${group}-${section.title}`}
                 >
-                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                  <span>{String(section.index + 1).padStart(2, "0")}</span>{section.title}
                 </button>
               ))}
             </div>
@@ -260,7 +267,7 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
         })}
       </nav>
       <section className="panel guide-preview">
-        <header><span>{String(selected + 1).padStart(2, "0")}</span><h2>{current.title}</h2></header>
+        <header><span>{String(current.index + 1).padStart(2, "0")}</span><h2>{current.title}</h2></header>
         <p className="guide-summary">{current.summary}</p>
         <div className="guide-detail-list">
           {current.blocks.map((block) => (
@@ -274,3 +281,4 @@ export function MatrixGuidePage({ onNavigate }: { onNavigate: Navigate }) {
     </FeatureShell>
   );
 }
+

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { hasLineOAuthCallback } from '../auth/line-pwa-return';
 import { useAppDialog } from '../dialog/AppDialog';
+import { SubscriptionCopy } from '../subscription-copy';
 import type { Navigate } from '../features/navigation';
 
 export const FIRST_VISIT_GUIDE_SEEN_KEY = 'matrix-first-visit-guide-seen';
@@ -29,9 +30,12 @@ export function FirstVisitGuide({ enabled, onNavigate }: { enabled: boolean; onN
 
       void confirm({
         variant: 'registration-guide',
-        title: '免費註冊會員',
-        description: '點擊下方「我的」，再點擊「LINE 登入」即可免費註冊會員。新註冊 LINE 會員可使用 Pro 演算法：天衍 2 天、天工 1 天。點擊首頁下方的 Matrix Core，即可進入探索。',
-        confirmLabel: '免費註冊',
+        title: <SubscriptionCopy formal="免費註冊會員" alternative="使用教學" />,
+        description: <SubscriptionCopy
+          formal="點擊下方「我的」，再點擊「LINE 登入」即可免費註冊會員。新註冊 LINE 會員可使用 Pro 演算法：天衍 2 天、天工 1 天。點擊首頁下方的 Matrix Core，即可進入探索。"
+          alternative="點擊右下方「我的」，再點擊「LINE 登入」即可使用查詢；首頁下方的 Matrix Core 進入探索。"
+        />,
+        confirmLabel: <SubscriptionCopy formal="免費註冊" alternative="立即登入" />,
         cancelLabel: '知道了',
       }).then((confirmed) => {
         if (active && confirmed) navigate.current('profile');

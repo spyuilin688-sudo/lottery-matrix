@@ -1,3 +1,4 @@
+import { SubscriptionCopy } from '../subscription-copy';
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -385,7 +386,7 @@ export function ExploreValidationProcess({
             <footer className="explore-validation-prediction">
               <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
               <span className="explore-validation-prediction-content">
-                <strong>本期預測</strong>
+                <strong><SubscriptionCopy formal="本期預測" alternative="版路結果" /></strong>
                 <b className="explore-validation-numeric-text">{values(ruleSet.predictionNumbers).join("、")}</b>
               </span>
               <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
@@ -544,7 +545,7 @@ export function TianyanValidationProcess({
         <footer className="explore-validation-prediction">
           <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
           <span className="explore-validation-prediction-content">
-            <strong>本期預測</strong>
+            <strong><SubscriptionCopy formal="本期預測" alternative="版路結果" /></strong>
             <b className="explore-validation-numeric-text">{values(validation.mergedSearchPredictionNumbers).join("、")}</b>
           </span>
           <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
@@ -553,3 +554,4 @@ export function TianyanValidationProcess({
     </section>
   );
 }
+

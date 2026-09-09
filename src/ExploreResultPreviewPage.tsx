@@ -1,3 +1,4 @@
+import { SubscriptionCopy } from './subscription-copy';
 import { Fragment, useEffect, useState } from "react";
 import { ChevronDownIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { PREVIEW_RESULTS, type PreviewDrawRow, type PreviewResult } from "./explore-result-preview-data";
@@ -134,7 +135,7 @@ function ExploreValidationCard({ result }: { result: PreviewResult }) {
       <footer className="explore-validation-prediction">
         <DoubleArrowLeftIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--left" aria-hidden="true" />
         <span className="explore-validation-prediction-content">
-          <strong>本期預測</strong>
+          <strong><SubscriptionCopy formal="本期預測" alternative="版路結果" /></strong>
           <b className="explore-validation-numeric-text">{result.finalPrediction}</b>
         </span>
         <DoubleArrowRightIcon className="explore-validation-prediction-arrow explore-validation-prediction-arrow--right" aria-hidden="true" />
@@ -217,9 +218,9 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
             <div className="road-results-head" aria-hidden="true">
               <span>位置</span>
               <span>號碼</span>
-              <span>預測期</span>
+              <span><SubscriptionCopy formal="預測期" alternative="查詢期" /></span>
               <span>連準次數</span>
-              <span>預測</span>
+              <span><SubscriptionCopy formal="預測" alternative="結果" /></span>
               <span>版路類型</span>
             </div>
 
@@ -256,3 +257,4 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
     </main>
   );
 }
+

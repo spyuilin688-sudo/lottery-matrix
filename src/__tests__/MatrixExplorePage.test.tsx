@@ -15,6 +15,8 @@ const matrixApi = vi.hoisted(() => ({
 }));
 
 vi.mock('../matrix-algorithm-api', () => matrixApi);
+// Existing algorithm assertions exercise the formal display mode.
+vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 
 const exploreEnvelope = {
   kind: 'explore',

@@ -5,9 +5,9 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 export type AppDialogTone = "warning" | "danger" | "success";
 
 export type AppDialogOptions = {
-  title: string;
-  description?: string;
-  confirmLabel?: string;
+  title: ReactNode;
+  description?: ReactNode;
+  confirmLabel?: ReactNode;
   cancelLabel?: string;
   tone?: AppDialogTone;
   icon?: "logout";
