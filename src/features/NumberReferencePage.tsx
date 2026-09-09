@@ -1,3 +1,4 @@
+import { useReferenceWindow } from "../reference-window";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
@@ -27,6 +28,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const history = useLotteryHistory(appliedLottery, getHistoryLimit(appliedRange));
   const fallbackHistory = useMemo(() => [...history].reverse(), [history]);
   const displayedHistory = referenceItems ?? fallbackHistory;
+  const referenceWindow = useReferenceWindow(displayedHistory.length);
   const historyOrder = getHistoryOrder(appliedOrder);
   const resetReference = () => {
     queryRevision.current += 1;
@@ -190,7 +192,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
         <header><h2>{appliedLottery}（{appliedOrder}）</h2></header>
         <div className="reference-table">
           <div className="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          {displayedHistory.map((record) => {
+          <div ref={referenceWindow.ref} className="reference-window" style={{ position: "relative", height: displayedHistory.length * referenceWindow.rowHeight }}
+            onFocusCapture={event => { const row = (event.target as HTMLElement).closest<HTMLElement>("[data-reference-index]"); if (row) referenceWindow.setFocusedIndex(Number(row.dataset.referenceIndex)); }}
+            onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) referenceWindow.setFocusedIndex(null); }}>
+          {referenceWindow.indices.map((recordIndex) => {
+            const record = displayedHistory[recordIndex];
             const issue = getDrawIssue(record);
             const draw = getHistoryDrawNumbers(appliedLottery, record, historyOrder);
             const displayedNumbers = draw.special
@@ -200,6 +206,9 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
             return (
               <div
                 className="reference-row"
+                data-reference-index={recordIndex}
+                data-striped={recordIndex % 2 === 0}
+                style={{ position: "absolute", top: recordIndex * referenceWindow.rowHeight }}
                 data-row-marked={markedRows.has(issue)}
                 data-has-special={Boolean(draw.special)}
                 key={issue}
@@ -236,6 +245,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
               </div>
             );
           })}
+          </div>
         </div>
       </section>
       <div ref={resultsEndRef} className="reference-results-end" aria-hidden="true" />

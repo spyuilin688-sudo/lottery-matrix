@@ -169,6 +169,35 @@ def _normalize_supabase_draw(draw: dict[str, Any]) -> dict[str, Any]:
     })
 
 
+def _history_years(repository: AnalysisRepository, lottery: str) -> list[str]:
+    # Fetch only dates; year choices must include history outside the current UI limit.
+    years: set[str] = set()
+
+    def add_date(value: Any) -> None:
+        text = str(value or "")
+        if len(text) >= 10 and text[:4].isdigit() and text[4] in {"-", "/"}:
+            years.add(text[:4])
+
+    client = getattr(repository, "client", None)
+    if client is None:
+        for draw in repository.list_draws(lottery, None):
+            add_date(draw.get("drawDate"))
+    else:
+        offset = 0
+        while True:
+            rows = (client.table("lottery_draws").select("draw_date")
+                    .eq("lottery", lottery)
+                    .order("draw_date", desc=True, nullsfirst=False)
+                    .order("period", desc=True)
+                    .range(offset, offset + PAGE_SIZE - 1).execute()).data
+            if not rows:
+                break
+            for row in rows:
+                add_date(row.get("draw_date"))
+            offset += len(rows)
+    return sorted(years, reverse=True)
+
+
 def _history(repository: AnalysisRepository, lottery: str, limit: int | None) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     seen: dict[str, dict[str, Any]] = {}
@@ -424,6 +453,10 @@ def handle_api_request(
                 # Keep the pre-PNG manifest for installed PWA clients.
                 return 200, _card_manifest(lottery, repository)
         latest_prefix = "/api/matrix/latest/"
+        years_prefix = "/api/matrix/history-years/"
+        if method == "GET" and path.startswith(years_prefix):
+            lottery = _parse_lottery(unquote(path[len(years_prefix):]))
+            return 200, {"years": _history_years(repository, lottery)}
         history_prefix = "/api/matrix/history/"
         if method == "GET" and path.startswith(latest_prefix):
             lottery = _parse_lottery(unquote(path[len(latest_prefix):]))

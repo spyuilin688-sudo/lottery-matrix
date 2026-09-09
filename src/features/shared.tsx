@@ -11,31 +11,7 @@ import { formatReferenceNumber, sanitizeReferenceNumber } from "../reference-num
 import { isDuplicateLookupNumber } from "../feature-tool-logic";
 import { Navigate, QuickNavigationContext, ScreenId, useQuickNavigation } from "./navigation";
 
-export const QUICK_CACHE_MS = 30 * 60 * 1000;
-
-export function useTimedState<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === "undefined") return initialValue;
-    try {
-      const stored = window.sessionStorage.getItem(`matrix-quick:${key}`);
-      if (!stored) return initialValue;
-      const parsed = JSON.parse(stored) as { savedAt: number; value: T };
-      if (Date.now() - parsed.savedAt > QUICK_CACHE_MS) {
-        window.sessionStorage.removeItem(`matrix-quick:${key}`);
-        return initialValue;
-      }
-      return parsed.value;
-    } catch {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    window.sessionStorage.setItem(`matrix-quick:${key}`, JSON.stringify({ savedAt: Date.now(), value }));
-  }, [key, value]);
-
-  return [value, setValue] as const;
-}
+export { QUICK_CACHE_MS, useTimedState } from "../use-timed-state";
 
 export const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
 
@@ -326,16 +302,14 @@ export function getHistoryRecordKey(record: LotteryDrawRecord) {
 
 export function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
-  const requestLimit = typeof limit === "number"
-    ? Math.max(limit * 3, limit <= 10 ? 50 : 30)
-    : undefined;
+
 
   useEffect(() => {
     let active = true;
     setData([]);
 
     const refreshLotteryHistory = () => {
-      fetchLotteryHistory(lottery, requestLimit)
+      fetchLotteryHistory(lottery, limit)
         .then((records) => {
           if (!active) return;
 
@@ -361,7 +335,7 @@ export function useLotteryHistory(lottery: LotteryId, limit?: number) {
       active = false;
       window.clearInterval(refreshTimer);
     };
-  }, [lottery, limit, requestLimit]);
+  }, [lottery, limit]);
 
   return data;
 }

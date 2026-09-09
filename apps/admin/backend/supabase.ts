@@ -96,7 +96,7 @@ export function createSupabaseTransport(
     ? configOrLoader
     : async () => configOrLoader;
   return {
-    async request<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
+    async request<T = unknown>(path: string, init: RequestInit = {}, withCount = false): Promise<T> {
       let config: SupabaseConfig;
       try {
         config = await loadConfig();
@@ -123,6 +123,20 @@ export function createSupabaseTransport(
         throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
       }
 
+      if (withCount) {
+        const count = response.headers.get('Content-Range')?.match(/\/(\d+)$/)?.[1];
+        const total = count === undefined ? NaN : Number(count);
+        if (Number.isSafeInteger(total) && total >= 0) {
+          if (response.status === 416) {
+            const error = await response.json().catch(() => null);
+            if (error?.code === 'PGRST103') return { items: [], total } as T;
+          } else if (response.ok) {
+            const items = await response.json();
+            if (Array.isArray(items)) return { items, total } as T;
+          }
+        }
+        throw new BackendIntegrationError('UNAVAILABLE', 'Supabase pagination is temporarily unavailable');
+      }
       if (!response.ok) {
         const domainError = await readPaymentReversalDomainError(path, response);
         if (domainError) throw domainError;
@@ -132,6 +146,9 @@ export function createSupabaseTransport(
       const minimal = headers.Prefer.split(',').some((value) => value.trim() === 'return=minimal');
       if (response.status === 204 || minimal) return undefined as T;
       return await response.json() as T;
+    },
+    async requestPage<T = unknown>(path: string): Promise<{ items: T[]; total: number }> {
+      return this.request(path, { headers: { Prefer: 'count=exact' } }, true);
     },
     async supabaseRequest<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
       return this.request<T>(`/rest/v1/${path.replace(/^\/+/, '')}`, init);

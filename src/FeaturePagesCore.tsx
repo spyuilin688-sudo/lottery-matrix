@@ -1,3 +1,4 @@
+import { useTimedState } from "./use-timed-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
@@ -5,6 +6,7 @@ import { BottomNavigation } from "./BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "./NumberBall";
 import {
   fetchLotteryHistory,
+  fetchLotteryHistoryYears,
   fetchTongXing,
   type LotteryDrawRecord,
   type MatrixNumberOrder,
@@ -32,33 +34,10 @@ type BottomNavCallbacks = {
 };
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
-const QUICK_CACHE_MS = 30 * 60 * 1000;
 const TITLE_ARTWORK: Record<"歷史開獎號碼" | "Matrix 同星", string> = {
   "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
   "Matrix 同星": "/assets/lottery/functions/同星標題K.png",
 };
-
-function useTimedState<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === "undefined") return initialValue;
-    try {
-      const stored = window.sessionStorage.getItem(`matrix-quick:${key}`);
-      if (!stored) return initialValue;
-      const parsed = JSON.parse(stored) as { savedAt: number; value: T };
-      if (Date.now() - parsed.savedAt > QUICK_CACHE_MS) {
-        window.sessionStorage.removeItem(`matrix-quick:${key}`);
-        return initialValue;
-      }
-      return parsed.value;
-    } catch {
-      return initialValue;
-    }
-  });
-  useEffect(() => {
-    window.sessionStorage.setItem(`matrix-quick:${key}`, JSON.stringify({ savedAt: Date.now(), value }));
-  }, [key, value]);
-  return [value, setValue] as const;
-}
 
 function MobilePagePortal({ active, children }: { active: boolean; children: React.ReactNode }) {
   if (!active || typeof document === "undefined") return children;
@@ -122,13 +101,12 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
   const [data, setData] = useState<LotteryDrawRecord[]>([]);
   const [loadState, setLoadState] = useState<DataLoadState>("loading");
   const [reloadRevision, setReloadRevision] = useState(0);
-  const requestLimit = typeof limit === "number" ? Math.max(limit * 3, limit <= 10 ? 50 : 30) : undefined;
   useEffect(() => {
     let active = true;
     setData([]);
     setLoadState("loading");
     const refresh = () => {
-      fetchLotteryHistory(lottery, requestLimit).then((records) => {
+      fetchLotteryHistory(lottery, limit).then((records) => {
         if (!active) return;
         const seen = new Set<string>();
         const uniqueRecords = records.filter((record) => {
@@ -145,7 +123,7 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
     refresh();
     const timer = window.setInterval(refresh, 60_000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [lottery, limit, requestLimit, reloadRevision]);
+  }, [lottery, limit, reloadRevision]);
   return { data, loadState, reload: () => setReloadRevision((current) => current + 1) };
 }
 
@@ -202,7 +180,7 @@ function PatchedDrawHistoryPage({
   const [filterExpanded, setFilterExpanded] = useState(true);
   const [filterFloating, setFilterFloating] = useState(false);
   const [filterPanelTop, setFilterPanelTop] = useState(0);
-  const [year, setYear] = useTimedState("history-year", "2026");
+  const [year, setYear] = useTimedState("history-year", String(new Date().getFullYear()));
   const [month, setMonth] = useTimedState("history-month", "08月");
   const [day, setDay] = useTimedState("history-day", "23日");
   const [dateFilterTouched, setDateFilterTouched] = useState(false);
@@ -219,6 +197,24 @@ function PatchedDrawHistoryPage({
   const paginatedHistory = useMemo(() => paginateHistory(filteredHistory, page), [filteredHistory, page]);
   const historyWeekGroups = useMemo(() => groupHistoryByCalendarWeek(paginatedHistory.items), [paginatedHistory.items]);
   const latestSelectedDate = getDrawDate(selectedLotteryLatest[0] ?? { numbers: [] });
+  const [yearMetadata, setYearMetadata] = useState<{ lottery: LotteryId; years: string[] } | null>(null);
+  const [yearError, setYearError] = useState(false);
+  const [yearRevision, setYearRevision] = useState(0);
+  const availableYears = yearMetadata?.lottery === lottery ? yearMetadata.years : [];
+  useEffect(() => {
+    let active = true;
+    setYearError(false);
+    fetchLotteryHistoryYears(lottery).then((years) => {
+      if (active) setYearMetadata({ lottery, years });
+    }).catch(() => { if (active) setYearError(true); });
+    return () => { active = false; };
+  }, [lottery, latestSelectedDate, yearRevision]);
+  useEffect(() => {
+    if (availableYears.length && !availableYears.includes(year)) {
+      setYear(availableYears[0]);
+      setDateFilterTouched(false);
+    }
+  }, [availableYears, year, setYear]);
 
   useEffect(() => { setPage(1); }, [appliedHistorySettings, appliedFilters]);
   useEffect(() => { if (page !== paginatedHistory.currentPage) setPage(paginatedHistory.currentPage); }, [page, paginatedHistory.currentPage]);
@@ -288,9 +284,10 @@ function PatchedDrawHistoryPage({
             <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
           </div>
+          {yearError ? <p role="alert">年份載入失敗 <button type="button" onClick={() => setYearRevision(value => value + 1)}>重試年份</button></p> : null}
           <div className="history-filter-secondary-row">
             <div className="history-date-selects">
-              <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{["2026", "2025", "2024"].map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
+              <div className="select-box native-select"><select aria-label="年份" value={year} onChange={(event) => { setYear(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{(availableYears.length ? availableYears : [year]).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
               <div className="select-box native-select"><select aria-label="月份" value={month} onChange={(event) => { setMonth(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 12 }, (_, index) => `${String(index + 1).padStart(2, "0")}月`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
               <div className="select-box native-select"><select aria-label="日期" value={day} onChange={(event) => { setDay(event.target.value); setDateFilterTouched(true); setHistoryFilterPriority("date"); }}>{Array.from({ length: 31 }, (_, index) => `${String(index + 1).padStart(2, "0")}日`).map((value) => <option key={value}>{value}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             </div>

@@ -1,6 +1,6 @@
 /* 號碼對照單：特別號、整列選取與數字對齊的最終覆寫。 */
 
-.number-reference-screen .reference-row:nth-child(even) {
+.number-reference-screen .reference-row[data-striped="true"] {
   background: rgba(20, 36, 48, .72);
 }
 

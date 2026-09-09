@@ -716,7 +716,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .reference-table-panel header button { display: flex; height: 32px; align-items: center; gap: 4px; border: 1px solid #704b17; border-radius: 5px; background: transparent; color: #d19a25; font-size: 11px; }
 .reference-table-panel header button svg { width: 1em; height: 1em; }
 .reference-row { display: grid; width: 100%; min-width: 0; min-height: 40px; grid-template-columns: minmax(0, .24fr) minmax(0, .76fr); border-top: 1px solid rgba(161, 112, 40, .78); color: #ccc4b8; font-size: 13px; text-align: center; }
-.reference-row:nth-child(even) { background: rgba(20, 36, 48, .6); }
+.reference-row[data-striped="true"] { background: rgba(20, 36, 48, .6); }
 .reference-row > span { display: flex; align-items: center; justify-content: center; }
 .reference-row > span + span,
 .reference-row > .reference-issue + span { border-left: 1px solid rgba(112, 76, 30, .75); }
