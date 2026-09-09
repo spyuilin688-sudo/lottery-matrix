@@ -1,3 +1,4 @@
+vi.mock('./permission-settings', () => ({ refreshPermissionSettings: vi.fn(async () => ({ revision: 0 })) }));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();

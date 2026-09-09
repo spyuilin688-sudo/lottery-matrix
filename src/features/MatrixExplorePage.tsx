@@ -1,3 +1,4 @@
+import { usePermissionSettings } from '../permission-settings';
 import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -5,7 +6,7 @@ import { ChevronDownIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon 
 import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 import { type LotteryId } from "../Prototype";
 import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
-import { bootstrapMember, fetchMemberProfile } from "../member-api";
+import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from "../member-api";
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
@@ -22,6 +23,9 @@ export function MatrixExplorePage({
   roadTypes?: string[];
 }) {
   const appDialog = useAppDialog();
+  const permissionSettings = usePermissionSettings();
+  const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
+  const initializedTitle = useRef<string | null>(null);
   type ConsecutiveOption =
     | "準4進5"
     | "準5進6"
@@ -149,18 +153,23 @@ export function MatrixExplorePage({
       .then(() => fetchMemberProfile())
       .then((profile) => {
         if (!active) return;
-        const defaults = getExploreEntryDefaults(profile);
-        setPeriod(defaults.period);
-        setExploreRange(defaults.range);
+        setExploreAccess(profile.exploreEntitlements);
+        if (initializedTitle.current !== title) {
+          const defaults = getExploreEntryDefaults(profile);
+          setPeriod(defaults.period);
+          setExploreRange(defaults.range);
+          initializedTitle.current = title;
+        }
       })
       .catch(() => {
         if (!active) return;
+        setExploreAccess(undefined);
         const defaults = getExploreEntryDefaults(null);
         setPeriod(defaults.period);
         setExploreRange(defaults.range);
       });
     return () => { active = false; };
-  }, [title]);
+  }, [title, permissionSettings?.revision]);
 
   const visibleResults = useMemo(() => {
     if (title === "Matrix 探索") {
@@ -418,7 +427,7 @@ export function MatrixExplorePage({
               {(["二期", "七期", "十三期"] as const).map((v) => (
                 <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
                   {v}
-                  {title === "Matrix 探索" && v === "十三期" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                  {title === "Matrix 探索" && v === "十三期" && !exploreAccess?.canUseThirteen ? <em><LockClosedIcon />Matrix Pro</em> : null}
                 </button>
               ))}
             </div>
@@ -496,7 +505,7 @@ export function MatrixExplorePage({
                     onClick={() => setExploreRange(value)}
                   >
                     {value}
-                    {title === "Matrix 探索" && value === "完整範圍" ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                    {title === "Matrix 探索" && value === "完整範圍" && !exploreAccess?.canUseFullRange ? <em><LockClosedIcon />Matrix Pro</em> : null}
                   </button>
                 ))}
               </div>
@@ -676,3 +685,4 @@ export function MatrixExplorePage({
     </FeatureShell>
   );
 }
+
