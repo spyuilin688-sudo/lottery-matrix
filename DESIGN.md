@@ -133,9 +133,15 @@ Matrix 探索、天衍與狀態頁的驗證過程，依鎖定條件整組交替�
 
 首頁 Logo 固定於內容捲動區上方，沿用正式 MatrixLogo 素材、91.9632% 流動寬度、自動比例高度、390px 內容寬度上限與既有頂部留白。`src/homepage/base.css` 擁有首頁固定品牌列與下方捲動區的排列，`src/homepage/logo-spacing.css` 繼續擁有 Logo 尺寸；品牌列保留自然高度，卡片不會滑入其後方。底部導覽與其他頁面的 Logo 行為維持既有設定。
 
+2026-09-10：依使用者確認，首頁 Logo 圖片以 `translateY(-16px)` 單獨上移 16px，由 `src/homepage/logo-spacing.css` 擁有；圖片尺寸、品牌列佔位、安全區與下方內容位置不變。
+
 ### Home Mark Six numbers — 2026-09-06
 
 首頁六合彩採使用者確認的 A 方案：保留彩球素材與尺寸，數字由 15px 縮小 10% 至 13.5px，字重由 900 降至 800，沿用白色區域的中心定位與既有光學微調。`src/number-ball.css` 是此首頁變體的唯一樣式來源；既有 Roboto 800 字型檔以首頁六合彩專用字型名稱載入，避免改變其他介面原有的字重匹配。歷史頁、其他彩種與彩球間距不在此次修改範圍。
+
+### Home five-ball numbers — 2026-09-10
+
+依使用者要求，首頁開獎資訊卡的今彩539、天天樂數字由 700 加粗至 800。`src/number-ball.css` 擁有此首頁彩種變體，共用既有 `Roboto Mark Six Home` 的 Roboto 800 字型檔；保留原有 20px 字級、彩球大小、位置、間距與無底線樣式。六合彩、大樂透及歷史介面維持既有字重。
 
 ### Profile membership cards — approved A+B
 
@@ -193,3 +199,4 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 ## Matrix 筆記本 — 2026-09-08
 
 筆記本列表、編輯、紀錄與設定頁統一沿用頁面左右 16px、標題卡下方 8px。`src/feature-pages.css` 是筆記本版面的樣式來源；圖示使用同一個 42px 尺寸，工具列各區與模式按鈕間距 8px。中間操作欄採可收縮寬度，刪除位於新增筆記上方，兩者字級 11px、正常字級下高度 26px。筆記摘要上下內距 5px，點選後進入獨立編輯頁。寫入筆記沿用 `primary-action branded-explore-action`，字級 14px、正常字級下高度 36px，允許放大文字時增加高度。不要再增加重複標題或卡片尾端的筆記刪除入口。
+

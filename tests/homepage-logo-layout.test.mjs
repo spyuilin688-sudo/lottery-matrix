@@ -15,10 +15,11 @@ test("首頁使用正式 MatrixLogo 圖檔並以放大 5% 後的流式尺寸呈�
   assert.doesNotMatch(logoRules, /visibility:\s*hidden/);
 });
 
-test("首頁 Logo 不使用硬拉位移", () => {
+test("首頁 Logo 依確認上移 16px，保留原本佔位與下方內容位置", () => {
   const logoRules = [...css.matchAll(/\.home-screen \.home-logo-image\s*\{[^}]*\}/gs)]
     .map(([rule]) => rule)
     .join("\n");
   assert.notEqual(logoRules, "");
-  assert.doesNotMatch(logoRules, /translateY\(|top\s*:\s*-|margin(?:-[a-z]+)?\s*:\s*-/);
+  assert.match(logoRules, /transform:\s*translateY\(-16px\);/);
+  assert.doesNotMatch(logoRules, /top\s*:\s*-|margin(?:-[a-z]+)?\s*:\s*-/);
 });
