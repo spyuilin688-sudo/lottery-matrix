@@ -219,16 +219,66 @@ export async function listAdminTable(table: string, api: Requester, currentDate 
   const rows = await listAllRows(api, definition.path);
   const items = rows.map(definition.map);
   if (table !== 'users' && table !== 'subscriptions') return { items };
+  return { items: await enrichMembers(items, api, currentDate) };
+}
+
+async function enrichMembers(items: Array<Row & { id: string }>, api: Requester, currentDate: Date, scopeMembers = false) {
+  if (!items.length) return [];
   const connections = await memberConnectionSummaries(items.map(item => String(item.authUserId ?? '')), api);
   const since = new Date(currentDate.getTime() - 3 * 86_400_000).toISOString();
-  const sessions = await listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc`);
+  const memberFilter = scopeMembers ? `&member_id=in.(${items.map(item => encodeURIComponent(item.id)).join(',')})` : '';
+  const sessions = await listAllRows(api, `/rest/v1/member_online_sessions?select=member_id,online_seconds&started_at=gte.${encodeURIComponent(since)}&order=id.asc${memberFilter}`);
   const secondsByMember = new Map<string, number>();
   for (const session of sessions) {
     const memberId = String(session.member_id ?? '');
     if (!memberId) continue;
     secondsByMember.set(memberId, (secondsByMember.get(memberId) ?? 0) + Math.max(0, Number(session.online_seconds ?? 0)));
   }
-  return { items: items.map((item) => ({ ...item, ...(connections.get(String(item.authUserId)) ?? { recentIp: null, estimatedRegion: null }), recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) })) };
+  return items.map((item) => ({ ...item, ...(connections.get(String(item.authUserId)) ?? { recentIp: null, estimatedRegion: null }), recentOnlineMinutes: Math.round((secondsByMember.get(String(item.id)) ?? 0) / 60) }));
+}
+
+type PageRequester = Requester & {
+  requestPage<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
+};
+
+export async function listAdminMemberPage(
+  table: string,
+  query: { page?: unknown; keyword?: unknown; status?: unknown },
+  api: PageRequester,
+  currentDate = new Date(),
+) {
+  const page = Number(query.page ?? 1);
+  const keyword = String(query.keyword ?? '').trim();
+  const status = String(query.status ?? 'all');
+  if (!['users', 'subscriptions'].includes(table) || !Number.isSafeInteger(page) || page < 1 || page > 100000
+      || keyword.length > 200 || !['all', 'active', 'disabled'].includes(status)) {
+    throw new AdminDataError('查詢條件不正確');
+  }
+  const definition = getAdminTableDefinition(table);
+  const url = new URL(definition.path, 'https://supabase.invalid');
+  if (status !== 'all') url.searchParams.set('status', status === 'disabled' ? 'in.(disabled,inactive,停用)' : 'in.(active,啟用)');
+  if (keyword) {
+    // Literal, case-insensitive substring search. Escape regex syntax and then
+    // quote PostgREST OR values so commas/parentheses cannot alter the filters.
+    const pattern = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const plans = await listAllRows(api, `/rest/v1/plans?select=id&name=imatch.${encodeURIComponent(pattern)}&order=id.asc`);
+    const clauses = ['line_display_name', 'referral_code', 'invitation_code'].map(field => `${field}.imatch.${JSON.stringify(pattern)}`);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const planIds = plans.map(plan => String(plan.id)).filter(id => uuid.test(id));
+    if (planIds.length) clauses.push(`current_plan_id.in.(${planIds.join(',')})`);
+    if (uuid.test(keyword)) clauses.push(`id.eq.${keyword}`, `auth_user_id.eq.${keyword}`);
+    url.searchParams.set('or', `(${clauses.join(',')})`);
+  }
+  url.searchParams.set('limit', '30');
+  const readPage = (currentPage: number) => {
+    url.searchParams.set('offset', String((currentPage - 1) * 30));
+    return api.requestPage<Row>(url.pathname + url.search);
+  };
+  let result = await readPage(page);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(result.total / 30)));
+  if (currentPage !== page) result = await readPage(currentPage);
+  const items = await enrichMembers(result.items.map(definition.map), api, currentDate, true);
+  return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / 30)) };
 }
 
 const dashboardPaymentPageSize = 1000;

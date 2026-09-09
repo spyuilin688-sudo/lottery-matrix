@@ -1,3 +1,4 @@
+import { useAdminMemberPage } from "./use-admin-member-page";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
@@ -26,7 +27,7 @@ import "./admin-operations.css";
 import "./system-status.css";
 import { RailwayOperations } from './RailwayOperations';
 import { saveOwnAdminName } from "./admin-profile";
-import { deleteActivationCode, filterRows, formatAdminDateTime, paginateRows, saveMemberStatus, saveSubscription } from "./admin-operations";
+import { deleteActivationCode, formatAdminDateTime, saveMemberStatus, saveSubscription } from "./admin-operations";
 import { runConfirmed } from "./admin-confirmation";
 import {
   canRefreshCrawler,
@@ -262,6 +263,7 @@ function AdminApp() {
   const [admin, setAdmin] = useState<Record<string, unknown> | null>(null);
   const [active, setActive] = useState("營運概覽");
   const [rows, setRows] = useState<Row[]>([]);
+  const [memberListRevision, setMemberListRevision] = useState(0);
   const [plans, setPlans] = useState<Row[]>([]);
   const [transfers, setTransfers] = useState<Row[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[] | null>(null);
@@ -312,6 +314,7 @@ function AdminApp() {
     && adminIdRef.current === expectedAdminId
   );
   const load = async (name = active, expectedAdminId = String(admin?.id ?? "")) => {
+    if (name === "用戶管理" || name === "訂閱管理") setMemberListRevision(value => value + 1);
     const paymentRequestVersion = name === "訂閱管理" ? ++paymentLoadVersion.current : null;
     if (paymentRequestVersion !== null) {
       setPayments(null);
@@ -332,8 +335,7 @@ function AdminApp() {
         const r = await api.get("/api/data/admins");
         setRows(r.data.items || []);
       } else if (name === "訂閱管理") {
-        const [subscriptionsResult, plansResult, transfersResult, paymentRead] = await Promise.all([
-          api.get("/api/data/subscriptions"),
+        const [plansResult, transfersResult, paymentRead] = await Promise.all([
           api.get("/api/data/plans"),
           api.get("/api/data/transferRequests"),
           api.get("/api/data/subscriptionRecords").then(
@@ -341,14 +343,13 @@ function AdminApp() {
             () => ({ ok: false as const }),
           ),
         ]);
-        setRows(subscriptionsResult.data.items || []);
         setPlans(plansResult.data.items || []);
         setTransfers(transfersResult.data.items || []);
         if (paymentRequestVersion !== null && isCurrentPaymentLoad(paymentRequestVersion, expectedAdminId)) {
           if (paymentRead.ok) setPayments((paymentRead.result.data.items || []).map(paymentRecord));
           else setPaymentLoadError("付款紀錄載入失敗，請重新載入");
         }
-      } else if (name === "系統設定" || name === "通知管理" || name === "代辦事項") {
+      } else if (name === "用戶管理" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
         setRows([]);
       } else {
         const t = tableMap[name];
@@ -775,7 +776,7 @@ function AdminApp() {
           )}{" "}
           {active === "用戶管理" && (
             <UserManager
-              rows={rows}
+              revision={memberListRevision}
               canEdit={moduleCan("users", "edit", "edit")}
               onStatus={async (id, status) => {
                 await runConfirmed(
@@ -803,7 +804,7 @@ function AdminApp() {
           )}{" "}
           {active === "訂閱管理" && (
             <SubscriptionManager
-              rows={rows}
+              revision={memberListRevision}
               plans={plans}
               transfers={transfers}
               payments={payments}
@@ -995,20 +996,16 @@ function ConfirmationDialog({
 }
 
 function UserManager({
-  rows,
+  revision,
   canEdit,
   onStatus,
 }: {
-  rows: Row[];
+  revision: number;
   canEdit: boolean;
   onStatus: (id: string, status: "active" | "disabled") => Promise<void>;
 }) {
-  const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState("all");
-  const [page, setPage] = useState(1);
+  const { keyword, setKeyword, status, setStatus, setPage, paged, total, loading, error, retry } = useAdminMemberPage("users", revision, api);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
-  const filtered = filterRows(rows, keyword, status);
-  const paged = paginateRows(filtered, page);
   const fields = ["lineDisplayName", "registeredAt", "lastOnlineAt", "recentOnlineMinutes", "status", "recentIp", "estimatedRegion"];
   const statusText = (value: unknown) => String(value) === "disabled" || String(value) === "停用" ? "停用" : "啟用";
   const showValue = (field: string, row: Row) => field === "status"
@@ -1017,18 +1014,19 @@ function UserManager({
   return (
     <>
       <div className="managementToolbar">
-        <input aria-label="搜尋會員" placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(1); }} />
-        <select aria-label="篩選會員狀態" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
+        <input aria-label="搜尋會員" maxLength={200} placeholder="搜尋會員、方案、推薦碼或邀請碼" value={keyword} onChange={(event) => { setKeyword(event.target.value); }} />
+        <select aria-label="篩選會員狀態" value={status} onChange={(event) => { setStatus(event.target.value); }}>
           <option value="all">全部狀態</option>
           <option value="active">啟用</option>
           <option value="disabled">停用</option>
         </select>
-        <span className="managementCount" aria-label={`共 ${filtered.length} 筆資料`}>{filtered.length} 筆</span>
+        <span className="managementCount" aria-label={loading ? "資料讀取中" : error ? "資料載入失敗" : `共 ${total} 筆資料`}>{loading ? "讀取中" : error ? "—" : `${total} 筆`}</span>
       </div>
-      <div className="managementList tableWrap">
+      {error && <p role="alert">{error} <button type="button" onClick={retry}>重新載入列表</button></p>}
+      <div className="managementList tableWrap" aria-busy={loading}>
         <table>
           <thead><tr>{fields.map((field) => <th key={field}>{zh[field] || field}</th>)}<th>用戶資訊</th></tr></thead>
-          <tbody>{paged.items.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
+          <tbody>{paged.items.length === 0 ? <tr><td colSpan={fields.length + 1} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
               {fields.map((field) => <td key={field}>{field === "status" ? <span className="memberStatusCell">{showValue(field, row)}{canEdit && <button className="compactButton" onClick={() => onStatus(row.id, statusText(row.status) === "停用" ? "active" : "disabled")}>{statusText(row.status) === "停用" ? "啟動" : "停權"}</button>}</span> : showValue(field, row)}</td>)}
               <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
@@ -1036,7 +1034,7 @@ function UserManager({
           ))}</tbody>
         </table>
       </div>
-      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} />
+      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} disabled={loading || Boolean(error)} />
       {userInfo && <UserInfoDialog key={userInfo.id} row={userInfo} client={api} onClose={() => setUserInfo(null)} />}
     </>
   );
@@ -1049,7 +1047,7 @@ type SubscriptionPayload = {
 };
 
 function SubscriptionManager({
-  rows,
+  revision,
   plans,
   transfers,
   payments,
@@ -1062,7 +1060,7 @@ function SubscriptionManager({
   onSubscription,
   onTransfer,
 }: {
-  rows: Row[];
+  revision: number;
   plans: Row[];
   transfers: Row[];
   payments: PaymentRecord[] | null;
@@ -1075,16 +1073,12 @@ function SubscriptionManager({
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
-  const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState("all");
+  const { keyword, setKeyword, status, setStatus, setPage, paged, total, loading, error, retry } = useAdminMemberPage("subscriptions", revision, api);
   const [editing, setEditing] = useState<Row | null>(null);
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
-  const [page, setPage] = useState(1);
   const [userInfo, setUserInfo] = useState<Row | null>(null);
-  const filtered = filterRows(rows, keyword, status);
-  const paged = paginateRows(filtered, page);
   const open = (row: Row, nextAction: SubscriptionPayload["action"]) => {
     setEditing(row);
     setAction(nextAction);
@@ -1105,16 +1099,17 @@ function SubscriptionManager({
   return (
     <>
       <div className="managementToolbar">
-        <input aria-label="搜尋訂閱" placeholder="搜尋會員或方案" value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(1); }} />
-        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
+        <input aria-label="搜尋訂閱" maxLength={200} placeholder="搜尋會員或方案" value={keyword} onChange={(event) => { setKeyword(event.target.value); }} />
+        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => { setStatus(event.target.value); }}>
           <option value="all">全部狀態</option><option value="active">啟用</option><option value="disabled">停用</option>
         </select>
-        <span className="managementCount" aria-label={`共 ${filtered.length} 筆資料`}>{filtered.length} 筆</span>
+        <span className="managementCount" aria-label={loading ? "資料讀取中" : error ? "資料載入失敗" : `共 ${total} 筆資料`}>{loading ? "讀取中" : error ? "—" : `${total} 筆`}</span>
       </div>
-      <div className="managementList tableWrap">
+      {error && <p role="alert">{error} <button type="button" onClick={retry}>重新載入列表</button></p>}
+      <div className="managementList tableWrap" aria-busy={loading}>
         <table>
           <thead><tr><th>LINE名稱</th><th>訂閱方案</th><th>開始時間</th><th>到期時間</th><th>自動續訂</th><th>調整到期日</th><th>用戶資訊</th></tr></thead>
-          <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">目前沒有資料</td></tr> : paged.items.map((row) => (
+          <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
               <td>{text(row.lineDisplayName)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
               <td>{canEdit && <button className="compactButton" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
@@ -1123,7 +1118,7 @@ function SubscriptionManager({
           ))}</tbody>
         </table>
       </div>
-      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} />
+      <Pagination page={paged.currentPage} totalPages={paged.totalPages} onPage={setPage} disabled={loading || Boolean(error)} />
       {editing && (
         <div className="modalBackdrop" role="presentation">
           <div className="operationDialog" role="dialog" aria-modal="true">
@@ -1160,12 +1155,12 @@ function SubscriptionManager({
   );
 }
 
-function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (page: number) => void }) {
+function Pagination({ page, totalPages, onPage, disabled = false }: { page: number; totalPages: number; onPage: (page: number) => void; disabled?: boolean }) {
   return (
     <div className="pagination" aria-label="分頁">
-      <button disabled={page <= 1} onClick={() => onPage(page - 1)}>上一頁</button>
+      <button disabled={disabled || page <= 1} onClick={() => onPage(page - 1)}>上一頁</button>
       <span>第 {page}／{totalPages} 頁</span>
-      <button disabled={page >= totalPages} onClick={() => onPage(page + 1)}>下一頁</button>
+      <button disabled={disabled || page >= totalPages} onClick={() => onPage(page + 1)}>下一頁</button>
     </div>
   );
 }

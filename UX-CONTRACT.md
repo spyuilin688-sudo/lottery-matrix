@@ -245,3 +245,11 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 
 - The current fifty-period setting is a labelled static value, with no button role, click action or keyboard focus stop. It retains the existing compact 24px height, 12px type and full single-column width through the owning segmented styles.
 - Requests retain `periodRange: 50`; this presentation correction does not add other period ranges or alter the algorithm.
+
+
+## History and member-list reliability — 2026-09-09
+
+- The active history router owns the year selector. It reads actual distinct years for the selected lottery, including records beyond the current history range; year-read failures provide an inline retry. History hooks request the selected count directly, relying on the API's existing unique-period handling.
+- The optional 30-minute quick-state cache is shared by the active and retained feature pages. Blocked/full browser storage preserves usable in-memory form state; it does not guarantee recovery after leaving or reloading.
+- Number Reference keeps the existing page scroller, draw order, special-number styling, manual row/cell marks and scroll-to-results-end behavior. Only visible rows plus overscan and any focused row are mounted; scrolling away and back preserves marks.
+- User and subscription membership lists retain the existing search/status controls and 30-row pagination. The authenticated backend filters nickname, plan name, referral/invitation codes and exact member/account IDs before pagination, returns the exact filtered count, and enriches only returned members. New filters reset the page; stale reads cannot replace the current list; failed reads clear actionable rows and provide retry. Module and operation permissions remain authoritative. Activation-code selection and payment/transfer record flows retain their existing owners.

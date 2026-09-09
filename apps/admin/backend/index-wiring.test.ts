@@ -13,7 +13,9 @@ const wiring = vi.hoisted(() => {
   }));
   const insertRows = vi.fn(async () => []);
   const supabaseRequest = vi.fn(async () => []);
+  const requestPage = vi.fn(async (_path: string) => ({ items: [], total: 61 }));
   const createSupabaseTransport = vi.fn(() => ({
+    request: vi.fn(async () => []), requestPage,
     selectRows: vi.fn(async () => []), insertRows, updateRows: vi.fn(async () => []), deleteRows: vi.fn(async () => []), supabaseRequest,
   }));
   const connectionGet = vi.fn(async () => ({ checkedAt: 'test', items: [] }));
@@ -83,7 +85,7 @@ const wiring = vi.hoisted(() => {
   }));
   return {
     workerGetStatus, workerRefreshLottery, workerRecoverLottery, getWorkerConfig, createWorkerApi, insertRows, supabaseRequest,
-    createSupabaseTransport, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
+    createSupabaseTransport, requestPage, createConnectionStatus, admin, requireAdmin, requirePermission, requireModulePermission,
     shouldRecordAdminActivity, getAdminFromHeaders, createAdminCredentialAuth, listMemberPushStatus,
     sendMemberTestPush, listPushDeliveryLogs, createPushNotifications,
     todoList, todoCreate, todoUpdate, todoRemove, createAdminTodos,
@@ -672,6 +674,24 @@ describe('payment reversal route wiring', () => {
         p_actor_name: wiring.admin.name,
       }),
     });
+  });
+
+  it('forwards member list filters after enforcing module view permission', async () => {
+    wiring.requestPage.mockClear();
+    wiring.requireModulePermission.mockClear();
+    const route = 'GET /api/data/:table';
+    const context = await authenticate(route, sessionContext({ table: 'users' }));
+    const routeHandler = routes[route][2] as (input: typeof context & { query: Record<string, string> }) => Promise<unknown>;
+    await expect(routeHandler({ ...context, query: { page: '2', status: 'disabled' } })).resolves.toMatchObject({ body: { total: 61, currentPage: 2 } });
+    expect(wiring.requireModulePermission).toHaveBeenCalledWith(wiring.admin, 'users', 'view');
+    const query = new URL(wiring.requestPage.mock.calls[0][0], 'https://example.test').searchParams;
+    expect(query.get('offset')).toBe('30');
+    expect(query.get('status')).toBe('in.(disabled,inactive,停用)');
+
+    wiring.requestPage.mockClear();
+    wiring.requireModulePermission.mockImplementationOnce(() => { throw Object.assign(new Error('Forbidden'), { statusCode: 403 }); });
+    await expect(routeHandler({ ...context, query: { page: '1' } })).resolves.toMatchObject({ status: 403 });
+    expect(wiring.requestPage).not.toHaveBeenCalled();
   });
 
   it('maps subscriptionRecords reads to subscription view permission', async () => {

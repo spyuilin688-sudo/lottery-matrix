@@ -44,14 +44,14 @@ const app = vi.hoisted(() => {
     };
     if (url === '/api/dashboard') return { data: dashboard };
     if (url === '/api/data/admins') return { data: { items: [otherAdmin] } };
-    if (url === '/api/data/users') return { data: { items: [{ id: 'member-1', status: 'active' }] } };
-    if (url === '/api/data/subscriptions') {
+    if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
+    if (url.startsWith('/api/data/subscriptions?')) {
       if (state.nextSubscriptionRead) {
         const pending = state.nextSubscriptionRead;
         state.nextSubscriptionRead = null;
         return pending;
       }
-      return { data: { items: [{ id: 'member-1', status: 'active' }] } };
+      return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
     }
     if (url === '/api/data/subscriptionRecords') {
       if (state.failPaymentRead) throw new Error('payment offline');

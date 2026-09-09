@@ -43,6 +43,7 @@ function historyFingerprint(records: LotteryDrawRecord[]) {
 
 function invalidateLotteryData(lottery: NumberBallLottery) {
   clearReadCache(`lottery:history:${lottery}:`);
+  clearReadCache(`lottery:years:${lottery}`);
   clearReadCache(`lottery:tongxing:${lottery}:`);
   clearReadCache(`lottery:number-reference:${lottery}:`);
   invalidateMatrixData();
@@ -374,6 +375,16 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
     },
     { expiresAt: () => expiresAt },
   );
+}
+
+export async function fetchLotteryHistoryYears(lottery: NumberBallLottery): Promise<string[]> {
+  return readThroughCache(`lottery:years:${lottery}`, LOTTERY_READ_CACHE_MS, async () => {
+    const data = await requestJson<{ years: unknown }>(`/api/matrix/history-years/${encodeURIComponent(lottery)}`);
+    if (!Array.isArray(data.years) || data.years.some(year => typeof year !== 'string' || !/^\d{4}$/.test(year))) {
+      throw new Error('歷史年份格式不正確');
+    }
+    return [...new Set(data.years as string[])].sort().reverse();
+  });
 }
 
 export async function fetchLotteryHistory(
