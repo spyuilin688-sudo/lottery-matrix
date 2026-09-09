@@ -11,6 +11,7 @@ import { getSupabaseClient } from "../lib/supabase";
 import { logicalSessionIdentity } from "../auth/session-identity";
 import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
+import { SUBSCRIPTION_PURCHASE_VISIBLE } from "../subscription-purchase-visibility";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
 
@@ -383,9 +384,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
             <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>
-          <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
+          {SUBSCRIPTION_PURCHASE_VISIBLE && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />
-          </button>
+          </button>}
         </section>
       </div>
       {menuGroups.map((group) => (
@@ -476,7 +477,7 @@ export function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigat
     <ProfileDetailShell title="管理訂閱" onNavigate={onNavigate}>
       <DetailCard title="目前方案"><p>{profile ? profile.isLifetime ? "永久會員" : profile.planName ?? "未訂閱" : placeholder}</p></DetailCard>
       <DetailCard title="訂閱到期日"><p>{profile ? expiry : placeholder}</p></DetailCard>
-      <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>
+      {SUBSCRIPTION_PURCHASE_VISIBLE && <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>}
     </ProfileDetailShell>
   );
 }

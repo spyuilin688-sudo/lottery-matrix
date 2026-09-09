@@ -30,6 +30,7 @@ import {
 } from "./MemberPages";
 import { MatrixCustomStatusPage, MatrixStatusPage } from "./MatrixStatusPages";
 import { LinePageGuard } from "../auth/LinePageGuard";
+import { SUBSCRIPTION_PURCHASE_VISIBLE } from "../subscription-purchase-visibility";
 
 export function FeaturePageRouter({
   screen,
@@ -42,6 +43,9 @@ export function FeaturePageRouter({
   historyReturnScreen?: ScreenId;
   statusLottery?: LotteryId;
 }) {
+  if (!SUBSCRIPTION_PURCHASE_VISIBLE && (screen === "pro-plans" || screen === "manual-transfer")) {
+    return <ProfilePage onNavigate={onNavigate} />;
+  }
   if (screen === "matrix-core") return <MatrixExplorePage onNavigate={onNavigate} />;
   if (screen === "explore") return <MatrixExplorePage onNavigate={onNavigate} />;
   if (screen === "tianyan") return <MatrixExplorePage key="tianyan" onNavigate={onNavigate} title="Matrix 天衍" roadTypes={["複合版路"]} />;

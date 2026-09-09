@@ -47,7 +47,8 @@ vi.mock("../lib/supabase", () => ({ getSupabaseClient: supabase.getClient }));
 vi.mock("../dialog/AppDialog", () => ({ useAppDialog: () => appDialog }));
 vi.mock("../pwa-lifecycle", () => ({ usePwaLifecycle: pwaLifecycle.usePwaLifecycle }));
 
-import { ProfilePage } from "../FeaturePages";
+import { FeaturePageRouter, ProfilePage } from "../FeaturePages";
+import { SubscriptionManagementPage } from "../features/MemberPages";
 
 const style = document.createElement("style");
 
@@ -99,17 +100,30 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
-  it("會員卡的登入與訂閱入口保留至少 44px 觸控高度", async () => {
+  it("暫時隱藏訂閱購買入口，保留登入操作及訂閱資訊", async () => {
     const onNavigate = vi.fn();
     render(<ProfilePage onNavigate={onNavigate} />);
 
     const logout = await screen.findByRole("button", { name: "登出" });
-    const plans = screen.getByRole("button", { name: "訂閱方案／收費標準" });
-    for (const action of [logout, plans]) {
-      expect(parseFloat(getComputedStyle(action).minHeight)).toBeGreaterThanOrEqual(44);
-    }
-    fireEvent.click(plans);
-    expect(onNavigate).toHaveBeenCalledWith("pro-plans");
+    expect(parseFloat(getComputedStyle(logout).minHeight)).toBeGreaterThanOrEqual(44);
+    expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
+    expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("管理訂閱保留目前方案並隱藏購買入口", async () => {
+    render(<SubscriptionManagementPage onNavigate={vi.fn()} />);
+    expect(await screen.findByText("年費方案")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
+  });
+
+  it.each(["pro-plans", "manual-transfer"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
+    render(<FeaturePageRouter screen={purchaseScreen} onNavigate={vi.fn()} />);
+    expect(screen.getByRole("img", { name: "我的" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "確定付款" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "提交" })).not.toBeInTheDocument();
+    await screen.findByRole("button", { name: "登出" });
   });
 
   it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
