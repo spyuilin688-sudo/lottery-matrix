@@ -19,14 +19,14 @@ import { FeatureShell, SectionTitle } from "./shared";
 /** Keep the approved raster artwork intact; mask sample text and the sample photo.
  *  All visible member data and interactive labels are rendered by ProfilePage.
  */
-function MembershipArtwork() {
+function MembershipArtwork({ showSubscription }: { showSubscription: boolean }) {
   const maskId = useId();
   const headingClipId = `${maskId}-heading`;
   const informationClipId = `${maskId}-information`;
   const source = "/assets/lottery/membership/membership-ab-reference.png";
   return (
-    <div className="membership-reference-art" aria-hidden="true">
-      <svg viewBox="0 0 1563 740" preserveAspectRatio="none" focusable="false">
+    <div className="membership-reference-art" data-subscription-visible={showSubscription} aria-hidden="true">
+      <svg viewBox={showSubscription ? "0 0 1563 740" : "0 0 1563 387"} preserveAspectRatio="none" focusable="false">
         <defs>
           <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1006">
             <rect width="1563" height="1006" fill="white" />
@@ -53,6 +53,7 @@ function MembershipArtwork() {
         </defs>
         <image href={source} width="1563" height="1006" mask={`url(#${maskId})`} />
       </svg>
+      {showSubscription && <>
       <svg viewBox="0 738 1563 2" preserveAspectRatio="none" focusable="false">
         <image href={source} width="1563" height="1006" />
       </svg>
@@ -68,6 +69,7 @@ function MembershipArtwork() {
       <svg className="subscription-information-art" viewBox="0 387 1563 353" preserveAspectRatio="none" focusable="false">
         <image href={source} width="1563" height="1006" clipPath={`url(#${informationClipId})`} />
       </svg>
+      </>}
     </div>
   );
 }
@@ -345,11 +347,16 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     { title: "系統相關", items: [["版本資訊/更新紀錄", "version-info"]] },
     { title: "客服與支援", items: [["聯絡客服/問題回報/商務合作", "merchant-info"]] },
   ];
+  const visibleMenuGroups = menuGroups.map((group) => ({
+    ...group,
+    items: group.items.filter(([, screen]) => subscriptionPurchaseVisible
+      || (screen !== "payment-history" && screen !== "refund-policy")),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
       <div className="membership-card-stack">
-        <MembershipArtwork />
+        <MembershipArtwork showSubscription={subscriptionPurchaseVisible} />
         <section className="panel membership-card profile-card">
           <div className="profile-avatar">
             <img
@@ -379,18 +386,18 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
                     : "LINE 登入"
           }</span></button> : null}
         </section>
-        <section className="panel membership-card subscription-status-card">
+        {subscriptionPurchaseVisible && <section className="panel membership-card subscription-status-card">
           <SectionTitle>目前訂閱狀態</SectionTitle>
           <div className="subscription-status-content">
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
             <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>
-          {subscriptionPurchaseVisible && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
+          <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />
-          </button>}
-        </section>
+          </button>
+        </section>}
       </div>
-      {menuGroups.map((group) => (
+      {visibleMenuGroups.map((group) => (
         <ProfileMenu title={group.title} items={group.items} onNavigate={onNavigate} key={group.title}>
           {group.title === "系統相關" && showInstallAction ? (
             <button type="button" onClick={() => void handleInstallAction()}>

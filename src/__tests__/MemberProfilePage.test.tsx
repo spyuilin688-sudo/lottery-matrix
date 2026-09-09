@@ -10,7 +10,7 @@ declare const process: { cwd(): string };
 const purchaseSetting = vi.hoisted(() => ({ visible: false }));
 vi.mock("../subscription-purchase-visibility", () => ({ useSubscriptionPurchaseVisible: () => purchaseSetting.visible }));
 
-const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
+const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn(), fetchMemberPaymentHistory: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({
   signInWithLine: vi.fn(),
   signOutFromMatrix: vi.fn(),
@@ -40,6 +40,7 @@ const supabase = vi.hoisted(() => {
 vi.mock("../member-api", () => ({
   bootstrapMember: memberApi.bootstrapMember,
   fetchMemberProfile: memberApi.fetchMemberProfile,
+  fetchMemberPaymentHistory: memberApi.fetchMemberPaymentHistory,
 }));
 vi.mock("../auth/line-auth", () => ({
   signInWithLine: lineAuth.signInWithLine,
@@ -72,6 +73,7 @@ afterEach(() => {
 
 beforeEach(() => {
   purchaseSetting.visible = false;
+  memberApi.fetchMemberPaymentHistory.mockReset().mockResolvedValue([]);
   window.sessionStorage.clear();
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
@@ -104,15 +106,23 @@ beforeEach(() => {
 });
 
 describe("ProfilePage member API", () => {
-  it("暫時隱藏訂閱購買入口，保留登入操作及訂閱資訊", async () => {
+  it("購買關閉時隱藏訂閱狀態、付款紀錄與退款規範，保留登入", async () => {
     const onNavigate = vi.fn();
     render(<ProfilePage onNavigate={onNavigate} />);
 
     const logout = await screen.findByRole("button", { name: "登出" });
     expect(parseFloat(getComputedStyle(logout).minHeight)).toBeGreaterThanOrEqual(44);
     expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
-    expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
+    expect(screen.queryByText("目前訂閱狀態")).not.toBeInTheDocument();
+    expect(document.querySelector(".subscription-status-card")).toBeNull();
+    const artwork = document.querySelector(".membership-reference-art")!;
+    expect(artwork.querySelectorAll(":scope > svg")).toHaveLength(1);
+    expect(artwork.querySelector("svg")).toHaveAttribute("viewBox", "0 0 1563 387");
+    expect(getComputedStyle(artwork).gridTemplateRows).toBe("24.76cqw");
+    expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
+    expect(screen.queryByText("會員相關")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "隱私權政策" })).toBeInTheDocument();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -122,12 +132,13 @@ describe("ProfilePage member API", () => {
     expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
   });
 
-  it.each(["pro-plans", "manual-transfer"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
+  it.each(["pro-plans", "manual-transfer", "payment-history", "refund-policy"] as const)("暫時隱藏 %s 購買頁並顯示會員頁", async (purchaseScreen) => {
     render(<FeaturePageRouter screen={purchaseScreen} onNavigate={vi.fn()} />);
     expect(screen.getByRole("img", { name: "我的" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "確定付款" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "提交" })).not.toBeInTheDocument();
     await screen.findByRole("button", { name: "登出" });
+    expect(memberApi.fetchMemberPaymentHistory).not.toHaveBeenCalled();
   });
 
   it("LINE 暱稱為資訊文字，不呈現輸入框邊線", async () => {
@@ -177,6 +188,7 @@ describe("ProfilePage member API", () => {
   });
 
   it("moves the combined support entry below legal information and removes its duplicate entries", () => {
+    purchaseSetting.visible = true;
     render(<ProfilePage onNavigate={vi.fn()} />);
 
     const menuTitles = Array.from(document.querySelectorAll<HTMLElement>(".profile-menu > .section-title"))
@@ -567,6 +579,7 @@ describe("ProfilePage member API", () => {
   });
 
   it("以登入會員 API 資料取代固定 LINE ID、方案與到期日", async () => {
+    purchaseSetting.visible = true;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
     render(<ProfilePage onNavigate={vi.fn()} />);
@@ -585,6 +598,7 @@ describe("ProfilePage member API", () => {
   });
 
   it("沒有付費方案與到期日時顯示免費會員核心功能體驗", async () => {
+    purchaseSetting.visible = true;
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
       lineUserId: "line-free",
       planName: null,
@@ -601,6 +615,7 @@ describe("ProfilePage member API", () => {
   });
 
   it("終身方案不顯示 API 內的固定到期日", async () => {
+    purchaseSetting.visible = true;
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
       lineUserId: "line-lifetime",
       planName: "終身方案",
@@ -616,6 +631,7 @@ describe("ProfilePage member API", () => {
   });
 
   it("以 Asia/Taipei 日曆日計算跨 UTC 日期邊界的到期日", async () => {
+    purchaseSetting.visible = true;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-12T04:00:00.000Z"));
     memberApi.fetchMemberProfile.mockResolvedValueOnce({
@@ -745,9 +761,17 @@ it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏", asyn
   view.rerender(<ProfilePage onNavigate={onNavigate} />);
   fireEvent.click(screen.getByRole("button", { name: "訂閱方案／收費標準" }));
   expect(onNavigate).toHaveBeenCalledWith("pro-plans");
+  expect(screen.getByText("目前訂閱狀態")).toBeInTheDocument();
+  expect(document.querySelector(".membership-reference-art > svg")).toHaveAttribute("viewBox", "0 0 1563 740");
+  expect(document.querySelector(".subscription-information-art")).not.toBeNull();
+  expect(screen.getByRole("button", { name: "付款紀錄" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "退款規範" })).toBeInTheDocument();
   purchaseSetting.visible = false;
   view.rerender(<ProfilePage onNavigate={onNavigate} />);
   expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
+  expect(screen.queryByText("目前訂閱狀態")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "付款紀錄" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "退款規範" })).not.toBeInTheDocument();
 });
 
 it("購買開關關閉時會卸載已開啟的方案頁", async () => {

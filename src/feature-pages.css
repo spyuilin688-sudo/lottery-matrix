@@ -1013,6 +1013,9 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   width: 100%;
   height: 100%;
 }
+.membership-reference-art[data-subscription-visible="false"] {
+  grid-template-rows: 24.76cqw;
+}
 .membership-reference-art > .subscription-heading-art,
 .membership-reference-art > .subscription-information-art {
   position: absolute;
