@@ -7,6 +7,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 declare const process: { cwd(): string };
 
+const purchaseSetting = vi.hoisted(() => ({ visible: false }));
+vi.mock("../subscription-purchase-visibility", () => ({ useSubscriptionPurchaseVisible: () => purchaseSetting.visible }));
+
 const memberApi = vi.hoisted(() => ({ bootstrapMember: vi.fn(), fetchMemberProfile: vi.fn() }));
 const lineAuth = vi.hoisted(() => ({
   signInWithLine: vi.fn(),
@@ -68,6 +71,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  purchaseSetting.visible = false;
   window.sessionStorage.clear();
   lineAuth.signInWithLine.mockReset().mockResolvedValue(undefined);
   lineAuth.signOutFromMatrix.mockReset().mockResolvedValue(undefined);
@@ -730,4 +734,29 @@ describe("ProfilePage member API", () => {
     fireEvent.click(logout);
     await waitFor(() => expect(lineAuth.signOutFromMatrix).toHaveBeenCalledTimes(2));
   });
+});
+
+
+it("開啟購買開關後恢復入口，關閉後不需重掛即可隱藏", async () => {
+  const onNavigate = vi.fn();
+  const view = render(<ProfilePage onNavigate={onNavigate} />);
+  await screen.findByRole("button", { name: "登出" });
+  purchaseSetting.visible = true;
+  view.rerender(<ProfilePage onNavigate={onNavigate} />);
+  fireEvent.click(screen.getByRole("button", { name: "訂閱方案／收費標準" }));
+  expect(onNavigate).toHaveBeenCalledWith("pro-plans");
+  purchaseSetting.visible = false;
+  view.rerender(<ProfilePage onNavigate={onNavigate} />);
+  expect(screen.queryByRole("button", { name: "訂閱方案／收費標準" })).not.toBeInTheDocument();
+});
+
+it("購買開關關閉時會卸載已開啟的方案頁", async () => {
+  purchaseSetting.visible = true;
+  const onNavigate = vi.fn();
+  const view = render(<FeaturePageRouter screen="pro-plans" onNavigate={onNavigate} />);
+  expect(document.querySelector(".pro-plans-screen")).not.toBeNull();
+  purchaseSetting.visible = false;
+  view.rerender(<FeaturePageRouter screen="pro-plans" onNavigate={onNavigate} />);
+  expect(document.querySelector(".pro-plans-screen")).toBeNull();
+  expect(await screen.findByRole("button", { name: "登出" })).toBeInTheDocument();
 });

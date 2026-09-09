@@ -11,7 +11,7 @@ import { getSupabaseClient } from "../lib/supabase";
 import { logicalSessionIdentity } from "../auth/session-identity";
 import { useAppDialog } from "../dialog/AppDialog";
 import { usePwaLifecycle } from "../pwa-lifecycle";
-import { SUBSCRIPTION_PURCHASE_VISIBLE } from "../subscription-purchase-visibility";
+import { useSubscriptionPurchaseVisible } from "../subscription-purchase-visibility";
 import { Navigate, ScreenId } from "./navigation";
 import { FeatureShell, SectionTitle } from "./shared";
 
@@ -160,6 +160,7 @@ export type ProfileAuthState =
 export const PROFILE_SESSION_TIMEOUT_MS = 2_500;
 
 export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const { confirm: confirmDialog, alert: alertDialog } = useAppDialog();
   const { showInstallAction, requestInstall } = usePwaLifecycle();
   const [authState, setAuthState] = useState<ProfileAuthState>("initializing");
@@ -384,7 +385,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
             <div className="subscription-plan"><span>目前方案</span><strong>{displayedPlanName}</strong><p>{memberProfile ? displayedPlanDescription : ""}</p></div>
             <div className="subscription-expiry"><span>訂閱到期日</span><strong>{expiry?.date ?? ""}</strong><p>{expiry ? `剩餘 ${expiry.remainingDays} 天` : ""}</p></div>
           </div>
-          {SUBSCRIPTION_PURCHASE_VISIBLE && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
+          {subscriptionPurchaseVisible && <button type="button" className="subscription-entry" onClick={() => onNavigate("pro-plans")}>
             <span>訂閱方案／收費標準</span><ChevronRightIcon />
           </button>}
         </section>
@@ -470,6 +471,7 @@ function useSubscriptionProfile() {
 }
 
 export function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigate }) {
+  const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
   const { profile, error } = useSubscriptionProfile();
   const placeholder = error ? "會員資料載入失敗" : "讀取中";
   const expiry = profile?.isLifetime ? "無到期日" : memberExpiryInTaipei(profile?.planExpiresAt ?? null)?.date ?? "無訂閱到期日";
@@ -477,7 +479,7 @@ export function SubscriptionManagementPage({ onNavigate }: { onNavigate: Navigat
     <ProfileDetailShell title="管理訂閱" onNavigate={onNavigate}>
       <DetailCard title="目前方案"><p>{profile ? profile.isLifetime ? "永久會員" : profile.planName ?? "未訂閱" : placeholder}</p></DetailCard>
       <DetailCard title="訂閱到期日"><p>{profile ? expiry : placeholder}</p></DetailCard>
-      {SUBSCRIPTION_PURCHASE_VISIBLE && <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>}
+      {subscriptionPurchaseVisible && <button type="button" className="confirm-payment" onClick={() => onNavigate("pro-plans")}>訂閱方案／收費標準</button>}
     </ProfileDetailShell>
   );
 }

@@ -1,2 +1,4 @@
-// Temporarily hide purchase UI. This does not change membership or API entitlements.
-export const SUBSCRIPTION_PURCHASE_VISIBLE = false;
+import { usePermissionSettings } from './permission-settings';
+export function useSubscriptionPurchaseVisible() {
+  return usePermissionSettings()?.subscriptionPurchaseVisible ?? false;
+}

@@ -1,3 +1,4 @@
+import { installPermissionSettingsRefresh } from './permission-settings';
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource/roboto/latin-500.css";
@@ -47,6 +48,8 @@ const root = document.getElementById('root')!;
 let diagnosticFlushStarted = false;
 const renderApp = () => {
   const stopVisitorTracking = installVisitorTracking();
+  const stopPermissionRefresh = installPermissionSettingsRefresh();
+  if (import.meta.hot) import.meta.hot.dispose(stopPermissionRefresh);
   if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
@@ -106,3 +109,4 @@ async function bootstrap() {
 }
 
 void bootstrap().catch(renderApp);
+
