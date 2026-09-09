@@ -6,6 +6,7 @@ const url = import.meta.env.VITE_SUPABASE_URL?.trim()
   || "https://wcimzbbapfrdotjsfyxa.supabase.co";
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
   || "sb_publishable_sJuiSZhS6bCOza_RGTMVPg_JFiVv0F8";
+const memberOnlineEndUrl = `${url.replace(/\/+$/, '')}/rest/v1/rpc/member_online_end`;
 let client: SupabaseClient | null = null;
 
 export function hasSupabaseConfig() {
@@ -26,7 +27,14 @@ export function getSupabaseClient() {
       storage: createSupabaseAuthStorage(),
     },
     global: {
-      fetch: (input, init) => fetchWithPolicy(input, init),
+      fetch: (input, init) => {
+        const request = typeof Request !== 'undefined' && input instanceof Request ? input : undefined;
+        const method = init?.method ?? request?.method;
+        const isMemberOnlineEnd = method?.toUpperCase() === 'POST'
+          && (request?.url ?? String(input)) === memberOnlineEndUrl;
+        // A pagehide/visibilitychange end must survive the document being unloaded.
+        return fetchWithPolicy(input, isMemberOnlineEnd ? { ...init, keepalive: true } : init);
+      },
     },
   });
 

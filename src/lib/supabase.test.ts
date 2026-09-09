@@ -2,6 +2,7 @@
 import type { Session, SupportedStorage } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as supabaseModule from './supabase';
+import { postMemberOnline } from '../member-online-api';
 import {
   createProviderTokenSafeStorage,
   createSupabaseAuthStorage,
@@ -73,6 +74,60 @@ describe('production Supabase configuration', () => {
     for (const [, init] of fetcher.mock.calls) {
       expect(new Headers(init?.headers).get('X-Request-ID')).toBeNull();
     }
+  });
+
+  it('keeps the authenticated session-end request alive when its page is unloaded', async () => {
+    vi.spyOn(supabaseModule.getSupabaseClient().auth, 'getSession').mockResolvedValue({
+      data: { session: lineSession() },
+      error: null,
+    });
+    const requests: Request[] = [];
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      requests.push(new Request(input, init));
+      return new Response(JSON.stringify({ onlineSeconds: 12 }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    await expect(postMemberOnline('/api/member-online/end', {
+      sessionId: 'ed338d00-cdf8-4f63-b2ab-c71536d4e164',
+    })).resolves.toEqual({ onlineSeconds: 12 });
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [request] = requests;
+    expect(request.keepalive).toBe(true);
+    expect(request.method).toBe('POST');
+    expect(request.url).toBe('https://wcimzbbapfrdotjsfyxa.supabase.co/rest/v1/rpc/member_online_end');
+    expect(request.headers.get('Authorization')).toBe('Bearer supabase-access-token');
+    expect(request.headers.get('apikey')).toBe('sb_publishable_sJuiSZhS6bCOza_RGTMVPg_JFiVv0F8');
+    expect(await request.json()).toEqual({ p_session_id: 'ed338d00-cdf8-4f63-b2ab-c71536d4e164' });
+  });
+
+  it('keeps ordinary reads and session-start writes outside the unload transport', async () => {
+    const requests: Request[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      requests.push(new Request(input, init));
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    });
+
+    await postMemberOnline('/api/member-online/start', {});
+    await supabaseModule.getSupabaseClient().from('lottery_draws').select('*');
+
+    expect(requests).toHaveLength(2);
+    expect(requests.map(request => request.method)).toEqual(['POST', 'GET']);
+    expect(requests.map(request => request.keepalive)).toEqual([false, false]);
+  });
+
+  it('does not retry a failed session-end write', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ message: 'unavailable', code: '503' }),
+      { status: 503, headers: { 'content-type': 'application/json' } },
+    ));
+
+    await expect(postMemberOnline('/api/member-online/end', {
+      sessionId: 'ed338d00-cdf8-4f63-b2ab-c71536d4e164',
+    })).rejects.toMatchObject({ message: 'unavailable' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it('does not return a network-stallable response body after the shared deadline', async () => {
