@@ -14,6 +14,10 @@ export function hasSupabaseConfig() {
 
 export function getSupabaseClient() {
   if (!url || !anonKey) throw new Error("SUPABASE_CONFIG_MISSING");
+  const memberOnlineEndUrl = new URL(
+    'rest/v1/rpc/member_online_end',
+    url.endsWith('/') ? url : `${url}/`,
+  ).href;
 
   client ??= createClient(url, anonKey, {
     db: {
@@ -26,7 +30,14 @@ export function getSupabaseClient() {
       storage: createSupabaseAuthStorage(),
     },
     global: {
-      fetch: (input, init) => fetchWithPolicy(input, init),
+      fetch: (input, init) => {
+        const request = typeof Request !== 'undefined' && input instanceof Request ? input : undefined;
+        const method = init?.method ?? request?.method;
+        const isMemberOnlineEnd = method?.toUpperCase() === 'POST'
+          && (request?.url ?? String(input)) === memberOnlineEndUrl;
+        // A pagehide/visibilitychange end must survive the document being unloaded.
+        return fetchWithPolicy(input, isMemberOnlineEnd ? { ...init, keepalive: true } : init);
+      },
     },
   });
 
