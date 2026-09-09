@@ -1,0 +1,28 @@
+name: Home logo and ball weight verification
+on:
+  push:
+    branches: ['work/home-logo-ball-weight-20260910']
+permissions:
+  contents: read
+jobs:
+  scoped-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/homepage-logo-layout.test.mjs tests/number-ball-style-source.test.mjs
+      - run: npx vitest run src/__tests__/homepage-layout-request.test.ts
+      - run: npm run build:pages
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/home-logo-core-responsive.spec.ts --workers=1 --reporter=list
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-logo-ball-weight-results
+          path: test-results/
+          retention-days: 7

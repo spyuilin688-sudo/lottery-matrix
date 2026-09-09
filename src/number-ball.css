@@ -1,4 +1,4 @@
-/* Use the existing Roboto 800 asset only for the approved home Mark Six variant. */
+/* Share the existing Roboto 800 asset only among approved home draw variants. */
 @font-face {
   font-family: "Roboto Mark Six Home";
   font-style: normal;
@@ -206,6 +206,12 @@
   --underline-width: 16px;
   --underline-height: 1px;
   --underline-y: 1px;
+}
+
+/* Keep other lotteries and history surfaces on their existing font matching. */
+.home-screen .latest-draw-card .number-ball-component:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .number-ball-value {
+  font-family: "Roboto Mark Six Home", "Roboto", Arial, sans-serif;
+  font-weight: 800;
 }
 
 .home-screen .latest-draw-card .draw-balls[data-has-special="true"] .number-ball-component {
