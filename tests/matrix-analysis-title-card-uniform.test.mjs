@@ -9,7 +9,7 @@ const css = readFileSync(new URL("../src/matrix-explore-spacing.css", import.met
 const source = readFeaturePagesSource();
 
 test("探索、天衍、天工共用固定尺寸的 Logo 標題卡", () => {
-  assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);
+  assert.match(source, /current=\{isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
   assert.match(source, /className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen"/);
 
   const card = ruleBodies(css, /^\.matrix-explore-main-screen \.matrix-title-banner$/);
