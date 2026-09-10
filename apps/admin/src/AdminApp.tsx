@@ -1585,7 +1585,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                           ))}
                           {detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
                           {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
-                          {item.id === "appdeploy-watchdog-heartbeat" && (
+                          {item.id === "supabase-watchdog-heartbeat" && (
                             <>
                               <div><dt>監控完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
                               <div><dt>執行頻率</dt><dd>每 10 分鐘</dd></div>

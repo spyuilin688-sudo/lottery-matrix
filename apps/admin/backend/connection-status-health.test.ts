@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createConnectionStatus } from './connection-status';
 
-const healthUrl = 'https://api-v2.appdeploy.ai/app/matrix-sanqwn/api/_healthcheck';
+const healthUrl = 'https://matrixlottery.idv.tw/admin/api/_healthcheck';
 const json = (body: unknown) => Response.json(body);
 const fixture = (fetcher: typeof fetch) => createConnectionStatus({
   supabase: { selectRows: async () => [] },

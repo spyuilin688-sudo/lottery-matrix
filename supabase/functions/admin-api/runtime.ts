@@ -121,7 +121,7 @@ export function router(routes: Record<string, unknown>): (request: Request) => P
       const params: Record<string, string> = {};
       route.segments.forEach((part, index) => { if (part.startsWith(':')) params[part.slice(1)] = segments[index]; });
       const headers: Record<string, string> = {};
-      for (const name of ['cookie', 'authorization', 'origin', 'content-type', 'user-agent', 'x-forwarded-for']) {
+      for (const name of ['cookie', 'authorization', 'origin', 'content-type', 'user-agent', 'x-forwarded-for', 'x-matrix-watchdog-token']) {
         const value = request.headers.get(name);
         if (value !== null) headers[name] = value;
       }
@@ -218,4 +218,3 @@ export function createWatchdogDatabase(reader: SecretReader = secrets, fetcher: 
   };
 }
 export const db = createWatchdogDatabase();
-

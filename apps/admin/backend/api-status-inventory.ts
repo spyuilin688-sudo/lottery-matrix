@@ -65,8 +65,8 @@ const supabaseRpcInventory: ApiStatusDefinition[] = supabaseRpcDefinitions.map(
 );
 
 export const apiStatusInventory: readonly ApiStatusDefinition[] = [
-  { id: 'admin-api', name: '管理者後臺 API', group: '系統', location: 'AppDeploy', endpoint: '/api/_healthcheck', checkMode: 'live', description: '確認管理者後臺 API 可正常回應。' },
-  { id: 'appdeploy-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'AppDeploy', endpoint: '/internal/matrix-watchdog-status', checkMode: 'service', description: '每 10 分鐘執行自動監控；這裡顯示最近一次執行結果。' },
+  { id: 'admin-api', name: '管理者後臺 API', group: '系統', location: 'Supabase', endpoint: '/admin/api/_healthcheck', checkMode: 'live', description: '確認正式管理者後臺 API 可正常回應。' },
+  { id: 'supabase-watchdog-heartbeat', name: '自動監控執行狀態', group: '自動監控', location: 'Supabase', endpoint: '/functions/v1/admin-api/api/internal/matrix-watchdog', checkMode: 'service', description: '每 10 分鐘由 Supabase 執行自動監控；這裡顯示最近一次執行結果。' },
   { id: 'supabase-database', name: '資料庫連線', group: '系統', location: 'Supabase', endpoint: '/rest/v1/plans?select=id&limit=1', checkMode: 'live', description: '讀取一筆訂閱方案，確認資料庫能回傳資料。' },
   { id: 'supabase-auth', name: '會員登入服務', group: '系統', location: 'Supabase', endpoint: '/auth/v1/settings', checkMode: 'live', description: '讀取會員登入服務設定，確認服務有回應。' },
   { id: 'matrix-status-function', name: 'Matrix 狀態處理', group: 'Matrix 狀態', location: 'Supabase', endpoint: '/functions/v1/matrix-status', checkMode: 'live', description: '處理 Matrix 狀態資料查詢。' },

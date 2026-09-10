@@ -1,4 +1,3 @@
-import { createSecurityMonitor } from './security-monitor';
 import { listMemberLoginHistory } from './member-login-history';
 import { db, error, json, requireAuth, router, secrets } from '@appdeploy/sdk';
 import {
@@ -51,7 +50,6 @@ type PermissionInput = {
 };
 
 const supabase = createSupabaseTransport(() => getSupabaseConfig(secrets));
-const securityMonitor = createSecurityMonitor(() => getSupabaseConfig(secrets));
 const adminTransferPush = createAdminTransferPush(() => getSupabaseConfig(secrets));
 const pushNotifications = createPushNotifications(() => getSupabaseConfig(secrets));
 const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
@@ -96,6 +94,20 @@ const actorOf = (admin: { id?: string; account?: string; name?: string; role?: s
 const bodyOf = (ctx: Context) =>
   (ctx.body && typeof ctx.body === 'object' ? ctx.body : {}) as Record<string, unknown>;
 
+const watchdogCronGuard = async (ctx: Context) => {
+  const token = ctx.event?.headers?.['x-matrix-watchdog-token']?.trim();
+  if (!token) return error('AUTHENTICATION_REQUIRED', 401);
+  try {
+    const allowed = await supabase.supabaseRequest<boolean>('rpc/admin_watchdog_cron_authorize', {
+      method: 'POST',
+      body: JSON.stringify({ p_token: token }),
+    });
+    if (allowed !== true) return error('AUTHENTICATION_REQUIRED', 401);
+  } catch {
+    return error('WATCHDOG_AUTH_UNAVAILABLE', 503);
+  }
+};
+
 async function getAdmin(ctx: Context) {
   if (!ctx.admin) throw new AdminAccessError('管理員登入已失效', 401);
   return ctx.admin;
@@ -103,17 +115,7 @@ async function getAdmin(ctx: Context) {
 
 const sessionGuard = async (ctx: Context) => {
   try { ctx.admin = await credentialAuth.getAdminFromHeaders(ctx.event?.headers); }
-  catch (cause) {
-    const decision = await securityMonitor.check(ctx, 'unauthorized');
-    if (!decision.allowed) {
-      const response = json({ error: { code: 'RATE_LIMITED' } }, 429);
-      response.headers['Retry-After'] = String(decision.retryAfter);
-      response.headers['Cache-Control'] = 'no-store';
-      return response;
-    }
-    await securityMonitor.observe(ctx, 'unauthorized', 'denied');
-    return fail(cause);
-  }
+  catch (cause) { return fail(cause); }
 };
 
 async function authorize(ctx: Context, permission: PermissionKey) {
@@ -185,45 +187,10 @@ const watchdogLotteries: WatchdogLottery[] = ['今彩539', '天天樂', '六合�
 const routes: Record<string, unknown> = {
   'GET /api/_healthcheck': [async () => json({ message: 'Success' })],
 
-  'GET /api/security-policies': [sessionGuard, superGuard, async (ctx: Context) => {
-    try {
-      const admin = await getAdmin(ctx);
-      return json(await supabase.supabaseRequest('rpc/security_policy_list', {method:'POST',body:JSON.stringify({p_admin_id:admin.id})}));
-    } catch (cause) { return fail(cause); }
-  }],
-  'PUT /api/security-policies/:category': [sessionGuard, superGuard, async (ctx: Context) => {
-    try {
-      const admin = await getAdmin(ctx);
-      const body = bodyOf(ctx);
-      if (!['public_query','admin_login','unauthorized'].includes(ctx.params.category)
-        || !['observe','enforce'].includes(String(body.mode))
-        || !Number.isInteger(body.threshold) || Number(body.threshold)<1 || Number(body.threshold)>100000
-        || !Number.isInteger(body.windowSeconds) || Number(body.windowSeconds)<10 || Number(body.windowSeconds)>3600
-        || !Number.isInteger(body.expectedRevision) || Number(body.expectedRevision)<1) return error('INVALID_SECURITY_POLICY',400);
-      return json(await supabase.supabaseRequest('rpc/security_policy_update', {method:'POST',body:JSON.stringify({
-        p_admin_id:admin.id,p_category:ctx.params.category,p_mode:body.mode,p_threshold:body.threshold,
-        p_window_seconds:body.windowSeconds,p_expected_revision:body.expectedRevision,
-      })}));
-    } catch (cause) { return fail(cause); }
-  }],
-
   'POST /api/admin-login': [async (ctx: Context) => {
-    const decision = await securityMonitor.check(ctx, 'admin_login');
-    if (!decision.allowed) {
-      const response = json({ error: { code: 'RATE_LIMITED' } }, 429);
-      response.headers['Retry-After'] = String(decision.retryAfter);
-      response.headers['Cache-Control'] = 'no-store';
-      return response;
-    }
     try {
       const body = bodyOf(ctx);
-      let login;
-      try { login = await credentialAuth.login(String(body.account ?? ''), String(body.password ?? '')); }
-      catch (cause) {
-        await securityMonitor.observe(ctx, 'admin_login', 'denied');
-        throw cause;
-      }
-      await securityMonitor.observe(ctx, 'admin_login', 'success');
+      const login = await credentialAuth.login(String(body.account ?? ''), String(body.password ?? ''));
       const lastLoginAt = now();
       if (shouldRecordAdminActivity(login.admin)) {
         await Promise.all([
@@ -401,6 +368,16 @@ const routes: Record<string, unknown> = {
   'GET /api/system-status': [sessionGuard, moduleGuard('systemSettings', 'view'), async () =>
     json(await connectionStatus.get())],
 
+  'POST /api/internal/matrix-watchdog': [watchdogCronGuard, async () => {
+    const result = await matrixIndependentWatchdog({
+      scheduledTime: now(),
+      invocationId: `supabase-cron:${crypto.randomUUID()}`,
+    });
+    return result.statusCode === 200
+      ? json({ message: 'Success' })
+      : error('WATCHDOG_DEGRADED', 503);
+  }],
+
   'POST /api/system-status/:id/retry': [sessionGuard, moduleGuard('systemSettings', 'view'), async (ctx: Context) => {
     try {
       return json({ item: await connectionStatus.retry(ctx.params.id) });
@@ -444,7 +421,7 @@ const routes: Record<string, unknown> = {
     if (!lottery) return error('此項目不支援復原', 400);
     try {
       const admin = await getAdmin(ctx);
-      const owner = crypto.randomUUID();
+      const owner = `admin-manual:${crypto.randomUUID()}`;
       const acquired = await watchdogLeases.claim(`railway:${lottery}`, owner);
       if (!acquired) return json({ recovery: { lottery, status: 'already-running' } });
       // Railway owns completion and lease release. On an ambiguous timeout, keep
@@ -620,9 +597,9 @@ const routes: Record<string, unknown> = {
   }],
 };
 
-export const matrixIndependentWatchdog = async (
+export async function matrixIndependentWatchdog(
   event: { scheduledTime?: string; invocationId?: string },
-) => {
+) {
   const scheduled = event?.scheduledTime ? new Date(event.scheduledTime) : new Date();
   const at = Number.isNaN(scheduled.getTime()) ? new Date() : scheduled;
   const owner = event?.invocationId || `cron:${at.toISOString()}`;
@@ -656,7 +633,7 @@ export const matrixIndependentWatchdog = async (
   }
   const log = result.status === 'ok' ? console.log : console.error;
   log(`matrix-independent-watchdog ${JSON.stringify(result)}`);
-  return { statusCode: 200 };
-};
+  return { statusCode: result.status === 'ok' ? 200 : 503 };
+}
 
 export const handler = router(routes);

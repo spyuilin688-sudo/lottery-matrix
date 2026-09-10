@@ -47,4 +47,26 @@ describe('Supabase admin Edge runtime', () => {
     expect(response.status).toBe(200);
     expect(seen).toHaveBeenCalledWith('203.0.113.7');
   });
+
+  it('passes only the dedicated watchdog credential to the internal canonical route', async () => {
+    const seen = vi.fn();
+    const handler = router({
+      'POST /api/internal/matrix-watchdog': [async (ctx) => {
+        seen(ctx.event.headers['x-matrix-watchdog-token']);
+        return json({ ok: true });
+      }],
+    });
+    const response = await handler(new Request('https://project.test/functions/v1/admin-api/api/internal/matrix-watchdog', {
+      method: 'POST',
+      headers: {
+        Origin: 'https://matrixlottery.idv.tw',
+        'Content-Type': 'application/json',
+        'X-Matrix-Watchdog-Token': 'cron-secret',
+        'X-Untrusted-Token': 'untrusted',
+      },
+      body: '{}',
+    }));
+    expect(response.status).toBe(200);
+    expect(seen).toHaveBeenCalledWith('cron-secret');
+  });
 });
