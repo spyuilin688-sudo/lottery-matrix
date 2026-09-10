@@ -99,6 +99,25 @@ test('first visit dialog changes live and keeps the login action and once-only b
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
+test.each([
+  ['04Matrix 探索', ['結果顯示位置、號碼、查詢期、連準次數、結果及版路類型。']],
+  ['06Matrix 天工', ['第一段驗證3個球位；第二段驗證前2個球位，第3個球位產生結果。', '按下「開始探索」後顯示間距期數、查詢位置、結果及版路類型。']],
+  ['07Matrix 狀態', ['每條版路顯示位置、號碼、查詢期、連準次數、結果及版路類型。']],
+  ['17關於 樂彩 Matrix', ['提供 Matrix 查詢、歷史資料查詢、號碼紀錄、計算工具、牌單及通知等功能。']],
+] as const)('guide %s switches requested result copy and restores its complete original section', (name, expected) => {
+  const view = render(<MatrixGuidePage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name }));
+  const preview = view.container.querySelector('.guide-preview')!;
+  const original = preview.textContent;
+  for (let cycle = 0; cycle < 2; cycle++) {
+    toggle(false);
+    expected.forEach(text => expect(preview.textContent).toContain(text));
+    expect(preview.textContent).not.toMatch(/預測期|預測位置|產生預測|提供 Matrix 分析/);
+    toggle(true);
+    expect(preview.textContent).toBe(original);
+  }
+});
+
 test('guide removes Pro category and requested blocks, keeps original IDs, and restores content', () => {
   const view = render(<MatrixGuidePage onNavigate={vi.fn()} />);
   const choose = (name: RegExp) => fireEvent.click(screen.getByRole('button', { name }));
