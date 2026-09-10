@@ -786,6 +786,81 @@ describe('security login wiring', () => {
   });
 });
 
+describe('Matrix permission settings routes', () => {
+  const settings = {
+    subscriptionPurchaseVisible: false,
+    registeredMemberFreeAccess: true,
+    revision: 4,
+    updatedAt: '2026-09-10T22:00:00.000Z',
+  };
+
+  it('allows every authenticated administrator to read the canonical settings', async () => {
+    wiring.supabaseRequest.mockClear();
+    wiring.supabaseRequest.mockResolvedValueOnce(settings);
+    const route = 'GET /api/permission-settings';
+    const context = await authenticate(route, sessionContext());
+    const routeHandler = routes[route][1] as (input: typeof context) => Promise<unknown>;
+
+    await expect(routeHandler(context)).resolves.toMatchObject({ body: settings, status: 200 });
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/matrix_permission_settings', {
+      method: 'POST',
+      body: '{}',
+    });
+  });
+
+  it('uses the authenticated super administrator as the only update actor', async () => {
+    wiring.supabaseRequest.mockClear();
+    wiring.supabaseRequest.mockResolvedValueOnce({ ...settings, subscriptionPurchaseVisible: true, revision: 5 });
+    const route = 'PUT /api/permission-settings/:key';
+    const context = await authenticate(route, sessionContext({ key: 'subscriptionPurchaseVisible' }));
+    const superGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(superGuard(context)).resolves.toBeUndefined();
+    await expect(routeHandler({
+      ...context,
+      body: { value: true, expectedRevision: 4 },
+    })).resolves.toMatchObject({ body: { subscriptionPurchaseVisible: true, revision: 5 } });
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/admin_matrix_permission_settings_update', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_admin_id: wiring.admin.id,
+        p_change: { key: 'subscriptionPurchaseVisible', value: true, expectedRevision: 4 },
+      }),
+    });
+  });
+
+  it('rejects a non-super administrator before any database update', async () => {
+    wiring.supabaseRequest.mockClear();
+    const originalRole = wiring.admin.role;
+    wiring.admin.role = '營運管理員';
+    try {
+      const route = 'PUT /api/permission-settings/:key';
+      const context = await authenticate(route, sessionContext({ key: 'registeredMemberFreeAccess' }));
+      const superGuard = routes[route][1] as (input: typeof context) => Promise<unknown>;
+      await expect(superGuard(context)).resolves.toEqual({ error: '僅超級管理員可修改權限切換', status: 403 });
+      expect(wiring.supabaseRequest).not.toHaveBeenCalled();
+    } finally {
+      wiring.admin.role = originalRole;
+    }
+  });
+
+  it.each([
+    [{ key: 'unknown' }, { value: true, expectedRevision: 4 }],
+    [{ key: 'subscriptionPurchaseVisible' }, { value: 'true', expectedRevision: 4 }],
+    [{ key: 'subscriptionPurchaseVisible' }, { value: true, expectedRevision: -1 }],
+    [{ key: 'subscriptionPurchaseVisible' }, { value: true, expectedRevision: 4, actorId: 'attacker' }],
+  ])('rejects invalid or actor-injecting update input', async (params, body) => {
+    wiring.supabaseRequest.mockClear();
+    const route = 'PUT /api/permission-settings/:key';
+    const context = await authenticate(route, sessionContext(params));
+    const routeHandler = routes[route][2] as (input: typeof context & { body?: unknown }) => Promise<unknown>;
+
+    await expect(routeHandler({ ...context, body })).resolves.toMatchObject({ status: 400 });
+    expect(wiring.supabaseRequest).not.toHaveBeenCalled();
+  });
+});
+
 describe('security policy administration wiring', () => {
   it('uses authenticated admin identity and validates all policy fields', async () => {
     const route='PUT /api/security-policies/:category';

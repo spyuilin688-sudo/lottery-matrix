@@ -12,6 +12,7 @@ import {
   Bell,
   ScrollText,
   ShieldCheck,
+  ToggleLeft,
   Settings,
   KeyRound,
   Menu,
@@ -48,6 +49,7 @@ import { NotificationManagement } from "./NotificationManagement";
 import { AdminTransferPush } from "./AdminTransferPush";
 import { AdminTodos } from "./AdminTodos";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
+import { PermissionSwitches } from "./PermissionSwitches";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
@@ -90,6 +92,7 @@ const modules = [
   ["通知管理", Bell],
   ["審計日誌", ScrollText],
   ["管理員權限", ShieldCheck],
+  ["權限切換", ToggleLeft],
   ["系統設定", Settings],
   ["啟動碼管理", KeyRound],
 ] as const;
@@ -352,7 +355,7 @@ function AdminApp() {
           if (paymentRead.ok) setPayments((paymentRead.result.data.items || []).map(paymentRecord));
           else setPaymentLoadError("付款紀錄載入失敗，請重新載入");
         }
-      } else if (name === "用戶管理" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
+      } else if (name === "用戶管理" || name === "權限切換" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
         setRows([]);
       } else {
         const t = tableMap[name];
@@ -787,6 +790,13 @@ function AdminApp() {
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
+          {active === "權限切換" && (
+            <PermissionSwitches
+              client={api}
+              canEdit={Boolean(isSuper)}
+              confirm={requestConfirmation}
+            />
+          )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
@@ -1233,9 +1243,9 @@ function AdminManager({
   onDelete: (id: string) => void;
 }) {
   const roleDescription: Record<string, string> = {
-    超級管理員: "用戶管理、訂閱管理、啟動碼管理、系統設定、管理員權限",
-    營運管理員: "用戶管理、訂閱管理、啟動碼管理；系統設定僅查看",
-    查看人員: "用戶管理、訂閱管理、啟動碼管理、系統設定僅查看",
+    超級管理員: "用戶管理、訂閱管理、啟動碼管理、權限切換、系統設定、管理員權限",
+    營運管理員: "用戶管理、訂閱管理、啟動碼管理；權限切換與系統設定僅查看",
+    查看人員: "用戶管理、訂閱管理、啟動碼管理、權限切換、系統設定僅查看",
   };
   return (
     <>

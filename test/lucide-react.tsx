@@ -18,6 +18,7 @@ export const RefreshCw = TestIcon;
 export const ScrollText = TestIcon;
 export const Settings = TestIcon;
 export const ShieldCheck = TestIcon;
+export const ToggleLeft = TestIcon;
 export const Trash2 = TestIcon;
 export const Users = TestIcon;
 export const Wallet = TestIcon;

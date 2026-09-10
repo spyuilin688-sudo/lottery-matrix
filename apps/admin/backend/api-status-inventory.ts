@@ -22,6 +22,8 @@ const supabaseRpcDefinitions = [
   ['matrix_custom_status_list', '自訂觸發條件清單', 'Matrix 狀態', '取得會員自訂觸發條件。'],
   ['matrix_custom_status_save', '儲存自訂觸發條件', 'Matrix 狀態', '儲存會員自訂觸發條件。'],
   ['matrix_custom_status_reset', '重設自訂觸發條件', 'Matrix 狀態', '重設會員自訂觸發條件。'],
+  ['matrix_permission_settings', 'Matrix 權限設定', '權限設定', '取得目前 Matrix 權限開關設定。'],
+  ['admin_matrix_permission_settings_update', '管理員更新 Matrix 權限設定', '權限設定', '由管理者後臺更新一項 Matrix 權限開關。'],
   ['member_bootstrap', '建立會員資料', '會員', '建立或補齊會員資料。'],
   ['member_referral_summary', '會員推薦摘要', '會員', '取得會員推薦紀錄摘要。'],
   ['member_referral_submit', '提交會員推薦碼', '會員', '提交會員推薦碼。'],
