@@ -9,8 +9,10 @@ create function auth.uid() returns uuid language sql stable as $f$ select nullif
 create table public.members (id uuid default gen_random_uuid(), auth_user_id uuid, status text, is_lifetime boolean default false, current_plan_id uuid, plan_expires_at timestamptz, line_user_id text, referral_code text, invitation_code text, line_trial_started_at timestamptz, registered_at timestamptz default now());
 create table public.plans(id uuid, name text);
 create table public.payments(member_id uuid,status text);
+create table public.admin_accounts(id uuid primary key, account text, name text, role text, status text);
 `);
 await db.exec(readFileSync(new URL('../../supabase/migrations/20260909215507_matrix_permission_switches.sql', import.meta.url),'utf8'));
+await db.exec(readFileSync(new URL('../../supabase/migrations/20260911061345_admin_matrix_permission_settings.sql', import.meta.url),'utf8'));
 const q = async sql => (await db.query(sql)).rows[0];
 const read = async () => (await q('select public.matrix_permission_settings() as value')).value;
 const ent = async () => (await q('select private.matrix_result_entitlements() as value')).value;
@@ -53,5 +55,28 @@ assert.equal((await ent()).canUseTianyan,false);
 await db.query("update public.members set is_lifetime=true where auth_user_id=$1",[old]);
 assert.equal((await ent()).canUseTiangong,true,'paid entitlement survives closing');
 assert.equal((await q('select count(*)::int as n from public.members where current_plan_id is not null or plan_expires_at is not null')).n,0);
-console.log('PASS: settings authorization, payload validation, revision conflict, guest/old/new/disabled/missing members, five-feature scope, independent toggles and paid fallback');
+const superAdmin='44444444-4444-4444-8444-444444444444';
+const operator='55555555-5555-4555-8555-555555555555';
+const disabledSuper='66666666-6666-4666-8666-666666666666';
+await db.query("insert into public.admin_accounts values ($1,'owner','Owner','超級管理員','啟用'),($2,'operator','Operator','營運管理員','啟用'),($3,'disabled','Disabled','超級管理員','停用')",[superAdmin,operator,disabledSuper]);
+const adminChange = async (actor,key,value,revision) => db.query(
+ 'select public.admin_matrix_permission_settings_update($1,$2::jsonb) as value',
+ [actor,JSON.stringify({key,value,expectedRevision:revision})],
+);
+await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({role:'service_role'})]);
+await db.exec('set role service_role');
+const beforeAdminChange=await read();
+await assert.rejects(adminChange(operator,'subscriptionPurchaseVisible',false,beforeAdminChange.revision),/FORBIDDEN/);
+await assert.rejects(adminChange(disabledSuper,'subscriptionPurchaseVisible',false,beforeAdminChange.revision),/FORBIDDEN/);
+await assert.rejects(adminChange(superAdmin,'unknown',true,beforeAdminChange.revision),/INVALID_REQUEST/);
+const updatedByAdmin=(await adminChange(superAdmin,'subscriptionPurchaseVisible',false,beforeAdminChange.revision)).rows[0].value;
+assert.equal(updatedByAdmin.subscriptionPurchaseVisible,false);
+assert.equal(updatedByAdmin.registeredMemberFreeAccess,beforeAdminChange.registeredMemberFreeAccess,'admin update keeps the other switch independent');
+assert.equal(updatedByAdmin.revision,beforeAdminChange.revision+1);
+await assert.rejects(adminChange(superAdmin,'registeredMemberFreeAccess',true,beforeAdminChange.revision),/SETTINGS_CONFLICT/);
+await db.exec('reset role');
+await db.exec('set role anon');
+await assert.rejects(adminChange(superAdmin,'registeredMemberFreeAccess',true,updatedByAdmin.revision),/permission denied/);
+await db.exec('reset role');
+console.log('PASS: settings authorization, admin role enforcement, payload validation, revision conflict, guest/old/new/disabled/missing members, five-feature scope, independent toggles and paid fallback');
 await db.close();
