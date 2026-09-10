@@ -4,6 +4,8 @@ from typing import Any
 from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
+from app.domain.tianheng_context import TianhengEngineSession
+from app.domain.tianheng_runtime import run_tianheng_batch
 from app.domain.tianyan_artifact import build_tianyan_artifact
 from app.domain.tiangong_artifact import build_tiangong_artifact
 from app.services.explore_batches import build_explore_batch, work_units
@@ -279,6 +281,22 @@ def create_artifact_builders(
             session,
         )
 
+    def tianheng(context: dict[str, Any]) -> dict[str, Any]:
+        draw = context["draw"]
+        session = TianhengEngineSession.from_explore_session(
+            engine_session(draw["lottery"], context["history"]),
+        )
+        batch = context["tianhengBatch"]
+        result = run_tianheng_batch(
+            draw["lottery"], context["history"],
+            int(batch["start"]), int(batch["limit"]), session=session,
+        )
+        result["artifact"]["drawPeriod"] = draw["period"]
+        return {"artifact": result["artifact"], "_checkpoint": {
+            "cursorStart": result["cursorStart"], "cursor": result["cursor"],
+            "total": result["total"], "complete": result["complete"],
+        }}
+
     def tianyan(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
         return build_tianyan_artifact(draw["lottery"], draw["period"], context["artifacts"]["explore"])
@@ -291,4 +309,4 @@ def create_artifact_builders(
         artifacts = context["artifacts"]
         return _status_artifact(artifacts["explore"], artifacts["tianyan"])
 
-    return {"explore": explore, "tianyan": tianyan, "tiangong": tiangong, "status": status}
+    return {"explore": explore, "tianheng": tianheng, "tianyan": tianyan, "tiangong": tiangong, "status": status}

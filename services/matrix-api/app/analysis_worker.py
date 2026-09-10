@@ -91,6 +91,19 @@ def _restore_completed_explore_results(
         )
 
 
+def _restore_completed_tianheng_results(
+    repository: AnalysisRepository,
+    lottery: str,
+    period: str,
+    analysis_version: str,
+) -> None:
+    if repository.has_tianheng_results(lottery, period, analysis_version):
+        return
+    artifact = repository.read_artifact(lottery, period, analysis_version, "tianheng")
+    if artifact is not None:
+        repository.save_tianheng_results(lottery, period, analysis_version, artifact)
+
+
 def _notification_enabled(notification_emitter: NotificationEventEmitter | None) -> bool:
     return notification_emitter is not None and notification_emitter.enabled
 
@@ -207,6 +220,9 @@ def run_analysis_only_worker(
             lottery,
             period,
             analysis_version,
+        )
+        _restore_completed_tianheng_results(
+            repository, lottery, period, analysis_version,
         )
         history = _history_through_period(
             repository.list_draws(lottery, None),

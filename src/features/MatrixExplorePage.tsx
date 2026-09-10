@@ -7,12 +7,13 @@ import { ChevronDownIcon, ChevronRightIcon, LockClosedIcon, MagnifyingGlassIcon 
 import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 import { type LotteryId } from "../Prototype";
 import { fetchExploreList, fetchExploreValidation, fetchTianyanList, fetchTianyanValidation, type ExploreListResponse, type ExploreValidation, type TianyanListResponse, type TianyanValidation } from "../matrix-algorithm-api";
+import { fetchTianhengList, fetchTianhengValidation, type TianhengApiRow, type TianhengListRequest, type TianhengListResponse, type TianhengValidation } from "../matrix-algorithm-api";
 import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from "../member-api";
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
 import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
-import { ExploreValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
+import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
   onNavigate,
@@ -20,10 +21,16 @@ export function MatrixExplorePage({
   roadTypes = ["加減版路", "合值版路", "拖牌版路"],
 }: {
   onNavigate: Navigate;
-  title?: "Matrix 探索" | "Matrix 天衍" | "Matrix 天工";
+  title?: "Matrix 探索" | "Matrix 天衡" | "Matrix 天衍" | "Matrix 天工";
   roadTypes?: string[];
 }) {
   const appDialog = useAppDialog();
+  const isExplore = title === "Matrix 探索";
+  const isTianyan = title === "Matrix 天衍";
+  const isTianheng = title === "Matrix 天衡";
+  const periodOptions = isTianheng
+    ? (["三期", "十三期"] as const)
+    : (["二期", "七期", "十三期"] as const);
   const permissionSettings = usePermissionSettings();
   const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
   const initializedTitle = useRef<string | null>(null);
@@ -53,15 +60,19 @@ export function MatrixExplorePage({
     numberOrder: string;
     referenceOffset?: number;
     referencePosition?: number;
+    tianhengItem?: TianhengApiRow;
   };
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
+    "準5+（鎖定1碼）": ["準5進6", "準6進7", "準7進8", "準9進10"],
+    "準7+（鎖定2碼）": ["準6進7", "準7進8", "準9進10", "準11進12"],
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
       ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
+    if (isTianheng) return filterOptions[hitValue];
     if (title === "Matrix 天衍") {
       return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
     }
@@ -84,12 +95,14 @@ export function MatrixExplorePage({
   const initialExploreDefaults = useMemo(
     () => title === "Matrix 探索"
       ? getExploreEntryDefaults(null)
+      : isTianheng ? { period: "三期", range: "標準範圍" } as const
       : { period: "二期", range: "標準範圍" } as const,
     [title],
   );
   const [period, setPeriod] = useState(initialExploreDefaults.period);
   const [road, setRoad] = useState(roadTypes[0]);
-  const [hit, setHit] = useState(title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）");
+  const initialHit = isTianheng ? "準5+（鎖定1碼）" : isTianyan ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）";
+  const [hit, setHit] = useState(initialHit);
   const [advanced, setAdvanced] = useState(false);
   const [numberOrder, setNumberOrder] = useState("依號碼由小到大排序");
   const [exploreDate, setExploreDate] = useState<ExploreDate>("本日 (最新)");
@@ -103,16 +116,19 @@ export function MatrixExplorePage({
   const [resultPage, setResultPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<ConsecutiveOption[]>(
     defaultFiltersFor(
-      title === "Matrix 天衍" ? "準5+（鎖定2碼）" : "準4+（鎖定1碼）",
+      initialHit,
       roadTypes[0],
     ),
   );
   const [exploreResponse, setExploreResponse] = useState<ExploreListResponse | null>(null);
   const [tianyanResponse, setTianyanResponse] = useState<TianyanListResponse | null>(null);
+  type TianhengAccess = Pick<TianhengListRequest, "explorePeriods" | "exploreRange">;
+  const [tianhengResponse, setTianhengResponse] = useState<(TianhengListResponse & { access: TianhengAccess }) | null>(null);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreError, setExploreError] = useState<string | null>(null);
   const [validationById, setValidationById] = useState<Record<string, ExploreValidation>>({});
   const [tianyanValidationById, setTianyanValidationById] = useState<Record<string, TianyanValidation>>({});
+  const [tianhengValidationById, setTianhengValidationById] = useState<Record<string, TianhengValidation>>({});
   const [validationLoadingId, setValidationLoadingId] = useState<string | null>(null);
   const cacheGeneration = useRef(0);
   const queryRevision = useRef(0);
@@ -121,8 +137,10 @@ export function MatrixExplorePage({
       cacheGeneration.current += 1;
       setExploreResponse(null);
       setTianyanResponse(null);
+      setTianhengResponse(null);
       setValidationById({});
       setTianyanValidationById({});
+      setTianhengValidationById({});
       setExpandedRoad(null);
       setValidationLoadingId(null);
       setExploreLoading(false);
@@ -148,14 +166,14 @@ export function MatrixExplorePage({
   }, [expandedRoad]);
 
   useEffect(() => {
-    if (title !== "Matrix 探索" && title !== "Matrix 天衍") return;
+    if (!isExplore && !isTianyan && !isTianheng) return;
     let active = true;
     void bootstrapMember()
       .then(() => fetchMemberProfile())
       .then((profile) => {
         if (!active) return;
         setExploreAccess(profile.exploreEntitlements);
-        if (initializedTitle.current !== title) {
+        if (!isTianheng && initializedTitle.current !== title) {
           const defaults = getExploreEntryDefaults(profile);
           setPeriod(defaults.period);
           setExploreRange(defaults.range);
@@ -165,6 +183,7 @@ export function MatrixExplorePage({
       .catch(() => {
         if (!active) return;
         setExploreAccess(undefined);
+        if (isTianheng) return;
         const defaults = getExploreEntryDefaults(null);
         setPeriod(defaults.period);
         setExploreRange(defaults.range);
@@ -173,6 +192,22 @@ export function MatrixExplorePage({
   }, [title, permissionSettings?.revision]);
 
   const visibleResults = useMemo(() => {
+    if (isTianheng) {
+      return (tianhengResponse?.items ?? []).map((item): ExploreResult => ({
+        id: item.id,
+        position: item.firstLockedPosition,
+        number: item.firstNumber,
+        predictionPeriod: item.predictionDistance,
+        consecutive: item.consecutive as ConsecutiveOption,
+        prediction: item.predictionNumbers.join("."),
+        sameCode: true,
+        algorithmType: item.algorithmType,
+        numberOrder: item.numberOrder,
+        referenceOffset: item.referenceOffset,
+        referencePosition: item.referencePosition,
+        tianhengItem: item,
+      }));
+    }
     if (title === "Matrix 探索") {
       return (exploreResponse?.items ?? []).map((item): ExploreResult => ({
         id: item.id,
@@ -199,11 +234,10 @@ export function MatrixExplorePage({
       algorithmType: item.roadTypeLabel,
       numberOrder: item.numberOrder,
     }));
-  }, [exploreResponse, tianyanResponse, title]);
+  }, [exploreResponse, tianyanResponse, tianhengResponse, title]);
 
-  const duplicateStats = title === "Matrix 探索"
-    ? exploreResponse?.duplicateStats ?? []
-    : tianyanResponse?.duplicateStats ?? [];
+  const activeResponse = isTianheng ? tianhengResponse : isExplore ? exploreResponse : tianyanResponse;
+  const duplicateStats = activeResponse?.duplicateStats ?? [];
 
   const resultsPerPage = MATRIX_RESULTS_PER_PAGE;
   const resultPageCount = Math.max(1, Math.ceil(visibleResults.length / resultsPerPage));
@@ -211,10 +245,10 @@ export function MatrixExplorePage({
     (resultPage - 1) * resultsPerPage,
     resultPage * resultsPerPage,
   );
-  const resultCount = title === "Matrix 探索" ? exploreResponse?.total ?? 0 : tianyanResponse?.total ?? 0;
-  const hasCompletedResults = !exploreLoading && !exploreError
-    && Boolean(title === "Matrix 探索" ? exploreResponse : tianyanResponse);
+  const resultCount = activeResponse?.total ?? 0;
+  const hasCompletedResults = !exploreLoading && !exploreError && Boolean(activeResponse);
   const selectedExplorePeriods = period === "十三期" ? 13 : period === "七期" ? 7 : 2;
+  const selectedTianhengPeriods = period === "十三期" ? 13 : 3;
   const exploreDateOffset = exploreDate === "前日 (上2期)" ? 2 : exploreDate === "昨日 (上1期)" ? 1 : 0;
 
   const loadExplore = async (
@@ -229,7 +263,27 @@ export function MatrixExplorePage({
     setExploreError(null);
     setExploreResponse(null);
     setTianyanResponse(null);
+    setTianhengResponse(null);
     try {
+      if (isTianheng) {
+        const access: TianhengAccess = { explorePeriods: selectedTianhengPeriods, exploreRange };
+        const response = await fetchTianhengList({
+          lottery,
+          ...access,
+          numberOrder: numberOrder as "依號碼由小到大排序" | "依實際開獎順序排序",
+          exploreDateOffset,
+          ruleCount: hit.includes("鎖定2碼") ? 2 : 1,
+          roadTypes: [road.startsWith("合值") ? "合值" : road.startsWith("拖牌") ? "拖牌" : "加減"],
+          selectedStreaks: nextFilters,
+          sameCode: nextSameCode,
+          ...(nextPredictionNumber ? { predictionNumber: nextPredictionNumber } : {}),
+        });
+        if (!isCurrent()) return;
+        setTianhengResponse({ ...response, access });
+        setTianhengValidationById({});
+        setExpandedRoad(null);
+        return;
+      }
       if (title === "Matrix 天衍") {
         const response = await fetchTianyanList({
           lottery,
@@ -355,6 +409,26 @@ export function MatrixExplorePage({
     }
     pendingRoadScrollRef.current = expandedRoad === null ? null : itemId;
     setExpandedRoad(itemId);
+    if (isTianheng && tianhengResponse) {
+      const cacheKey = `${tianhengResponse.analysisVersion}:${itemId}`;
+      if (tianhengValidationById[cacheKey]) return;
+      setValidationLoadingId(cacheKey);
+      void fetchTianhengValidation({
+        lottery: tianhengResponse.lottery,
+        drawPeriod: tianhengResponse.drawPeriod,
+        analysisVersion: tianhengResponse.analysisVersion,
+      }, itemId, tianhengResponse.access).then((response) => {
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
+        setTianhengValidationById((current) => ({ ...current, [cacheKey]: response.validation }));
+      }).catch(() => {
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
+        setExploreError("Matrix API 讀取失敗");
+      }).finally(() => {
+        if (generation !== cacheGeneration.current || revision !== queryRevision.current) return;
+        setValidationLoadingId((current) => current === cacheKey ? null : current);
+      });
+      return;
+    }
     if (title === "Matrix 天衍" && tianyanResponse) {
       const cacheKey = `${tianyanResponse.analysisVersion}:${itemId}`;
       if (tianyanValidationById[cacheKey]) return;
@@ -403,12 +477,12 @@ export function MatrixExplorePage({
       title={title}
       onNavigate={onNavigate}
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
-      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${title === "Matrix 天衍" ? "matrix-tianyan-screen" : ""}`}
+      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${isTianheng ? "matrix-tianheng-screen" : isTianyan ? "matrix-tianyan-screen" : ""}`}
     >
       <section className="panel explore-settings">
         <header className="matrix-settings-heading">
           <SectionTitle>探索設定</SectionTitle>
-          <MatrixPageSwitcher current={title === "Matrix 天衍" ? "tianyan" : "explore"} onNavigate={onNavigate} />
+          <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
           <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span>
@@ -424,11 +498,11 @@ export function MatrixExplorePage({
             </div>
           </label>
           <label><span><SettingLabelIcon type="period" />探索期數</span>
-            <div className="segmented three">
-              {(["二期", "七期", "十三期"] as const).map((v) => (
-                <button type="button" key={v} data-selected={period === v} onClick={() => setPeriod(v)}>
+            <div className={`segmented ${isTianheng ? "two" : "three"}`}>
+              {periodOptions.map((v) => (
+                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
                   {v}
-                  {title === "Matrix 探索" && v === "十三期" && !exploreAccess?.canUseThirteen ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                  {(isExplore || isTianheng) && v === "十三期" && !exploreAccess?.canUseThirteen ? <em><LockClosedIcon />Matrix Pro</em> : null}
                 </button>
               ))}
             </div>
@@ -436,7 +510,7 @@ export function MatrixExplorePage({
           <label><span><SettingLabelIcon type="road" />版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
-                <button type="button" key={v} data-selected={road === v} onClick={() => changeRoad(v)}>
+                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={road === v} onClick={() => changeRoad(v)}>
                   {v}
                   {title === "Matrix 探索" && v === "拖牌版路" ? <em>推薦</em> : null}
                 </button>
@@ -449,7 +523,7 @@ export function MatrixExplorePage({
       <section className="panel hit-advanced-panel">
         <SectionTitle>命中條件</SectionTitle>
         <div className="segmented two hit-options">
-          {(title === "Matrix 天衍" ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
+          {(isTianheng ? ["準5+（鎖定1碼）", "準7+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
             <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
           ))}
         </div>
@@ -485,6 +559,7 @@ export function MatrixExplorePage({
                   <button
                     type="button"
                     key={value}
+                    aria-label={isTianheng ? value : undefined}
                     data-selected={exploreDate === value}
                     onClick={() => setExploreDate(value)}
                   >
@@ -502,11 +577,12 @@ export function MatrixExplorePage({
                   <button
                     type="button"
                     key={value}
+                    aria-label={isTianheng ? value : undefined}
                     data-selected={exploreRange === value}
                     onClick={() => setExploreRange(value)}
                   >
                     {value}
-                    {title === "Matrix 探索" && value === "完整範圍" && !exploreAccess?.canUseFullRange ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                    {(isExplore || isTianheng) && value === "完整範圍" && !exploreAccess?.canUseFullRange ? <em><LockClosedIcon />Matrix Pro</em> : null}
                   </button>
                 ))}
               </div>
@@ -519,7 +595,7 @@ export function MatrixExplorePage({
         <MagnifyingGlassIcon /><span>{title === "Matrix 天衍" ? "開始天衍" : "開始探索"}</span>
       </button>
 
-      {title === "Matrix 探索" ? (
+      {isExplore || isTianheng ? (
         <HistoryList
           lottery={lottery}
           numberOrder={numberOrder}
@@ -548,7 +624,7 @@ export function MatrixExplorePage({
               <span>點選進行版路篩選</span>
             </header>
             <div className="result-summary">
-              {duplicateStats.map(({ number, count }) => (title === "Matrix 探索" || title === "Matrix 天衍") ? (
+              {duplicateStats.map(({ number, count }) => (isExplore || isTianyan || isTianheng) ? (
                 <button
                   type="button"
                   key={number}
@@ -571,7 +647,7 @@ export function MatrixExplorePage({
 
           <section className="panel result-panel">
             <header className="result-title">
-              <SectionTitle>{title === "Matrix 天衍" ? "天衍結果區" : "探索結果區"}</SectionTitle>
+              <SectionTitle>{isTianheng ? "天衡結果區" : isTianyan ? "天衍結果區" : "探索結果區"}</SectionTitle>
               <button
                 type="button"
                 className="consecutive-filter-button"
@@ -632,17 +708,28 @@ export function MatrixExplorePage({
                     aria-label={`${expandedRoad === item.id ? "收合" : "展開"}版路 ${item.id}`}
                     onClick={() => toggleRoad(item.id)}
                   >
-                    <span className="tag">
-                      {item.position === 7 ? (
-                        <span>特別號</span>
-                      ) : (
-                        <>
-                          <span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
-                          <span className="numeric-text">{item.position}</span>
-                        </>
-                      )}
-                    </span>
-                    <span className="result-number numeric-text">{item.number}</span>
+                    {item.tianhengItem ? <>
+                      <span className="tag tianheng-lock-positions">
+                        <span>{positionLabel(item.tianhengItem.firstLockedPosition, item.numberOrder)}</span>
+                        <span>{positionLabel(item.tianhengItem.secondLockedPosition, item.numberOrder)}</span>
+                      </span>
+                      <span className="result-number numeric-text tianheng-lock-numbers">
+                        <span>{item.tianhengItem.firstNumber}</span>
+                        <span>{item.tianhengItem.secondNumber}</span>
+                      </span>
+                    </> : <>
+                      <span className="tag">
+                        {item.position === 7 ? (
+                          <span>特別號</span>
+                        ) : (
+                          <>
+                            <span>{item.numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}</span>
+                            <span className="numeric-text">{item.position}</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="result-number numeric-text">{item.number}</span>
+                    </>}
                     <span className="result-period"><span>下</span><span className="numeric-text">{item.predictionPeriod}</span><span>期</span></span>
                     <span className="result-consecutive">
                       <span>準</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[0]}</span><span>進</span><span className="numeric-text">{item.consecutive.match(/\d+/g)?.[1]}</span>
@@ -654,7 +741,14 @@ export function MatrixExplorePage({
                     </span>
                   </button>
                   {expandedRoad === item.id ? (
-                    title === "Matrix 探索" && exploreResponse
+                    isTianheng && tianhengResponse && item.tianhengItem
+                      ? <TianhengValidationProcess
+                          item={item.tianhengItem}
+                          lottery={tianhengResponse.lottery}
+                          validation={tianhengValidationById[`${tianhengResponse.analysisVersion}:${item.id}`]}
+                          loading={validationLoadingId === `${tianhengResponse.analysisVersion}:${item.id}`}
+                        />
+                      : title === "Matrix 探索" && exploreResponse
                       ? <ExploreValidationProcess
                           item={item}
                           lottery={exploreResponse.lottery}
@@ -687,3 +781,6 @@ export function MatrixExplorePage({
   );
 }
 
+function positionLabel(position: number, numberOrder: string) {
+  return position === 7 ? "特別號" : `${numberOrder === "依實際開獎順序排序" ? "落球" : "順球"}${position}`;
+}
