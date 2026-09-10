@@ -10,6 +10,10 @@ import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
 vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
+vi.mock('../permission-settings', () => ({
+  refreshPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
+  usePermissionSettings: () => null,
+}));
 vi.mock('../features/shared', () => ({
   FeatureShell: ({ children }: any) => <main>{children}</main>,
   SectionTitle: ({ children }: any) => <h2>{children}</h2>,
@@ -18,7 +22,7 @@ vi.mock('../features/shared', () => ({
 }));
 vi.mock('../features/MatrixValidation', () => ({ ExploreValidationProcess: () => null, TianyanValidationProcess: () => null, RoadValidationProcess: () => null }));
 
-const response = { kind: 'explore', lottery: '今彩539', drawPeriod: '115000210', analysisVersion: 'v12', status: 'complete', total: 1, duplicateStats: [], items: [{ id: 'guest-row', lockedPosition: 1, number: '03', predictionDistance: 2, consecutive: '準7進8', predictionNumbers: ['22', '26'], algorithmType: '加減', numberOrder: '依號碼由小到大排序' }] };
+const response = { kind: 'explore', lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13', status: 'complete', total: 1, duplicateStats: [], items: [{ id: 'guest-row', lockedPosition: 1, number: '03', predictionDistance: 2, consecutive: '準7進8', predictionNumbers: ['22', '26'], algorithmType: '加減', numberOrder: '依號碼由小到大排序' }] };
 
 beforeEach(() => {
   resetReadCacheForTests();
@@ -45,7 +49,7 @@ test('未登入二期探索可以顯示 RPC 結果', async () => {
 
 test('訪客可以讀取二期探索驗證過程', async () => {
   sdk.rpc.mockResolvedValue({ data: { ...response, itemId: 'guest-row', validation: { ruleSets: [] } }, error: null });
-  await expect(fetchExploreValidation({ lottery: '今彩539', drawPeriod: '115000210', analysisVersion: 'v12' }, 'guest-row', { explorePeriods: 2, exploreRange: '標準範圍' })).resolves.toMatchObject({ itemId: 'guest-row' });
+  await expect(fetchExploreValidation({ lottery: '今彩539', drawPeriod: '115000210', analysisVersion: '115000210:matrix-python-v13' }, 'guest-row', { explorePeriods: 2, exploreRange: '標準範圍' })).resolves.toMatchObject({ itemId: 'guest-row' });
 });
 
 test('登入提示使用探索名稱且不顯示空結果', async () => {
