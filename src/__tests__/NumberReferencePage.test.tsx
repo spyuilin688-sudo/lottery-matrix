@@ -159,3 +159,25 @@ test('單格標記後點擊同一期整列會清除單格並保留整列標記',
   expect(numberButton.getAttribute('aria-pressed')).toBe('false');
   expect(issueButton.getAttribute('aria-pressed')).toBe('true');
 });
+
+
+test('更換號碼重新搜尋時清除先前的整列與單碼標記', async () => {
+  mockReferenceHistory();
+  render(<NumberReferencePage onNavigate={vi.fn()} />);
+  const issueButton = await screen.findByRole('button', { name: '115078' });
+  const row = issueButton.closest<HTMLElement>('.reference-row');
+  const numberButton = within(row!).getByRole('button', { name: '號碼 01' });
+
+  fireEvent.click(issueButton);
+  fireEvent.click(numberButton);
+  expect(issueButton).toHaveAttribute('aria-pressed', 'true');
+  expect(numberButton).toHaveAttribute('aria-pressed', 'true');
+
+  fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), {
+    target: { value: '13' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+
+  expect(await screen.findByRole('button', { name: '115078' })).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.getByRole('button', { name: '號碼 01' })).toHaveAttribute('aria-pressed', 'false');
+});
