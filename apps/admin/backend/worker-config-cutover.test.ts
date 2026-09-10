@@ -56,7 +56,7 @@ describe('Supabase admin Railway configuration after AppDeploy cutover', () => {
         reason: 'SUPABASE_RAILWAY_CONFIG_MISSING',
         health,
         jobs: null,
-      } as any),
+      }),
       loadWorkerUrl: async () => undefined,
       fetcher: vi.fn(async () => Response.json([])),
     });
