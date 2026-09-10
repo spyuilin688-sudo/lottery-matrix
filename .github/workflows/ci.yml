@@ -92,8 +92,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install pinned Vitest coverage provider
-        run: npm install --no-save --ignore-scripts --legacy-peer-deps @vitest/coverage-v8@4.1.10
+      - name: Install isolated Vitest coverage provider
+        run: |
+          rm -rf .coverage-runtime node_modules/@vitest/coverage-v8
+          npm install --prefix .coverage-runtime --no-save --ignore-scripts --legacy-peer-deps @vitest/coverage-v8@4.1.10
+          mkdir -p node_modules/@vitest
+          ln -s "$PWD/.coverage-runtime/node_modules/@vitest/coverage-v8" node_modules/@vitest/coverage-v8
 
       - name: Generate informational coverage report
         run: npm run test:coverage
