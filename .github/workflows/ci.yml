@@ -93,7 +93,7 @@ jobs:
         run: npm ci
 
       - name: Install pinned Vitest coverage provider
-        run: npm install --no-save --package-lock=false --ignore-scripts @vitest/coverage-v8@4.1.10
+        run: npm install --no-save --ignore-scripts --legacy-peer-deps @vitest/coverage-v8@4.1.10
 
       - name: Generate informational coverage report
         run: npm run test:coverage
