@@ -203,7 +203,6 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
           <label htmlFor="admin-todo-content">新增代辦</label>
           <textarea
             className="resize-none"
-            className="resize-none"
             style={{ resize: 'none' }}
             id="admin-todo-content"
             rows={2}
@@ -265,7 +264,6 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                     <label className="adminTodosVisuallyHidden" htmlFor={`admin-todo-edit-${item.id}`}>編輯代辦事項</label>
                     <textarea
                       className="resize-none"
-                      className="resize-none"
                       style={{ resize: 'none' }}
                       autoFocus
                       id={`admin-todo-edit-${item.id}`}
@@ -315,4 +313,3 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
     </div>
   );
 }
-
