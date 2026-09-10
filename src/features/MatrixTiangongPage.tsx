@@ -263,7 +263,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       {searched ? <section className="panel result-panel"><header className="result-title"><SectionTitle>天工結果區</SectionTitle>{!loading && !requestError && response ? <strong className="result-count">探索到&nbsp;<span className="numeric-text">{visibleItems.length}</span>&nbsp;組符合條件版路</strong> : null}</header>
         {loading ? <p role="status" className="explore-request-state">分析結果載入中</p> : null}
         {requestError ? <p role="alert" className="explore-request-state">{requestError}</p> : null}
-        <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span>預測位置</span><span><SubscriptionCopy formal="預測" alternative="結果" /></span><span>版路類型</span></div>
+        <div className="road-results tiangong-results"><div className="road-results-head tiangong-results-head" aria-hidden="true"><span>間距</span><span>位移走向</span><span><SubscriptionCopy formal="預測位置" alternative="查詢位置" /></span><span><SubscriptionCopy formal="預測" alternative="結果" /></span><span>版路類型</span></div>
           {paginatedItems.map((item, index) => <article key={item.id} data-number-group-start={sameCode && index > 0 && paginatedItems[index - 1].predictionNumber !== item.predictionNumber ? "true" : undefined}>
             <button type="button" className="road-result-row tiangong-result-row" aria-expanded={expandedId === item.id} aria-label={`${expandedId === item.id ? "收合" : "展開"}版路 ${item.id}`} onClick={() => toggleResult(item.id)}>
               <span className="tiangong-interval"><span>間距</span><span className="numeric-text">{item.interval}</span></span>

@@ -1,3 +1,4 @@
+import { SubscriptionCopy } from "../subscription-copy";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, GearIcon, ReaderIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { LotterySwitcher, type LotteryId } from "../Prototype";
@@ -46,7 +47,7 @@ export function MatrixStatusTriggerCard({
       <header className="matrix-status-trigger-summary">
         <span className="matrix-status-trigger-result">
           <strong className="numeric-text">
-            <span className="matrix-status-prediction-label">預測：</span>
+            <span className="matrix-status-prediction-label"><SubscriptionCopy formal="預測：" alternative="結果：" /></span>
             {card.result.map((number, index) => (
               <span key={index}>
                 {index > 0 ? <span className="matrix-status-prediction-separator">、</span> : null}
@@ -64,9 +65,9 @@ export function MatrixStatusTriggerCard({
           <div className="road-results-head" aria-hidden="true">
             <span>位置</span>
             <span>號碼</span>
-            <span>預測期</span>
+            <span><SubscriptionCopy formal="預測期" alternative="查詢期" /></span>
             <span>連準次數</span>
-            <span>預測</span>
+            <span><SubscriptionCopy formal="預測" alternative="結果" /></span>
             <span>版路類型</span>
           </div>
         ) : null}

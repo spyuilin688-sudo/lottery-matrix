@@ -24,6 +24,7 @@ import { formatCountdown, formatNextDrawAt, nextCountdownSeconds, parseCountdown
 import { fetchMatrixStatus, type MatrixStatusResponse } from "./matrix-status-api";
 import { subscribeMatrixDataRevision } from "./matrix-data-revision";
 import { withDeadline } from "./lib/api-resilience";
+import { HomeFreeStatement } from "./homepage/HomeFreeStatement";
 import { FirstVisitGuide } from "./onboarding/FirstVisitGuide";
 import { useLinePageEntry } from "./auth/LinePageGuard";
 
@@ -527,6 +528,7 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
             <MatrixCoreBanner onOpen={() => navigate("explore")} />
             <HomeShortcutRow onNavigate={navigate} />
           </div>
+          <HomeFreeStatement />
           <BottomNavigation active="首頁" onNavigate={navigate} onQuickOpen={openQuick} onQuickConfigure={() => setQuickSettingsOpen(true)} showQuickSettings />
         </div>
         {quickSettings}
@@ -535,3 +537,4 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     </>
   );
 }
+

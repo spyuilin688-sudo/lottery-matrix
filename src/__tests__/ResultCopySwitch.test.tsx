@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
+import { MatrixStatusTriggerCard } from '../features/MatrixStatusPages';
 import { AppDialogProvider } from '../dialog/AppDialog';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 import { MatrixTiangongPage, TiangongValidationProcess } from '../features/MatrixTiangongPage';
@@ -40,7 +41,7 @@ test.each(['Matrix 探索', 'Matrix 天衍', 'Matrix 天工'] as const)('%s resu
   expect(head.textContent).toContain('結果');
   expect(head.textContent).not.toContain('預測期');
   if (title !== 'Matrix 天工') expect(head.textContent).toContain('查詢期');
-  else expect(head.textContent).toContain('預測位置'); // not requested to change this label
+  else { expect(head.textContent).toContain('查詢位置'); expect(head.textContent).not.toContain('預測位置'); }
   expect(head.children.length).toBe(columns);
   toggle(true);
   expect(head.textContent).toBe(original);
@@ -73,4 +74,29 @@ test.each(['探索', '天衍', '天工'] as const)('%s expanded footer changes o
   expect(footer.textContent).toBe(original!.replace('本期預測', '版路結果'));
   toggle(true);
   expect(footer.textContent).toBe(original);
+});
+
+
+test('expanded Matrix status result label follows the switch and restores its numbers', () => {
+  const view = render(<MatrixStatusTriggerCard
+    card={{ id: 'status-1', ruleId: 'rule-1', status: 'ACTIVE', hitType: 'one-code', result: ['07'], sameCodeRoadCount: 1, sameCodeRoadCountLocked: false, roads: [] }}
+    showColumnHead lottery="今彩539" analysisVersion="v1" expandedRoad={null}
+    validationById={{}} validationLoadingId={null} validationErrorId={null} onToggleRoad={vi.fn()}
+  />);
+  const result = view.container.querySelector('.matrix-status-trigger-result')!;
+  const head = view.container.querySelector('.road-results-head')!;
+  const originalHead = head.textContent;
+  const columns = head.children.length;
+  expect(originalHead).toContain('預測期');
+  const original = result.textContent;
+  expect(original).toBe('預測：07');
+  toggle(false);
+  expect(result.textContent).toBe('結果：07');
+  expect(head.textContent).toContain('查詢期');
+  expect(head.textContent).toContain('結果');
+  expect(head.textContent).not.toContain('預測');
+  expect(head.children.length).toBe(columns);
+  toggle(true);
+  expect(result.textContent).toBe(original);
+  expect(head.textContent).toBe(originalHead);
 });
