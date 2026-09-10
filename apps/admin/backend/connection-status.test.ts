@@ -78,7 +78,7 @@ describe('connection status', () => {
       checkMode: 'registry',
       checkEvidence: 'registered',
     });
-    expect(result.items).toHaveLength(62);
+    expect(result.items).toHaveLength(64);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -133,7 +133,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(62);
+    expect(result.items).toHaveLength(64);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
