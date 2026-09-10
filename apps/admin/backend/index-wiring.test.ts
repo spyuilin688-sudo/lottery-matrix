@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
+const securityWiring = vi.hoisted(() => ({ check: vi.fn(async () => ({allowed:true,retryAfter:0,mode:'observe'})), observe:vi.fn(async () => undefined) }));
+vi.mock('./security-monitor', () => ({createSecurityMonitor: () => securityWiring}));
+
 const wiring = vi.hoisted(() => {
   const workerStatus = { ok: false, health: null, jobs: null, reason: 'RAILWAY_UNAVAILABLE' } as const;
   const workerGetStatus = vi.fn(async () => workerStatus);
@@ -714,6 +717,42 @@ describe('payment reversal route wiring', () => {
       ...context,
       body: { status: 'refunded', reason: { value: '偽造理由' } },
     })).resolves.toMatchObject({ status: 400 });
+    expect(wiring.supabaseRequest).not.toHaveBeenCalled();
+  });
+});
+
+
+
+describe('security login wiring', () => {
+  it('returns 429 before password verification', async () => {
+    const login = wiring.createAdminCredentialAuth.mock.results[0].value.login;
+    login.mockClear();
+    securityWiring.check.mockResolvedValueOnce({allowed:false,retryAfter:23,mode:'enforce'});
+    const handler = routes['POST /api/admin-login'][0] as (ctx:unknown) => Promise<unknown>;
+    expect(await handler({params:{},body:{account:'admin',password:'secret'}})).toMatchObject({status:429,headers:{'Retry-After':'23'}});
+    expect(login).not.toHaveBeenCalled();
+  });
+  it('records failed credentials outside superadmin activity exemption without forwarding body', async () => {
+    const login = wiring.createAdminCredentialAuth.mock.results[0].value.login;
+    login.mockRejectedValueOnce(Object.assign(new Error('Invalid credentials'), {statusCode:401}));
+    securityWiring.observe.mockClear();
+    const handler = routes['POST /api/admin-login'][0] as (ctx:unknown) => Promise<unknown>;
+    const context={params:{},body:{account:'admin',password:'secret'}};
+    expect(await handler(context)).toMatchObject({status:401});
+    expect(securityWiring.observe).toHaveBeenCalledWith(context,'admin_login','denied');
+  });
+});
+
+describe('security policy administration wiring', () => {
+  it('uses authenticated admin identity and validates all policy fields', async () => {
+    const route='PUT /api/security-policies/:category';
+    const context=await authenticate(route,sessionContext({category:'public_query'}));
+    const handler=routes[route][2] as (ctx:unknown)=>Promise<unknown>;
+    wiring.supabaseRequest.mockClear();
+    await handler({...context,body:{mode:'observe',threshold:120,windowSeconds:60,expectedRevision:1,adminId:'forged'}});
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith('rpc/security_policy_update',{method:'POST',body:JSON.stringify({p_admin_id:wiring.admin.id,p_category:'public_query',p_mode:'observe',p_threshold:120,p_window_seconds:60,p_expected_revision:1})});
+    wiring.supabaseRequest.mockClear();
+    expect(await handler({...context,body:{mode:'enforce',threshold:0,windowSeconds:60,expectedRevision:1}})).toMatchObject({status:400});
     expect(wiring.supabaseRequest).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.security_monitor import SecurityMonitor, request_category
 
 import json
 import logging
@@ -502,6 +503,37 @@ def handle_api_request(
 
 class RailwayApiHandler(BaseHTTPRequestHandler):
     repository: AnalysisRepository
+    security_monitor: SecurityMonitor | None = None
+
+    def _security_before(self) -> bool:
+        monitor = self.security_monitor
+        category = request_category(self.path)
+        self._security_category = category
+        if monitor is None or category is None:
+            return True
+        source, trusted = monitor.identity(self.client_address[0])
+        self._security_identity = (source, trusted)
+        result = monitor.check(category, source, trusted)
+        if not result["allowed"]:
+            self._security_retry_after = result["retryAfter"]
+            self._send(429, {"error": "RATE_LIMITED"}, allow_cors=not self._is_protected_job_path(), no_store=True)
+            return False
+        return True
+
+    def _security_outcome(self, status: int) -> None:
+        if self.security_monitor is None:
+            return
+        if self._is_protected_job_path() and status in (401, 403):
+            source, trusted = self.security_monitor.identity(self.client_address[0])
+            self.security_monitor.observe("unauthorized", source, trusted, "attempt")
+            self.security_monitor.observe("unauthorized", source, trusted, "denied")
+            return
+        if not getattr(self, "_security_category", None):
+            return
+        if status in (400, 401, 403, 404, 413):
+            source, trusted = self._security_identity
+            self.security_monitor.observe(self._security_category, source, trusted,
+                                          "denied" if status in (401, 403) else "invalid")
 
     def _send(
         self,
@@ -511,9 +543,12 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         allow_cors: bool = True,
         no_store: bool = False,
     ) -> None:
+        self._security_outcome(status)
         encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        if status == 429:
+            self.send_header("Retry-After", str(self._security_retry_after))
         self.send_header("Content-Length", str(len(encoded)))
         if no_store:
             self.send_header("Cache-Control", "no-store")
@@ -550,6 +585,8 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self._send(204, {}, allow_cors=not protected, no_store=protected)
 
     def do_GET(self) -> None:
+        if not self._security_before():
+            return
         protected = self._is_protected_job_path()
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
             try:
@@ -576,6 +613,8 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:
+        if not self._security_before():
+            return
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -630,9 +669,19 @@ def main() -> None:
     host = "0.0.0.0"
     port = int(environ.get("PORT", "8000"))
     RailwayApiHandler.repository = create_repository()
+    settings = load_settings()
+    RailwayApiHandler.security_monitor = SecurityMonitor(
+        settings.supabase_url, settings.supabase_secret_key,
+        enforce=environ.get("MATRIX_SECURITY_ENFORCE", "") == "true",
+        trust_direct_peer=environ.get("MATRIX_SECURITY_TRUST_DIRECT_PEER", "") == "true",
+    )
     server = ThreadingHTTPServer((host, port), RailwayApiHandler)
     print(f"Railway Matrix API listening on {host}:{port}")
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    finally:
+        RailwayApiHandler.security_monitor.close()
+        server.server_close()
 
 
 if __name__ == "__main__":
