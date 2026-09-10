@@ -6,7 +6,7 @@ export default defineConfig({
     include: [
       "supabase/functions/admin-transfer-push/**/*.test.ts",
       "supabase/functions/_shared/web-push-delivery.test.ts",
-      "supabase/functions/notification-dispatch/handler.test.ts",
+      "supabase/functions/notification-dispatch/**/*.test.ts",
       "supabase/functions/notification-ingest/handler.test.ts",
       "supabase/functions/notification-pilio/**/*.test.ts",
       "supabase/functions/send-test-push/**/*.test.ts",

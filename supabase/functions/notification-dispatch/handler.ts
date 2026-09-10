@@ -1,5 +1,7 @@
+import { withRequestDeadline } from '../_shared/request-deadline.ts';
 import {
   deliverPushToSubscription,
+  PUSH_OPERATION_TIMEOUT_MS,
   type DeliveryDependencies,
   type PushPayload,
   type PushSubscription,
@@ -43,6 +45,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const CLAIM_LIMIT = 25;
+const DISPATCH_CONCURRENCY = 4;
 const RETRY_MINUTES = [1, 2, 5, 15, 30] as const;
 const DISPATCH_ACCOUNT = "system:notification-dispatch";
 
@@ -90,6 +93,8 @@ function requireFinalized(result: boolean) {
 
 export function createNotificationDispatchHandler(dependencies: Dependencies) {
   const now = dependencies.now ?? (() => new Date());
+  const bounded = <T>(operation: () => Promise<T>) =>
+    withRequestDeadline(operation, { timeoutMs: PUSH_OPERATION_TIMEOUT_MS });
 
   return async (request: Request): Promise<Response> => {
     if (request.method === "OPTIONS") {
@@ -106,7 +111,7 @@ export function createNotificationDispatchHandler(dependencies: Dependencies) {
     }
 
     try {
-      const workItems = await dependencies.claim(CLAIM_LIMIT);
+      const workItems = await bounded(() => dependencies.claim(CLAIM_LIMIT));
       const totals = {
         claimed: workItems.length,
         sent: 0,
@@ -115,19 +120,19 @@ export function createNotificationDispatchHandler(dependencies: Dependencies) {
         failed: 0,
       };
 
-      for (const work of workItems) {
-        const subscriptions = await dependencies.listSubscriptions(work.userId);
+      const processWork = async (work: ClaimedNotificationWork) => {
+        const subscriptions = await bounded(() => dependencies.listSubscriptions(work.userId));
         const processedAt = now();
         const processedAtIso = processedAt.toISOString();
 
         if (subscriptions.length === 0) {
-          requireFinalized(await dependencies.markSkipped(
+          requireFinalized(await bounded(() => dependencies.markSkipped(
             work.outboxId,
             "no_enabled_subscription",
             processedAtIso,
-          ));
+          )));
           totals.skipped += 1;
-          continue;
+          return;
         }
 
         const deliveryResults = [];
@@ -141,39 +146,51 @@ export function createNotificationDispatchHandler(dependencies: Dependencies) {
         }
 
         if (deliveryResults.some((result) => result.delivered)) {
-          requireFinalized(await dependencies.markSent(work.outboxId, processedAtIso));
+          requireFinalized(await bounded(() => dependencies.markSent(work.outboxId, processedAtIso)));
           totals.sent += 1;
-          continue;
+          return;
         }
 
         if (deliveryResults.every((result) => result.permanentFailure)) {
-          requireFinalized(await dependencies.markSkipped(
+          requireFinalized(await bounded(() => dependencies.markSkipped(
             work.outboxId,
             "no_valid_subscription",
             processedAtIso,
-          ));
+          )));
           totals.skipped += 1;
-          continue;
+          return;
         }
 
         const error = retryReason(deliveryResults);
         if (work.attemptCount >= 5) {
-          requireFinalized(await dependencies.markFailed(
+          requireFinalized(await bounded(() => dependencies.markFailed(
             work.outboxId,
             error,
             processedAtIso,
-          ));
+          )));
           totals.failed += 1;
-          continue;
+          return;
         }
 
-        requireFinalized(await dependencies.markRetry(
+        requireFinalized(await bounded(() => dependencies.markRetry(
           work.outboxId,
           error,
           nextRetryAt(processedAt, work.attemptCount),
-        ));
+        )));
         totals.retried += 1;
-      }
+      };
+
+      // Keep provider stalls and per-item storage errors isolated from other work.
+      let cursor = 0;
+      let itemFailed = false;
+      await Promise.all(Array.from({ length: Math.min(DISPATCH_CONCURRENCY, workItems.length) }, async () => {
+        while (cursor < workItems.length) {
+          const work = workItems[cursor++];
+          try { await processWork(work); }
+          catch { itemFailed = true; }
+        }
+      }));
+      if (itemFailed) return json({ error: { code: "DISPATCH_FAILED" } }, 500);
 
       return json(totals, 200);
     } catch {

@@ -557,7 +557,7 @@ const routes: Record<string, unknown> = {
       const durationType = legacyDurations[rawDuration] ?? rawDuration;
       const quantity = Number(body.quantity ?? 10);
       const admin = await getAdmin(ctx);
-      return json(await adminData.generateActivationCodeBatch(durationType, quantity, actorOf(admin)));
+      return json(await adminData.generateActivationCodeBatch(durationType, quantity, actorOf(admin), String(body.requestId ?? "")));
     } catch (cause) {
       return fail(cause);
     }

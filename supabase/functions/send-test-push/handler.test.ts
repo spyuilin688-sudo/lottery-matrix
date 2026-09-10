@@ -239,16 +239,10 @@ Deno.test("已成功送出不因 log 寫入錯誤被誤標為推播失敗", asyn
     recordDelivery: () => Promise.reject(new Error("database unavailable")),
   });
   const handler = createSendTestPushHandler(setup.value);
-  let rejected = false;
+  const response = await handler(request({ userId: "member-1", adminAccount: "admin@test" }));
 
-  try {
-    await handler(request({ userId: "member-1", adminAccount: "admin@test" }));
-  } catch {
-    rejected = true;
-  }
-
-  assertEquals(rejected, true);
+  assertEquals(response.status, 200);
+  assertEquals(await response.json(), { sent: 1, failed: 0 });
   assertEquals(setup.observations.successes.length, 1);
   assertEquals(setup.observations.failures, []);
 });
-

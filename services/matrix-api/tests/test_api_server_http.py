@@ -9,6 +9,8 @@ from urllib.parse import quote
 from xml.etree import ElementTree
 
 import pytest
+import httpx
+from postgrest.exceptions import APIError
 
 import app.api_server as api_server
 from app.api_server import RailwayApiHandler
@@ -32,6 +34,41 @@ class HttpOperationalRepository(InMemoryAnalysisRepository):
 class ExplodingStatusRepository(HttpOperationalRepository):
     def list_job_statuses(self) -> list[dict]:
         raise RuntimeError("fake-database-secret")
+
+
+@pytest.mark.parametrize("failure", [
+    ValueError("DRAW_HISTORY_UNSTABLE"),
+    ValueError("fake-database-secret"),
+    TimeoutError("fake-database-secret"),
+    httpx.ConnectError("fake-database-secret"),
+    httpx.ReadTimeout("fake-database-secret"),
+    APIError({"message": "fake-database-secret", "code": "57014", "details": None, "hint": None}),
+])
+def test_svg_database_failure_returns_safe_uncacheable_503(failure, capsys, caplog) -> None:
+    class FailingCardRepository(HttpOperationalRepository):
+        def list_draws(self, lottery: str, limit: int | None = None) -> list[dict]:
+            raise failure
+
+    path = f"/api/matrix/cards/{quote('今彩539', safe='')}/draw.svg"
+    with running_server(FailingCardRepository()) as address:
+        response, body = request(address, "GET", path)
+        assert response.status == 503
+        assert response.getheader("Cache-Control") == "no-store"
+        assert response.getheader("Access-Control-Allow-Origin") == "*"
+        assert response.getheader("Content-Type").startswith("application/json")
+        assert json.loads(body) == {"error": "CARD_UNAVAILABLE"}
+    captured = capsys.readouterr()
+    assert "fake-database-secret" not in captured.out + captured.err
+    assert "fake-database-secret" not in caplog.text
+
+
+def test_svg_invalid_order_remains_a_400_response() -> None:
+    path = f"/api/matrix/cards/{quote('今彩539', safe='')}/invalid.svg"
+    with running_server(HttpOperationalRepository()) as address:
+        response, body = request(address, "GET", path)
+        assert response.status == 400
+        assert response.getheader("Cache-Control") == "no-store"
+        assert json.loads(body) == {"error": "未知牌單順序"}
 
 
 @contextmanager

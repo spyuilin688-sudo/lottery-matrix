@@ -97,55 +97,85 @@ export function createSupabaseTransport(
     : async () => configOrLoader;
   return {
     async request<T = unknown>(path: string, init: RequestInit = {}, withCount = false): Promise<T> {
-      let config: SupabaseConfig;
-      try {
-        config = await loadConfig();
-      } catch (error) {
-        if (error instanceof BackendIntegrationError) throw error;
-        throw new BackendIntegrationError('CONFIG_MISSING', 'Supabase backend configuration is incomplete');
-      }
-      const baseUrl = config.url.replace(/\/+$/, '');
-      const headers = {
-        apikey: config.serviceRoleKey,
-        Authorization: `Bearer ${config.serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-        ...(init.headers as Record<string, string> | undefined),
+      const controller = new AbortController();
+      const unavailable = () => new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
+      let rejectDeadline!: (reason: unknown) => void;
+      const deadline = new Promise<never>((_, reject) => { rejectDeadline = reject; });
+      const cancel = () => {
+        const reason = init.signal?.reason ?? new DOMException('Request aborted', 'AbortError');
+        rejectDeadline(reason);
+        controller.abort(reason);
       };
-
-      let response: Response;
+      const timer = setTimeout(() => {
+        const reason = unavailable();
+        rejectDeadline(reason);
+        controller.abort(reason);
+      }, 15_000);
+      init.signal?.addEventListener('abort', cancel, { once: true });
       try {
-        response = await fetcher(`${baseUrl}/${path.replace(/^\/+/, '')}`, {
-          ...init,
-          headers,
-        });
-      } catch {
-        throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
-      }
-
-      if (withCount) {
-        const count = response.headers.get('Content-Range')?.match(/\/(\d+)$/)?.[1];
-        const total = count === undefined ? NaN : Number(count);
-        if (Number.isSafeInteger(total) && total >= 0) {
-          if (response.status === 416) {
-            const error = await response.json().catch(() => null);
-            if (error?.code === 'PGRST103') return { items: [], total } as T;
-          } else if (response.ok) {
-            const items = await response.json();
-            if (Array.isArray(items)) return { items, total } as T;
+        if (init.signal?.aborted) cancel();
+        return await Promise.race([deadline, (async () => {
+          controller.signal.throwIfAborted();
+          let config: SupabaseConfig;
+          try {
+            config = await loadConfig();
+          } catch (error) {
+            if (error instanceof BackendIntegrationError) throw error;
+            throw new BackendIntegrationError('CONFIG_MISSING', 'Supabase backend configuration is incomplete');
           }
-        }
-        throw new BackendIntegrationError('UNAVAILABLE', 'Supabase pagination is temporarily unavailable');
+          controller.signal.throwIfAborted();
+          const baseUrl = config.url.replace(/\/+$/, '');
+          const headers = {
+            apikey: config.serviceRoleKey,
+            Authorization: `Bearer ${config.serviceRoleKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+            ...(init.headers as Record<string, string> | undefined),
+          };
+
+          let response: Response;
+          try {
+            response = await fetcher(`${baseUrl}/${path.replace(/^\/+/, '')}`, {
+              ...init,
+              headers,
+              signal: controller.signal,
+            });
+          } catch {
+            throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
+          }
+
+          if (withCount) {
+            const count = response.headers.get('Content-Range')?.match(/\/(\d+)$/)?.[1];
+            const total = count === undefined ? NaN : Number(count);
+            if (Number.isSafeInteger(total) && total >= 0) {
+              if (response.status === 416) {
+                const error = await response.json().catch(() => null);
+                if (error?.code === 'PGRST103') return { items: [], total } as T;
+              } else if (response.ok) {
+                const items = await response.json();
+                if (Array.isArray(items)) return { items, total } as T;
+              }
+            }
+            throw new BackendIntegrationError('UNAVAILABLE', 'Supabase pagination is temporarily unavailable');
+          }
+          if (!response.ok) {
+            const domainError = await readPaymentReversalDomainError(path, response);
+            if (domainError) throw domainError;
+            throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
+          }
+          // PostgREST minimal writes can return 201 with an empty body, not only 204.
+          const minimal = headers.Prefer.split(',').some((value) => value.trim() === 'return=minimal');
+          if (response.status === 204 || minimal) return undefined as T;
+          return await response.json() as T;
+        })()]);
+      } catch (error) {
+        if (init.signal?.aborted) throw init.signal.reason ?? new DOMException('Request aborted', 'AbortError');
+        if (error instanceof BackendIntegrationError || error instanceof SupabaseDomainError) throw error;
+        throw unavailable();
+      } finally {
+        clearTimeout(timer);
+        init.signal?.removeEventListener('abort', cancel);
       }
-      if (!response.ok) {
-        const domainError = await readPaymentReversalDomainError(path, response);
-        if (domainError) throw domainError;
-        throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
-      }
-      // PostgREST minimal writes can return 201 with an empty body, not only 204.
-      const minimal = headers.Prefer.split(',').some((value) => value.trim() === 'return=minimal');
-      if (response.status === 204 || minimal) return undefined as T;
-      return await response.json() as T;
     },
     async requestPage<T = unknown>(path: string): Promise<{ items: T[]; total: number }> {
       return this.request(path, { headers: { Prefer: 'count=exact' } }, true);

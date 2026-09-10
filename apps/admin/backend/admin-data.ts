@@ -637,7 +637,7 @@ export function createAdminData(transport: WriteTransport) {
     });
   }
 
-  async function generateActivationCodeBatch(durationType: string, quantity: number, actor: AdminActor) {
+  async function generateActivationCodeBatch(durationType: string, quantity: number, actor: AdminActor, requestId?: string) {
     if (!durationTypes.includes(durationType)) throw new AdminDataError('啟動期限不正確');
     if (!activationCodeQuantities.includes(quantity)) throw new AdminDataError('建立數量不正確');
     if (!['超級管理員', '營運管理員'].includes(String(actor.role ?? ''))) {
@@ -646,23 +646,15 @@ export function createAdminData(transport: WriteTransport) {
     if (actor.role === '營運管理員' && !operatorActivationCodeDurations.includes(durationType)) {
       throw new AdminDataError('營運管理員僅可建立 7 天或 15 天啟動碼', 403);
     }
-    const rows = await transport.supabaseRequest<Row[]>('rpc/generate_activation_code_batch', {
-      method: 'POST',
-      body: JSON.stringify({ p_duration_type: durationType, p_quantity: quantity }),
-    });
-    const batchId = rows[0]?.batch_id;
-    if (rows.length !== quantity || !batchId || rows.some((row) => row.batch_id !== batchId)) {
-      throw new AdminDataError('啟動碼批次建立失敗', 500);
+    if (!requestId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
+      throw new AdminDataError('啟動碼建立請求不正確');
     }
-    await writeAudit({
-      actor,
-      operationType: '批次新增',
-      targetTable: 'activation_codes',
-      targetId: String(batchId),
-      content: `批次建立 ${quantity} 組啟動碼`,
-      afterData: { batchId, durationType, count: quantity },
+    const result = await transport.supabaseRequest<{ batchId: string; count: number }>('rpc/admin_generate_activation_code_batch', {
+      method: 'POST',
+      body: JSON.stringify({ p_duration_type: durationType, p_quantity: quantity, p_actor_id: actor.id, p_request_id: requestId }),
     });
-    return { batchId: String(batchId), count: quantity };
+    if (!result?.batchId || result.count !== quantity) throw new AdminDataError('啟動碼批次建立失敗', 500);
+    return { batchId: result.batchId, count: result.count };
   }
 
   return {

@@ -1,3 +1,6 @@
+import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
+import { invalidateMatrixData } from '../matrix-data-revision';
+import type { Session } from '@supabase/supabase-js';
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
@@ -132,7 +135,7 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
   expect(resultGroups).toHaveLength(2);
   const firstGroup = resultGroups[0];
   expect(within(firstGroup).queryByText('單碼結果')).not.toBeInTheDocument();
-  expect(within(firstGroup).getByText('預測：')).toBeInTheDocument();
+  expect(within(firstGroup).getByText('結果：')).toBeInTheDocument();
   expect(within(firstGroup).queryByText('共振')).not.toBeInTheDocument();
   const lockedRow = firstGroup.querySelector('.matrix-status-locked-road .road-result-row');
   expect(lockedRow?.children).toHaveLength(2);
@@ -140,7 +143,7 @@ test('狀態頁各同碼群組以獨立結果框呈現，並各自顯示探索�
   expect(lockedRow?.children[1]).toHaveTextContent('07.09');
   expect(resultTable).toContainElement(firstGroup);
   for (const group of resultGroups) {
-    for (const heading of ['位置', '號碼', '預測期', '連準次數', '預測', '版路類型']) {
+    for (const heading of ['位置', '號碼', '查詢期', '連準次數', '結果', '版路類型']) {
       expect(within(group).getByText(heading)).toBeInTheDocument();
     }
   }
@@ -291,4 +294,39 @@ test('入口讀取失敗留在原頁，關閉提醒後可以重試', async () =>
   await waitFor(()=>expect(trigger).not.toBeDisabled());
   fireEvent.click(trigger);
   await waitFor(()=>expect(navigate).toHaveBeenCalledWith('status-settings'));
+});
+
+
+
+test.each(['session', 'data'])('狀態頁 %s 變更即清除已顯示內容並重取，忽略舊驗證', async kind => {
+  updateAlgorithmCacheSession({ access_token: 'a', user: { id: 'a' } } as Session);
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  await screen.findByText('2 組');
+  fireEvent.click(screen.getByRole('button', { name: /•共振/ }));
+  let resolve!: (value: unknown) => void;
+  statusApi.fetchMatrixStatusValidation.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+  fireEvent.click(screen.getByRole('button', { name: '展開版路 road' }));
+  statusApi.fetchMatrixStatus.mockReturnValueOnce(new Promise(() => {}));
+  act(() => kind === 'session'
+    ? updateAlgorithmCacheSession({ access_token: 'b', user: { id: 'b' } } as Session)
+    : invalidateMatrixData());
+  expect(screen.queryByText('2 組')).toBeNull();
+  expect(screen.queryByRole('button', { name: '展開版路 road' })).toBeNull();
+  expect(statusApi.fetchMatrixStatus).toHaveBeenCalledTimes(2);
+  await act(async () => resolve({ validation: { itemId: 'source-road', ruleSets: [] } }));
+  expect(screen.queryByRole('region', { name: '版路驗證過程' })).toBeNull();
+});
+
+test('狀態頁忽略切換帳號前尚未完成的列表', async () => {
+  updateAlgorithmCacheSession({ access_token: 'a', user: { id: 'a' } } as Session);
+  const oldResponse = await statusApi.fetchMatrixStatus();
+  statusApi.fetchMatrixStatus.mockClear();
+  let resolve!: (value: unknown) => void;
+  statusApi.fetchMatrixStatus.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+  render(<MatrixStatusPage onNavigate={vi.fn()} />);
+  statusApi.fetchMatrixStatus.mockRejectedValueOnce(new Error('offline'));
+  act(() => updateAlgorithmCacheSession(null));
+  await screen.findByRole('alert');
+  await act(async () => resolve(oldResponse));
+  expect(screen.queryByText('2 組')).toBeNull();
 });

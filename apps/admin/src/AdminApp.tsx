@@ -1,3 +1,4 @@
+import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
@@ -258,6 +259,8 @@ const defaultAdmin = (role = "查看人員"): AdminForm => ({
 });
 function AdminApp() {
   const [signed, setSigned] = useState(false);
+  const [bootstrapUnavailable, setBootstrapUnavailable] = useState(false);
+  const activationBatchSubmitter = useRef(createActivationBatchSubmitter(api));
   const [loginAccount, setLoginAccount] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [admin, setAdmin] = useState<Record<string, unknown> | null>(null);
@@ -375,7 +378,20 @@ function AdminApp() {
     setBusy(true);
     if (showError) setError("");
     try {
-      const r = await api.get("/api/bootstrap");
+      const bootstrap = await loadAdminBootstrap(api);
+      if (bootstrap.kind !== 'ready') {
+        setBootstrapUnavailable(bootstrap.kind === 'unavailable');
+        if (bootstrap.kind === 'unauthorized') {
+          signedRef.current = false;
+          adminIdRef.current = "";
+          setSigned(false);
+          setAdmin(null);
+        }
+        if (showError || bootstrap.kind === 'unavailable') setError(bootstrap.message);
+        return;
+      }
+      setBootstrapUnavailable(false);
+      const r = { data: { admin: bootstrap.admin } };
       const initialAdminId = String(r.data.admin?.id ?? "");
       setAdmin(r.data.admin);
       setSigned(true);
@@ -386,11 +402,8 @@ function AdminApp() {
       setActive(initial);
       await load(initial, initialAdminId);
     } catch (e) {
-      signedRef.current = false;
-      adminIdRef.current = "";
-      setSigned(false);
-      setAdmin(null);
-      if (showError) setError(e instanceof Error ? e.message : "無法載入後台");
+      setBootstrapUnavailable(true);
+      setError(e instanceof Error ? e.message : "無法載入後台");
     } finally { setBusy(false); }
   };
   useEffect(() => { void boot(false); }, []);
@@ -524,7 +537,7 @@ function AdminApp() {
       async () => {
         setBusy(true);
         try {
-          await api.post("/api/activation-codes/batch", { durationType, quantity });
+          await activationBatchSubmitter.current.submit(adminIdRef.current, durationType, quantity);
           setShowForm(false);
           setForm({});
           await load(active);
@@ -683,6 +696,15 @@ function AdminApp() {
     role,
     permissions: defaultOperationPermissions(role),
   }));
+  if (!signed && bootstrapUnavailable)
+    return (
+      <div className="login"><div className="loginCard">
+        <div className="brand">樂彩 Matrix</div>
+        <h1>營運後台</h1>
+        <p role="alert">後台連線異常，請重新載入</p>
+        <button onClick={() => void boot(true)} disabled={busy}>重新載入</button>
+      </div></div>
+    );
   if (!signed)
     return (
       <div className="login">

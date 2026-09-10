@@ -2,10 +2,12 @@ import "edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 // @ts-types="web-push-types"
 import webpush from "web-push";
+import { createNotificationFetch } from "./transport.ts";
 import {
   createNotificationDispatchHandler,
   type ClaimedNotificationWork,
 } from "./handler.ts";
+import { PUSH_OPERATION_TIMEOUT_MS } from "../_shared/web-push-delivery.ts";
 import type {
   DeliveryLog,
   PushPayload,
@@ -76,6 +78,7 @@ const subject = secret("WEB_PUSH_SUBJECT");
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: createNotificationFetch() },
 });
 
 webpush.setVapidDetails(subject, publicKey, privateKey);
@@ -112,6 +115,7 @@ async function sendPush(subscription: PushSubscription, payload: PushPayload) {
       keys: { p256dh: subscription.p256dh, auth: subscription.authKey },
     },
     JSON.stringify(payload),
+    { timeout: PUSH_OPERATION_TIMEOUT_MS },
   );
 }
 

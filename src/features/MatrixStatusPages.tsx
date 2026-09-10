@@ -1,3 +1,5 @@
+import { subscribeAlgorithmCacheScope } from "../auth/algorithm-cache-scope";
+import { subscribeMatrixDataRevision } from "../matrix-data-revision";
 import { SubscriptionCopy } from "../subscription-copy";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, GearIcon, ReaderIcon, ReloadIcon } from "@radix-ui/react-icons";
@@ -204,26 +206,35 @@ export function MatrixStatusPage({ onNavigate, initialLottery = "今彩539" }: {
 
   useEffect(() => {
     let active = true;
-    validationRevision.current += 1;
-    setResult(null);
-    setOpen("");
-    setRequestError("");
-    setExpandedRoad(null);
-    setValidationById({});
-    setValidationLoadingId(null);
-    setValidationErrorId(null);
-    void fetchMatrixStatus(lottery)
-      .then((response) => {
-        if (!active) return;
-        setResult(response);
-      })
-      .catch((cause) => {
-        if (!active) return;
-        setRequestError((cause as { code?: string })?.code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : "Matrix 狀態讀取失敗");
-      });
+    let listRevision = 0;
+    const reload = () => {
+      const revision = ++listRevision;
+      validationRevision.current += 1;
+      setResult(null);
+      setOpen("");
+      setRequestError("");
+      setExpandedRoad(null);
+      setValidationById({});
+      setValidationLoadingId(null);
+      setValidationErrorId(null);
+      void fetchMatrixStatus(lottery)
+        .then((response) => {
+          if (!active || revision !== listRevision) return;
+          setResult(response);
+        })
+        .catch((cause) => {
+          if (!active || revision !== listRevision) return;
+          setRequestError((cause as { code?: string })?.code === "ANALYSIS_NOT_READY" ? "分析中，請稍後再試" : "Matrix 狀態讀取失敗");
+        });
+    };
+    const unsubscribeSession = subscribeAlgorithmCacheScope(reload);
+    const unsubscribeData = subscribeMatrixDataRevision(reload);
+    reload();
     return () => {
       active = false;
       validationRevision.current += 1;
+      unsubscribeSession();
+      unsubscribeData();
     };
   }, [lottery]);
 
