@@ -23,11 +23,34 @@ test("production smoke target collection requires configured PWA and admin URLs"
   );
 });
 
-test("production smoke accepts non-5xx responses and rejects server failures", () => {
-  assert.doesNotThrow(() => evaluateSmokeResponse("PWA", "https://example.test/", 200));
-  assert.doesNotThrow(() => evaluateSmokeResponse("PWA", "https://example.test/", 404));
+test("production smoke rejects invalid or non-http deployment URLs", () => {
   assert.throws(
-    () => evaluateSmokeResponse("PWA", "https://example.test/", 503),
-    /PWA.*503/,
+    () => collectSmokeTargets({
+      SMOKE_PWA_URL: "file:///tmp/index.html",
+      SMOKE_ADMIN_URL: "https://admin.example.test/",
+    }),
+    /SMOKE_PWA_URL.*http/i,
+  );
+});
+
+test("PWA and admin smoke targets require a successful final response", () => {
+  assert.doesNotThrow(() => evaluateSmokeResponse("PWA", "https://example.test/", 200));
+  assert.throws(
+    () => evaluateSmokeResponse("PWA", "https://example.test/", 404),
+    /PWA.*404/,
+  );
+  assert.throws(
+    () => evaluateSmokeResponse("Admin", "https://admin.example.test/", 503),
+    /Admin.*503/,
+  );
+});
+
+test("optional API smoke target may be protected but never accepts a server error", () => {
+  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 200));
+  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 401));
+  assert.doesNotThrow(() => evaluateSmokeResponse("API", "https://api.example.test/health", 403));
+  assert.throws(
+    () => evaluateSmokeResponse("API", "https://api.example.test/health", 500),
+    /API.*500/,
   );
 });
