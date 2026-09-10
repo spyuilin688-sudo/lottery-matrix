@@ -111,6 +111,10 @@ def _card_manifest(lottery: str, repository: AnalysisRepository) -> dict[str, An
     }
 
 
+class MatrixCardRequestError(ValueError):
+    """A known card request error whose message is safe for clients."""
+
+
 def handle_matrix_card_request(
     target: str,
     repository: AnalysisRepository,
@@ -122,14 +126,17 @@ def handle_matrix_card_request(
     try:
         encoded_lottery, order = route.rsplit("/", 1)
     except ValueError as error:
-        raise ValueError("牌單路徑格式錯誤") from error
-    lottery = _parse_lottery(unquote(encoded_lottery))
+        raise MatrixCardRequestError("牌單路徑格式錯誤") from error
+    try:
+        lottery = _parse_lottery(unquote(encoded_lottery))
+    except ValueError as error:
+        raise MatrixCardRequestError("未知彩種") from error
     if order not in {"draw", "sorted"}:
-        raise ValueError("未知牌單順序")
+        raise MatrixCardRequestError("未知牌單順序")
     row_count = sum(card_layout(lottery)["column_rows"])
     draws = _history(repository, lottery, row_count)
     if not draws:
-        raise ValueError("牌單尚未建立")
+        raise MatrixCardRequestError("牌單尚未建立")
     return 200, render_matrix_card(lottery, order, draws)
 
 
@@ -591,8 +598,16 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         if self._is_matrix_card_path() and urlsplit(self.path).path.endswith(".svg"):
             try:
                 card_response = handle_matrix_card_request(self.path, self.repository)
-            except ValueError as error:
+            except MatrixCardRequestError as error:
                 self._send(400, {"error": str(error)}, no_store=True)
+                return
+            except Exception as error:
+                # Keep database/transport failures inside the HTTP boundary;
+                # exception messages may include credentials or query details.
+                logging.getLogger(__name__).error(
+                    "matrix-card-unavailable %s", type(error).__name__
+                )
+                self._send(503, {"error": "CARD_UNAVAILABLE"}, no_store=True)
                 return
             if card_response is not None:
                 status, svg = card_response

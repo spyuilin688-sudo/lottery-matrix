@@ -100,7 +100,7 @@ describe('member Supabase RPC', () => {
 
   it('clears only the stale local session when the auth server rejects the current user', async () => {
     supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
-    supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: { message: 'Invalid Refresh Token' } });
+    supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: { status: 400, code: 'refresh_token_not_found', message: 'Invalid Refresh Token' } });
 
     await expect(fetchMemberReferralSummary()).rejects.toThrow('MEMBER_SESSION_EXPIRED');
     expect(supabase.auth.getUser).toHaveBeenCalledTimes(1);
@@ -171,5 +171,36 @@ describe('member Supabase RPC', () => {
       }],
       ['member_push_subscription_disable', { p_endpoint: 'https://push.test/device' }],
     ]);
+  });
+});
+
+
+
+describe('temporary member auth verification failure', () => {
+  it.each([
+    { status: 503, message: 'Service unavailable' },
+    { status: 429, message: 'Too many requests' },
+    { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
+    { status: 500, message: 'Internal server error' },
+    { status: 400, message: 'Unclassified auth failure' },
+  ])('preserves the local session for $message', async failure => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
+    supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: failure });
+    await expect(fetchMemberProfile()).rejects.toBe(failure);
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+  });
+  it('preserves the local session when getUser rejects', async () => {
+    const failure = new TypeError('Failed to fetch');
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
+    supabase.auth.getUser.mockRejectedValue(failure);
+    await expect(fetchMemberProfile()).rejects.toBe(failure);
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
+  });
+  it('clears the local session on a definitive 401 response', async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
+    supabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: { status: 401, message: 'Invalid JWT' } });
+    await expect(fetchMemberProfile()).rejects.toThrow('MEMBER_SESSION_EXPIRED');
+    expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 });

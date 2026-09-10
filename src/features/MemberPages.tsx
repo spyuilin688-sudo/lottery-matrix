@@ -171,6 +171,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   const lineLoginInProgress = useRef(false);
   const [lineAvatarUrl, setLineAvatarUrl] = useState<string | null>(null);
   const [lineNickname, setLineNickname] = useState<string | null>(null);
+  const [memberUserId, setMemberUserId] = useState<string | null>(null);
+  const memberUserIdRef = useRef<string | null>(null);
   const [memberProfile, setMemberProfile] = useState<MemberProfileResponse | null>(null);
   useEffect(() => {
     let active = true;
@@ -183,6 +185,12 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       // Supabase can broadcast the callback session before the PWA handoff is
       // acknowledged. Keep the login button pending until this attempt settles.
       if (session && lineLoginInProgress.current) return;
+      const userId = (session as Session | null)?.user?.id ?? null;
+      if (memberUserIdRef.current !== userId) {
+        memberUserIdRef.current = userId;
+        setMemberUserId(userId);
+        setMemberProfile(null);
+      }
       setAuthRetrying(false);
       setAuthState(session ? "authenticated" : "anonymous");
       setLineAvatarUrl(lineAvatarFromSession(session));
@@ -237,13 +245,17 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
       return;
     }
     let active = true;
-    void bootstrapMember().then(() => fetchMemberProfile()).then((profile) => {
-      if (active) setMemberProfile(profile);
+    const userId = memberUserId;
+    void bootstrapMember().then(() => {
+      if (!active || memberUserIdRef.current !== userId) return null;
+      return fetchMemberProfile();
+    }).then((profile) => {
+      if (active && memberUserIdRef.current === userId) setMemberProfile(profile);
     }).catch(() => {
       if (active) setMemberProfile(null);
     });
     return () => { active = false; };
-  }, [authState]);
+  }, [authState, memberUserId]);
   const expiry = memberProfile?.isLifetime ? null : memberExpiryInTaipei(memberProfile?.planExpiresAt ?? null);
   const displayedPlanName = memberProfile ? memberProfile.planName ?? "免費會員" : "";
   const displayedPlanDescription = displayedPlanName === "免費會員" ? "核心功能體驗" : "享有所有 Matrix Pro 功能";
@@ -304,6 +316,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
           );
           if (sessionError) throw sessionError;
           if (data.session) {
+            memberUserIdRef.current = data.session.user.id;
+            setMemberUserId(data.session.user.id);
+            setMemberProfile(null);
             setAuthState('authenticated');
             setLineAvatarUrl(lineAvatarFromSession(data.session));
             setLineNickname(lineNicknameFromSession(data.session));

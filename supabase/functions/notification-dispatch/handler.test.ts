@@ -1,3 +1,4 @@
+import { afterEach, vi } from 'vitest';
 import {
   createNotificationDispatchHandler,
   type ClaimedNotificationWork,
@@ -66,6 +67,7 @@ function setup(options: {
   subscriptions?: PushSubscription[];
   sendPush?: (subscription: PushSubscription, payload: PushPayload) => Promise<void>;
   recordDelivery?: (log: DeliveryLog) => Promise<void>;
+  markSent?: (outboxId: string) => Promise<boolean>;
 } = {}) {
   const claimed = options.work ?? [WORK];
   const subscriptions = options.subscriptions ?? [SUB_A];
@@ -108,6 +110,7 @@ function setup(options: {
       },
       async markSent(outboxId, at) {
         observations.sent.push({ outboxId, at });
+        if (options.markSent) return options.markSent(outboxId);
         return true;
       },
       async markSkipped(outboxId, reason, at) {
@@ -262,16 +265,63 @@ Deno.test("notification dispatcher makes fifth transient failure terminal", asyn
   });
 });
 
-Deno.test("delivery log failure leaves claimed outbox recoverable instead of falsely finalizing it", async () => {
+Deno.test("delivery log failure finalizes the confirmed send without retrying it", async () => {
   const test = setup({
     recordDelivery: () => Promise.reject(new Error("delivery log unavailable")),
   });
   const response = await test.handler(request());
-  assertEquals(response.status, 500);
-  assertEquals(await response.json(), { error: { code: "DISPATCH_FAILED" } });
-  assertEquals(test.observations.sent, []);
+  assertEquals(response.status, 200);
+  assertEquals(test.observations.sent, [{ outboxId: WORK.outboxId, at: NOW }]);
   assertEquals(test.observations.skipped, []);
   assertEquals(test.observations.retried, []);
   assertEquals(test.observations.failed, []);
 });
 
+afterEach(() => vi.useRealTimers());
+
+Deno.test('failed finalization does not abort the rest of a claimed batch or resend in the same invocation', async () => {
+  const fixture = setup({
+    work: Array.from({ length: 6 }, (_, index) => ({ ...WORK, outboxId: `outbox-${index}` })),
+    markSent: (id) => id === 'outbox-0' ? Promise.reject(new Error('storage unavailable')) : Promise.resolve(true),
+  });
+  const response = await fixture.handler(request());
+  assertEquals(response.status, 500);
+  assertEquals(await response.json(), { error: { code: 'DISPATCH_FAILED' } });
+  assertEquals(fixture.observations.sent.length, 6);
+  assertEquals(fixture.observations.pushTargets.length, 6);
+  assertEquals(fixture.observations.retried, []);
+});
+
+Deno.test('dispatch limits concurrent push operations to four while draining the batch', async () => {
+  vi.useFakeTimers();
+  let active = 0;
+  let maximumActive = 0;
+  const fixture = setup({
+    work: Array.from({ length: 9 }, (_, index) => ({ ...WORK, outboxId: `outbox-${index}` })),
+    sendPush: () => new Promise((resolve) => {
+      active += 1;
+      maximumActive = Math.max(maximumActive, active);
+      setTimeout(() => { active -= 1; resolve(); }, 100);
+    }),
+  });
+  const pending = fixture.handler(request());
+  await vi.advanceTimersByTimeAsync(300);
+  assertEquals((await pending).status, 200);
+  assertEquals(maximumActive, 4);
+  assertEquals(fixture.observations.sent.length, 9);
+});
+
+Deno.test('a stalled delivery does not hold healthy notifications in the same claim', async () => {
+  vi.useFakeTimers();
+  const fixture = setup({
+    work: [WORK, { ...WORK, outboxId: 'outbox-2', payload: { ...WORK.payload, title: 'healthy' } }],
+    sendPush: (_subscription, payload) => payload.title === 'healthy' ? Promise.resolve() : new Promise(() => {}),
+  });
+  const pending = fixture.handler(request());
+  await vi.advanceTimersByTimeAsync(0);
+  assertEquals(fixture.observations.sent.map((item) => item.outboxId), ['outbox-2']);
+  await vi.advanceTimersByTimeAsync(8_000);
+  const response = await pending;
+  assertEquals(response.status, 200);
+  assertEquals(fixture.observations.retried.map((item) => item.outboxId), ['outbox-1']);
+});

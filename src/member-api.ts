@@ -71,6 +71,18 @@ function isMemberAuthError(error: unknown) {
   return code === 'PGRST301';
 }
 
+function isDefinitivelyInvalidMemberSession(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const status = 'status' in error ? Number(error.status) : 0;
+  const code = 'code' in error ? String(error.code ?? '') : '';
+  // Only an explicit auth rejection may remove local credentials. Transport,
+  // rate-limit and unknown server failures must remain recoverable.
+  return status === 401 || [
+    'bad_jwt', 'session_not_found', 'user_not_found',
+    'refresh_token_not_found', 'refresh_token_already_used',
+  ].includes(code);
+}
+
 async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
   const client = getSupabaseClient();
   const request = () => args
@@ -82,6 +94,7 @@ async function memberRpc<T>(name: string, args?: Record<string, unknown>) {
   if (!isMemberAuthError(error)) throw error;
 
   const { data: userData, error: userError } = await client.auth.getUser();
+  if (userError && !isDefinitivelyInvalidMemberSession(userError)) throw userError;
   if (userError || !userData.user) {
     try {
       await client.auth.signOut({ scope: 'local' });

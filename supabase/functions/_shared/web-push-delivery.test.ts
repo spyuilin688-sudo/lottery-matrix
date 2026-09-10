@@ -1,3 +1,4 @@
+import { afterEach, vi } from 'vitest';
 import {
   deliverPushToSubscription,
   type DeliveryLog,
@@ -10,23 +11,6 @@ function assertEquals(actual: unknown, expected: unknown) {
   const expectedJson = JSON.stringify(expected);
   if (actualJson !== expectedJson) {
     throw new Error(`Expected ${expectedJson}, received ${actualJson}`);
-  }
-}
-
-async function assertRejects(
-  operation: () => Promise<unknown>,
-  expectedMessage: string,
-) {
-  let thrown: unknown;
-  try {
-    await operation();
-  } catch (error) {
-    thrown = error;
-  }
-  if (!(thrown instanceof Error) || thrown.message !== expectedMessage) {
-    throw new Error(
-      `Expected rejection ${JSON.stringify(expectedMessage)}, received ${String(thrown)}`,
-    );
   }
 }
 
@@ -185,26 +169,67 @@ Deno.test("shared delivery keeps transient provider failure retryable", async ()
   ]);
 });
 
-Deno.test("delivery log failure rejects after successful push without reclassifying provider result", async () => {
+Deno.test("delivery log failure preserves successful delivery without requesting another send", async () => {
   const test = setup({
     recordDelivery: () => Promise.reject(new Error("delivery log unavailable")),
   });
 
-  await assertRejects(
-    () => deliverPushToSubscription(test.dependencies, {
-      userId: "user-1",
-      subscription: SUBSCRIPTION,
-      payload: PAYLOAD,
-      adminAccount: "system:notification-dispatch",
-    }),
-    "delivery log unavailable",
-  );
+  const result = await deliverPushToSubscription(test.dependencies, {
+    userId: "user-1",
+    subscription: SUBSCRIPTION,
+    payload: PAYLOAD,
+    adminAccount: "system:notification-dispatch",
+  });
+  assertEquals(result.delivered, true);
 
   assertEquals(test.observations.sent.length, 1);
   assertEquals(test.observations.successes, [
     { subscriptionId: "subscription-a", at: "2026-09-03T08:50:00.000Z" },
   ]);
   assertEquals(test.observations.failures, []);
+});
+
+afterEach(() => vi.useRealTimers());
+
+Deno.test('stalled delivery metadata has a finite deadline without resending the confirmed push', async () => {
+  vi.useFakeTimers();
+  const fixture = setup({ recordDelivery: () => new Promise(() => {}) });
+  const pending = deliverPushToSubscription(fixture.dependencies, {
+    userId: 'user-1', subscription: SUBSCRIPTION, payload: PAYLOAD,
+    adminAccount: 'system:notification-dispatch',
+  });
+  await vi.advanceTimersByTimeAsync(8_000);
+  assertEquals((await pending).delivered, true);
+  assertEquals(fixture.observations.sent.length, 1);
+  assertEquals(vi.getTimerCount(), 0);
+});
+
+Deno.test('a stalled provider settles as retryable without disabling its endpoint', async () => {
+  vi.useFakeTimers();
+  const fixture = setup({ sendPush: () => new Promise(() => {}) });
+  const pending = deliverPushToSubscription(fixture.dependencies, {
+    userId: 'user-1', subscription: SUBSCRIPTION, payload: PAYLOAD, adminAccount: 'system:notification-dispatch',
+  });
+  await vi.advanceTimersByTimeAsync(8_000);
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await vi.advanceTimersByTimeAsync(0);
+  assertEquals(settled, true);
+  const result = await pending;
+  assertEquals(result.delivered, false);
+  assertEquals(result.permanentFailure, false);
+  assertEquals(fixture.observations.failures[0]?.disable, false);
+});
+
+Deno.test('a failed subscription success record preserves confirmed delivery', async () => {
+  const fixture = setup();
+  fixture.dependencies.markSuccess = () => Promise.reject(new Error('database unavailable'));
+  const result = await deliverPushToSubscription(fixture.dependencies, {
+    userId: 'user-1', subscription: SUBSCRIPTION, payload: PAYLOAD, adminAccount: 'system:notification-dispatch',
+  });
+  assertEquals(result.delivered, true);
+  assertEquals(fixture.observations.sent.length, 1);
+  assertEquals(fixture.observations.logs[0]?.status, 'sent');
 });
 
 for (const endpoint of [
