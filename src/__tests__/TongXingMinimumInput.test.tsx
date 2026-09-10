@@ -21,7 +21,7 @@ vi.mock("../dialog/AppDialog", () => ({
   useAppDialog: () => dialogApi,
 }));
 
-import { FeaturePageRouter } from "../FeaturePages";
+import { FeaturePageRouter } from "../FeaturePagesCore";
 
 beforeEach(() => {
   window.localStorage.clear();
