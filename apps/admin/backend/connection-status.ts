@@ -83,7 +83,7 @@ const safeJobDetail = (row: Row, jobName: string, lottery: string, analysis: Rai
 const descriptionFor = (definition: ApiStatusDefinition) => definition.description;
 const safeErrorFor = (definition: ApiStatusDefinition, workerStatus?: WorkerStatus) => {
   if (definition.location === 'Railway' && workerStatus?.ok === false) {
-    if (workerStatus.reason === 'APPDEPLOY_CONFIG_MISSING') return 'AppDeploy 尚未完成 Railway 管理 API 設定';
+    if (workerStatus.reason === 'SUPABASE_RAILWAY_CONFIG_MISSING') return 'Supabase 尚未完成 Railway 管理 API 設定';
     if (workerStatus.reason === 'RAILWAY_ADMIN_CONFIG_MISSING') return 'Railway 管理 API 尚未完成設定';
     if (workerStatus.reason === 'RAILWAY_AUTH_FAILED') return 'Railway 管理 API 驗證失敗';
   }
@@ -256,8 +256,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
         detail = safeGithubDetail(workflow, latestRun);
       } else if (definition.location === 'Railway') {
         const status = await shared.worker();
-        if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
-        if (definition.id === 'railway-health') detail = status.health;
+        if (definition.id === 'railway-health' && status.health) detail = status.health;
+        else if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
+        else if (definition.id === 'railway-health') detail = status.health;
         else if (definition.id === 'railway-jobs-status') detail = status.jobs;
         else detail = { inheritedFrom: ['/health', '/jobs/status'] };
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');
