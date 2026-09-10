@@ -15,7 +15,7 @@
     "predev": "npm run check:runtime",
     "dev": "vite",
     "prebuild": "npm run check:runtime",
-    "build": "tsc && vite build && node scripts/pwa-build-version.mjs dist && node scripts/prepare-sites-build.mjs",
+    "build": "tsc && vite build && npm run build:admin:pages && node scripts/pwa-build-version.mjs dist && node scripts/prepare-sites-build.mjs",
     "build:admin:pages": "ADMIN_PAGES_BUILD=true vite build --config apps/admin/vite.config.ts",
     "build:pages": "npm run check:runtime && tsc && vite build && npm run build:admin:pages && node scripts/pwa-build-version.mjs dist",
     "build:verified": "bash scripts/build-verified.sh",
