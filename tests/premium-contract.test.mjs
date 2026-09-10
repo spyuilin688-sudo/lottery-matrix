@@ -202,10 +202,11 @@ test("routes every reachable confirmation through the shared accessible dialog o
 
   assert.doesNotMatch(featurePages, /window\.(?:confirm|alert)\(/);
   assert.match(featurePages, /import \{ useAppDialog \} from "\.\.\/dialog\/AppDialog"/);
-  assert.ok((notebookSource.match(/appDialog\.confirm\(/g) ?? []).length >= 11);
+  assert.match(notebookSource, /const confirmCurrent = async \(options: AppDialogOptions\) =>/);
+  assert.equal(notebookSource.match(/appDialog\.confirm\(/g)?.length, 1);
+  assert.ok((notebookSource.match(/confirmCurrent\(/g) ?? []).length >= 10);
   assert.equal(plansSource.match(/appDialog\.confirm\(/g)?.length, 1);
   assert.equal(profileSource.match(/confirmDialog\(/g)?.length, 1);
-  assert.match(notebookSource, /appDialog\.alert\(/);
   assert.match(featurePages, /if \(screen === "notebook"\) return <LinePageGuard [^\n]*<MatrixNotebookPage /);
   assert.match(dialogSource, /@radix-ui\/react-dialog/);
   assert.match(dialogSource, /returnFocus/);

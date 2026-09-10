@@ -3,12 +3,12 @@ import { createAdminApiProxy } from '../../../functions/admin/api/[[path]]';
 
 describe('Cloudflare Pages admin API proxy', () => {
   it('pins the Supabase target and forwards only the request data required by the admin API', async () => {
+    const upstreamHeaders = new Headers({ 'Content-Type': 'application/json' });
+    upstreamHeaders.append('Set-Cookie', 'matrix_admin_session=opaque; Path=/; HttpOnly; Secure; SameSite=Strict');
+    upstreamHeaders.append('Set-Cookie', '__cf_bm=provider-cookie; Domain=supabase.co; Path=/; HttpOnly; Secure; SameSite=None');
     const upstream = vi.fn(async () => new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Set-Cookie': 'matrix_admin_session=opaque; Path=/admin/; HttpOnly; Secure; SameSite=Strict',
-      },
+      headers: upstreamHeaders,
     }));
     const proxy = createAdminApiProxy(upstream);
     const request = new Request('https://matrixlottery.idv.tw/admin/api/todos?view=open', {
@@ -32,7 +32,9 @@ describe('Cloudflare Pages admin API proxy', () => {
     expect(headers.get('x-forwarded-for')).toBe('203.0.113.7');
     expect(headers.has('x-untrusted-target')).toBe(false);
     expect(await new Response(init?.body).text()).toBe(JSON.stringify({ content: '確認資料' }));
-    expect(response.headers.get('set-cookie')).toContain('Path=/admin/');
+    expect(response.headers.get('set-cookie')).toBe('matrix_admin_session=opaque; Path=/; HttpOnly; Secure; SameSite=Strict');
+    expect(response.headers.get('set-cookie')).not.toContain('__cf_bm');
+    expect(response.headers.get('set-cookie')).not.toContain('Domain=supabase.co');
   });
 
   it('does not proxy a path outside /admin/api', async () => {

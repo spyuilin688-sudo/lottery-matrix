@@ -23,7 +23,7 @@ test('first navigation renders real feature pages immediately without waiting fo
   render(<AppDialogProvider><MobileDeviceProvider><KeyboardProvider><Prototype /></KeyboardProvider></MobileDeviceProvider></AppDialogProvider>);
 
   fireEvent.click(screen.getByRole('button', { name: '我的' }));
-  expect(screen.getByRole('heading', { name: '會員相關' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '推廣相關' })).toBeInTheDocument();
   expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: '首頁' }));

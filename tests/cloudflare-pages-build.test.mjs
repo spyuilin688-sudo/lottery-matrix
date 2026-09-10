@@ -4,10 +4,10 @@ import test from 'node:test';
 
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 
-test('declares a clean Cloudflare Pages build without Sites packaging', () => {
+test('declares a Cloudflare Pages build with admin assets and without Sites packaging', () => {
   assert.equal(
     packageJson.scripts['build:pages'],
-    'npm run check:runtime && tsc && vite build && node scripts/pwa-build-version.mjs dist',
+    'npm run check:runtime && tsc && vite build && npm run build:admin:pages && node scripts/pwa-build-version.mjs dist',
   );
   assert.doesNotMatch(packageJson.scripts['build:pages'], /prepare-sites-build|dist\/client|dist\/server/);
 });
@@ -15,6 +15,6 @@ test('declares a clean Cloudflare Pages build without Sites packaging', () => {
 test('stamps the PWA worker before preparing the Sites artifact', () => {
   assert.equal(
     packageJson.scripts.build,
-    'tsc && vite build && node scripts/pwa-build-version.mjs dist && node scripts/prepare-sites-build.mjs',
+    'tsc && vite build && npm run build:admin:pages && node scripts/pwa-build-version.mjs dist && node scripts/prepare-sites-build.mjs',
   );
 });

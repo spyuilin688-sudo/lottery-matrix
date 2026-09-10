@@ -8,7 +8,7 @@ describe('Supabase admin Edge runtime', () => {
     expect(apiPath(new Request('https://project.test/api/bootstrap'))).toBeNull();
   });
 
-  it('keeps the credential cookie scoped to the admin surface', async () => {
+  it('preserves the root-scoped credential cookie for the Cloudflare session roundtrip', async () => {
     const handler = router({
       'POST /api/admin-login': [async () => ({
         ...json({ ok: true }),
@@ -24,7 +24,8 @@ describe('Supabase admin Edge runtime', () => {
       body: JSON.stringify({ account: 'owner', password: 'secret' }),
     }));
     expect(response.status).toBe(200);
-    expect(response.headers.get('set-cookie')).toContain('Path=/admin/');
+    expect(response.headers.get('set-cookie')).toContain('Path=/;');
+    expect(response.headers.get('set-cookie')).not.toContain('Path=/admin/');
   });
 
   it('passes the Cloudflare visitor IP to existing security and audit code', async () => {

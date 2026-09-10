@@ -47,11 +47,11 @@ export type WorkerStatus =
   | {
     ok: false;
     reason:
-      | 'APPDEPLOY_CONFIG_MISSING'
+      | 'SUPABASE_RAILWAY_CONFIG_MISSING'
       | 'RAILWAY_ADMIN_CONFIG_MISSING'
       | 'RAILWAY_AUTH_FAILED'
       | 'RAILWAY_UNAVAILABLE';
-    health: null;
+    health: RailwayHealth | null;
     jobs: null;
   };
 export type WorkerRefresh = {
@@ -83,6 +83,8 @@ const analysisPhases = [
 ] as const;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 const DEFAULT_MANUAL_REFRESH_TIMEOUT_MS = 90_000;
+export const PRODUCTION_RAILWAY_WORKER_URL =
+  'https://heartfelt-generosity-production-9f2b.up.railway.app';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -218,10 +220,11 @@ function parseRecovery(
 
 const unavailable = (
   reason: Extract<WorkerStatus, { ok: false }>['reason'] = 'RAILWAY_UNAVAILABLE',
+  health: RailwayHealth | null = null,
 ): WorkerStatus => ({
   ok: false,
   reason,
-  health: null,
+  health,
   jobs: null,
 });
 
@@ -243,24 +246,23 @@ class WorkerRecoveryError extends Error {
 
 export async function getWorkerConfig(
   reader: SecretReader,
-): Promise<WorkerConfig | null> {
+): Promise<WorkerConfig> {
   try {
     const names = await reader.listSecretNames();
-    if (
-      !names.includes('RAILWAY_WORKER_URL')
-      || !names.includes('MATRIX_ADMIN_STATUS_TOKEN')
-    ) {
-      return null;
-    }
     const [baseUrlValue, tokenValue] = await Promise.all([
-      reader.readSecret('RAILWAY_WORKER_URL'),
-      reader.readSecret('MATRIX_ADMIN_STATUS_TOKEN'),
+      names.includes('RAILWAY_WORKER_URL')
+        ? reader.readSecret('RAILWAY_WORKER_URL')
+        : undefined,
+      names.includes('MATRIX_ADMIN_STATUS_TOKEN')
+        ? reader.readSecret('MATRIX_ADMIN_STATUS_TOKEN')
+        : undefined,
     ]);
-    const baseUrl = String(baseUrlValue ?? '').trim().replace(/\/+$/, '');
+    const baseUrl = String(baseUrlValue ?? '').trim().replace(/\/+$/, '')
+      || PRODUCTION_RAILWAY_WORKER_URL;
     const statusToken = String(tokenValue ?? '').trim();
-    return baseUrl && statusToken ? { baseUrl, statusToken } : null;
+    return { baseUrl, statusToken };
   } catch {
-    return null;
+    return { baseUrl: PRODUCTION_RAILWAY_WORKER_URL, statusToken: '' };
   }
 }
 
@@ -273,6 +275,7 @@ export function createWorkerApi(
   return {
     async getStatus(): Promise<WorkerStatus> {
       const controller = new AbortController();
+      let verifiedHealth: RailwayHealth | null = null;
       let timer: ReturnType<typeof setTimeout> | undefined;
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
@@ -284,8 +287,8 @@ export function createWorkerApi(
         const config = await loadConfig();
         const baseUrl = config?.baseUrl.trim().replace(/\/+$/, '') ?? '';
         const statusToken = config?.statusToken.trim() ?? '';
-        if (!baseUrl || !statusToken || controller.signal.aborted) {
-          return unavailable('APPDEPLOY_CONFIG_MISSING');
+        if (!baseUrl || controller.signal.aborted) {
+          return unavailable('SUPABASE_RAILWAY_CONFIG_MISSING');
         }
         const healthResponse = await fetcher(`${baseUrl}/health`, {
           signal: controller.signal,
@@ -296,8 +299,12 @@ export function createWorkerApi(
         const healthValue = await healthResponse.json();
         const health = parseHealth(healthValue);
         if (!health) return unavailable();
+        verifiedHealth = health;
         if (health.adminApi.status === 'misconfigured') {
-          return unavailable('RAILWAY_ADMIN_CONFIG_MISSING');
+          return unavailable('RAILWAY_ADMIN_CONFIG_MISSING', health);
+        }
+        if (!statusToken) {
+          return unavailable('SUPABASE_RAILWAY_CONFIG_MISSING', health);
         }
         const jobsResponse = await fetcher(`${baseUrl}/jobs/status`, {
           signal: controller.signal,
@@ -306,18 +313,18 @@ export function createWorkerApi(
           headers: { 'X-Matrix-Admin-Token': statusToken },
         });
         if (jobsResponse.status === 403) {
-          return unavailable('RAILWAY_AUTH_FAILED');
+          return unavailable('RAILWAY_AUTH_FAILED', health);
         }
-        if (!jobsResponse.ok) return unavailable();
+        if (!jobsResponse.ok) return unavailable('RAILWAY_UNAVAILABLE', health);
         const jobsValue = await jobsResponse.json();
         const jobs = parseJobs(jobsValue);
-        return health && jobs ? { ok: true, health, jobs } : unavailable();
+        return jobs ? { ok: true, health, jobs } : unavailable('RAILWAY_UNAVAILABLE', health);
       })();
       try {
         return await Promise.race([work, timeout]);
       } catch {
         controller.abort();
-        return unavailable();
+        return unavailable('RAILWAY_UNAVAILABLE', verifiedHealth);
       } finally {
         if (timer !== undefined) clearTimeout(timer);
       }

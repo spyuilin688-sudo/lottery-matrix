@@ -49,7 +49,10 @@ test("Matrix Explore icons, controls, spacing and badges use the refined mobile 
   assert.match(button, /color:\s*#d1d5db/);
   assert.match(button, /background:\s*transparent/);
 
-  assert.match(css, /\.matrix-explore-main-screen \.segmented button\[data-selected="true"\]\s*\{[^}]*border-color:\s*#c89622;[^}]*background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\);[^}]*color:\s*#f2cf67;/s);
+  const selectedButton = ruleBlock(css, '\\.matrix-explore-main-screen \\.segmented button\\[data-selected="true"\\]');
+  assert.match(selectedButton, /border-color:\s*#c89622/);
+  assert.match(selectedButton, /background:\s*linear-gradient\(145deg, rgba\(124, 85, 12, \.25\), rgba\(31, 25, 13, \.74\)\)/);
+  assert.match(selectedButton, /color:\s*#f2cf67/);
   assert.match(css, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*width:\s*100%;[^}]*margin:\s*8px 0 4px;[^}]*padding:\s*0 0 6px;/s);
 
   const badge = ruleBlock(css, "\\.matrix-explore-main-screen \\.segmented button em");

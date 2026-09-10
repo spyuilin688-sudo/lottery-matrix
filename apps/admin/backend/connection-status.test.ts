@@ -18,7 +18,7 @@ const healthyWorkerStatus: WorkerStatus = {
 
 describe('connection status', () => {
   it('keeps individual query failures separate from healthy host and registry evidence', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
       if (url.pathname.includes('/latest/')) {
         const lottery = decodeURIComponent(url.pathname.split('/').pop()!);
@@ -26,7 +26,7 @@ describe('connection status', () => {
         return response({ item: { period: '123', numbers: lottery === '大樂透' ? ['01','02','03','04','05','06','07'] : ['01','02','03','04','05'] } });
       }
       if (url.pathname.endsWith('matrix_explore_list')) {
-        const body = JSON.parse(url.searchParams.get('p_request')!);
+        const body = JSON.parse(String(init?.body)).p_request;
         return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: 'v1', total: 0, items: [] });
       }
       return response([{ rpc_name: 'member_profile' }]);
@@ -191,8 +191,14 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(fetcher.mock.calls.every(([, init]) =>
-      init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS')).toBe(true);
+    expect(fetcher.mock.calls.every(([input, init]) => {
+      if (init?.method === 'POST') {
+        const path = new URL(String(input)).pathname;
+        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation'].includes(path)
+          && typeof JSON.parse(String(init.body)).p_request === 'object';
+      }
+      return init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS';
+    })).toBe(true);
     expect(fetcher.mock.calls.some(([input]) =>
       new URL(String(input)).pathname.endsWith('/redeem_activation_code'))).toBe(false);
     expect(fetcher.mock.calls.some(([input]) =>
