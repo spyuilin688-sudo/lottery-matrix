@@ -518,3 +518,49 @@ describe('connection status', () => {
       error: 'WORKER_FAILED',
       analysisStatus: null,
       analysisPhase: null,
+      analysisDrawPeriod: null,
+      analysisCompletedAt: null,
+    });
+    expect(item?.error).toBe('排程狀態：failed');
+    expect(JSON.stringify(item)).not.toMatch(/raw-worker-secret|raw-row-secret/);
+    expect(supabase.selectRows).toHaveBeenCalledWith(
+      'system_job_status',
+      'select=job_name,lottery,status,started_at,finished_at,updated_at,error&order=updated_at.desc',
+    );
+  });
+
+  it('shows the current Matrix analysis stage from the Railway status response', async () => {
+    const workerStatus: WorkerStatus = {
+      ...healthyWorkerStatus,
+      jobs: {
+        items: [{
+          lottery: '今彩539',
+          jobName: 'matrix-539-refresh-v2',
+          job: null,
+          latestDraw: { period: '115000210', drawDate: '2026-08-31' },
+          latestAnalysis: {
+            drawPeriod: '115000210',
+            status: 'running',
+            phase: 'tiangong',
+            startedAt: '2026-08-31T06:23:21Z',
+            completedAt: null,
+            error: null,
+          },
+        }] as WorkerStatus extends { jobs: infer Jobs } ? Jobs extends { items: infer Items } ? Items : never : never,
+      },
+    };
+    const status = createConnectionStatus({
+      supabase: { selectRows: vi.fn(async () => []) },
+      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
+      fetcher: vi.fn(async () => response({ ok: true })),
+      getWorkerStatus: async () => workerStatus,
+    });
+
+    const result = await status.get();
+    expect(result.items.find((item) => item.id === 'cron-matrix-539-refresh-v2')?.detail).toMatchObject({
+      analysisStatus: 'running',
+      analysisPhase: 'tiangong',
+      analysisDrawPeriod: '115000210',
+    });
+  });
+});
