@@ -25,6 +25,18 @@ export default mergeConfig(
       coverage: {
         provider: "v8",
         reporter: ["text", "json-summary"],
+        include: [
+          "src/**/*.{ts,tsx}",
+          "shared/**/*.{ts,tsx}",
+          "backend/**/*.{ts,tsx}",
+          "apps/admin/backend/**/*.{ts,tsx}",
+          "apps/admin/src/**/*.{ts,tsx}",
+        ],
+        exclude: [
+          "**/*.test.{ts,tsx}",
+          "**/*.spec.{ts,tsx}",
+          "**/*.d.ts",
+        ],
       },
     },
   }),
