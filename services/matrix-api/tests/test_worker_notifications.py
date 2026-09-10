@@ -59,6 +59,7 @@ def _builders(status: str = "ACTIVE", *, fail_status: bool = False) -> dict:
 
     return {
         "explore": lambda _: {"items": [], "validationById": {}},
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda _: {"items": []},
         "tiangong": lambda _: {"items": []},
         "status": build_status,

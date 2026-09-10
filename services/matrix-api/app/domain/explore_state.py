@@ -102,18 +102,25 @@ def _candidate_groups(groups: Iterable[Iterable[int]]) -> tuple[frozenset[int], 
     return tuple(frozenset(int(value) for value in group) for group in groups)
 
 
-def evaluate_one_code(groups: Iterable[Iterable[int]]) -> StreakDecision:
+def evaluate_one_code(
+    groups: Iterable[Iterable[int]],
+    *,
+    eligible_streaks: frozenset[int] = frozenset({4, 5, 6, 7}),
+    invalid_streak: int = 8,
+    tier_label: str = "準4+",
+    invalid_reason: str = INVALID_ONE_CODE_MAXIMUM,
+) -> StreakDecision:
     normalized = _candidate_groups(groups)
     if len(normalized) < 2:
-        return StreakDecision(False, 0, reason="準4+至少需要B、C兩個歷史組")
+        return StreakDecision(False, 0, reason=f"{tier_label}至少需要B、C兩個歷史組")
     common = normalized[0] & normalized[1]
     if not common:
-        return StreakDecision(False, 0, reason="B、C無共同值，準4+停止")
+        return StreakDecision(False, 0, reason=f"B、C無共同值，{tier_label}停止")
 
     scores: dict[int, int] = {}
     for rule in common:
         streak = 0
-        for group in normalized[:8]:
+        for group in normalized[:invalid_streak]:
             if rule not in group:
                 break
             streak += 1
@@ -122,14 +129,14 @@ def evaluate_one_code(groups: Iterable[Iterable[int]]) -> StreakDecision:
     highest = max(scores.values())
     top_rules = tuple(sorted(rule for rule, streak in scores.items() if streak == highest))
     matched = tuple(range(highest))
-    if highest >= 8:
-        return StreakDecision(False, highest, top_rules, INVALID_ONE_CODE_MAXIMUM, matched)
-    if highest not in {4, 5, 6, 7}:
+    if highest >= invalid_streak:
+        return StreakDecision(False, highest, top_rules, invalid_reason, matched)
+    if highest not in eligible_streaks:
         return StreakDecision(
             False,
             highest,
             top_rules,
-            f"準{highest}進{highest + 1}不屬準4+有效層級",
+            f"準{highest}進{highest + 1}不屬{tier_label}有效層級",
             matched,
         )
     if len(top_rules) != 1:
@@ -227,10 +234,14 @@ def _endpoint_invalid(
 def evaluate_two_code(
     groups: Iterable[Iterable[int]],
     metrics: EngineMetrics | None = None,
+    *,
+    eligible_streaks: frozenset[int] = frozenset({5, 6, 7, 9, 11}),
+    invalid_streak: int = 12,
+    tier_label: str = "準5+",
 ) -> StreakDecision:
     normalized = _candidate_groups(groups)
     if len(normalized) < 2:
-        return StreakDecision(False, 0, reason="準5+至少需要B、C兩個歷史組")
+        return StreakDecision(False, 0, reason=f"{tier_label}至少需要B、C兩個歷史組")
 
     scores = _incremental_pair_scores(normalized, metrics)
     if not scores:
@@ -240,8 +251,8 @@ def evaluate_two_code(
     eligible_scores = {
         pair: streak
         for pair, streak in scores.items()
-        if streak in {5, 6, 7, 9, 11}
-        and streak < 12
+        if streak in eligible_streaks
+        and streak < invalid_streak
         and not _endpoint_invalid(pair, normalized, streak)
     }
 
@@ -251,7 +262,7 @@ def evaluate_two_code(
         )
         raw_rules = tuple(sorted({rule for pair in raw_pairs for rule in pair}))
         matched = tuple(range(raw_highest))
-        if raw_highest >= 12:
+        if raw_highest >= invalid_streak:
             return StreakDecision(
                 False,
                 raw_highest,
@@ -260,12 +271,12 @@ def evaluate_two_code(
                 matched,
                 raw_pairs,
             )
-        if raw_highest not in {5, 6, 7, 9, 11}:
+        if raw_highest not in eligible_streaks:
             return StreakDecision(
                 False,
                 raw_highest,
                 raw_rules,
-                f"準{raw_highest}進{raw_highest + 1}不屬準5+有效層級",
+                f"準{raw_highest}進{raw_highest + 1}不屬{tier_label}有效層級",
                 matched,
                 raw_pairs,
             )
@@ -298,7 +309,7 @@ def evaluate_two_code(
             False,
             highest,
             rules,
-            "準5+必須恰好2條不同規則",
+            f"{tier_label}必須恰好2條不同規則",
             matched,
             top_pairs,
         )

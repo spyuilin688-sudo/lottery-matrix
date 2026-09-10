@@ -45,6 +45,7 @@ def _repository(history_count: int = 227) -> InMemoryAnalysisRepository:
 def _builders(status: str = "ACTIVE") -> dict:
     return {
         "explore": lambda _: {"items": [], "validationById": {}},
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda _: {"items": []},
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"summary": {"status": status}},
@@ -54,6 +55,13 @@ def _builders(status: str = "ACTIVE") -> dict:
 def _complete_analysis(repository: InMemoryAnalysisRepository, status: str = "ACTIVE") -> None:
     repository.begin_run(LOTTERY, PERIOD, VERSION, "2026-09-04T01:00:00+00:00")
     repository.save_artifact(LOTTERY, PERIOD, VERSION, "explore", {"items": []})
+    repository.save_artifact(
+        LOTTERY,
+        PERIOD,
+        VERSION,
+        "tianheng",
+        {"items": [], "validationById": {}},
+    )
     repository.save_artifact(LOTTERY, PERIOD, VERSION, "tianyan", {"items": []})
     repository.save_artifact(LOTTERY, PERIOD, VERSION, "tiangong", {"items": []})
     repository.save_artifact(

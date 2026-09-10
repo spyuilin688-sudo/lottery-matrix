@@ -96,7 +96,7 @@ def _builders(failing: bool = False) -> dict:
             return {"items": []}
         return selected
 
-    return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
 
 
 def _run_due_worker(
@@ -240,6 +240,7 @@ def test_running_analysis_checkpoint_finishes_invocation_as_success(monkeypatch)
 
     builders = {
         "explore": explore,
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda _: {"items": []},
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},

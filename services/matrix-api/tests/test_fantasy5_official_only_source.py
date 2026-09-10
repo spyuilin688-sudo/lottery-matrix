@@ -130,7 +130,7 @@ class Fantasy5PredrawRepairSource:
 def _test_builders() -> dict:
     return {
         kind: (lambda context, kind=kind: {"kind": kind})
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")
     }
 
 
@@ -159,3 +159,4 @@ def test_fantasy5_predraw_recovery_targets_previous_draw_not_upcoming_draw() -> 
     assert repository.list_draws("天天樂", 1)[0]["period"] == "11988"
     assert repository.list_draws("天天樂", 1)[0]["drawDate"] == "2026-09-03"
     assert source.events == ["latest"]
+

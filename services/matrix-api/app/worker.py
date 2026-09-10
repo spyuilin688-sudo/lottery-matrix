@@ -34,7 +34,7 @@ EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
 RETRY_BACKOFF_SECONDS = (15.0, 45.0)
-ANALYSIS_VERSION = "matrix-python-v12"
+ANALYSIS_VERSION = "matrix-python-v13"
 
 
 def _draw_from_history(
@@ -266,6 +266,15 @@ def _resume_stored_analysis(
             artifact = repository.read_artifact(lottery, period, expected_version, "explore")
             if artifact is not None:
                 repository.save_explore_results(
+                    lottery, period, expected_version, artifact,
+                )
+        artifact = repository.read_artifact(lottery, period, expected_version, "tianheng")
+        if artifact is not None:
+            expected_count = len(artifact.get("items", []))
+            if not repository.has_tianheng_results(
+                lottery, period, expected_version, expected_count,
+            ):
+                repository.save_tianheng_results(
                     lottery, period, expected_version, artifact,
                 )
         return None

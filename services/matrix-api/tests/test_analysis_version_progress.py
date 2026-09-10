@@ -14,7 +14,7 @@ from app.worker import ANALYSIS_VERSION, run_scheduled_worker
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v12"
+CURRENT_VERSION = f"{PERIOD}:matrix-python-v13"
 LEGACY_VERSION = f"{PERIOD}:matrix-python-v10"
 
 
@@ -86,8 +86,8 @@ def _complete_run(
     repository.complete_run(LOTTERY, PERIOD, version, completed_at)
 
 
-def test_worker_uses_matrix_python_v12() -> None:
-    assert ANALYSIS_VERSION == "matrix-python-v12"
+def test_worker_uses_matrix_python_v13() -> None:
+    assert ANALYSIS_VERSION == "matrix-python-v13"
 
 
 def test_progress_lookup_can_be_scoped_to_one_analysis_version() -> None:
@@ -140,7 +140,7 @@ def test_supabase_progress_batch_lookup_uses_exact_period_versions() -> None:
         {
             "lottery": "天天樂",
             "draw_period": period,
-            "analysis_version": f"{period}:matrix-python-v12",
+            "analysis_version": f"{period}:matrix-python-v13",
             "phase": "complete",
             "cursor": 4,
             "total": 4,
@@ -157,7 +157,7 @@ def test_supabase_progress_batch_lookup_uses_exact_period_versions() -> None:
     progress = repository.list_progress_for_periods(
         "天天樂",
         periods,
-        "matrix-python-v12",
+        "matrix-python-v13",
     )
 
     assert set(progress) == {"11988", "11989"}
@@ -166,7 +166,7 @@ def test_supabase_progress_batch_lookup_uses_exact_period_versions() -> None:
         ("draw_period", ("11988", "11989")),
         (
             "analysis_version",
-            ("11988:matrix-python-v12", "11989:matrix-python-v12"),
+            ("11988:matrix-python-v13", "11989:matrix-python-v13"),
         ),
     ]
 
@@ -176,7 +176,7 @@ def test_supabase_progress_batch_ignores_mismatched_period_version_pair() -> Non
         {
             "lottery": "天天樂",
             "draw_period": "11988",
-            "analysis_version": "11989:matrix-python-v12",
+            "analysis_version": "11989:matrix-python-v13",
             "phase": "complete",
             "cursor": 4,
             "total": 4,
@@ -191,7 +191,7 @@ def test_supabase_progress_batch_ignores_mismatched_period_version_pair() -> Non
     progress = repository.list_progress_for_periods(
         "天天樂",
         ["11988", "11989"],
-        "matrix-python-v12",
+        "matrix-python-v13",
     )
 
     assert progress == {}
@@ -219,9 +219,10 @@ def test_pipeline_returns_current_version_progress_when_legacy_run_is_newer() ->
 
     pipeline = AnalysisPipeline(
         repository,
-        {
-            "explore": explore,
-            "tianyan": lambda _: {},
+            {
+                "explore": explore,
+                "tianheng": lambda _: {"items": [], "validationById": {}},
+                "tianyan": lambda _: {},
             "tiangong": lambda _: {"items": []},
             "status": lambda _: {},
         },

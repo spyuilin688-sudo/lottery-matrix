@@ -28,11 +28,12 @@ def seed_complete(repository, lottery, period, draw_date, version=None):
     repository.upsert_draw(draw)
     repository.begin_run(lottery, period, version, (NOW - timedelta(days=10)).isoformat())
     for kind in ARTIFACT_KINDS:
-        repository.save_artifact(lottery, period, version, kind, PAYLOAD)
+        artifact = {"items": [], "validationById": {}} if kind == "tianheng" else PAYLOAD
+        repository.save_artifact(lottery, period, version, kind, artifact)
     repository.save_artifact_chunk(lottery, period, version, "explore", 0, 0, 1, PAYLOAD)
     repository.save_artifact(lottery, period, version, "explore", chunk_manifest(1, 1, 1, 1))
     repository.save_explore_results(lottery, period, version, PAYLOAD)
-    repository.update_progress(lottery, period, version, "status", 3, 4)
+    repository.update_progress(lottery, period, version, "status", 4, 5)
     repository.complete_run(lottery, period, version, (NOW - timedelta(days=9)).isoformat())
     return draw, version
 
@@ -60,7 +61,7 @@ def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
         for record in collection.values():
             record["expiresAt"] = NOW - timedelta(seconds=1)
 
-    assert repository.cleanup_expired(NOW) == 18
+    assert repository.cleanup_expired(NOW) == 21
     assert {key[:2] for key in repository.artifacts} == {
         ("六合彩", "026093"), ("六合彩", "026094"), ("六合彩", "026095"),
         ("六合彩", "026090"), ("天天樂", "260901"),
