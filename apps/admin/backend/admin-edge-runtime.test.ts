@@ -1,7 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { apiPath, json, router } from '../../../supabase/functions/admin-api/runtime';
 
 describe('Supabase admin Edge runtime', () => {
+  it('maps every new permission settings module into the Edge bundle', () => {
+    const importMap = JSON.parse(readFileSync(
+      new URL('../../../supabase/functions/admin-api/deno.json', import.meta.url),
+      'utf8',
+    ));
+    expect(importMap.imports['../../../apps/admin/backend/permission-settings'])
+      .toBe('../../../apps/admin/backend/permission-settings.ts');
+  });
+
   it('normalizes only the deployed and proxied admin API prefixes', () => {
     expect(apiPath(new Request('https://project.test/functions/v1/admin-api/api/bootstrap'))).toBe('/api/bootstrap');
     expect(apiPath(new Request('https://project.test/admin-api/api/bootstrap'))).toBe('/api/bootstrap');
