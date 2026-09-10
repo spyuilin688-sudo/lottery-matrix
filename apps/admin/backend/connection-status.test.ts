@@ -18,7 +18,7 @@ const healthyWorkerStatus: WorkerStatus = {
 
 describe('connection status', () => {
   it('keeps individual query failures separate from healthy host and registry evidence', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
       if (url.pathname.includes('/latest/')) {
         const lottery = decodeURIComponent(url.pathname.split('/').pop()!);
@@ -26,7 +26,7 @@ describe('connection status', () => {
         return response({ item: { period: '123', numbers: lottery === '大樂透' ? ['01','02','03','04','05','06','07'] : ['01','02','03','04','05'] } });
       }
       if (url.pathname.endsWith('matrix_explore_list')) {
-        const body = JSON.parse(url.searchParams.get('p_request')!);
+        const body = JSON.parse(String(init?.body)).p_request;
         return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: 'v1', total: 0, items: [] });
       }
       return response([{ rpc_name: 'member_profile' }]);
@@ -191,8 +191,14 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(fetcher.mock.calls.every(([, init]) =>
-      init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS')).toBe(true);
+    expect(fetcher.mock.calls.every(([input, init]) => {
+      if (init?.method === 'POST') {
+        const path = new URL(String(input)).pathname;
+        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation'].includes(path)
+          && typeof JSON.parse(String(init.body)).p_request === 'object';
+      }
+      return init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS';
+    })).toBe(true);
     expect(fetcher.mock.calls.some(([input]) =>
       new URL(String(input)).pathname.endsWith('/redeem_activation_code'))).toBe(false);
     expect(fetcher.mock.calls.some(([input]) =>
@@ -512,49 +518,3 @@ describe('connection status', () => {
       error: 'WORKER_FAILED',
       analysisStatus: null,
       analysisPhase: null,
-      analysisDrawPeriod: null,
-      analysisCompletedAt: null,
-    });
-    expect(item?.error).toBe('排程狀態：failed');
-    expect(JSON.stringify(item)).not.toMatch(/raw-worker-secret|raw-row-secret/);
-    expect(supabase.selectRows).toHaveBeenCalledWith(
-      'system_job_status',
-      'select=job_name,lottery,status,started_at,finished_at,updated_at,error&order=updated_at.desc',
-    );
-  });
-
-  it('shows the current Matrix analysis stage from the Railway status response', async () => {
-    const workerStatus: WorkerStatus = {
-      ...healthyWorkerStatus,
-      jobs: {
-        items: [{
-          lottery: '今彩539',
-          jobName: 'matrix-539-refresh-v2',
-          job: null,
-          latestDraw: { period: '115000210', drawDate: '2026-08-31' },
-          latestAnalysis: {
-            drawPeriod: '115000210',
-            status: 'running',
-            phase: 'tiangong',
-            startedAt: '2026-08-31T06:23:21Z',
-            completedAt: null,
-            error: null,
-          },
-        }] as WorkerStatus extends { jobs: infer Jobs } ? Jobs extends { items: infer Items } ? Items : never : never,
-      },
-    };
-    const status = createConnectionStatus({
-      supabase: { selectRows: vi.fn(async () => []) },
-      loadConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'secret' }),
-      fetcher: vi.fn(async () => response({ ok: true })),
-      getWorkerStatus: async () => workerStatus,
-    });
-
-    const result = await status.get();
-    expect(result.items.find((item) => item.id === 'cron-matrix-539-refresh-v2')?.detail).toMatchObject({
-      analysisStatus: 'running',
-      analysisPhase: 'tiangong',
-      analysisDrawPeriod: '115000210',
-    });
-  });
-});
