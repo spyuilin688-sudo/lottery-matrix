@@ -21,11 +21,12 @@ export class BackendIntegrationError extends Error {
 }
 
 class SupabaseDomainError extends Error {
-  statusCode = 400;
+  statusCode: number;
 
-  constructor(message: string) {
+  constructor(message: string, statusCode = 400) {
     super(message);
     this.name = 'SupabaseDomainError';
+    this.statusCode = statusCode;
   }
 }
 
@@ -47,10 +48,19 @@ const paymentReversalDomainErrors = new Map<string, {
   ['P0001', { httpStatus: 400, messages: ['PAYMENT_REVERSAL_CONFLICT', 'PAYMENT_NOT_CONFIRMED'] }],
 ]);
 
-async function readPaymentReversalDomainError(path: string, response: Response) {
-  if (
-    path.replace(/^\/+/, '').split('?')[0] !== 'rest/v1/rpc/admin_record_payment_reversal'
-  ) return null;
+const permissionSettingsDomainErrors = new Map<string, {
+  httpStatus: number;
+  messages: readonly string[];
+}>([
+  ['PT409', { httpStatus: 409, messages: ['SETTINGS_CONFLICT'] }],
+  ['42501', { httpStatus: 403, messages: ['FORBIDDEN', 'ADMIN_BACKEND_REQUIRED'] }],
+  ['22023', { httpStatus: 400, messages: ['INVALID_REQUEST'] }],
+]);
+
+async function readSupabaseDomainError(path: string, response: Response) {
+  const normalizedPath = path.replace(/^\/+/, '').split('?')[0];
+  if (normalizedPath !== 'rest/v1/rpc/admin_record_payment_reversal'
+    && normalizedPath !== 'rest/v1/rpc/admin_matrix_permission_settings_update') return null;
 
   let body: unknown;
   try {
@@ -61,9 +71,15 @@ async function readPaymentReversalDomainError(path: string, response: Response) 
   if (!body || typeof body !== 'object') return null;
   const { code, message } = body as { code?: unknown; message?: unknown };
   if (typeof code !== 'string' || typeof message !== 'string') return null;
-  const domain = paymentReversalDomainErrors.get(code);
+  if (normalizedPath === 'rest/v1/rpc/admin_record_payment_reversal') {
+    const domain = paymentReversalDomainErrors.get(code);
+    return domain?.httpStatus === response.status && domain.messages.includes(message)
+      ? new SupabaseDomainError(message)
+      : null;
+  }
+  const domain = permissionSettingsDomainErrors.get(code);
   return domain?.httpStatus === response.status && domain.messages.includes(message)
-    ? new SupabaseDomainError(message)
+    ? new SupabaseDomainError(message, domain.httpStatus)
     : null;
 }
 
@@ -159,7 +175,7 @@ export function createSupabaseTransport(
             throw new BackendIntegrationError('UNAVAILABLE', 'Supabase pagination is temporarily unavailable');
           }
           if (!response.ok) {
-            const domainError = await readPaymentReversalDomainError(path, response);
+            const domainError = await readSupabaseDomainError(path, response);
             if (domainError) throw domainError;
             throw new BackendIntegrationError('UNAVAILABLE', 'Supabase is temporarily unavailable');
           }
