@@ -45,7 +45,7 @@
 .adminTodosFormFooter p,
 .adminTodosEditFooter p { flex: 1 1 auto; min-width: 0; min-height: 18px; margin: 0; color: #777b84; font-size: 11px; overflow-wrap: anywhere; }
 .adminTodosFormFooter > span { flex: 0 0 auto; color: #8d919a; font-size: 11px; font-variant-numeric: tabular-nums; }
-.adminTodosInlineError { color: #efabab !important; /* Overrides shared paragraph color inside form footers. */ }
+.adminTodosInlineError { color: #efabab !important; }
 .primary.adminTodosPrimaryButton { width: auto; min-width: 58px; }
 
 .adminTodos button {
