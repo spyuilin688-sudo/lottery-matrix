@@ -67,3 +67,4 @@ def test_fantasy5_backlog_does_not_notify_an_older_draw(monkeypatch):
     analysis_worker.run_analysis_only_worker("天天樂", repository, fantasy_builders(), notification_emitter=capture)
     assert capture.events
     assert all(event["payload"]["period"] == candidates[0]["period"] for event in capture.events)
+

@@ -12,8 +12,10 @@ from app.repositories.artifact_chunks import chunk_manifest
 
 
 ArtifactBuilder = Callable[[dict[str, Any]], Any]
-PHASES = ("explore", "tianyan", "tiangong", "status")
+PHASES = ("explore", "tianheng", "tianyan", "tiangong", "status")
+BATCHED_PHASES = frozenset({"explore", "tianheng"})
 PHASE_DEPENDENCIES = {
+    "tianheng": (),
     "tianyan": ("explore",),
     "tiangong": (),
     "status": ("explore", "tianyan"),
@@ -58,7 +60,7 @@ class AnalysisPipeline:
             phase_total = len(PHASES)
             resume_phase_index = PHASES.index(run["phase"]) if run.get("phase") in PHASES else 0
             for phase_index, phase in enumerate(PHASES):
-                if phase == "explore":
+                if phase in BATCHED_PHASES:
                     if phase_index < resume_phase_index:
                         if self.repository.has_artifact(
                             lottery, period, self.analysis_version, phase,
@@ -89,6 +91,10 @@ class AnalysisPipeline:
                                 self._save_explore_results(
                                     lottery, period, self.analysis_version, payload,
                                 )
+                            elif phase == "tianheng":
+                                self._save_tianheng_results(
+                                    lottery, period, self.analysis_version, payload,
+                                )
                         elif not checkpoint.get("complete"):
                             raise RuntimeError("ANALYSIS_CHECKPOINT_MADE_NO_PROGRESS")
                         self._update_progress(
@@ -112,9 +118,12 @@ class AnalysisPipeline:
                             lottery, period, self.analysis_version, phase, manifest,
                         )
                         context["artifacts"][phase] = materialized
+                        next_phase = PHASES[phase_index + 1]
                         self._update_progress(
                             lottery, period, self.analysis_version,
-                            PHASES[phase_index + 1], phase_index + 1, phase_total,
+                            next_phase,
+                            0 if next_phase in BATCHED_PHASES else phase_index + 1,
+                            0 if next_phase in BATCHED_PHASES else phase_total,
                         )
                         continue
                     context.pop(batch_key, None)
@@ -188,6 +197,10 @@ class AnalysisPipeline:
     def _save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
         self._require_lease(lottery, draw_period)
         self.repository.save_explore_results(lottery, draw_period, analysis_version, payload)
+
+    def _save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None:
+        self._require_lease(lottery, draw_period)
+        self.repository.save_tianheng_results(lottery, draw_period, analysis_version, payload)
 
     def _update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int) -> None:
         self._require_lease(lottery, draw_period)

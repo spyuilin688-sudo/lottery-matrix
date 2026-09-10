@@ -89,7 +89,7 @@ def _builders(calls: list[str]) -> dict:
             return {"kind": kind}
         return selected
 
-    return {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")}
+    return {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
 
 
 def _repository_with_history() -> InMemoryAnalysisRepository:
@@ -112,8 +112,8 @@ def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored(
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v12"
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert result["analysisVersion"] == "000000221:matrix-python-v13"
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
 def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() -> None:
@@ -129,8 +129,8 @@ def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() 
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v12"
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert result["analysisVersion"] == "000000221:matrix-python-v13"
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
 def test_production_resume_repairs_actual_order_before_algorithms(monkeypatch) -> None:
@@ -152,7 +152,7 @@ def test_production_resume_repairs_actual_order_before_algorithms(monkeypatch) -
 
     assert result["status"] == "complete"
     assert source.algorithm_requests == ["今彩539"]
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
 def test_completed_scheduled_analysis_does_not_read_all_history_again() -> None:
@@ -203,6 +203,7 @@ def test_completed_analysis_backfills_missing_explore_query_results() -> None:
 
     builders = {
         "explore": explore,
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda _: {"items": []},
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
@@ -243,4 +244,4 @@ def test_scheduled_worker_repairs_history_before_resuming_any_algorithm() -> Non
 
     assert result["status"] == "complete"
     assert source.history_requests == [14]
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]

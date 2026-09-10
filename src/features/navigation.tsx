@@ -4,6 +4,7 @@ export type ScreenId =
   | "home"
   | "matrix-core"
   | "explore"
+  | "tianheng"
   | "tianyan"
   | "tiangong"
   | "tongxing"

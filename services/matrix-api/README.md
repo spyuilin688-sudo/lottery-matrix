@@ -104,7 +104,7 @@ upserts `lottery_draws`. It owns 天天樂 acquisition status in
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
-`period:matrix-python-v12` progress rows. It processes a new tail in order and
+`period:matrix-python-v13` progress rows. It processes a new tail in order and
 repairs bounded analysis gaps such as a late-backfilled period between two
 completed periods. Full-history reads restart if concurrent ingestion shifts an
 offset page, so no duplicated draw reaches the algorithms. It does not
@@ -142,7 +142,7 @@ Matrix background analysis writes its run/artifact data to the existing Supabase
 ## Matrix Explore canonical v12 core
 
 `app.domain.explore_engine` is the only production Explore/Status core for the
-`matrix-python-v12` analysis version. It builds a complete-history occurrence
+`matrix-python-v13` analysis version. It builds a complete-history occurrence
 index per lottery/order and reuses cached range cells across the thirteen source
 periods. Drag reads only the locked cell; add and sum reuse their range cells.
 Only fully finalized and valid results are persisted.
@@ -152,6 +152,15 @@ The authoritative behavior is documented in
 the same locked condition is finalized before a result is emitted. Each
 persisted Explore row includes its validation payload for the
 `matrix_explore_validation` RPC and the expandable road details in the PWA.
+
+## Tianheng analysis integration (v13)
+
+Analysis phases run in order: Explore, Tianheng, Tianyan, Tiangong, Status.
+Tianheng reuses the cached Explore engine session and runs in resumable,
+lease-guarded batches with independent `tianheng` artifact chunks and normalized
+`matrix_tianheng_results` rows. Both workers repair missing Explore and Tianheng
+normalized result sets from completed artifacts without rerunning analysis.
+Matrix Status continues to consume only Explore and Tianyan.
 
 ## Local verification
 
