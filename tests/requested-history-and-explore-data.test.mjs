@@ -24,7 +24,7 @@ test("歷史六合彩的數字使用共用正式球圖中心", () => {
   assert.doesNotMatch(ballCss, /:is\([^}]*draw-history-screen[^}]*\)\[data-lottery="六合彩"\][^}]*\.number-ball-component\.history-lottery-ball\[data-tone=/s);
 });
 
-test("探索只使用 Canonical Python v12 scoped final rows 與固定來源距離，舊演算法已淘汰", () => {
+test("探索只使用 Canonical Python v13 scoped final rows 與固定來源距離，舊演算法已淘汰", () => {
   assert.match(exploreService, /Compatibility types only/);
   assert.doesNotMatch(exploreService, /runMatrixAlgorithm|calculate|candidateMap/);
   assert.match(exploreContextSource, /prediction_distance=draw_index \+ 1/);
@@ -38,7 +38,7 @@ test("探索只使用 Canonical Python v12 scoped final rows 與固定來源距�
   assert.match(artifactBuilderSource, /run_explore_batch/);
   assert.doesNotMatch(artifactBuilderSource, /run_explore_v2_batch/);
   assert.doesNotMatch(artifactBuilderSource, /explore_shared_v8/);
-  assert.match(workerSource, /ANALYSIS_VERSION = "matrix-python-v12"/);
+  assert.match(workerSource, /ANALYSIS_VERSION = "matrix-python-v13"/);
   assert.match(exploreRangeMigration, /add column if not exists explore_range text/);
   assert.match(exploreRangeMigration, /result\.explore_range = v_range/);
   assert.doesNotMatch(exploreRangeMigration, /coalesce\(result\.reference_offset, 0\) >= -7/);

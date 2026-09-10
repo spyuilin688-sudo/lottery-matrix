@@ -115,3 +115,4 @@ def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
         worker.emit_ready_notifications(lottery, "1001", repository, emitter, set())
         assert any(event["eventKey"] == f"matrix_card:{code}:1001" for event in emitted)
         assert early_event["numbers"] == early_numbers
+

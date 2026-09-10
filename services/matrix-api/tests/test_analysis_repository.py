@@ -14,7 +14,7 @@ from app.repositories.analysis_repository import (
 )
 
 
-KINDS = ["explore", "tianyan", "tiangong", "status"]
+KINDS = ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
 class FakeResponse:
@@ -564,7 +564,7 @@ def test_completed_manifest_artifact_materializes_legacy_explore_shape() -> None
         "storage": "chunks", "schemaVersion": 1, "chunkCount": 2,
         "cursor": 20, "total": 20, "itemCount": 2,
     })
-    for kind in ("tianyan", "tiangong", "status"):
+    for kind in ("tianheng", "tianyan", "tiangong", "status"):
         repository.save_artifact("今彩539", "115000205", "v1", kind, {"kind": kind})
     repository.complete_run("今彩539", "115000205", "v1", "2026-08-24T10:01:00+00:00")
 

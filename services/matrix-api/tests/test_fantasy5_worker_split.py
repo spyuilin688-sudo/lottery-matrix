@@ -17,7 +17,7 @@ REPOSITORY_ROOT = SERVICE_ROOT.parents[1]
 WORKFLOW_ROOT = REPOSITORY_ROOT / ".github" / "workflows"
 TAIPEI = ZoneInfo("Asia/Taipei")
 FANTASY5_JOB_NAME = "matrix-fantasy5-refresh-v2"
-FANTASY5_VERSION = "11988:matrix-python-v12"
+FANTASY5_VERSION = "11988:matrix-python-v13"
 
 
 def _draw(period: str, draw_date: str, numbers: list[str] | None = None) -> dict:
@@ -311,7 +311,7 @@ def _repository_with_fantasy5_history() -> InMemoryAnalysisRepository:
 
 
 def _complete_analysis(repository: InMemoryAnalysisRepository, period: str) -> None:
-    version = f"{period}:matrix-python-v12"
+    version = f"{period}:matrix-python-v13"
     repository.begin_run("天天樂", period, version, "2026-09-04T01:00:00+00:00")
     for kind in ARTIFACT_KINDS:
         repository.save_artifact("天天樂", period, version, kind, {"kind": kind})
@@ -374,12 +374,12 @@ def test_analysis_only_worker_resumes_from_supabase_without_constructing_a_sourc
     result = run_analysis_only_worker(
         "天天樂",
         repository,
-        {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")},
+        {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")},
     )
 
     assert result["status"] == "complete"
     assert result["analysisVersion"] == FANTASY5_VERSION
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
 def test_analysis_only_worker_fills_a_missing_analysis_between_completed_periods() -> None:
@@ -401,7 +401,7 @@ def test_analysis_only_worker_fills_a_missing_analysis_between_completed_periods
     result = run_analysis_only_worker(
         "天天樂",
         repository,
-        {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")},
+        {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")},
     )
 
     assert result["status"] == "complete"
@@ -472,7 +472,7 @@ def test_analysis_history_never_contains_draws_newer_than_the_selected_period() 
     result = run_analysis_only_worker(
         "天天樂",
         repository,
-        {kind: build(kind) for kind in ("explore", "tianyan", "tiangong", "status")},
+        {kind: build(kind) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")},
     )
 
     assert result["analysisVersion"] == FANTASY5_VERSION
@@ -504,3 +504,4 @@ def test_analysis_worker_cli_reads_only_supabase(monkeypatch) -> None:
 
     assert analysis_worker.main(["--lottery", "天天樂"]) == 0
     assert calls == [("天天樂", repository)]
+

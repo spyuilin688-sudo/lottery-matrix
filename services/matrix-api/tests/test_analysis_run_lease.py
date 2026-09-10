@@ -24,7 +24,7 @@ def builders_with_calls(calls: list[str]) -> dict:
             lambda _context, selected=kind:
             calls.append(selected) or {"kind": selected, "items": []}
         )
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")
     }
 
 
@@ -199,3 +199,4 @@ def test_supabase_run_lease_uses_atomic_acquire_and_renew_rpcs() -> None:
             "p_lease_seconds": 300,
         }),
     ]
+

@@ -46,7 +46,7 @@ test("Matrix switcher exposes the other two pages in one compact horizontal cont
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
   assert.match(switcher, /MATRIX_PAGE_ITEMS\.filter\(\(item\) => item\.screen !== current\)\.map/);
   assert.match(switcher, /onClick=\{\(\) => onNavigate\(item\.screen\)\}/);
-  assert.match(source, /title === "Matrix 天衍" \? "tianyan" : "explore"/);
+  assert.match(source, /current=\{isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
   assert.match(source, /current="tiangong"/);
   assert.match(css, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*gap:\s*8px;/s);
   assert.match(css, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex:\s*0 0 2\.34rem;/s);
