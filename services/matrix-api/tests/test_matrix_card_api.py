@@ -1,4 +1,7 @@
 import re
+import xml.etree.ElementTree as ET
+
+import pytest
 from datetime import date
 from urllib.parse import quote
 
@@ -123,6 +126,23 @@ def test_daily_monday_uses_a_red_boxed_one() -> None:
             f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
             'stroke="#ff0000" stroke-width="2"/>'
         ) in svg
+
+
+@pytest.mark.parametrize("order", ["draw", "sorted"])
+def test_lotto_monday_is_black_like_the_reference_in_both_orders(order: str) -> None:
+    svg = render_matrix_card(
+        "大樂透", order,
+        [{"drawDate": "2026-02-16", "numbers": ["38", "37", "47", "18", "02", "25", "42"]}],
+    )
+    root = ET.fromstring(svg)
+    text = root.findall("{http://www.w3.org/2000/svg}text")
+    mondays = [node for node in text if node.text == "一"]
+    assert mondays
+    assert all(node.get("fill") == "#000" for node in mondays)
+    assert not any(node.get("stroke") == "#ff0000" for node in root)
+    special = [node for node in text if node.text == "42" and node.get("font-size") == "48"]
+    assert len(special) == 1
+    assert special[0].get("fill") == "#0000ff"
 
 
 def test_539_future_calendar_includes_only_the_confirmed_2026_sunday_draws() -> None:
