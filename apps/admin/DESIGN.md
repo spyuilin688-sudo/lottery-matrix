@@ -47,8 +47,11 @@ Runtime ownership（Model B）：src/admin.css 擁有基本排版，src/admin-op
 | Date | 原生日期欄位 | src/AdminApp.tsx | OS 原生日期選擇與在地化 | 既有編輯流程 |
 | Form | 既有 formGrid / formActions | src/admin-operations.css | 登入按鈕維持整列、管理動作依內容 | admin-profile、admin-confirmation |
 | Scrollbar | CSS 原生捲動條 | src/admin.css | 表格水平捲動，頁面自然捲動 | 密度與窄版版面檢查 |
+| Permission Switches | 權限切換工作區 | src/PermissionSwitches.tsx、src/permission-switches.css | 全角色只讀／超級管理員可修改 | permission-switches、admin-permissions-app |
 
 手機通知使用預設收合的原生 details / summary，一行顯示通知狀態，展開才顯示說明與設定動作；收合不改變裝置註冊。權限、註冊、停用、付款金額及確認／拒絕 API 不因排版而改變。轉帳狀態僅將既有值翻成繁體中文。
+
+「權限切換」沿用緊湊後台工作區，最大寬度 720px。兩個設定各自以標題、影響說明及原生 `role="switch"` 控制組成；所有管理員看到相同伺服器狀態，非超級管理員的控制保持 disabled 並有文字說明。修改使用既有 `ConfirmationDialog`，頁內保留 loading、status、alert 與重試。760px 以下讓文字與控制自然換成單欄，不截斷說明，開關觸控區至少 44px。此功能不新增全域色彩、字型或形狀 token。
 
 ## Do / Don't
 
