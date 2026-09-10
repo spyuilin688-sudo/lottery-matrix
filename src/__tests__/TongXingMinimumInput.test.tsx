@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const lotteryApi = vi.hoisted(() => ({
   fetchTongXing: vi.fn(),
+}));
+
+const dialogApi = vi.hoisted(() => ({
+  alert: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../lottery-api", async (importOriginal) => ({
@@ -13,13 +17,17 @@ vi.mock("../lottery-api", async (importOriginal) => ({
   fetchTongXing: lotteryApi.fetchTongXing,
 }));
 
+vi.mock("../dialog/AppDialog", () => ({
+  useAppDialog: () => dialogApi,
+}));
+
 import { FeaturePageRouter } from "../FeaturePages";
-import { AppDialogProvider } from "../dialog/AppDialog";
 
 beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
   lotteryApi.fetchTongXing.mockReset();
+  dialogApi.alert.mockClear();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -29,19 +37,11 @@ afterEach(() => {
 });
 
 it("輸入不足兩碼時只顯示提示且不呼叫同星 API", async () => {
-  render(
-    <AppDialogProvider>
-      <FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />
-    </AppDialogProvider>,
-  );
+  render(<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />);
 
   fireEvent.click(screen.getByRole("button", { name: "開始探索" }));
 
-  const dialog = await screen.findByRole("dialog");
-  expect(dialog).toHaveTextContent("請至少輸入兩個號碼");
+  await waitFor(() => expect(dialogApi.alert).toHaveBeenCalledWith({ title: "請至少輸入兩個號碼" }));
   expect(lotteryApi.fetchTongXing).not.toHaveBeenCalled();
   expect(screen.queryByText("探索結果")).not.toBeInTheDocument();
-
-  fireEvent.click(within(dialog).getByRole("button", { name: "知道了" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });
