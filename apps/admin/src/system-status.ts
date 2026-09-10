@@ -51,7 +51,7 @@ export function getSystemStatusPresentation(item: SystemStatusItem) {
     item.endpoint.startsWith('/functions/v1/') ? 'options'
       : item.checkMode === 'openapi' || item.checkMode === 'registry' ? 'registered'
         : item.location === 'Railway' && item.checkMode === 'service' ? 'inherited'
-          : item.id === 'appdeploy-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
+          : item.id === 'supabase-watchdog-heartbeat' || item.id.startsWith('cron-') ? 'reported' : 'live'
   );
   const memberRead = /(?:matrix_(?:tianyan|tiangong)_(?:list|validation)|matrix_custom_status_list|member_(?:referral_summary|profile|notification_settings_get|pending_transfer_request|payment_history_get|push_subscription_status))$/.test(item.id);
   const presentations = {

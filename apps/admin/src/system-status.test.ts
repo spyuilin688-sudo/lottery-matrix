@@ -215,6 +215,6 @@ describe('system status evidence presentation', () => {
     expect(getSystemStatusPresentation({ ...item, checkMode: 'openapi' })).toMatchObject({ label: 'API 已建立', tone: 'limited', scope: 'API 已建立；此操作會修改資料或工作狀態，自動檢查不會執行正式操作。' });
     expect(getSystemStatusPresentation({ ...item, endpoint: '/functions/v1/notification-pilio' })).toMatchObject({ label: '連線正常', tone: 'limited' });
     expect(getSystemStatusPresentation({ ...item, location: 'Railway', checkMode: 'service' })).toMatchObject({ label: '主機正常', tone: 'limited' });
-    expect(getSystemStatusPresentation({ ...item, id: 'appdeploy-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });
+    expect(getSystemStatusPresentation({ ...item, id: 'supabase-watchdog-heartbeat', checkMode: 'service' })).toMatchObject({ label: '執行正常' });
   });
 });

@@ -88,7 +88,7 @@ describe('connection status', () => {
       'matrix-algorithm-cases-api',
     ]));
     expect(fetcher).toHaveBeenCalledWith(
-      'https://api-v2.appdeploy.ai/app/matrix-sanqwn/api/_healthcheck',
+      'https://matrixlottery.idv.tw/admin/api/_healthcheck',
       expect.objectContaining({ cache: 'no-store' }),
     );
     expect(fetcher.mock.calls.map(([input]) => String(input))).not.toEqual(
@@ -326,7 +326,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.filter((item) => item.endpoint.startsWith('/functions/v1/'))).toEqual(
+    expect(result.items.filter((item) => item.checkMode === 'live' && item.endpoint.startsWith('/functions/v1/'))).toEqual(
       Array.from({ length: 7 }, () => expect.objectContaining({ ok: true, checkEvidence: 'options' })),
     );
     const functionCalls = fetcher.mock.calls.filter(([input]) =>
@@ -405,8 +405,9 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({
       ok: true,
+      checkEvidence: 'reported',
       detail: {
         status: 'ok',
         checkedAt: '2026-09-04T11:41:00.000Z',
@@ -442,7 +443,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({ ok: false, error });
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({ ok: false, error });
   });
 
   it('does not accept a watchdog heartbeat that is materially ahead of the status-check clock', async () => {
@@ -459,7 +460,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({
       ok: false,
       error: '自動監控的執行時間異常',
     });

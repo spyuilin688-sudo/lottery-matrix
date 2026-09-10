@@ -176,6 +176,7 @@ describe('manual Railway recovery route', () => {
     await expect(execute()).resolves.toMatchObject({ body: { recovery: { lottery: '今彩539', status: 'accepted' } } });
     expect(wiring.watchdogLeaseClaim).toHaveBeenCalledWith('railway:今彩539', expect.any(String));
     const owner = wiring.watchdogLeaseClaim.mock.calls[0][1];
+    expect(owner).toMatch(/^admin-manual:/);
     expect(wiring.workerRecoverLottery).toHaveBeenCalledExactlyOnceWith('今彩539', owner);
   });
   it('does not enqueue when another recovery holds the lease', async () => {
@@ -258,7 +259,7 @@ describe('independent watchdog cron wiring', () => {
     await expect(matrixIndependentWatchdog({
       scheduledTime: '2026-09-04T01:39:00.000Z',
       invocationId: 'cron-invocation-2',
-    })).resolves.toEqual({ statusCode: 200 });
+    })).resolves.toEqual({ statusCode: 503 });
 
     expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
       status: 'degraded',
@@ -282,7 +283,7 @@ describe('independent watchdog cron wiring', () => {
     await expect(matrixIndependentWatchdog({
       scheduledTime: '2026-09-04T01:45:00.000Z',
       invocationId: 'cron-invocation-degraded',
-    })).resolves.toEqual({ statusCode: 200 });
+    })).resolves.toEqual({ statusCode: 503 });
 
     expect(wiring.watchdogStatusSave).toHaveBeenCalledWith({
       status: 'degraded',
@@ -310,7 +311,7 @@ describe('independent watchdog cron wiring', () => {
       await expect(matrixIndependentWatchdog({
         scheduledTime: '2026-09-04T12:45:00.000Z',
         invocationId: 'cron-invocation-3',
-      })).resolves.toEqual({ statusCode: 200 });
+      })).resolves.toEqual({ statusCode: 503 });
 
       expect(wiring.watchdogStatusSave).toHaveBeenCalledTimes(1);
       expect(log).toHaveBeenCalledWith('matrix-independent-watchdog ' + JSON.stringify({
@@ -331,6 +332,48 @@ describe('independent watchdog cron wiring', () => {
     const dependencies = wiring.createConnectionStatus.mock.calls[0][0];
     await expect(dependencies.loadWatchdogStatus()).resolves.toBeNull();
     expect(wiring.watchdogStatusLoad).toHaveBeenCalled();
+  });
+});
+
+describe('Supabase watchdog invocation route', () => {
+  const route = 'POST /api/internal/matrix-watchdog';
+  const execute = async (token?: string) => {
+    const ctx = {
+      params: {},
+      event: { headers: token ? { 'x-matrix-watchdog-token': token } : {} },
+    };
+    for (const middleware of routes[route] as Array<(input: typeof ctx) => Promise<unknown>>) {
+      const result = await middleware(ctx);
+      if (result) return result;
+    }
+  };
+
+  it('exposes one internal route for the Supabase cron', () => {
+    expect(routes).toHaveProperty(route);
+  });
+
+  it('rejects a missing or invalid cron credential before running the watchdog', async () => {
+    wiring.watchdogRun.mockClear();
+    wiring.supabaseRequest.mockResolvedValueOnce(false);
+    await expect(execute()).resolves.toMatchObject({ status: 401 });
+    await expect(execute('wrong-token')).resolves.toMatchObject({ status: 401 });
+    expect(wiring.watchdogRun).not.toHaveBeenCalled();
+  });
+
+  it('authorizes through the service-role transport and runs with a Supabase owner id', async () => {
+    wiring.supabaseRequest.mockResolvedValueOnce(true);
+    wiring.watchdogRun.mockResolvedValueOnce({
+      status: 'ok', checkedAt: '2026-09-10T16:33:00.000Z', actions: [],
+    });
+    await expect(execute('cron-secret')).resolves.toMatchObject({ status: 200 });
+    expect(wiring.supabaseRequest).toHaveBeenCalledWith(
+      'rpc/admin_watchdog_cron_authorize',
+      { method: 'POST', body: JSON.stringify({ p_token: 'cron-secret' }) },
+    );
+    expect(wiring.watchdogRun).toHaveBeenCalledWith(
+      expect.any(Date),
+      expect.stringMatching(/^supabase-cron:/),
+    );
   });
 });
 
