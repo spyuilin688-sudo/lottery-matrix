@@ -9,6 +9,12 @@ const MOBILE_HEIGHT = 844;
 for (const width of MOBILE_WIDTHS) {
   test(`首頁與訂閱方案在 ${width}px 使用正式間距 owner`, async ({ page }) => {
     await page.setViewportSize({ width, height: MOBILE_HEIGHT });
+    await page.route("**/rest/v1/rpc/matrix_permission_settings", route => route.fulfill({ json: {
+      subscriptionPurchaseVisible: true,
+      registeredMemberFreeAccess: false,
+      revision: 1,
+      updatedAt: "2026-09-10T00:00:00.000Z",
+    } }));
     await page.goto("/");
 
     const homepageTokens = await page.locator(".home-screen").evaluate((screen) => {

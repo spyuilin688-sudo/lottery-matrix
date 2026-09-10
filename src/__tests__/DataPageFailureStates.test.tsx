@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test/render-with-dialog';
 
 const lotteryApi = vi.hoisted(() => ({
   fetchLotteryHistory: vi.fn(),
@@ -23,6 +24,8 @@ vi.mock('../member-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../member-api')>()),
   fetchMemberPaymentHistory: memberApi.fetchMemberPaymentHistory,
 }));
+
+vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 

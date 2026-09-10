@@ -573,7 +573,7 @@ describe("production member shell", () => {
     const prediction = document.querySelector(".explore-validation-prediction");
     expect(prediction?.querySelector(".explore-validation-prediction-arrow--left")).toHaveAttribute("aria-hidden", "true");
     expect(prediction?.querySelector(".explore-validation-prediction-arrow--right")).toHaveAttribute("aria-hidden", "true");
-    expect(prediction?.querySelector(".explore-validation-prediction-content")).toHaveTextContent("本期預測15、27");
+    expect(prediction?.querySelector(".explore-validation-prediction-content")).toHaveTextContent("版路結果15、27");
   });
 
   it("keeps the complete expanded validation area independent from reference page classes", () => {

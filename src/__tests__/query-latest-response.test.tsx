@@ -85,6 +85,10 @@ test.each([['reference',false],['reference',true],['tongxing',false],['tongxing'
  const api=page==='reference'?lotteryApi.fetchNumberReference:lotteryApi.fetchTongXing;
  api.mockReset().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
  render(page==='reference'?<NumberReferencePage onNavigate={vi.fn()}/>:<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()}/>);
+ if(page==='tongxing') {
+  fireEvent.change(screen.getByRole('textbox',{name:'號碼 1'}),{target:{value:'01'}});
+  fireEvent.change(screen.getByRole('textbox',{name:'號碼 2'}),{target:{value:'02'}});
+ }
  fireEvent.click(screen.getByRole('button',{name:'開始探索'}));
  if(page==='tongxing') fireEvent.click(screen.getByRole('button',{name:'展開同星探索設定'}));
  const selects=screen.getAllByRole('combobox');
