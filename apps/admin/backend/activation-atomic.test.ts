@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const actor = '00000000-0000-4000-8000-000000000001';
 const request = '00000000-0000-4000-8000-000000000010';
 const db = new PGlite();
-const migration = readFileSync('supabase/migrations/20260910105312_admin_atomic_activation_batch.sql','utf8');
+const migration = readFileSync(new URL('../../../supabase/migrations/20260910105312_admin_atomic_activation_batch.sql', import.meta.url),'utf8');
 beforeAll(async () => {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema extensions;
