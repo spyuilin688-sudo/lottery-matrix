@@ -202,6 +202,8 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
         <form noValidate onSubmit={submitCreate}>
           <label htmlFor="admin-todo-content">新增代辦</label>
           <textarea
+            className="resize-none"
+            style={{ resize: 'none' }}
             id="admin-todo-content"
             rows={2}
             maxLength={100}
@@ -261,6 +263,8 @@ export function AdminTodos({ client, admin, requestConfirmation }: Props) {
                   <form noValidate onSubmit={(event) => { event.preventDefault(); void saveEdit(item); }}>
                     <label className="adminTodosVisuallyHidden" htmlFor={`admin-todo-edit-${item.id}`}>編輯代辦事項</label>
                     <textarea
+                      className="resize-none"
+                      style={{ resize: 'none' }}
                       autoFocus
                       id={`admin-todo-edit-${item.id}`}
                       rows={2}

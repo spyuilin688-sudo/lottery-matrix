@@ -450,7 +450,7 @@ function AdminApp() {
     setError("");
     if (!loginPassword) { setError("請先輸入要設定的管理員密碼"); return; }
     try {
-      const result = await auth.signIn();
+      const result = await auth.signIn({ email: loginAccount, password: loginPassword });
       const account = String(result.user.email || "");
       await api.post("/api/admin-credential-bootstrap", { password: loginPassword });
       await auth.signOut();

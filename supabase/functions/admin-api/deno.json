@@ -1,0 +1,25 @@
+{
+  "imports": {
+    "@appdeploy/sdk": "./runtime.ts",
+    "../../../apps/admin/backend/admin-data": "../../../apps/admin/backend/admin-data.ts",
+    "../../../apps/admin/backend/push-notifications": "../../../apps/admin/backend/push-notifications.ts",
+    "../../../apps/admin/backend/admin-todos": "../../../apps/admin/backend/admin-todos.ts",
+    "../../../apps/admin/backend/supabase": "../../../apps/admin/backend/supabase.ts",
+    "../../../apps/admin/backend/connection-status": "../../../apps/admin/backend/connection-status.ts",
+    "../../../apps/admin/backend/watchdog-status": "../../../apps/admin/backend/watchdog-status.ts",
+    "../../../apps/admin/backend/member-login-history": "../../../apps/admin/backend/member-login-history.ts",
+    "../../../apps/admin/backend/security-monitor": "../../../apps/admin/backend/security-monitor.ts",
+    "../../../apps/admin/backend/admin-credential-auth": "../../../apps/admin/backend/admin-credential-auth.ts",
+    "../../../apps/admin/backend/realtime-subscribers": "../../../apps/admin/backend/realtime-subscribers.ts",
+    "../../../apps/admin/backend/watchdog": "../../../apps/admin/backend/watchdog.ts",
+    "../../../apps/admin/backend/admin-transfer-push": "../../../apps/admin/backend/admin-transfer-push.ts",
+    "../../../apps/admin/backend/notification-events": "../../../apps/admin/backend/notification-events.ts",
+    "../../../apps/admin/backend/worker-api": "../../../apps/admin/backend/worker-api.ts",
+    "../../../apps/admin/backend/realtime": "../../../apps/admin/backend/realtime.ts",
+    "../../../apps/admin/backend/admin-auth": "../../../apps/admin/backend/admin-auth.ts",
+    "../../../apps/admin/backend/api-status-inventory": "../../../apps/admin/backend/api-status-inventory.ts",
+    "../../../apps/admin/backend/api-query-checks": "../../../apps/admin/backend/api-query-checks.ts",
+    "../../../apps/admin/backend/index": "../../../apps/admin/backend/index.ts"
+  }
+}
+

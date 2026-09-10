@@ -6,10 +6,12 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build:pages": "ADMIN_PAGES_BUILD=true vite build",
         "preview": "vite preview",
         "test": "vitest run"
     },
     "dependencies": {
+        "@supabase/supabase-js": "^2.112.3",
         "lucide-react": "^0.469.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"
