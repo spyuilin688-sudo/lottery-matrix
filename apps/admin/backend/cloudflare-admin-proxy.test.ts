@@ -7,7 +7,7 @@ describe('Cloudflare Pages admin API proxy', () => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Set-Cookie': 'matrix_admin_session=opaque; Path=/admin/; HttpOnly; Secure; SameSite=Strict',
+        'Set-Cookie': 'matrix_admin_session=opaque; Path=/; HttpOnly; Secure; SameSite=Strict',
       },
     }));
     const proxy = createAdminApiProxy(upstream);
@@ -32,7 +32,8 @@ describe('Cloudflare Pages admin API proxy', () => {
     expect(headers.get('x-forwarded-for')).toBe('203.0.113.7');
     expect(headers.has('x-untrusted-target')).toBe(false);
     expect(await new Response(init?.body).text()).toBe(JSON.stringify({ content: '確認資料' }));
-    expect(response.headers.get('set-cookie')).toContain('Path=/admin/');
+    expect(response.headers.get('set-cookie')).toContain('Path=/;');
+    expect(response.headers.get('set-cookie')).not.toContain('Path=/admin/');
   });
 
   it('does not proxy a path outside /admin/api', async () => {
