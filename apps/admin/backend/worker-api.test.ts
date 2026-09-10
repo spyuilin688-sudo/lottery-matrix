@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createWorkerApi, getWorkerConfig } from './worker-api';
+import {
+  createWorkerApi,
+  getWorkerConfig,
+  PRODUCTION_RAILWAY_WORKER_URL,
+} from './worker-api';
 
 const health = {
   status: 'ok',
@@ -47,6 +51,7 @@ const unavailable = {
   health: null,
   jobs: null,
 };
+const unavailableAfterHealth = { ...unavailable, health };
 
 describe('Railway worker status adapter', () => {
   it('reports a Railway-side missing admin token without calling protected jobs', async () => {
@@ -65,7 +70,10 @@ describe('Railway worker status adapter', () => {
     await expect(api.getStatus()).resolves.toEqual({
       ok: false,
       reason: 'RAILWAY_ADMIN_CONFIG_MISSING',
-      health: null,
+      health: {
+        ...health,
+        adminApi: { status: 'misconfigured' },
+      },
       jobs: null,
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
@@ -125,7 +133,7 @@ describe('Railway worker status adapter', () => {
     await expect(api.getStatus()).resolves.toEqual({
       ok: false,
       reason: 'RAILWAY_AUTH_FAILED',
-      health: null,
+      health,
       jobs: null,
     });
   });
@@ -220,15 +228,30 @@ describe('Railway worker status adapter', () => {
   it.each([
     null,
     { baseUrl: '', statusToken: 'server-token' },
-    { baseUrl: 'https://railway.example', statusToken: '' },
   ])('performs no fetch when config is unusable', async (config) => {
     const fetcher = vi.fn();
     const api = createWorkerApi(async () => config, fetcher as typeof fetch);
     await expect(api.getStatus()).resolves.toEqual({
       ...unavailable,
-      reason: 'APPDEPLOY_CONFIG_MISSING',
+      reason: 'SUPABASE_RAILWAY_CONFIG_MISSING',
     });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('still checks public health when the Supabase management token is missing', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(health));
+    const api = createWorkerApi(
+      async () => ({ baseUrl: 'https://railway.example', statusToken: '' }),
+      fetcher,
+    );
+
+    await expect(api.getStatus()).resolves.toEqual({
+      ok: false,
+      reason: 'SUPABASE_RAILWAY_CONFIG_MISSING',
+      health,
+      jobs: null,
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it('does not parse or expose a non-success response body', async () => {
@@ -244,7 +267,7 @@ describe('Railway worker status adapter', () => {
       fetcher,
     );
     const result = await api.getStatus();
-    expect(result).toEqual(unavailable);
+    expect(result).toEqual(unavailableAfterHealth);
     expect(JSON.stringify(result)).not.toContain('fake-upstream-secret');
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
@@ -261,7 +284,7 @@ describe('Railway worker status adapter', () => {
       }),
       fetcher,
     );
-    await expect(api.getStatus()).resolves.toEqual(unavailable);
+    await expect(api.getStatus()).resolves.toEqual(unavailableAfterHealth);
   });
 
   const invalidJobPayloads = [
@@ -298,7 +321,7 @@ describe('Railway worker status adapter', () => {
       }),
       fetcher,
     );
-    await expect(api.getStatus()).resolves.toEqual(unavailable);
+    await expect(api.getStatus()).resolves.toEqual(unavailableAfterHealth);
   });
 
   it('rejects an invalid health DTO', async () => {
@@ -442,23 +465,23 @@ describe('Railway worker secret configuration', () => {
   });
 
   it.each([
-    ['missing token name', ['RAILWAY_WORKER_URL'], 'https://railway.example'],
-    ['missing URL name', ['MATRIX_ADMIN_STATUS_TOKEN'], 'server-token'],
-    ['blank stored value', ['RAILWAY_WORKER_URL', 'MATRIX_ADMIN_STATUS_TOKEN'], '   '],
-  ])('returns null for %s', async (_name, names, value) => {
+    ['missing token name', ['RAILWAY_WORKER_URL'], 'https://railway.example', { baseUrl: 'https://railway.example', statusToken: '' }],
+    ['missing URL name', ['MATRIX_ADMIN_STATUS_TOKEN'], 'server-token', { baseUrl: PRODUCTION_RAILWAY_WORKER_URL, statusToken: 'server-token' }],
+    ['blank stored value', ['RAILWAY_WORKER_URL', 'MATRIX_ADMIN_STATUS_TOKEN'], '   ', { baseUrl: PRODUCTION_RAILWAY_WORKER_URL, statusToken: '' }],
+  ])('keeps public health configuration for %s', async (_name, names, value, expected) => {
     const config = await getWorkerConfig({
       listSecretNames: async () => names as string[],
       readSecret: async () => value,
     });
-    expect(config).toBeNull();
+    expect(config).toEqual(expected);
   });
 
-  it('maps secret-store errors to null without exposing their text', async () => {
+  it('maps secret-store errors to public-only configuration without exposing their text', async () => {
     const config = await getWorkerConfig({
       listSecretNames: async () => { throw new Error('fake-secret-value'); },
       readSecret: async () => '',
     });
-    expect(config).toBeNull();
+    expect(config).toEqual({ baseUrl: PRODUCTION_RAILWAY_WORKER_URL, statusToken: '' });
     expect(JSON.stringify(config)).not.toContain('fake-secret-value');
   });
 });
