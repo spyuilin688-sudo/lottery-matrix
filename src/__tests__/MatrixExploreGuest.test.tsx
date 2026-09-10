@@ -10,6 +10,15 @@ import { updateAlgorithmCacheSession } from '../auth/algorithm-cache-scope';
 const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.fn() }));
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
 vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
+vi.mock('../permission-settings', () => ({
+  refreshPermissionSettings: vi.fn().mockResolvedValue({
+    subscriptionPurchaseVisible: false,
+    registeredMemberFreeAccess: false,
+    revision: 1,
+    updatedAt: '2026-09-10T00:00:00.000Z',
+  } satisfies import('../permission-settings').PermissionSettings),
+  usePermissionSettings: () => null,
+}));
 vi.mock('../features/shared', () => ({
   FeatureShell: ({ children }: any) => <main>{children}</main>,
   SectionTitle: ({ children }: any) => <h2>{children}</h2>,

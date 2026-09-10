@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test/render-with-dialog';
 
 const lotteryApi = vi.hoisted(() => ({
   fetchLotteryHistory: vi.fn(),
@@ -23,6 +24,8 @@ vi.mock('../member-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../member-api')>()),
   fetchMemberPaymentHistory: memberApi.fetchMemberPaymentHistory,
 }));
+
+vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 
 import { FeaturePageRouter } from '../FeaturePagesPatched';
 
@@ -56,6 +59,8 @@ describe('data page request failures are not normal empty data', () => {
     lotteryApi.fetchTongXing.mockRejectedValueOnce(new Error('tongxing offline'));
     render(<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />);
 
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 1' }), { target: { value: '01' } });
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 2' }), { target: { value: '02' } });
     fireEvent.click(await screen.findByRole('button', { name: '開始探索' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Matrix 同星資料載入失敗');

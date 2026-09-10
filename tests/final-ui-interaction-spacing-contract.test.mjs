@@ -59,7 +59,7 @@ test("快捷設定不依賴一次性 portal host 才能顯示", () => {
 
 test("指南複製卡片可透過事件委派選取且修正延遲較溫和", () => {
   assert.match(guideSource, /const GUIDE_LOOP_IDLE_MS = 200;/);
-  assert.match(guideSource, /data-guide-index=\{index\}/);
+  assert.match(guideSource, /data-guide-index=\{section\.index\}/);
   assert.match(guideSource, /closest<HTMLElement>\("\[data-guide-index\]"\)/);
   assert.match(guideSource, /onClick=\{selectGuideCategory\}/);
 });

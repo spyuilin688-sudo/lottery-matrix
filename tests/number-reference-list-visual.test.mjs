@@ -15,9 +15,9 @@ function renderReferenceList() {
       <section class="reference-table-panel">
         <div class="reference-table">
           <div class="reference-row head"><span>期數</span><span>開獎號碼</span></div>
-          <div class="reference-row"><button class="reference-issue">115204</button><span><button>09</button></span></div>
+          <div class="reference-row" data-striped="true"><button class="reference-issue">115204</button><span><button>09</button></span></div>
           <div class="reference-row"><button class="reference-issue">115205</button><span><button>26</button></span></div>
-          <div class="reference-row" data-row-marked="true"><button class="reference-issue">115206</button><span><button>31</button></span></div>
+          <div class="reference-row" data-striped="true" data-row-marked="true"><button class="reference-issue">115206</button><span><button>31</button></span></div>
         </div>
         <div class="reference-results-end"></div>
       </section>

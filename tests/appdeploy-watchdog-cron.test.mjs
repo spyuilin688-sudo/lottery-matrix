@@ -26,7 +26,7 @@ test('AppDeploy owns one independent ten-minute Matrix watchdog', () => {
     handler: 'matrixIndependentWatchdog',
     timezone: 'Asia/Taipei',
   }]);
-  assert.match(backend, /export const matrixIndependentWatchdog/);
+  assert.match(backend, /export async function matrixIndependentWatchdog/);
 });
 
 test('Fantasy5 recovery keeps GitHub crawling separate from Railway analysis', () => {
