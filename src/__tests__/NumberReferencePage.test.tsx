@@ -170,14 +170,14 @@ test('更換號碼重新搜尋時清除先前的整列與單碼標記', async ()
 
   fireEvent.click(issueButton);
   fireEvent.click(numberButton);
-  expect(issueButton).toHaveAttribute('aria-pressed', 'true');
-  expect(numberButton).toHaveAttribute('aria-pressed', 'true');
+  expect(issueButton.getAttribute('aria-pressed')).toBe('true');
+  expect(numberButton.getAttribute('aria-pressed')).toBe('true');
 
   fireEvent.change(screen.getByRole('textbox', { name: '探索號碼 1' }), {
     target: { value: '13' },
   });
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
-  expect(await screen.findByRole('button', { name: '115078' })).toHaveAttribute('aria-pressed', 'false');
-  expect(screen.getByRole('button', { name: '號碼 01' })).toHaveAttribute('aria-pressed', 'false');
+  expect((await screen.findByRole('button', { name: '115078' })).getAttribute('aria-pressed')).toBe('false');
+  expect(screen.getByRole('button', { name: '號碼 01' }).getAttribute('aria-pressed')).toBe('false');
 });
