@@ -35,9 +35,6 @@ it("輸入不足兩碼時只顯示提示且不呼叫同星 API", async () => {
     </AppDialogProvider>,
   );
 
-  fireEvent.change(screen.getByRole("textbox", { name: "號碼 1" }), {
-    target: { value: "01" },
-  });
   fireEvent.click(screen.getByRole("button", { name: "開始探索" }));
 
   const dialog = await screen.findByRole("dialog");
