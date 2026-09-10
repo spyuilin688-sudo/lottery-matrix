@@ -69,6 +69,8 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     const normalized = inputs.map(normalizeLookupNumber);
     const unique = normalized.filter((value, index) => value && normalized.indexOf(value) === index);
     const historyRange = Number(range.replace(/\D/g, "")) as 1000 | 3000 | 5000;
+    setMarkedRows(new Set());
+    setMarkedCells(new Set());
     setInputs(normalized);
     setAppliedLottery(lottery);
     setAppliedRange(range);
