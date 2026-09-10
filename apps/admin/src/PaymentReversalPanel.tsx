@@ -260,7 +260,6 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
                     沖銷原因
                     <textarea
                       className="resize-none"
-                      className="resize-none"
                       style={{ resize: 'none' }}
                       ref={reasonRef}
                       aria-label="沖銷原因"
@@ -294,4 +293,3 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
     </section>
   );
 }
-
