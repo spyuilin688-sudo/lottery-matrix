@@ -1,6 +1,19 @@
-# Matrix request security monitoring — release draft
+# Matrix request security monitoring
 
-This change is prepared for review only. No database migration, server release, Cloudflare setting or real-device push has been applied. The SQL files are executable drafts rather than invented migration-history filenames: the Supabase CLI install/help attempt was stopped by the environment's network approval system. At release, use the installed CLI's `migration new` command after checking its help, and place the approved draft in the generated file. Do not mark the draft applied manually.
+## Activation status — 2026-09-10 UTC
+
+Source was merged as `8f1a2e13a5bfe687807a67c0715177304e9da5a2`. The later unrelated card-rendering change `18ffc7f86a468876b2eed7f1e7cc289303853bf4` is preserved.
+
+- **Active:** Supabase request collection for the six Matrix RPC wrappers. All three policies remain `observe`; no new blocking is enabled. The original six algorithm bodies and grants were compared before application; their private implementation bodies retain their original hashes.
+- **Active:** Railway's merged producer code. The production health endpoint returned HTTP 200 and release `8f1a2e13a5bfe687807a67c0715177304e9da5a2`.
+- **Active:** `matrix-security-cleanup`, every five minutes. A direct cleanup invocation succeeded; bounded cleanup targets records older than seven days.
+- **Deployed, dispatch paused:** `admin-security-push` Edge Function version 1. An authenticated empty-queue invocation returned HTTP 200 with claimed/sent/failed counts all zero. No real-device test notification was sent.
+- **Blocked:** admin login producer and updated admin service worker deployment. AppDeploy rejected the existing app deployment because the Free lifetime deploy allowance is exhausted (125/125; no reset). Do not retry until allowance increases.
+- **Not enabled:** `admin-security-push-minute`. The deployed admin worker still displays transfer-only notifications, so enabling security dispatch now would mislabel security alerts. Deploy and activate the reviewed worker before scheduling dispatch.
+
+Supabase applied migration `20260910111850_security_monitoring` through the connected deployment tool using the reviewed SQL, and `20260910112657_security_monitoring_cleanup` using only the existing cleanup schedule statement. The corresponding files under `supabase/migrations` are exports of those actual server history entries, not invented versions or new migrations. The CLI could not execute in this environment. Do not reapply the initial subsystem SQL to this project.
+
+Live PostgREST validation confirmed an invalid Explore request returns the expected HTTP 400 / `22023 INVALID_REQUEST` while its denial observation persists after the HTTP transaction. A valid anonymous Explore POST also returned HTTP 200 with `kind: explore` and `status: complete`. This is a narrow production smoke check, not a complete entitlement or load test. Full repository tests were not run.
 
 ## Behavior and limits
 
@@ -42,14 +55,14 @@ The admin service worker now recognizes only `kind: security`, displays fixed se
 
 Existing authenticated superadmins can read `GET /api/security-policies` and update `PUT /api/security-policies/:category` with `{mode,threshold,windowSeconds,expectedRevision}`. The backend supplies the authenticated admin ID, never a caller-provided actor. Service-only SQL rechecks current active-superadmin status, range constraints, and the expected revision under lock, and writes previous/next values to the private audit table atomically. Stale revisions are rejected; reload current values before retrying. No settings UI is added. Review legitimate traffic first; enable only a chosen category after explicit release approval. SQL admin tooling can use the same service RPC rather than unaudited direct table updates.
 
-## Release sequence (not executed)
+## Remaining release guidance
 
-1. Rebase/cherry-pick the reviewed source patch on current upstream. Preserve concurrent work. CI currently runs full suites on every PR, including drafts; opening a PR needs explicit approval of that test scope. A reviewed branch/compare link can be prepared without opening it. No skip-CI or workflow edits are proposed.
+1. Source integration is complete. Preserve concurrent work on any follow-up. The user explicitly prohibited the full suite; the approved integration used a no-content-change `[skip ci]` commit on the verified unprotected branch. No workflow or branch-protection settings were changed.
 2. In a disposable Supabase/PostgREST environment, use CLI help to create the migration file and copy `security-monitoring.sql`. Run the named local tests below, then compare all six POST success/error cases against the original deployment for guest/free/paid/trial/disabled identities. Capture function definitions, owners, ACLs and dependencies before release. Confirm no SQL caller embeds recursion through the public names.
 3. Confirm current Supabase gateway/PostgREST version, commit transaction mode, request GUCs, timeout, no client rollback overrides, exposed schemas excluding private, and ACL checks. Local PGlite verifies SQL execution and rollback mechanics but does not provide a live PostgREST wire test or multiconnection lock-contention test.
 4. After approved migration application, release backend producers with defaults observe and Railway enforcement/trust flags false. Reuse existing secrets. Deploy/activate the service worker before enabling dispatch.
 5. Deploy the new `admin-security-push` Edge Function using the existing project's dispatch-token authentication convention (`--no-verify-jwt` only after confirming CLI help and deployment policy). Reuse SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MATRIX_NOTIFICATION_DISPATCH_TOKEN and existing WEB_PUSH_* values. No new secret literals or credentials belong in code.
-6. Apply the separately approved `security-monitoring-scheduler.sql` after checking existing vault names and pg_cron/pg_net availability. It schedules only the new security tick and cleanup; transfer scheduling remains unchanged. Actual delivery to one approved test device and retention/timing observation are still required. No real-user test push was sent in development.
+6. Only after the updated service worker is active, apply `security-monitoring-scheduler.sql`. Vault names and pg_cron/pg_net availability were checked; cleanup is already scheduled independently. It schedules only the new security tick and cleanup; transfer scheduling remains unchanged. Actual delivery to one approved test device and retention/timing observation are still required. No real-user test push was sent in development.
 7. Independently inspect Cloudflare DNS proxy state, SSL/TLS mode, WAF/bot rules, rate rules and analytics against the approved scope. No connected Cloudflare account capability was available during implementation; none of these settings are verified or changed. Supabase/Railway direct endpoints may bypass a custom-domain Cloudflare rule.
 
 ## Rollback and reapply
@@ -75,4 +88,4 @@ From `services/matrix-api`, using a Python environment with project dependencies
 python -m pytest tests/test_security_monitor.py tests/test_api_server_http.py tests/test_api_error_diagnostics.py -q
 ```
 
-No full repository suite was run. Edge handler behavior is tested under Vitest; Deno is unavailable, so Deno dependency resolution/typechecking/deployment and device delivery are unverified. SQL scheduler network dispatch requires pg_cron/pg_net/vault and was not invoked.
+No full repository suite was run. Edge handler behavior was tested under Vitest; local Deno typechecking remains unavailable. The live Edge deployment and authenticated empty-queue call succeeded. Device delivery and scheduled security dispatch remain unverified and paused.
