@@ -9,7 +9,11 @@ const navigationCss = readFileSync(new URL("../src/prototype.css", import.meta.u
 test("首頁內容由安全區頂部開始排列且不再把剩餘高度堆到 Logo 上方", () => {
   assert.match(
     homeCss,
-    /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
+    /\.home-screen\s*\{[^}]*inset:\s*var\(--layout-safe-area-top\) 0 0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s,
+  );
+  assert.match(
+    homeCss,
+    /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*start;[^}]*padding-top:\s*0;/s,
   );
   assert.doesNotMatch(
     homeCss,

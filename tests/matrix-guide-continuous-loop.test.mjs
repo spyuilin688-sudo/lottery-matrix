@@ -18,7 +18,7 @@ test("Matrix 指南使用三組原生捲動內容並在頭尾等距校正", () =
   assert.doesNotMatch(source, /requestAnimationFrame\(normalizeLoop\)/);
   assert.match(source, /new ResizeObserver/);
   assert.match(source, /aria-hidden=\{isClone\}/);
-  assert.match(source, /isClone \? \([\s\S]*?<span className="guide-category-card"[\s\S]*?\) : \([\s\S]*?<button[\s\S]*?aria-pressed=\{selected === index\}/);
+  assert.match(source, /isClone \? \([\s\S]*?<span className="guide-category-card"[\s\S]*?data-guide-index=\{section\.index\}[\s\S]*?\) : \([\s\S]*?<button[\s\S]*?aria-pressed=\{selected === section\.index\}/);
   assert.doesNotMatch(source, /aria-hidden=\{isClone\}[\s\S]*?tabIndex=/);
 });
 
@@ -39,5 +39,5 @@ test("Matrix 指南移除半速指標攔截並使用原生橫向慣性", () => {
   assert.doesNotMatch(guidePage, /onPointerDown=|onPointerMove=|onPointerUp=|onPointerCancel=/);
   assert.match(guidePage, /strip\.addEventListener\("scroll", handleScroll, \{ passive: true \}\)/);
   assert.match(guidePage, /onClick=\{selectGuideCategory\}/);
-  assert.match(guidePage, /data-guide-index=\{index\}/);
+  assert.match(guidePage, /data-guide-index=\{section\.index\}/);
 });

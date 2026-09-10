@@ -45,8 +45,9 @@ test("通知頁批次區維持 18px、列表維持 16px 左右間距並保留正
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });
 
-test("首頁由頂部安全區開始排列並保留固定底部導覽空間", () => {
-  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*start;[^}]*padding-top:\s*var\(--layout-safe-area-top\);[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
+test("首頁固定 Logo 列由頂部安全區開始，內容保留固定底部導覽空間", () => {
+  assert.match(homepageCss, /\.home-screen\s*\{[^}]*inset:\s*var\(--layout-safe-area-top\) 0 0;[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);[^}]*padding-top:\s*var\(--layout-safe-area-top\);/s);
+  assert.match(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*grid-template-rows:\s*auto auto;[^}]*align-content:\s*start;[^}]*padding-top:\s*0;[^}]*padding-bottom:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ var\(--home-gap-features-nav\)\);/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*padding-bottom:\s*8px;/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-bottom-group\s*\{[^}]*(?:\n\s*|;\s*)(?:transform|bottom|margin-block-end)\s*:/s);
   assert.doesNotMatch(homepageCss, /\.home-screen \.home-layout\s*\{[^}]*var\(--mobile-safe-area-height/s);

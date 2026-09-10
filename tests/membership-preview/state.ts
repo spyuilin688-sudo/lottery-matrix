@@ -3,7 +3,7 @@ const scenario = new URLSearchParams(location.search).get("state") ?? "year";
 const signedIn = scenario !== "anonymous";
 let session: unknown = signedIn ? {
   access_token: "qa-only-not-a-token",
-  user: { user_metadata: {
+  user: { id: "qa-user", user_metadata: {
     name: scenario === "long" ? "這是一個很長的 LINE 會員暱稱與英文 LongDisplayName" : "Yu YiXang🐳",
     picture: "/assets/lottery/matrix-profile-avatar.jpg",
   } },
