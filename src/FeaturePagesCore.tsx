@@ -22,6 +22,7 @@ import {
 } from "./features/navigation";
 import { FeaturePageRouter as OriginalFeaturePageRouter } from "./features/router";
 import type { DrawOrder, LotteryId } from "./Prototype";
+import { useAppDialog } from "./dialog/AppDialog";
 
 export { QuickNavigationProvider };
 export type { ScreenId };
@@ -323,6 +324,7 @@ function PatchedDrawHistoryPage({
 }
 
 function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
+  const appDialog = useAppDialog();
   const [lottery, setLottery] = useTimedState<LotteryId>("tongxing-lottery", "今彩539");
   const [order, setOrder] = useTimedState("tongxing-order", "依號碼由小到大排序");
   const [period, setPeriod] = useTimedState("tongxing-period", "1期");
@@ -347,6 +349,10 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     const hasInvalidValue = values.some((value) => value !== "" && !/^(0[1-9]|[1-4][0-9])$/.test(value));
     if (hasInvalidValue) { setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : "")); return; }
     const normalizedValues = values.map(normalizeLookupNumber).filter(Boolean);
+    if (normalizedValues.length < 2) {
+      await appDialog.alert({ title: "請至少輸入兩個號碼" });
+      return;
+    }
     const revision = ++queryRevision.current;
     setSettingsExpanded(false);
     setSettingsFloating(false);
