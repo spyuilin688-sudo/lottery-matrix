@@ -45,7 +45,15 @@ export function createApiQueryChecks(options: {
   let config: Promise<SupabaseConfig> | undefined;
   const rpc = async (name: 'matrix_explore_list' | 'matrix_explore_validation', body: unknown) => {
     const current = await (config ??= options.loadSupabaseConfig());
-    return request(`${current.url}/rest/v1/rpc/${name}?p_request=${encodeURIComponent(JSON.stringify(body))}`, { headers: { apikey: current.serviceRoleKey, Authorization: `Bearer ${current.serviceRoleKey}` } });
+    return request(`${current.url}/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      headers: {
+        apikey: current.serviceRoleKey,
+        Authorization: `Bearer ${current.serviceRoleKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_request: body }),
+    });
   };
   const lists = new Map<string, Promise<any>>();
   const explore = (lottery: string) => {
