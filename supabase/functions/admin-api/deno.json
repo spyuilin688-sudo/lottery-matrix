@@ -4,6 +4,7 @@
     "../../../apps/admin/backend/admin-data": "../../../apps/admin/backend/admin-data.ts",
     "../../../apps/admin/backend/push-notifications": "../../../apps/admin/backend/push-notifications.ts",
     "../../../apps/admin/backend/admin-todos": "../../../apps/admin/backend/admin-todos.ts",
+    "../../../apps/admin/backend/permission-settings": "../../../apps/admin/backend/permission-settings.ts",
     "../../../apps/admin/backend/supabase": "../../../apps/admin/backend/supabase.ts",
     "../../../apps/admin/backend/connection-status": "../../../apps/admin/backend/connection-status.ts",
     "../../../apps/admin/backend/watchdog-status": "../../../apps/admin/backend/watchdog-status.ts",
