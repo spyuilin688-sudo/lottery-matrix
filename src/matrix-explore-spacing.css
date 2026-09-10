@@ -104,7 +104,6 @@
   max-width: 100%;
   object-fit: contain;
   object-position: center;
-  clip-path: inset(0 0 4% 0);
 }
 
 .matrix-explore-main-screen .explore-settings,
