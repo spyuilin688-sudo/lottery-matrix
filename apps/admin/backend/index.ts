@@ -17,6 +17,7 @@ import { createAdminTransferPush } from './admin-transfer-push';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
 import { createConnectionStatus } from './connection-status';
 import { createNotificationEvents, getNotificationEventConfig } from './notification-events';
+import { createPermissionSettings, isPermissionSettingKey } from './permission-settings';
 import { createPushNotifications, requireMemberUuid } from './push-notifications';
 import { createSupabaseTransport, getSupabaseConfig } from './supabase';
 import { createWorkerApi, getWorkerConfig, type CrawlerLottery } from './worker-api';
@@ -57,6 +58,7 @@ const pushNotifications = createPushNotifications(() => getSupabaseConfig(secret
 const notificationEvents = createNotificationEvents(() => getNotificationEventConfig(secrets));
 const adminData = createAdminData(supabase);
 const adminTodos = createAdminTodos(supabase);
+const permissionSettings = createPermissionSettings(supabase);
 const credentialAuth = createAdminCredentialAuth(supabase);
 const workerApi = createWorkerApi(() => getWorkerConfig(secrets));
 const watchdogLeases = createSupabaseWatchdogLeaseManager(supabase);
@@ -165,6 +167,7 @@ const requireSuperRole = (message: string) => async (ctx: Context) => {
 const superGuard = requireSuperRole('僅超級管理員可管理管理員帳號');
 const transferPushGuard = requireSuperRole('僅超級管理員可管理匯款推播通知');
 const revenueResetGuard = requireSuperRole('僅超級管理員可重設收入');
+const permissionSwitchGuard = requireSuperRole('僅超級管理員可修改權限切換');
 
 function adminInput(body: Record<string, unknown>) {
   const permissions = (body.permissions ?? {}) as PermissionInput;
@@ -271,6 +274,33 @@ const routes: Record<string, unknown> = {
   'GET /api/bootstrap': [sessionGuard, async (ctx: Context) => {
     try { return json({ admin: await getAdmin(ctx) }); }
     catch (cause) { return fail(cause); }
+  }],
+
+  'GET /api/permission-settings': [sessionGuard, async (ctx: Context) => {
+    try {
+      await getAdmin(ctx);
+      return json(await permissionSettings.get());
+    } catch (cause) { return fail(cause); }
+  }],
+
+  'PUT /api/permission-settings/:key': [sessionGuard, permissionSwitchGuard, async (ctx: Context) => {
+    try {
+      const admin = await getAdmin(ctx);
+      const body = bodyOf(ctx);
+      if (
+        !isPermissionSettingKey(ctx.params.key)
+        || Object.keys(body).length !== 2
+        || typeof body.value !== 'boolean'
+        || !Number.isInteger(body.expectedRevision)
+        || Number(body.expectedRevision) < 0
+      ) return error('INVALID_PERMISSION_SETTING_REQUEST', 400);
+      return json(await permissionSettings.update(
+        String(admin.id),
+        ctx.params.key,
+        body.value,
+        Number(body.expectedRevision),
+      ));
+    } catch (cause) { return fail(cause); }
   }],
 
   'GET /api/todos': [sessionGuard, async (ctx: Context) => {
