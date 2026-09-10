@@ -59,6 +59,8 @@ describe('data page request failures are not normal empty data', () => {
     lotteryApi.fetchTongXing.mockRejectedValueOnce(new Error('tongxing offline'));
     render(<FeaturePageRouter screen="tongxing" onNavigate={vi.fn()} />);
 
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 1' }), { target: { value: '01' } });
+    fireEvent.change(screen.getByRole('textbox', { name: '號碼 2' }), { target: { value: '02' } });
     fireEvent.click(await screen.findByRole('button', { name: '開始探索' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Matrix 同星資料載入失敗');

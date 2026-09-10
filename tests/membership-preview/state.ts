@@ -48,3 +48,11 @@ export async function signInWithLine() { throw new Error("此為本機預覽，�
 export function usePwaLifecycle() {
   return { showInstallAction: false, requestInstall: async () => "unavailable" };
 }
+export function usePermissionSettings() {
+  return {
+    subscriptionPurchaseVisible: true,
+    registeredMemberFreeAccess: false,
+    revision: 1,
+    updatedAt: "2026-09-10T00:00:00.000Z",
+  };
+}
