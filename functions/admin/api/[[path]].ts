@@ -8,7 +8,25 @@ const SUPABASE_ADMIN_API = 'https://wcimzbbapfrdotjsfyxa.supabase.co/functions/v
 const MAX_BODY_BYTES = 65_536;
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const REQUEST_HEADERS = ['accept', 'authorization', 'content-type', 'cookie', 'user-agent'] as const;
-const RESPONSE_HEADERS = ['cache-control', 'content-type', 'retry-after', 'set-cookie', 'x-content-type-options'] as const;
+const RESPONSE_HEADERS = ['cache-control', 'content-type', 'retry-after', 'x-content-type-options'] as const;
+const ADMIN_SESSION_COOKIE_PREFIX = 'matrix_admin_session=';
+
+type HeadersWithSetCookie = Headers & { getSetCookie?: () => string[] };
+
+function adminSessionCookie(headers: Headers): string | null {
+  const getSetCookie = (headers as HeadersWithSetCookie).getSetCookie;
+  const values = typeof getSetCookie === 'function'
+    ? getSetCookie.call(headers)
+    : [headers.get('set-cookie') ?? ''];
+  for (const value of values) {
+    const cookie = value
+      .split(/,\s*(?=[A-Za-z0-9_-]+=)/)
+      .map((candidate) => candidate.trim())
+      .find((candidate) => candidate.startsWith(ADMIN_SESSION_COOKIE_PREFIX));
+    if (cookie) return cookie;
+  }
+  return null;
+}
 
 function proxyError(code: string, status: number) {
   return Response.json({ error: code }, {
@@ -60,6 +78,8 @@ export function createAdminApiProxy(fetcher: typeof fetch = fetch) {
         const value = response.headers.get(name);
         if (value !== null) responseHeaders.set(name, value);
       }
+      const cookie = adminSessionCookie(response.headers);
+      if (cookie) responseHeaders.set('Set-Cookie', cookie);
       responseHeaders.set('Cache-Control', 'no-store');
       responseHeaders.set('X-Content-Type-Options', 'nosniff');
       return new Response(response.body, {
