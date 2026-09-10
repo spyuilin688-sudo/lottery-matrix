@@ -39,12 +39,6 @@ export function apiPath(request: Request): string | null {
 
 function responseOf(result: SdkResponse): Response {
   const headers = new Headers(result.headers);
-  const cookie = headers.get('set-cookie');
-  if (cookie?.startsWith('matrix_admin_session=')) {
-    // Shared credential code also serves the old AppDeploy root. Only the
-    // migrated runtime narrows the cookie scope; all security flags survive.
-    headers.set('set-cookie', cookie.replace(/(;\s*Path=)\/(?=;|$)/i, '$1/admin/'));
-  }
   headers.set('Cache-Control', 'no-store');
   headers.set('X-Content-Type-Options', 'nosniff');
   return new Response(result.statusCode === 204 ? null : result.body, { status: result.statusCode, headers });
