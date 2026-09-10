@@ -21,8 +21,11 @@ export default mergeConfig(
         "backend/**/*.test.ts",
         "apps/admin/backend/**/*.test.ts",
         "apps/admin/src/**/*.test.tsx",
-        "supabase/functions/line-logout/handler.test.ts",
       ],
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "json-summary"],
+      },
     },
   }),
 );
