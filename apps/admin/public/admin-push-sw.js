@@ -8,7 +8,7 @@ self.addEventListener('push', (event) => {
       ? `（${payload.count} 次請求）` : '';
     event.waitUntil(self.registration.showNotification('安全監控提醒', {
       body: `偵測到異常請求量${count}，請檢查服務安全紀錄。`,
-      icon: new URL('resources/admin-backend-icon.png', self.registration.scope).href,
+      icon: new URL('icons/admin-192x192.png', self.registration.scope).href,
       tag: 'admin-security-monitor',
       data: { kind: 'security' },
     }));
@@ -17,7 +17,7 @@ self.addEventListener('push', (event) => {
   // Keep financial/member details off the lock screen, regardless of payload contents.
   event.waitUntil(self.registration.showNotification('新轉帳申請', {
     body: '有新的轉帳申請待處理，請登入後台查看。',
-    icon: new URL('resources/admin-backend-icon.png', self.registration.scope).href,
+    icon: new URL('icons/admin-192x192.png', self.registration.scope).href,
     tag: 'admin-transfer-request',
   }));
 });
