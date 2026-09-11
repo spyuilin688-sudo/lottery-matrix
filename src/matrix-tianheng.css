@@ -5,6 +5,10 @@
   align-items: center;
 }
 
+.matrix-tianheng-screen .tianheng-lock-positions {
+  row-gap: 1.5px;
+}
+
 .matrix-tianheng-screen .tianheng-summary-lines {
   grid-template-columns: max-content minmax(0, 1fr);
   column-gap: 3px;

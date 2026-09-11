@@ -19,6 +19,13 @@ test('Tianheng cards keep the shared Explore horizontal spacing owner', () => {
   );
 });
 
+test('Tianheng position labels use a 1.5px vertical gap', () => {
+  assert.match(
+    tianhengCss,
+    /\.matrix-tianheng-screen \.tianheng-lock-positions\s*\{[^}]*row-gap:\s*1\.5px;/s,
+  );
+});
+
 test('Matrix switcher artwork is not clipped on any edge', () => {
   const imageRule = exploreCss.match(/\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher img\s*\{([^}]*)\}/s)?.[1] ?? '';
   assert.ok(imageRule, 'expected the shared Matrix switcher image rule');
