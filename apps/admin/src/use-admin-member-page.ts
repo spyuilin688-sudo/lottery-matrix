@@ -4,6 +4,14 @@ type Row = Record<string, unknown> & { id: string };
 type Page = { items: Row[]; total: number; currentPage: number; totalPages: number };
 type Client = { get(path: string): Promise<{ data: Page }> };
 
+function keepRowsWithPlans(page: Page): Page {
+  const items = page.items.filter(item => String(item.currentPlanId ?? '').trim() && String(item.planName ?? '').trim());
+  const removed = page.items.length - items.length;
+  if (!removed) return page;
+  const total = Math.max(0, page.total - removed);
+  return { ...page, items, total, totalPages: Math.max(1, Math.ceil(total / 30)) };
+}
+
 export function useAdminMemberPage(table: 'users' | 'subscriptions', revision: number, client: Client) {
   const [query, setQuery] = useState({ page: 1, keyword: '', status: 'all', plan: 'all' });
   const [attempt, setAttempt] = useState(0);
@@ -23,7 +31,7 @@ export function useAdminMemberPage(table: 'users' | 'subscriptions', revision: n
         if (!Array.isArray(data.items) || !Number.isSafeInteger(data.total) || data.total < 0
             || !Number.isSafeInteger(data.currentPage) || data.currentPage < 1
             || !Number.isSafeInteger(data.totalPages) || data.totalPages < 1) throw new Error('Invalid member page');
-        if (active) setResult({ key, data });
+        if (active) setResult({ key, data: table === 'subscriptions' ? keepRowsWithPlans(data) : data });
       }).catch(() => { if (active) setResult({ key, error: '列表載入失敗，請重新載入' }); });
     }, query.keyword ? 200 : 0);
     return () => { active = false; window.clearTimeout(timer); };
