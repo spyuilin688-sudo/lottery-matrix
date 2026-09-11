@@ -11,12 +11,7 @@ const sdk = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn(), profile: vi.f
 vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc: sdk.rpc, auth: { getSession: sdk.getSession } }) }));
 vi.mock('../member-api', () => ({ bootstrapMember: async () => {}, fetchMemberProfile: sdk.profile }));
 vi.mock('../permission-settings', () => ({
-  refreshPermissionSettings: vi.fn().mockResolvedValue({
-    subscriptionPurchaseVisible: false,
-    registeredMemberFreeAccess: false,
-    revision: 1,
-    updatedAt: '2026-09-10T00:00:00.000Z',
-  } satisfies import('../permission-settings').PermissionSettings),
+  refreshPermissionSettings: vi.fn().mockResolvedValue({ revision: 1 }),
   usePermissionSettings: () => null,
 }));
 vi.mock('../features/shared', () => ({
@@ -101,12 +96,27 @@ test('訪客選擇七期時須登入，且不送出探索請求', async () => {
   expect(sdk.rpc).not.toHaveBeenCalled();
 });
 
-test.each(['Matrix 探索', 'Matrix 天衍'] as const)('%s 進頁選取會員實際最高期數及範圍', async (title) => {
+test('Matrix 探索進頁選取會員實際最高期數及範圍', async () => {
   sdk.profile.mockResolvedValue({ lineUserId: 'line-member', planName: null, isLifetime: false, exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: true } });
-  await act(async () => { render(<MatrixExplorePage title={title} onNavigate={vi.fn()} />); });
+  await act(async () => { render(<MatrixExplorePage title="Matrix 探索" onNavigate={vi.fn()} />); });
   expect(screen.getByText('七期').getAttribute('data-selected')).toBe('true');
   fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
   expect(screen.getByText('完整範圍').closest('button')?.getAttribute('data-selected')).toBe('true');
+});
+
+test('Matrix 天衍只顯示全寬十三期與完整範圍', async () => {
+  sdk.profile.mockResolvedValue({ lineUserId: 'line-member', planName: null, isLifetime: false, exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: false } });
+  await act(async () => { render(<MatrixExplorePage title="Matrix 天衍" onNavigate={vi.fn()} />); });
+  const thirteen = screen.getByText('十三期').closest('button');
+  expect(thirteen?.getAttribute('data-selected')).toBe('true');
+  expect(thirteen?.parentElement?.classList.contains('one')).toBe(true);
+  expect(screen.queryByText('二期')).toBeNull();
+  expect(screen.queryByText('七期')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  const fullRange = screen.getByText('完整範圍').closest('button');
+  expect(fullRange?.getAttribute('data-selected')).toBe('true');
+  expect(fullRange?.parentElement?.classList.contains('one')).toBe(true);
+  expect(screen.queryByText('標準範圍')).toBeNull();
 });
 
 test.each(['加減版路', '合值版路', '拖牌版路'])('二期鎖定1碼的%s預設勾選準4進5', async (road) => {
@@ -119,7 +129,7 @@ test.each(['加減版路', '合值版路', '拖牌版路'])('二期鎖定1碼的
   expect(sdk.rpc).toHaveBeenCalledWith('matrix_explore_list', { p_request: expect.objectContaining({ explorePeriods: 2, ruleCount: 1, selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'] }) });
 });
 
-test('天衍將會員最高預設與手動變更送至實際 RPC', async () => {
+test('天衍固定將十三期與完整範圍送至實際 RPC', async () => {
   sdk.profile.mockResolvedValue({ exploreEntitlements: { canUseSeven: true, canUseThirteen: true, canUseFullRange: true } });
   const session = { user: { id: 'member' }, access_token: 'test-session' };
   updateAlgorithmCacheSession(session as any);
@@ -128,10 +138,4 @@ test('天衍將會員最高預設與手動變更送至實際 RPC', async () => {
   await act(async () => { render(<MatrixExplorePage title="Matrix 天衍" onNavigate={vi.fn()} />); });
   fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
   await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 13, exploreRange: '完整範圍' }) }));
-  await screen.findByText('無符合設定條件');
-  fireEvent.click(screen.getByText('二期'));
-  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
-  fireEvent.click(screen.getByText('標準範圍'));
-  fireEvent.click(screen.getByRole('button', { name: '開始天衍' }));
-  await waitFor(() => expect(sdk.rpc).toHaveBeenLastCalledWith('matrix_tianyan_list', { p_request: expect.objectContaining({ explorePeriods: 2, exploreRange: '標準範圍' }) }));
 });

@@ -101,7 +101,7 @@ async function renderTianhengResult(overrides = {}, validation = tianhengValidat
     itemId: 'th-1', validation,
   });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衡" />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   return screen.findByRole('button', { name: /展開版路 th-1/ });
 }
 
@@ -127,7 +127,7 @@ async function openPage() {
 }
 
 async function search() {
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   return screen.findByRole('button', { name: '展開版路 th-1' });
 }
 
@@ -141,7 +141,7 @@ it('routes Tianheng into the canonical Explore layout with its exact artwork and
   expect(screen.queryByRole('button', { name: '七期' })).not.toBeInTheDocument();
   expect(document.querySelector('.matrix-tianheng-screen')).toHaveClass('matrix-explore-layout', 'matrix-explore-main-screen');
   expect(screen.getByRole('button', { name: '拖牌版路' })).toHaveTextContent('推薦');
-  expect(screen.getByRole('button', { name: '開始探索' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '開始天衡' })).toBeVisible();
 });
 
 it.each([
@@ -414,7 +414,7 @@ it('lets the server decide thirteen-period entitlement and shows the canonical d
   matrixApi.fetchTianhengList.mockRejectedValue({ code: 'FORBIDDEN' });
   await openPage();
   fireEvent.click(screen.getByRole('button', { name: /十三期/ }));
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   const dialog = await screen.findByRole('dialog', { name: '無法使用 Matrix 天衡' });
   expect(dialog).toHaveTextContent('目前會員權限無法使用此設定');
   expect(matrixApi.fetchTianhengList).toHaveBeenCalledWith(expect.objectContaining({ explorePeriods: 13 }));
@@ -424,13 +424,13 @@ it('shows loading, completed empty, and retryable analysis errors without sample
   let finish!: (response: TianhengListResponse) => void;
   matrixApi.fetchTianhengList.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
   await openPage();
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   expect(screen.getByRole('status')).toHaveTextContent('分析結果載入中');
   expect(document.querySelector('.result-count')).toBeNull();
   await act(async () => finish({ ...envelope, items: [], duplicateStats: [], total: 0 }));
   expect(screen.getByText('無符合設定條件')).toBeVisible();
   matrixApi.fetchTianhengList.mockRejectedValueOnce({ code: 'ANALYSIS_NOT_READY' });
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('分析中，請稍後再試');
   expect(document.querySelector('.result-count')).toBeNull();
   await search();
@@ -441,7 +441,7 @@ it.each(['success', 'error'])('ignores an older query %s after a newer submitted
   let fail!: (error: unknown) => void;
   matrixApi.fetchTianhengList.mockReturnValueOnce(new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
   await openPage();
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   await search();
   await act(async () => {
     if (outcome === 'success') finish({ ...envelope, items: [], total: 0 });

@@ -443,13 +443,13 @@
 }
 
 .matrix-status-screen .explore-validation-groups,
-.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-groups {
+.matrix-status-screen .explore-validation-group {
   background: #02070C;
 }
 
-.matrix-status-screen .explore-validation-group,
-.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-validation-group {
-  background: #02070C;
+.matrix-explore-main-screen .explore-validation-groups,
+.matrix-explore-main-screen .explore-validation-group {
+  background: #000;
 }
 
 .matrix-status-screen .explore-validation-group > :is(
@@ -514,6 +514,12 @@
 .explore-validation-issue:nth-child(n + 2),
 .explore-validation-formula-row:nth-child(n + 2) {
   border-top: 1px solid rgba(91, 126, 169, .34);
+}
+
+.matrix-explore-main-screen .explore-validation-number-row:nth-child(n + 2),
+.matrix-explore-main-screen .explore-validation-issue:nth-child(n + 2),
+.matrix-explore-main-screen .explore-validation-formula-row:nth-child(n + 2) {
+  border-top-color: #000;
 }
 
 .explore-validation-issue {
@@ -865,4 +871,3 @@
   font-size: calc(.8em - 2px);
   margin-inline: 2px;
 }
-
