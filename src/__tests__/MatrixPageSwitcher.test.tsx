@@ -71,3 +71,20 @@ test('四個 Matrix 切換圖示均完整顯示相同外框', () => {
     expect(styles.borderTopColor).toBe('rgb(117, 83, 41)');
   });
 });
+
+test('僅將天衡圖示置中放大裁切以貼齊共用外框', () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
+
+  const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
+  const tianhengImage = within(nav).getByRole('button', { name: 'Matrix 天衡' }).querySelector('img');
+  const otherImages = within(nav).getAllByRole('button')
+    .filter((button) => button.getAttribute('aria-label') !== 'Matrix 天衡')
+    .map((button) => button.querySelector('img'));
+
+  expect(tianhengImage).toHaveClass('matrix-page-switcher-image--tianheng');
+  expect(getComputedStyle(tianhengImage!).transform).toBe('scale(1.14)');
+  otherImages.forEach((image) => {
+    expect(image).not.toHaveClass('matrix-page-switcher-image--tianheng');
+    expect(getComputedStyle(image!).transform).not.toBe('scale(1.14)');
+  });
+});
