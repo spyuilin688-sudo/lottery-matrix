@@ -188,11 +188,15 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
   };
 
   return (
-    <section className="panel paymentReversalPanel" aria-labelledby="payment-reversal-title">
-      <h2 id="payment-reversal-title">付款紀錄與已完成沖銷</h2>
-      <p className="paymentReversalHelp">僅記錄已在外部完成的退款、刷退或交易取消；不執行款項移轉，也不變更訂閱日期。</p>
-      {notice && <p className="paymentReversalNotice" role="status">{notice}</p>}
-      <div className="paymentReversalList">
+    <details className="panel paymentReversalPanel" open={loadError ? true : undefined}>
+      <summary className="paymentReversalSummary">
+        <span id="payment-reversal-title">付款紀錄與沖銷</span>
+        <small>{loadError ? '讀取失敗' : payments === null ? '讀取中' : `${payments.length} 筆`}</small>
+      </summary>
+      <div className="paymentReversalBody" aria-labelledby="payment-reversal-title">
+        <p className="paymentReversalHelp">僅記錄已在外部完成的退款、刷退或交易取消；不執行款項移轉，也不變更訂閱日期。</p>
+        {notice && <p className="paymentReversalNotice" role="status">{notice}</p>}
+        <div className="paymentReversalList">
         {loadError ? (
           <div className="paymentReversalLoadError paymentReversalError" role="alert">
             <span>{loadError}</span>
@@ -289,7 +293,8 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
             </article>
           );
         })}
+        </div>
       </div>
-    </section>
+    </details>
   );
 }

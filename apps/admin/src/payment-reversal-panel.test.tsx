@@ -70,6 +70,24 @@ function change(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElem
 }
 
 describe('PaymentReversalPanel', () => {
+  it('keeps the entire payment history card collapsed until the administrator expands it', async () => {
+    await renderPanel();
+    const disclosure = container.querySelector('details.paymentReversalPanel') as HTMLDetailsElement;
+
+    expect(disclosure).toBeTruthy();
+    expect(disclosure.open).toBe(false);
+    expect(disclosure.querySelector('summary')?.textContent).toContain('付款紀錄與沖銷');
+  });
+
+  it('opens the card and exposes retry when payment history loading fails', async () => {
+    await renderPanel({ payments: null, loadError: '付款紀錄載入失敗' });
+    const disclosure = container.querySelector('details.paymentReversalPanel') as HTMLDetailsElement;
+
+    expect(disclosure.open).toBe(true);
+    expect(disclosure.querySelector('summary')?.textContent).toContain('讀取失敗');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('付款紀錄載入失敗');
+  });
+
   it('distinguishes loading and failed reads from a confirmed empty history and retries inline', async () => {
     const onRefresh = vi.fn().mockResolvedValue(undefined);
     await renderPanel({ payments: null, loadError: '' });

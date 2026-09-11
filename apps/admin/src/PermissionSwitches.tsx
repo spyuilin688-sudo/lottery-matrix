@@ -43,6 +43,12 @@ const definitions: Array<{
   },
 ];
 
+const permissionRefreshIntervalMs = 60 * 60 * 1000;
+
+function checkedTimeLabel(value: string) {
+  return new Date(value).toLocaleString('zh-TW', { hour12: false });
+}
+
 function settingsFrom(value: unknown): MatrixPermissionSettings | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
@@ -76,9 +82,12 @@ export function PermissionSwitches({
   const [saving, setSaving] = useState<PermissionSettingKey | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const requestVersion = useRef(0);
+  const savingRef = useRef(false);
 
   const read = async (showLoading: boolean) => {
+    if (!showLoading && savingRef.current) return null;
     const version = ++requestVersion.current;
     if (showLoading) setLoading(true);
     setError('');
@@ -86,7 +95,10 @@ export function PermissionSwitches({
       const response = await client.get('/api/permission-settings');
       const next = settingsFrom(response.data);
       if (!next) throw new Error('INVALID_PERMISSION_SETTINGS');
-      if (version === requestVersion.current) setSettings(next);
+      if (version === requestVersion.current) {
+        setSettings(next);
+        setCheckedAt(new Date().toISOString());
+      }
       return next;
     } catch {
       if (version === requestVersion.current) {
@@ -101,7 +113,11 @@ export function PermissionSwitches({
 
   useEffect(() => {
     void read(true);
-    return () => { requestVersion.current += 1; };
+    const interval = window.setInterval(() => { void read(false); }, permissionRefreshIntervalMs);
+    return () => {
+      window.clearInterval(interval);
+      requestVersion.current += 1;
+    };
   }, []);
 
   const change = async (definition: typeof definitions[number]) => {
@@ -116,6 +132,8 @@ export function PermissionSwitches({
     if (!confirmed || !settings || saving) return;
 
     const expectedRevision = settings.revision;
+    requestVersion.current += 1;
+    savingRef.current = true;
     setSaving(definition.key);
     setError('');
     setNotice('');
@@ -127,9 +145,11 @@ export function PermissionSwitches({
       const updated = settingsFrom(response.data);
       if (!updated) throw new Error('INVALID_PERMISSION_SETTINGS');
       setSettings(updated);
+      setCheckedAt(new Date().toISOString());
       setNotice(`${definition.label}已${nextValue ? '開啟' : '關閉'}`);
     } catch (cause) {
       const conflict = cause instanceof Error && cause.message.includes('SETTINGS_CONFLICT');
+      savingRef.current = false;
       const refreshed = await read(false);
       setError(conflict
         ? '設定已由其他管理員更新，已重新載入目前狀態，請再確認一次'
@@ -137,6 +157,7 @@ export function PermissionSwitches({
           ? '權限設定儲存失敗，已重新載入目前狀態，請再試一次'
           : '權限設定儲存結果無法確認，請重新載入');
     } finally {
+      savingRef.current = false;
       setSaving(null);
     }
   };
@@ -161,8 +182,13 @@ export function PermissionSwitches({
       )}
 
       {settings && (
-        <div className="permissionSwitchRows">
-          {definitions.map((definition) => {
+        <>
+          <div className="permissionCurrentState" role="status" aria-live="polite">
+            <div><strong>目前 PWA 狀態</strong><span>訂閱購買：{settings.subscriptionPurchaseVisible ? '開啟' : '關閉'}</span><span>會員免費使用：{settings.registeredMemberFreeAccess ? '開啟' : '關閉'}</span></div>
+            <small>上次檢查：{checkedAt ? checkedTimeLabel(checkedAt) : '確認中'} · 每小時自動檢查</small>
+          </div>
+          <div className="permissionSwitchRows">
+            {definitions.map((definition) => {
             const checked = settings[definition.key];
             const descriptionId = `permission-${definition.key}-description`;
             return (
@@ -188,8 +214,9 @@ export function PermissionSwitches({
                 </label>
               </article>
             );
-          })}
-        </div>
+            })}
+          </div>
+        </>
       )}
     </section>
   );

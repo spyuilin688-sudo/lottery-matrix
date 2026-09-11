@@ -1,6 +1,7 @@
 {
   "name": "樂彩 Matrix 營運後台",
   "short_name": "樂彩 Matrix 營運後台",
+  "id": "/admin/",
   "start_url": "/admin/",
   "scope": "/admin/",
   "display": "standalone",
