@@ -35,6 +35,8 @@ describe('LINE callback bootstrap', () => {
     mocks.isPwaDisplayMode.mockReset().mockReturnValue(false);
     mocks.requestLinePwaReturn.mockReset().mockResolvedValue(false);
     document.body.innerHTML = '<div id="root"></div>';
+    window.history.replaceState({}, '', '/');
+    window.sessionStorage.clear();
     Object.defineProperty(window.navigator, 'serviceWorker', {
       configurable: true,
       value: { ready: Promise.resolve({ active: null }), controller: null },
@@ -94,5 +96,54 @@ describe('LINE callback bootstrap', () => {
 
     expect(strictMode.props.children.type.name).not.toBe('LinePwaReturnFallback');
     expect(mocks.getSession).toHaveBeenCalledOnce();
+  });
+
+  it('surfaces an expired callback even when an older session exists and clears its pending success marker', async () => {
+    window.history.replaceState({}, '', '/?source=line&error=invalid_request&error_code=bad_oauth_state&error_description=OAuth+state+has+expired');
+    window.sessionStorage.setItem('matrix-line-login-pending', JSON.stringify({ startedAt: Date.now() }));
+    mocks.hasLineOAuthCallback.mockReturnValueOnce(true).mockReturnValue(false);
+
+    await import('../../main');
+
+    await vi.waitFor(() => expect(mocks.createRoot).toHaveBeenCalledOnce());
+    const app = mocks.createRoot.mock.results[0].value.render.mock.calls[0][0].props.children;
+    expect(app.props.lineLoginError).toBe('expired');
+    expect(app.type.name).not.toBe('LinePwaReturnFallback');
+    expect(window.sessionStorage.getItem('matrix-line-login-pending')).toBeNull();
+    expect(window.location.search).toBe('?source=line');
+  });
+
+  it('reports a cancelled hash callback without reflecting the provider description', async () => {
+    window.history.replaceState({}, '', '/#error=access_denied&error_description=private-provider-details');
+
+    await import('../../main');
+
+    await vi.waitFor(() => expect(mocks.createRoot).toHaveBeenCalledOnce());
+    const app = mocks.createRoot.mock.results[0].value.render.mock.calls[0][0].props.children;
+    expect(app.props.lineLoginError).toBe('cancelled');
+    expect(window.location.hash).toBe('');
+  });
+
+  it('preserves callback errors for the receiving PWA when handoff succeeds', async () => {
+    window.history.replaceState({}, '', '/?error=invalid_request&error_code=bad_oauth_state');
+    mocks.requestLinePwaReturn.mockResolvedValue(true);
+    vi.spyOn(window, 'close').mockImplementation(() => undefined);
+
+    await import('../../main');
+
+    await vi.waitFor(() => expect(mocks.requestLinePwaReturn).toHaveBeenCalledOnce());
+    expect(window.location.search).toContain('error_code=bad_oauth_state');
+    expect(mocks.createRoot).not.toHaveBeenCalled();
+  });
+
+  it('does not mislabel other state failures as an expired login', async () => {
+    window.history.replaceState({}, '', '/?error=invalid_request&error_code=bad_oauth_state&error_description=state+mismatch#profile');
+
+    await import('../../main');
+
+    await vi.waitFor(() => expect(mocks.createRoot).toHaveBeenCalledOnce());
+    const app = mocks.createRoot.mock.results[0].value.render.mock.calls[0][0].props.children;
+    expect(app.props.lineLoginError).toBe('failed');
+    expect(window.location.hash).toBe('#profile');
   });
 });
