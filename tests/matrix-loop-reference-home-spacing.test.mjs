@@ -8,9 +8,10 @@ const feature = readFileSync(new URL("../src/feature-pages.css", import.meta.url
 const reference = readFileSync(new URL("../src/number-reference-visual-refinement.css", import.meta.url), "utf8");
 const home = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
 
-test("Matrix 切換器只顯示另外兩頁，移除循環複本與捲動切換", () => {
+test("Matrix 切換器固定顯示四頁並標示目前頁面，移除循環複本與捲動切換", () => {
   const switcher = pages.slice(pages.indexOf("function MatrixPageSwitcher"), pages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
-  assert.match(switcher, /item\.screen !== current/);
+  assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
+  assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.doesNotMatch(switcher, /MATRIX_LOOP_ITEMS|data-loop-clone|onScroll|scrollTo/);
   assert.match(feature, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*gap:\s*8px;/s);
 });

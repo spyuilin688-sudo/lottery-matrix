@@ -38,13 +38,14 @@ test("single-number marking remains independent from the selected row", async ()
   assert.doesNotMatch(body, /setMarkedRows/);
 });
 
-test("Matrix switcher exposes the other two pages in one compact horizontal control", async () => {
+test("Matrix switcher exposes all four pages in one compact horizontal control", async () => {
   const [source, css] = await Promise.all([
     readFeaturePagesSource(),
     read("src/feature-pages.css"),
   ]);
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
-  assert.match(switcher, /MATRIX_PAGE_ITEMS\.filter\(\(item\) => item\.screen !== current\)\.map/);
+  assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
+  assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
   assert.match(switcher, /onClick=\{\(\) => onNavigate\(item\.screen\)\}/);
   assert.match(source, /current=\{isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
   assert.match(source, /current="tiangong"/);

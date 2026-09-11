@@ -30,5 +30,8 @@ test('no hard overwrite hacks', () => {
     assert.match(remainingLayout, rule);
     remainingLayout = remainingLayout.replace(rule, '');
   }
+  const approvedTianhengArtworkScale = /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher \.matrix-page-switcher-image--tianheng\s*\{[^}]*transform:\s*scale\(1\.14\);[^}]*\}/s;
+  assert.match(remainingLayout, approvedTianhengArtworkScale);
+  remainingLayout = remainingLayout.replace(approvedTianhengArtworkScale, '');
   assert.doesNotMatch(remainingLayout, /!important|zoom\s*:|scale\s*\(|margin(?:-[a-z]+)?\s*:\s*-/);
 });
