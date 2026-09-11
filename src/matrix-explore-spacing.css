@@ -358,3 +358,876 @@
   inline-size: 1.75rem;
   block-size: 1.75rem;
   border-radius: .375rem;
+  object-fit: contain;
+}
+
+.matrix-explore-main-screen .advanced-row svg:last-child {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.matrix-explore-main-screen .primary-action {
+  width: 100%;
+  min-height: 34px;
+  height: auto;
+  margin: 0;
+  padding: .25rem .75rem;
+  gap: .75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d4a52f;
+  border-radius: .75rem;
+  color: #f6d472;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.matrix-explore-main-screen .primary-action svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.matrix-explore-main-screen .segmented button em {
+  position: absolute;
+  z-index: 20;
+  top: -.5625rem;
+  right: .125rem;
+  height: auto;
+  min-height: 0;
+  padding: .0625rem .125rem;
+  border: 1px solid #9a6f1e;
+  border-radius: 9999px;
+  font-size: .4375rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .segmented button em svg {
+  inline-size: .375rem;
+  block-size: .375rem;
+}
+
+.matrix-explore-main-screen .history-panel-title {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel-title .section-title {
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: .25rem;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel-title .section-title > span {
+  width: .25rem;
+  height: 1rem;
+  flex: 0 0 .25rem;
+}
+
+.matrix-explore-main-screen .history-panel-order {
+  display: inline;
+  min-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #c6c0b8;
+  font-size: clamp(.5rem, 2.4vw, .625rem);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 32px;
+  margin: 0;
+  padding: 5px 6px;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem;
+  border-bottom: 1px solid rgba(195, 145, 54, .58);
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child,
+.matrix-explore-main-screen .history-panel-actions > button:last-child {
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: .125rem;
+  font-size: clamp(.5625rem, 2.6vw, .6875rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel .panel-heading > button:last-child svg,
+.matrix-explore-main-screen .history-panel-actions > button:last-child svg {
+  width: .625rem;
+  height: .625rem;
+  flex: 0 0 .625rem;
+}
+
+.matrix-explore-main-screen .history-panel-actions {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.matrix-explore-main-screen .history-panel-actions > .history-panel-collapse-button {
+  display: grid;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  place-items: center;
+}
+
+.matrix-explore-main-screen .history-table {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .history-row {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  grid-template-columns: minmax(0, .65fr) minmax(0, .85fr) minmax(0, 3.5fr);
+  align-items: center;
+  gap: 0;
+  border-top: 0;
+  border-bottom: 1px solid rgba(126, 91, 39, .82);
+}
+
+.matrix-explore-main-screen .history-row.history-head {
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  color: #d2a52a;
+  font-size: clamp(.625rem, 2.8vw, .75rem);
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="今彩539"], [data-lottery="天天樂"]) .history-row:not(.history-head) {
+  height: 32px;
+  min-height: 32px;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-row:not(.history-head) {
+  height: 40px;
+  min-height: 40px;
+}
+
+.matrix-explore-main-screen .history-row.history-head > span {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.matrix-explore-main-screen .history-row > :nth-child(1),
+.matrix-explore-main-screen .history-row > :nth-child(2),
+.matrix-explore-main-screen .history-row > :nth-child(3) {
+  grid-column: auto;
+  min-width: 0;
+}
+
+.matrix-explore-main-screen .history-row > span,
+.matrix-explore-main-screen .history-row > span + span,
+.matrix-explore-main-screen .history-row:not(.history-head) > span:first-child,
+.matrix-explore-main-screen .history-row:not(.history-head) > span:nth-child(2) {
+  min-width: 0;
+  padding: 0;
+  border-left: 0;
+}
+
+.matrix-explore-main-screen .history-row > :nth-child(1),
+.matrix-explore-main-screen .history-row > :nth-child(2) {
+  border-right: 1px solid rgba(126, 91, 39, .9);
+}
+
+.matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(1) {
+  color: #fff;
+  font-family: inherit;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-row:not(.history-head) > :nth-child(2) {
+  overflow: hidden;
+  font-size: clamp(.5625rem, 2.5vw, .6875rem);
+}
+
+.matrix-explore-main-screen .history-date-stack {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  row-gap: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-date-stack strong {
+  --history-year-font-size: clamp(8px, 2.6vw, 10px);
+  font-size: var(--history-year-font-size);
+  line-height: 1.05;
+}
+
+.matrix-explore-main-screen .history-date-stack small {
+  --history-date-font-size: clamp(7px, 2.1vw, 8px);
+  margin-top: 0;
+  font-size: var(--history-date-font-size);
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-numbers,
+.matrix-explore-main-screen .history-main-numbers,
+.matrix-explore-main-screen .history-special-number {
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.matrix-explore-main-screen .history-numbers {
+  width: 100%;
+  gap: .125rem;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.matrix-explore-main-screen .history-main-numbers {
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.8vw, 8px);
+}
+
+.matrix-explore-main-screen .history-special-number {
+  height: auto;
+  margin-left: .375rem;
+  flex: 0 0 auto;
+  gap: .25rem;
+  justify-content: center;
+  color: #d4a63b;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-special-number > span:first-child {
+  width: .5rem;
+  height: 22px;
+  flex: 0 0 .5rem;
+  font-size: .6875rem;
+}
+
+.matrix-explore-main-screen .history-special-ball {
+  display: flex;
+  height: auto;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.matrix-explore-main-screen .history-special-label {
+  --history-special-label-size: clamp(5px, 1.67vw, 6.5px);
+  display: none;
+  margin: 0;
+  font-size: var(--history-special-label-size);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .history-panel .history-numbers[data-has-special="true"] .history-main-numbers {
+  padding-top: 0;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] {
+  --matrix-history-ball-size: clamp(18px, 5.64vw, 22px);
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] {
+  --matrix-history-ball-size: clamp(20px, 6.15vw, 24px);
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"],
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-main-numbers {
+  gap: clamp(4px, 1.5vw, 7px);
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-numbers[data-has-special="true"] {
+  align-items: center;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number {
+  margin-left: 0;
+  align-items: center;
+  gap: clamp(4px, 1.5vw, 7px);
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-number > span:first-child {
+  display: grid;
+  height: var(--matrix-history-ball-size);
+  place-items: center;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-ball {
+  display: grid;
+  width: var(--matrix-history-ball-size);
+  flex: 0 0 var(--matrix-history-ball-size);
+  grid-template-rows: auto var(--matrix-history-ball-size);
+  align-items: center;
+  justify-items: center;
+  row-gap: 2px;
+}
+
+.matrix-explore-main-screen .history-panel:is([data-lottery="六合彩"], [data-lottery="大樂透"]) .history-special-label {
+  display: block;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-ball {
+  position: relative;
+  height: 40px;
+  grid-template-rows: 1fr;
+  row-gap: 0;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="六合彩"] .history-special-label {
+  position: absolute;
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-ball {
+  position: relative;
+  height: 36px;
+  grid-template-rows: 1fr;
+  row-gap: 0;
+}
+
+.matrix-explore-main-screen .history-panel[data-lottery="大樂透"] .history-special-label {
+  position: absolute;
+  bottom: calc(50% + var(--matrix-history-ball-size) / 2 - 1px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.matrix-explore-main-screen .repeat-stats-heading {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 1.75rem;
+  margin-bottom: 8px;
+  align-items: center;
+  gap: .375rem;
+}
+
+.matrix-explore-main-screen .repeat-stats-heading > span {
+  margin-left: auto;
+  padding-right: 8px;
+  color: #9e9a93;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.matrix-explore-main-screen .repeat-stats-panel,
+.matrix-explore-main-screen .result-panel {
+  box-shadow: none;
+}
+
+.matrix-explore-main-screen .repeat-stats-heading .section-title,
+.matrix-explore-main-screen .result-title .section-title,
+.matrix-explore-main-screen .road-results-head {
+  color: rgba(244, 206, 103, .84);
+}
+
+.matrix-explore-main-screen .road-results-head {
+  margin-bottom: 4px;
+}
+
+.matrix-explore-main-screen .repeat-stats-heading .section-title > span,
+.matrix-explore-main-screen .result-title .section-title > span {
+  background: rgba(244, 206, 103, .84);
+  box-shadow: 0 0 8px rgba(244, 206, 103, .24);
+}
+
+.matrix-explore-main-screen .result-summary {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  column-gap: clamp(.125rem, .8vw, .25rem);
+  row-gap: clamp(.25rem, 1.1vw, .375rem);
+}
+
+.matrix-explore-main-screen .result-summary > div,
+.matrix-explore-main-screen .result-summary > button {
+  display: flex;
+  min-width: 0;
+  min-height: clamp(36px, 10vw, 40px);
+  height: auto;
+  padding: .1875rem .0625rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(117, 83, 41, .62);
+  border-radius: .4375rem;
+  background: rgba(7, 16, 24, .72);
+  color: inherit;
+  font: inherit;
+}
+
+.matrix-explore-main-screen .result-summary > button[data-selected="true"] {
+  border-color: #f4ce67;
+  background: rgba(212, 165, 47, .12);
+  color: #f4ce67;
+  box-shadow: inset 0 0 10px rgba(212, 165, 47, .10);
+}
+
+.matrix-explore-main-screen .result-summary b {
+  color: #f2f5f8;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.matrix-explore-main-screen .result-summary small {
+  margin-top: 0;
+  font-size: clamp(.5rem, 2.2vw, .625rem);
+  opacity: .72;
+}
+
+.matrix-explore-main-screen .explore-result-disclaimer {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0 6px;
+  color: #aaa49a;
+  font-size: clamp(7px, 2vw, 8px);
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .result-title {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: .375rem;
+  flex-wrap: nowrap;
+}
+
+.matrix-explore-main-screen .result-title .section-title {
+  flex: 0 0 auto;
+}
+
+.matrix-explore-main-screen .result-title .result-count {
+  margin-left: auto;
+  padding-right: 8px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .result-title .result-count .numeric-text {
+  color: #a7d8ea;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.matrix-explore-main-screen .road-results {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.matrix-explore-main-screen .road-results-head,
+.matrix-explore-main-screen .road-result-row {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(0, 1.23fr) minmax(0, 1.6fr) minmax(0, 1.35fr) minmax(0, 1.6fr);
+  align-items: center;
+  gap: .125rem;
+  text-align: center;
+}
+
+.matrix-explore-main-screen .road-results-head {
+  min-height: 32px;
+  border-bottom: 1px solid rgba(117, 83, 41, .82);
+  font-size: clamp(10px, 2.8vw, 12px);
+}
+
+.matrix-explore-main-screen .road-results article + article {
+  border-top: 1px solid rgba(57, 55, 49, .58);
+}
+
+.matrix-explore-main-screen .road-result-row {
+  min-height: 0;
+  padding: 6px 0;
+  border-bottom: 0;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .6875rem;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row {
+  padding-right: var(--matrix-explore-result-panel-extra-width);
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head > :last-child,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-result-row > :last-child {
+  box-sizing: border-box;
+  width: calc(100% + var(--matrix-explore-result-panel-extra-width));
+  margin-right: calc(0px - var(--matrix-explore-result-panel-extra-width));
+}
+
+.matrix-explore-main-screen .road-result-row > span,
+.matrix-explore-main-screen .road-result-row > button {
+  font-size: .6875rem;
+}
+
+.matrix-explore-main-screen .road-result-row > strong {
+  color: #f4ce67;
+  font-size: .875rem;
+}
+
+.matrix-explore-main-screen .road-results .tag {
+  display: inline-flex;
+  min-width: 0;
+  padding: .125rem .25rem;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  border: 1px solid rgba(117, 83, 41, .62);
+  border-radius: .375rem;
+  font-size: .5625rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.matrix-explore-main-screen .road-results .result-number {
+  font-size: .8125rem;
+}
+
+.matrix-explore-main-screen .road-results .result-period {
+  font-size: .625rem;
+}
+
+.matrix-explore-main-screen .road-results .result-consecutive {
+  font-size: .625rem;
+}
+
+.matrix-explore-main-screen .road-type-toggle {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding-right: 3px;
+  justify-content: flex-end;
+  font-size: .625rem;
+}
+
+.matrix-explore-main-screen .road-type-toggle svg {
+  width: .5rem;
+  height: .5rem;
+  flex: 0 0 .5rem;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button,
+.matrix-explore-main-screen .repeat-stats-heading button {
+  position: relative;
+  min-height: 24px;
+  height: 24px;
+  padding: .125rem .5rem;
+  border: 1px solid rgba(117, 83, 41, .62);
+  border-radius: .5rem;
+  background: transparent;
+  color: #aaa7a2;
+  font-size: 11px;
+}
+
+.matrix-explore-main-screen .repeat-stats-heading button[data-selected="true"] {
+  border-color: #f4ce67;
+  color: #f4ce67;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button svg {
+  width: 8px;
+  height: 8px;
+  transition: transform .2s;
+}
+
+.matrix-explore-main-screen .consecutive-filter-button svg[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.matrix-explore-main-screen .matrix-explore-consecutive-filter-options {
+  margin: 0;
+  padding: 3px 0;
+  gap: 3px;
+  border-top: 1px solid rgba(117, 83, 41, .68);
+  border-bottom: 1px solid rgba(117, 83, 41, .68);
+}
+
+.matrix-explore-main-screen .explore-consecutive-filter-option {
+  border: 1px solid rgba(117, 83, 41, .62);
+}
+
+.matrix-explore-main-screen .explore-consecutive-filter-option[aria-pressed="true"] {
+  border-color: #f4ce67;
+  color: #f4ce67;
+}
+
+@media (max-width: 359.98px) {
+  .matrix-explore-main-screen .result-title {
+    gap: .25rem;
+  }
+
+  .matrix-explore-main-screen .result-title .result-count {
+    font-size: .6875rem;
+  }
+}
+
+@media (min-width: 40rem) {
+  .matrix-explore-main-screen .explore-settings .setting-grid label > span,
+  .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
+    min-width: 104.8px;
+  }
+
+  .matrix-explore-main-screen .history-numbers,
+  .matrix-explore-main-screen .history-main-numbers,
+  .matrix-explore-main-screen .history-special-number {
+    gap: .375rem;
+  }
+
+  .matrix-explore-main-screen .result-summary {
+    column-gap: .5rem;
+    row-gap: .625rem;
+  }
+}
+
+
+/* Matrix Tiangong compact responsive setting layout. */
+.matrix-tiangong-screen .tiangong-settings {
+  --tiangong-label-column: 88.8px;
+}
+
+.matrix-tiangong-screen .tiangong-settings .setting-grid > label > .segmented,
+.matrix-tiangong-screen .tiangong-settings .tiangong-setting-row > .segmented,
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel label > .segmented {
+  width: 100%;
+  min-width: 0;
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.two,
+.matrix-tiangong-screen .tiangong-settings .segmented.three {
+  display: grid;
+  gap: .375rem;
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.two button,
+.matrix-tiangong-screen .tiangong-settings .segmented.three button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.matrix-tiangong-screen .tiangong-settings .segmented.three button {
+  padding-inline: clamp(1px, .8vw, 4px);
+  overflow: hidden;
+  font-size: clamp(9px, 2.7vw, 11px);
+  white-space: nowrap;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid {
+  row-gap: 0;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid > * + * {
+  margin-top: 7px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .setting-grid > label:first-child + label {
+  margin-top: 10px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider {
+  box-sizing: border-box;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(212, 165, 47, .28);
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-divider + .tiangong-advanced-row {
+  margin-top: 4px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel {
+  width: 100%;
+  margin-top: 0;
+  padding-top: 0;
+  row-gap: 7px;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel label {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  grid-template-columns: var(--tiangong-label-column) minmax(0, 1fr);
+  align-items: center;
+  gap: .375rem;
+}
+
+.matrix-tiangong-screen .tiangong-general-settings .tiangong-advanced-panel .advanced-setting-title {
+  width: auto;
+  min-width: 0;
+}
+
+.matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block > .section-title {
+  min-height: 18px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block > .section-title > span {
+  block-size: 18px;
+}
+
+.matrix-tiangong-screen .tiangong-stage-settings .tiangong-stage-block + .tiangong-stage-block {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(212, 165, 47, .45);
+}
+
+
+@media (min-width: 40rem) {
+  .matrix-tiangong-screen .tiangong-settings {
+    --tiangong-label-column: 104.8px;
+  }
+}
+
+/* Matrix Explore result table alignment and same-code grouping. */
+.matrix-explore-main-screen .road-results-head {
+  align-items: end;
+  padding-bottom: 5px;
+}
+
+.matrix-explore-main-screen .road-results article[data-number-group-start="true"] {
+  border-top: 0.7px solid rgba(230, 183, 106, .72);
+}
+
+.matrix-explore-main-screen .road-results article:first-child {
+  border-top: 0;
+}
+
+
+/* Matrix 探索、天衍、天工：結果卡維持 13px，其餘內容維持 16px。 */
+.matrix-explore-screen .feature-body {
+  padding-inline: 13px;
+}
+
+.matrix-explore-screen .feature-body > :not(.result-panel),
+.matrix-explore-screen .feature-body > .matrix-explore-history-scope .history-panel {
+  width: auto;
+  margin-inline: 3px;
+}
+
+.matrix-explore-main-screen .feature-body > .result-panel {
+  --matrix-explore-result-panel-width: 100%;
+}
+
+/* Requested Explore and Tianyan result spacing and quieter selected filters. */
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-panel {
+  padding-top: 6px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .consecutive-filter-button,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-heading button {
+  min-height: 22px;
+  height: 22px;
+  padding-block: 1px;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .road-results-head + article {
+  border-top: 0;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-heading button[data-selected="true"],
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"],
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .explore-consecutive-filter-option[aria-pressed="true"] {
+  border-color: var(--lottery-gold-500, #c49145);
+  color: var(--lottery-gold-500, #c49145);
+  background: rgba(196, 145, 69, .06);
+  box-shadow: none;
+}
+
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-summary > button[data-selected="true"] b {
+  color: inherit;
+}
+
+
+/* Equal heading rows keep the same visual top inset in both result cards. */
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .repeat-stats-heading,
+.matrix-explore-main-screen:not(.matrix-tiangong-screen) .result-title {
+  min-height: 22px;
+}
+
+/* Tianyan and Tian Gong use the Explore same-code button dimensions. */
+.matrix-explore-main-screen:is(.matrix-tianyan-screen, .matrix-tiangong-screen) .repeat-stats-heading button {
+  box-sizing: border-box;
+  min-height: 22px;
+  height: 22px;
+  padding: 1px .5rem;
+  font-size: 11px;
+  width: auto;
+}
