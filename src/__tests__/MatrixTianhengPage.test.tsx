@@ -145,21 +145,23 @@ it('routes Tianheng into the canonical Explore layout with its exact artwork and
 });
 
 it.each([
-  ['explore', ['Matrix 天衡', 'Matrix 天衍', 'Matrix 天工']],
-  ['tianheng', ['Matrix 探索', 'Matrix 天衍', 'Matrix 天工']],
-  ['tianyan', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天工']],
-  ['tiangong', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍']],
-] as const)('switcher %s shows only the other three pages in established order', (current, labels) => {
+  ['explore'],
+  ['tianheng'],
+  ['tianyan'],
+  ['tiangong'],
+] as const)('switcher %s always shows all four pages in established order', (current) => {
   const onNavigate = vi.fn();
   render(<MatrixPageSwitcher current={current} onNavigate={onNavigate} />);
   const buttons = screen.getAllByRole('button');
-  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual(labels);
-  if (current !== 'tianheng') {
-    const button = screen.getByRole('button', { name: 'Matrix 天衡' });
-    expect(button.querySelector('img')).toHaveAttribute('src', '/assets/lottery/functions/天衡.png');
+  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+    'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
+  ]);
+  const tianhengButton = screen.getByRole('button', { name: 'Matrix 天衡' });
+  expect(tianhengButton.querySelector('img')).toHaveAttribute('src', '/assets/lottery/functions/天衡.png');
+  buttons.forEach((button, index) => {
     fireEvent.click(button);
-    expect(onNavigate).toHaveBeenCalledWith('tianheng');
-  }
+    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
+  });
 });
 
 it.each([
@@ -336,10 +338,15 @@ it('orders the drag summary in exactly two rows', async () => {
     predictionDistance: 5, algorithmType: '拖牌',
   });
   fireEvent.click(resultButton);
+  const summary = await screen.findByLabelText('版路摘要');
   const rows = await screen.findAllByTestId('tianheng-summary-row');
   expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('開 05 第 1 顆｜同期｜第 1 顆');
-  expect(rows[1]).toHaveTextContent('開 18 第 4 顆｜+14.24｜下 5 期開');
+  expect(within(summary).getAllByText('開')).toHaveLength(1);
+  expect(within(summary).getByText('開')).toHaveClass('tianheng-summary-open-label');
+  expect(rows[0].firstElementChild).toHaveTextContent('05');
+  expect(rows[1].firstElementChild).toHaveTextContent('18');
+  expect(rows[0]).toHaveTextContent('05 第 1 顆｜同期｜第 1 顆');
+  expect(rows[1]).toHaveTextContent('18 第 4 顆｜+14.24｜下 5 期開');
 });
 
 it('highlights both locked numbers in every source group', async () => {

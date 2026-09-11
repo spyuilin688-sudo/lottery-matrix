@@ -8,6 +8,7 @@ const resultCss = readFileSync('src/explore-result-preview.css', 'utf8');
 const tiangongCss = readFileSync('src/matrix-tiangong-results.css', 'utf8');
 
 test('Tianheng summary streak tag matches the Tianyan top-right inset', () => {
+  assert.match(tianhengCss, /\.matrix-tianheng-screen \.explore-validation-summary-card\s*\{[^}]*position:\s*relative;/s);
   assert.match(tianhengCss, /\.matrix-tianheng-screen \.explore-validation-summary-card > \.explore-validation-consecutive-tag\s*\{[^}]*position:\s*absolute;[^}]*top:\s*2px;[^}]*right:\s*2px;[^}]*margin:\s*0;/s);
 });
 
@@ -15,6 +16,13 @@ test('Tianheng cards keep the shared Explore horizontal spacing owner', () => {
   assert.doesNotMatch(
     tianhengCss,
     /\.(?:explore-settings|hit-advanced-panel|repeat-stats-panel|result-panel)\s*\{[^}]*(?:margin-inline|padding-inline|width)\s*:/s,
+  );
+});
+
+test('Tianheng position labels use a 1.5px vertical gap', () => {
+  assert.match(
+    tianhengCss,
+    /\.matrix-tianheng-screen \.tianheng-lock-positions\s*\{[^}]*row-gap:\s*1\.5px;/s,
   );
 });
 
