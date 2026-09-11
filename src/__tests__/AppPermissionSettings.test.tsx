@@ -7,7 +7,13 @@ vi.mock('../lib/supabase', () => ({ getSupabaseClient: () => ({ rpc }) }));
 vi.mock('../auth/MemberSessionBridge', () => ({ MemberSessionBridge: () => null }));
 vi.mock('../mobile/Device', () => ({ MobileDeviceProvider: ({ children }: { children: ReactNode }) => children }));
 vi.mock('../mobile/Keyboard', () => ({ KeyboardProvider: ({ children }: { children: ReactNode }) => children }));
-vi.mock('../dialog/AppDialog', () => ({ AppDialogProvider: ({ children }: { children: ReactNode }) => children }));
+vi.mock('../dialog/AppDialog', () => ({
+  AppDialogProvider: ({ children }: { children: ReactNode }) => children,
+  useAppDialog: () => ({
+    alert: vi.fn().mockResolvedValue(undefined),
+    confirm: vi.fn().mockResolvedValue(false),
+  }),
+}));
 vi.mock('../pwa-lifecycle', () => ({ PwaLifecycleProvider: ({ children }: { children: ReactNode }) => children }));
 vi.mock('../ExploreResultPreviewPage', () => ({ ExploreResultPreviewPage: () => null }));
 vi.mock('../Prototype', () => ({ default: function PurchaseEntry() {

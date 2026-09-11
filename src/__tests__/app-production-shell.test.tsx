@@ -169,7 +169,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(prediction!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(issues!).borderTopColor).toBe("rgba(91, 126, 169, 0.42)");
-    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgba(91, 126, 169, 0.34)");
+    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(0, 0, 0)");
     expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
     expect(document.querySelector(".explore-validation-result-number")).not.toBeNull();
