@@ -32,8 +32,6 @@
 .matrix-tiangong-screen .tiangong-validation-process { overflow-x: auto; }
 .matrix-tiangong-screen .explore-validation-group:nth-child(odd) { --explore-validation-group-background: #152A42; }
 .matrix-tiangong-screen .explore-validation-group:nth-child(even) { --explore-validation-group-background: #0E1D30; }
-.matrix-tiangong-screen .explore-validation-groups,
-.matrix-tiangong-screen .explore-validation-group { background: #02070C; }
 .matrix-tiangong-screen .explore-validation-group > :is(.explore-validation-issues, .explore-validation-numbers-card, .explore-validation-formulas) {
   background: var(--explore-validation-group-background);
 }
