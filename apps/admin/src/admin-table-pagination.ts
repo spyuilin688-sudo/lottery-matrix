@@ -1,7 +1,7 @@
 type Row = Record<string, unknown> & { id: string };
 
 const pageSizes: Record<string, number> = {
-  啟動碼管理: 15,
+  啟動碼管理: 10,
 };
 
 export function paginateAdminRows(active: string, rows: Row[], requestedPage: number) {
