@@ -10,6 +10,10 @@
   width: max-content;
 }
 
+.matrix-tianheng-screen .explore-validation-summary-card {
+  position: relative;
+}
+
 .matrix-tianheng-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
   position: absolute;
   top: 2px;
