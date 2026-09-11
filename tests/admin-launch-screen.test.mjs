@@ -25,21 +25,21 @@ test('admin keeps its PWA identity without a second in-page launch screen', () =
   );
 });
 
-test('admin native PWA launch screen uses the warm black-gold background', () => {
-  assert.equal(adminManifest.background_color, '#1A0F00');
-  assert.equal(adminManifest.theme_color, '#1A0F00');
+test('admin native PWA launch screen uses a pure black background', () => {
+  assert.equal(adminManifest.background_color, '#000000');
+  assert.equal(adminManifest.theme_color, '#000000');
 });
 
 test('admin installation bypasses stale native splash metadata', () => {
   assert.match(
     adminIndex,
-    /<meta name="theme-color" content="#1A0F00">/,
+    /<meta name="theme-color" content="#000000">/,
   );
   assert.match(
     adminIndex,
-    /<link rel="manifest" href="\.\/manifest\.webmanifest\?v=20260911-2">/,
+    /<link rel="manifest" href="\.\/manifest\.webmanifest\?v=20260911-3">/,
   );
   for (const icon of adminManifest.icons) {
-    assert.match(icon.src, /\?v=20260911-2$/);
+    assert.match(icon.src, /\?v=20260911-3$/);
   }
 });
