@@ -145,21 +145,23 @@ it('routes Tianheng into the canonical Explore layout with its exact artwork and
 });
 
 it.each([
-  ['explore', ['Matrix 天衡', 'Matrix 天衍', 'Matrix 天工']],
-  ['tianheng', ['Matrix 探索', 'Matrix 天衍', 'Matrix 天工']],
-  ['tianyan', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天工']],
-  ['tiangong', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍']],
-] as const)('switcher %s shows only the other three pages in established order', (current, labels) => {
+  ['explore'],
+  ['tianheng'],
+  ['tianyan'],
+  ['tiangong'],
+] as const)('switcher %s always shows all four pages in established order', (current) => {
   const onNavigate = vi.fn();
   render(<MatrixPageSwitcher current={current} onNavigate={onNavigate} />);
   const buttons = screen.getAllByRole('button');
-  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual(labels);
-  if (current !== 'tianheng') {
-    const button = screen.getByRole('button', { name: 'Matrix 天衡' });
-    expect(button.querySelector('img')).toHaveAttribute('src', '/assets/lottery/functions/天衡.png');
+  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+    'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
+  ]);
+  const tianhengButton = screen.getByRole('button', { name: 'Matrix 天衡' });
+  expect(tianhengButton.querySelector('img')).toHaveAttribute('src', '/assets/lottery/functions/天衡.png');
+  buttons.forEach((button, index) => {
     fireEvent.click(button);
-    expect(onNavigate).toHaveBeenCalledWith('tianheng');
-  }
+    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
+  });
 });
 
 it.each([

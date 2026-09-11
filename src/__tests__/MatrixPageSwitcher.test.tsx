@@ -10,10 +10,10 @@ beforeEach(() => {
 });
 
 test.each([
-  ['explore', ['Matrix 天衡', 'Matrix 天衍', 'Matrix 天工'], ['tianheng', 'tianyan', 'tiangong']],
-  ['tianyan', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天工'], ['explore', 'tianheng', 'tiangong']],
-  ['tiangong', ['Matrix 探索', 'Matrix 天衡', 'Matrix 天衍'], ['explore', 'tianheng', 'tianyan']],
-] as const)('%s 在第一張探索設定標題同列顯示另外三頁，僅點擊切換', (current, labels, destinations) => {
+  ['explore'],
+  ['tianyan'],
+  ['tiangong'],
+] as const)('%s 在第一張探索設定標題同列固定顯示四頁，僅點擊切換', (current) => {
   const onNavigate = vi.fn();
   if (current === 'tiangong') render(<MatrixTiangongPage onNavigate={onNavigate} />);
   else render(<MatrixExplorePage onNavigate={onNavigate} title={current === 'tianyan' ? 'Matrix 天衍' : 'Matrix 探索'} />);
@@ -24,12 +24,14 @@ test.each([
   expect(heading.closest('section')).toBe(document.querySelector('.feature-body > section'));
   expect(document.querySelector('.feature-brand-header .matrix-page-switcher')).toBeNull();
   const buttons = within(nav).getAllByRole('button');
-  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual(labels);
-  expect(nav.querySelectorAll('button')).toHaveLength(3);
+  expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+    'Matrix 探索', 'Matrix 天衡', 'Matrix 天衍', 'Matrix 天工',
+  ]);
+  expect(nav.querySelectorAll('button')).toHaveLength(4);
   fireEvent.scroll(nav, { target: { scrollTop: 100 } });
   expect(onNavigate).not.toHaveBeenCalled();
   buttons.forEach((button, index) => {
     fireEvent.click(button);
-    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, destinations[index]);
+    expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
   });
 });

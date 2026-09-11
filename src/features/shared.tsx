@@ -60,8 +60,8 @@ export function MatrixPageSwitcher({ current, onNavigate }: {
 }) {
   return (
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
-      {MATRIX_PAGE_ITEMS.filter((item) => item.screen !== current).map((item) => (
-        <button type="button" aria-label={item.label} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
+      {MATRIX_PAGE_ITEMS.map((item) => (
+        <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
           <img src={item.image} alt="" draggable={false} />
         </button>
       ))}
