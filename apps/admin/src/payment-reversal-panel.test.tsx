@@ -11,6 +11,9 @@ const adminOperationsCss = readFileSync(new NodeURL('./admin-operations.css', im
 const paymentReversalTextareaCss = [...adminOperationsCss.matchAll(/\.paymentReversalForm textarea\s*\{[^}]+\}/g)]
   .map(([rule]) => rule)
   .join('\n');
+const paymentReversalLayoutCss = [...adminOperationsCss.matchAll(/\.(?:paymentReversalRow|paymentReversalActions|paymentReversalState|paymentReversalOpen)[^{]*\{[^}]+\}/g)]
+  .map(([rule]) => rule)
+  .join('\n');
 
 const payment = {
   id: 'payment-1', memberId: 'member-1', lineDisplayName: '王小明', planName: '月費方案',
@@ -119,6 +122,13 @@ describe('PaymentReversalPanel', () => {
     await renderPanel({ payments: [payment, { ...payment, id: 'payment-2', status: 'refunded' }] });
     expect(button('記錄沖銷 payment-1')).toBeTruthy();
     expect(button('記錄沖銷 payment-2')).toBeFalsy();
+    const actions = button('記錄沖銷 payment-1').closest('.paymentReversalActions');
+    expect(actions?.querySelector('[data-status="confirmed"]')?.textContent).toBe('已確認');
+    expect(paymentReversalLayoutCss).toMatch(/\.paymentReversalRow\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/);
+    expect(paymentReversalLayoutCss).toMatch(/\.paymentReversalActions\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*row;/);
+    expect(paymentReversalLayoutCss).toMatch(/\.paymentReversalState\[data-status="confirmed"\]\s*\{[^}]*color:\s*#e1c170;/);
+    expect(paymentReversalLayoutCss).toMatch(/\.paymentReversalOpen\s*\{[^}]*height:\s*24px;[^}]*font-size:\s*10px;/);
+    expect(paymentReversalLayoutCss).toMatch(/\.paymentReversalRow\s*\{[^}]*border-top:\s*1px solid #3a3f48;/);
     openForm();
     act(() => button('記錄已完成沖銷').click());
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('請填寫已完成沖銷的原因');
