@@ -14,68 +14,10 @@
             background: #000;
         }
 
-        #admin-launch-screen {
-            position: fixed;
-            inset: 0;
-            z-index: 2147483647;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: #000;
-        }
-
-        #admin-launch-screen img {
-            display: block;
-            width: 100%;
-            max-width: 540px;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-        }
     </style>
 </head>
 <body>
-    <div id="admin-launch-screen" aria-hidden="true">
-        <img src="/admin/admin-splash.jpg" alt="" fetchpriority="high">
-    </div>
     <div id="root"></div>
-    <script>
-        (() => {
-            const splash = document.getElementById('admin-launch-screen');
-            const root = document.getElementById('root');
-            if (!splash || !root) return;
-
-            const MIN_SPLASH_MS = 2500;
-            const MAX_SPLASH_MS = 5000;
-            let appReady = root.childElementCount > 0;
-            let minimumElapsed = false;
-            let removed = false;
-
-            const removeSplash = () => {
-                if (removed) return;
-                removed = true;
-                observer.disconnect();
-                splash.remove();
-            };
-            const maybeRemoveSplash = () => {
-                if (appReady && minimumElapsed) {
-                    requestAnimationFrame(removeSplash);
-                }
-            };
-            const observer = new MutationObserver(() => {
-                appReady = root.childElementCount > 0;
-                maybeRemoveSplash();
-            });
-
-            observer.observe(root, { childList: true });
-            window.setTimeout(() => {
-                minimumElapsed = true;
-                maybeRemoveSplash();
-            }, MIN_SPLASH_MS);
-            window.setTimeout(removeSplash, MAX_SPLASH_MS);
-        })();
-    </script>
     <script type="module" src="./src/main.tsx"></script>
 </body>
 </html>
