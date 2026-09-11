@@ -609,7 +609,7 @@ export function TianhengValidationProcess({
   );
   const divider = <i className="validation-summary-divider" aria-hidden="true">｜</i>;
   const summaryLocked = (number: string, position: number) => (
-    <span>開 <i className="validation-summary-primary">{number}</i> 第 <i className="validation-summary-position">{position}</i> 顆</span>
+    <span><i className="validation-summary-primary">{number}</i> 第 <i className="validation-summary-position">{position}</i> 顆</span>
   );
   const summaryDirection = () => {
     const offset = item.algorithmType === "拖牌" ? 0 : item.referenceOffset ?? 0;
@@ -713,14 +713,15 @@ export function TianhengValidationProcess({
             <header className="explore-validation-summary-card">
               <ExploreValidationSummary layout="tianyan">
                 <span className="tianyan-validation-summary-lines tianheng-summary-lines" aria-label="版路摘要">
-                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
+                  <span className="tianheng-summary-open-label">開</span>
+                  <span className="tianyan-validation-summary-row tianheng-summary-row--first" data-testid="tianheng-summary-row">
                     {summaryLocked(item.firstNumber, item.firstLockedPosition)}
                     {divider}
                     {summaryDirection()}
                     {divider}
                     <span>第 <i className="validation-summary-position">{summaryPosition}</i> 顆</span>
                   </span>
-                  <span className="tianyan-validation-summary-row" data-testid="tianheng-summary-row">
+                  <span className="tianyan-validation-summary-row tianheng-summary-row--second" data-testid="tianheng-summary-row">
                     {summaryLocked(item.secondNumber, item.secondLockedPosition)}
                     {divider}
                     {item.algorithmType === "合值" ? (

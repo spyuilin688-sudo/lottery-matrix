@@ -338,10 +338,15 @@ it('orders the drag summary in exactly two rows', async () => {
     predictionDistance: 5, algorithmType: '拖牌',
   });
   fireEvent.click(resultButton);
+  const summary = await screen.findByLabelText('版路摘要');
   const rows = await screen.findAllByTestId('tianheng-summary-row');
   expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('開 05 第 1 顆｜同期｜第 1 顆');
-  expect(rows[1]).toHaveTextContent('開 18 第 4 顆｜+14.24｜下 5 期開');
+  expect(within(summary).getAllByText('開')).toHaveLength(1);
+  expect(within(summary).getByText('開')).toHaveClass('tianheng-summary-open-label');
+  expect(rows[0].firstElementChild).toHaveTextContent('05');
+  expect(rows[1].firstElementChild).toHaveTextContent('18');
+  expect(rows[0]).toHaveTextContent('05 第 1 顆｜同期｜第 1 顆');
+  expect(rows[1]).toHaveTextContent('18 第 4 顆｜+14.24｜下 5 期開');
 });
 
 it('highlights both locked numbers in every source group', async () => {
