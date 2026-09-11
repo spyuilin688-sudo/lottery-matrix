@@ -95,6 +95,10 @@
   object-position: center;
 }
 
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher .matrix-page-switcher-image--tianheng {
+  transform: scale(1.14);
+}
+
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .history-panel,
