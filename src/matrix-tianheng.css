@@ -11,7 +11,7 @@
 
 .matrix-tianheng-screen .tianheng-summary-lines {
   grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 3px;
+  column-gap: 4.5px;
   align-items: center;
 }
 
