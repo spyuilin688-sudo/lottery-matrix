@@ -1200,8 +1200,8 @@ function SubscriptionManager({
           <tbody>{paged.items.length === 0 ? <tr><td colSpan={7} className="empty">{loading ? "資料讀取中" : error ? "資料載入失敗" : "目前沒有資料"}</td></tr> : paged.items.map((row) => (
             <tr key={row.id}>
               <td>{text(row.lineDisplayName)}</td><td>{text(row.planName)}</td><td>{formatAdminDateTime(row.planStartedAt)}</td><td>{row.isLifetime ? "終生" : formatAdminDateTime(row.planExpiresAt)}</td><td>{row.autoRenew ? "是" : "否"}</td>
-              <td>{canEdit && <button className="compactButton" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
-              <td><button className="compactButton" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
+              <td>{canEdit && <button className="compactButton subscriptionTableAction" onClick={() => open(row, "adjustExpiry")}>調整到期日</button>}</td>
+              <td><button className="compactButton subscriptionTableAction" onClick={() => setUserInfo(row)}>用戶資訊</button></td>
             </tr>
           ))}</tbody>
         </table>
