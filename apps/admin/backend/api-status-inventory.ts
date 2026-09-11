@@ -1,4 +1,4 @@
-export type ApiLocation = 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
+export type ApiLocation = 'Supabase' | 'GitHub' | 'Railway';
 export type ApiCheckEvidence = 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
 export type ApiCheckMode = 'live' | 'registry' | 'service';
 
