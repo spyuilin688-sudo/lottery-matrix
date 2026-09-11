@@ -20,6 +20,26 @@ afterEach(() => {
 });
 
 describe('useAdminMemberPage subscription filters', () => {
+  it('does not expose members without a subscription plan', async () => {
+    const get = vi.fn(async () => ({ data: {
+      items: [
+        { id: 'paid', currentPlanId: 'yearly', planName: '年費方案' },
+        { id: 'none', currentPlanId: null, planName: null },
+      ],
+      total: 2,
+      currentPage: 1,
+      totalPages: 1,
+    } }));
+
+    function Harness() {
+      const page = useAdminMemberPage('subscriptions', 0, { get });
+      return <div>{page.paged.items.map(item => item.id).join(',')}|{page.total}</div>;
+    }
+
+    await act(async () => { root.render(<Harness />); });
+    await vi.waitFor(() => expect(container.textContent).toBe('paid|1'));
+  });
+
   it('sends the compact plan filter and returns to page one when it changes', async () => {
     const get = vi.fn(async () => ({ data: { items: [], total: 0, currentPage: 1, totalPages: 1 } }));
 
