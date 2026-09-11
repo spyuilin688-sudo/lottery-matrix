@@ -1,9 +1,28 @@
 // @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
 import { render } from '../../test/render-with-dialog';
 import { fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, expect, test, vi } from 'vitest';
+// @ts-expect-error Vitest runs on Node; this project intentionally omits global Node types from app compilation.
+import { readFileSync } from 'node:fs';
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
 import { MatrixTiangongPage } from '../features/MatrixTiangongPage';
+
+declare const process: { cwd(): string };
+
+const style = document.createElement('style');
+
+beforeAll(() => {
+  style.textContent = [
+    'src/feature-pages.css',
+    'src/matrix-explore-spacing.css',
+  ].map((path) => readFileSync(`${process.cwd()}/${path}`, 'utf8').replace(/^@import[^;]+;\s*/, '')).join('\n');
+  document.head.append(style);
+});
+
+afterAll(() => {
+  style.remove();
+});
 
 beforeEach(() => {
   globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ records: [] }) }) as typeof fetch;
@@ -33,5 +52,22 @@ test.each([
   buttons.forEach((button, index) => {
     fireEvent.click(button);
     expect(onNavigate).toHaveBeenNthCalledWith(index + 1, ['explore', 'tianheng', 'tianyan', 'tiangong'][index]);
+  });
+});
+
+test('四個 Matrix 切換圖示均完整顯示相同外框', () => {
+  render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 探索" />);
+
+  const nav = screen.getByRole('navigation', { name: 'Matrix Core 功能切換' });
+  const buttons = within(nav).getAllByRole('button');
+
+  expect(buttons).toHaveLength(4);
+  buttons.forEach((button) => {
+    const styles = getComputedStyle(button);
+    expect(styles.borderTopWidth).toBe('1px');
+    expect(styles.borderRightWidth).toBe('1px');
+    expect(styles.borderBottomWidth).toBe('1px');
+    expect(styles.borderLeftWidth).toBe('1px');
+    expect(styles.borderTopColor).toBe('rgb(117, 83, 41)');
   });
 });
