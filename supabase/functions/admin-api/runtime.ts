@@ -13,6 +13,7 @@ type SecretReader = { listSecretNames(): Promise<string[]>; readSecret(name: str
 type EdgeGlobals = { Deno: { env: { toObject(): Record<string, string> }; serve(handler: (request: Request) => Promise<Response>): unknown } };
 const edge = () => (globalThis as unknown as EdgeGlobals).Deno;
 export const ADMIN_ORIGIN = 'https://matrixlottery.idv.tw';
+const ADMIN_ORIGINS = new Set([ADMIN_ORIGIN, 'https://admin.matrixlottery.idv.tw']);
 const MAX_BODY_BYTES = 65536;
 const WATCHDOG_TABLE = 'matrix-watchdog-status';
 
@@ -101,7 +102,7 @@ export function router(routes: Record<string, unknown>): (request: Request) => P
     try {
       const path = apiPath(request);
       if (!path) return responseOf(error('NOT_FOUND', 404));
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && request.headers.get('origin') !== ADMIN_ORIGIN) {
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !ADMIN_ORIGINS.has(request.headers.get('origin') ?? '')) {
         return responseOf(error('ORIGIN_NOT_ALLOWED', 403));
       }
       let segments: string[];
