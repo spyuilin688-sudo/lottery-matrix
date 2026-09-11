@@ -9,3 +9,10 @@
   justify-content: flex-start;
   width: max-content;
 }
+
+.matrix-tianheng-screen .explore-validation-summary-card > .explore-validation-consecutive-tag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  margin: 0;
+}

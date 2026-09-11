@@ -28,12 +28,18 @@ export function MatrixExplorePage({
   const isExplore = title === "Matrix 探索";
   const isTianyan = title === "Matrix 天衍";
   const isTianheng = title === "Matrix 天衡";
-  const periodOptions = isTianheng
-    ? (["三期", "十三期"] as const)
-    : (["二期", "七期", "十三期"] as const);
+  const periodOptions = isTianyan
+    ? (["十三期"] as const)
+    : isTianheng
+      ? (["三期", "十三期"] as const)
+      : (["二期", "七期", "十三期"] as const);
+  const rangeOptions = isTianyan
+    ? (["完整範圍"] as const)
+    : (["標準範圍", "完整範圍"] as const);
   const permissionSettings = usePermissionSettings();
   const [exploreAccess, setExploreAccess] = useState<MemberProfileResponse['exploreEntitlements']>();
-  const initializedTitle = useRef<string | null>(null);
+  const initializedDefaultsKey = useRef<string | null>(null);
+  const defaultsContextKey = `${title}:${permissionSettings?.revision ?? "unknown"}`;
   type ConsecutiveOption =
     | "準4進5"
     | "準5進6"
@@ -65,14 +71,18 @@ export function MatrixExplorePage({
 
   const filterOptions: Record<string, ConsecutiveOption[]> = {
     "準5+（鎖定1碼）": ["準5進6", "準6進7", "準7進8", "準9進10"],
-    "準7+（鎖定2碼）": ["準6進7", "準7進8", "準9進10", "準11進12"],
+    "準6+（鎖定2碼）": ["準6進7", "準7進8", "準9進10", "準11進12"],
     "準4+（鎖定1碼）": ["準4進5", "準5進6", "準6進7", "準7進8"],
     "準5+（鎖定2碼）": title === "Matrix 天衍"
       ? ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"]
       : ["準5進6", "準6進7", "準7進8", "準9進10", "準11進12"],
   };
   const defaultFiltersFor = (hitValue: string, roadValue: string): ConsecutiveOption[] => {
-    if (isTianheng) return filterOptions[hitValue];
+    if (isTianheng) {
+      return hitValue.includes("鎖定2碼")
+        ? ["準9進10", "準11進12"]
+        : filterOptions[hitValue];
+    }
     if (title === "Matrix 天衍") {
       return ["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"];
     }
@@ -96,6 +106,7 @@ export function MatrixExplorePage({
     () => title === "Matrix 探索"
       ? getExploreEntryDefaults(null)
       : isTianheng ? { period: "三期", range: "標準範圍" } as const
+      : isTianyan ? { period: "十三期", range: "完整範圍" } as const
       : { period: "二期", range: "標準範圍" } as const,
     [title],
   );
@@ -173,23 +184,25 @@ export function MatrixExplorePage({
       .then((profile) => {
         if (!active) return;
         setExploreAccess(profile.exploreEntitlements);
-        if (!isTianheng && initializedTitle.current !== title) {
+        if (initializedDefaultsKey.current !== defaultsContextKey) {
           const defaults = getExploreEntryDefaults(profile);
-          setPeriod(defaults.period);
-          setExploreRange(defaults.range);
-          initializedTitle.current = title;
+          setPeriod(isTianyan ? "十三期" : isTianheng ? (defaults.period === "十三期" ? "十三期" : "三期") : defaults.period);
+          setExploreRange(isTianyan ? "完整範圍" : defaults.range);
+          initializedDefaultsKey.current = defaultsContextKey;
         }
       })
       .catch(() => {
         if (!active) return;
         setExploreAccess(undefined);
-        if (isTianheng) return;
-        const defaults = getExploreEntryDefaults(null);
-        setPeriod(defaults.period);
-        setExploreRange(defaults.range);
+        if (initializedDefaultsKey.current !== defaultsContextKey) {
+          const defaults = getExploreEntryDefaults(null);
+          setPeriod(isTianyan ? "十三期" : isTianheng ? "三期" : defaults.period);
+          setExploreRange(isTianyan ? "完整範圍" : defaults.range);
+          initializedDefaultsKey.current = defaultsContextKey;
+        }
       });
     return () => { active = false; };
-  }, [title, permissionSettings?.revision]);
+  }, [defaultsContextKey, isExplore, isTianheng, isTianyan]);
 
   const visibleResults = useMemo(() => {
     if (isTianheng) {
@@ -498,7 +511,7 @@ export function MatrixExplorePage({
             </div>
           </label>
           <label><span><SettingLabelIcon type="period" />探索期數</span>
-            <div className={`segmented ${isTianheng ? "two" : "three"}`}>
+            <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
               {periodOptions.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
                   {v}
@@ -523,7 +536,7 @@ export function MatrixExplorePage({
       <section className="panel hit-advanced-panel">
         <SectionTitle>命中條件</SectionTitle>
         <div className="segmented two hit-options">
-          {(isTianheng ? ["準5+（鎖定1碼）", "準7+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
+          {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
             <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
           ))}
         </div>
@@ -572,8 +585,8 @@ export function MatrixExplorePage({
               <span className="advanced-setting-title">
                 <SettingLabelIcon type="range" />探索範圍
               </span>
-              <div className="segmented two">
-                {(["標準範圍", "完整範圍"] as const).map((value) => (
+              <div className={`segmented ${isTianyan ? "one" : "two"}`}>
+                {rangeOptions.map((value) => (
                   <button
                     type="button"
                     key={value}
@@ -592,10 +605,10 @@ export function MatrixExplorePage({
       </section>
 
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
-        <MagnifyingGlassIcon /><span>{title === "Matrix 天衍" ? "開始天衍" : "開始探索"}</span>
+        <MagnifyingGlassIcon /><span>{isTianyan ? "開始天衍" : isTianheng ? "開始天衡" : "開始探索"}</span>
       </button>
 
-      {isExplore || isTianheng ? (
+      {isExplore ? (
         <HistoryList
           lottery={lottery}
           numberOrder={numberOrder}

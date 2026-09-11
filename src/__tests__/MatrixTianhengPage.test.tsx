@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { render } from '../../test/render-with-dialog';
 import { MatrixExplorePage } from '../features/MatrixExplorePage';
@@ -101,7 +101,7 @@ async function renderTianhengResult(overrides = {}, validation = tianhengValidat
     itemId: 'th-1', validation,
   });
   render(<MatrixExplorePage onNavigate={vi.fn()} title="Matrix 天衡" />);
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   return screen.findByRole('button', { name: /展開版路 th-1/ });
 }
 
@@ -127,7 +127,7 @@ async function openPage() {
 }
 
 async function search() {
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   return screen.findByRole('button', { name: '展開版路 th-1' });
 }
 
@@ -141,7 +141,7 @@ it('routes Tianheng into the canonical Explore layout with its exact artwork and
   expect(screen.queryByRole('button', { name: '七期' })).not.toBeInTheDocument();
   expect(document.querySelector('.matrix-tianheng-screen')).toHaveClass('matrix-explore-layout', 'matrix-explore-main-screen');
   expect(screen.getByRole('button', { name: '拖牌版路' })).toHaveTextContent('推薦');
-  expect(screen.getByRole('button', { name: '開始探索' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '開始天衡' })).toBeVisible();
 });
 
 it.each([
@@ -162,19 +162,62 @@ it.each([
   }
 });
 
-it.each([true, false])('always defaults to free three periods with server thirteen entitlement %s', async canUseThirteen => {
+it.each([
+  [false, false, '三期', '標準範圍', 3],
+  [false, true, '三期', '完整範圍', 3],
+  [true, true, '十三期', '完整範圍', 13],
+] as const)('defaults to the highest currently available settings', async (
+  canUseThirteen, canUseFullRange, expectedPeriod, expectedRange, explorePeriods,
+) => {
   uiState.fetchMemberProfile.mockResolvedValue({
-    exploreEntitlements: { canUseSeven: true, canUseThirteen, canUseFullRange: true },
+    exploreEntitlements: { canUseSeven: true, canUseThirteen, canUseFullRange },
   });
   await openPage();
-  expect(screen.getByRole('button', { name: '三期' })).toHaveAttribute('data-selected', 'true');
+  expect(screen.getByRole('button', { name: expectedPeriod })).toHaveAttribute('data-selected', 'true');
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  expect(screen.getByRole('button', { name: expectedRange })).toHaveAttribute('data-selected', 'true');
   await search();
   expect(matrixApi.fetchTianhengList).toHaveBeenCalledWith({
-    lottery: '今彩539', explorePeriods: 3, exploreRange: '標準範圍',
+    lottery: '今彩539', explorePeriods, exploreRange: expectedRange,
     numberOrder: '依號碼由小到大排序', exploreDateOffset: 0, ruleCount: 1,
     roadTypes: ['加減'], selectedStreaks: ['準5進6', '準6進7', '準7進8', '準9進10'], sameCode: false,
   });
   expect(matrixApi.fetchExploreList).not.toHaveBeenCalled();
+});
+
+it('uses thirteen periods and full range while registered-member free access is enabled', async () => {
+  uiState.permissionSettings.registeredMemberFreeAccess = true;
+  uiState.fetchMemberProfile.mockResolvedValue({
+    exploreEntitlements: { canUseSeven: true, canUseThirteen: true, canUseFullRange: true },
+  });
+  await openPage();
+  expect(screen.getByRole('button', { name: '十三期' })).toHaveAttribute('data-selected', 'true');
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  expect(screen.getByRole('button', { name: '完整範圍' })).toHaveAttribute('data-selected', 'true');
+});
+
+it('Matrix Explore follows the highest current access when free access changes', async () => {
+  uiState.permissionSettings = {
+    subscriptionPurchaseVisible: true, registeredMemberFreeAccess: true, revision: 10,
+  };
+  uiState.fetchMemberProfile.mockResolvedValue({
+    exploreEntitlements: { canUseSeven: true, canUseThirteen: true, canUseFullRange: true },
+  });
+  const view = render(<MatrixExplorePage onNavigate={vi.fn()} />);
+  await waitFor(() => expect(screen.getByRole('button', { name: '十三期' })).toHaveAttribute('data-selected', 'true'));
+  fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
+  expect(screen.getByRole('button', { name: '完整範圍' })).toHaveAttribute('data-selected', 'true');
+
+  uiState.permissionSettings = {
+    subscriptionPurchaseVisible: true, registeredMemberFreeAccess: false, revision: 11,
+  };
+  uiState.fetchMemberProfile.mockResolvedValue({
+    exploreEntitlements: { canUseSeven: true, canUseThirteen: false, canUseFullRange: false },
+  });
+  view.rerender(<MatrixExplorePage onNavigate={vi.fn()} />);
+
+  await waitFor(() => expect(screen.getByRole('button', { name: '七期' })).toHaveAttribute('data-selected', 'true'));
+  expect(screen.getByText('標準範圍', { selector: 'button' })).toHaveAttribute('data-selected', 'true');
 });
 
 it('shows the Matrix Pro cue on full range without full-range access', async () => {
@@ -186,7 +229,7 @@ it('shows the Matrix Pro cue on full range without full-range access', async () 
 
 it.each([
   ['準5+（鎖定1碼）', ['準5進6', '準6進7', '準7進8', '準9進10'], 1],
-  ['準7+（鎖定2碼）', ['準6進7', '準7進8', '準9進10', '準11進12'], 2],
+  ['準6+（鎖定2碼）', ['準6進7', '準7進8', '準9進10', '準11進12'], 2],
 ] as const)('uses the exact %s filters and submits rule count', async (hit, options, ruleCount) => {
   await openPage();
   fireEvent.click(screen.getByRole('button', { name: hit }));
@@ -194,19 +237,22 @@ it.each([
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
   const group = screen.getByRole('group', { name: `${hit}連準篩選` });
   expect(within(group).getAllByRole('button').map(button => button.textContent)).toEqual(options);
-  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ ruleCount, selectedStreaks: options }));
+  const defaults: readonly string[] = ruleCount === 2 ? ['準9進10', '準11進12'] : options;
+  expect(within(group).getAllByRole('button').map(button => button.getAttribute('aria-pressed')))
+    .toEqual(options.map(option => String(defaults.includes(option))));
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ ruleCount, selectedStreaks: defaults }));
   fireEvent.click(within(group).getByRole('button', { name: options[0] }));
   await act(async () => {});
-  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ selectedStreaks: options.slice(1) }));
+  const toggled = defaults.includes(options[0]) ? defaults.filter(option => option !== options[0]) : [...defaults, options[0]];
+  expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({ selectedStreaks: toggled }));
 });
 
-it('submits advanced settings and keeps history collapse/navigation identical to Explore', async () => {
-  const onNavigate = vi.fn();
-  render(<MatrixExplorePage title="Matrix 天衡" onNavigate={onNavigate} />);
+it('submits advanced settings without rendering near-10 history', async () => {
+  render(<MatrixExplorePage title="Matrix 天衡" onNavigate={vi.fn()} />);
   await act(async () => {});
-  expect(screen.getByRole('button', { name: '收合近10期開獎號碼' })).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: /查看更多紀錄/ }));
-  expect(onNavigate).toHaveBeenCalledWith('history');
+  expect(screen.queryByText('近10期開獎號碼')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /近10期開獎號碼/ })).not.toBeInTheDocument();
+  expect(document.querySelector('.matrix-tianheng-screen .history-panel')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: /十三期/ }));
   fireEvent.click(screen.getByRole('button', { name: '拖牌版路' }));
   fireEvent.click(screen.getByRole('button', { name: '進階探索設定' }));
@@ -215,7 +261,7 @@ it('submits advanced settings and keeps history collapse/navigation identical to
   fireEvent.click(screen.getByRole('button', { name: '前日 (上2期)' }));
   fireEvent.click(screen.getByRole('button', { name: /完整範圍/ }));
   await search();
-  expect(screen.getByRole('button', { name: '展開近10期開獎號碼' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: /近10期開獎號碼/ })).not.toBeInTheDocument();
   expect(matrixApi.fetchTianhengList).toHaveBeenLastCalledWith(expect.objectContaining({
     lottery: '六合彩', explorePeriods: 13, exploreRange: '完整範圍',
     roadTypes: ['拖牌'], numberOrder: '依實際開獎順序排序', exploreDateOffset: 2,
@@ -368,7 +414,7 @@ it('lets the server decide thirteen-period entitlement and shows the canonical d
   matrixApi.fetchTianhengList.mockRejectedValue({ code: 'FORBIDDEN' });
   await openPage();
   fireEvent.click(screen.getByRole('button', { name: /十三期/ }));
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   const dialog = await screen.findByRole('dialog', { name: '無法使用 Matrix 天衡' });
   expect(dialog).toHaveTextContent('目前會員權限無法使用此設定');
   expect(matrixApi.fetchTianhengList).toHaveBeenCalledWith(expect.objectContaining({ explorePeriods: 13 }));
@@ -378,13 +424,13 @@ it('shows loading, completed empty, and retryable analysis errors without sample
   let finish!: (response: TianhengListResponse) => void;
   matrixApi.fetchTianhengList.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
   await openPage();
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   expect(screen.getByRole('status')).toHaveTextContent('分析結果載入中');
   expect(document.querySelector('.result-count')).toBeNull();
   await act(async () => finish({ ...envelope, items: [], duplicateStats: [], total: 0 }));
   expect(screen.getByText('無符合設定條件')).toBeVisible();
   matrixApi.fetchTianhengList.mockRejectedValueOnce({ code: 'ANALYSIS_NOT_READY' });
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('分析中，請稍後再試');
   expect(document.querySelector('.result-count')).toBeNull();
   await search();
@@ -395,7 +441,7 @@ it.each(['success', 'error'])('ignores an older query %s after a newer submitted
   let fail!: (error: unknown) => void;
   matrixApi.fetchTianhengList.mockReturnValueOnce(new Promise((resolve, reject) => { finish = resolve; fail = reject; }));
   await openPage();
-  fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
+  fireEvent.click(screen.getByRole('button', { name: '開始天衡' }));
   await search();
   await act(async () => {
     if (outcome === 'success') finish({ ...envelope, items: [], total: 0 });
