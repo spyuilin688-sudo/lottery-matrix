@@ -12,6 +12,7 @@
     "test:sites": "node --test tests/sites-worker.test.mjs",
     "test:unit": "vitest run",
     "test:edge-functions": "vitest run --config vitest.edge-functions.config.ts",
+    "test:production-smoke": "node scripts/production-smoke.mjs",
     "predev": "npm run check:runtime",
     "dev": "vite",
     "prebuild": "npm run check:runtime",
