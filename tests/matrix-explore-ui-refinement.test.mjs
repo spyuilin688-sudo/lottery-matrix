@@ -100,12 +100,13 @@ test("Matrix Explore restores the three original date selections and keeps them 
 });
 
 
-test("Matrix settings switcher retains its existing artwork scale", () => {
+test("Matrix settings switcher retains its artwork scale and complete outer frame", () => {
   const switcher = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher");
   assert.match(switcher, /--matrix-switcher-size:\s*calc\(2\.34rem \* \.85\)/);
   assert.match(switcher, /opacity:\s*\.96/);
   const switcherButton = ruleBlock(css, "\\.matrix-explore-main-screen \\.matrix-settings-heading \\.matrix-page-switcher button");
-  assert.match(switcherButton, /border:\s*0/);
-  assert.match(switcherButton, /clip-path:\s*polygon/);
+  assert.match(switcherButton, /border:\s*1px solid #755329/);
+  assert.match(switcherButton, /border-radius:\s*clamp\(4px, 1\.2vw, 5px\)/);
+  assert.doesNotMatch(switcherButton, /clip-path/);
   assert.match(css, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
 });

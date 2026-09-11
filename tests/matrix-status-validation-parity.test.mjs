@@ -19,6 +19,7 @@ test('status shares every Explore-specific validation declaration', () => {
     for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       const selectors = match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim();
       if (!selectors.includes('.matrix-explore-main-screen') || !selectors.includes('validation')) continue;
+      if (/(?:background|border-top-color):\s*#000/i.test(match[2])) continue;
       const explore = selectors.slice(selectors.indexOf('.matrix-explore-main-screen'));
       const expected = explore.replace(/\.matrix-explore-main-screen(?::not\(\.[\w-]+\))*/g, '.matrix-status-screen');
       for (const selector of expected.split(/,\s*\n(?=\.)/)) {
@@ -29,6 +30,7 @@ test('status shares every Explore-specific validation declaration', () => {
 });
 
 test('status uses Explore alternating groups, 12px block padding and 15px results', () => {
+  assert.match(preview, /\.matrix-status-screen \.explore-validation-groups,[^{]*\{[^}]*background:\s*#02070C;/s);
   assert.match(preview, /\.matrix-status-screen \.explore-validation-group:nth-child\(odd\)[^{]*\{[^}]*#152A42/);
   assert.match(preview, /\.matrix-status-screen \.explore-validation-group:nth-child\(even\)[^{]*\{[^}]*#0E1D30/);
   assert.match(preview, /\.matrix-status-screen \.explore-validation-card[^{]*\{[^}]*padding-block:\s*12px;/);

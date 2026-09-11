@@ -86,7 +86,7 @@ test('天衍連準篩選固定為指定五項', async () => {
   expect(await screen.findByText('14.27')).toBeTruthy();
   expect(matrixApi.fetchTianyanList).toHaveBeenCalledWith({
     lottery: '今彩539', exploreDateOffset: 0,
-    explorePeriods: 2, exploreRange: '標準範圍', numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13, exploreRange: '完整範圍', numberOrder: '依號碼由小到大排序',
     selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
     sameCode: false,
   });
@@ -106,7 +106,7 @@ test('天衍重複號碼統計比照 Matrix 探索，可點號碼進行版路篩
 
   await waitFor(() => expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith({
     lottery: '今彩539', exploreDateOffset: 0,
-    explorePeriods: 2, exploreRange: '標準範圍', numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13, exploreRange: '完整範圍', numberOrder: '依號碼由小到大排序',
     selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
     sameCode: false,
     predictionNumber: '14',
@@ -123,7 +123,7 @@ test('天衍同碼篩選比照 Matrix 探索送出相同篩選規則', async () 
 
   await waitFor(() => expect(matrixApi.fetchTianyanList).toHaveBeenLastCalledWith({
     lottery: '今彩539', exploreDateOffset: 0,
-    explorePeriods: 2, exploreRange: '標準範圍', numberOrder: '依號碼由小到大排序',
+    explorePeriods: 13, exploreRange: '完整範圍', numberOrder: '依號碼由小到大排序',
     selectedStreaks: ['準11進12', '準14進15', '準15進16', '準16進17', '準17進18'],
     sameCode: true,
   }));

@@ -12,9 +12,9 @@ const responsiveCss = readFileSync(new URL("../src/responsive-feature-pages.css"
 const exploreCss = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 const adjustmentsCss = readFileSync(new URL("../src/feature-page-adjustments.css", import.meta.url), "utf8");
 
-test("Matrix 三頁切換器移至設定標題同列並維持無外框", () => {
+test("Matrix 四頁切換器位於設定標題同列並完整呈現外框", () => {
   assert.match(featureCss, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
-  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button\s*\{[^}]*border:\s*0;/s);
+  assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button\s*\{[^}]*border:\s*1px solid #755329;[^}]*border-radius:\s*clamp\(4px, 1\.2vw, 5px\);/s);
   assert.match(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before,[\s\S]*?button::after\s*\{[^}]*display:\s*none;/s);
   assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher button::before\s*\{[^}]*background:\s*linear-gradient\([^}]*#f0c44d/s);
   assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher img\s*\{\s*clip-path:\s*inherit;/s);

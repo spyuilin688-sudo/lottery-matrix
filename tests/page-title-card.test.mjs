@@ -45,12 +45,14 @@ test("integrated title artwork uses current sixteen-pixel side margins and propo
   assert.doesNotMatch(brandHeaderStyles, /^\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/ms);
 });
 
-test("Matrix settings heading owns the other two page controls", () => {
+test("Matrix settings heading owns the fixed four-page control", () => {
   const start = featurePages.indexOf("function MatrixPageSwitcher");
   const end = featurePages.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY", start);
   const switcher = featurePages.slice(start, end);
   for (const name of ["探索", "天衍", "天工"]) assert.ok(switcher.length > 0 && featurePages.includes(`Matrix${name}-icon.png`));
-  assert.match(switcher, /item\.screen !== current/);
+  assert.match(switcher, /MATRIX_PAGE_ITEMS\.map/);
+  assert.match(switcher, /aria-current=\{item\.screen === current \? "page" : undefined\}/);
+  assert.match(featurePages, /label: "Matrix 天衡", image: "\/assets\/lottery\/functions\/天衡\.png"/);
   assert.match(featurePages, /className="matrix-settings-heading">\s*<SectionTitle>探索設定<\/SectionTitle>\s*<MatrixPageSwitcher/s);
   assert.doesNotMatch(featurePages, /headerAction=\{<MatrixPageSwitcher/);
   assert.match(styles, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);

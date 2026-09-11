@@ -13,7 +13,7 @@ const migration = readdirSync('supabase/migrations')
   .join('\n');
 
 test('Tianyan result UI matches the approved differences', () => {
-  assert.match(source, /\{isExplore \|\| isTianheng \? \([\s\S]*?<HistoryList/);
+  assert.match(source, /\{isExplore \? \([\s\S]*?<HistoryList/);
   assert.match(source, /\? \["準11進12", "準14進15", "準15進16", "準16進17", "準17進18"\]/);
   assert.match(source, /algorithmType: item\.roadTypeLabel/);
   assert.match(source, /numberOrder: item\.numberOrder/);

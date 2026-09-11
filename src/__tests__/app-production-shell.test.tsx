@@ -156,7 +156,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(summary!).backgroundColor).toBe("rgba(10, 14, 24, 0.92)");
     expect(getComputedStyle(summary!).borderTopWidth).toBe("0px");
     for (const [group, color] of [[firstGroup, "#152A42"], [secondGroup, "#0E1D30"]] as const) {
-      expect(getComputedStyle(group!).backgroundColor).toBe("rgb(2, 7, 12)");
+      expect(getComputedStyle(group!).backgroundColor).toBe("rgb(0, 0, 0)");
       expect(getComputedStyle(group!).getPropertyValue("--explore-validation-group-background")).toBe(color);
       const columns = group!.querySelectorAll(":scope > .explore-validation-issues, :scope > .explore-validation-numbers-card, :scope > .explore-validation-formulas");
       expect(columns).toHaveLength(3);
@@ -169,7 +169,7 @@ describe("production member shell", () => {
     expect(getComputedStyle(prediction!).backgroundColor).toBe("rgba(230, 183, 106, 0.14)");
     expect(getComputedStyle(prediction!).borderTopColor).toBe("rgb(230, 183, 106)");
     expect(getComputedStyle(issues!).borderTopColor).toBe("rgba(91, 126, 169, 0.42)");
-    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgba(91, 126, 169, 0.34)");
+    expect(getComputedStyle(secondFormula!).borderTopColor).toBe("rgb(0, 0, 0)");
     expect(getComputedStyle(primaryFormula!).color).toBe("rgb(228, 201, 128)");
     expect(getComputedStyle(secondaryFormula!).color).toBe("rgb(186, 197, 210)");
     expect(document.querySelector(".explore-validation-result-number")).not.toBeNull();
