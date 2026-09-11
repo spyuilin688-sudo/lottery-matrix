@@ -12,6 +12,7 @@ import { FirstVisitGuide } from './FirstVisitGuide';
 
 vi.mock('../useLatestLotteryDraw', () => ({ useLatestLotteryDraw: () => ({ data: null }) }));
 vi.mock('../matrix-status-api', () => ({ fetchMatrixStatus: async () => { throw new Error('offline status'); } }));
+vi.mock('../subscription-purchase-visibility', () => ({ useSubscriptionPurchaseVisible: () => true }));
 
 vi.stubGlobal('ResizeObserver', class {
   observe() {}

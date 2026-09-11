@@ -37,8 +37,8 @@ export class ConnectionStatusError extends Error {
   }
 }
 
-// The public app host serves the SPA for unknown paths; probe the backend gateway.
-const adminUrl = 'https://api-v2.appdeploy.ai/app/matrix-sanqwn';
+// Probe the complete production Cloudflare-to-Supabase route used by admins.
+const adminUrl = 'https://matrixlottery.idv.tw';
 const jobDefinitions = [
   ['matrix-539-refresh-v2', '今彩539'],
   ['matrix-fantasy5-refresh-v2', '天天樂'],
@@ -83,7 +83,7 @@ const safeJobDetail = (row: Row, jobName: string, lottery: string, analysis: Rai
 const descriptionFor = (definition: ApiStatusDefinition) => definition.description;
 const safeErrorFor = (definition: ApiStatusDefinition, workerStatus?: WorkerStatus) => {
   if (definition.location === 'Railway' && workerStatus?.ok === false) {
-    if (workerStatus.reason === 'APPDEPLOY_CONFIG_MISSING') return 'AppDeploy 尚未完成 Railway 管理 API 設定';
+    if (workerStatus.reason === 'SUPABASE_RAILWAY_CONFIG_MISSING') return 'Supabase 尚未完成 Railway 管理 API 設定';
     if (workerStatus.reason === 'RAILWAY_ADMIN_CONFIG_MISSING') return 'Railway 管理 API 尚未完成設定';
     if (workerStatus.reason === 'RAILWAY_AUTH_FAILED') return 'Railway 管理 API 驗證失敗';
   }
@@ -170,10 +170,12 @@ export function createConnectionStatus(dependencies: Dependencies) {
   };
   const runDefinition = async (definition: ApiStatusDefinition, shared: ReturnType<typeof createSharedChecks>): Promise<ConnectionStatusItem> => {
     const started = now().getTime();
-    const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query' : definition.endpoint.startsWith('/functions/v1/') ? 'options'
+    const checkEvidence: ApiCheckEvidence = queryCheckIds.has(definition.id) ? 'query'
+      : definition.id === 'supabase-watchdog-heartbeat' ? 'reported'
+      : definition.endpoint.startsWith('/functions/v1/') ? 'options'
       : definition.checkMode === 'registry' ? 'registered'
       : definition.location === 'Railway' && definition.checkMode === 'service' ? 'inherited'
-      : definition.id === 'appdeploy-watchdog-heartbeat' ? 'reported' : 'live';
+      : 'live';
     const base = { ...definition, checkEvidence, description: descriptionFor(definition), checkedAt: now().toISOString(), responseMs: 0, ...(retryableIds.has(definition.id) ? { retryable: true } : {}) };
     const finish = (ok: boolean, detail?: unknown, error?: string): ConnectionStatusItem => ({
       ...base,
@@ -195,7 +197,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
         const health = await readJsonWithDeadline<unknown>(response);
         if (!health || typeof health !== 'object' || Array.isArray(health) || !('message' in health) || health.message !== 'Success') throw new Error('ADMIN_API_INVALID');
         detail = { status: response.status };
-      } else if (definition.id === 'appdeploy-watchdog-heartbeat') {
+      } else if (definition.id === 'supabase-watchdog-heartbeat') {
         const heartbeat = await withDeadline(async () => dependencies.loadWatchdogStatus?.());
         if (!heartbeat) return finish(false, undefined, '尚無自動監控執行紀錄');
         detail = safeWatchdogDetail(heartbeat);
@@ -254,8 +256,9 @@ export function createConnectionStatus(dependencies: Dependencies) {
         detail = safeGithubDetail(workflow, latestRun);
       } else if (definition.location === 'Railway') {
         const status = await shared.worker();
-        if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
-        if (definition.id === 'railway-health') detail = status.health;
+        if (definition.id === 'railway-health' && status.health) detail = status.health;
+        else if (!status.ok) throw new Error('WORKER_UNAVAILABLE');
+        else if (definition.id === 'railway-health') detail = status.health;
         else if (definition.id === 'railway-jobs-status') detail = status.jobs;
         else detail = { inheritedFrom: ['/health', '/jobs/status'] };
       } else throw new Error('UNSUPPORTED_STATUS_CHECK');

@@ -85,6 +85,7 @@ def checkpoint_builders(total: int) -> dict:
 
     return {
         "explore": explore,
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
@@ -100,13 +101,13 @@ def test_pipeline_runs_tiangong_before_status() -> None:
             lambda context, selected=kind:
             calls.append(selected) or {"kind": selected, "period": context["draw"]["period"]}
         )
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")
     }
 
     result = AnalysisPipeline(repository, builders, analysis_version="with-tiangong").run(DRAW, history=[])
 
     assert result["status"] == "complete"
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 def test_pipeline_requires_an_explicit_analysis_version() -> None:
     repository = InMemoryAnalysisRepository()
@@ -121,13 +122,13 @@ def test_pipeline_publishes_only_after_required_artifacts_finish() -> None:
     calls: list[str] = []
     builders = {
         kind: (lambda context, selected=kind: calls.append(selected) or {"kind": selected, "period": context["draw"]["period"]})
-        for kind in ("explore", "tianyan", "tiangong", "status")
+        for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")
     }
 
     result = AnalysisPipeline(repository, builders, analysis_version="matrix-python-v1").run(DRAW, history=[])
 
     assert result["status"] == "complete"
-    assert calls == ["explore", "tianyan", "tiangong", "status"]
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
     assert repository.read_completed_artifact("今彩539", "114000123", "status") == {
         "kind": "status",
         "period": "114000123",
@@ -138,6 +139,7 @@ def test_later_builders_can_consume_earlier_artifacts() -> None:
     repository = InMemoryAnalysisRepository()
     builders = {
         "explore": lambda _: {"items": ["road"]},
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},
@@ -154,6 +156,7 @@ def test_pipeline_failure_marks_run_failed_and_keeps_partial_output_private() ->
 
     builders = {
         "explore": lambda _: {"items": []},
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": fail,
         "tiangong": lambda _: {"items": []},
         "status": lambda _: {"items": []},
@@ -179,19 +182,19 @@ def test_completed_version_is_idempotent_and_skips_recalculation() -> None:
         calls += 1
         return {"items": []}
 
-    builders = {kind: build for kind in ("explore", "tianyan", "tiangong", "status")}
+    builders = {kind: build for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
     pipeline = AnalysisPipeline(repository, builders, analysis_version="v1")
     pipeline.run(DRAW, history=[])
     second = pipeline.run(DRAW, history=[])
 
     assert second["status"] == "complete"
     assert second["skipped"] is True
-    assert calls == 4
+    assert calls == 5
 
 
 def test_pipeline_rejects_incomplete_or_noncanonical_draw_before_writing() -> None:
     repository = InMemoryAnalysisRepository()
-    builders = {kind: (lambda _: {}) for kind in ("explore", "tianyan", "tiangong", "status")}
+    builders = {kind: (lambda _: {}) for kind in ("explore", "tianheng", "tianyan", "tiangong", "status")}
     invalid = {**DRAW, "numbers": ["1", "02", "03", "04", "05"]}
 
     with pytest.raises(ValueError, match="DRAW_NUMBERS_INVALID"):
@@ -219,6 +222,7 @@ def test_pipeline_resumes_checkpointed_explore_batch() -> None:
 
     builders = {
         "explore": explore,
+        "tianheng": lambda _: {"items": [], "validationById": {}},
         "tianyan": lambda context: {"source": context["artifacts"]["explore"]["items"]},
         "tiangong": lambda _: {"items": []},
         "status": lambda context: {"source": context["artifacts"]["tianyan"]["source"]},

@@ -142,6 +142,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       setRequestError(null);
       setSearched(false);
     };
+    clearResults();
     const unsubscribeSession = subscribeAlgorithmCacheScope(clearResults);
     const unsubscribeData = subscribeMatrixDataRevision(clearResults);
     return () => {
@@ -149,7 +150,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       unsubscribeSession();
       unsubscribeData();
     };
-  }, []);
+  }, [lottery]);
   const positionOptions: Array<{ value: Direction; label: string }> = [
     { value: "依序遞增", label: "由左至右" },
     { value: "固定", label: "固定" },
@@ -163,7 +164,10 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   const startExplore = async () => {
     if (loading) return;
-    const generation = cacheGeneration.current;
+    const generation = ++cacheGeneration.current;
+    setExpandedId(null);
+    setValidationById({});
+    setValidationLoadingId(null);
     setSearched(true);
     setLoading(true);
     setResponse(null);
@@ -283,4 +287,3 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
     </FeatureShell>
   );
 }
-

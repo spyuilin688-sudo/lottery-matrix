@@ -60,7 +60,6 @@
 
 .matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher {
   --matrix-switcher-size: calc(2.34rem * .85);
-  --matrix-switcher-cut: clamp(3px, 1vw, 5px);
   width: auto;
   height: var(--matrix-switcher-size);
   opacity: .96;
@@ -73,21 +72,11 @@
   width: var(--matrix-switcher-size);
   height: var(--matrix-switcher-size);
   min-height: var(--matrix-switcher-size);
-  padding: 1px;
+  padding: 0;
   flex: 0 0 var(--matrix-switcher-size);
-  border: 0;
-  border-radius: 0;
+  border: 1px solid #755329;
+  border-radius: clamp(4px, 1.2vw, 5px);
   background: transparent;
-  clip-path: polygon(
-    var(--matrix-switcher-cut) 0,
-    calc(100% - var(--matrix-switcher-cut)) 0,
-    100% var(--matrix-switcher-cut),
-    100% calc(100% - var(--matrix-switcher-cut)),
-    calc(100% - var(--matrix-switcher-cut)) 100%,
-    var(--matrix-switcher-cut) 100%,
-    0 calc(100% - var(--matrix-switcher-cut)),
-    0 var(--matrix-switcher-cut)
-  );
   overflow: hidden;
 }
 
@@ -104,7 +93,10 @@
   max-width: 100%;
   object-fit: contain;
   object-position: center;
-  clip-path: inset(0 0 4% 0);
+}
+
+.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher .matrix-page-switcher-image--tianheng {
+  transform: scale(1.14);
 }
 
 .matrix-explore-main-screen .explore-settings,

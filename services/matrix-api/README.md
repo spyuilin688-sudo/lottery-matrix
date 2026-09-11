@@ -38,15 +38,15 @@ POST /api/matrix/number-reference
 The PWA reads this service through `VITE_RAILWAY_API_BASE`.
 
 `GET /health` is public. `GET /jobs/status`, `POST /jobs/refresh`, and
-`POST /jobs/recover` are for the AppDeploy backend only and require the
+`POST /jobs/recover` are for the Supabase `admin-api` Edge Function only and require the
 `X-Matrix-Admin-Token` request
-header. Railway and AppDeploy must store the same server-only secret under
+header. Railway and the Supabase Edge Function must store the same server-only secret under
 `MATRIX_ADMIN_STATUS_TOKEN`. Never expose that value through a `VITE_` variable
 or other browser configuration.
 
 The health payload reports `adminApi.status` as `ok` or `misconfigured` without
-exposing the secret. AppDeploy is an administrator-backend consumer only; it is
-not a deployment target for the public PWA.
+exposing the secret. Supabase `admin-api` is the administrator-backend consumer.
+AppDeploy is not in the production request path.
 
 `POST /jobs/refresh` accepts `{"lottery":"今彩539"}` for 今彩539、六合彩、or
 大樂透, then fetches and upserts only its latest draw. It does not backfill
@@ -60,27 +60,27 @@ lottery and returns `202` immediately. For 天天樂 it invokes only
 three Railway-owned lotteries it invokes the tracked scheduled pipeline. The
 pipeline refreshes only inside a due stale-draw window and otherwise resumes
 stored analysis. Concurrent requests in the Railway API process for the same lottery return
-`already-running`; recovery threads are non-daemon. The API atomically consumes the AppDeploy claim with a unique runner fence,
+`already-running`; recovery threads are non-daemon. The API atomically consumes the Supabase watchdog claim with a unique runner fence,
 renews its durable Supabase lease every minute while work runs, and releases it
 only after completion. If a live runner loses ownership, that Railway replica
 terminates before a replacement may continue.
 
 ### Independent watchdog
 
-The AppDeploy admin backend owns `cron.json` and runs
-`matrix-independent-watchdog-v2` on the `3/6 * * * *` Asia/Taipei grid. Its
+Supabase Cron runs `matrix-admin-watchdog-v1` on the
+`3-59/10 * * * *` grid and invokes the Supabase `admin-api` Edge Function. Its
 logical checkpoints run every 6 minutes for 50 checks, every 10 minutes for 60
 checks, then every 30 minutes for 18 checks after each lottery's base call. It reads
 `system_job_status`, `lottery_draws`, and `matrix_analysis_runs` directly
 from Supabase, then calls `POST /jobs/recover` only for a stuck, missing, failed
 analysis, or due-but-stale draw. A 20-minute atomic Supabase lease prevents
-concurrent AppDeploy invocations from dispatching the same recovery twice.
+concurrent watchdog invocations from dispatching the same recovery twice.
 
 天天樂 draw recovery is dispatched only to
 `.github/workflows/fantasy5-crawler.yml`; Railway recovery remains
-analysis-only. AppDeploy requires a server-only `GITHUB_ACTIONS_TOKEN` with
+analysis-only. The Supabase `admin-api` Edge Function requires a server-only `GITHUB_ACTIONS_TOKEN` with
 Actions read/write access to inspect active runs and dispatch that workflow.
-Deployment must validate this secret before enabling `cron.json`; a missing
+Deployment must validate this secret before enabling the watchdog schedule; a missing
 value is emitted as a degraded backend error. The token must never be exposed
 to frontend code.
 
@@ -104,7 +104,7 @@ upserts `lottery_draws`. It owns 天天樂 acquisition status in
 
 The dedicated Railway 天天樂 process reads a bounded set of recent
 `lottery_draws` from Supabase and batch-checks their
-`period:matrix-python-v12` progress rows. It processes a new tail in order and
+`period:matrix-python-v13` progress rows. It processes a new tail in order and
 repairs bounded analysis gaps such as a late-backfilled period between two
 completed periods. Full-history reads restart if concurrent ingestion shifts an
 offset page, so no duplicated draw reaches the algorithms. It does not
@@ -137,12 +137,12 @@ running twice.
 
 `lottery_draws` stores historical draws. History is not capped at 80 records. The public history API paginates Supabase reads so 1000/3000/5000-period number-reference queries are not silently truncated.
 
-Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; AppDeploy no longer exposes Matrix Explore HTTP routes.
+Matrix background analysis writes its run/artifact data to the existing Supabase Matrix analysis tables. Matrix Explore is read by the PWA through the existing Supabase RPCs `matrix_explore_list` and `matrix_explore_validation`; the legacy AppDeploy app is not used for Matrix Explore or administrator requests.
 
 ## Matrix Explore canonical v12 core
 
 `app.domain.explore_engine` is the only production Explore/Status core for the
-`matrix-python-v12` analysis version. It builds a complete-history occurrence
+`matrix-python-v13` analysis version. It builds a complete-history occurrence
 index per lottery/order and reuses cached range cells across the thirteen source
 periods. Drag reads only the locked cell; add and sum reuse their range cells.
 Only fully finalized and valid results are persisted.
@@ -152,6 +152,15 @@ The authoritative behavior is documented in
 the same locked condition is finalized before a result is emitted. Each
 persisted Explore row includes its validation payload for the
 `matrix_explore_validation` RPC and the expandable road details in the PWA.
+
+## Tianheng analysis integration (v13)
+
+Analysis phases run in order: Explore, Tianheng, Tianyan, Tiangong, Status.
+Tianheng reuses the cached Explore engine session and runs in resumable,
+lease-guarded batches with independent `tianheng` artifact chunks and normalized
+`matrix_tianheng_results` rows. Both workers repair missing Explore and Tianheng
+normalized result sets from completed artifacts without rerunning analysis.
+Matrix Status continues to consume only Explore and Tianyan.
 
 ## Local verification
 

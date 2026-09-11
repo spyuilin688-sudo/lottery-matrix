@@ -306,7 +306,7 @@ def test_card_notifications_retry_only_published_period(monkeypatch):
     publish_initial(repository, cards)
     version = f'10000:{worker.ANALYSIS_VERSION}'
     repository.begin_run('今彩539', '10000', version, NOW.isoformat())
-    for kind in ('explore', 'tianyan', 'tiangong', 'status'):
+    for kind in ('explore', 'tianheng', 'tianyan', 'tiangong', 'status'):
         repository.save_artifact('今彩539', '10000', version, kind, {'summary': {'status': 'DORMANT'}} if kind == 'status' else {})
     repository.complete_run('今彩539', '10000', version, NOW.isoformat())
     events = []

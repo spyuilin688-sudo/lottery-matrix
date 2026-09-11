@@ -14,6 +14,12 @@ const app = vi.hoisted(() => {
     } as Record<string, unknown>,
     failPaymentRead: false,
     nextSubscriptionRead: null as Promise<{ data: { items: Array<{ id: string; status: string }> } }> | null,
+    permissionSettings: {
+      subscriptionPurchaseVisible: true,
+      registeredMemberFreeAccess: false,
+      revision: 7,
+      updatedAt: '2026-09-10T08:00:00.000Z',
+    },
   };
   const otherAdmin = {
     id: 'admin-2',
@@ -43,6 +49,7 @@ const app = vi.hoisted(() => {
       },
     };
     if (url === '/api/dashboard') return { data: dashboard };
+    if (url === '/api/permission-settings') return { data: state.permissionSettings };
     if (url === '/api/data/admins') return { data: { items: [otherAdmin] } };
     if (url.startsWith('/api/data/users?')) return { data: { items: [{ id: 'member-1', status: 'active' }], total: 1, currentPage: 1, totalPages: 1 } };
     if (url.startsWith('/api/data/subscriptions?')) {
@@ -257,6 +264,41 @@ describe('administrator operation permission editing', () => {
     expect(app.api.put).toHaveBeenCalledWith('/api/admins/admin-2', expect.objectContaining({
       permissions: { view: false, add: true, edit: false, delete: true },
     }));
+  });
+
+  it('shows the independent permission switch menu and lets a super administrator operate it', async () => {
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+
+    const navigation = buttonWithText(container, '權限切換');
+    expect(navigation).toBeDefined();
+    await act(async () => navigation?.click());
+    await settle();
+
+    expect(app.api.get).toHaveBeenCalledWith('/api/permission-settings');
+    expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="顯示訂閱購買"]')?.disabled).toBe(false);
+    expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="註冊會員免費使用"]')?.disabled).toBe(false);
+  });
+
+  it.each(['營運管理員', '查看人員'])('shows permission switches read-only for %s', async (role) => {
+    app.state.admin = {
+      id: 'admin-1',
+      account: 'readonly@example.com',
+      name: role,
+      role,
+      permissions: { view: true, add: false, edit: false, delete: false },
+    };
+    await act(async () => root.render(<AdminApp />));
+    await settle();
+
+    const navigation = buttonWithText(container, '權限切換');
+    expect(navigation).toBeDefined();
+    await act(async () => navigation?.click());
+    await settle();
+
+    expect(container.textContent).toContain('僅超級管理員可修改');
+    expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="顯示訂閱購買"]')?.disabled).toBe(true);
+    expect(container.querySelector<HTMLInputElement>('[role="switch"][aria-label="註冊會員免費使用"]')?.disabled).toBe(true);
   });
   it('hides protected mutations when module access exists but the stored operation permission is disabled', async () => {
     app.state.admin = {

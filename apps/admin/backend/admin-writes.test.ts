@@ -157,26 +157,41 @@ describe('authorized Supabase writes', () => {
   });
 
   it('creates the requested activation-code quantity through the database RPC', async () => {
-    const rpc = vi.fn(async () => Array.from({ length: 10 }, (_, index) => ({
-      id: String(index + 1),
-      batch_id: 'batch-1',
-    })));
+    const rpc = vi.fn(async () => ({ batchId: 'batch-1', count: 10 }));
+    const insertRows = vi.fn(async () => [{ id: 'audit-1' }]);
     const data = createAdminData({
       supabaseRequest: rpc,
-      insertRows: vi.fn(async () => [{ id: 'audit-1' }]),
+      insertRows,
       selectRows: vi.fn(async () => []),
       updateRows: vi.fn(async () => []),
       deleteRows: vi.fn(async () => []),
     });
 
-    await expect(data.generateActivationCodeBatch('30_days', 10, { ...actor, role: '超級管理員' })).resolves.toEqual({
+    await expect(data.generateActivationCodeBatch('30_days', 10, { ...actor, role: '超級管理員' }, '00000000-0000-4000-8000-000000000010')).resolves.toEqual({
       batchId: 'batch-1',
       count: 10,
     });
-    expect(rpc).toHaveBeenCalledWith('rpc/generate_activation_code_batch', {
+    expect(insertRows).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith('rpc/admin_generate_activation_code_batch', {
       method: 'POST',
-      body: JSON.stringify({ p_duration_type: '30_days', p_quantity: 10 }),
+      body: JSON.stringify({ p_duration_type: '30_days', p_quantity: 10, p_actor_id: actor.id, p_request_id: '00000000-0000-4000-8000-000000000010' }),
     });
+  });
+
+  it('rejects an activation operation without a valid retry identity before writing', async () => {
+    const rpc = vi.fn();
+    const data = createAdminData({supabaseRequest: rpc, insertRows: vi.fn(), selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn()});
+    for (const requestId of [undefined, '', 'invalid']) {
+      await expect(data.generateActivationCodeBatch('7_days', 3, { ...actor, role: '營運管理員' }, requestId)).rejects.toMatchObject({statusCode:400});
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to split writes when atomic activation generation fails', async () => {
+    const insertRows = vi.fn();
+    const data = createAdminData({supabaseRequest: vi.fn(async () => {throw Error('unavailable');}), insertRows, selectRows: vi.fn(), updateRows: vi.fn(), deleteRows: vi.fn()});
+    await expect(data.generateActivationCodeBatch('7_days', 3, { ...actor, role: '營運管理員' }, '00000000-0000-4000-8000-000000000010')).rejects.toThrow('unavailable');
+    expect(insertRows).not.toHaveBeenCalled();
   });
 
   it('rejects invalid activation durations before calling Supabase', async () => {

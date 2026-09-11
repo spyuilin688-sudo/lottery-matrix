@@ -166,7 +166,12 @@ describe("ProfilePage member API", () => {
   });
 
   it('PWA 視窗失聯後重新讀到 session 時保留登入並回首頁', async () => {
-    supabase.auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    supabase.auth.getSession
+      .mockResolvedValueOnce({ data: { session: null }, error: null })
+      .mockResolvedValueOnce({
+        data: { session: { access_token: 'member-session', user: { id: 'member-real' } } },
+        error: null,
+      });
     lineAuth.signInWithLine.mockRejectedValue(new Error('LINE_LOGIN_INCOMPLETE'));
     const onNavigate = vi.fn();
     render(<ProfilePage onNavigate={onNavigate} />);

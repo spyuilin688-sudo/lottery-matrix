@@ -18,7 +18,7 @@ const healthyWorkerStatus: WorkerStatus = {
 
 describe('connection status', () => {
   it('keeps individual query failures separate from healthy host and registry evidence', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
       if (url.pathname.includes('/latest/')) {
         const lottery = decodeURIComponent(url.pathname.split('/').pop()!);
@@ -26,7 +26,7 @@ describe('connection status', () => {
         return response({ item: { period: '123', numbers: lottery === '大樂透' ? ['01','02','03','04','05','06','07'] : ['01','02','03','04','05'] } });
       }
       if (url.pathname.endsWith('matrix_explore_list')) {
-        const body = JSON.parse(url.searchParams.get('p_request')!);
+        const body = JSON.parse(String(init?.body)).p_request;
         return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: 'v1', total: 0, items: [] });
       }
       return response([{ rpc_name: 'member_profile' }]);
@@ -78,7 +78,7 @@ describe('connection status', () => {
       checkMode: 'registry',
       checkEvidence: 'registered',
     });
-    expect(result.items).toHaveLength(62);
+    expect(result.items).toHaveLength(64);
     expect(result.items.every((item) => item.location && item.endpoint && item.group)).toBe(true);
     expect(result.items.map((item) => item.id)).not.toEqual(expect.arrayContaining([
       'api-appdeploy',
@@ -88,7 +88,7 @@ describe('connection status', () => {
       'matrix-algorithm-cases-api',
     ]));
     expect(fetcher).toHaveBeenCalledWith(
-      'https://api-v2.appdeploy.ai/app/matrix-sanqwn/api/_healthcheck',
+      'https://matrixlottery.idv.tw/admin/api/_healthcheck',
       expect.objectContaining({ cache: 'no-store' }),
     );
     expect(fetcher.mock.calls.map(([input]) => String(input))).not.toEqual(
@@ -133,7 +133,7 @@ describe('connection status', () => {
       now: () => new Date('2026-08-21T03:00:00Z'),
     });
     const result = await status.get();
-    expect(result.items).toHaveLength(62);
+    expect(result.items).toHaveLength(64);
     expect(result.items.find((item) => item.id === 'railway-health')).toMatchObject({
       ok: true,
       retryable: true,
@@ -191,8 +191,14 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(fetcher.mock.calls.every(([, init]) =>
-      init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS')).toBe(true);
+    expect(fetcher.mock.calls.every(([input, init]) => {
+      if (init?.method === 'POST') {
+        const path = new URL(String(input)).pathname;
+        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation'].includes(path)
+          && typeof JSON.parse(String(init.body)).p_request === 'object';
+      }
+      return init?.method === undefined || init.method === 'GET' || init.method === 'OPTIONS';
+    })).toBe(true);
     expect(fetcher.mock.calls.some(([input]) =>
       new URL(String(input)).pathname.endsWith('/redeem_activation_code'))).toBe(false);
     expect(fetcher.mock.calls.some(([input]) =>
@@ -326,7 +332,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.filter((item) => item.endpoint.startsWith('/functions/v1/'))).toEqual(
+    expect(result.items.filter((item) => item.checkMode === 'live' && item.endpoint.startsWith('/functions/v1/'))).toEqual(
       Array.from({ length: 7 }, () => expect.objectContaining({ ok: true, checkEvidence: 'options' })),
     );
     const functionCalls = fetcher.mock.calls.filter(([input]) =>
@@ -405,8 +411,9 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({
       ok: true,
+      checkEvidence: 'reported',
       detail: {
         status: 'ok',
         checkedAt: '2026-09-04T11:41:00.000Z',
@@ -442,7 +449,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({ ok: false, error });
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({ ok: false, error });
   });
 
   it('does not accept a watchdog heartbeat that is materially ahead of the status-check clock', async () => {
@@ -459,7 +466,7 @@ describe('connection status', () => {
     });
 
     const result = await status.get();
-    expect(result.items.find((item) => item.id === 'appdeploy-watchdog-heartbeat')).toMatchObject({
+    expect(result.items.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({
       ok: false,
       error: '自動監控的執行時間異常',
     });

@@ -11,7 +11,7 @@ from app.repositories.artifact_chunks import (
 )
 
 
-ARTIFACT_KINDS = {"explore", "tianyan", "tiangong", "status"}
+ARTIFACT_KINDS = {"explore", "tianheng", "tianyan", "tiangong", "status"}
 JOB_NAME_BY_LOTTERY = {
     "今彩539": "matrix-539-refresh-v2",
     "天天樂": "matrix-fantasy5-refresh-v2",
@@ -23,6 +23,7 @@ DRAW_PAGE_SIZE = 1000
 DRAW_SNAPSHOT_MAX_ATTEMPTS = 3
 ARTIFACT_CHUNK_PAGE_SIZE = 2
 EXPLORE_RESULT_UPSERT_BATCH_SIZE = 100
+TIANHENG_RESULT_UPSERT_BATCH_SIZE = 100
 ANALYSIS_RUN_LEASE_SECONDS = 300
 
 
@@ -52,6 +53,14 @@ class AnalysisRepository(Protocol):
     def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
     def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
     def has_explore_results(self, lottery: str, draw_period: str, analysis_version: str) -> bool: ...
+    def save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
+    def has_tianheng_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool: ...
     def read_artifact_chunks(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> list[dict[str, Any]]: ...
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]: ...
     def summarize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> int: ...
@@ -72,6 +81,7 @@ class InMemoryAnalysisRepository:
         self.artifacts: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
         self.explore_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+        self.tianheng_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.job_statuses: dict[str, dict[str, Any]] = {}
 
     def health_check(self) -> None:
@@ -373,6 +383,30 @@ class InMemoryAnalysisRepository:
         ]
         return sorted(chunks, key=lambda chunk: chunk["chunk_index"])
 
+    def save_tianheng_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+    ) -> None:
+        expires_at = datetime.now(UTC) + RETENTION
+        for record in _tianheng_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at.isoformat(),
+        ):
+            record["expiresAt"] = expires_at
+            key = (lottery, draw_period, analysis_version, record["item_id"])
+            self.tianheng_results[key] = record
+
+    def has_tianheng_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool:
+        count = sum(
+            key[:3] == (lottery, draw_period, analysis_version)
+            for key in self.tianheng_results
+        )
+        return count == expected_count if expected_count is not None else count > 0
+
     def materialize_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, expected_total: int) -> dict[str, Any]:
         return materialize_chunks(
             lottery, draw_period,
@@ -500,7 +534,7 @@ class InMemoryAnalysisRepository:
         }
 
         removed = 0
-        for collection in (self.artifacts, self.artifact_chunks, self.explore_results):
+        for collection in (self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results):
             expired = [
                 key for key, record in collection.items()
                 if record["expiresAt"] < now
@@ -876,6 +910,39 @@ class SupabaseAnalysisRepository:
         )
         return bool(response.data)
 
+    def save_tianheng_results(
+        self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+    ) -> None:
+        expires_at = (datetime.now(UTC) + RETENTION).isoformat()
+        records = _tianheng_result_records(
+            lottery, draw_period, analysis_version, payload, expires_at,
+        )
+        for start in range(0, len(records), TIANHENG_RESULT_UPSERT_BATCH_SIZE):
+            self.client.table("matrix_tianheng_results").upsert(
+                records[start:start + TIANHENG_RESULT_UPSERT_BATCH_SIZE],
+                on_conflict="lottery,draw_period,analysis_version,item_id",
+            ).execute()
+
+    def has_tianheng_results(
+        self,
+        lottery: str,
+        draw_period: str,
+        analysis_version: str,
+        expected_count: int | None = None,
+    ) -> bool:
+        response = (
+            self.client.table("matrix_tianheng_results")
+            .select("item_id", count="exact")
+            .eq("lottery", lottery)
+            .eq("draw_period", draw_period)
+            .eq("analysis_version", analysis_version)
+            .range(0, 0)
+            .execute()
+        )
+        if expected_count is not None:
+            return response.count == expected_count
+        return bool(response.data)
+
     def _iter_artifact_chunks(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
     ) -> Iterator[dict[str, Any]]:
@@ -1064,6 +1131,44 @@ def create_supabase_repository(
 
     options = SyncClientOptions(httpx_client=httpx_client) if httpx_client is not None else None
     return SupabaseAnalysisRepository(create_client(url, secret_key, options=options))
+
+
+def _tianheng_result_records(
+    lottery: str,
+    draw_period: str,
+    analysis_version: str,
+    payload: Any,
+    expires_at: str,
+) -> list[dict[str, Any]]:
+    records = []
+    for item in payload.get("items", []):
+        item_id = str(item["id"])
+        records.append({
+            "lottery": lottery,
+            "draw_period": draw_period,
+            "analysis_version": analysis_version,
+            "item_id": item_id,
+            "first_number": str(item["firstNumber"]),
+            "first_locked_position": int(item["firstLockedPosition"]),
+            "second_number": str(item["secondNumber"]),
+            "second_locked_position": int(item["secondLockedPosition"]),
+            "prediction_distance": int(item["predictionDistance"]),
+            "consecutive": str(item["consecutive"]),
+            "highest_streak": int(item["highestStreak"]),
+            "prediction_numbers": list(item["predictionNumbers"]),
+            "algorithm_type": str(item["algorithmType"]),
+            "number_order": str(item["numberOrder"]),
+            "rule_count": int(item["ruleCount"]),
+            "explore_range": str(item["exploreRange"]),
+            "locked_source_index": int(item["lockedSourceIndex"]),
+            "locked_source_period": str(item["lockedSourcePeriod"]),
+            "reference_offset": item.get("referenceOffset"),
+            "reference_position": item.get("referencePosition"),
+            "item": {key: value for key, value in item.items() if key != "exploreRange"},
+            "validation": payload["validationById"].get(item_id, {}),
+            "expires_at": expires_at,
+        })
+    return records
 
 
 def _explore_result_records(

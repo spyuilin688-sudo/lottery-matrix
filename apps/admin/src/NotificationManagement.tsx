@@ -22,6 +22,8 @@ type Props = {
   canEdit: boolean;
 };
 
+const deliveryLogPageSize = 10;
+
 function memberName(member: PushMember) {
   return member.displayName || member.userId;
 }
@@ -37,6 +39,7 @@ function MemberAvatar({ member }: { member: PushMember }) {
 export function NotificationManagement({ client, canEdit }: Props) {
   const [members, setMembers] = useState<PushMember[]>([]);
   const [logs, setLogs] = useState<PushDeliveryLog[]>([]);
+  const [logPage, setLogPage] = useState(1);
   const [selectedId, setSelectedId] = useState('');
   const [membersLoading, setMembersLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -86,7 +89,10 @@ export function NotificationManagement({ client, canEdit }: Props) {
     setLogsError('');
     try {
       const nextLogs = await listPushDeliveryLogs(client);
-      if (logRequests.canCommit(request)) setLogs(nextLogs);
+      if (logRequests.canCommit(request)) {
+        setLogs(nextLogs);
+        setLogPage((current) => Math.min(current, Math.max(1, Math.ceil(nextLogs.length / deliveryLogPageSize))));
+      }
     } catch {
       if (logRequests.canCommit(request)) {
         setLogsError(logs.length > 0
@@ -147,6 +153,9 @@ export function NotificationManagement({ client, canEdit }: Props) {
       : !selectedMember.pushEnabled
         ? '此會員目前沒有有效的推播訂閱'
         : '';
+  const logTotalPages = Math.max(1, Math.ceil(logs.length / deliveryLogPageSize));
+  const currentLogPage = Math.min(logPage, logTotalPages);
+  const visibleLogs = logs.slice((currentLogPage - 1) * deliveryLogPageSize, currentLogPage * deliveryLogPageSize);
 
   return (
     <div className="notificationManagement">
@@ -245,19 +254,26 @@ export function NotificationManagement({ client, canEdit }: Props) {
         {logsLoading && <div className="loading" role="status">發送紀錄讀取中…</div>}
         {!logsLoading && !logsError && logs.length === 0 && <div className="empty notificationEmpty">目前沒有發送紀錄</div>}
         {logs.length > 0 && (
-          <div className="tableWrap notificationLogTable">
-            <table aria-label="測試推播發送紀錄">
-              <thead><tr><th>發送時間</th><th>會員</th><th>結果</th><th>失敗原因</th></tr></thead>
-              <tbody>{logs.map((log) => (
-                <tr key={log.id}>
-                  <td data-label="發送時間">{formatAdminDateTime(log.sentAt)}</td>
-                  <td data-label="會員">{membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : log.userId}</td>
-                  <td data-label="結果"><span className={log.status === 'sent' ? 'notificationLogSuccess' : 'notificationLogFailure'}>{log.status === 'sent' ? '成功' : '失敗'}</span></td>
-                  <td data-label="失敗原因">{log.failureReason || '—'}</td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
+          <>
+            <div className="tableWrap notificationLogTable">
+              <table aria-label="測試推播發送紀錄">
+                <thead><tr><th>發送時間</th><th>會員</th><th>結果</th><th>失敗原因</th></tr></thead>
+                <tbody>{visibleLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td data-label="發送時間">{formatAdminDateTime(log.sentAt)}</td>
+                    <td data-label="會員">{membersById.has(log.userId) ? memberName(membersById.get(log.userId)!) : log.userId}</td>
+                    <td data-label="結果"><span className={log.status === 'sent' ? 'notificationLogSuccess' : 'notificationLogFailure'}>{log.status === 'sent' ? '成功' : '失敗'}</span></td>
+                    <td data-label="失敗原因">{log.failureReason || '—'}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div className="pagination notificationLogPagination" aria-label="發送紀錄分頁">
+              <button type="button" disabled={logsLoading || currentLogPage <= 1} onClick={() => setLogPage(currentLogPage - 1)}>上一頁</button>
+              <span>第 {currentLogPage}／{logTotalPages} 頁</span>
+              <button type="button" disabled={logsLoading || currentLogPage >= logTotalPages} onClick={() => setLogPage(currentLogPage + 1)}>下一頁</button>
+            </div>
+          </>
         )}
       </section>
     </div>

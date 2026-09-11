@@ -49,7 +49,7 @@ test("Matrix Explore 兩組三列圖示的垂直邊距都是 7px", () => {
 test("Matrix Explore selects and general option buttons are 24px high, hit options are 28px", () => {
   assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
   assert.match(oneRule(css, /^\.matrix-explore-main-screen \.advanced-panel \.select-box select$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
-  assert.match(css, /\.matrix-explore-main-screen \.segmented button\s*\{[^}]*height:\s*24px;[^}]*min-height:\s*24px;/s);
+  assert.match(oneRule(css, /^\.matrix-explore-main-screen \.segmented button$/), /height:\s*24px;[\s\S]*min-height:\s*24px;/);
   assert.match(css, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*box-sizing:\s*border-box;[^}]*height:\s*28px;[^}]*min-height:\s*28px;[^}]*padding:\s*\.125rem \.25rem;[^}]*flex:\s*1 1 0;/s);
 });
 

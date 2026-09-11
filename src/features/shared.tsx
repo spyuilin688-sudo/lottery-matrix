@@ -31,12 +31,14 @@ export function finalizeLookupInputValues(values: string[], index: number) {
 
 export const MATRIX_PAGE_ITEMS = [
   { screen: "explore", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索-icon.png" },
+  { screen: "tianheng", label: "Matrix 天衡", image: "/assets/lottery/functions/天衡.png" },
   { screen: "tianyan", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍-icon.png" },
   { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
 ] as const;
 
 export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
   "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
+  "Matrix 天衡": "/assets/lottery/functions/天衡標題K.png",
   "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
   "Matrix 天工": "/assets/lottery/functions/天工標題K.png",
   "Matrix 指南": "/assets/lottery/functions/指南標題K.png",
@@ -53,14 +55,19 @@ export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
 };
 
 export function MatrixPageSwitcher({ current, onNavigate }: {
-  current: "explore" | "tianyan" | "tiangong";
+  current: "explore" | "tianheng" | "tianyan" | "tiangong";
   onNavigate: Navigate;
 }) {
   return (
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
-      {MATRIX_PAGE_ITEMS.filter((item) => item.screen !== current).map((item) => (
-        <button type="button" aria-label={item.label} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
-          <img src={item.image} alt="" draggable={false} />
+      {MATRIX_PAGE_ITEMS.map((item) => (
+        <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
+          <img
+            className={item.screen === "tianheng" ? "matrix-page-switcher-image--tianheng" : undefined}
+            src={item.image}
+            alt=""
+            draggable={false}
+          />
         </button>
       ))}
     </nav>

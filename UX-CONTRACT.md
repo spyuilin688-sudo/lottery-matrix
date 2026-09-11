@@ -9,7 +9,9 @@
 - PWA 啟動、回到前景及前景每 30 秒重讀設定；演算法快取使用前重新確認設定版本，變更時清除既有結果。
 - 免費使用適用所有既有與未來的有效註冊會員，只增加天衍、天工、探索七期／十三期／完整範圍。訪客、缺少會員資料、停用會員不取得此權限。
 - Supabase 共用權限判斷為最終依據，關閉免費開放後恢復原有方案、推薦與試用規則；不修改方案、期限、付款或其他 Pro 權限。
-- 管理網站只允許擁有者登入，管理憑證只留在伺服器。切換需伺服器確認，版本衝突需重讀。
+- 管理入口位於營運後台的獨立選單「權限切換」。所有已登入且啟用的管理員可查看真實狀態，只有超級管理員可修改；前端顯示權限不取代 Supabase `admin-api` 與資料庫的雙重授權。
+- 切換使用既有 app-owned 確認對話框，取消不送出。儲存期間兩個開關停用；成功使用伺服器回傳的新 revision，失敗或版本衝突重讀真實狀態並提供可重試提示。service role 與舊管理權杖不得出現在瀏覽器。
+- 遷移採兩階段：先驗證新後台的讀取、超級管理員修改、一般管理員 403 與前台反映；確認正常後才撤銷舊 token 更新 RPC／憑證並退役獨立網站，避免控制空窗。
 
 ## Product context
 
@@ -109,7 +111,7 @@ The dialog preserves the existing navy, gold, danger-red and success-green visua
 
 2026-09-08：Matrix 狀態在資料回傳前顯示「資料載入中」及分類的「載入中」，讀取失敗時數量顯示「—」，成功完成後才顯示組數並開放展開。天工僅在探索成功後顯示結果組數。探索、天衍與天工收到 `AUTH_REQUIRED` 或 `FORBIDDEN` 時使用共用 `AppDialog` 提醒，關閉後保留頁面錯誤文字並可重試；天衍與天工方案不符文案為「目前 Matrix Pro 方案不符合天衍／天工的使用條件」。沿用共用視窗尺寸與觸控高度，不更動會員資格及試用規則。
 
-2026-09-08：三頁共用 `MatrixPageSwitcher`，移至第一張「探索設定」卡片標題同列右側。探索顯示天衍／天工，天衍顯示探索／天工，天工顯示探索／天衍；點擊呼叫既有頁面導覽，不再依上下捲動切換。探索、天衍、天工結果共用 `MatrixResultsPagination`，每頁 15 筆。天工點擊「重複號碼統計」的號碼小卡後，先依預測位置、再依間距升冪排序完整篩選結果，再分頁；切換篩選或重新探索回到第一頁。依據為本次使用者要求。
+2026-09-11：探索、天衡、天衍、天工四頁共用 `MatrixPageSwitcher`，位於第一張「探索設定」卡片標題同列右側。四頁固定依探索、天衡、天衍、天工排列並共用完整外框；點擊呼叫既有頁面導覽，不依上下捲動切換。探索、天衍、天工結果共用 `MatrixResultsPagination`，每頁 15 筆。天工點擊「重複號碼統計」的號碼小卡後，先依預測位置、再依間距升冪排序完整篩選結果，再分頁；切換篩選或重新探索回到第一頁。依據為本次使用者要求。
 
 2026-09-06: The user explicitly rejected loading feature-page code only when navigating. `Prototype` and `features/router` therefore import feature pages statically so their code loads at application startup. This supersedes the page-lazy-loading choice in the earlier P3 performance plan. The production import-graph test must keep every routed page in the startup graph; the earlier deferred-page and 500 KB chunk assertions no longer define this loading contract. The card exporter still loads only after download confirmation. Data requests, page markup, CSS, authentication and navigation targets retain their existing behavior. The shared `FeaturePageLoadBoundary` remains available for page render errors with user-initiated `重新載入` and `返回首頁`; navigation clears failure state without remounting a healthy shared page.
 

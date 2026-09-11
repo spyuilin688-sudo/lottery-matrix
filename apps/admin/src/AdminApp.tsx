@@ -1,4 +1,6 @@
+import { loadAdminBootstrap, createActivationBatchSubmitter } from "./admin-recovery";
 import { useAdminMemberPage } from "./use-admin-member-page";
+import { paginateAdminRows } from "./admin-table-pagination";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, auth } from "@appdeploy/client";
 import {
@@ -11,6 +13,7 @@ import {
   Bell,
   ScrollText,
   ShieldCheck,
+  ToggleLeft,
   Settings,
   KeyRound,
   Menu,
@@ -47,6 +50,7 @@ import { NotificationManagement } from "./NotificationManagement";
 import { AdminTransferPush } from "./AdminTransferPush";
 import { AdminTodos } from "./AdminTodos";
 import { PaymentReversalPanel, type PaymentRecord, type PaymentReversalStatus } from "./PaymentReversalPanel";
+import { PermissionSwitches } from "./PermissionSwitches";
 type Row = Record<string, unknown> & { id: string };
 type Dashboard = {
   todayVisitors: number | null;
@@ -89,6 +93,7 @@ const modules = [
   ["通知管理", Bell],
   ["審計日誌", ScrollText],
   ["管理員權限", ShieldCheck],
+  ["權限切換", ToggleLeft],
   ["系統設定", Settings],
   ["啟動碼管理", KeyRound],
 ] as const;
@@ -129,6 +134,7 @@ const labels: Record<string, string[]> = {
     "logoutAt",
     "onlineMinutes",
     "ip",
+    "estimatedRegion",
     "device",
   ],
   auditLogs: [
@@ -258,11 +264,15 @@ const defaultAdmin = (role = "查看人員"): AdminForm => ({
 });
 function AdminApp() {
   const [signed, setSigned] = useState(false);
+  const [bootstrapUnavailable, setBootstrapUnavailable] = useState(false);
+  const activationBatchSubmitter = useRef(createActivationBatchSubmitter(api));
   const [loginAccount, setLoginAccount] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [admin, setAdmin] = useState<Record<string, unknown> | null>(null);
   const [active, setActive] = useState("營運概覽");
   const [rows, setRows] = useState<Row[]>([]);
+  const [tablePage, setTablePage] = useState(1);
+  const [loginPageMeta, setLoginPageMeta] = useState({ total: 0, currentPage: 1, totalPages: 1 });
   const [memberListRevision, setMemberListRevision] = useState(0);
   const [plans, setPlans] = useState<Row[]>([]);
   const [transfers, setTransfers] = useState<Row[]>([]);
@@ -313,7 +323,7 @@ function AdminApp() {
     && activeRef.current === "訂閱管理"
     && adminIdRef.current === expectedAdminId
   );
-  const load = async (name = active, expectedAdminId = String(admin?.id ?? "")) => {
+  const load = async (name = active, expectedAdminId = String(admin?.id ?? ""), requestedTablePage = 1) => {
     if (name === "用戶管理" || name === "訂閱管理") setMemberListRevision(value => value + 1);
     const paymentRequestVersion = name === "訂閱管理" ? ++paymentLoadVersion.current : null;
     if (paymentRequestVersion !== null) {
@@ -349,7 +359,13 @@ function AdminApp() {
           if (paymentRead.ok) setPayments((paymentRead.result.data.items || []).map(paymentRecord));
           else setPaymentLoadError("付款紀錄載入失敗，請重新載入");
         }
-      } else if (name === "用戶管理" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
+      } else if (name === "登入紀錄") {
+        const result = await api.get(`/api/data/loginRecords?page=${requestedTablePage}`);
+        const page = result.data;
+        setRows(page.items || []);
+        setTablePage(Number(page.currentPage || 1));
+        setLoginPageMeta({ total: Number(page.total || 0), currentPage: Number(page.currentPage || 1), totalPages: Number(page.totalPages || 1) });
+      } else if (name === "用戶管理" || name === "權限切換" || name === "系統設定" || name === "通知管理" || name === "代辦事項") {
         setRows([]);
       } else {
         const t = tableMap[name];
@@ -375,7 +391,20 @@ function AdminApp() {
     setBusy(true);
     if (showError) setError("");
     try {
-      const r = await api.get("/api/bootstrap");
+      const bootstrap = await loadAdminBootstrap(api);
+      if (bootstrap.kind !== 'ready') {
+        setBootstrapUnavailable(bootstrap.kind === 'unavailable');
+        if (bootstrap.kind === 'unauthorized') {
+          signedRef.current = false;
+          adminIdRef.current = "";
+          setSigned(false);
+          setAdmin(null);
+        }
+        if (showError || bootstrap.kind === 'unavailable') setError(bootstrap.message);
+        return;
+      }
+      setBootstrapUnavailable(false);
+      const r = { data: { admin: bootstrap.admin } };
       const initialAdminId = String(r.data.admin?.id ?? "");
       setAdmin(r.data.admin);
       setSigned(true);
@@ -386,11 +415,8 @@ function AdminApp() {
       setActive(initial);
       await load(initial, initialAdminId);
     } catch (e) {
-      signedRef.current = false;
-      adminIdRef.current = "";
-      setSigned(false);
-      setAdmin(null);
-      if (showError) setError(e instanceof Error ? e.message : "無法載入後台");
+      setBootstrapUnavailable(true);
+      setError(e instanceof Error ? e.message : "無法載入後台");
     } finally { setBusy(false); }
   };
   useEffect(() => { void boot(false); }, []);
@@ -410,6 +436,8 @@ function AdminApp() {
       setPaymentLoadError("");
     }
     clearActivationSelection();
+    setTablePage(1);
+    setLoginPageMeta({ total: 0, currentPage: 1, totalPages: 1 });
     setActive(name);
     setDrawer(false);
     setShowForm(false);
@@ -437,7 +465,7 @@ function AdminApp() {
     setError("");
     if (!loginPassword) { setError("請先輸入要設定的管理員密碼"); return; }
     try {
-      const result = await auth.signIn();
+      const result = await auth.signIn({ email: loginAccount, password: loginPassword });
       const account = String(result.user.email || "");
       await api.post("/api/admin-credential-bootstrap", { password: loginPassword });
       await auth.signOut();
@@ -512,6 +540,26 @@ function AdminApp() {
     );
   };
   const fields = useMemo(() => labels[tableMap[active]] || [], [active]);
+  const pagedTable = useMemo(() => paginateAdminRows(active, rows, tablePage), [active, rows, tablePage]);
+  useEffect(() => {
+    if (tablePage === pagedTable.page) return;
+    setTablePage(pagedTable.page);
+    if (active === "啟動碼管理") {
+      setSelectedActivationCodeIds(new Set());
+      setActivationCopyFeedback("");
+    }
+  }, [active, pagedTable.page, tablePage]);
+  const changeTablePage = (page: number) => {
+    if (active === "登入紀錄") {
+      void load("登入紀錄", adminIdRef.current, page);
+      return;
+    }
+    setTablePage(page);
+    if (active === "啟動碼管理") {
+      setSelectedActivationCodeIds(new Set());
+      setActivationCopyFeedback("");
+    }
+  };
   const openActivationCodeForm = () => {
     setForm({ durationType: isSuper ? "30_days" : "7_days", quantity: "10" });
     setShowForm(true);
@@ -524,7 +572,7 @@ function AdminApp() {
       async () => {
         setBusy(true);
         try {
-          await api.post("/api/activation-codes/batch", { durationType, quantity });
+          await activationBatchSubmitter.current.submit(adminIdRef.current, durationType, quantity);
           setShowForm(false);
           setForm({});
           await load(active);
@@ -683,6 +731,15 @@ function AdminApp() {
     role,
     permissions: defaultOperationPermissions(role),
   }));
+  if (!signed && bootstrapUnavailable)
+    return (
+      <div className="login"><div className="loginCard">
+        <div className="brand">樂彩 Matrix</div>
+        <h1>營運後台</h1>
+        <p role="alert">後台連線異常，請重新載入</p>
+        <button onClick={() => void boot(true)} disabled={busy}>重新載入</button>
+      </div></div>
+    );
   if (!signed)
     return (
       <div className="login">
@@ -765,6 +822,13 @@ function AdminApp() {
           {busy && <div className="loading">資料處理中…</div>}
           {active === "營運概覽" && dash && <Overview d={dash} />}{" "}
           {active === "收入報表" && dash && <Revenue d={dash} isSuper={Boolean(isSuper)} onReset={resetRevenue} busy={busy} />}{" "}
+          {active === "權限切換" && (
+            <PermissionSwitches
+              client={api}
+              canEdit={Boolean(isSuper)}
+              confirm={requestConfirmation}
+            />
+          )}{" "}
           {active === "系統設定" && <SystemSettings canEdit={can("edit")} confirm={requestConfirmation} />}{" "}
           {active === "通知管理" && <NotificationManagement client={api} canEdit={can("edit")} />}{" "}
           {active === "代辦事項" && admin && (
@@ -871,7 +935,7 @@ function AdminApp() {
           {tableMap[active] && !["用戶管理", "訂閱管理"].includes(active) && (
             <>
               <div className="toolbar">
-                <div>{rows.length} 筆資料</div>
+                <div>{active === "登入紀錄" ? loginPageMeta.total : rows.length} 筆資料</div>
                 {active === "啟動碼管理" && (
                   <div className="activationCodeToolbarActions">
                     {activationCopyFeedback && <span className="activationCopyStatus" role="status">{activationCopyFeedback}</span>}
@@ -942,7 +1006,7 @@ function AdminApp() {
                 </div>
               )}
               <DataTable
-                rows={rows}
+                rows={pagedTable.items}
                 fields={fields}
                 canDelete={active === "啟動碼管理" && moduleCan("activationCodes", "edit", "delete")}
                 onDelete={deleteCode}
@@ -955,6 +1019,11 @@ function AdminApp() {
                   ? (row) => redeemedActivationCode(row) ? "已兌換，僅超級管理員可刪除" : ""
                   : undefined}
               />
+              {active === "登入紀錄" ? (
+                <Pagination page={loginPageMeta.currentPage} totalPages={loginPageMeta.totalPages} onPage={changeTablePage} disabled={busy} />
+              ) : pagedTable.pageSize > 0 && (
+                <Pagination page={pagedTable.page} totalPages={pagedTable.totalPages} onPage={changeTablePage} disabled={busy} />
+              )}
             </>
           )}
         </section>
@@ -1071,7 +1140,7 @@ function SubscriptionManager({
   onSubscription: (id: string, payload: SubscriptionPayload) => Promise<boolean>;
   onTransfer: (id: string, decision: "confirmed" | "rejected") => Promise<void>;
 }) {
-  const { keyword, setKeyword, status, setStatus, setPage, paged, total, loading, error, retry } = useAdminMemberPage("subscriptions", revision, api);
+  const { keyword, setKeyword, plan, setPlan, setPage, paged, total, loading, error, retry } = useAdminMemberPage("subscriptions", revision, api);
   const [editing, setEditing] = useState<Row | null>(null);
   const [action, setAction] = useState<SubscriptionPayload["action"]>("activate");
   const [planId, setPlanId] = useState("");
@@ -1117,10 +1186,10 @@ function SubscriptionManager({
   };
   return (
     <>
-      <div className="managementToolbar">
+      <div className="managementToolbar subscriptionManagementToolbar">
         <input aria-label="搜尋訂閱" maxLength={200} placeholder="搜尋會員或方案" value={keyword} onChange={(event) => { setKeyword(event.target.value); }} />
-        <select aria-label="篩選訂閱狀態" value={status} onChange={(event) => { setStatus(event.target.value); }}>
-          <option value="all">全部狀態</option><option value="active">啟用</option><option value="disabled">停用</option>
+        <select aria-label="篩選訂閱方案" value={plan} onChange={(event) => { setPlan(event.target.value); }}>
+          <option value="all">全部方案</option><option value="monthly">月費</option><option value="quarterly">季費</option><option value="yearly">年費</option>
         </select>
         <span className="managementCount" aria-label={loading ? "資料讀取中" : error ? "資料載入失敗" : `共 ${total} 筆資料`}>{loading ? "讀取中" : error ? "—" : `${total} 筆`}</span>
       </div>
@@ -1211,9 +1280,9 @@ function AdminManager({
   onDelete: (id: string) => void;
 }) {
   const roleDescription: Record<string, string> = {
-    超級管理員: "用戶管理、訂閱管理、啟動碼管理、系統設定、管理員權限",
-    營運管理員: "用戶管理、訂閱管理、啟動碼管理；系統設定僅查看",
-    查看人員: "用戶管理、訂閱管理、啟動碼管理、系統設定僅查看",
+    超級管理員: "用戶管理、訂閱管理、啟動碼管理、權限切換、系統設定、管理員權限",
+    營運管理員: "用戶管理、訂閱管理、啟動碼管理；權限切換與系統設定僅查看",
+    查看人員: "用戶管理、訂閱管理、啟動碼管理、權限切換、系統設定僅查看",
   };
   return (
     <>
@@ -1563,7 +1632,7 @@ function SystemSettings({ canEdit, confirm }: { canEdit: boolean; confirm: (requ
                           ))}
                           {detail?.status !== undefined && <div><dt>{typeof detail.status === "number" ? "回應代碼" : "執行結果"}</dt><dd>{formatSystemStatusValue(detail.status)}</dd></div>}
                           {finishedAt !== undefined && <div><dt>排程完成時間</dt><dd>{formatAdminDateTime(finishedAt)}</dd></div>}
-                          {item.id === "appdeploy-watchdog-heartbeat" && (
+                          {item.id === "supabase-watchdog-heartbeat" && (
                             <>
                               <div><dt>監控完成時間</dt><dd>{formatAdminDateTime(detail?.completedAt)}</dd></div>
                               <div><dt>執行頻率</dt><dd>每 10 分鐘</dd></div>

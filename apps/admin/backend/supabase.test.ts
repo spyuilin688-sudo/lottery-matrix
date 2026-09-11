@@ -58,11 +58,28 @@ describe('createSupabaseTransport', () => {
   );
 
   it.each([
+    ['PT409', 'SETTINGS_CONFLICT', 409],
+    ['42501', 'FORBIDDEN', 403],
+    ['42501', 'ADMIN_BACKEND_REQUIRED', 403],
+    ['22023', 'INVALID_REQUEST', 400],
+  ])('propagates the exact %s/%s permission-setting domain error', async (code, message, status) => {
+    const transport = createSupabaseTransport(
+      { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },
+      async () => new Response(JSON.stringify({ code, message }), { status }),
+    );
+
+    await expect(transport.supabaseRequest('rpc/admin_matrix_permission_settings_update'))
+      .rejects.toMatchObject({ message, statusCode: status });
+  });
+
+  it.each([
     ['/rest/v1/rpc/admin_update_subscription', { code: 'P0001', message: 'PAYMENT_REVERSAL_CONFLICT' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'P0001', message: 'UNKNOWN_DATABASE_DETAIL' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'XX000', message: 'PAYMENT_REVERSAL_CONFLICT' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'constructor', message: 'PAYMENT_REVERSAL_CONFLICT' }],
     ['/rest/v1/rpc/admin_record_payment_reversal', { code: 'P0002', message: 'PAYMENT_NOT_FOUND' }],
+    ['/rest/v1/rpc/admin_matrix_permission_settings_update', { code: 'PT409', message: 'UNKNOWN_DATABASE_DETAIL' }],
+    ['/rest/v1/rpc/matrix_permission_settings', { code: 'PT409', message: 'SETTINGS_CONFLICT' }],
   ])('keeps non-allowlisted database errors redacted for %s', async (path, body) => {
     const transport = createSupabaseTransport(
       { url: 'https://example.supabase.co', serviceRoleKey: 'test-key' },

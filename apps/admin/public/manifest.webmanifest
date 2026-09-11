@@ -1,13 +1,20 @@
 {
   "name": "樂彩 Matrix 營運後台",
   "short_name": "樂彩 Matrix 營運後台",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/admin/",
+  "start_url": "/admin/",
+  "scope": "/admin/",
   "display": "standalone",
   "icons": [
     {
-      "src": "./resources/admin-backend-icon.png",
-      "sizes": "1536x1536",
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }

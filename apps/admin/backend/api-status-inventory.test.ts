@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { apiStatusInventory } from './api-status-inventory';
 
 describe('api status inventory', () => {
-  it('lists every current AppDeploy, Supabase, GitHub and Railway endpoint once', () => {
+  it('lists every current Supabase, GitHub and Railway endpoint once', () => {
     expect(apiStatusInventory).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'admin-api', location: 'AppDeploy', endpoint: '/api/_healthcheck' }),
-      expect.objectContaining({ id: 'appdeploy-watchdog-heartbeat', location: 'AppDeploy' }),
+      expect.objectContaining({ id: 'admin-api', location: 'Supabase', endpoint: '/admin/api/_healthcheck' }),
+      expect.objectContaining({ id: 'supabase-watchdog-heartbeat', location: 'Supabase' }),
       expect.objectContaining({ id: 'supabase-auth', location: 'Supabase' }),
       expect.objectContaining({ id: 'matrix-status-function', endpoint: '/functions/v1/matrix-status' }),
       expect.objectContaining({ id: 'supabase-rpc-matrix_explore_list', endpoint: '/rest/v1/rpc/matrix_explore_list' }),
+      expect.objectContaining({ id: 'supabase-rpc-matrix_permission_settings', endpoint: '/rest/v1/rpc/matrix_permission_settings' }),
+      expect.objectContaining({ id: 'supabase-rpc-admin_matrix_permission_settings_update', endpoint: '/rest/v1/rpc/admin_matrix_permission_settings_update' }),
       expect.objectContaining({ id: 'supabase-rpc-redeem_activation_code', endpoint: '/rest/v1/rpc/redeem_activation_code' }),
       expect.objectContaining({
         id: 'github-fantasy5-workflow',
@@ -19,14 +21,14 @@ describe('api status inventory', () => {
       expect.objectContaining({ id: 'railway-jobs-recover', endpoint: '/jobs/recover', checkMode: 'service' }),
       expect.objectContaining({ id: 'railway-number-reference', endpoint: '/api/matrix/number-reference' }),
     ]));
-    expect(apiStatusInventory).toHaveLength(58);
+    expect(apiStatusInventory).toHaveLength(60);
     expect(new Set(apiStatusInventory.map((item) => item.id)).size).toBe(apiStatusInventory.length);
     expect(apiStatusInventory.every((item) => item.name && item.group && item.endpoint)).toBe(true);
   });
 
   it('covers the monitored Edge Functions including admin transfer push', () => {
     expect(apiStatusInventory
-      .filter((item) => item.endpoint.startsWith('/functions/v1/'))
+      .filter((item) => item.checkMode === 'live' && item.endpoint.startsWith('/functions/v1/'))
       .map((item) => item.endpoint))
       .toEqual([
         '/functions/v1/matrix-status',
@@ -67,13 +69,17 @@ describe('api status inventory', () => {
   });
 
   it('describes the deployed ten-minute watchdog schedule', () => {
-    expect(apiStatusInventory.find((item) => item.id === 'appdeploy-watchdog-heartbeat')?.description).toContain('每 10 分鐘');
+    expect(apiStatusInventory.find((item) => item.id === 'supabase-watchdog-heartbeat')).toMatchObject({
+      checkMode: 'service',
+      description: expect.stringContaining('每 10 分鐘'),
+    });
   });
 
   it('never live-probes write endpoints', () => {
     const writeEndpoints = new Set([
       '/rest/v1/rpc/matrix_custom_status_save',
       '/rest/v1/rpc/matrix_custom_status_reset',
+      '/rest/v1/rpc/admin_matrix_permission_settings_update',
       '/rest/v1/rpc/member_notification_settings_save',
       '/rest/v1/rpc/member_transfer_request_submit',
       '/rest/v1/rpc/member_push_subscription_save',

@@ -1,0 +1,31 @@
+.permissionSwitches{display:grid;gap:8px;width:min(720px,100%);min-width:0}
+.permissionSwitchesHeader{position:static;z-index:auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:0;padding:0 0 8px;background:transparent;border-bottom:1px solid #292c32;backdrop-filter:none}
+.permissionSwitchesHeader h2{margin:0;color:#ece7d8;font-size:17px}
+.permissionSwitchesHeader p{margin:4px 0 0;color:#989ca5;font-size:12px;line-height:1.55}
+.permissionReadOnly{flex:0 0 auto;padding:3px 7px;border:1px solid #45403a;border-radius:6px;color:#cbb675;font-size:11px;line-height:1.4}
+.permissionCurrentState{display:grid;gap:4px;padding:8px 10px;border:1px solid #343840;border-radius:8px;background:#0d1014}
+.permissionCurrentState>div{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}
+.permissionCurrentState strong{color:#e1c170;font-size:12px}
+.permissionCurrentState span{color:#c4c6cc;font-size:12px}
+.permissionCurrentState small{color:#888d96;font-size:11px}
+.permissionSwitchRows{display:grid;gap:8px}
+.permissionSwitchRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:12px;border:1px solid #292c32;border-radius:10px;background:#111419}
+.permissionSwitchCopy{min-width:0}
+.permissionSwitchCopy h3{margin:0;color:#ece7d8;font-size:15px}
+.permissionSwitchCopy p{margin:4px 0 0;color:#989ca5;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+.permissionSwitchControl{position:relative;display:grid;grid-template-columns:44px 44px;align-items:center;gap:6px;min-height:44px;color:#c4c6cc;cursor:pointer}
+.permissionSwitchControl input{position:absolute;left:0;top:0;width:44px;height:44px;margin:0;opacity:0;cursor:pointer}
+.permissionSwitchTrack{position:relative;display:block;width:38px;height:22px;margin-left:3px;border:1px solid #484c54;border-radius:999px;background:#25282e;transition:background-color .16s ease,border-color .16s ease}
+.permissionSwitchTrack>span{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#92969f;transition:transform .16s ease,background-color .16s ease}
+.permissionSwitchControl input:checked+.permissionSwitchTrack{border-color:#b48a35;background:#7d5f21}
+.permissionSwitchControl input:checked+.permissionSwitchTrack>span{transform:translateX(16px);background:#f2d17c}
+.permissionSwitchControl input:focus-visible+.permissionSwitchTrack{outline:2px solid #e7c46d;outline-offset:3px}
+.permissionSwitchControl input:disabled{cursor:not-allowed}
+.permissionSwitchControl:has(input:disabled){cursor:not-allowed;opacity:.62}
+.permissionSwitchControl b{width:44px;color:inherit;font-size:12px;font-weight:700;text-align:left;white-space:nowrap}
+.permissionSwitchLoading{min-height:70px;display:grid;place-items:center;border:1px solid #292c32;border-radius:10px;background:#111419;color:#8d919a;font-size:12px}
+.permissionSwitchFeedback{margin:0}
+.permissionSwitchNotice{padding:8px 10px;border:1px solid #31533b;border-radius:8px;background:#122219;color:#8ed7a3;font-size:12px}
+.permissionSwitchRetry{justify-self:start;width:auto}
+@media(max-width:760px){.permissionSwitchesHeader{display:grid}.permissionReadOnly{justify-self:start}.permissionSwitchRow{grid-template-columns:1fr;gap:6px;padding:10px}.permissionSwitchControl{justify-self:end}.permissionSwitchCopy p{max-width:none}}
+@media(prefers-reduced-motion:reduce){.permissionSwitchTrack,.permissionSwitchTrack>span{transition:none}}

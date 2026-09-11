@@ -229,7 +229,7 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
   const row = await screen.findByRole('button', { name: /展開版路/ });
   expect(screen.getByRole('heading', { name: '天工結果區' })).toBeTruthy();
-  expect([...document.querySelectorAll('.tiangong-results-head > span')].map(x => x.textContent)).toEqual(['間距','位移走向','預測位置','預測','版路類型']);
+  expect([...document.querySelectorAll('.tiangong-results-head > span')].map(x => x.textContent)).toEqual(['間距','位移走向','查詢位置','結果','版路類型']);
   expect(row.classList.contains('road-result-row')).toBe(true);
   expect(row.querySelector('.tiangong-interval')?.textContent).toBe('間距2');
   expect(row.querySelector('.tiangong-directions')?.textContent).toBe('固定|固定|固定');
@@ -242,9 +242,9 @@ test('天工列表沿用探索樣式並顯示指定五欄與整列按鈕', async
   expect(formulas[2].textContent).toBe('［ 16 ］');
 });
 
- test.each([1,2,3,4,5,6,7])('本期預測卡顯示號碼與球位 %s', (position) => {
+ test.each([1,2,3,4,5,6,7])('版路結果卡顯示號碼與球位 %s', (position) => {
   render(<TiangongValidationProcess loading={false} predictionNumber="28" predictedPosition={position} validation={{itemId:'test', evidence:{rows:[], d_exclusion:{status:'breaks_at_stage1'}}}} />);
-  const card = screen.getByText('本期預測').closest('footer')!;
+  const card = screen.getByText('版路結果').closest('footer')!;
   expect(card.className).toBe('explore-validation-prediction');
   expect(card.textContent).toContain('28');
   expect(card.textContent).toContain(position === 7 ? '特別號' : `第${['一','二','三','四','五','六'][position-1]}顆`);
@@ -348,4 +348,24 @@ test('點擊天工號碼小卡後，完整結果先依預測位置再依間距�
   fireEvent.click(screen.getByRole('button', { name: '天工結果下一頁' }));
   expect(labels()).toEqual([2, 5, 9].map(gap => `展開版路 position-7-gap-${gap}`));
   expect(screen.getByRole('button', { name: '篩選預測號碼 12，18次' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+
+
+test.each(['success', 'failure'])('切換彩種清除天工請求並忽略舊 %s', async outcome => {
+  let resolve!: (value: typeof envelope) => void;
+  let reject!: (reason: unknown) => void;
+  matrixApi.fetchTiangongList.mockReturnValueOnce(new Promise((done, fail) => { resolve = done; reject = fail; }));
+  render(<MatrixTiangongPage onNavigate={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  fireEvent.change(screen.getByRole('combobox', { name: '彩球類型' }), { target: { value: '天天樂' } });
+  expect(screen.queryByRole('heading', { name: '天工結果區' })).toBeNull();
+  expect((screen.getByRole('button', { name: '開始天工' }) as HTMLButtonElement).disabled).toBe(false);
+  await act(async () => { outcome === 'success' ? resolve(envelope) : reject({ code: 'AUTH_REQUIRED' }); });
+  expect(screen.queryByRole('button', { name: /展開版路/ })).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '開始天工' }));
+  await screen.findByRole('button', { name: /展開版路/ });
+  expect(matrixApi.fetchTiangongList).toHaveBeenLastCalledWith(expect.objectContaining({ lottery: '天天樂' }));
 });

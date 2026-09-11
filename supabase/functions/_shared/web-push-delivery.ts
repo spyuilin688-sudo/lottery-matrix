@@ -1,3 +1,7 @@
+import { withRequestDeadline } from './request-deadline.ts';
+
+export const PUSH_OPERATION_TIMEOUT_MS = 8_000;
+
 export type PushSubscription = {
   id: string;
   endpoint: string;
@@ -91,24 +95,29 @@ export async function deliverPushToSubscription(
 
   try {
     if (invalidEndpoint) throw new Error("INVALID_PUSH_SUBSCRIPTION");
-    await dependencies.sendPush(input.subscription, input.payload);
+    await withRequestDeadline(() => dependencies.sendPush(input.subscription, input.payload), {
+      timeoutMs: PUSH_OPERATION_TIMEOUT_MS,
+    });
     delivered = true;
   } catch (cause) {
     sendFailure = cause;
   }
 
   if (delivered) {
-    await dependencies.markSuccess(input.subscription.id, sentAt);
-    await dependencies.recordDelivery({
-      userId: input.userId,
-      subscriptionId: input.subscription.id,
-      title: input.payload.title,
-      body: input.payload.body,
-      status: "sent",
-      failureReason: null,
-      adminAccount: input.adminAccount,
-      sentAt,
-    });
+    // Metadata failures cannot turn a provider-confirmed send into a retry.
+    await recordMetadata([
+      () => dependencies.markSuccess(input.subscription.id, sentAt),
+      () => dependencies.recordDelivery({
+        userId: input.userId,
+        subscriptionId: input.subscription.id,
+        title: input.payload.title,
+        body: input.payload.body,
+        status: "sent",
+        failureReason: null,
+        adminAccount: input.adminAccount,
+        sentAt,
+      }),
+    ]);
     return {
       delivered: true,
       permanentFailure: false,
@@ -119,21 +128,23 @@ export async function deliverPushToSubscription(
 
   const permanentFailure = invalidEndpoint || expiredEndpoint(sendFailure);
   const reason = failureReason(sendFailure);
-  await dependencies.markFailure(
-    input.subscription.id,
-    sentAt,
-    permanentFailure,
-  );
-  await dependencies.recordDelivery({
-    userId: input.userId,
-    subscriptionId: input.subscription.id,
-    title: input.payload.title,
-    body: input.payload.body,
-    status: "failed",
-    failureReason: reason,
-    adminAccount: input.adminAccount,
-    sentAt,
-  });
+  await recordMetadata([
+    () => dependencies.markFailure(
+      input.subscription.id,
+      sentAt,
+      permanentFailure,
+    ),
+    () => dependencies.recordDelivery({
+      userId: input.userId,
+      subscriptionId: input.subscription.id,
+      title: input.payload.title,
+      body: input.payload.body,
+      status: "failed",
+      failureReason: reason,
+      adminAccount: input.adminAccount,
+      sentAt,
+    }),
+  ]);
 
   return {
     delivered: false,
@@ -141,4 +152,14 @@ export async function deliverPushToSubscription(
     failureReason: reason,
     sentAt,
   };
+}
+
+async function recordMetadata(operations: Array<() => Promise<void>>) {
+  const results = await Promise.allSettled(operations.map((operation) =>
+    withRequestDeadline(operation, { timeoutMs: PUSH_OPERATION_TIMEOUT_MS })
+  ));
+  if (results.some((result) => result.status === 'rejected')) {
+    // Do not include provider responses, subscription endpoints or user data.
+    console.warn('PUSH_DELIVERY_METADATA_UNAVAILABLE');
+  }
 }

@@ -271,11 +271,11 @@ test('reversal recomputes canonical distinct referral counts and 10/15/30/50 rew
     for (let n = 36; n <= 40; n += 1) await reverse(db, n);
     assert.equal((await scalar(db, 'select public.member_referral_summary()')).referralSuccessCount, 10);
     entitlements = await scalar(db, 'select private.matrix_result_entitlements()');
-    assert.equal(entitlements.canUseSeven, [1, 4].includes(day));
+    assert.equal(entitlements.canUseSeven, [1, 2, 4, 5].includes(day));
 
     await reverse(db, 41);
     entitlements = await scalar(db, 'select private.matrix_result_entitlements()');
-    assert.equal(entitlements.canUseSeven, false);
+    assert.equal(entitlements.canUseSeven, [2, 5].includes(day));
     assert.equal(entitlements.canUseFullRange, false);
 
     await db.exec(`

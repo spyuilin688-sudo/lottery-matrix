@@ -5,7 +5,7 @@ const response = (value: unknown) => new Response(JSON.stringify(value));
 function fixture(input: RequestInfo | URL, init?: RequestInit) {
   const url = new URL(String(input));
   if (url.pathname.includes('/rpc/')) {
-    const body = JSON.parse(url.searchParams.get('p_request')!);
+    const body = JSON.parse(String(init?.body)).p_request;
     return response(url.pathname.endsWith('_validation')
       ? { ...body, status: 'complete', validation: { ruleSets: [] } }
       : { kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 1, items: [{ id: 'sample' }] });
@@ -23,6 +23,27 @@ function fixture(input: RequestInfo | URL, init?: RequestInit) {
 const make = (fetcher: typeof fetch, timeoutMs = 1000) => createApiQueryChecks({ fetcher, loadWorkerUrl: async () => 'https://worker.test', loadSupabaseConfig: async () => ({ url: 'https://db.test', serviceRoleKey: 'server-secret' }), timeoutMs });
 
 describe('automatic per API queries', () => {
+  it('calls volatile Supabase RPCs with POST JSON bodies', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method !== 'POST') return new Response(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }), { status: 405 });
+      const body = JSON.parse(String(init.body));
+      const request = body.p_request;
+      return response({ kind: 'explore', lottery: request.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 0, items: [] });
+    });
+
+    const result = await make(fetcher)('supabase-rpc-matrix_explore_list');
+
+    expect(result.ok).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(fetcher.mock.calls.every(([url, init]) => {
+      const parsed = new URL(String(url));
+      return init?.method === 'POST'
+        && parsed.search === ''
+        && new Headers(init.headers).get('Content-Type') === 'application/json'
+        && typeof JSON.parse(String(init.body)).p_request === 'object';
+    })).toBe(true);
+  });
+
   it('queries all four lotteries for each API, shares list samples and never invokes mutation routes', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => fixture(input, init));
     const probe = make(fetcher);
@@ -33,7 +54,12 @@ describe('automatic per API queries', () => {
     expect(urls.filter((url) => url.pathname.endsWith('matrix_explore_list'))).toHaveLength(4);
     for (const [url, init] of fetcher.mock.calls) {
       expect(init?.redirect).toBe('error');
-      if (init?.method === 'POST') expect(['/api/matrix/tongxing', '/api/matrix/number-reference']).toContain(new URL(String(url)).pathname);
+      if (init?.method === 'POST' && String(url).startsWith('https://worker.test')) expect(['/api/matrix/tongxing', '/api/matrix/number-reference']).toContain(new URL(String(url)).pathname);
+      if (String(url).startsWith('https://db.test')) {
+        expect(init?.method).toBe('POST');
+        expect(new URL(String(url)).search).toBe('');
+        expect(typeof JSON.parse(String(init?.body)).p_request).toBe('object');
+      }
       if (String(url).startsWith('https://worker.test')) expect(JSON.stringify(init)).not.toContain('server-secret');
       expect(String(url)).not.toMatch(/jobs\/(refresh|recover)|notification|member_|_save|_reset/);
     }
@@ -51,8 +77,8 @@ describe('automatic per API queries', () => {
     expect((await make(async () => response({ item: { period: '123', numbers: ['01', '01', '03', '04', '05'] } }))('railway-latest')).ok).toBe(false);
   });
   it('does not claim validation passed when there are no sample items', async () => {
-    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
-      const body = JSON.parse(new URL(String(input)).searchParams.get('p_request')!);
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)).p_request;
       return response({ kind: 'explore', lottery: body.lottery, status: 'complete', drawPeriod: '123', analysisVersion: '123:v12', total: 0, items: [] });
     });
     const result = await make(fetcher)('supabase-rpc-matrix_explore_validation');

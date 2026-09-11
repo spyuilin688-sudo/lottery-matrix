@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createConnectionStatus } from './connection-status';
 
-const healthUrl = 'https://api-v2.appdeploy.ai/app/matrix-sanqwn/api/_healthcheck';
+const healthUrl = 'https://matrixlottery.idv.tw/admin/api/_healthcheck';
 const json = (body: unknown) => Response.json(body);
 const fixture = (fetcher: typeof fetch) => createConnectionStatus({
   supabase: { selectRows: async () => [] },
@@ -54,7 +54,14 @@ describe('permission-independent RPC registration evidence', () => {
     expect(registryCalls).toHaveLength(1);
     expect(new URL(String(registryCalls[0][0])).searchParams.get('rpc_name')).toContain('member_transfer_request_submit');
     expect(fetcher.mock.calls.some(([input]) => new URL(String(input)).pathname === '/rest/v1/rpc/member_transfer_request_submit')).toBe(false);
-    expect(fetcher.mock.calls.every(([, init]) => !init?.method || ['GET', 'OPTIONS'].includes(init.method))).toBe(true);
+    expect(fetcher.mock.calls.every(([input, init]) => {
+      if (init?.method === 'POST') {
+        const path = new URL(String(input)).pathname;
+        return ['/rest/v1/rpc/matrix_explore_list', '/rest/v1/rpc/matrix_explore_validation'].includes(path)
+          && typeof JSON.parse(String(init.body)).p_request === 'object';
+      }
+      return !init?.method || ['GET', 'OPTIONS'].includes(init.method);
+    })).toBe(true);
     expect(JSON.stringify(result)).not.toContain('private-service-key');
   });
 

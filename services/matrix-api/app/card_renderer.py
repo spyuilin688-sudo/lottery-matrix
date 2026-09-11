@@ -407,7 +407,7 @@ def render_matrix_card(lottery: str, order: str, draws: list[dict[str, Any]]) ->
                 _text(
                     (panel["day_week"] + panel["numbers"]) / 2, top + 41,
                     value["weekday"],
-                    39, fill=MONDAY_RED if value["weekday"] == "一" else BLACK,
+                    39, fill=MONDAY_RED if value["weekday"] == "一" and lottery != "大樂透" else BLACK,
                     font_family=CJK_FONT_FAMILY,
                 ),
             ])
