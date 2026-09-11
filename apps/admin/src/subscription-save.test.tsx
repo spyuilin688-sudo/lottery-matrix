@@ -25,7 +25,7 @@ const app = vi.hoisted(() => {
         } };
         if (url.startsWith('/api/data/subscriptions?')) return { data: { total: 1, currentPage: 1, totalPages: 1, items: [{
           id: 'member-1', authUserId: 'auth-1', lineDisplayName: '測試會員', status: 'active',
-          currentPlanId: null, planName: null, planStartedAt: null,
+          currentPlanId: 'plan-monthly', planName: '月費方案', planStartedAt: null,
           planExpiresAt: state.expiresAt, isLifetime: false, autoRenew: false,
         }] } };
         return { data: { items: [] } };

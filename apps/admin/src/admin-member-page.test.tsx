@@ -2,7 +2,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { useAdminMemberPage } from './use-admin-member-page';
-const response = (id: string, total = 61, currentPage = 1) => ({ data: { items: [{ id, lineDisplayName: id }], total, currentPage, totalPages: Math.max(1, Math.ceil(total / 30)) } });
+const response = (id: string, total = 61, currentPage = 1) => ({ data: { items: [{ id, lineDisplayName: id, currentPlanId: 'plan-monthly', planName: '月費方案' }], total, currentPage, totalPages: Math.max(1, Math.ceil(total / 30)) } });
 
 test('page and search are sent to server; stale results never replace a newer filter', async () => {
   let finishOld!: (value: ReturnType<typeof response>) => void;

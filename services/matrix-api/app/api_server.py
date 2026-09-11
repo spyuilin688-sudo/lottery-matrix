@@ -542,6 +542,13 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             self.security_monitor.observe(self._security_category, source, trusted,
                                           "denied" if status in (401, 403) else "invalid")
 
+    def _write_response(self, encoded: bytes) -> None:
+        try:
+            self.end_headers()
+            self.wfile.write(encoded)
+        except BrokenPipeError:
+            return
+
     def _send(
         self,
         status: int,
@@ -563,8 +570,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Access-Control-Allow-Headers", "Content-Type,X-Request-ID")
             self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.end_headers()
-        self.wfile.write(encoded)
+        self._write_response(encoded)
 
     def _is_protected_job_path(self) -> bool:
         return urlsplit(self.path).path in {
@@ -584,8 +590,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET,OPTIONS")
-        self.end_headers()
-        self.wfile.write(encoded)
+        self._write_response(encoded)
 
     def do_OPTIONS(self) -> None:
         protected = self._is_protected_job_path()

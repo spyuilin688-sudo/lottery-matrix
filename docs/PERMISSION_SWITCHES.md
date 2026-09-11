@@ -1,8 +1,8 @@
 # 權限管理開關
 
-管理網站：https://matrix-permissions.spyuilin688.chatgpt.site
+管理者後台：https://admin.matrixlottery.idv.tw
 
-網站獨立部署於 Sites，僅限擁有者登入；不占用既有 AppDeploy 管理後台部署。
+權限切換已整合至管理者後台；所有啟用中的管理員可查看，僅超級管理員可修改。
 
 兩個開關由 Supabase private.matrix_permission_settings 保存：
 
@@ -15,8 +15,8 @@ PWA 首次需發布包含此串接的版本。之後變更設定不需要重新�
 
 購買開關只控制介面顯示，不停止既有付款後端。免費開放不修改會員方案與到期日，不開放其他 Pro 功能。
 
-管理憑證只保存在 Sites 的 MATRIX_MANAGEMENT_TOKEN 秘密環境變數；資料庫只保存 SHA-256。它只能修改這兩項設定，不能存取會員資料。不要將憑證放進 PWA、Git 或公開環境變數。
-輪替時產生至少 48 隨機位元組的 token，更新 private.matrix_permission_credentials 的 hash 及 Sites runtime secret，再發布既有網站版本使秘密生效。
+管理者後台以既有登入工作階段驗證身分，Supabase admin-api 僅允許啟用中的超級管理員呼叫原生更新 RPC。
+舊獨立網站的 token 更新函式與憑證表已退役；PWA 繼續透過公開唯讀 RPC 取得目前設定。
 
 設定寫入需 expectedRevision，衝突回 409，管理頁必須重讀。操作失敗或結果未知時不顯示儲存成功。
 

@@ -73,7 +73,7 @@ describe('system status client', () => {
   });
 
   it('groups status rows in the fixed deployment-location order', () => {
-    const item = (id: string, location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway') => ({
+    const item = (id: string, location: 'Supabase' | 'GitHub' | 'Railway') => ({
       id,
       name: id,
       description: '狀態',
@@ -90,9 +90,7 @@ describe('system status client', () => {
       item('railway', 'Railway'),
       item('github', 'GitHub'),
       item('supabase', 'Supabase'),
-      item('admin', 'AppDeploy'),
     ])).toEqual([
-      { location: 'AppDeploy', items: [expect.objectContaining({ id: 'admin' })] },
       { location: 'Supabase', items: [expect.objectContaining({ id: 'supabase' })] },
       { location: 'GitHub', items: [expect.objectContaining({ id: 'github' })] },
       { location: 'Railway', items: [expect.objectContaining({ id: 'railway' })] },
@@ -100,7 +98,7 @@ describe('system status client', () => {
   });
 
   it('omits deployment locations that do not have status rows', () => {
-    const item = (id: string, location: 'AppDeploy' | 'GitHub' | 'Railway') => ({
+    const item = (id: string, location: 'GitHub' | 'Railway') => ({
       id,
       name: id,
       description: '狀態',
@@ -115,9 +113,8 @@ describe('system status client', () => {
 
     expect(groupSystemStatusItems([
       item('railway', 'Railway'),
-      item('admin', 'AppDeploy'),
       item('github', 'GitHub'),
-    ]).map((group) => group.location)).toEqual(['AppDeploy', 'GitHub', 'Railway']);
+    ]).map((group) => group.location)).toEqual(['GitHub', 'Railway']);
   });
 
   it('projects the whitelisted GitHub workflow and latest-run detail for display', () => {
@@ -192,7 +189,7 @@ describe('system status client', () => {
 describe('system status evidence presentation', () => {
   const item = {
     id: 'admin-api', name: 'API', description: '', group: '系統',
-    location: 'AppDeploy' as const, endpoint: '/api/_healthcheck',
+    location: 'Supabase' as const, endpoint: '/admin/api/_healthcheck',
     checkMode: 'live' as const, ok: true, checkedAt: '', responseMs: 0,
   };
 

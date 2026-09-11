@@ -3,7 +3,7 @@ export type SystemStatusItem = {
   name: string;
   description: string;
   group: string;
-  location: 'AppDeploy' | 'Supabase' | 'GitHub' | 'Railway';
+  location: 'Supabase' | 'GitHub' | 'Railway';
   endpoint: string;
   checkMode: 'live' | 'openapi' | 'registry' | 'service';
   checkEvidence?: 'live' | 'registered' | 'options' | 'inherited' | 'reported' | 'query' | 'no-sample';
@@ -39,7 +39,6 @@ const crawlerStatusIds = new Set([
   'cron-matrix-649-refresh-v2',
 ]);
 const statusLocationOrder: SystemStatusItem['location'][] = [
-  'AppDeploy',
   'Supabase',
   'GitHub',
   'Railway',
