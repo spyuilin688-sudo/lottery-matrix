@@ -12,7 +12,7 @@ create table public.payments(member_id uuid,status text);
 create table public.admin_accounts(id uuid primary key, account text, name text, role text, status text);
 `);
 await db.exec(readFileSync(new URL('../../supabase/migrations/20260909215507_matrix_permission_switches.sql', import.meta.url),'utf8'));
-await db.exec(readFileSync(new URL('../../supabase/migrations/20260911061345_admin_matrix_permission_settings.sql', import.meta.url),'utf8'));
+await db.exec(readFileSync(new URL('../../supabase/migrations/20260910225542_admin_matrix_permission_settings.sql', import.meta.url),'utf8'));
 const q = async sql => (await db.query(sql)).rows[0];
 const read = async () => (await q('select public.matrix_permission_settings() as value')).value;
 const ent = async () => (await q('select private.matrix_result_entitlements() as value')).value;
