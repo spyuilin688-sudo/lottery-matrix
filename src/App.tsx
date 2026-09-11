@@ -7,8 +7,10 @@ import Prototype from "./Prototype";
 import { AppDialogProvider } from "./dialog/AppDialog";
 import { ExploreResultPreviewPage } from "./ExploreResultPreviewPage";
 import { PwaLifecycleProvider } from "./pwa-lifecycle";
+import { LineLoginErrorNotice } from "./auth/LineLoginErrorNotice";
+import type { LineLoginCallbackError } from "./auth/line-login-callback-error";
 
-export default function App() {
+export default function App({ lineLoginError }: { lineLoginError?: LineLoginCallbackError } = {}) {
   useEffect(() => installPermissionSettingsRefresh(), []);
   const isExploreResultPreviewPath =
     window.location.pathname === "/explore-result-preview" ||
@@ -16,6 +18,7 @@ export default function App() {
 
   return (
     <AppDialogProvider>
+      <LineLoginErrorNotice error={lineLoginError} />
       <PwaLifecycleProvider>
         <div className="app-mobile-canvas" data-testid="app-mobile-canvas">
           {isExploreResultPreviewPath ? <ExploreResultPreviewPage /> : (

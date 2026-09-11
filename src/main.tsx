@@ -35,6 +35,10 @@ import {
   createLinePwaReturnHref,
 } from './auth/LinePwaReturnFallback';
 import { isPwaDisplayMode } from './pwa-display-mode';
+import { clearLineLoginAttempt } from './auth/line-login-attempt';
+import { clearLineLoginCallbackError, readLineLoginCallbackError } from './auth/line-login-callback-error';
+
+const lineLoginError = readLineLoginCallbackError(new URL(window.location.href));
 
 installGlobalInputBehavior();
 
@@ -47,11 +51,15 @@ const linePwaWorkerReady = 'serviceWorker' in navigator
 const root = document.getElementById('root')!;
 let diagnosticFlushStarted = false;
 const renderApp = () => {
+  if (lineLoginError) {
+    clearLineLoginAttempt();
+    clearLineLoginCallbackError();
+  }
   const stopVisitorTracking = installVisitorTracking();
   if (import.meta.hot) import.meta.hot.dispose(stopVisitorTracking);
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <App />
+      <App lineLoginError={lineLoginError} />
     </React.StrictMode>,
   );
   if (!diagnosticFlushStarted) {
@@ -93,7 +101,7 @@ async function bootstrap() {
     try {
       const { data, error } = await getSupabaseClient().auth.getSession();
       const callbackWasConsumed = !hasLineOAuthCallback(window);
-      if (callbackIsOutsidePwa && callbackWasConsumed && !error && data.session) {
+      if (!lineLoginError && callbackIsOutsidePwa && callbackWasConsumed && !error && data.session) {
         renderLinePwaReturnFallback();
         return;
       }
