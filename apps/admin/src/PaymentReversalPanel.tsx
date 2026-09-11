@@ -223,18 +223,20 @@ export function PaymentReversalPanel({ payments, loadError = '', canEdit, confir
                   <span>沖銷原因 {payment.reversalReason}{payment.reversedByName ? `／${payment.reversedByName}` : ''}</span>
                 )}
               </div>
-              <b className="paymentReversalState" data-status={paymentStatus}>{statusLabels[paymentStatus] || paymentStatus}</b>
-              {canEdit && paymentStatus === 'confirmed' && !isEditing && (
-                <button
-                  type="button"
-                  className="paymentReversalOpen"
-                  aria-label={`記錄沖銷 ${payment.id}`}
-                  disabled={busy}
-                  onClick={() => open(payment.id)}
-                >
-                  記錄沖銷
-                </button>
-              )}
+              <div className="paymentReversalActions">
+                <b className="paymentReversalState" data-status={paymentStatus}>{statusLabels[paymentStatus] || paymentStatus}</b>
+                {canEdit && paymentStatus === 'confirmed' && !isEditing && (
+                  <button
+                    type="button"
+                    className="paymentReversalOpen"
+                    aria-label={`記錄沖銷 ${payment.id}`}
+                    disabled={busy}
+                    onClick={() => open(payment.id)}
+                  >
+                    記錄沖銷
+                  </button>
+                )}
+              </div>
               {isEditing && canEdit && (
                 <form
                   className="paymentReversalForm"
