@@ -11,7 +11,7 @@ import {
   type ModuleKey,
   type PermissionKey,
 } from './admin-auth';
-import { createAdminData, getDashboard, listAdminTable, listAdminMemberPage } from './admin-data';
+import { createAdminData, getDashboard, listAdminLoginRecordPage, listAdminTable, listAdminMemberPage } from './admin-data';
 import { createAdminTodos } from './admin-todos';
 import { createAdminTransferPush } from './admin-transfer-push';
 import { createAdminCredentialAuth, type CredentialAdmin } from './admin-credential-auth';
@@ -548,6 +548,9 @@ const routes: Record<string, unknown> = {
       if (module) requireModulePermission(admin, module, 'view');
       if (ctx.params.table === 'users' || ctx.params.table === 'subscriptions') {
         return json(await listAdminMemberPage(ctx.params.table, ctx.query ?? {}, supabase));
+      }
+      if (ctx.params.table === 'loginRecords') {
+        return json(await listAdminLoginRecordPage(ctx.query ?? {}, supabase));
       }
       return json(await listAdminTable(ctx.params.table, supabase));
     } catch (cause) {

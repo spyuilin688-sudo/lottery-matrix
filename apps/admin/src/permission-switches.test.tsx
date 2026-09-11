@@ -29,6 +29,7 @@ describe('permission switch workspace', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
   });
 
   const switches = () => ({
@@ -47,6 +48,50 @@ describe('permission switch workspace', () => {
     expect(switches().purchase?.disabled).toBe(true);
     expect(switches().free?.disabled).toBe(true);
     expect(container.textContent).toContain('僅超級管理員可修改');
+  });
+
+  it('shows the current PWA state and refreshes it automatically every hour', async () => {
+    let hourlyRefresh: (() => void) | undefined;
+    vi.spyOn(window, 'setInterval').mockImplementation(((handler: TimerHandler, timeout?: number) => {
+      expect(timeout).toBe(60 * 60 * 1000);
+      hourlyRefresh = handler as () => void;
+      return 1;
+    }) as typeof window.setInterval);
+    const client = { get: vi.fn(async () => ({ data: current })), put: vi.fn() };
+
+    await act(async () => root.render(<PermissionSwitches client={client} canEdit confirm={vi.fn()} />));
+    await settle();
+
+    expect(container.textContent).toContain('目前 PWA 狀態');
+    expect(container.textContent).toContain('訂閱購買：關閉');
+    expect(container.textContent).toContain('會員免費使用：開啟');
+    expect(container.textContent).toContain('每小時自動檢查');
+    await act(async () => { hourlyRefresh?.(); await Promise.resolve(); });
+    expect(client.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not let an older hourly read overwrite a successful switch update', async () => {
+    let hourlyRefresh: (() => void) | undefined;
+    let releaseStaleRead!: (value: { data: typeof current }) => void;
+    vi.spyOn(window, 'setInterval').mockImplementation(((handler: TimerHandler) => {
+      hourlyRefresh = handler as () => void;
+      return 1;
+    }) as typeof window.setInterval);
+    const updated = { ...current, subscriptionPurchaseVisible: true, revision: 8 };
+    const get = vi.fn()
+      .mockResolvedValueOnce({ data: current })
+      .mockImplementationOnce(() => new Promise((resolve) => { releaseStaleRead = resolve; }));
+    const client = { get, put: vi.fn(async () => ({ data: updated })) };
+    await act(async () => root.render(<PermissionSwitches client={client} canEdit confirm={vi.fn(async () => true)} />));
+    await settle();
+
+    act(() => { hourlyRefresh?.(); });
+    await act(async () => switches().purchase?.click());
+    expect(switches().purchase?.checked).toBe(true);
+    await act(async () => releaseStaleRead({ data: current }));
+
+    expect(switches().purchase?.checked).toBe(true);
+    expect(container.textContent).toContain('訂閱購買：開啟');
   });
 
   it('shows an honest load failure and retries without displaying guessed switch values', async () => {

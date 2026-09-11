@@ -257,7 +257,7 @@ describe('NotificationManagement', () => {
     expect(container.textContent).not.toContain('發送紀錄更新失敗');
   });
 
-  it('renders the latest 200 logs once in one semantic responsive table', async () => {
+  it('renders delivery logs ten per page in one semantic responsive table', async () => {
     const manyLogs = Array.from({ length: 200 }, (_, index) => ({
       ...failedLog,
       id: `log-${index}`,
@@ -269,7 +269,14 @@ describe('NotificationManagement', () => {
     await renderManager(client({ get }));
 
     expect(container.textContent).toContain('最新 200 筆紀錄');
-    expect(container.querySelectorAll('tbody tr, .notificationLogCard')).toHaveLength(200);
+    expect(container.querySelectorAll('tbody tr, .notificationLogCard')).toHaveLength(10);
+    expect(container.textContent).toContain('第 1／20 頁');
+    expect(container.textContent).toContain('reason-9');
+    expect(container.textContent).not.toContain('reason-10');
+    await act(async () => { buttonNamed('下一頁').click(); });
+    expect(container.textContent).toContain('第 2／20 頁');
+    expect(container.textContent).toContain('reason-10');
+    expect(container.textContent).not.toContain('reason-9');
     expect(container.querySelector('table[aria-label="測試推播發送紀錄"]')).not.toBeNull();
     expect(container.querySelector('.notificationLogCards')).toBeNull();
   });

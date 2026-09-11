@@ -1,4 +1,4 @@
-import { memberConnectionSummaries } from './member-login-history';
+import { lookupLocations, memberConnectionSummaries } from './member-login-history';
 type Requester = {
   request<T = unknown>(path: string, init?: RequestInit): Promise<T>;
 };
@@ -67,7 +67,7 @@ const definitions: Record<string, TableDefinition> = {
     }),
   },
   subscriptions: {
-    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
+    path: '/rest/v1/members?select=id,auth_user_id,line_display_name,registered_at,current_plan_id,plan_started_at,plan_expires_at,is_lifetime,auto_renew,status,referral_code,invitation_code,last_online_at,total_online_seconds,online_session_count,current_plan:plans!members_current_plan_id_fkey!inner(name,price,duration_days)&order=plan_started_at.desc.nullslast,id.asc',
     map: (row) => {
       const plan = (row.current_plan ?? null) as Row | null;
       return {
@@ -214,10 +214,19 @@ async function listAllRows(api: Requester, path: string) {
   }
 }
 
+async function enrichLoginRecords(items: Array<Row & { id: string }>, api: Requester) {
+  const ips = items.map(item => typeof item.ip === 'string' ? item.ip : null);
+  const locations = await lookupLocations(ips, api).catch(() => new Map<string, string | null>());
+  return items.map(item => ({ ...item, estimatedRegion: typeof item.ip === 'string' ? locations.get(item.ip) || null : null }));
+}
+
 export async function listAdminTable(table: string, api: Requester, currentDate = new Date()) {
   const definition = getAdminTableDefinition(table);
   const rows = await listAllRows(api, definition.path);
   const items = rows.map(definition.map);
+  if (table === 'loginRecords') {
+    return { items: await enrichLoginRecords(items, api) };
+  }
   if (table !== 'users' && table !== 'subscriptions') return { items };
   return { items: await enrichMembers(items, api, currentDate) };
 }
@@ -241,22 +250,52 @@ type PageRequester = Requester & {
   requestPage<T = unknown>(path: string): Promise<{ items: T[]; total: number }>;
 };
 
+const adminLoginRecordPageSize = 10;
+
+export async function listAdminLoginRecordPage(query: { page?: unknown }, api: PageRequester) {
+  const page = Number(query.page ?? 1);
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new AdminDataError('查詢條件不正確');
+  const definition = getAdminTableDefinition('loginRecords');
+  const url = new URL(definition.path, 'https://supabase.invalid');
+  url.searchParams.set('limit', String(adminLoginRecordPageSize));
+  const readPage = (currentPage: number) => {
+    url.searchParams.set('offset', String((currentPage - 1) * adminLoginRecordPageSize));
+    return api.requestPage<Row>(url.pathname + url.search);
+  };
+  let result = await readPage(page);
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(result.total / adminLoginRecordPageSize)));
+  if (currentPage !== page) result = await readPage(currentPage);
+  const items = await enrichLoginRecords(result.items.map(definition.map), api);
+  return { items, total: result.total, currentPage, totalPages: Math.max(1, Math.ceil(result.total / adminLoginRecordPageSize)) };
+}
+
 export async function listAdminMemberPage(
   table: string,
-  query: { page?: unknown; keyword?: unknown; status?: unknown },
+  query: { page?: unknown; keyword?: unknown; status?: unknown; plan?: unknown },
   api: PageRequester,
   currentDate = new Date(),
 ) {
   const page = Number(query.page ?? 1);
   const keyword = String(query.keyword ?? '').trim();
   const status = String(query.status ?? 'all');
+  const plan = String(query.plan ?? 'all');
+  const planDurations: Record<string, number> = { monthly: 30, quarterly: 90, yearly: 365 };
   if (!['users', 'subscriptions'].includes(table) || !Number.isSafeInteger(page) || page < 1 || page > 100000
-      || keyword.length > 200 || !['all', 'active', 'disabled'].includes(status)) {
+      || keyword.length > 200 || !['all', 'active', 'disabled'].includes(status)
+      || !['all', ...Object.keys(planDurations)].includes(plan)
+      || (table === 'users' && plan !== 'all')) {
     throw new AdminDataError('查詢條件不正確');
   }
   const definition = getAdminTableDefinition(table);
   const url = new URL(definition.path, 'https://supabase.invalid');
-  if (status !== 'all') url.searchParams.set('status', status === 'disabled' ? 'in.(disabled,inactive,停用)' : 'in.(active,啟用)');
+  if (table === 'subscriptions') {
+    url.searchParams.set('current_plan.duration_days', plan === 'all' ? 'in.(30,90,365)' : `eq.${planDurations[plan]}`);
+    url.searchParams.set('plan_expires_at', `gt.${currentDate.toISOString()}`);
+    url.searchParams.set('is_lifetime', 'eq.false');
+    url.searchParams.set('status', 'in.(active,啟用)');
+  } else if (status !== 'all') {
+    url.searchParams.set('status', status === 'disabled' ? 'in.(disabled,inactive,停用)' : 'in.(active,啟用)');
+  }
   if (keyword) {
     // Literal, case-insensitive substring search. Escape regex syntax and then
     // quote PostgREST OR values so commas/parentheses cannot alter the filters.

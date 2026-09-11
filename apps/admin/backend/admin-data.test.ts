@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getDashboard, listAdminTable } from './admin-data';
+import { getDashboard, listAdminLoginRecordPage, listAdminMemberPage, listAdminTable } from './admin-data';
 
 // Model the REST offset/limit behavior for fixture-backed table responses.
 const fixtureRequest = (respond: (path: string) => Promise<unknown>, serverCap = 1000) => vi.fn(async (path: string) => {
@@ -119,6 +119,22 @@ describe('listAdminTable', () => {
     expect(request.mock.calls[1][0]).not.toContain('admin_account.role=neq.');
   });
 
+  it('restores the estimated login city beside an administrator IP address', async () => {
+    const checkedAt = new Date().toISOString();
+    const request = fixtureRequest(async (path) => {
+      if (path.includes('/admin_login_records?')) return [{
+        id: 'login-1', account: 'operator@example.com', login_at: '2026-09-10T10:00:00Z',
+        logout_at: null, online_minutes: 5, ip: '1.2.3.4', device: 'Chrome',
+      }];
+      if (path.includes('/member_ip_locations?')) return [{ ip: '1.2.3.4', country_code: 'TW', city: 'Taipei', checked_at: checkedAt }];
+      return [];
+    });
+
+    await expect(listAdminTable('loginRecords', { request })).resolves.toEqual({ items: [expect.objectContaining({
+      id: 'login-1', ip: '1.2.3.4', estimatedRegion: '台灣・台北市',
+    })] });
+  });
+
   it('maps administrator permission columns into the existing permission object', async () => {
     const api = { request: fixtureRequest(async () => [{
       id: 'a1', account: 'owner@example.com', name: 'Owner', role: '查看人員', status: '啟用',
@@ -135,6 +151,53 @@ describe('listAdminTable', () => {
     const api = { request: vi.fn() };
     await expect(listAdminTable('secrets', api)).rejects.toMatchObject({ statusCode: 400 });
     expect(api.request).not.toHaveBeenCalled();
+  });
+});
+
+describe('listAdminMemberPage subscriptions', () => {
+  it.each([
+    ['all', 'in.(30,90,365)'],
+    ['monthly', 'eq.30'],
+    ['quarterly', 'eq.90'],
+    ['yearly', 'eq.365'],
+  ])('lists only current successful fixed-duration subscriptions for %s', async (plan, durationFilter) => {
+    const request = vi.fn(async () => []);
+    const requestPage = vi.fn(async () => ({ items: [], total: 0 }));
+
+    await listAdminMemberPage('subscriptions', { page: 1, keyword: '', status: 'all', plan }, { request, requestPage }, new Date('2026-09-11T00:00:00.000Z'));
+
+    const url = new URL(requestPage.mock.calls[0][0], 'https://example.test');
+    expect(url.searchParams.get('select')).toContain('!inner');
+    expect(url.searchParams.get('current_plan.duration_days')).toBe(durationFilter);
+    expect(url.searchParams.get('plan_expires_at')).toBe('gt.2026-09-11T00:00:00.000Z');
+    expect(url.searchParams.get('is_lifetime')).toBe('eq.false');
+    expect(url.searchParams.get('status')).toBe('in.(active,啟用)');
+  });
+
+  it('rejects an unknown subscription plan filter before querying Supabase', async () => {
+    const api = { request: vi.fn(async () => []), requestPage: vi.fn(async () => ({ items: [], total: 0 })) };
+    await expect(listAdminMemberPage('subscriptions', { plan: 'lifetime' }, api)).rejects.toMatchObject({ statusCode: 400 });
+    expect(api.requestPage).not.toHaveBeenCalled();
+  });
+});
+
+describe('listAdminLoginRecordPage', () => {
+  it('reads ten rows per server page and enriches every visible IP', async () => {
+    const checkedAt = new Date().toISOString();
+    const request = vi.fn(async (path: string) => path.includes('/member_ip_locations?')
+      ? [{ ip: '1.2.3.4', country_code: 'TW', city: 'Taipei', checked_at: checkedAt }]
+      : []);
+    const requestPage = vi.fn(async () => ({ items: [{
+      id: 'login-11', account: 'operator@example.com', login_at: '2026-09-10T10:00:00Z',
+      logout_at: null, online_minutes: 5, ip: '1.2.3.4', device: 'Chrome',
+    }], total: 21 }));
+
+    const result = await listAdminLoginRecordPage({ page: 2 }, { request, requestPage });
+
+    expect(result).toMatchObject({ total: 21, currentPage: 2, totalPages: 3, items: [expect.objectContaining({ estimatedRegion: '台灣・台北市' })] });
+    const url = new URL(requestPage.mock.calls[0][0], 'https://example.test');
+    expect(url.searchParams.get('limit')).toBe('10');
+    expect(url.searchParams.get('offset')).toBe('10');
   });
 });
 

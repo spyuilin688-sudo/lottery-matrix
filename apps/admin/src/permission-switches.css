@@ -3,6 +3,11 @@
 .permissionSwitchesHeader h2{margin:0;color:#ece7d8;font-size:17px}
 .permissionSwitchesHeader p{margin:4px 0 0;color:#989ca5;font-size:12px;line-height:1.55}
 .permissionReadOnly{flex:0 0 auto;padding:3px 7px;border:1px solid #45403a;border-radius:6px;color:#cbb675;font-size:11px;line-height:1.4}
+.permissionCurrentState{display:grid;gap:4px;padding:8px 10px;border:1px solid #343840;border-radius:8px;background:#0d1014}
+.permissionCurrentState>div{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}
+.permissionCurrentState strong{color:#e1c170;font-size:12px}
+.permissionCurrentState span{color:#c4c6cc;font-size:12px}
+.permissionCurrentState small{color:#888d96;font-size:11px}
 .permissionSwitchRows{display:grid;gap:8px}
 .permissionSwitchRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:12px;border:1px solid #292c32;border-radius:10px;background:#111419}
 .permissionSwitchCopy{min-width:0}
