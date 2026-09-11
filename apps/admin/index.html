@@ -3,14 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0d0f13">
+    <meta name="theme-color" content="#000000">
     <title>樂彩 Matrix 營運後台</title>
     <link rel="icon" type="image/png" sizes="192x192" href="/admin/icons/admin-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/admin/icons/admin-180x180.png">
     <link rel="manifest" href="./manifest.webmanifest">
+    <style>
+        html,
+        body {
+            background: #000;
+        }
+
+        #admin-launch-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #admin-launch-screen img {
+            display: block;
+            width: 100%;
+            max-width: 540px;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+    </style>
 </head>
 <body>
+    <div id="admin-launch-screen" aria-hidden="true">
+        <img src="/admin/admin-splash.webp" alt="" fetchpriority="high">
+    </div>
     <div id="root"></div>
+    <script>
+        (() => {
+            const splash = document.getElementById('admin-launch-screen');
+            const root = document.getElementById('root');
+            if (!splash || !root) return;
+
+            const removeSplash = () => splash.remove();
+            const observer = new MutationObserver(() => {
+                if (root.childElementCount > 0) {
+                    observer.disconnect();
+                    requestAnimationFrame(removeSplash);
+                }
+            });
+
+            observer.observe(root, { childList: true });
+            window.setTimeout(() => {
+                observer.disconnect();
+                removeSplash();
+            }, 5000);
+        })();
+    </script>
     <script type="module" src="./src/main.tsx"></script>
 </body>
 </html>
