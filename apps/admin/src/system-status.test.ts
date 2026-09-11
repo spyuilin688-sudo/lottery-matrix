@@ -189,7 +189,7 @@ describe('system status client', () => {
 describe('system status evidence presentation', () => {
   const item = {
     id: 'admin-api', name: 'API', description: '', group: '系統',
-    location: 'Supabase' as const, endpoint: '/functions/v1/admin-api/api/_healthcheck',
+    location: 'Supabase' as const, endpoint: '/admin/api/_healthcheck',
     checkMode: 'live' as const, ok: true, checkedAt: '', responseMs: 0,
   };
 
