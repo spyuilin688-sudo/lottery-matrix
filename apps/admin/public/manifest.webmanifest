@@ -15,7 +15,7 @@
       "purpose": "any"
     },
     {
-      "src": "/admin/icons/admin-512x512.png",
+      "src": "/admin/icons/admin-splash-transparent-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
