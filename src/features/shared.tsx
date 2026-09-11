@@ -62,7 +62,12 @@ export function MatrixPageSwitcher({ current, onNavigate }: {
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
       {MATRIX_PAGE_ITEMS.map((item) => (
         <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
-          <img src={item.image} alt="" draggable={false} />
+          <img
+            className={item.screen === "tianheng" ? "matrix-page-switcher-image--tianheng" : undefined}
+            src={item.image}
+            alt=""
+            draggable={false}
+          />
         </button>
       ))}
     </nav>

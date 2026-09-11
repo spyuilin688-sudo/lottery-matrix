@@ -12,6 +12,14 @@ test('Tianheng summary streak tag matches the Tianyan top-right inset', () => {
   assert.match(tianhengCss, /\.matrix-tianheng-screen \.explore-validation-summary-card > \.explore-validation-consecutive-tag\s*\{[^}]*position:\s*absolute;[^}]*top:\s*2px;[^}]*right:\s*2px;[^}]*margin:\s*0;/s);
 });
 
+test('Tianheng summary keeps one 4.5px gap before both aligned number rows', () => {
+  assert.match(
+    tianhengCss,
+    /\.matrix-tianheng-screen \.tianheng-summary-lines\s*\{[^}]*column-gap:\s*4\.5px;/s,
+  );
+  assert.equal((tianhengCss.match(/column-gap:\s*4\.5px;/g) ?? []).length, 1);
+});
+
 test('Tianheng cards keep the shared Explore horizontal spacing owner', () => {
   assert.doesNotMatch(
     tianhengCss,
