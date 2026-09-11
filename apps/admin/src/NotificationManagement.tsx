@@ -22,7 +22,7 @@ type Props = {
   canEdit: boolean;
 };
 
-const deliveryLogPageSize = 10;
+const deliveryLogPageSize = 5;
 
 function memberName(member: PushMember) {
   return member.displayName || member.userId;

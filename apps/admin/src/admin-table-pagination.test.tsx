@@ -4,8 +4,8 @@ import { paginateAdminRows } from './admin-table-pagination';
 const rows = (count: number) => Array.from({ length: count }, (_, index) => ({ id: String(index + 1) }));
 
 describe('admin table pagination', () => {
-  it('shows activation codes fifteen at a time', () => {
-    expect(paginateAdminRows('啟動碼管理', rows(31), 2)).toMatchObject({ items: rows(31).slice(15, 30), page: 2, totalPages: 3, pageSize: 15 });
+  it('shows activation codes ten at a time', () => {
+    expect(paginateAdminRows('啟動碼管理', rows(31), 2)).toMatchObject({ items: rows(31).slice(10, 20), page: 2, totalPages: 4, pageSize: 10 });
   });
 
   it('leaves other tables unpaged', () => {
