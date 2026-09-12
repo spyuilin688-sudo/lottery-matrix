@@ -22,7 +22,7 @@ vi.mock('../permission-settings', () => ({
 vi.mock('../features/shared', () => ({
   FeatureShell: ({ children }: any) => <main>{children}</main>,
   SectionTitle: ({ children }: any) => <h2>{children}</h2>,
-  SettingLabelIcon: () => null, MatrixPageSwitcher: () => null, HistoryList: () => null,
+  SettingLabelIcon: () => null, MatrixPageSwitcher: () => null, LotteryTabs: () => null, HistoryList: () => null,
   LOTTERIES: ['今彩539', '天天樂', '六合彩', '大樂透'],
 }));
 vi.mock('../features/MatrixValidation', () => ({ ExploreValidationProcess: () => null, TianyanValidationProcess: () => null, RoadValidationProcess: () => null }));
@@ -41,7 +41,7 @@ afterEach(cleanup);
 async function start() {
   await act(async () => { render(<MatrixExplorePage onNavigate={vi.fn()} />); });
   fireEvent.click(screen.getByText('二期'));
-  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '準5+ (鎖定2碼)' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 }
 

@@ -286,7 +286,7 @@
   align-items: center;
 }
 
-.matrix-explore-main-screen .hit-options button .hit-lock-detail { font-weight: 500; }
+.matrix-explore-main-screen .hit-options button .hit-lock-detail { font-weight: 500; white-space: pre; }
 .matrix-explore-main-screen .hit-options button:focus-visible {
   outline: 2px solid #f1c75a;
   outline-offset: -2px;
@@ -1172,4 +1172,3 @@
   font-size: 11px;
   width: auto;
 }
-

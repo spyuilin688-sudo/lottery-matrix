@@ -747,7 +747,7 @@ test('探索頁使用單列收合連準篩選並套用兩種命中條件預設�
   expect(options.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'true', 'true', 'true']);
   expect(screen.queryByRole('dialog', { name: '連準篩選' })).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '準5+ (鎖定2碼)' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
     selectedStreaks: ['準7進8', '準9進10', '準11進12'],
@@ -764,7 +764,7 @@ test('拖牌版路依命中條件使用例外預設連準', async () => {
     selectedStreaks: ['準4進5', '準5進6', '準6進7', '準7進8'],
   })));
 
-  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '準5+ (鎖定2碼)' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
 
   await waitFor(() => expect(matrixApi.fetchExploreList).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -811,7 +811,7 @@ test('再次開始探索會清除同碼與號碼篩選並恢復準4+預設連準
 
 test('再次開始探索會恢復準5+預設連準', async () => {
   render(<MatrixExplorePage onNavigate={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button', { name: '準5+（鎖定2碼）' }));
+  fireEvent.click(screen.getByRole('button', { name: '準5+ (鎖定2碼)' }));
   fireEvent.click(screen.getByRole('button', { name: '開始探索' }));
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
   fireEvent.click(screen.getByRole('button', { name: '準9進10' }));

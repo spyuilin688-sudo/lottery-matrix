@@ -230,14 +230,14 @@ it('shows the Matrix Pro cue on full range without full-range access', async () 
 });
 
 it.each([
-  ['準5+（鎖定1碼）', ['準5進6', '準6進7', '準7進8', '準9進10'], 1],
-  ['準6+（鎖定2碼）', ['準6進7', '準7進8', '準9進10', '準11進12'], 2],
-] as const)('uses the exact %s filters and submits rule count', async (hit, options, ruleCount) => {
+  ['準5+ (鎖定1碼)', '準5+（鎖定1碼）', ['準5進6', '準6進7', '準7進8', '準9進10'], 1],
+  ['準6+ (鎖定2碼)', '準6+（鎖定2碼）', ['準6進7', '準7進8', '準9進10', '準11進12'], 2],
+] as const)('uses the exact %s filters and submits rule count', async (hit, resultFilterName, options, ruleCount) => {
   await openPage();
   fireEvent.click(screen.getByRole('button', { name: hit }));
   await search();
   fireEvent.click(screen.getByRole('button', { name: '連準篩選' }));
-  const group = screen.getByRole('group', { name: `${hit}連準篩選` });
+  const group = screen.getByRole('group', { name: `${resultFilterName}連準篩選` });
   expect(within(group).getAllByRole('button').map(button => button.textContent)).toEqual(options);
   const defaults: readonly string[] = ruleCount === 2 ? ['準9進10', '準11進12'] : options;
   expect(within(group).getAllByRole('button').map(button => button.getAttribute('aria-pressed')))
