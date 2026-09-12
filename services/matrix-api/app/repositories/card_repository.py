@@ -13,7 +13,8 @@ class CardRepository(Protocol):
     def update(self, lottery: str, token: str, values: dict[str, Any]) -> bool: ...
     def upload(self, path: str, png: bytes) -> str: ...
     def prune(self, lottery: str, current_period: str,
-              keep_generation: str, lease_token: str) -> None: ...
+              keep_generation: str, lease_token: str, *,
+              keep_generations: set[str] | None = None) -> None: ...
     def release(self, lottery: str, token: str, error: str | None = None) -> None: ...
     def read_manifest(self, lottery: str) -> dict[str, Any] | None: ...
 
@@ -24,7 +25,7 @@ class SupabaseCardRepository:
 
     def claim(self, lottery: str, token: str, now: datetime) -> dict[str, Any] | None:
         # Production eligibility/leases use database time, not worker clocks.
-        return self.client.rpc('claim_matrix_card_publication', {
+        return self.client.rpc('claim_matrix_card_publication_v2', {
             'p_lottery': lottery, 'p_token': token,
         }).execute().data or None
 
@@ -81,7 +82,9 @@ class SupabaseCardRepository:
             raise RuntimeError('MATRIX_CARD_CLEANUP_LEASE_LOST')
 
     def prune(self, lottery: str, current_period: str,
-              keep_generation: str, lease_token: str) -> None:
+              keep_generation: str, lease_token: str, *,
+              keep_generations: set[str] | None = None) -> None:
+        current_generations = keep_generations if keep_generations is not None else {keep_generation}
         code = {
             '今彩539': '539', '天天樂': 'fantasy5',
             '六合彩': 'marksix', '大樂透': 'lotto649',
@@ -106,7 +109,7 @@ class SupabaseCardRepository:
             for generation_item in self._list_all(bucket, f'{code}/{period}'):
                 generation = str(generation_item.get('name', ''))
                 if not generation or (period == current_period
-                                      and generation == keep_generation):
+                                      and generation in current_generations):
                     continue
                 base = f'{code}/{period}/{generation}'
                 paths.extend((f'{base}/draw.png', f'{base}/sorted.png'))
@@ -142,7 +145,9 @@ def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
         return None
     # Import locally because the publisher depends on the storage transport.
     from app.card_renderer import card_layout, supported_card_orders
-    from app.services.card_publication import complete_snapshot, snapshot_digest
+    from app.services.card_publication import (
+        complete_snapshot, order_input_digest, reusable_card, snapshot_digest,
+    )
 
     draws = repository.list_draws(lottery, sum(card_layout(lottery)['column_rows']))
     if (not complete_snapshot(lottery, draws)
@@ -153,6 +158,12 @@ def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
     orders = supported_card_orders(lottery, draws)
     if not isinstance(available, dict) or 'sorted' not in available:
         return None
+    for order in orders:
+        card = available.get(order)
+        if isinstance(card, dict) and 'inputDigest' in card and not reusable_card(
+            card, lottery, str(draws[0]['period']), order, order_input_digest(lottery, order, draws),
+        ):
+            return None
     return {**manifest, 'cards': {order: available[order] for order in orders if order in available}}
 
 

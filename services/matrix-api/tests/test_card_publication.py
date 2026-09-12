@@ -45,7 +45,7 @@ class MemoryCards:
         self.objects[path] = png
         return f'https://cards.example/{path}'
 
-    def prune(self, lottery, current_period, keep_generation, lease_token):
+    def prune(self, lottery, current_period, keep_generation, lease_token, *, keep_generations=None):
         self.prunes.append((
             lottery, current_period, keep_generation, lease_token == self.owner,
         ))
@@ -82,9 +82,10 @@ def fixture(lottery='今彩539'):
     return repository, cards
 
 
-def png_stub(lottery, draws):
+def png_stub(lottery, draws, *, orders=None):
     # Valid header for orchestration tests; the real renderer is tested below.
     prefix = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', CARD_WIDTH, CARD_HEIGHT)
+    selected = orders
     orders = ['sorted']
     if lottery != '天天樂' and all(
         row.get('resultStatus', 'confirmed') == 'confirmed' and row.get('drawOrderNumbers')
@@ -92,7 +93,7 @@ def png_stub(lottery, draws):
     ):
         orders.insert(0, 'draw')
     return {order: prefix + sha256((order + snapshot_digest(lottery, draws)).encode()).digest()
-            for order in orders}
+            for order in orders if selected is None or order in selected}
 
 
 def service(repository, cards, renderer=png_stub):
@@ -111,7 +112,7 @@ def test_complete_snapshot_publishes_both_orders_immediately_once():
     assert manifest['period'] == '10000'
     assert len(cards.objects) == 2
     assert all(item['mimeType'] == 'image/png' for item in manifest['cards'].values())
-    assert all(manifest['generation'] in item['url'] for item in manifest['cards'].values())
+    assert all(item['inputDigest'] in item['url'] for item in manifest['cards'].values())
     objects = deepcopy(cards.objects)
     assert publisher.ensure_current('今彩539', NOW + timedelta(days=1)) == manifest
     assert cards.objects == objects
@@ -193,20 +194,20 @@ def test_second_upload_failure_preserves_old_manifest_and_retry_finishes_same_fi
 
 def test_source_change_while_rendering_never_publishes_stale_snapshot():
     repository, cards = fixture()
-    def race(lottery, draws):
+    def race(lottery, draws, *, orders=None):
         changed = history()[0]
         changed['period'] = '10001'
         repository.upsert_draw(changed)
-        return png_stub(lottery, draws)
+        return png_stub(lottery, draws, orders=orders)
     assert service(repository, cards, race).ensure_current('今彩539', NOW + timedelta(minutes=10)) is None
     assert cards.row['manifest'] is None
 
 
 def test_replaced_lease_cannot_publish_or_release_new_owner():
     repository, cards = fixture()
-    def race(lottery, draws):
+    def race(lottery, draws, *, orders=None):
         cards.owner = 'replacement-owner'
-        return png_stub(lottery, draws)
+        return png_stub(lottery, draws, orders=orders)
     assert service(repository, cards, race).ensure_current('今彩539', NOW + timedelta(minutes=10)) is None
     assert cards.row['manifest'] is None
     assert cards.owner == 'replacement-owner'

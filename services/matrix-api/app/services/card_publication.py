@@ -45,6 +45,26 @@ def snapshot_digest(lottery: str, draws: list[dict[str, Any]]) -> str:
                              separators=(',', ':')).encode()).hexdigest()
 
 
+def order_input_digest(lottery: str, order: str, draws: list[dict[str, Any]]) -> str:
+    """Identity of one image's inputs, independent of the other order's arrival."""
+    special = card_layout(lottery)['special']
+    payload = {'lottery': lottery, 'order': order, 'renderer': renderer_digest(),
+               'draws': [{'period': str(row['period']), 'drawDate': row['drawDate'],
+                          'numbers': card_renderer._numbers(row, order, special)}
+                         for row in draws]}
+    return sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                             separators=(',', ':')).encode()).hexdigest()
+
+
+def reusable_card(card: Any, lottery: str, period: str, order: str, digest: str) -> bool:
+    return bool(isinstance(card, dict) and card.get('inputDigest') == digest
+                and card.get('mimeType') == 'image/png'
+                and card.get('width') == CARD_WIDTH and card.get('height') == CARD_HEIGHT
+                and re.fullmatch(r'[0-9a-f]{64}', str(card.get('sha256', '')))
+                and isinstance(card.get('url'), str) and card['url'].startswith('https://')
+                and card['url'].endswith(f'/{LOTTERY_CODES[lottery]}/{period}/{digest}/{order}.png'))
+
+
 def complete_snapshot(lottery: str, draws: list[dict[str, Any]]) -> bool:
     layout = card_layout(lottery)
     if len(draws) != sum(layout['column_rows']):
@@ -89,13 +109,18 @@ def validate_png(png: bytes) -> None:
         raise ValueError('MATRIX_CARD_INVALID_PNG')
 
 
-def build_card_pngs(lottery: str, draws: list[dict[str, Any]]) -> dict[str, bytes]:
+def build_card_pngs(lottery: str, draws: list[dict[str, Any]], *,
+                   orders: tuple[str, ...] | None = None) -> dict[str, bytes]:
     import resvg_py
 
     result = {}
     if len(FONT_FILES) != 4:
         raise ValueError('MATRIX_CARD_FONTS_MISSING')
-    for order in supported_card_orders(lottery, draws):
+    supported = supported_card_orders(lottery, draws)
+    selected = supported if orders is None else orders
+    if len(set(selected)) != len(selected) or any(order not in supported for order in selected):
+        raise ValueError('MATRIX_CARD_ORDER_UNAVAILABLE')
+    for order in selected:
         svg = render_matrix_card(lottery, order, draws)
         svg = svg.replace(card_renderer.CJK_FONT_FAMILY, 'Matrix Card TC')
         svg = svg.replace('font-family="Arial"', 'font-family="Matrix Card Sans"')
@@ -121,6 +146,8 @@ class CardPublicationService:
         try:
             self.cards.prune(
                 lottery, manifest['period'], manifest['generation'], lease_token,
+                keep_generations={card.get('inputDigest', manifest['generation'])
+                                  for card in manifest['cards'].values()},
             )
         except Exception as error:
             # Publication is already durable; retry cleanup on the next tick.
@@ -145,8 +172,13 @@ class CardPublicationService:
                 return None
             digest = snapshot_digest(lottery, draws)
             orders = supported_card_orders(lottery, draws)
+            period = str(draws[0]['period'])
+            inputs = {order: order_input_digest(lottery, order, draws) for order in orders}
+            previous = manifest.get('cards', {}) if manifest else {}
+            files = {order: previous[order] for order in orders
+                     if reusable_card(previous.get(order), lottery, period, order, inputs[order])}
             if (manifest and manifest['generation'] == digest
-                    and set(manifest.get('cards', {})) == set(orders)):
+                    and set(previous) == set(orders) == set(files)):
                 return manifest
             if state['desired_digest'] != digest:
                 if not self.cards.update(lottery, token, {
@@ -154,19 +186,19 @@ class CardPublicationService:
                     'eligible_at': now.isoformat(),
                 }):
                     return published_manifest(lottery, self.repository)
-            pngs = self.renderer(lottery, draws)
-            if set(pngs) != set(orders):
+            pending = tuple(order for order in orders if order not in files)
+            pngs = self.renderer(lottery, draws, orders=pending) if pending else {}
+            if set(pngs) != set(pending):
                 raise ValueError('MATRIX_CARD_ORDERS_INCOMPLETE')
             for png in pngs.values():
                 validate_png(png)
-            period = str(draws[0]['period'])
-            files = {}
-            for order in orders:
+            for order in pending:
                 png = pngs[order]
-                path = f'{LOTTERY_CODES[lottery]}/{period}/{digest}/{order}.png'
+                path = f'{LOTTERY_CODES[lottery]}/{period}/{inputs[order]}/{order}.png'
                 files[order] = {
                     'url': self.cards.upload(path, png), 'mimeType': 'image/png',
                     'width': CARD_WIDTH, 'height': CARD_HEIGHT, 'sha256': sha256(png).hexdigest(),
+                    'inputDigest': inputs[order],
                 }
             # Acquisition/correction can happen while rasterizing or uploading.
             latest = self.repository.list_draws(lottery, count)

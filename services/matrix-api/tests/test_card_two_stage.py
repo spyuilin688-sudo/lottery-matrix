@@ -18,8 +18,8 @@ def preliminary(repository, lottery='今彩539'):
     return draw
 
 
-def available_pngs(lottery, draws):
-    output = png_stub(lottery, draws)
+def available_pngs(lottery, draws, *, orders=None):
+    output = png_stub(lottery, draws, orders=orders)
     if lottery == '天天樂' or any(
         row.get('resultStatus', 'confirmed') != 'confirmed' or not row.get('drawOrderNumbers')
         for row in draws

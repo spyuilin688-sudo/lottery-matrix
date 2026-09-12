@@ -55,9 +55,9 @@ def test_sorted_stage_is_available_before_formal_and_card_notification_waits_for
     repository.card_repository = cards
     rendered = []
 
-    def render(requested_lottery, rows):
+    def render(requested_lottery, rows, *, orders=None):
         rendered.append(deepcopy(rows))
-        return png_stub(requested_lottery, rows)
+        return png_stub(requested_lottery, rows, orders=orders)
 
     publisher = CardPublicationService(repository, cards, renderer=render)
     publisher.ensure_current(lottery, now - timedelta(minutes=11))
@@ -125,4 +125,3 @@ def test_sorted_stage_is_available_before_formal_and_card_notification_waits_for
         worker.emit_ready_notifications(lottery, "1001", repository, emitter, set())
         assert any(event["eventKey"] == f"matrix_card:{code}:1001" for event in emitted)
         assert early_event["numbers"] == early_numbers
-
