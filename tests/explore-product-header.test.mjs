@@ -9,7 +9,7 @@ test("Matrix 探索改用產品型 Header，不再載入舊標題圖", () => {
   assert.doesNotMatch(shared, /"Matrix 探索":\s*"\/assets\/lottery\/functions\/探索標題K\.png"/);
   assert.match(shared, /title === "Matrix 探索" && !artwork && !hideTitle/);
   assert.match(shared, /className="explore-product-header"/);
-  assert.match(shared, /\/assets\/lottery\/functions\/Matrix探索-icon\.png/);
+  assert.match(shared, /\/assets\/lottery\/functions\/MatrixLogo\.png/);
   assert.match(shared, /<h1>MATRIX 探索<\/h1>/);
   assert.match(shared, />EXPLORE<\/span>/);
   assert.match(shared, /className="explore-product-header__back"/);
@@ -27,4 +27,10 @@ test("探索 Header 維持單一正式樣式來源，不以覆寫或 !important 
   assert.doesNotMatch(productHeaderRules, /translate[XY]?\([^)]*[+-]\d+px/);
   assert.match(productHeaderRules, /width:\s*42px;/);
   assert.match(productHeaderRules, /height:\s*42px;/);
+
+  const markRule = css.match(/\.explore-product-header__mark\s*\{[^}]+\}/s)?.[0] ?? "";
+  assert.match(markRule, /width:\s*76px;/);
+  assert.match(markRule, /height:\s*56px;/);
+  const frameRule = css.match(/\.explore-product-header__frame\s*\{[^}]+\}/s)?.[0] ?? "";
+  assert.match(frameRule, /grid-template-columns:\s*42px 76px minmax\(0, 1fr\) auto;/);
 });

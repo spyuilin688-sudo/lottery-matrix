@@ -2608,7 +2608,7 @@ opacity: .30; box-shadow: none;
   box-sizing: border-box;
   width: 100%;
   min-height: 78px;
-  grid-template-columns: 42px 46px minmax(0, 1fr) auto;
+  grid-template-columns: 42px 76px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 8px 10px 8px 8px;
@@ -2676,10 +2676,11 @@ opacity: .30; box-shadow: none;
   position: relative;
   z-index: 2;
   display: block;
-  width: 46px;
-  height: 46px;
+  width: 76px;
+  height: 56px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(217, 169, 72, .2));
+  object-position: center;
+  filter: drop-shadow(0 0 6px rgba(217, 169, 72, .14));
 }
 .explore-product-header__copy {
   position: relative;
