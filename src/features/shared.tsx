@@ -123,7 +123,6 @@ export function BrandHeader({
           <h1>MATRIX 探索</h1>
           <span>EXPLORE</span>
         </div>
-        <span className="explore-product-header__orbit" aria-hidden="true" />
         {action ? <div className="explore-product-header__actions">{action}</div> : null}
       </div>
     </header>
