@@ -2565,6 +2565,7 @@ opacity: .30; box-shadow: none;
   --product-header-copy-area: 1 / 3 / 2 / 5;
   --product-header-copy-height: 35px;
   --product-header-subtitle-reserve: var(--product-header-settings-action-width);
+  --product-header-subtitle-tracking: .2em;
   box-sizing: border-box;
   overflow: hidden;
   border: 1px solid rgba(205, 155, 62, .74);
@@ -2695,7 +2696,7 @@ opacity: .30; box-shadow: none;
   font-size: min(9px, calc((100cqi - var(--product-header-subtitle-reserve, 0px)) * .07));
   font-weight: 600;
   line-height: 1;
-  letter-spacing: .32em;
+  letter-spacing: var(--product-header-subtitle-tracking, .32em);
   white-space: nowrap;
 }
 .product-header__actions {
