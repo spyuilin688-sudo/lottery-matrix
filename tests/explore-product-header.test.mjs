@@ -9,7 +9,7 @@ test("Matrix 探索改用產品型 Header，不再載入舊標題圖", () => {
   assert.doesNotMatch(shared, /"Matrix 探索":\s*"\/assets\/lottery\/functions\/探索標題K\.png"/);
   assert.match(shared, /title === "Matrix 探索" && !artwork && !hideTitle/);
   assert.match(shared, /className="explore-product-header"/);
-  assert.match(shared, /\/assets\/lottery\/functions\/MatrixLogo\.png/);
+  assert.match(shared, /\/assets\/lottery\/matrixYY\.png/);
   assert.match(shared, /<h1>MATRIX 探索<\/h1>/);
   assert.match(shared, />EXPLORE<\/span>/);
   assert.match(shared, /className="explore-product-header__back"/);

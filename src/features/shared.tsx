@@ -114,7 +114,7 @@ export function BrandHeader({
         ) : <span className="explore-product-header__back-spacer" aria-hidden="true" />}
         <img
           className="explore-product-header__mark"
-          src="/assets/lottery/functions/MatrixLogo.png"
+          src="/assets/lottery/matrixYY.png"
           alt=""
           aria-hidden="true"
           draggable={false}
