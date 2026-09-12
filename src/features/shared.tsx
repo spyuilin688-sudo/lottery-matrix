@@ -194,7 +194,7 @@ export function LotteryTabs({
           onClick={() => onChange(item)}
           key={item}
         >
-          {item}
+          <span>{item}</span>
         </button>
       ))}
     </div>

@@ -286,6 +286,8 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 ## Core settings and header backgrounds — 2026-09-12
 
 - Four core pages use the approved 06 flow background; all other non-home PWA headers use 07 geometric. Existing fixed dimensions, logo, back behavior and right-side sticky controls remain.
-- Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. Core pages reuse the exact draw-sheet LotteryTabs component and styling (48px, 14px type, gold active underline), with keyboard selection and without the redundant lottery select.
+- Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. Core pages reuse the exact draw-sheet LotteryTabs component and styling (36px, 14px type, 2px text-width gold active underline), with keyboard selection and without the redundant lottery select.
 - Explore and Tianyan render their existing hit and advanced controls inside the settings card. Tianheng keeps its hit section; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
 - One 8px header bottom margin separates the frame and the next visible content. The header rect excludes this margin, so existing floating-panel bottom +8px calculations produce an actual 8px gap.
+
+- Core mode switcher height is 26px with unchanged 12px text and a faint gold selected fill. Period/road control heights and type remain unchanged; three options use equal grid columns and 6px gaps. Hit choices share one muted border with an internal divider, retain full labels and use aria-pressed for selection.

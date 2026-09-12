@@ -129,7 +129,7 @@ components:
 
 ### Navigation and data display
 
-2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、28px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位使用共用 `ExploreSettingIcon` 的 Lucide `CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
+2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位使用共用 `ExploreSettingIcon` 的 Lucide `CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
@@ -214,6 +214,8 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 ### Core lottery tabs and integrated settings — 2026-09-12
 
-四個核心頁面與牌單共用同一個 `LotteryTabs` 樣式，置於標題卡下方 8px，四彩種等寬、48px 高、14px 文字，選中項目使用金字與金色底線；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索與天衍的命中按鈕、進階設定歸入探索設定卡，不顯示命中條件標題；天衡保留獨立命中條件，天工沿用既有兩段設定。設定區一般 segmented 選項 24→20px，命中按鈕 28→24px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
+四個核心頁面與牌單共用同一個 `LotteryTabs` 樣式，置於標題卡下方 8px，四彩種等寬、36px 高、14px 文字，選中項目使用金字與文字等寬的 2px 金色底線，列下方間距 8px；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索與天衍的命中按鈕、進階設定歸入探索設定卡，不顯示命中條件標題；天衡保留獨立命中條件，天工沿用既有兩段設定。設定區一般 segmented 選項 24→20px，命中按鈕 28→24px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
 
 所有 PWA 標題與下方內容的 8px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。浮動設定以 header 實際 bottom +8px 定位，因此與可見框線亦為 8px。移除通知與探索結果預覽額外的頂部 padding。
+
+彩種 Tabs 與牌單維持共用樣式；四頁切換為 26px 高、12px 字級、淡金選中底。期數／版路保留 20px 與原字級，三欄採等寬 grid、欄距 6px，標籤垂直置中。命中條件共用單一低亮度金框與內部分隔線，按鈕 24px 高、12px 字級、完整文字，選中以淡金底表示，不再使用獨立膠囊外框。

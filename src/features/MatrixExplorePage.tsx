@@ -487,9 +487,9 @@ export function MatrixExplorePage({
 
   const hitSettings = (
     <>
-        <div className="segmented two hit-options">
+        <div className="hit-options" role="group" aria-label="命中條件">
           {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
-            <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
+            <button type="button" key={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>{v}</button>
           ))}
         </div>
 
