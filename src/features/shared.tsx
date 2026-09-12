@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, CircleDot, GitBranch } from "lucide-react";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId, type DrawOrder } from "../Prototype";
 import { BottomNavigation } from "../BottomNavigation";
@@ -137,17 +136,6 @@ export function FeatureShell({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="section-title"><span />{children}</h2>;
-}
-
-const EXPLORE_SETTING_ICONS = {
-  lottery: CircleDot,
-  period: CalendarDays,
-  road: GitBranch,
-} as const;
-
-export function ExploreSettingIcon({ type }: { type: keyof typeof EXPLORE_SETTING_ICONS }) {
-  const Icon = EXPLORE_SETTING_ICONS[type];
-  return <Icon className="explore-setting-line-icon" strokeWidth={1.75} aria-hidden="true" focusable="false" />;
 }
 
 export function SettingLabelIcon({

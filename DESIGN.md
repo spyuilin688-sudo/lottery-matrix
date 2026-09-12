@@ -129,7 +129,7 @@ components:
 
 ### Navigation and data display
 
-2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位使用共用 `ExploreSettingIcon` 的 Lucide `CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
+2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位恢復使用共用 `SettingLabelIcon`，圖片為 `/assets/matrix-explore/period.png` 與 `/assets/matrix-explore/road.png`，維持 1.8rem 佔位。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
@@ -219,3 +219,5 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 所有 PWA 標題與下方內容的 8px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。浮動設定以 header 實際 bottom +8px 定位，因此與可見框線亦為 8px。移除通知與探索結果預覽額外的頂部 padding。
 
 彩種 Tabs 與牌單維持共用樣式；四頁切換為 26px 高、12px 字級、淡金選中底。期數／版路保留 20px 與原字級，三欄採等寬 grid、欄距 6px，標籤垂直置中。命中條件共用單一低亮度金框與內部分隔線，按鈕 24px 高、12px 字級、完整文字，選中以淡金底表示，不再使用獨立膠囊外框。
+
+核心頁面 `--lottery-tabs-bottom-gap: 0px` 由既有 8px row-gap 單獨提供 Tabs 與設定卡的距離，避免疊加為 16px；其他共用 Tabs 頁面保留原邊距。四頁切換外框與分隔線金褐色透明度分別 .48／.28，高度 26px、字級與位置維持。未選中期數／版路採暖灰 #ded6c9、清楚暗金框 #7d6a4c；選中為金字 #f1c75a、淡金底與 #c49a46 外框，只有 disabled 才以 .4 透明度淡化。命中主文字 700、鎖定碼數 500，同為 12px，完整 accessible name 與選取行為維持。

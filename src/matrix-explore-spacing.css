@@ -2,6 +2,7 @@
 
 /* Matrix Explore: single active responsive layout source for the supplied reference. */
 .matrix-explore-main-screen {
+  --lottery-tabs-bottom-gap: 0px;
   --matrix-explore-result-panel-extra-width: calc(var(--layout-page-inline) + var(--layout-page-inline) - 28px);
   --mx-history-issue-size: clamp(6px, 2.1vw, 8px);
   --road-validation-inline-padding: 4px;
@@ -248,10 +249,11 @@
   flex: 1 1 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid #4a4030;
+  border: 1px solid #7d6a4c;
   border-radius: .625rem;
-  background: transparent;
-  color: #d1d5db;
+  background: rgba(3, 11, 17, .35);
+  box-shadow: none;
+  color: #ded6c9;
   font-size: .75rem;
   font-weight: 700;
   line-height: 1;
@@ -261,10 +263,14 @@
 
 .matrix-explore-main-screen .segmented button[data-selected="true"],
 .matrix-explore-main-screen.matrix-tiangong-screen .tiangong-period-options > .segmented-static[data-selected="true"] {
-  border-color: #c89622;
-  background: linear-gradient(145deg, rgba(124, 85, 12, .25), rgba(31, 25, 13, .74));
-  color: #f2cf67;
-  box-shadow: inset 0 0 16px rgba(225, 170, 39, .08);
+  border-color: #c49a46;
+  background: rgba(212, 165, 47, .12);
+  color: #f1c75a;
+}
+
+.matrix-explore-main-screen .segmented button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
 }
 
 .matrix-explore-main-screen .hit-options {
@@ -302,6 +308,7 @@
   line-height: 1;
   white-space: nowrap;
 }
+.matrix-explore-main-screen .hit-options button .hit-lock-detail { font-weight: 500; }
 .matrix-explore-main-screen .hit-options button:last-child { border-right: 0; }
 .matrix-explore-main-screen .hit-options button[data-selected="true"] {
   background: rgba(212, 165, 47, .10);

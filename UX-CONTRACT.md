@@ -291,3 +291,5 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 - One 8px header bottom margin separates the frame and the next visible content. The header rect excludes this margin, so existing floating-panel bottom +8px calculations produce an actual 8px gap.
 
 - Core mode switcher height is 26px with unchanged 12px text and a faint gold selected fill. Period/road control heights and type remain unchanged; three options use equal grid columns and 6px gaps. Hit choices share one muted border with an internal divider, retain full labels and use aria-pressed for selection.
+
+- Core lottery tabs use the body’s single 8px gap without an additional bottom margin. Mode-switcher borders are subdued while 26px height, text size and position are retained. Unselected period/road choices remain clearly enabled with warm-grey text; only disabled controls dim. Hit choices retain full accessible names, with 700 primary text and 500 lock-detail text. Original period.png and road.png icons are restored through SettingLabelIcon.

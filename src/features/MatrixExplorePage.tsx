@@ -12,7 +12,7 @@ import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from 
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
-import { FeatureShell, MatrixPageSwitcher, SectionTitle, ExploreSettingIcon, SettingLabelIcon, LotteryTabs, HistoryList } from "./shared";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs, HistoryList } from "./shared";
 import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
@@ -489,7 +489,9 @@ export function MatrixExplorePage({
     <>
         <div className="hit-options" role="group" aria-label="命中條件">
           {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
-            <button type="button" key={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>{v}</button>
+            <button type="button" key={v} aria-label={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>
+              <span>{v.slice(0, v.indexOf("（"))}</span><span className="hit-lock-detail">{v.slice(v.indexOf("（"))}</span>
+            </button>
           ))}
         </div>
 
@@ -571,7 +573,7 @@ export function MatrixExplorePage({
           <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
-          <label><span>{isExplore ? <ExploreSettingIcon type="period" /> : <SettingLabelIcon type="period" />}探索期數</span>
+          <label><span><SettingLabelIcon type="period" />探索期數</span>
             <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
               {periodOptions.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -581,7 +583,7 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <label><span>{isExplore ? <ExploreSettingIcon type="road" /> : <SettingLabelIcon type="road" />}版路類型</span>
+          <label><span><SettingLabelIcon type="road" />版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={road === v} onClick={() => changeRoad(v)}>
