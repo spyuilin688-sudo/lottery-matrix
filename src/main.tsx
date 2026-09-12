@@ -114,4 +114,3 @@ async function bootstrap() {
 }
 
 void bootstrap().catch(renderApp);
-
