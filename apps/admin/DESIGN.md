@@ -88,3 +88,7 @@ Railway 原生彩種選單固定 104px 寬、28px 高、12px 字級；兩種操�
 ### 後台 PWA 身分
 
 後台 manifest 的 `id`、`start_url`、`scope` 都固定為 `/admin/`，啟動時註冊 `/admin/admin-push-sw.js` 並限制 scope 為 `/admin/`。管理後台與前台 PWA 保持不同安裝身分及服務工作者範圍。
+
+### 後台啟動畫面（2026-09-12）
+
+以使用者上傳的 1000020659.png 原圖作為唯一全幅啟動圖，正式資產為 public/admin-launch-20260912.png。public/admin-launch-20260912.css 擁有純黑啟動背景與等比例完整顯示；不裁切、不拉伸、不增加裝飾或覆寫既有後台 CSS。public/admin-launch-20260912.js 在圖片顯示至少 1.2 秒且 React 首次呈現後移除畫面；圖片失敗不阻擋已就緒頁面，最長 10 秒釋放。啟動期間後方頁面 inert，結束後解除。PWA、apple-touch 與推播圖示統一為原圖等比例縮放置於黑底方形的 admin-20260912-*，移除舊圖示檔與引用。安裝身分與推播 scope 維持 /admin/。Android 系統原生啟動階段採新版方形圖示；網頁階段顯示完整直式原圖。
