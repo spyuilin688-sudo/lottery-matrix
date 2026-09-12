@@ -369,7 +369,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
   })).filter((group) => group.items.length > 0);
 
   return (
-    <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader headerArtwork="/assets/lottery/functions/我的標題K.png">
+    <FeatureShell title="我的" onNavigate={onNavigate} active="我的" className="profile-screen" compactHeader>
       <div className="membership-card-stack">
         <MembershipArtwork showSubscription={subscriptionPurchaseVisible} />
         <section className="panel membership-card profile-card">
@@ -441,9 +441,9 @@ export function ProfileMenu({ title, items, onNavigate, children }: { title: str
   );
 }
 
-export function ProfileDetailShell({ title, children, onNavigate, className = "", hidePageTitle = false, headerArtwork = "/assets/lottery/functions/我的標題K2.png" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string; hidePageTitle?: boolean; headerArtwork?: string }) {
+export function ProfileDetailShell({ title, children, onNavigate, className = "" }: { title: string; children?: React.ReactNode; onNavigate: Navigate; className?: string }) {
   return (
-    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" compactHeader className={`profile-detail-screen ${className}`.trim()} hidePageTitle={hidePageTitle} headerArtwork={headerArtwork}>
+    <FeatureShell title={title} onNavigate={onNavigate} active="我的" backTarget="profile" compactHeader className={`profile-detail-screen ${className}`.trim()}>
       {children}
     </FeatureShell>
   );
@@ -459,7 +459,7 @@ export function DetailList({ items }: { items: string[] }) {
 
 function LegalInfoDocument({ title, children, onNavigate }: { title: string; children: ReactNode; onNavigate: Navigate }) {
   return (
-    <ProfileDetailShell title={title} onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png">
+    <ProfileDetailShell title={title} onNavigate={onNavigate} className="profile-info-screen">
       <article className="panel legal-info-document" aria-label={title}>
         <h1>{title}</h1>
         {children}
@@ -610,7 +610,7 @@ export function ProPlansPage({ onNavigate }: { onNavigate: Navigate }) {
     onNavigate("manual-transfer");
   };
   return (
-    <ProfileDetailShell title="Matrix Pro 訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen" headerArtwork="/assets/lottery/functions/訂閱方案標題K.png">
+    <ProfileDetailShell title="Matrix Pro 訂閱方案與收費標準" onNavigate={onNavigate} className="pro-plans-screen">
       <div className="plan-carousel" aria-label="Matrix Pro 會員方案" ref={carouselRef} onScroll={handleCarouselScroll}>
         {carouselPlans.map((plan, position) => {
           const planIndex = position === 0 ? plans.length - 1 : position === plans.length + 1 ? 0 : position - 1;
@@ -738,7 +738,7 @@ export function ManualTransferPage({ onNavigate }: { onNavigate: Navigate }) {
 
 export function AboutMatrixPage({ onNavigate }: { onNavigate: Navigate }) {
   const subscriptionPurchaseVisible = useSubscriptionPurchaseVisible();
-  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen" headerArtwork="/assets/lottery/functions/法律資訊標題K.png"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、{subscriptionPurchaseVisible ? "直覺且易於使用的開獎資料查詢與分析服務" : "直覺且易於使用的開獎資料查詢"}，協助使用者快速查閱公開資訊、整理歷史數據，{subscriptionPurchaseVisible ? "並透過多項分析功能" : "並透過多項查詢功能"}，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，{subscriptionPurchaseVisible ? "整合各項分析工具" : "整合各項查詢工具"}，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、{subscriptionPurchaseVisible ? "且容易使用的分析工具" : "且容易使用的查詢工具"}，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
+  return <ProfileDetailShell title="關於 樂彩 Matrix" onNavigate={onNavigate} className="profile-info-screen"><section className="panel detail-card about-matrix-card"><p className="about-welcome">歡迎使用 樂彩 Matrix。</p><p>樂彩 Matrix 致力於提供清晰、{subscriptionPurchaseVisible ? "直覺且易於使用的開獎資料查詢與分析服務" : "直覺且易於使用的開獎資料查詢"}，協助使用者快速查閱公開資訊、整理歷史數據，{subscriptionPurchaseVisible ? "並透過多項分析功能" : "並透過多項查詢功能"}，提升資料檢視效率。</p><p>我們持續優化介面設計與操作體驗，{subscriptionPurchaseVisible ? "整合各項分析工具" : "整合各項查詢工具"}，讓不同需求的使用者都能以更簡單、更流暢的方式使用各項功能。</p><h2>我們的理念</h2><p>我們重視資料整理、操作效率與使用體驗，持續改善介面細節與功能品質，希望提供穩定、{subscriptionPurchaseVisible ? "且容易使用的分析工具" : "且容易使用的查詢工具"}，讓每一次資料查詢都更加便利。</p><p className="about-thanks">感謝您對 樂彩 Matrix 的支持與使用！</p><div className="about-brand-info"><p><span>品牌名稱：</span>樂彩 Matrix</p><p>Copyright © 2026 樂彩 Matrix. All Rights Reserved.</p></div></section></ProfileDetailShell>;
 }
 
 export function CollapsibleRuleCard({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
@@ -948,7 +948,7 @@ export function ActivationCodePage({ onNavigate }: { onNavigate: Navigate }) {
   }
 
   return (
-    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen" hidePageTitle headerArtwork="/assets/lottery/functions/推薦啟動標題K.png">
+    <ProfileDetailShell title="我的推薦碼/啟動碼" onNavigate={onNavigate} className="activation-code-screen">
       <section className="panel referral-code-section" aria-label="推薦碼">
         <div className="referral-summary-card">
           <div className="referral-summary-heading">
@@ -1167,3 +1167,4 @@ export function DisclaimerPage({ onNavigate }: { onNavigate: Navigate }) {
     </LegalInfoDocument>
   );
 }
+

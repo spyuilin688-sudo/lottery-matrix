@@ -6,13 +6,6 @@
   --tool-page-inline: var(--layout-page-inline);
   --tool-section-gap: var(--layout-section-gap, 8px);
   --tool-floating-clearance: clamp(96px, 18dvh, 148px);
-  --title-action-top-offset: 0px;
-  --title-action-right-offset: 0px;
-}
-
-.number-reference-screen {
-  --title-action-top-offset: -2.5px;
-  --title-action-right-offset: 3px;
 }
 
 .title-card-compact-actions {
@@ -69,35 +62,6 @@
   flex: 0 0 10px;
 }
 
-.sticky-title-card-screen .feature-brand-header,
-.number-reference-screen .feature-brand-header {
-  position: sticky;
-  z-index: 30;
-  top: 0;
-  background: #020b11;
-}
-
-.draw-history-screen .matrix-title-banner,
-.tongxing-screen .matrix-title-banner,
-.number-reference-screen .matrix-title-banner {
-  width: calc(100% - (var(--tool-page-inline) * 2));
-}
-
-.draw-history-screen .matrix-title-banner-actions,
-.tongxing-screen .matrix-title-banner-actions,
-.number-reference-screen .matrix-title-banner-actions {
-  top: 100%;
-  top: calc(100% + var(--title-action-top-offset));
-  right: calc(4% + var(--title-action-right-offset));
-  bottom: auto;
-  left: auto;
-  width: auto;
-  min-width: 0;
-  height: auto;
-  align-items: center;
-  justify-content: flex-end;
-  transform: translateY(-87.5%);
-}
 
 .draw-history-screen .history-title-actions,
 .tongxing-screen .tongxing-title-actions,
@@ -110,13 +74,6 @@
   gap: 6px;
 }
 
-.tool-title-actions {
-  translate: -3px -1px;
-}
-
-.draw-history-screen .matrix-title-banner-actions .history-title-actions {
-  align-items: stretch;
-}
 
 .draw-history-screen .history-title-actions :is(.history-reset-trigger, .history-filter-trigger) {
   align-self: stretch;
@@ -468,3 +425,4 @@
   font-size: 14px;
   line-height: 18px;
 }
+

@@ -5,7 +5,7 @@
   --select-tech-surface: #030b13;
   --select-tech-cut: 8px;
   min-height: 100%;
-  padding: 44px 0 0;
+  padding: 0;
   background: #02070c;
   color: #f5f2ea;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
@@ -42,10 +42,8 @@
 
 
 .calculator-screen > .feature-body { box-sizing: border-box; min-width: 0; min-height: 0; flex: 1 1 auto; padding: 0 var(--layout-page-inline) var(--layout-bottom-nav-clearance); overflow-y: auto; overscroll-behavior-y: contain; }
-.compact-feature-screen { padding-top: 30px; }
-.feature-title-card { box-sizing: border-box; display: grid; width: calc(100% - 32px); min-height: 56px; margin-top: 8px; padding: 6px 8px 6px 12px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
-.feature-title-card h1 { min-width: 0; margin: 0; color: #eee9df; font-size: 24px; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
-.feature-title-actions { display: flex; min-width: 0; align-items: center; }
+
+
 .matrix-settings-heading { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; }
 .matrix-page-switcher {
   box-sizing: border-box;
@@ -101,49 +99,8 @@
   padding: 4px;
   color: var(--lottery-gold-300);
 }
-.matrix-title-banner {
-  position: relative;
-  width: calc(100% - 32px);
-  margin: 0 auto;
-  line-height: 0;
-}
-.matrix-title-banner > img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-.integrated-title-back {
-  position: absolute;
-  z-index: 4;
-  top: 50%;
-  left: 0;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  transform: translateY(-50%);
-  border: 0;
-  background: transparent;
-}
-.matrix-title-banner-actions {
-  position: absolute;
-  z-index: 3;
-  inset: 13% 2.5% 13% auto;
-  display: flex;
-  width: min(42%, 160px);
-  min-width: 0;
-  align-items: center;
-  justify-content: flex-end;
-}
-.matrix-title-banner-actions {
-  width: 100%;
-  height: 100%;
-}
-.matrix-title-banner-actions .reference-title-actions,
-.matrix-title-banner-actions .history-title-actions {
-  width: 100%;
-  justify-content: flex-end;
-}
+
+
 .history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
@@ -646,8 +603,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .history-panel .history-numbers[data-has-special="true"] .history-main-numbers { padding-top: 0; }
 .history-panel[data-lottery="六合彩"] .history-special-label { transform: none; }
 
-.draw-history-screen .matrix-title-banner-actions { top: 20%; right: 4%; bottom: 8%; left: auto; width: 46%; height: auto; }
-.draw-history-screen .matrix-title-banner-actions .history-title-actions { width: 100%; height: 100%; align-items: flex-end; justify-content: flex-end; }
+
 .draw-history-week-list { display: grid; gap: 8px; }
 .draw-history-panel { padding: 0; overflow: visible; border: 1px solid rgba(170, 119, 46, .82); }
 .history-pagination { box-sizing: border-box; display: grid; width: 132px; height: 32px; margin: 10px auto 0; grid-template-columns: 32px 68px 32px; align-items: center; border: 1px solid #6c4a20; border-radius: 9px; background: #071018; color: #d9ad42; }
@@ -797,17 +753,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .reference-row.head { min-height: 40px; color: #d2a52a; font-size: 15px; font-weight: 700; }
 
-/* 號碼對照單：固定頁首、查詢收合與列表為單一正式樣式來源。 */
-.number-reference-screen .feature-brand-header {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  background: linear-gradient(180deg, #02070c 0%, rgba(2, 7, 12, .98) 88%, rgba(2, 7, 12, 0) 100%);
-}
-.number-reference-screen .matrix-title-banner {
-  width: calc(100% - (var(--layout-page-inline) * 2));
-  margin-top: 0;
-}
+
 .reference-title-actions {
   display: flex;
   height: 100%;
@@ -1295,7 +1241,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .profile-menu .section-title { margin-bottom: 8px; font-size: 17px; font-weight: 600; }
 .profile-menu-rows button { display: grid; width: 100%; min-height: 48px; padding: 0 2px; grid-template-columns: minmax(0, 1fr) 20px; align-items: center; border: 0; border-top: 1px solid #30271c; background: transparent; color: #d8d1c6; font-size: 14px; text-align: left; }
 .profile-menu-rows button svg { width: 18px; height: 18px; justify-self: end; color: #b98a31; }
-.profile-detail-screen .feature-brand-header h1 { max-width: calc(100% - 72px); font-size: 21px; line-height: 1.25; text-align: center; }
+
 .detail-card { padding: 14px; }
 .detail-card h2 { margin: 0 0 10px; color: #e5c36e; font-size: 16px; font-weight: 600; line-height: 1.4; }
 .detail-card p { margin: 0 0 8px; color: #c9c2b8; font-size: 13px; line-height: 1.75; }
@@ -1374,7 +1320,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .status-detail p > span:first-child { padding: 4px; border: 1px solid var(--border); border-radius: 999px; text-align: center; }
 .status-detail p strong { color: var(--tone); font-size: 14px; }
 .matrix-notebook-screen > .feature-body { padding-inline: var(--layout-page-inline); }
-.matrix-notebook-screen > .feature-brand-header { margin-bottom: var(--layout-section-gap); }
+
 .notebook-heading { --notebook-icon-size: 42px; display: grid; min-width: 0; grid-template-columns: var(--notebook-icon-size) minmax(0, 1fr) auto; align-items: center; margin-bottom: 12px; gap: var(--layout-section-gap); }
 .notebook-heading > img { width: var(--notebook-icon-size); height: var(--notebook-icon-size); border-radius: 11px; object-fit: contain; }
 .notebook-entry-count { min-width: 0; color: #948d83; font-size: 11px; }
@@ -2063,8 +2009,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .matrix-guide-screen .guide-intro img { width: 62px; height: 62px; }
 
 
-
-
 .weekly-summary { margin-bottom: 8px; padding: 9px 10px 10px; border-color: #168ad0; }
 .weekly-summary > header { display: flex; height: 28px; align-items: center; gap: 8px; border-bottom: 1px solid #1d2c37; }
 .weekly-summary h2 { margin: 0; color: #e6cc84; font-size: 14px; font-weight: 550; }
@@ -2640,23 +2584,23 @@ opacity: .30; box-shadow: none;
   min-height: 100%;
   padding-bottom: 0;
 }
-.feature-screen:not(.compact-feature-screen) {
-  padding-top: 0;
-}
-/* Matrix 探索：產品型頁首為唯一正式樣式來源；不沿用圖片式標題卡。 */
-.explore-product-header {
+.bottom-nav-brand-screen > .feature-body { position: relative; top: auto; margin-bottom: 0; }
+/* All PWA feature titles share the Explore header; homepage branding is separate. */
+.product-header {
   box-sizing: border-box;
   width: 100%;
   padding: 0 var(--layout-page-inline) 8px;
+  flex: 0 0 auto;
 }
-.explore-product-header__frame {
+.product-header__frame {
   position: relative;
   isolation: isolate;
   display: grid;
   box-sizing: border-box;
   width: 100%;
-  min-height: 68px;
-  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
+  height: 68px;
+  grid-template-columns: 44px 56px minmax(0, 1fr);
+  grid-template-areas: "back mark copy";
   align-items: center;
   gap: 10px;
   padding: 5px 10px 5px 8px;
@@ -2667,12 +2611,30 @@ opacity: .30; box-shadow: none;
     radial-gradient(circle at 76% 45%, rgba(201, 149, 48, .055), transparent 38%),
     #020609;
 }
-.explore-product-header__back,
-.explore-product-header__back-spacer {
+.product-header__frame[data-back="false"] {
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-areas: "mark copy";
+}
+.product-header__frame[data-actions="true"] {
+  grid-template-areas: "back mark copy" "back mark actions";
+  grid-template-rows: minmax(0, 1fr) auto;
+  row-gap: 3px;
+}
+.product-header__frame[data-back="false"][data-actions="true"] {
+  grid-template-areas: "mark copy" "mark actions";
+}
+.sticky-title-card-screen > .product-header,
+.number-reference-screen > .product-header {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  background: #020b11;
+}
+.product-header__back {
+  box-sizing: border-box;
+  grid-area: back;
   width: 44px;
   height: 44px;
-}
-.explore-product-header__back {
   position: relative;
   z-index: 2;
   display: grid;
@@ -2684,21 +2646,22 @@ opacity: .30; box-shadow: none;
   color: #f2eee6;
   cursor: pointer;
 }
-.explore-product-header__back:hover {
+.product-header__back:hover {
   background: rgba(213, 166, 72, .08);
 }
-.explore-product-header__back:active {
+.product-header__back:active {
   background: rgba(213, 166, 72, .14);
 }
-.explore-product-header__back:focus-visible {
+.product-header__back:focus-visible {
   outline: 2px solid var(--lottery-gold-300);
   outline-offset: -2px;
 }
-.explore-product-header__back svg {
+.product-header__back svg {
   width: 22px;
   height: 22px;
 }
-.explore-product-header__mark {
+.product-header__mark {
+  grid-area: mark;
   position: relative;
   z-index: 2;
   display: block;
@@ -2708,22 +2671,26 @@ opacity: .30; box-shadow: none;
   object-position: center;
   filter: drop-shadow(0 0 6px rgba(217, 169, 72, .14));
 }
-.explore-product-header__copy {
+.product-header__copy {
+  grid-area: copy;
+  container-type: inline-size;
   position: relative;
   z-index: 2;
   min-width: 0;
   text-align: left;
 }
-.explore-product-header__copy h1 {
+.product-header__copy h1 {
   margin: 0;
   color: #f0c85f;
-  font-size: 20px;
+  font-size: min(20px, 12cqi);
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: .015em;
   white-space: nowrap;
 }
-.explore-product-header__copy > span {
+.product-header__copy h1[data-title-fit="medium"] { font-size: min(20px, 8.5cqi); }
+.product-header__copy h1[data-title-fit="long"] { font-size: min(20px, 6cqi); }
+.product-header__copy > span {
   display: block;
   margin-top: 4px;
   color: rgba(221, 214, 201, .7);
@@ -2731,8 +2698,11 @@ opacity: .30; box-shadow: none;
   font-weight: 600;
   line-height: 1;
   letter-spacing: .32em;
+  white-space: nowrap;
 }
-.explore-product-header__actions {
+.product-header__actions {
+  grid-area: actions;
+  flex-wrap: wrap;
   position: relative;
   z-index: 3;
   display: flex;

@@ -1,3 +1,4 @@
+import { BrandHeader } from "./features/BrandHeader";
 import { SubscriptionCopy } from './subscription-copy';
 import { Fragment, useEffect, useState } from "react";
 import { ChevronDownIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
@@ -161,12 +162,7 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
 
   return (
     <main className="feature-screen matrix-explore-screen matrix-explore-main-screen explore-result-preview-screen" aria-label="探索結果區">
-      <header className="feature-brand-header integrated-title-header">
-        <div className="matrix-title-banner">
-          <img src="/assets/lottery/functions/探索標題K.png" alt="Matrix 探索" draggable={false} />
-          <a className="integrated-title-back" href="/" aria-label="返回" />
-        </div>
-      </header>
+      <BrandHeader title="Matrix 探索" backHref="/" />
 
       <div className="feature-body">
         <section className="panel result-panel">
@@ -257,4 +253,5 @@ export function ExploreResultPreviewPage({ hitCondition = "準4+" }: { hitCondit
     </main>
   );
 }
+
 

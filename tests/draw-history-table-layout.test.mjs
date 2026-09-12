@@ -46,24 +46,16 @@ test("歷史今彩539只保留明確的 .2px 數字底線間距，不受 Matrix 
   assert.match(ballCss, /\.matrix-explore-main-screen \.matrix-explore-history-panel/);
 });
 
-test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承接", () => {
-  const actionBodies = ruleBodies(
-    responsiveCss,
-    /^\.draw-history-screen \.matrix-title-banner-actions$/,
-  );
-  assert.equal(actionBodies.length, 1);
-  assert.match(actionBodies[0], /top:\s*100%;/);
-  assert.match(actionBodies[0], /bottom:\s*auto;/);
-  assert.match(actionBodies[0], /width:\s*auto;/);
-  assert.match(actionBodies[0], /transform:\s*translateY\(-87\.5%\);/);
-
-  const controlBodies = ruleBodies(
-    responsiveCss,
-    /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/,
-  );
-  assert.equal(controlBodies.length, 1);
-  assert.doesNotMatch(controlBodies[0], /(?:^|;)\s*(?:min-)?height\s*:/);
-  assert.match(controlBodies[0], /padding-inline:\s*4px;/);
+test("篩選條件由標題卡內容寬度與內容驅動的精簡控制器承接 [header migration]", () => {
+  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const actions = ruleBodies(css, /^\.product-header__actions$/);
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /min-width:\s*0;/);
+  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  const control = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/);
+  assert.equal(control.length, 1);
+  assert.match(control[0], /padding-inline:\s*4px;/);
 });
 
 test("彩種下拉為歷史設定卡第一項並保留標題列篩選按鈕", () => {
@@ -98,3 +90,4 @@ test("歷史設定卡維持 26px 控制、深色直角選項與共享 16px 水�
   assert.match(bodyRules[0], /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/);
   assert.match(responsiveCss, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
 });
+

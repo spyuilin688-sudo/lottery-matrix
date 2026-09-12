@@ -13,6 +13,14 @@
 - 切換使用既有 app-owned 確認對話框，取消不送出。儲存期間兩個開關停用；成功使用伺服器回傳的新 revision，失敗或版本衝突重讀真實狀態並提供可重試提示。service role 與舊管理權杖不得出現在瀏覽器。
 - 遷移採兩階段：先驗證新後台的讀取、超級管理員修改、一般管理員 403 與前台反映；確認正常後才撤銷舊 token 更新 RPC／憑證並退役獨立網站，避免控制空窗。
 
+## PWA page headers — 2026-09-12
+
+- `src/features/BrandHeader.tsx` is the sole title renderer for PWA feature pages. `src/feature-pages.css` owns its layout. Homepage branding and the independent admin application are excluded.
+- Each frame is 68px high with the same 16px page gutters and 8px following gap. Titles remain complete and single-line; the shared CSS fit ranges reduce long titles without changing frame geometry.
+- Preserve existing back destinations, shortcut return callbacks, action callbacks, and sticky tool headers. Notification and profile roots have no back control; profile details and notebook retain their existing back control. No placeholder back target is introduced.
+- Header actions remain inside the fixed frame. Floating filter panels continue to read the actual header bottom after migration.
+- The current user instruction is the source for this visual change; all authorization, persistence and API contracts remain unchanged.
+
 ## Product context
 
 - Audience: 使用繁體中文、以手機查詢彩券開獎與 Matrix 分析資料的會員；管理頁使用者沿用相同產品安全規則。
@@ -272,3 +280,4 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 ## 首頁固定 Logo — 2026-09-09
 
 依使用者確認，首頁 Logo 位於 `MobileScroll` 外的固定品牌列；首頁內容仍由既有 `.mobile-scroll` 使用原生上下捲動。品牌列依圖片比例保留實際高度，下方捲動區填滿剩餘空間，內容與鍵盤焦點不會滑入 Logo 後方。保留既有 Logo 大小、安全區、卡片間距及固定底部導覽。2026-09-10 依使用者確認，僅 Logo 圖片上移 16px，品牌列佔位與下方內容位置不變。此行為限首頁，功能頁共用 `MobileScroll` 與 Logo 不變。
+

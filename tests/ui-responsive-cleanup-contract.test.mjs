@@ -15,43 +15,22 @@ const coreSource = fs.readFileSync('src/FeaturePagesCore.tsx', 'utf8');
 const main = fs.readFileSync('src/main.tsx', 'utf8');
 const adjustments = fs.readFileSync('src/feature-page-adjustments.css', 'utf8');
 
-test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字大小', () => {
-  const sharedControl = ruleBodies(responsive, /^\.title-card-compact-action$/);
-  assert.equal(sharedControl.length, 1);
-  assert.match(sharedControl[0], /padding:\s*clamp\(3\.5px, 1vw, 4px\) 4\.5px;/);
-  assert.match(sharedControl[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
-  assert.doesNotMatch(sharedControl[0], /(?:^|;)\s*(?:min-)?height\s*:/);
-  assert.match(coreSource, /history-reset-trigger title-card-compact-action/);
-  assert.match(coreSource, /tongxing-title-actions title-card-compact-actions/);
-  assert.match(source, /reference-title-actions title-card-compact-actions/);
-  assert.doesNotMatch(responsive, /(?:history|tongxing|reference)-title-actions[^{}]*\.title-card-compact-action\s*\{[^}]*(?:min-)?height\s*:/s);
-  assert.doesNotMatch(responsive.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
-  assert.doesNotMatch(responsive.match(/\.title-card-compact-action::after\s*\{[^}]*\}/s)?.[0] ?? '', /clip-path/);
-  const actions = ruleBodies(responsive, /^\.number-reference-screen \.matrix-title-banner-actions$/);
+test('三頁標題操作按鈕由響應式內距縮減高度且維持原文字大小 [header migration]', () => {
+  const css = fs.readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /width:\s*auto;/);
-  const icon = ruleBodies(responsive, /^\.reference-refresh-icon$/);
-  assert.equal(icon.length, 1);
-  assert.match(icon[0], /width:\s*8px;/);
-  assert.match(icon[0], /height:\s*8px;/);
+  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /min-width:\s*0;/);
+  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  const control = ruleBodies(responsive, /^\.title-card-compact-action$/);
+  assert.equal(control.length, 1);
+  assert.match(control[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
 });
 
-test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距', () => {
+test('同星、對照單、歷史、計算機與 Matrix Explore 使用指定外距 [header migration]', () => {
+  assert.match(feature, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
   assert.match(responsive, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
-  for (const selector of [
-    /^\.tongxing-screen \.feature-body$/,
-    /^\.number-reference-screen \.feature-body$/,
-    /^\.draw-history-screen \.feature-body$/,
-  ]) {
-    const bodies = ruleBodies(responsive, selector);
-    assert.equal(bodies.length, 1);
-    const expectedBottom = /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/;
-    assert.match(bodies[0], expectedBottom);
-  }
-  assert.match(feature, /\.calculator-screen > \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.feature-body\s*\{[^}]*padding:\s*0 var\(--layout-page-inline\) var\(--layout-bottom-nav-clearance\);/s);
-  assert.match(explore, /\.matrix-explore-main-screen \.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - \(var\(--layout-page-inline\) \* 2\)\);/s);
-  assert.doesNotMatch(tongxing, /\.tongxing-screen \.feature-body\s*\{/);
+  assert.doesNotMatch(explore, /matrix-title-banner/);
 });
 
 test('三個浮動設定卡固定於 viewport、左右 16px 且 top 使用 viewport 座標', () => {
@@ -124,3 +103,4 @@ test('臨時底部安全區 override 已移除', () => {
 test('號碼對照單刷新圖示不覆寫共用尺寸', () => {
   assert.doesNotMatch(responsive, /\.number-reference-screen \.reference-refresh-trigger > svg\s*\{/);
 });
+

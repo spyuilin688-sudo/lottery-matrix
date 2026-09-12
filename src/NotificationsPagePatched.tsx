@@ -1,3 +1,4 @@
+import { BrandHeader } from "./features/BrandHeader";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
@@ -467,11 +468,7 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
 
   return (
     <main className="feature-screen compact-feature-screen bottom-nav-brand-screen notifications-screen notifications-screen-v2">
-      <header className="feature-brand-header integrated-title-header" data-compact="true">
-        <div className="matrix-title-banner">
-          <img src="/assets/lottery/functions/通知標題K.png" alt="通知" draggable={false} />
-        </div>
-      </header>
+      <BrandHeader title="通知" showBack={false} />
       <div className="feature-body">
         <div className="notification-content">
           {saveFailed ? <div className="notification-settings-save-error panel" role="status"><p>通知設定尚未儲存，請重試</p><button type="button" className="title-card-compact-action" aria-label="重試儲存通知設定" disabled={saveBusy} aria-busy={saveBusy} onClick={() => {
@@ -495,3 +492,4 @@ export function NotificationsPagePatched({ onNavigate, onQuickOpen, onQuickConfi
     </main>
   );
 }
+

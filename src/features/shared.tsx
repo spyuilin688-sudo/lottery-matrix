@@ -1,12 +1,13 @@
 import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, CircleDot, GitBranch } from "lucide-react";
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId, type DrawOrder } from "../Prototype";
 import { BottomNavigation } from "../BottomNavigation";
 import { NumberBall as LotteryNumberBall, normalizeBallNumber } from "../NumberBall";
 import { fetchLotteryHistory, type LotteryDrawRecord } from "../lottery-api";
-import { BrandLogo } from "../BrandLogo";
+import { BrandHeader } from "./BrandHeader";
+export { BrandHeader } from "./BrandHeader";
 import { isNearHistoryWeekBoundary } from "../history-week-groups";
 import { formatReferenceNumber, sanitizeReferenceNumber } from "../reference-number-input";
 import { isDuplicateLookupNumber } from "../feature-tool-logic";
@@ -37,23 +38,6 @@ export const MATRIX_PAGE_ITEMS = [
   { screen: "tiangong", shortLabel: "天工", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
 ] as const;
 
-export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
-  "Matrix 天衡": "/assets/lottery/functions/天衡標題K.png",
-  "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
-  "Matrix 天工": "/assets/lottery/functions/天工標題K.png",
-  "Matrix 指南": "/assets/lottery/functions/指南標題K.png",
-  "Matrix 同星": "/assets/lottery/functions/同星標題K.png",
-  "Matrix 牌單": "/assets/lottery/functions/牌單標題K.png",
-  "Matrix 狀態": "/assets/lottery/functions/狀態標題K.png",
-  "Matrix 筆記本": "/assets/lottery/functions/筆記本標題K.png",
-  "號碼對照單": "/assets/lottery/functions/對照單標題K.png",
-  "歷史開獎號碼": "/assets/lottery/functions/歷史開獎標題K.png",
-  "連碰計算機": "/assets/lottery/functions/連碰標題K.png",
-  "立柱計算機": "/assets/lottery/functions/立柱標題K.png",
-  "Matrix Pro 訂閱方案與收費標準": "/assets/lottery/functions/訂閱方案標題K.png",
-  "Matrix 自訂觸發狀態": "/assets/lottery/functions/自訂觸發標題K.png",
-};
-
 export function MatrixPageSwitcher({ current, onNavigate }: {
   current: "explore" | "tianheng" | "tianyan" | "tiangong";
   onNavigate: Navigate;
@@ -81,85 +65,6 @@ export const ROAD_VALIDATION_SAMPLE_HISTORY = [
   ["5895", "2026/06/21（六）", ["02", "09", "18", "26", "34"]],
   ["5896", "2026/06/23（一）", ["05", "12", "21", "28", "37"]],
 ] as const;
-
-export function BrandHeader({
-  title,
-  onBack,
-  action,
-  compact = false,
-  hideTitle = false,
-  showBack = true,
-  artwork,
-}: {
-  title: string;
-  onBack: () => void;
-  action?: React.ReactNode;
-  compact?: boolean;
-  hideTitle?: boolean;
-  showBack?: boolean;
-  artwork?: string;
-}) {
-  if (title === "Matrix 探索" && !artwork && !hideTitle) {
-  return (
-    <header className="explore-product-header" data-product-header="explore">
-      <div className="explore-product-header__frame">
-        {showBack ? (
-          <button type="button" className="explore-product-header__back" onClick={onBack} aria-label="返回">
-            <ChevronLeftIcon aria-hidden="true" />
-          </button>
-        ) : <span className="explore-product-header__back-spacer" aria-hidden="true" />}
-        <img
-          className="explore-product-header__mark"
-          src="/assets/lottery/matrixYY.png"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-        />
-        <div className="explore-product-header__copy">
-          <h1>MATRIX 探索</h1>
-          <span>EXPLORE</span>
-        </div>
-        {action ? <div className="explore-product-header__actions">{action}</div> : null}
-      </div>
-    </header>
-  );
-}
-
-  const integratedArtwork = artwork ?? MATRIX_TITLE_ARTWORK[title];
-  if (integratedArtwork && (!hideTitle || Boolean(artwork))) {
-    return (
-      <header className="feature-brand-header integrated-title-header" data-compact={compact}>
-        <div className="matrix-title-banner">
-          <img src={integratedArtwork} alt={title} draggable={false} />
-          {showBack ? <button type="button" className="integrated-title-back" onClick={onBack} aria-label="返回" /> : null}
-          {action ? <div className="matrix-title-banner-actions">{action}</div> : null}
-        </div>
-      </header>
-    );
-  }
-  return (
-    <header className="feature-brand-header" data-compact={compact} data-hide-title={hideTitle}>
-      {!compact || showBack ? (
-        <div className="feature-brand-row">
-          {showBack ? (
-            <div className="back-button-slot">
-              <button type="button" className="icon-button back-button" onClick={onBack} aria-label="返回">
-                <ChevronLeftIcon aria-hidden="true" />
-              </button>
-            </div>
-          ) : null}
-          <div className="feature-brand-lockup"><BrandLogo /></div>
-        </div>
-      ) : <BrandLogo />}
-      {!hideTitle ? (
-        <div className="feature-title-card">
-          <h1>{title}</h1>
-          {action ? <div className="feature-title-actions">{action}</div> : null}
-        </div>
-      ) : null}
-    </header>
-  );
-}
 
 export function FeatureBottomNavigationPortal({
   active,
@@ -204,8 +109,6 @@ export function FeatureShell({
   backTarget = "home",
   headerAction,
   compactHeader = false,
-  hidePageTitle = false,
-  headerArtwork,
 }: {
   title: string;
   children: React.ReactNode;
@@ -215,22 +118,16 @@ export function FeatureShell({
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
   compactHeader?: boolean;
-  hidePageTitle?: boolean;
-  headerArtwork?: string;
 }) {
   const { onQuickBack, quickActive } = useQuickNavigation();
   const logoOnlyHeader = compactHeader || active !== "首頁";
-  const hideTitle = hidePageTitle || compactHeader;
   return (
     <main className={`feature-screen ${logoOnlyHeader ? "compact-feature-screen bottom-nav-brand-screen" : ""} ${className}`.trim()}>
       <BrandHeader
         title={title}
         onBack={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)}
         action={headerAction}
-        compact={logoOnlyHeader}
-        hideTitle={hideTitle}
-        showBack={(Boolean(headerArtwork ?? MATRIX_TITLE_ARTWORK[title]) && !(active === "我的" && backTarget === "home")) || !logoOnlyHeader || (active === "我的" && backTarget === "profile")}
-        artwork={headerArtwork}
+        showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile") || title === "Matrix 筆記本"}
       />
       <div className="feature-body">{children}</div>
       <FeatureBottomNavigationPortal active={active} onNavigate={onNavigate} />
@@ -558,3 +455,4 @@ export function HistoryList({
     </div>
   );
 }
+

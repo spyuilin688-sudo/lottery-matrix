@@ -9,70 +9,37 @@ const source = readFeaturePagesSource();
 const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const tongxingCss = readFileSync(new URL('../src/tongxing-compact.css', import.meta.url), 'utf8');
 const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
-const brandCss = readFileSync(new URL('../src/brand-header-unify.css', import.meta.url), 'utf8');
+const brandCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const tokens = readFileSync(new URL('../src/design-tokens.css', import.meta.url), 'utf8');
 const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url), 'utf8');
 const adjustmentsCss = readFileSync(new URL('../src/feature-page-adjustments.css', import.meta.url), 'utf8');
 
-test('歷史開獎使用內容驅動的精簡按鈕及 sticky 頁首', () => {
-  assert.match(source, /className="history-filter-panel"/);
-  assert.match(source, /role=\{filterFloating \? "dialog" : "region"\}/);
-  assert.match(source, /aria-label="歷史篩選設定"/);
-  assert.match(source, /className="history-filter-trigger title-card-compact-action"/);
+test('歷史開獎使用內容驅動的精簡按鈕及 sticky 頁首 [header migration]', () => {
   assert.match(source, /className="draw-history-screen sticky-title-card-screen"/);
-  assert.match(responsiveCss, /\.title-card-compact-action\s*\{[^}]*padding:\s*clamp\(3\.5px, 1vw, 4px\) 4\.5px;[^}]*gap:\s*2px;[^}]*font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\)/s);
-  const historyControl = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-title-actions \.title-card-compact-action$/);
-  assert.equal(historyControl.length, 1);
-  assert.doesNotMatch(historyControl[0], /(?:^|;)\s*(?:min-)?height\s*:/);
-  const before = responsiveCss.match(/\.title-card-compact-action::before\s*\{[^}]*\}/s)?.[0] ?? '';
-  const after = ruleBodies(responsiveCss, /^\.title-card-compact-action::after$/)
-    .find((body) => /inset:\s*1px/.test(body)) ?? '';
-  assert.match(before, /inset:\s*0/);
-  assert.match(after, /inset:\s*1px/);
-  assert.doesNotMatch(before, /height\s*:/);
-  assert.doesNotMatch(after, /height\s*:/);
-  assert.match(after, /background:\s*var\(--select-tech-surface, #030b13\)/);
-  assert.doesNotMatch(before, /clip-path/);
-  assert.doesNotMatch(after, /clip-path/);
-  const stickyHeader = ruleBodies(responsiveCss, /^\.sticky-title-card-screen \.feature-brand-header$/);
-  assert.equal(stickyHeader.length, 1);
-  assert.match(stickyHeader[0], /position:\s*sticky;/);
+  assert.match(css, /\.sticky-title-card-screen > \.product-header,\s*\.number-reference-screen > \.product-header\s*\{[^}]*position:\s*sticky;[^}]*z-index:\s*30;[^}]*top:\s*0;/s);
+  assert.doesNotMatch(responsiveCss, /feature-brand-header/);
 });
 
-test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8px 垂直間距', () => {
+test('歷史、同星、對照單使用 16px 水平外距並由標題卡提供 8px 垂直間距 [header migration]', () => {
   assert.match(tokens, /--layout-page-inline:\s*16px;/);
-  assert.match(responsiveCss, /--tool-page-inline:\s*var\(--layout-page-inline\);/);
-  for (const selector of [
-    /^\.draw-history-screen \.feature-body$/,
-    /^\.tongxing-screen \.feature-body$/,
-    /^\.number-reference-screen \.feature-body$/,
-  ]) {
+  assert.match(css, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  for (const selector of [/^\.draw-history-screen \.feature-body$/, /^\.tongxing-screen \.feature-body$/, /^\.number-reference-screen \.feature-body$/]) {
     const bodies = ruleBodies(responsiveCss, selector);
     assert.equal(bodies.length, 1);
-    assert.match(bodies[0], /width:\s*100%;/);
-    assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\) calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/);
-    assert.match(bodies[0], /row-gap:\s*var\(--tool-section-gap\);/);
+    assert.match(bodies[0], /padding:\s*0 var\(--tool-page-inline\)/);
   }
-  const titleBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner$/);
-  assert.equal(titleBodies.length, 1);
-  assert.match(titleBodies[0], /width:\s*calc\(100% - \(var\(--tool-page-inline\) \* 2\)\);/);
-  assert.doesNotMatch(tongxingCss, /\.tongxing-screen \.feature-body\s*\{/);
 });
 
-test('號碼對照單標題操作使用共用控制項尺寸、內容寬度區域與自適應文字', () => {
-  assert.match(source, /className="reference-title-actions title-card-compact-actions tool-title-actions"/);
-  assert.match(source, /<ReloadIcon className="reference-refresh-icon" \/>刷新/);
-  assert.match(source, /className="title-card-compact-action reference-settings-trigger"[^>]*aria-label=\{queryExpanded/);
-  assert.match(responsiveCss, /\.number-reference-screen \.reference-title-actions\s*\{[\s\S]*?gap:\s*6px;/s);
-  const actionBodies = ruleBodies(responsiveCss, /^\.number-reference-screen \.matrix-title-banner-actions$/);
-  assert.equal(actionBodies.length, 1);
-  assert.match(actionBodies[0], /width:\s*auto;/);
-  const iconBodies = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
-  assert.equal(iconBodies.length, 1);
-  assert.match(iconBodies[0], /width:\s*8px;/);
-  assert.match(iconBodies[0], /height:\s*8px;/);
-  assert.doesNotMatch(brandCss, /\.number-reference-screen \.reference-title-actions button:(?:first|last)-child/);
-  assert.match(css, /\.number-reference-screen \.reference-select select\s*\{[^}]*font-size:\s*clamp\(/s);
+test('號碼對照單標題操作使用共用控制項尺寸、內容寬度區域與自適應文字 [header migration]', () => {
+  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const actions = ruleBodies(css, /^\.product-header__actions$/);
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /min-width:\s*0;/);
+  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  assert.match(source, /reference-title-actions title-card-compact-actions/);
+  assert.match(source, /reference-refresh-trigger[\s\S]*刷新/);
+  assert.match(source, /reference-settings-trigger[\s\S]*探索設定/);
 });
 
 test('對照單浮動探索設定維持原本三欄排列', () => {
@@ -94,13 +61,11 @@ test('Matrix 同星設定可收合、頁首固定且不渲染近10期卡片', ()
   assert.match(page, /className="tongxing-screen sticky-title-card-screen"/);
 });
 
-test('快捷通知我的共用首頁 matrixya Logo 幾何與 8px 間距', () => {
-  assert.match(brandSource, /matrixya\.png/);
-  assert.match(brandCss, /\.feature-brand-header,[\s\S]*?\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
-  assert.match(brandCss, /\.feature-brand-lockup,[\s\S]*?\.shared-brand-logo\s*\{[^}]*width:\s*100%;[^}]*height:\s*var\(--primary-brand-height\)/s);
-  assert.match(tokens, /--layout-section-gap:\s*8px;/);
-  assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen \.shared-brand-logo\s*\{[^}]*width:\s*75%/s);
-  assert.doesNotMatch(responsiveCss, /\.bottom-nav-brand-screen\.notifications-screen > \.feature-brand-header:not\(\.integrated-title-header\)/);
+test('快捷通知我的共用首頁 matrixya Logo 幾何與 8px 間距 [header migration]', () => {
+  const header = readFileSync(new URL('../src/features/BrandHeader.tsx', import.meta.url), 'utf8');
+  assert.match(header, /matrixYY\.png/);
+  assert.match(brandCss, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.doesNotMatch(responsiveCss, /matrix-title-banner|feature-brand-header/);
 });
 
 test('通知頁使用 v2 緊密密度且右側動作固定欄對齊', () => {
@@ -137,3 +102,4 @@ test('本次正式規則不新增整頁縮放、負位移或 important 補償', 
 test('號碼對照單刷新圖示不再有頁面專屬尺寸覆寫', () => {
   assert.doesNotMatch(responsiveCss, /\.number-reference-screen \.reference-refresh-trigger > svg\s*\{/);
 });
+

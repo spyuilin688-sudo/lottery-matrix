@@ -7,7 +7,6 @@ import App from "./App";
 import { installGlobalInputBehavior } from "./input-behavior";
 import "./styles.css";
 import "./prototype.css";
-import "./brand-header-unify.css";
 import "./homepage-repair.css";
 import "./responsive-feature-pages.css";
 import "./tongxing-compact.css";
@@ -115,3 +114,4 @@ async function bootstrap() {
 }
 
 void bootstrap().catch(renderApp);
+

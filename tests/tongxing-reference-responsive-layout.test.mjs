@@ -10,7 +10,7 @@ const tongxing = fs.readFileSync('src/tongxing-compact.css', 'utf8');
 const feature = fs.readFileSync('src/feature-pages.css', 'utf8');
 const responsive = fs.readFileSync('src/responsive-feature-pages.css', 'utf8');
 const tokens = fs.readFileSync('src/design-tokens.css', 'utf8');
-const brandHeader = fs.readFileSync('src/brand-header-unify.css', 'utf8');
+const brandHeader = fs.readFileSync('src/feature-pages.css', 'utf8');
 const source = readFeaturePagesSource();
 
 function block(css, selector) {
@@ -105,11 +105,9 @@ test('shared responsive sheet is the final owner of both tool-page content flows
   assert.doesNotMatch(tongxing, /\.tongxing-screen \.feature-body\s*\{/);
 });
 
-test('Matrix 同星與號碼對照單頁首不受 390px 寬度限制', () => {
-  assert.match(
-    brandHeader,
-    /\.tongxing-screen > \.feature-brand-header,\s*\.number-reference-screen > \.feature-brand-header\s*\{[^}]*width:\s*100%;/s,
-  );
+test('Matrix 同星與號碼對照單頁首不受 390px 寬度限制 [header migration]', () => {
+  assert.match(brandHeader, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.doesNotMatch(brandHeader, /\.product-header[^{]*\{[^}]*(?:max-width:\s*390px|width:\s*min\(100%, 390px\))/s);
 });
 
 test('號碼對照單 uses one responsive three-select grid without the old fixed override', () => {
@@ -150,3 +148,4 @@ test('Matrix 同星使用自動網格並由 API 結果渲染鎖定與預測列',
   assert.match(source, /renderResultRow\(lockedEntry, "locked"\)/);
   assert.match(source, /renderResultRow\(predictedEntry, "predicted"\)/);
 });
+

@@ -117,7 +117,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       onNavigate={onNavigate}
       className="number-reference-screen"
       headerAction={(
-        <div className="reference-title-actions title-card-compact-actions tool-title-actions">
+        <div className="reference-title-actions title-card-compact-actions">
           <button type="button" className="title-card-compact-action reference-refresh-trigger tool-title-reset-trigger" onClick={resetReference}><ReloadIcon className="reference-refresh-icon" />刷新</button>
           <button type="button" className="title-card-compact-action reference-settings-trigger" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
             <span>探索設定</span>
@@ -254,3 +254,4 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     </FeatureShell>
   );
 }
+

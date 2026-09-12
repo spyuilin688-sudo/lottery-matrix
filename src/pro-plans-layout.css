@@ -9,9 +9,6 @@
   padding-inline: 0;
 }
 
-.pro-plans-screen > .feature-brand-header.integrated-title-header {
-  margin-bottom: 16px;
-}
 
 .pro-plans-screen .plan-carousel {
   box-sizing: border-box;
@@ -98,3 +95,4 @@
 .pro-plans-screen .payment-note {
   font-size: 11px;
 }
+

@@ -20,14 +20,17 @@ test("Matrix 四頁切換器位於設定標題同列並完整呈現外框", () =
   assert.doesNotMatch(exploreCss, /\.matrix-explore-main-screen \.matrix-settings-heading \.matrix-page-switcher img\s*\{\s*clip-path:\s*inherit;/s);
 });
 
-test("同星、對照單與歷史的設定按鈕使用同一個位置規格", () => {
-  assert.match(featurePages, /className="reference-title-actions title-card-compact-actions tool-title-actions"/);
-  assert.match(corePages, /className="history-title-actions title-card-compact-actions tool-title-actions"/);
-  assert.match(corePages, /className="tongxing-title-actions title-card-compact-actions tool-title-actions"/);
-
-  const actionBodies = ruleBodies(responsiveCss, /^\.tool-title-actions$/);
-  assert.equal(actionBodies.length, 1);
-  assert.match(actionBodies[0], /translate:\s*-3px -1px;/);
+test("同星、對照單與歷史的設定按鈕使用同一個位置規格 [header migration]", () => {
+  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const actions = ruleBodies(css, /^\.product-header__actions$/);
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /min-width:\s*0;/);
+  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  assert.match(featurePages, /className="reference-title-actions title-card-compact-actions"/);
+  assert.match(corePages, /className="history-title-actions title-card-compact-actions"/);
+  assert.match(corePages, /className="tongxing-title-actions title-card-compact-actions"/);
+  assert.doesNotMatch(responsiveCss, /tool-title-actions/);
 });
 
 test("重設與刷新在設定按鈕左側保留 6px，且外框高度由同一列伸展", () => {
@@ -57,3 +60,4 @@ test("指南章節捲動列上下以 3px 間距保留分隔線", () => {
   assert.match(bodies[0], /border-top:\s*1px solid/);
   assert.match(bodies[0], /border-bottom:\s*1px solid/);
 });
+

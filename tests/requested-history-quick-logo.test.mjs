@@ -12,7 +12,7 @@ const brandSource = readFileSync(new URL('../src/BrandLogo.tsx', import.meta.url
 const featureCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 const ballCss = readFileSync(new URL('../src/number-ball.css', import.meta.url), 'utf8');
 const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
-const brandCss = readFileSync(new URL('../src/brand-header-unify.css', import.meta.url), 'utf8');
+const brandCss = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
 
 test('歷史開獎卡共用近10期的正式表格結構與響應範圍', () => {
   assert.match(featureSource, /className="matrix-explore-main-screen draw-history-history-scope"/);
@@ -35,17 +35,13 @@ test('歷史篩選使用目前的原生下拉網格與正式開始探索操作',
   assert.doesNotMatch(featureCss, /\.history-range-options button\s*\{[^}]*min-height:\s*40px/s);
 });
 
-test('篩選設定按鈕由標題卡內容寬度控制器定位', () => {
-  const actionBodies = ruleBodies(responsiveCss, /^\.draw-history-screen \.matrix-title-banner-actions$/);
-  assert.equal(actionBodies.length, 1);
-  assert.match(actionBodies[0], /top:\s*calc\(100% \+ var\(--title-action-top-offset\)\);/);
-  assert.match(actionBodies[0], /bottom:\s*auto;/);
-  assert.match(actionBodies[0], /width:\s*auto;/);
-  const controlBodies = ruleBodies(responsiveCss, /^\.draw-history-screen \.history-filter-trigger$/);
-  assert.equal(controlBodies.length, 1);
-  assert.doesNotMatch(controlBodies[0], /(?:^|;)\s*(?:min-)?height\s*:/);
-  assert.match(controlBodies[0], /font-size:\s*clamp\(7\.2px, 2\.1vw, 9px\);/);
-  assert.match(controlBodies[0], /gap:\s*1px;/);
+test('篩選設定按鈕由標題卡內容寬度控制器定位 [header migration]', () => {
+  const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const actions = ruleBodies(css, /^\.product-header__actions$/);
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /min-width:\s*0;/);
+  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
 });
 
 test('歷史篩選設定按鈕的完整 cascade 不保留固定高度', () => {
@@ -65,20 +61,10 @@ test('未設定快捷功能時點擊快捷會開啟既有設定', () => {
   assert.match(prototypeSource, /if \(!quickTarget\) \{ setQuickSettingsOpen\(true\); return; \}/);
 });
 
-test('底部導覽三頁的共用頁首使用首頁 matrixya Logo', () => {
-  assert.match(brandSource, /PRIMARY_BRAND_LOGO\s*=\s*"\/assets\/lottery\/functions\/matrixya\.png"/);
-  const headerBodies = ruleBodies(brandCss, /^\.feature-brand-header$/);
-  assert.equal(headerBodies.length, 1);
-  assert.match(headerBodies[0], /margin:\s*0 auto var\(--layout-section-gap\);/);
-  assert.doesNotMatch(headerBodies[0], /object-fit\s*:/);
-
-  const logoImageBodies = ruleBodies(
-    brandCss,
-    /^\.feature-brand-lockup \.shared-brand-logo > img$/,
-  );
-  assert.equal(logoImageBodies.length, 1);
-  assert.match(logoImageBodies[0], /width:\s*100%;/);
-  assert.match(logoImageBodies[0], /height:\s*var\(--primary-brand-height\);/);
-  assert.match(logoImageBodies[0], /object-fit:\s*contain;/);
-  assert.match(logoImageBodies[0], /object-position:\s*center;/);
+test('底部導覽三頁的共用頁首使用首頁 matrixya Logo [header migration]', () => {
+  const header = readFileSync(new URL('../src/features/BrandHeader.tsx', import.meta.url), 'utf8');
+  assert.match(header, /matrixYY\.png/);
+  assert.match(brandCss, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(brandCss, /\.product-header__mark\s*\{[^}]*width:\s*56px;[^}]*height:\s*48px;/s);
 });
+

@@ -4,10 +4,6 @@
   --activation-section-gap: 8px;
 }
 
-/* Align the integrated title artwork with the canonical page inset. */
-.activation-code-screen > .feature-brand-header.integrated-title-header .matrix-title-banner {
-  width: calc(100% - (var(--layout-page-inline) * 2));
-}
 
 /* Keep the two main panels on the same responsive 16px page inset. */
 .activation-code-screen > .feature-body {
@@ -102,3 +98,4 @@
 .activation-code-screen .activation-card-toggle {
   min-height: 32px;
 }
+

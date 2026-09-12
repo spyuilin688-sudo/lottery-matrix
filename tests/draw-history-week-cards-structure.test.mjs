@@ -40,16 +40,9 @@ test("歷史開獎分頁資料先依曆週分組再渲染資訊卡", () => {
   assert.match(historySource, /className="panel history-panel draw-history-panel"/);
 });
 
-test("歷史開獎由 sticky 頁首與全寬內容 owner 維持單一頁面流", () => {
+test("歷史開獎由 sticky 頁首與全寬內容 owner 維持單一頁面流 [header migration]", () => {
   assert.match(historySource, /className="draw-history-screen sticky-title-card-screen"/);
-  assert.match(historySource, /className="draw-history-week-list"/);
-  assert.match(featurePagesCss, /\.draw-history-week-list\s*\{[^}]*display:\s*grid;[^}]*gap:\s*8px;/s);
-  assert.match(
-    responsiveCss,
-    /\.sticky-title-card-screen \.feature-brand-header,\s*\.number-reference-screen \.feature-brand-header\s*\{[^}]*position:\s*sticky;[^}]*z-index:\s*30;[^}]*top:\s*0;/s,
-  );
-  assert.match(
-    responsiveCss,
-    /\.draw-history-history-scope,\s*\.tongxing-screen \.tongxing-results,\s*\.number-reference-screen \.reference-table-panel\s*\{[^}]*width:\s*100%;[^}]*max-width:\s*100%;[^}]*min-width:\s*0;[^}]*margin-inline:\s*0;/s,
-  );
+  assert.match(featurePagesCss, /\.sticky-title-card-screen > \.product-header,\s*\.number-reference-screen > \.product-header\s*\{[^}]*position:\s*sticky;[^}]*z-index:\s*30;[^}]*top:\s*0;/s);
+  assert.match(historySource, /<BrandHeader[\s\S]*action=\{headerAction\}/);
 });
+

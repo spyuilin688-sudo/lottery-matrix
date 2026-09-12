@@ -2,35 +2,30 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const shared = await readFile(new URL("../src/features/shared.tsx", import.meta.url), "utf8");
-const css = await readFile(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-
-test("Matrix 探索改用產品型 Header，不再載入舊標題圖", () => {
-  assert.doesNotMatch(shared, /"Matrix 探索":\s*"\/assets\/lottery\/functions\/探索標題K\.png"/);
-  assert.match(shared, /title === "Matrix 探索" && !artwork && !hideTitle/);
-  assert.match(shared, /className="explore-product-header"/);
-  assert.match(shared, /\/assets\/lottery\/matrixYY\.png/);
-  assert.match(shared, /<h1>MATRIX 探索<\/h1>/);
-  assert.match(shared, />EXPLORE<\/span>/);
-  assert.match(shared, /className="explore-product-header__back"/);
-  assert.match(shared, /<ChevronLeftIcon aria-hidden="true" \/>/);
+test("one CSS owner fixes every frame to 68px with single-line fitted titles", async () => {
+  const css = await readFile(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
+  const rules = (css.match(/\.product-header[^{}]*\{[^}]*\}/gs) ?? []).join('\n');
+  assert.equal((css.match(/(?:^|\n)\.product-header__frame\s*\{/g) ?? []).length, 1);
+  const frame = css.match(/\.product-header__frame\s*\{[^}]*\}/s)[0];
+  assert.match(frame, /height:\s*68px;/);
+  assert.match(frame, /width:\s*100%;/);
+  assert.match(rules, /padding:\s*0 var\(--layout-page-inline\) 8px;/);
+  assert.match(rules, /white-space:\s*nowrap;/);
+  assert.match(rules, /container-type:\s*inline-size;/);
+  assert.doesNotMatch(rules, /!important|translate|white-space:\s*normal/);
+  assert.doesNotMatch(css, /matrix-title-banner|integrated-title-back|explore-product-header/);
 });
 
-test("探索 Header 維持單一正式樣式來源，不以覆寫或 !important 補償", () => {
-  assert.doesNotMatch(css, /\.matrix-explore-main-screen \.feature-brand-header\s*\{/);
-  assert.equal((css.match(/(?:^|\n)\.explore-product-header\s*\{/g) ?? []).length, 1);
-  assert.equal((css.match(/(?:^|\n)\.explore-product-header__frame\s*\{/g) ?? []).length, 1);
-
-  const productHeaderRules = (css.match(/\.explore-product-header[^\{]*\{[^}]*\}/gs) ?? []).join("\n");
-  assert.ok(productHeaderRules.length > 0);
-  assert.doesNotMatch(productHeaderRules, /!important/);
-  assert.doesNotMatch(productHeaderRules, /translate[XY]?\([^)]*[+-]\d+px/);
-  assert.match(productHeaderRules, /width:\s*44px;/);
-  assert.match(productHeaderRules, /height:\s*44px;/);
-
-  const markRule = css.match(/\.explore-product-header__mark\s*\{[^}]+\}/s)?.[0] ?? "";
-  assert.match(markRule, /width:\s*56px;/);
-  assert.match(markRule, /height:\s*48px;/);
-  const frameRule = css.match(/\.explore-product-header__frame\s*\{[^}]+\}/s)?.[0] ?? "";
-  assert.match(frameRule, /grid-template-columns:\s*44px 56px minmax\(0, 1fr\) auto;/);
+test("all PWA header entry points use the same component and preserve no-back roots", async () => {
+  const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
+  const shared = await read('src/features/shared.tsx');
+  const notification = await read('src/NotificationsPagePatched.tsx');
+  for (const path of ['src/features/shared.tsx', 'src/FeaturePagesCore.tsx', 'src/NotificationsPagePatched.tsx', 'src/ExploreResultPreviewPage.tsx']) {
+    const text = await read(path);
+    assert.match(text, /<BrandHeader\b/);
+    assert.doesNotMatch(text, /integrated-title-header|matrix-title-banner|MATRIX_TITLE_ARTWORK/);
+  }
+  assert.match(notification, /<BrandHeader title="通知" showBack=\{false\}/);
+  assert.match(shared, /showBack=\{!logoOnlyHeader \|\| \(active === "我的" && backTarget === "profile"\) \|\| title === "Matrix 筆記本"\}/);
+  assert.doesNotMatch(await read('src/Prototype.tsx'), /product-header|BrandHeader/);
 });

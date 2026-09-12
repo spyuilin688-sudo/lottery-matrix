@@ -8,41 +8,22 @@ import { readLocalCss } from "./helpers/read-local-css.mjs";
 
 const featurePages = readFeaturePagesSource();
 const styles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
-const brandHeaderStyles = readFileSync(new URL("../src/brand-header-unify.css", import.meta.url), "utf8");
+const brandHeaderStyles = readFileSync(new URL("../src/feature-pages.css", import.meta.url), "utf8");
 const homepageStyles = readLocalCss(new URL("../src/homepage-repair.css", import.meta.url));
 const exploreSpacingStyles = readFileSync(new URL("../src/matrix-explore-spacing.css", import.meta.url), "utf8");
 
-test("confirmed feature pages use the latest integrated title artwork", () => {
-  const expectedArtwork = [
-    ["Matrix 探索", "/assets/lottery/functions/探索標題K.png"],
-    ["Matrix 天衍", "/assets/lottery/functions/天衍標題K.png"],
-    ["Matrix 天工", "/assets/lottery/functions/天工標題K.png"],
-    ["Matrix 指南", "/assets/lottery/functions/指南標題K.png"],
-    ["Matrix 同星", "/assets/lottery/functions/同星標題K.png"],
-    ["Matrix 牌單", "/assets/lottery/functions/牌單標題K.png"],
-    ["Matrix 狀態", "/assets/lottery/functions/狀態標題K.png"],
-    ["Matrix 筆記本", "/assets/lottery/functions/筆記本標題K.png"],
-    ["號碼對照單", "/assets/lottery/functions/對照單標題K.png"],
-    ["歷史開獎號碼", "/assets/lottery/functions/歷史開獎標題K.png"],
-    ["連碰計算機", "/assets/lottery/functions/連碰標題K.png"],
-    ["立柱計算機", "/assets/lottery/functions/立柱標題K.png"],
-    ["Matrix Pro 訂閱方案與收費標準", "/assets/lottery/functions/訂閱方案標題K.png"],
-    ["Matrix 自訂觸發狀態", "/assets/lottery/functions/自訂觸發標題K.png"],
-  ];
-
-  for (const [title, asset] of expectedArtwork) {
-    const escapedAsset = asset.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    assert.match(featurePages, new RegExp(`"${title}": "${escapedAsset}"`));
-  }
+test("confirmed feature pages use the latest integrated title artwork [header migration]", () => {
+  const header = readFileSync(new URL('../src/features/BrandHeader.tsx', import.meta.url), 'utf8');
+  for (const title of ['Matrix 探索','Matrix 天衡','Matrix 天衍','Matrix 天工','Matrix 指南','Matrix 同星','Matrix 牌單','Matrix 狀態','Matrix 筆記本','號碼對照單','歷史開獎號碼','連碰計算機','立柱計算機']) assert.ok(header.includes(`"${title}":`));
+  assert.match(header, /matrixYY\.png/);
+  assert.doesNotMatch(featurePages, /MATRIX_TITLE_ARTWORK|integrated-title-header/);
 });
 
-test("integrated title artwork uses current sixteen-pixel side margins and proportional height", () => {
-  assert.match(styles, /\.matrix-title-banner\s*\{[^}]*width:\s*calc\(100% - 32px\)[^}]*margin:\s*0 auto/s);
-  assert.match(styles, /\.matrix-title-banner\s*>\s*img\s*\{[^}]*width:\s*100%[^}]*height:\s*auto[^}]*object-fit:\s*contain/s);
-  assert.match(styles, /\.integrated-title-back\s*\{[^}]*width:\s*44px[^}]*height:\s*44px[^}]*background:\s*transparent/s);
-  assert.match(brandHeaderStyles, /\.feature-brand-header,\s*\.feature-brand-header\[data-compact="true"\]\s*\{[^}]*margin:\s*0 auto var\(--layout-section-gap\)/s);
-  assert.match(brandHeaderStyles, /\.feature-brand-header\.integrated-title-header\s*\{[^}]*padding-top:\s*8px/s);
-  assert.doesNotMatch(brandHeaderStyles, /^\.feature-brand-header\.integrated-title-header\s*\{[^}]*margin-bottom\s*:/ms);
+test("integrated title artwork uses current sixteen-pixel side margins and proportional height [header migration]", () => {
+  assert.match(styles, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(styles, /\.product-header__frame\s*\{[^}]*height:\s*68px;/s);
+  assert.match(styles, /\.product-header__mark\s*\{[^}]*width:\s*56px;[^}]*height:\s*48px;[^}]*object-fit:\s*contain;/s);
+  assert.match(styles, /\.product-header__back\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
 });
 
 test("Matrix settings heading owns the fixed four-page control", () => {
@@ -58,11 +39,10 @@ test("Matrix settings heading owns the fixed four-page control", () => {
   assert.match(styles, /\.matrix-settings-heading\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*space-between;/s);
 });
 
-test("status and profile flows use supplied artwork while status settings stays in bottom navigation", () => {
-  assert.match(featurePages, /headerArtwork="\/assets\/lottery\/functions\/我的標題K\.png"/);
-  assert.match(featurePages, /headerArtwork = "\/assets\/lottery\/functions\/我的標題K2\.png"/);
+test("status and profile flows use supplied artwork while status settings stays in bottom navigation [header migration]", () => {
+  assert.match(featurePages, /showBack=\{!logoOnlyHeader \|\| \(active === "我的" && backTarget === "profile"\) \|\| title === "Matrix 筆記本"\}/);
   assert.match(featurePages, /className="bottom-navigation-quick-settings matrix-status-settings-entry"/);
-  assert.doesNotMatch(featurePages, /status-title-trigger/);
+  assert.doesNotMatch(featurePages, /headerArtwork|status-title-trigger/);
 });
 
 test("history title card owns the filter trigger while the panel owns the lottery dropdown", () => {
@@ -80,11 +60,11 @@ test("history title card owns the filter trigger while the panel owns the lotter
   assert.doesNotMatch(historyPage, /<LotteryTabs/);
 });
 
-test("number reference title card owns refresh and explore settings", () => {
+test("number reference title card owns refresh and explore settings [header migration]", () => {
   const start = featurePages.indexOf("export function NumberReferencePage");
   const end = featurePages.indexOf("export function CalculatorPage", start);
   const referencePage = featurePages.slice(start, end);
-  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions tool-title-actions"/);
+  assert.match(referencePage, /className="reference-title-actions title-card-compact-actions"/);
   assert.match(referencePage, /刷新/);
   assert.match(referencePage, /探索設定/);
 });
@@ -124,3 +104,4 @@ test("calculator keeps the approved compact responsive layout source", () => {
     assert.equal((styles.match(new RegExp(`(^|\\n)\\s*${escaped}\\s*\\{`, "g")) ?? []).length, 1, `${selector} must have one source`);
   }
 });
+
