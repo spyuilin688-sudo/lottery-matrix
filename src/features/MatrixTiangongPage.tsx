@@ -231,26 +231,26 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="panel explore-settings tiangong-settings tiangong-general-settings">
         <header className="matrix-settings-heading">
-          <SectionTitle>探索設定</SectionTitle>
+          <SectionTitle>天工設定</SectionTitle>
           <MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
-          <label><span id="tiangong-period-label"><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><output className="segmented-static" data-selected="true" aria-labelledby="tiangong-period-label">五十期</output></div></label>
-          <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
+          <label><span id="tiangong-period-label"><SettingLabelIcon type="period" />天工期數</span><div className="segmented tiangong-period-options"><output className="segmented-static" data-selected="true" aria-labelledby="tiangong-period-label">五十期</output></div></label>
+          <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="天工球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />天工球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
         </div>
       </section>
       <section className="panel explore-settings tiangong-settings tiangong-stage-settings">
         <div className="tiangong-stage-block" data-stage="first">
-          <SectionTitle>第一段 探索設定</SectionTitle>
+          <SectionTitle>第一段 天工設定</SectionTitle>
           <div className="setting-grid">
-            <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第一段球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{label}</button>)}</div></div>
+            <div className="tiangong-setting-row" role="group" aria-label="天工球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第一段球位.png" alt="" aria-hidden="true" />天工球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={firstPositions.includes(value)} onClick={() => toggle(value, firstPositions, setFirstPositions)} key={value}>{label}</button>)}</div></div>
             <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={firstRoads.includes(value)} onClick={() => toggle(value, firstRoads, setFirstRoads)} key={value}>{value}</button>)}</div></div>
           </div>
         </div>
         <div className="tiangong-stage-block" data-stage="second">
-            <SectionTitle>第二段 探索設定</SectionTitle>
+            <SectionTitle>第二段 天工設定</SectionTitle>
             <div className="setting-grid">
-              <div className="tiangong-setting-row" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{label}</button>)}</div></div>
+              <div className="tiangong-setting-row" role="group" aria-label="天工球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/第二段球位.png" alt="" aria-hidden="true" />天工球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={secondPositions.includes(value)} onClick={() => toggle(value, secondPositions, setSecondPositions)} key={value}>{label}</button>)}</div></div>
               <div className="tiangong-setting-row" role="group" aria-label="版路類型"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/版路類型.png" alt="" aria-hidden="true" />版路類型</span><div className="segmented two">{roadOptions.map((value) => <button type="button" data-selected={secondRoads.includes(value)} onClick={() => toggle(value, secondRoads, setSecondRoads)} key={value}>{value}</button>)}</div></div>
             </div>
         </div>

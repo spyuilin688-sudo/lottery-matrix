@@ -11,8 +11,10 @@ test('core lottery tabs reuse the existing state setters outside the settings ca
     assert.doesNotMatch(source, /<select\s+aria-label="(?:彩種|彩球類型)"/);
   }
   const source = read('src/features/MatrixExplorePage.tsx');
-  assert.match(source, /!isTianheng \? <div className="explore-hit-settings">\{hitSettings\}<\/div>/);
-  assert.match(source, /isTianheng \? \(\s*<section className="panel hit-advanced-panel">\s*<SectionTitle>命中條件/);
+  assert.match(source, /<div className="explore-hit-settings">\{advancedSettings\}<\/div>/);
+  assert.doesNotMatch(source, /hit-advanced-panel|<SectionTitle>命中條件/);
+  assert.match(source, /className="explore-condition-row" role="group" aria-label="探索條件"/);
+  assert.match(source, /<SettingLabelIcon type="condition" \/>探索條件/);
   assert.match(source, /onClick=\{\(\) => changeHit\(v\)\}/);
   assert.match(source, /onClick=\{\(\) => setAdvanced\(!advanced\)\}/);
 });
@@ -35,7 +37,8 @@ test('core controls shrink without changing their type and use the requested bac
   assert.doesNotMatch(css, /\.matrix-tiangong-screen \.tiangong-settings \.tiangong-setting-row \.segmented button\s*\{[^}]*(?:min-)?height:/s);
   const spacing = read('src/matrix-explore-spacing.css');
   assert.match(spacing, /\.matrix-explore-main-screen \.segmented button,[^{]*\{[^}]*height:\s*20px;[^}]*font-size:\s*\.75rem;/s);
-  assert.match(spacing, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;/s);
+  assert.match(spacing, /\.matrix-explore-main-screen \.hit-options\s*\{[^}]*height:\s*20px;[^}]*margin:\s*0;/s);
+  assert.match(spacing, /\.matrix-explore-main-screen \.explore-condition-row > \.hit-options,[^{]*\{[^}]*flex:\s*1 1 0;/s);
   assert.match(css, /header-06-flow\.svg/);
   assert.match(css, /header-07-geometric\.svg/);
   for (const file of ['header-06-flow.svg','header-07-geometric.svg']) {

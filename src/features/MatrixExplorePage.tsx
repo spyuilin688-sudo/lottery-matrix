@@ -485,19 +485,12 @@ export function MatrixExplorePage({
     });
   };
 
-  const hitSettings = (
+  const settingsName = isTianheng ? "天衡" : isTianyan ? "天衍" : "探索";
+  const advancedSettings = (
     <>
-        <div className="hit-options" role="group" aria-label="命中條件">
-          {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
-            <button type="button" key={v} aria-label={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>
-              <span>{v.slice(0, v.indexOf("（"))}</span><span className="hit-lock-detail">{v.slice(v.indexOf("（"))}</span>
-            </button>
-          ))}
-        </div>
-
         <button type="button" className="advanced-row" onClick={() => setAdvanced(!advanced)}>
           <img src="/assets/lottery/matrixYY.png" alt="" aria-hidden="true" />
-          <span>進階探索設定</span><ChevronRightIcon data-open={advanced} />
+          <span>進階{settingsName}設定</span><ChevronRightIcon data-open={advanced} />
         </button>
         {advanced ? (
           <div className="advanced-panel">
@@ -519,7 +512,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                <SettingLabelIcon type="date" />探索日期
+                <SettingLabelIcon type="date" />{settingsName}日期
               </span>
               <div className="segmented three">
                 {(["本日 (最新)", "昨日 (上1期)", "前日 (上2期)"] as const).map((value) => (
@@ -537,7 +530,7 @@ export function MatrixExplorePage({
             </label>
             <label>
               <span className="advanced-setting-title">
-                <SettingLabelIcon type="range" />探索範圍
+                <SettingLabelIcon type="range" />{settingsName}範圍
               </span>
               <div className={`segmented ${isTianyan ? "one" : "two"}`}>
                 {rangeOptions.map((value) => (
@@ -569,11 +562,11 @@ export function MatrixExplorePage({
       <LotteryTabs selected={lottery} onChange={changeLottery} />
       <section className="panel explore-settings">
         <header className="matrix-settings-heading">
-          <SectionTitle>探索設定</SectionTitle>
+          <SectionTitle>{settingsName}設定</SectionTitle>
           <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="period" />探索期數</span>
+          <label><span><SettingLabelIcon type="period" />{settingsName}期數</span>
             <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
               {periodOptions.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -593,16 +586,19 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
+          <div className="explore-condition-row" role="group" aria-label="探索條件">
+            <span className="explore-condition-label"><SettingLabelIcon type="condition" />探索條件</span>
+            <div className="hit-options">
+              {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
+                <button type="button" key={v} aria-label={v} data-selected={hit === v} aria-pressed={hit === v} onClick={() => changeHit(v)}>
+                  <span>{v.slice(0, v.indexOf("（"))}</span><span className="hit-lock-detail">{v.slice(v.indexOf("（"))}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        {!isTianheng ? <div className="explore-hit-settings">{hitSettings}</div> : null}
+        <div className="explore-hit-settings">{advancedSettings}</div>
       </section>
-
-      {isTianheng ? (
-        <section className="panel hit-advanced-panel">
-          <SectionTitle>命中條件</SectionTitle>
-          {hitSettings}
-        </section>
-      ) : null}
 
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
         <MagnifyingGlassIcon /><span>{isTianyan ? "開始天衍" : isTianheng ? "開始天衡" : "開始探索"}</span>

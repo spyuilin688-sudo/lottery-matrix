@@ -291,9 +291,11 @@ After result notification dispatch, the trusted producer requests immediate back
 
 - Four core pages use the approved 06 flow background; all other non-home PWA headers use 07 geometric. Existing fixed dimensions, logo, back behavior and right-side sticky controls remain.
 - Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. Core pages reuse the exact draw-sheet LotteryTabs component and styling (36px, 14px type, 2px text-width gold active underline), with keyboard selection and without the redundant lottery select.
-- Explore and Tianyan render their existing hit and advanced controls inside the settings card. Tianheng keeps its hit section; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
+- Explore, Tianheng and Tianyan render their existing hit and advanced controls inside the settings card. The labelled 探索條件 row uses the supplied functions/探索條件.png icon and aligns with the preceding settings rows; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
 - One 8px header bottom margin separates the frame and the next visible content. The header rect excludes this margin, so existing floating-panel bottom +8px calculations produce an actual 8px gap.
 
 - Core mode switcher height is 26px with unchanged 12px text and a faint gold selected fill. Period/road control heights and type remain unchanged; three options use equal grid columns and 6px gaps. Hit choices share one muted border with an internal divider, retain full labels and use aria-pressed for selection.
 
 - Core lottery tabs use the body’s single 8px gap without an additional bottom margin. Mode-switcher borders are subdued while 26px height, text size and position are retained. Unselected period/road choices remain clearly enabled with warm-grey text; only disabled controls dim. Hit choices retain full accessible names, with 700 primary text and 500 lock-detail text. Original period.png and road.png icons are restored through SettingLabelIcon.
+
+- Core settings labels follow the page: 天衡 and 天衍 replace 探索 in setting, period, date, range and advanced-setting labels; 天工 replaces 探索 in setting, period and ball-position labels. Asset filenames and existing option values, selection handlers, entitlements and request semantics are preserved. Condition segments keep full accessible names and 700/500 primary/detail weights, within a 20px shared frame aligned with the upper controls.

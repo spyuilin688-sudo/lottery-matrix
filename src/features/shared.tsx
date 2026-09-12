@@ -142,12 +142,12 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 export function SettingLabelIcon({
   type,
 }: {
-  type: "lottery" | "period" | "road" | "order" | "date" | "range";
+  type: "lottery" | "period" | "road" | "order" | "date" | "range" | "condition";
 }) {
   return (
     <img
       className="setting-label-icon matrix-explore-setting-icon"
-      src={`/assets/matrix-explore/${type}.png`}
+      src={type === "condition" ? "/assets/lottery/functions/探索條件.png" : `/assets/matrix-explore/${type}.png`}
       alt=""
       aria-hidden="true"
     />

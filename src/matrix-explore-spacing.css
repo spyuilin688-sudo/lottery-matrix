@@ -44,7 +44,6 @@
 
 
 .matrix-explore-main-screen .explore-settings,
-.matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .history-panel,
 .matrix-explore-main-screen .repeat-stats-panel,
 .matrix-explore-main-screen .result-panel {
@@ -52,7 +51,6 @@
 }
 
 .matrix-explore-main-screen .explore-settings,
-.matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .repeat-stats-panel,
 .matrix-explore-main-screen .result-panel {
   box-sizing: border-box;
@@ -90,10 +88,6 @@
 
 .matrix-explore-main-screen .explore-settings {
   padding: 6px;
-}
-
-.matrix-explore-main-screen .hit-advanced-panel {
-  padding: 6px 6px 4px;
 }
 
 .matrix-explore-main-screen .repeat-stats-panel {
@@ -140,6 +134,7 @@
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label,
+.matrix-explore-main-screen .explore-condition-row,
 .matrix-explore-main-screen .advanced-panel label {
   display: flex;
   width: 100%;
@@ -150,6 +145,7 @@
 }
 
 .matrix-explore-main-screen .explore-settings .setting-grid label > span,
+.matrix-explore-main-screen .explore-condition-label,
 .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
   display: flex;
   width: auto;
@@ -176,6 +172,7 @@
   object-fit: contain;
 }
 
+.matrix-explore-main-screen .explore-condition-row > .hit-options,
 .matrix-explore-main-screen .explore-settings .setting-grid label > .select-box,
 .matrix-explore-main-screen .explore-settings .setting-grid label > .segmented,
 .matrix-explore-main-screen .advanced-panel label > .select-box,
@@ -279,7 +276,8 @@
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   width: 100%;
-  margin: 8px 0 4px;
+  height: 20px;
+  margin: 0;
   padding: 0;
   gap: 0;
   overflow: hidden;
@@ -292,8 +290,8 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  height: 24px;
-  min-height: 24px;
+  height: 100%;
+  min-height: 0;
   padding: .125rem .25rem;
   align-items: center;
   justify-content: center;
@@ -302,7 +300,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #b9b5ae;
+  color: #ded6c9;
   font-size: .75rem;
   font-weight: 700;
   line-height: 1;
@@ -1013,6 +1011,7 @@
 
 @media (min-width: 40rem) {
   .matrix-explore-main-screen .explore-settings .setting-grid label > span,
+  .matrix-explore-main-screen .explore-condition-label,
   .matrix-explore-main-screen .advanced-panel label > .advanced-setting-title {
     min-width: 104.8px;
   }
