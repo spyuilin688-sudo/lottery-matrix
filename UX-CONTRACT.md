@@ -18,6 +18,7 @@
 - `src/features/BrandHeader.tsx` is the sole title renderer for PWA feature pages. `src/feature-pages.css` owns its layout. Homepage branding and the independent admin application are excluded.
 - Each frame is 68px high with the same 16px page gutters and 8px following gap. Titles remain complete and single-line; the shared CSS fit ranges reduce long titles without changing frame geometry.
 - Preserve existing back destinations, shortcut return callbacks, action callbacks, and sticky tool headers. Notification and profile roots have no back control; profile details and notebook retain their existing back control. No placeholder back target is introduced.
+- All frames retain the same back column even when no back control is rendered. Fixed 35px copy and 18px action rows, separated by 3px, keep logo and copy origins unchanged when actions are absent. A 22px heading box with an 18px baseline strut keeps smaller titles on the shared baseline.
 - Header actions remain inside the fixed frame. Floating filter panels continue to read the actual header bottom after migration.
 - The current user instruction is the source for this visual change; all authorization, persistence and API contracts remain unchanged.
 
