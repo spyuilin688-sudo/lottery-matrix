@@ -33,13 +33,13 @@ test("同星、對照單與歷史的設定按鈕使用同一個位置規格 [hea
   assert.doesNotMatch(responsiveCss, /tool-title-actions/);
 });
 
-test("重設與刷新在設定按鈕上方保留 4px，且外框高度固定 24px [header migration]", () => {
+test("重設與刷新在設定按鈕上方保留 4px，且外框高度固定 20px [header migration]", () => {
   assert.match(featurePages, /className="title-card-compact-action reference-refresh-trigger tool-title-reset-trigger"/);
   assert.match(corePages, /className="history-reset-trigger title-card-compact-action tool-title-reset-trigger"/);
 
   const bodies = ruleBodies(responsiveCss, /^\.title-card-compact-actions$/);
   assert.equal(bodies.length, 1);
-  assert.match(bodies[0], /grid-auto-rows:\s*24px;/);
+  assert.match(bodies[0], /grid-auto-rows:\s*20px;/);
   assert.match(bodies[0], /gap:\s*4px;/);
 
   const refreshIcon = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);

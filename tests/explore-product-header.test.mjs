@@ -40,6 +40,6 @@ test("header alignment stays fixed with absent back controls, actions and smalle
   assert.match(title, /height:\s*22px;/);
   assert.match(title, /align-items:\s*baseline;/);
   const actions = await readFile(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
-  assert.match(actions, /\.title-card-compact-actions\s*\{[^}]*width:\s*64px;[^}]*grid-auto-rows:\s*24px;/s);
+  assert.match(actions, /\.title-card-compact-actions\s*\{[^}]*width:\s*60px;[^}]*grid-auto-rows:\s*20px;/s);
   assert.match(css, /\.product-header__copy h1::before\s*\{[^}]*height:\s*18px;/s);
 });

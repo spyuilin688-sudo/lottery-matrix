@@ -10,9 +10,9 @@
 
 .title-card-compact-actions {
   display: grid;
-  width: 64px;
+  width: 60px;
   min-width: 0;
-  grid-auto-rows: 24px;
+  grid-auto-rows: 20px;
   align-items: stretch;
   gap: 4px;
 }
@@ -23,7 +23,7 @@
   box-sizing: border-box;
   display: inline-flex;
   min-width: 0;
-  padding: clamp(3.5px, 1vw, 4px) 4.5px;
+  padding: 2px 1px;
   align-items: center;
   justify-content: center;
   gap: 2px;
@@ -70,7 +70,7 @@
 
 .tool-title-reset-trigger {
   gap: 1px;
-  padding-inline: 4px 5px;
+  padding-inline: 2px;
   background-image: none;
 }
 
