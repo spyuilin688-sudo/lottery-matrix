@@ -25,12 +25,12 @@ test("探索 Header 維持單一正式樣式來源，不以覆寫或 !important 
   assert.ok(productHeaderRules.length > 0);
   assert.doesNotMatch(productHeaderRules, /!important/);
   assert.doesNotMatch(productHeaderRules, /translate[XY]?\([^)]*[+-]\d+px/);
-  assert.match(productHeaderRules, /width:\s*42px;/);
-  assert.match(productHeaderRules, /height:\s*42px;/);
+  assert.match(productHeaderRules, /width:\s*44px;/);
+  assert.match(productHeaderRules, /height:\s*44px;/);
 
   const markRule = css.match(/\.explore-product-header__mark\s*\{[^}]+\}/s)?.[0] ?? "";
-  assert.match(markRule, /width:\s*76px;/);
-  assert.match(markRule, /height:\s*56px;/);
+  assert.match(markRule, /width:\s*56px;/);
+  assert.match(markRule, /height:\s*48px;/);
   const frameRule = css.match(/\.explore-product-header__frame\s*\{[^}]+\}/s)?.[0] ?? "";
-  assert.match(frameRule, /grid-template-columns:\s*42px 76px minmax\(0, 1fr\) auto;/);
+  assert.match(frameRule, /grid-template-columns:\s*44px 56px minmax\(0, 1fr\) auto;/);
 });

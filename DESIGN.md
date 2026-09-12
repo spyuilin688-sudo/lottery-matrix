@@ -119,7 +119,7 @@ components:
 
 ### Matrix 探索標題卡 — 2026-09-12
 
-探索標題由 `src/features/shared.tsx` 的 `BrandHeader` 與 `src/feature-pages.css` 的 `.explore-product-header*` 原有規則共同擁有。使用完整 `matrixYY.png`，保留 76 × 56px 等比例圖片區域與返回按鈕排列；卡片最小高度 68px，上下內距各 5px、邊框各 1px，正常內容下實際外框為 68px。主標題 `MATRIX 探索` 使用 20px／700／暖金色 `#f0c85f`；`EXPLORE` 使用 9px 灰金色，兩行靠左對齊。保留單層 1px 金框，以深黑底與單一低透明度金色光暈呈現；移除橢圓圖層及額外裝飾偽元素。標題區底部內距 8px 擁有與探索設定卡的間距，不增加覆寫或補償位移。
+探索標題由 `src/features/shared.tsx` 的 `BrandHeader` 與 `src/feature-pages.css` 的 `.explore-product-header*` 原有規則共同擁有。使用完整 `matrixYY.png`，圖片區域為 56 × 48px，等比例呈現；返回箭頭 22px，點擊範圍 44 × 44px。卡片最小高度 68px、圓角 10px，上下內距各 5px、邊框各 1px，正常內容下實際外框為 68px，Logo 與文字垂直置中。主標題 `MATRIX 探索` 使用 20px／700／暖金色 `#f0c85f`；`EXPLORE` 使用 9px 灰金色，兩行靠左對齊、間距 4px；Logo 與文字間距為 10px，由原有 grid gap 擁有。保留單層 1px 金框，以深黑底與單一低透明度金色光暈呈現；不使用橢圓圖層及額外裝飾偽元素。標題區底部內距 8px 擁有與探索設定卡的間距，不增加覆寫或補償位移。
 
 ### Navigation and data display
 
