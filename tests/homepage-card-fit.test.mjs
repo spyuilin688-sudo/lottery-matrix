@@ -9,11 +9,11 @@ const source = readFileSync(new URL("../src/Prototype.tsx", import.meta.url), "u
 test("Matrix Core uses its fitted responsive token and container background without a child image", () => {
   const component = source.match(/export function MatrixCoreBanner[\s\S]*?\n\}/)?.[0] ?? "";
 
-  assert.match(css, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/);
-  assert.match(css, /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/);
-  assert.match(css, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/s);
+  assert.match(css, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/);
+  assert.match(css, /--home-core-height:\s*calc\(var\(--home-core-width\) \* 181 \/ 654\);/);
+  assert.match(css, /\.home-screen \.matrix-core-banner\s*\{[^}]*width:\s*var\(--home-core-width\);[^}]*height:\s*var\(--home-core-height\);[^}]*background:\s*url\("\/assets\/lottery\/home-premium\/core-artwork\.webp"\) center \/ cover no-repeat;/s);
   assert.match(component, /className="matrix-core-banner home-core-box"/);
-  assert.match(component, /className="matrix-core-symbol-energy"/);
+  assert.match(component, /className="matrix-core-description"/);
   assert.doesNotMatch(component, /<img\b/);
 });
 

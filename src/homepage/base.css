@@ -30,11 +30,11 @@
 }
 
 .home-screen .home-layout {
-  --home-feature-inline: 10px;
-  --home-feature-gap: 4px;
-  --home-feature-card-aspect: 386 / 496;
+  --home-feature-inline: 16px;
+  --home-feature-gap: 6px;
+  --home-feature-card-aspect: 154 / 194;
   --home-gap-status-core: clamp(9px, 1.35dvh, 12px);
-  --home-gap-core-features: clamp(14px, 1.75dvh, 17px);
+  --home-gap-core-features: 8px;
   --home-gap-features-nav: clamp(8px, 1.15dvh, 12px);
   box-sizing: border-box;
   display: grid;
@@ -90,8 +90,8 @@
 }
 
 .home-screen .home-bottom-group {
-  --home-core-width: calc(min(100vw, 390px) - 28px);
-  --home-core-height: clamp(68px, calc((var(--home-core-width) * 414 / 1536) - 18px), 79px);
+  --home-core-width: calc(min(100vw, 390px) - 32px);
+  --home-core-height: calc(var(--home-core-width) * 181 / 654);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -482,8 +482,7 @@
   white-space: nowrap;
 }
 
-.home-screen .matrix-status-section,
-.home-screen .matrix-core-banner {
+.home-screen .matrix-status-section {
   appearance: none;
   position: relative;
   display: block;
@@ -510,18 +509,46 @@
 }
 
 .home-screen .matrix-core-banner {
+  appearance: none;
+  position: relative;
   box-sizing: border-box;
+  display: block;
   width: var(--home-core-width);
   height: var(--home-core-height);
-  aspect-ratio: auto;
   margin-inline: auto;
+  padding: 0;
   align-self: start;
-  border: 1px solid rgba(229, 179, 77, .56);
+  border: 7px solid transparent;
+  border-image: url("/assets/lottery/home-premium/gold-frame.webp") 140 stretch;
   border-radius: 0;
-  background: url("/assets/lottery/functions/matrixcore.png") center / cover no-repeat;
-  isolation: isolate;
-  line-height: 0;
-  overflow: hidden;
+  background: url("/assets/lottery/home-premium/core-artwork.webp") center / cover no-repeat;
+  background-origin: border-box;
+  background-clip: padding-box;
+  color: var(--lottery-gold-300);
+  cursor: pointer;
+  transition: filter 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-screen .matrix-core-description {
+  position: absolute;
+  top: 60%;
+  left: 7%;
+  color: var(--lottery-text-secondary);
+  font-size: clamp(.6875rem, 3.1vw, .8125rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 3px #000;
+}
+
+.home-screen .matrix-core-chevron {
+  position: absolute;
+  inset-block: 0;
+  right: 2px;
+  width: 18px;
+  height: 24px;
+  margin-block: auto;
 }
 
 .home-screen .matrix-status-card-grid {
@@ -595,120 +622,63 @@
   pointer-events: none;
 }
 
-.home-screen .matrix-core-banner::before {
-  position: absolute;
-  z-index: 4;
-  top: 50%;
-  left: 50%;
-  width: 12%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 224, 144, .55);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 220, 125, .22), rgba(255, 205, 93, .08) 42%, transparent 70%);
-  box-shadow: 0 0 10px rgba(255, 205, 93, .33), inset 0 0 8px rgba(255, 231, 169, .22);
-  content: "";
-  opacity: 0;
-  pointer-events: none;
-}
-
-.home-screen .matrix-core-banner:active::before {
-  animation: matrix-core-click-wave 420ms ease-out both;
-}
-
 .home-screen .home-shortcut-row {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%;
-  height: auto;
-  aspect-ratio: auto;
-  min-height: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: calc(100% - var(--home-feature-inline) * 2);
   margin-inline: auto;
-  padding-inline: var(--home-feature-inline);
-  column-gap: var(--home-feature-gap);
-  row-gap: 0;
+  padding: 4px;
+  gap: var(--home-feature-gap);
   align-items: stretch;
-  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--lottery-gold-500) 20%, transparent);
+  border-radius: 10px;
+  background: #05080a;
 }
 
 .home-screen .home-shortcut {
   appearance: none;
   position: relative;
-  isolation: isolate;
-  display: flex;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   width: 100%;
   min-width: 0;
-  height: auto;
+  min-height: 90px;
   aspect-ratio: var(--home-feature-card-aspect);
-  min-height: 0;
-  padding: 0;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  border: 0;
+  padding: 2px 1px 6px;
+  justify-items: center;
+  border: 4px solid transparent;
+  border-image: url("/assets/lottery/home-premium/gold-frame.webp") 140 stretch;
   border-radius: 0;
-  background: transparent;
-  clip-path: polygon(
-    var(--home-octagon-cut) 0,
-    calc(100% - var(--home-octagon-cut)) 0,
-    100% var(--home-octagon-cut),
-    100% calc(100% - var(--home-octagon-cut)),
-    calc(100% - var(--home-octagon-cut)) 100%,
-    var(--home-octagon-cut) 100%,
-    0 calc(100% - var(--home-octagon-cut)),
-    0 var(--home-octagon-cut)
-  );
-  box-shadow: var(--home-frame-shadow);
-  overflow: visible;
+  background: #05080a;
+  background-clip: padding-box;
+  color: var(--lottery-gold-300);
+  cursor: pointer;
+  transition: filter 140ms ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .home-screen .home-shortcut img {
   display: block;
-  box-sizing: border-box;
   width: 100%;
   height: 100%;
-  max-height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.home-screen .home-shortcut-label {
   max-width: 100%;
-  object-fit: fill;
-  object-position: center;
-  border: 0;
-  border-radius: 0;
-  clip-path: inherit;
-  box-shadow: none;
-  filter: none;
+  font-size: clamp(.625rem, 2.8vw, .6875rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
 }
 
-.home-screen .home-shortcut::before {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  padding: 3px;
-  clip-path: inherit;
-  background: var(--lottery-neutral-950);
-  content: "";
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-.home-screen .home-shortcut::after {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
-  display: block;
-  padding: 0;
-  clip-path: inherit;
-  border-radius: 0;
-  background: var(--home-octagon-frame);
-  content: "";
-  pointer-events: none;
-}
-
+.home-screen .matrix-core-banner:active,
 .home-screen .home-shortcut:active {
-  border-radius: 0;
-  box-shadow: var(--home-frame-shadow-active);
+  filter: brightness(1.15);
 }
 
 .home-screen .home-shortcut:focus-visible {
@@ -729,13 +699,11 @@
   margin-block-start: var(--home-gap-draw-status);
 }
 
-@keyframes matrix-core-click-wave {
-  0% { opacity: .72; scale: .35; }
-  100% { opacity: 0; scale: 8; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .home-screen .matrix-core-banner::before { animation: none; opacity: 0; }
+  .home-screen .matrix-core-banner,
+  .home-screen .home-shortcut {
+    transition: none;
+  }
 }
 
 /* Wide/desktop-site viewports keep homepage content in normal top flow.

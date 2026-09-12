@@ -15,8 +15,8 @@ test("首頁各區塊獨立擁有指定左右外距", () => {
   assert.match(homeCss, /\.lottery-switcher--home-style\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /\.home-screen \.latest-draw-card\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
   assert.match(homeCss, /\.home-screen \.matrix-status-section\s*\{[^}]*width:\s*calc\(100% - 32px\);/s);
-  assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 28px\);/s);
-  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*100%;[^}]*padding-inline:\s*var\(--home-feature-inline\);/s);
+  assert.match(homeCss, /--home-core-width:\s*calc\(min\(100vw, 390px\) - 32px\);/s);
+  assert.match(homeCss, /\.home-screen \.home-shortcut-row\s*\{[^}]*width:\s*calc\(100% - var\(--home-feature-inline\) \* 2\);/s);
 });
 
 test("開獎資訊卡底列使用無縫鑲嵌排版", () => {

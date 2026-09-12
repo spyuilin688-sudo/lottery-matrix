@@ -37,12 +37,14 @@
 
 | 素材 | 路徑 |
 |---|---|
-| Matrix Core | `assets/lottery/matrix-core-banner.jpg` |
-| Matrix 同星 | `assets/lottery/functions/matrix-tongxing.png` |
-| 號碼對照單 | `assets/lottery/functions/number-reference.png` |
-| 連碰立柱計算機 | `assets/lottery/functions/collision-column-calculator.png` |
-| Matrix 牌單 | `assets/lottery/functions/matrix-card.png` |
-| Matrix 指南 | `assets/lottery/functions/matrix-guide.png` |
+| Matrix Core 主視覺 | `assets/lottery/home-premium/core-artwork.webp` |
+| Core／四卡共用金屬切角框 | `assets/lottery/home-premium/gold-frame.webp` |
+| Matrix 同星插畫 | `assets/lottery/home-premium/tongxing.webp` |
+| 號碼對照單插畫 | `assets/lottery/home-premium/reference.webp` |
+| Matrix 牌單插畫 | `assets/lottery/home-premium/matrix-card.webp` |
+| Matrix 指南插畫 | `assets/lottery/home-premium/guide.webp` |
+
+2026-09-12 依選定參考圖產生獨立素材，再轉為 WebP；未從整張 UI 截圖裁切按鈕。Core 2022×778，四張插畫與金框均為 1254×1254。金框保留 alpha，`border-image-slice: 140`（不使用 fill），僅拉伸直線邊段；Core 以 cover 顯示中央安全區，保留標題與 M；四張插畫以 contain 保持完整比例。中文說明、功能名稱與箭頭由元件呈現。
 
 ## 手機預覽
 
@@ -56,5 +58,5 @@
 | Android 狀態圖示 | `assets/status/status-icons.svg` |
 | iOS 狀態圖示 | `assets/status/ios-status-icons.svg` |
 
-素材不得改色、拉伸、裁切或以示意圖裁切內容代替。
+除首頁入口上述明確的九宮格框與背景適配方式外，素材不得改色、拉伸、裁切或以示意圖裁切內容代替。
 

@@ -23,14 +23,14 @@ test("visual-language layer does not override homepage spacing geometry", () => 
   assert.match(visualLanguage, /\.home-screen \.home-bottom-group\s*\{[^}]*margin-block-start:\s*var\(--home-gap-status-core\);/s);
 });
 
-test("uses one restrained octagon frame treatment with shortcut geometry owned by base", () => {
+test("keeps four-feature framing owned by base alongside existing octagon treatments", () => {
   assert.match(visualLanguage, /--home-frame-border:/);
   assert.match(visualLanguage, /--home-frame-shadow:/);
   assert.match(visualLanguage, /\.home-screen \.latest-draw-card::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
   assert.doesNotMatch(visualLanguage, /\.home-screen \.home-shortcut(?:::before|::after|:active|:focus-visible)\s*\{/);
-  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*var\(--home-frame-shadow\);/s);
-  assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*box-shadow:\s*var\(--home-frame-shadow-active\);/s);
-  assert.match(base, /\.home-screen \.home-shortcut::after\s*\{[^}]*background:\s*var\(--home-octagon-frame\);/s);
+  assert.match(base, /\.home-screen \.home-shortcut\s*\{[^}]*border:\s*4px solid transparent;[^}]*border-image:/s);
+  assert.match(base, /\.home-screen \.home-shortcut:active\s*\{[^}]*filter:\s*brightness\(1\.15\);/s);
+  assert.doesNotMatch(base, /\.home-screen \.home-shortcut::(?:before|after)\s*\{/);
 });
 
 test("does not add navigation-height clearance above the fixed homepage navigation", () => {

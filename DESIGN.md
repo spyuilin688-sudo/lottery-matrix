@@ -135,9 +135,9 @@ PD01 導覽專用 token：底色 `--bottom-nav-panel-950: #030708`、未選中�
 
 2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位恢復使用共用 `SettingLabelIcon`，圖片為 `/assets/matrix-explore/period.png` 與 `/assets/matrix-explore/road.png`，維持 1.8rem 佔位。
 
-首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
+首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與四大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
-2026-09-08 首頁五大功能採使用者確認的 A 方案：金框不透明度由 56% 提高至 85%，沿用 1px 線條、原有卡片尺寸與 4px 卡片間距。`src/homepage/visual-language.css` 的 `.home-screen .home-shortcut` 擁有此顏色變體，沿用 `--lottery-gold-500` 與共用八角描邊；其他首頁區塊不套用此變體。
+2026-09-12 首頁 Core 與四大功能依使用者選定的黑金插畫參考圖更新。`src/homepage/base.css` 統一擁有兩區排版、金屬切角九宮格框與按壓回饋；不再疊加舊金框遮罩或持續閃爍軌跡。Core 與功能列對齊 16px 左右邊界，Core 比例 654:181，兩區間距 8px；四張卡單列等寬、間距 6px、最小高度 90px。Core 主視覺與標題使用專用 WebP，中文說明與箭頭保持真實 UI；四卡插畫等比例 contain，名稱為真實文字。新素材位於 `public/assets/lottery/home-premium/`。入口依序為 Matrix 同星、號碼對照單、Matrix 牌單、Matrix 指南；計算機沿用底部導覽與快捷設定入口。其他首頁區塊保留現有設計。
 
 Matrix 探索、天衡、天衍、天工與狀態頁的驗證過程，依鎖定條件整組交替使用 `#152A42`、`#0E1D30`。探索、天衡、天衍與天工的左、中、右三欄共用同組底色，欄間與列間間距統一透出純黑 `#000`；狀態頁維持既有頁面背景。既有結果的期號、特別號與欄寬依產生該結果的彩種呈現，探索設定尚未提交時不改變結果版面。版路摘要的公式序列以獨立文字節點呈現，加減版路例如 `+5`、`.`、`15`，合值序列為 `合值`、`5`、`.`、`15`（不顯示 `+`）；相鄰文字節點間距皆為 1px。
 
