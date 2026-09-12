@@ -6,7 +6,7 @@ const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8'
 test('core lottery tabs reuse the existing state setters outside the settings card', () => {
   for (const [path, setter] of [['src/features/MatrixExplorePage.tsx', 'changeLottery'], ['src/features/MatrixTiangongPage.tsx', 'setLottery']]) {
     const source = read(path);
-    assert.ok(source.includes(`<LotteryTabs selected={lottery} onChange={${setter}} variant="core" />`));
+    assert.ok(source.includes(`<LotteryTabs selected={lottery} onChange={${setter}} />`));
     assert.ok(source.indexOf('<LotteryTabs') < source.indexOf('<section className="panel explore-settings'));
     assert.doesNotMatch(source, /<select\s+aria-label="(?:彩種|彩球類型)"/);
   }

@@ -214,6 +214,6 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 
 ### Core lottery tabs and integrated settings — 2026-09-12
 
-四個核心頁面使用 `LotteryTabs` 的 core 變體，置於標題卡下方 8px，四彩種等寬、36px 高、13px 文字；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索與天衍的命中按鈕、進階設定歸入探索設定卡，不顯示命中條件標題；天衡保留独立命中條件，天工沿用既有兩段設定。設定區一般 segmented 選項 24→20px，命中按鈕 28→24px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
+四個核心頁面與牌單共用同一個 `LotteryTabs` 樣式，置於標題卡下方 8px，四彩種等寬、48px 高、14px 文字，選中項目使用金字與金色底線；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索與天衍的命中按鈕、進階設定歸入探索設定卡，不顯示命中條件標題；天衡保留獨立命中條件，天工沿用既有兩段設定。設定區一般 segmented 選項 24→20px，命中按鈕 28→24px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
 
 所有 PWA 標題與下方內容的 8px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。浮動設定以 header 實際 bottom +8px 定位，因此與可見框線亦為 8px。移除通知與探索結果預覽額外的頂部 padding。

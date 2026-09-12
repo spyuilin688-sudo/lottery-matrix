@@ -564,7 +564,7 @@ export function MatrixExplorePage({
       backTarget={title === "Matrix 探索" ? "home" : "explore"}
       className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${isTianheng ? "matrix-tianheng-screen" : isTianyan ? "matrix-tianyan-screen" : ""}`}
     >
-      <LotteryTabs selected={lottery} onChange={changeLottery} variant="core" />
+      <LotteryTabs selected={lottery} onChange={changeLottery} />
       <section className="panel explore-settings">
         <header className="matrix-settings-heading">
           <SectionTitle>探索設定</SectionTitle>

@@ -228,7 +228,7 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   return (
     <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
-      <LotteryTabs selected={lottery} onChange={setLottery} variant="core" />
+      <LotteryTabs selected={lottery} onChange={setLottery} />
       <section className="panel explore-settings tiangong-settings tiangong-general-settings">
         <header className="matrix-settings-heading">
           <SectionTitle>探索設定</SectionTitle>

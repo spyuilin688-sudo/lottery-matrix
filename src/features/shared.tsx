@@ -168,14 +168,12 @@ export function SettingLabelIcon({
 export function LotteryTabs({
   selected,
   onChange,
-  variant = "default",
 }: {
   selected: LotteryId;
-  variant?: "default" | "core";
   onChange: (value: LotteryId) => void;
 }) {
   return (
-    <div className={variant === "core" ? "core-lottery-tabs" : "lottery-tabs"} role="tablist" aria-label={variant === "core" ? "彩種切換" : "彩種"}>
+    <div className="lottery-tabs" role="tablist" aria-label="彩種">
       {LOTTERIES.map((item) => (
         <button
           type="button"
