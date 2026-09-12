@@ -16,6 +16,21 @@
 - 舊動態 M／八節點測試隨退役效果移除。既有兩份 CSS fixture 的 Logo 對齊斷言過時：以未修改 main CSS 重現為 flex-start，僅同步測試預期，沒有修改 Logo。
 - 僅執行上述明確路徑；沒有執行全量測試，commit 使用 `[skip actions]`。
 
-## 合併前
+## 正式畫面驗證完成
 
-Cloudflare 分支預覽確認 320、390、430px 排版、完整插畫、鍵盤焦點與五個入口，再移除暫時的 `public/home-style-review.html`。尚未將視覺檢查標示為完成。
+Cloudflare `95ae3b4` 與 `70c921c` 均回報成功部署，正式站 https://matrixlottery.idv.tw/ 已載入新版。控制台安全驗證及未啟動的分支預覽沒有視為成功證據，最終檢查直接使用正式頁面。
+
+| 瀏覽器視窗寬度 | 功能列寬度 | 單卡尺寸 | 四卡標籤與圖片 |
+|---|---|---|---|
+| 320px | 288px | 65 × 90px | 單行、完整載入 |
+| 390px | 358px | 82.5 × 103.92px | 單行、完整載入 |
+| 430px | 358px | 82.5 × 103.92px | 單行、完整載入 |
+
+- 三種尺寸皆無水平溢出。320px 原先繼承較寬的 Inter，已改用載入中的 Roboto；沒有縮小字級或卡片。實測三個 Matrix 名稱寬度 51.375px、小於 55px 可用寬度，行高 13px。
+- Core 金屬框、標題及 M 完整呈現；390px Core 為 358 × 99.08px。四張插畫保持完整比例。
+- 鍵盤 Tab 可從 Core 到第一張卡，focus-visible 為 2px 金色實線；原生捲動可看到完整聲明，聲明底部 768.52px、導覽起點 778px。
+- 正式頁面實際開啟：MATRIX 探索、MATRIX 同星、號碼對照單、MATRIX 牌單、MATRIX 指南；底部計算機仍開啟連碰計算機。
+- `public/home-style-review.html` 已在驗證後移除，沒有新增產品導覽入口。
+- Roboto 修正後重新執行上述兩份 Vitest（8/8）與功能卡間距檢查（1/1）；Cloudflare 再次完整建置成功。
+
+![正式首頁 Core 與四大功能](home-core-four-functions-390.jpg)
