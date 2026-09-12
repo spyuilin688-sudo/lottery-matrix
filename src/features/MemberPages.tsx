@@ -359,7 +359,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: Navigate }) {
     { title: "會員相關", items: [["付款紀錄", "payment-history"]] },
     { title: "推廣相關", items: [["我的推薦碼/啟動碼", "activation-code"], ["優惠活動", "promotions"]] },
     { title: "法律資訊", items: [["關於 樂彩 Matrix", "about-matrix"], ["服務內容與使用說明", "service-info"], ["會員服務條例", "member-terms"], ["隱私權政策", "privacy-policy"], ["退款規範", "refund-policy"], ["聲明與免責事項", "disclaimer"]] },
-    { title: "系統相關", items: [["版本資訊/更新紀錄", "version-info"]] },
+    { title: "系統相關", items: [["通知", "notifications"], ["版本資訊/更新紀錄", "version-info"]] },
     { title: "客服與支援", items: [["聯絡客服/問題回報/商務合作", "merchant-info"]] },
   ];
   const visibleMenuGroups = menuGroups.map((group) => ({

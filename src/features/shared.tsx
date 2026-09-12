@@ -74,7 +74,7 @@ export function FeatureBottomNavigationPortal({
   onNavigate: Navigate;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
-  const { onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
+  const { currentScreen, onQuickOpen, onQuickConfigure, quickActive } = useContext(QuickNavigationContext);
 
   useEffect(() => {
     setHost(document.querySelector<HTMLElement>(".mobile-page"));
@@ -83,7 +83,7 @@ export function FeatureBottomNavigationPortal({
   return host
     ? createPortal(
         <BottomNavigation
-          active={active}
+          active={currentScreen === "calculator" ? "計算機" : active}
           quickActive={Boolean(quickActive)}
           onNavigate={onNavigate}
           onQuickOpen={onQuickOpen}

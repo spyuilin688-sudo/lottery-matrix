@@ -1,10 +1,5 @@
 /* Requested mobile layout corrections. */
 
-/* Bottom navigation: align only the 「我的」 tap target with its artwork. */
-.bottom-navigation-item:nth-of-type(4) {
-  right: 4px;
-}
-
 /* Notifications: 8px to the list below; reduce each bulk button by 3px total. */
 .notifications-screen-v2 .notification-content {
   row-gap: 8px;

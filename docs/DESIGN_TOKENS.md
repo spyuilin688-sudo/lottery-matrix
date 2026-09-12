@@ -28,6 +28,10 @@ Token 更新必須先在 canonical CSS owner 完成，並在同一 changeset 同
 | `--layout-section-gap` | `8px` | 主要區段節奏 |
 | `--lottery-card-radius` | `10px` | 標準卡片圓角 |
 | `--bottom-navigation-height` | `72px` | 固定底部導覽高度 |
+| `--bottom-nav-panel-950` | `#030708` | PD01 導覽與底部安全區底色 |
+| `--bottom-nav-icon-default` | `#e0bd75` | PD01 未選中圖示 |
+| `--bottom-nav-text-default` | `#c3beb6` | PD01 未選中文字 |
+| `--bottom-nav-text-active` | `#ffe2a0` | PD01 選中文字 |
 
 響應式外殼由 `src/styles.css` 的 `--app-layout-max: 430px` 控制，實際寬度維持 `100%`；`--layout-dialog-inline`、`--layout-card-padding` 使用 `clamp()` 在 320–430px 間平滑調整，並透過安全區 token 保留瀏海與底部手勢空間。
 

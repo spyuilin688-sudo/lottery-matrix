@@ -1,8 +1,9 @@
 import { GearIcon } from "@radix-ui/react-icons";
+import { Calculator, House, LayoutGrid, UserRound } from "lucide-react";
 import { useDoubleClickAction } from "./useDoubleClickAction";
 
-export type BottomNavigationLabel = "首頁" | "快捷" | "通知" | "我的";
-export type BottomNavigationTarget = "home" | "notifications" | "profile";
+export type BottomNavigationLabel = "首頁" | "快捷" | "計算機" | "通知" | "我的";
+export type BottomNavigationTarget = "home" | "calculator" | "profile";
 
 type BottomNavigationProps = {
   active?: BottomNavigationLabel;
@@ -14,18 +15,11 @@ type BottomNavigationProps = {
 };
 
 const NAVIGATION_ITEMS = [
-  { label: "首頁", screen: "home" },
-  { label: "快捷", screen: null },
-  { label: "通知", screen: "notifications" },
-  { label: "我的", screen: "profile" },
+  { label: "首頁", screen: "home", Icon: House },
+  { label: "快捷", screen: null, Icon: LayoutGrid },
+  { label: "計算機", screen: "calculator", Icon: Calculator },
+  { label: "我的", screen: "profile", Icon: UserRound },
 ] as const;
-
-const NAVIGATION_ARTWORK: Record<BottomNavigationLabel, string> = {
-  "首頁": "/assets/lottery/functions/matrixWW1.png",
-  "快捷": "/assets/lottery/functions/matrixWW2.png",
-  "通知": "/assets/lottery/functions/matrixWW3.png",
-  "我的": "/assets/lottery/functions/matrixWW4.png",
-};
 
 export const QUICK_SETTINGS_DOUBLE_TAP_MS = 800;
 
@@ -42,7 +36,7 @@ export function BottomNavigation({
     QUICK_SETTINGS_DOUBLE_TAP_MS,
   );
 
-  const displayedActive = quickActive ? "快捷" : active;
+  const displayedActive = quickActive ? "快捷" : active === "通知" ? "我的" : active;
   return (
     <nav
       className="bottom-navigation"
@@ -52,13 +46,14 @@ export function BottomNavigation({
     >
       <img
         className="bottom-navigation-artwork"
-        src={NAVIGATION_ARTWORK[displayedActive]}
-        alt="Matrix 底部導覽"
+        src="/assets/lottery/navigation/pd01-frame.svg"
+        alt=""
+        aria-hidden="true"
         draggable={false}
       />
 
-      {NAVIGATION_ITEMS.map(({ label, screen }) => {
-        const selected = label === "快捷" ? active === label || quickActive : active === label && !quickActive;
+      {NAVIGATION_ITEMS.map(({ label, screen, Icon }) => {
+        const selected = displayedActive === label;
 
         return (
           <button
@@ -69,7 +64,15 @@ export function BottomNavigation({
             onClick={label === "快捷" ? onQuickOpen : () => screen && onNavigate?.(screen)}
             key={label}
           >
-            <span className="bottom-navigation-a11y-label">{label}</span>
+            <img
+              className="bottom-navigation-active-frame"
+              src="/assets/lottery/navigation/pd01-active.svg"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+            />
+            <Icon className="bottom-navigation-icon" aria-hidden="true" strokeWidth={1.6} />
+            <span className="bottom-navigation-label">{label}</span>
           </button>
         );
       })}

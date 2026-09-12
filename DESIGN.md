@@ -129,6 +129,10 @@ components:
 
 ### Navigation and data display
 
+2026-09-12：依使用者選定的 PD01「階梯裝飾」重製共用底部導覽。外框左右外距為 0、滿寬，72px 主體下方接瀏覽器安全區；Figma 匯出的 `public/assets/lottery/navigation/pd01-frame.svg` 與 `pd01-active.svg` 分別承載階梯金框、扇形角飾及選中拱框，圖示與 12px 文字由四個真實按鈕呈現。圖示 24px、圖文距離 4px，選中態以金拱、底座、亮金字及 `aria-current` 共同表示；180ms 淡入支援 reduced motion。框內兩側各 44px 為角飾與設定操作區，其餘空間四格等分；這是內部配置，不是導覽外距。首頁與狀態頁的既有設定齒輪保留 44px 觸控區及原視覺尺寸，與主導覽觸控區不重疊。`src/prototype.css` 是導覽樣式唯一來源，移除舊「我的」按鈕 4px 位移補償。
+
+PD01 導覽專用 token：底色 `--bottom-nav-panel-950: #030708`、未選中圖示 `--bottom-nav-icon-default: #e0bd75`、未選中文字 `--bottom-nav-text-default: #c3beb6`、選中文字 `--bottom-nav-text-active: #ffe2a0`；其他元件色彩不由此變更。
+
 2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、26px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位恢復使用共用 `SettingLabelIcon`，圖片為 `/assets/matrix-explore/period.png` 與 `/assets/matrix-explore/road.png`，維持 1.8rem 佔位。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
