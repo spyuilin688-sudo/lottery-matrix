@@ -62,7 +62,7 @@ describe("homepage requested spacing and selection", () => {
     expect(getComputedStyle(document.querySelector(".home-screen")!).gridTemplateRows).toBe("auto minmax(0, 1fr)");
     expect(getComputedStyle(document.querySelector(".home-content")!).minHeight).toBe("0px");
     expect(getComputedStyle(document.querySelector(".mobile-scroll")!).overflowY).toBe("auto");
-    expect(brandHeader.alignItems).toBe("center");
+    expect(brandHeader.alignItems).toBe("flex-start");
     expect(normalizedCss).toContain("padding-top:clamp(8px,1dvh,12px);");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).height).toBe("auto");
     expect(getComputedStyle(document.querySelector(".home-logo-image")!).objectPosition).toBe("center bottom");
@@ -76,15 +76,15 @@ describe("homepage requested spacing and selection", () => {
     const lotteryScreen = getComputedStyle(document.querySelector(".lottery-screen")!);
     const bottomGroup = getComputedStyle(document.querySelector(".home-bottom-group")!);
 
-    expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("10px");
-    expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("4px");
+    expect(layout.getPropertyValue("--home-feature-inline").trim()).toBe("16px");
+    expect(layout.getPropertyValue("--home-feature-gap").trim()).toBe("6px");
     expect(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", "")).toBe("clamp(9px,1.35dvh,12px)");
-    expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("clamp(14px,1.75dvh,17px)");
+    expect(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", "")).toBe("8px");
     expect(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", "")).toBe("clamp(13px,calc(1.15dvh+5px),16px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", "")).toBe("clamp(7px,calc(0.9dvh+1px),9px)");
     expect(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", "")).toBe("clamp(9px,calc(1.15dvh+1px),12px)");
     expect(normalizedCss).toContain("padding-top:clamp(8px,1dvh,12px);");
-    expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 28px");
+    expect(bottomGroup.getPropertyValue("--home-core-width").trim()).toContain("- 32px");
     expect(getComputedStyle(document.querySelector(".matrix-status-section")!).paddingInline).toBe("0px");
     const shortcutImage = getComputedStyle(document.querySelector(".home-shortcut img")!);
     expect(shortcutImage.width).toBe("100%");

@@ -4,17 +4,17 @@ import test from "node:test";
 
 const css = readFileSync(new URL("../src/homepage/base.css", import.meta.url), "utf8");
 
-test("Matrix Core 上下外框內縮但素材維持等比例", () => {
+test("Matrix Core 保留參考圖比例且素材等比例填滿", () => {
   assert.match(
     css,
-    /--home-core-height:\s*clamp\(68px,\s*calc\(\(var\(--home-core-width\) \* 414 \/ 1536\) - 18px\),\s*79px\);/,
+    /--home-core-height:\s*calc\(var\(--home-core-width\) \* 181 \/ 654\);/,
   );
 
   const bannerRules = [...css.matchAll(/\.home-screen \.matrix-core-banner \{[\s\S]*?\n\}/g)].map(
     ([rule]) => rule,
   );
-  const bannerRule = bannerRules.find((rule) => /matrixcore\.png/.test(rule)) ?? "";
+  const bannerRule = bannerRules.find((rule) => /core-artwork\.webp/.test(rule)) ?? "";
 
-  assert.match(bannerRule, /background:\s*url\("\/assets\/lottery\/functions\/matrixcore\.png"\) center \/ cover no-repeat;/);
+  assert.match(bannerRule, /background:\s*url\("\/assets\/lottery\/home-premium\/core-artwork\.webp"\) center \/ cover no-repeat;/);
   assert.doesNotMatch(bannerRule, /100% 100%/);
 });

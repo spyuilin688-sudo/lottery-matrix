@@ -8,17 +8,6 @@ const base = read("src/homepage/base.css");
 const switcher = read("src/homepage/lottery-switcher.css");
 const visual = read("src/homepage/visual-language.css");
 
-test("Matrix Core M 與圓環貼合原圖並保留外框環流與八節點", () => {
-  assert.match(prototype, /className="matrix-core-symbol-energy"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340"/);
-  assert.match(prototype, /className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144"/);
-  assert.match(prototype, /className="matrix-core-energy-loop"/);
-  assert.equal((prototype.match(/className="matrix-core-node"/g) ?? []).length, 8);
-  assert.match(visual, /\.matrix-core-energy-path\s*\{[^}]*stroke-dasharray:\s*5 95;[^}]*animation:\s*matrix-core-symbol-circulation/s);
-  assert.match(visual, /@keyframes matrix-core-energy-circulation/);
-  assert.match(visual, /@keyframes matrix-core-node-pulse/);
-});
-
 test("首頁彩種容器外框隱藏且選取時切換為單一 0.7px 響應式框", () => {
   assert.match(switcher, /\.lottery-switcher--home-style\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;/s);
   assert.match(switcher, /\.lottery-card\[data-selected="true"\]::after\s*\{[^}]*display:\s*none;/s);
@@ -28,9 +17,9 @@ test("首頁彩種容器外框隱藏且選取時切換為單一 0.7px 響應式�
   assert.doesNotMatch(prototype, /className="lottery-selected-frame"/);
 });
 
-test("五大功能圖片恢復 100% 且不改變既有排列", () => {
+test("四大功能插畫等比例呈現並與 Core 對齊", () => {
   assert.match(base, /\.home-screen \.home-shortcut img\s*\{[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
-  assert.match(base, /--home-feature-inline:\s*10px;/);
+  assert.match(base, /--home-feature-inline:\s*16px;/);
 });
 
 test("開獎資訊卡加深外切角且重設底部資訊卡切角", () => {

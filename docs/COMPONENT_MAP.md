@@ -10,8 +10,8 @@
 | 最新開獎資訊卡 | `LatestDrawCard` | `lottery`, `result`, `order`, `onOrderChange`, `onOpenHistory?`, `className?` | 首頁 |
 | 下次開獎資訊列 | `NextDrawInfoBar` | `nextDraw`, `remainingTime`, `className?` | 首頁 |
 | Matrix 狀態入口 | `MatrixStatusSection` | `statuses?` | 首頁 |
-| Matrix Core 入口 | `MatrixCoreBanner` | 無 | 首頁 |
-| 五大功能入口列 | `HomeShortcutRow` | 無 | 首頁 |
+| Matrix Core 入口 | `MatrixCoreBanner` | `onOpen?` | 首頁 |
+| 四大功能入口列 | `HomeShortcutRow` | `onNavigate?` | 首頁 |
 | 底部導覽 | `BottomNavigation` | 無 | 首頁 |
 
 ## 共用型別
@@ -73,5 +73,5 @@ export type MatrixStatusMap = Record<LotteryId, MatrixStatusData>;
 8. `HomeShortcutRow`
 9. `BottomNavigation`
 
-不得將 `Matrix Core` 與五大功能入口合併。`Matrix Core` 是進入 `Matrix 探索` 的獨立入口；五大功能是另一組獨立入口列。
+不得將 `Matrix Core` 與四大功能入口合併。`Matrix Core` 是進入 `Matrix 探索` 的獨立入口；四大功能是另一組獨立入口列。
 

@@ -54,19 +54,19 @@ test("homepage reserves the logo above its scroller and preserves the requested 
   assert.equal(style(".home-screen").gridTemplateRows, "auto minmax(0, 1fr)");
   assert.equal(style(".home-content").minHeight, "0px");
   assert.equal(style(".mobile-scroll").overflowY, "auto");
-  assert.equal(brandHeader.alignItems, "center");
+  assert.equal(brandHeader.alignItems, "flex-start");
   assert.ok(normalizedCss.includes("padding-top:clamp(8px,1dvh,12px);"));
   assert.equal(style(".home-logo-image").height, "auto");
   assert.equal(style(".home-logo-image").objectPosition, "center bottom");
-  assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "10px");
-  assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "4px");
+  assert.equal(layout.getPropertyValue("--home-feature-inline").trim(), "16px");
+  assert.equal(layout.getPropertyValue("--home-feature-gap").trim(), "6px");
   assert.equal(layout.getPropertyValue("--home-gap-status-core").replaceAll(" ", ""), "clamp(9px,1.35dvh,12px)");
-  assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "clamp(14px,1.75dvh,17px)");
+  assert.equal(layout.getPropertyValue("--home-gap-core-features").replaceAll(" ", ""), "8px");
   assert.equal(layout.getPropertyValue("--home-gap-features-nav").replaceAll(" ", ""), "clamp(8px,1.15dvh,12px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-logo-switcher").replaceAll(" ", ""), "clamp(13px,calc(1.15dvh+5px),16px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-switcher-draw").replaceAll(" ", ""), "clamp(7px,calc(0.9dvh+1px),9px)");
   assert.equal(lotteryScreen.getPropertyValue("--home-gap-draw-status").replaceAll(" ", ""), "clamp(9px,calc(1.15dvh+1px),12px)");
-  assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 28px/);
+  assert.match(bottomGroup.getPropertyValue("--home-core-width"), /- 32px/);
   assert.equal(style(".matrix-status-section").paddingInline, "0px");
 });
 

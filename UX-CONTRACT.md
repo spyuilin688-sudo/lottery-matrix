@@ -5,7 +5,7 @@
 - 獨立權限管理網站提供「顯示訂閱購買」與「註冊會員免費使用」兩個獨立開關。
 - 購買關閉時，「我的」隱藏整張目前訂閱狀態（含金框與占位）、付款紀錄及退款規範；空的會員相關群組一併收起。「管理訂閱」隱藏購買入口；router 不掛載方案／轉帳／付款紀錄／退款規範頁。設定未知或讀取失敗時保持隱藏；開啟同一開關即可恢復。
 - 同一「顯示訂閱購買」開關同步控制指定文案與篇章：關閉時使用查詢文案、隱藏指定段落；開啟時恢復原文與篇章。範圍詳見 `docs/PERMISSION_SWITCHES.md`，不與免費權限開關連動。已開啟的首次提示同步更新；指南隱藏第 14 類時保留其他類別原編號，若正停留在第 14 類則回到第 01 類。
-- 購買開關關閉時，首頁五大功能下方、底部導覽上方顯示兩段原文：「本站僅提供公開歷史數據查詢，不提供任何投注建議。」「本服務僅供學術參考研究使用，不保証數據之即時性與準確性。」開啟即隱藏。第一段以 390px 一行為基準，窄畫面允許必要換行；第二段依使用者要求維持單行，字級上限 .6875rem 並隨聲明容器實際內容寬度縮小（3.4cqi）。不截斷、不省略，不改寫「保証」；樣式由 src/homepage/free-statement.css 擁有。
+- 購買開關關閉時，首頁四大功能下方、底部導覽上方顯示兩段原文：「本站僅提供公開歷史數據查詢，不提供任何投注建議。」「本服務僅供學術參考研究使用，不保証數據之即時性與準確性。」開啟即隱藏。第一段以 390px 一行為基準，窄畫面允許必要換行；第二段依使用者要求維持單行，字級上限 .6875rem 並隨聲明容器實際內容寬度縮小（3.4cqi）。不截斷、不省略，不改寫「保証」；樣式由 src/homepage/free-statement.css 擁有。
 - PWA 啟動、回到前景及前景每 30 秒重讀設定；演算法快取使用前重新確認設定版本，變更時清除既有結果。
 - 免費使用適用所有既有與未來的有效註冊會員，只增加天衍、天工、探索七期／十三期／完整範圍。訪客、缺少會員資料、停用會員不取得此權限。
 - Supabase 共用權限判斷為最終依據，關閉免費開放後恢復原有方案、推薦與試用規則；不修改方案、期限、付款或其他 Pro 權限。
@@ -115,6 +115,8 @@ Live LINE callback and revoke behavior remain **NOT EXECUTED** without an author
 The dialog preserves the existing navy, gold, danger-red and success-green visual language. It supplies a labelled title, optional description, explicit primary and secondary actions, a minimum 44px touch target, viewport-safe sizing, queued requests and reduced-motion behavior. Escape and overlay dismissal resolve as cancellation. When the queue is empty, focus returns to the control that opened the dialog; destructive actions use the danger tone and explicit destructive copy.
 
 ## Navigation, async and recovery
+
+2026-09-12：首頁 Matrix Core 保持獨立探索入口，顯示「進入更深入的查詢」說明；四大功能依序開啟既有 `tongxing`、`reference`、`matrix-card`、`guide` 路由。移除功能列中的計算機，底部導覽及快捷設定的計算機保留。插畫不包含卡名；原生按鈕提供文字名稱、鍵盤焦點及按壓回饋。靜止金屬素材取代循環光圈，減少動態干擾。
 
 2026-09-12：PD01 底部導覽依使用者指定順序提供「首頁、快捷、計算機、我的」。計算機沿用既有 `calculator` 路由，選中態由 `QuickNavigationContext.currentScreen` 推導，保留工具頁標題與返回行為；快捷開啟時優先顯示快捷選中態。原通知入口移至「我的 → 系統相關 → 通知」，仍使用既有通知頁及資料流程，該頁將「我的」標示為目前導覽群組。首頁快捷設定與狀態頁自訂觸發條件入口均保留；兩者繼續使用既有 800ms 內雙擊及鍵盤／輔助操作的原生 click 行為，不改動權限、設定內容或儲存邏輯。金框滿寬，角落設定與四個主要按鈕的觸控區分離。
 

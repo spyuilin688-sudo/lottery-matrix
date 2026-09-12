@@ -82,25 +82,23 @@ const LOTTERIES: LotteryOption[] = [
 ];
 
 const HOME_ASSET_BASE = "/assets/lottery/functions";
+const HOME_PREMIUM_ASSET_BASE = "/assets/lottery/home-premium";
 const STATUS_ASSET_BASE = "/assets/lottery/status";
 
 const HOME_ASSETS = {
   logo: "/assets/lottery/functions/MatrixLogo.png",
   drawCard: `${HOME_ASSET_BASE}/開獎資訊卡.png`,
-  matrixCore: `${HOME_ASSET_BASE}/matrixcore.png`,
-  tongxing: `${HOME_ASSET_BASE}/同星.png`,
-  reference: `${HOME_ASSET_BASE}/對照單.png`,
-  calculator: `${HOME_ASSET_BASE}/計算機.png`,
-  matrixCard: `${HOME_ASSET_BASE}/牌單.png`,
-  guide: `${HOME_ASSET_BASE}/指南.png`,
+  tongxing: `${HOME_PREMIUM_ASSET_BASE}/tongxing.webp`,
+  reference: `${HOME_PREMIUM_ASSET_BASE}/reference.webp`,
+  matrixCard: `${HOME_PREMIUM_ASSET_BASE}/matrix-card.webp`,
+  guide: `${HOME_PREMIUM_ASSET_BASE}/guide.webp`,
 } as const;
 
 const HOME_SHORTCUTS = [
-  { label: "Matrix 同星", image: HOME_ASSETS.tongxing },
-  { label: "號碼對照單", image: HOME_ASSETS.reference },
-  { label: "連碰立柱計算機", image: HOME_ASSETS.calculator },
-  { label: "Matrix 牌單", image: HOME_ASSETS.matrixCard },
-  { label: "Matrix 指南", image: HOME_ASSETS.guide },
+  { label: "Matrix 同星", screen: "tongxing", image: HOME_ASSETS.tongxing },
+  { label: "號碼對照單", screen: "reference", image: HOME_ASSETS.reference },
+  { label: "Matrix 牌單", screen: "matrix-card", image: HOME_ASSETS.matrixCard },
+  { label: "Matrix 指南", screen: "guide", image: HOME_ASSETS.guide },
 ] as const;
 
 const QUICK_OPTIONS = [
@@ -355,37 +353,23 @@ export function MatrixStatusSection({
 export function MatrixCoreBanner({ onOpen }: { onOpen?: () => void }) {
   return (
     <button type="button" className="matrix-core-banner home-core-box" aria-label="Matrix Core" data-testid="matrix-core-banner" onClick={onOpen}>
-      <span className="matrix-core-energy-loop" aria-hidden="true" />
-      <span className="matrix-core-node-frame" aria-hidden="true">
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-        <span className="matrix-core-node" />
-      </span>
-      <svg className="matrix-core-symbol-energy" viewBox="0 0 1536 414" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="matrix-core-symbol-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="rgba(203, 146, 36, .08)" />
-            <stop offset="48%" stopColor="rgba(244, 190, 73, .72)" />
-            <stop offset="68%" stopColor="rgba(255, 241, 190, .98)" />
-            <stop offset="84%" stopColor="rgba(238, 174, 51, .62)" />
-            <stop offset="100%" stopColor="rgba(203, 146, 36, .08)" />
-          </linearGradient>
-        </defs>
-        <ellipse className="matrix-core-energy-path matrix-core-energy-path--ring" cx="1163" cy="207" rx="212" ry="144" pathLength="100" />
-        <path className="matrix-core-energy-path matrix-core-energy-path--m" d="M1099 340V111H1129L1163 222L1197 111H1226V340" pathLength="100" />
-      </svg>
+      <span className="matrix-core-description">進入更深入的查詢</span>
+      <ChevronRightIcon className="matrix-core-chevron" aria-hidden="true" />
     </button>
   );
 }
 
 export function HomeShortcutRow({ onNavigate }: { onNavigate?: (screen: ScreenId) => void }) {
-  const screens: Record<(typeof HOME_SHORTCUTS)[number]["label"], ScreenId> = { "Matrix 同星": "tongxing", "號碼對照單": "reference", "連碰立柱計算機": "calculator", "Matrix 牌單": "matrix-card", "Matrix 指南": "guide" };
-  return <nav className="home-shortcut-row home-features-box" aria-label="五大功能" data-testid="home-shortcut-row">{HOME_SHORTCUTS.map((item) => <button className="home-shortcut" type="button" aria-label={item.label} key={item.label} onClick={() => onNavigate?.(screens[item.label])}><img src={item.image} alt="" draggable={false} /></button>)}</nav>;
+  return (
+    <nav className="home-shortcut-row home-features-box" aria-label="四大功能" data-testid="home-shortcut-row">
+      {HOME_SHORTCUTS.map((item) => (
+        <button className="home-shortcut" type="button" key={item.screen} onClick={() => onNavigate?.(item.screen)}>
+          <img src={item.image} alt="" width={1254} height={1254} draggable={false} />
+          <span className="home-shortcut-label">{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
 }
 
 export type BrandLoadingProps = { visible: boolean; onComplete?: () => void; className?: string };
@@ -538,4 +522,3 @@ export default function Prototype({ isLoading = false }: PrototypeProps) {
     </>
   );
 }
-
