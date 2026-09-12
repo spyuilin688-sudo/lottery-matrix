@@ -8,14 +8,14 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/admin/icons/admin-icon-20260912-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/admin/icons/admin-icon-20260912-180.png">
     <link rel="manifest" href="./manifest.webmanifest?v=20260912-2">
-    <link rel="preload" as="image" href="./admin-launch-20260912.png">
-    <link rel="stylesheet" href="./admin-launch-20260912.css">
-    <script defer src="./admin-launch-20260912.js"></script>
+    <style>
+        html,
+        body {
+            background: #000;
+        }
+    </style>
 </head>
 <body>
-    <div id="admin-launch-screen" role="status" aria-label="管理後台啟動中">
-        <img src="./admin-launch-20260912.png" width="864" height="1536" alt="MATRIX 管理後台" fetchpriority="high">
-    </div>
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
 </body>
