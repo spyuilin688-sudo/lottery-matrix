@@ -14,15 +14,18 @@ test("號碼對照單標題卡只保留探索設定", () => {
   assert.match(header, /HeaderSettingsButton/);
 });
 
-test("三頁共用設定操作固定於標題卡右下各 4px，刷新使用設定區共用尺寸", () => {
+test("三頁設定操作右距 4px、下距 0px，文字與下拉箭頭間距 2px", () => {
   const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
   assert.match(actions[0], /position:\s*absolute;/);
   assert.match(actions[0], /right:\s*4px;/);
-  assert.match(actions[0], /bottom:\s*4px;/);
+  assert.match(actions[0], /bottom:\s*0px;/);
   assert.match(actions[0], /min-width:\s*0;/);
   assert.doesNotMatch(actions[0], /translate|!important/);
+  const toggle = ruleBodies(css, /^\.product-header__settings-toggle$/);
+  assert.equal(toggle.length, 1);
+  assert.match(toggle[0], /gap:\s*2px;/);
   const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
   const icon = ruleBodies(responsiveCss, /^\.tool-settings-reset > svg$/);
   assert.equal(icon.length, 1);
