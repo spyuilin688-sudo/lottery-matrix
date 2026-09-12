@@ -2595,7 +2595,7 @@ opacity: .30; box-shadow: none;
   padding: 2px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -2702,7 +2702,7 @@ opacity: .30; box-shadow: none;
 .product-header__actions {
   position: absolute;
   right: 4px;
-  bottom: 4px;
+  bottom: 0px;
   z-index: 3;
   display: flex;
   width: var(--product-header-action-width);
