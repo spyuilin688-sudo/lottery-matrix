@@ -2,19 +2,23 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import pytest
+
+from app.domain.explore_state import DRAW_ORDER, SORTED_ORDER
 from app.repositories.analysis_repository import (
     ARTIFACT_KINDS,
     InMemoryAnalysisRepository,
     SupabaseAnalysisRepository,
 )
 from app.services.analysis_pipeline import AnalysisPipeline
-from app.worker import ANALYSIS_VERSION, run_scheduled_worker
+from app.worker import ANALYSIS_VERSION, analysis_version_for_order, run_scheduled_worker
 
 
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000000221"
-CURRENT_VERSION = f"{PERIOD}:matrix-python-v13"
+CURRENT_VERSION = analysis_version_for_order(PERIOD, SORTED_ORDER)
+CURRENT_DRAW_VERSION = analysis_version_for_order(PERIOD, DRAW_ORDER)
 LEGACY_VERSION = f"{PERIOD}:matrix-python-v10"
 
 
@@ -71,6 +75,8 @@ def _draw(period: int, draw_date: str) -> dict[str, Any]:
         "period": str(period).zfill(9),
         "drawDate": draw_date,
         "numbers": ["01", "02", "03", "04", "05"],
+        "drawOrderNumbers": ["02", "01", "03", "04", "05"],
+        "resultStatus": "confirmed",
     }
 
 
@@ -86,8 +92,15 @@ def _complete_run(
     repository.complete_run(LOTTERY, PERIOD, version, completed_at)
 
 
-def test_worker_uses_matrix_python_v13() -> None:
-    assert ANALYSIS_VERSION == "matrix-python-v13"
+@pytest.mark.parametrize("number_order,suffix", [(SORTED_ORDER, "sorted"), (DRAW_ORDER, "draw")])
+def test_worker_versions_are_scoped_to_period_and_order(number_order, suffix) -> None:
+    assert analysis_version_for_order(PERIOD, number_order) == f"{PERIOD}:{ANALYSIS_VERSION}-{suffix}"
+    assert analysis_version_for_order("000000222", number_order) == f"000000222:{ANALYSIS_VERSION}-{suffix}"
+
+
+def test_worker_version_rejects_unknown_order() -> None:
+    with pytest.raises(ValueError, match="^NUMBER_ORDER_UNSUPPORTED$"):
+        analysis_version_for_order(PERIOD, "unknown")
 
 
 def test_progress_lookup_can_be_scoped_to_one_analysis_version() -> None:
@@ -243,12 +256,13 @@ def test_scheduled_worker_does_not_resume_when_current_version_is_complete() -> 
         repository.upsert_draw(
             _draw(221 - offset, "2026-08-28" if offset == 0 else "2026-08-27")
         )
-    _complete_run(
-        repository,
-        CURRENT_VERSION,
-        "2026-08-29T09:00:00+00:00",
-        "2026-08-29T09:01:00+00:00",
-    )
+    for version in (CURRENT_VERSION, CURRENT_DRAW_VERSION):
+        _complete_run(
+            repository,
+            version,
+            "2026-08-29T09:00:00+00:00",
+            "2026-08-29T09:01:00+00:00",
+        )
     repository.begin_run(
         LOTTERY,
         PERIOD,
@@ -268,3 +282,8 @@ def test_scheduled_worker_does_not_resume_when_current_version_is_complete() -> 
         "drawPeriod": PERIOD,
         "status": "already-acquired",
     }
+    assert repository.get_progress(LOTTERY, PERIOD, LEGACY_VERSION)["status"] == "running"
+    for version in (CURRENT_VERSION, CURRENT_DRAW_VERSION):
+        progress = repository.get_progress(LOTTERY, PERIOD, version)
+        assert progress["status"] == "complete"
+        assert progress["startedAt"] == "2026-08-29T09:00:00+00:00"

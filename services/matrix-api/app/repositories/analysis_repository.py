@@ -80,6 +80,7 @@ class InMemoryAnalysisRepository:
     def __init__(self) -> None:
         self.draws: dict[tuple[str, str], dict[str, Any]] = {}
         self.runs: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self.active_versions: dict[tuple[str, str, str], str] = {}
         self.artifacts: dict[tuple[str, str, str, str], dict[str, Any]] = {}
         self.artifact_chunks: dict[tuple[str, str, str, str, int], dict[str, Any]] = {}
         self.explore_results: dict[tuple[str, str, str, str], dict[str, Any]] = {}
@@ -228,17 +229,24 @@ class InMemoryAnalysisRepository:
                 row["period"] for (name, _), row in self.draws.items() if name == lottery
                 and (not cutoff or str(row.get("drawDate") or "").replace("/", "-").replace(".", "-") >= cutoff)
             }
+            removed_runs = set()
             for records in (self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results):
                 for key in list(records):
                     if key[0] == lottery and key[1] in affected and (sorted_changed or not key[2].endswith("-sorted")):
+                        if records is self.runs:
+                            removed_runs.add(key)
                         del records[key]
+            # Mirror the active-version foreign key's ON DELETE CASCADE.
+            for key, version in list(self.active_versions.items()):
+                if (*key[:2], version) in removed_runs:
+                    del self.active_versions[key]
         if previous is not None and previous["period"] != period and self.draws.get((lottery, previous["period"])) is previous:
             self.draws.pop((lottery, previous["period"]), None)
         self.draws[(stored["lottery"], stored["period"])] = stored
         return stored
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        records = (self.draws, self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results)
+        records = (self.draws, self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results, self.active_versions)
         snapshots = [(items, dict(items)) for items in records]
         ordered = sorted(draws, key=lambda draw: (draw["lottery"], draw.get("drawDate") is None,
                                                 str(draw.get("drawDate") or ""), draw["period"]))
@@ -580,14 +588,46 @@ class InMemoryAnalysisRepository:
         *,
         owner_id: str | None = None,
     ) -> None:
-        available = {key[3] for key in self.artifacts if key[:3] == (lottery, draw_period, analysis_version)}
+        key = (lottery, draw_period, analysis_version)
+        run = self.runs.get(key)
+        if run is None:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+        # Legacy ownerless fixtures are supported only when the run is unowned.
+        # Omitting the owner must never bypass a live worker's lease.
+        if owner_id is not None or run.get("leaseOwner") is not None:
+            if not owner_id or not owner_id.strip() or run.get("status") != "running":
+                raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+            self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
+        number_order = "sorted" if analysis_version.endswith("-sorted") else "draw" if analysis_version.endswith("-draw") else None
+        if number_order == "draw" and not self._draw_order_eligible(lottery, draw_period):
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+        available = {artifact_key[3] for artifact_key in self.artifacts if artifact_key[:3] == key}
         if available != ARTIFACT_KINDS:
             raise ValueError("ANALYSIS_ARTIFACTS_INCOMPLETE")
+        # Recheck expiry immediately before publishing completion and activation.
         self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
         update = {"phase": "complete", "status": "complete", "completedAt": completed_at, "error": None}
         if owner_id is not None:
             update.update({"leaseOwner": None, "leaseExpiresAt": None})
-        self.runs[(lottery, draw_period, analysis_version)].update(update)
+        run.update(update)
+        if number_order is not None:
+            self.active_versions[(lottery, draw_period, number_order)] = analysis_version
+
+    def _draw_order_eligible(self, lottery: str, draw_period: str) -> bool:
+        # Test-double equivalent of private.matrix_analysis_draw_order_eligible.
+        draw = self.draws.get((lottery, draw_period))
+        if lottery == "天天樂" or draw is None or draw.get("resultStatus", "confirmed") != "confirmed":
+            return False
+        numbers, ordered = draw.get("numbers"), draw.get("drawOrderNumbers")
+        expected = 5 if lottery == "今彩539" else 7
+        return (
+            isinstance(numbers, list) and isinstance(ordered, list)
+            and len(numbers) == len(ordered) == expected
+            and all(number in ordered for number in numbers)
+            and all(number in numbers for number in ordered)
+            and all(number not in ordered[:index] for index, number in enumerate(ordered))
+            and (lottery == "今彩539" or ordered[-1] == numbers[-1])
+        )
 
     def fail_run(
         self,
@@ -1216,17 +1256,14 @@ class SupabaseAnalysisRepository:
         *,
         owner_id: str | None = None,
     ) -> None:
-        response = self.client.table("matrix_analysis_artifacts").select("kind").eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version).execute()
-        if {row["kind"] for row in response.data} != ARTIFACT_KINDS:
-            raise ValueError("ANALYSIS_ARTIFACTS_INCOMPLETE")
-        update = {"phase": "complete", "status": "complete", "completed_at": completed_at, "error": None}
-        if owner_id is not None:
-            update.update({"lease_owner": None, "lease_expires_at": None})
-        query = self.client.table("matrix_analysis_runs").update(update).eq("lottery", lottery).eq("draw_period", draw_period).eq("analysis_version", analysis_version)
-        if owner_id is not None:
-            query = query.eq("lease_owner", owner_id).gt("lease_expires_at", datetime.now(UTC).isoformat())
-        update_response = query.execute()
-        if owner_id is not None and not update_response.data:
+        response = self.client.rpc("matrix_analysis_complete_owned", {
+            "p_lottery": lottery,
+            "p_draw_period": draw_period,
+            "p_analysis_version": analysis_version,
+            "p_owner_id": owner_id,
+            "p_completed_at": completed_at,
+        }).execute()
+        if response.data is not True:
             raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
     def fail_run(
