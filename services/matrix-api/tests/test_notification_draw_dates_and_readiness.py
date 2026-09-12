@@ -28,14 +28,19 @@ def test_status_uses_the_corresponding_draw_date():
     assert event["payload"]["drawDate"] == "2026-09-05"
 
 
-def test_published_card_does_not_notify_before_full_analysis_completes(monkeypatch):
+def test_published_actual_card_notifies_before_analysis_completes(monkeypatch):
     repository = InMemoryAnalysisRepository()
     capture = Capture()
     monkeypatch.setattr(worker, "_card_ready", lambda *_: True)
-    monkeypatch.setattr(worker, "_run_analysis", lambda *_: {"status": "running"})
+
+    def running_analysis(*_, **__):
+        assert [event["eventType"] for event in capture.events] == ["lottery_result", "matrix_card"]
+        return {"status": "running"}
+
+    monkeypatch.setattr(worker, "_run_analysis", running_analysis)
     result = worker.run_scheduled_worker("今彩539", _due_time(), repository, NotificationSource(), _builders(), notification_emitter=capture)
     assert result["status"] == "running"
-    assert [event["eventType"] for event in capture.events] == ["lottery_result"]
+    assert [event["eventType"] for event in capture.events] == ["lottery_result", "matrix_card"]
 
 
 def test_completed_analysis_emits_card_and_status_with_the_same_draw_date(monkeypatch):

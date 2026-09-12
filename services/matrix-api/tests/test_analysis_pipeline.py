@@ -19,19 +19,19 @@ class RepositorySpy(InMemoryAnalysisRepository):
 
     def save_artifact_chunk(
         self, lottery: str, draw_period: str, analysis_version: str, kind: str,
-        chunk_index: int, cursor_start: int, cursor_end: int, payload: object,
+        chunk_index: int, cursor_start: int, cursor_end: int, payload: object, **fence,
     ) -> None:
         self.calls.append(f"save_artifact_chunk:{kind}:{chunk_index}")
         super().save_artifact_chunk(
             lottery, draw_period, analysis_version, kind,
-            chunk_index, cursor_start, cursor_end, payload,
+            chunk_index, cursor_start, cursor_end, payload, **fence,
         )
 
     def save_explore_results(
-        self, lottery: str, draw_period: str, analysis_version: str, payload: object,
+        self, lottery: str, draw_period: str, analysis_version: str, payload: object, **fence,
     ) -> None:
         self.calls.append("save_explore_results")
-        super().save_explore_results(lottery, draw_period, analysis_version, payload)
+        super().save_explore_results(lottery, draw_period, analysis_version, payload, **fence)
 
     def update_progress(
         self, lottery: str, draw_period: str, analysis_version: str,
@@ -266,7 +266,7 @@ def test_incomplete_explore_saves_delta_before_progress_without_cumulative_read(
 def test_explore_result_failure_does_not_advance_checkpoint() -> None:
     class FailingExploreRepository(RepositorySpy):
         def save_explore_results(
-            self, lottery: str, draw_period: str, analysis_version: str, payload: object,
+            self, lottery: str, draw_period: str, analysis_version: str, payload: object, **fence,
         ) -> None:
             self.calls.append("save_explore_results")
             raise RuntimeError("canonical result write failed")

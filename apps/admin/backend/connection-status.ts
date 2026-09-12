@@ -20,6 +20,7 @@ type Dependencies = {
 export type ConnectionStatusItem = ApiStatusDefinition & {
   description: string;
   ok: boolean;
+  healthState?: 'healthy' | 'running' | 'waiting' | 'unknown' | 'failed';
   checkEvidence?: ApiCheckEvidence;
   checkedAt: string;
   responseMs: number;
@@ -51,6 +52,8 @@ const githubApiUrl = 'https://api.github.com';
 const watchdogFreshnessMs = 18 * 60 * 1000;
 const watchdogAllowedFutureSkewMs = 2 * 60 * 1000;
 const defaultRequestTimeoutMs = 10_000;
+// Match watchdog.ts JOB_STALE_MS: a running crawler uses its latest heartbeat.
+const jobStaleMs = 20 * 60 * 1000;
 const watchdogScheduleDetail = {
   physicalCronIntervalMinutes: 10,
   freshnessThresholdMinutes: 18,
@@ -78,6 +81,18 @@ const safeJobDetail = (row: Row, jobName: string, lottery: string, analysis: Rai
     analysisDrawPeriod: analysis?.drawPeriod ?? null,
     analysisCompletedAt: analysis?.completedAt ?? null,
   };
+};
+
+const jobHealthState = (detail: ReturnType<typeof safeJobDetail> | null, checkedAt: string): NonNullable<ConnectionStatusItem['healthState']> => {
+  if (!detail) return 'unknown';
+  if (detail.status === 'failed' || detail.error) return 'failed';
+  if (detail.status === 'success') return 'healthy';
+  if (detail.status === 'waiting_source') return 'waiting';
+  if (detail.status !== 'running') return 'unknown';
+  const heartbeat = detail.updatedAt ?? detail.startedAt;
+  const age = heartbeat ? Date.parse(checkedAt) - Date.parse(heartbeat) : NaN;
+  if (!Number.isFinite(age) || age < 0) return 'unknown';
+  return age > jobStaleMs ? 'failed' : 'running';
 };
 
 const descriptionFor = (definition: ApiStatusDefinition) => definition.description;
@@ -189,7 +204,7 @@ export function createConnectionStatus(dependencies: Dependencies) {
       let detail: unknown;
       if (queryCheckIds.has(definition.id)) {
         const result = await shared.query(definition.id);
-        return { ...finish(result.ok, { samples: result.samples }, result.error), checkEvidence: result.ok && result.skipped ? 'no-sample' : 'query' };
+        return { ...finish(result.ok, { samples: result.samples }, result.error), ...(result.ok && result.waiting ? { healthState: 'waiting' as const } : {}), checkEvidence: result.ok && result.skipped ? 'no-sample' : 'query' };
       } else if (definition.id === 'admin-api') {
         const response = await fetchWithDeadline(`${adminUrl}${definition.endpoint}`, { cache: 'no-store', redirect: 'error' });
         if (!response.ok) throw new Error('ADMIN_API_UNAVAILABLE');
@@ -286,13 +301,14 @@ export function createConnectionStatus(dependencies: Dependencies) {
           jobName, lottery, status: 'unknown', startedAt: null, finishedAt: null, finished_at: null, updatedAt: null, error: null,
           analysisStatus: analysis.status, analysisPhase: analysis.phase, analysisDrawPeriod: analysis.drawPeriod, analysisCompletedAt: analysis.completedAt,
         } : null;
-        const ok = detail?.status === 'success' || detail?.status === 'waiting_source';
+        const healthState = jobHealthState(detail, checkedAt);
+        const ok = healthState === 'healthy' || healthState === 'running' || healthState === 'waiting';
         return {
           id: `cron-${jobName}`,
           name: `${lottery}資料更新排程`,
           description: '顯示各彩種自動更新資料的執行狀態。',
-          group: '排程', location: 'Supabase', endpoint: '/rest/v1/system_job_status', checkMode: 'live', checkEvidence: 'reported', ok, checkedAt, responseMs: 0, detail,
-          ...(ok ? {} : { error: detail ? `排程狀態：${detail.status}` : '尚無執行紀錄' }),
+          group: '排程', location: 'Supabase', endpoint: '/rest/v1/system_job_status', checkMode: 'live', checkEvidence: 'reported', ok, healthState, checkedAt, responseMs: 0, detail,
+          ...(healthState === 'failed' ? { error: detail?.status === 'running' && !detail.error ? '排程已超過 20 分鐘未更新執行紀錄。' : detail?.status === 'failed' ? '排程狀態：failed' : '排程執行失敗。' } : {}),
         } satisfies ConnectionStatusItem;
       });
       return { checkedAt, items: [...apiItems, ...jobs] };

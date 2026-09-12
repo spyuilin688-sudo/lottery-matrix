@@ -207,7 +207,7 @@ def test_successful_acquisition_repairs_recent_internal_period_gap() -> None:
     repository.upsert_draw({
         "lottery": "今彩539",
         "period": "000000219",
-        "drawDate": "2026-08-27",
+        "drawDate": "2026-08-23",
         "numbers": ["01", "02", "03", "04", "05"],
     })
     source = Source()

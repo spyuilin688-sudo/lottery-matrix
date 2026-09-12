@@ -249,12 +249,8 @@ def _expected_source_draw_dates(lottery: str, cycle: datetime) -> frozenset[str]
 
 def _restore_stage_results(repository: AnalysisRepository, lottery: str, period: str, version: str) -> None:
     if not repository.has_explore_results(lottery, period, version):
-        artifact = repository.read_artifact(lottery, period, version, "explore")
-        if artifact is not None:
-            repository.save_explore_results(lottery, period, version, artifact)
-    artifact = repository.read_artifact(lottery, period, version, "tianheng")
-    if artifact is not None and not repository.has_tianheng_results(lottery, period, version, len(artifact.get("items", []))):
-        repository.save_tianheng_results(lottery, period, version, artifact)
+        repository.restore_completed_results(lottery, period, version, "explore")
+    repository.restore_completed_results(lottery, period, version, "tianheng")
 
 
 def _resume_stored_analysis(

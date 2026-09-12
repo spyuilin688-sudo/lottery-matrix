@@ -74,21 +74,8 @@ def _restore_completed_explore_results(
     period: str,
     analysis_version: str,
 ) -> None:
-    if repository.has_explore_results(lottery, period, analysis_version):
-        return
-    artifact = repository.read_artifact(
-        lottery,
-        period,
-        analysis_version,
-        "explore",
-    )
-    if artifact is not None:
-        repository.save_explore_results(
-            lottery,
-            period,
-            analysis_version,
-            artifact,
-        )
+    if not repository.has_explore_results(lottery, period, analysis_version):
+        repository.restore_completed_results(lottery, period, analysis_version, "explore")
 
 
 def _restore_completed_tianheng_results(
@@ -97,15 +84,7 @@ def _restore_completed_tianheng_results(
     period: str,
     analysis_version: str,
 ) -> None:
-    artifact = repository.read_artifact(lottery, period, analysis_version, "tianheng")
-    if artifact is None:
-        return
-    expected_count = len(artifact.get("items", []))
-    if repository.has_tianheng_results(
-        lottery, period, analysis_version, expected_count,
-    ):
-        return
-    repository.save_tianheng_results(lottery, period, analysis_version, artifact)
+    repository.restore_completed_results(lottery, period, analysis_version, "tianheng")
 
 
 def _notification_enabled(notification_emitter: NotificationEventEmitter | None) -> bool:

@@ -235,6 +235,10 @@ Card PNGs publish without the former ten-minute waiting period. The current mani
 
 After result notification dispatch, the trusted producer requests immediate background processing; the scheduled worker retries if that request fails. Sorted-card generation precedes sorted analysis; formal actual-card generation precedes actual analysis. Card-ready notification requires the current confirmed actual PNG for 今彩539,六合彩 and 大樂透, or the current confirmed sorted PNG for 天天樂, and does not wait for all algorithms. Historical analysis backfill may notify only the latest published card, never an older draw. A card upload failure cannot publish a manifest or generate a card-ready notification. Missing actual order is never invented for 天天樂.
 
+Admin health checks follow those same capabilities: 天天樂 has only a sorted card and sorted analysis. Valid provisional sorted-only cards are waiting states, not malformed responses. Running jobs show execution in progress; missing evidence is limited rather than proof of failure or success. Actual failures and stale work remain visible. Notification opt-outs and normal skips are not operational incidents.
+
+Historical formal backfill must preserve the date and ID of a newer provisional draw even when their issue numbers collide; provisional issue estimates move atomically before the older formal row is inserted. Analysis child writes atomically verify the current run owner, start identity and unexpired lease, preventing superseded work from entering a replacement run under the same analysis version.
+
 ## 2026-09-08：查詢與設定回應
 
 - Matrix 探索、天衍、同星及號碼對照單只接受最近一次已送出查詢的回應；較舊的成功、錯誤及捲動回呼都不得覆蓋新查詢。單純編輯未送出的條件維持原有行為。

@@ -50,11 +50,12 @@ class AnalysisRepository(Protocol):
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str, *, owner_id: str | None = None, lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS) -> dict[str, Any]: ...
     def renew_run_lease(self, lottery: str, draw_period: str, analysis_version: str, owner_id: str, lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS) -> bool: ...
     def update_progress(self, lottery: str, draw_period: str, analysis_version: str, phase: str, cursor: int, total: int, *, owner_id: str | None = None) -> None: ...
-    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None: ...
-    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None: ...
-    def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
+    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any, *, owner_id: str, run_started_at: str) -> None: ...
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any, *, owner_id: str, run_started_at: str) -> None: ...
+    def save_explore_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any, *, owner_id: str, run_started_at: str) -> None: ...
+    def restore_completed_results(self, lottery: str, draw_period: str, analysis_version: str, kind: str) -> None: ...
     def has_explore_results(self, lottery: str, draw_period: str, analysis_version: str) -> bool: ...
-    def save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any) -> None: ...
+    def save_tianheng_results(self, lottery: str, draw_period: str, analysis_version: str, payload: Any, *, owner_id: str, run_started_at: str) -> None: ...
     def has_tianheng_results(
         self,
         lottery: str,
@@ -166,7 +167,10 @@ class InMemoryAnalysisRepository:
         stored.setdefault("resultStatus", "confirmed")
         lottery, period = stored["lottery"], stored["period"]
         rebased_periods: set[str] = set()
-        previous = self.draws.get((lottery, period))
+        period_match = self.draws.get((lottery, period))
+        previous = period_match
+        if previous is not None and previous.get("resultStatus") == "preliminary" and previous.get("drawDate") != stored.get("drawDate"):
+            previous = None
         for key, candidate in list(self.draws.items()):
             if key[0] != lottery or not stored.get("drawDate") or candidate.get("drawDate") != stored["drawDate"]:
                 continue
@@ -180,7 +184,15 @@ class InMemoryAnalysisRepository:
                 return dict(previous)
             if previous.get("drawDate") and stored.get("drawDate") and previous["drawDate"] != stored["drawDate"]:
                 raise ValueError("DRAW_PERIOD_DATE_CONFLICT")
-        if previous is not None and previous.get("resultStatus") == "preliminary" and stored["resultStatus"] == "confirmed" and previous["period"] != period:
+        if period_match is not None and period_match is not previous:
+            if (stored["resultStatus"] != "confirmed" or period_match.get("resultStatus", "confirmed") != "preliminary"
+                    or not stored.get("drawDate") or not period_match.get("drawDate")
+                    or period_match["drawDate"] <= stored["drawDate"]):
+                raise ValueError("DRAW_PERIOD_DATE_CONFLICT")
+        if stored["resultStatus"] == "confirmed" and (
+            (previous is not None and previous.get("resultStatus") == "preliminary" and previous["period"] != period)
+            or (period_match is not None and period_match is not previous)
+        ):
             anchor = period
             pending: list[tuple[tuple[str, str], dict[str, Any]]] = []
             later = sorted((row for (name, _), row in self.draws.items() if name == lottery
@@ -194,10 +206,13 @@ class InMemoryAnalysisRepository:
                     pending.append(((lottery, row["period"]), {**row, "period": estimate}))
                     anchor = estimate
             pending_keys = {key for key, _ in pending}
+            assigned_periods = {period}
             for _, row in pending:
                 key = (lottery, row["period"])
-                if key in self.draws and key not in pending_keys and key != (lottery, previous["period"]):
+                if row["period"] in assigned_periods or (key in self.draws and key not in pending_keys
+                        and (previous is None or key != (lottery, previous["period"]))):
                     raise ValueError("DRAW_PERIOD_DATE_CONFLICT")
+                assigned_periods.add(row["period"])
             for key, _ in pending:
                 del self.draws[key]
                 rebased_periods.add(key[1])
@@ -223,7 +238,17 @@ class InMemoryAnalysisRepository:
         return stored
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        return [self.upsert_draw(draw) for draw in draws]
+        records = (self.draws, self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results)
+        snapshots = [(items, dict(items)) for items in records]
+        ordered = sorted(draws, key=lambda draw: (draw["lottery"], draw.get("drawDate") is None,
+                                                str(draw.get("drawDate") or ""), draw["period"]))
+        try:
+            return [self.upsert_draw(draw) for draw in ordered]
+        except Exception:
+            for items, snapshot in snapshots:
+                items.clear()
+                items.update(snapshot)
+            raise
 
     def get_draw(self, lottery: str, period: str) -> dict[str, Any] | None:
         draw = self.draws.get((lottery, period))
@@ -407,14 +432,32 @@ class InMemoryAnalysisRepository:
         self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
         self.runs[(lottery, draw_period, analysis_version)].update({"phase": phase, "cursor": cursor, "total": total, "status": "running", "completedAt": None, "error": None})
 
-    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
+    def _require_child_write_owner(
+        self, lottery: str, draw_period: str, analysis_version: str,
+        owner_id: str | None, run_started_at: str | None,
+    ) -> None:
+        run = self.runs.get((lottery, draw_period, analysis_version))
+        # Ownerless in-memory fixtures remain supported only outside leased work.
+        if owner_id is None and (run is None or not run.get("leaseOwner")):
+            return
+        self._require_run_owner(lottery, draw_period, analysis_version, owner_id)
+        if (
+            owner_id is None or run is None or run.get("status") != "running"
+            or not run_started_at
+            or self._lease_datetime(run_started_at) != self._lease_datetime(run["startedAt"])
+        ):
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+
+    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any, *, owner_id: str | None = None, run_started_at: str | None = None) -> None:
+        self._require_child_write_owner(lottery, draw_period, analysis_version, owner_id, run_started_at)
         if kind not in ARTIFACT_KINDS:
             raise ValueError("UNKNOWN_ARTIFACT_KIND")
         self.artifacts[(lottery, draw_period, analysis_version, kind)] = {
             "payload": payload, "expiresAt": datetime.now(UTC) + RETENTION,
         }
 
-    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any, *, owner_id: str | None = None, run_started_at: str | None = None) -> None:
+        self._require_child_write_owner(lottery, draw_period, analysis_version, owner_id, run_started_at)
         if kind not in ARTIFACT_KINDS:
             raise ValueError("UNKNOWN_ARTIFACT_KIND")
         self.artifact_chunks[(lottery, draw_period, analysis_version, kind, chunk_index)] = {
@@ -426,7 +469,9 @@ class InMemoryAnalysisRepository:
 
     def save_explore_results(
         self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str | None = None, run_started_at: str | None = None,
     ) -> None:
+        self._require_child_write_owner(lottery, draw_period, analysis_version, owner_id, run_started_at)
         expires_at = datetime.now(UTC) + RETENTION
         for record in _explore_result_records(
             lottery, draw_period, analysis_version, payload, expires_at.isoformat(),
@@ -434,6 +479,26 @@ class InMemoryAnalysisRepository:
             record["expiresAt"] = expires_at
             key = (lottery, draw_period, analysis_version, record["item_id"])
             self.explore_results[key] = record
+
+    def restore_completed_results(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> None:
+        started_at, artifact = _completed_result_snapshot(self, lottery, draw_period, analysis_version, kind)
+        if kind == "explore" and self.has_explore_results(lottery, draw_period, analysis_version):
+            return
+        if kind == "tianheng" and self.has_tianheng_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
+            return
+        expires_at = datetime.now(UTC) + RETENTION
+        records = _result_records(kind, lottery, draw_period, analysis_version, artifact, expires_at.isoformat())
+        run = self.runs.get((lottery, draw_period, analysis_version))
+        if run is None or run["status"] != "complete" or run["startedAt"] != started_at:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+        if not self.has_artifact(lottery, draw_period, analysis_version, kind):
+            raise RuntimeError("ANALYSIS_REQUIRED_ARTIFACT_MISSING:" + kind)
+        results = self.explore_results if kind == "explore" else self.tianheng_results
+        for record in records:
+            record["expiresAt"] = expires_at
+            results[(lottery, draw_period, analysis_version, record["item_id"])] = record
 
     def has_explore_results(
         self, lottery: str, draw_period: str, analysis_version: str,
@@ -450,7 +515,9 @@ class InMemoryAnalysisRepository:
 
     def save_tianheng_results(
         self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str | None = None, run_started_at: str | None = None,
     ) -> None:
+        self._require_child_write_owner(lottery, draw_period, analysis_version, owner_id, run_started_at)
         expires_at = datetime.now(UTC) + RETENTION
         for record in _tianheng_result_records(
             lottery, draw_period, analysis_version, payload, expires_at.isoformat(),
@@ -930,14 +997,35 @@ class SupabaseAnalysisRepository:
         if owner_id is not None and not response.data:
             raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
-    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any) -> None:
+    def _write_owned(
+        self, lottery: str, draw_period: str, analysis_version: str,
+        owner_id: str, run_started_at: str, target: str, records: list[dict[str, Any]],
+    ) -> None:
+        if not owner_id or not owner_id.strip() or not run_started_at:
+            raise ValueError("ANALYSIS_RUN_OWNER_REQUIRED")
+        response = self.client.rpc("matrix_analysis_write_owned", {
+            "p_lottery": lottery,
+            "p_draw_period": draw_period,
+            "p_analysis_version": analysis_version,
+            "p_owner_id": owner_id,
+            "p_started_at": run_started_at,
+            "p_target": target,
+            "p_records": records,
+        }).execute()
+        if response.data is not True:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+
+    def save_artifact(self, lottery: str, draw_period: str, analysis_version: str, kind: str, payload: Any, *, owner_id: str, run_started_at: str) -> None:
         if kind not in ARTIFACT_KINDS:
             raise ValueError("UNKNOWN_ARTIFACT_KIND")
         now = datetime.now(UTC)
         record = {"lottery": lottery, "draw_period": draw_period, "analysis_version": analysis_version, "kind": kind, "payload": payload, "completed_at": now.isoformat(), "expires_at": (now + RETENTION).isoformat()}
-        self.client.table("matrix_analysis_artifacts").upsert(record, on_conflict="lottery,draw_period,analysis_version,kind").execute()
+        self._write_owned(
+            lottery, draw_period, analysis_version, owner_id, run_started_at,
+            "matrix_analysis_artifacts", [record],
+        )
 
-    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any) -> None:
+    def save_artifact_chunk(self, lottery: str, draw_period: str, analysis_version: str, kind: str, chunk_index: int, cursor_start: int, cursor_end: int, payload: Any, *, owner_id: str, run_started_at: str) -> None:
         if kind not in ARTIFACT_KINDS:
             raise ValueError("UNKNOWN_ARTIFACT_KIND")
         now = datetime.now(UTC)
@@ -947,12 +1035,14 @@ class SupabaseAnalysisRepository:
             "cursor_end": cursor_end, "payload": encode_chunk_payload(payload),
             "expires_at": (now + RETENTION).isoformat(),
         }
-        self.client.table("matrix_analysis_artifact_chunks").upsert(
-            record, on_conflict="lottery,draw_period,analysis_version,kind,chunk_index",
-        ).execute()
+        self._write_owned(
+            lottery, draw_period, analysis_version, owner_id, run_started_at,
+            "matrix_analysis_artifact_chunks", [record],
+        )
 
     def save_explore_results(
         self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str, run_started_at: str,
     ) -> None:
         expires_at = (datetime.now(UTC) + RETENTION).isoformat()
         records = _explore_result_records(
@@ -961,10 +1051,37 @@ class SupabaseAnalysisRepository:
         if not records:
             return
         for start in range(0, len(records), EXPLORE_RESULT_UPSERT_BATCH_SIZE):
-            self.client.table("matrix_explore_results").upsert(
-                records[start:start + EXPLORE_RESULT_UPSERT_BATCH_SIZE],
-                on_conflict="lottery,draw_period,analysis_version,item_id",
-            ).execute()
+            self._write_owned(
+                lottery, draw_period, analysis_version, owner_id, run_started_at,
+                "matrix_explore_results", records[start:start + EXPLORE_RESULT_UPSERT_BATCH_SIZE],
+            )
+
+    def restore_completed_results(
+        self, lottery: str, draw_period: str, analysis_version: str, kind: str,
+    ) -> None:
+        # Capture the completed generation before reading/materializing its saved
+        # artifact. The RPC rejects that snapshot if correction recreated the run.
+        started_at, artifact = _completed_result_snapshot(self, lottery, draw_period, analysis_version, kind)
+        if kind == "explore" and self.has_explore_results(lottery, draw_period, analysis_version):
+            return
+        if kind == "tianheng" and self.has_tianheng_results(lottery, draw_period, analysis_version, len(artifact.get("items", []))):
+            return
+        records = _result_records(
+            kind, lottery, draw_period, analysis_version, artifact,
+            (datetime.now(UTC) + RETENTION).isoformat(),
+        )
+        batch_size = EXPLORE_RESULT_UPSERT_BATCH_SIZE if kind == "explore" else TIANHENG_RESULT_UPSERT_BATCH_SIZE
+        for start in range(0, len(records), batch_size):
+            response = self.client.rpc("matrix_analysis_restore_results", {
+                "p_lottery": lottery,
+                "p_draw_period": draw_period,
+                "p_analysis_version": analysis_version,
+                "p_started_at": started_at,
+                "p_kind": kind,
+                "p_records": records[start:start + batch_size],
+            }).execute()
+            if response.data is not True:
+                raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
 
     def has_explore_results(
         self, lottery: str, draw_period: str, analysis_version: str,
@@ -982,16 +1099,17 @@ class SupabaseAnalysisRepository:
 
     def save_tianheng_results(
         self, lottery: str, draw_period: str, analysis_version: str, payload: Any,
+        *, owner_id: str, run_started_at: str,
     ) -> None:
         expires_at = (datetime.now(UTC) + RETENTION).isoformat()
         records = _tianheng_result_records(
             lottery, draw_period, analysis_version, payload, expires_at,
         )
         for start in range(0, len(records), TIANHENG_RESULT_UPSERT_BATCH_SIZE):
-            self.client.table("matrix_tianheng_results").upsert(
-                records[start:start + TIANHENG_RESULT_UPSERT_BATCH_SIZE],
-                on_conflict="lottery,draw_period,analysis_version,item_id",
-            ).execute()
+            self._write_owned(
+                lottery, draw_period, analysis_version, owner_id, run_started_at,
+                "matrix_tianheng_results", records[start:start + TIANHENG_RESULT_UPSERT_BATCH_SIZE],
+            )
 
     def has_tianheng_results(
         self,
@@ -1201,6 +1319,28 @@ def create_supabase_repository(
 
     options = SyncClientOptions(httpx_client=httpx_client) if httpx_client is not None else None
     return SupabaseAnalysisRepository(create_client(url, secret_key, options=options))
+
+
+def _completed_result_snapshot(
+    repository: AnalysisRepository, lottery: str, draw_period: str, analysis_version: str, kind: str,
+) -> tuple[str, Any]:
+    if kind not in {"explore", "tianheng"}:
+        raise ValueError("UNKNOWN_RESULT_KIND")
+    run = repository.get_progress(lottery, draw_period, analysis_version)
+    if run is None or run["status"] != "complete":
+        raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
+    started_at = str(run["startedAt"])
+    artifact = repository.read_artifact(lottery, draw_period, analysis_version, kind)
+    if artifact is None:
+        raise RuntimeError("ANALYSIS_REQUIRED_ARTIFACT_MISSING:" + kind)
+    return started_at, artifact
+
+
+def _result_records(
+    kind: str, lottery: str, draw_period: str, analysis_version: str, payload: Any, expires_at: str,
+) -> list[dict[str, Any]]:
+    normalize = _explore_result_records if kind == "explore" else _tianheng_result_records
+    return normalize(lottery, draw_period, analysis_version, payload, expires_at)
 
 
 def _tianheng_result_records(

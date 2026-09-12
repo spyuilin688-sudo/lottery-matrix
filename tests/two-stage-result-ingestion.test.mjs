@@ -36,6 +36,7 @@ async function database() {
   `);
   await db.exec(oldFast);
   if (existsSync(migrationPath)) await db.exec(readFileSync(migrationPath, 'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20260912192941_preserve_provisional_draw_identity.sql', import.meta.url), 'utf8'));
   await db.query(`insert into lottery_draws(lottery,period,draw_date,numbers,sorted_numbers,draw_order_numbers)
     values ('六合彩','026099','2026-09-12',$1,$1,$1)`, [JSON.stringify(numbers)]);
   return db;
@@ -144,5 +145,67 @@ test('downward formal correction and missing-date historical insertion preserve 
     await db.exec(`insert into matrix_analysis_runs values('六合彩','026101','026101:matrix-python-v14-sorted')`);
     await db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify([formal('025001',{draw_date:null})])]);
     assert.equal((await db.query('select count(*)::int n from matrix_analysis_runs')).rows[0].n,0);
+  } finally { await db.close(); }
+});
+
+test('backfilling an older official date preserves the newer preliminary ID and result notification', async () => {
+  const db=await database();
+  try {
+    await db.exec(`update lottery_draws set draw_date='2026-09-10'`);
+    await fast(db);
+    const before=(await db.query(`select id,draw_date::text draw_date from lottery_draws where period='026100'`)).rows[0];
+    const eventBefore=(await db.query(`select id,payload from notification_events`)).rows;
+    await db.exec(`insert into matrix_analysis_runs values('六合彩','026100','026100:matrix-python-v14-sorted');
+      insert into matrix_card_publications(lottery,desired_digest,lease_token,lease_until)
+      values('六合彩',repeat('a',64),gen_random_uuid(),now()+interval '10 minutes');`);
+    const backfill=[formal('026100',{draw_date:'2026-09-12'})];
+    await db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify(backfill)]);
+    const {rows}=await db.query(`select id,draw_date::text draw_date,period,result_status from lottery_draws order by draw_date`);
+    assert.equal(rows.length,3);
+    assert.deepEqual(rows.map(({draw_date,period,result_status})=>[draw_date,period,result_status]),[
+      ['2026-09-10','026099','confirmed'],['2026-09-12','026100','confirmed'],['2026-09-15','026101','preliminary']]);
+    assert.equal(rows[2].id,before.id);
+    assert.notEqual(rows[1].id,before.id);
+    assert.equal((await db.query('select count(*)::int n from matrix_analysis_runs')).rows[0].n,0);
+    const card=(await db.query('select * from matrix_card_publications')).rows[0];
+    assert.equal(card.lease_token,null); assert.equal(card.desired_digest,null);
+    await db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify(backfill)]);
+    await fast(db);
+    assert.deepEqual((await db.query(`select id,draw_date::text draw_date,period,result_status from lottery_draws order by draw_date`)).rows,rows);
+    assert.deepEqual((await db.query(`select id,payload from notification_events`)).rows,eventBefore);
+  } finally { await db.close(); }
+});
+
+test('reverse-order official backfill rebases multiple preliminary dates atomically and is retry safe', async () => {
+  const db=await database();
+  try {
+    await db.exec(`update lottery_draws set draw_date='2026-09-10'`);
+    await fast(db);
+    await db.query(`select public.notification_fast_result_publish('marksix','2026-09-17',$1::text[])`, [numbers]);
+    const before=(await db.query(`select id,draw_date::text draw_date from lottery_draws where result_status='preliminary' order by draw_date`)).rows;
+    const backfill=[formal('026101',{draw_date:'2026-09-13'}),formal('026100',{draw_date:'2026-09-12'})];
+    await db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify(backfill)]);
+    const {rows}=await db.query(`select id,draw_date::text draw_date,period,result_status from lottery_draws order by draw_date`);
+    assert.deepEqual(rows.map(({draw_date,period})=>[draw_date,period]),[
+      ['2026-09-10','026099'],['2026-09-12','026100'],['2026-09-13','026101'],
+      ['2026-09-15','026102'],['2026-09-17','026103']]);
+    assert.deepEqual(rows.filter(row=>row.result_status==='preliminary').map(({id,draw_date})=>({id,draw_date})),before);
+    await db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify([...backfill].reverse())]);
+    assert.deepEqual((await db.query(`select id,draw_date::text draw_date,period,result_status from lottery_draws order by draw_date`)).rows,rows);
+  } finally { await db.close(); }
+});
+
+test('a confirmed-period collision rolls back earlier backfills and all analysis invalidation', async () => {
+  const db=await database();
+  try {
+    await db.exec(`update lottery_draws set draw_date='2026-09-10'`);
+    await fast(db);
+    await db.exec(`insert into matrix_analysis_runs values('六合彩','026100','026100:matrix-python-v14-sorted')`);
+    const before=(await db.query('select * from lottery_draws order by id')).rows;
+    const analysisBefore=(await db.query('select * from matrix_analysis_runs')).rows;
+    await assert.rejects(db.query('select public.matrix_upsert_draws($1::jsonb)', [JSON.stringify([
+      formal('026100',{draw_date:'2026-09-12'}),formal('026099',{draw_date:'2026-09-13'})])]), /DRAW_PERIOD_DATE_CONFLICT/);
+    assert.deepEqual((await db.query('select * from lottery_draws order by id')).rows,before);
+    assert.deepEqual((await db.query('select * from matrix_analysis_runs')).rows,analysisBefore);
   } finally { await db.close(); }
 });

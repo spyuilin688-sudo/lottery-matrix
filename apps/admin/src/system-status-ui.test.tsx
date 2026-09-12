@@ -47,3 +47,29 @@ it('keeps purpose, evidence and errors visible while technical details collapse 
     expect(mocks.delete).not.toHaveBeenCalled();
   } finally { await act(async () => root.unmount()); container.remove(); }
 });
+
+it('counts only actual failures as abnormal while running, waiting and unknown jobs remain limited', async () => {
+  const originalGet = mocks.get.getMockImplementation()!;
+  mocks.get.mockImplementation(async (url: string) => url === '/api/system-status' ? { data: { checkedAt: '2026-09-12T02:00:00Z', items: [
+    ['running', true, 'running'], ['waiting', true, 'waiting_source'], ['unknown', false, 'unknown'], ['failed', false, 'failed'],
+  ].map(([healthState, ok, status]) => ({
+    id: `cron-${healthState}`, name: `${healthState}排程`, group: '排程', location: 'Supabase', description: '開獎資料更新排程。', endpoint: '/rest/v1/system_job_status', checkMode: 'live', checkEvidence: 'reported', healthState, ok, checkedAt: '2026-09-12T02:00:00Z', responseMs: 0, detail: { status }, ...(healthState === 'failed' ? { error: '排程執行失敗。' } : {}),
+  })) } } : originalGet(url));
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<AdminApp />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent?.includes('系統設定'))?.click());
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect([...container.querySelectorAll('.statusBadge')].map(badge => [badge.textContent, badge.classList.contains('bad')])).toEqual([
+      ['執行中', false], ['等待開獎來源更新', false], ['狀態待確認', false], ['異常', true],
+    ]);
+    expect(container.querySelector('.statusGroupHeader')?.textContent).toContain('4 項 · 3 項僅部分檢查 · 1 項異常');
+    expect(container.querySelectorAll('.statusRow [role=alert]')).toHaveLength(1);
+  } finally {
+    await act(async () => root.unmount()); container.remove();
+    mocks.get.mockImplementation(originalGet);
+  }
+});
