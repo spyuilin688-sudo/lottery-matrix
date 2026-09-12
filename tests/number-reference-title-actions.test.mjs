@@ -5,29 +5,30 @@ import assert from "node:assert/strict";
 
 import { ruleBodies } from "./helpers/css-rules.mjs";
 
-test("號碼對照單標題卡只顯示一個刷新與探索設定文字", () => {
+test("號碼對照單標題卡只保留探索設定", () => {
   const source = readFeaturePagesSource();
   const start = source.indexOf('title="號碼對照單"');
   const end = source.indexOf('className="reference-query-panel"', start);
   const header = source.slice(start, end);
 
-  assert.equal((header.match(/刷新<\/button>/g) ?? []).length, 1);
-  assert.match(header, /<ReloadIcon className="reference-refresh-icon" \/>/);
+  assert.doesNotMatch(header, /reference-refresh-trigger/);
   assert.match(header, /探索設定/);
 });
 
-test("刷新與探索設定共用標題卡控制項尺寸，刷新圖示縮減為 8px [header migration]", () => {
+test("三頁共用設定操作固定於標題卡右下各 4px，刷新使用設定區共用尺寸", () => {
   const css = readFileSync(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const actions = ruleBodies(css, /^\.product-header__actions$/);
   assert.equal(actions.length, 1);
-  assert.match(actions[0], /grid-area:\s*actions;/);
+  assert.match(actions[0], /position:\s*absolute;/);
+  assert.match(actions[0], /right:\s*4px;/);
+  assert.match(actions[0], /bottom:\s*4px;/);
   assert.match(actions[0], /min-width:\s*0;/);
-  assert.doesNotMatch(actions[0], /translate|position:\s*absolute/);
+  assert.doesNotMatch(actions[0], /translate|!important/);
   const responsiveCss = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
-  const icon = ruleBodies(responsiveCss, /^\.reference-refresh-icon$/);
+  const icon = ruleBodies(responsiveCss, /^\.tool-settings-reset > svg$/);
   assert.equal(icon.length, 1);
-  assert.match(icon[0], /width:\s*8px;/);
-  assert.match(icon[0], /height:\s*8px;/);
+  assert.match(icon[0], /width:\s*10px;/);
+  assert.match(icon[0], /height:\s*10px;/);
 });
 
 
