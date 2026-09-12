@@ -12,7 +12,7 @@ import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from 
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
-import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, ExploreSettingIcon, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
 import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
@@ -498,7 +498,7 @@ export function MatrixExplorePage({
           <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span>
+          <label><span>{isExplore ? <ExploreSettingIcon type="lottery" /> : <SettingLabelIcon type="lottery" />}<b>彩球類型</b></span>
             <div className="select-box native-select">
               <select
                 aria-label="彩種"
@@ -510,7 +510,7 @@ export function MatrixExplorePage({
               <ChevronDownIcon aria-hidden="true" />
             </div>
           </label>
-          <label><span><SettingLabelIcon type="period" />探索期數</span>
+          <label><span>{isExplore ? <ExploreSettingIcon type="period" /> : <SettingLabelIcon type="period" />}探索期數</span>
             <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
               {periodOptions.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
@@ -520,7 +520,7 @@ export function MatrixExplorePage({
               ))}
             </div>
           </label>
-          <label><span><SettingLabelIcon type="road" />版路類型</span>
+          <label><span>{isExplore ? <ExploreSettingIcon type="road" /> : <SettingLabelIcon type="road" />}版路類型</span>
             <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
               {roadTypes.map((v) => (
                 <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={road === v} onClick={() => changeRoad(v)}>

@@ -58,47 +58,6 @@
   object-fit: fill;
 }
 
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher {
-  --matrix-switcher-size: calc(2.34rem * .85);
-  width: auto;
-  height: var(--matrix-switcher-size);
-  opacity: .96;
-}
-
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button {
-  box-sizing: border-box;
-  position: relative;
-  isolation: isolate;
-  width: var(--matrix-switcher-size);
-  height: var(--matrix-switcher-size);
-  min-height: var(--matrix-switcher-size);
-  padding: 0;
-  flex: 0 0 var(--matrix-switcher-size);
-  border: 1px solid #755329;
-  border-radius: clamp(4px, 1.2vw, 5px);
-  background: transparent;
-  overflow: hidden;
-}
-
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button::before,
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher button::after {
-  display: none;
-}
-
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher img {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  object-fit: contain;
-  object-position: center;
-}
-
-.matrix-explore-main-screen .matrix-settings-heading .matrix-page-switcher .matrix-page-switcher-image--tianheng {
-  transform: scale(1.14);
-}
-
 .matrix-explore-main-screen .explore-settings,
 .matrix-explore-main-screen .hit-advanced-panel,
 .matrix-explore-main-screen .history-panel,

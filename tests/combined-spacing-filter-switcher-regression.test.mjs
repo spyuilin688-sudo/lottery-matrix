@@ -40,7 +40,7 @@ test("single-number marking remains independent from the selected row", async ()
 
 test("Matrix switcher exposes all four pages in one compact horizontal control", async () => {
   const [source, css] = await Promise.all([
-    readFeaturePagesSource(),
+    Promise.all([read("src/features/shared.tsx"), read("src/features/MatrixExplorePage.tsx"), read("src/features/MatrixTiangongPage.tsx")]).then(parts => parts.join("\n")),
     read("src/feature-pages.css"),
   ]);
   const switcher = source.slice(source.indexOf("function MatrixPageSwitcher"), source.indexOf("const ROAD_VALIDATION_SAMPLE_HISTORY"));
@@ -49,8 +49,8 @@ test("Matrix switcher exposes all four pages in one compact horizontal control",
   assert.match(switcher, /onClick=\{\(\) => onNavigate\(item\.screen\)\}/);
   assert.match(source, /current=\{isTianheng \? "tianheng" : isTianyan \? "tianyan" : "explore"\}/);
   assert.match(source, /current="tiangong"/);
-  assert.match(css, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*gap:\s*8px;/s);
-  assert.match(css, /\.matrix-page-switcher button\s*\{[^}]*width:\s*2\.34rem;[^}]*height:\s*2\.34rem;[^}]*flex:\s*0 0 2\.34rem;/s);
+  assert.match(css, /\.matrix-page-switcher\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;[^}]*gap:\s*0;/s);
+  assert.match(css, /\.matrix-page-switcher button\s*\{[^}]*min-width:\s*0;[^}]*height:\s*100%;[^}]*flex:\s*1 1 0;/s);
   assert.doesNotMatch(switcher, /MATRIX_LOOP_ITEMS|onScroll/);
   assert.doesNotMatch(css, /scroll-snap-type:\s*y mandatory|touch-action:\s*pan-y/);
 });

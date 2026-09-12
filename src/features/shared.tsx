@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { CalendarDays, CircleDot, GitBranch } from "lucide-react";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { type LotteryId, type DrawOrder } from "../Prototype";
 import { BottomNavigation } from "../BottomNavigation";
@@ -30,10 +31,10 @@ export function finalizeLookupInputValues(values: string[], index: number) {
 }
 
 export const MATRIX_PAGE_ITEMS = [
-  { screen: "explore", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索-icon.png" },
-  { screen: "tianheng", label: "Matrix 天衡", image: "/assets/lottery/functions/天衡.png" },
-  { screen: "tianyan", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍-icon.png" },
-  { screen: "tiangong", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
+  { screen: "explore", shortLabel: "探索", label: "Matrix 探索", image: "/assets/lottery/functions/Matrix探索-icon.png" },
+  { screen: "tianheng", shortLabel: "天衡", label: "Matrix 天衡", image: "/assets/lottery/functions/天衡.png" },
+  { screen: "tianyan", shortLabel: "天衍", label: "Matrix 天衍", image: "/assets/lottery/functions/Matrix天衍-icon.png" },
+  { screen: "tiangong", shortLabel: "天工", label: "Matrix 天工", image: "/assets/lottery/functions/Matrix天工-icon.png" },
 ] as const;
 
 export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
@@ -61,12 +62,7 @@ export function MatrixPageSwitcher({ current, onNavigate }: {
     <nav className="matrix-page-switcher" aria-label="Matrix Core 功能切換">
       {MATRIX_PAGE_ITEMS.map((item) => (
         <button type="button" aria-label={item.label} aria-current={item.screen === current ? "page" : undefined} title={item.label} onClick={() => onNavigate(item.screen)} key={item.screen}>
-          <img
-            className={item.screen === "tianheng" ? "matrix-page-switcher-image--tianheng" : undefined}
-            src={item.image}
-            alt=""
-            draggable={false}
-          />
+          {item.shortLabel}
         </button>
       ))}
     </nav>
@@ -244,6 +240,17 @@ export function FeatureShell({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="section-title"><span />{children}</h2>;
+}
+
+const EXPLORE_SETTING_ICONS = {
+  lottery: CircleDot,
+  period: CalendarDays,
+  road: GitBranch,
+} as const;
+
+export function ExploreSettingIcon({ type }: { type: keyof typeof EXPLORE_SETTING_ICONS }) {
+  const Icon = EXPLORE_SETTING_ICONS[type];
+  return <Icon className="explore-setting-line-icon" strokeWidth={1.75} aria-hidden="true" focusable="false" />;
 }
 
 export function SettingLabelIcon({

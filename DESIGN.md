@@ -123,7 +123,7 @@ components:
 
 ### Navigation and data display
 
-2026-09-11：Matrix 探索、天衡、天衍、天工的頁面切換圖示位於第一張「探索設定」卡片的標題同列右側。四頁固定依探索、天衡、天衍、天工排列；沿用原有圖示與尺寸，四個圖示共用完整的 1px 金褐色外框，以點擊切換。
+2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、32px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁前三個欄位使用共用 `ExploreSettingIcon` 的 Lucide `CircleDot`／`CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
