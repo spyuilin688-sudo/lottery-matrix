@@ -1,8 +1,8 @@
-"""Build both fixed PNG orders once; publish only a complete immutable generation."""
+"""Publish current immutable PNGs as sorted and formal actual orders become available."""
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from functools import lru_cache
 from hashlib import sha256
 import json
@@ -14,15 +14,14 @@ from typing import Any
 from uuid import uuid4
 
 from app import card_renderer
-from app.card_renderer import CARD_HEIGHT, CARD_WIDTH, card_layout, render_matrix_card
-from app.repositories.card_repository import CardRepository, card_repository
+from app.card_renderer import CARD_HEIGHT, CARD_WIDTH, card_layout, render_matrix_card, supported_card_orders
+from app.repositories.card_repository import CardRepository, card_repository, published_manifest
 from app.services.draw_refresh import require_complete_history
 
 LOGGER = logging.getLogger(__name__)
 FONT_DIR = Path(__file__).resolve().parents[1] / 'fonts'
 FONT_FILES = tuple(sorted([*FONT_DIR.glob('*.otf'), *FONT_DIR.glob('*.ttf')]))
 LOTTERY_CODES = {'今彩539': '539', '天天樂': 'fantasy5', '六合彩': 'marksix', '大樂透': 'lotto649'}
-PUBLICATION_DELAY = timedelta(minutes=10)
 
 
 @lru_cache(maxsize=1)
@@ -38,9 +37,9 @@ def renderer_digest() -> str:
 
 def snapshot_digest(lottery: str, draws: list[dict[str, Any]]) -> str:
     payload = {'lottery': lottery, 'renderer': renderer_digest(), 'draws': [
-        {key: row.get(key) for key in (
+        {**{key: row.get(key) for key in (
             'period', 'drawDate', 'numbers', 'sortedNumbers', 'drawOrderNumbers',
-        )} for row in draws
+        )}, 'resultStatus': row.get('resultStatus', 'confirmed')} for row in draws
     ]}
     return sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True,
                              separators=(',', ':')).encode()).hexdigest()
@@ -60,7 +59,7 @@ def complete_snapshot(lottery: str, draws: list[dict[str, Any]]) -> bool:
         try:
             date.fromisoformat(str(row.get('drawDate', '')).replace('/', '-').replace('.', '-'))
             variants = [row.get('numbers'), row.get('sortedNumbers') or row.get('numbers')]
-            if row.get('drawOrderNumbers') is not None:
+            if row.get('drawOrderNumbers') not in (None, []):
                 variants.append(row['drawOrderNumbers'])
             sets = []
             for variant in variants:
@@ -96,7 +95,7 @@ def build_card_pngs(lottery: str, draws: list[dict[str, Any]]) -> dict[str, byte
     result = {}
     if len(FONT_FILES) != 4:
         raise ValueError('MATRIX_CARD_FONTS_MISSING')
-    for order in ('draw', 'sorted'):
+    for order in supported_card_orders(lottery, draws):
         svg = render_matrix_card(lottery, order, draws)
         svg = svg.replace(card_renderer.CJK_FONT_FAMILY, 'Matrix Card TC')
         svg = svg.replace('font-family="Arial"', 'font-family="Matrix Card Sans"')
@@ -133,7 +132,7 @@ class CardPublicationService:
         token = str(uuid4())
         state = self.cards.claim(lottery, token, now)
         if state is None:
-            return self.cards.read_manifest(lottery)
+            return published_manifest(lottery, self.repository)
         error_code = None
         try:
             now = datetime.fromisoformat(state['claimed_at'])
@@ -143,26 +142,26 @@ class CardPublicationService:
             count = sum(card_layout(lottery)['column_rows'])
             draws = self.repository.list_draws(lottery, count)
             if not complete_snapshot(lottery, draws):
-                return state['manifest']
+                return None
             digest = snapshot_digest(lottery, draws)
-            if manifest and manifest['generation'] == digest:
+            orders = supported_card_orders(lottery, draws)
+            if (manifest and manifest['generation'] == digest
+                    and set(manifest.get('cards', {})) == set(orders)):
                 return manifest
             if state['desired_digest'] != digest:
-                self.cards.update(lottery, token, {
+                if not self.cards.update(lottery, token, {
                     'desired_digest': digest, 'desired_period': str(draws[0]['period']),
-                    'eligible_at': (now + PUBLICATION_DELAY).isoformat(),
-                })
-                return manifest
-            if now < datetime.fromisoformat(state['eligible_at']):
-                return manifest
+                    'eligible_at': now.isoformat(),
+                }):
+                    return published_manifest(lottery, self.repository)
             pngs = self.renderer(lottery, draws)
-            if set(pngs) != {'draw', 'sorted'}:
+            if set(pngs) != set(orders):
                 raise ValueError('MATRIX_CARD_ORDERS_INCOMPLETE')
             for png in pngs.values():
                 validate_png(png)
             period = str(draws[0]['period'])
             files = {}
-            for order in ('draw', 'sorted'):
+            for order in orders:
                 png = pngs[order]
                 path = f'{LOTTERY_CODES[lottery]}/{period}/{digest}/{order}.png'
                 files[order] = {
@@ -172,13 +171,13 @@ class CardPublicationService:
             # Acquisition/correction can happen while rasterizing or uploading.
             latest = self.repository.list_draws(lottery, count)
             if snapshot_digest(lottery, latest) != digest:
-                return manifest
+                return None
             published = {'lottery': lottery, 'period': period, 'generation': digest,
                          'generatedAt': now.isoformat(), 'cards': files}
             if self.cards.update(lottery, token, {'manifest': published}):
                 self._prune(lottery, published, token)
                 return published
-            return self.cards.read_manifest(lottery)
+            return published_manifest(lottery, self.repository)
         except Exception as error:
             error_code = type(error).__name__  # Do not store transport URLs/credentials.
             raise

@@ -1,3 +1,4 @@
+import { subscribeLotteryRefresh } from "../lottery-data-refresh";
 import { useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, ChevronRightIcon } from "@radix-ui/react-icons";
@@ -264,11 +265,11 @@ export function useLotteryHistory(lottery: LotteryId, limit?: number) {
     };
 
     refreshLotteryHistory();
-    const refreshTimer = window.setInterval(refreshLotteryHistory, 60_000);
+    const unsubscribe = subscribeLotteryRefresh(lottery, refreshLotteryHistory);
 
     return () => {
       active = false;
-      window.clearInterval(refreshTimer);
+      unsubscribe();
     };
   }, [lottery, limit]);
 
@@ -291,7 +292,7 @@ export function getHistoryDrawNumbers(
 ): HistoryDrawNumbers {
   const source = order === "順球"
     ? record.sortedNumbers?.length ? record.sortedNumbers : record.numbers
-    : record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers;
+    : record.drawOrderNumbers ?? [];
   const normalized = source.map(normalizeBallNumber);
 
   if (lottery === "六合彩" || lottery === "大樂透") {
@@ -432,7 +433,7 @@ export function HistoryList({
               <span><HistoryDate value={date} /></span>
               <span className="history-numbers" data-has-special={Boolean(draw.special)}>
                 <span className="history-main-numbers">
-                  {draw.main.map((num, index) => (
+                  {!draw.main.length ? "待公布" : null}{draw.main.map((num, index) => (
                     <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={lottery} number={num} />
                   ))}
                 </span>

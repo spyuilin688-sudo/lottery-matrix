@@ -216,7 +216,7 @@ function splitDrawNumbers(lottery: LotteryId, values: Array<string | number>) {
 
 function toDrawResult(lottery: LotteryId, record: LotteryDrawRecord): DrawResultData {
   const sorted = splitDrawNumbers(lottery, record.sortedNumbers?.length ? record.sortedNumbers : record.numbers);
-  const drawOrder = splitDrawNumbers(lottery, record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers);
+  const drawOrder = splitDrawNumbers(lottery, record.drawOrderNumbers ?? []);
 
   return {
     issue: record.period ?? record.issue,
@@ -239,8 +239,8 @@ export type LatestDrawCardProps = {
 };
 
 export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderChange, onOpenHistory, className = "" }: LatestDrawCardProps) {
-  const displayedNumbers = order === "順球" ? result.numbers : result.drawOrderNumbers ?? result.numbers;
-  const displayedSpecialNumber = order === "順球" ? result.specialNumber : result.drawOrderSpecialNumber ?? result.specialNumber;
+  const displayedNumbers = order === "順球" ? result.numbers : result.drawOrderNumbers ?? [];
+  const displayedSpecialNumber = order === "順球" ? result.specialNumber : result.drawOrderSpecialNumber;
   const hasMeta = Boolean(result.issue || result.date);
   const hasSpecial = Boolean(displayedSpecialNumber);
   return (
@@ -257,6 +257,7 @@ export function LatestDrawCard({ lottery, result, nextDrawInfo, order, onOrderCh
       <button className="history-link" type="button" onClick={onOpenHistory} aria-label="查看更多紀錄"><span>查看更多紀錄</span><span aria-hidden="true">&gt;</span></button>
       <div className="draw-balls" data-has-special={hasSpecial}>
         <div className="main-balls">
+          {order === "落球" && hasMeta && !displayedNumbers.length ? <span role="status">實際開獎順序待公布</span> : null}
           {displayedNumbers.map((number, index) => <LotteryNumberBall lottery={lottery} number={number} key={`${number}-${index}`} />)}
         </div>
         {displayedSpecialNumber ? <><span className="special-ball-separator" aria-hidden="true" /><div className="special-ball-group"><span className="special-label">特別號</span><LotteryNumberBall lottery={lottery} number={displayedSpecialNumber} isSpecial /></div></> : null}

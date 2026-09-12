@@ -135,7 +135,7 @@ describe('lottery-api response validation', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('最新期號在五分鐘內跨重新初始化使用已儲存資料', async () => {
+  it('最新期號在三十秒內跨重新初始化使用已儲存資料', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-31T14:00:00Z'));
     const latest = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
@@ -148,7 +148,7 @@ describe('lottery-api response validation', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('最新期號超過五分鐘後不再重用 localStorage 資料', async () => {
+  it('最新期號超過三十秒後不再重用 localStorage 資料', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-31T14:00:00Z'));
     const first = { period: '115000207', numbers: ['01', '02', '03', '04', '05'] };
@@ -159,7 +159,7 @@ describe('lottery-api response validation', () => {
 
     await fetchLatestLotteryDraw('今彩539');
     resetReadCacheForTests();
-    vi.advanceTimersByTime(5 * 60 * 1_000 - 1);
+    vi.advanceTimersByTime(30_000 - 1);
     await fetchLatestLotteryDraw('今彩539');
 
     resetReadCacheForTests();
@@ -244,6 +244,7 @@ describe('lottery-api response validation', () => {
       period: '5896',
       drawDate: '2026/08/11',
       numbers: ['21', '18', '07', '44', '13', '38'],
+      drawOrderNumbers: ['21', '18', '07', '44', '13', '38'],
       specialNumber: '03',
     });
 
@@ -284,6 +285,7 @@ describe('lottery-api response validation', () => {
       period: '5897',
       drawDate: '2026/08/12',
       numbers: ['', '00', '1', '49', '50', '7'],
+      drawOrderNumbers: ['', '00', '1', '49', '50', '7'],
     });
 
     const result = await fetchLatestLotteryDraw('今彩539');
@@ -297,6 +299,7 @@ describe('lottery-api response validation', () => {
       period: '5898',
       drawDate: '2026/08/13',
       numbers: ['01', '02', '03', '04', '05', '06'],
+      drawOrderNumbers: ['01', '02', '03', '04', '05', '06'],
       specialNumber: '50',
     });
 
@@ -320,7 +323,7 @@ describe('cache freshness and draw corrections', () => {
       .mockResolvedValueOnce(jsonResponse(second));
     await fetchLatestLotteryDraw('今彩539');
     resetReadCacheForTests();
-    vi.advanceTimersByTime(299_000);
+    vi.advanceTimersByTime(29_000);
     await fetchLatestLotteryDraw('今彩539');
     vi.advanceTimersByTime(1_000);
     expect((await fetchLatestLotteryDraw('今彩539'))?.period).toBe('115208');

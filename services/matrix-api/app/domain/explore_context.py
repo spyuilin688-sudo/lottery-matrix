@@ -376,6 +376,14 @@ class ExploreContext:
         return result
 
 
+def allowed_number_orders(lottery: str, number_orders: Iterable[str] | None = None) -> tuple[str, ...]:
+    supported = (SORTED_ORDER,) if lottery == "天天樂" else (SORTED_ORDER, DRAW_ORDER)
+    selected = supported if number_orders is None else tuple(number_orders)
+    if not selected or len(selected) != len(set(selected)) or any(order not in supported for order in selected):
+        raise AlgorithmError("NUMBER_ORDER_UNSUPPORTED")
+    return selected
+
+
 @dataclass(frozen=True, slots=True)
 class ExploreEngineSession:
     lottery: str
@@ -388,13 +396,11 @@ class ExploreEngineSession:
         cls,
         lottery: str,
         newest_first: Iterable[Mapping[str, object]],
+        *,
+        number_orders: Iterable[str] | None = None,
     ) -> "ExploreEngineSession":
         history = tuple(newest_first)
-        orders = (
-            (SORTED_ORDER,)
-            if lottery == "天天樂"
-            else (SORTED_ORDER, DRAW_ORDER)
-        )
+        orders = allowed_number_orders(lottery, number_orders)
         contexts: list[ExploreContext] = []
         for number_order in orders:
             selected_history: Sequence[Mapping[str, object]] = history
@@ -403,6 +409,8 @@ class ExploreEngineSession:
 
                 try:
                     selected_history = draw_order_history(lottery, history)
+                    if any(draw.get("resultStatus", "confirmed") == "preliminary" for draw in selected_history):
+                        raise ValueError("DRAW_ORDER_HISTORY_INCOMPLETE")
                 except ValueError as error:
                     raise AlgorithmError(str(error)) from error
             contexts.append(

@@ -15,6 +15,8 @@ import {
 
 export const LOTTERY_API_BASE = RAILWAY_API_BASE;
 const LOTTERY_READ_CACHE_MS = 5 * 60 * 1_000;
+// Leave room for request latency so the next 60-second refresh cannot hit its prior snapshot.
+const LOTTERY_LATEST_CACHE_MS = 30_000;
 const latestRecords = new Map<NumberBallLottery, LotteryDrawRecord>();
 const historyRecords = new Map<string, LotteryDrawRecord[]>();
 const historyIdentities = new WeakMap<LotteryDrawRecord[], number>();
@@ -33,7 +35,7 @@ function drawFingerprint(record: LotteryDrawRecord) {
   return stableCacheKey('', {
     period: record.period, drawDate: record.drawDate, numbers: record.numbers,
     sortedNumbers: record.sortedNumbers, drawOrderNumbers: record.drawOrderNumbers,
-    specialNumber: record.specialNumber,
+    specialNumber: record.specialNumber, resultStatus: record.resultStatus,
   });
 }
 
@@ -60,7 +62,8 @@ export type LotteryDrawRecord = {
   date?: string;
   numbers: Array<string | number>;
   sortedNumbers?: Array<string | number>;
-  drawOrderNumbers?: Array<string | number>;
+  drawOrderNumbers?: Array<string | number> | null;
+  resultStatus?: 'preliminary' | 'confirmed';
   specialNumber?: string | number;
   special?: string | number;
   nextDrawAt?: string | null;
@@ -84,7 +87,7 @@ export type MatrixCardManifest = {
   period: string | null;
   generation?: string;
   generatedAt?: string;
-  cards: Record<MatrixCardOrder, { url: string }>;
+  cards: Partial<Record<MatrixCardOrder, { url: string }>>;
 };
 
 export function matrixCardUrl(path: string) {
@@ -99,12 +102,11 @@ export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promi
     `/api/matrix/cards/${encodeURIComponent(lottery)}?format=png`,
   );
   if (payload.lottery === lottery && payload.period === null) {
-    return { lottery, period: null, cards: { draw: { url: '' }, sorted: { url: '' } } };
+    return { lottery, period: null, cards: {} };
   }
   if (
     payload.lottery !== lottery
     || typeof payload.period !== 'string' || !payload.period
-    || !payload.cards?.draw?.url
     || !payload.cards?.sorted?.url
   ) {
     throw new Error('Lottery API returned invalid matrix card metadata');
@@ -115,7 +117,7 @@ export async function fetchMatrixCardManifest(lottery: NumberBallLottery): Promi
     generation: payload.generation,
     generatedAt: payload.generatedAt,
     cards: {
-      draw: { url: payload.cards.draw.url },
+      ...(payload.cards.draw?.url ? { draw: { url: payload.cards.draw.url } } : {}),
       sorted: { url: payload.cards.sorted.url },
     },
   };
@@ -246,7 +248,8 @@ function normalizeRecord(lottery: NumberBallLottery, record: LotteryDrawRecord):
     date: normalizedDrawDate,
     numbers: normalizedSortedNumbers,
     sortedNumbers: normalizedSortedNumbers,
-    drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : numbers,
+    drawOrderNumbers,
+    resultStatus: record.resultStatus ?? 'confirmed',
     specialNumber,
   };
 }
@@ -290,7 +293,8 @@ function normalizeProjectedRecord(lottery: NumberBallLottery, record: LotteryDra
     date: normalizedDrawDate,
     numbers,
     sortedNumbers: sortedNumbers.length ? sortedNumbers : undefined,
-    drawOrderNumbers: drawOrderNumbers.length ? drawOrderNumbers : undefined,
+    drawOrderNumbers,
+    resultStatus: record.resultStatus ?? 'confirmed',
     specialNumber,
   };
 }
@@ -341,18 +345,18 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
   let expiresAt = Infinity;
   return readThroughCache(
     stableCacheKey('lottery:latest', { lottery }),
-    LOTTERY_READ_CACHE_MS,
+    LOTTERY_LATEST_CACHE_MS,
     async ({ isCurrent }) => {
       // Keep the expired snapshot only for correction detection, never as fresh data.
       const stored = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, Infinity);
-      const cached = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, LOTTERY_READ_CACHE_MS);
-      if (cached) {
+      const cached = readLotteryLatestCacheEntry<LotteryDrawRecord>(lottery, LOTTERY_LATEST_CACHE_MS);
+      if (cached && cached.value.resultStatus) {
         const record = normalizeRecord(lottery, cached.value);
         const previous = latestRecords.get(lottery);
         if (previous && drawFingerprint(previous) !== drawFingerprint(record)) invalidateLotteryData(lottery);
         if (record.period) setMatrixCurrentPeriod(lottery, record.period);
         latestRecords.set(lottery, record);
-        expiresAt = cached.savedAt + LOTTERY_READ_CACHE_MS;
+        expiresAt = cached.savedAt + LOTTERY_LATEST_CACHE_MS;
         return record;
       }
       const data = await requestJson<LatestLotteryResponse>(
@@ -370,7 +374,7 @@ export async function fetchLatestLotteryDraw(lottery: NumberBallLottery): Promis
       if (record.period) setMatrixCurrentPeriod(lottery, record.period);
       latestRecords.set(lottery, record);
       writeLotteryLatestCache(lottery, record);
-      expiresAt = Date.now() + LOTTERY_READ_CACHE_MS;
+      expiresAt = Date.now() + LOTTERY_LATEST_CACHE_MS;
       return record;
     },
     { expiresAt: () => expiresAt },
@@ -402,7 +406,8 @@ export async function fetchLotteryHistory(
     async ({ isCurrent }) => {
       const stored = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit, Infinity) : null;
       const cached = drawPeriod ? readLotteryHistoryCacheEntry<LotteryDrawRecord[]>(lottery, drawPeriod, limit) : null;
-      if (cached) {
+      // Older clients persisted fabricated draw-order fallbacks. Revalidate those snapshots.
+      if (cached && cached.value.every(record => record.resultStatus)) {
         expiresAt = cached.savedAt + LOTTERY_READ_CACHE_MS;
         historyRecords.set(historyKey, cached.value);
         return cached.value;
@@ -430,7 +435,7 @@ export async function fetchLotteryHistory(
 }
 
 function orderedNumbers(record: LotteryDrawRecord, order: MatrixNumberOrder) {
-  if (order === '依實際開獎順序排序' && record.drawOrderNumbers?.length) {
+  if (order === '依實際開獎順序排序') {
     return normalizeNumberList(record.drawOrderNumbers);
   }
   return normalizeNumberList(record.sortedNumbers?.length ? record.sortedNumbers : record.numbers);

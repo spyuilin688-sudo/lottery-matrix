@@ -115,8 +115,7 @@ class DrawRefreshService:
         return self._prepare_draw(lottery, self.source.fetch(lottery))
 
     def store(self, draw: dict[str, Any]) -> dict[str, Any]:
-        self.repository.upsert_draw(draw)
-        return draw
+        return self.repository.upsert_draw(draw)
 
     def ensure_history(self, lottery: str) -> list[dict[str, Any]]:
         latest = self.repository.list_draws(lottery, 1)

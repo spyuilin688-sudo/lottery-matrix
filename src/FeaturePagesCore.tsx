@@ -1,3 +1,4 @@
+import { subscribeLotteryRefresh } from "./lottery-data-refresh";
 import { BrandHeader } from "./features/BrandHeader";
 import { useTimedState } from "./use-timed-state";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import {
   type LotteryDrawRecord,
   type MatrixNumberOrder,
   type TongXingPair,
+  type TongXingRequest,
 } from "./lottery-api";
 import { paginateHistory } from "./history-pagination";
 import { groupHistoryByCalendarWeek } from "./history-week-groups";
@@ -117,8 +119,8 @@ function useLotteryHistory(lottery: LotteryId, limit?: number) {
       }).catch(() => { if (active) setLoadState("error"); });
     };
     refresh();
-    const timer = window.setInterval(refresh, 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    const unsubscribe = subscribeLotteryRefresh(lottery, refresh);
+    return () => { active = false; unsubscribe(); };
   }, [lottery, limit, reloadRevision]);
   return { data, loadState, reload: () => setReloadRevision((current) => current + 1) };
 }
@@ -135,7 +137,7 @@ function getHistoryOrder(numberOrder: string): DrawOrder {
 function getHistoryDrawNumbers(lottery: LotteryId, record: LotteryDrawRecord, order: DrawOrder) {
   const source = order === "順球"
     ? record.sortedNumbers?.length ? record.sortedNumbers : record.numbers
-    : record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers;
+    : record.drawOrderNumbers ?? [];
   const normalized = source.map(normalizeBallNumber);
   if (lottery === "六合彩" || lottery === "大樂透") return { main: normalized.slice(0, 6), special: normalized[6] };
   return { main: normalized.slice(0, 5), special: undefined };
@@ -306,7 +308,7 @@ function PatchedDrawHistoryPage({
                   const draw = getHistoryDrawNumbers(appliedHistorySettings.lottery, record, historyOrder);
                   const issue = getDrawIssue(record);
                   const date = getDrawDate(record);
-                  return <div className="history-row draw-history-row" key={issue}><span className="draw-history-meta">{issue}</span><span className="draw-history-meta"><HistoryDate value={date} /></span><span className="history-numbers" data-has-special={Boolean(draw.special)}><span className="history-main-numbers">{draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={appliedHistorySettings.lottery} number={num} />)}</span>{draw.special ? <span className="history-special-number"><span className="history-special-plus" aria-hidden="true">+</span><span className="history-special-ball"><small className="history-special-label">特別號</small><LotteryNumberBall className="history-lottery-ball" lottery={appliedHistorySettings.lottery} number={draw.special} isSpecial /></span></span> : null}</span></div>;
+                  return <div className="history-row draw-history-row" key={issue}><span className="draw-history-meta">{issue}</span><span className="draw-history-meta"><HistoryDate value={date} /></span><span className="history-numbers" data-has-special={Boolean(draw.special)}><span className="history-main-numbers">{!draw.main.length ? "待公布" : null}{draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={appliedHistorySettings.lottery} number={num} />)}</span>{draw.special ? <span className="history-special-number"><span className="history-special-plus" aria-hidden="true">+</span><span className="history-special-ball"><small className="history-special-label">特別號</small><LotteryNumberBall className="history-lottery-ball" lottery={appliedHistorySettings.lottery} number={draw.special} isSpecial /></span></span> : null}</span></div>;
                 })}
               </section>
             );
@@ -330,6 +332,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const [appliedOrder, setAppliedOrder] = useState(order);
   const [resultGroups, setResultGroups] = useState<TongXingPair[]>([]);
   const queryRevision = useRef(0);
+  const appliedRequest = useRef<TongXingRequest | null>(null);
   useEffect(() => () => { queryRevision.current += 1; }, []);
   const [resultLoadState, setResultLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const [settingsExpanded, setSettingsExpanded] = useState(true);
@@ -340,6 +343,21 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const historyOrder = getHistoryOrder(appliedOrder);
   const resultColumns = appliedLottery === "六合彩" || appliedLottery === "大樂透" ? ["一", "二", "三", "四", "五", "六", "特"] : ["一", "二", "三", "四", "五"];
 
+  useEffect(() => subscribeLotteryRefresh(appliedLottery, () => {
+    const input = appliedRequest.current;
+    if (!input) return;
+    const revision = ++queryRevision.current;
+    void fetchTongXing(input).then(response => {
+      if (revision !== queryRevision.current) return;
+      setResultGroups(response.groups);
+      setResultLoadState(response.groups.length ? "success" : "empty");
+    }).catch(() => {
+      if (revision !== queryRevision.current) return;
+      setResultGroups([]);
+      setResultLoadState("error");
+    });
+  }), [appliedLottery]);
+
   const handleSearch = async () => {
     const hasInvalidValue = values.some((value) => value !== "" && !/^(0[1-9]|[1-4][0-9])$/.test(value));
     if (hasInvalidValue) { setValues(values.map((value) => /^(0[1-9]|[1-4][0-9])$/.test(value) ? value : "")); return; }
@@ -349,6 +367,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
       return;
     }
     const revision = ++queryRevision.current;
+    appliedRequest.current = null;
     setSettingsExpanded(false);
     setSettingsFloating(false);
     setAppliedValues(normalizedValues);
@@ -356,9 +375,11 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     setAppliedOrder(order);
     setResultGroups([]);
     setResultLoadState("loading");
+    const input = { lottery, numberOrder: order as MatrixNumberOrder, numbers: normalizedValues, futureOffset: periodOffset };
     try {
-      const response = await fetchTongXing({ lottery, numberOrder: order as MatrixNumberOrder, numbers: normalizedValues, futureOffset: periodOffset });
+      const response = await fetchTongXing(input);
       if (revision !== queryRevision.current) return;
+      appliedRequest.current = input;
       setResultGroups(response.groups);
       setResultLoadState(response.groups.length > 0 ? "success" : "empty");
     } catch {
@@ -386,7 +407,7 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     const draw = getHistoryDrawNumbers(appliedLottery, entry, historyOrder);
     const displayedNumbers = draw.special ? [...draw.main, draw.special] : [...draw.main];
     const inputNumbers = new Set(appliedValues);
-    return <div className="tongxing-table-row" data-row-type={type}><span className="tongxing-period-cell" aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date.slice(0, 10)}`}><strong>{issue}</strong><time>{date.slice(0, 10)}</time></span>{displayedNumbers.map((number, index) => <span key={`${issue}-${index}`} className={type === "locked" && inputNumbers.has(number) ? "locked-input-number" : undefined}>{number}</span>)}</div>;
+    return <div className="tongxing-table-row" data-row-type={type}><span className="tongxing-period-cell" aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date.slice(0, 10)}`}><strong>{issue}</strong><time>{date.slice(0, 10)}</time></span>{resultColumns.map((_, index) => { const number = displayedNumbers[index]; return <span key={`${issue}-${index}`} aria-label={!number ? "實際開獎順序待公布" : undefined} className={type === "locked" && inputNumbers.has(number) ? "locked-input-number" : undefined}>{number ?? "—"}</span>; })}</div>;
   };
 
   return (

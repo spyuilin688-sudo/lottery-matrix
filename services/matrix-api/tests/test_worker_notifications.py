@@ -17,7 +17,7 @@ from app.worker import ANALYSIS_VERSION, run_scheduled_worker
 TAIPEI = ZoneInfo("Asia/Taipei")
 LOTTERY = "今彩539"
 PERIOD = "000001001"
-VERSION = f"{PERIOD}:{ANALYSIS_VERSION}"
+VERSION = f"{PERIOD}:{ANALYSIS_VERSION}-sorted"
 RESULT_KEY = f"lottery_result:539:{PERIOD}"
 CARD_KEY = f"matrix_card:539:{PERIOD}"
 STATUS_KEY = f"matrix_status:539:{PERIOD}"

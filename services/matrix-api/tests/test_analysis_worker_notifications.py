@@ -17,7 +17,7 @@ from app.worker import ANALYSIS_VERSION
 
 LOTTERY = "天天樂"
 PERIOD = "11988"
-VERSION = f"{PERIOD}:{ANALYSIS_VERSION}"
+VERSION = f"{PERIOD}:{ANALYSIS_VERSION}-sorted"
 RESULT_KEY = f"lottery_result:fantasy5:{PERIOD}"
 CARD_KEY = f"matrix_card:fantasy5:{PERIOD}"
 STATUS_KEY = f"matrix_status:fantasy5:{PERIOD}"

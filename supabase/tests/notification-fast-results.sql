@@ -34,11 +34,11 @@ end;
 $$;
 
 insert into public.lottery_draws(lottery,period,draw_date,numbers,sorted_numbers)
-values ('今彩539','test-legacy-notification-date','2099-09-05','["03","08","10","28","38"]','["03","08","10","28","38"]');
+values ('今彩539','199000001','2099-09-04','["03","08","10","28","38"]','["03","08","10","28","38"]');
 do $$
 begin
-  assert private.notification_draw_date_label('{"lottery":"今彩539","period":"test-legacy-notification-date"}')
-    = private.notification_draw_date_label('{"drawDate":"2099-09-05"}'), 'legacy payload resolves its own official period date';
+  assert private.notification_draw_date_label('{"lottery":"今彩539","period":"199000001"}')
+    = private.notification_draw_date_label('{"drawDate":"2099-09-04"}'), 'legacy payload resolves its own official period date';
 end;
 $$;
 
@@ -65,8 +65,13 @@ begin
     'early result is rendered and queued for all matching members immediately';
   perform private.notification_fanout_event((v_formal->>'id')::uuid);
   assert (select count(*) from public.notification_outbox where event_id=(v_early->>'id')::uuid) = v_outbox, 'repeat source does not fan out again';
-  assert (select coalesce(jsonb_agg(to_jsonb(d) order by lottery,period),'[]'::jsonb) from public.lottery_draws d) = v_draws,
-    'early notification and duplicate acknowledgement cannot insert, update or delete formal draw data';
+  assert (select coalesce(jsonb_agg(to_jsonb(d) order by lottery,period),'[]'::jsonb) from public.lottery_draws d
+    where not (lottery='今彩539' and draw_date='2099-09-05')) = v_draws,
+    'early result preserves existing draw data';
+  assert (select count(*)=1 from public.lottery_draws where lottery='今彩539' and draw_date='2099-09-05'
+    and period='199000002' and result_status='preliminary' and draw_order_numbers is null
+    and sorted_numbers='["03","08","10","28","38"]'::jsonb),
+    'early result stores one new date with next provisional period and no fabricated draw order';
   assert private.notification_pilio_http_tick('2099-09-05T12:35:00Z') is null, 'recorded result stops source polling';
   assert private.notification_pilio_http_tick('2099-09-05T12:34:59Z') is null, 'no request before the configured window';
   assert private.notification_pilio_http_tick('2099-09-05T13:41:00Z') is null, 'no request after the final window';

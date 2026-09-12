@@ -33,6 +33,21 @@ describe('pre-generated static card downloads', () => {
     expect(observer).not.toHaveBeenCalled();
   });
 
+  it('does not download a card superseded while its PNG is loading', async () => {
+    let finish!: (response: Response) => void;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = vi.fn(() => 'blob:card'); });
+    const { downloadMatrixCardPng } = await import('../matrix-ticket-download');
+    let current = true;
+    const pending = downloadMatrixCardPng(url, '牌單.png', () => current);
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    current = false;
+    finish({ ok: true, blob: async () => png() } as Response);
+    await pending;
+    expect(click).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid image data and retries with a fresh fetch', async () => {
     const fetcher = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({ ok: true, blob: async () => new Blob(['bad'], { type: 'image/png' }) } as Response)
@@ -47,7 +62,8 @@ describe('pre-generated static card downloads', () => {
     const fetcher = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ lottery: '今彩539', period: null, cards: {} }), { headers: { 'content-type': 'application/json' } }));
     const manifest = await fetchMatrixCardManifest('今彩539');
     expect(manifest.period).toBeNull();
-    expect(manifest.cards.sorted.url).toBe('');
+    expect(manifest.cards.sorted).toBeUndefined();
+    expect(manifest.cards.draw).toBeUndefined();
     expect(String(fetcher.mock.calls[0][0])).toContain('?format=png');
   });
 });

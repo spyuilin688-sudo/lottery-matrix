@@ -1,26 +1,43 @@
-# 開獎通知與正式分析的執行順序
+# 開獎、牌單與分析的兩階段流程
 
-Pilio 只提供開獎結果通知。它不寫入 `lottery_draws`、首頁開獎資料、正式爬蟲狀態或演算法資料，也不推算期數。正式爬蟲仍沿用原本流程；該期完整分析完成後，才允許 Matrix 狀態通知，牌單通知還需要確認該期牌單已發布。
+取得當日日期與完整順球後，立即將新期資料寫入 `lottery_draws` 並建立開獎通知。期數暫用上一期加一，`result_status=preliminary`，`draw_order_numbers=NULL`。首頁、同星、對照單與歷史紀錄讀取這筆新資料；尚未取得的落球保持空白，不拿順球或舊期資料替代。
 
-開獎結果與牌單通知內文的日期均取自對應開獎資料的 `drawDate`，格式為 `MM/DD(星期)`。舊版狀態／牌單事件缺少日期時，只查詢它自己的彩種與期數，不使用發送日期。天天樂補算歷史期數時，不發送舊期通知。
+正式來源到齊後，以彩種及日期核對同一筆資料，修正期數及號碼、補上明確提供的落球，改為 `confirmed`。若期數修正影響後續暫估期數，會在同一交易中重排；已確認期數碰撞會整筆回滾，不覆蓋另一筆正式開獎。
 
-## 快速來源
+## 快速來源與開獎通知
 
-依需求提供的時間範圍，每分鐘檢查一次（Asia/Taipei，含結束分鐘）：
+既有檢查時段不變，每分鐘一次（Asia/Taipei，含結束分鐘）：
 
 | 彩種 | 時段 | 來源 |
 | --- | --- | --- |
 | 今彩539 | 20:35–20:40 | https://www.pilio.idv.tw/lto539/list.asp |
 | 大樂透 | 20:55–21:00 | https://www.pilio.idv.tw/ltobig/list.asp |
-| 六合彩 | 21:35–21:40 | https://www.pilio.idv.tw/ltohk/list.asp |
+|六合彩 | 21:35–21:40 | https://www.pilio.idv.tw/ltohk/list.asp |
 
-只接受頁面第一筆開獎資料，且日期必須是台北當日。日期不符、號碼未齊、重複或超出範圍都不發送。六碼彩種必須同時取得特別號，儲存時特別號置於第七碼；來源未提供開出順序，不推算開出順序。
+只接受頁面第一筆開獎資料，日期必須是台北當日。日期不符、號碼未齊、重複或超出範圍都不發送。六碼彩種須同時取得特別號，儲存時特別號置於第七碼；來源沒有提供落球順序，不推算。
 
-SQL 唯一索引以「彩種＋開獎日期」去重，快速來源和正式來源無論誰先到，都共用一個結果通知事件。原有依會員、事件、管道的 outbox 去重仍有效。保留正式爬蟲的期數事件鍵回應，避免既有發送端誤判請求失敗。
+`notification_fast_result_publish` 在同一交易中儲存暫定資料、建立結果事件及 outbox。SQL 唯一索引以「彩種＋開獎日期」去重，快速與正式來源共用一筆結果通知；既有會員、事件、管道去重仍有效。重試不會重建暫定資料，也不會降級已確認資料。
 
-成功取得結果後立即建立 outbox 並呼叫現有 dispatcher。若立即呼叫失敗，現有每分鐘 dispatcher 負責重試。若來源在上述時段內仍未提供完整當期結果，由正式爬蟲的結果通知補上。這是每分鐘輪詢，不保證與網站更新同一秒送達。
+`notification-pilio` 隨後呼叫現有 dispatcher，並以既有 ingest token 呼叫 Railway `/jobs/result-ready` 喚醒處理。此端點只接受資料庫最新一期的日期。喚醒失敗不撤回開獎資料或通知，排程 worker 繼續重試；dispatcher 失敗也由既有排程重試。手機實際收到通知的時間仍取決於推播服務與裝置。
+
+## 牌單、演算法與畫面
+
+| 階段 | 可用資料與工作 | 通知 |
+| --- | --- | --- |
+| 日期、順球已取得 | 更新新期資訊；立即生成順球 PNG；執行順球演算法 | 發送一次開獎通知；順球牌單不發牌單通知 |
+| 正式來源確認 | 核對期數、補落球；生成落球 PNG；接著執行落球演算法 | 落球 PNG 發布成功後才發牌單通知，無須等待全部演算法 |
+
+取消原本牌單的十分鐘等待。兩種牌單各有可用狀態；新期資訊抵達或內容修正時，舊 manifest 不再被當作新期牌單顯示或下載。發佈仍檢查快照、租約、期數、PNG 尺寸及校驗碼，處理中變更的舊工作不能覆蓋新資料。
+
+演算法使用分開的版本及租約：`<period>:matrix-python-v14-sorted`、`<period>:matrix-python-v14-draw`。每個順序完成自身所需成果後才可讀取；讀取不退回上一期。正式來源只補落球時保留順球成果；期數、順球或較早歷史資料修正時，依賴該資料的成果失效並重算。Matrix 狀態通知沿用順球狀態及既有會員偏好。
+
+天天樂正式來源僅提供順球，因此只有順球牌單及順球分析，不建立虛構落球，也不發出落球牌單完成通知。
+
+前端掛載中的同彩種資料共用每分鐘更新，回到可見頁面或恢復網路時重新確認最新資料。查詢結果更新保留尚未送出的篩選草稿。資料抵達後不等待牌單或分析才更新開獎資訊；已開啟頁面的呈現時間仍受重新查詢與網路速度影響。
 
 ## 通知文案
+
+開獎與牌單通知日期取對應資料的 `drawDate`，格式為 `MM/DD(星期)`。舊事件缺日期時只查詢自己的彩種與期數，不使用發送日期。天天樂補算歷史期數不發送舊期通知。
 
 - 選號提醒：`選號時間到了，記得完成你的選號。`
 - 開獎結果：`09/05(六) 03-08-10-28-38`
@@ -30,22 +47,12 @@ SQL 唯一索引以「彩種＋開獎日期」去重，快速來源和正式來�
 - 啟動：`發現了具備基本參考價值的版路！`
 - 牌單：`09/05(六) 最新的牌單已經更新囉！`
 
-通知標題、會員偏好、DORMANT 不通知的行為、到期提醒與系統公告不變。
-
 ## 部署與驗證
 
-1. 部署更新後的正式 worker／天天樂 analysis worker，以及 `notification-ingest`。舊資料庫 renderer 仍可接受新增的日期欄位。
-2. 部署 `notification-pilio`，使用 `--no-verify-jwt`；由既有 `MATRIX_NOTIFICATION_DISPATCH_TOKEN` 驗證伺服器呼叫。沿用 Supabase URL、service role 和現有 dispatcher，無須建立新金鑰。
-3. 套用 `20260905205428_notification_fast_results.sql` 前，重新確認既有結果事件沒有同彩種、同日期的重複資料；Vault 中已有 `matrix_project_url` 與 `matrix_notification_dispatch_token`。不要輸出秘密值。
-4. 套用 migration，建立跨來源唯一索引、更新文案及建立 `matrix-notification-pilio-minute` 排程。
-5. 開獎時檢查新事件的來源、`drawDate`、`created_at` 及 outbox 狀態。正式資料到齊後確認結果事件仍只有一筆，狀態／牌單事件晚於完整分析完成。裝置實際收到推播需另行驗證。
+1. Railway API 沿用 worker 的 `MATRIX_NOTIFICATION_INGEST_TOKEN` 與 `MATRIX_NOTIFICATION_INGEST_URL` 參照，不建立或輸出新金鑰。
+2. 依序套用 `two_stage_lottery_results`、`two_stage_card_publication`、`matrix_order_analysis_reads` migrations。
+3. 由最新 GitHub main 部署 API、正式 worker、天天樂 analysis worker 與前端。確認健康檢查的版本與合併 commit 一致。
+4. 部署 `notification-pilio`。沿用已關閉 JWT 的設定及既有 `MATRIX_NOTIFICATION_DISPATCH_TOKEN` 自訂驗證。Railway 位址可由 `MATRIX_RAILWAY_API_BASE` 指定。
+5. 只執行本次受影響的測試檔案，依 `AGENTS.md` 不執行全專案測試；涵蓋 SQL 真實交易、期數上調／下調、歷史失效、租約競爭、兩階段牌單／分析、通知去重及前端缺值。裝置實際收件須在下次真實開獎另行確認。
 
-回復時先停用新增的 `matrix-notification-pilio-minute` 排程；正式爬蟲與既有通知 dispatcher 可繼續運作。不要刪除已發送事件或 outbox 以免重複通知。
-
-驗證包含：75 項 Python 通知／worker／牌單測試、71 項 Edge Function 測試、通知 handler TypeScript strict 檢查，以及 `supabase/tests/notification-fast-results.sql` 的本機隔離 PostgreSQL 相容環境測試（PGlite，cron／Vault／HTTP 使用本機替身）。三個來源的實際 DOM 已核對。正式資料庫只讀預檢顯示重複日期組數為 0，既有兩個 Vault 設定均存在。
-
-另補三個彩種各一項來源隔離測試：通知端已有當日 Pilio 結果，且刻意使用與正式來源不同的號碼；正式來源未更新時，worker 仍回報 `not-acquired`，不執行新期分析或發布新期牌單。正式來源更新後，仍抓取及寫入正式資料，分析輸入與牌單內容均使用正式號碼，結果通知去重不阻止分析完成。SQL 驗證比較完整正式開獎資料前後內容，確認通知呼叫沒有新增、修改或刪除正式開獎資料。
-
-正式資料庫只讀檢查顯示通知事件、outbox 及投遞紀錄沒有使用者定義的觸發器；讀取通知事件／outbox 的資料庫函式均屬通知流程。首頁與牌單取用正式資料，不從通知內容填入開獎快取。原 PR 程式版本 `aa59f8c8` 的完整 GitHub CI 已通過。
-
-尚未在正式 Supabase 執行新 Edge Function 或發送實際通知；部署後仍須確認 Supabase 對 Pilio 的 HTTP 存取與手機收件。
+部署後用唯讀查詢檢查各彩種最新日期、狀態、牌單及成果版本，不以假開獎或實際會員通知作測試。若需要回復，先停用快速來源排程與處理工作；保留已發送事件、outbox 及暫定資料，避免重複通知或遺失已取得的新期資訊。

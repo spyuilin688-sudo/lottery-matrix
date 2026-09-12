@@ -164,6 +164,7 @@ def _normalize_draw(draw: dict[str, Any]) -> dict[str, Any]:
         "numbers": sorted_numbers,
         "sortedNumbers": sorted_numbers,
         "drawOrderNumbers": draw_order,
+        "resultStatus": draw.get("resultStatus", "confirmed"),
     }
 
 
@@ -174,6 +175,7 @@ def _normalize_supabase_draw(draw: dict[str, Any]) -> dict[str, Any]:
         "numbers": draw.get("numbers") or [],
         "sortedNumbers": draw.get("sorted_numbers") or draw.get("numbers") or [],
         "drawOrderNumbers": draw.get("draw_order_numbers"),
+        "resultStatus": draw.get("result_status", "confirmed"),
     })
 
 
@@ -241,7 +243,7 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
         page_size = PAGE_SIZE if remaining is None else min(PAGE_SIZE, remaining)
         response = (
             client.table("lottery_draws")
-            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status")
             .eq("lottery", lottery)
             .order("draw_date", desc=True, nullsfirst=False)
             .order("period", desc=True)
@@ -260,10 +262,9 @@ def _history(repository: AnalysisRepository, lottery: str, limit: int | None) ->
 
 
 def _ordered_numbers(draw: dict[str, Any], order: str) -> list[str]:
-    if order == "依實際開獎順序排序" and isinstance(draw.get("drawOrderNumbers"), list):
-        actual = draw["drawOrderNumbers"]
-        if actual:
-            return list(actual)
+    if order == "依實際開獎順序排序":
+        actual = draw.get("drawOrderNumbers")
+        return list(actual) if isinstance(actual, list) and draw.get("resultStatus") != "preliminary" else []
     return list(draw.get("sortedNumbers") or draw.get("numbers") or [])
 
 
@@ -275,6 +276,9 @@ def _project_draw(draw: dict[str, Any], order: str) -> dict[str, Any]:
         "drawDate": draw.get("drawDate"),
         "date": draw.get("drawDate"),
         "numbers": numbers,
+        "resultStatus": draw.get("resultStatus", "confirmed"),
+        "sortedNumbers": draw.get("sortedNumbers", draw.get("numbers", [])),
+        "drawOrderNumbers": draw.get("drawOrderNumbers"),
     }
     if len(numbers) == 7:
         projected["specialNumber"] = numbers[6]
@@ -402,6 +406,7 @@ def handle_api_request(
     request_monitor_token: str | None = None,
     refresh_lottery: Callable[[str, AnalysisRepository], dict[str, Any]] | None = None,
     recover_lottery: Callable[[str, str], str] | None = None,
+    request_notification_token: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     parsed = urlsplit(target)
     path = parsed.path
@@ -448,6 +453,21 @@ def handle_api_request(
                     lease_owner,
                 )
                 return 202, {"lottery": lottery, "status": recovery_status}
+            except Exception:
+                return 503, {"error": "RECOVERY_UNAVAILABLE"}
+        if method == "POST" and path == "/jobs/result-ready":
+            expected = environ.get("MATRIX_NOTIFICATION_INGEST_TOKEN", "").strip()
+            supplied = request_notification_token or ""
+            if not expected or not supplied or not compare_digest(expected.encode(), supplied.encode()):
+                return 403, {"error": "FORBIDDEN"}
+            ready = _decode_body(body)
+            lottery = _parse_lottery(ready.get("lottery"))
+            latest = repository.list_draws(lottery, 1)
+            if not latest or not ready.get("drawDate") or latest[0].get("drawDate") != ready["drawDate"]:
+                return 409, {"error": "RESULT_NOT_CURRENT"}
+            try:
+                result = (recover_lottery or _RECOVERY_COORDINATOR.enqueue)(lottery, None)
+                return 202, {"lottery": lottery, "status": result}
             except Exception:
                 return 503, {"error": "RECOVERY_UNAVAILABLE"}
         if method == "GET" and path.startswith(CARD_PREFIX):
@@ -577,6 +597,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             "/jobs/status",
             "/jobs/refresh",
             "/jobs/recover",
+            "/jobs/result-ready",
         }
 
     def _is_matrix_card_path(self) -> bool:
@@ -624,6 +645,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             None,
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+            request_notification_token=self.headers.get("X-Matrix-Notification-Token"),
         )
         self._send(
             status,
@@ -655,6 +677,7 @@ class RailwayApiHandler(BaseHTTPRequestHandler):
             body,
             self.repository,
             request_monitor_token=self.headers.get("X-Matrix-Admin-Token"),
+            request_notification_token=self.headers.get("X-Matrix-Notification-Token"),
         )
         self._send(status, payload, allow_cors=not protected, no_store=protected)
 

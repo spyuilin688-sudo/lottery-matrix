@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { subscribeLotteryRefresh } from "../lottery-data-refresh";
+import { useEffect, useRef, useState } from "react";
 import { DownloadIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
 import { fetchMatrixCardManifest, matrixCardUrl, type MatrixCardManifest, type MatrixCardOrder } from "../lottery-api";
@@ -18,29 +19,41 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
 
   useEffect(() => {
     let active = true;
+    let revision = 0;
     setLoading(true);
     setLoadFailed(false);
     setManifest(null);
-    void fetchMatrixCardManifest(lottery)
-      .then((nextManifest) => { if (active) setManifest(nextManifest); })
-      .catch(() => { if (active) setLoadFailed(true); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    const refresh = () => {
+      const current = ++revision;
+      void fetchMatrixCardManifest(lottery)
+        .then((nextManifest) => { if (active && current === revision) { setManifest(nextManifest); setLoadFailed(false); } })
+        .catch(() => { if (active && current === revision) { setManifest(null); setLoadFailed(true); } })
+        .finally(() => { if (active && current === revision) setLoading(false); });
+    };
+    refresh();
+    const unsubscribe = subscribeLotteryRefresh(lottery, refresh);
+    return () => { active = false; unsubscribe(); };
   }, [lottery]);
 
-  const cardPath = manifest?.cards[order]?.url;
+  const currentManifest = manifest?.lottery === lottery ? manifest : null;
+  const cardPath = currentManifest?.cards[order]?.url;
   const cardUrl = cardPath ? matrixCardUrl(cardPath) : null;
-  const cardPeriod = manifest?.period ?? null;
+  const cardPeriod = currentManifest?.period ?? null;
+  const currentCard = useRef<string | null>(null);
+  currentCard.current = cardUrl;
+  useEffect(() => () => { currentCard.current = null; }, []);
 
   const handleTicketDownload = async () => {
-    if (!cardUrl || downloadPending) return;
+    if (!cardUrl || currentCard.current !== cardUrl || downloadPending) return;
     setDownloadPending(true);
     setDownloadFailed(false);
     try {
       const { downloadMatrixCardPng } = await import("../matrix-ticket-download");
+      if (currentCard.current !== cardUrl) return;
       await downloadMatrixCardPng(
         cardUrl,
         [lottery, order === "draw" ? "落球" : "順球"].join("-") + "牌單.png",
+        () => currentCard.current === cardUrl,
       );
     } catch {
       setDownloadFailed(true);
@@ -60,12 +73,13 @@ export function MatrixCardPage({ onNavigate }: { onNavigate: Navigate }) {
       <LotteryTabs selected={lottery} onChange={setLottery} />
       <div className="matrix-card-order" role="tablist" aria-label="牌單順序">
         <button type="button" role="tab" aria-selected={order === "sorted"} className={order === "sorted" ? "is-selected" : undefined} onClick={() => setOrder("sorted")}>順球</button>
-        <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")}>落球</button>
+        <button type="button" role="tab" aria-selected={order === "draw"} className={order === "draw" ? "is-selected" : undefined} onClick={() => setOrder("draw")} disabled={!currentManifest?.cards.draw?.url} aria-label="落球" aria-description={!currentManifest?.cards.draw?.url ? "落球牌單待公布" : undefined}>落球{currentManifest && !currentManifest.cards.draw?.url ? "（待公布）" : ""}</button>
       </div>
       <section className="matrix-ticket matrix-ticket--preview" aria-busy={loading}>
         {loading ? <p>牌單載入中…</p> : null}
         {loadFailed ? <p role="alert">牌單暫時無法載入，請稍後再試</p> : null}
         {!loading && !loadFailed && !cardPeriod ? <p>尚無可用牌單</p> : null}
+        {!loading && !loadFailed && cardPeriod && !cardUrl ? <p role="status">{order === "draw" ? "落球" : "順球"}牌單待公布</p> : null}
         {!loading && !loadFailed && cardUrl && cardPeriod ? (
           <img className="matrix-ticket-image" src={cardUrl} alt={lottery + (order === "draw" ? "落球" : "順球") + "牌單，第 " + cardPeriod + " 期"} />
         ) : null}

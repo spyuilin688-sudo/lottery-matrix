@@ -215,7 +215,7 @@ def test_worker_backfills_and_analyzes_complete_history() -> None:
     result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000220:matrix-python-v13"
+    assert result["analysisVersion"] == "000000220:matrix-python-v14-sorted"
     assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
@@ -236,7 +236,7 @@ def test_worker_checks_one_month_but_keeps_full_history_for_algorithms() -> None
     assert history_lengths == [120, 120, 120, 120, 120]
 
 
-def test_production_worker_repairs_actual_draw_order_before_algorithms(monkeypatch) -> None:
+def test_production_worker_repairs_actual_history_between_sorted_and_actual_algorithms(monkeypatch) -> None:
     repository = TrackingRepository()
     source = AlgorithmHistorySource()
     calls: list[str] = []
@@ -246,14 +246,15 @@ def test_production_worker_repairs_actual_draw_order_before_algorithms(monkeypat
 
     assert result["status"] == "complete"
     assert source.events == ["history-all", "latest", "algorithm-history"]
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
+    # Adding older sorted history invalidates and rebuilds the first stage.
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"] * 3
     assert all(
         len(draw["drawOrderNumbers"]) == 5
         for draw in repository.list_draws("今彩539", None)
     )
 
 
-def test_production_worker_stops_before_algorithms_if_draw_order_is_incomplete(monkeypatch) -> None:
+def test_production_worker_publishes_sorted_but_stops_actual_if_order_history_is_incomplete(monkeypatch) -> None:
     repository = TrackingRepository()
     source = AlgorithmHistorySource(complete=False)
     calls: list[str] = []
@@ -262,7 +263,9 @@ def test_production_worker_stops_before_algorithms_if_draw_order_is_incomplete(m
     with pytest.raises(ValueError, match="DRAW_ORDER_HISTORY_INCOMPLETE"):
         run_due_worker("今彩539", repository, source)
 
-    assert calls == []
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"] * 2
+    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v14-sorted")["status"] == "complete"
+    assert repository.get_progress("今彩539", "000000220", "000000220:matrix-python-v14-draw") is None
 
 
 def test_completed_scheduled_run_does_not_read_all_history_again() -> None:
@@ -288,7 +291,7 @@ def test_worker_refreshes_latest_draw_before_targeting_recent_gap_repair() -> No
             source._draw(
                 period,
                 5,
-                (datetime(2026, 8, 25) - timedelta(days=offset)).date().isoformat(),
+                (datetime(2026, 8, 24) - timedelta(days=offset)).date().isoformat(),
             )
             | {"lottery": "今彩539"}
         )
@@ -309,7 +312,7 @@ def test_worker_has_no_fixed_minimum_history_count() -> None:
     result = run_due_worker("今彩539", repository, source, _builders(calls, history_lengths))
 
     assert result["status"] == "complete"
-    assert repository.events == ["cleanup"]
+    assert repository.events[0] == "cleanup"
     assert source.events == ["history-all", "latest"]
     assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
     assert history_lengths == [79, 79, 79, 79, 79]
@@ -352,6 +355,12 @@ def test_worker_failure_does_not_replace_an_existing_completed_lottery() -> None
         def fetch(self, lottery: str) -> dict:
             self.events.append("latest")
             return self._draw(220, 7, "2026-08-25")
+
+        def fetch_history(self, lottery: str, limit: int | None) -> list[dict]:
+            return [
+                {**row, "drawDate": "2026-08-25"} if row["period"] == "000000220" else row
+                for row in super().fetch_history(lottery, limit)
+            ]
 
     repository = InMemoryAnalysisRepository()
     run_due_worker("今彩539", repository, Source(), _builders([]))
@@ -538,7 +547,7 @@ def test_scheduled_worker_resumes_when_current_draw_is_stored_without_analysis()
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v13"
+    assert result["analysisVersion"] == "000000221:matrix-python-v14-sorted"
     assert source.events == []
 
 

@@ -184,7 +184,7 @@ export function DrawHistoryPage({
                     <span className="draw-history-meta"><HistoryDate value={date} /></span>
                     <span className="history-numbers" data-has-special={Boolean(draw.special)}>
                       <span className="history-main-numbers">
-                        {draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={appliedHistorySettings.lottery} number={num} />)}
+                        {!draw.main.length ? "待公布" : null}{draw.main.map((num, index) => <LotteryNumberBall className="history-lottery-ball" key={`${issue}-${num}-${index}`} lottery={appliedHistorySettings.lottery} number={num} />)}
                       </span>
                       {draw.special ? (
                         <span className="history-special-number">

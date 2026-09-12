@@ -63,7 +63,8 @@ def test_card_preserves_an_actual_539_sunday_draw_from_history() -> None:
         "draw",
         [
             {"drawDate": "2026-08-31", "numbers": []},
-            {"drawDate": "2026-08-30", "numbers": ["39", "38", "37", "36", "35"]},
+            {"drawDate": "2026-08-30", "numbers": ["39", "38", "37", "36", "35"],
+             "drawOrderNumbers": ["39", "38", "37", "36", "35"]},
         ],
     )
 
@@ -132,7 +133,8 @@ def test_daily_monday_uses_a_red_boxed_one() -> None:
 def test_lotto_monday_is_black_like_the_reference_in_both_orders(order: str) -> None:
     svg = render_matrix_card(
         "大樂透", order,
-        [{"drawDate": "2026-02-16", "numbers": ["38", "37", "47", "18", "02", "25", "42"]}],
+        [{"drawDate": "2026-02-16", "numbers": ["38", "37", "47", "18", "02", "25", "42"],
+          "drawOrderNumbers": ["38", "37", "47", "18", "02", "25", "42"]}],
     )
     root = ET.fromstring(svg)
     text = root.findall("{http://www.w3.org/2000/svg}text")

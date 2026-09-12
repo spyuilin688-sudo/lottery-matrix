@@ -67,12 +67,12 @@ def test_artifact_builder_reuses_one_engine_session_across_checkpoints(monkeypat
     original_build = ExploreEngineSession.build
     build_count = 0
 
-    def build_once(cls, lottery: str, newest_first: list[dict]) -> ExploreEngineSession:
+    def build_once(cls, lottery: str, newest_first: list[dict], **kwargs) -> ExploreEngineSession:
         nonlocal build_count
         build_count += 1
         if build_count > 1:
             raise AssertionError("canonical engine session rebuilt between checkpoints")
-        return original_build(lottery, newest_first)
+        return original_build(lottery, newest_first, **kwargs)
 
     monkeypatch.setattr(ExploreEngineSession, "build", classmethod(build_once))
     builders = create_artifact_builders()
