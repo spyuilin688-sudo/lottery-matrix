@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { DrawHistoryPage } from '../FeaturePages';
+import { FeaturePageRouter } from '../FeaturePagesCore';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -22,12 +22,14 @@ test('歷史篩選設定初始內嵌，探索後收合，再展開時固定為�
   Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
   vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 20, width: 195 } as DOMRect);
 
-  render(<DrawHistoryPage onNavigate={vi.fn()} />, { container: root });
+  render(<FeaturePageRouter screen="history" onNavigate={vi.fn()} />, { container: root });
   const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
   vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 120 } as DOMRect);
 
   const inlinePanel = screen.getByRole('region', { name: '歷史篩選設定' });
   expect(inlinePanel.parentElement).not.toBe(mobilePage);
+  expect(within(inlinePanel).getByRole('button', { name: '重設' }).parentElement?.className).toBe('history-filter-primary-row');
+  expect(within(header!).queryByRole('button', { name: '重設' })).toBeNull();
   expect(screen.getByRole('combobox', { name: '彩種' })).not.toBeNull();
   expect(screen.getByRole('combobox', { name: '號碼順序' })).not.toBeNull();
   expect(screen.getByRole('combobox', { name: '年份' })).not.toBeNull();
@@ -49,4 +51,9 @@ test('歷史篩選設定初始內嵌，探索後收合，再展開時固定為�
   expect(dialog.getAttribute('data-floating')).toBe('true');
   expect(dialog.parentElement).toBe(mobilePage);
   expect(dialog.style.top).toBe('128px');
+  fireEvent.change(within(dialog).getByRole('combobox', { name: '號碼順序' }), { target: { value: '依實際開獎順序排序' } });
+  fireEvent.change(within(dialog).getByRole('combobox', { name: '探索範圍' }), { target: { value: '3000期' } });
+  fireEvent.click(within(dialog).getByRole('button', { name: '重設' }));
+  expect((screen.getByRole('combobox', { name: '號碼順序' }) as HTMLSelectElement).value).toBe('依號碼由小到大排序');
+  expect((screen.getByRole('combobox', { name: '探索範圍' }) as HTMLSelectElement).value).toBe('1000期');
 });

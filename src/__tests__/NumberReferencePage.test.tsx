@@ -45,6 +45,10 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   render(<NumberReferencePage onNavigate={vi.fn()} />, { container: root });
 
   const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
+  const firstInput = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
+  fireEvent.change(firstInput, { target: { value: '07' } });
+  expect(screen.getByRole('button', { name: '刷新' }).parentElement?.className).toBe('query-selects three-cols');
+  expect(within(header!).queryByRole('button', { name: '刷新' })).toBeNull();
   Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
   vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 23, width: 195 } as DOMRect);
   vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 123 } as DOMRect);
@@ -60,6 +64,8 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   expect(dialog.style.top).toBe('131px');
   expect(dialog.style.getPropertyValue('--select-tech-surface')).toBe('#030b13');
   expect(scrollIntoView).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole('button', { name: '刷新' }));
+  expect((screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement).value).toBe('');
 });
 
 test('點擊已有號碼的輸入框時選取原號碼供直接取代', () => {

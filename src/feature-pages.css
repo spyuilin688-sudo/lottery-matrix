@@ -639,7 +639,7 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 }
 .history-filter-primary-row,
 .history-filter-secondary-row { display: grid; width: 100%; min-width: 0; gap: 6px; }
-.history-filter-primary-row { grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr); }
+.history-filter-primary-row { grid-template-columns: minmax(0, .85fr) minmax(0, 1.85fr) 52px; align-items: center; }
 .history-filter-secondary-row { grid-template-columns: minmax(0, 2.15fr) minmax(62px, .72fr) minmax(72px, .82fr); }
 .history-date-selects { display: grid; min-width: 0; grid-template-columns: 1.15fr 1fr 1fr; gap: 4px; }
 .history-filter-panel .select-box,
@@ -665,13 +665,10 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   --reference-control-height: 26px;
 }
 
-.reference-query-panel .query-selects.three-cols { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, .85fr) minmax(0, .8fr) minmax(0, 1.75fr); gap: 6px; margin-bottom: 8px; }
+.reference-query-panel .query-selects.three-cols { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, .95fr) minmax(0, .8fr) minmax(0, 1.75fr) 42px; align-items: center; gap: 6px; margin-bottom: 8px; }
 .reference-query-panel .reference-select { height: 26px; border: 1px solid #b98723; border-radius: 0; background: #07131d; }
 .reference-query-panel .select-box::before,
 .reference-query-panel .select-box::after { display: none; }
-.number-reference-screen .reference-select select { padding-left: 7px; padding-right: 25px; font-size: clamp(9px, 3vw, 13px); font-weight: 600; text-align: center; text-align-last: center; }
-.number-reference-screen .reference-select svg { right: 8px; width: 15px; }
-.number-reference-screen .reference-order-select select { padding-left: 5px; padding-right: 22px; font-size: clamp(8.5px, 2.8vw, 11.5px); }
 .reference-search input,
 .note-form input { min-width: 0; padding: 0 8px; border: 1px solid #6e4a1e; border-radius: 7px; outline: none; background: #030a10; color: #efe8dc; text-align: center; }
 .note-form input { height: 42px; }
@@ -2571,7 +2568,7 @@ opacity: .30; box-shadow: none;
   box-sizing: border-box;
   width: 100%;
   height: 68px;
-  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
+  grid-template-columns: 44px 56px minmax(0, 1fr) var(--product-header-action-width, auto);
   grid-template-areas: "back mark copy actions";
   align-items: center;
   column-gap: 10px;
@@ -2580,6 +2577,9 @@ opacity: .30; box-shadow: none;
   border: 1px solid rgba(205, 155, 62, .74);
   border-radius: 10px;
   background: #020609 var(--product-header-background, url("/assets/lottery/header-07-geometric.svg")) center / cover no-repeat;
+}
+.product-header__frame[data-actions="true"] {
+  --product-header-action-width: 60px;
 }
 .sticky-title-card-screen > .product-header,
 .number-reference-screen > .product-header {
@@ -2668,10 +2668,12 @@ opacity: .30; box-shadow: none;
   white-space: nowrap;
 }
 .product-header__actions {
-  grid-area: actions;
-  position: relative;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
   z-index: 3;
   display: flex;
+  width: var(--product-header-action-width);
   min-width: 0;
   align-items: center;
   justify-content: flex-end;

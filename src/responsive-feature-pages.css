@@ -68,10 +68,25 @@
 
 
 
-.tool-title-reset-trigger {
-  gap: 1px;
-  padding-inline: 2px;
-  background-image: none;
+.tool-settings-reset {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  height: 26px;
+  padding: 0 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: #d4d0c8;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .draw-history-screen .history-filter-trigger {
@@ -79,19 +94,23 @@
   gap: 1px;
 }
 
-.draw-history-screen .history-reset-trigger {
-  gap: 1px;
+.tool-settings-reset:hover {
+  color: var(--lottery-gold-300);
 }
 
-.number-reference-screen .reference-refresh-trigger {
-  gap: 1px;
+.tool-settings-reset:active {
+  background: rgba(213, 166, 72, .08);
 }
 
-.tool-title-reset-trigger > svg,
-.reference-refresh-icon {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
+.tool-settings-reset:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: -2px;
+}
+
+.tool-settings-reset > svg {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
 }
 
 .draw-history-screen .feature-body,
@@ -224,16 +243,16 @@
 }
 
 .reference-query-panel .reference-select select {
-  padding-left: 7px;
-  padding-right: 25px;
+  padding-left: 3px;
+  padding-right: 16px;
   font-size: clamp(9px, 3vw, 13px);
   font-weight: 600;
   text-align: center;
   text-align-last: center;
 }
 
-.reference-query-panel .reference-select svg { right: 8px; width: 15px; }
-.reference-query-panel .reference-order-select select { padding-left: 5px; padding-right: 22px; font-size: clamp(8.5px, 2.8vw, 11.5px); }
+.reference-query-panel .reference-select svg { right: 3px; width: 10px; }
+.reference-query-panel .reference-order-select select { font-size: clamp(8.5px, 2.8vw, 11.5px); }
 
 .number-reference-screen .reference-table-panel > header {
   min-height: 34px;

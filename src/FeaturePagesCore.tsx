@@ -263,7 +263,6 @@ function PatchedDrawHistoryPage({
 
   const historyTitleActions = (
     <div className="history-title-actions title-card-compact-actions">
-      <button type="button" className="history-reset-trigger title-card-compact-action tool-title-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" />重設</button>
       <button type="button" className="history-filter-trigger title-card-compact-action" aria-label={filterExpanded ? "收合篩選設定" : "展開篩選設定"} aria-expanded={filterExpanded} onClick={toggleHistoryFilters}>
         <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
         篩選設定
@@ -279,6 +278,7 @@ function PatchedDrawHistoryPage({
           <div className="history-filter-primary-row">
             <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
+            <button type="button" className="tool-settings-reset history-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" /><span>重設</span></button>
           </div>
           {yearError ? <p role="alert">年份載入失敗 <button type="button" onClick={() => setYearRevision(value => value + 1)}>重試年份</button></p> : null}
           <div className="history-filter-secondary-row">
