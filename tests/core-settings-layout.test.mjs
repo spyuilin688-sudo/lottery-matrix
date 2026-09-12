@@ -32,6 +32,7 @@ test('one outer gap keeps normal and floating settings 8px below the frame', () 
 test('core controls shrink without changing their type and use the requested backgrounds', () => {
   const css = read('src/feature-pages.css');
   assert.match(css, /\.matrix-page-switcher\s*\{[^}]*height:\s*28px;/s);
+  assert.doesNotMatch(css, /\.matrix-tiangong-screen \.tiangong-settings \.tiangong-setting-row \.segmented button\s*\{[^}]*(?:min-)?height:/s);
   const spacing = read('src/matrix-explore-spacing.css');
   assert.match(spacing, /\.matrix-explore-main-screen \.segmented button,[^{]*\{[^}]*height:\s*20px;[^}]*font-size:\s*\.75rem;/s);
   assert.match(spacing, /\.matrix-explore-main-screen \.hit-options button\s*\{[^}]*height:\s*24px;/s);

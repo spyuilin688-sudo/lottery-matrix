@@ -2190,11 +2190,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
   width: 100%;
   min-width: 0;
 }
-.matrix-tiangong-screen .tiangong-settings .tiangong-setting-row .segmented,
-.matrix-tiangong-screen .tiangong-settings .tiangong-setting-row .segmented button {
-  height: 24px;
-  min-height: 24px;
-}
 .matrix-tiangong-screen .tiangong-results-head,
 .matrix-tiangong-screen .tiangong-result-row {
   display: grid;
