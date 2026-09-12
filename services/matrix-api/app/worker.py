@@ -7,6 +7,9 @@ from typing import Any
 
 import httpx
 
+from app.domain.explore_state import DRAW_ORDER, SORTED_ORDER
+from app.domain.history_boundaries import has_complete_draw_order, period_sort_key
+from app.domain.models import lottery_position_count
 from app.repositories.card_repository import is_card_published
 from app.services.card_publication import publish_current_card
 from app.repositories.analysis_repository import AnalysisRepository, JOB_NAME_BY_LOTTERY, create_supabase_repository
@@ -34,7 +37,13 @@ EXPLORE_BATCH_SIZE = 10
 MAX_CYCLES_PER_INVOCATION = 450
 MAX_FAILURES_PER_INVOCATION = 3
 RETRY_BACKOFF_SECONDS = (15.0, 45.0)
-ANALYSIS_VERSION = "matrix-python-v13"
+ANALYSIS_VERSION = "matrix-python-v14"
+
+
+def analysis_version_for_order(period: str, number_order: str = SORTED_ORDER) -> str:
+    if number_order not in {SORTED_ORDER, DRAW_ORDER}:
+        raise ValueError("NUMBER_ORDER_UNSUPPORTED")
+    return f"{period}:{ANALYSIS_VERSION}-{'sorted' if number_order == SORTED_ORDER else 'draw'}"
 
 
 def _draw_from_history(
@@ -80,16 +89,19 @@ def _run_analysis(
     draw: dict[str, Any],
     history: list[dict[str, Any]],
     builders: Mapping[str, ArtifactBuilder] | None,
+    *,
+    number_order: str = SORTED_ORDER,
 ) -> dict[str, Any]:
     require_complete_history(
         str(draw["lottery"]), recent_history_window(history), str(draw["period"]),
     )
-    version = f'{draw["period"]}:{ANALYSIS_VERSION}'
+    version = analysis_version_for_order(str(draw["period"]), number_order)
     pipeline = AnalysisPipeline(
         repository,
         builders or create_artifact_builders(),
         version,
         explore_batch_size=EXPLORE_BATCH_SIZE,
+        number_orders=(number_order,),
     )
     failures = 0
     result: dict[str, Any] = {}
@@ -98,6 +110,8 @@ def _run_analysis(
             result = pipeline.run(draw, history)
             failures = 0
         except Exception as error:
+            if str(error) in {"ANALYSIS_DRAW_CHANGED", "ANALYSIS_RUN_LEASE_LOST"}:
+                return {"lottery": draw["lottery"], "drawPeriod": draw["period"], "analysisVersion": version, "status": "superseded"}
             failures += 1
             if failures >= MAX_FAILURES_PER_INVOCATION:
                 raise
@@ -143,22 +157,6 @@ def _emit_notification_event(
     emitted_event_keys.add(event_key)
 
 
-def _emit_early_notifications(
-    draw: dict[str, Any],
-    repository: AnalysisRepository,
-    notification_emitter: NotificationEventEmitter | None,
-    emitted_event_keys: set[str],
-) -> None:
-    if not _notification_enabled(notification_emitter):
-        return
-    events = [lottery_result_event(draw)]
-    for event in events:
-        try:
-            _emit_notification_event(notification_emitter, event, emitted_event_keys)
-        except NotificationDeliveryError:
-            continue
-
-
 def emit_ready_notifications(
     lottery: str,
     period: str,
@@ -174,10 +172,6 @@ def emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
-    version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, version)
-    if progress is None or progress.get("status") != "complete":
-        return
     if _card_ready(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
@@ -185,7 +179,11 @@ def emit_ready_notifications(
             emitted_event_keys,
         )
 
-    status_artifact = repository.read_completed_artifact(lottery, period, "status")
+    version = analysis_version_for_order(period)
+    progress = repository.get_progress(lottery, period, version)
+    if progress is None or progress.get("status") != "complete":
+        return
+    status_artifact = repository.read_artifact(lottery, period, version, "status")
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
@@ -249,47 +247,81 @@ def _expected_source_draw_dates(lottery: str, cycle: datetime) -> frozenset[str]
     return frozenset(dates)
 
 
+def _restore_stage_results(repository: AnalysisRepository, lottery: str, period: str, version: str) -> None:
+    if not repository.has_explore_results(lottery, period, version):
+        artifact = repository.read_artifact(lottery, period, version, "explore")
+        if artifact is not None:
+            repository.save_explore_results(lottery, period, version, artifact)
+    artifact = repository.read_artifact(lottery, period, version, "tianheng")
+    if artifact is not None and not repository.has_tianheng_results(lottery, period, version, len(artifact.get("items", []))):
+        repository.save_tianheng_results(lottery, period, version, artifact)
+
+
 def _resume_stored_analysis(
     lottery: str,
     repository: AnalysisRepository,
     source: DrawSource,
     latest_draw: dict[str, Any],
     builders: Mapping[str, ArtifactBuilder] | None,
+    *,
+    on_cards_ready: Callable[[], None] | None = None,
 ) -> dict[str, Any] | None:
     period = str(latest_draw["period"])
-    expected_version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, expected_version)
-    if progress is not None and progress.get("status") == "complete" and repository.has_artifact(
-        lottery, period, expected_version, "explore",
-    ):
-        if not repository.has_explore_results(lottery, period, expected_version):
-            artifact = repository.read_artifact(lottery, period, expected_version, "explore")
-            if artifact is not None:
-                repository.save_explore_results(
-                    lottery, period, expected_version, artifact,
-                )
-        artifact = repository.read_artifact(lottery, period, expected_version, "tianheng")
-        if artifact is not None:
-            expected_count = len(artifact.get("items", []))
-            if not repository.has_tianheng_results(
-                lottery, period, expected_version, expected_count,
-            ):
-                repository.save_tianheng_results(
-                    lottery, period, expected_version, artifact,
-                )
-        return None
-
+    result = None
     refresh = DrawRefreshService(repository, source)
-    history: list[dict[str, Any]] | None = None
-    if builders is None:
-        history = refresh.ensure_algorithm_history(lottery)
-    else:
-        refresh.ensure_history(lottery)
-    repository.cleanup_expired(datetime.now(UTC))
-    if history is None:
-        history = repository.list_draws(lottery, None)
-    draw = _draw_from_history(lottery, period, history)
-    return _run_analysis(repository, draw, history, builders)
+    for number_order in (SORTED_ORDER, DRAW_ORDER):
+        current = repository.get_draw(lottery, period)
+        if current is None:
+            return {"lottery": lottery, "drawPeriod": period, "status": "superseded"}
+        if number_order == DRAW_ORDER and (lottery == "天天樂" or current.get("resultStatus", "confirmed") == "preliminary"):
+            break
+        version = analysis_version_for_order(period, number_order)
+        progress = repository.get_progress(lottery, period, version)
+        if progress is not None and progress.get("status") == "complete" and repository.has_artifact(lottery, period, version, "explore"):
+            _restore_stage_results(repository, lottery, period, version)
+            continue
+        history_error: Exception | None = None
+        if number_order == SORTED_ORDER:
+            # Preliminary work uses the already stored sorted history and never
+            # starts the expensive actual-order archive repair path.
+            if current.get("resultStatus", "confirmed") != "preliminary":
+                refresh.ensure_history(lottery)
+            history = repository.list_draws(lottery, None)
+        elif builders is None:
+            try:
+                history = refresh.ensure_algorithm_history(lottery)
+            except Exception as error:
+                # Archive repair can persist sorted corrections before failing
+                # its actual-order validation. Keep that sorted stage current.
+                history_error = error
+                history = repository.list_draws(lottery, None)
+        else:
+            if not has_complete_draw_order(current, lottery_position_count(lottery)):
+                break
+            history = repository.list_draws(lottery, None)
+        history = sorted(
+            (row for row in history if period_sort_key(lottery, row["period"]) <= period_sort_key(lottery, period)),
+            key=lambda row: period_sort_key(lottery, row["period"]), reverse=True,
+        )
+        draw = _draw_from_history(lottery, period, history)
+        if number_order == DRAW_ORDER:
+            publish_current_card(lottery, repository)
+            if on_cards_ready is not None:
+                on_cards_ready()
+            if repository.get_progress(lottery, period, analysis_version_for_order(period)) is None:
+                repaired = _run_analysis(repository, draw, history, builders, number_order=SORTED_ORDER)
+                result = repaired
+                if repaired.get("status") == "superseded":
+                    return repaired
+            if history_error is not None:
+                raise history_error
+        repository.cleanup_expired(datetime.now(UTC))
+        stage_result = _run_analysis(repository, draw, history, builders, number_order=number_order)
+        if result is None or stage_result.get("status") != "complete" or result.get("status") == "complete":
+            result = stage_result
+        if stage_result.get("status") == "superseded":
+            return stage_result
+    return result
 
 
 def run_scheduled_worker(
@@ -304,6 +336,15 @@ def run_scheduled_worker(
     emitted_event_keys: set[str] = set()
     latest = repository.list_draws(lottery, 1)
     publish_current_card(lottery, repository, now)
+    def notify_cards(*, final: bool = False) -> None:
+        current = repository.list_draws(lottery, 1)
+        if current:
+            try:
+                emit_ready_notifications(lottery, str(current[0]["period"]), repository, notification_emitter, emitted_event_keys)
+            except NotificationDeliveryError:
+                if final:
+                    raise
+    notify_cards()
     if allow_recovery_crawl:
         cycle = due_call_cycle(lottery, now, allow_weekend_fallback=True)
     else:
@@ -311,7 +352,7 @@ def run_scheduled_worker(
 
     if cycle is None:
         if latest:
-            resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
+            resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
             if resumed is not None:
                 if resumed.get("status") == "complete":
                     emit_ready_notifications(
@@ -336,7 +377,7 @@ def run_scheduled_worker(
     oldest_expected_draw_date = min(expected_draw_dates)
     latest_draw_date = _normalized_draw_date(latest[0].get("drawDate")) if latest else ""
 
-    if latest and (
+    if latest and latest[0].get("resultStatus", "confirmed") != "preliminary" and (
         latest_draw_date in expected_draw_dates
         or (is_pre_draw_recovery and latest_draw_date > oldest_expected_draw_date)
     ):
@@ -346,7 +387,7 @@ def run_scheduled_worker(
                 "drawPeriod": latest[0]["period"],
                 "status": "already-acquired",
             }
-        resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders)
+        resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
         if resumed is not None:
             if resumed.get("status") == "complete":
                 emit_ready_notifications(
@@ -371,6 +412,10 @@ def run_scheduled_worker(
         }
 
     if not allow_recovery_crawl and current_minute != cycle:
+        if latest and latest[0].get("resultStatus") == "preliminary":
+            resumed = _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
+            if resumed is not None:
+                return resumed
         return {"lottery": lottery, "status": "not-due"}
 
     database_period = str(latest[0]["period"]) if latest else None
@@ -405,15 +450,10 @@ def run_scheduled_worker(
                 "writtenPeriod": None,
             }
 
-        refresh.store(draw)
+        draw = refresh.store(draw)
         refresh.ensure_history(lottery)
         publish_current_card(lottery, repository, now)
-        _emit_early_notifications(
-            draw,
-            repository,
-            notification_emitter,
-            emitted_event_keys,
-        )
+        notify_cards()
         return {
             "lottery": lottery,
             "drawPeriod": draw["period"],
@@ -423,29 +463,23 @@ def run_scheduled_worker(
             "writtenPeriod": source_period,
         }
 
-    acquisition = _run_tracked_job(lottery, repository, acquire)
+    try:
+        acquisition = _run_tracked_job(lottery, repository, acquire)
+    except httpx.HTTPError:
+        if latest and latest[0].get("resultStatus") == "preliminary":
+            _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
+        raise
     if acquisition["status"] != "acquired":
-        return {
-            "lottery": lottery,
-            "drawPeriod": acquisition["drawPeriod"],
-            "status": acquisition["status"],
-        }
+        if latest and latest[0].get("resultStatus") == "preliminary":
+            _resume_stored_analysis(lottery, repository, source, latest[0], builders, on_cards_ready=notify_cards)
+        return {"lottery": lottery, "drawPeriod": acquisition["drawPeriod"], "status": acquisition["status"]}
 
-    if builders is None:
-        history = refresh.ensure_algorithm_history(lottery)
-    else:
-        history = repository.list_draws(lottery, None)
-    draw = _draw_from_history(lottery, str(acquisition["drawPeriod"]), history)
-    result = _run_analysis(repository, draw, history, builders)
-    if result.get("status") == "complete":
-        emit_ready_notifications(
-            lottery,
-            str(acquisition["drawPeriod"]),
-            repository,
-            notification_emitter,
-            emitted_event_keys,
-        )
-    return result
+    stored = repository.get_draw(lottery, str(acquisition["drawPeriod"]))
+    if stored is None:
+        return {"lottery": lottery, "drawPeriod": acquisition["drawPeriod"], "status": "superseded"}
+    result = _resume_stored_analysis(lottery, repository, source, stored, builders, on_cards_ready=notify_cards)
+    notify_cards(final=True)
+    return result or {"lottery": lottery, "drawPeriod": acquisition["drawPeriod"], "status": "already-acquired"}
 
 
 def create_notification_emitter(

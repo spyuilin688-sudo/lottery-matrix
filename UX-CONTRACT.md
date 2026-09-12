@@ -223,11 +223,15 @@ The production build stamps `push-service-worker.js` with a fingerprint derived 
 - Authenticated request failures retain the existing failure message, retry
   control and protection against overwriting unknown remote settings.
 
-## Pre-generated Matrix cards — 2026-09-05
+## Two-stage lottery results and cards — 2026-09-13
 
-The existing four-lottery, sorted/draw tabs and download confirmation remain the card-page flow. New clients request the PNG manifest explicitly. Its period and both URLs describe the latest complete published generation; an ungenerated newer draw never relabels the older image. Preview and confirmed download use the same immutable PNG bytes, with no browser rasterization or document-wide observer. Download failure remains inline and retryable. The prior SVG manifest/routes remain available to installed older PWA clients during rollout.
+The notification source supplies a fresh date and sorted numbers. Persist that information and enqueue the deduplicated lottery-result notification immediately; estimate its period as the preceding period plus one. Home, TongXing, NumberReference and history show available current information. Missing actual-order balls and their special ball remain absent, never reconstructed from sorted numbers or an older draw. Mounted readers share a one-minute refresh cadence and revalidate on visibility/network recovery. Formal enrichment and period correction invalidate derived caches.
 
-Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled CJK and Arial-compatible font subsets make generated PNG text deterministic across worker hosts. Publication waits ten minutes after the publisher first observes a complete snapshot, then runs on the next available worker tick; this does not promise an exact ten-minute completion time. A missing period, invalid numbers, failed upload, or lost lease retains the previous complete card. Card-ready notifications require the matching published period.
+Formal data reconciles the same lottery and date, corrects the estimated period, and fills explicit actual order. Later provisional issue estimates move with a corrected period under the same transaction. Changed historical inputs invalidate dependent current analyses. Per-order analyses use distinct versions; Tiangong and officially sorted-only 天天樂 stay sorted-only.
+
+Card PNGs publish without the former ten-minute waiting period. The current manifest may contain only the sorted card; unavailable orders show 待公布 and cannot be downloaded. Older period images are hidden while the current generation is unavailable. Preview and confirmed download use the same immutable PNG bytes; a changed manifest cancels an old pending confirmation/download. Download failures remain inline and retryable. Existing 2276 × 3438 print geometry, bundled fonts and tabs remain unchanged.
+
+After result notification dispatch, the trusted producer requests immediate background processing; the scheduled worker retries if that request fails. Sorted-card generation precedes sorted analysis; formal actual-card generation precedes actual analysis. Card-ready notification requires the current confirmed actual PNG to be published and does not wait for all algorithms. A card upload failure cannot publish a manifest or generate a card-ready notification. Missing actual order is never invented for 天天樂.
 
 ## 2026-09-08：查詢與設定回應
 

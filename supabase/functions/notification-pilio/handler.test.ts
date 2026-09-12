@@ -54,3 +54,21 @@ it('still rejects a POST without the dispatch token', async () => {
   expect((await test.handler(new Request('https://example.test/notification-pilio', { method: 'POST' }))).status).toBe(401);
   expect(test.calls).toEqual([]);
 });
+
+it('requests processing after result dispatch and leaves a failed wake-up to the scheduled worker', async () => {
+  const calls: string[] = [];
+  const handler = createPilioNotificationHandler({
+    dispatchToken: 'test-secret', now: () => new Date('2026-09-05T12:35:00Z'),
+    async isRecorded() { return false; }, async fetchPage() { return html; },
+    async publish() { calls.push('persist-result-and-event'); return { created: true }; },
+    async dispatch() { calls.push('dispatch'); },
+    async requestProcessing(result) {
+      calls.push(`process:${result.lottery}:${result.drawDate}`);
+      throw new Error('worker temporarily unavailable');
+    },
+  });
+  const response = await handler(request());
+  expect(calls).toEqual(['persist-result-and-event', 'dispatch', 'process:今彩539:2026-09-05']);
+  expect(response.status).toBe(200);
+  expect((await response.json()).processing).toEqual([{ lottery: '今彩539', status: 'retry-by-scheduled-worker' }]);
+});

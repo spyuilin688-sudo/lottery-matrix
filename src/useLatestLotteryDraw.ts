@@ -1,3 +1,4 @@
+import { subscribeLotteryRefresh } from "./lottery-data-refresh";
 import { useEffect, useState } from 'react';
 import type { NumberBallLottery } from './NumberBall';
 import { fetchLatestLotteryDraw, type LotteryDrawRecord } from './lottery-api';
@@ -31,11 +32,11 @@ export function useLatestLotteryDraw(lottery: NumberBallLottery) {
     };
 
     refreshLatestDraw();
-    const refreshTimer = window.setInterval(refreshLatestDraw, 60_000);
+    const unsubscribe = subscribeLotteryRefresh(lottery, refreshLatestDraw);
 
     return () => {
       active = false;
-      window.clearInterval(refreshTimer);
+      unsubscribe();
     };
   }, [lottery]);
 

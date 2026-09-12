@@ -18,7 +18,7 @@ DRAW = {
     "lottery": "今彩539", "period": "114001",
     "numbers": ["01", "02", "03", "04", "05"],
 }
-VERSION = "114001:matrix-python-v13"
+VERSION = "114001:matrix-python-v14-sorted"
 
 
 def empty_artifact():
@@ -331,7 +331,7 @@ def test_completed_workers_restore_each_missing_normalized_result_set(monkeypatc
         )
 
     def no_reanalysis(*args, **kwargs):
-        pytest.fail("completed v13 runs must repair from artifacts without reanalysis")
+        pytest.fail("completed sorted runs must repair from artifacts without reanalysis")
 
     monkeypatch.setattr(worker, "_run_analysis", no_reanalysis)
     monkeypatch.setattr(analysis_worker, "_run_analysis", no_reanalysis)

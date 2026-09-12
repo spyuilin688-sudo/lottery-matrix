@@ -44,6 +44,7 @@ class AnalysisRepository(Protocol):
     ) -> None: ...
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]: ...
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
+    def get_draw(self, lottery: str, period: str) -> dict[str, Any] | None: ...
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]: ...
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]: ...
     def begin_run(self, lottery: str, draw_period: str, analysis_version: str, started_at: str, *, owner_id: str | None = None, lease_seconds: int = ANALYSIS_RUN_LEASE_SECONDS) -> dict[str, Any]: ...
@@ -162,11 +163,71 @@ class InMemoryAnalysisRepository:
 
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
         stored = dict(draw)
+        stored.setdefault("resultStatus", "confirmed")
+        lottery, period = stored["lottery"], stored["period"]
+        rebased_periods: set[str] = set()
+        previous = self.draws.get((lottery, period))
+        for key, candidate in list(self.draws.items()):
+            if key[0] != lottery or not stored.get("drawDate") or candidate.get("drawDate") != stored["drawDate"]:
+                continue
+            if stored["resultStatus"] == "preliminary" and candidate.get("resultStatus", "confirmed") == "confirmed":
+                return dict(candidate)
+            if candidate.get("resultStatus") == "preliminary":
+                previous = candidate
+                break
+        if previous is not None and previous.get("resultStatus", "confirmed") == "confirmed":
+            if stored["resultStatus"] == "preliminary":
+                return dict(previous)
+            if previous.get("drawDate") and stored.get("drawDate") and previous["drawDate"] != stored["drawDate"]:
+                raise ValueError("DRAW_PERIOD_DATE_CONFLICT")
+        if previous is not None and previous.get("resultStatus") == "preliminary" and stored["resultStatus"] == "confirmed" and previous["period"] != period:
+            anchor = period
+            pending: list[tuple[tuple[str, str], dict[str, Any]]] = []
+            later = sorted((row for (name, _), row in self.draws.items() if name == lottery
+                            and str(row.get("drawDate") or "") > str(stored.get("drawDate") or "")),
+                           key=lambda row: str(row["drawDate"]))
+            for row in later:
+                if row.get("resultStatus", "confirmed") == "confirmed":
+                    anchor = row["period"]
+                else:
+                    estimate = str(int(anchor) + 1).zfill(max(len(anchor), len(row["period"])))
+                    pending.append(((lottery, row["period"]), {**row, "period": estimate}))
+                    anchor = estimate
+            pending_keys = {key for key, _ in pending}
+            for _, row in pending:
+                key = (lottery, row["period"])
+                if key in self.draws and key not in pending_keys and key != (lottery, previous["period"]):
+                    raise ValueError("DRAW_PERIOD_DATE_CONFLICT")
+            for key, _ in pending:
+                del self.draws[key]
+                rebased_periods.add(key[1])
+            for _, row in pending:
+                self.draws[(lottery, row["period"])] = row
+        sorted_changed = previous is None or any(previous.get(field) != stored.get(field) for field in ("period", "drawDate", "numbers"))
+        sorted_changed = sorted_changed or previous.get("sortedNumbers", previous["numbers"]) != stored.get("sortedNumbers", stored["numbers"])
+        actual_changed = previous is None or previous.get("drawOrderNumbers") != stored.get("drawOrderNumbers") or previous.get("resultStatus") != stored.get("resultStatus")
+        if sorted_changed or actual_changed:
+            dates = [str(value).replace("/", "-").replace(".", "-") for value in (stored.get("drawDate"), (previous or stored).get("drawDate")) if value]
+            cutoff = min(dates) if len(dates) == 2 else ""
+            affected = rebased_periods | ({previous["period"]} if previous else set()) | {
+                row["period"] for (name, _), row in self.draws.items() if name == lottery
+                and (not cutoff or str(row.get("drawDate") or "").replace("/", "-").replace(".", "-") >= cutoff)
+            }
+            for records in (self.runs, self.artifacts, self.artifact_chunks, self.explore_results, self.tianheng_results):
+                for key in list(records):
+                    if key[0] == lottery and key[1] in affected and (sorted_changed or not key[2].endswith("-sorted")):
+                        del records[key]
+        if previous is not None and previous["period"] != period and self.draws.get((lottery, previous["period"])) is previous:
+            self.draws.pop((lottery, previous["period"]), None)
         self.draws[(stored["lottery"], stored["period"])] = stored
         return stored
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [self.upsert_draw(draw) for draw in draws]
+
+    def get_draw(self, lottery: str, period: str) -> dict[str, Any] | None:
+        draw = self.draws.get((lottery, period))
+        return dict(draw) if draw is not None else None
 
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:
         matches = [draw for (name, _), draw in self.draws.items() if name == lottery]
@@ -187,6 +248,7 @@ class InMemoryAnalysisRepository:
                 "numbers": draw["numbers"],
                 "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),
                 "drawOrderNumbers": draw.get("drawOrderNumbers"),
+                "resultStatus": draw.get("resultStatus", "confirmed"),
             }
             for draw in newest
         ]
@@ -213,6 +275,7 @@ class InMemoryAnalysisRepository:
                 "numbers": draw["numbers"],
                 "sortedNumbers": draw.get("sortedNumbers", draw["numbers"]),
                 "drawOrderNumbers": draw.get("drawOrderNumbers"),
+                "resultStatus": draw.get("resultStatus", "confirmed"),
             }
             for draw in ordered
         ]
@@ -233,7 +296,9 @@ class InMemoryAnalysisRepository:
     ) -> None:
         if owner_id is None:
             return
-        run = self.runs[(lottery, draw_period, analysis_version)]
+        run = self.runs.get((lottery, draw_period, analysis_version))
+        if run is None:
+            raise RuntimeError("ANALYSIS_RUN_LEASE_LOST")
         expires_at = run.get("leaseExpiresAt")
         if (
             run.get("leaseOwner") != owner_id
@@ -585,6 +650,7 @@ class SupabaseAnalysisRepository:
             "numbers": draw["numbers"],
             "sortedNumbers": draw.get("sorted_numbers", draw["numbers"]),
             "drawOrderNumbers": draw.get("draw_order_numbers"),
+            "resultStatus": draw.get("result_status", "confirmed"),
         }
 
     @staticmethod
@@ -596,6 +662,7 @@ class SupabaseAnalysisRepository:
             "sorted_numbers": draw.get("sortedNumbers", draw["numbers"]),
             "draw_order_numbers": draw.get("drawOrderNumbers"),
             "source_id": draw.get("sourceId"),
+            "result_status": draw.get("resultStatus", "confirmed"),
         }
 
     @staticmethod
@@ -707,18 +774,21 @@ class SupabaseAnalysisRepository:
         return items
 
     def upsert_draw(self, draw: dict[str, Any]) -> dict[str, Any]:
-        record = self._draw_record(draw)
-        response = self.client.table("lottery_draws").upsert(record, on_conflict="lottery,period").execute()
-        return self._one(response)
+        stored = self.upsert_draws([draw])[0]
+        return {"lottery": stored["lottery"], **self._normalize_draw(stored), "sourceId": stored.get("source_id")}
 
     def upsert_draws(self, draws: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not draws:
             return []
         records = [self._draw_record(draw) for draw in draws]
-        response = self.client.table("lottery_draws").upsert(
-            records, on_conflict="lottery,period",
-        ).execute()
+        response = self.client.rpc("matrix_upsert_draws", {"p_draws": records}).execute()
         return [dict(record) for record in response.data]
+
+    def get_draw(self, lottery: str, period: str) -> dict[str, Any] | None:
+        response = self.client.table("lottery_draws").select(
+            "period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status"
+        ).eq("lottery", lottery).eq("period", period).limit(1).execute()
+        return self._normalize_draw(response.data[0]) if response.data else None
 
     def list_draws(self, lottery: str, limit: int | None = None) -> list[dict[str, Any]]:
         if limit is not None and limit <= 0:
@@ -741,7 +811,7 @@ class SupabaseAnalysisRepository:
             page_size = DRAW_PAGE_SIZE if limit is None else min(DRAW_PAGE_SIZE, limit - len(draws))
             response = (
                 self.client.table("lottery_draws")
-                .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+                .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status")
                 .eq("lottery", lottery)
                 .order("draw_date", desc=True, nullsfirst=False)
                 .order("period", desc=True)
@@ -786,7 +856,7 @@ class SupabaseAnalysisRepository:
     def list_draws_since(self, lottery: str, since_date: str) -> list[dict[str, Any]]:
         response = (
             self.client.table("lottery_draws")
-            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers")
+            .select("period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status")
             .eq("lottery", lottery)
             .gte("draw_date", since_date)
             .order("draw_date", desc=True, nullsfirst=False)

@@ -20,7 +20,7 @@ PAYLOAD = {"items": [{"id": "retained-result", "number": "07"}], "validationById
 
 
 def seed_complete(repository, lottery, period, draw_date, version=None):
-    version = version or f"{period}:{ANALYSIS_VERSION}"
+    version = version or f"{period}:{ANALYSIS_VERSION}-sorted"
     draw = {
         "lottery": lottery, "period": period, "drawDate": draw_date,
         "numbers": [f"{number:02d}" for number in range(1, 8 if lottery == "六合彩" else 6)],
@@ -40,6 +40,14 @@ def seed_complete(repository, lottery, period, draw_date, version=None):
 
 def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
     repository = InMemoryAnalysisRepository()
+    # Seed older source rows first: inserting historical data after analysis
+    # correctly invalidates every dependent newer run.
+    failed = ("六合彩", "026089", f"026089:{ANALYSIS_VERSION}-sorted")
+    seed_complete(repository, *failed[:2], "2026-08-20")
+    repository.runs[failed]["status"] = "failed"
+    active = ("六合彩", "026090", f"026090:{ANALYSIS_VERSION}-sorted")
+    seed_complete(repository, *active[:2], "2026-08-22")
+    repository.runs[active]["status"] = "running"
     for period, draw_date in [
         ("026091", "2026-08-25"), ("026092", "2026-08-27"),
         ("026093", "2026-08-29"), ("026094", "2026-09-01"),
@@ -50,13 +58,7 @@ def test_cleanup_keeps_latest_three_completed_periods_and_running_checkpoints():
     seed_complete(repository, "六合彩", "026095", "2026-09-03", "previous-version")
     seed_complete(repository, "天天樂", "260901", "2026-09-01")
     # Completion time must not replace draw ordering.
-    repository.runs[("六合彩", "026091", f"026091:{ANALYSIS_VERSION}")]["completedAt"] = NOW.isoformat()
-    active = ("六合彩", "026090", f"026090:{ANALYSIS_VERSION}")
-    seed_complete(repository, *active[:2], "2026-08-22")
-    repository.runs[active]["status"] = "running"
-    failed = ("六合彩", "026089", f"026089:{ANALYSIS_VERSION}")
-    seed_complete(repository, *failed[:2], "2026-08-20")
-    repository.runs[failed]["status"] = "failed"
+    repository.runs[("六合彩", "026091", f"026091:{ANALYSIS_VERSION}-sorted")]["completedAt"] = NOW.isoformat()
     for collection in (repository.artifacts, repository.artifact_chunks, repository.explore_results):
         for record in collection.values():
             record["expiresAt"] = NOW - timedelta(seconds=1)

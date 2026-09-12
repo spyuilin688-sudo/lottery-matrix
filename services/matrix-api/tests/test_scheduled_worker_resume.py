@@ -112,7 +112,7 @@ def test_scheduled_worker_resumes_analysis_after_current_draw_is_already_stored(
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v13"
+    assert result["analysisVersion"] == "000000221:matrix-python-v14-sorted"
     assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
@@ -129,11 +129,11 @@ def test_scheduled_worker_resumes_incomplete_analysis_between_polling_windows() 
     )
 
     assert result["status"] == "complete"
-    assert result["analysisVersion"] == "000000221:matrix-python-v13"
+    assert result["analysisVersion"] == "000000221:matrix-python-v14-sorted"
     assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
 
 
-def test_production_resume_repairs_actual_order_before_algorithms(monkeypatch) -> None:
+def test_production_resume_repairs_actual_order_after_sorted_algorithms(monkeypatch) -> None:
     repository = _repository_with_history()
     source = DrawOrderRepairSource()
     calls: list[str] = []
@@ -152,7 +152,8 @@ def test_production_resume_repairs_actual_order_before_algorithms(monkeypatch) -
 
     assert result["status"] == "complete"
     assert source.algorithm_requests == ["今彩539"]
-    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"]
+    # Sorted analysis is rebuilt after the archive inserts its missing boundary.
+    assert calls == ["explore", "tianheng", "tianyan", "tiangong", "status"] * 3
 
 
 def test_completed_scheduled_analysis_does_not_read_all_history_again() -> None:

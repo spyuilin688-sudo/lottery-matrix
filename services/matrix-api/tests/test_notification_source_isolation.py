@@ -19,7 +19,7 @@ from tests.test_worker_notifications import _builders
     ("六合彩", "marksix", 21, 33, 7),
     ("大樂透", "lotto649", 20, 53, 7),
 ])
-def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
+def test_sorted_stage_is_available_before_formal_and_card_notification_waits_for_actual(
     monkeypatch, lottery, code, hour, minute, count,
 ):
     day = 29 if lottery == "六合彩" else 28
@@ -66,9 +66,11 @@ def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
     assert old_manifest["period"] == "1000"
     monkeypatch.setattr(worker, "publish_current_card", lambda name, repo, time=None: publisher.ensure_current(name, time))
 
-    # The notification endpoint already holds today's Pilio result. Deliberately
-    # use different numbers, so any leak into formal data is observable.
+    # Pilio persists only sorted numbers. Formal correction deliberately changes
+    # those numbers, proving derived results cannot keep the preliminary input.
     early_event = {"source": "pilio", "lottery": lottery, "drawDate": now.date().isoformat(), "numbers": early_numbers}
+    repository.upsert_draw({**draw(1001, now), "numbers": early_numbers, "sortedNumbers": early_numbers,
+                            "drawOrderNumbers": None, "resultStatus": "preliminary"})
     emitted = []
 
     def ingest(request):
@@ -85,7 +87,11 @@ def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
 
     def explore(context):
         inputs.append(deepcopy(context["draw"]))
-        assert all(row["numbers"] == formal_numbers for row in context["history"])
+        if context["draw"].get("resultStatus") == "preliminary":
+            assert context["history"][0]["numbers"] == early_numbers
+            assert context["numberOrders"] == ("依號碼由小到大排序",)
+        else:
+            assert all(row["numbers"] == formal_numbers for row in context["history"])
         return {"items": [], "validationById": {}}
 
     builders["explore"] = explore
@@ -94,10 +100,14 @@ def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
         emitter = NotificationEventEmitter("https://example.invalid/notification-ingest", "test-token", client)
         waiting = worker.run_scheduled_worker(lottery, now, repository, source, builders, emitter)
         assert waiting["status"] == "not-acquired"
-        assert repository.list_draws(lottery, 1)[0]["period"] == "1000"
-        assert repository.get_progress(lottery, "1001", f"1001:{worker.ANALYSIS_VERSION}") is None
-        assert cards.row["manifest"] == old_manifest
-        assert inputs == []
+        assert repository.list_draws(lottery, 1)[0]["period"] == "1001"
+        assert repository.get_progress(lottery, "1001", f"1001:{worker.ANALYSIS_VERSION}-sorted")["status"] == "complete"
+        assert repository.get_progress(lottery, "1001", f"1001:{worker.ANALYSIS_VERSION}-draw") is None
+        assert cards.row["manifest"]["period"] == "1001"
+        assert set(cards.row["manifest"]["cards"]) == {"sorted"}
+        assert inputs and inputs[0]["numbers"] == early_numbers
+        assert not any(event["eventType"] == "matrix_card" for event in emitted)
+        inputs.clear()
 
         source.ready = True
         finished = worker.run_scheduled_worker(lottery, now, repository, source, builders, emitter)
@@ -105,11 +115,11 @@ def test_early_notification_cannot_replace_formal_acquisition_analysis_or_cards(
         assert source.fetches == 2
         assert repository.list_draws(lottery, 1)[0]["numbers"] == formal_numbers
         assert inputs and all(row["period"] == "1001" and row["numbers"] == formal_numbers for row in inputs)
-        assert repository.get_progress(lottery, "1001", f"1001:{worker.ANALYSIS_VERSION}")["status"] == "complete"
-        assert cards.row["manifest"] == old_manifest
-        assert [event["eventType"] for event in emitted] == ["lottery_result", "matrix_status"]
+        assert repository.get_progress(lottery, "1001", f"1001:{worker.ANALYSIS_VERSION}-draw")["status"] == "complete"
+        assert set(cards.row["manifest"]["cards"]) == {"sorted", "draw"}
+        assert any(event["eventType"] == "matrix_card" for event in emitted)
 
-        manifest = publisher.ensure_current(lottery, now + timedelta(minutes=10))
+        manifest = publisher.ensure_current(lottery, now)
         assert manifest["period"] == "1001"
         assert rendered[-1][0]["numbers"] == formal_numbers
         worker.emit_ready_notifications(lottery, "1001", repository, emitter, set())

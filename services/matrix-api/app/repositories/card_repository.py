@@ -137,9 +137,26 @@ def card_repository(repository: Any) -> CardRepository | None:
 
 def published_manifest(lottery: str, repository: Any) -> dict[str, Any] | None:
     cards = card_repository(repository)
-    return cards.read_manifest(lottery) if cards is not None else None
+    manifest = cards.read_manifest(lottery) if cards is not None else None
+    if not manifest:
+        return None
+    # Import locally because the publisher depends on the storage transport.
+    from app.card_renderer import card_layout, supported_card_orders
+    from app.services.card_publication import complete_snapshot, snapshot_digest
+
+    draws = repository.list_draws(lottery, sum(card_layout(lottery)['column_rows']))
+    if (not complete_snapshot(lottery, draws)
+            or manifest.get('period') != str(draws[0]['period'])
+            or manifest.get('generation') != snapshot_digest(lottery, draws)):
+        return None
+    available = manifest.get('cards', {})
+    orders = supported_card_orders(lottery, draws)
+    if not isinstance(available, dict) or 'sorted' not in available:
+        return None
+    return {**manifest, 'cards': {order: available[order] for order in orders if order in available}}
 
 
-def is_card_published(lottery: str, period: str, repository: Any) -> bool:
+def is_card_published(lottery: str, period: str, repository: Any, *, order: str = 'draw') -> bool:
     manifest = published_manifest(lottery, repository)
-    return bool(manifest and manifest.get('period') == period)
+    return bool(manifest and manifest.get('period') == period
+                and manifest.get('cards', {}).get(order))

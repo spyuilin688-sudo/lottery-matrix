@@ -85,8 +85,14 @@ def fixture(lottery='今彩539'):
 def png_stub(lottery, draws):
     # Valid header for orchestration tests; the real renderer is tested below.
     prefix = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + struct.pack('>II', CARD_WIDTH, CARD_HEIGHT)
+    orders = ['sorted']
+    if lottery != '天天樂' and all(
+        row.get('resultStatus', 'confirmed') == 'confirmed' and row.get('drawOrderNumbers')
+        for row in draws
+    ):
+        orders.insert(0, 'draw')
     return {order: prefix + sha256((order + snapshot_digest(lottery, draws)).encode()).digest()
-            for order in ('draw', 'sorted')}
+            for order in orders}
 
 
 def service(repository, cards, renderer=png_stub):
@@ -95,17 +101,13 @@ def service(repository, cards, renderer=png_stub):
 
 def publish_initial(repository, cards):
     publisher = service(repository, cards)
-    assert publisher.ensure_current('今彩539', NOW) is None
-    return publisher.ensure_current('今彩539', NOW + timedelta(minutes=10))
+    return publisher.ensure_current('今彩539', NOW)
 
 
-def test_complete_snapshot_waits_ten_minutes_and_publishes_both_orders_once():
+def test_complete_snapshot_publishes_both_orders_immediately_once():
     repository, cards = fixture()
     publisher = service(repository, cards)
-    assert publisher.ensure_current('今彩539', NOW) is None
-    assert publisher.ensure_current('今彩539', NOW + timedelta(minutes=9, seconds=59)) is None
-    assert cards.objects == {}
-    manifest = publisher.ensure_current('今彩539', NOW + timedelta(minutes=10))
+    manifest = publisher.ensure_current('今彩539', NOW)
     assert manifest['period'] == '10000'
     assert len(cards.objects) == 2
     assert all(item['mimeType'] == 'image/png' for item in manifest['cards'].values())
@@ -127,8 +129,7 @@ def test_cleanup_failure_keeps_published_manifest_and_retries_without_rendering(
     repository, cards = fixture()
     cards.prune_error = RuntimeError('cleanup unavailable')
     publisher = service(repository, cards)
-    assert publisher.ensure_current('今彩539', NOW) is None
-    manifest = publisher.ensure_current('今彩539', NOW + timedelta(minutes=10))
+    manifest = publisher.ensure_current('今彩539', NOW)
     assert manifest == cards.read_manifest('今彩539')
     assert len(cards.prunes) == 1
     objects = deepcopy(cards.objects)
@@ -149,14 +150,15 @@ def test_cleanup_retry_runs_before_observing_a_changed_snapshot():
     changed['period'] = '10001'
     repository.upsert_draw(changed)
     cards.prune_error = None
-    assert service(repository, cards).ensure_current(
+    updated = service(repository, cards).ensure_current(
         '今彩539', NOW + timedelta(minutes=11),
-    ) == manifest
-    assert len(cards.prunes) == 2
-    assert cards.prunes[-1][1] == manifest['period']
+    )
+    assert updated['period'] == '10001'
+    assert len(cards.prunes) == 3
+    assert cards.prunes[-2][1] == manifest['period']
 
 
-def test_historical_correction_creates_new_generation_and_keeps_old_until_ready():
+def test_historical_correction_creates_a_new_generation_immediately():
     repository, cards = fixture()
     old = publish_initial(repository, cards)
     changed = history()[30]
@@ -165,8 +167,7 @@ def test_historical_correction_creates_new_generation_and_keeps_old_until_ready(
     changed['sortedNumbers'] = sorted(changed['numbers'], key=int)
     repository.upsert_draw(changed)
     publisher = service(repository, cards)
-    assert publisher.ensure_current('今彩539', NOW + timedelta(hours=1)) == old
-    new = publisher.ensure_current('今彩539', NOW + timedelta(hours=1, minutes=10))
+    new = publisher.ensure_current('今彩539', NOW + timedelta(hours=1))
     assert new['period'] == old['period']
     assert new['generation'] != old['generation']
     assert len(cards.objects) == 4
@@ -179,7 +180,6 @@ def test_second_upload_failure_preserves_old_manifest_and_retry_finishes_same_fi
     changed['period'] = '10001'
     repository.upsert_draw(changed)
     publisher = service(repository, cards)
-    publisher.ensure_current('今彩539', NOW + timedelta(hours=1))
     cards.fail_order = 'sorted'
     with pytest.raises(RuntimeError, match='upload unavailable'):
         publisher.ensure_current('今彩539', NOW + timedelta(hours=1, minutes=10))
@@ -193,7 +193,6 @@ def test_second_upload_failure_preserves_old_manifest_and_retry_finishes_same_fi
 
 def test_source_change_while_rendering_never_publishes_stale_snapshot():
     repository, cards = fixture()
-    service(repository, cards).ensure_current('今彩539', NOW)
     def race(lottery, draws):
         changed = history()[0]
         changed['period'] = '10001'
@@ -205,7 +204,6 @@ def test_source_change_while_rendering_never_publishes_stale_snapshot():
 
 def test_replaced_lease_cannot_publish_or_release_new_owner():
     repository, cards = fixture()
-    service(repository, cards).ensure_current('今彩539', NOW)
     def race(lottery, draws):
         cards.owner = 'replacement-owner'
         return png_stub(lottery, draws)
@@ -227,31 +225,32 @@ def test_incomplete_or_invalid_history_does_not_publish(invalid):
             draw['drawOrderNumbers'] = ['01'] * 5
         else:
             draw['drawDate'] = 'invalid'
-        repository.upsert_draw(draw)
+        # Exercise the reader against a corrupt stored fixture; ingestion rejects invalid dates.
+        repository.draws[(draw['lottery'], draw['period'])] = draw
     assert service(repository, cards).ensure_current('今彩539', NOW) is None
     assert cards.row['desired_digest'] is None
     assert cards.objects == {}
 
 
 @pytest.mark.parametrize('lottery', LOTTERIES)
-def test_real_png_renderer_produces_both_fixed_size_deterministic_files(lottery):
+def test_real_png_renderer_produces_supported_fixed_size_deterministic_files(lottery):
     draws = history(lottery)
     output = build_card_pngs(lottery, draws)
-    assert set(output) == {'draw', 'sorted'}
+    assert set(output) == ({'sorted'} if lottery == '天天樂' else {'draw', 'sorted'})
     assert output == build_card_pngs(lottery, draws)
-    assert output['draw'] != output['sorted']
+    if 'draw' in output:
+        assert output['draw'] != output['sorted']
     for png in output.values():
         assert png[:8] == b'\x89PNG\r\n\x1a\n'
         assert struct.unpack('>II', png[16:24]) == (2276, 3438)
         assert len(png) > 10000
 
 
-def test_png_manifest_uses_published_period_without_reading_or_rendering_history(monkeypatch):
+def test_png_manifest_validates_current_snapshot_without_rendering_history(monkeypatch):
     from app.api_server import handle_api_request
     import app.api_server as api
     repository, cards = fixture()
     manifest = publish_initial(repository, cards)
-    monkeypatch.setattr(repository, 'list_draws', lambda *_: pytest.fail('manifest queried history'))
     monkeypatch.setattr(api, 'render_matrix_card', lambda *_: pytest.fail('manifest rendered'))
     status, actual = handle_api_request('GET', '/api/matrix/cards/%E4%BB%8A%E5%BD%A9539?format=png', None, repository)
     assert status == 200
@@ -266,7 +265,7 @@ def test_png_manifest_has_no_phantom_latest_period_before_publication():
     assert manifest == {'lottery': '今彩539', 'period': None, 'cards': {}}
 
 
-def test_scheduled_not_due_branch_publishes_but_waits_for_analysis_to_notify(monkeypatch):
+def test_scheduled_not_due_branch_notifies_published_actual_card_without_analysis(monkeypatch):
     import app.worker as worker
     from types import SimpleNamespace
     repository, cards = fixture()
@@ -274,13 +273,13 @@ def test_scheduled_not_due_branch_publishes_but_waits_for_analysis_to_notify(mon
     publisher.ensure_current('今彩539', NOW)
     monkeypatch.setattr(worker, 'publish_current_card', lambda lottery, repo, now=None: publisher.ensure_current(lottery, NOW + timedelta(minutes=10)), raising=False)
     monkeypatch.setattr(worker, 'due_call_cycle', lambda *_: None)
-    monkeypatch.setattr(worker, '_resume_stored_analysis', lambda *_: None)
+    monkeypatch.setattr(worker, '_resume_stored_analysis', lambda *_, **__: None)
     events = []
     emitter = SimpleNamespace(enabled=True, emit=lambda e: events.append(e))
     result = worker.run_scheduled_worker('今彩539', NOW, repository, None, notification_emitter=emitter)
     assert result['status'] == 'not-due'
     assert cards.row['manifest']['period'] == '10000'
-    assert [e['eventType'] for e in events] == ['lottery_result']
+    assert [e['eventType'] for e in events] == ['lottery_result', 'matrix_card']
 
 
 def test_analysis_backlog_publishes_card_without_notifying_before_analysis(monkeypatch):

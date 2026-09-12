@@ -108,6 +108,19 @@ def card_layout(lottery: str) -> dict[str, Any]:
         raise ValueError("未知彩種") from error
 
 
+def supported_card_orders(lottery: str, draws: list[dict[str, Any]]) -> tuple[str, ...]:
+    """An actual-order card requires formal actual numbers for every visible row."""
+    balls = card_layout(lottery)['balls']
+    if lottery != '天天樂' and draws and all(
+        draw.get('resultStatus', 'confirmed') == 'confirmed'
+        and isinstance(draw.get('drawOrderNumbers'), list)
+        and len(draw['drawOrderNumbers']) == balls
+        for draw in draws
+    ):
+        return ('draw', 'sorted')
+    return ('sorted',)
+
+
 def _number(value: Any) -> str:
     return str(int(str(value))).zfill(2)
 
@@ -115,8 +128,11 @@ def _number(value: Any) -> str:
 def _numbers(draw: dict[str, Any], order: str, special: bool) -> list[str]:
     if order not in {"draw", "sorted"}:
         raise ValueError("未知牌單順序")
-    raw = draw.get("drawOrderNumbers") if order == "draw" else draw.get("sortedNumbers")
-    values = [_number(value) for value in (raw or draw.get("numbers") or [])]
+    if order == "draw":
+        raw = draw.get("drawOrderNumbers") if draw.get('resultStatus', 'confirmed') == 'confirmed' else None
+    else:
+        raw = draw.get("sortedNumbers") or draw.get("numbers")
+    values = [_number(value) for value in (raw or [])]
     if order == "sorted":
         normal = values[:-1] if special and len(values) == 7 else values
         normal = sorted(normal, key=int)
@@ -271,7 +287,8 @@ def _build_rows(
                     draw = entries[cursor]
                     cursor += 1
                     visible_date = _date_value(draw.get("drawDate") or draw.get("date"))
-                    values = _numbers(draw, order, special)
+                    if lottery != '天天樂' or order != 'draw':
+                        values = _numbers(draw, order, special)
                 elif visible_date is not None:
                     visible_date = _next_card_draw_date(lottery, visible_date)
             elif visible_date is not None:

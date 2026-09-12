@@ -68,8 +68,9 @@ export function refreshMatrixCardPng(cardUrl: string): Promise<Blob> {
   return prepare(cardUrl, true);
 }
 
-export async function downloadMatrixCardPng(cardUrl: string, filename: string) {
+export async function downloadMatrixCardPng(cardUrl: string, filename: string, isCurrent: () => boolean = () => true) {
   const png = await prepareMatrixCardPng(cardUrl);
+  if (!isCurrent()) return;
   let url = downloadUrls.get(png);
   if (!url) {
     url = URL.createObjectURL(png);

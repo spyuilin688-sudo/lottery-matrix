@@ -5,6 +5,7 @@ type Dependencies = {
   fetchPage(url: string): Promise<string>;
   publish(result: PilioResult): Promise<{ created: boolean }>;
   dispatch(): Promise<void>;
+  requestProcessing?(result: PilioResult): Promise<void>;
 };
 function tokenEquals(left: string, right: string): boolean {
   const a = new TextEncoder().encode(left), b = new TextEncoder().encode(right);
@@ -24,6 +25,7 @@ export function createPilioNotificationHandler(dependencies: Dependencies) {
     const date = taipeiDate(now);
     const results: { lottery: string; status: string }[] = [];
     let published = false;
+    const acquired: PilioResult[] = [];
     for (const source of duePilioSources(now)) {
       try {
         if (await dependencies.isRecorded(source.lottery, date)) {
@@ -37,6 +39,7 @@ export function createPilioNotificationHandler(dependencies: Dependencies) {
         }
         const event = await dependencies.publish(result);
         published = true;
+        acquired.push(result);
         results.push({ lottery: source.lottery, status: event.created ? "published" : "already-recorded" });
       } catch {
         results.push({ lottery: source.lottery, status: "failed" });
@@ -47,6 +50,17 @@ export function createPilioNotificationHandler(dependencies: Dependencies) {
       try { await dependencies.dispatch(); dispatch = "requested"; }
       catch { dispatch = "retry-by-scheduled-dispatch"; }
     }
-    return Response.json({ date, results, dispatch }, { status: results.some(result => result.status === "failed") ? 502 : 200 });
+    const processing: { lottery: string; status: string }[] = [];
+    if (dependencies.requestProcessing) {
+      for (const result of acquired) {
+        try {
+          await dependencies.requestProcessing(result);
+          processing.push({ lottery: result.lottery, status: "requested" });
+        } catch {
+          processing.push({ lottery: result.lottery, status: "retry-by-scheduled-worker" });
+        }
+      }
+    }
+    return Response.json({ date, results, dispatch, processing }, { status: results.some(result => result.status === "failed") ? 502 : 200 });
   };
 }

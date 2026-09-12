@@ -21,7 +21,7 @@ from app.services.notification_events import (
     notification_emitter_context,
 )
 from app.settings import load_settings
-from app.worker import ANALYSIS_VERSION, _draw_from_history, _run_analysis
+from app.worker import ANALYSIS_VERSION, _draw_from_history, _run_analysis, analysis_version_for_order
 
 
 FANTASY5 = "天天樂"
@@ -162,10 +162,7 @@ def _emit_ready_notifications(
         lottery_result_event(draw),
         emitted_event_keys,
     )
-    version = f"{period}:{ANALYSIS_VERSION}"
-    progress = repository.get_progress(lottery, period, version)
-    if progress is None or progress.get("status") != "complete":
-        return
+    version = analysis_version_for_order(period)
     if is_card_published(lottery, period, repository):
         _emit_notification_event(
             notification_emitter,
@@ -173,7 +170,10 @@ def _emit_ready_notifications(
             emitted_event_keys,
         )
 
-    status_artifact = repository.read_completed_artifact(lottery, period, "status")
+    progress = repository.get_progress(lottery, period, version)
+    if progress is None or progress.get("status") != "complete":
+        return
+    status_artifact = repository.read_artifact(lottery, period, version, "status")
     if not isinstance(status_artifact, Mapping):
         return
     _emit_notification_event(
@@ -207,11 +207,11 @@ def run_analysis_only_worker(
     progress_by_period = repository.list_progress_for_periods(
         lottery,
         periods,
-        ANALYSIS_VERSION,
+        f"{ANALYSIS_VERSION}-sorted",
     )
     selected = _select_analysis_draw(candidates, progress_by_period)
     period = str(selected["period"])
-    analysis_version = f"{period}:{ANALYSIS_VERSION}"
+    analysis_version = analysis_version_for_order(period)
     draw = {"lottery": lottery, **selected}
     _emit_early_result({"lottery": lottery, **candidates[0]}, notification_emitter, emitted_event_keys)
 

@@ -17,7 +17,7 @@ REPOSITORY_ROOT = SERVICE_ROOT.parents[1]
 WORKFLOW_ROOT = REPOSITORY_ROOT / ".github" / "workflows"
 TAIPEI = ZoneInfo("Asia/Taipei")
 FANTASY5_JOB_NAME = "matrix-fantasy5-refresh-v2"
-FANTASY5_VERSION = "11988:matrix-python-v13"
+FANTASY5_VERSION = "11988:matrix-python-v14-sorted"
 
 
 def _draw(period: str, draw_date: str, numbers: list[str] | None = None) -> dict:
@@ -311,7 +311,7 @@ def _repository_with_fantasy5_history() -> InMemoryAnalysisRepository:
 
 
 def _complete_analysis(repository: InMemoryAnalysisRepository, period: str) -> None:
-    version = f"{period}:matrix-python-v13"
+    version = f"{period}:matrix-python-v14-sorted"
     repository.begin_run("天天樂", period, version, "2026-09-04T01:00:00+00:00")
     for kind in ARTIFACT_KINDS:
         repository.save_artifact("天天樂", period, version, kind, {"kind": kind})

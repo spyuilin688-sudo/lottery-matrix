@@ -1,6 +1,8 @@
 from collections.abc import Callable
 from typing import Any
 
+from app.domain.explore_context import allowed_number_orders
+from app.domain.explore_state import SORTED_ORDER
 from app.domain.explore_engine import ExploreEngineSession, run_explore_batch
 from app.domain.models import lottery_position_count
 from app.domain.status import evaluate_chapter15
@@ -15,8 +17,8 @@ ExploreRunner = Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
 ExploreBatchRunner = Callable[..., dict[str, Any]]
 
 
-def _work_units(lottery: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return work_units(lottery, len(history), lottery_position_count(lottery))
+def _work_units(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None = None) -> list[dict[str, Any]]:
+    return work_units(lottery, len(history), lottery_position_count(lottery), number_orders=number_orders)
 
 
 def _append_explore_result(
@@ -85,8 +87,11 @@ def build_explore_artifact_chunk(
     runner: ExploreRunner | None = None,
     batch_runner: ExploreBatchRunner = run_explore_batch,
     session: ExploreEngineSession | None = None,
+    number_orders: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     if runner is None:
+        if session is None and number_orders is not None and batch_runner is run_explore_batch:
+            session = ExploreEngineSession.build(lottery, history, number_orders=number_orders)
         result = batch_runner(
             lottery=lottery,
             newest_first=history,
@@ -102,6 +107,7 @@ def build_explore_artifact_chunk(
         draw_period=draw_period,
         history=history,
         position_count=lottery_position_count(lottery),
+        number_orders=number_orders,
         start=start,
         limit=limit,
         runner=runner,
@@ -116,16 +122,18 @@ def build_explore_artifact(
     runner: ExploreRunner | None = None,
     batch_runner: ExploreBatchRunner = run_explore_batch,
     session: ExploreEngineSession | None = None,
+    number_orders: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     return build_explore_artifact_chunk(
         lottery,
         draw_period,
         history,
         0,
-        len(_work_units(lottery, history)),
+        len(_work_units(lottery, history, number_orders)),
         runner,
         batch_runner,
         session,
+        number_orders,
     )["artifact"]
 
 
@@ -238,19 +246,21 @@ def create_artifact_builders(
     explore_runner: ExploreRunner | None = None,
     explore_batch_runner: ExploreBatchRunner = run_explore_batch,
 ) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
-    engine_sessions: dict[str, ExploreEngineSession] = {}
+    engine_sessions: dict[tuple[str, tuple[str, ...]], ExploreEngineSession] = {}
 
-    def engine_session(lottery: str, history: list[dict[str, Any]]) -> ExploreEngineSession:
-        cached = engine_sessions.get(lottery)
+    def engine_session(lottery: str, history: list[dict[str, Any]], number_orders: tuple[str, ...] | None) -> ExploreEngineSession:
+        orders = allowed_number_orders(lottery, number_orders)
+        key = (lottery, orders)
+        cached = engine_sessions.get(key)
         if cached is None or not cached.matches(lottery, history):
-            cached = ExploreEngineSession.build(lottery, history)
-            engine_sessions[lottery] = cached
+            cached = ExploreEngineSession.build(lottery, history, number_orders=orders)
+            engine_sessions[key] = cached
         return cached
 
     def explore(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
         session = (
-            engine_session(draw["lottery"], context["history"])
+            engine_session(draw["lottery"], context["history"], context.get("numberOrders"))
             if explore_runner is None and explore_batch_runner is run_explore_batch
             else None
         )
@@ -262,6 +272,7 @@ def create_artifact_builders(
                 explore_runner,
                 explore_batch_runner,
                 session,
+                context.get("numberOrders"),
             )
             return {
                 "artifact": result["artifact"],
@@ -279,12 +290,13 @@ def create_artifact_builders(
             explore_runner,
             explore_batch_runner,
             session,
+            context.get("numberOrders"),
         )
 
     def tianheng(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
         session = TianhengEngineSession.from_explore_session(
-            engine_session(draw["lottery"], context["history"]),
+            engine_session(draw["lottery"], context["history"], context.get("numberOrders")),
         )
         batch = context["tianhengBatch"]
         result = run_tianheng_batch(
@@ -303,6 +315,8 @@ def create_artifact_builders(
 
     def tiangong(context: dict[str, Any]) -> dict[str, Any]:
         draw = context["draw"]
+        if SORTED_ORDER not in allowed_number_orders(draw["lottery"], context.get("numberOrders")):
+            return {"lottery": draw["lottery"], "drawPeriod": draw["period"], "numberOrder": SORTED_ORDER, "items": [], "validationById": {}}
         return build_tiangong_artifact(draw["lottery"], draw["period"], context["history"])
 
     def status(context: dict[str, Any]) -> dict[str, Any]:

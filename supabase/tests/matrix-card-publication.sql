@@ -1,4 +1,4 @@
--- Requires the static card publication migration to be installed.
+-- Requires static card publication, cleanup leases, and two-stage result/card migrations.
 -- Rollback-only verification. Run as project owner in one connection.
 -- No blobs are uploaded; every SQL change is rolled back.
 BEGIN;
@@ -48,8 +48,22 @@ DECLARE
   malformed record;
   storage_fixture_name text := 'rollback-fixture-'||gen_random_uuid()::text||'.png';
 BEGIN
+  -- Make this the current formal draw without deleting any existing history.
+  -- The fixture and any replaced row are restored by the final ROLLBACK.
+  INSERT INTO public.lottery_draws(
+    lottery,period,draw_date,numbers,sorted_numbers,draw_order_numbers,result_status
+  )
+  SELECT '今彩539','10000',greatest(current_date,coalesce(max(draw_date),current_date))+1,
+    '["01","07","11","20","39"]'::jsonb,
+    '["01","07","11","20","39"]'::jsonb,
+    '["39","20","11","07","01"]'::jsonb,'confirmed'
+  FROM public.lottery_draws WHERE lottery='今彩539'
+  ON CONFLICT(lottery,period) DO UPDATE SET draw_date=excluded.draw_date,
+    numbers=excluded.numbers,sorted_numbers=excluded.sorted_numbers,
+    draw_order_numbers=excluded.draw_order_numbers,result_status=excluded.result_status;
   fixture_manifest := jsonb_build_object(
     'lottery','今彩539','period','10000','generation',digest_a,
+    'generatedAt',clock_timestamp(),
     'cards',jsonb_build_object(
       'draw',jsonb_build_object('mimeType','image/png','width',2276,'height',3438,'sha256',repeat('1',64),'url',
         'https://example.supabase.co/storage/v1/object/public/matrix-card-png/539/10000/'||digest_a||'/draw.png'),
@@ -73,12 +87,16 @@ BEGIN
   INSERT INTO pg_temp.card_test_results VALUES ('current lease observes snapshot',
     public.observe_matrix_card_snapshot('今彩539',first_token,digest_a,'10000'),'{}');
   SELECT eligible_at INTO original_eligibility FROM public.matrix_card_publications WHERE lottery='今彩539';
-  INSERT INTO pg_temp.card_test_results VALUES ('eligibility uses database time plus ten minutes',
-    original_eligibility >= observed_before + interval '10 minutes'
-    AND original_eligibility <= clock_timestamp() + interval '10 minutes','{}');
-  INSERT INTO pg_temp.card_test_results VALUES ('same snapshot observation does not reset wait',
+  INSERT INTO pg_temp.card_test_results VALUES ('eligibility uses immediate database time',
+    original_eligibility >= observed_before
+    AND original_eligibility <= clock_timestamp(),'{}');
+  INSERT INTO pg_temp.card_test_results VALUES ('same snapshot observation preserves eligibility',
     NOT public.observe_matrix_card_snapshot('今彩539',first_token,digest_a,'10000')
     AND (SELECT eligible_at=original_eligibility FROM public.matrix_card_publications WHERE lottery='今彩539'),'{}');
+  INSERT INTO pg_temp.card_test_results VALUES ('current sorted PNG publishes immediately',
+    public.publish_matrix_card('今彩539',first_token,digest_a,fixture_manifest #- '{cards,draw}'),'{}');
+  UPDATE public.matrix_card_publications SET eligible_at=clock_timestamp()+interval '1 minute'
+    WHERE lottery='今彩539' AND lease_token=first_token;
   INSERT INTO pg_temp.card_test_results VALUES ('future eligible_at cannot publish',
     NOT public.publish_matrix_card('今彩539',first_token,digest_a,fixture_manifest),'{}');
   UPDATE public.matrix_card_publications SET eligible_at=clock_timestamp()-interval '1 second'

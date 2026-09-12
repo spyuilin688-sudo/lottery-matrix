@@ -3,14 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from app.domain.explore_context import allowed_number_orders
 
-def work_units(lottery: str, history_length: int, position_count: int) -> list[dict[str, Any]]:
+
+def work_units(lottery: str, history_length: int, position_count: int, *, number_orders: tuple[str, ...] | None = None) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
-    number_orders = (
-        ('依號碼由小到大排序',)
-        if lottery == '天天樂'
-        else ('依號碼由小到大排序', '依實際開獎順序排序')
-    )
+    number_orders = allowed_number_orders(lottery, number_orders)
     for number_order in number_orders:
         for source_index in range(min(13, max(0, history_length))):
             for position in range(1, position_count + 1):
@@ -36,8 +34,9 @@ def build_explore_batch(
     limit: int,
     runner: Callable[[dict[str, Any], list[dict[str, Any]]], dict[str, Any]],
     append_result: Callable[[dict[str, Any], dict[str, Any], dict[str, Any]], None] | None = None,
+    number_orders: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
-    units = work_units(lottery, len(history), position_count)
+    units = work_units(lottery, len(history), position_count, number_orders=number_orders)
     cursor = min(max(0, start), len(units))
     stop = min(len(units), cursor + max(1, limit))
     artifact = {

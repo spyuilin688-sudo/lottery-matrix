@@ -1,8 +1,9 @@
+import { subscribeLotteryRefresh } from "../lottery-data-refresh";
 import { useReferenceWindow } from "../reference-window";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, MagnifyingGlassIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { type LotteryId } from "../Prototype";
-import { fetchNumberReference, type MatrixNumberOrder, type NumberReferenceItem } from "../lottery-api";
+import { fetchNumberReference, type MatrixNumberOrder, type NumberReferenceRequest, type NumberReferenceItem } from "../lottery-api";
 import { normalizeLookupNumber } from "../feature-tool-logic";
 import { Navigate } from "./navigation";
 import { useTimedState, useLotteryHistory, getHistoryLimit, getHistoryOrder, FeatureShell, MobilePagePortal, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
@@ -22,6 +23,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const queryRevision = useRef(0);
+  const appliedRequest = useRef<NumberReferenceRequest | null>(null);
   useEffect(() => () => { queryRevision.current += 1; }, []);
   const [referenceItems, setReferenceItems] = useState<NumberReferenceItem[] | null>(null);
   const [referenceLoadState, setReferenceLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
@@ -30,8 +32,24 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const displayedHistory = referenceItems ?? fallbackHistory;
   const referenceWindow = useReferenceWindow(displayedHistory.length);
   const historyOrder = getHistoryOrder(appliedOrder);
+  useEffect(() => subscribeLotteryRefresh(appliedLottery, () => {
+    const input = appliedRequest.current;
+    if (!input) return;
+    const revision = ++queryRevision.current;
+    void fetchNumberReference(input).then(response => {
+      if (revision !== queryRevision.current) return;
+      setReferenceItems(response.items);
+      setReferenceLoadState(response.items.length ? "success" : "empty");
+    }).catch(() => {
+      if (revision !== queryRevision.current) return;
+      setReferenceItems([]);
+      setReferenceLoadState("error");
+    });
+  }), [appliedLottery]);
+
   const resetReference = () => {
     queryRevision.current += 1;
+    appliedRequest.current = null;
     setReferenceLoadState("idle");
     setInputs(["", "", ""]);
     setReferenceItems(null);
@@ -66,6 +84,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
 
   const startReferenceSearch = async () => {
     const revision = ++queryRevision.current;
+    appliedRequest.current = null;
     const normalized = inputs.map(normalizeLookupNumber);
     const unique = normalized.filter((value, index) => value && normalized.indexOf(value) === index);
     const historyRange = Number(range.replace(/\D/g, "")) as 1000 | 3000 | 5000;
@@ -76,14 +95,11 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
     setAppliedRange(range);
     setAppliedOrder(order);
     setReferenceLoadState("loading");
+    const input = { lottery, numberOrder: order as MatrixNumberOrder, historyRange, numbers: unique };
     try {
-      const response = await fetchNumberReference({
-        lottery,
-        numberOrder: order as MatrixNumberOrder,
-        historyRange,
-        numbers: unique,
-      });
+      const response = await fetchNumberReference(input);
       if (revision !== queryRevision.current) return;
+      appliedRequest.current = input;
       setReferenceItems(response.items);
       setReferenceLoadState(response.items.length > 0 ? "success" : "empty");
     } catch {
@@ -224,6 +240,7 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
                   {issue}
                 </button>
                 <span>
+                  {historyOrder === "落球" && !displayedNumbers.length ? "待公布" : null}
                   {displayedNumbers.map((num, index) => {
                     const autoMatch = Array.isArray(record.matchSlots) ? Number(record.matchSlots[index] ?? 0) : 0;
                     const manuallyMarked = markedCells.has(`${issue}-${num}`);

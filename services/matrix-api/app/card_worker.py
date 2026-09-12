@@ -1,7 +1,7 @@
 """Run one publication check, also used to bootstrap/repair static cards.
 
-Uses the existing Supabase service configuration. Never bypasses the delay,
-lease, source validation, or notification policy; it sends no notifications.
+Uses the existing Supabase service configuration and respects publication
+leases and source validation; this manual repair command sends no notifications.
 """
 import argparse
 import json

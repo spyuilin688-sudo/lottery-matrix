@@ -91,6 +91,10 @@ class FakeSupabaseClient:
         self.last_table = name
         return FakeQuery(self, name)
 
+    def rpc(self, name: str, params: dict[str, Any]) -> FakeQuery:
+        self.last_rpc = (name, params)
+        return FakeQuery(self, "lottery_draws")
+
 
 class PrependingDrawQuery(FakeQuery):
     def execute(self) -> FakeResponse:
@@ -156,7 +160,7 @@ def test_draw_history_bulk_upsert_preserves_single_draw_idempotency() -> None:
     assert stored[-1]["numbers"] == ["06", "07", "08", "09", "10"]
 
 
-def test_supabase_draw_history_uses_one_bulk_upsert_with_draw_conflict_key() -> None:
+def test_supabase_draw_history_uses_atomic_bulk_reconciliation_rpc() -> None:
     fake_client = FakeSupabaseClient()
     fake_client.responses["lottery_draws"] = [
         {"lottery": "天天樂", "period": "11977"},
@@ -178,20 +182,21 @@ def test_supabase_draw_history_uses_one_bulk_upsert_with_draw_conflict_key() -> 
     ])
 
     assert stored == fake_client.responses["lottery_draws"]
-    assert fake_client.last_table == "lottery_draws"
-    assert fake_client.last_on_conflict == "lottery,period"
-    assert fake_client.last_record == [
+    assert fake_client.last_rpc[0] == "matrix_upsert_draws"
+    assert fake_client.last_rpc[1]["p_draws"] == [
         {
             "lottery": "天天樂", "period": "11977", "draw_date": "2026/08/23",
             "numbers": ["01", "02", "03", "04", "05"],
             "sorted_numbers": ["01", "02", "03", "04", "05"],
             "draw_order_numbers": None, "source_id": "calottery:11977",
+            "result_status": "confirmed",
         },
         {
             "lottery": "天天樂", "period": "11978", "draw_date": "2026/08/24",
             "numbers": ["06", "07", "08", "09", "10"],
             "sorted_numbers": ["06", "07", "08", "09", "10"],
             "draw_order_numbers": None, "source_id": None,
+            "result_status": "confirmed",
         },
     ]
 
@@ -247,6 +252,7 @@ def test_list_draws_returns_newest_first_and_normalized_shape() -> None:
         "numbers": ["06", "07", "08", "09", "10"],
         "sortedNumbers": ["06", "07", "08", "09", "10"],
         "drawOrderNumbers": None,
+        "resultStatus": "confirmed",
     }]
 
 
@@ -387,6 +393,7 @@ def test_supabase_draw_normalization_converts_database_field_names() -> None:
         "numbers": ["06", "07", "08", "09", "10"],
         "sortedNumbers": ["06", "07", "08", "09", "10"],
         "drawOrderNumbers": None,
+        "resultStatus": "confirmed",
     }
 
 

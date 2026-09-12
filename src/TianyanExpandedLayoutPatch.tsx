@@ -103,7 +103,7 @@ function readConsecutive(button: HTMLElement) {
 
 function historyRecordNumbers(record: LotteryDrawRecord, item: TianyanApiRow) {
   const values = item.numberOrder === "依實際開獎順序排序"
-    ? record.drawOrderNumbers?.length ? record.drawOrderNumbers : record.numbers
+    ? record.drawOrderNumbers ?? []
     : record.sortedNumbers?.length ? record.sortedNumbers : record.numbers;
   return [...values];
 }

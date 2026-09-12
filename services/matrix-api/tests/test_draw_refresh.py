@@ -28,6 +28,7 @@ def test_refresh_fetches_validates_and_upserts_latest_draw() -> None:
     assert source.requests == ["今彩539"]
     assert result["lottery"] == "今彩539"
     assert repository.list_draws("今彩539", 10) == [{
+        "resultStatus": "confirmed",
         "period": "114000123", "drawDate": "2025/08/23",
         "numbers": ["01", "02", "03", "04", "05"],
         "sortedNumbers": ["01", "02", "03", "04", "05"],
