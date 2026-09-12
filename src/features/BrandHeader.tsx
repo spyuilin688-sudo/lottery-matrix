@@ -50,7 +50,7 @@ export function BrandHeader({ title, onBack, backHref, action, showBack = true }
   // Conservative glyph widths select one shared fit range without inline styles.
   const titleWidth = Array.from(displayTitle).reduce((width, character) =>
     width + (/[^\u0000-\u007f]/.test(character) ? 1 : /[A-Z]/.test(character) ? .75 : .6), 0);
-  const titleFit = titleWidth <= 8 ? "regular" : titleWidth <= 11 ? "medium" : "long";
+  const titleFit = titleWidth <= 6 ? "short" : titleWidth <= 8 ? "regular" : titleWidth <= 11 ? "medium" : "long";
   return (
     <header className="feature-brand-header product-header" data-product-header={title}>
       <div className="product-header__frame" data-back={hasBack} data-actions={Boolean(action)}>

@@ -33,11 +33,13 @@ test("all PWA header entry points use the same component and preserve no-back ro
 test("header alignment stays fixed with absent back controls, actions and smaller titles", async () => {
   const css = await readFile(new URL('../src/feature-pages.css', import.meta.url), 'utf8');
   const frame = css.match(/\.product-header__frame\s*\{[^}]*\}/s)[0];
-  assert.match(frame, /grid-template-areas:\s*"back mark copy" "back mark actions";/);
-  assert.match(frame, /grid-template-rows:\s*35px 18px;/);
+  assert.match(frame, /grid-template-areas:\s*"back mark copy actions";/);
+  assert.doesNotMatch(frame, /grid-template-rows:/);
   assert.doesNotMatch(css, /\.product-header__frame\[data-(?:back|actions)=/);
   const title = css.match(/\.product-header__copy h1\s*\{[^}]*\}/s)[0];
   assert.match(title, /height:\s*22px;/);
   assert.match(title, /align-items:\s*baseline;/);
+  const actions = await readFile(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
+  assert.match(actions, /\.title-card-compact-actions\s*\{[^}]*width:\s*64px;[^}]*grid-auto-rows:\s*24px;/s);
   assert.match(css, /\.product-header__copy h1::before\s*\{[^}]*height:\s*18px;/s);
 });

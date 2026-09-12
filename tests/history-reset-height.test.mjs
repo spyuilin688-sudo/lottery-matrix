@@ -4,8 +4,7 @@ import test from 'node:test';
 
 const css = readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
 
-test('歷史開獎的重設與篩選設定依同一列高度伸展 [header migration]', () => {
-  assert.match(css, /\.draw-history-screen \.history-title-actions,[\s\S]*?align-items:\s*stretch;/);
-  assert.match(css, /\.draw-history-screen \.history-title-actions :is\(\.history-reset-trigger, \.history-filter-trigger\)\s*\{[^}]*align-self:\s*stretch;/s);
+test('歷史開獎的重設與篩選設定在右欄等高排列 [header migration]', () => {
+  assert.match(css, /\.title-card-compact-actions\s*\{[^}]*width:\s*64px;[^}]*grid-auto-rows:\s*24px;[^}]*gap:\s*4px;/s);
 });
 

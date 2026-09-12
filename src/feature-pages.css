@@ -101,7 +101,6 @@
 }
 
 
-.history-title-actions { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .icon-button { display: grid; place-items: center; border: 0; background: transparent; color: #f5bd29; }
 
 .panel { border: 1px solid #6c4a20; border-radius: 11px; background: linear-gradient(145deg, rgba(8, 16, 22, .96), rgba(2, 8, 13, .98)); box-shadow: inset 0 0 18px rgba(150, 102, 34, .04); }
@@ -754,12 +753,6 @@ display: grid; box-sizing: border-box; width: 100%; height: var(--mx-history-row
 .reference-row.head { min-height: 40px; color: #d2a52a; font-size: 15px; font-weight: 700; }
 
 
-.reference-title-actions {
-  display: flex;
-  height: 100%;
-  align-items: center;
-}
-.reference-title-actions svg { width: 14px; height: 14px; }
 .reference-title-actions svg[data-open="true"] { transform: rotate(180deg); }
 .reference-query-panel[hidden] { display: none; }
 .reference-query-panel[data-floating="true"] {
@@ -2599,12 +2592,10 @@ opacity: .30; box-shadow: none;
   box-sizing: border-box;
   width: 100%;
   height: 68px;
-  grid-template-columns: 44px 56px minmax(0, 1fr);
-  grid-template-areas: "back mark copy" "back mark actions";
-  grid-template-rows: 35px 18px;
+  grid-template-columns: 44px 56px minmax(0, 1fr) auto;
+  grid-template-areas: "back mark copy actions";
   align-items: center;
   column-gap: 10px;
-  row-gap: 3px;
   padding: 5px 10px 5px 8px;
   overflow: hidden;
   border: 1px solid rgba(205, 155, 62, .74);
@@ -2675,7 +2666,7 @@ opacity: .30; box-shadow: none;
   height: 22px;
   margin: 0;
   color: #f0c85f;
-  font-size: min(20px, 12cqi);
+  font-size: min(20px, 14cqi);
   font-weight: 700;
   line-height: 1;
   letter-spacing: .015em;
@@ -2686,13 +2677,14 @@ opacity: .30; box-shadow: none;
   flex: 0 0 0;
   height: 18px;
 }
+.product-header__copy h1[data-title-fit="short"] { font-size: min(20px, 16cqi); }
 .product-header__copy h1[data-title-fit="medium"] { font-size: min(20px, 8.5cqi); }
 .product-header__copy h1[data-title-fit="long"] { font-size: min(20px, 6cqi); }
 .product-header__copy > span {
   display: block;
   margin-top: 4px;
   color: rgba(221, 214, 201, .7);
-  font-size: 9px;
+  font-size: min(9px, 7cqi);
   font-weight: 600;
   line-height: 1;
   letter-spacing: .32em;
@@ -2700,7 +2692,6 @@ opacity: .30; box-shadow: none;
 }
 .product-header__actions {
   grid-area: actions;
-  flex-wrap: wrap;
   position: relative;
   z-index: 3;
   display: flex;
