@@ -14,17 +14,17 @@ describe('admin PWA identity', () => {
       scope: '/admin/',
     });
     expect(manifest.icons).toEqual(expect.arrayContaining([
-      expect.objectContaining({ src: '/admin/icons/admin-20260912-192.png', sizes: '192x192' }),
-      expect.objectContaining({ src: '/admin/icons/admin-20260912-512.png', sizes: '512x512' }),
+      expect.objectContaining({ src: '/admin/icons/admin-icon-20260912-192.png', sizes: '192x192' }),
+      expect.objectContaining({ src: '/admin/icons/admin-icon-20260912-512.png', sizes: '512x512' }),
     ]));
   });
 
   it('ships dedicated admin install icons instead of reusing the public PWA icon', () => {
-    expect(() => readFileSync(new NodeURL('../public/icons/admin-20260912-192.png', import.meta.url))).not.toThrow();
-    expect(() => readFileSync(new NodeURL('../public/icons/admin-20260912-512.png', import.meta.url))).not.toThrow();
+    expect(() => readFileSync(new NodeURL('../public/icons/admin-icon-20260912-192.png', import.meta.url))).not.toThrow();
+    expect(() => readFileSync(new NodeURL('../public/icons/admin-icon-20260912-512.png', import.meta.url))).not.toThrow();
     const html = readFileSync(new NodeURL('../index.html', import.meta.url), 'utf8');
-    expect(html).toContain('href="/admin/icons/admin-20260912-192.png"');
-    expect(html).toContain('href="/admin/icons/admin-20260912-180.png"');
+    expect(html).toContain('href="/admin/icons/admin-icon-20260912-192.png"');
+    expect(html).toContain('href="/admin/icons/admin-icon-20260912-180.png"');
   });
 
   it('registers the admin service worker at startup with the admin scope', async () => {
@@ -38,7 +38,7 @@ describe('admin PWA identity', () => {
     const worker = readFileSync(new NodeURL('../public/admin-push-sw.js', import.meta.url), 'utf8');
     expect(worker).toContain("self.addEventListener('install'");
     expect(worker).toContain("self.addEventListener('notificationclick'");
-    expect(worker).toContain("icons/admin-20260912-192.png");
+    expect(worker).toContain("icons/admin-icon-20260912-192.png");
   });
 
   it('does nothing when service workers are unavailable', async () => {

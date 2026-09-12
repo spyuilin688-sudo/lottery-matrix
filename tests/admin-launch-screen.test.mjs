@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL('../apps/admin/' + path, import.meta
 const html = read('index.html');
 const manifest = JSON.parse(read('public/manifest.webmanifest'));
 
-test('admin uses only the requested launch artwork and new install icons', () => {
+test('admin keeps the portrait launch separate from the square install icons', () => {
   assert.match(html, /admin-launch-20260912\.png/);
   assert.equal((html.match(/id="admin-launch-screen"/g) || []).length, 1);
   assert.doesNotMatch(html, /20260911|admin-splash\.jpg|style=/);
@@ -16,7 +16,7 @@ test('admin uses only the requested launch artwork and new install icons', () =>
   assert.equal(manifest.id, '/admin/');
   assert.equal(manifest.scope, '/admin/');
   for (const icon of manifest.icons) {
-    assert.match(icon.src, /admin-20260912-(192|512)\.png$/);
+    assert.match(icon.src, /admin-icon-20260912-(192|512)\.png$/);
     assert.ok(existsSync(new URL('../apps/admin/public/' + icon.src.replace('/admin/', ''), import.meta.url)));
   }
 });
