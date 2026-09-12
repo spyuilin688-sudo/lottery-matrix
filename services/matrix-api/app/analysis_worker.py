@@ -126,17 +126,20 @@ def _emit_notification_event(
     emitted_event_keys.add(event_key)
 
 
-def _emit_early_result(
+def _emit_early_notifications(
     draw: dict[str, Any],
+    repository: AnalysisRepository,
     notification_emitter: NotificationEventEmitter | None,
     emitted_event_keys: set[str],
 ) -> None:
     if not _notification_enabled(notification_emitter):
         return
     try:
-        _emit_notification_event(
+        _emit_ready_notifications(
+            draw,
+            [],
+            repository,
             notification_emitter,
-            lottery_result_event(draw),
             emitted_event_keys,
         )
     except NotificationDeliveryError:
@@ -163,7 +166,9 @@ def _emit_ready_notifications(
         emitted_event_keys,
     )
     version = analysis_version_for_order(period)
-    if is_card_published(lottery, period, repository):
+    if latest[0].get("resultStatus", "confirmed") == "confirmed" and is_card_published(
+        lottery, period, repository, order="sorted",
+    ):
         _emit_notification_event(
             notification_emitter,
             matrix_card_event(draw),
@@ -213,7 +218,10 @@ def run_analysis_only_worker(
     period = str(selected["period"])
     analysis_version = analysis_version_for_order(period)
     draw = {"lottery": lottery, **selected}
-    _emit_early_result({"lottery": lottery, **candidates[0]}, notification_emitter, emitted_event_keys)
+    _emit_early_notifications(
+        {"lottery": lottery, **candidates[0]}, repository,
+        notification_emitter, emitted_event_keys,
+    )
 
     progress = progress_by_period.get(period)
     if progress is not None and progress.get("status") == "complete" and repository.has_artifact(

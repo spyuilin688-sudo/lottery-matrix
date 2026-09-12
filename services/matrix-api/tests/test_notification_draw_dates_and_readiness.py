@@ -49,13 +49,13 @@ def test_completed_analysis_emits_card_and_status_with_the_same_draw_date(monkey
     assert all(event["payload"].get("drawDate") == "2026-08-28" for event in events.values())
 
 
-def test_fantasy5_published_card_waits_for_analysis_completion(monkeypatch):
+def test_fantasy5_published_card_notifies_before_analysis_completion(monkeypatch):
     capture = Capture()
-    monkeypatch.setattr(analysis_worker, "is_card_published", lambda *_: True)
+    monkeypatch.setattr(analysis_worker, "is_card_published", lambda *_, **__: True)
     monkeypatch.setattr(analysis_worker, "_run_analysis", lambda *_: {"status": "running"})
     result = analysis_worker.run_analysis_only_worker("天天樂", _repository(), fantasy_builders(), notification_emitter=capture)
     assert result["status"] == "running"
-    assert [event["eventType"] for event in capture.events] == ["lottery_result"]
+    assert [event["eventType"] for event in capture.events] == ["lottery_result", "matrix_card"]
 
 
 def test_fantasy5_backlog_does_not_notify_an_older_draw(monkeypatch):
@@ -67,4 +67,3 @@ def test_fantasy5_backlog_does_not_notify_an_older_draw(monkeypatch):
     analysis_worker.run_analysis_only_worker("天天樂", repository, fantasy_builders(), notification_emitter=capture)
     assert capture.events
     assert all(event["payload"]["period"] == candidates[0]["period"] for event in capture.events)
-
