@@ -33,6 +33,23 @@ pipeline completion. Check all five artifacts after each successful stage.
 No source refresh, card publication, notification dispatch, or cleanup is part
 of this prerequisite.
 
+Always first pass the bounded snapshot through the existing
+`DrawRefreshService._sort_algorithm_history`. This normalizes eight-digit and
+nine-digit Taiwan period aliases and rejects conflicting duplicate payloads.
+Validate draw-order history with the existing boundary check before computing.
+The first recovery invocation omitted this preparation: Mark Six completed,
+but the Taiwan Lotto draw stage rejected 418 identical historical period aliases.
+Its unnormalized sorted run is marked failed and retained as an execution record.
+Recompute both Taiwan Lotto stages using the same `AnalysisPipeline` and builders
+with canonical history, under versions derived from `ANALYSIS_VERSION` and the
+`-retention-v2-sorted` / `-retention-v2-draw` suffixes. This replaces no algorithm
+and deletes no source history. Only five-kind-complete recovery versions may be
+selected by manifest backfill. The finite recovery driver has a 1800-second cap.
+
+A Railway redeploy can replay the original deployment configuration, including
+its prior pre-deploy command. Verify the new command in logs from a fresh main
+source deployment; do not assume a redeploy has loaded changed service settings.
+
 Run this finite recovery as a temporary Railway pre-deploy command in the
 existing lottery-matrix service, with an overall 2400-second alarm. It uses the
 service's existing environment variables without exposing their values. The
