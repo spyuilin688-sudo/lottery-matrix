@@ -18,7 +18,7 @@ before(async () => {
   await db.exec(read('../migrations/20260903185906_matrix_analysis_run_lease.sql'));
   await db.exec('grant select, insert, update, delete on public.matrix_explore_results, public.matrix_tianheng_results to service_role;');
   await db.exec(read('../migrations/20260912192953_matrix_analysis_owned_writes.sql'));
-  await db.exec(read('../migrations/20260912193020_matrix_analysis_seal_direct_writes.sql'));
+  await db.exec(read('../migrations/20260912193421_matrix_analysis_seal_direct_writes.sql'));
 });
 after(async () => db.close());
 beforeEach(async () => {
