@@ -5,6 +5,8 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BottomNavigation } from "../BottomNavigation";
+import { QuickNavigationProvider } from "../features/navigation";
+import { FeatureBottomNavigationPortal } from "../features/shared";
 
 declare const process: { cwd(): string };
 
@@ -22,22 +24,13 @@ describe("BottomNavigation", () => {
     expect(renderedButton).not.toContain("{...quickProps}");
   });
 
-  it.each([
-    ["首頁", "/assets/lottery/functions/matrixWW1.png"],
-    ["快捷", "/assets/lottery/functions/matrixWW2.png"],
-    ["通知", "/assets/lottery/functions/matrixWW3.png"],
-    ["我的", "/assets/lottery/functions/matrixWW4.png"],
-  ] as const)("依目前選取入口 %s 切換正式底圖", (active, artwork) => {
-    render(<BottomNavigation active={active} />);
-
-    expect(screen.getByRole("img", { name: "Matrix 底部導覽" })).toHaveAttribute("src", artwork);
-    expect(screen.getByRole("button", { name: active })).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
+  it("PD01 依序提供首頁、快捷、計算機、我的四個獨立入口", () => {
+    render(<BottomNavigation />);
+    const buttons = within(screen.getByRole("navigation", { name: "底部導覽" })).getAllByRole("button");
+    expect(buttons.map((button) => button.textContent)).toEqual(["首頁", "快捷", "計算機", "我的"]);
   });
 
-  it.each(["首頁", "快捷", "通知", "我的"] as const)(
+  it.each(["首頁", "快捷", "計算機", "我的"] as const)(
     "只讓目前頁面 %s 顯示選取發光狀態",
     (active) => {
       render(<BottomNavigation active={active} />);
@@ -57,7 +50,7 @@ describe("BottomNavigation", () => {
   );
 
   it("快捷功能開啟時會取代其他頁面的選取狀態", () => {
-    render(<BottomNavigation active="通知" quickActive />);
+    render(<BottomNavigation active="計算機" quickActive />);
 
     expect(screen.getByRole("navigation", { name: "底部導覽" })).toHaveAttribute(
       "data-active",
@@ -67,7 +60,7 @@ describe("BottomNavigation", () => {
       "data-selected",
       "true",
     );
-    expect(screen.getByRole("button", { name: "通知" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "計算機" })).toHaveAttribute(
       "data-selected",
       "false",
     );
@@ -80,6 +73,26 @@ describe("BottomNavigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "快捷" }));
 
     expect(onQuickOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([[false, "計算機"], [true, "快捷"]] as const)(
+    "計算機實際路由與快捷覆蓋狀態 %s 決定共用導覽選中項",
+    (quickActive, label) => {
+      render(
+        <div className="mobile-page">
+          <QuickNavigationProvider currentScreen="calculator" quickActive={quickActive}>
+            <FeatureBottomNavigationPortal active="首頁" onNavigate={vi.fn()} />
+          </QuickNavigationProvider>
+        </div>,
+      );
+      expect(screen.getByRole("button", { name: label })).toHaveAttribute("aria-current", "page");
+      expect(screen.getByRole("button", { name: "首頁" })).not.toHaveAttribute("aria-current");
+    },
+  );
+
+  it("通知頁由新的會員入口進入後將我的標示為目前群組", () => {
+    render(<BottomNavigation active="通知" />);
+    expect(screen.getByRole("button", { name: "我的" })).toHaveAttribute("aria-current", "page");
   });
 
   it("快捷設定入口只在顯示設定且提供處理函式時出現", () => {
@@ -138,7 +151,7 @@ describe("BottomNavigation", () => {
 
   it.each([
     ["首頁", "home"],
-    ["通知", "notifications"],
+    ["計算機", "calculator"],
     ["我的", "profile"],
   ] as const)("一般入口 %s 每次點擊只導向一次", (label, target) => {
     const onNavigate = vi.fn();

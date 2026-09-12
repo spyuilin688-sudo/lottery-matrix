@@ -6,7 +6,10 @@ function TestIcon(props: SVGProps<SVGSVGElement>) {
 
 export const BarChart3 = TestIcon;
 export const Bell = TestIcon;
+export const Calculator = TestIcon;
 export const CreditCard = TestIcon;
+export const House = TestIcon;
+export const LayoutGrid = TestIcon;
 export const KeyRound = TestIcon;
 export const ListTodo = TestIcon;
 export const LogIn = TestIcon;
@@ -21,4 +24,5 @@ export const ShieldCheck = TestIcon;
 export const ToggleLeft = TestIcon;
 export const Trash2 = TestIcon;
 export const Users = TestIcon;
+export const UserRound = TestIcon;
 export const Wallet = TestIcon;

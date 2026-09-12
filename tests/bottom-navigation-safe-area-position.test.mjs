@@ -13,7 +13,7 @@ const homepageCss = readLocalCss("src/homepage-repair.css");
 test("底部導覽固定貼底並以瀏覽器 safe area 為唯一底部安全區來源", () => {
   assert.match(navigationCss, /\.bottom-navigation\s*\{[\s\S]*?--bottom-nav-safe-area:\s*env\(safe-area-inset-bottom,\s*0px\);[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*auto 0 0;/);
   assert.match(navigationCss, /height:\s*calc\(var\(--bottom-navigation-height\) \+ var\(--bottom-nav-safe-area\)\);/);
-  assert.match(navigationCss, /padding:\s*0 0 var\(--bottom-nav-safe-area\);/);
+  assert.match(navigationCss, /padding:\s*0 calc\(44px \+ env\(safe-area-inset-right, 0px\)\) var\(--bottom-nav-safe-area\) calc\(44px \+ env\(safe-area-inset-left, 0px\)\);/);
   assert.doesNotMatch(navigationCss, /\.bottom-navigation\s*\{[^}]*?(?:margin(?:-[a-z]+)?\s*:\s*-|transform\s*:|top\s*:)/s);
 });
 
@@ -40,7 +40,7 @@ test("所有非首頁子頁共用正式底部安全距離加 8px", () => {
 
 test("通知頁批次區維持 18px、列表維持 16px 左右間距並保留正式底部安全距離", () => {
   assert.match(featureAdjustmentsCss, /\.notifications-screen-v2\s*\{[^}]*--notification-bulk-inline:\s*18px;[^}]*--notification-list-inline:\s*16px;/s);
-  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*4px;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
+  assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.feature-body\s*\{[^}]*padding-inline:\s*var\(--notification-bulk-inline\);[^}]*padding-block-start:\s*0;[^}]*padding-block-end:\s*calc\(var\(--layout-bottom-nav-clearance\) \+ 8px\);/s);
   assert.match(featureAdjustmentsCss, /\.notifications-screen-v2 \.notification-list\s*\{[^}]*margin-inline:\s*calc\(var\(--notification-list-inline\) - var\(--notification-bulk-inline\)\);/s);
   assert.match(tokenCss, /--layout-page-inline:\s*16px;/);
 });

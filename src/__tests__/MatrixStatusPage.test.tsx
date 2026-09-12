@@ -217,7 +217,7 @@ test('自訂觸發條件入口移至底部導覽所在的 mobile-page 點擊層'
   expect(statusRule).toMatch(/^\.matrix-status-settings-entry\s*\{/);
   expect(statusRule).toMatch(/position:\s*fixed;/);
   expect(statusRule).toMatch(/z-index:\s*21;/);
-  expect(statusRule).toMatch(/right:\s*max\(10px, calc\(env\(safe-area-inset-right, 0px\) \+ 4px\)\);/);
+  expect(statusRule).toMatch(/right:\s*env\(safe-area-inset-right, 0px\);/);
   expect(screen.queryByRole('img', { name: '自訂觸發條件' })).not.toBeInTheDocument();
   expect(container.querySelector('.matrix-title-banner-actions')).not.toBeInTheDocument();
   expect(screen.getByTestId('lottery-switcher')).toHaveClass('lottery-switcher--home-style');
