@@ -121,7 +121,7 @@ components:
 
 首頁以外的 PWA 頁面統一由 `src/features/BrandHeader.tsx` 與 `src/feature-pages.css` 的 `.product-header*` 擁有標題卡，沿用探索頁的黑金樣式。首頁 Logo、首頁排列與獨立管理後台不屬於此次遷移。
 
-所有標題卡固定外框高度 68px、寬度為頁面寬度扣除左右各 16px，與下方內容間距 8px；單層 1px 金框、10px 圓角、深黑底與單一低透明度金色光暈。Logo 使用完整 `matrixYY.png`，56 × 48px、等比例呈現。返回箭頭 22px、觸控範圍 44 × 44px；通知、我的主頁與原本沒有返回鍵的頁面不新增返回鍵，但保留共用 44px 返回鍵欄位與 10px 欄距，原有返回目的地及快捷返回回呼維持不變。
+所有標題卡固定外框高度 68px、寬度為頁面寬度扣除左右各 16px，與下方內容間距 8px；單層 1px 金框、10px 圓角、深黑底；探索、天衡、天衍、天工採參考圖 06 暗金曲線，其餘 PWA 標題採 07 幾何線條，背景由 header-06-flow.svg／header-07-geometric.svg 呈現。Logo 使用完整 `matrixYY.png`，56 × 48px、等比例呈現。返回箭頭 22px、觸控範圍 44 × 44px；通知、我的主頁與原本沒有返回鍵的頁面不新增返回鍵，但保留共用 44px 返回鍵欄位與 10px 欄距，原有返回目的地及快捷返回回呼維持不變。
 
 主標題暖金色 `#f0c85f`、700、20px 上限，副標以 9px 灰金色為上限，極窄文字欄依 cqi 等比例縮小，靠左對齊、兩行間距 4px。主副標各自固定單行，不以換行、刪字或省略號改變頁名。主標依文字長度使用共用 short／regular／medium／long 字級範圍，搭配標題內容容器的 cqi 自動縮小；不得以額外 inline style、補償位移或覆寫控制字級。篩選、重設與探索設定等原有標題操作保留在卡內右側獨立的 grid 欄位，標題卡維持 68px；工具頁保留 sticky 行為與浮動設定面板的定位讀取。所有頁面共用單列返回鍵／Logo／文字／操作欄位，Logo 與 35px 主副標題組垂直置中；右側操作區寬 64px，按鈕每個高 24px、上下間距 4px。不為沒有操作按鈕的頁面預留下方空白列，文字起點不受按鈕數量影響。主標行盒固定 22px，使用 18px 零寬基線支架對齊縮字後的文字；副標起點、Logo 位置與文字左緣固定。
 
@@ -129,7 +129,7 @@ components:
 
 ### Navigation and data display
 
-2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、32px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁前三個欄位使用共用 `ExploreSettingIcon` 的 Lucide `CircleDot`／`CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
+2026-09-12：Matrix 探索、天衡、天衍、天工在「探索設定」標題同列右側共用文字分段切換，依探索、天衡、天衍、天工排列。`MatrixPageSwitcher` 保留完整 accessible name、`aria-current` 與既有導覽回呼；當前頁以金字、淡金底及粗體標示。單一 1px 金褐色外框、8px 圓角、28px 高、176px 可收縮寬度，由 `src/feature-pages.css` 擁有全部切換樣式；移除 `src/matrix-explore-spacing.css` 舊圖片入口的覆寫。探索頁期數與版路欄位使用共用 `ExploreSettingIcon` 的 Lucide `CalendarDays`／`GitBranch` 金色線條圖示，保留原有 1.8rem 佔位、內距 4px、線寬 1.75，沒有獨立底框與細字；其餘欄位與其他頁的設定圖示維持原素材。
 
 首頁由品牌、彩種切換、最新開獎、下次開獎、Matrix 狀態、Matrix Core、功能入口與底部導覽組成，詳見 `docs/COMPONENT_MAP.md`。Matrix Core 與五大功能入口保持分離。表格、歷史卡與彩球不因文件化而改變密度、順序或響應式幾何。
 
@@ -211,3 +211,9 @@ Select/Listbox 與 Date 採 `UX-CONTRACT.md` 宣告的 OS 原生 ownership；封
 筆記本列表、編輯、紀錄與設定頁統一沿用頁面左右 16px、標題卡下方 8px。`src/feature-pages.css` 是筆記本版面的樣式來源；圖示使用同一個 42px 尺寸，工具列各區與模式按鈕間距 8px。中間操作欄採可收縮寬度，刪除位於新增筆記上方，兩者字級 11px、正常字級下高度 26px。筆記摘要上下內距 5px，點選後進入獨立編輯頁。寫入筆記沿用 `primary-action branded-explore-action`，字級 14px、正常字級下高度 36px，允許放大文字時增加高度。不要再增加重複標題或卡片尾端的筆記刪除入口。
 
 
+
+### Core lottery tabs and integrated settings — 2026-09-12
+
+四個核心頁面使用 `LotteryTabs` 的 core 變體，置於標題卡下方 8px，四彩種等寬、36px 高、13px 文字；支援左右方向鍵與 Home／End。彩種切換沿用原有 state setter／changeLottery，不另增 API 或變更查詢規則。移除設定卡內彩種 select。探索與天衍的命中按鈕、進階設定歸入探索設定卡，不顯示命中條件標題；天衡保留独立命中條件，天工沿用既有兩段設定。設定區一般 segmented 選項 24→20px，命中按鈕 28→24px，文字字級不變。背景皆為低亮度靜態 SVG，不加入動畫。
+
+所有 PWA 標題與下方內容的 8px 由 `.product-header` 的 margin-bottom 唯一擁有，header 不再含底部 padding。浮動設定以 header 實際 bottom +8px 定位，因此與可見框線亦為 8px。移除通知與探索結果預覽額外的頂部 padding。

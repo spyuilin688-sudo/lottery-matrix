@@ -9,7 +9,7 @@ test("one CSS owner fixes every frame to 68px with single-line fitted titles", a
   const frame = css.match(/\.product-header__frame\s*\{[^}]*\}/s)[0];
   assert.match(frame, /height:\s*68px;/);
   assert.match(frame, /width:\s*100%;/);
-  assert.match(rules, /padding:\s*0 var\(--layout-page-inline\) 8px;/);
+  assert.match(rules, /padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*8px;/);
   assert.match(rules, /white-space:\s*nowrap;/);
   assert.match(rules, /container-type:\s*inline-size;/);
   assert.doesNotMatch(rules, /!important|translate|white-space:\s*normal/);

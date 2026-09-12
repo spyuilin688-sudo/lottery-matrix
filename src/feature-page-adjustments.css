@@ -10,7 +10,7 @@
   box-sizing: border-box;
   width: 100%;
   padding-inline: var(--notification-bulk-inline);
-  padding-block-start: 4px;
+  padding-block-start: 0;
   padding-block-end: calc(var(--layout-bottom-nav-clearance) + 8px);
 }
 

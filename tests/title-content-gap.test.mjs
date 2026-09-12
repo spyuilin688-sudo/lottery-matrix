@@ -8,7 +8,7 @@ const featurePages = fs.readFileSync(new URL('../src/feature-pages.css', import.
 const responsive = fs.readFileSync(new URL('../src/responsive-feature-pages.css', import.meta.url), 'utf8');
 
 test('title cards use the shared eight-pixel default and the approved profile spacing [header migration]', () => {
-  assert.match(shared, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\) 8px;/s);
+  assert.match(shared, /\.product-header\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0 var\(--layout-page-inline\);[^}]*margin-bottom:\s*8px;/s);
   for (const css of [explore, responsive]) assert.doesNotMatch(css, /matrix-title-banner|feature-brand-header/);
   assert.doesNotMatch(featurePages, /\.profile-screen > \.product-header/);
 });

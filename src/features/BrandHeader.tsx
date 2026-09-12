@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
 
+const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天衍", "Matrix 天工"]);
+
 const PAGE_SUBTITLES: Readonly<Record<string, string>> = {
   "Matrix 探索": "EXPLORE",
   "Matrix 天衡": "TIANHENG",
@@ -52,7 +54,7 @@ export function BrandHeader({ title, onBack, backHref, action, showBack = true }
     width + (/[^\u0000-\u007f]/.test(character) ? 1 : /[A-Z]/.test(character) ? .75 : .6), 0);
   const titleFit = titleWidth <= 6 ? "short" : titleWidth <= 8 ? "regular" : titleWidth <= 11 ? "medium" : "long";
   return (
-    <header className="feature-brand-header product-header" data-product-header={title}>
+    <header className="feature-brand-header product-header" data-product-header={title} data-header-style={CORE_HEADER_TITLES.has(title) ? "flow" : "geometric"}>
       <div className="product-header__frame" data-back={hasBack} data-actions={Boolean(action)}>
         {hasBack ? backHref ? (
           <a className="product-header__back" href={backHref} aria-label="返回">

@@ -282,3 +282,10 @@ Print geometry remains 2276 × 3438 under the existing backend renderer. Bundled
 
 依使用者確認，首頁 Logo 位於 `MobileScroll` 外的固定品牌列；首頁內容仍由既有 `.mobile-scroll` 使用原生上下捲動。品牌列依圖片比例保留實際高度，下方捲動區填滿剩餘空間，內容與鍵盤焦點不會滑入 Logo 後方。保留既有 Logo 大小、安全區、卡片間距及固定底部導覽。2026-09-10 依使用者確認，僅 Logo 圖片上移 16px，品牌列佔位與下方內容位置不變。此行為限首頁，功能頁共用 `MobileScroll` 與 Logo 不變。
 
+
+## Core settings and header backgrounds — 2026-09-12
+
+- Four core pages use the approved 06 flow background; all other non-home PWA headers use 07 geometric. Existing fixed dimensions, logo, back behavior and right-side sticky controls remain.
+- Lottery tabs sit 8px below the frame and retain the existing lottery-change behavior. The core variant uses four equal tabs with keyboard selection, without the redundant lottery select.
+- Explore and Tianyan render their existing hit and advanced controls inside the settings card. Tianheng keeps its hit section; Tiangong retains its existing stage settings. No algorithm, entitlement, default or result behavior changes.
+- One 8px header bottom margin separates the frame and the next visible content. The header rect excludes this margin, so existing floating-panel bottom +8px calculations produce an actual 8px gap.

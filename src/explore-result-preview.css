@@ -59,7 +59,7 @@
 .explore-result-preview-screen > .feature-body {
   box-sizing: border-box;
   width: 100%;
-  padding: 8px var(--layout-page-inline) calc(24px + env(safe-area-inset-bottom));
+  padding: 0 var(--layout-page-inline) calc(24px + env(safe-area-inset-bottom));
 }
 
 .explore-result-preview-screen.matrix-explore-main-screen .result-panel {

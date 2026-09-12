@@ -16,6 +16,7 @@ test("all title variants render the official logo, complete title, subtitle and 
     ["聯絡客服/問題回報/商務合作", true, "CONTACT & SUPPORT"],
   ] as const) {
     const doc = new DOMParser().parseFromString(renderToStaticMarkup(createElement(BrandHeader, { title, onBack() {}, showBack: back })), "text/html");
+    assert.equal(doc.querySelector('header')!.getAttribute('data-header-style'), ['Matrix 探索','Matrix 天衡','Matrix 天衍','Matrix 天工'].includes(title) ? 'flow' : 'geometric');
     assert.equal(doc.querySelector('h1')!.textContent, title.replace(/^Matrix\b/, "MATRIX"));
     assert.equal(doc.querySelector('.product-header__copy > span')!.textContent, subtitle);
     assert.equal(doc.querySelector('.product-header__mark')!.getAttribute('src'), '/assets/lottery/matrixYY.png');

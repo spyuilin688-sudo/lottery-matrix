@@ -168,17 +168,30 @@ export function SettingLabelIcon({
 export function LotteryTabs({
   selected,
   onChange,
+  variant = "default",
 }: {
   selected: LotteryId;
+  variant?: "default" | "core";
   onChange: (value: LotteryId) => void;
 }) {
   return (
-    <div className="lottery-tabs" role="tablist" aria-label="彩種">
+    <div className={variant === "core" ? "core-lottery-tabs" : "lottery-tabs"} role="tablist" aria-label={variant === "core" ? "彩種切換" : "彩種"}>
       {LOTTERIES.map((item) => (
         <button
           type="button"
           role="tab"
           aria-selected={selected === item}
+          tabIndex={selected === item ? 0 : -1}
+          onKeyDown={(event) => {
+            const index = LOTTERIES.indexOf(item);
+            const next = event.key === "ArrowRight" ? (index + 1) % LOTTERIES.length
+              : event.key === "ArrowLeft" ? (index + LOTTERIES.length - 1) % LOTTERIES.length
+              : event.key === "Home" ? 0 : event.key === "End" ? LOTTERIES.length - 1 : -1;
+            if (next < 0) return;
+            event.preventDefault();
+            onChange(LOTTERIES[next]);
+            event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+          }}
           data-selected={selected === item}
           onClick={() => onChange(item)}
           key={item}

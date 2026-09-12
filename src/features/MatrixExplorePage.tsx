@@ -12,7 +12,7 @@ import { bootstrapMember, fetchMemberProfile, type MemberProfileResponse } from 
 import { getExploreEntryDefaults } from "../explore-defaults";
 import { useAppDialog } from "../dialog/AppDialog";
 import { Navigate } from "./navigation";
-import { FeatureShell, MatrixPageSwitcher, SectionTitle, ExploreSettingIcon, SettingLabelIcon, LOTTERIES, HistoryList } from "./shared";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, ExploreSettingIcon, SettingLabelIcon, LotteryTabs, HistoryList } from "./shared";
 import { ExploreValidationProcess, TianhengValidationProcess, TianyanValidationProcess, RoadValidationProcess } from "./MatrixValidation";
 
 export function MatrixExplorePage({
@@ -485,56 +485,8 @@ export function MatrixExplorePage({
     });
   };
 
-  return (
-    <FeatureShell
-      title={title}
-      onNavigate={onNavigate}
-      backTarget={title === "Matrix 探索" ? "home" : "explore"}
-      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${isTianheng ? "matrix-tianheng-screen" : isTianyan ? "matrix-tianyan-screen" : ""}`}
-    >
-      <section className="panel explore-settings">
-        <header className="matrix-settings-heading">
-          <SectionTitle>探索設定</SectionTitle>
-          <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
-        </header>
-        <div className="setting-grid">
-          <label><span>{isExplore ? <ExploreSettingIcon type="lottery" /> : <SettingLabelIcon type="lottery" />}<b>彩球類型</b></span>
-            <div className="select-box native-select">
-              <select
-                aria-label="彩種"
-                value={lottery}
-                onChange={(event) => changeLottery(event.target.value as LotteryId)}
-              >
-                {LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}
-              </select>
-              <ChevronDownIcon aria-hidden="true" />
-            </div>
-          </label>
-          <label><span>{isExplore ? <ExploreSettingIcon type="period" /> : <SettingLabelIcon type="period" />}探索期數</span>
-            <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
-              {periodOptions.map((v) => (
-                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
-                  {v}
-                  {(isExplore || isTianheng) && v === "十三期" && !exploreAccess?.canUseThirteen ? <em><LockClosedIcon />Matrix Pro</em> : null}
-                </button>
-              ))}
-            </div>
-          </label>
-          <label><span>{isExplore ? <ExploreSettingIcon type="road" /> : <SettingLabelIcon type="road" />}版路類型</span>
-            <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
-              {roadTypes.map((v) => (
-                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={road === v} onClick={() => changeRoad(v)}>
-                  {v}
-                  {(isExplore || isTianheng) && v === "拖牌版路" ? <em>推薦</em> : null}
-                </button>
-              ))}
-            </div>
-          </label>
-        </div>
-      </section>
-
-      <section className="panel hit-advanced-panel">
-        <SectionTitle>命中條件</SectionTitle>
+  const hitSettings = (
+    <>
         <div className="segmented two hit-options">
           {(isTianheng ? ["準5+（鎖定1碼）", "準6+（鎖定2碼）"] : isTianyan ? ["準5+（鎖定2碼）"] : ["準4+（鎖定1碼）", "準5+（鎖定2碼）"]).map((v) => (
             <button type="button" key={v} data-selected={hit === v} onClick={() => changeHit(v)}>{v}</button>
@@ -602,7 +554,53 @@ export function MatrixExplorePage({
             </label>
           </div>
         ) : null}
+    </>
+  );
+
+  return (
+    <FeatureShell
+      title={title}
+      onNavigate={onNavigate}
+      backTarget={title === "Matrix 探索" ? "home" : "explore"}
+      className={`matrix-explore-screen matrix-explore-main-screen matrix-explore-layout ${isTianheng ? "matrix-tianheng-screen" : isTianyan ? "matrix-tianyan-screen" : ""}`}
+    >
+      <LotteryTabs selected={lottery} onChange={changeLottery} variant="core" />
+      <section className="panel explore-settings">
+        <header className="matrix-settings-heading">
+          <SectionTitle>探索設定</SectionTitle>
+          <MatrixPageSwitcher current={isTianheng ? "tianheng" : isTianyan ? "tianyan" : "explore"} onNavigate={onNavigate} />
+        </header>
+        <div className="setting-grid">
+          <label><span>{isExplore ? <ExploreSettingIcon type="period" /> : <SettingLabelIcon type="period" />}探索期數</span>
+            <div className={`segmented ${isTianyan ? "one" : isTianheng ? "two" : "three"}`}>
+              {periodOptions.map((v) => (
+                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={period === v} onClick={() => setPeriod(v)}>
+                  {v}
+                  {(isExplore || isTianheng) && v === "十三期" && !exploreAccess?.canUseThirteen ? <em><LockClosedIcon />Matrix Pro</em> : null}
+                </button>
+              ))}
+            </div>
+          </label>
+          <label><span>{isExplore ? <ExploreSettingIcon type="road" /> : <SettingLabelIcon type="road" />}版路類型</span>
+            <div className={`segmented ${roadTypes.length === 1 ? "one" : "three"}`}>
+              {roadTypes.map((v) => (
+                <button type="button" key={v} aria-label={isTianheng ? v : undefined} data-selected={road === v} onClick={() => changeRoad(v)}>
+                  {v}
+                  {(isExplore || isTianheng) && v === "拖牌版路" ? <em>推薦</em> : null}
+                </button>
+              ))}
+            </div>
+          </label>
+        </div>
+        {!isTianheng ? <div className="explore-hit-settings">{hitSettings}</div> : null}
       </section>
+
+      {isTianheng ? (
+        <section className="panel hit-advanced-panel">
+          <SectionTitle>命中條件</SectionTitle>
+          {hitSettings}
+        </section>
+      ) : null}
 
       <button type="button" className="primary-action branded-explore-action" onClick={startExplore}>
         <MagnifyingGlassIcon /><span>{isTianyan ? "開始天衍" : isTianheng ? "開始天衡" : "開始探索"}</span>

@@ -241,8 +241,8 @@
   box-sizing: border-box;
   display: flex;
   min-width: 0;
-  height: 24px;
-  min-height: 24px;
+  height: 20px;
+  min-height: 20px;
   padding: .125rem .25rem;
   flex: 1 1 0;
   align-items: center;
@@ -275,8 +275,8 @@
 
 .matrix-explore-main-screen .hit-options button {
   box-sizing: border-box;
-  height: 28px;
-  min-height: 28px;
+  height: 24px;
+  min-height: 24px;
   padding: .125rem .25rem;
   flex: 1 1 0;
 }

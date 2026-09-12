@@ -12,7 +12,7 @@ import { ChevronDownIcon, MagnifyingGlassIcon, DoubleArrowLeftIcon, DoubleArrowR
 import { type LotteryId } from "../Prototype";
 import { fetchTiangongList, fetchTiangongValidation, type TiangongApiRow, type TiangongListResponse, type TiangongValidation } from "../matrix-algorithm-api";
 import { Navigate } from "./navigation";
-import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LOTTERIES } from "./shared";
+import { FeatureShell, MatrixPageSwitcher, SectionTitle, SettingLabelIcon, LotteryTabs } from "./shared";
 import { MATRIX_RESULTS_PER_PAGE, MatrixResultsPagination } from "./MatrixResultsPagination";
 
 export function TiangongValidationProcess({ validation, loading, lottery = "今彩539", predictionNumber, predictedPosition, item }: { validation?: TiangongValidation; loading: boolean; lottery?: LotteryId; predictionNumber?: string; predictedPosition?: number; item?: TiangongApiRow }) {
@@ -228,13 +228,13 @@ export function MatrixTiangongPage({ onNavigate }: { onNavigate: Navigate }) {
   };
   return (
     <FeatureShell title="Matrix 天工" onNavigate={onNavigate} backTarget="explore" className="matrix-explore-screen matrix-explore-main-screen matrix-explore-layout matrix-tiangong-screen">
+      <LotteryTabs selected={lottery} onChange={setLottery} variant="core" />
       <section className="panel explore-settings tiangong-settings tiangong-general-settings">
         <header className="matrix-settings-heading">
           <SectionTitle>探索設定</SectionTitle>
           <MatrixPageSwitcher current="tiangong" onNavigate={onNavigate} />
         </header>
         <div className="setting-grid">
-          <label><span><SettingLabelIcon type="lottery" /><b>彩球類型</b></span><div className="select-box native-select"><select aria-label="彩球類型" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option key={item}>{item}</option>)}</select><ChevronDownIcon /></div></label>
           <label><span id="tiangong-period-label"><SettingLabelIcon type="period" />探索期數</span><div className="segmented tiangong-period-options"><output className="segmented-static" data-selected="true" aria-labelledby="tiangong-period-label">五十期</output></div></label>
           <div className="tiangong-setting-row tiangong-advanced-divider" role="group" aria-label="探索球位"><span className="tiangong-setting-label"><img className="setting-label-icon matrix-explore-setting-icon" src="/assets/lottery/functions/探索球位.png" alt="" aria-hidden="true" />探索球位</span><div className="segmented three">{positionOptions.map(({ value, label }) => <button type="button" data-selected={searchPositions.includes(value)} onClick={() => toggle(value, searchPositions, setSearchPositions)} key={value}>{label}</button>)}</div></div>
         </div>

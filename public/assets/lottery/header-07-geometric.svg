@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 136" fill="none">
+<defs>
+<linearGradient id="metal" x1="615" y1="130" x2="793" y2="8" gradientUnits="userSpaceOnUse"><stop stop-color="#b5904c" stop-opacity="0"/><stop offset=".7" stop-color="#c3ae80" stop-opacity=".075"/><stop offset="1" stop-color="#c3ae80" stop-opacity=".13"/></linearGradient>
+<linearGradient id="gold" x1="585" y1="136" x2="800" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#ac7827" stop-opacity=".04"/><stop offset=".65" stop-color="#cda451" stop-opacity=".35"/><stop offset="1" stop-color="#e2ba62" stop-opacity=".55"/></linearGradient>
+<linearGradient id="dim" x1="0" y1="128" x2="120" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#be913f" stop-opacity=".32"/><stop offset="1" stop-color="#be913f" stop-opacity=".04"/></linearGradient>
+</defs>
+<path d="M583 136L717 0H747L614 136Z" fill="url(#metal)"/>
+<path d="M638 136L772 0H800L666 136Z" fill="url(#metal)"/>
+<path d="M574 136L708 0M627 136L761 0M685 136L819 0" stroke="url(#gold)" stroke-width=".9"/>
+<path d="M0 101L99 0H119L0 121Z" fill="#bba06b" fill-opacity=".035"/>
+<path d="M0 134L132 0M-19 102L81 0" stroke="url(#dim)" stroke-width=".85"/>
+</svg>
