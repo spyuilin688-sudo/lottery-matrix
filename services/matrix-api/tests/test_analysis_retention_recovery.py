@@ -157,3 +157,108 @@ def test_workers_rebuild_missing_artifacts_and_preserve_valid_results(analysis_o
     else:
         assert built_phases == []
     assert repository.has_explore_results(lottery, period, version) is (artifact_state != "empty")
+
+
+def complete_owned(repository, lottery, period, version):
+    started = datetime.now(UTC).isoformat()
+    repository.begin_run(lottery, period, version, started, owner_id="worker")
+    for kind in ARTIFACT_KINDS:
+        repository.save_artifact(lottery, period, version, kind, {}, owner_id="worker", run_started_at=started)
+    repository.complete_run(lottery, period, version, started, owner_id="worker")
+    return repository.runs[(lottery, period, version)]
+
+
+def activation_draw(lottery="今彩539", period="115000220", date="2026-09-12"):
+    numbers = ["01", "02", "03", "04", "05"] if lottery in {"今彩539", "天天樂"} else ["01", "02", "03", "04", "05", "06", "07"]
+    return {"lottery": lottery, "period": period, "drawDate": date, "numbers": numbers,
+            "drawOrderNumbers": ["02", "01", *numbers[2:]], "resultStatus": "confirmed"}
+
+
+@pytest.mark.parametrize("lottery", ["今彩539", "六合彩", "大樂透"])
+def test_owned_completion_activates_future_suffix_versions_independently(lottery):
+    repository = InMemoryAnalysisRepository()
+    draw = activation_draw(lottery)
+    repository.upsert_draw(draw)
+    period = draw["period"]
+    complete_owned(repository, lottery, period, "v99-sorted")
+    complete_owned(repository, lottery, period, "v100-draw")
+    run = complete_owned(repository, lottery, period, "v101-sorted")
+    assert repository.active_versions == {
+        (lottery, period, "sorted"): "v101-sorted",
+        (lottery, period, "draw"): "v100-draw",
+    }
+    assert (run["status"], run["phase"], run["leaseOwner"], run["leaseExpiresAt"], run["error"]) == (
+        "complete", "complete", None, None, None,
+    )
+    assert run["completedAt"] == run["startedAt"]
+
+
+@pytest.mark.parametrize("version", ["matrix-python-v13", "v99-unknown", "v99-sorted-extra", "v99-draw-extra"])
+def test_legacy_or_unknown_suffix_completes_without_replacing_active_versions(version):
+    repository = InMemoryAnalysisRepository()
+    draw = activation_draw()
+    repository.upsert_draw(draw)
+    complete_owned(repository, draw["lottery"], draw["period"], "v99-sorted")
+    run = complete_owned(repository, draw["lottery"], draw["period"], version)
+    assert run["status"] == "complete"
+    assert repository.active_versions == {(draw["lottery"], draw["period"], "sorted"): "v99-sorted"}
+
+
+@pytest.mark.parametrize("lottery,changes", [
+    ("天天樂", {}),
+    ("今彩539", {"resultStatus": "preliminary"}),
+    ("今彩539", {"drawOrderNumbers": None}),
+    ("今彩539", {"drawOrderNumbers": "0102030405"}),
+    ("今彩539", {"drawOrderNumbers": ["01", "02", "03", "04"]}),
+    ("今彩539", {"drawOrderNumbers": ["01", "02", "03", "04", "06"]}),
+    ("今彩539", {"numbers": ["01", "01", "03", "04", "05"], "drawOrderNumbers": ["01", "01", "03", "04", "05"]}),
+    ("六合彩", {"drawOrderNumbers": ["07", "02", "03", "04", "05", "06", "01"]}),
+    ("大樂透", {"drawOrderNumbers": ["01", "02", "03", "04", "05"]}),
+])
+def test_ineligible_draw_completion_is_atomic(lottery, changes):
+    repository = InMemoryAnalysisRepository()
+    draw = {**activation_draw(lottery), **changes}
+    repository.upsert_draw(draw)
+    complete_owned(repository, lottery, draw["period"], "v99-sorted")
+    with pytest.raises(RuntimeError, match="^ANALYSIS_RUN_LEASE_LOST$"):
+        complete_owned(repository, lottery, draw["period"], "v99-draw")
+    run = repository.runs[(lottery, draw["period"], "v99-draw")]
+    assert (run["status"], run["leaseOwner"], run["completedAt"]) == ("running", "worker", None)
+    assert repository.active_versions == {(lottery, draw["period"], "sorted"): "v99-sorted"}
+
+
+@pytest.mark.parametrize("sorted_changed", [False, True])
+def test_source_invalidation_prunes_only_pointers_to_removed_runs(sorted_changed):
+    repository = InMemoryAnalysisRepository()
+    previous = activation_draw(period="115000219", date="2026-09-11")
+    current = activation_draw()
+    unrelated = activation_draw("六合彩")
+    repository.upsert_draws([previous, current, unrelated])
+    for draw in (previous, current, unrelated):
+        for version in ("v99-sorted", "v99-draw"):
+            complete_owned(repository, draw["lottery"], draw["period"], version)
+    changes = {"numbers": ["01", "02", "03", "04", "06"]} if sorted_changed else {"drawOrderNumbers": previous["numbers"]}
+    repository.upsert_draw({**previous, **changes})
+    expected = {
+        (draw["lottery"], draw["period"], order): f"v99-{order}"
+        for draw in (previous, current, unrelated) for order in ("sorted", "draw")
+        if draw["lottery"] == "六合彩" or (not sorted_changed and order == "sorted")
+    }
+    assert repository.active_versions == expected
+    assert all((lottery, period, version) in repository.runs for (lottery, period, _), version in expected.items())
+
+
+def test_upsert_draws_rollback_restores_active_versions_with_runs_and_draws():
+    repository = InMemoryAnalysisRepository()
+    previous = activation_draw(period="115000219", date="2026-09-11")
+    current = activation_draw()
+    repository.upsert_draws([previous, current])
+    for version in ("v99-sorted", "v99-draw"):
+        complete_owned(repository, current["lottery"], current["period"], version)
+    before = {name: dict(getattr(repository, name)) for name in ("draws", "runs", "artifacts", "active_versions")}
+    with pytest.raises(ValueError, match="^DRAW_PERIOD_DATE_CONFLICT$"):
+        repository.upsert_draws([
+            {**previous, "drawOrderNumbers": previous["numbers"]},
+            {**current, "drawDate": "2026-09-13"},
+        ])
+    assert {name: getattr(repository, name) for name in before} == before

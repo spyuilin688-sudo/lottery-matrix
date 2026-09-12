@@ -220,3 +220,88 @@ def test_supabase_restore_captures_generation_before_materializing_saved_chunks(
         "p_started_at": started_at, "p_kind": kind, "p_records": [],
     }
     assert body["p_records"][0]["item"]["number"] == "06"
+
+
+@pytest.mark.parametrize("response_data", [True, False, None, 1, "true", [True], {"accepted": True}])
+@pytest.mark.parametrize("owner_id", ["worker", None])
+def test_completion_uses_one_atomic_rpc_and_requires_literal_true(response_data, owner_id):
+    requests = []
+    completed_at = "2026-09-12T01:02:03+00:00"
+
+    def respond(request):
+        assert request.method == "POST"
+        requests.append((request.method, request.url.path, json.loads(request.content)))
+        return httpx.Response(200, content=json.dumps(response_data), headers={"content-type": "application/json"})
+
+    with httpx.Client(transport=httpx.MockTransport(respond)) as session:
+        repository = SupabaseAnalysisRepository(SyncPostgrestClient("https://example.test/rest/v1", http_client=session))
+        if response_data is True:
+            repository.complete_run(*KEY, completed_at, owner_id=owner_id)
+        else:
+            with pytest.raises(RuntimeError, match="^ANALYSIS_RUN_LEASE_LOST$"):
+                repository.complete_run(*KEY, completed_at, owner_id=owner_id)
+    assert requests == [("POST", "/rest/v1/rpc/matrix_analysis_complete_owned", {
+        "p_lottery": LOTTERY, "p_draw_period": PERIOD, "p_analysis_version": VERSION,
+        "p_owner_id": owner_id, "p_completed_at": completed_at,
+    })]
+
+
+@pytest.mark.parametrize("rejection", ["stale_owner", "expired", "expiry_boundary", "missing_owner", "blank_owner", "failed", "complete", "missing_run"])
+def test_owned_completion_rejection_preserves_run_and_active_version(rejection, monkeypatch):
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw(DRAW)
+    seed_completed(repository, "05")
+    replacement_key = (LOTTERY, PERIOD, f"{PERIOD}:future-sorted")
+    started = datetime.now(UTC).isoformat()
+    repository.begin_run(*replacement_key, started, owner_id="worker")
+    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+        repository.save_artifact(*replacement_key, kind, {}, owner_id="worker", run_started_at=started)
+    owner = "worker"
+    if rejection == "stale_owner":
+        owner = "old-worker"
+    elif rejection in {"expired", "expiry_boundary"}:
+        now = datetime.now(UTC)
+        if rejection == "expiry_boundary":
+            class FrozenDateTime(datetime):
+                @classmethod
+                def now(cls, tz=None):
+                    return now
+
+            monkeypatch.setattr("app.repositories.analysis_repository.datetime", FrozenDateTime)
+        repository.runs[replacement_key]["leaseExpiresAt"] = (
+            now - timedelta(seconds=1 if rejection == "expired" else 0)
+        ).isoformat()
+    elif rejection == "missing_owner":
+        owner = None
+    elif rejection == "blank_owner":
+        owner = " "
+        repository.runs[replacement_key]["leaseOwner"] = owner
+    elif rejection == "missing_run":
+        del repository.runs[replacement_key]
+    else:
+        repository.runs[replacement_key]["status"] = rejection
+    before = {key: dict(run) for key, run in repository.runs.items()}
+    with pytest.raises(RuntimeError, match="^ANALYSIS_RUN_LEASE_LOST$"):
+        repository.complete_run(*replacement_key, started, owner_id=owner)
+    assert repository.runs == before
+    assert repository.active_versions == {(LOTTERY, PERIOD, "sorted"): VERSION}
+
+
+@pytest.mark.parametrize("missing_kind", ["explore", "tianheng", "tianyan", "tiangong", "status"])
+def test_owned_completion_missing_artifacts_preserves_running_owner_and_previous_activation(missing_kind):
+    repository = InMemoryAnalysisRepository()
+    repository.upsert_draw(DRAW)
+    seed_completed(repository, "05")
+    key = (LOTTERY, PERIOD, "future-sorted")
+    started = datetime.now(UTC).isoformat()
+    repository.begin_run(*key, started, owner_id="worker")
+    for kind in ("explore", "tianheng", "tianyan", "tiangong", "status"):
+        if kind != missing_kind:
+            repository.save_artifact(*key, kind, {}, owner_id="worker", run_started_at=started)
+    before = dict(repository.runs[key])
+    with pytest.raises(ValueError, match="^ANALYSIS_ARTIFACTS_INCOMPLETE$"):
+        repository.complete_run(*key, started, owner_id="worker")
+    assert repository.runs[key] == before
+    assert repository.active_versions == {(LOTTERY, PERIOD, "sorted"): VERSION}
+    with pytest.raises(RuntimeError, match="^ANALYSIS_RUN_LEASE_LOST$"):
+        repository.complete_run(*key, started, owner_id="stale-worker")
