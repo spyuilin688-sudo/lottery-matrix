@@ -2595,8 +2595,136 @@ opacity: .30; box-shadow: none;
 .feature-screen:not(.compact-feature-screen) {
   padding-top: 0;
 }
-.matrix-explore-main-screen .feature-brand-header {
-  padding-inline: 0;
+/* Matrix 探索：產品型頁首為唯一正式樣式來源；不沿用圖片式標題卡。 */
+.explore-product-header {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 var(--layout-page-inline);
+}
+.explore-product-header__frame {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 78px;
+  grid-template-columns: 42px 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(205, 155, 62, .74);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 76% 45%, rgba(201, 149, 48, .13), transparent 31%),
+    linear-gradient(108deg, #02070b 0%, #061017 58%, #020609 100%);
+  box-shadow: inset 0 0 18px rgba(214, 162, 66, .045);
+}
+.explore-product-header__frame::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 14%;
+  width: 36%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(246, 207, 112, .82), transparent);
+  content: "";
+}
+.explore-product-header__frame::after {
+  position: absolute;
+  z-index: -2;
+  top: 50%;
+  right: 3%;
+  width: 112px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(202, 151, 47, .12), transparent 66%);
+  content: "";
+}
+.explore-product-header__back,
+.explore-product-header__back-spacer {
+  width: 42px;
+  height: 42px;
+}
+.explore-product-header__back {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f2eee6;
+  cursor: pointer;
+}
+.explore-product-header__back:hover {
+  background: rgba(213, 166, 72, .08);
+}
+.explore-product-header__back:active {
+  background: rgba(213, 166, 72, .14);
+}
+.explore-product-header__back:focus-visible {
+  outline: 2px solid var(--lottery-gold-300);
+  outline-offset: -2px;
+}
+.explore-product-header__back svg {
+  width: 29px;
+  height: 29px;
+}
+.explore-product-header__mark {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(217, 169, 72, .2));
+}
+.explore-product-header__copy {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+.explore-product-header__copy h1 {
+  margin: 0;
+  color: #f0c85f;
+  font-size: clamp(20px, 5.9vw, 24px);
+  font-weight: 750;
+  line-height: 1.08;
+  letter-spacing: .015em;
+  white-space: nowrap;
+}
+.explore-product-header__copy > span {
+  display: block;
+  margin-top: 5px;
+  color: rgba(221, 214, 201, .7);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .32em;
+}
+.explore-product-header__orbit {
+  position: absolute;
+  z-index: 0;
+  top: 7px;
+  right: -18px;
+  width: 154px;
+  height: 62px;
+  border: 1px solid rgba(215, 165, 65, .24);
+  border-radius: 50%;
+  rotate: -18deg;
+  box-shadow: 0 0 12px rgba(203, 150, 46, .06), inset 0 0 11px rgba(214, 166, 68, .05);
+  pointer-events: none;
+}
+.explore-product-header__actions {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 .feature-body {
   box-sizing: border-box;

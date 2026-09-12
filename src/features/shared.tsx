@@ -37,7 +37,6 @@ export const MATRIX_PAGE_ITEMS = [
 ] as const;
 
 export const MATRIX_TITLE_ARTWORK: Partial<Record<string, string>> = {
-  "Matrix 探索": "/assets/lottery/functions/探索標題K.png",
   "Matrix 天衡": "/assets/lottery/functions/天衡標題K.png",
   "Matrix 天衍": "/assets/lottery/functions/天衍標題K.png",
   "Matrix 天工": "/assets/lottery/functions/天工標題K.png",
@@ -104,6 +103,33 @@ export function BrandHeader({
   showBack?: boolean;
   artwork?: string;
 }) {
+  if (title === "Matrix 探索" && !artwork && !hideTitle) {
+  return (
+    <header className="explore-product-header" data-product-header="explore">
+      <div className="explore-product-header__frame">
+        {showBack ? (
+          <button type="button" className="explore-product-header__back" onClick={onBack} aria-label="返回">
+            <ChevronLeftIcon aria-hidden="true" />
+          </button>
+        ) : <span className="explore-product-header__back-spacer" aria-hidden="true" />}
+        <img
+          className="explore-product-header__mark"
+          src="/assets/lottery/functions/Matrix探索-icon.png"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
+        <div className="explore-product-header__copy">
+          <h1>MATRIX 探索</h1>
+          <span>EXPLORE</span>
+        </div>
+        <span className="explore-product-header__orbit" aria-hidden="true" />
+        {action ? <div className="explore-product-header__actions">{action}</div> : null}
+      </div>
+    </header>
+  );
+}
+
   const integratedArtwork = artwork ?? MATRIX_TITLE_ARTWORK[title];
   if (integratedArtwork && (!hideTitle || Boolean(artwork))) {
     return (
