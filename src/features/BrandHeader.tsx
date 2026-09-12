@@ -57,7 +57,6 @@ export function HeaderSettingsButton({ expanded, controls, onClick, label = "探
 }) {
   return (
     <button type="button" className="product-header__settings-toggle" aria-label={`${expanded ? "收合" : "展開"}${accessibleLabel}`} aria-expanded={expanded} aria-controls={controls} onClick={onClick}>
-      <svg className="product-header__settings-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
       <span>{label}</span>
       <ChevronDownIcon aria-hidden="true" data-open={expanded} />
     </button>
