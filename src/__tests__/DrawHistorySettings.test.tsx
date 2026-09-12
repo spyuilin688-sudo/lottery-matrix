@@ -28,8 +28,8 @@ test('歷史篩選設定初始內嵌，探索後收合，再展開時固定為�
 
   const inlinePanel = screen.getByRole('region', { name: '歷史篩選設定' });
   expect(inlinePanel.parentElement).not.toBe(mobilePage);
-  expect(within(inlinePanel).getByRole('button', { name: '重設' }).parentElement?.className).toBe('history-filter-primary-row');
-  expect(within(header!).queryByRole('button', { name: '重設' })).toBeNull();
+  expect(within(inlinePanel).getByRole('button', { name: '重設' }).parentElement?.classList.contains('history-filter-primary-row')).toBe(true);
+  expect(within(header!.querySelector<HTMLElement>('.product-header__frame')!).queryByRole('button', { name: '重設' })).toBeNull();
   expect(screen.getByRole('combobox', { name: '彩種' })).not.toBeNull();
   expect(screen.getByRole('combobox', { name: '號碼順序' })).not.toBeNull();
   expect(screen.getByRole('combobox', { name: '年份' })).not.toBeNull();
@@ -49,8 +49,8 @@ test('歷史篩選設定初始內嵌，探索後收合，再展開時固定為�
   fireEvent.click(screen.getByRole('button', { name: '展開篩選設定' }));
   const dialog = screen.getByRole('dialog', { name: '歷史篩選設定' });
   expect(dialog.getAttribute('data-floating')).toBe('true');
-  expect(dialog.parentElement).toBe(mobilePage);
-  expect(dialog.style.top).toBe('128px');
+  expect(header!.contains(dialog)).toBe(true);
+  expect(dialog.getAttribute('style')).toBeNull();
   fireEvent.change(within(dialog).getByRole('combobox', { name: '號碼順序' }), { target: { value: '依實際開獎順序排序' } });
   fireEvent.change(within(dialog).getByRole('combobox', { name: '探索範圍' }), { target: { value: '3000期' } });
   fireEvent.click(within(dialog).getByRole('button', { name: '重設' }));

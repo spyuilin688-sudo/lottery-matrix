@@ -153,9 +153,7 @@
   scroll-margin-bottom: calc(var(--layout-bottom-nav-clearance) + var(--tool-section-gap));
 }
 
-.history-filter-panel,
-.reference-query-panel,
-.tongxing-query {
+.tool-settings-panel {
   box-sizing: border-box;
   font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   width: 100%;
@@ -164,28 +162,8 @@
   height: auto;
   margin: 0;
   padding: 8px;
-  border: 1px solid #6c4a20;
-  border-radius: 11px;
-  background: linear-gradient(145deg, rgba(8, 16, 22, .99), rgba(2, 8, 13, .99));
-  box-shadow: inset 0 0 18px rgba(150, 102, 34, .04);
-}
-
-.history-filter-panel[data-floating="true"],
-.reference-query-panel[data-floating="true"],
-.tongxing-query[data-floating="true"] {
-  position: fixed;
-  z-index: 45;
-  left: 16px;
-  right: 16px;
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  max-height: calc(100dvh - var(--layout-bottom-nav-clearance) - var(--tool-floating-clearance));
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .72), inset 0 0 18px rgba(150, 102, 34, .04);
+  border: 0;
+  background: transparent;
 }
 
 .history-filter-panel[hidden],
@@ -200,8 +178,12 @@
 .history-filter-primary-row,
 .reference-query-panel .query-selects.three-cols { width: 100%; }
 
-.history-filter-primary-row .select-box,
-.reference-query-panel .query-selects.three-cols .select-box {
+.tool-settings-primary-row .select-box {
+  --select-tech-cut: 4px;
+  --select-tech-border-paint: #8a7147;
+  --select-tech-surface-paint: linear-gradient(180deg, #101514, #020609);
+  --select-tech-frame-shadow: none;
+  --select-tech-focus-shadow: none;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -210,10 +192,11 @@
   background: transparent;
 }
 
-.history-filter-primary-row .select-box::before,
-.history-filter-primary-row .select-box::after,
-.reference-query-panel .query-selects.three-cols .select-box::before,
-.reference-query-panel .query-selects.three-cols .select-box::after { display: block; }
+.tool-settings-primary-row .select-box::before,
+.tool-settings-primary-row .select-box::after { display: block; }
+
+.tool-settings-primary-row .select-box:hover { --select-tech-border-paint: #b7995e; }
+.tool-settings-primary-row .select-box:focus-within { --select-tech-border-paint: var(--lottery-gold-300); }
 
 .history-filter-start.branded-explore-action {
   display: flex;
@@ -426,4 +409,3 @@
   font-size: 14px;
   line-height: 18px;
 }
-

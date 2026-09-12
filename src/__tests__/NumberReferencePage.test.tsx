@@ -47,8 +47,8 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   const header = mobilePage.querySelector<HTMLElement>('.feature-brand-header');
   const firstInput = screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement;
   fireEvent.change(firstInput, { target: { value: '07' } });
-  expect(screen.getByRole('button', { name: '刷新' }).parentElement?.className).toBe('query-selects three-cols');
-  expect(within(header!).queryByRole('button', { name: '刷新' })).toBeNull();
+  expect(screen.getByRole('button', { name: '刷新' }).parentElement?.classList.contains('query-selects')).toBe(true);
+  expect(within(header!.querySelector<HTMLElement>('.product-header__frame')!).queryByRole('button', { name: '刷新' })).toBeNull();
   Object.defineProperty(mobilePage, 'offsetWidth', { configurable: true, value: 390 });
   vi.spyOn(mobilePage, 'getBoundingClientRect').mockReturnValue({ top: 23, width: 195 } as DOMRect);
   vi.spyOn(header!, 'getBoundingClientRect').mockReturnValue({ bottom: 123 } as DOMRect);
@@ -60,9 +60,9 @@ test('從列表底部展開探索設定時直接顯示設定且不捲動畫面',
   const dialog = screen.getByRole('dialog', { name: '探索設定' });
   expect(dialog.hidden).toBe(false);
   expect(dialog.getAttribute('data-floating')).toBe('true');
-  expect(dialog.parentElement).toBe(mobilePage);
-  expect(dialog.style.top).toBe('131px');
-  expect(dialog.style.getPropertyValue('--select-tech-surface')).toBe('#030b13');
+  expect(header!.contains(dialog)).toBe(true);
+  expect(dialog.getAttribute('style')).toBeNull();
+  expect((within(dialog).getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement).value).toBe('07');
   expect(scrollIntoView).not.toHaveBeenCalled();
   fireEvent.click(within(dialog).getByRole('button', { name: '刷新' }));
   expect((screen.getByRole('textbox', { name: '探索號碼 1' }) as HTMLInputElement).value).toBe('');

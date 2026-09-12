@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronLeftIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ChevronLeftIcon } from "@radix-ui/react-icons";
 
 const CORE_HEADER_TITLES = new Set(["Matrix 探索", "Matrix 天衡", "Matrix 天衍", "Matrix 天工"]);
 
@@ -40,11 +40,36 @@ const PAGE_SUBTITLES: Readonly<Record<string, string>> = {
   "聲明與免責事項": "DISCLAIMER",
 };
 
-export function BrandHeader({ title, onBack, backHref, action, showBack = true }: {
+export type HeaderSettings = {
+  id: string;
+  expanded: boolean;
+  floating: boolean;
+  content: ReactNode;
+  onClose: () => void;
+};
+
+export function HeaderSettingsButton({ expanded, controls, onClick, label = "探索設定", accessibleLabel = label }: {
+  expanded: boolean;
+  controls: string;
+  onClick: () => void;
+  label?: string;
+  accessibleLabel?: string;
+}) {
+  return (
+    <button type="button" className="product-header__settings-toggle" aria-label={`${expanded ? "收合" : "展開"}${accessibleLabel}`} aria-expanded={expanded} aria-controls={controls} onClick={onClick}>
+      <svg className="product-header__settings-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
+      <span>{label}</span>
+      <ChevronDownIcon aria-hidden="true" data-open={expanded} />
+    </button>
+  );
+}
+
+export function BrandHeader({ title, onBack, backHref, action, settings, showBack = true }: {
   title: string;
   onBack?: () => void;
   backHref?: string;
   action?: ReactNode;
+  settings?: HeaderSettings;
   showBack?: boolean;
 }) {
   const hasBack = showBack && Boolean(onBack || backHref);
@@ -53,8 +78,7 @@ export function BrandHeader({ title, onBack, backHref, action, showBack = true }
   const titleWidth = Array.from(displayTitle).reduce((width, character) =>
     width + (/[^\u0000-\u007f]/.test(character) ? 1 : /[A-Z]/.test(character) ? .75 : .6), 0);
   const titleFit = titleWidth <= 6 ? "short" : titleWidth <= 8 ? "regular" : titleWidth <= 11 ? "medium" : "long";
-  return (
-    <header className="feature-brand-header product-header" data-product-header={title} data-header-style={CORE_HEADER_TITLES.has(title) ? "flow" : "geometric"}>
+  const frame = (
       <div className="product-header__frame" data-back={hasBack} data-actions={Boolean(action)}>
         {hasBack ? backHref ? (
           <a className="product-header__back" href={backHref} aria-label="返回">
@@ -72,6 +96,23 @@ export function BrandHeader({ title, onBack, backHref, action, showBack = true }
         </div>
         {action ? <div className="product-header__actions">{action}</div> : null}
       </div>
+  );
+  return (
+    <header className="feature-brand-header product-header" data-product-header={title} data-header-style={CORE_HEADER_TITLES.has(title) ? "flow" : "geometric"} data-settings-floating={Boolean(settings?.expanded && settings.floating)} onKeyDown={(event) => {
+      if (event.key !== "Escape" || !settings?.expanded) return;
+      event.preventDefault();
+      event.stopPropagation();
+      settings.onClose();
+      event.currentTarget.querySelector<HTMLButtonElement>(".product-header__settings-toggle")?.focus();
+    }}>
+      {settings ? (
+        <div className="product-header__settings-card" data-floating={settings.expanded && settings.floating}>
+          {frame}
+          <div className="product-header__settings-content" id={settings.id} hidden={!settings.expanded}>
+            {settings.content}
+          </div>
+        </div>
+      ) : frame}
     </header>
   );
 }

@@ -6,7 +6,8 @@ import { type LotteryId } from "../Prototype";
 import { fetchNumberReference, type MatrixNumberOrder, type NumberReferenceRequest, type NumberReferenceItem } from "../lottery-api";
 import { normalizeLookupNumber } from "../feature-tool-logic";
 import { Navigate } from "./navigation";
-import { useTimedState, useLotteryHistory, getHistoryLimit, getHistoryOrder, FeatureShell, MobilePagePortal, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
+import { HeaderSettingsButton } from "./BrandHeader";
+import { useTimedState, useLotteryHistory, getHistoryLimit, getHistoryOrder, FeatureShell, LOTTERIES, updateLookupInputValues, finalizeLookupInputValues, getDrawIssue, getHistoryDrawNumbers } from "./shared";
 
 export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [lottery, setLottery] = useTimedState<LotteryId>("reference-lottery", "今彩539");
@@ -20,7 +21,6 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [queryExpanded, setQueryExpanded] = useState(true);
   const [queryFloating, setQueryFloating] = useState(false);
-  const [queryPanelTop, setQueryPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLDivElement>(null);
   const queryRevision = useRef(0);
   const appliedRequest = useRef<NumberReferenceRequest | null>(null);
@@ -121,42 +121,19 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
       setQueryFloating(false);
       return;
     }
-    const header = document.querySelector<HTMLElement>(".number-reference-screen > .feature-brand-header");
-    setQueryPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setQueryExpanded(true);
     setQueryFloating(true);
   };
 
-  return (
-    <FeatureShell
-      title="號碼對照單"
-      onNavigate={onNavigate}
-      className="number-reference-screen"
-      headerAction={(
-        <div className="reference-title-actions title-card-compact-actions">
-          <button type="button" className="title-card-compact-action reference-settings-trigger" aria-label={queryExpanded ? "收合探索設定" : "展開探索設定"} aria-expanded={queryExpanded} onClick={toggleQueryPanel}>
-            <span>探索設定</span>
-            <ChevronDownIcon data-open={queryExpanded} />
-          </button>
-        </div>
-      )}
-    >
-      <MobilePagePortal active={queryFloating}>
+  const queryPanel = (
         <div
-          className="reference-query-panel"
+          className="reference-query-panel tool-settings-panel"
           data-floating={queryFloating}
           role={queryFloating ? "dialog" : undefined}
           aria-label={queryFloating ? "探索設定" : undefined}
           hidden={!queryExpanded}
-          style={queryFloating ? {
-            top: `${queryPanelTop}px`,
-            "--select-tech-surface": "#030b13",
-            "--select-tech-accent": "#f0bd36",
-            "--select-tech-text": "#d4d0c8",
-            "--select-tech-cut": "8px",
-          } as React.CSSProperties : undefined}
         >
-        <div className="query-selects three-cols">
+        <div className="query-selects three-cols tool-settings-primary-row">
         <div className="select-box native-select reference-select">
           <select
             aria-label="彩種"
@@ -203,7 +180,17 @@ export function NumberReferencePage({ onNavigate }: { onNavigate: Navigate }) {
           </div>
         </section>
         </div>
-      </MobilePagePortal>
+  );
+
+  return (
+    <FeatureShell
+      title="號碼對照單"
+      onNavigate={onNavigate}
+      className="number-reference-screen"
+      headerAction={<HeaderSettingsButton expanded={queryExpanded} controls="reference-header-settings" onClick={toggleQueryPanel} />}
+      headerSettings={{ id: "reference-header-settings", expanded: queryExpanded, floating: queryFloating, content: queryPanel, onClose: () => { setQueryExpanded(false); setQueryFloating(false); } }}
+    >
+
       {referenceLoadState === "error" ? <div className="panel" role="alert"><span>號碼對照資料載入失敗</span><button type="button" aria-label="重新載入號碼對照資料" onClick={() => void startReferenceSearch()}>重新載入</button></div> : null}
       {referenceLoadState === "loading" ? <p role="status">號碼對照資料載入中</p> : null}
       <section className="panel reference-table-panel" hidden={referenceLoadState === "error" || referenceLoadState === "loading"}>

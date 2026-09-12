@@ -108,6 +108,7 @@ export function FeatureShell({
   className = "",
   backTarget = "home",
   headerAction,
+  headerSettings,
   compactHeader = false,
 }: {
   title: string;
@@ -117,6 +118,7 @@ export function FeatureShell({
   className?: string;
   backTarget?: ScreenId;
   headerAction?: React.ReactNode;
+  headerSettings?: import("./BrandHeader").HeaderSettings;
   compactHeader?: boolean;
 }) {
   const { onQuickBack, quickActive } = useQuickNavigation();
@@ -127,6 +129,7 @@ export function FeatureShell({
         title={title}
         onBack={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)}
         action={headerAction}
+        settings={headerSettings}
         showBack={!logoOnlyHeader || (active === "我的" && backTarget === "profile") || title === "Matrix 筆記本"}
       />
       <div className="feature-body">{children}</div>
@@ -455,4 +458,3 @@ export function HistoryList({
     </div>
   );
 }
-

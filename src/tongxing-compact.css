@@ -35,17 +35,8 @@
 .tongxing-query .same-star-fields > * { min-width: 0; }
 
 .tongxing-query .query-selects .select-box {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
   height: var(--control-height);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
 }
-
-.tongxing-query .query-selects .select-box::before,
-.tongxing-query .query-selects .select-box::after { display: block; }
 
 .tongxing-query .query-selects select,
 .tongxing-query .same-star-period-select select {

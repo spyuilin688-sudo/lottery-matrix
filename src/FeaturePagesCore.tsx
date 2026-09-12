@@ -1,5 +1,5 @@
 import { subscribeLotteryRefresh } from "./lottery-data-refresh";
-import { BrandHeader } from "./features/BrandHeader";
+import { BrandHeader, HeaderSettingsButton, type HeaderSettings } from "./features/BrandHeader";
 import { useTimedState } from "./use-timed-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -39,12 +39,6 @@ type BottomNavCallbacks = {
 
 const LOTTERIES: LotteryId[] = ["今彩539", "天天樂", "六合彩", "大樂透"];
 
-function MobilePagePortal({ active, children }: { active: boolean; children: React.ReactNode }) {
-  if (!active || typeof document === "undefined") return children;
-  const host = document.querySelector<HTMLElement>(".mobile-page");
-  return host ? createPortal(children, host) : children;
-}
-
 function BottomNavigationPortal({ onNavigate, onQuickOpen, onQuickConfigure, quickActive }: { onNavigate: Navigate } & BottomNavCallbacks) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => { setHost(document.querySelector<HTMLElement>(".mobile-page")); }, []);
@@ -61,6 +55,7 @@ function ToolFeatureShell({
   backTarget = "home",
   className,
   headerAction,
+  headerSettings,
   onQuickOpen,
   onQuickConfigure,
   quickActive,
@@ -71,6 +66,7 @@ function ToolFeatureShell({
   backTarget?: ScreenId;
   className: string;
   headerAction?: React.ReactNode;
+  headerSettings?: HeaderSettings;
 } & BottomNavCallbacks) {
   const { onQuickBack } = useQuickNavigation();
   return (
@@ -79,6 +75,7 @@ function ToolFeatureShell({
         title={title}
         onBack={() => quickActive && onQuickBack ? onQuickBack() : onNavigate(backTarget)}
         action={headerAction}
+        settings={headerSettings}
       />
       <div className="feature-body">{children}</div>
       <BottomNavigationPortal onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive} />
@@ -177,7 +174,6 @@ function PatchedDrawHistoryPage({
   const [lottery, setLottery] = useTimedState<LotteryId>("history-lottery", "今彩539");
   const [filterExpanded, setFilterExpanded] = useState(true);
   const [filterFloating, setFilterFloating] = useState(false);
-  const [filterPanelTop, setFilterPanelTop] = useState(0);
   const [year, setYear] = useTimedState("history-year", String(new Date().getFullYear()));
   const [month, setMonth] = useTimedState("history-month", "08月");
   const [day, setDay] = useTimedState("history-day", "23日");
@@ -257,27 +253,13 @@ function PatchedDrawHistoryPage({
 
   const toggleHistoryFilters = () => {
     if (filterExpanded) { setFilterExpanded(false); setFilterFloating(false); return; }
-    const header = document.querySelector<HTMLElement>(".draw-history-screen > .feature-brand-header");
-    setFilterPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setFilterExpanded(true);
     setFilterFloating(true);
   };
 
-  const historyTitleActions = (
-    <div className="history-title-actions title-card-compact-actions">
-      <button type="button" className="history-filter-trigger title-card-compact-action" aria-label={filterExpanded ? "收合篩選設定" : "展開篩選設定"} aria-expanded={filterExpanded} onClick={toggleHistoryFilters}>
-        <svg className="history-filter-trigger-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2h9L7 6v3.2L5 10V6L1.5 2Z" /></svg>
-        篩選設定
-        <ChevronDownIcon data-open={filterExpanded} />
-      </button>
-    </div>
-  );
-
-  return (
-    <ToolFeatureShell title="歷史開獎號碼" onNavigate={onNavigate} backTarget={backTarget} className="draw-history-screen sticky-title-card-screen" headerAction={historyTitleActions} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
-      <MobilePagePortal active={filterFloating}>
-        <section className="history-filter-panel" data-floating={filterFloating} role={filterFloating ? "dialog" : "region"} aria-label="歷史篩選設定" hidden={!filterExpanded} style={filterFloating ? { top: `${filterPanelTop}px`, "--select-tech-surface": "#030b13", "--select-tech-accent": "#f0bd36", "--select-tech-text": "#d4d0c8", "--select-tech-cut": "8px" } as React.CSSProperties : undefined}>
-          <div className="history-filter-primary-row">
+  const historySettings = (
+        <section className="history-filter-panel tool-settings-panel" data-floating={filterFloating} role={filterFloating ? "dialog" : "region"} aria-label="歷史篩選設定" hidden={!filterExpanded}>
+          <div className="history-filter-primary-row tool-settings-primary-row">
             <div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => changeLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div>
             <div className="select-box native-select history-order-select"><select aria-label="號碼順序" value={numberOrder} onChange={(event) => setNumberOrder(event.target.value)}><option>依號碼由小到大排序</option><option>依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div>
             <button type="button" className="tool-settings-reset history-reset-trigger" onClick={resetHistory}><ReloadIcon aria-hidden="true" /><span>重設</span></button>
@@ -293,7 +275,15 @@ function PatchedDrawHistoryPage({
             <button type="button" className="history-filter-start branded-explore-action" onClick={applyHistoryFilters}><MagnifyingGlassIcon aria-hidden="true" /><span>開始探索</span></button>
           </div>
         </section>
-      </MobilePagePortal>
+  );
+
+  const historyTitleActions = (
+    <HeaderSettingsButton expanded={filterExpanded} controls="history-header-settings" label="篩選設定" onClick={toggleHistoryFilters} />
+  );
+
+  return (
+    <ToolFeatureShell title="歷史開獎號碼" onNavigate={onNavigate} backTarget={backTarget} className="draw-history-screen sticky-title-card-screen" headerAction={historyTitleActions} headerSettings={{ id: "history-header-settings", expanded: filterExpanded, floating: filterFloating, content: historySettings, onClose: () => { setFilterExpanded(false); setFilterFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
+
       <div className="matrix-explore-main-screen draw-history-history-scope">
         {historyLoadState === "error" ? <div className="panel" role="alert"><span>歷史開獎號碼載入失敗</span><button type="button" aria-label="重新載入歷史開獎號碼" onClick={reloadHistory}>重新載入</button></div> : null}
         {historyLoadState === "loading" ? <p role="status">歷史開獎號碼載入中</p> : null}
@@ -337,7 +327,6 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
   const [resultLoadState, setResultLoadState] = useState<"idle" | "loading" | "success" | "empty" | "error">("idle");
   const [settingsExpanded, setSettingsExpanded] = useState(true);
   const [settingsFloating, setSettingsFloating] = useState(false);
-  const [settingsPanelTop, setSettingsPanelTop] = useState(0);
   const resultsEndRef = useRef<HTMLElement>(null);
   const periodOffset = Number(period.replace(/\D/g, "")) || 1;
   const historyOrder = getHistoryOrder(appliedOrder);
@@ -395,8 +384,6 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
 
   const toggleSettingsPanel = () => {
     if (settingsExpanded) { setSettingsExpanded(false); setSettingsFloating(false); return; }
-    const header = document.querySelector<HTMLElement>(".tongxing-screen > .feature-brand-header");
-    setSettingsPanelTop((header?.getBoundingClientRect().bottom ?? 0) + 8);
     setSettingsExpanded(true);
     setSettingsFloating(true);
   };
@@ -410,15 +397,17 @@ function PatchedTongXingPage({ onNavigate, onQuickOpen, onQuickConfigure, quickA
     return <div className="tongxing-table-row" data-row-type={type}><span className="tongxing-period-cell" aria-label={`${type === "locked" ? "鎖定條件期" : "預測期"} ${issue} ${date.slice(0, 10)}`}><strong>{issue}</strong><time>{date.slice(0, 10)}</time></span>{resultColumns.map((_, index) => { const number = displayedNumbers[index]; return <span key={`${issue}-${index}`} aria-label={!number ? "實際開獎順序待公布" : undefined} className={type === "locked" && inputNumbers.has(number) ? "locked-input-number" : undefined}>{number ?? "—"}</span>; })}</div>;
   };
 
-  return (
-    <ToolFeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen sticky-title-card-screen" headerAction={<div className="tongxing-title-actions title-card-compact-actions"><button type="button" className="title-card-compact-action" aria-label={settingsExpanded ? "收合同星探索設定" : "展開同星探索設定"} aria-expanded={settingsExpanded} onClick={toggleSettingsPanel}><span>探索設定</span><ChevronDownIcon data-open={settingsExpanded} /></button></div>} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
-      <MobilePagePortal active={settingsFloating}>
-        <section className="panel tongxing-query tongxing-panel-scope" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded} style={settingsFloating ? { top: `${settingsPanelTop}px`, "--select-tech-surface": "#030b13", "--select-tech-accent": "#f0bd36", "--select-tech-text": "#d4d0c8", "--select-tech-cut": "8px" } as React.CSSProperties : undefined}>
-          <div className="query-selects"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
+  const tongxingSettings = (
+        <section className="tongxing-query tongxing-panel-scope tool-settings-panel" data-floating={settingsFloating} role={settingsFloating ? "dialog" : "region"} aria-label="同星探索設定" hidden={!settingsExpanded}>
+          <div className="query-selects tool-settings-primary-row"><div className="select-box native-select"><select aria-label="彩種" value={lottery} onChange={(event) => setLottery(event.target.value as LotteryId)}>{LOTTERIES.map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><div className="select-box native-select tongxing-order-select"><select aria-label="號碼順序" value={order} onChange={(event) => setOrder(event.target.value)}><option value="依號碼由小到大排序">依號碼由小到大排序</option><option value="依實際開獎順序排序">依實際開獎順序排序</option></select><ChevronDownIcon aria-hidden="true" /></div></div>
           <div className="same-star-fields">{values.map((value, index) => <input key={index} aria-label={`號碼 ${index + 1}`} value={value} inputMode="numeric" pattern="(0[1-9]|[1-4][0-9])" maxLength={2} onClick={(event) => event.currentTarget.select()} onChange={(event) => setValues(updateLookupInputValues(values, index, event.target.value))} onBlur={() => setValues(finalizeLookupInputValues(values, index))} />)}<span>之後下</span><div className="select-box native-select same-star-period-select"><select aria-label="之後期數" value={period} onChange={(event) => setPeriod(event.target.value)}>{Array.from({ length: 30 }, (_, index) => `${index + 1}期`).map((item) => <option value={item} key={item}>{item}</option>)}</select><ChevronDownIcon aria-hidden="true" /></div><span>開出</span></div>
           <button type="button" className="primary-action branded-explore-action" onClick={handleSearch}><MagnifyingGlassIcon /><span>開始探索</span></button>
         </section>
-      </MobilePagePortal>
+  );
+
+  return (
+    <ToolFeatureShell title="Matrix 同星" onNavigate={onNavigate} className="tongxing-screen sticky-title-card-screen" headerAction={<HeaderSettingsButton expanded={settingsExpanded} controls="tongxing-header-settings" accessibleLabel="同星探索設定" onClick={toggleSettingsPanel} />} headerSettings={{ id: "tongxing-header-settings", expanded: settingsExpanded, floating: settingsFloating, content: tongxingSettings, onClose: () => { setSettingsExpanded(false); setSettingsFloating(false); } }} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive}>
+
       {searched ? <><div className="ornament-title"><span />探索結果<span /></div>{resultLoadState === "error" ? <section ref={resultsEndRef} className="panel tongxing-results" role="alert"><span>Matrix 同星資料載入失敗</span><button type="button" aria-label="重新載入 Matrix 同星資料" onClick={() => void handleSearch()}>重新載入</button></section> : <section ref={resultsEndRef} className="panel tongxing-results">{resultLoadState === "loading" ? <p role="status">Matrix 同星資料載入中</p> : resultLoadState === "empty" ? <p>目前沒有符合條件的同星結果。</p> : <div className="tongxing-table" data-columns={resultColumns.length} aria-label={`${appliedLottery}同星探索結果`}><div className="tongxing-table-row tongxing-table-head"><span>期數</span>{resultColumns.map((column) => <span key={column}>{column}</span>)}</div>{resultGroups.map(({ lockedEntry, predictedEntry }) => <article className="tongxing-result-group" key={getDrawIssue(lockedEntry)}>{renderResultRow(lockedEntry, "locked")}{renderResultRow(predictedEntry, "predicted")}</article>)}</div>}</section>}</> : null}
     </ToolFeatureShell>
   );
@@ -442,4 +431,3 @@ export function FeaturePageRouter({
   if (screen === "tongxing") return <PatchedTongXingPage onNavigate={onNavigate} onQuickOpen={onQuickOpen} onQuickConfigure={onQuickConfigure} quickActive={quickActive} />;
   return <OriginalFeaturePageRouter screen={screen} onNavigate={onNavigate} historyReturnScreen={historyReturnScreen} statusLottery={statusLottery} />;
 }
-
