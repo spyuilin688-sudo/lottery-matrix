@@ -670,6 +670,7 @@
 
 .home-screen .home-shortcut-label {
   max-width: 100%;
+  font-family: Roboto, Arial, sans-serif;
   font-size: clamp(.625rem, 2.8vw, .6875rem);
   font-weight: 700;
   line-height: 1.3;
