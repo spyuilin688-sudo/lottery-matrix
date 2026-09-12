@@ -37,6 +37,7 @@ async function database() {
   await db.exec(oldFast);
   if (existsSync(migrationPath)) await db.exec(readFileSync(migrationPath, 'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20260912192941_preserve_provisional_draw_identity.sql', import.meta.url), 'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20260912202503_avoid_unchanged_draw_writes.sql', import.meta.url), 'utf8'));
   await db.query(`insert into lottery_draws(lottery,period,draw_date,numbers,sorted_numbers,draw_order_numbers)
     values ('六合彩','026099','2026-09-12',$1,$1,$1)`, [JSON.stringify(numbers)]);
   return db;
@@ -50,6 +51,91 @@ function formal(period='026100', override={}) {
   return {lottery:'六合彩',period,draw_date:'2026-09-15',numbers,sorted_numbers:numbers,
     draw_order_numbers:['06','05','04','03','02','01','49'],result_status:'confirmed',...override};
 }
+
+async function observeDrawUpdates(db) {
+  await db.exec(`create table private.draw_updates (draw_id bigint);
+    create function private.observe_draw_update() returns trigger language plpgsql as $$ begin
+      insert into private.draw_updates values(new.id); return new; end $$;
+    create trigger observe_draw_update after update on public.lottery_draws
+      for each row execute function private.observe_draw_update();`);
+  return async () => (await db.query('select count(*)::int n from private.draw_updates')).rows[0].n;
+}
+
+async function upsert(db, draws) {
+  return (await db.query('select public.matrix_upsert_draws($1::jsonb) result', [JSON.stringify(draws)])).rows[0].result;
+}
+
+test('repeated confirmed batches return existing rows without physical updates or invalidating completed work', async () => {
+  const db=await database();
+  try {
+    const saved=await upsert(db,[formal()]);
+    await db.exec(`insert into matrix_analysis_runs values('六合彩','026100','026100:matrix-python-v14-sorted');
+      insert into matrix_card_publications(lottery,desired_digest,lease_token,lease_until)
+      values('六合彩',repeat('a',64),gen_random_uuid(),now()+interval '10 minutes');`);
+    const cards=(await db.query('select * from matrix_card_publications')).rows;
+    const updateCount=await observeDrawUpdates(db);
+    assert.deepEqual(await upsert(db,[formal(),formal()]),[saved[0],saved[0]]);
+    assert.deepEqual(await upsert(db,[formal()]),saved);
+    assert.equal(await updateCount(),0);
+    assert.equal((await db.query('select count(*)::int n from matrix_analysis_runs')).rows[0].n,1);
+    assert.deepEqual((await db.query('select * from matrix_card_publications')).rows,cards);
+  } finally { await db.close(); }
+});
+
+test('repeated preliminary batches normalize unavailable actual numbers and do not rewrite the sorted draw', async () => {
+  const db=await database();
+  try {
+    await fast(db);
+    const saved=(await db.query(`select to_jsonb(d) result from lottery_draws d where draw_date='2026-09-15'`)).rows[0].result;
+    const updateCount=await observeDrawUpdates(db);
+    const preliminary=formal('026100',{result_status:'preliminary',source_id:'pilio',draw_order_numbers:[]});
+    assert.deepEqual(await upsert(db,[preliminary,preliminary]),[saved,saved]);
+    await fast(db);
+    assert.equal(await updateCount(),0);
+    assert.equal((await db.query('select count(*)::int n from notification_events')).rows[0].n,1);
+  } finally { await db.close(); }
+});
+
+test('confirmation and actual order correction update the same identity once each while repeated stages are no-ops', async () => {
+  const db=await database();
+  try {
+    await fast(db);
+    const before=(await db.query(`select id from lottery_draws where draw_date='2026-09-15'`)).rows[0];
+    const updateCount=await observeDrawUpdates(db);
+    const official=formal('026100',{source_id:'pilio',draw_order_numbers:null});
+    const confirmed=await upsert(db,[official,official]);
+    assert.equal(confirmed[0].id,before.id);
+    assert.equal(confirmed[0].result_status,'confirmed');
+    assert.equal(await updateCount(),1);
+    const actual=await upsert(db,[formal('026100',{source_id:'pilio'}),formal('026100',{source_id:'pilio'})]);
+    assert.equal(actual[0].id,before.id);
+    assert.deepEqual(actual[0].draw_order_numbers,['06','05','04','03','02','01','49']);
+    assert.equal(await updateCount(),2);
+    const corrected=formal('026100',{source_id:'pilio',draw_order_numbers:['05','06','04','03','02','01','49']});
+    assert.deepEqual((await upsert(db,[corrected,corrected]))[0].draw_order_numbers,corrected.draw_order_numbers);
+    assert.equal(await updateCount(),3);
+    await upsert(db,[formal('026100',{result_status:'preliminary',source_id:'pilio'})]);
+    assert.equal(await updateCount(),3);
+  } finally { await db.close(); }
+});
+
+test('source metadata changes persist once including null transitions without invalidating unchanged sorted analysis', async () => {
+  const db=await database();
+  try {
+    const [saved]=await upsert(db,[formal()]);
+    await db.exec(`insert into matrix_analysis_runs values('六合彩','026100','026100:matrix-python-v14-sorted')`);
+    const updateCount=await observeDrawUpdates(db);
+    let expectedUpdates=0;
+    for (const source of ['nfd','official',null]) {
+      const [result]=await upsert(db,[formal('026100',{source_id:source}),formal('026100',{source_id:source})]);
+      expectedUpdates+=1;
+      assert.equal(result.id,saved.id);
+      assert.equal(result.source_id,source);
+      assert.equal(await updateCount(),expectedUpdates);
+      assert.equal((await db.query('select count(*)::int n from matrix_analysis_runs')).rows[0].n,1);
+    }
+  } finally { await db.close(); }
+});
 
 test('fresh date and sorted numbers become provisional period +1 and one result notification', async () => {
   const db=await database();

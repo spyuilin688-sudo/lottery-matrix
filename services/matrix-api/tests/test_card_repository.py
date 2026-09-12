@@ -116,7 +116,23 @@ def test_claim_observe_and_publish_use_the_server_guarded_rpcs():
     manifest = {'generation': 'digest'}
     assert repo.update('今彩539', 'token', {'manifest': manifest})
     assert calls == [
-        ('claim_matrix_card_publication', {'p_lottery': '今彩539', 'p_token': 'token'}),
+        ('claim_matrix_card_publication_v2', {'p_lottery': '今彩539', 'p_token': 'token'}),
         ('observe_matrix_card_snapshot', {'p_lottery': '今彩539', 'p_token': 'token', 'p_digest': 'digest', 'p_period': '123'}),
         ('publish_matrix_card', {'p_lottery': '今彩539', 'p_token': 'token', 'p_digest': 'digest', 'p_manifest': manifest}),
     ]
+
+
+def test_prune_keeps_both_referenced_order_generations_and_removes_unreferenced_files():
+    storage = PrunableStorage()
+    storage.listings['539/100'] = [
+        {'name': 'sorted-input'}, {'name': 'draw-input'}, {'name': 'obsolete-input'},
+    ]
+    client = PruneClient(storage)
+    repo = SupabaseCardRepository(client)
+    repo.prune('今彩539', '100', 'whole-snapshot', 'lease-token',
+               keep_generations={'sorted-input', 'draw-input'})
+    assert set(storage.removed) == {
+        '539/100/obsolete-input/draw.png', '539/100/obsolete-input/sorted.png',
+        '539/97/old-generation/draw.png', '539/97/old-generation/sorted.png',
+    }
+    assert all(parameters['p_digest'] == 'whole-snapshot' for _, parameters in client.rpc_calls)
